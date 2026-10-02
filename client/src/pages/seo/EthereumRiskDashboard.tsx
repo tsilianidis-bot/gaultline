@@ -18,7 +18,7 @@ export default function EthereumRiskDashboard() {
         { icon: "◈", title: "ETH/BTC Ratio Tracking", desc: "The ETH/BTC ratio is the primary indicator of Ethereum's relative strength vs. Bitcoin. FAULTLINE tracks this ratio and its trend as new data is published." },
         { icon: "◎", title: "DeFi Ecosystem Context", desc: "Ethereum hosts the majority of DeFi protocols. DeFi protocol risk and contagion exposure are covered as qualitative context; FAULTLINE does not ingest TVL data." },
         { icon: "⬡", title: "Macro Regime Alignment", desc: "ETH is more sensitive to macro conditions than BTC due to its higher beta. FAULTLINE scores ETH's alignment with the current macro regime." },
-        { icon: "◈", title: "Price Levels", desc: "FAULTLINE does not publish price targets or support/resistance levels." },
+        { icon: "◈", title: "Price Levels", desc: "FAULTLINE does not publish price targets or support/resistance levels on this page." },
         { icon: "◎", title: "Staking Yield vs. Risk-Free Rate", desc: "Educational context: ETH staking yield relative to U.S. Treasury yields affects demand. FAULTLINE tracks Treasury yields; staking yield is not a data input." },
         { icon: "⬡", title: "Layer-2 Ecosystem Context", desc: "Arbitrum, Optimism, Base, and other L2s drive ETH demand through fees. L2 activity is qualitative context, not a FAULTLINE data input." },
       ]}

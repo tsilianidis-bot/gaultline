@@ -8,17 +8,17 @@ export default function NVDASignal() {
       sector="Semiconductors / AI Infrastructure"
       description="NVIDIA AI stock signal analysis"
       seoTitle="NVDA Signal — NVIDIA Stock Analysis, AI Risk Score & Key Levels | FAULTLINE"
-      seoDescription="NVDA signal analysis: NVIDIA's macro alignment score, AI bubble exposure rating, key support and resistance levels, bull and bear case scenarios, and regime-based signal classification."
+      seoDescription="NVDA signal analysis: NVIDIA's macro alignment score, AI bubble exposure rating, bull and bear case scenarios, and regime-based signal classification."
       canonical="/stock/nvda"
       accentColor="#76B900"
       badge="NVDA SIGNAL INTELLIGENCE"
       headline={"NVDA Signal\nNVIDIA AI Risk & Macro Analysis"}
-      subheadline="FAULTLINE provides regularly refreshed macro-aligned signal analysis for NVIDIA (NVDA) — the central node of the AI infrastructure buildout. Track NVDA's regime fit score, AI bubble exposure, key price levels, and bull/bear case scenarios."
+      subheadline="FAULTLINE provides regularly refreshed macro-aligned signal analysis for NVIDIA (NVDA) — the central node of the AI infrastructure buildout. Track NVDA's regime fit score, AI bubble exposure, and bull/bear case scenarios."
       whatIsIt={`NVIDIA Corporation (NASDAQ: NVDA) is the dominant supplier of graphics processing units (GPUs) for artificial intelligence training and inference workloads. Founded in 1993 and headquartered in Santa Clara, California, NVIDIA has transformed from a gaming GPU company into the central infrastructure provider for the AI revolution.
 
 NVIDIA operates in the Semiconductors sector, specifically in the AI Infrastructure sub-sector. Its products — particularly the H100, H200, and Blackwell GPU architectures — are the primary compute substrate for training large language models (LLMs) and running AI inference at scale. Customers include Microsoft (Azure), Amazon (AWS), Google (GCP), Meta, and virtually every major AI research organization globally.
 
-NVIDIA's financial metrics as of mid-2026 reflect its extraordinary market position: revenue has grown from approximately $27 billion in fiscal 2023 to over $130 billion in fiscal 2025, driven almost entirely by data center GPU demand. The company's gross margins exceed 70%, reflecting the pricing power that comes with near-monopoly supply of the most critical AI infrastructure component.
+NVIDIA's reported results reflect its market position: revenue grew from $27.0 billion in fiscal 2023 to $130.5 billion in fiscal 2025 (NVIDIA fiscal-year results releases of February 22, 2023 and February 26, 2025), driven largely by data center GPU demand. Fiscal 2025 GAAP gross margin was 75.0%, reflecting the pricing power that comes with near-monopoly supply of the most critical AI infrastructure component.
 
 NVIDIA belongs to the FAULTLINE AI Bubble Exposure category — a designation given to stocks whose valuations are most sensitive to changes in AI narrative momentum and capital allocation toward AI infrastructure. This designation is not a negative judgment; it is a risk classification that reflects NVDA's position as the highest-beta play on the AI infrastructure cycle.`}
       signalAnalysis={`FAULTLINE classifies NVDA's signal based on three primary inputs: macro regime alignment, AI narrative momentum, and technical structure.
@@ -27,18 +27,18 @@ Macro Regime Alignment: NVDA performs best in LOW RISK macro environments charac
 
 AI Narrative Momentum: NVDA's revenue and valuation are directly tied to AI infrastructure spending by hyperscalers (Microsoft, Amazon, Google, Meta). When AI capex guidance from these companies is strong and rising, NVDA's forward estimates expand and the stock outperforms. When AI capex guidance disappoints or shows signs of peaking, NVDA's forward estimates compress rapidly.
 
-Technical Structure: FAULTLINE tracks NVDA's position relative to key moving averages (50-day, 200-day), support and resistance levels, and momentum indicators (RSI, MACD) to classify the technical signal as BUY, SELL, HOLD, or WATCH.
+Technical Structure: the NVDA signal (BUY, SELL, HOLD, or WATCH) is computed from daily price data together with the current Pressure Index reading and regime band. FAULTLINE does not publish price targets or support/resistance levels on this page.
 
 The combination of these three inputs produces FAULTLINE's NVDA regime fit score (0-10) and signal classification, recalculated as new data is published.`}
-      keyLevels={`FAULTLINE tracks the following key NVDA price levels as part of the signal analysis:
+      keyLevels={`FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:
 
 Major Support Zones: The 200-day moving average is the primary long-term support for NVDA. Previous all-time highs that became support after being broken are secondary support levels. Major round numbers ($100, $150, $200) attract significant options positioning.
 
 Resistance Clusters: Previous all-time highs before they were broken become resistance if the stock pulls back below them.
 
-Entry Zone: FAULTLINE's signal engine identifies optimal entry zones based on the combination of technical support, momentum indicators, and macro regime alignment. Entry zones are not buy recommendations — they are risk-defined areas where the risk/reward profile is most favorable given current conditions.
+Entry Zones: FAULTLINE does not publish price targets or support/resistance levels on this page.
 
-Stop-Loss Levels: FAULTLINE identifies stop-loss levels based on technical structure — the price at which the bullish thesis is invalidated. For NVDA, the 200-day moving average is typically the key stop-loss reference.`}
+Stop-Loss Levels: FAULTLINE does not publish price targets or support/resistance levels on this page. Traders commonly treat the 200-day moving average as a reference for where a bullish thesis is invalidated.`}
       riskFactors={`NVDA faces five primary risk factors that FAULTLINE monitors:
 
 1. AI Capex Cycle Peak Risk: NVDA's extraordinary revenue growth depends on continued massive AI infrastructure investment by hyperscalers. If AI capex growth decelerates — due to ROI concerns, economic slowdown, or strategic pivots — NVDA's forward estimates would compress rapidly.
@@ -61,7 +61,7 @@ Stop-Loss Levels: FAULTLINE identifies stop-loss levels based on technical struc
         },
         {
           question: "What are NVDA's key support levels?",
-          answer: "FAULTLINE tracks NVDA's key support levels as new data is published, including the 200-day moving average, previous all-time highs that became support, and major round numbers. These levels are updated as new daily price data arrives from Polygon.io. Access the latest levels on the FAULTLINE Signals tab.",
+          answer: "FAULTLINE does not publish price targets or support/resistance levels on this page. Traders commonly watch the 200-day moving average, previous all-time highs that became support, and major round numbers; those are general technical-analysis conventions, not FAULTLINE outputs.",
         },
         {
           question: "How does the Federal Reserve affect NVDA's stock price?",

@@ -8,12 +8,12 @@ export default function PLTRSignal() {
       sector="AI Software / Government & Enterprise Analytics"
       description="Palantir AI stock signal analysis"
       seoTitle="PLTR Signal — Palantir Stock Analysis, AI Risk Score & Key Levels | FAULTLINE"
-      seoDescription="PLTR signal analysis: Palantir's macro alignment score, AI software exposure rating, key support and resistance levels, bull and bear case scenarios, and regime-based signal classification."
+      seoDescription="PLTR signal analysis: Palantir's macro alignment score, AI software exposure rating, bull and bear case scenarios, and regime-based signal classification."
       canonical="/stock/pltr"
       accentColor="#00D4FF"
       badge="PLTR SIGNAL INTELLIGENCE"
       headline={"PLTR Signal\nPalantir AI Software Risk & Macro Analysis"}
-      subheadline="FAULTLINE provides regularly refreshed macro-aligned signal analysis for Palantir Technologies (PLTR) — the leading AI software platform for government and enterprise. Track PLTR's regime fit score, AI software exposure, key price levels, and bull/bear case scenarios."
+      subheadline="FAULTLINE provides regularly refreshed macro-aligned signal analysis for Palantir Technologies (PLTR) — the leading AI software platform for government and enterprise. Track PLTR's regime fit score, AI software exposure, and bull/bear case scenarios."
       whatIsIt={`Palantir Technologies (NYSE: PLTR) is an American software company specializing in big data analytics, artificial intelligence, and decision intelligence platforms. Founded in 2003 by Peter Thiel, Alex Karp, and others, Palantir is headquartered in Denver, Colorado.
 
 Palantir operates in the AI Software sector, specifically in the Government & Enterprise Analytics sub-sector. The company's primary products are Gotham (government intelligence and defense), Foundry (enterprise data operations), and AIP (Artificial Intelligence Platform) — its newest and fastest-growing product that enables organizations to deploy large language models on proprietary data.
@@ -30,7 +30,7 @@ Government AI Spending Momentum: PLTR's government business is directly tied to 
 AIP Commercial Adoption: Palantir's AIP (Artificial Intelligence Platform) is the primary commercial growth driver. AIP boot camp adoption rates, net dollar retention, and customer count growth are the key metrics. Strong AIP adoption signals expanding commercial revenue and multiple expansion potential.
 
 The combination of these inputs produces FAULTLINE's PLTR regime fit score (0-10) and signal classification, refreshed as new data is published.`}
-      keyLevels={`FAULTLINE tracks the following key PLTR price levels:
+      keyLevels={`FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:
 
 Major Support Zones: The 200-day moving average is the primary long-term support. Previous breakout levels (the price at which PLTR broke out of consolidation ranges) become support after the breakout. Major round numbers ($20, $25, $30, $40, $50) attract significant options positioning.
 

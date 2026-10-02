@@ -466,7 +466,7 @@ describe("public claims truth: Product-QA r4 follow-ups (PR #56 r5)", () => {
       expect(levels.length, path).toBeGreaterThan(0);
       for (const line of levels) {
         expect(line, path).not.toMatch(/\$\d/);
-        expect(line, path).toContain("FAULTLINE does not publish price targets or support/resistance levels.");
+        expect(line, path).toContain("FAULTLINE does not publish price targets or support/resistance levels on this page.");
       }
       expect(text, path).not.toMatch(priceLevel);
       expect(text, path).not.toMatch(/updated dynamically based on price action|regime-aligned entry zones/);

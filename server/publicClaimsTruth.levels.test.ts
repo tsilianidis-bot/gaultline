@@ -23,18 +23,12 @@ function walk(dir: string): string[] {
   });
 }
 
-const NO_LEVELS = "FAULTLINE does not publish price targets or support/resistance levels.";
+const NO_LEVELS = "FAULTLINE does not publish price targets or support/resistance levels on this page.";
 
-// Files with the same defects that overlap the held branch
-// probability/public-copy-on-56 (@159b29a) and were not edited in r7.
-// Remove an entry once its file is fixed; the checks below then cover it.
-const OVERLAP_PENDING = new Set([
-  "client/src/pages/seo/NVDASignal.tsx",
-  "client/src/pages/seo/TSLASignal.tsx",
-  "client/src/pages/seo/AMDSignal.tsx",
-  "client/src/pages/seo/PLTRSignal.tsx",
-  "client/src/pages/seo/METASignal.tsx",
-]);
+// r8: the five signal pages that were overlap-pending in r7 (NVDA, TSLA, AMD,
+// PLTR, META) are fixed and covered; keep this empty unless a file is
+// deliberately deferred.
+const OVERLAP_PENDING = new Set<string>([]);
 
 const seoPages = walk(join(root, "client/src/pages/seo"))
   .map((p) => p.slice(root.length).replace(/^\//, ""))
@@ -42,9 +36,9 @@ const seoPages = walk(join(root, "client/src/pages/seo"))
   .map((path) => ({ path, text: read(path) }));
 
 const liveLevelClaim =
-  /FAULTLINE tracks (the following key [^\n]{0,30}price levels|major support zones)|price levels refreshed|support and resistance levels updated|levels are updated as new daily|incorporates the proximity to support|derived from technical analysis and FAULTLINE's signal engine|identifies (optimal entry zones|stop-loss levels)|price-based key levels/i;
+  /FAULTLINE tracks (the following key [^\n]{0,30}price levels|major support zones)|price levels refreshed|support and resistance levels updated|levels are updated as new daily|incorporates the proximity to support|derived from technical analysis and FAULTLINE's signal engine|identifies (optimal entry zones|stop-loss levels)|price-based key levels|tracks NVDA's position relative to|Access the latest levels|tracks AI narrative momentum as one of the inputs/i;
 const srMetaPhrase = /key support and resistance levels/i;
-const unsourcedFigure = /\$130B\+|over \$130 billion|\$60-65 billion|\$60B\+ annual/i;
+const unsourcedFigure = /\$130B\+|over \$130 billion|as of mid-2026|\$60-65 billion (annually|annual)|spending \$60-65 billion|\$60B\+ annual/i;
 const engineCount = /\b(?:1[0-9]|ten|eleven|twelve|thirteen|fourteen)\s+(?:FMOS\s+)?engines\b|label: 'Active Engines', value: '\d+'|engineCount \?\? \d+/i;
 
 const offenders = (pages: { path: string; text: string }[], re: RegExp) => pages.filter((p) => re.test(p.text)).map((p) => p.path);
@@ -59,6 +53,13 @@ describe("public claims truth: price levels, figures, engine counts (PR #56 r7)"
     expect("Support, resistance, entry zone, and stop-loss levels for ${ticker} derived from technical analysis and FAULTLINE's signal engine.").toMatch(liveLevelClaim);
     expect("Bitcoin risk dashboard: BTC macro alignment score, key support and resistance levels, liquidity sensitivity").toMatch(srMetaPhrase);
     expect("NVDA is an equity in a profitable semiconductor company with $130B+ in annual revenue.").toMatch(unsourcedFigure);
+    // r8 (3dba6d8 lines on NVDA/META/TSLA)
+    expect("NVIDIA's financial metrics as of mid-2026 reflect its extraordinary market position").toMatch(unsourcedFigure);
+    expect("AI Infrastructure ROI: Meta is spending $60-65 billion annually on AI infrastructure.").toMatch(unsourcedFigure);
+    expect("AI capex ROI concerns (market questioning the return on $60B+ annual AI investment)").toMatch(unsourcedFigure);
+    expect("Technical Structure: FAULTLINE tracks NVDA's position relative to key moving averages").toMatch(liveLevelClaim);
+    expect("These levels are updated as new daily price data arrives from Polygon.io. Access the latest levels on the FAULTLINE Signals tab.").toMatch(liveLevelClaim);
+    expect("FAULTLINE tracks AI narrative momentum as one of the inputs to the TSLA signal.").toMatch(liveLevelClaim);
     expect("{ label: 'Active Engines', value: '14', icon: Cpu, color: 'text-cyan-400' },").toMatch(engineCount);
     expect("All 14 engines compiled and operational - 0 TypeScript errors").toMatch(engineCount);
     expect('FMOS {version?.version ?? "—"} · {version?.engineCount ?? 14} engines').toMatch(engineCount);
@@ -97,7 +98,35 @@ describe("public claims truth: price levels, figures, engine counts (PR #56 r7)"
     expect(read("client/src/pages/FmosHealthDashboard.tsx")).toContain("{ENGINES.length} FMOS engines");
   });
 
-  it("overlap-pending files still exist (remove from OVERLAP_PENDING once fixed)", () => {
-    for (const path of OVERLAP_PENDING) expect(() => read(path)).not.toThrow();
+  it("covers the r7 overlap-pending signal pages", () => {
+    expect(OVERLAP_PENDING.size).toBe(0);
+    for (const path of [
+      "client/src/pages/seo/NVDASignal.tsx",
+      "client/src/pages/seo/TSLASignal.tsx",
+      "client/src/pages/seo/AMDSignal.tsx",
+      "client/src/pages/seo/PLTRSignal.tsx",
+      "client/src/pages/seo/METASignal.tsx",
+    ]) {
+      expect(seoPages.some((p) => p.path === path), path).toBe(true);
+      expect(read(path), path).toContain(NO_LEVELS + " How technical levels are commonly read:");
+    }
+  });
+
+  it("the no-levels line is narrowed to 'on this page' wherever it appears", () => {
+    const hits: string[] = [];
+    for (const page of seoPages) {
+      for (const m of page.text.matchAll(/does not publish price targets or support\/resistance levels([^"`\n]{0,14})/g)) {
+        if (!m[1].startsWith(" on this page.")) hits.push(`${page.path}: ${m[0]}`);
+      }
+    }
+    expect(hits).toEqual([]);
+  });
+
+  it("company figures that remain are cited and dated once", () => {
+    const nvda = read("client/src/pages/seo/NVDASignal.tsx");
+    expect(nvda).toContain("$27.0 billion in fiscal 2023 to $130.5 billion in fiscal 2025 (NVIDIA fiscal-year results releases of February 22, 2023 and February 26, 2025)");
+    const meta = read("client/src/pages/seo/METASignal.tsx");
+    expect(meta).toContain("In its fourth-quarter 2024 results release (January 29, 2025), Meta guided full-year 2025 capital expenditures of $60–65 billion");
+    expect(meta.match(/\$60[–-]65 billion|\$60B/g)?.length).toBe(1);
   });
 });

@@ -51,7 +51,7 @@ export default function StockSignalPage({
       features={[
         { icon: "◈", title: "Signal Classification", desc: `FAULTLINE classifies ${ticker} against the current macro regime — BUY, SELL, HOLD, or WATCH — refreshed as new data is published.` },
         { icon: "◎", title: "Regime Fit Score", desc: `How well does ${ticker} fit the current macro environment? FAULTLINE scores regime alignment from 0-10.` },
-        { icon: "⬡", title: "Price Levels", desc: "FAULTLINE does not publish price targets or support/resistance levels." },
+        { icon: "⬡", title: "Price Levels", desc: "FAULTLINE does not publish price targets or support/resistance levels on this page." },
         { icon: "◈", title: "Bull & Bear Case", desc: `Structured bull and bear case scenarios for ${ticker} based on macro conditions, sector dynamics, and technical structure.` },
         { icon: "◎", title: "Risk Score (0-100)", desc: `A composite ${ticker} risk score aggregating macro alignment, momentum, volatility, debt risk, and AI exposure.` },
         { icon: "⬡", title: "AI & Macro Sensitivity", desc: `${ticker}'s sensitivity to AI narrative shifts, Federal Reserve policy, and macro regime transitions — quantified.` },

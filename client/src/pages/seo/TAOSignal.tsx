@@ -17,7 +17,7 @@ export default function TAOSignal() {
       features={[
         { icon: "◈", title: "AI Crypto Exposure Rating", desc: "TAO is the highest-beta play on the intersection of AI and crypto. FAULTLINE scores TAO's sensitivity to AI narrative momentum and crypto market cycles." },
         { icon: "◎", title: "Macro Regime Alignment", desc: "TAO requires a risk-on macro environment AND positive AI narrative momentum simultaneously. FAULTLINE tracks both conditions." },
-        { icon: "⬡", title: "Price Levels", desc: "FAULTLINE does not publish price targets or support/resistance levels." },
+        { icon: "⬡", title: "Price Levels", desc: "FAULTLINE does not publish price targets or support/resistance levels on this page." },
         { icon: "◈", title: "BTC/ETH Correlation", desc: "TAO's price action is correlated with both BTC (crypto market beta) and AI stock momentum. FAULTLINE tracks both correlations." },
         { icon: "◎", title: "Subnet Ecosystem Context", desc: "Bittensor's subnet ecosystem growth is a fundamental driver of TAO demand. This is qualitative context; FAULTLINE does not ingest subnet or validator data." },
         { icon: "⬡", title: "Risk Score (0-100)", desc: "A composite TAO risk score aggregating macro alignment, crypto market conditions, AI narrative momentum, and technical structure." },
@@ -29,7 +29,7 @@ export default function TAOSignal() {
 
 Bittensor operates in the AI Crypto sector — the intersection of artificial intelligence and decentralized blockchain technology. The protocol is built on a Proof of Intelligence consensus mechanism, where validators assess the quality of AI model outputs and distribute TAO rewards accordingly.
 
-The Bittensor network is organized into subnets — specialized AI marketplaces focused on specific tasks such as text generation, image generation, financial prediction, and data validation. Each subnet has its own token (subnet token) that is backed by TAO. As of mid-2026, Bittensor has over 60 active subnets with hundreds of validators and miners.
+The Bittensor network is organized into subnets — specialized AI marketplaces focused on specific tasks such as text generation, image generation, financial prediction, and data validation. Each subnet has its own token (subnet token) that is backed by TAO. Each subnet has its own validators and miners, and the number of active subnets has grown over time.
 
 TAO's tokenomics mirror Bitcoin's: a fixed maximum supply of 21 million TAO, with halving events that reduce issuance over time. This fixed supply combined with growing network demand creates a deflationary pressure on TAO supply that is a key component of the bull case.
 
@@ -49,7 +49,7 @@ The FAULTLINE TAO signal is most bullish when BOTH conditions are met: crypto ma
           heading: "TAO Key Price Levels and Historical Volatility",
           body: `TAO is among the most volatile assets in the FAULTLINE signal universe. Historical drawdowns from cycle highs have exceeded 80% during bear market phases. This volatility reflects TAO's position at the intersection of two high-beta themes (AI and crypto) and its relatively small market cap compared to BTC or ETH.
 
-FAULTLINE does not publish price targets or support/resistance levels. How technical levels are commonly read:
+FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:
 
 Major Support Zones: Previous cycle highs that became support after being broken, major moving averages (50-day, 200-day), and key psychological round numbers.
 

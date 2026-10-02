@@ -8,12 +8,12 @@ export default function AMDSignal() {
       sector="Semiconductors / AI & Data Center"
       description="AMD stock signal analysis"
       seoTitle="AMD Signal — Advanced Micro Devices Stock Analysis, AI Risk Score & Key Levels | FAULTLINE"
-      seoDescription="AMD signal analysis: Advanced Micro Devices' macro alignment score, AI GPU exposure rating, data center cycle sensitivity, key support and resistance levels, and regime-based signal classification."
+      seoDescription="AMD signal analysis: Advanced Micro Devices' macro alignment score, AI GPU exposure rating, data center cycle sensitivity, and regime-based signal classification."
       canonical="/stock/amd"
       accentColor="#ED1C24"
       badge="AMD SIGNAL INTELLIGENCE"
       headline={"AMD Signal\nAdvanced Micro Devices Risk & Macro Analysis"}
-      subheadline="FAULTLINE provides regularly refreshed macro-aligned signal analysis for AMD — NVIDIA's primary GPU competitor and a major data center processor supplier. Track AMD's regime fit score, AI semiconductor exposure, key price levels, and bull/bear case scenarios."
+      subheadline="FAULTLINE provides regularly refreshed macro-aligned signal analysis for AMD — NVIDIA's primary GPU competitor and a major data center processor supplier. Track AMD's regime fit score, AI semiconductor exposure, and bull/bear case scenarios."
       whatIsIt={`Advanced Micro Devices, Inc. (NASDAQ: AMD) is an American semiconductor company founded in 1969 and headquartered in Santa Clara, California. Under CEO Lisa Su's leadership since 2014, AMD has transformed from a struggling competitor into a formidable force in CPUs, GPUs, and AI accelerators.
 
 AMD operates in the Semiconductors sector, specifically in the AI & Data Center sub-sector. The company's primary product lines include EPYC server CPUs (competing with Intel Xeon), Ryzen desktop and laptop CPUs, Radeon consumer GPUs, and Instinct AI accelerators (competing with NVIDIA's H100/H200/Blackwell).
@@ -30,7 +30,7 @@ Data Center CPU Cycle: AMD's EPYC server CPUs have gained significant market sha
 Macro Regime Alignment: AMD is a high-beta semiconductor stock. In LOW RISK macro environments, semiconductor stocks tend to outperform as technology capex expands. In HIGH STRESS environments, semiconductor stocks are vulnerable to both multiple compression and earnings estimate cuts.
 
 NVDA Competitive Dynamics: AMD's valuation is partially determined by its position relative to NVIDIA. When NVIDIA faces supply constraints, export restrictions, or competitive challenges, AMD benefits. When NVIDIA's competitive position strengthens, AMD's relative valuation is pressured.`}
-      keyLevels={`FAULTLINE tracks the following key AMD price levels:
+      keyLevels={`FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:
 
 Major Support Zones: The 200-day moving average is the primary long-term support. Previous cycle highs that became support. Major psychological levels ($80, $100, $120, $150, $200).
 

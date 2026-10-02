@@ -8,12 +8,12 @@ export default function TSLASignal() {
       sector="Electric Vehicles / AI & Robotics"
       description="Tesla stock signal analysis"
       seoTitle="TSLA Signal — Tesla Stock Analysis, Risk Score & Key Levels | FAULTLINE"
-      seoDescription="TSLA signal analysis: Tesla's macro alignment score, AI and EV exposure rating, key support and resistance levels, bull and bear case scenarios, and regime-based signal classification."
+      seoDescription="TSLA signal analysis: Tesla's macro alignment score, AI and EV exposure rating, bull and bear case scenarios, and regime-based signal classification."
       canonical="/stock/tsla"
       accentColor="#E31937"
       badge="TSLA SIGNAL INTELLIGENCE"
       headline={"TSLA Signal\nTesla Risk & Macro Analysis"}
-      subheadline="FAULTLINE provides regularly refreshed macro-aligned signal analysis for Tesla (TSLA) — the world's leading EV manufacturer and an increasingly AI-driven robotics and autonomous driving company. Track TSLA's regime fit score, key price levels, and bull/bear case scenarios."
+      subheadline="FAULTLINE provides regularly refreshed macro-aligned signal analysis for Tesla (TSLA) — the world's leading EV manufacturer and an increasingly AI-driven robotics and autonomous driving company. Track TSLA's regime fit score, and bull/bear case scenarios."
       whatIsIt={`Tesla, Inc. (NASDAQ: TSLA) is an American electric vehicle and clean energy company founded by Elon Musk, JB Straubel, Martin Eberhard, Marc Tarpenning, and Ian Wright in 2003. Headquartered in Austin, Texas, Tesla designs, manufactures, and sells electric vehicles, energy storage systems, and solar products.
 
 Tesla operates across multiple sectors: Electric Vehicles (its core business), Energy Storage (Powerwall, Megapack), Solar (Solar Roof, Solar Panels), and increasingly AI & Robotics (Full Self-Driving, Optimus humanoid robot, Dojo supercomputer). This multi-sector exposure gives Tesla a unique risk profile that combines EV cycle sensitivity with AI optionality.
@@ -30,7 +30,7 @@ AI & Robotics Optionality: TSLA's valuation includes significant optionality for
 Elon Musk Factor: TSLA's valuation is uniquely tied to Elon Musk's perceived execution ability and public profile. Positive developments (FSD milestones, Optimus demos, government contracts) can drive significant upside. Controversies or distractions can create headwinds.
 
 Macro Regime Alignment: TSLA is a high-beta growth stock. In LOW RISK macro environments (FAULTLINE Pressure Index below 25), TSLA tends to outperform. In HIGH STRESS environments, TSLA's high valuation multiple creates significant downside risk.`}
-      keyLevels={`FAULTLINE tracks the following key TSLA price levels:
+      keyLevels={`FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:
 
 Major Support Zones: The 200-day moving average is the primary long-term support. Previous all-time highs that became support after being broken. Major psychological levels ($150, $200, $250, $300, $400, $500).
 
@@ -50,7 +50,7 @@ Historical Volatility Context: TSLA is one of the most volatile large-cap stocks
 5. Macro Regime Sensitivity: TSLA's high valuation multiple makes it highly sensitive to macro regime transitions. A shift to HIGH STRESS (FAULTLINE Pressure Index 65+) typically triggers significant TSLA drawdowns.`}
       faqs={[
         { question: "Is TSLA a buy or sell right now?", answer: "FAULTLINE's TSLA signal classification is available on the Signals tab, based on macro regime alignment, EV demand cycle, AI optionality momentum, and technical structure. This is not investment advice." },
-        { question: "What is Tesla's AI exposure?", answer: "Tesla's AI exposure comes primarily from Full Self-Driving (FSD) — its autonomous driving software — and Optimus, its humanoid robot program. Both are embedded as optionality in TSLA's valuation. FAULTLINE tracks AI narrative momentum as one of the inputs to the TSLA signal." },
+        { question: "What is Tesla's AI exposure?", answer: "Tesla's AI exposure comes primarily from Full Self-Driving (FSD) — its autonomous driving software — and Optimus, its humanoid robot program. Both are embedded as optionality in TSLA's valuation. AI narrative momentum is qualitative context, not a data input to the TSLA signal." },
         { question: "How does the Federal Reserve affect TSLA?", answer: "Higher interest rates increase monthly payments on financed EV purchases, reducing demand. They also increase the discount rate applied to TSLA's future earnings and optionality value, compressing the stock's valuation multiple. FAULTLINE's Federal Reserve Tracker monitors Fed policy as part of the TSLA macro alignment score." },
         { question: "What is TSLA's biggest risk in 2026?", answer: "Based on FAULTLINE's analysis, TSLA's biggest risks in 2026 are EV competition intensification (particularly from BYD and legacy OEMs), FSD and Optimus execution risk (if AI optionality milestones are missed), and macro regime sensitivity (high-multiple growth stocks are vulnerable in HIGH STRESS environments)." },
         { question: "How volatile is TSLA compared to the S&P 500?", answer: "TSLA has a historical beta of approximately 2.0-2.5 relative to the S&P 500, meaning it tends to move 2-2.5x the magnitude of the broader market. Drawdowns from cycle highs have exceeded 70% in bear market phases. This elevated volatility is a core feature of TSLA's risk profile that FAULTLINE accounts for in the risk score." },

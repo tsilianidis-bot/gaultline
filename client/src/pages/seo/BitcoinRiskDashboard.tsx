@@ -16,7 +16,7 @@ export default function BitcoinRiskDashboard() {
       accentColor="#F7931A"
       features={[
         { icon: "◈", title: "Macro Regime Alignment Score", desc: "BTC classified against the current macro regime. Risk-on vs. risk-off conditions fundamentally change Bitcoin's risk/reward profile." },
-        { icon: "◎", title: "Price Levels", desc: "FAULTLINE does not publish price targets or support/resistance levels." },
+        { icon: "◎", title: "Price Levels", desc: "FAULTLINE does not publish price targets or support/resistance levels on this page." },
         { icon: "⬡", title: "Liquidity Sensitivity Rating", desc: "Bitcoin is the most liquidity-sensitive major asset. FAULTLINE scores BTC's vulnerability to Fed QT and global liquidity withdrawal." },
         { icon: "◈", title: "Bull Case / Bear Case Analysis", desc: "Structured bull and bear case context for BTC based on current macro conditions and technical structure." },
         { icon: "◎", title: "BTC Dominance Tracking", desc: "Monitor Bitcoin's share of total crypto market cap — the primary indicator of whether capital is flowing into or out of altcoins." },
@@ -49,15 +49,13 @@ FAULTLINE's Bitcoin Risk Dashboard uses the macro framework as the primary analy
         },
         {
           heading: "Bitcoin Key Price Levels and Technical Structure",
-          body: `FAULTLINE does not publish price targets or support/resistance levels. How technical levels are commonly read:
+          body: `FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:
 
 Major Support Zones: These are price levels where significant buying interest has historically emerged — previous all-time highs that became support and major moving averages (200-day, 200-week).
 
 Resistance Clusters: Price levels where significant selling pressure has historically emerged — previous all-time highs before they were broken and major round numbers.
 
-Key Psychological Levels: Round numbers ($100K, $150K, $200K) that attract significant options positioning and retail attention.
-
-FAULTLINE does not publish price targets or support/resistance levels.`,
+Key Psychological Levels: Round numbers ($100K, $150K, $200K) that attract significant options positioning and retail attention.`,
         },
       ]}
       faqs={[
@@ -74,8 +72,8 @@ FAULTLINE does not publish price targets or support/resistance levels.`,
           answer: "Bitcoin's correlation with the S&P 500 has increased significantly since 2020 as institutional adoption has grown. During risk-off events (market stress, recession fears), BTC typically falls alongside equities — often more severely due to its higher volatility. During risk-on environments, BTC can outperform equities significantly. FAULTLINE's macro regime alignment score reflects this by reading BTC through the same systemic pressure conditions as equities.",
         },
         {
-          question: "Does FAULTLINE publish BTC price levels?",
-          answer: "No. FAULTLINE does not publish price targets or support/resistance levels. Traders commonly watch previous all-time highs, the 200-day and 200-week moving averages, and major round numbers; those are general technical-analysis conventions, not FAULTLINE outputs.",
+          question: "Does this page publish BTC price levels?",
+          answer: "No. FAULTLINE does not publish price targets or support/resistance levels on this page. Traders commonly watch previous all-time highs, the 200-day and 200-week moving averages, and major round numbers; those are general technical-analysis conventions, not FAULTLINE outputs.",
         },
         {
           question: "Is Bitcoin a good hedge against inflation?",
