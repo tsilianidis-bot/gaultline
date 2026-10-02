@@ -1,8 +1,10 @@
 import type { InvokeParams, InvokeResult } from "../_core/llm";
 import { createOpenAiCompatibleAdapter, type PlatoAdapter, type PlatoAdapterRequest } from "./adapters/openaiCompatible";
 import { readPlatoConfig, PLATO_MAX_RETRY_DELAY_MS, type PlatoConfig, type PlatoTaskType } from "./config";
+import { platoMaxTokens, platoUsage, readPlatoLimits, type PlatoLimits, type PlatoUsageCounter } from "./limits";
 import {
   classifyTransportError,
+  platoDailyLimitError,
   isRetryableOnSameModel,
   PlatoRouteError,
   PlatoUnavailableError,
@@ -110,6 +112,10 @@ export interface RouteDependencies {
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
   random?: () => number;
+  /** Usage and cost limits (defaults in code, optional env overrides). */
+  limits?: PlatoLimits;
+  /** Daily call counter. Defaults to the process-wide in-memory counter. */
+  usage?: PlatoUsageCounter;
 }
 
 const defaultSleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
@@ -140,6 +146,14 @@ export async function routePlatoCompletion(
     invoke: dependencies.invoke,
   }));
 
+  const limits = dependencies.limits ?? readPlatoLimits();
+  const usage = dependencies.usage ?? platoUsage;
+  // Every PLATO call carries an explicit output cap (the gateway default would be 32768).
+  const cappedRequest: PlatoCompletionRequest = {
+    ...request,
+    maxTokens: platoMaxTokens(request.maxTokens ?? request.max_tokens, limits.maxOutputTokens),
+    max_tokens: undefined,
+  };
   const budget = dependencies.budget ?? createPlatoBudget(config, now);
   const deadline = budget.deadline;
   const attempts: PlatoAttemptRecord[] = [];
@@ -154,16 +168,20 @@ export async function routePlatoCompletion(
     while (budget.attemptsUsed < budget.maxAttempts) {
       const remaining = deadline - now();
       if (remaining <= 0) break;
+      // App-wide daily call cap: checked before every provider call, retries and fallbacks included.
+      if (!usage.tryConsumeGlobalCall(limits.globalDailyCalls)) {
+        throw platoDailyLimitError("global", attempts);
+      }
       const attemptStarted = now();
       budget.attemptsUsed++;
       const attemptNumber = budget.attemptsUsed;
       try {
         const result = await runWithDeadline(
-          signal => adapter.complete(request, { signal }),
+          signal => adapter.complete(cappedRequest, { signal }),
           Math.min(config.attemptTimeoutMs, remaining),
           adapter,
         );
-        const unusable = checkPlatoResponse(result.response, request) ?? dependencies.validateResponse?.(result.response) ?? null;
+        const unusable = checkPlatoResponse(result.response, cappedRequest) ?? dependencies.validateResponse?.(result.response) ?? null;
         if (unusable) {
           throw new PlatoRouteError(`PLATO provider returned 200 without a usable answer (${unusable}).`, {
             httpStatus: 200,

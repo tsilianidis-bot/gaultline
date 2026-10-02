@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { PlatoRouteError, PlatoUnavailableError, type PlatoUnavailableReason } from "./plato/errors";
+import { PLATO_DAILY_LIMIT_MESSAGE, PLATO_USER_DAILY_LIMIT_MESSAGE } from "../shared/ashaPanelMachine";
 
 /**
  * Client-safe PLATO failure messages. Each starts with the same title so every
@@ -12,6 +13,9 @@ export const PLATO_UNAVAILABLE_MESSAGES: Record<PlatoUnavailableReason, string> 
   timeout: "PLATO is temporarily unavailable: the language model did not respond in time. Please try again.",
   misconfigured: "PLATO is temporarily unavailable. Please try again later.",
   provider_error: "PLATO is temporarily unavailable. Please try again.",
+  // App-side daily caps: honest copy, no answer, no Retry on the client.
+  daily_limit: PLATO_DAILY_LIMIT_MESSAGE,
+  user_daily_limit: PLATO_USER_DAILY_LIMIT_MESSAGE,
 };
 
 const REASON_TO_CODE: Record<PlatoUnavailableReason, TRPCError["code"]> = {
@@ -20,12 +24,15 @@ const REASON_TO_CODE: Record<PlatoUnavailableReason, TRPCError["code"]> = {
   timeout: "SERVICE_UNAVAILABLE",
   misconfigured: "INTERNAL_SERVER_ERROR",
   provider_error: "SERVICE_UNAVAILABLE",
+  daily_limit: "TOO_MANY_REQUESTS",
+  user_daily_limit: "TOO_MANY_REQUESTS",
 };
 
 export function platoUnavailableReasonOf(error: unknown): PlatoUnavailableReason | null {
   if (error instanceof PlatoUnavailableError) return error.reason;
   if (error instanceof PlatoRouteError) {
     if (error.errorClass === "quota") return "quota";
+    if (error.errorClass === "daily_limit") return "daily_limit";
     if (error.errorClass === "capacity" || error.errorClass === "provider_5xx" || error.errorClass === "network") return "capacity";
     if (error.errorClass === "timeout") return "timeout";
     if (error.errorClass === "auth" || error.errorClass === "bad_request") return "misconfigured";

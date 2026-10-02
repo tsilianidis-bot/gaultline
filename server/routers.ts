@@ -75,6 +75,8 @@ import { analyzeSeoUrl, generateMetaTags, generateAutoFix } from './seoOptimizer
 import { computeSOB } from './sobEngine';
 import { askAsha, generateAshaDailyGreeting, ASHA_FIRST_INTRODUCTION } from './ashaEngine';
 import { mapAshaProcedureError, platoFailureLogFields } from './ashaProcedureError';
+import { platoDailyLimitError, PlatoUnavailableError } from './plato/errors';
+import { platoUsage, readPlatoLimits } from './plato/limits';
 import { generateBotResponse, detectIntent, aggregateLeadScore } from './chatbotEngine';
 import {
   createChatbotSession, updateChatbotSession, addChatbotMessage, getChatbotMessages,
@@ -3364,7 +3366,14 @@ export const appRouter = router({
           additionalContext: z.record(z.string(), z.unknown()).optional(),
         }),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
+        // Per-signed-in-user daily question cap (in-memory, per process; see server/plato/limits.ts).
+        const userDailyQuestions = readPlatoLimits().userDailyQuestions;
+        if (!platoUsage.tryReserveUserQuestion(ctx.user.id, userDailyQuestions)) {
+          const mapped = mapAshaProcedureError(platoDailyLimitError("user"));
+          log.warn("[PLATO] ask unavailable", { code: mapped.code, reason: "user_daily_limit", limit: userDailyQuestions });
+          throw mapped;
+        }
         try {
           return await askAsha({
             userMessage: input.userMessage,
@@ -3372,6 +3381,8 @@ export const appRouter = router({
             pageContext: input.pageContext,
           });
         } catch (error) {
+          // PLATO gave no answer: the question does not count against the user's daily cap.
+          if (error instanceof PlatoUnavailableError) platoUsage.releaseUserQuestion(ctx.user.id);
           const mapped = mapAshaProcedureError(error);
           log.warn("[PLATO] ask unavailable", { code: mapped.code, ...platoFailureLogFields(error) });
           if (mapped.code === "INTERNAL_SERVER_ERROR") {

@@ -27,10 +27,21 @@ export type PlatoErrorClass =
   | "empty_response"
   /** 200 with an answer that cannot be used: truncated (finish_reason=length) or not the requested JSON. */
   | "malformed_response"
+  /** App-side daily cap reached (per user or global). No provider call is made. */
+  | "daily_limit"
   | "provider_error";
 
 /** Final, client-facing reason when PLATO cannot answer. */
-export type PlatoUnavailableReason = "quota" | "capacity" | "timeout" | "misconfigured" | "provider_error";
+export type PlatoUnavailableReason =
+  | "quota"
+  | "capacity"
+  | "timeout"
+  | "misconfigured"
+  | "provider_error"
+  /** The app-wide daily PLATO call cap is reached. */
+  | "daily_limit"
+  /** This signed-in user's daily question cap is reached. */
+  | "user_daily_limit";
 
 export class PlatoRouteError extends Error {
   readonly httpStatus: number | null;
@@ -68,12 +79,12 @@ export class PlatoUnavailableError extends Error {
   readonly attempts: PlatoAttemptRecord[];
   readonly lastError: PlatoRouteError;
 
-  constructor(lastError: PlatoRouteError, attempts: PlatoAttemptRecord[]) {
+  constructor(lastError: PlatoRouteError, attempts: PlatoAttemptRecord[], reason?: PlatoUnavailableReason) {
     super(`PLATO unavailable after ${attempts.length} attempt(s): ${lastError.errorClass}`);
     this.name = "PlatoUnavailableError";
     this.lastError = lastError;
     this.attempts = attempts;
-    this.reason = unavailableReason(attempts);
+    this.reason = reason ?? (lastError.errorClass === "daily_limit" ? "daily_limit" : unavailableReason(attempts));
   }
 
   get attemptedModels(): string[] {
@@ -96,6 +107,7 @@ export class PlatoUnavailableError extends Error {
  */
 export function unavailableReason(attempts: readonly PlatoAttemptRecord[]): PlatoUnavailableReason {
   const classes = new Set(attempts.map(attempt => attempt.errorClass));
+  if (classes.has("daily_limit")) return "daily_limit";
   if (classes.has("auth") || classes.has("bad_request")) return "misconfigured";
   if (classes.size > 0 && Array.from(classes).every(entry => entry === "quota" || entry === "model_unavailable") && classes.has("quota")) {
     return "quota";
@@ -159,7 +171,24 @@ export function isRetryableOnSameModel(error: PlatoRouteError): boolean {
  */
 export function shouldFallback(error: unknown): boolean {
   if (!(error instanceof PlatoRouteError)) return false;
-  return error.errorClass !== "auth" && error.errorClass !== "bad_request";
+  return error.errorClass !== "auth" && error.errorClass !== "bad_request" && error.errorClass !== "daily_limit";
+}
+
+/**
+ * Typed failure when an app-side daily cap is reached. No provider is called and no
+ * answer is produced; the tRPC layer maps it to TOO_MANY_REQUESTS with honest copy.
+ */
+export function platoDailyLimitError(
+  scope: "global" | "user",
+  attempts: PlatoAttemptRecord[] = [],
+): PlatoUnavailableError {
+  const failure = new PlatoRouteError(`PLATO ${scope} daily limit reached.`, {
+    httpStatus: null,
+    errorClass: "daily_limit",
+    provider: "plato-limits",
+    model: "none",
+  });
+  return new PlatoUnavailableError(failure, attempts, scope === "user" ? "user_daily_limit" : "daily_limit");
 }
 
 /** Server-log summary of an upstream error: status line only, key-like strings removed, bounded length. */
