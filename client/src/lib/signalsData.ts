@@ -330,7 +330,6 @@ export interface SignalStock {
   sparkline: number[]; // 20 data points, normalized to % change from first
   bullCase: string;
   bearCase: string;
-  whyAppearing: string;
   // Institutional signal fields (Phase 3.5)
   // No price, support, resistance, entry, stop, target or invalidation levels
   // live in this static catalog: price levels come only from the server-computed
@@ -386,7 +385,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('up', 3.2),
     bullCase: 'AI capex supercycle, data center GPU dominance, CUDA moat',
     bearCase: 'Valuation excess, China export restrictions, capex cycle peak',
-    whyAppearing: 'Breaking out on 2x avg volume with AI earnings acceleration',
     opportunityScore: 92, confidence: 88,
     macroAlignment: 'Strong', institutionalFlow: 'Accumulating',
     catalysts: ['Q3 earnings beat', 'Blackwell GPU ramp', 'Sovereign AI contracts'],
@@ -408,7 +406,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('up', 1.1),
     bullCase: 'Azure AI growth, Copilot monetization, enterprise stickiness',
     bearCase: 'Cloud growth deceleration, antitrust risk, valuation',
-    whyAppearing: 'Consistent earnings beats with AI revenue acceleration',
     opportunityScore: 78, confidence: 76,
     macroAlignment: 'Strong', institutionalFlow: 'Accumulating',
     catalysts: ['Azure AI revenue acceleration', 'Copilot enterprise adoption', 'OpenAI partnership upside'],
@@ -430,7 +427,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('up', 0.8),
     bullCase: 'Apple Intelligence AI cycle, services growth, buyback machine',
     bearCase: 'China revenue risk, iPhone saturation, regulatory pressure',
-    whyAppearing: 'AI supercycle catalyst with services margin expansion',
     opportunityScore: 71, confidence: 70,
     macroAlignment: 'Moderate', institutionalFlow: 'Neutral',
     catalysts: ['iPhone 16 AI features launch', 'Services margin expansion', 'India market growth'],
@@ -454,7 +450,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('up', 2.4),
     bullCase: 'Ad revenue reacceleration, Llama AI monetization, Reality Labs optionality',
     bearCase: 'Regulatory risk, ad cycle slowdown, metaverse capex',
-    whyAppearing: 'Earnings acceleration + AI monetization driving multiple expansion',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/META/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=META', shortInterest: 'polygon.io/v2/reference/financials/META', sparkline: 'twelvedata.com/time_series?symbol=META&interval=1h&outputsize=20' },
   },
   {
@@ -470,7 +465,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('up', 1.8),
     bullCase: 'AWS AI growth, advertising expansion, margin improvement',
     bearCase: 'Consumer spending slowdown, AWS competition, regulatory risk',
-    whyAppearing: 'AWS AI revenue inflecting with margin expansion story',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/AMZN/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=AMZN', shortInterest: 'polygon.io/v2/reference/financials/AMZN', sparkline: 'twelvedata.com/time_series?symbol=AMZN&interval=1h&outputsize=20' },
   },
 
@@ -488,7 +482,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('up', 2.1),
     bullCase: 'Cybersecurity spending resilience, Falcon platform expansion, ARR growth',
     bearCase: 'Valuation premium, competition from Microsoft, incident recovery',
-    whyAppearing: 'ARR acceleration + cybersecurity budget expansion',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/CRWD/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=CRWD', shortInterest: 'polygon.io/v2/reference/financials/CRWD', sparkline: 'twelvedata.com/time_series?symbol=CRWD&interval=1h&outputsize=20' },
   },
   {
@@ -504,7 +497,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('up', 1.6),
     bullCase: 'AI observability demand, cloud migration tailwind, net dollar retention',
     bearCase: 'Cloud spend optimization, competition, growth deceleration',
-    whyAppearing: 'AI workload monitoring demand driving NRR expansion',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/DDOG/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=DDOG', shortInterest: 'polygon.io/v2/reference/financials/DDOG', sparkline: 'twelvedata.com/time_series?symbol=DDOG&interval=1h&outputsize=20' },
   },
 
@@ -522,7 +514,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('volatile', 4.2),
     bullCase: 'Quantum computing commercialization, government contracts, first-mover',
     bearCase: 'Pre-revenue, high burn rate, long commercialization timeline',
-    whyAppearing: 'Quantum computing catalyst + government contract announcements',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/IONQ/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=IONQ', shortInterest: 'polygon.io/v2/reference/financials/IONQ', sparkline: 'twelvedata.com/time_series?symbol=IONQ&interval=1h&outputsize=20' },
   },
   {
@@ -538,7 +529,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('volatile', 5.8),
     bullCase: 'Voice AI adoption, automotive partnerships, NVIDIA backing',
     bearCase: 'High short interest, cash burn, competition from Big Tech',
-    whyAppearing: 'High short interest + retail momentum + AI narrative',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/SOUN/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=SOUN', shortInterest: 'polygon.io/v2/reference/financials/SOUN', sparkline: 'twelvedata.com/time_series?symbol=SOUN&interval=1h&outputsize=20' },
   },
 
@@ -556,7 +546,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('volatile', 6.4),
     bullCase: 'Space-based cellular, AT&T/Verizon partnerships, global connectivity',
     bearCase: 'Execution risk, capital intensive, regulatory uncertainty',
-    whyAppearing: 'Satellite launch milestones + telecom partnership announcements',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/ASTS/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=ASTS', shortInterest: 'polygon.io/v2/reference/financials/ASTS', sparkline: 'twelvedata.com/time_series?symbol=ASTS&interval=1h&outputsize=20' },
   },
   {
@@ -572,7 +561,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('volatile', 3.8),
     bullCase: 'Launch frequency growth, Neutron rocket development, government contracts',
     bearCase: 'SpaceX competition, capital needs, execution risk',
-    whyAppearing: 'Launch cadence acceleration + defense contract pipeline',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/RKLB/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=RKLB', shortInterest: 'polygon.io/v2/reference/financials/RKLB', sparkline: 'twelvedata.com/time_series?symbol=RKLB&interval=1h&outputsize=20' },
   },
 
@@ -590,7 +578,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('volatile', 7.2),
     bullCase: 'AI server demand, NVIDIA partnership, direct liquid cooling',
     bearCase: 'Accounting concerns, competition, high short interest',
-    whyAppearing: 'Volume surge 3x avg + earnings catalyst approaching',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/SMCI/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=SMCI', shortInterest: 'polygon.io/v2/reference/financials/SMCI', sparkline: 'twelvedata.com/time_series?symbol=SMCI&interval=1h&outputsize=20' },
   },
   {
@@ -606,7 +593,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('up', 4.1),
     bullCase: 'AIP platform adoption, US government expansion, commercial inflection',
     bearCase: 'Valuation extreme, government budget risk, competition',
-    whyAppearing: 'AIP commercial growth + S&P 500 inclusion momentum',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/PLTR/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=PLTR', shortInterest: 'polygon.io/v2/reference/financials/PLTR', sparkline: 'twelvedata.com/time_series?symbol=PLTR&interval=1h&outputsize=20' },
   },
 
@@ -624,7 +610,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('down', -1.2),
     bullCase: 'Foundry business turnaround, government CHIPS Act funding, new CEO',
     bearCase: 'Execution risk, AMD/TSMC competition, market share loss',
-    whyAppearing: 'RSI at 28 (oversold), new CEO catalyst, CHIPS Act funding',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/INTC/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=INTC', shortInterest: 'polygon.io/v2/reference/financials/INTC', sparkline: 'twelvedata.com/time_series?symbol=INTC&interval=1h&outputsize=20' },
   },
   {
@@ -640,7 +625,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('down', -0.8),
     bullCase: 'China stimulus, AI cloud growth, deep discount to intrinsic value',
     bearCase: 'Geopolitical risk, regulatory overhang, delisting risk',
-    whyAppearing: 'Trading at 8x earnings with China stimulus catalyst',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/BABA/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=BABA', shortInterest: 'polygon.io/v2/reference/financials/BABA', sparkline: 'twelvedata.com/time_series?symbol=BABA&interval=1h&outputsize=20' },
   },
 
@@ -658,7 +642,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('up', 2.8),
     bullCase: 'MI300X GPU ramp, data center AI share gains, EPYC server growth',
     bearCase: 'NVIDIA dominance, China restrictions, execution risk',
-    whyAppearing: 'MI300X AI GPU gaining data center share from NVIDIA',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/AMD/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=AMD', shortInterest: 'polygon.io/v2/reference/financials/AMD', sparkline: 'twelvedata.com/time_series?symbol=AMD&interval=1h&outputsize=20' },
   },
   {
@@ -674,7 +657,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('up', 1.9),
     bullCase: 'Custom AI chip (XPU) demand, VMware integration, networking dominance',
     bearCase: 'Debt load from VMware, custom chip competition, integration risk',
-    whyAppearing: 'Custom AI chip orders accelerating from hyperscalers',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/AVGO/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=AVGO', shortInterest: 'polygon.io/v2/reference/financials/AVGO', sparkline: 'twelvedata.com/time_series?symbol=AVGO&interval=1h&outputsize=20' },
   },
 
@@ -692,7 +674,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('up', 2.2),
     bullCase: 'Nuclear renaissance, AI data center power demand, supply deficit',
     bearCase: 'Uranium price volatility, mine production risk, political risk',
-    whyAppearing: 'Nuclear energy demand from AI data centers + supply deficit',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/CCJ/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=CCJ', shortInterest: 'polygon.io/v2/reference/financials/CCJ', sparkline: 'twelvedata.com/time_series?symbol=CCJ&interval=1h&outputsize=20' },
   },
   {
@@ -708,7 +689,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('flat', 0.6),
     bullCase: 'Permian Basin growth, Pioneer acquisition synergies, dividend yield',
     bearCase: 'Oil price decline, energy transition risk, capex intensity',
-    whyAppearing: 'Inflation hedge + dividend yield premium in rate environment',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/XOM/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=XOM', shortInterest: 'polygon.io/v2/reference/financials/XOM', sparkline: 'twelvedata.com/time_series?symbol=XOM&interval=1h&outputsize=20' },
   },
 
@@ -726,7 +706,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('volatile', 5.4),
     bullCase: 'Bitcoin treasury strategy, institutional Bitcoin proxy, BTC ETF flows',
     bearCase: 'Bitcoin price risk, leverage risk, dilution from convertible notes',
-    whyAppearing: 'Leveraged Bitcoin proxy with institutional accumulation',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/MSTR/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=MSTR', shortInterest: 'polygon.io/v2/reference/financials/MSTR', sparkline: 'twelvedata.com/time_series?symbol=MSTR&interval=1h&outputsize=20' },
   },
   {
@@ -742,7 +721,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('up', 3.8),
     bullCase: 'Crypto bull cycle, ETF custody fees, Base L2 growth, regulatory clarity',
     bearCase: 'Crypto bear market, SEC risk, competition from DEXs',
-    whyAppearing: 'Crypto cycle momentum + ETF custody revenue expansion',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/COIN/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=COIN', shortInterest: 'polygon.io/v2/reference/financials/COIN', sparkline: 'twelvedata.com/time_series?symbol=COIN&interval=1h&outputsize=20' },
   },
 
@@ -760,7 +738,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('volatile', 8.4),
     bullCase: 'Short squeeze potential, Roaring Kitty catalyst, Bitcoin treasury',
     bearCase: 'No fundamental business value, retail-driven, violent reversals',
-    whyAppearing: 'Volume 3x avg + social media momentum + high short interest',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/GME/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=GME', shortInterest: 'polygon.io/v2/reference/financials/GME', sparkline: 'twelvedata.com/time_series?symbol=GME&interval=1h&outputsize=20' },
   },
   {
@@ -776,7 +753,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('volatile', 6.2),
     bullCase: 'Short squeeze, retail momentum, blockbuster film slate',
     bearCase: 'Massive debt load, dilution risk, streaming competition',
-    whyAppearing: 'Social media buzz + high short interest + volume surge',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/AMC/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=AMC', shortInterest: 'polygon.io/v2/reference/financials/AMC', sparkline: 'twelvedata.com/time_series?symbol=AMC&interval=1h&outputsize=20' },
   },
 
@@ -794,7 +770,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('down', -2.4),
     bullCase: 'mRNA pipeline (cancer vaccines, flu), RSV approval, cash position',
     bearCase: 'COVID revenue collapse, pipeline risk, cash burn',
-    whyAppearing: 'RSI at 24 (deeply oversold) + cancer vaccine trial catalyst',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/MRNA/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=MRNA', shortInterest: 'polygon.io/v2/reference/financials/MRNA', sparkline: 'twelvedata.com/time_series?symbol=MRNA&interval=1h&outputsize=20' },
   },
   {
@@ -810,7 +785,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('volatile', 4.2),
     bullCase: 'AI drug discovery, NVIDIA partnership, pipeline optionality',
     bearCase: 'Pre-revenue, cash burn, clinical trial risk',
-    whyAppearing: 'AI drug discovery + NVIDIA partnership announcement',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/RXRX/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=RXRX', shortInterest: 'polygon.io/v2/reference/financials/RXRX', sparkline: 'twelvedata.com/time_series?symbol=RXRX&interval=1h&outputsize=20' },
   },
 
@@ -828,7 +802,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('up', 0.4),
     bullCase: 'Defense budget expansion, F-35 program, geopolitical tailwinds',
     bearCase: 'Budget sequestration, program delays, cost overruns',
-    whyAppearing: 'NATO defense spending expansion + geopolitical risk premium',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/LMT/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=LMT', shortInterest: 'polygon.io/v2/reference/financials/LMT', sparkline: 'twelvedata.com/time_series?symbol=LMT&interval=1h&outputsize=20' },
   },
   {
@@ -844,7 +817,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('up', 2.8),
     bullCase: 'AI-powered law enforcement, Taser dominance, SaaS recurring revenue',
     bearCase: 'Valuation premium, regulatory risk, competition',
-    whyAppearing: 'AI integration in law enforcement + recurring SaaS growth',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/AXON/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=AXON', shortInterest: 'polygon.io/v2/reference/financials/AXON', sparkline: 'twelvedata.com/time_series?symbol=AXON&interval=1h&outputsize=20' },
   },
 
@@ -862,7 +834,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('up', 0.6),
     bullCase: 'Transaction volume growth, global penetration, network effects',
     bearCase: 'Credit cycle risk, regulatory pressure, crypto disruption',
-    whyAppearing: 'Durable transaction volume growth + global travel recovery',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/V/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=V', shortInterest: 'polygon.io/v2/reference/financials/V', sparkline: 'twelvedata.com/time_series?symbol=V&interval=1h&outputsize=20' },
   },
   {
@@ -878,7 +849,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('down', 2.4),
     bullCase: 'Cash App growth, Bitcoin integration, SMB lending expansion',
     bearCase: 'Credit losses, competition, consumer spending slowdown',
-    whyAppearing: 'Oversold reversal setup + Cash App monetization inflection',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/SQ/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=SQ', shortInterest: 'polygon.io/v2/reference/financials/SQ', sparkline: 'twelvedata.com/time_series?symbol=SQ&interval=1h&outputsize=20' },
   },
 
@@ -896,7 +866,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('down', -1.8),
     bullCase: 'FSD robotaxi launch, energy storage growth, AI/robotics optionality',
     bearCase: 'EV price war, brand damage, China competition, Musk distraction',
-    whyAppearing: 'FSD catalyst + robotaxi timeline approaching',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/TSLA/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=TSLA', shortInterest: 'polygon.io/v2/reference/financials/TSLA', sparkline: 'twelvedata.com/time_series?symbol=TSLA&interval=1h&outputsize=20' },
   },
   {
@@ -912,7 +881,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('up', 1.2),
     bullCase: 'Travel demand resilience, Experiences expansion, margin improvement',
     bearCase: 'Consumer spending slowdown, regulatory risk, housing market',
-    whyAppearing: 'Summer travel season + Experiences product launch',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/ABNB/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=ABNB', shortInterest: 'polygon.io/v2/reference/financials/ABNB', sparkline: 'twelvedata.com/time_series?symbol=ABNB&interval=1h&outputsize=20' },
   },
 
@@ -930,7 +898,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('up', 1.4),
     bullCase: 'Rate cut cycle, 5G tower demand, dividend yield premium',
     bearCase: 'Higher-for-longer rates, debt load, India asset write-down',
-    whyAppearing: 'Rate cut expectations + 5G infrastructure demand',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/AMT/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=AMT', shortInterest: 'polygon.io/v2/reference/financials/AMT', sparkline: 'twelvedata.com/time_series?symbol=AMT&interval=1h&outputsize=20' },
   },
   {
@@ -946,7 +913,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('down', -0.8),
     bullCase: 'Housing supply shortage, rate cut catalyst, entry-level focus',
     bearCase: 'Mortgage rate sensitivity, affordability crisis, inventory buildup',
-    whyAppearing: 'Oversold on rate fears + housing shortage structural tailwind',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/DHI/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=DHI', shortInterest: 'polygon.io/v2/reference/financials/DHI', sparkline: 'twelvedata.com/time_series?symbol=DHI&interval=1h&outputsize=20' },
   },
 
@@ -964,7 +930,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('down', -1.4),
     bullCase: 'Streaming profitability, debt paydown, content library value',
     bearCase: 'Debt load, streaming competition, cord-cutting acceleration',
-    whyAppearing: 'Trading below book value + streaming profitability milestone',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/WBD/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=WBD', shortInterest: 'polygon.io/v2/reference/financials/WBD', sparkline: 'twelvedata.com/time_series?symbol=WBD&interval=1h&outputsize=20' },
   },
   {
@@ -980,7 +945,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('down', -0.6),
     bullCase: 'Skydance merger completion, content library, M&A premium',
     bearCase: 'Deal risk, debt, streaming losses, linear TV decline',
-    whyAppearing: 'Skydance merger arbitrage + content library discount',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/PARA/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=PARA', shortInterest: 'polygon.io/v2/reference/financials/PARA', sparkline: 'twelvedata.com/time_series?symbol=PARA&interval=1h&outputsize=20' },
   },
 
@@ -998,7 +962,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('volatile', 3.8),
     bullCase: 'Crypto trading volume, prediction markets, Gold card launch',
     bearCase: 'Retail trading cycle, regulatory risk, competition',
-    whyAppearing: 'Crypto cycle + prediction markets launch + retail trading surge',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/HOOD/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=HOOD', shortInterest: 'polygon.io/v2/reference/financials/HOOD', sparkline: 'twelvedata.com/time_series?symbol=HOOD&interval=1h&outputsize=20' },
   },
   {
@@ -1014,7 +977,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('volatile', 12.4),
     bullCase: 'Space tourism demand, short squeeze potential, catalyst-driven',
     bearCase: 'Cash burn, execution risk, dilution, no clear path to profitability',
-    whyAppearing: 'Volume 3x avg + high short interest + event-driven catalyst',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/SPCE/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=SPCE', shortInterest: 'polygon.io/v2/reference/financials/SPCE', sparkline: 'twelvedata.com/time_series?symbol=SPCE&interval=1h&outputsize=20' },
   },
 
@@ -1032,7 +994,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('up', 2.8),
     bullCase: 'AI data center networking, cloud titan relationships, insider buying',
     bearCase: 'Cisco competition, valuation, customer concentration',
-    whyAppearing: 'CEO insider purchase + unusual call option flow + AI networking demand',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/ANET/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=ANET', shortInterest: 'polygon.io/v2/reference/financials/ANET', sparkline: 'twelvedata.com/time_series?symbol=ANET&interval=1h&outputsize=20' },
   },
   {
@@ -1048,7 +1009,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('volatile', 4.2),
     bullCase: 'Energy drink market share gains, Pepsi distribution, insider buying',
     bearCase: 'Competition from Monster/Red Bull, Pepsi dependency, growth deceleration',
-    whyAppearing: 'Insider buying cluster + volume 2x avg + short squeeze setup',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/CELH/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=CELH', shortInterest: 'polygon.io/v2/reference/financials/CELH', sparkline: 'twelvedata.com/time_series?symbol=CELH&interval=1h&outputsize=20' },
   },
 
@@ -1066,7 +1026,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('up', 0.8),
     bullCase: 'Central bank buying, dollar weakness, geopolitical risk premium',
     bearCase: 'Rate hike cycle, dollar strength, risk-on rotation',
-    whyAppearing: 'Central bank gold accumulation + geopolitical risk premium',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/GLD/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=GLD', shortInterest: 'polygon.io/v2/reference/financials/GLD', sparkline: 'twelvedata.com/time_series?symbol=GLD&interval=1h&outputsize=20' },
   },
   {
@@ -1082,7 +1041,6 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     sparkline: genSparkline('flat', 0.4),
     bullCase: 'Rate cut cycle, recession hedge, duration premium',
     bearCase: 'Higher-for-longer rates, fiscal deficit, inflation persistence',
-    whyAppearing: 'Rate cut expectations + recession hedge positioning',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/TLT/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=TLT', shortInterest: 'polygon.io/v2/reference/financials/TLT', sparkline: 'twelvedata.com/time_series?symbol=TLT&interval=1h&outputsize=20' },
   },
 ];

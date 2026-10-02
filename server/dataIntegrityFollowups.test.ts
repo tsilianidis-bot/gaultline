@@ -1039,3 +1039,36 @@ describe("QA r7 blockers: Simulate probability NaN%, Charts legend/ribbon/footer
     expect(sliders).not.toMatch(/unit: '\/10'/);
   });
 });
+
+describe("claims sweep: no unsourced present-tense valuation / record claims in #59 data and quote surfaces", () => {
+  const CLAIM = /record[- ]highs?|all[- ]time[- ]highs?|\b\d+(?:\.\d+)?x (?:earnings|sales|revenue|book)\b|trading at \d/i;
+  const files = [
+    "client/src/lib/data.ts",
+    "client/src/lib/signalsData.ts",
+    "client/src/pages/Signals.tsx",
+    "client/src/pages/Charts.tsx",
+    "client/src/pages/SimulatePressure.tsx",
+    "client/src/components/HomeStockIntelSection.tsx",
+    "client/src/components/DashboardSearchPanels.tsx",
+    "client/src/components/TickerSearch.tsx",
+  ];
+  const claimLines = (text: string) => text.split("\n").map((l, i) => ({ l, n: i + 1 })).filter(({ l }) => CLAIM.test(l));
+
+  it.each(files)("%s has no 'record highs' / 'all-time high' / 'Nx earnings' / 'Trading at N' claim", (f) => {
+    expect(claimLines(src(f)).map(({ n, l }) => `${f}:${n}: ${l.trim()}`)).toEqual([]);
+  });
+
+  it("signalsData: the unrendered whyAppearing blurbs (volume multiples, RSI, P/E) are gone", () => {
+    expect(src("client/src/lib/signalsData.ts")).not.toMatch(/whyAppearing/);
+  });
+
+  it.each([
+    "interpretation: 'Office vacancy at record highs.'",
+    "description: 'capex boom with negative ROI. Nasdaq at 100x earnings.'",
+    "whyAppearing: 'Trading at 8x earnings with China stimulus catalyst'",
+    "resistance: '$950 (all-time high zone)'",
+    "note: 'Trading at 12.5x sales'",
+  ])("mutation: %s is caught", (line) => {
+    expect(claimLines(`x\n${line}\n`).length).toBe(1);
+  });
+});
