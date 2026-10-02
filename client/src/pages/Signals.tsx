@@ -1491,9 +1491,12 @@ function SignalsInner() {
   }, [quoteMap]);
 
   // ── Regime context ─────────────────────────────────────────
-  const regimeCode = useMemo(() => mapRegimeToCode(engine?.output?.regime?.label ?? 'MODERATE RISK'), [engine?.output?.regime?.label]);
-  const regimeCtx = REGIME_CONTEXT[regimeCode];
-  const priorityCats = REGIME_PRIORITY_CATEGORIES[regimeCode];
+  // Canonical regime only: no 'MODERATE RISK' default. Outside canonical mode
+  // there is no regime code, so no regime context or priority highlighting.
+  const canonicalRegimeLabel = engine?.marketMode === 'canonical' ? (engine?.output?.regime?.label ?? null) : null;
+  const regimeCode = useMemo(() => (canonicalRegimeLabel ? mapRegimeToCode(canonicalRegimeLabel) : null), [canonicalRegimeLabel]);
+  const regimeCtx = regimeCode ? REGIME_CONTEXT[regimeCode] : null;
+  const priorityCats: readonly ScreeningCategory[] = regimeCode ? REGIME_PRIORITY_CATEGORIES[regimeCode] : [];
 
   // Regime sent to signal computation / ticker analysis must be the canonical
   // regime. Outside canonical mode (marketState unavailable) the browser engine
@@ -1567,7 +1570,7 @@ function SignalsInner() {
       .filter(s => !marketFilterActive || isQuoted(s.ticker));
     return filtered.map(s => ({
       stock: s,
-      score: regimeForSignals && isQuoted(s.ticker) ? scoreStockForRegime(s, regimeCode) : null,
+      score: regimeForSignals && regimeCode && isQuoted(s.ticker) ? scoreStockForRegime(s, regimeCode) : null,
     })).sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
   }, [filters, activeCategory, regimeCode, enrichedStocks, quoteMap, regimeForSignals]);
 
@@ -1645,7 +1648,7 @@ function SignalsInner() {
   // changePercent can never make a ticker "Top Bearish" etc.
   const topSignals = useMemo(() => {
     const quoted = enrichedStocks.filter(s => hasUsableSignalQuote(quoteMap.get(s.ticker)));
-    return quoted.length > 0 && regimeForSignals ? getTodaysTopSignals(regimeCode, quoted) : null;
+    return quoted.length > 0 && regimeForSignals && regimeCode ? getTodaysTopSignals(regimeCode, quoted) : null;
   }, [regimeCode, enrichedStocks, quoteMap, regimeForSignals]);
 
   // Header (ApiHealthBadge) and footer read the SAME catalog-scoped quotes and feed label.
@@ -1717,10 +1720,14 @@ function SignalsInner() {
       {/* ── Signals Module Sub-Nav: navigate between Stocks, Crypto, Signal Outlook ── */}
       <SignalsSubNav />
 
-      {/* ── Seismograph Narrative Banner ── */}
-      <div style={{ padding: '0 16px', marginTop: '8px' }}>
-        <SeismographNarrativeBanner context="signals" defaultExpanded={false} />
-      </div>
+      {/* ── Seismograph Narrative Banner ── (only with a canonical regime; during a
+          canonical outage it would repeat a regime/pressure line beside
+          'CANONICAL REGIME UNAVAILABLE') */}
+      {regimeForSignals && (
+        <div style={{ padding: '0 16px', marginTop: '8px' }}>
+          <SeismographNarrativeBanner context="signals" defaultExpanded={false} />
+        </div>
+      )}
       {/* ── What does this mean? synthesis panel ── */}
       <div style={{ padding: '0 16px', marginBottom: '8px' }}>
         <MarketSynthesisPanel context="signals" />
@@ -1822,12 +1829,12 @@ function SignalsInner() {
                 fontWeight: 700, fontSize: '13px',
                 color: regimeColor, letterSpacing: '0.1em',
                 textTransform: 'uppercase',
-              }}>SIGNALS — {regimeForSignals ? regimeCtx.headline : 'CANONICAL REGIME UNAVAILABLE'}</span>
+              }}>SIGNALS — {regimeForSignals && regimeCtx ? regimeCtx.headline : 'CANONICAL REGIME UNAVAILABLE'}</span>
             </div>
             <p style={{
               fontSize: '10px', color: 'rgba(100,116,139,0.8)',
               lineHeight: 1.5, margin: 0, maxWidth: '500px',
-            }}>{regimeForSignals ? regimeCtx.description : 'The canonical market state is unavailable, so regime context, favors/avoids and signal computation are withheld rather than derived from simulated inputs.'}</p>
+            }}>{regimeForSignals && regimeCtx ? regimeCtx.description : 'The canonical market state is unavailable, so regime context, favors/avoids and signal computation are withheld rather than derived from simulated inputs.'}</p>
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
             <div style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)', marginBottom: '2px' }}><FaultlineTerm id="regime-score" /></div>
@@ -1839,7 +1846,7 @@ function SignalsInner() {
           </div>
         </div>
 
-        {regimeForSignals && <div style={{ display: 'flex', gap: '12px', marginTop: '10px', flexWrap: 'wrap' }}>
+        {regimeForSignals && regimeCtx && <div style={{ display: 'flex', gap: '12px', marginTop: '10px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em' }}>FAVORS:</span>
             <span style={{ fontSize: '13px', color: '#00D4FF' }}>{regimeCtx.bullish}</span>

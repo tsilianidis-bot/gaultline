@@ -46,17 +46,18 @@ export const INDICATOR_CATALOG: IndicatorDef[] = [
   {
     key: 'score_overall',
     label: 'Overall Systemic Risk',
-    sublabel: 'Composite Score',
-    unit: '/10',
+    sublabel: 'Canonical Pressure Index',
+    // Same 0–100 scale as NOW, Pressure and the header strip (was 0–10).
+    unit: '/100',
     category: 'score',
     color: '#00D4FF',
-    description: 'Composite of all 7 domain risk scores. The primary FAULTLINE signal.',
-    defaultThreshold: 7.0,
+    description: 'The canonical FAULTLINE Pressure Index (0–100), the same score shown on NOW and the Pressure Engine.',
+    defaultThreshold: 70,
     defaultCondition: 'above',
-    min: 0, max: 10, step: 0.1,
-    format: (v) => v.toFixed(1),
-    stressLevel: 7.0,
-    normalRange: [2, 5],
+    min: 0, max: 100, step: 1,
+    format: (v) => v.toFixed(0),
+    stressLevel: 70,
+    normalRange: [20, 50],
   },
   {
     key: 'score_credit',
@@ -323,13 +324,36 @@ export const INDICATOR_MAP = Object.fromEntries(INDICATOR_CATALOG.map(d => [d.ke
 
 // ── Persistence ───────────────────────────────────────────────
 const STORAGE_KEY = 'faultline_watchlist_v1';
+/** Set once saved score_overall thresholds have been moved from 0–10 to 0–100. */
+export const OVERALL_SCALE_KEY = 'faultline_watchlist_overall_scale';
+
+/**
+ * One-time migration: score_overall thresholds were stored on the old 0–10
+ * scale. Multiply them by 10 exactly once (guarded by OVERALL_SCALE_KEY), so a
+ * saved "above 7.0" stays "above 70" instead of firing at 7/100.
+ */
+export function migrateOverallScale(items: WatchlistItem[], alreadyMigrated: boolean): WatchlistItem[] {
+  if (alreadyMigrated) return items;
+  return items.map(item => item.indicatorKey === 'score_overall'
+    ? { ...item, thresholdValue: Math.round(item.thresholdValue * 10 * 10) / 10 }
+    : item);
+}
 
 export function loadWatchlist(): WatchlistItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return getDefaultWatchlist();
+    if (!raw) {
+      localStorage.setItem(OVERALL_SCALE_KEY, '100');
+      return getDefaultWatchlist();
+    }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : getDefaultWatchlist();
+    if (!Array.isArray(parsed)) return getDefaultWatchlist();
+    const migrated = localStorage.getItem(OVERALL_SCALE_KEY) === '100';
+    if (migrated) return parsed;
+    const next = migrateOverallScale(parsed, false);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    localStorage.setItem(OVERALL_SCALE_KEY, '100');
+    return next;
   } catch {
     return getDefaultWatchlist();
   }
@@ -349,7 +373,7 @@ export function getDefaultWatchlist(): WatchlistItem[] {
     {
       id: 'default-1',
       indicatorKey: 'score_overall',
-      thresholdValue: 7.0,
+      thresholdValue: 70,
       condition: 'above',
       severity: 'critical',
       note: 'Systemic risk entering high-stress territory',

@@ -20,7 +20,7 @@ export interface WatchlistEditModalProps {
 export function WatchlistEditModal({ item, onSave, onClose, liveValues }: WatchlistEditModalProps) {
   const [indicatorKey, setIndicatorKey] = useState(item?.indicatorKey ?? 'score_overall');
   const [condition, setCondition] = useState<AlertCondition>(item?.condition ?? 'above');
-  const [threshold, setThreshold] = useState(item?.thresholdValue ?? 7.0);
+  const [threshold, setThreshold] = useState(item?.thresholdValue ?? INDICATOR_MAP[item?.indicatorKey ?? 'score_overall']?.defaultThreshold ?? 70);
   const [severity, setSeverity] = useState<AlertSeverity>(item?.severity ?? 'high');
   const [note, setNote] = useState(item?.note ?? '');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');

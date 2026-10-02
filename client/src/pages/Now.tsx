@@ -472,7 +472,7 @@ function PressureInstrument({
         )}
         {lastUpdated && (
           <div className="col-span-2 text-center">
-            <p className="font-mono text-[8px] text-slate-600">Updated {lastUpdated.toLocaleTimeString()}</p>
+            <p className="font-mono text-[8px] text-slate-600">Updated {formatEt(lastUpdated.getTime()) ?? "unavailable"}</p>
           </div>
         )}
       </div>
@@ -759,7 +759,7 @@ function StatusRail({
   const items = [
     { label: "PRESSURE", value: formatCanonicalScore(pressure), color: accent },
     { label: "MODE", value: integrityLabel, color: customerIntegrityColor(integrityLabel) },
-    { label: "UPDATED", value: lastUpdated ? lastUpdated.toLocaleTimeString() : "—", color: "rgba(255,255,255,0.5)" },
+    { label: "UPDATED", value: lastUpdated ? (formatEt(lastUpdated.getTime()) ?? "—") : "—", color: "rgba(255,255,255,0.5)" },
     { label: "STATE", value: marketMode === "simulation" ? "SIMULATION" : integrityLabel, color: "rgba(255,255,255,0.4)" },
   ];
   return (
@@ -928,7 +928,7 @@ export default function Now() {
                 </span>
                 <DataFreshnessChip
                   freshness={customerIntegrityChipLevel(integrityLabel)}
-                  tooltip={lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : undefined}
+                  tooltip={lastUpdated ? `Updated ${formatEt(lastUpdated.getTime()) ?? "unavailable"}` : undefined}
                 />
               </div>
               <div className="flex items-center gap-2">

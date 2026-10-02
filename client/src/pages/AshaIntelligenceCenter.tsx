@@ -149,6 +149,9 @@ export default function AshaIntelligenceCenter() {
 
 function AshaGuestSignIn() {
   const [, navigate] = useLocation();
+  // navigateToLogin() returns false when no sign-in portal URL is configured
+  // (PR #54); the button must not silently do nothing.
+  const [signInUnavailable, setSignInUnavailable] = useState(false);
   return (
     <main data-plato-guest-gate style={{ minHeight: "70vh", background: "#070910", color: "#F0F6FF", display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 20px" }}>
       <div style={{ maxWidth: "460px", width: "100%", border: "1px solid rgba(0,229,255,0.18)", background: "rgba(0,229,255,0.03)", borderRadius: "6px", padding: "28px 24px", textAlign: "center" }}>
@@ -158,13 +161,18 @@ function AshaGuestSignIn() {
           PLATO conversations, memory and thesis history are tied to your account. Guest access does not include PLATO.
         </p>
         <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
-          <button type="button" onClick={() => { navigateToLogin(); }} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", letterSpacing: "0.1em", padding: "10px 18px", background: "#00E5FF", color: "#041016", border: "none", borderRadius: "3px", cursor: "pointer", fontWeight: 700 }}>
+          <button type="button" onClick={() => { setSignInUnavailable(!navigateToLogin()); }} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", letterSpacing: "0.1em", padding: "10px 18px", background: "#00E5FF", color: "#041016", border: "none", borderRadius: "3px", cursor: "pointer", fontWeight: 700 }}>
             SIGN IN
           </button>
           <button type="button" onClick={() => navigate(CANONICAL_DESTINATION_BY_ID.now.path)} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", letterSpacing: "0.1em", padding: "10px 18px", background: "transparent", color: "#94A3B8", border: "1px solid rgba(148,163,184,0.3)", borderRadius: "3px", cursor: "pointer" }}>
             BACK TO NOW
           </button>
         </div>
+        {signInUnavailable && (
+          <p role="status" data-plato-signin-unavailable style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#F59E0B", margin: "14px 0 0" }}>
+            Sign-in is unavailable right now. Please try again later.
+          </p>
+        )}
       </div>
     </main>
   );
