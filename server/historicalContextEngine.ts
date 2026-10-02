@@ -61,7 +61,7 @@ export interface PressureTimeline {
   /** 90-day trend: change in pressure over last 90 runs */
   trend90d: number | null;
   /** Trend direction label */
-  trendDirection: "Building" | "Accelerating" | "Stable" | "Improving" | "Rapidly Deteriorating";
+  trendDirection: "Building" | "Accelerating" | "Stable" | "Improving" | "Rapidly Deteriorating" | "Unavailable";
   /** Human-readable explanation of the trend */
   trendExplanation: string;
   /** Current regime label */
@@ -155,7 +155,7 @@ export interface HistoricalContextResult {
 
   /** Section 7: Trend assessment */
   trendAssessment: {
-    label: "Building" | "Accelerating" | "Stable" | "Improving" | "Rapidly Deteriorating";
+    label: PressureTimeline["trendDirection"];
     explanation: string;
   };
 
@@ -226,13 +226,17 @@ function computePercentile(value: number, sortedValues: number[]): number {
 
 // ── Trend Direction ───────────────────────────────────────────
 
-function classifyTrendDirection(
+export function classifyTrendDirection(
   trend7d: number | null,
   trend30d: number | null,
   trend90d: number | null
-): "Building" | "Accelerating" | "Stable" | "Improving" | "Rapidly Deteriorating" {
-  const t7 = trend7d ?? 0;
-  const t30 = trend30d ?? 0;
+): PressureTimeline["trendDirection"] {
+  const known = (v: number | null) => typeof v === "number" && Number.isFinite(v);
+  // No 7d and no 30d reading: the trend is unknown, not "Stable".
+  if (!known(trend7d) && !known(trend30d)) return "Unavailable";
+  // One window known: thresholds are unchanged; the unknown window adds nothing.
+  const t7 = known(trend7d) ? (trend7d as number) : 0;
+  const t30 = known(trend30d) ? (trend30d as number) : 0;
 
   if (t7 >= 15 && t30 >= 15) return "Accelerating";
   if (t7 >= 15) return "Rapidly Deteriorating";
@@ -264,6 +268,8 @@ function buildTrendExplanation(
       return `Pressure is gradually building — ${trendStr}. Systemic stress is increasing but has not yet reached an accelerating pace.`;
     case "Rapidly Deteriorating":
       return `Pressure is rapidly deteriorating — ${trendStr}. The speed of increase warrants close attention.`;
+    case "Unavailable":
+      return `Pressure trend unavailable — ${trendStr}. No direction is stated without a 7- or 30-day comparison.`;
     case "Improving":
       return `Pressure is improving — ${trendStr}. Systemic stress is easing, though the current reading of ${currentPressure} still warrants monitoring.`;
     default:

@@ -857,8 +857,8 @@ export default function SeismographIntelligence() {
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                   {[
-                    { label: "7-DAY TREND", value: safeEvolution.sevenDayTrend ? safeEvolution.sevenDayTrend.split(" ").slice(0, 4).join(" ") + "…" : "N/A" },
-                    { label: "30-DAY TREND", value: safeEvolution.thirtyDayTrend ? safeEvolution.thirtyDayTrend.split(" ").slice(0, 4).join(" ") + "…" : "N/A" },
+                    { label: "7-MONTH TREND", value: safeEvolution.sevenDayTrend ? safeEvolution.sevenDayTrend.split(" ").slice(0, 4).join(" ") + "…" : "N/A" },
+                    { label: "7 VS 30-MONTH", value: safeEvolution.thirtyDayTrend ? safeEvolution.thirtyDayTrend.split(" ").slice(0, 4).join(" ") + "…" : "N/A" },
                   ].map(({ label, value }) => (
                     <div key={label} style={{ padding: "8px 10px", background: "rgba(6,182,212,0.03)", borderRadius: "4px", border: "1px solid rgba(6,182,212,0.07)" }}>
                       <div style={{ ...mono, fontSize: "7px", letterSpacing: "0.1em", color: "rgba(6,182,212,0.32)", marginBottom: "3px" }}>{label}</div>
@@ -911,7 +911,7 @@ export default function SeismographIntelligence() {
         {safeEvolution.sparkline90d.length > 0 && (
           <div style={{ marginBottom: "32px", opacity: loadPhase >= 4 ? 1 : 0, transition: "opacity 0.5s ease-out 0.25s" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
-              <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.18em", color: "rgba(6,182,212,0.4)", fontWeight: 700 }}>LIVE PRESSURE SIGNAL — 90 DAYS</div>
+              <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.18em", color: "rgba(6,182,212,0.4)", fontWeight: 700 }}>LIVE PRESSURE SIGNAL — LAST {safeEvolution.sparkline90d.length} MONTHLY READINGS</div>
               <span style={{ position: "relative", display: "inline-block", width: "5px", height: "5px", flexShrink: 0 }}>
                 <span style={{ position: "absolute", inset: "-3px", borderRadius: "50%", background: scoreColor, opacity: 0, animation: "live-ripple 2.2s ease-out infinite", animationDelay: "0.4s" }} />
                 <span style={{ display: "block", width: "5px", height: "5px", borderRadius: "50%", background: scoreColor, boxShadow: `0 0 6px ${scoreColor}`, animation: "livepulse 2s infinite", position: "relative", zIndex: 1 }} />
@@ -919,7 +919,7 @@ export default function SeismographIntelligence() {
             </div>
             <LiveSeismographWave sparkline={safeEvolution.sparkline90d} scoreColor={scoreColor} currentScore={currentScore} />
             <div style={{ display: "flex", justifyContent: "space-between", ...mono, fontSize: "8px", color: "rgba(6,182,212,0.28)", marginTop: "5px" }}>
-              <span>90 DAYS AGO</span><span>LIVE</span>
+              <span>{safeEvolution.sparkline90d.length - 1} MONTHS AGO</span><span>LIVE</span>
             </div>
           </div>
         )}
@@ -1096,9 +1096,9 @@ export default function SeismographIntelligence() {
           {/* Trend summaries */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "16px" }}>
             {([
-              { label: "7-DAY TREND", text: safeEvolution.sevenDayTrend },
-              { label: "30-DAY TREND", text: safeEvolution.thirtyDayTrend },
-              { label: "90-DAY TREND", text: safeEvolution.ninetyDayTrend },
+              { label: "7-MONTH TREND", text: safeEvolution.sevenDayTrend },
+              { label: "7- VS 30-MONTH TREND", text: safeEvolution.thirtyDayTrend },
+              { label: "30- VS 90-MONTH TREND", text: safeEvolution.ninetyDayTrend },
               { label: "12-MONTH TREND", text: safeEvolution.yearTrend },
             ] as { label: string; text: string }[]).filter(t => t.text).map(({ label, text }, i) => (
               <div key={i} style={{ padding: "10px 12px", background: "rgba(6,182,212,0.02)", borderRadius: "5px", border: "1px solid rgba(6,182,212,0.08)" }}>

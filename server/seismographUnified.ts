@@ -1080,9 +1080,21 @@ export function computeEvolution(history: HistoricalMonth[]): EvolutionAnalysis 
   const delta30 = avg7 - avg30;
   const delta90 = avg30 - avg90;
 
+  // Label-only guard (formulas above unchanged). The history is MONTHLY, so the
+  // windows are 7/30/90 monthly readings, not days. A comparison is only shown
+  // when both windows are full and distinct: a short history makes last30 and
+  // last90 the same rows (delta90 ≡ 0 → a false "+0.0 stable"), and a partial
+  // window is not the window its label names. See HELD_CHANGES.md item 6 for
+  // the real windowing fix.
+  const INSUFFICIENT_HISTORY = "Unavailable (insufficient history)";
+  const fullDistinct = (short: HistoricalMonth[], long: HistoricalMonth[], longSize: number) =>
+    long.length >= longSize && long.length > short.length;
+  const thirtyAvailable = Number.isFinite(delta30) && fullDistinct(last7, last30, 30);
+  const ninetyAvailable = Number.isFinite(delta90) && fullDistinct(last30, last90, 90);
+
   // Fail closed: no prior comparable window → no delta and no "Stable" claim.
   const sevenDayTrend = !Number.isFinite(delta7)
-    ? "Unavailable (no prior-week reading)"
+    ? INSUFFICIENT_HISTORY
     : delta7 >= 8
       ? `Rising sharply (+${delta7.toFixed(1)} pts vs prior week)`
       : delta7 >= 3
@@ -1093,25 +1105,25 @@ export function computeEvolution(history: HistoricalMonth[]): EvolutionAnalysis 
       ? `Declining moderately (${delta7.toFixed(1)} pts vs prior week)`
       : `Stable (${delta7 >= 0 ? "+" : ""}${delta7.toFixed(1)} pts vs prior week)`;
 
-  const thirtyDayTrend = !Number.isFinite(delta30)
-    ? "Unavailable (no 30-day comparison)"
+  const thirtyDayTrend = !thirtyAvailable
+    ? INSUFFICIENT_HISTORY
     : delta30 >= 10
-      ? `Elevated vs 30-day average (+${delta30.toFixed(1)} pts)`
+      ? `Elevated vs 30-month average (+${delta30.toFixed(1)} pts, 7-month average)`
       : delta30 >= 5
-      ? `Slightly above 30-day average (+${delta30.toFixed(1)} pts)`
+      ? `Slightly above 30-month average (+${delta30.toFixed(1)} pts, 7-month average)`
       : delta30 <= -10
-      ? `Below 30-day average (${delta30.toFixed(1)} pts)`
+      ? `Below 30-month average (${delta30.toFixed(1)} pts, 7-month average)`
       : delta30 <= -5
-      ? `Slightly below 30-day average (${delta30.toFixed(1)} pts)`
-      : `Near 30-day average (${delta30 >= 0 ? "+" : ""}${delta30.toFixed(1)} pts)`;
+      ? `Slightly below 30-month average (${delta30.toFixed(1)} pts, 7-month average)`
+      : `Near 30-month average (${delta30 >= 0 ? "+" : ""}${delta30.toFixed(1)} pts, 7-month average)`;
 
-  const ninetyDayTrend = !Number.isFinite(delta90)
-    ? "Unavailable (no 90-day comparison)"
+  const ninetyDayTrend = !ninetyAvailable
+    ? INSUFFICIENT_HISTORY
     : delta90 >= 10
-      ? `Pressure has built significantly over 90 days (+${delta90.toFixed(1)} pts)`
+      ? `Pressure has built significantly (30-month vs 90-month average, +${delta90.toFixed(1)} pts)`
       : delta90 <= -10
-      ? `Pressure has eased significantly over 90 days (${delta90.toFixed(1)} pts)`
-      : `Pressure is broadly stable over 90 days (${delta90 >= 0 ? "+" : ""}${delta90.toFixed(1)} pts)`;
+      ? `Pressure has eased significantly (30-month vs 90-month average, ${delta90.toFixed(1)} pts)`
+      : `Pressure is broadly stable (30-month vs 90-month average, ${delta90 >= 0 ? "+" : ""}${delta90.toFixed(1)} pts)`;
 
   const yearDelta = currentScore - avg12m;
   const yearTrend = !Number.isFinite(yearDelta)
@@ -1128,17 +1140,17 @@ export function computeEvolution(history: HistoricalMonth[]): EvolutionAnalysis 
   const whatChanged: string[] = [];
   if (Math.abs(delta7) >= 5)
     whatChanged.push(
-      `Pressure ${delta7 > 0 ? "increased" : "decreased"} by ${Math.abs(delta7).toFixed(1)} points over the past 7 days`
+      `Pressure ${delta7 > 0 ? "increased" : "decreased"} by ${Math.abs(delta7).toFixed(1)} points over the past 7 months`
     );
-  if (Math.abs(delta30) >= 8)
+  if (thirtyAvailable && Math.abs(delta30) >= 8)
     whatChanged.push(
-      `30-day trend is ${delta30 > 0 ? "deteriorating" : "improving"} — ${Math.abs(delta30).toFixed(1)} point shift`
+      `7-month vs 30-month trend is ${delta30 > 0 ? "deteriorating" : "improving"} — ${Math.abs(delta30).toFixed(1)} point shift`
     );
 
   // Detect regime instability
   const regimes90 = new Set(last90.map((h) => h.regime));
   if (regimes90.size >= 3)
-    whatChanged.push(`Market has cycled through ${regimes90.size} different regimes in the past 90 days — elevated instability`);
+    whatChanged.push(`Market has cycled through ${regimes90.size} different regimes in the past ${last90.length} months — elevated instability`);
 
   const sparkline90d = last90.map((h) => ({
     month: h.month,

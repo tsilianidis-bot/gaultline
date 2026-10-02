@@ -25,7 +25,7 @@ const SLIDES = [
     title: "Reading the Pressure Score",
     subtitle: "0–100 scale · Domain-weighted composite",
     body: "Each domain — Liquidity, Credit, Speculative Excess, Macro Instability, Concentration, and Structural Fragility — is scored 0–100 using real FRED macroeconomic data. The composite Pressure Index drives the overall regime classification.",
-    detail: "30–50 = Moderate · 50–70 = Elevated · 70–85 = High · 85+ = Critical",
+    detail: "<25 = Low · 25–44 = Moderate · 45–64 = Elevated · 65–79 = High · 80+ = Critical",
     detailColor: "#FFD700",
   },
   {

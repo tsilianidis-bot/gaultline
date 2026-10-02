@@ -24,6 +24,38 @@ export interface EngineSnapshotPayload {
   timestamp: number;
 }
 
+/**
+ * Domain lookup by family. The deterministic engine names domains by engine id
+ * ("liquidity", "credit-stress"); the canonical projection names them
+ * `canonical-<n>-<family slug>` with the evidence-family name as the label
+ * ("Liquidity Conditions", "Credit Markets"). Exact id or exact family name
+ * only — no fuzzy match, so a mixed family (e.g. "Credit and Liquidity") is
+ * not read as either. Lookup only: the formulas using the score are unchanged.
+ */
+export type SnapshotDomainFamily = "liquidity" | "credit";
+const DOMAIN_FAMILY_MATCH: Record<SnapshotDomainFamily, { engineId: string; familyNames: string[] }> = {
+  liquidity: { engineId: "liquidity", familyNames: ["Liquidity Conditions"] },
+  credit: { engineId: "credit-stress", familyNames: ["Credit Markets"] },
+};
+const familySlug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+export function findDomainByFamily<D extends { id: string; label?: string }>(
+  domains: readonly D[] | null | undefined,
+  family: SnapshotDomainFamily,
+): D | undefined {
+  if (!domains) return undefined;
+  const { engineId, familyNames } = DOMAIN_FAMILY_MATCH[family];
+  const names = familyNames.map(n => n.toLowerCase());
+  const slugs = familyNames.map(familySlug);
+  return (
+    domains.find(d => d.id === engineId) ??
+    domains.find(d => {
+      const m = /^canonical-\d+-(.+)$/.exec(d.id);
+      return (m !== null && slugs.includes(m[1])) || (typeof d.label === "string" && names.includes(d.label.trim().toLowerCase()));
+    })
+  );
+}
+
 /** Canonical 0–100 pressure, or null when it is not an authoritative reading. */
 export function canonicalPressure100(output: EngineOutput, marketMode: BrowserMarketMode): number | null {
   if (marketMode !== "canonical") return null;
@@ -39,8 +71,8 @@ export function buildEngineSnapshot(
 ): EngineSnapshotPayload | null {
   const overallPressure = canonicalPressure100(output, marketMode);
   if (overallPressure === null) return null;
-  const liquidityScore = finiteOrNull(output.domains.find(d => d.id === "liquidity")?.score);
-  const creditScore = finiteOrNull(output.domains.find(d => d.id === "credit-stress")?.score);
+  const liquidityScore = finiteOrNull(findDomainByFamily(output.domains, "liquidity")?.score);
+  const creditScore = finiteOrNull(findDomainByFamily(output.domains, "credit")?.score);
   return {
     overallPressure,
     regime: output.regime.label,

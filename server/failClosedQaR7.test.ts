@@ -54,7 +54,7 @@ describe("#8 seismograph evolution: no NaN and no 'Stable' without a prior readi
       const evo = computeEvolution(months(n));
       const text = JSON.stringify(evo);
       expect(text).not.toMatch(/NaN/);
-      expect(evo.sevenDayTrend).toBe("Unavailable (no prior-week reading)");
+      expect(evo.sevenDayTrend).toBe("Unavailable (insufficient history)");
       expect(evo.sevenDayTrend).not.toMatch(/Stable/);
     });
   }
@@ -71,12 +71,13 @@ describe("#7 SmartDiscovery under a canonical 503 shows no 45 and sends nothing"
     expect(canonicalPressure100(output, mode)).toBeNull();            // …but is never shown
     expect(buildEngineSnapshot(output, mode)).toBeNull();             // …or sent to recordVisit
   });
-  it("canonical → snapshot without invented liquidity/credit/ai/vol defaults", () => {
+  it("canonical → snapshot without invented ai/vol defaults; liquidity/credit from the canonical families (QA r8)", () => {
     const { output, mode } = canonical();
     const snap = buildEngineSnapshot(output, mode, 1)!;
     expect(snap.overallPressure).toBe(Math.round(output.overall.score * 10));
-    expect(snap.liquidity).toBeNull();
-    expect(snap.credit).toBeNull();
+    // "Liquidity Conditions" strength 17 → (10 − 1.7) × 10; "Credit Markets" 30 → 3.0 × 10.
+    expect(snap.liquidity).toBe(83);
+    expect(snap.credit).toBe(30);
     expect(snap.aiConcentration).toBeNull();
     expect(snap.volatility).toBeNull();
     expect(EngineSnapshotSchema.parse(snap)).toBeTruthy();

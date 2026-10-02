@@ -12,7 +12,7 @@
  *   - 13-stage loading sequence
  */
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { buildEngineSnapshot, canonicalPressure100, type EngineSnapshotPayload } from "@/lib/engineSnapshot";
+import { buildEngineSnapshot, canonicalPressure100, findDomainByFamily, type EngineSnapshotPayload } from "@/lib/engineSnapshot";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -2420,8 +2420,11 @@ function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => 
   // Fail closed: only a canonical state yields a pressure reading. Under a
   // canonical 503 the engine runs on demo defaults (≈45) — show "—" instead.
   const pressureScore = canonicalPressure100(output, marketMode); // 0-100 | null
-  const liquidityDomain = domains.find(d => d.id === 'liquidity');
-  const creditDomain = domains.find(d => d.id === 'credit-stress');
+  // Same gate for the regime: without a canonical reading the label is the
+  // demo engine's (e.g. "Moderate Risk" under a 503), so it is not shown or asked about.
+  const regimeLabel = pressureScore === null ? null : regime.label;
+  const liquidityDomain = findDomainByFamily(domains, 'liquidity');
+  const creditDomain = findDomainByFamily(domains, 'credit');
 
   // Derive institutional bias
   const bias = useMemo(() => {
@@ -2469,9 +2472,9 @@ function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => 
       </div>
       <div style={{ padding: '12px 14px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px' }}>
         {/* Regime — clickable */}
-        <button onClick={() => onQuickAction(`What is the ${regime.label} regime and what does it mean for my portfolio?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+        <button onClick={() => onQuickAction(regimeLabel === null ? `The market regime is currently unavailable. What does that mean and what should I watch?` : `What is the ${regimeLabel} regime and what does it mean for my portfolio?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
           <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>REGIME ↗</span>
-          <span style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: '#F0F4FF', lineHeight: 1.3 }}>{regime.label}</span>
+          <span data-snapshot-regime style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: regimeLabel === null ? '#94A3B8' : '#F0F4FF', lineHeight: 1.3 }}>{regimeLabel ?? 'Unavailable'}</span>
         </button>
         {/* Pressure Index — clickable */}
         <button onClick={() => onQuickAction(pressureScore === null ? `The Pressure Index is currently unavailable. What does that mean and what should I watch?` : `The Pressure Index is at ${pressureScore}/100. What does this mean and what should I do?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>

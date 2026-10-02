@@ -20,10 +20,23 @@ import { useEngine } from "@/contexts/EngineContext";
 import { engineProbabilityText } from "@/lib/marketStateProjection";
 import { trpc } from "@/lib/trpc";
 import { getRiskColor } from "@/components/RiskBadge";
+import { availableDelta } from "@/lib/displayFallbacks";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function deltaLabel(delta: number): "easing" | "building" | "stable" {
+export type InterpretationTrend = "easing" | "building" | "stable" | "unavailable";
+
+/**
+ * Domain trend for the interpretation copy. Same availability semantics as
+ * #59's knownDelta (lib/deltaAvailability.ts): a missing domain, a delta
+ * flagged `deltaAvailable: false`, or a non-finite delta is "unavailable" —
+ * never "stable". "stable" is only a known flat delta (|Δ| ≤ 0.15).
+ */
+export function interpretationTrend(
+  item: { delta?: unknown; deltaAvailable?: boolean } | null | undefined,
+): InterpretationTrend {
+  const delta = availableDelta(item);
+  if (delta === null) return "unavailable";
   if (delta < -0.15) return "easing";
   if (delta > 0.15) return "building";
   return "stable";
@@ -117,11 +130,11 @@ export function FaultlineInterpretation() {
     [domains]
   );
 
-  const treasuryDelta  = deltaLabel(domainById["treasury-debt"]?.delta ?? 0);
-  const recessionDelta = deltaLabel(domainById["recession"]?.delta ?? 0);
-  const liquidityDelta = deltaLabel(domainById["liquidity"]?.delta ?? 0);
-  const bankingDelta   = deltaLabel(domainById["banking"]?.delta ?? 0);
-  const creditDelta    = deltaLabel(domainById["credit-stress"]?.delta ?? 0);
+  const treasuryDelta  = interpretationTrend(domainById["treasury-debt"]);
+  const recessionDelta = interpretationTrend(domainById["recession"]);
+  const liquidityDelta = interpretationTrend(domainById["liquidity"]);
+  const bankingDelta   = interpretationTrend(domainById["banking"]);
+  const creditDelta    = interpretationTrend(domainById["credit-stress"]);
 
   const inflationDomain = domainById["inflation-fed"];
   const bankingDomain   = domainById["banking"];
@@ -156,7 +169,11 @@ export function FaultlineInterpretation() {
   const crashChipColor: ChipColor = "cyan";
 
   // Liquidity chip color
-  const liquidityChipColor: ChipColor = liquidityDelta === "easing" ? "green" : liquidityDelta === "building" ? "amber" : "cyan";
+  const liquidityChipColor: ChipColor = liquidityDelta === "easing" ? "green" : liquidityDelta === "building" ? "amber" : liquidityDelta === "unavailable" ? "gray" : "cyan";
+  const liquidityChipLabel =
+    liquidityDelta === "unavailable" ? "Liquidity trend: Unavailable" :
+    liquidityDelta === "easing" ? "Liquidity Easing" :
+    liquidityDelta === "building" ? "Liquidity Tightening" : "Liquidity Stable";
 
   // Build dynamic narrative paragraphs
   const para1 = `Overall, FAULTLINE is showing ${regimeLabel.toLowerCase()} systemic risk. The current Pressure Index is ${Math.round(pressureScore * 10)}/100, placing the market in a ${regimeLabel} regime. Bull scenario weight: ${bullText}. Crash probability: ${crashText} — FAULTLINE has no governed crash model.`;
@@ -180,13 +197,22 @@ export function FaultlineInterpretation() {
   if (inflationDomain && inflationDomain.score >= 4) dangerZones.push("Inflation/Fed Pressure");
   if (creDomain && creDomain.score >= 6) dangerZones.push("Commercial Real Estate Stress");
 
-  const para3 = easingZones.length > 0
+  // Trend copy only claims what the deltas show: when none of the trend
+  // domains has a known delta, say so instead of "no easing" / "contained".
+  const trendDeltas = [treasuryDelta, recessionDelta, liquidityDelta, bankingDelta, creditDelta];
+  const allTrendsUnavailable = trendDeltas.every(t => t === "unavailable");
+
+  const para3 = allTrendsUnavailable
+    ? `Domain trends versus the prior reading are unavailable, so no domain is described as easing, building or stable. The level of stress is the ${regimeLabel} regime above.`
+    : easingZones.length > 0
     ? `Several major stress areas are easing, including ${easingZones.join(", ")}. This means the system is not currently confirming a broad liquidity collapse — risk-on assets may still have room to move.`
     : `No domain is showing an easing trend versus the prior reading. This is a trend statement only; the level of stress is the ${regimeLabel} regime above.`;
 
   const para4 = dangerZones.length > 0
     ? `However, several danger zones remain active: ${dangerZones.join(", ")}. The market can continue climbing, but the foundation is fragile if ${aiBubbleDomain?.label ?? "AI leadership"} breaks down, credit conditions worsen, or liquidity reverses.`
-    : `Risk conditions are broadly contained. Monitor for any deterioration in credit spreads or liquidity metrics.`;
+    : allTrendsUnavailable
+      ? `No danger zone is flagged from levels alone; trend-based danger zones cannot be assessed without prior readings. Monitor credit spreads and liquidity metrics.`
+      : `Risk conditions are broadly contained. Monitor for any deterioration in credit spreads or liquidity metrics.`;
 
   // Takeaway card content — dynamically adapted to regime
   const cleanReadTitle = fragile
@@ -239,7 +265,7 @@ export function FaultlineInterpretation() {
           <StatusChip label={`AI Concentration ${aiConcentration.toFixed(1)}% · static baseline`} color="amber" />
         )}
         <StatusChip
-          label={`Liquidity ${liquidityDelta === "easing" ? "Stable" : liquidityDelta === "building" ? "Tightening" : "Neutral"}`}
+          label={liquidityChipLabel}
           color={liquidityChipColor}
         />
         <StatusChip label={`Crash probability: ${crashText}`} color={crashChipColor} />
