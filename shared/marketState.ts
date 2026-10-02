@@ -42,7 +42,12 @@ export interface CanonicalMarketState {
     direction: "Improving" | "Stable" | "Deteriorating" | "Accelerating" | "Unavailable";
     historicalPercentile: number;
     headline: string;
+    /** Strongest evidence families by strength. Ordering only — NOT a threat/support classification. */
     topDrivers: string[];
+    /** Families whose own signal is bearish/stressed (shared/canonicalReadout classifyEvidenceFamilies). */
+    threats: string[];
+    /** Families whose own signal is bullish/recovering (same classifier). */
+    supports: string[];
   };
   why: {
     story: string;

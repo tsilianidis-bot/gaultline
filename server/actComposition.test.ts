@@ -91,7 +91,10 @@ describe("ACT destination composition", () => {
 
   it("formats pressure, confidence, and scenario probabilities on the shared canonical 0–100 scale", () => {
     expect(actSource).toContain("formatCanonicalScore(pressure)");
-    expect(actSource).toContain("formatCanonicalPercent(confidence)");
+    // Forecast confidence is display-gated (forecastConfidenceDisplay); when a % is
+    // supported it is still formatted on the canonical 0–100 scale.
+    expect(actSource).toContain("formatCanonicalPercent(confidenceDisplay.percent)");
+    expect(actSource).not.toContain("formatCanonicalPercent(confidence)");
     expect(actSource).toContain("formatCanonicalPercent(scenario.probability)");
     expect(actSource).not.toMatch(/\}\s*\/10\b/);
     expect(actSource).not.toContain("/10</");

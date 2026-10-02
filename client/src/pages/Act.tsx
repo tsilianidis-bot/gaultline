@@ -29,6 +29,7 @@ import {
 import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
+import { forecastConfidenceDisplay } from "@shared/confidenceDisplay";
 
 const ACT_DEEP_PATH = "/app/act/deep";
 
@@ -264,7 +265,13 @@ export default function Act() {
   const pressure = canonicalState.pressureIndex ?? 0;
   const posture = marketState?.act.marketPosture ?? null;
   const postureView = posture ? postureConfig[posture] : unavailablePostureView;
-  const confidence = marketState?.outlook.probabilities.confidence ?? 0;
+  // Display gate: a % only with HEALTHY canonical evidence AND a verified analog
+  // (the engine value is a 50 baseline even with zero analogs). Engine unchanged.
+  const confidenceDisplay = forecastConfidenceDisplay({
+    confidence: marketState?.outlook.probabilities.confidence,
+    evidenceQuality: canonicalState?.confidenceOrEvidenceQuality,
+    topAnalog: marketState?.outlook.topAnalog,
+  });
   const decisionSummary = marketState?.act.decisionSummary
     ?? "Canonical decision guidance is unavailable. ACT will not manufacture a colored posture or trade-level instruction from deterministic fallback data.";
   const riskControls = marketState?.act.riskControls ?? [];
@@ -275,8 +282,11 @@ export default function Act() {
   const developingConditions = marketState?.watch.developingConditions ?? [];
   const modeLabel = customerChromeModeLabel(integrityLabel);
 
-  const greenFlags = evidence;
-  const redFlags: string[] = marketState?.watch.whatChanged ?? [];
+  // Same classifier as NOW (shared/canonicalReadout via EngineContext): only families
+  // whose own signal is bullish/recovering are "supporting"; bearish/stressed are
+  // cautionary. Neutral families are neither. Strength order never decides this.
+  const greenFlags = marketState?.now.supports ?? [];
+  const redFlags: string[] = Array.from(new Set([...(marketState?.now.threats ?? []), ...(marketState?.watch.whatChanged ?? [])]));
 
   const scenarios: DecisionScenario[] = marketState ? [
     {
@@ -386,7 +396,7 @@ export default function Act() {
                   </div>
                   <div className="rounded-sm border border-white/10 bg-white/[0.025] p-4">
                     <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-slate-600">Confidence</p>
-                    <p className="mt-1 font-mono text-sm text-slate-200">{formatCanonicalPercent(confidence)}</p>
+                    <p className="mt-1 font-mono text-sm text-slate-200"><span data-forecast-confidence={confidenceDisplay.state}>{confidenceDisplay.percent == null ? confidenceDisplay.text : formatCanonicalPercent(confidenceDisplay.percent)}</span></p>
                   </div>
                 </div>
                 <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-slate-600">Updated {lastUpdated?.toLocaleString() ?? "not available"}</p>
@@ -418,12 +428,19 @@ export default function Act() {
         <Section id="evidence-boundary" index="03" eyebrow="Evidence boundary" title="What the posture can and cannot infer" description="The posture is a system-level response to canonical market conditions. Evidence is separated from any instrument-level decision so confidence cannot outrun provenance.">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
             <div className="grid gap-3 sm:grid-cols-2">
-              {evidence.map(item => (
-                <div key={item} className="flex gap-3 rounded-sm border border-white/10 bg-white/[0.025] p-4 text-sm leading-6 text-slate-300">
-                  <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald-300" />
-                  {item}
-                </div>
-              ))}
+              {evidence.map(item => {
+                const cls = greenFlags.includes(item) ? "support" : (marketState?.now.threats ?? []).includes(item) ? "threat" : "neutral";
+                return (
+                  <div key={item} data-evidence-class={cls} className="flex gap-3 rounded-sm border border-white/10 bg-white/[0.025] p-4 text-sm leading-6 text-slate-300">
+                    {cls === "support"
+                      ? <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald-300" />
+                      : cls === "threat"
+                        ? <XCircle className="mt-1 h-4 w-4 shrink-0 text-rose-300" />
+                        : <Scale className="mt-1 h-4 w-4 shrink-0 text-slate-400" />}
+                    <span>{item}<span className="ml-2 font-mono text-[9px] uppercase tracking-[0.12em] text-slate-500">{cls === "support" ? "supporting" : cls === "threat" ? "cautionary" : "neutral"}</span></span>
+                  </div>
+                );
+              })}
             </div>
             <div className="rounded-sm border border-amber-400/20 bg-amber-400/[0.04] p-5">
               <Scale className="h-5 w-5 text-amber-300" />
@@ -516,7 +533,7 @@ export default function Act() {
           <div className="grid gap-4 md:grid-cols-3">
             <div className="rounded-sm border border-white/10 bg-white/[0.025] p-5">
               <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-600">Forecast confidence</div>
-              <div className="mt-3 font-['Rajdhani'] text-2xl font-semibold text-slate-100">{formatCanonicalPercent(confidence)}</div>
+              <div className="mt-3 font-['Rajdhani'] text-2xl font-semibold text-slate-100"><span data-forecast-confidence={confidenceDisplay.state}>{confidenceDisplay.percent == null ? confidenceDisplay.text : formatCanonicalPercent(confidenceDisplay.percent)}</span></div>
             </div>
             <div className="rounded-sm border border-white/10 bg-white/[0.025] p-5">
               <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-600">Historical observations</div>

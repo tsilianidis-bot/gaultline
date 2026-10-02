@@ -15,6 +15,7 @@ import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, AlertTriangle,
 import FaultlineTerm from "./FaultlineTerm";
 import type { CanonicalConsumerEnvelope } from "@shared/canonicalConsumerEnvelope";
 import type { CanonicalMarketState } from "@shared/marketState";
+import { sobConfidenceDisplay } from "@shared/confidenceDisplay";
 
 interface SOBPanelProps {
   /** Current state provenance travels with compatibility inputs but is not sent to the legacy S.O.B. procedure. */
@@ -72,8 +73,12 @@ export default function SOBPanel({
 
   if (!sob) return null;
 
+  const confidenceDisplay = sobConfidenceDisplay(sob);
+
   const activePillars = sob.pillars.filter(p => p.active);
-  const inactivePillars = sob.pillars.filter(p => !p.active);
+  // Only pillars with valid input can be "clear"; missing-input pillars are UNAVAILABLE.
+  const clearPillars = sob.pillars.filter(p => p.available && !p.active);
+  const unavailablePillars = sob.pillars.filter(p => !p.available);
 
   // ── Compact mode: single row ──────────────────────────────────────────────
   if (compact) {
@@ -100,7 +105,7 @@ export default function SOBPanel({
           {TREND_ICONS[sob.trend]}
         </div>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#6B7280" }}>
-          {sob.level}/6 pillars active
+          {sob.level}/6 pillars active · {sob.availablePillarCount}/6 with data
         </div>
         <div style={{ marginLeft: "auto" }}>
           {expanded ? <ChevronUp size={12} style={{ color: "#4B5563" }} /> : <ChevronDown size={12} style={{ color: "#4B5563" }} />}
@@ -161,17 +166,21 @@ export default function SOBPanel({
                 height: "8px",
                 borderRadius: "50%",
                 background: p.active ? sob.color : "rgba(255,255,255,0.08)",
-                border: `1px solid ${p.active ? sob.color : "rgba(255,255,255,0.12)"}`,
+                border: `1px ${p.available ? "solid" : "dashed"} ${p.active ? sob.color : "rgba(255,255,255,0.12)"}`,
+                opacity: p.available ? 1 : 0.5,
                 transition: "all 0.2s",
               }}
-              title={p.name}
+              title={p.available ? p.name : `${p.name}: UNAVAILABLE`}
             />
           ))}
         </div>
 
-        {/* Confidence */}
-        <div style={{ marginLeft: "auto", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#4B5563" }}>
-          {sob.confidence}% confidence
+        {/* Confidence — a % only when every required pillar has valid data */}
+        <div
+          data-sob-confidence={confidenceDisplay.state}
+          style={{ marginLeft: "auto", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: confidenceDisplay.percent == null ? "#9CA3AF" : "#4B5563" }}
+        >
+          {confidenceDisplay.text}
         </div>
 
         {expanded
@@ -192,7 +201,7 @@ export default function SOBPanel({
           {/* Pillar grid */}
           <div style={{ marginBottom: "16px" }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>
-              Pillars ({activePillars.length} active / {inactivePillars.length} clear)
+              Pillars ({activePillars.length} active / {clearPillars.length} clear{unavailablePillars.length > 0 ? ` / ${unavailablePillars.length} unavailable` : ""})
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "6px" }}>
               {sob.pillars.map(pillar => (
@@ -211,14 +220,16 @@ export default function SOBPanel({
                   <div style={{ flexShrink: 0, marginTop: "2px" }}>
                     {pillar.active
                       ? <AlertTriangle size={12} style={{ color: SEVERITY_COLORS[pillar.severity] }} />
-                      : <CheckCircle size={12} style={{ color: "#1F2937" }} />}
+                      : pillar.available
+                        ? <CheckCircle size={12} style={{ color: "#1F2937" }} />
+                        : <Minus size={12} style={{ color: "#4B5563" }} />}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px" }}>
                       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", fontWeight: 600, color: pillar.active ? SEVERITY_COLORS[pillar.severity] : "#4B5563" }}>
                         {pillar.name}
                       </div>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#6B7280", flexShrink: 0 }}>
+                      <div data-sob-pillar-value={pillar.id} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: pillar.available ? "#6B7280" : "#F59E0B", flexShrink: 0, letterSpacing: pillar.available ? undefined : "0.08em" }}>
                         {pillar.value}
                       </div>
                     </div>

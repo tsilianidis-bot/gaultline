@@ -4,10 +4,12 @@ import path from "node:path";
 import { createCanonicalConsumerEnvelope } from "../shared/canonicalConsumerEnvelope";
 import type { PublicCanonicalIntelligenceState } from "../shared/canonicalIntelligenceState";
 
-const source = fs.readFileSync(
-  path.resolve(process.cwd(), "client/src/contexts/EngineContext.tsx"),
-  "utf8",
-);
+// EngineContext delegates the canonical merge to lib/canonicalNowProjection
+// (mergeCanonicalMarketState); both files together are the transport source.
+const source = [
+  "client/src/contexts/EngineContext.tsx",
+  "client/src/lib/canonicalNowProjection.ts",
+].map(file => fs.readFileSync(path.resolve(process.cwd(), file), "utf8")).join("\n");
 
 const controlledState: PublicCanonicalIntelligenceState = {
   schemaVersion: "phase2-canonical-state-v1", stateId: "state:controlled", generatedAt: "2026-08-22T15:00:00.000Z", effectiveAt: "2026-08-22T15:00:00.000Z",
