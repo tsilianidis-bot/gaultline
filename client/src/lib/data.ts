@@ -60,7 +60,10 @@ export interface AIWatchItem {
   sentiment: 'bullish' | 'bearish' | 'neutral' | 'warning';
   marketImpact: 'high' | 'medium' | 'low';
   riskInterpretation: string;
-  timestamp: string;
+  /** ISO publication time of the source article (shown in ET). Required: no relative "2h ago" stamps. */
+  publishedAt: string;
+  /** Publisher name and URL of the source article. Required: no unsourced items. */
+  source: { name: string; url: string };
   category: string;
 }
 
@@ -271,20 +274,6 @@ export const metrics: MetricCard[] = [
     category: 'Credit',
     chartData: generateChartData(7.2, 30, 0.02),
   },
-  {
-    id: 'ai-capex',
-    label: 'AI Infrastructure Capex Race',
-    value: '$214B',
-    unit: '',
-    change: 42,
-    changeLabel: '+42% YoY',
-    direction: 'up',
-    riskLevel: 'elevated',
-    interpretation: 'Hyperscaler AI capex at $214B annualized. ROI unproven at scale. Bubble dynamics intensifying.',
-    historicalComparison: 'Capex growth rate exceeds 1999 fiber optic buildout at peak.',
-    category: 'AI Bubble',
-    chartData: generateChartData(150, 30, 0.04),
-  },
 ];
 
 // ---- Risk Scores ----
@@ -474,98 +463,11 @@ export const historicalAnalogs: HistoricalAnalog[] = [
 ];
 
 // ---- AI Watch Feed ----
-export const aiWatchItems: AIWatchItem[] = [
-  {
-    id: 'ai-1',
-    company: 'NVIDIA',
-    headline: 'Nvidia H200 backlog extends to 18 months as hyperscalers accelerate orders',
-    sentiment: 'warning',
-    marketImpact: 'high',
-    riskInterpretation: 'Supply constraint masking demand destruction risk. Single-point-of-failure in global AI infrastructure.',
-    timestamp: '2h ago',
-    category: 'Chip Wars',
-  },
-  {
-    id: 'ai-2',
-    company: 'OpenAI',
-    headline: 'OpenAI raises $6.6B at $157B valuation — largest private funding round in history',
-    sentiment: 'warning',
-    marketImpact: 'high',
-    riskInterpretation: 'Valuation multiples disconnected from revenue. Bubble dynamics intensifying in private AI markets.',
-    timestamp: '4h ago',
-    category: 'Speculation',
-  },
-  {
-    id: 'ai-3',
-    company: 'Microsoft',
-    headline: 'Microsoft Azure AI revenue growth decelerates to 29% — below 35% consensus',
-    sentiment: 'bearish',
-    marketImpact: 'high',
-    riskInterpretation: 'First signs of AI monetization gap. $80B capex commitment with slowing revenue growth is unsustainable.',
-    timestamp: '6h ago',
-    category: 'Earnings',
-  },
-  {
-    id: 'ai-4',
-    company: 'Anthropic',
-    headline: 'Anthropic Claude 4 achieves AGI-adjacent benchmarks — regulatory scrutiny intensifies',
-    sentiment: 'neutral',
-    marketImpact: 'medium',
-    riskInterpretation: 'Regulatory risk rising. EU AI Act enforcement could constrain US AI companies in key markets.',
-    timestamp: '8h ago',
-    category: 'Regulation',
-  },
-  {
-    id: 'ai-5',
-    company: 'Meta',
-    headline: 'Meta Llama 4 open-source release disrupts enterprise AI pricing models',
-    sentiment: 'bearish',
-    marketImpact: 'medium',
-    riskInterpretation: 'Commoditization risk for closed-model AI companies. OpenAI and Anthropic revenue models under pressure.',
-    timestamp: '10h ago',
-    category: 'Competition',
-  },
-  {
-    id: 'ai-6',
-    company: 'Google DeepMind',
-    headline: 'Google Gemini Ultra achieves state-of-art across all major benchmarks',
-    sentiment: 'bullish',
-    marketImpact: 'medium',
-    riskInterpretation: 'Competitive dynamics intensifying. Winner-take-all dynamics may concentrate risk in fewer names.',
-    timestamp: '12h ago',
-    category: 'Competition',
-  },
-  {
-    id: 'ai-7',
-    company: 'xAI',
-    headline: 'Elon Musk\'s xAI raises $6B, announces 100,000 GPU Memphis supercluster',
-    sentiment: 'warning',
-    marketImpact: 'medium',
-    riskInterpretation: 'Capex arms race accelerating. Power grid strain and resource competition creating systemic bottlenecks.',
-    timestamp: '1d ago',
-    category: 'Infrastructure',
-  },
-  {
-    id: 'ai-8',
-    company: 'Sovereign AI',
-    headline: 'UAE, Saudi Arabia announce $100B sovereign AI investment funds',
-    sentiment: 'neutral',
-    marketImpact: 'medium',
-    riskInterpretation: 'Geopolitical AI race intensifying. Chip export controls creating fragmented global AI infrastructure.',
-    timestamp: '1d ago',
-    category: 'Geopolitics',
-  },
-  {
-    id: 'ai-9',
-    company: 'Amazon',
-    headline: 'AWS Trainium3 chips challenge Nvidia dominance — $150B data center investment announced',
-    sentiment: 'neutral',
-    marketImpact: 'high',
-    riskInterpretation: 'Nvidia moat being challenged. Transition risk if custom silicon adoption accelerates.',
-    timestamp: '2d ago',
-    category: 'Chip Wars',
-  },
-];
+// Intentionally empty. The previous items were undated ("2h ago" … "2d ago")
+// and unsourced, so they read as current news when they were not. FAULTLINE
+// does not ingest an AI headline feed; an item may only be added here with its
+// real publication time and source (see AIWatchItem.publishedAt / source).
+export const aiWatchItems: AIWatchItem[] = [];
 
 // ---- Alerts ----
 export const alerts: AlertItem[] = [

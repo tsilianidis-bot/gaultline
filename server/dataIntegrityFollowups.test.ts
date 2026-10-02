@@ -468,3 +468,31 @@ describe("ScoreExplainer yield-curve bands match the engine maximum (74)", () =>
     expect(e).toMatch(/Math\.round\(spreadScore \* 0\.6 \+ rateScore \* 0\.4\)/);
   });
 });
+
+describe("AIWatch feed + data.ts: no undated / unsourced items, no $214B", () => {
+  const data = src("client/src/lib/data.ts");
+  it("feed holds no relative-time stamps and every item type requires publishedAt + source", async () => {
+    const mod = await import("../client/src/lib/data");
+    for (const item of mod.aiWatchItems) {
+      expect(Number.isNaN(Date.parse(item.publishedAt))).toBe(false);
+      expect(item.source.name.length).toBeGreaterThan(0);
+      expect(item.source.url).toMatch(/^https:\/\//);
+    }
+    const feed = data.slice(data.indexOf("// ---- AI Watch Feed ----"), data.indexOf("// ---- Alerts ----"));
+    expect(feed).not.toMatch(/timestamp:\s*'\d+[hd] ago'/);
+    expect(feed).not.toMatch(/\$6\.6B|\$157B|Claude 4|Gemini Ultra/);
+    expect(data).toMatch(/publishedAt: string;/);
+    expect(data).toMatch(/source: \{ name: string; url: string \};/);
+  });
+  it("data.ts no longer carries the $214B AI capex metric", () => {
+    expect(data).not.toMatch(/\$214B/);
+    expect(data).not.toMatch(/id: 'ai-capex'/);
+  });
+  it("AIWatch shows the feed as Unavailable when empty and dates items in ET with source", () => {
+    const page = src("client/src/pages/AIWatch.tsx");
+    expect(page).toMatch(/AI Headline Feed · Unavailable/);
+    expect(page).toMatch(/\{formatEt\(item\.publishedAt\) \?\? '—'\} · \{item\.source\.name\}/);
+    expect(page).not.toMatch(/item\.timestamp/);
+    expect(page).not.toMatch(/has reached 32\.4%/);
+  });
+});

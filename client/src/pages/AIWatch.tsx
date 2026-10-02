@@ -11,6 +11,7 @@ import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
 import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
 import { trpc } from "@/lib/trpc";
+import { formatEt } from "@shared/credibilityLabels";
 import { aiWatchTiles, selectAiBubbleRisk, AI_CONCENTRATION_STATIC_BASELINE_PCT } from "@/lib/aiWatchMetrics";
 
 const sentimentConfig = {
@@ -86,7 +87,7 @@ function AIWatchCard({ item, index }: { item: AIWatchItem; index: number }) {
               {item.category}
             </span>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', marginLeft: 'auto' }}>
-              {item.timestamp}
+              {formatEt(item.publishedAt) ?? '—'} · {item.source.name}
             </span>
           </div>
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#E2E8F0', lineHeight: 1.4, marginBottom: '6px' }}>
@@ -149,8 +150,8 @@ export default function AIWatch() {
     <div style={{ minHeight: '100vh', background: '#050608', maxWidth: '800px', margin: '0 auto' }}>
       <PageHeader
         title="AI Sector Watch"
-        subtitle="AI-generated intelligence feed tracking sector trends, company headlines, and market impact signals."
-        badge="AI-GENERATED"
+        subtitle="AI sector exposure in the FAULTLINE Pressure Index: the AI / Speculation vector and its static AI-concentration baseline."
+        badge="STATIC BASELINE"
         badgeColor="blue"
         rightSlot={<PreflightTrigger currentPage="ai-watch" actionKey="viewed_ai_watch" />}
 	  />
@@ -205,8 +206,23 @@ export default function AIWatch() {
         </p>
       </div>
 
+      {/* No sourced, dated AI headline feed is ingested: say so instead of showing undated items. */}
+      {aiWatchItems.length === 0 && (
+        <div data-ai-watch-feed="unavailable" style={{
+          background: 'rgba(10, 12, 16, 0.9)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '4px',
+          padding: '12px', marginBottom: '12px',
+        }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#64748B', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '4px' }}>
+            AI Headline Feed · Unavailable
+          </div>
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.5 }}>
+            FAULTLINE does not ingest a dated, sourced AI news feed, so no headlines are shown here.
+          </p>
+        </div>
+      )}
+
       {/* Category filter */}
-      <div style={{ overflowX: 'auto', marginBottom: '12px', animation: 'fade-slide-up 0.5s cubic-bezier(0.23, 1, 0.32, 1) 160ms both' }}>
+      {aiWatchItems.length > 0 && <div style={{ overflowX: 'auto', marginBottom: '12px', animation: 'fade-slide-up 0.5s cubic-bezier(0.23, 1, 0.32, 1) 160ms both' }}>
         <div style={{ display: 'flex', gap: '4px', paddingBottom: '4px', minWidth: 'max-content' }}>
           {categories.map((cat) => (
             <button
@@ -227,7 +243,7 @@ export default function AIWatch() {
             </button>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* Intelligence feed */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
