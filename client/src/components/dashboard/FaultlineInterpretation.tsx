@@ -156,7 +156,7 @@ export function FaultlineInterpretation() {
   // Build dynamic narrative paragraphs
   const para1 = `Overall, FAULTLINE is showing ${regimeLabel.toLowerCase()} systemic risk. The current Pressure Index is ${pressureScore.toFixed(1)}/10, placing the market in a ${regimeLabel} regime. Bull probability ${bullPct > crashPct ? "remains slightly favored" : "is below crash probability"} at ${bullPct}%, while crash/bear probability is ${crashPct >= 40 ? "elevated" : "contained"} at ${crashPct}%.`;
 
-  const para2 = `The strongest warning is not broad recession pressure. The main risk is ${aiBubbleDomain?.label ?? "speculative concentration"}, scoring ${aiBubbleDomain?.score.toFixed(1) ?? "—"}/10.${aiConcentration > 25 ? ` AI/mega-cap concentration stands at ${aiConcentration.toFixed(1)}% of the S&P 500.` : ""}${closestAnalog ? ` The closest historical analog is the ${closestAnalog.era} (${closestAnalog.year}), with a ${closestAnalog.similarity}% similarity score.` : ""}`;
+  const para2 = `The strongest warning is not broad recession pressure. The main risk is ${aiBubbleDomain?.label ?? "speculative concentration"}, scoring ${aiBubbleDomain?.score.toFixed(1) ?? "—"}/10.${aiConcentration > 25 ? ` The model's AI/mega-cap concentration input is a static baseline of ${aiConcentration.toFixed(1)}% of the S&P 500, not a live measurement.` : ""}${closestAnalog ? ` The closest historical analog is the ${closestAnalog.era} (${closestAnalog.year}), with a ${closestAnalog.similarity}% similarity score.` : ""}`;
 
   const easingZones: string[] = [];
   const dangerZones: string[] = [];
@@ -177,7 +177,7 @@ export function FaultlineInterpretation() {
 
   const para3 = easingZones.length > 0
     ? `Several major stress areas are easing, including ${easingZones.join(", ")}. This means the system is not currently confirming a broad liquidity collapse — risk-on assets may still have room to move.`
-    : `Systemic stress remains broadly elevated across multiple domains. No major easing signals are present at this time.`;
+    : `No domain is showing an easing trend versus the prior reading. This is a trend statement only; the level of stress is the ${regimeLabel} regime above.`;
 
   const para4 = dangerZones.length > 0
     ? `However, several danger zones remain active: ${dangerZones.join(", ")}. The market can continue climbing, but the foundation is fragile if ${aiBubbleDomain?.label ?? "AI leadership"} breaks down, credit conditions worsen, or liquidity reverses.`
@@ -231,7 +231,7 @@ export function FaultlineInterpretation() {
           <StatusChip label={`${aiBubbleDomain.label} ${aiBubbleDomain.score.toFixed(1)}/10`} color={topThreatColor} />
         )}
         {aiConcentration > 25 && (
-          <StatusChip label={`AI Concentration ${aiConcentration.toFixed(1)}%`} color="amber" />
+          <StatusChip label={`AI Concentration ${aiConcentration.toFixed(1)}% · static baseline`} color="amber" />
         )}
         <StatusChip
           label={`Liquidity ${liquidityDelta === "easing" ? "Stable" : liquidityDelta === "building" ? "Tightening" : "Neutral"}`}

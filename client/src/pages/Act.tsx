@@ -27,6 +27,7 @@ import {
   normalizeCanonicalMetric,
 } from "@shared/marketMetrics";
 import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/customerIntegrityLabels";
+import { canonicalFreshnessReadout, monthlyRecordBasisNote } from "@shared/dataIntegrityReadout";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 import { forecastConfidenceDisplay } from "@shared/confidenceDisplay";
@@ -281,6 +282,9 @@ export default function Act() {
   const monitoredTriggers = marketState?.watch.whatToWatch ?? [];
   const developingConditions = marketState?.watch.developingConditions ?? [];
   const modeLabel = customerChromeModeLabel(integrityLabel);
+  // Same integrity label as the header chip + the snapshot's own input lists
+  // (never the legacy marketState.freshness cache-age "live").
+  const freshnessReadout = canonicalFreshnessReadout({ integrityLabel, canonical: canonicalState });
 
   // Same classifier as NOW (shared/canonicalReadout via EngineContext): only families
   // whose own signal is bullish/recovering are "supporting"; bearish/stressed are
@@ -421,11 +425,11 @@ export default function Act() {
           <StrategyMatrix posture={posture} scenarios={scenarios} />
         </Section>
 
-        <Section id="flag-balance" index="02" eyebrow="Evidence balance" title="Supporting and cautionary signals in the current state" description="Evidence is split into supporting and cautionary signals. The balance bar shows the proportion without manufacturing a score from it.">
+        <Section id="flag-balance" index="02" eyebrow="Evidence balance" title="Supporting and cautionary signals in the current state" description={`Evidence is split into supporting and cautionary signals. The balance bar shows the proportion without manufacturing a score from it. ${monthlyRecordBasisNote(marketState?.why.evidenceAsOfMonth)}`}>
           <FlagBalance greenFlags={greenFlags} redFlags={redFlags} />
         </Section>
 
-        <Section id="evidence-boundary" index="03" eyebrow="Evidence boundary" title="What the posture can and cannot infer" description="The posture is a system-level response to canonical market conditions. Evidence is separated from any instrument-level decision so confidence cannot outrun provenance.">
+        <Section id="evidence-boundary" index="03" eyebrow="Evidence boundary" title="What the posture can and cannot infer" description={`The posture is a system-level response to canonical market conditions. Evidence is separated from any instrument-level decision so confidence cannot outrun provenance. ${monthlyRecordBasisNote(marketState?.why.evidenceAsOfMonth)}`}>
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
             <div className="grid gap-3 sm:grid-cols-2">
               {evidence.map(item => {
@@ -542,10 +546,8 @@ export default function Act() {
             </div>
             <div className="rounded-sm border border-white/10 bg-white/[0.025] p-5">
               <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-600">Freshness</div>
-              <div className="mt-3 text-sm font-semibold text-slate-100">{marketState?.freshness ?? "Fallback"}</div>
-              <div className="mt-2 text-xs text-slate-500">
-                {marketState ? `Canonical source state is ${marketState.freshness}.` : "Live canonical freshness unavailable."}
-              </div>
+              <div className="mt-3 text-sm font-semibold text-slate-100" data-canonical-freshness={freshnessReadout.label}>{freshnessReadout.label}</div>
+              <div className="mt-2 text-xs text-slate-500">{freshnessReadout.detail}</div>
             </div>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2">

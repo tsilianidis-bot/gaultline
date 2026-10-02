@@ -318,7 +318,8 @@ function SkeletonCard() {
 // ── Stock Card ────────────────────────────────────────────────
 function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked }: {
   stock: SignalStock;
-  regimeScore: number;
+  /** null = no quote or no canonical regime: the bar is not drawn. */
+  regimeScore: number | null;
   liveQuote?: LiveQuote;
   tradingSignal?: TradingSignalResult;
   signalBlocked?: boolean;
@@ -385,7 +386,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
       }}
     >
       {/* Regime score bar */}
-      <div style={{
+      {regimeScore != null && <div style={{
         position: 'absolute', top: 0, left: 0,
         height: '2px',
         width: `${regimeScore}%`,
@@ -393,7 +394,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
           ? `linear-gradient(90deg, ${ACTION_COLORS[tradingSignal.action].text}, ${ACTION_COLORS[tradingSignal.action].glow})`
           : `linear-gradient(90deg, #00D4FF, #FFD700)`,
         opacity: 0.7,
-      }} />
+      }} />}
 
       {/* Header row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
@@ -502,7 +503,9 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
         gap: '4px', marginBottom: '8px',
       }}>
         {[
-          { label: tradingSignal?.technicals.rsiIsTrue ? 'RSI(14)' : 'RSI~', value: tradingSignal ? tradingSignal.technicals.rsiEstimate.toFixed(0) : stock.relativeStrength.toString(), color: (tradingSignal?.technicals.rsiEstimate ?? stock.relativeStrength) > 70 ? '#FF2D55' : (tradingSignal?.technicals.rsiEstimate ?? stock.relativeStrength) < 30 ? '#00D4FF' : '#94A3B8' },
+          // RSI only from a computed trading signal. The static signalsData
+          // relativeStrength catalog value is never shown as an RSI reading.
+          { label: tradingSignal ? (tradingSignal.technicals.rsiIsTrue ? 'RSI(14)' : 'RSI~') : 'RSI', value: tradingSignal ? tradingSignal.technicals.rsiEstimate.toFixed(0) : '—', color: tradingSignal ? (tradingSignal.technicals.rsiEstimate > 70 ? '#FF2D55' : tradingSignal.technicals.rsiEstimate < 30 ? '#00D4FF' : '#94A3B8') : '#64748B' },
           { label: 'VOL', value: surge != null ? `${surge}x` : '—', color: highSurge ? '#FFD700' : '#94A3B8' },
           { label: tradingSignal ? 'TREND' : 'SECTOR', value: tradingSignal ? tradingSignal.technicals.trend.split('trend')[0].toUpperCase() || tradingSignal.technicals.trend.toUpperCase() : stock.sector.split(' ')[0], color: tradingSignal?.technicals.trend === 'Uptrend' ? '#00D4FF' : tradingSignal?.technicals.trend === 'Downtrend' ? '#FF2D55' : '#94A3B8' },
         ].map(({ label, value, color }) => (
@@ -540,8 +543,9 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
         </div>
       )}
 
-      {/* Signal tags */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: expanded ? '8px' : 0 }}>
+      {/* Signal tags — static catalog descriptors; withheld when there is no quote
+          so an UNAVAILABLE card never shows momentum/breakout-style tags. */}
+      {quote.available && <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: expanded ? '8px' : 0 }}>
         {stock.signals.slice(0, 2).map(sig => (
           <SignalTag key={sig} signal={sig} />
         ))}
@@ -552,7 +556,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             padding: '2px 6px',
           }}>+{stock.signals.length - 2}</span>
         )}
-      </div>
+      </div>}
 
       {/* Expanded details */}
       {expanded && (
@@ -1491,10 +1495,15 @@ function SignalsInner() {
   const regimeCtx = REGIME_CONTEXT[regimeCode];
   const priorityCats = REGIME_PRIORITY_CATEGORIES[regimeCode];
 
-  const regimeForSignals = useMemo(() => ({
-    label: engine?.output?.regime?.label ?? 'MODERATE RISK',
-    score: engine?.output?.overall?.score ?? 5,
-  }), [engine?.output?.regime?.label, engine?.output?.overall?.score]);
+  // Regime sent to signal computation / ticker analysis must be the canonical
+  // regime. Outside canonical mode (marketState unavailable) the browser engine
+  // runs on DEFAULT_INDICATORS demo inputs, so no regime is sent or displayed.
+  const canonicalRegimeAvailable = engine?.marketMode === 'canonical';
+  const regimeForSignals = useMemo(() => (
+    canonicalRegimeAvailable && engine?.output?.regime?.label && Number.isFinite(engine?.output?.overall?.score)
+      ? { label: engine.output.regime.label, score: engine.output.overall.score }
+      : null
+  ), [canonicalRegimeAvailable, engine?.output?.regime?.label, engine?.output?.overall?.score]);
 
   // ── Filters state ──────────────────────────────────────────
   const [filters, setFilters] = useState<SignalFilters>(DEFAULT_FILTERS);
@@ -1537,12 +1546,25 @@ function SignalsInner() {
   // ── Scored and filtered stocks ─────────────────────────────
   const displayedStocks = useMemo(() => {
     const filtersWithCat: SignalFilters = { ...filters, category: activeCategory };
-    const filtered = filterStocks(enrichedStocks, filtersWithCat);
+    // Unquoted tickers keep only static catalog price/change/volume/RS/tags
+    // (signalsData.ts). Those are never treated as market readings: when a
+    // market-value filter is active they are excluded, they are not scored, and
+    // they sort after quoted tickers.
+    const isQuoted = (t: string) => hasUsableSignalQuote(quoteMap.get(t));
+    const marketFilterActive =
+      filters.minChange !== DEFAULT_FILTERS.minChange ||
+      filters.maxChange !== DEFAULT_FILTERS.maxChange ||
+      filters.minRS !== DEFAULT_FILTERS.minRS ||
+      filters.minVolumeSurge !== DEFAULT_FILTERS.minVolumeSurge ||
+      filters.minMomentum !== DEFAULT_FILTERS.minMomentum ||
+      filters.signal !== DEFAULT_FILTERS.signal;
+    const filtered = filterStocks(enrichedStocks, filtersWithCat)
+      .filter(s => !marketFilterActive || isQuoted(s.ticker));
     return filtered.map(s => ({
       stock: s,
-      score: scoreStockForRegime(s, regimeCode),
-    })).sort((a, b) => b.score - a.score);
-  }, [filters, activeCategory, regimeCode, enrichedStocks]);
+      score: regimeForSignals && isQuoted(s.ticker) ? scoreStockForRegime(s, regimeCode) : null,
+    })).sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+  }, [filters, activeCategory, regimeCode, enrichedStocks, quoteMap, regimeForSignals]);
 
   // ── Trading signals query ──────────────────────────────────
   // Build input for tRPC query — stable reference via useMemo
@@ -1568,7 +1590,7 @@ function SignalsInner() {
         ...(dailyBarsMap[stock.ticker]?.length >= 14 ? { dailyBars: dailyBarsMap[stock.ticker] } : {}),
       }];
     }),
-    regime: regimeForSignals,
+    regime: regimeForSignals ?? { label: 'UNAVAILABLE', score: Number.NaN },
   }), [displayedStocks, quoteMap, dailyBarsMap, regimeForSignals]);
 
   const [tradingSignalsData, setTradingSignalsData] = useState<TradingSignalResult[]>([]);
@@ -1596,6 +1618,7 @@ function SignalsInner() {
       return;
     }
     if (tradingSignalsInput.tickers.length === 0) return; // nothing quoted → no signals, no fabricated inputs
+    if (!regimeForSignals) return; // no canonical regime → never compute against a demo regime
     const key = JSON.stringify(tradingSignalsInput) + ':' + signalsRefreshCounter;
     if (key === signalsInputRef.current) return;
     signalsInputRef.current = key;
@@ -1617,8 +1640,8 @@ function SignalsInner() {
   // changePercent can never make a ticker "Top Bearish" etc.
   const topSignals = useMemo(() => {
     const quoted = enrichedStocks.filter(s => hasUsableSignalQuote(quoteMap.get(s.ticker)));
-    return quoted.length > 0 ? getTodaysTopSignals(regimeCode, quoted) : null;
-  }, [regimeCode, enrichedStocks, quoteMap]);
+    return quoted.length > 0 && regimeForSignals ? getTodaysTopSignals(regimeCode, quoted) : null;
+  }, [regimeCode, enrichedStocks, quoteMap, regimeForSignals]);
 
   // Header (ApiHealthBadge) and footer read the SAME catalog-scoped quotes and feed label.
   const catalogQuoteList = useMemo(
@@ -1663,9 +1686,9 @@ function SignalsInner() {
             {tradingSignalsData.length > 0 && (
               <ShareReportButton
                 reportType="stock_intelligence"
-                subject={`Stock Signals — ${tradingSignalsData.length} tickers · ${regimeForSignals.label}`}
+                subject={`Stock Signals — ${tradingSignalsData.length} tickers · ${regimeForSignals?.label ?? 'Regime unavailable'}`}
                 snapshotData={{
-                  regime: regimeForSignals.label,
+                  regime: regimeForSignals?.label ?? null,
                   signalCount: tradingSignalsData.length,
                   signals: tradingSignalsData.slice(0, 20).map(s => ({
                     ticker: s.ticker,
@@ -1681,7 +1704,7 @@ function SignalsInner() {
                 }}
               />
             )}
-            <PreflightTrigger currentPage="signals" regimeLabel={regimeForSignals.label} actionKey="viewed_signals" />
+            <PreflightTrigger currentPage="signals" regimeLabel={regimeForSignals?.label ?? 'UNAVAILABLE'} actionKey="viewed_signals" />
           </div>
         }
       />
@@ -1737,8 +1760,8 @@ function SignalsInner() {
           isLoading={asymLoading}
           onRefresh={() => asymRefetch()}
           regimeColor="#A855F7"
-          regimeLabel={engine?.output?.regime?.label ?? 'MODERATE RISK'}
-          pressureIndex={engine?.output?.overall?.score ?? 5}
+          regimeLabel={regimeForSignals?.label ?? 'UNAVAILABLE'}
+          pressureIndex={regimeForSignals?.score ?? Number.NaN}
         />
       )}
 
@@ -1794,12 +1817,12 @@ function SignalsInner() {
                 fontWeight: 700, fontSize: '13px',
                 color: regimeColor, letterSpacing: '0.1em',
                 textTransform: 'uppercase',
-              }}>SIGNALS — {regimeCtx.headline}</span>
+              }}>SIGNALS — {regimeForSignals ? regimeCtx.headline : 'CANONICAL REGIME UNAVAILABLE'}</span>
             </div>
             <p style={{
               fontSize: '10px', color: 'rgba(100,116,139,0.8)',
               lineHeight: 1.5, margin: 0, maxWidth: '500px',
-            }}>{regimeCtx.description}</p>
+            }}>{regimeForSignals ? regimeCtx.description : 'The canonical market state is unavailable, so regime context, favors/avoids and signal computation are withheld rather than derived from simulated inputs.'}</p>
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
             <div style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)', marginBottom: '2px' }}><FaultlineTerm id="regime-score" /></div>
@@ -1807,11 +1830,11 @@ function SignalsInner() {
               fontFamily: "'Rajdhani', sans-serif",
               fontWeight: 700, fontSize: '22px',
               color: regimeColor,
-            }}>{engine?.output?.overall?.score?.toFixed(1) ?? '—'}<span style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)' }}>/10</span></div>
+            }}>{regimeForSignals ? regimeForSignals.score.toFixed(1) : '—'}<span style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)' }}>/10</span></div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', marginTop: '10px', flexWrap: 'wrap' }}>
+        {regimeForSignals && <div style={{ display: 'flex', gap: '12px', marginTop: '10px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em' }}>FAVORS:</span>
             <span style={{ fontSize: '13px', color: '#00D4FF' }}>{regimeCtx.bullish}</span>
@@ -1820,7 +1843,7 @@ function SignalsInner() {
             <span style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em' }}>AVOIDS:</span>
             <span style={{ fontSize: '13px', color: '#FF2D55' }}>{regimeCtx.bearish}</span>
           </div>
-        </div>
+        </div>}
 
         <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
           <ApiHealthBadge
@@ -1836,13 +1859,19 @@ function SignalsInner() {
 
       {/* ── Ticker Intelligence Search ──────────────────── */}
       <div style={{ padding: '16px 16px 0' }}>
-        <TickerSearch
-          regime={{
-            label: engine?.output?.regime?.label ?? 'MODERATE RISK',
-            score: engine?.output?.overall?.score ?? 5,
-            description: engine?.output?.regime?.description,
-          }}
-        />
+        {regimeForSignals ? (
+          <TickerSearch
+            regime={{
+              label: regimeForSignals.label,
+              score: regimeForSignals.score,
+              description: engine?.output?.regime?.description,
+            }}
+          />
+        ) : (
+          <div style={{ fontSize: '11px', color: 'rgba(148,163,184,0.85)' }}>
+            Ticker analysis is unavailable while the canonical market state is unavailable.
+          </div>
+        )}
       </div>
 
       <div style={{ margin: '4px 16px 0', height: '1px', background: 'rgba(255,255,255,0.04)' }} />
