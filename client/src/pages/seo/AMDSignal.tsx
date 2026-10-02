@@ -7,7 +7,7 @@ export default function AMDSignal() {
       companyName="Advanced Micro Devices, Inc."
       sector="Semiconductors / AI & Data Center"
       description="AMD stock signal analysis"
-      seoTitle="AMD Signal — Advanced Micro Devices Stock Analysis, AI Risk Score & Key Levels | FAULTLINE"
+      seoTitle="AMD Signal — Advanced Micro Devices Stock Analysis, AI Risk Score | FAULTLINE"
       seoDescription="AMD signal analysis: Advanced Micro Devices' macro alignment score, AI GPU exposure rating, data center cycle sensitivity, and regime-based signal classification."
       canonical="/stock/amd"
       accentColor="#ED1C24"
@@ -32,7 +32,7 @@ Macro Regime Alignment: AMD is a high-beta semiconductor stock. In LOW RISK macr
 NVDA Competitive Dynamics: AMD's valuation is partially determined by its position relative to NVIDIA. When NVIDIA faces supply constraints, export restrictions, or competitive challenges, AMD benefits. When NVIDIA's competitive position strengthens, AMD's relative valuation is pressured.`}
       keyLevels={`FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:
 
-Major Support Zones: The 200-day moving average is the primary long-term support. Previous cycle highs that became support. Major psychological levels ($80, $100, $120, $150, $200).
+Major Support Zones: The 200-day moving average is the primary long-term support. Previous cycle highs that became support. Major round numbers.
 
 Resistance Clusters: Previous all-time highs before they were broken, and major psychological round numbers.
 
