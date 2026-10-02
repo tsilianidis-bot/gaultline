@@ -24,6 +24,7 @@ import {
 } from "@shared/routeRegistry";
 import { formatCanonicalPercent, formatCanonicalScore } from "@shared/marketMetrics";
 import { formatOrdinal } from "@shared/historicalPercentile";
+import { formatScenarioPercent } from "@shared/canonicalReadout";
 import { customerIntegrityChipLevel, customerIntegrityColor, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
@@ -672,7 +673,8 @@ function ActiveDriverChannel({
 function BullBearCard({
   label, value, accent, description, phase, phaseTarget,
 }: { label: string; value: number; accent: string; description: string; phase: number; phaseTarget: number }) {
-  const displayValue = useCountUp(Math.round(value), 1000, phase >= phaseTarget);
+  const available = Number.isFinite(value);
+  const displayValue = useCountUp(available ? Math.round(value) : 0, 1000, phase >= phaseTarget);
   return (
     <div
       className="relative overflow-hidden rounded border bg-[#060a10] p-5"
@@ -687,12 +689,12 @@ function BullBearCard({
       <div className="pointer-events-none absolute inset-0" style={{ background: `radial-gradient(ellipse at top, ${accent}08, transparent 60%)` }} />
       <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-500">{label}</p>
       <p className="mt-3 font-['Rajdhani'] text-5xl font-bold" style={{ color: accent }}>
-        {displayValue}<span className="text-2xl">%</span>
+        {available ? <>{displayValue}<span className="text-2xl">%</span></> : <span data-scenario-unavailable>—</span>}
       </p>
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
         <div
           className="h-full rounded-full"
-          style={{ width: `${value}%`, background: accent, transition: "width 1.2s cubic-bezier(0.23,1,0.32,1)", boxShadow: `0 0 8px ${accent}60` }}
+          style={{ width: `${available ? Math.max(0, Math.min(100, value)) : 0}%`, background: accent, transition: "width 1.2s cubic-bezier(0.23,1,0.32,1)", boxShadow: `0 0 8px ${accent}60` }}
         />
       </div>
       <p className="mt-3 text-xs leading-5 text-slate-500">{description}</p>
@@ -844,13 +846,17 @@ export default function Now() {
     ?? [...output.domains].sort((a, b) => b.score - a.score).slice(0, 3).map(domain => domain.label);
   const building = evidenceFamilies.filter(item => item.trend === "deteriorating").length;
   const easing = evidenceFamilies.filter(item => item.trend === "improving").length;
-  const probabilities = marketState?.outlook.regimeProbabilities ?? {
-    bull: output.probability.bullProbability,
-    softLanding: output.probability.softLandingProbability,
-    stagflation: output.probability.stagflationProbability,
-    recession: output.probability.recessionProbability,
-    crash: output.probability.crashProbability,
+  // One canonical scenario set (governed snapshot scenarioOutputs via EngineContext);
+  // withheld (NaN → "—") when unavailable. The seismograph's 5-way split is not shown.
+  const probabilities = {
+    bull: marketState?.outlook.probabilities.bull ?? Number.NaN,
+    neutral: marketState?.outlook.probabilities.neutral ?? Number.NaN,
+    bear: marketState?.outlook.probabilities.bear ?? Number.NaN,
   };
+  const scenarioWidth = (value: number) => (Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0);
+  // Threat classification comes from the evidence family's own signal (shared classifier),
+  // never from strength order alone.
+  const threats = marketState?.now.threats ?? [];
   const topAnalog = marketState?.outlook.topAnalog ?? (output.analogs[0]
     ? { period: output.analogs[0].year, label: output.analogs[0].era, similarity: output.analogs[0].similarity, resolution: "Deterministic fallback analog; canonical resolution unavailable." }
     : null);
@@ -990,8 +996,8 @@ export default function Now() {
                 <div className="mt-5 grid gap-2 sm:grid-cols-2">
                   <div className="rounded border border-rose-300/20 bg-rose-300/[0.045] p-3">
                     <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-rose-200/65">Top threat</p>
-                    <p className="mt-1 text-sm font-medium text-slate-100">{topDrivers[0] ?? "No dominant verified threat"}</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-400">Current highest-contribution pressure channel.</p>
+                    <p className="mt-1 text-sm font-medium text-slate-100">{threats[0] ?? "No dominant verified threat"}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-400">{threats[0] ? "Strongest evidence family currently signaling stress." : "No evidence family is currently signaling stress."}</p>
                   </div>
                   <div className="rounded border border-violet-300/20 bg-violet-300/[0.045] p-3">
                     <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-violet-200/65">Closest historical analog</p>
@@ -1039,18 +1045,18 @@ export default function Now() {
               >
                 <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">Bull vs Bear</p>
                 <BullBearCard
-                  label="Bull continuation probability"
+                  label="Bull scenario"
                   value={probabilities.bull}
                   accent="#00e599"
-                  description="Probability the current uptrend continues without a major drawdown."
+                  description="Canonical snapshot scenario weight for the bull path. Context, not a calibrated forecast."
                   phase={phase}
                   phaseTarget={4}
                 />
                 <BullBearCard
-                  label="Major drawdown risk"
-                  value={probabilities.crash}
+                  label="Bear scenario"
+                  value={probabilities.bear}
                   accent="#ff4d6d"
-                  description="Probability of a significant market correction or crisis event."
+                  description="Canonical snapshot scenario weight for the bear path. Context, not a calibrated forecast."
                   phase={phase}
                   phaseTarget={4}
                 />
@@ -1107,22 +1113,20 @@ export default function Now() {
             <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">Scenario Distribution</p>
             <div className="space-y-3">
               {[
-                { label: "Bull continuation", value: probabilities.bull, color: "#00e599" },
-                { label: "Soft landing", value: probabilities.softLanding, color: "#00e5ff" },
-                { label: "Stagflation", value: probabilities.stagflation, color: "#ffaa00" },
-                { label: "Recession", value: probabilities.recession, color: "#ff7a45" },
-                { label: "Crash / bear", value: probabilities.crash, color: "#ff4d6d" },
+                { label: "Bull", value: probabilities.bull, color: "#00e599" },
+                { label: "Neutral", value: probabilities.neutral, color: "#00e5ff" },
+                { label: "Bear", value: probabilities.bear, color: "#ff4d6d" },
               ].map((seg, i) => (
                 <div key={seg.label} style={{ animationDelay: `${i * 60}ms` }}>
                   <div className="mb-1 flex items-center justify-between">
                     <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-slate-400">{seg.label}</span>
-                    <span className="font-mono text-[10px] font-semibold" style={{ color: seg.color }}>{formatCanonicalPercent(seg.value)}</span>
+                    <span className="font-mono text-[10px] font-semibold" style={{ color: seg.color }}>{formatScenarioPercent(seg.value)}</span>
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
                     <div
                       className="h-full rounded-full"
                       style={{
-                        width: `${seg.value}%`,
+                        width: `${scenarioWidth(seg.value)}%`,
                         background: seg.color,
                         transition: "width 1.2s cubic-bezier(0.23,1,0.32,1)",
                         boxShadow: `0 0 6px ${seg.color}50`,
@@ -1146,7 +1150,7 @@ export default function Now() {
             {marketState?.why.story ?? output.narrative.summary}
           </p>
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {[`Regime: ${regime}`, `Top risk: ${topDrivers[0] ?? "No dominant risk"}`, `Breadth: ${building} rising domains`].map(item => (
+            {[`Regime: ${regime}`, `Top risk: ${threats[0] ?? "No verified threat"}`, `Rising domains: ${building}`].map(item => (
               <div key={item} className="border-l-2 border-cyan-300/50 bg-white/[0.025] px-4 py-3 font-mono text-[10px] uppercase tracking-[0.1em] text-slate-300">{item}</div>
             ))}
           </div>
@@ -1177,7 +1181,7 @@ export default function Now() {
           </div>
         </Section>
 
-        <Section id="breadth" index="03" eyebrow="Breadth" title="Where pressure is concentrated" description="Every domain is normalized to the same 0–100 scale so concentration and breadth can be compared directly.">
+        <Section id="breadth" index="03" eyebrow="Domains" title="Where pressure is concentrated" description="Every domain is normalized to the same 0–100 scale so concentration and breadth can be compared directly.">
           <div className="grid gap-3 md:grid-cols-2">
             {evidenceFamilies.map(family => (
               <div key={family.name} className="rounded border border-white/10 bg-white/[0.025] p-4">
@@ -1199,19 +1203,17 @@ export default function Now() {
         </Section>
 
         <Section id="probabilities" index="04" eyebrow="Probabilities" title="What the current state implies" description="Scenario probabilities are distributions, not certainty. They update from the same canonical market state used across FAULTLINE.">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-3 sm:grid-cols-3">
             {[
-              { label: "Bull continuation", value: probabilities.bull, accent: "#00e599" },
-              { label: "Soft landing", value: probabilities.softLanding, accent: "#00e5ff" },
-              { label: "Stagflation", value: probabilities.stagflation, accent: "#ffaa00" },
-              { label: "Recession", value: probabilities.recession, accent: "#ff7a45" },
-              { label: "Crash / bear", value: probabilities.crash, accent: "#ff4d6d" },
+              { label: "Bull", value: probabilities.bull, accent: "#00e599" },
+              { label: "Neutral", value: probabilities.neutral, accent: "#00e5ff" },
+              { label: "Bear", value: probabilities.bear, accent: "#ff4d6d" },
             ].map(card => (
               <div key={card.label} className="rounded border border-white/10 bg-[#090d14] p-4">
                 <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-500">{card.label}</p>
-                <p className="mt-3 font-['Rajdhani'] text-3xl font-semibold" style={{ color: card.accent }}>{formatCanonicalPercent(card.value)}</p>
+                <p className="mt-3 font-['Rajdhani'] text-3xl font-semibold" style={{ color: card.accent }}>{formatScenarioPercent(card.value)}</p>
                 <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full" style={{ width: `${card.value}%`, background: card.accent, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
+                  <div className="h-full rounded-full" style={{ width: `${scenarioWidth(card.value)}%`, background: card.accent, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
                 </div>
               </div>
             ))}

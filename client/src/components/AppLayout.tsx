@@ -25,7 +25,8 @@ import { trpc } from "@/lib/trpc";
 import AshaIntroModal from "@/components/AshaIntroModal";
 import AshaPanel from "@/components/AshaPanel";
 import { customerIntegrityColor } from "@shared/customerIntegrityLabels";
-import { APP_HEADER_FRED_SERIES, buildAppHeaderStrip, type AppHeaderFredSeriesId, type FredObservation } from "@/lib/appHeaderStrip";
+import { buildAppHeaderStrip } from "@/lib/appHeaderStrip";
+import { useAppHeaderFred } from "@/hooks/useAppHeaderFred";
 import { DrawerProvider } from "@/contexts/DrawerContext";
 import LeftNavDrawer from "@/components/LeftNavDrawer";
 import RightActionDrawer from "@/components/RightActionDrawer";
@@ -748,29 +749,4 @@ export default function AppLayout({ children }: AppLayoutProps) {
     </div>
     </DrawerProvider>
   );
-}
-
-/** FRED observations for the header strip (public /api/fred proxy, server-cached). Missing series stay null → UNAVAILABLE. */
-function useAppHeaderFred(): Partial<Record<AppHeaderFredSeriesId, FredObservation[] | null>> {
-  const [series, setSeries] = useState<Partial<Record<AppHeaderFredSeriesId, FredObservation[] | null>>>({});
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      const entries = await Promise.all(APP_HEADER_FRED_SERIES.map(async ({ id, limit }) => {
-        try {
-          const res = await fetch(`/api/fred?series_id=${id}&limit=${limit}`);
-          if (!res.ok) return [id, null] as const;
-          const body = await res.json();
-          return [id, Array.isArray(body?.observations) ? body.observations as FredObservation[] : null] as const;
-        } catch {
-          return [id, null] as const;
-        }
-      }));
-      if (!cancelled) setSeries(Object.fromEntries(entries));
-    };
-    load();
-    const interval = setInterval(load, 15 * 60 * 1000);
-    return () => { cancelled = true; clearInterval(interval); };
-  }, []);
-  return series;
 }

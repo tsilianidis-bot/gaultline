@@ -18,6 +18,7 @@
  */
 
 import { getDb } from "./db";
+import { pressureVectorLabel } from "@shared/pressureVectorLabels";
 import {
   pressureHistory,
   pressureRuns,
@@ -40,7 +41,12 @@ export interface HistoricalMonth {
   credit: number;
   volatility: number;
   macro: number;
-  breadth: number;
+  /**
+   * "market-breadth" engine score. It reads unemployment + the 10Y yield
+   * (shared/pressureVectorLabels.ts → "Labor & Rates"), NOT market breadth.
+   * null = missing for that month; never replaced with a neutral 50.
+   */
+  breadth: number | null;
   aiBubble: number;
   baaSpread: number | null;
   hySpread: number | null;
@@ -404,7 +410,9 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
     credit: r.creditContagion || 50,
     volatility: r.volatilityRegime || 50,
     macro: r.macroSensitivity || 50,
-    breadth: r.marketBreadth || 50,
+    // Fail-closed: a missing (null) or unpopulated (0 sentinel, see note above)
+    // market-breadth sub-score stays null instead of becoming a neutral 50.
+    breadth: normalizeLaborRatesScore(r.marketBreadth),
     aiBubble: r.aiBubble || 50,
     baaSpread: r.baaSpread !== null ? Number(r.baaSpread) : null,
     hySpread: r.hySpreadProxy !== null ? Number(r.hySpreadProxy) : null,
@@ -628,7 +636,9 @@ function compute5WayRegimeProbabilities(
   const creditFam = families.find((f) => f.name.toLowerCase().includes("credit"));
   const macroFam = families.find((f) => f.name.toLowerCase().includes("macro") || f.name.toLowerCase().includes("fed"));
   const volFam = families.find((f) => f.name.toLowerCase().includes("volatility"));
-  const breadthFam = families.find((f) => f.name.toLowerCase().includes("breadth"));
+  // The "market-breadth" engine family is named by its canonical label (Labor & Rates);
+  // matched by that name so this calculation is unchanged by the relabel.
+  const breadthFam = families.find((f) => f.name === LABOR_RATES_FAMILY_NAME || f.name.toLowerCase().includes("breadth"));
   const aiBubbleFam = families.find((f) => f.name.toLowerCase().includes("ai") || f.name.toLowerCase().includes("bubble"));
   let bull = score <= 35 ? 55 : score <= 50 ? 40 : score <= 65 ? 25 : 12;
   let softLanding = score <= 40 ? 35 : score <= 55 ? 30 : score <= 70 ? 20 : 10;
@@ -674,7 +684,19 @@ function compute5WayRegimeProbabilities(
   for (let i = 0; i < residual; i++) out[fracs[i % fracs.length].key] += 1;
   return { bull: out.bull, softLanding: out.softLanding, stagflation: out.stagflation, recession: out.recession, crash: out.crash };
 }
-function buildEvidenceFamilies(
+/** Canonical display label for the "market-breadth" engine (Unemployment + 10Y). */
+export const LABOR_RATES_FAMILY_NAME = pressureVectorLabel("market-breadth");
+
+/**
+ * Fail-closed normalisation of the stored "market-breadth" (Labor & Rates)
+ * sub-score: null/undefined/non-finite or the 0 "not computed" sentinel → null.
+ * Never a neutral 50.
+ */
+export function normalizeLaborRatesScore(raw: number | null | undefined): number | null {
+  return typeof raw === "number" && Number.isFinite(raw) && raw !== 0 ? raw : null;
+}
+
+export function buildEvidenceFamilies(
   latest: HistoricalMonth,
   history: HistoricalMonth[]
 ): EvidenceFamily[] {
@@ -683,7 +705,8 @@ function buildEvidenceFamilies(
   const avgCredit = last6.reduce((s, h) => s + h.credit, 0) / last6.length;
   const avgVol = last6.reduce((s, h) => s + h.volatility, 0) / last6.length;
   const avgMacro = last6.reduce((s, h) => s + h.macro, 0) / last6.length;
-  const avgBreadth = last6.reduce((s, h) => s + h.breadth, 0) / last6.length;
+  const last6LaborRates = last6.map(h => h.breadth).filter((v): v is number => v != null);
+  const avgLaborRates = last6LaborRates.length ? last6LaborRates.reduce((s, v) => s + v, 0) / last6LaborRates.length : null;
 
   const families: EvidenceFamily[] = [
     {
@@ -780,28 +803,37 @@ function buildEvidenceFamilies(
       whyItMatters:
         "Macro sensitivity captures how exposed markets are to economic deterioration. High readings mean that negative economic surprises will have outsized market impact.",
     },
-    {
-      name: "Market Breadth",
-      signal: latest.breadth >= 65 ? "bearish" : latest.breadth >= 40 ? "neutral" : "bullish",
-      strength: latest.breadth,
-      currentValue: `${latest.breadth}/100`,
-      historicalContext: `6-month average: ${Math.round(avgBreadth)}/100. ${
-        latest.breadth > 65
-          ? "Narrow market breadth signals that gains are concentrated in a few names — a historically fragile condition."
-          : latest.breadth < 35
-          ? "Broad market participation is a constructive sign — rallies with wide breadth are historically more durable."
-          : "Market breadth is moderate — neither confirming nor contradicting the current trend."
+  ];
+
+  // Labor & Rates — the "market-breadth" engine id reads UNRATE + DGS10, so it
+  // is labelled with its canonical display label and never described as market
+  // breadth / participation. Omitted (not neutral) when the score is missing.
+  if (latest.breadth != null) {
+    const laborRates = latest.breadth;
+    families.push({
+      name: LABOR_RATES_FAMILY_NAME,
+      signal: laborRates >= 65 ? "bearish" : laborRates >= 40 ? "neutral" : "bullish",
+      strength: laborRates,
+      currentValue: `${laborRates}/100`,
+      historicalContext: `${avgLaborRates != null ? `6-month average: ${Math.round(avgLaborRates)}/100. ` : ""}${
+        laborRates > 65
+          ? "Unemployment and the 10Y yield are combining into elevated labor-and-rates pressure."
+          : laborRates < 35
+          ? "Labor-market and rate conditions are adding little pressure."
+          : "Labor-and-rates pressure is moderate."
       }`,
       trend:
-        latest.breadth > avgBreadth + 5
+        avgLaborRates == null
+          ? "stable"
+          : laborRates > avgLaborRates + 5
           ? "deteriorating"
-          : latest.breadth < avgBreadth - 5
+          : laborRates < avgLaborRates - 5
           ? "improving"
           : "stable",
       whyItMatters:
-        "Market breadth measures participation in market moves. Narrow breadth during rallies historically precedes reversals; wide breadth during selloffs signals capitulation.",
-    },
-  ];
+        "This vector blends the unemployment rate with the 10Y Treasury yield. It is not an advance/decline or market-participation breadth measure.",
+    });
+  }
 
   // Add treasury yield curve if data available
   if (latest.tsy10y !== null && latest.tsy2y !== null) {
@@ -1421,7 +1453,7 @@ function buildTodayStory(
       ? ` Current conditions most closely resemble ${analogs[0].label} (${analogs[0].similarity}% similarity).`
       : "";
 
-  const todayStory = `FAULTLINE's Seismograph is reading ${score}/100 — ${stressDesc} — ${directionDesc}. The market is in a ${regimeLabel(regime)} regime, placing current conditions in the ${formatOrdinal(percentile)} historical percentile (${describeHistoricalPercentile(percentile)}) across ${evidenceFamilies.length > 0 ? `${evidenceFamilies.length} intelligence domains` : "all tracked domains"}.${topFamily ? ` The primary pressure driver is ${topFamily.name.toLowerCase()}, which is signaling ${topFamily.signal} conditions.` : ""}${analogRef}`;
+  const todayStory = `FAULTLINE's Seismograph is reading ${score}/100 — ${stressDesc} — ${directionDesc}. The market is in a ${regimeLabel(regime)} regime, placing current conditions in the ${formatOrdinal(percentile)} historical percentile (${describeHistoricalPercentile(percentile)}) across ${evidenceFamilies.length > 0 ? `${evidenceFamilies.length} intelligence domains` : "all tracked domains"}.${topFamily ? ` The primary pressure driver is ${topFamily.name}, which is signaling ${topFamily.signal} conditions.` : ""}${analogRef}`;
 
   return {
     todayStory,
@@ -1464,7 +1496,8 @@ function buildWhyThisRegime(
   const topFamilies = evidenceFamilies
     .sort((a, b) => b.strength - a.strength)
     .slice(0, 3)
-    .map((f) => f.name.toLowerCase());
+    // Display names as labelled (e.g. "Labor & Rates (Unemployment, 10Y)").
+    .map((f) => f.name);
   const analogRef =
     analogs.length > 0
       ? ` This regime classification is consistent with historical analogs including ${analogs[0].label}.`

@@ -179,3 +179,47 @@ export function buildAppHeaderStrip(input: {
     quoteItem("BTC Dominance", "CG:BTC_DOM", input.quotes),
   ];
 }
+
+/* ── S.O.B. inputs from the same real sources as this strip ──────────────
+   Credit (HY OAS, bps) ← FRED BAMLH0A0HYM2 (percent × 100)
+   Yield curve (10Y-2Y, %) ← markets.getGlobalSnapshot DERIVED:2Y10Y (bps ÷ 100)
+   Liquidity (Fed funds, %) ← FRED FEDFUNDS
+   Volatility (VIX) ← markets.getGlobalSnapshot ^VIX
+   A missing, unavailable or STALE source is null, so the S.O.B. pillar is
+   UNAVAILABLE. Nothing is proxied from the regime or Pressure Index. */
+export interface SOBSourceInputs {
+  creditSpread: number | null;
+  yieldSpread: number | null;
+  fedFundsRate: number | null;
+  vix: number | null;
+}
+
+function usableQuoteValue(items: readonly QuoteLike[] | null | undefined, symbol: string): number | null {
+  const item = items?.find(candidate => candidate.symbol === symbol);
+  const quote = toTickerQuote(item, symbol, symbol);
+  if (!item || quote.state === "unavailable" || quote.state === "stale") return null;
+  return typeof item.price === "number" && Number.isFinite(item.price) ? item.price : null;
+}
+
+function usableFredValue(observations: readonly FredObservation[] | null | undefined, cadence: FredCadence, now: number): number | null {
+  const [latest] = validObservations(observations);
+  if (!latest || !Number.isFinite(now) || fredObservationState(latest.date, cadence, now) === "STALE") return null;
+  return latest.value;
+}
+
+export function buildSOBSourceInputs(input: {
+  quotes: readonly QuoteLike[] | null | undefined;
+  fred: Partial<Record<AppHeaderFredSeriesId, readonly FredObservation[] | null>>;
+  now: number;
+}): SOBSourceInputs {
+  const hy = usableFredValue(input.fred.BAMLH0A0HYM2, "daily", input.now);
+  const curveBps = usableQuoteValue(input.quotes, "DERIVED:2Y10Y");
+  const curveItem = input.quotes?.find(item => item.symbol === "DERIVED:2Y10Y");
+  return {
+    creditSpread: hy == null ? null : Math.round(hy * 100),
+    // DERIVED:2Y10Y is published in bps; only accept it when the unit says so.
+    yieldSpread: curveBps == null || curveItem?.unit !== "bps" ? null : Math.round(curveBps) / 100,
+    fedFundsRate: usableFredValue(input.fred.FEDFUNDS, "monthly", input.now),
+    vix: usableQuoteValue(input.quotes, "^VIX"),
+  };
+}

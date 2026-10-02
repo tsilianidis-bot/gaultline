@@ -187,7 +187,9 @@ describe("/app now: band from engine thresholds, one direction", () => {
   });
 
   it("EngineContext projects stress level, direction, headline and story from the canonical snapshot", () => {
-    const ctx = source("client/src/contexts/EngineContext.tsx");
+    // EngineContext delegates the merge to lib/canonicalNowProjection (mergeCanonicalMarketState).
+    const ctx = source("client/src/contexts/EngineContext.tsx") + "\n" + source("client/src/lib/canonicalNowProjection.ts");
+    expect(source("client/src/contexts/EngineContext.tsx")).toContain("mergeCanonicalMarketState(canonicalState, legacy)");
     expect(ctx).toContain("projectCanonicalNow(canonicalState, legacy.now)");
     expect(ctx).toContain("stressLevel: now.stressLevel");
     expect(ctx).toContain("direction: now.direction");

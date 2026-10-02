@@ -5,6 +5,9 @@
    ============================================================ */
 import DisclaimerBanner from "@/components/DisclaimerBanner";
 import SOBPanel from "@/components/SOBPanel";
+import { trpc } from "@/lib/trpc";
+import { useAppHeaderFred } from "@/hooks/useAppHeaderFred";
+import { buildSOBSourceInputs } from "@/lib/appHeaderStrip";
 import { useRef, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap, BarChart2, Activity, Waves, Clock, GitBranch, BookOpen } from "lucide-react";
@@ -23,6 +26,8 @@ import { useEngine } from "@/contexts/EngineContext";
 import ScoreExplainer from "@/components/ScoreExplainer";
 import { customerIntegrityBadgeColor, customerPressureBadge, customerPressureUnavailableCopy, humanizeConflictType, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
 import { pressureVectorLabel } from "@shared/pressureVectorLabels";
+import { canonicalDirectionTrend, canonicalHistoricalPercentile } from "@shared/canonicalReadout";
+import { directionDisplay } from "@shared/snapshotEvidence";
 
 // ── Market Stress sub-nav tabs ──────────────────────────────────
 // All stress-related analysis lives under one roof — in-page state, no navigation
@@ -982,7 +987,15 @@ export default function Pressure() {
     const requested = new URLSearchParams(window.location.search).get('tab');
     return STRESS_TABS.some(tab => tab.id === requested) ? requested as StressTabId : 'pressure';
   });
-  const { canonicalState, canonicalEnvelope, isLoading, isRefreshing, dataError, refresh, integrityLabel } = useEngine();
+  const { canonicalState, canonicalEnvelope, marketState, isLoading, isRefreshing, dataError, refresh, integrityLabel } = useEngine();
+  // S.O.B. inputs come from the same real sources as the /app header strip
+  // (FRED HY spread + Fed funds, snapshot 2Y10Y + VIX). Missing → null → UNAVAILABLE pillar.
+  const { data: marketSnapshot } = trpc.markets.getGlobalSnapshot.useQuery(undefined, { refetchInterval: 90_000, staleTime: 60_000, retry: 2 });
+  const headerFred = useAppHeaderFred();
+  const sobInputs = useMemo(
+    () => buildSOBSourceInputs({ quotes: marketSnapshot?.items ?? null, fred: headerFred, now: Date.now() }),
+    [marketSnapshot?.items, headerFred],
+  );
   const data = useMemo(() => {
     if (!canonicalState || canonicalState.pressureIndex === null || Number.isNaN(canonicalState.pressureIndex)) return null;
     const pressureLevel = resolvePressureLevel(canonicalState.pressureLevel, canonicalState.pressureIndex);
@@ -1213,8 +1226,8 @@ export default function Pressure() {
               <ScoreExplainer
                 scoreKey="pressureIndex"
                 value={data.overallPressure}
-                trend={data.overallPressure > 60 ? 'rising' : data.overallPressure < 40 ? 'falling' : 'stable'}
-                historicalPercentile={data.overallPressure}
+                trend={canonicalDirectionTrend(directionDisplay(canonicalState?.pressureDirection))}
+                historicalPercentile={canonicalHistoricalPercentile(marketState?.now.historicalPercentile)}
                 defaultExpanded={false}
               />
             </div>
@@ -1396,6 +1409,10 @@ export default function Pressure() {
             canonicalEnvelope={canonicalEnvelope ?? undefined}
             regime={data.regime}
             pressureIndex={data.overallPressure}
+            creditSpread={sobInputs.creditSpread}
+            yieldSpread={sobInputs.yieldSpread}
+            fedFundsRate={sobInputs.fedFundsRate}
+            vix={sobInputs.vix}
           />
         </div>
 
