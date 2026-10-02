@@ -71,7 +71,7 @@ const CreditMarketStress = () => {
         { label: "Market Regime Tracker", href: "/market-regime-tracker", desc: "View Market Regime Tracker on FAULTLINE" },
         { label: "Daily Brief", href: "/daily-brief", desc: "View Daily Brief on FAULTLINE" },
         { label: "Corporate Bond Spreads", href: "/corporate-bond-spreads", desc: "View Corporate Bond Spreads on FAULTLINE" },
-        { label: "Recession Probability", href: "/recession-probability", desc: "View Recession Probability on FAULTLINE" },
+        { label: "Recession Risk Context", href: "/recession-probability", desc: "View recession-risk context on FAULTLINE" },
         { label: "Monetary Policy Impact", href: "/monetary-policy-impact", desc: "View Monetary Policy Impact on FAULTLINE" },
       ]}
       schemaType="Article"

@@ -529,34 +529,78 @@ describe("public claims truth: historical accuracy and remaining present-tense c
   });
 });
 
-describe("public claims truth: no copy offers a crash probability (PR #56 r15)", () => {
+describe("public claims truth: no copy offers an event probability (PR #56 r15/r16)", () => {
   const R15_SKIP = new Set<string>(["client/src/pages/seo/MarketCrashProbability2026.tsx", "client/src/pages/PublicSituationRoom.tsx"]);
-  const files = [...new Set([...walkRel("client/src/pages/seo"), ...publicSurfaces, "client/src/pages/SEOLandingPage.tsx", "server/seoMeta.ts", "client/src/hooks/useSEO.ts", "client/src/pages/AdminPortal.tsx"])].filter((p) => !R15_SKIP.has(p));
-  // A mention is allowed only as a disclaimer ("not a calibrated crash probability", "does not offer a crash probability") or inside the unchanged slug.
+  const files = [...new Set([...walkRel("client/src/pages/seo"), ...publicSurfaces, "client/src/pages/SEOLandingPage.tsx", "client/src/pages/MarketingSite.tsx", "client/src/pages/TrackRecord.tsx", "server/seoMeta.ts", "server/publicContentSsr.ts", "server/seoRoutes.ts", "client/src/hooks/useSEO.ts", "client/src/pages/AdminPortal.tsx", "client/index.html"])].filter((p) => !R15_SKIP.has(p));
+  const EVENT = String.raw`(?:market[- ])?(?:crash|recession|default|bear[- ]market|bull[- ]market|bull\/bear|correction|crisis|alt[- ]season)`;
+  const OFFER = new RegExp(String.raw`\b${EVENT}[- ]probabilit|\bprobabilit(?:y|ies) of (?:an? )?(?:market )?(?:recession|crash|default|bear market|correction|crisis|alt season|significant market)`, "i");
+  // r16: the only allowed disclaimer forms are "does not offer/publish a … probability" and "not a … probability".
+  const ADJ = String.raw`(?:(?:calibrated|validated|published|fitted)\s+)*`;
+  const DISCLAIMER = new RegExp(String.raw`\b(?:does not (?:offer|publish)|not) an? ${ADJ}(?:${EVENT}[- ])?probabilit(?:y|ies)\b`, "gi");
   const offersProbability = (line: string) =>
     line
-      .replace(/market-crash-probability-2026/g, "")
-      .split(/(?<=[.!?])\s+/)
-      .some((s) => /crash[- ]probabilit/i.test(s) && !/\b(?:not|no|neither|nor|never|does not offer|rather than)\b[^.]{0,120}crash[- ]probabilit/i.test(s));
+      .replace(/\/[a-z0-9/-]*probability[a-z0-9-]*/gi, "")
+      .split(/(?<=[.!?:;])\s+/)
+      .some((s) => OFFER.test(s.replace(DISCLAIMER, " ")));
   const hits = (paths: string[]) =>
     paths.flatMap((path) => read(path).split("\n").flatMap((line, i) => (offersProbability(line) ? [`${path}:${i + 1}`] : [])));
 
-  it("the detector flags offers and allows disclaimers", () => {
-    expect(offersProbability("FAULTLINE delivers curated insights into crash probability.")).toBe(true);
-    expect(offersProbability('{ label: "Market Crash Probability 2026", href: "/x" }')).toBe(true);
-    expect(offersProbability("The Pressure Index is a proprietary stress measure, not a calibrated crash probability.")).toBe(false);
-    expect(offersProbability('{ href: "/market-crash-probability-2026" }')).toBe(false);
-    expect(offersProbability("Neither label is a calibrated crash probability.")).toBe(false);
+  it("the detector flags offers and allows only the two disclaimer forms", () => {
+    for (const offer of [
+      "FAULTLINE delivers curated insights into crash probability.",
+      '{ label: "Market Crash Probability 2026", href: "/x" }',
+      "FAULTLINE does not hide it: crash probability is 23% this month.",
+      "FAULTLINE's recession probability score helps you distinguish between the two scenarios.",
+      "Recession probability intelligence using yield curves.",
+      "FAULTLINE classifies recession probability into four tiers.",
+      "Track alt season probability as new data is published.",
+      "The model shows default probability for each issuer.",
+      "See the bear market probability for 2026.",
+      "Correction probability is rising.",
+      "What is the probability of a recession?",
+      "FAULTLINE does not offer a crash probability, but recession probability is 40%.",
+      "Neither label is a calibrated crash probability.",
+    ])
+      expect(offersProbability(offer), offer).toBe(true);
+    for (const ok of [
+      "The Pressure Index is a proprietary stress measure, not a calibrated crash probability.",
+      "FAULTLINE does not offer a recession probability.",
+      "FAULTLINE does not publish a recession probability or a recession score.",
+      "It does not offer an alt season probability.",
+      '{ href: "/market-crash-probability-2026" }',
+      '{ label: "RECESSION RISK", href: "/recession-probability" }',
+    ])
+      expect(offersProbability(ok), ok).toBe(false);
   });
 
-  it("no public surface, SEO meta or admin sitemap label offers a crash probability", () => {
+  it("no public surface, SEO meta or admin sitemap label offers an event probability", () => {
     expect(files.length).toBeGreaterThan(80);
     expect(hits(files)).toEqual([]);
   });
 
-  it("the Time Machine 2022 entry uses the corrected hiking-cycle duration", () => {
+  it("the recession page and its meta carry the recession-probability disclaimer", () => {
+    for (const path of ["server/seoMeta.ts", "client/src/pages/SEOLandingPage.tsx"]) {
+      const text = read(path);
+      expect(text, path).toContain('title: "Recession Risk Context | FAULTLINE"');
+      expect(text, path).toMatch(/Recession-risk context from [^"]*FAULTLINE does not offer a recession probability\."/);
+    }
+    const page = read("client/src/pages/seo/RecessionProbability.tsx");
+    expect(page).toContain('canonical: "/recession-probability"');
+    expect(page.match(/FAULTLINE does not offer a recession probability/g)?.length ?? 0).toBeGreaterThanOrEqual(5);
+    expect(page).not.toMatch(/LOW \(0-25%\)|tiers: LOW/);
+  });
+
+  it("the Time Machine 2022 entry uses peak-to-trough figures and the corrected hiking-cycle duration", () => {
     const tm = read("server/routers/timeMachine.ts");
     expect(tm).toContain("525bps in about 16 months");
     expect(tm).not.toContain("525bps in 18 months");
+    expect(tm).toContain("S&P 500 fell about 25% peak-to-trough (Jan–Oct 2022); the Nasdaq Composite fell about 36% (Nov 2021–Dec 2022)");
+    expect(tm).not.toMatch(/NASDAQ fell 33%|Bonds had their worst year since 1788\./);
+  });
+
+  it("TAO's ~80% drawdown is dated", () => {
+    const tao = read("client/src/pages/seo/TAOSignal.tsx");
+    expect(tao.match(/reached approximately 80% by February 2026/g)?.length).toBe(2);
+    expect(tao).not.toMatch(/has been approximately 80%/);
   });
 });

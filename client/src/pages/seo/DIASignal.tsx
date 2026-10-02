@@ -21,7 +21,7 @@ export default function DIASignal() {
         { icon: "◈", title: "Regularly Refreshed DIA Signal", desc: "FAULTLINE's regularly refreshed signal for DIA — the Dow Jones Industrial Average ETF." },
         { icon: "◎", title: "Macro Regime Fit", desc: "How does the current macro regime affect Dow Jones large-cap industrials and financials?" },
         { icon: "⬡", title: "Credit and Rate Sensitivity", desc: "DIA's sensitivity to interest rates, credit conditions, and Fed policy changes." },
-        { icon: "◈", title: "Recession Risk Impact", desc: "How recession probability and economic slowdown affect the Dow Jones 30 components." },
+        { icon: "◈", title: "Recession Risk Impact", desc: "How recession risk and economic slowdown affect the Dow Jones 30 components." },
         { icon: "◎", title: "Historical Analog Matching", desc: "Compare current DIA conditions against historical Dow Jones environments." },
         { icon: "⬡", title: "Pressure Index Context", desc: "How the FAULTLINE Pressure Index reading affects the outlook for DIA." },
       ]}

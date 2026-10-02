@@ -57,7 +57,7 @@ Historical Context: META experienced one of the most dramatic large-cap drawdown
         { label: "NVDA SIGNAL", href: "/stock/nvda", desc: "NVIDIA — META's primary GPU supplier." },
         { label: "PLTR SIGNAL", href: "/stock/pltr", desc: "Palantir AI software signal analysis." },
         { label: "AI STOCKS DASHBOARD", href: "/ai-stocks-dashboard", desc: "All AI-exposed stocks in one dashboard." },
-        { label: "RECESSION PROBABILITY", href: "/recession-probability", desc: "Recession risk that could compress META's ad revenue." },
+        { label: "RECESSION RISK CONTEXT", href: "/recession-probability", desc: "Recession risk that could compress META's ad revenue." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy impact on META's valuation multiple." },
         { label: "STOCK SIGNALS", href: "/signals", desc: "All FAULTLINE stock signals in one view." },
       ]}

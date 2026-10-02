@@ -57,7 +57,7 @@ The bands describe the pressure in the system today. They are not a forecast of 
 
 6. AI/Speculation (15%): A static baseline (score 65) reflecting the concentration of S&P 500 market cap in AI-exposed equities. It is not a live market feed.
 
-FAULTLINE publishes these weights. The Pressure Index does not read VIX, market breadth, or a recession probability; VIX appears separately as a delayed quote and in FAULTLINE's separate systemic-regime model.`,
+FAULTLINE publishes these weights. The Pressure Index does not read VIX or market breadth, and FAULTLINE does not offer a recession probability. VIX appears separately as a delayed quote and in FAULTLINE's separate systemic-regime model.`,
         },
         {
           heading: "What Each Regime Has Historically Meant",
@@ -103,7 +103,7 @@ This is educational and informational context, not investment advice.`,
       internalLinks={[
         { label: "PRESSURE INDEX", href: "/pressure-index", desc: "The regime classification engine — six weighted vectors in one score." },
         { label: "MARKET RISK CONTEXT 2026", href: "/market-crash-probability-2026", desc: "Systemic-pressure context based on current regime conditions." },
-        { label: "RECESSION PROBABILITY", href: "/recession-probability", desc: "Economic recession risk — a key regime driver." },
+        { label: "RECESSION RISK CONTEXT", href: "/recession-probability", desc: "Economic recession risk — a key regime driver." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy — the primary regime-setting force." },
         { label: "VOLATILITY DASHBOARD", href: "/volatility-dashboard", desc: "VIX context — read alongside the Pressure Index, not an input to it." },
         { label: "LIQUIDITY MONITOR", href: "/liquidity-monitor", desc: "Liquidity conditions — the mechanism behind regime shifts." },

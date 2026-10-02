@@ -58,7 +58,7 @@ export const HISTORICAL_PERIODS = [
     endMonth: "2023-01",
     peakMonth: "2022-06",
     description: "The Fed raised rates 525bps in about 16 months — the fastest tightening cycle in 40 years. What did the pressure engine see?",
-    outcome: "S&P 500 fell 25%. NASDAQ fell 33%. Bonds had their worst year since 1788. Rate-sensitive sectors collapsed.",
+    outcome: "S&P 500 fell about 25% peak-to-trough (Jan–Oct 2022); the Nasdaq Composite fell about 36% (Nov 2021–Dec 2022). 10-year Treasury notes had their worst year since 1788, per a Bank of America estimate. Rate-sensitive sectors fell sharply.",
     category: "Monetary Tightening",
   },
   {

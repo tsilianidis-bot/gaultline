@@ -65,7 +65,7 @@ Note: Past readings do not guarantee future results. The Pressure Index is a ris
         },
         {
           question: "What is the difference between HIGH STRESS and SYSTEMIC CRISIS?",
-          answer: "HIGH STRESS (score 65-79) indicates that multiple Pressure Index vectors are elevated at once — for example, credit spreads widening while funding rates and the yield curve signal tightening. SYSTEMIC CRISIS (score 80+) is the model's highest classification, with severe readings across most vectors. Neither label is a crash probability; FAULTLINE does not offer one.",
+          answer: "HIGH STRESS (score 65-79) indicates that multiple Pressure Index vectors are elevated at once — for example, credit spreads widening while funding rates and the yield curve signal tightening. SYSTEMIC CRISIS (score 80+) is the model's highest classification, with severe readings across most vectors. These labels are not a crash probability; FAULTLINE does not offer one.",
         },
         {
           question: "How is the FAULTLINE crash indicator different from the VIX?",

@@ -926,7 +926,7 @@ const SEO_PAGES = [
   { path: "/track-record",                 label: "Track Record",                priority: "0.9", type: "core" },
   { path: "/market-crash-probability-2026", label: "Market Risk Context 2026", priority: "1.0", type: "flagship" },
   { path: "/market-crash-indicator",       label: "Market Crash Indicator",      priority: "1.0", type: "flagship" },
-  { path: "/recession-probability",        label: "Recession Probability",       priority: "1.0", type: "flagship" },
+  { path: "/recession-probability",        label: "Recession Risk Context",       priority: "1.0", type: "flagship" },
   { path: "/alt-season-indicator",         label: "Alt Season Indicator",        priority: "1.0", type: "flagship" },
   { path: "/bitcoin-risk-dashboard",       label: "Bitcoin Risk Dashboard",      priority: "1.0", type: "flagship" },
   { path: "/ethereum-risk-dashboard",      label: "Ethereum Risk Dashboard",     priority: "1.0", type: "flagship" },

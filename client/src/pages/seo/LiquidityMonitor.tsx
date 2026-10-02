@@ -69,7 +69,7 @@ Repo Market Stress: The repo market is the plumbing of the financial system — 
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy rates and their impact on funding conditions." },
         { label: "MARKET CRASH INDICATOR", href: "/market-crash-indicator", desc: "Crash risk detection incorporating liquidity conditions." },
         { label: "CRYPTO MARKET RISK", href: "/crypto-market-risk-dashboard", desc: "Crypto liquidity sensitivity and systemic risk." },
-        { label: "RECESSION PROBABILITY", href: "/recession-probability", desc: "How liquidity conditions relate to recession risk." },
+        { label: "RECESSION RISK CONTEXT", href: "/recession-probability", desc: "How liquidity conditions relate to recession risk." },
         { label: "VOLATILITY DASHBOARD", href: "/volatility-dashboard", desc: "Volatility regime monitoring and risk analysis." },
       ]}
       schemaType="Article"

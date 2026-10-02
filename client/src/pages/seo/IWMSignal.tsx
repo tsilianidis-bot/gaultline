@@ -73,7 +73,7 @@ const IWMSignal = () => {
         { label: "Pressure Index", href: "/pressure-index", desc: "View Pressure Index on FAULTLINE" },
         { label: "Market Regime Tracker", href: "/market-regime-tracker", desc: "View Market Regime Tracker on FAULTLINE" },
         { label: "Daily Brief", href: "/daily-brief", desc: "View Daily Brief on FAULTLINE" },
-        { label: "Recession Probability", href: "/recession-probability", desc: "View Recession Probability on FAULTLINE" },
+        { label: "Recession Risk Context", href: "/recession-probability", desc: "View recession-risk context on FAULTLINE" },
         { label: "Credit Market Stress", href: "/credit-market-stress", desc: "View Credit Market Stress on FAULTLINE" },
         { label: "Stock Market Risk Today", href: "/stock-market-risk-today", desc: "View Stock Market Risk Today on FAULTLINE" },
       ]}

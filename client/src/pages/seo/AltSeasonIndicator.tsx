@@ -29,7 +29,7 @@ export default function AltSeasonIndicator() {
 
 The defining characteristic of alt season is BTC dominance falling. Bitcoin dominance measures Bitcoin's share of total crypto market capitalization. When dominance falls, it means capital is flowing into altcoins faster than it is flowing into Bitcoin. A sustained fall in BTC dominance below 50% has historically coincided with the most explosive altcoin rallies.
 
-Analysts typically watch five signals. FAULTLINE does not combine them into an alt season probability or score:
+Analysts typically watch five signals. FAULTLINE does not offer an alt season probability or score built from them:
 
 1. BTC Dominance Level and Trend — Is dominance falling? How fast? Has it broken below key support levels?
 
@@ -73,7 +73,7 @@ FAULTLINE's Alt Season Indicator tracks all of these conditions as new data is p
       faqs={[
         {
           question: "What is the best indicator for alt season?",
-          answer: "The most reliable alt season indicator is BTC dominance — specifically, a sustained decline in Bitcoin's share of total crypto market capitalization below 50%. This is typically accompanied by a rising ETH/BTC ratio and broad-based altcoin momentum across multiple sectors. FAULTLINE does not combine these signals into an alt season probability or score.",
+          answer: "The most reliable alt season indicator is BTC dominance — specifically, a sustained decline in Bitcoin's share of total crypto market capitalization below 50%. This is typically accompanied by a rising ETH/BTC ratio and broad-based altcoin momentum across multiple sectors. FAULTLINE does not offer an alt season probability or score built from these signals.",
         },
         {
           question: "How long does alt season typically last?",

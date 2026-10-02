@@ -82,7 +82,7 @@ Understanding which historical environment today most resembles is useful contex
         { label: "PRESSURE INDEX", href: "/pressure-index", desc: "The core systemic risk score — 6 weighted vectors combined into a single 0-100 reading." },
         { label: "MARKET REGIME TRACKER", href: "/market-regime-tracker", desc: "Regularly refreshed classification of the current market regime." },
         { label: "DAILY BRIEF", href: "/daily-brief", desc: "Today's market conditions, key drivers, and risk assessment." },
-        { label: "RECESSION PROBABILITY", href: "/recession-probability", desc: "Leading economic indicators of recession risk — the biggest driver of sustained bear markets." },
+        { label: "RECESSION RISK CONTEXT", href: "/recession-probability", desc: "Leading economic indicators of recession risk — the biggest driver of sustained bear markets." },
         { label: "HISTORICAL ANALOGS", href: "/analogs", desc: "Compare today's vector profile with reference profiles of past stress episodes." },
         { label: "BULL OR BEAR MARKET?", href: "/bull-or-bear-market", desc: "Is the stock market currently in a bull or bear market? FAULTLINE's regime classification." },
       ]}
