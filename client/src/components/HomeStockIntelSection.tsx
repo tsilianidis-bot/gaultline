@@ -7,35 +7,12 @@ import { Link } from 'wouter';
 import { getLoginUrl } from '@/const';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { TickerChip } from '@/components/TickerActionMenu';
-import { signalQuoteView, type SignalQuoteLike } from '@/lib/signalQuoteView';
-import { formatEt } from '@shared/credibilityLabels';
-
-type PreviewQuote = SignalQuoteLike & { ticker: string; timestamp?: number };
-
-/** Live/delayed quotes for the preview tickers from the existing Signals quote feed. */
-function usePreviewQuotes(): Record<string, PreviewQuote> {
-  const [quotes, setQuotes] = useState<Record<string, PreviewQuote>>({});
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/signals/quotes')
-      .then(r => (r.ok ? r.json() : null))
-      .then((data: { quotes?: PreviewQuote[] } | null) => {
-        if (cancelled || !data?.quotes) return;
-        const map: Record<string, PreviewQuote> = {};
-        for (const q of data.quotes) map[q.ticker] = q;
-        setQuotes(map);
-      })
-      .catch(() => { /* fail closed: cards show UNAVAILABLE */ });
-    return () => { cancelled = true; };
-  }, []);
-  return quotes;
-}
 
 // ── Illustrative layout examples ──────────────────────────────
 // Action / confidence / factors below are a static example of the card layout,
-// not current signals. Price and change are NEVER hard-coded: they come only from
-// the existing /api/signals/quotes feed (with its badge and an ET as-of time),
-// otherwise the card shows "—" UNAVAILABLE.
+// not current signals. The example binds NO real quote: pairing a real price with
+// a static action and confidence would read as a current call. Price and change
+// show "—" with an EXAMPLE label; current quotes and signals live in /app/signals.
 const DEMO_STOCKS = [
   {
     ticker: 'NVDA',
@@ -164,9 +141,7 @@ function SearchBarTeaser() {
 }
 
 // ── Stock Intelligence Card ───────────────────────────────────
-function StockCard({ stock, delay, liveQuote }: { stock: typeof DEMO_STOCKS[0]; delay: number; liveQuote?: PreviewQuote }) {
-  const quote = signalQuoteView(liveQuote);
-  const asOf = quote.available ? formatEt(liveQuote?.timestamp ?? null) : null;
+function StockCard({ stock, delay }: { stock: typeof DEMO_STOCKS[0]; delay: number }) {
   const [visible, setVisible] = useState(false);
   const ac = ACTION_COLORS[stock.action];
   const rc = REGIME_ALIGN_COLORS[stock.regime as keyof typeof REGIME_ALIGN_COLORS];
@@ -204,12 +179,12 @@ function StockCard({ stock, delay, liveQuote }: { stock: typeof DEMO_STOCKS[0]; 
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.04em' }}>{stock.name}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div data-preview-price style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '15px', color: '#F0F4FF' }}>{quote.priceText}</div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: quote.changePercent == null ? '#64748B' : quote.changePercent >= 0 ? '#00FF88' : '#FF2D55', letterSpacing: '0.06em' }}>
-            {quote.changeText}
+          <div data-preview-price style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '15px', color: '#F0F4FF' }}>—</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: '#64748B', letterSpacing: '0.06em' }}>
+            —
           </div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.7)', letterSpacing: '0.06em' }}>
-            {quote.available ? `${quote.badge} · Signals quote · ${asOf ?? '—'}` : 'UNAVAILABLE'}
+            EXAMPLE · NO QUOTE
           </div>
         </div>
       </div>
@@ -230,6 +205,7 @@ function StockCard({ stock, delay, liveQuote }: { stock: typeof DEMO_STOCKS[0]; 
         {stock.action === 'WATCH' && '◎ '}
           {stock.action}
         </span>
+        <span data-example-label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.7)', letterSpacing: '0.1em' }}>EXAMPLE</span>
         <span style={{
           fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px',
           color: rc, padding: '2px 6px',
@@ -337,7 +313,6 @@ const MOMENTUM_CLASSES = [
 // ── Main Section ──────────────────────────────────────────────
 export default function HomeStockIntelSection() {
   const { isAuthenticated } = useAuth();
-  const previewQuotes = usePreviewQuotes();
 
   return (
     <div style={{
@@ -449,7 +424,7 @@ export default function HomeStockIntelSection() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
           {DEMO_STOCKS.map((s, i) => (
-            <StockCard key={s.ticker} stock={s} delay={i * 150} liveQuote={previewQuotes[s.ticker]} />
+            <StockCard key={s.ticker} stock={s} delay={i * 150} />
           ))}
         </div>
 
