@@ -451,3 +451,20 @@ describe("AIWatch tiles: canonical, static baseline, or Not tracked", () => {
     expect(selectAiBubbleRisk(state([engine({ freshnessStatus: "STALE" })])).basis).toMatch(/STALE/);
   });
 });
+
+describe("ScoreExplainer yield-curve bands match the engine maximum (74)", () => {
+  const s = src("client/src/components/ScoreExplainer.tsx");
+  const block = s.slice(s.indexOf("volatilityRegime: {"), s.indexOf("watchNext", s.indexOf("volatilityRegime: {")));
+  it("no unreachable 75–100 'Extreme Curve Pressure' band; 55–74 is the top band", () => {
+    expect(block).not.toMatch(/Extreme Curve Pressure/);
+    expect(block).not.toMatch(/75–100/);
+    expect(block).not.toMatch(/v >= 75/);
+    expect(block).toMatch(/\{ label: "High Curve Pressure", range: "55–74"/);
+  });
+  it("engine formula still caps at 74 (0.6 × 90 + 0.4 × 50), so no scoring change is implied", () => {
+    const e = src("server/pressure/engine.ts");
+    expect(e).toMatch(/if \(spread < -1\.0\) spreadScore = 90;/);
+    expect(e).toMatch(/linearMap\(tsy10y, 2\.5, 6, 0, 50\)/);
+    expect(e).toMatch(/Math\.round\(spreadScore \* 0\.6 \+ rateScore \* 0\.4\)/);
+  });
+});
