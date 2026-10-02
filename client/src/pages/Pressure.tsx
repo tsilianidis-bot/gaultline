@@ -970,11 +970,11 @@ function DomainAnalysisTab() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: colors.text, background: colors.bg, border: `1px solid ${colors.primary}33`, borderRadius: '3px', padding: '2px 6px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{domain.riskLevel}</div>
                 {(() => {
-                  // Unknown delta (#60 deltaAvailable: false, or non-finite) → "Δ unavailable", never "0 vs baseline".
+                  // Unknown delta (#60 deltaAvailable: false, or non-finite) → "Δ unavailable", never "0 vs baseline";
+                  // a known zero reads "Stable".
                   const d = knownDelta(domain);
-                  if (d === 0) return null;
                   return (
-                    <div data-domain-delta={d === null ? 'unavailable' : d} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: d === null ? '#6B7280' : d > 0 ? '#FF6B00' : '#00FF88', letterSpacing: '0.06em' }}>
+                    <div data-domain-delta={d === null ? 'unavailable' : d} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: d === null || vsBaselineText(domain) === 'Stable' ? '#6B7280' : d > 0 ? '#FF6B00' : '#00FF88', letterSpacing: '0.06em' }}>
                       {vsBaselineText(domain)}
                     </div>
                   );

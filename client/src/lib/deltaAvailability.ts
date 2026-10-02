@@ -36,10 +36,14 @@ export function deltaDirection(item: DeltaLike | null | undefined): "Deteriorati
   return t === "unavailable" ? "Unavailable" : t === "deteriorating" ? "Deteriorating" : t === "improving" ? "Improving" : "Stable";
 }
 
-/** "+3.5 pts vs baseline" for a known 0–10 delta (×10 → 0–100 points); "Δ unavailable" when unknown. */
+/**
+ * "+3.5 pts vs baseline" for a known 0–10 delta (×10 → 0–100 points);
+ * "Stable" for a known zero (rounds to 0.0 pts); "Δ unavailable" when unknown.
+ */
 export function vsBaselineText(item: DeltaLike | null | undefined): string {
   const d = knownDelta(item);
   if (d === null) return "Δ unavailable";
   const pts = Math.round(d * 100) / 10;
+  if (pts === 0) return "Stable";
   return `${pts > 0 ? "+" : ""}${pts.toFixed(1)} pts vs baseline`;
 }

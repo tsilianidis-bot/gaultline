@@ -85,7 +85,7 @@ export const INDICATOR_CATALOG: IndicatorDef[] = [
     min: 0, max: 10, step: 0.1,
     // Stored 0–10 (unchanged); shown on the 0–100 display scale.
     format: (v) => (v * 10).toFixed(0),
-    displayFactor: 10, displayStep: 10,
+    displayFactor: 10, displayStep: 5,
     stressLevel: 7.0,
     normalRange: [2, 5],
   },
@@ -102,7 +102,7 @@ export const INDICATOR_CATALOG: IndicatorDef[] = [
     min: 0, max: 10, step: 0.1,
     // Stored 0–10 (unchanged); shown on the 0–100 display scale.
     format: (v) => (v * 10).toFixed(0),
-    displayFactor: 10, displayStep: 10,
+    displayFactor: 10, displayStep: 5,
     stressLevel: 7.5,
     normalRange: [2, 5],
   },
@@ -119,7 +119,7 @@ export const INDICATOR_CATALOG: IndicatorDef[] = [
     min: 0, max: 10, step: 0.1,
     // Stored 0–10 (unchanged); shown on the 0–100 display scale.
     format: (v) => (v * 10).toFixed(0),
-    displayFactor: 10, displayStep: 10,
+    displayFactor: 10, displayStep: 5,
     stressLevel: 7.0,
     normalRange: [2, 5],
   },
@@ -136,7 +136,7 @@ export const INDICATOR_CATALOG: IndicatorDef[] = [
     min: 0, max: 10, step: 0.1,
     // Stored 0–10 (unchanged); shown on the 0–100 display scale.
     format: (v) => (v * 10).toFixed(0),
-    displayFactor: 10, displayStep: 10,
+    displayFactor: 10, displayStep: 5,
     stressLevel: 7.0,
     normalRange: [2, 5],
   },

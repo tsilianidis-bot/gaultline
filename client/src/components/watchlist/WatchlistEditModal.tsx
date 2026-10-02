@@ -27,7 +27,7 @@ export function WatchlistEditModal({ item, onSave, onClose, liveValues }: Watchl
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   const def = INDICATOR_MAP[indicatorKey];
-  // Slider on the display scale (domain scores 0–100, step 10); saves the stored value.
+  // Slider on the display scale (domain scores 0–100, step 5); saves the stored value.
   const slider = thresholdSlider(def);
 
   useEffect(() => {
