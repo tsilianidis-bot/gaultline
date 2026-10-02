@@ -110,6 +110,9 @@ export type ListLLMModelsResult = {
   data: LLMModel[];
 };
 
+/** Default chat model when a caller does not pass one. Catalog selection can still choose another id. */
+export const DEFAULT_CHAT_MODEL = "gemini-3-flash-preview";
+
 export type JsonSchema = {
   name: string;
   schema: Record<string, unknown>;
@@ -324,7 +327,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   } = params;
 
   const payload: Record<string, unknown> = {
-    model: model ?? "gemini-3-flash-preview",
+    model: model ?? DEFAULT_CHAT_MODEL,
     messages: messages.map(normalizeMessage),
   };
 
@@ -388,9 +391,40 @@ export async function listLLMModels(): Promise<ListLLMModelsResult> {
     );
   }
 
-  const result = (await response.json()) as ListLLMModelsResult;
-  if (!Array.isArray(result.data)) {
+  return normalizeModelCatalog(await response.json());
+}
+
+/**
+ * OpenAI-compatible gateways, including Forge, return `{ data: [{ id }] }`.
+ * Gemini's native models.list returns `{ models: [{ name: "models/..." }] }`.
+ * Both are accepted. Neither shape invents an id that was not in the payload.
+ */
+export function normalizeModelCatalog(payload: unknown): ListLLMModelsResult {
+  if (!payload || typeof payload !== "object") {
     throw new Error("LLM model catalog returned an invalid response");
   }
-  return result;
+  const record = payload as { data?: unknown; models?: unknown };
+  if (Array.isArray(record.data)) {
+    return {
+      object: "list",
+      data: record.data.filter((model): model is LLMModel => (
+        !!model && typeof model === "object" && typeof (model as LLMModel).id === "string"
+      )),
+    };
+  }
+  if (Array.isArray(record.models)) {
+    const data: LLMModel[] = [];
+    for (const model of record.models) {
+      if (!model || typeof model !== "object") continue;
+      const entry = model as { id?: unknown; name?: unknown };
+      const id = typeof entry.id === "string"
+        ? entry.id
+        : typeof entry.name === "string"
+          ? entry.name
+          : "";
+      if (id) data.push({ id });
+    }
+    return { object: "list", data };
+  }
+  throw new Error("LLM model catalog returned an invalid response");
 }

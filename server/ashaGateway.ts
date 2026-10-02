@@ -22,8 +22,41 @@ import {
   resolveAshaModelCandidates,
   type AshaModelResolution,
 } from "./ashaModelPolicy";
+import { PlatoRouteError } from "./plato/errors";
+import { routePlatoCompletion } from "./plato/router";
+import { log } from "./logger";
 
 type InvokeGatewayModel = (params: InvokeParams) => Promise<InvokeResult>;
+
+export class AshaProviderError extends Error {
+  readonly httpStatus: number | null;
+  readonly rateLimited: boolean;
+  readonly attemptedModels: string[];
+
+  constructor(
+    message: string,
+    details: { httpStatus: number | null; rateLimited: boolean; attemptedModels: string[] },
+  ) {
+    super(message);
+    this.name = "AshaProviderError";
+    this.httpStatus = details.httpStatus;
+    this.rateLimited = details.rateLimited;
+    this.attemptedModels = details.attemptedModels;
+  }
+}
+
+export function providerFailureStatus(error: unknown): number | null {
+  if (!(error instanceof Error)) return null;
+  const match = error.message.match(/\b(?:LLM invoke failed|LLM model catalog failed): (\d{3})\b/);
+  if (match) return Number(match[1]);
+  if (/RESOURCE_EXHAUSTED/i.test(error.message)) return 429;
+  return null;
+}
+
+export function isAshaRateLimitError(error: unknown): boolean {
+  if (error instanceof AshaProviderError) return error.rateLimited;
+  return providerFailureStatus(error) === 429;
+}
 
 const destinationIds = new Set<CanonicalDestinationId>([
   "now",
@@ -131,6 +164,9 @@ export async function invokeAshaGateway(
     invokeModel?: InvokeGatewayModel;
   } = {},
 ): Promise<{ response: InvokeResult; trace: AshaModelTrace }> {
+  if (!dependencies.resolveModels && !dependencies.invokeModel) {
+    return invokeAshaThroughPlatoRouter(params);
+  }
   const resolution = await (dependencies.resolveModels ?? resolveAshaModelCandidates)();
   const invokeModel = dependencies.invokeModel ?? invokeLLM;
   const attemptedModels: string[] = [];
@@ -151,9 +187,66 @@ export async function invokeAshaGateway(
       };
     } catch (error) {
       lastError = error;
+      const status = providerFailureStatus(error);
+      log.warn("[ASHA] model attempt failed", {
+        model,
+        status,
+        message: error instanceof Error ? error.message.slice(0, 800) : "unknown model failure",
+      });
     }
   }
 
   const reason = lastError instanceof Error ? lastError.message : "unknown model failure";
-  throw new Error(`ASHA model gateway failed after ${attemptedModels.length} attempt(s): ${reason}`);
+  const status = providerFailureStatus(lastError);
+  throw new AshaProviderError(
+    `ASHA model gateway failed after ${attemptedModels.length} attempt(s): ${reason}`,
+    {
+      httpStatus: status,
+      rateLimited: status === 429,
+      attemptedModels,
+    },
+  );
+}
+
+async function invokeAshaThroughPlatoRouter(
+  params: Omit<InvokeParams, "model">,
+): Promise<{ response: InvokeResult; trace: AshaModelTrace }> {
+  try {
+    const routed = await routePlatoCompletion({
+      messages: params.messages,
+      tools: params.tools,
+      toolChoice: params.toolChoice,
+      tool_choice: params.tool_choice,
+      maxTokens: params.maxTokens,
+      max_tokens: params.max_tokens,
+      outputSchema: params.outputSchema,
+      output_schema: params.output_schema,
+      responseFormat: params.responseFormat,
+      response_format: params.response_format,
+      taskType: "FAST",
+    });
+    return {
+      response: routed.response,
+      trace: {
+        selectedModel: routed.trace.selectedModel,
+        attemptedModels: routed.trace.attemptedModels,
+        resolutionSource: routed.trace.resolutionSource,
+        resolvedAt: routed.trace.resolvedAt,
+      },
+    };
+  } catch (error) {
+    const status = error instanceof PlatoRouteError ? error.httpStatus : providerFailureStatus(error);
+    const rateLimited = error instanceof PlatoRouteError ? error.rateLimited : status === 429;
+    const attemptedModels = error instanceof PlatoRouteError ? error.attemptedModels : [];
+    const reason = error instanceof Error ? error.message : "unknown model failure";
+    log.warn("[ASHA] model attempt failed", {
+      model: attemptedModels[attemptedModels.length - 1] ?? "unknown",
+      status,
+      message: reason.slice(0, 800),
+    });
+    throw new AshaProviderError(
+      `ASHA model gateway failed after ${Math.max(attemptedModels.length, 1)} attempt(s): ${reason}`,
+      { httpStatus: status, rateLimited, attemptedModels },
+    );
+  }
 }
