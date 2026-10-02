@@ -54,8 +54,7 @@ interface CanonicalProbabilityContract {
 ## Model registry (versioned)
 | modelId@version | Kind | Horizon | Calibration | Notes |
 |---|---|---|---|---|
-| `seismograph-evidence-vote@seismograph-evidence-vote-v1` | SCENARIO_WEIGHT | NOT_ESTABLISHED | UNCALIBRATED | Manifests with seismograph `2.0`. Known defect: analog similarity was voted as stress. |
-| `seismograph-evidence-vote@seismograph-evidence-vote-v2` | SCENARIO_WEIGHT | NOT_ESTABLISHED | UNCALIBRATED | Seismograph `2.1`. The analog packet is non-directional (neutral). |
+| `seismograph-evidence-vote@seismograph-evidence-vote-v1` | SCENARIO_WEIGHT | NOT_ESTABLISHED | UNCALIBRATED | Every current manifest (seismograph `2.0`). Known defect: analog similarity is voted as stress. The fix (v2, seismograph 2.1) is **held** for owner approval on `probability/held-methodology-2026-10-02` (HELD_CHANGES.md). |
 | `systemic-regime-hmm@<reading.modelVersion>` (e.g. `sre-hmm2-v1.0.0`) | REGIME_POSTERIOR | NOT_ESTABLISHED | UNCALIBRATED, ECE 0.515 (2-state, expanding-window OOS) | Crisis / stress-building / transition / state posterior |
 | `seismograph-transition-frequency@seismograph-transition-v1` | TRANSITION_FREQUENCY | NOT_ESTABLISHED | UNCALIBRATED | Static defaults when the sample is empty → INSUFFICIENT_DATA |
 | retired: `unified-seismograph-3way`, `unified-seismograph-5way`, `preflight-heuristic`, `browser-engine` | — | — | — | Never rendered |
@@ -65,13 +64,13 @@ Scenario definitions are stated as what the number measures. For example, bull =
 
 ## Ledger / validation hooks (no migration)
 - `governedIntelligenceClaims` for new states:
-  - `modelVersion` = the contract model version (`seismograph-evidence-vote-v2`, `seismograph-transition-v1`)
+  - `modelVersion` unchanged (`seismograph-core-v1`)
   - `timeHorizon` = `"NOT_ESTABLISHED"` (HorizonBucket)
   - `eventDefinition` = the explicit scenario definition text
-  - `metadataJson` = { contractVersion, modelId, horizonMinDays: null, horizonMaxDays: null, resolvable: false, calibrationStatus }
+  - `metadataJson` = { contractVersion, modelId, contractModelVersion (`seismograph-evidence-vote-v1`, `seismograph-transition-v1`), horizonBucket, horizonMinDays: null, horizonMaxDays: null, resolvable: false, calibrationStatus }
 - Existing rows are untouched.
 - `stateId` + `claimId` → `claimObservationKey`, which is what `forecastObservations.originalForecastJson.canonicalStateId` should reference once a resolvable event exists.
-- `seismograph.version` "2.0" → "2.1" (in `stateHash` core) marks the v2 methodology. New states get new hashes. Old states keep v1.
+- `seismograph.version` stays "2.0" and the `stateHash` core is unchanged in this PR (verified on the 2026-10-01 and 2026-10-02 14:01 fixtures). Only the held branch moves it to "2.1".
 
 ## Blockers for James (not done here)
 1. Display policy. Under the binding rule, the canonical bull/neutral/bear now renders "Uncalibrated", because nothing is calibrated. If you want those weights shown as qualified "scenario weights", that is one registry flag, but it is your call.
@@ -89,4 +88,6 @@ After #58 merges:
 5. Tests: PLATO context snapshot contains "Uncalibrated"/"Not offered" and no `\d+%` next to bull/bear/crash/recession.
 
 ## Yield Curve (10Y–2Y) & 10Y Level vector: reachable range
-The engine (`server/pressure/engine.ts` `scoreVolatilityRegime`) scores `0.6 × spreadScore + 0.4 × rateScore`, where spreadScore is 90 at most (10Y–2Y below −1 pp) and rateScore is 50 at most (10Y ≥ 6%). The highest reachable score is therefore **74**, so any band at ≥75 can never show for this vector. A steep, positive curve scores 20 on spread (low pressure). The copy in `seismographUnified.ts` and `preFlight.ts` used to say "steep re-steepening" means high pressure. It now matches the engine: the top band means a deeply inverted curve plus an elevated 10Y yield. Rescaling the vector, or dropping the unreachable band, is a model change and needs James.
+The engine (`server/pressure/engine.ts` `scoreVolatilityRegime`) scores `0.6 × spreadScore + 0.4 × rateScore`, where spreadScore is 90 at most (10Y–2Y below −1 pp) and rateScore is 50 at most (10Y ≥ 6%). The highest reachable score is therefore **74**, so any band at ≥75 can never show for this vector. A steep, positive curve scores 20 on spread (low pressure). The copy in `seismographUnified.ts` and `preFlight.ts` used to say "steep re-steepening" means high pressure. It now matches the engine: the top band means a deeply inverted curve plus an elevated 10Y yield.
+
+Owner decision (2026-10-02 11:42 ET): remove the unreachable ≥75 **display** band; do **not** rescale. The only ≥75 yield-curve display band is in `client/src/components/ScoreExplainer.tsx` ("Extreme Curve Pressure", 75–100), which PR #59 owns, so this PR does not edit it. No file in this PR has a yield-curve band at ≥75. The rescale is held (HELD_CHANGES.md).
