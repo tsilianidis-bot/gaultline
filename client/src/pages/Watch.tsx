@@ -31,6 +31,7 @@ import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/cus
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
+import { forecastConfidenceDisplay } from "@shared/confidenceDisplay";
 
 const WATCH_DEEP_PATH = "/app/watch/deep";
 
@@ -257,7 +258,13 @@ export default function Watch() {
     ...(marketState?.outlook.invalidationConditions ?? []),
     ...activePatterns.map(pattern => pattern.invalidationConditions),
   ].filter((item, index, values) => item && values.indexOf(item) === index);
-  const confidence = marketState?.outlook.probabilities.confidence ?? 0;
+  // Display gate: a % only with HEALTHY canonical evidence AND a verified analog
+  // (the engine value is a 50 baseline even with zero analogs). Engine unchanged.
+  const confidenceDisplay = forecastConfidenceDisplay({
+    confidence: marketState?.outlook.probabilities.confidence,
+    evidenceQuality: canonicalState?.confidenceOrEvidenceQuality,
+    topAnalog: marketState?.outlook.topAnalog,
+  });
   const modeLabel = customerChromeModeLabel(integrityLabel);
   const watchAcceleration = marketState?.watch.accelerating ?? false;
   const buildingPressure = marketState?.watch.buildingPressure ?? developingConditions.some(condition => condition.trend === "building");
@@ -337,7 +344,7 @@ export default function Watch() {
                   </div>
                   <div>
                     <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-slate-600">Confidence</p>
-                    <p className="mt-1 font-mono text-sm text-slate-200">{formatCanonicalPercent(confidence)}</p>
+                    <p className="mt-1 font-mono text-sm text-slate-200"><span data-forecast-confidence={confidenceDisplay.state}>{confidenceDisplay.percent == null ? confidenceDisplay.text : formatCanonicalPercent(confidenceDisplay.percent)}</span></p>
                   </div>
                 </div>
                 <p className="mt-4 font-mono text-[9px] uppercase tracking-[0.12em] text-slate-600">
@@ -521,7 +528,7 @@ export default function Watch() {
           <div className="grid gap-4 md:grid-cols-3">
             <div className="rounded-sm border border-white/10 bg-white/[0.025] p-5">
               <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-600">Forecast confidence</div>
-              <div className="mt-3 font-['Rajdhani'] text-2xl font-semibold text-slate-100">{formatCanonicalPercent(confidence)}</div>
+              <div className="mt-3 font-['Rajdhani'] text-2xl font-semibold text-slate-100"><span data-forecast-confidence={confidenceDisplay.state}>{confidenceDisplay.percent == null ? confidenceDisplay.text : formatCanonicalPercent(confidenceDisplay.percent)}</span></div>
             </div>
             <div className="rounded-sm border border-white/10 bg-white/[0.025] p-5">
               <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-600">Historical observations</div>

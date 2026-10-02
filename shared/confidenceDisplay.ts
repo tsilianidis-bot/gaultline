@@ -54,3 +54,22 @@ export function sobConfidenceDisplay(sob: {
     noData: sob.coverage === "UNAVAILABLE" || sob.coverage == null,
   });
 }
+
+/**
+ * Forecast confidence on ACT/WATCH (outlook.probabilities.confidence). The engine
+ * value starts from a 50 baseline even with zero analogs, so a % is supported
+ * only when canonical evidence quality is fully HEALTHY (no partial/delayed
+ * inputs) AND a verified analog (outlook.topAnalog) exists.
+ * CanonicalQualityStatus is HEALTHY | DEGRADED | PARTIAL | UNAVAILABLE.
+ */
+export function forecastConfidenceDisplay(input: {
+  confidence: number | null | undefined;
+  evidenceQuality: string | null | undefined;
+  topAnalog: unknown;
+}): ConfidenceDisplay {
+  return gatedConfidence({
+    confidence: input.confidence,
+    sufficient: input.evidenceQuality === "HEALTHY" && input.topAnalog != null,
+    noData: input.evidenceQuality === "UNAVAILABLE" || input.evidenceQuality == null,
+  });
+}

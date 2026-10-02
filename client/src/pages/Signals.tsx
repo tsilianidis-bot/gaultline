@@ -5,7 +5,7 @@
    ============================================================ */
 import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { signalQuoteView, signalsFeedLabel, hasUsableSignalQuote, signalsPriceBadge, catalogQuotes } from "@/lib/signalQuoteView";
+import { signalQuoteView, signalsFeedLabel, hasUsableSignalQuote, signalsPriceBadge, catalogQuotes, signalsFooter } from "@/lib/signalQuoteView";
 import { useEngine } from '@/contexts/EngineContext';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
@@ -1620,6 +1620,16 @@ function SignalsInner() {
     return quoted.length > 0 ? getTodaysTopSignals(regimeCode, quoted) : null;
   }, [regimeCode, enrichedStocks, quoteMap]);
 
+  // Header (ApiHealthBadge) and footer read the SAME catalog-scoped quotes and feed label.
+  const catalogQuoteList = useMemo(
+    () => catalogQuotes(quotesData?.quotes, SIGNAL_STOCKS.map(s => s.ticker)),
+    [quotesData?.quotes],
+  );
+  const footer = useMemo(
+    () => signalsFooter(signalsFeedLabel({ source: quotesData?.source ?? null, quotes: catalogQuoteList, tickerCount: SIGNAL_STOCKS.length })),
+    [quotesData?.source, catalogQuoteList],
+  );
+
   // Header badge reflects quote freshness, never the pressure-engine integrity.
   const pricesBadge = useMemo(() => signalsPriceBadge(quotesData?.quotes), [quotesData?.quotes]);
 
@@ -1812,7 +1822,7 @@ function SignalsInner() {
             tradeDate={quotesData?.tradeDate}
             lastUpdated={quotesData?.timestamp ?? null}
             isLoading={quotesLoading}
-            quotes={catalogQuotes(quotesData?.quotes, SIGNAL_STOCKS.map(s => s.ticker))}
+            quotes={catalogQuoteList}
             tickerCount={SIGNAL_STOCKS.length}
           />
         </div>
@@ -2049,11 +2059,12 @@ function SignalsInner() {
       </div>
 
       {/* ── Data Source Panel ─────────────────────────────── */}
-      <div style={{
+      {/* Same signalsFeedLabel() input/result as the header badge (ApiHealthBadge). */}
+      <div data-signals-footer={footer.title} style={{
         margin: '24px 16px 0',
         padding: '12px',
-        background: quotesData?.source === 'live' ? 'rgba(0,212,255,0.03)' : 'rgba(255,45,85,0.03)',
-        border: `1px solid ${quotesData?.source === 'live' ? 'rgba(0,212,255,0.08)' : 'rgba(255,45,85,0.08)'}`,
+        background: footer.tone === 'live' ? 'rgba(0,212,255,0.03)' : footer.tone === 'alert' ? 'rgba(255,45,85,0.03)' : 'rgba(148,163,184,0.03)',
+        border: `1px solid ${footer.tone === 'live' ? 'rgba(0,212,255,0.08)' : footer.tone === 'alert' ? 'rgba(255,45,85,0.08)' : 'rgba(148,163,184,0.08)'}`,
         borderRadius: '4px',
       }}>
         <div style={{
@@ -2061,19 +2072,10 @@ function SignalsInner() {
           color: 'rgba(100,116,139,0.75)',
           lineHeight: 1.6,
         }}>
-          {quotesData?.source === 'live' ? (
-            <>
-              <span style={{ color: '#00D4FF' }}>LIVE DATA</span> — Yahoo Finance intraday prices (market hours) · Polygon.io sparklines via secure backend proxy.
-              Session: <span style={{ color: 'rgba(100,116,139,0.7)' }}>{quotesData.tradeDate ?? '—'}</span> ·
-              Quotes: <span style={{ color: 'rgba(100,116,139,0.7)' }}>{quotesData.count ?? 0}/42 tickers</span> ·
-              Refreshes every 5 minutes.
-            </>
-          ) : (
-            <>
-              <span style={{ color: '#FF2D55' }}>CATALOG DATA</span> — Live market data unavailable.
-              Showing static catalog prices. Live prices load automatically during market hours.
-            </>
-          )}
+          <span style={{ color: footer.tone === 'live' ? '#00D4FF' : footer.tone === 'alert' ? '#FF2D55' : '#F59E0B' }}>{footer.title}</span> — {footer.detail}{' '}
+          Session: <span style={{ color: 'rgba(100,116,139,0.7)' }}>{quotesData?.tradeDate ?? '—'}</span> ·
+          Quotes: <span style={{ color: 'rgba(100,116,139,0.7)' }}>{footer.coverage}</span> ·
+          Refreshes every 5 minutes.
           {tradingSignalsData && (
             <> · <span style={{ color: '#00D4FF' }}>TRADING SIGNALS</span> — FAULTLINE Engine · {tradingSignalsData.length} signals computed.</>
           )}

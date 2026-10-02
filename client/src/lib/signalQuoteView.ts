@@ -106,3 +106,28 @@ export function catalogQuotes<Q extends { ticker: string }>(
   const catalog = new Set(catalogTickers);
   return (quotes ?? []).filter(q => catalog.has(q.ticker));
 }
+
+/**
+ * Footer copy derived from the SAME signalsFeedLabel() result as the header, so
+ * the two can never disagree (freshness or ticker coverage).
+ */
+export function signalsFooter(feed: { label: string; coverage: string }): {
+  title: string;
+  detail: string;
+  coverage: string;
+  tone: "live" | "muted" | "alert";
+} {
+  const coverage = feed.coverage;
+  switch (feed.label) {
+    case "YAHOO FINANCE LIVE":
+      return { title: "LIVE DATA", detail: "Yahoo Finance intraday prices (market open).", coverage, tone: "live" };
+    case "YAHOO FINANCE · LAST CLOSE":
+      return { title: "LAST CLOSE", detail: "Yahoo Finance prices from the most recent session close — not live.", coverage, tone: "muted" };
+    case "YAHOO FINANCE · DELAYED":
+      return { title: "DELAYED", detail: "Yahoo Finance prices, delayed — not live.", coverage, tone: "muted" };
+    case "STALE CACHE":
+      return { title: "STALE CACHE", detail: "Last cached quotes — not current.", coverage, tone: "alert" };
+    default:
+      return { title: "QUOTES UNAVAILABLE", detail: "No current server quotes. Unquoted tickers show — / UNAVAILABLE; no catalog prices are shown as market data.", coverage, tone: "alert" };
+  }
+}

@@ -27,6 +27,7 @@ import {
   signalsFeedLabel,
   signalsPriceBadge,
   catalogQuotes,
+  signalsFooter,
 } from "@/lib/signalQuoteView";
 import { SIGNAL_STOCKS } from "@/lib/signalsData";
 import { mergeCanonicalMarketState } from "@/lib/canonicalNowProjection";
@@ -42,6 +43,7 @@ import { directionDisplay } from "@shared/snapshotEvidence";
 import {
   CONFIDENCE_INSUFFICIENT_TEXT,
   CONFIDENCE_UNAVAILABLE_TEXT,
+  forecastConfidenceDisplay,
   gatedConfidence,
   sobConfidenceDisplay,
 } from "@shared/confidenceDisplay";
@@ -314,7 +316,7 @@ describe("Signals quotes fail closed", () => {
     expect(total).toBe(catalog.length);
     const unquoted = catalog.filter(t => !quoteMap.has(t));
     expect(quoted + unquoted.length).toBe(catalog.length);
-    expect(src("client/src/pages/Signals.tsx")).toMatch(/quotes=\{catalogQuotes\(quotesData\?\.quotes, SIGNAL_STOCKS\.map/);
+    expect(src("client/src/pages/Signals.tsx")).toMatch(/catalogQuotes\(quotesData\?\.quotes, SIGNAL_STOCKS\.map/);
   });
 
   it("LIVE only for a live quote in an open session", () => {
@@ -461,5 +463,84 @@ describe("confidence display gating", () => {
     expect(panel).not.toMatch(/\{sob\.confidence\}%/);
     expect(panel).toMatch(/sobConfidenceDisplay\(sob\)/);
     expect(panel).toMatch(/\{confidenceDisplay\.text\}/);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. B3 — ACT/WATCH forecast confidence gated (engine baseline 50 with 0 analogs)
+// ─────────────────────────────────────────────────────────────────────────────
+describe("ACT/WATCH forecast confidence display gating", () => {
+  const merged = mergeCanonicalMarketState(canonical, legacy)!;
+
+  it("this snapshot (PARTIAL evidence, no verified analog) → 'Confidence: Insufficient data', no %", () => {
+    expect(canonical.confidenceOrEvidenceQuality).toBe("PARTIAL");
+    expect(merged.outlook.topAnalog).toBeNull();
+    expect(merged.outlook.probabilities.confidence).toBe(50); // engine value preserved
+    const d = forecastConfidenceDisplay({
+      confidence: merged.outlook.probabilities.confidence,
+      evidenceQuality: canonical.confidenceOrEvidenceQuality,
+      topAnalog: merged.outlook.topAnalog,
+    });
+    expect(d).toEqual({ state: "INSUFFICIENT", text: "Confidence: Insufficient data", percent: null });
+  });
+
+  it("a % needs BOTH healthy evidence and a verified analog", () => {
+    const analog = { period: "x", similarity: 80 };
+    expect(forecastConfidenceDisplay({ confidence: 66, evidenceQuality: "HEALTHY", topAnalog: null }).percent).toBeNull();
+    expect(forecastConfidenceDisplay({ confidence: 66, evidenceQuality: "PARTIAL", topAnalog: analog }).percent).toBeNull();
+    expect(forecastConfidenceDisplay({ confidence: 66, evidenceQuality: "DEGRADED", topAnalog: analog }).percent).toBeNull();
+    expect(forecastConfidenceDisplay({ confidence: 66, evidenceQuality: "UNAVAILABLE", topAnalog: analog }).text).toBe("Confidence: Unavailable");
+    expect(forecastConfidenceDisplay({ confidence: 66, evidenceQuality: "HEALTHY", topAnalog: analog })).toEqual({ state: "AVAILABLE", text: "66% confidence", percent: 66 });
+  });
+
+  it("source: ACT and WATCH render only the gated value at every confidence site", () => {
+    for (const file of ["client/src/pages/Act.tsx", "client/src/pages/Watch.tsx"]) {
+      const text = src(file);
+      expect(text).not.toMatch(/formatCanonicalPercent\(confidence\)/);
+      expect(text).not.toMatch(/outlook\.probabilities\.confidence \?\? 0/);
+      expect(text).toMatch(/forecastConfidenceDisplay\(\{/);
+      expect(text).toMatch(/evidenceQuality: canonicalState\?\.confidenceOrEvidenceQuality/);
+      expect(text).toMatch(/topAnalog: marketState\?\.outlook\.topAnalog/);
+      expect(text.match(/data-forecast-confidence=\{confidenceDisplay\.state\}/g)?.length).toBe(2);
+    }
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. B4 — Signals footer agrees with the header (same feed label + coverage)
+// ─────────────────────────────────────────────────────────────────────────────
+describe("Signals footer = header feed state", () => {
+  const quotes = signalsQuotes.quotes as Array<{ ticker: string; price: number; changePercent: number; isLive: boolean; marketStatus: string }>;
+  const catalog = SIGNAL_STOCKS.map(s => s.ticker);
+
+  it("captured prod quotes (source 'live', all closed) → footer LAST CLOSE with the header's coverage", () => {
+    const scoped = catalogQuotes(quotes, catalog);
+    const header = signalsFeedLabel({ source: signalsQuotes.source, quotes: scoped, tickerCount: catalog.length });
+    const footer = signalsFooter(header);
+    expect(footer.title).toBe("LAST CLOSE");
+    expect(footer.title).not.toBe("LIVE DATA");
+    expect(footer.detail).not.toMatch(/intraday/i);
+    expect(footer.coverage).toBe(header.coverage);
+    expect(footer.coverage).toMatch(new RegExp(`^\\d+/${catalog.length} TICKERS QUOTED`));
+    expect(footer.coverage).not.toMatch(/\/42\b/);
+  });
+
+  it("live open quote → LIVE DATA; no quotes → QUOTES UNAVAILABLE (never 'static catalog prices')", () => {
+    const live = [{ ticker: catalog[0], price: 10, changePercent: 1, isLive: true, marketStatus: "open" }];
+    expect(signalsFooter(signalsFeedLabel({ source: "live", quotes: live, tickerCount: catalog.length })).title).toBe("LIVE DATA");
+    const none = signalsFooter(signalsFeedLabel({ source: "fallback", quotes: [], tickerCount: catalog.length }));
+    expect(none.title).toBe("QUOTES UNAVAILABLE");
+    expect(none.detail).not.toMatch(/static catalog prices/i);
+    expect(signalsFooter(signalsFeedLabel({ source: "stale", quotes: live, tickerCount: 1 })).title).toBe("STALE CACHE");
+  });
+
+  it("source: footer and header read the same catalog-scoped quotes and feed label", () => {
+    const s = src("client/src/pages/Signals.tsx");
+    expect(s).not.toMatch(/>LIVE DATA<\/span>/);
+    expect(s).not.toMatch(/\/42 tickers/);
+    expect(s).not.toMatch(/quotesData\?\.source === 'live' \? \(/);
+    expect(s).toMatch(/signalsFooter\(signalsFeedLabel\(\{ source: quotesData\?\.source \?\? null, quotes: catalogQuoteList, tickerCount: SIGNAL_STOCKS\.length \}\)\)/);
+    expect(s).toMatch(/quotes=\{catalogQuoteList\}/);
+    expect(s).toMatch(/tickerCount=\{SIGNAL_STOCKS\.length\}/);
   });
 });
