@@ -29,6 +29,9 @@ import {
 import { getRiskColor } from "@/components/RiskBadge";
 import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
+import { trpc } from "@/lib/trpc";
+import { useAppHeaderFred } from "@/hooks/useAppHeaderFred";
+import { buildChartsInstruments } from "@/lib/chartsInstrumentReadings";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
@@ -646,127 +649,43 @@ function CorrelationRiskMap() {
 }
 
 // ── 5. Institutional Depth Widgets ──────────────────────────
-function seededRandW(seed: number) {
-  let s = seed;
-  return () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
-}
-function buildW(seed: number, n: number, base: number, vol: number) {
-  const r = seededRandW(seed);
-  let v = base;
-  return Array.from({ length: n }, (_, i) => {
-    v = Math.max(-3, Math.min(8, v + (r() - 0.48) * vol));
-    return { t: i, v: parseFloat(v.toFixed(2)) };
-  });
-}
-
+// Bound to the app's existing readings (markets.getGlobalSnapshot + FRED via
+// /api/fred) with source and as-of; otherwise Unavailable / Not tracked.
+// No fixed values and no modelled sparklines.
 function InstitutionalWidgets() {
-  const yieldCurveData = useMemo(() => buildW(301, 36, -0.4, 0.18), []);
-  const vixData = useMemo(() => buildW(302, 36, 22, 2.5), []);
-  const treasuryData = useMemo(() => buildW(303, 36, 4.4, 0.12), []);
-  const aiSentData = useMemo(() => buildW(304, 36, 72, 4), []);
-  const liquidityData = useMemo(() => buildW(305, 36, 5.8, 0.4), []);
-  const creditData = useMemo(() => buildW(306, 36, 380, 18), []);
-
-  const widgets = [
-    {
-      id: 'yield-curve', label: 'Yield Curve', sublabel: '10Y–2Y Spread', value: '-0.42', unit: '%',
-      color: '#FF2D55', data: yieldCurveData, trend: 'inverted',
-      note: 'Inverted — recession signal active',
-      apiSource: 'FRED: T10Y2Y',
-    },
-    {
-      id: 'vix', label: 'VIX Pulse', sublabel: 'Volatility Index', value: '22.8', unit: '',
-      color: '#FF9500', data: vixData, trend: 'elevated',
-      note: 'Elevated — above 20 threshold',
-      apiSource: 'CBOE via Polygon.io',
-    },
-    {
-      id: 'treasury', label: 'Treasury Ribbon', sublabel: '10Y Yield', value: '4.42', unit: '%',
-      color: '#00D4FF', data: treasuryData, trend: 'rising',
-      note: 'Rising — duration risk elevated',
-      apiSource: 'FRED: DGS10',
-    },
-    {
-      id: 'ai-sentiment', label: 'AI Sentiment', sublabel: 'Speculation Index', value: '72', unit: '/100',
-      color: '#C084FC', data: aiSentData, trend: 'extreme',
-      note: 'Extreme greed — bubble risk',
-      apiSource: 'Alpha Vantage: Sentiment',
-    },
-    {
-      id: 'liquidity', label: 'Liquidity Flow', sublabel: 'M2 / Fed Balance', value: '5.8', unit: '/10',
-      color: '#FFD700', data: liquidityData, trend: 'tightening',
-      note: 'Tightening — QT in progress',
-      apiSource: 'FRED: M2SL, WALCL',
-    },
-    {
-      id: 'credit-spread', label: 'Credit Spread', sublabel: 'HY OAS (bps)', value: '380', unit: 'bps',
-      color: '#FF9500', data: creditData, trend: 'widening',
-      note: 'Widening — credit stress rising',
-      apiSource: 'FRED: BAMLH0A0HYM2',
-    },
-  ];
-
-  const trendConfig: Record<string, { color: string; label: string }> = {
-    inverted: { color: '#FF2D55', label: 'INVERTED' },
-    elevated: { color: '#FF9500', label: 'ELEVATED' },
-    rising: { color: '#FF9500', label: 'RISING' },
-    extreme: { color: '#C084FC', label: 'EXTREME' },
-    tightening: { color: '#FFD700', label: 'TIGHTENING' },
-    widening: { color: '#FF9500', label: 'WIDENING' },
-  };
+  const quotesQuery = trpc.markets.getGlobalSnapshot.useQuery(undefined, { staleTime: 60_000, refetchOnWindowFocus: false });
+  const fred = useAppHeaderFred();
+  const widgets = useMemo(
+    () => buildChartsInstruments({ quotes: quotesQuery.data?.items ?? null, fred, now: Date.now() }),
+    [quotesQuery.data, fred],
+  );
 
   return (
     <SectionCard delay={0} accentColor="rgba(0,212,255,0.15)">
       <SectionHeader
-        eyebrow="Institutional Depth · Live Instruments"
+        eyebrow="Institutional Depth · Market Readings"
         title="Market Intelligence Ribbon"
-        subtitle="Six high-signal instruments — structured for FRED, Polygon.io, Alpha Vantage, TradingView"
+        subtitle="Current or delayed readings from the app's market snapshot and FRED, each with its source and as-of time"
         color="#00D4FF"
       />
-      {/* Data status banner */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', padding: '6px 10px', background: 'rgba(255,149,0,0.05)', border: '1px solid rgba(255,149,0,0.15)', borderRadius: '4px' }}>
-        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FF9500', flexShrink: 0 }} />
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#FF9500', letterSpacing: '0.1em' }}>MODEL</span>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>— Chart lines use calibrated baseline models. Current values update when live FRED/Polygon feeds are active.</span>
-      </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-        {widgets.map((w, i) => {
-          const tc = trendConfig[w.trend] ?? { color: '#6B7280', label: w.trend.toUpperCase() };
-          return (
-            <div key={w.id} style={{
-              background: 'rgba(5,6,8,0.9)', border: `1px solid ${w.color}18`,
-              borderRadius: '4px', padding: '10px', position: 'relative', overflow: 'hidden',
-              animation: `cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) ${i * 70}ms both`,
-              transition: 'border-color 0.2s ease',
-            }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = `${w.color}35`}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = `${w.color}18`}
-            >
-              {/* Corner bracket */}
-              <div style={{ position: 'absolute', top: 0, right: 0, width: '8px', height: '8px', borderTop: `1px solid ${w.color}30`, borderRight: `1px solid ${w.color}30` }} />
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>{w.sublabel}</div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#D1D5DB', marginBottom: '4px', lineHeight: 1 }}>{w.label}</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', marginBottom: '4px' }}>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: '20px', color: w.color, textShadow: `0 0 12px ${w.color}60`, lineHeight: 1, animation: 'data-flicker 16s ease-in-out infinite' }}>{w.value}</span>
-                {w.unit && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280' }}>{w.unit}</span>}
-              </div>
-              <ResponsiveContainer width="100%" height={36}>
-                <LineChart data={w.data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                  <Line type="monotone" dataKey="v" stroke={w.color} strokeWidth={1.5} dot={false}
-                    style={{ filter: `drop-shadow(0 0 3px ${w.color}60)` }} />
-                </LineChart>
-              </ResponsiveContainer>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: tc.color, background: `${tc.color}10`, border: `1px solid ${tc.color}25`, borderRadius: '2px', padding: '1px 5px' }}>{tc.label}</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', background: 'rgba(255,149,0,0.08)', border: '1px solid rgba(255,149,0,0.2)', borderRadius: '2px', padding: '1px 4px' }}>MODEL · {w.apiSource.split(':')[0]}</span>
-              </div>
-              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '9px', color: '#4B5563', marginTop: '3px', lineHeight: 1.3 }}>{w.note}</div>
+        {widgets.map((w, i) => (
+          <div key={w.id} data-charts-instrument={w.id} data-status={w.status} style={{
+            background: 'rgba(5,6,8,0.9)', border: `1px solid ${w.color}18`,
+            borderRadius: '4px', padding: '10px', position: 'relative', overflow: 'hidden',
+            animation: `cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) ${i * 70}ms both`,
+          }}>
+            <div style={{ position: 'absolute', top: 0, right: 0, width: '8px', height: '8px', borderTop: `1px solid ${w.color}30`, borderRight: `1px solid ${w.color}30` }} />
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>{w.sublabel}</div>
+            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#D1D5DB', marginBottom: '4px', lineHeight: 1 }}>{w.label}</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', marginBottom: '4px' }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: w.status === 'bound' ? '20px' : '13px', color: w.color, lineHeight: 1 }}>{w.value}</span>
+              {w.unit && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280' }}>{w.unit}</span>}
+              {w.stateLabel && <span style={{ marginLeft: '6px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#94A3B8', border: '1px solid rgba(148,163,184,0.25)', borderRadius: '2px', padding: '1px 4px' }}>{w.stateLabel}</span>}
             </div>
-          );
-        })}
-      </div>
-      <div style={{ marginTop: '10px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#374151', background: 'rgba(255,255,255,0.02)', borderRadius: '3px', padding: '6px 8px', borderLeft: '2px solid rgba(0,212,255,0.15)' }}>
-        API integration ready: FRED (yield curve, treasury, liquidity) · Polygon.io (VIX, equities) · Alpha Vantage (sentiment) · FINRA TRACE (credit spreads) · TradingView (charting)
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', marginTop: '3px', lineHeight: 1.3 }}>{w.basis}</div>
+          </div>
+        ))}
       </div>
     </SectionCard>
   );

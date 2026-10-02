@@ -496,3 +496,57 @@ describe("AIWatch feed + data.ts: no undated / unsourced items, no $214B", () =>
     expect(page).not.toMatch(/has reached 32\.4%/);
   });
 });
+
+// ── Charts tab ribbon: canonical readings or Unavailable / Not tracked ───────
+describe("Charts Market Intelligence Ribbon (no fixed values, no MODEL lines)", async () => {
+  const { buildChartsInstruments, quoteAsOf } = await import("../client/src/lib/chartsInstrumentReadings");
+  const charts = src("client/src/pages/Charts.tsx");
+  const ribbon = charts.slice(charts.indexOf("function InstitutionalWidgets()"), charts.indexOf("// ── Main Charts Page"));
+  const NOW = Date.parse("2026-10-02T18:00:00Z");
+  const q = (symbol: string, price: number | null, extra: Record<string, unknown> = {}) => ({
+    symbol, shortLabel: symbol, price, changePercent: 0, freshnessState: "delayed", sessionStatus: "OPEN",
+    unit: undefined, proxySymbol: undefined, observedAt: NOW - 15 * 60_000, source: "yahoo", ...extra,
+  }) as never;
+
+  it("source: no hard-coded VIX 22.8 / 10Y 4.42 / HY 380 / curve -0.42, no seeded sparklines, no MODEL badge", () => {
+    expect(ribbon).not.toMatch(/'22\.8'|'4\.42'|'380'|'-0\.42'|'72'|'5\.8'/);
+    expect(ribbon).not.toMatch(/buildW\(|seededRandW|LineChart/);
+    expect(ribbon).not.toMatch(/MODEL/);
+    expect(ribbon).not.toMatch(/Alpha Vantage|FINRA|TradingView|API integration ready/);
+    expect(ribbon).toMatch(/trpc\.markets\.getGlobalSnapshot\.useQuery/);
+    expect(ribbon).toMatch(/useAppHeaderFred\(\)/);
+  });
+
+  it("binds VIX / 10Y / curve / HY with source + as-of; ET time for quotes, observation date for FRED", () => {
+    const views = buildChartsInstruments({
+      quotes: [
+        q("^VIX", 17.3),
+        q("FRED:DGS10", 4.11, { source: "fred", freshnessState: "delayed", sessionStatus: "CLOSED", unit: "percent", observedAt: Date.parse("2026-10-01T00:00:00Z") }),
+        q("DERIVED:2Y10Y", 52, { source: "derived:FRED", unit: "bps", sessionStatus: "CLOSED", observedAt: Date.parse("2026-10-01T00:00:00Z") }),
+      ],
+      fred: { BAMLH0A0HYM2: [{ date: "2026-10-01", value: "2.95" }] },
+      now: NOW,
+    });
+    const by = Object.fromEntries(views.map(v => [v.id, v]));
+    expect(by.vix).toMatchObject({ status: "bound", value: "17.3" });
+    expect(by.vix.basis).toMatch(/markets\.getGlobalSnapshot \^VIX · as of .* ET$/);
+    expect(by.treasury).toMatchObject({ status: "bound", value: "4.11", unit: "%" });
+    expect(by.treasury.basis).toMatch(/as of 2026-10-01 \(FRED observation date\)/);
+    expect(by["yield-curve"]).toMatchObject({ status: "bound", value: "52", unit: "bps" });
+    expect(by["credit-spread"]).toMatchObject({ status: "bound", value: "295", unit: "bps" });
+    expect(by["credit-spread"].basis).toBe("FRED BAMLH0A0HYM2 · as of 2026-10-01 (observation date)");
+    expect(by["ai-sentiment"].value).toBe("Not tracked");
+    expect(by.liquidity.value).toBe("Not tracked");
+  });
+
+  it("no snapshot / no FRED → every bound instrument is Unavailable (never a default number)", () => {
+    const views = buildChartsInstruments({ quotes: null, fred: {}, now: NOW });
+    for (const v of views) expect(["Unavailable", "Not tracked"]).toContain(v.value);
+    expect(views.filter(v => v.status === "unavailable").map(v => v.id).sort()).toEqual(["credit-spread", "treasury", "vix", "yield-curve"]);
+  });
+
+  it("quoteAsOf never turns a FRED date into a clock time", () => {
+    expect(quoteAsOf({ observedAt: Date.parse("2026-10-01T00:00:00Z"), source: "fred" })).toBe("2026-10-01 (FRED observation date)");
+    expect(quoteAsOf({ observedAt: null, source: "yahoo" })).toMatch(/no observation time/);
+  });
+});
