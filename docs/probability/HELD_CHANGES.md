@@ -1,6 +1,6 @@
 # Held methodology changes (not in PR #60)
 
-These are on branch `probability/held-methodology-2026-10-02` at b733dfc, stacked on #60's split commit e51e8f5. The branch is pushed and has no PR.
+These are on branch `probability/held-methodology-2026-10-02` (code at b733dfc + 94aba2e), stacked on #60's split commit e51e8f5. The branch is pushed and has no PR.
 
 On James's 2026-10-02 11:42 ET decision, every change below alters a calculated output, so it stays out of #60 until he approves it.
 
@@ -55,7 +55,13 @@ User-visible change under #60: none on canonical surfaces, which show "Uncalibra
 | oct02_1401 Credit Conditions panel | Caution, **50** | Stable, **23** |
 | oct02_1401 Recession Risk condition score | **38** | **28** |
 
+- Daily-brief prompt line (Product-QA `preflight-{base,wt}.json`): "Credit Stress: **50/100**" → "**22/100**".
+
 Not affected: the other condition panels, awareness score and market status.
+
+**Same wrong id elsewhere (also held, commit 94aba2e):** `server/simPortfolioEngine.ts:164` and `server/ownerSimulation.ts:248` (`extractDomainScores`). There `credit` feeds only the LLM rationale prompts ("credit: 50/100" / "Credit Stress: 50/100" → the real vector, 22/100 on the oct01 fixture); no stored score uses it. The same extractors also read `"treasury-yield"` and `"recession-risk"`, which are not engine vector ids either (always 50). They are reported here and **not** changed.
+
+**Test (held branch only):** `server/heldCreditContagion.test.ts` uses the oct01 vectors and asserts credit 22 / Stable, recession 27, no `credit-stress` key risk, `credit-check` pass, and 22/100 in the prompt. With the preFlight id reverted to `credit-stress` it fails (`expected 50 to be 22`).
 
 Also: base's retired preFlight probabilities (oct01 bull 64 / bear 36 / recession 22 / crash 20; oct02 63/37/23/20) were computed from this constant 50. #60 removes those values (they show "Not offered"), as James approved.
 
