@@ -642,7 +642,7 @@ function compute5WayRegimeProbabilities(
 ): UnifiedSeismographIntelligence["regimeProbabilities5way"] {
   const creditFam = families.find((f) => f.name.toLowerCase().includes("credit"));
   const macroFam = families.find((f) => f.name.toLowerCase().includes("macro") || f.name.toLowerCase().includes("fed"));
-  const volFam = families.find((f) => f.name.toLowerCase().includes("volatility"));
+  const volFam = families.find((f) => f.name === YIELD_CURVE_FAMILY_NAME || f.name.toLowerCase().includes("volatility"));
   // The "market-breadth" engine family is named by its canonical label (Labor & Rates);
   // matched by that name so this calculation is unchanged by the relabel.
   const breadthFam = families.find((f) => f.name === LABOR_RATES_FAMILY_NAME || f.name.toLowerCase().includes("breadth"));
@@ -693,6 +693,12 @@ function compute5WayRegimeProbabilities(
 }
 /** Canonical display label for the "market-breadth" engine (Unemployment + 10Y). */
 export const LABOR_RATES_FAMILY_NAME = pressureVectorLabel("market-breadth");
+/**
+ * The "volatility-regime" engine reads the 10Y–2Y curve and the 10Y level
+ * (DGS10, DGS2), not VIX. Its evidence family uses the canonical display label
+ * so NOW/Watch/ACT and the Pressure page name the same vector the same way.
+ */
+export const YIELD_CURVE_FAMILY_NAME = pressureVectorLabel("volatility-regime");
 
 /**
  * Fail-closed normalisation of the stored "market-breadth" (Labor & Rates)
@@ -763,16 +769,16 @@ export function buildEvidenceFamilies(
         "Credit spreads are the most reliable leading indicator of systemic stress. Widening spreads signal that institutional investors are pricing in elevated default risk.",
     },
     {
-      name: "Volatility Regime",
+      name: YIELD_CURVE_FAMILY_NAME,
       signal: latest.volatility >= 65 ? "stressed" : latest.volatility >= 40 ? "neutral" : "bullish",
       strength: latest.volatility,
       currentValue: `${latest.volatility}/100`,
       historicalContext: `6-month average: ${Math.round(avgVol)}/100. ${
         latest.volatility > 70
-          ? "Volatility is in crisis territory — historically associated with forced deleveraging."
+          ? "Curve shape and the 10Y level are in a high-pressure band (deep inversion or steep re-steepening)."
           : latest.volatility > 55
-          ? "Elevated volatility is compressing risk appetite and increasing hedging demand."
-          : "Volatility is contained, consistent with normal market functioning."
+          ? "Curve shape and the 10Y level are adding elevated rate-structure pressure."
+          : "Curve shape and the 10Y level are adding limited rate-structure pressure."
       }`,
       trend:
         latest.volatility > avgVol + 5
@@ -781,7 +787,7 @@ export function buildEvidenceFamilies(
           ? "improving"
           : "stable",
       whyItMatters:
-        "Volatility regime determines the cost of capital and risk appetite. Sustained elevated volatility forces institutional de-risking regardless of fundamental valuations.",
+        "The 10Y–2Y curve and the 10Y level summarize the rate structure facing borrowers and risk assets. This vector does not read VIX or realized volatility.",
     },
     {
       name: "Macro Sensitivity",

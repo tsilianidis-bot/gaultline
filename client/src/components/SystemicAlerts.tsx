@@ -47,17 +47,18 @@ const CATEGORY_META: Record<SystemicCategory, {
 };
 
 // ── Alert generation from live engine data ─────────────────────
-function generateSystemicAlerts(output: ReturnType<typeof useEngine>['output']): SystemicAlert[] {
+export function generateSystemicAlerts(output: ReturnType<typeof useEngine>['output']): SystemicAlert[] {
   const alerts: SystemicAlert[] = [];
-  const { overall, domains, regime, analogs, alertPressure } = output;
+  const { overall, domains, regime, analogs } = output;
 
-  const domainMap = Object.fromEntries(domains.map(d => [d.id, d.score]));
-  const liquidityScore  = domainMap['liquidity']      ?? alertPressure.liquidity ?? 0;
-  const creditScore     = domainMap['credit-stress']  ?? alertPressure.credit    ?? 0;
-  const aiBubbleScore   = domainMap['ai-bubble']      ?? alertPressure.aiRisk    ?? 0;
-  const treasuryScore   = domainMap['treasury-debt']  ?? alertPressure.treasury  ?? 0;
-  const inflationScore  = domainMap['inflation-fed']  ?? 0;
-  const recessionScore  = domainMap['recession']      ?? 0;
+  // 0–10 domain scores by id only. No fallback to output.alertPressure: it is on
+  // a 0–100 scale (so 56 read as "56.0/10") and, in canonical mode, came from the
+  // browser engine's DEFAULT_INDICATORS demo baseline. A missing domain raises no
+  // alert (never a neutral 0 or a demo value).
+  const domainMap = Object.fromEntries(domains.map(d => [d.id, d.score])) as Record<string, number | undefined>;
+  const liquidityScore  = domainMap['liquidity'] ?? null;
+  const creditScore     = domainMap['credit-stress'] ?? null;
+  const aiBubbleScore   = domainMap['ai-bubble'] ?? null;
 
   // ── 1. Regime Shift ──────────────────────────────────────────
   if (overall.score >= 6.5) {
@@ -76,7 +77,7 @@ function generateSystemicAlerts(output: ReturnType<typeof useEngine>['output']):
   }
 
   // ── 2. Liquidity Deterioration ───────────────────────────────
-  if (liquidityScore >= 5.5) {
+  if (liquidityScore != null && liquidityScore >= 5.5) {
     const sev = liquidityScore >= 8 ? 'critical' : liquidityScore >= 6.5 ? 'high' : 'elevated';
     alerts.push({
       id: `liquidity-${Math.round(liquidityScore * 10)}`,
@@ -92,7 +93,7 @@ function generateSystemicAlerts(output: ReturnType<typeof useEngine>['output']):
   }
 
   // ── 3. Credit Stress ─────────────────────────────────────────
-  if (creditScore >= 5.0) {
+  if (creditScore != null && creditScore >= 5.0) {
     const sev = creditScore >= 8 ? 'critical' : creditScore >= 6.5 ? 'high' : 'elevated';
     alerts.push({
       id: `credit-stress-${Math.round(creditScore * 10)}`,
@@ -108,7 +109,7 @@ function generateSystemicAlerts(output: ReturnType<typeof useEngine>['output']):
   }
 
   // ── 4. AI Concentration Risk ──────────────────────────────────
-  if (aiBubbleScore >= 5.0) {
+  if (aiBubbleScore != null && aiBubbleScore >= 5.0) {
     const sev = aiBubbleScore >= 8 ? 'critical' : aiBubbleScore >= 6.5 ? 'high' : 'elevated';
     alerts.push({
       id: `ai-concentration-${Math.round(aiBubbleScore * 10)}`,

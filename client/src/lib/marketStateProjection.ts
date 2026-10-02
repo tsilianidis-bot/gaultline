@@ -69,6 +69,10 @@ export function projectCanonicalMarketState(
 
   return {
     ...deterministicFallback,
+    // Never inherit values computed from the DEFAULT_INDICATORS demo baseline:
+    // the canonical state has no ticker values or 0–100 alert gauges.
+    tickerValues: [],
+    alertPressure: { treasury: null, credit: null, aiRisk: null, liquidity: null },
     overall: {
       id: "canonical-market-pressure",
       label: "Market Pressure",

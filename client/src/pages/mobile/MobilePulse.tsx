@@ -40,14 +40,18 @@ function getRegimeLabel(regime: string): string {
 
 // ── Main Component ────────────────────────────────────────────
 export default function MobilePulse() {
-  const { data: canonicalState, isLoading: canonicalLoading, refetch, isFetching } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+  const { data: canonicalState, isLoading: canonicalLoading, refetch, isFetching, fetchStatus } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
 
   const regimeColor = useMemo(() => getRegimeColor(canonicalState?.regime ?? ""), [canonicalState?.regime]);
 
-  if (canonicalLoading) {
+  // Offline: react-query pauses the fetch and isLoading would stay true forever.
+  // Fail closed to the unavailable state instead of an endless LOADING spinner.
+  const offlinePaused = canonicalLoading && fetchStatus === "paused";
+
+  if (canonicalLoading && !offlinePaused) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <div className="w-10 h-10 rounded-full border-2 border-[#00D4FF]/30 border-t-[#00D4FF] animate-spin" />
@@ -59,8 +63,9 @@ export default function MobilePulse() {
   if (!canonicalState) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
-        <span className="text-[10px] font-mono tracking-widest text-[#64748B]">CANONICAL STATE UNAVAILABLE</span>
-        <p className="text-xs text-[#A8B8CC]">Current mobile pulse is withheld. No default, fixture, or live pressure recalculation is shown as current intelligence.</p>
+        <span data-mobile-pulse-unavailable={offlinePaused ? "offline" : "unavailable"} className="text-[10px] font-mono tracking-widest text-[#64748B]">{offlinePaused ? "OFFLINE · " : ""}CANONICAL STATE UNAVAILABLE</span>
+        <p className="text-xs text-[#A8B8CC]">{offlinePaused ? "No network connection. " : ""}Current mobile pulse is withheld. No default, fixture, or live pressure recalculation is shown as current intelligence.</p>
+        <button type="button" onClick={() => { void refetch(); }} className="mt-2 text-[10px] font-mono tracking-widest text-[#00D4FF] border border-[#00D4FF]/30 rounded px-3 py-1.5">RETRY</button>
       </div>
     );
   }

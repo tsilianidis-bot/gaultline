@@ -18,6 +18,8 @@ import PageHeader from "@/components/PageHeader";
 import SystemicAlertsPanel from "@/components/SystemicAlerts";
 import { trpc } from "@/lib/trpc";
 import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
+import { useLiveIndicatorReadings } from "@/hooks/useLiveIndicatorReadings";
+import { evaluableIndicatorValues, type IndicatorReading } from "@/lib/liveIndicatorReadings";
 
 type ArchivedEvent = {
   id: number;
@@ -247,8 +249,11 @@ function AlertCard({
 }
 
 // ── Threshold rule card ────────────────────────────────────────
-function ThresholdCard({ rule, indicators }: { rule: typeof THRESHOLD_RULES[0]; indicators: Record<string, number> }) {
-  const value = indicators[rule.metric] ?? null;
+function ThresholdCard({ rule, reading }: { rule: typeof THRESHOLD_RULES[0]; reading: IndicatorReading | undefined }) {
+  // Real reading only (FRED / markets snapshot). Missing → UNAVAILABLE; a STALE
+  // reading is shown but never evaluated as a breach.
+  const evaluable = reading != null && reading.stateLabel !== 'STALE';
+  const value = evaluable ? reading.value : null;
   const breached = value !== null && (rule.direction === 'above' ? value > rule.threshold : value < rule.threshold);
   const proximity = value !== null
     ? rule.direction === 'above'
@@ -269,9 +274,9 @@ function ThresholdCard({ rule, indicators }: { rule: typeof THRESHOLD_RULES[0]; 
           {rule.label}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {value !== null && (
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: breached ? rule.color : '#6B7280' }}>
-              {value.toFixed(rule.metric === 'auctionBidCover' ? 2 : 1)}
+          {reading != null && (
+            <span title={reading.source} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: breached ? rule.color : '#6B7280' }}>
+              {reading.value.toFixed(rule.metric === 'auctionBidCover' ? 2 : 1)}{reading.stateLabel ? ` · ${reading.stateLabel}` : ''}
             </span>
           )}
           <span style={{
@@ -281,7 +286,7 @@ function ThresholdCard({ rule, indicators }: { rule: typeof THRESHOLD_RULES[0]; 
             border: `1px solid ${breached ? rule.color + '30' : 'rgba(255,255,255,0.06)'}`,
             borderRadius: '2px', padding: '1px 5px',
           }}>
-            {breached ? 'BREACHED' : 'WATCHING'}
+            {reading == null ? 'UNAVAILABLE' : breached ? 'BREACHED' : 'WATCHING'}
           </span>
         </div>
       </div>
@@ -302,8 +307,13 @@ function ThresholdCard({ rule, indicators }: { rule: typeof THRESHOLD_RULES[0]; 
 // ── Main Alerts page ──────────────────────────────────────────
 function AlertsInner() {
   useSEO(PAGE_SEO.alerts);
-  const { output, indicators, integrityLabel } = useEngine();
-  const { overall, domains, regime, alertPressure } = output;
+  const { output, integrityLabel, marketMode } = useEngine();
+  const { overall, domains, regime } = output;
+  // Fail closed: without the canonical state the browser engine runs on its
+  // DEFAULT_INDICATORS demo baseline, so no regime, gauge or alert is derived.
+  const canonicalAvailable = marketMode === 'canonical';
+  const { readings } = useLiveIndicatorReadings();
+  const evaluableIndicators = useMemo(() => evaluableIndicatorValues(readings), [readings]);
   const [archiveSeverity, setArchiveSeverity] = useState<"all" | ArchivedEvent["severity"]>("all");
   const [archiveDirection, setArchiveDirection] = useState<"all" | ArchivedEvent["direction"]>("all");
   const [archiveSearch, setArchiveSearch] = useState("");
@@ -352,6 +362,9 @@ function AlertsInner() {
 
   // Generate alerts when engine output changes
   useEffect(() => {
+    // Baseline and change detection use the canonical state only, never the
+    // demo-baseline output shown while the canonical state is loading/unavailable.
+    if (!canonicalAvailable) return;
     if (!initialized.current) {
       // On first load, just record baseline state without generating alerts
       prevRegimeCode.current = output.regime.code;
@@ -362,7 +375,7 @@ function AlertsInner() {
 
     const newAlerts = generateAlerts(
       output,
-      indicators,
+      evaluableIndicators,
       prevRegimeCode.current,
       prevDomainScores.current,
     );
@@ -377,7 +390,7 @@ function AlertsInner() {
 
     prevRegimeCode.current = output.regime.code;
     prevDomainScores.current = Object.fromEntries(output.domains.map(d => [d.id, d.score]));
-  }, [output, indicators]);
+  }, [output, evaluableIndicators, canonicalAvailable]);
 
   const handleAcknowledge = (id: string) => {
     setAlertHistory(prev => {
@@ -415,8 +428,6 @@ function AlertsInner() {
   // Pressure gauge colors
   const gaugeColor = (v: number) => v >= 7 ? '#FF2D55' : v >= 5 ? '#FF9500' : v >= 3 ? '#FFD700' : '#00D4FF';
 
-  // Indicators as plain object for threshold cards
-  const indicatorMap = indicators as unknown as Record<string, number>;
 
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', paddingBottom: '100px' }}>
@@ -443,6 +454,11 @@ function AlertsInner() {
 	  <div style={{ padding: '16px' }}>
 	    <EarlyWarningPresentationPanel mode="compact" />
 
+	  {!canonicalAvailable ? (
+	    <div data-alerts-canonical="unavailable" style={{ background: 'rgba(10,12,16,0.9)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '14px', marginBottom: '16px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#94A3B8', lineHeight: 1.6 }}>
+	      CURRENT CANONICAL STATE UNAVAILABLE — regime, pressure gauges and systemic alerts are withheld until one authoritative state is available.
+	    </div>
+	  ) : (<>
 	  {/* Regime status banner */}
       <div style={{
         background: `linear-gradient(135deg, ${regime.color}12, rgba(10,12,16,0.95))`,
@@ -474,13 +490,9 @@ function AlertsInner() {
       {/* Pressure gauges */}
       <div style={{ background: 'rgba(10,12,16,0.9)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.1em', marginBottom: '12px' }}>
-          LIVE PRESSURE GAUGES
+          DOMAIN PRESSURE GAUGES · 0–10 · LATEST MONTHLY RECORD
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: '8px' }}>
-          <PressureGauge label="Treasury" value={alertPressure.treasury} color={gaugeColor(alertPressure.treasury)} />
-          <PressureGauge label="Credit" value={alertPressure.credit} color={gaugeColor(alertPressure.credit)} />
-          <PressureGauge label="AI Risk" value={alertPressure.aiRisk} color={gaugeColor(alertPressure.aiRisk)} />
-          <PressureGauge label="Liquidity" value={alertPressure.liquidity} color={gaugeColor(alertPressure.liquidity)} />
           {domains.slice(0, 4).map(d => (
             <PressureGauge key={d.id} label={d.label.split(' ')[0]} value={d.score} color={gaugeColor(d.score)} />
           ))}
@@ -489,6 +501,8 @@ function AlertsInner() {
 
       {/* ── Systemic Alert Engine ─────────────────────────── */}
       <SystemicAlertsPanel />
+
+	  </>)}
 
       {/* Threshold watchlist toggle */}
       <div style={{ marginBottom: '12px' }}>
@@ -512,7 +526,7 @@ function AlertsInner() {
         {showThresholds && (
           <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {THRESHOLD_RULES.map(rule => (
-              <ThresholdCard key={rule.id} rule={rule} indicators={indicatorMap} />
+              <ThresholdCard key={rule.id} rule={rule} reading={readings[rule.metric as keyof typeof readings]} />
             ))}
           </div>
         )}
