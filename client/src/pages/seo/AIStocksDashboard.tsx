@@ -10,13 +10,13 @@ export default function AIStocksDashboard() {
       }}
       badge="AI STOCKS INTELLIGENCE"
       headline={"AI Stocks Dashboard\nAll AI Stocks. One Signal View."}
-      subheadline="FAULTLINE's AI Stocks Dashboard tracks every major AI-exposed equity as new data is published — from AI infrastructure (NVDA, AMD) to AI software (PLTR, MSFT) to AI-powered platforms (META, GOOGL, AMZN). One dashboard. All signals. Macro-aligned."
+      subheadline="FAULTLINE's AI Stocks Dashboard reads every major AI-exposed equity against the macro regime and a static AI-concentration baseline — from AI infrastructure (NVDA, AMD) to AI software (PLTR, MSFT) to AI-powered platforms (META, GOOGL, AMZN). One dashboard. All signals. Macro-aligned."
       ctaLabel="VIEW AI STOCK SIGNALS"
       ctaHref="/app/signals"
       accentColor="#00D4FF"
       features={[
         { icon: "◈", title: "AI Bubble Exposure Ratings", desc: "Every AI stock classified by its sensitivity to AI narrative momentum — from HIGH to MODERATE to LOW exposure." },
-        { icon: "◎", title: "Regime Fit Scores", desc: "How well does each AI stock fit the current macro regime? Scores from 0-10 refreshed as new data is published." },
+        { icon: "◎", title: "Regime Fit Scores", desc: "How well does each AI stock fit the current macro regime? Scores from 0-10, based on FAULTLINE's macro inputs and a static AI-concentration baseline." },
         { icon: "⬡", title: "Signal Classification", desc: "BUY, SELL, HOLD, or WATCH for every tracked AI stock — based on macro alignment, momentum, and technical structure." },
         { icon: "◈", title: "AI Concentration Risk Monitor", desc: "Track the aggregate AI concentration in the S&P 500 and the systemic risk it creates for the broader market." },
         { icon: "◎", title: "Sector Rotation Signals", desc: "Monitor capital flows between AI infrastructure, AI software, and AI-powered platforms to identify rotation opportunities." },
@@ -41,7 +41,7 @@ AI-Adjacent (Moderate AI Exposure): Companies that benefit from AI adoption with
 
 When concentrated positions unwind, the cascade effect on index-level returns is severe. The 2000 dot-com bubble provides the historical precedent: the top 10 S&P 500 stocks in March 2000 represented approximately 25% of the index. When technology stocks began to fall, the concentration amplified the index-level decline.
 
-FAULTLINE's AI Bubble Monitor assesses this concentration risk from a static 32.4% AI-concentration baseline (a fixed reference value, not a live market-cap feed), adjusted by the latest 10-year yield and high-yield spread, and compares it with historical bubble periods. The AI Stocks Dashboard provides the stock-level view of this systemic risk — showing which individual stocks are most exposed and how their signals are evolving.
+FAULTLINE's AI Bubble Monitor assesses this concentration risk from a static 32.4% AI-concentration baseline (a fixed reference value with no live source and no published as-of date; not a live market-cap feed), adjusted by the latest 10-year yield and high-yield spread, and compares it with historical bubble periods. The AI Stocks Dashboard provides the stock-level view of this systemic risk — showing which individual stocks are most exposed and how their signals are evolving.
 
 The key insight is that AI stock analysis cannot be done in isolation from the systemic concentration risk. A stock that looks attractive on individual metrics may still be a poor risk-adjusted investment if it is part of a highly concentrated sector that is vulnerable to a systemic unwind.`,
         },

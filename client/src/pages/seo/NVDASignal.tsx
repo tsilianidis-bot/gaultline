@@ -32,9 +32,9 @@ Technical Structure: the NVDA signal (BUY, SELL, HOLD, or WATCH) is computed fro
 The combination of these three inputs produces FAULTLINE's NVDA regime fit score (0-10) and signal classification, recalculated as new data is published.`}
       keyLevels={`FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:
 
-Major Support Zones: The 200-day moving average is the primary long-term support for NVDA. Previous all-time highs that became support after being broken are secondary support levels. Major round numbers attract significant options positioning.
+Major Support Zones: The 200-day moving average is the primary long-term support for NVDA. Prior peaks that became support after being broken are secondary support levels. Major round numbers attract significant options positioning.
 
-Resistance Clusters: Previous all-time highs before they were broken become resistance if the stock pulls back below them.
+Resistance Clusters: Prior peaks before they were broken become resistance if the stock pulls back below them.
 
 Entry Zones: FAULTLINE does not publish price targets or support/resistance levels on this page.
 
@@ -43,7 +43,7 @@ Stop-Loss Levels: FAULTLINE does not publish price targets or support/resistance
 
 1. AI Capex Cycle Peak Risk: NVDA's extraordinary revenue growth depends on continued massive AI infrastructure investment by hyperscalers. If AI capex growth decelerates — due to ROI concerns, economic slowdown, or strategic pivots — NVDA's forward estimates would compress rapidly.
 
-2. Valuation Multiple Compression: NVDA trades at a significant premium to the broader market. In a risk-off environment, high-multiple growth stocks experience multiple compression — the P/E ratio falls even if earnings remain stable, causing the stock price to decline.
+2. Valuation Multiple Compression: NVDA has historically traded at a premium to the broader market. In a risk-off environment, high-multiple growth stocks experience multiple compression — the P/E ratio falls even if earnings remain stable, causing the stock price to decline.
 
 3. Competition from Custom Silicon: Microsoft (Maia), Google (TPU), Amazon (Trainium), and Meta are all developing custom AI chips to reduce dependence on NVIDIA. If custom silicon adoption accelerates, NVDA's market share and pricing power could erode.
 
@@ -61,7 +61,7 @@ Stop-Loss Levels: FAULTLINE does not publish price targets or support/resistance
         },
         {
           question: "What are NVDA's key support levels?",
-          answer: "FAULTLINE does not publish price targets or support/resistance levels on this page. Traders commonly watch the 200-day moving average, previous all-time highs that became support, and major round numbers; those are general technical-analysis conventions, not FAULTLINE outputs.",
+          answer: "FAULTLINE does not publish price targets or support/resistance levels on this page. Traders commonly watch the 200-day moving average, prior peaks that became support, and major round numbers; those are general technical-analysis conventions, not FAULTLINE outputs.",
         },
         {
           question: "How does the Federal Reserve affect NVDA's stock price?",

@@ -51,9 +51,9 @@ FAULTLINE's Bitcoin Risk Dashboard uses the macro framework as the primary analy
           heading: "How Technical Levels Are Read: Bitcoin",
           body: `FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:
 
-Major Support Zones: These are price levels where significant buying interest has historically emerged — previous all-time highs that became support and major moving averages (200-day, 200-week).
+Major Support Zones: These are price levels where significant buying interest has historically emerged — prior cycle peaks that became support and major moving averages (200-day, 200-week).
 
-Resistance Clusters: Price levels where significant selling pressure has historically emerged — previous all-time highs before they were broken and major round numbers.
+Resistance Clusters: Price levels where significant selling pressure has historically emerged — prior cycle peaks before they were broken and major round numbers.
 
 Psychological Levels: major round numbers that attract significant options positioning and retail attention.`,
         },
@@ -73,7 +73,7 @@ Psychological Levels: major round numbers that attract significant options posit
         },
         {
           question: "Does this page publish BTC price levels?",
-          answer: "No. FAULTLINE does not publish price targets or support/resistance levels on this page. Traders commonly watch previous all-time highs, the 200-day and 200-week moving averages, and major round numbers; those are general technical-analysis conventions, not FAULTLINE outputs.",
+          answer: "No. FAULTLINE does not publish price targets or support/resistance levels on this page. Traders commonly watch prior cycle peaks, the 200-day and 200-week moving averages, and major round numbers; those are general technical-analysis conventions, not FAULTLINE outputs.",
         },
         {
           question: "Is Bitcoin a good hedge against inflation?",
