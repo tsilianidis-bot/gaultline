@@ -62,12 +62,15 @@ export const getLoginUrl = () => {
 /**
  * Navigate to the OAuth portal only when Vite OAuth env produced a real URL.
  * Independent staging leaves getLoginUrl() as "" — do not send the browser to Manus.
+ * Returns true only when a navigation to the portal was started, so callers can
+ * leave any "redirecting" UI state when sign-in is unavailable.
  */
-export function navigateToLogin(): void {
+export function navigateToLogin(): boolean {
   const url = getLoginUrl();
-  if (!url) return;
-  if (typeof window === "undefined") return;
+  if (!url) return false;
+  if (typeof window === "undefined") return false;
   window.location.href = url;
+  return true;
 }
 
 /** Prevent empty-href same-document navigation when OAuth is inactive. */

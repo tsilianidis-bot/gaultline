@@ -23,10 +23,37 @@ interface CinematicAuthGateProps {
   onAuthenticated: () => void;
 }
 
+/** The gate never stays in REDIRECTING: after this long it returns to SIGN IN with an error. */
+export const SIGN_IN_REDIRECT_TIMEOUT_MS = 15_000;
+
+const SIGN_IN_UNAVAILABLE_MSG = "Sign-in is unavailable right now. Please try again later or continue as guest.";
+const SIGN_IN_TIMEOUT_MSG = "Sign-in is taking longer than expected. Please try again.";
+
 export default function CinematicAuthGate({ onAuthenticated }: CinematicAuthGateProps) {
   const { user, loading } = useAuth();
   const [visible, setVisible] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
+  const [signInError, setSignInError] = useState<string | null>(null);
+
+  // A started redirect that has not left the page times out back to SIGN IN.
+  useEffect(() => {
+    if (!signingIn) return;
+    const t = setTimeout(() => {
+      setSigningIn(false);
+      setSignInError(SIGN_IN_TIMEOUT_MSG);
+    }, SIGN_IN_REDIRECT_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [signingIn]);
+
+  // Back from the provider can restore this page from the back/forward cache
+  // with signingIn still true; return to the SIGN IN state instead.
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) setSigningIn(false);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   // Fade in
   useEffect(() => {
@@ -43,13 +70,21 @@ export default function CinematicAuthGate({ onAuthenticated }: CinematicAuthGate
   }, [loading, user, onAuthenticated]);
 
   const handleSignIn = () => {
-    setSigningIn(true);
+    setSignInError(null);
     // Store a flag so after OAuth redirect we skip the cinematic
     // and go straight to PLATO greeting
     try {
       sessionStorage.setItem("fl_post_auth_asha", "1");
     } catch {}
-    navigateToLogin();
+    if (!navigateToLogin()) {
+      // No portal URL (OAuth env missing): nothing will navigate, so never show REDIRECTING.
+      try {
+        sessionStorage.removeItem("fl_post_auth_asha");
+      } catch {}
+      setSignInError(SIGN_IN_UNAVAILABLE_MSG);
+      return;
+    }
+    setSigningIn(true);
   };
 
   return (
@@ -149,6 +184,21 @@ export default function CinematicAuthGate({ onAuthenticated }: CinematicAuthGate
         >
           {signingIn ? "REDIRECTING…" : loading ? "CHECKING…" : "SIGN IN / SIGN UP"}
         </button>
+
+        {signInError && (
+          <div
+            role="alert"
+            style={{
+              fontFamily: "'IBM Plex Sans', sans-serif",
+              fontSize: "13px",
+              lineHeight: 1.5,
+              color: "rgba(255,170,0,0.85)",
+              textAlign: "center",
+            }}
+          >
+            {signInError}
+          </div>
+        )}
 
         {/* Divider */}
         <div style={{
