@@ -8,6 +8,8 @@ On James's 2026-10-02 11:42 ET decision, every change below alters a calculated 
 All numbers come from running one harness on three trees: base `d1834a5`, launch `e51e8f5` (the #60 split commit) and held `b733dfc`.
 - The harness is `/workspace/probability/engine-diff/engineDiff.harness.test.ts`, with fixtures in `fixtures.json` and raw output in `out/*.json`.
 - The clock is frozen at 2026-10-02 18:01:25.427Z, so `stateHash` is reproducible: base run twice gives 0 differing fields.
+- The `stateHash` prefixes below match the committed `engine-diff/base-vs-held.txt` (an earlier draft of this file had prefixes from a pre-final harness run).
+- #60's final head `af73475` (display/contract fixes on top of 27cf167) gives 0 differing fields against launch and the same 38 display-only differences against base. All computed values are identical to base.
 
 Fixtures:
 - **oct01:** the 2026-10-01 production replay (`/workspace/repair-failclosed/replay-map.json`): assembled seismograph, canonical state, systemic regime and unified payload. Product-QA used the same replay.
@@ -31,10 +33,10 @@ Product-QA's own measurements in `/workspace/prod-qa-oct1/gate-pr60/item10/` (`c
 |---|---|---|
 | oct01 analog packet | `stressed` (Fed Pivot Rally, 91% similarity) | `neutral` |
 | oct01 scenario weights bull/neutral/bear | **43 / 43 / 14** | **43 / 57 / 0** |
-| oct01 manifest `modelVersion` / `stateHash` | `2.0` / `8acc472e…` | `2.1` / `414d6393…` |
+| oct01 manifest `modelVersion` / `stateHash` | `2.0` / `dbb3ba52…` | `2.1` / `11bba85f…` |
 | oct01 governed claims (neutral, bear) | 43, 14 | 57, 0 |
 | oct02_1401 scenario weights | **33 / 50 / 17** | **33 / 67 / 0** |
-| oct02_1401 `modelVersion` / `stateHash` | `2.0` / `f802a5b8…` | `2.1` / `e6bf4e90…` |
+| oct02_1401 `modelVersion` / `stateHash` | `2.0` / `03520e2e…` | `2.1` / `06020e6a…` |
 
 These stay the same on both sides: pressure score (33 and 34), regime, stress level, direction, percentile 83, evidence consensus (weak and divergent), primary driver, and transitions.
 
