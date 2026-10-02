@@ -211,7 +211,9 @@ interface BriefAnswer {
     pressureIndex: number;
     marketHealth: string;
     institutionalBias: string;
-    confidence: number;
+    /** Uncalibrated: rendered only as confidenceText. */
+    confidence: number | null;
+    confidenceText?: string;
     marketStatus: string;
   };
   topOpportunities: Array<{
@@ -2259,7 +2261,7 @@ function FullMarketBriefingCard({ brief, onAskFollowUp, onSelectAsset }: { brief
           <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>BIAS</div><div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: biasColor }}>{brief.todaysMarket.institutionalBias}</div></div>
           <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>HEALTH</div><div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: '#F0F4FF' }}>{brief.todaysMarket.marketHealth}</div></div>
           <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>STATUS</div><div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: statusColor }}>{brief.todaysMarket.marketStatus}</div></div>
-          <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>CONFIDENCE</div><div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: brief.todaysMarket.confidence > 65 ? '#00FF88' : '#FFD700' }}>{brief.todaysMarket.confidence}%</div></div>
+          <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>CONFIDENCE</div><div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: '#94A3B8' }}>{brief.todaysMarket.confidenceText ?? 'Uncalibrated'}</div></div>
         </div>
       </div>
 
@@ -2769,7 +2771,7 @@ export default function SmartDiscovery() {
             aiConcentration: 32,
             volatility: 40,
             // Withheld (NaN) → null; zod rejects NaN.
-        bullProbability: Number.isFinite(probability.bullProbability) ? probability.bullProbability : null,
+            bullProbability: Number.isFinite(probability.bullProbability) ? probability.bullProbability : null,
             timestamp: Date.now(),
           },
         });

@@ -10,7 +10,7 @@ import {
   overlayUnifiedSeismographIntelligence,
 } from "./probabilityContract";
 import { buildProbabilityClaim, SCENARIO_DEFINITIONS, type CanonicalProbabilityContract } from "../shared/probabilityContract";
-import { EngineSnapshotSchema } from "./routers/dailyBrief";
+import { EngineSnapshotSchema, computeOverallConfidence, OVERALL_CONFIDENCE_DISPLAY_TEXT } from "./routers/dailyBrief";
 import { computeEngine, DEFAULT_INDICATORS } from "../client/src/lib/engine";
 
 const prodCanonical = JSON.parse(readFileSync(join(__dirname, "__fixtures__", "prod-2026-10-01", "canonical-current.json"), "utf8"));
@@ -99,6 +99,18 @@ describe("daily brief engine snapshot (QA item 4)", () => {
     expect(EngineSnapshotSchema.safeParse(base).success).toBe(true);
     expect(EngineSnapshotSchema.safeParse({ ...base, bullProbability: 53 }).success).toBe(true);
   });
+  it("overallConfidence keeps the pre-contract formula (methodology-neutral) and is displayed as Uncalibrated", () => {
+    // Base formula: round((100-p)*0.35 + breadth*0.25 + liquidity*0.25 + bull*0.15) = round(60.65) = 61.
+    expect(computeOverallConfidence({ ...base, bullProbability: 53 })).toBe(61);
+    expect(computeOverallConfidence({ ...base, bullProbability: 0 })).toBe(53);
+    // Withheld bull: no value is substituted.
+    expect(computeOverallConfidence({ ...base, bullProbability: null })).toBeNull();
+    expect(computeOverallConfidence({ ...base, bullProbability: Number.NaN })).toBeNull();
+    expect(OVERALL_CONFIDENCE_DISPLAY_TEXT).toBe("Uncalibrated");
+    const page = readFileSync(join(__dirname, "..", "client", "src", "pages", "SmartDiscovery.tsx"), "utf8");
+    expect(page).not.toMatch(/\{brief\.todaysMarket\.confidence\}%/);
+    expect(page).toContain("brief.todaysMarket.confidenceText ?? 'Uncalibrated'");
+  });
 });
 
 describe("browser engine narrative (QA item 7)", () => {
@@ -151,6 +163,5 @@ describe("prompts withhold scenario / transition percentages (QA item 8)", () =>
     expect(outlook).not.toMatch(/transitionProbability \?\? 0\}%/);
     const brief = readFileSync(join(__dirname, "routers", "dailyBrief.ts"), "utf8");
     expect(brief).not.toMatch(/Bull Probability: \$\{engineSnapshot\.bullProbability\}%/);
-    expect(brief).not.toMatch(/engineSnapshot\.bullProbability \* 0\.15/);
   });
 });

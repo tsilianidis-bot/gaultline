@@ -37,6 +37,32 @@ const PreferencesInputSchema = z.object({
   onboardingComplete: z.boolean().optional(),
 });
 
+// ── Daily-brief overall confidence ───────────────────────────────────────────
+/** Display text for overallConfidence: it has no calibration record (probability contract). */
+export const OVERALL_CONFIDENCE_DISPLAY_TEXT = "Uncalibrated" as const;
+
+/**
+ * The daily brief's overall confidence. Formula unchanged from before the
+ * probability contract (methodology-neutral). When the bull input is withheld
+ * (null/NaN) the formula has no defined value, so it returns null instead of
+ * substituting one. Displayed only as OVERALL_CONFIDENCE_DISPLAY_TEXT.
+ */
+export function computeOverallConfidence(engineSnapshot: {
+  overallPressure: number;
+  breadth: number;
+  liquidity: number;
+  bullProbability?: number | null;
+}): number | null {
+  const bullProbability = engineSnapshot.bullProbability;
+  if (typeof bullProbability !== "number" || !Number.isFinite(bullProbability)) return null;
+  return Math.round(
+    (100 - engineSnapshot.overallPressure) * 0.35 +
+    engineSnapshot.breadth * 0.25 +
+    engineSnapshot.liquidity * 0.25 +
+    bullProbability * 0.15
+  );
+}
+
 // ── Engine snapshot shape (subset of EngineOutput for diff) ──────────────────
 export const EngineSnapshotSchema = z.object({
   overallPressure:  z.number(),
@@ -329,13 +355,7 @@ export const dailyBriefRouter = router({
 
       const institutionalBias = deriveInstitutionalBias(engineSnapshot.overallPressure, engineSnapshot.regime);
       const marketHealth = deriveMarketHealth(engineSnapshot.overallPressure, engineSnapshot.breadth, engineSnapshot.liquidity);
-      // Probability contract: the uncalibrated bull scenario no longer feeds the
-      // brief's confidence (the client sends null; NaN made zod reject the call).
-      const overallConfidence = Math.round(
-        (100 - engineSnapshot.overallPressure) * 0.35 +
-        engineSnapshot.breadth * 0.25 +
-        engineSnapshot.liquidity * 0.25
-      );
+      const overallConfidence = computeOverallConfidence(engineSnapshot);
 
       // Build top risks from engine data
       const topRisks: string[] = [];
@@ -403,7 +423,10 @@ Write the 3-sentence CIO institutional insight for today's brief.`,
           pressureIndex:      engineSnapshot.overallPressure,
           marketHealth,
           institutionalBias,
-          confidence:         Math.min(99, Math.max(50, overallConfidence)),
+          // Calculation unchanged (null only when the bull input is withheld).
+          // Not calibrated, so surfaces render confidenceText, never the number.
+          confidence:         overallConfidence === null ? null : Math.min(99, Math.max(50, overallConfidence)),
+          confidenceText:     OVERALL_CONFIDENCE_DISPLAY_TEXT,
           marketStatus:       engineSnapshot.overallPressure < 30 ? "RISK-ON" : engineSnapshot.overallPressure < 55 ? "NEUTRAL" : "RISK-OFF",
         },
         // Section 3: Top Opportunities
