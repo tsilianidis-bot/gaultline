@@ -5,12 +5,12 @@ export default function AltSeasonIndicator() {
     <SEOLandingPage
       seo={{
         title: "Alt Season Indicator — Is Alt Season Here? | FAULTLINE",
-        description: "Track alt season probability as new data is published. Monitor BTC dominance, ETH/BTC ratio, altcoin momentum, and capital rotation signals to know when alt season is building — before the move is obvious.",
+        description: "Alt season context: BTC dominance, the ETH/BTC ratio, altcoin momentum, and capital rotation. FAULTLINE does not offer an alt season probability or an advance-warning signal.",
         canonical: "/alt-season-indicator",
       }}
       badge="ALT SEASON INTELLIGENCE"
       headline={"Alt Season Indicator\nIs the Rotation Here?"}
-      subheadline="FAULTLINE's Alt Season Indicator tracks BTC dominance, ETH/BTC ratio, altcoin sector momentum, and capital rotation signals as new data is published — giving you advance warning when alt season conditions are building across the crypto market."
+      subheadline="This page explains the signals analysts watch for alt season — BTC dominance, the ETH/BTC ratio, altcoin sector momentum, and capital rotation — alongside FAULTLINE's macro Pressure Index. FAULTLINE does not offer an alt season probability or an advance-warning signal."
       ctaLabel="VIEW ALT SEASON DATA"
       ctaHref="/app/crypto"
       accentColor="#F7931A"
@@ -29,7 +29,7 @@ export default function AltSeasonIndicator() {
 
 The defining characteristic of alt season is BTC dominance falling. Bitcoin dominance measures Bitcoin's share of total crypto market capitalization. When dominance falls, it means capital is flowing into altcoins faster than it is flowing into Bitcoin. A sustained fall in BTC dominance below 50% has historically coincided with the most explosive altcoin rallies.
 
-FAULTLINE's Alt Season Indicator synthesizes five signals into a single alt season probability score:
+Analysts typically watch five signals. FAULTLINE does not combine them into an alt season probability or score:
 
 1. BTC Dominance Level and Trend — Is dominance falling? How fast? Has it broken below key support levels?
 
@@ -39,7 +39,7 @@ FAULTLINE's Alt Season Indicator synthesizes five signals into a single alt seas
 
 4. Macro Regime Alignment — Is the broader macro environment (FAULTLINE Pressure Index, Fed policy, global liquidity) supportive of risk-on behavior? Alt season rarely sustains in HIGH STRESS macro environments.
 
-5. Social Sentiment Momentum — Is retail interest in altcoins accelerating? Social sentiment surges precede and accompany alt season rotations.`,
+5. Social Sentiment Momentum — Is retail interest in altcoins accelerating? Social sentiment surges have accompanied past alt season rotations.`,
         },
         {
           heading: "The Four Phases of the Crypto Rotation Cycle",
@@ -73,7 +73,7 @@ FAULTLINE's Alt Season Indicator tracks all of these conditions as new data is p
       faqs={[
         {
           question: "What is the best indicator for alt season?",
-          answer: "The most reliable alt season indicator is BTC dominance — specifically, a sustained decline in Bitcoin's share of total crypto market capitalization below 50%. This is typically accompanied by a rising ETH/BTC ratio and broad-based altcoin momentum across multiple sectors. FAULTLINE's Alt Season Indicator synthesizes all of these signals into a single probability score.",
+          answer: "The most reliable alt season indicator is BTC dominance — specifically, a sustained decline in Bitcoin's share of total crypto market capitalization below 50%. This is typically accompanied by a rising ETH/BTC ratio and broad-based altcoin momentum across multiple sectors. FAULTLINE does not combine these signals into an alt season probability or score.",
         },
         {
           question: "How long does alt season typically last?",

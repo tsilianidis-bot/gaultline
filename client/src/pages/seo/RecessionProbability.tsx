@@ -4,18 +4,18 @@ export default function RecessionProbability() {
   return (
     <SEOLandingPage
       seo={{
-        title: "Recession Probability Indicator — Leading Economic Risk Signals | FAULTLINE",
-        description: "Recession-risk context from the FRED series FAULTLINE ingests: the 10Y–2Y Treasury curve, high-yield credit spreads, unemployment, inflation, policy rates, and SOFR. Know when recession risk is rising.",
+        title: "Recession Risk Context — FRED Leading Indicators | FAULTLINE",
+        description: "Recession-risk context from the FRED series FAULTLINE ingests: the 10Y–2Y Treasury curve, high-yield credit spreads, unemployment, inflation, policy rates, and SOFR. FAULTLINE does not offer a recession probability.",
         canonical: "/recession-probability",
       }}
       badge="RECESSION RISK INTELLIGENCE"
-      headline={"Recession Probability\nLeading Indicators, As Published"}
+      headline={"Recession Risk Context\nFRED Indicators, As Published"}
       subheadline="FAULTLINE reads recession-relevant conditions from FRED — the 10Y–2Y Treasury curve, high-yield credit spreads, the unemployment rate, inflation, policy rates, and SOFR funding — the same eight series that feed the Pressure Index."
       ctaLabel="VIEW RECESSION RISK"
       ctaHref="/pressure-index"
       accentColor="#FF8C00"
       features={[
-        { icon: "◈", title: "Yield Curve Inversion Depth", desc: "The 2yr/10yr spread has inverted before every U.S. recession since 1955. FAULTLINE tracks inversion depth and re-steepening signals." },
+        { icon: "◈", title: "Yield Curve Inversion Depth", desc: "An inverted 10Y–2Y curve has historically preceded most U.S. recessions, with long and variable lead times. FAULTLINE reads the spread and the 10-year level; it does not turn them into a recession probability." },
         { icon: "◎", title: "Unemployment Rate", desc: "The monthly U.S. unemployment rate (FRED UNRATE). FAULTLINE does not ingest weekly jobless claims." },
         { icon: "⬡", title: "Inflation and Policy Rates", desc: "CPI (CPIAUCSL), PPI (PPIACO), and the federal funds rate (FEDFUNDS) from FRED, on their standard release schedules." },
         { icon: "◈", title: "Credit Spread Analysis", desc: "High-yield credit spreads widen as recession risk rises. FAULTLINE reads the ICE BofA US High Yield spread (BAMLH0A0HYM2) from FRED." },
@@ -24,12 +24,12 @@ export default function RecessionProbability() {
       ]}
       contentSections={[
         {
-          heading: "What Is Recession Probability and Why Does It Matter?",
-          body: `Recession probability is an estimate of the likelihood that the U.S. economy will enter a formal recession — defined as two consecutive quarters of negative GDP growth — within a specified time horizon (typically 12 months).
+          heading: "What a Recession Probability Is — and Why FAULTLINE Does Not Publish One",
+          body: `A recession probability is an estimate of the likelihood that the U.S. economy enters a recession within a stated horizon. Publishing one responsibly needs three things: a defined event (for example, an NBER-dated recession), a fixed horizon, and a calibration record against resolved outcomes. FAULTLINE has none of these for recessions, so it does not offer a recession probability. What it shows instead is the FRED data below and the Pressure Index as current-conditions context.
 
-For investors, recession probability matters because recessions are associated with significant equity market drawdowns. The average S&P 500 decline during recessions since 1945 is approximately 30%. Some recessions — 2000-2002 (49% decline) and 2008-2009 (57% decline) — produced much larger drawdowns.
+For investors, recession risk matters because recessions are associated with significant equity market drawdowns. The average S&P 500 decline during recessions since 1945 is approximately 30%. Some recessions — 2000-2002 (49% decline) and 2008-2009 (57% decline) — produced much larger drawdowns.
 
-More importantly, recession risk affects which asset classes, sectors, and individual equities are likely to outperform or underperform. Defensive sectors (utilities, consumer staples, healthcare) historically outperform during recessions. Cyclical sectors (technology, consumer discretionary, industrials) underperform. Understanding recession probability helps you position your portfolio for the environment ahead, not the one behind you.`,
+More importantly, recession risk affects which asset classes, sectors, and individual equities are likely to outperform or underperform. Defensive sectors (utilities, consumer staples, healthcare) historically outperform during recessions. Cyclical sectors (technology, consumer discretionary, industrials) underperform. Understanding recession risk helps you think about the environment ahead, not only the one behind you.`,
         },
         {
           heading: "The FRED Data FAULTLINE Reads",
@@ -49,42 +49,42 @@ FAULTLINE does not ingest PMI or ISM surveys, jobless claims, or consumer-confid
         },
         {
           heading: "Recession vs. Market Correction: Understanding the Difference",
-          body: `Not every market correction is a recession, and not every recession produces a severe market crash. Understanding the distinction helps you calibrate your response to FAULTLINE's recession probability readings.
+          body: `Not every market correction is a recession, and not every recession produces a severe market crash. Understanding the distinction matters when you read FAULTLINE's current-conditions data.
 
 A market correction (10-20% decline) can occur without a recession — driven by valuation compression, sentiment shifts, or technical factors. These corrections are typically shorter in duration and shallower in depth than recession-driven bear markets.
 
 A recession-driven bear market (typically 30-50%+ decline) is characterized by fundamental deterioration: falling earnings, rising unemployment, tightening credit conditions, and declining consumer spending. These bear markets last longer and require more time to recover.
 
-FAULTLINE's recession probability score helps you distinguish between the two scenarios. When recession probability is LOW and the Pressure Index is below the HIGH STRESS band (LOW RISK through ELEVATED RISK), a market correction is more likely than a full recession-driven bear market. When recession probability is HIGH and the Pressure Index is in the HIGH STRESS or SYSTEMIC CRISIS band, the risk profile shifts toward a more severe, longer-duration drawdown.`,
+FAULTLINE does not produce a recession probability or score, and it does not forecast which of the two will happen. The Pressure Index band describes current systemic pressure only: readings below HIGH STRESS (LOW RISK through ELEVATED RISK) describe less modeled pressure, and HIGH STRESS or SYSTEMIC CRISIS readings describe more. Neither band is a forecast of a correction or of a recession-driven bear market.`,
         },
       ]}
       faqs={[
         {
-          question: "How accurate is FAULTLINE's recession probability indicator?",
-          answer: "FAULTLINE's recession probability score is based on leading indicators with strong historical track records — particularly the yield curve, which has preceded every U.S. recession since 1955. However, no indicator is perfectly accurate, and the timing of recessions is inherently uncertain. The score should be used as a risk management input, not a precise prediction.",
+          question: "Does FAULTLINE publish a recession probability?",
+          answer: "No. FAULTLINE does not offer a recession probability or a recession score, so there is no accuracy record to report. It shows the FRED inputs listed on this page and the Pressure Index as current-conditions context. An inverted yield curve has historically preceded most U.S. recessions, with long and variable lead times; that history is not a FAULTLINE forecast.",
         },
         {
-          question: "What recession probability level should I be concerned about?",
-          answer: "FAULTLINE classifies recession probability into four tiers: LOW (0-25%), MODERATE (25-50%), ELEVATED (50-75%), and HIGH (75%+). ELEVATED and HIGH readings warrant a review of portfolio positioning — particularly exposure to cyclical sectors, high-beta equities, and leveraged positions.",
+          question: "Does FAULTLINE have recession-probability tiers?",
+          answer: "No. There are no recession-probability tiers, because FAULTLINE does not offer a recession probability. The only fixed bands are the Pressure Index labels — LOW RISK (0–24), MODERATE RISK (25–44), ELEVATED RISK (45–64), HIGH STRESS (65–79), and SYSTEMIC CRISIS (80–100). They classify current systemic pressure, not recession likelihood.",
         },
         {
-          question: "Does a high recession probability mean I should sell everything?",
-          answer: "No. Recession probability is one input among many. High recession probability combined with HIGH STRESS macro regime and deteriorating credit conditions warrants defensive positioning — reducing cyclical exposure, increasing cash, and adding defensive sectors. But it does not necessarily mean exiting all equity positions. FAULTLINE's Situation Room helps you stress-test specific portfolio moves against current conditions.",
+          question: "Does a high Pressure Index reading mean I should sell everything?",
+          answer: "No. The Pressure Index is one input among many. It is a current systemic-stress measure, not a recession forecast or a trading instruction, and FAULTLINE does not offer a recession probability. Decisions about cyclical exposure, cash, or defensive sectors depend on your own circumstances and other evidence.",
         },
         {
-          question: "How does the yield curve predict recessions?",
-          answer: "When the 2-year Treasury yield rises above the 10-year Treasury yield (yield curve inversion), it signals that investors expect the Fed to cut rates in the future — typically because they anticipate economic weakness. This inversion has preceded every U.S. recession since 1955, with a lead time of 6-18 months. The re-steepening that follows the inversion (as the Fed begins cutting) is often the final warning before recession arrives.",
+          question: "How does the yield curve relate to recessions?",
+          answer: "When the 2-year Treasury yield rises above the 10-year yield (an inversion), markets are typically pricing future rate cuts, often because they expect slower growth. Inversions have historically preceded most U.S. recessions, with long and variable lead times, and the curve has also inverted without a recession following soon after. FAULTLINE reads the 10Y–2Y spread and the 10-year level as current-conditions inputs; it does not convert them into a recession probability.",
         },
         {
-          question: "Is recession probability data available for free?",
-          answer: "Yes. FAULTLINE's Pressure Index — six weighted vectors built from eight FRED series — is free to read at /pressure-index. Recession probability is not one of its inputs. Signed-in access starts with a free account; paid plans are not on sale.",
+          question: "Is FAULTLINE's recession-risk context free?",
+          answer: "Yes. FAULTLINE's Pressure Index — six weighted vectors built from eight FRED series — is free to read at /pressure-index. FAULTLINE does not offer a recession probability. Signed-in access starts with a free account; paid plans are not on sale.",
         },
       ]}
       internalLinks={[
         { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Systemic market stress score — six weighted vectors from eight FRED series." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy signals and their impact on recession risk." },
-        { label: "MARKET CRASH INDICATOR", href: "/market-crash-indicator", desc: "Regularly refreshed crash risk detection and systemic stress monitoring." },
-        { label: "LIQUIDITY MONITOR", href: "/liquidity-monitor", desc: "Track liquidity conditions — the mechanism behind recessions." },
+        { label: "MARKET CRASH INDICATOR", href: "/market-crash-indicator", desc: "Systemic-stress monitoring. FAULTLINE does not offer a crash probability." },
+        { label: "LIQUIDITY MONITOR", href: "/liquidity-monitor", desc: "Track liquidity conditions as one systemic-pressure input." },
         { label: "HISTORICAL ANALOGS", href: "/analogs", desc: "Compare today's conditions against historical recession periods." },
         { label: "VOLATILITY DASHBOARD", href: "/volatility-dashboard", desc: "Regularly refreshed volatility regime monitoring and risk analysis." },
       ]}

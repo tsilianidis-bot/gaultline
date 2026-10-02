@@ -29,7 +29,7 @@ export default function MarketCrashIndicator() {
 
 FAULTLINE's crash indicator is built on the FAULTLINE Pressure Index™, which combines six weighted vectors: liquidity stress, credit contagion, the 10Y–2Y yield curve and 10Y level, macro sensitivity, labor and rates, and AI / speculation (a static concentration baseline). Each vector is scored and weighted to produce a single 0-100 systemic pressure score.
 
-The current index labels scores of 65-79 HIGH STRESS and 80+ SYSTEMIC CRISIS. Those labels describe modeled stress, not a calibrated crash probability. No independently validated backtest shows that market crashes since 2000 were preceded by any particular Pressure Index reading.`,
+The current index labels scores of 65-79 HIGH STRESS and 80+ SYSTEMIC CRISIS. Those labels describe modeled stress, not a crash probability; FAULTLINE does not offer one. No independently validated backtest shows that market crashes since 2000 were preceded by any particular Pressure Index reading.`,
         },
         {
           heading: "The 6 Vectors Behind the Pressure Index",
@@ -65,7 +65,7 @@ Note: Past readings do not guarantee future results. The Pressure Index is a ris
         },
         {
           question: "What is the difference between HIGH STRESS and SYSTEMIC CRISIS?",
-          answer: "HIGH STRESS (score 65-79) indicates that multiple Pressure Index vectors are elevated at once — for example, credit spreads widening while funding rates and the yield curve signal tightening. SYSTEMIC CRISIS (score 80+) is the model's highest classification, with severe readings across most vectors. Neither label is a calibrated crash probability.",
+          answer: "HIGH STRESS (score 65-79) indicates that multiple Pressure Index vectors are elevated at once — for example, credit spreads widening while funding rates and the yield curve signal tightening. SYSTEMIC CRISIS (score 80+) is the model's highest classification, with severe readings across most vectors. Neither label is a crash probability; FAULTLINE does not offer one.",
         },
         {
           question: "How is the FAULTLINE crash indicator different from the VIX?",
@@ -83,7 +83,7 @@ Note: Past readings do not guarantee future results. The Pressure Index is a ris
       internalLinks={[
         { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Systemic market stress score — the core crash indicator." },
         { label: "HISTORICAL ANALOGS", href: "/analogs", desc: "Pattern-match today's conditions against 2000, 2008, 2020, and 2022." },
-        { label: "RECESSION PROBABILITY", href: "/recession-probability", desc: "Leading indicators of recession risk and economic contraction." },
+        { label: "RECESSION RISK CONTEXT", href: "/recession-probability", desc: "FRED recession-risk inputs; FAULTLINE does not offer a recession probability." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy signals and their impact on market stress." },
         { label: "VOLATILITY DASHBOARD", href: "/volatility-dashboard", desc: "Regularly refreshed volatility regime monitoring and VIX analysis." },
         { label: "MARKET RISK DASHBOARD", href: "/stock-market-risk-dashboard", desc: "Comprehensive equity risk monitoring dashboard." },
