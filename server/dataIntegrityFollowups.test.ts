@@ -676,8 +676,11 @@ describe("Signals quote freshness follows the feed (QA D1, strip says DELAYED)",
 
   it("ticker search shows the real freshness badge, not a bare LIVE", () => {
     const s = src("client/src/components/TickerSearch.tsx");
-    expect(s).toMatch(/\}\}>\{signalQuoteBadge\(profile\)\}<\/span>/);
-    expect(s).not.toMatch(/\}\}>LIVE<\/span>/);
+    // One badge from the quote and its response source (stale → STALE), no separate STALE chip.
+    expect(s).toMatch(/const badge = signalQuoteBadge\(profile, profile\.source\);/);
+    expect(s).toMatch(/data-ticker-freshness=\{badge\}/);
+    expect(s).not.toMatch(/\}\}>LIVE<\/span>|\}\}>STALE<\/span>/);
+    expect(signalQuoteBadge({ price: 10, changePercent: 1, isLive: true, isDelayed: true, marketStatus: "open" }, "stale")).toBe("STALE");
   });
 });
 
@@ -885,5 +888,64 @@ describe("Signals card: static fundamentals are Unavailable, never current-looki
   it("no static 'EARN nd' badge and no volume ratio against the static average", () => {
     expect(s).not.toMatch(/EARN \{stock\.earningsDaysAway\}d/);
     expect(s).not.toMatch(/volumeSurge\(/);
+  });
+});
+
+// ── PR #59 r7: QA gate r6 F1 / F2 ─────────────────────────────────────────────
+describe("Signals ASSET INFO: catalog momentum / bias chips are labelled static (F1)", () => {
+  const s = src("client/src/pages/Signals.tsx");
+  it("both chips carry 'Catalog · static'; no bare 'MOM:' or bare bias chip", () => {
+    expect(s).toMatch(/data-catalog-static-chip="momentum"[\s\S]{0,400}?\}\}>Catalog · static · MOM \{stock\.momentum\}<\/span>/);
+    expect(s).toMatch(/data-catalog-static-chip="bias"[\s\S]{0,1200}?\}\}>Catalog · static · \{stock\.bias\.toUpperCase\(\)\}<\/span>/);
+    expect(s).not.toMatch(/>MOM: \{stock\.momentum\}</);
+    expect(s).not.toMatch(/\}\}>\{stock\.bias\.toUpperCase\(\)\}<\/span>/);
+  });
+});
+
+describe("no hard-coded $ figures in quote surfaces; NOW example price/change are '—' (F2)", () => {
+  const QUOTE_SURFACES = [
+    "client/src/pages/Signals.tsx",
+    "client/src/components/HomeStockIntelSection.tsx",
+    "client/src/components/DashboardSearchPanels.tsx",
+    "client/src/components/TickerSearch.tsx",
+  ];
+  // A literal dollar figure ("$924.58", "$64,250.12"). Template interpolation ("$${x}") is not a literal.
+  const DOLLAR_LITERAL = /\$[0-9]/;
+  const offenders = (text: string) => text.split("\n").filter(l => DOLLAR_LITERAL.test(l));
+
+  it.each(QUOTE_SURFACES)("%s has no $-number literal", f => {
+    expect(offenders(src(f))).toEqual([]);
+  });
+
+  const PRICE_CELL = /<div data-preview-price style=\{\{[^}]*\}\}>—<\/div>/;
+  const CHANGE_CELL = /<div data-preview-change style=\{\{[^}]*\}\}>—<\/div>/;
+  const previewCellsAreDashes = (text: string) =>
+    PRICE_CELL.test(text) && CHANGE_CELL.test(text) &&
+    (text.match(/data-preview-price/g) ?? []).length === 1 && (text.match(/data-preview-change/g) ?? []).length === 1;
+
+  it("HomeStockIntelSection preview price and change cells always render '—'", () => {
+    expect(previewCellsAreDashes(src("client/src/components/HomeStockIntelSection.tsx"))).toBe(true);
+  });
+
+  // QA's 4 bypass injections, applied in-suite: each must be caught.
+  const home = src("client/src/components/HomeStockIntelSection.tsx");
+  const dash = src("client/src/components/DashboardSearchPanels.tsx");
+  const signals = src("client/src/pages/Signals.tsx");
+  it("mutation: '$924.58' in the preview price cell is caught", () => {
+    const m = home.replace(/(<div data-preview-price style=\{\{[^}]*\}\}>)—(<\/div>)/, "$1$$924.58$2");
+    expect(m).not.toBe(home);
+    expect(previewCellsAreDashes(m)).toBe(false);
+    expect(offenders(m).length).toBeGreaterThan(0);
+  });
+  it("mutation: '+3.42%' in the preview change cell is caught", () => {
+    const m = home.replace(/(<div data-preview-change style=\{\{[^}]*\}\}>)—(<\/div>)/, "$1+3.42%$2");
+    expect(m).not.toBe(home);
+    expect(previewCellsAreDashes(m)).toBe(false);
+  });
+  it("mutation: const BTC_PRICE='$64,250.12' in DashboardSearchPanels is caught", () => {
+    expect(offenders(`${dash}\nconst BTC_PRICE='$64,250.12';`).length).toBeGreaterThan(0);
+  });
+  it("mutation: {label:'Last', value:'$924.58'} in Signals is caught", () => {
+    expect(offenders(`${signals}\n  {label:'Last', value:'$924.58'},`).length).toBeGreaterThan(0);
   });
 });

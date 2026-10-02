@@ -180,9 +180,7 @@ function StockCard({ stock, delay }: { stock: typeof DEMO_STOCKS[0]; delay: numb
         </div>
         <div style={{ textAlign: 'right' }}>
           <div data-preview-price style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '15px', color: '#F0F4FF' }}>—</div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: '#64748B', letterSpacing: '0.06em' }}>
-            —
-          </div>
+          <div data-preview-change style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: '#64748B', letterSpacing: '0.06em' }}>—</div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.7)', letterSpacing: '0.06em' }}>
             EXAMPLE · NO QUOTE
           </div>
