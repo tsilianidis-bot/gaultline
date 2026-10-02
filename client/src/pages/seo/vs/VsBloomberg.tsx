@@ -13,12 +13,12 @@ export default function VsBloomberg() {
       }}
       badge="Comparison"
       headline="FAULTLINE vs Bloomberg: Accessible Macro Risk Intelligence for Retail Investors"
-      subheadline="Discover how FAULTLINE provides focused, purpose-built market intelligence for understanding systemic risk and crash probability, offering a distinct alternative to Bloomberg's institutional data terminal."
+      subheadline="Discover how FAULTLINE provides focused, purpose-built market intelligence for understanding systemic risk and crash risk, offering a distinct alternative to Bloomberg's institutional data terminal."
       ctaLabel="Explore FAULTLINE"
       ctaHref="/app"
       accentColor="#00D4FF"
       features={[
-        { icon: "◈", title: "Focused Macro Risk", desc: "Specialized insights into systemic risk, regime classification, and crash probability, tailored for actionable intelligence." },
+        { icon: "◈", title: "Focused Macro Risk", desc: "Specialized insights into systemic risk, regime classification, and crash risk, tailored for actionable intelligence." },
         { icon: "◈", title: "Retail Investor Friendly", desc: "Designed for accessibility and clarity, translating complex market dynamics into understandable insights for individual investors." },
         { icon: "◈", title: "Purpose-Built Analytics", desc: "Tools and dashboards specifically developed to help retail investors navigate volatile market conditions and identify key turning points." },
         { icon: "◈", title: "Cost-Effective Access", desc: "A fraction of the cost of institutional terminals, making advanced market intelligence available to a broader audience." },
@@ -30,7 +30,7 @@ export default function VsBloomberg() {
           heading: 'What Each Tool Does: FAULTLINE vs. Bloomberg',
           body: `Bloomberg Terminal is the gold standard for institutional financial data, news, and analytics, offering an unparalleled breadth of information across all asset classes. It serves professional traders, portfolio managers, and analysts with regularly refreshed data feeds, sophisticated charting tools, and direct access to market participants. Its strength lies in its comprehensive, all-encompassing nature, providing everything from bond pricing to company fundamentals and geopolitical news. However, its complexity and high cost make it largely inaccessible and often overwhelming for retail investors.
 
-FAULTLINE, in contrast, is a specialized market intelligence platform built from the ground up for retail investors. It focuses specifically on macro risk, systemic vulnerabilities, and market regime classification. Instead of broad data, FAULTLINE delivers curated insights into crash probability, liquidity conditions, and investor sentiment, all presented in an intuitive, accessible format. Its purpose is to help individual investors understand the bigger picture of market health and where systemic pressure is building, without the need for a multi-thousand-dollar annual subscription or extensive training.`,
+FAULTLINE, in contrast, is a specialized market intelligence platform built from the ground up for retail investors. It focuses specifically on macro risk, systemic vulnerabilities, and market regime classification. Instead of broad data, FAULTLINE delivers curated insights into crash risk, liquidity conditions, and investor sentiment, all presented in an intuitive, accessible format. Its purpose is to help individual investors understand the bigger picture of market health and where systemic pressure is building, without the need for a multi-thousand-dollar annual subscription or extensive training.`,
         },
         {
           heading: 'Key Differences: Accessibility, Focus, and Cost',
@@ -40,7 +40,7 @@ FAULTLINE, conversely, prioritizes accessibility and a focused approach to macro
         },
         {
           heading: 'Who FAULTLINE Is For: The Informed Retail Investor',
-          body: `FAULTLINE is specifically engineered for retail investors who seek to elevate their market understanding beyond conventional news and basic charting. It caters to individuals who recognize the importance of macro-level forces in driving asset prices and wish to incorporate systemic risk analysis into their investment framework. If you're a self-directed investor looking for an edge in identifying market turning points, understanding liquidity flows, and assessing crash probabilities without the complexity and expense of institutional tools, FAULTLINE is built for you.
+          body: `FAULTLINE is specifically engineered for retail investors who seek to elevate their market understanding beyond conventional news and basic charting. It caters to individuals who recognize the importance of macro-level forces in driving asset prices and wish to incorporate systemic risk analysis into their investment framework. If you're a self-directed investor looking for an edge in identifying market turning points, understanding liquidity flows, and assessing crash risk without the complexity and expense of institutional tools, FAULTLINE is built for you.
 
 While Bloomberg serves a broad spectrum of institutional needs, FAULTLINE provides a laser focus on the critical macro indicators that can significantly impact a retail portfolio. It empowers investors to make more informed decisions by providing context on market health, helping them to navigate periods of uncertainty and capitalize on opportunities that arise from shifts in market regimes. It's for those who want to think like a macro analyst, but with tools designed for their specific needs.`,
         },
@@ -54,7 +54,7 @@ Bloomberg provides the raw materials for such analysis, but the synthesis and in
       faqs={[
         {
           question: 'Is FAULTLINE a replacement for Bloomberg Terminal?',
-          answer: 'No, FAULTLINE is not a direct replacement for Bloomberg Terminal. Bloomberg is a comprehensive institutional platform covering all aspects of financial markets. FAULTLINE is a specialized macro risk intelligence platform designed specifically for retail investors, focusing on systemic risk, market regimes, and crash probability. It offers a focused, accessible, and cost-effective alternative for understanding macro market dynamics.',
+          answer: 'No, FAULTLINE is not a direct replacement for Bloomberg Terminal. Bloomberg is a comprehensive institutional platform covering all aspects of financial markets. FAULTLINE is a specialized macro risk intelligence platform designed specifically for retail investors, focusing on systemic risk, market regimes, and crash risk. It offers a focused, accessible, and cost-effective alternative for understanding macro market dynamics.',
         },
         {
           question: 'How does FAULTLINE help retail investors understand market conditions?',
@@ -62,7 +62,7 @@ Bloomberg provides the raw materials for such analysis, but the synthesis and in
         },
         {
           question: 'What kind of data does FAULTLINE provide?',
-          answer: 'FAULTLINE focuses on macro risk intelligence, including systemic risk indicators, market regime classifications, crash probability metrics, liquidity monitoring, and investor sentiment analysis. It distills complex quantitative models into clear, actionable insights tailored for individual investors.',
+          answer: 'FAULTLINE focuses on macro risk intelligence, including systemic risk indicators, market regime classifications, crash-risk context, liquidity monitoring, and investor sentiment analysis. It distills complex quantitative models into clear, actionable insights tailored for individual investors.',
         },
         {
           question: 'Is FAULTLINE suitable for professional traders?',

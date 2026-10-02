@@ -105,7 +105,7 @@ export const PAGE_SEO = {
   scenarios: {
     title: "Scenario Analysis — Macro Stress Simulations",
     description:
-      "Simulate macro stress scenarios: market crash probability, recession pathways, credit contagion cascades, and systemic risk events with the FAULTLINE Scenario Engine.",
+      "Simulate macro stress scenarios: market crash risk, recession pathways, credit contagion cascades, and systemic risk events with the FAULTLINE Scenario Engine.",
     canonical: "/app/scenarios",
   },
   // 44 chars ✓

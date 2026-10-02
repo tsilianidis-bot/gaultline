@@ -527,3 +527,35 @@ describe("public claims truth: historical accuracy and remaining present-tense c
     expect(read("server/seoMeta.ts")).toContain('"/market-crash-probability-2026": {');
   });
 });
+
+describe("public claims truth: no copy offers a crash probability (PR #56 r15)", () => {
+  const R15_SKIP = new Set<string>(["client/src/pages/seo/MarketCrashProbability2026.tsx", "client/src/pages/PublicSituationRoom.tsx"]);
+  const files = [...new Set([...walkRel("client/src/pages/seo"), ...publicSurfaces, "client/src/pages/SEOLandingPage.tsx", "server/seoMeta.ts", "client/src/hooks/useSEO.ts", "client/src/pages/AdminPortal.tsx"])].filter((p) => !R15_SKIP.has(p));
+  // A mention is allowed only as a disclaimer ("not a calibrated crash probability", "does not offer a crash probability") or inside the unchanged slug.
+  const offersProbability = (line: string) =>
+    line
+      .replace(/market-crash-probability-2026/g, "")
+      .split(/(?<=[.!?])\s+/)
+      .some((s) => /crash[- ]probabilit/i.test(s) && !/\b(?:not|no|neither|nor|never|does not offer|rather than)\b[^.]{0,120}crash[- ]probabilit/i.test(s));
+  const hits = (paths: string[]) =>
+    paths.flatMap((path) => read(path).split("\n").flatMap((line, i) => (offersProbability(line) ? [`${path}:${i + 1}`] : [])));
+
+  it("the detector flags offers and allows disclaimers", () => {
+    expect(offersProbability("FAULTLINE delivers curated insights into crash probability.")).toBe(true);
+    expect(offersProbability('{ label: "Market Crash Probability 2026", href: "/x" }')).toBe(true);
+    expect(offersProbability("The Pressure Index is a proprietary stress measure, not a calibrated crash probability.")).toBe(false);
+    expect(offersProbability('{ href: "/market-crash-probability-2026" }')).toBe(false);
+    expect(offersProbability("Neither label is a calibrated crash probability.")).toBe(false);
+  });
+
+  it("no public surface, SEO meta or admin sitemap label offers a crash probability", () => {
+    expect(files.length).toBeGreaterThan(80);
+    expect(hits(files)).toEqual([]);
+  });
+
+  it("the Time Machine 2022 entry uses the corrected hiking-cycle duration", () => {
+    const tm = read("server/routers/timeMachine.ts");
+    expect(tm).toContain("525bps in about 16 months");
+    expect(tm).not.toContain("525bps in 18 months");
+  });
+});

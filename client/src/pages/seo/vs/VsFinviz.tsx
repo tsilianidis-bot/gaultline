@@ -12,14 +12,14 @@ const VsFinviz = () => {
       }}
       badge="Comparison"
       headline="FAULTLINE vs Finviz: A Deep Dive into Macro Risk Intelligence vs. Stock Screening"
-      subheadline="Finviz excels as a stock screener and visualization tool, but FAULTLINE provides unparalleled macro risk intelligence, focusing on systemic risk, market regimes, and crash probability, not individual stock analysis."
+      subheadline="Finviz excels as a stock screener and visualization tool, but FAULTLINE provides unparalleled macro risk intelligence, focusing on systemic risk, market regimes, and crash risk, not individual stock analysis."
       ctaLabel="Explore FAULTLINE Platform"
       ctaHref="/app"
       accentColor="#00D4FF"
       features={[
         { icon: "◈", title: "Systemic Risk Monitoring", desc: "Systemic Risk Monitoring" },
         { icon: "◎", title: "Market Regime Tracking", desc: "Market Regime Tracking" },
-        { icon: "⬡", title: "Crash Probability Analysis", desc: "Crash Probability Analysis" },
+        { icon: "⬡", title: "Market Crash Risk Context", desc: "Systemic-pressure context for market crash risk. FAULTLINE does not offer a crash probability." },
         { icon: "◈", title: "Macro Intelligence Engine", desc: "Macro Intelligence Engine" },
         { icon: "◎", title: "Structural Pressure Indicators", desc: "Structural Pressure Indicators" },
         { icon: "⬡", title: "Educational Content & Insights", desc: "Educational Content & Insights" }
@@ -39,13 +39,13 @@ const VsFinviz = () => {
         },
         {
           heading: "FAULTLINE's Unique Approach: Beyond Screening to Structural Market Intelligence",
-          body: `FAULTLINE's unique value proposition lies in its ability to move beyond descriptive data to structural market intelligence. Unlike traditional screeners that present historical and current data points, FAULTLINE's models read the interdependencies between credit, funding, rates, inflation, and labor to show where systemic pressure is building — without claiming to predict a specific crash or date. For instance, its crash probability models are not just historical observations but dynamic assessments based on regularly refreshed market stress indicators. The platform's market regime tracker helps users understand the current operating environment and how it compares to historical analogs, providing insights into what strategies might be most effective. This structural analytical framework, combined with educational content that explains the 'why' behind the data, empowers users to make more informed, proactive decisions. FAULTLINE is not just a data aggregator; it's an interpretive engine that translates complex macro signals into actionable intelligence, offering a distinct advantage over tools focused solely on individual security analysis.`,
+          body: `FAULTLINE's unique value proposition lies in its ability to move beyond descriptive data to structural market intelligence. Unlike traditional screeners that present historical and current data points, FAULTLINE's models read the interdependencies between credit, funding, rates, inflation, and labor to show where systemic pressure is building — without claiming to predict a specific crash or date. For instance, its crash-risk context is not just historical observation but a dynamic assessment based on regularly refreshed market stress indicators. The platform's market regime tracker helps users understand the current operating environment and how it compares to historical analogs, providing insights into what strategies might be most effective. This structural analytical framework, combined with educational content that explains the 'why' behind the data, empowers users to make more informed, proactive decisions. FAULTLINE is not just a data aggregator; it's an interpretive engine that translates complex macro signals into actionable intelligence, offering a distinct advantage over tools focused solely on individual security analysis.`,
         },
       ]}
       faqs={[
         {
           question: "Is FAULTLINE a stock screener like Finviz?",
-          answer: "No, FAULTLINE is not a stock screener. While Finviz helps you find individual stocks based on specific criteria, FAULTLINE is a macro risk intelligence platform focused on systemic risk, market regimes, and crash probability. It provides a top-down view of the market, not a bottom-up analysis of individual securities.",
+          answer: "No, FAULTLINE is not a stock screener. While Finviz helps you find individual stocks based on specific criteria, FAULTLINE is a macro risk intelligence platform focused on systemic risk, market regimes, and crash risk. It provides a top-down view of the market, not a bottom-up analysis of individual securities.",
         },
         {
           question: "Can I use FAULTLINE to pick individual stocks?",
@@ -53,7 +53,7 @@ const VsFinviz = () => {
         },
         {
           question: "How does FAULTLINE help with risk management?",
-          answer: "FAULTLINE helps with risk management by identifying systemic vulnerabilities, tracking market regimes, and assessing crash probabilities. This gives investors context on where systemic pressure is building; it does not forecast specific market moves.",
+          answer: "FAULTLINE helps with risk management by identifying systemic vulnerabilities, tracking market regimes, and assessing crash risk. This gives investors context on where systemic pressure is building; it does not forecast specific market moves.",
         },
         {
           question: "What kind of data does FAULTLINE use?",
