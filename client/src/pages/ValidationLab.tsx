@@ -130,7 +130,7 @@ const INSTITUTIONAL_METRICS = [
   { id: 'regime_coverage',  label: 'Regime Coverage',            category: 'Coverage',     value: '3/5',    target: '5/5',    status: 'warn',  tooltip: 'Only 3 of 5 regime states were triggered in the static Phase-2 demo snapshot. HIGH RISK and CRITICAL RISK thresholds were never breached, indicating the pressure model needs recalibration.' },
   { id: 'data_coverage',    label: 'Data Coverage',              category: 'Data Quality', value: '99.8%',  target: '> 95%',  status: 'good',  tooltip: 'Percentage of weekly observations with complete macro data from FRED. 99.8% coverage across 1,902 weeks demonstrates robust data pipeline reliability.' },
   { id: 'credit_coverage',  label: 'Credit Stress Coverage',     category: 'Data Quality', value: '8.1%',   target: '> 90%',  status: 'bad',   tooltip: 'CRITICAL: HY credit spread data only available for 8.1% of the backtest period due to a unit mismatch bug. FRED returns % values but the formula expects basis points, causing credit_stress scores to compute as 0 for 91.9% of observations.' },
-  { id: 'evidence_families',label: 'Evidence Families',          category: 'Architecture', value: '14',     target: '14',     status: 'good',  tooltip: '14 independent evidence families covering: yield curve, credit stress, volatility, rate level, labor market, sentiment, monetary policy, fiscal policy, geopolitical risk, sector rotation, earnings quality, liquidity conditions, AI concentration, and global macro.' },
+  { id: 'evidence_families',label: 'Evidence Families',          category: 'Architecture', value: '6',      target: '6',      status: 'good',  tooltip: 'The FMOS Evidence engine groups evidence into 6 families: macro, liquidity, technical, fundamental, sentiment, and cross-asset. Diminishing returns apply when items in the same family agree.' },
   { id: 'engine_count',     label: 'Engine Registry',            category: 'Architecture', value: 'Listed', target: 'Listed', status: 'good',  tooltip: 'The FMOS engines are listed in the Engine Registry tab, read from fmos.getVersion. A registry entry is not by itself evidence that an engine ran on a given day.' },
 ];
 
@@ -826,7 +826,7 @@ export default function ValidationLab() {
                       MarketWeather: "Daily tactical conditions: breadth, momentum, volatility",
                       Regime: "Regime classification with transition risk scoring",
                       Transition: "Detects regime transition signals and warning indicators",
-                      Evidence: "Organizes evidence into 8 independent families with diminishing returns",
+                      Evidence: "Organizes evidence into 6 families (macro, liquidity, technical, fundamental, sentiment, cross-asset) with diminishing returns",
                       Probability: "Canonical bull/neutral/bear probability distribution",
                       Confidence: "Assesses overall confidence from evidence strength and diversity",
                       HistoricalAnalog: "Finds closest historical analogs using 5-dimensional vector matching",

@@ -289,7 +289,7 @@ export default function DynamicCryptoPage() {
 
         {/* Price levels section: FAULTLINE does not publish levels here */}
         <section className="mb-12">
-          <h2 className="text-2xl font-bold text-white mb-4">{upper} Price Levels</h2>
+          <h2 className="text-2xl font-bold text-white mb-4">How Technical Levels Are Read: {upper}</h2>
           <p className="text-[#A8B8CC] leading-relaxed">{data.keyLevels}</p>
         </section>
 
