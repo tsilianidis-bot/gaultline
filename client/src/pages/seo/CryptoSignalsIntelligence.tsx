@@ -83,7 +83,7 @@ Each asset is scored for momentum, macro alignment, liquidity sensitivity, and s
       internalLinks={[
         { label: "CRYPTO MARKET RISK", href: "/crypto-market-risk-dashboard", desc: "Crypto systemic risk dashboard: BTC dominance, altcoin risk, contagion indicators." },
         { label: "ALT SEASON INDICATOR", href: "/alt-season-indicator", desc: "Track the altcoin rotation cycle and know when alt season is building." },
-        { label: "BITCOIN RISK DASHBOARD", href: "/bitcoin-risk-dashboard", desc: "Deep-dive BTC risk analysis: macro alignment, liquidity sensitivity, key levels." },
+        { label: "BITCOIN RISK DASHBOARD", href: "/bitcoin-risk-dashboard", desc: "Deep-dive BTC risk analysis: macro alignment and liquidity sensitivity." },
         { label: "AI STOCK SIGNALS", href: "/ai-stock-signals", desc: "Macro-aligned AI signals for equities — the same intelligence applied to stocks." },
         { label: "PRESSURE INDEX", href: "/pressure-index", desc: "The macro foundation behind every FAULTLINE signal." },
         { label: "ANALYSIS HUB", href: "/analysis", desc: "Deep research on crypto cycles, macro analysis, and market risk." },

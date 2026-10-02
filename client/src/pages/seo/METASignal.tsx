@@ -7,7 +7,7 @@ export default function METASignal() {
       companyName="Meta Platforms, Inc."
       sector="Social Media / AI Infrastructure & Advertising"
       description="Meta Platforms stock signal analysis"
-      seoTitle="META Signal — Meta Platforms Stock Analysis, AI Risk Score & Key Levels | FAULTLINE"
+      seoTitle="META Signal — Meta Platforms Stock Analysis, AI Risk Score | FAULTLINE"
       seoDescription="META signal analysis: Meta Platforms' macro alignment score, AI infrastructure exposure, advertising cycle sensitivity, and regime-based signal classification."
       canonical="/stock/meta"
       accentColor="#0081FB"
@@ -30,7 +30,7 @@ AI Infrastructure ROI: Meta is investing heavily in AI infrastructure. The marke
 Regulatory and Antitrust Risk: Meta faces ongoing regulatory scrutiny in the U.S. and EU, including antitrust investigations, data privacy enforcement, and content moderation requirements. Regulatory developments are a qualitative input to the META signal.`}
       keyLevels={`FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:
 
-Major Support Zones: The 200-day moving average is the primary long-term support. Previous breakout levels and all-time highs that became support. Major psychological levels ($400, $500, $600, $700).
+Major Support Zones: The 200-day moving average is the primary long-term support. Previous breakout levels and all-time highs that became support. Major round numbers.
 
 Resistance Clusters: Previous all-time highs before they were broken, and major psychological round numbers.
 

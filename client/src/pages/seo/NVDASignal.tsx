@@ -7,7 +7,7 @@ export default function NVDASignal() {
       companyName="NVIDIA Corporation"
       sector="Semiconductors / AI Infrastructure"
       description="NVIDIA AI stock signal analysis"
-      seoTitle="NVDA Signal — NVIDIA Stock Analysis, AI Risk Score & Key Levels | FAULTLINE"
+      seoTitle="NVDA Signal — NVIDIA Stock Analysis, AI Risk Score | FAULTLINE"
       seoDescription="NVDA signal analysis: NVIDIA's macro alignment score, AI bubble exposure rating, bull and bear case scenarios, and regime-based signal classification."
       canonical="/stock/nvda"
       accentColor="#76B900"
@@ -32,7 +32,7 @@ Technical Structure: the NVDA signal (BUY, SELL, HOLD, or WATCH) is computed fro
 The combination of these three inputs produces FAULTLINE's NVDA regime fit score (0-10) and signal classification, recalculated as new data is published.`}
       keyLevels={`FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:
 
-Major Support Zones: The 200-day moving average is the primary long-term support for NVDA. Previous all-time highs that became support after being broken are secondary support levels. Major round numbers ($100, $150, $200) attract significant options positioning.
+Major Support Zones: The 200-day moving average is the primary long-term support for NVDA. Previous all-time highs that became support after being broken are secondary support levels. Major round numbers attract significant options positioning.
 
 Resistance Clusters: Previous all-time highs before they were broken become resistance if the stock pulls back below them.
 

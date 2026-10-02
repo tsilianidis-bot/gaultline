@@ -4,7 +4,7 @@ export default function TAOSignal() {
   return (
     <SEOLandingPage
       seo={{
-        title: "TAO Signal — Bittensor Analysis, Risk Score & Key Levels | FAULTLINE",
+        title: "TAO Signal — Bittensor Analysis, Risk Score | FAULTLINE",
         description: "TAO (Bittensor) signal analysis: macro alignment score, AI crypto exposure rating, bull and bear case scenarios, and regime-based signal classification.",
         canonical: "/crypto/tao",
       }}
@@ -46,7 +46,7 @@ AI Narrative Momentum: TAO is also an AI asset, meaning its price is influenced 
 The FAULTLINE TAO signal is most bullish when BOTH conditions are met: crypto market in a risk-on phase (BTC dominance falling, ETH/BTC rising) AND AI narrative momentum is strong (AI stocks outperforming, AI capex guidance strong). When only one condition is met, the signal is WATCH. When neither condition is met, the signal is HOLD or SELL.`,
         },
         {
-          heading: "TAO Key Price Levels and Historical Volatility",
+          heading: "How Technical Levels Are Read: TAO, and Its Historical Volatility",
           body: `TAO is among the most volatile assets in the FAULTLINE signal universe. Historical drawdowns from cycle highs have exceeded 80% during bear market phases. This volatility reflects TAO's position at the intersection of two high-beta themes (AI and crypto) and its relatively small market cap compared to BTC or ETH.
 
 FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:

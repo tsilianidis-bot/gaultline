@@ -162,12 +162,14 @@ describe("public claims truth: no '$214B' AI capex figure on public pages or SEO
     "server/publicContentSsr.ts",
     "server/seoRoutes.ts",
   ];
-  const figure214 = /\$\s?214\s?(B\b|billion)/i;
+  const figure214 = /\$214\s*(B|bn|billion)/i;
 
   it("flags the original r4 copies", () => {
     expect("Monitor $214B+ in AI capex commitments and the equities most exposed to AI infrastructure spending cycles.").toMatch(figure214);
     expect("Track $214B+ in AI capex commitments and mega-cap concentration.").toMatch(figure214);
     expect("Currently tracking $214 billion in announced AI capex.").toMatch(figure214);
+    expect("AI capex reached $214bn in 2024.").toMatch(figure214);
+    expect("AI capex reached $214 bn in 2024.").toMatch(figure214);
   });
 
   it("no public or SEO surface carries the figure", () => {
@@ -178,5 +180,63 @@ describe("public claims truth: no '$214B' AI capex figure on public pages or SEO
   it("the AIWatch meta and the AI bubble page describe the static baseline instead", () => {
     expect(read("client/src/hooks/useSEO.ts")).toContain("FAULTLINE uses a static AI-concentration baseline and does not ingest AI capex data.");
     expect(read("client/src/pages/PublicAIBubble.tsx")).toContain("FAULTLINE does not ingest capex data.");
+  });
+});
+
+describe("public claims truth: no 'key levels' claims in SSR meta, JSON-LD, titles or headings (PR #56 r10)", () => {
+  // Scanned set: every SEO page (incl. the JSON-LD in the Dynamic stock/crypto
+  // templates), the server-rendered meta and SSR, and client meta.
+  const metaFiles = ["server/seoMeta.ts", "server/publicContentSsr.ts", "server/seoRoutes.ts", "client/src/hooks/useSEO.ts", "client/index.html"];
+  const scanned = [...seoPages, ...metaFiles.map((path) => ({ path, text: read(path) }))];
+
+  // 'FAULTLINE tracks … key (price) levels' style claims.
+  const keyLevelsTracking = /FAULTLINE (?:tracks|monitors|covers|provides|publishes|identifies)\b[^.]{0,160}\bkey (?:price )?levels/i;
+  // Titles, headings, descriptions and link/feature copy that advertise key levels.
+  const keyLevelsLabel = /\b(?:title|seoTitle|heading|headline|subheadline|description|desc|label)\s*[:=]\s*\{?\s*["`'][^"`'\n]*\bkey (?:price )?levels|<h[1-6][^>]*>[^<]*\bkey (?:price )?levels|·\s*Key levels\b|\{\/\*\s*Key Levels\s*\*\/\}/i;
+  // Ticker-specific $ lists under support zones / psychological levels.
+  const tickerDollarList = /(?:round numbers|psychological levels)\s*\(\s*\$\d/i;
+
+  // JSON-LD "description" strings in the Dynamic templates.
+  const jsonLd = ["client/src/pages/seo/DynamicStockPage.tsx", "client/src/pages/seo/DynamicCryptoPage.tsx"].flatMap((path) =>
+    [...read(path).matchAll(/"description":\s*`([^`]*)`/g)].map((m) => ({ path: `${path} (JSON-LD)`, text: m[1] })),
+  );
+
+  it("each pattern flags the original 2f4edff lines", () => {
+    expect('description: "NVIDIA (NVDA) signal analysis. FAULTLINE tracks NVDA macro regime fit, AI bubble exposure, momentum score, and key price levels.",').toMatch(keyLevelsTracking);
+    expect('"description": `Regularly refreshed ${upper} signal analysis. FAULTLINE tracks ${upper} macro regime fit, momentum score, volatility risk, and key price levels.`,').toMatch(keyLevelsTracking);
+    expect("FAULTLINE tracks TAO key price levels.").toMatch(keyLevelsTracking);
+    expect('seoTitle="NVDA Signal — NVIDIA Stock Analysis, AI Risk Score & Key Levels | FAULTLINE"').toMatch(keyLevelsLabel);
+    expect('title: "Bitcoin Risk Dashboard — BTC Risk Score, Key Levels & Macro Analysis | FAULTLINE",').toMatch(keyLevelsLabel);
+    expect("heading: `${ticker} Key Price Levels and Technical Structure`,").toMatch(keyLevelsLabel);
+    expect('heading: "TAO Key Price Levels and Historical Volatility",').toMatch(keyLevelsLabel);
+    expect("Macro regime fit · Momentum score · Risk classification · Key levels").toMatch(keyLevelsLabel);
+    expect("Major round numbers ($100, $150, $200) attract significant options positioning.").toMatch(tickerDollarList);
+    expect("Major psychological levels ($150, $200, $250, $300, $400, $500).").toMatch(tickerDollarList);
+    expect("Key Psychological Levels: Round numbers ($100K, $150K, $200K) that attract").toMatch(tickerDollarList);
+  });
+
+  it("JSON-LD blocks are found and scanned", () => {
+    expect(jsonLd.length).toBeGreaterThanOrEqual(2);
+    expect(jsonLd.filter((b) => keyLevelsTracking.test(b.text) || /key (?:price )?levels/i.test(b.text)).map((b) => b.path)).toEqual([]);
+  });
+
+  it("server meta, SSR and SEO pages make no 'FAULTLINE tracks … key levels' claims", () => {
+    expect(offenders(scanned, keyLevelsTracking)).toEqual([]);
+    const meta = read("server/seoMeta.ts");
+    expect(meta).not.toMatch(/key price levels/i);
+  });
+
+  it("titles, headings and labels do not advertise key levels", () => {
+    expect(offenders(scanned, keyLevelsLabel)).toEqual([]);
+  });
+
+  it("support-zone methodology carries no ticker-specific $ lists", () => {
+    expect(offenders(scanned, tickerDollarList)).toEqual([]);
+  });
+
+  it("level headings use methodology wording", () => {
+    expect(read("client/src/pages/seo/StockSignalPage.tsx")).toContain("heading: `How Technical Levels Are Read: ${ticker}`");
+    expect(read("client/src/pages/seo/TAOSignal.tsx")).toContain('heading: "How Technical Levels Are Read: TAO, and Its Historical Volatility"');
+    expect(read("client/src/pages/seo/BitcoinRiskDashboard.tsx")).toContain('heading: "How Technical Levels Are Read: Bitcoin"');
   });
 });

@@ -4,7 +4,7 @@ export default function BitcoinRiskDashboard() {
   return (
     <SEOLandingPage
       seo={{
-        title: "Bitcoin Risk Dashboard — BTC Risk Score, Key Levels & Macro Analysis | FAULTLINE",
+        title: "Bitcoin Risk Dashboard — BTC Risk Score & Macro Analysis | FAULTLINE",
         description: "Bitcoin risk dashboard: BTC macro alignment score, liquidity sensitivity, and regime-based bull/bear case analysis built on the FAULTLINE Pressure Index.",
         canonical: "/bitcoin-risk-dashboard",
       }}
@@ -48,14 +48,14 @@ FAULTLINE's Bitcoin Risk Dashboard uses the macro framework as the primary analy
 5. Institutional Adoption Dynamics — The approval of Bitcoin spot ETFs in January 2024 opened BTC to a new class of institutional investors. ETF inflows and outflows are now a significant driver of BTC price action and liquidity.`,
         },
         {
-          heading: "Bitcoin Key Price Levels and Technical Structure",
+          heading: "How Technical Levels Are Read: Bitcoin",
           body: `FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:
 
 Major Support Zones: These are price levels where significant buying interest has historically emerged — previous all-time highs that became support and major moving averages (200-day, 200-week).
 
 Resistance Clusters: Price levels where significant selling pressure has historically emerged — previous all-time highs before they were broken and major round numbers.
 
-Key Psychological Levels: Round numbers ($100K, $150K, $200K) that attract significant options positioning and retail attention.`,
+Psychological Levels: major round numbers that attract significant options positioning and retail attention.`,
         },
       ]}
       faqs={[

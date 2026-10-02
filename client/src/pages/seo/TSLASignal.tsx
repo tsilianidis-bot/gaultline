@@ -7,7 +7,7 @@ export default function TSLASignal() {
       companyName="Tesla, Inc."
       sector="Electric Vehicles / AI & Robotics"
       description="Tesla stock signal analysis"
-      seoTitle="TSLA Signal — Tesla Stock Analysis, Risk Score & Key Levels | FAULTLINE"
+      seoTitle="TSLA Signal — Tesla Stock Analysis, Risk Score | FAULTLINE"
       seoDescription="TSLA signal analysis: Tesla's macro alignment score, AI and EV exposure rating, bull and bear case scenarios, and regime-based signal classification."
       canonical="/stock/tsla"
       accentColor="#E31937"
@@ -32,7 +32,7 @@ Elon Musk Factor: TSLA's valuation is uniquely tied to Elon Musk's perceived exe
 Macro Regime Alignment: TSLA is a high-beta growth stock. In LOW RISK macro environments (FAULTLINE Pressure Index below 25), TSLA tends to outperform. In HIGH STRESS environments, TSLA's high valuation multiple creates significant downside risk.`}
       keyLevels={`FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:
 
-Major Support Zones: The 200-day moving average is the primary long-term support. Previous all-time highs that became support after being broken. Major psychological levels ($150, $200, $250, $300, $400, $500).
+Major Support Zones: The 200-day moving average is the primary long-term support. Previous all-time highs that became support after being broken. Major round numbers.
 
 Resistance Clusters: Previous all-time highs before they were broken, and major psychological round numbers.
 

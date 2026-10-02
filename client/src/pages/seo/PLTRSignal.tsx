@@ -7,7 +7,7 @@ export default function PLTRSignal() {
       companyName="Palantir Technologies"
       sector="AI Software / Government & Enterprise Analytics"
       description="Palantir AI stock signal analysis"
-      seoTitle="PLTR Signal — Palantir Stock Analysis, AI Risk Score & Key Levels | FAULTLINE"
+      seoTitle="PLTR Signal — Palantir Stock Analysis, AI Risk Score | FAULTLINE"
       seoDescription="PLTR signal analysis: Palantir's macro alignment score, AI software exposure rating, bull and bear case scenarios, and regime-based signal classification."
       canonical="/stock/pltr"
       accentColor="#00D4FF"
@@ -32,7 +32,7 @@ AIP Commercial Adoption: Palantir's AIP (Artificial Intelligence Platform) is th
 The combination of these inputs produces FAULTLINE's PLTR regime fit score (0-10) and signal classification, refreshed as new data is published.`}
       keyLevels={`FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:
 
-Major Support Zones: The 200-day moving average is the primary long-term support. Previous breakout levels (the price at which PLTR broke out of consolidation ranges) become support after the breakout. Major round numbers ($20, $25, $30, $40, $50) attract significant options positioning.
+Major Support Zones: The 200-day moving average is the primary long-term support. Previous breakout levels (the price at which PLTR broke out of consolidation ranges) become support after the breakout. Major round numbers attract significant options positioning.
 
 Resistance Clusters: Previous all-time highs before they were broken become resistance if the stock pulls back.
 

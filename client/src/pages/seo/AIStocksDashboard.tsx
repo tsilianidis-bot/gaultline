@@ -5,7 +5,7 @@ export default function AIStocksDashboard() {
     <SEOLandingPage
       seo={{
         title: "AI Stocks Dashboard — AI Stock Signals & Risk Scores | FAULTLINE",
-        description: "Track all major AI stocks in one dashboard: NVDA, PLTR, META, AMD, TSLA, MSFT, GOOGL, AMZN. Macro-aligned signals, AI bubble exposure ratings, regime fit scores, and key price levels.",
+        description: "Track all major AI stocks in one dashboard: NVDA, PLTR, META, AMD, TSLA, MSFT, GOOGL, AMZN. Macro-aligned signals, AI bubble exposure ratings, and regime fit scores.",
         canonical: "/ai-stocks-dashboard",
       }}
       badge="AI STOCKS INTELLIGENCE"

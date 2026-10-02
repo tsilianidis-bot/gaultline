@@ -66,7 +66,7 @@ export default function StockSignalPage({
           body: signalAnalysis,
         },
         {
-          heading: `${ticker} Key Price Levels and Technical Structure`,
+          heading: `How Technical Levels Are Read: ${ticker}`,
           body: keyLevels,
         },
         {

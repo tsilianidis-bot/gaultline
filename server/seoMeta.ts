@@ -156,33 +156,33 @@ const PAGE_META: Record<string, PageMeta> = {
   // ── Stock signal pages ────────────────────────────────────────────────────
   "/stock/nvda": {
     title: "NVDA Signal — NVIDIA AI Risk Score & Analysis | FAULTLINE",
-    description: "NVIDIA (NVDA) signal analysis. FAULTLINE tracks NVDA macro regime fit, AI bubble exposure, momentum score, and key price levels.",
+    description: "NVIDIA (NVDA) signal analysis. FAULTLINE tracks NVDA macro regime fit, AI bubble exposure, and momentum score.",
     ogType: "article",
   },
   "/stock/pltr": {
     title: "PLTR Signal — Palantir Risk Score & Analysis | FAULTLINE",
-    description: "Palantir (PLTR) signal analysis. FAULTLINE tracks PLTR macro regime fit, AI exposure, momentum score, and key price levels.",
+    description: "Palantir (PLTR) signal analysis. FAULTLINE tracks PLTR macro regime fit, AI exposure, and momentum score.",
     ogType: "article",
   },
   "/stock/tsla": {
     title: "TSLA Signal — Tesla Risk Score & Analysis | FAULTLINE",
-    description: "Tesla (TSLA) signal analysis. FAULTLINE tracks TSLA macro regime fit, momentum score, volatility risk, and key price levels.",
+    description: "Tesla (TSLA) signal analysis. FAULTLINE tracks TSLA macro regime fit, momentum score, and volatility risk.",
     ogType: "article",
   },
   "/stock/meta": {
     title: "META Signal — Meta Platforms Risk & Analysis | FAULTLINE",
-    description: "Meta Platforms (META) signal analysis. FAULTLINE tracks META macro regime fit, AI exposure, momentum score, and key price levels.",
+    description: "Meta Platforms (META) signal analysis. FAULTLINE tracks META macro regime fit, AI exposure, and momentum score.",
     ogType: "article",
   },
   "/stock/amd": {
     title: "AMD Signal — AMD AI Chip Risk & Analysis | FAULTLINE",
-    description: "AMD signal analysis. FAULTLINE tracks AMD macro regime fit, AI chip exposure, momentum score, and key price levels.",
+    description: "AMD signal analysis. FAULTLINE tracks AMD macro regime fit, AI chip exposure, and momentum score.",
     ogType: "article",
   },
   // ── Crypto signal pages ───────────────────────────────────────────────────
   "/crypto/tao": {
     title: "TAO Signal — Bittensor Risk Score & Analysis | FAULTLINE",
-    description: "Bittensor (TAO) signal analysis. FAULTLINE tracks TAO macro regime fit, AI network risk, momentum score, and key price levels.",
+    description: "Bittensor (TAO) signal analysis. FAULTLINE tracks TAO macro regime fit, AI network risk, and momentum score.",
     ogType: "article",
   },
   // ── Static pages ──────────────────────────────────────────────────────────
@@ -246,7 +246,7 @@ export function getPageMeta(urlPath: string): PageMeta {
     const sym = stockMatch[1].toUpperCase();
     return {
       title: `${sym} Signal — Stock Risk Score & Analysis | FAULTLINE`,
-      description: `${sym} signal analysis. FAULTLINE tracks ${sym} macro regime fit, momentum score, volatility risk, and key price levels.`,
+      description: `${sym} signal analysis. FAULTLINE tracks ${sym} macro regime fit, momentum score, and volatility risk.`,
       ogType: "article",
     };
   }
@@ -257,7 +257,7 @@ export function getPageMeta(urlPath: string): PageMeta {
     const sym = cryptoMatch[1].toUpperCase();
     return {
       title: `${sym} Signal — Crypto Risk Score & Analysis | FAULTLINE`,
-      description: `${sym} signal analysis. FAULTLINE tracks ${sym} macro regime fit, liquidity conditions, momentum score, and key price levels.`,
+      description: `${sym} signal analysis. FAULTLINE tracks ${sym} macro regime fit, liquidity conditions, and momentum score.`,
       ogType: "article",
     };
   }

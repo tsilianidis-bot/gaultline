@@ -285,7 +285,7 @@ export default function DynamicStockPage() {
       {
         "@type": "Article",
         "headline": `${upper} Signal — Stock Risk Score & Analysis | FAULTLINE`,
-        "description": `Regularly refreshed ${upper} signal analysis. FAULTLINE tracks ${upper} macro regime fit, momentum score, volatility risk, and key price levels.`,
+        "description": `Regularly refreshed ${upper} signal analysis. FAULTLINE tracks ${upper} macro regime fit, momentum score, and volatility risk.`,
         "author": { "@type": "Organization", "name": "FAULTLINE" },
         "publisher": { "@type": "Organization", "name": "FAULTLINE", "url": "https://getfaultline.live" },
         "url": `https://getfaultline.live/stock/${symbol}`,
@@ -377,7 +377,7 @@ export default function DynamicStockPage() {
             <div>
               <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-2">CURRENT SIGNAL</div>
               <p className="text-white font-semibold mb-1">Access the current {upper} signal</p>
-              <p className="text-[#A8B8CC] text-sm">Macro regime fit · Momentum score · Risk classification · Key levels</p>
+              <p className="text-[#A8B8CC] text-sm">Macro regime fit · Momentum score · Risk classification</p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <a href="/pricing" onClick={() => handleCtaClick("pricing")} className="text-[11px] font-mono tracking-widest text-[#A8B8CC] border border-white/20 hover:border-[#00D4FF]/40 px-4 py-2.5 rounded transition-colors">
@@ -437,7 +437,7 @@ export default function DynamicStockPage() {
           </section>
         )}
 
-        {/* Key Levels */}
+        {/* Price levels section: FAULTLINE does not publish levels here */}
         <section className="mb-12">
           <h2 className="text-2xl font-bold text-white mb-4">{upper} Price Levels</h2>
           <p className="text-[#A8B8CC] leading-relaxed">{data.keyLevels}</p>
