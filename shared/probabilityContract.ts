@@ -124,22 +124,19 @@ export const HORIZON_NOT_ESTABLISHED: HorizonClass = {
 
 // ── Model registry ──────────────────────────────────────────────────────────
 export const SCENARIO_MODEL_ID = "seismograph-evidence-vote";
-/** Seismograph assembled-output version that introduced evidence-vote v2. */
-export const SEISMOGRAPH_EVIDENCE_VOTE_V2_SEISMOGRAPH_VERSION = "2.1";
-
 const SCENARIO_METHODOLOGY_V1 =
   "Share of the state's Seismograph evidence packets whose signal is bullish/recovering, neutral, or bearish/stressed. A vote count, not a probability. Known defect: historical-analog similarity above 70 was voted as stress.";
-const SCENARIO_METHODOLOGY_V2 =
-  "Share of the state's Seismograph evidence packets whose signal is bullish/recovering, neutral, or bearish/stressed. A vote count, not a probability. Historical-analog similarity is non-directional (neutral) from v2.";
-
-/** Map the manifest's seismograph modelVersion to the scenario model version. Unknown → v1 (legacy). */
-export function scenarioModelForSeismographVersion(seismographVersion: string | null | undefined): ProbabilityModelRef {
-  const v2 = seismographVersion === SEISMOGRAPH_EVIDENCE_VOTE_V2_SEISMOGRAPH_VERSION;
+/**
+ * Scenario model reference for display metadata. Every current seismograph
+ * version uses the v1 evidence vote (the analog-vote change is held for owner
+ * approval; see HELD_CHANGES.md), so this always returns v1.
+ */
+export function scenarioModelForSeismographVersion(_seismographVersion: string | null | undefined): ProbabilityModelRef {
   return {
     modelId: SCENARIO_MODEL_ID,
-    modelVersion: v2 ? "seismograph-evidence-vote-v2" : "seismograph-evidence-vote-v1",
+    modelVersion: "seismograph-evidence-vote-v1",
     kind: "SCENARIO_WEIGHT",
-    methodology: v2 ? SCENARIO_METHODOLOGY_V2 : SCENARIO_METHODOLOGY_V1,
+    methodology: SCENARIO_METHODOLOGY_V1,
   };
 }
 

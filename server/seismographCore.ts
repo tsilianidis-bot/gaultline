@@ -26,7 +26,6 @@
 // The Seismograph is the only synthesis layer.
 // ============================================================
 
-import { SEISMOGRAPH_EVIDENCE_VOTE_V2_SEISMOGRAPH_VERSION } from "../shared/probabilityContract";
 import type {
   EvidencePacket,
   EvidenceSignal,
@@ -703,11 +702,7 @@ export function assembleSeismographOutput(
 
   const computedAt = Date.now();
   const output: SeismographOutput = {
-    // 2.1 = scenario evidence-vote v2: historical-analog similarity is no longer
-    // voted as stress (server/seismographAdapters.ts). Enters the manifest core
-    // (modelVersion → stateHash), so v2 states are new versioned records and
-    // 2.0 states keep their original v1 values.
-    version: SEISMOGRAPH_EVIDENCE_VOTE_V2_SEISMOGRAPH_VERSION,
+    version: "2.0",
     computedAt,
     dataFreshness,
     pressureScore: canonicalPressure,

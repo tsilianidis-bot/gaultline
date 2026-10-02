@@ -169,7 +169,7 @@ function getAwarenessLevel(score: number): AwarenessLevel {
 }
 
 function buildCreditCondition(vectors: RiskVector[], pressure: FaultlinePressureOutput): ConditionPanel {
-  const creditScore = getVectorScore(vectors, "credit-contagion");
+  const creditScore = getVectorScore(vectors, "credit-stress");
   const level = scoreToConditionLevel(creditScore);
 
   const spreadLabel = creditScore >= 70 ? "Widening rapidly" : creditScore >= 45 ? "Moderately elevated" : "Contained";
@@ -260,15 +260,16 @@ function buildAIBubbleRisk(vectors: RiskVector[], pressure: FaultlinePressureOut
 }
 
 function buildRecessionRisk(vectors: RiskVector[], pressure: FaultlinePressureOutput): ConditionPanel {
-  const creditScore = getVectorScore(vectors, "credit-contagion");
+  const creditScore = getVectorScore(vectors, "credit-stress");
   const breadthScore = getVectorScore(vectors, "market-breadth");
   const recessionScore = clamp(Math.round(creditScore * 0.35 + breadthScore * 0.35 + pressure.overallPressure * 0.30), 0, 100);
   const level = scoreToConditionLevel(recessionScore);
 
   // No recession probability is offered: the former "~N%" was
   // clamp(round(recessionScore * 0.6), 5, 70), an invented scaling of this
-  // condition score (and it read a nonexistent "credit-stress" vector, so credit
-  // was always the default 50). The panel reports the 0–100 condition score only.
+  // condition score. The panel reports the 0–100 condition score only.
+  // (Known defect, held for owner approval: "credit-stress" is not an engine
+  // vector id, so creditScore is always the default 50; see HELD_CHANGES.md.)
   return {
     label: "Recession Risk",
     level,
@@ -353,7 +354,7 @@ function buildMacroCondition(vectors: RiskVector[], pressure: FaultlinePressureO
 
 function buildMacroDrivers(vectors: RiskVector[], pressure: FaultlinePressureOutput): MacroDriver[] {
   const fedScore = getVectorScore(vectors, "fed-policy");
-  const creditScore = getVectorScore(vectors, "credit-contagion");
+  const creditScore = getVectorScore(vectors, "credit-stress");
   const volScore = getVectorScore(vectors, "volatility-regime");
   const aiScore = getVectorScore(vectors, "ai-speculation");
   const debtScore = getVectorScore(vectors, "debt-fiscal");
@@ -470,7 +471,7 @@ function buildThreatBoard(vectors: RiskVector[], pressure: FaultlinePressureOutp
 function buildKeyRisks(vectors: RiskVector[], pressure: FaultlinePressureOutput): RiskAlert[] {
   const risks: RiskAlert[] = [];
 
-  const creditScore = getVectorScore(vectors, "credit-contagion");
+  const creditScore = getVectorScore(vectors, "credit-stress");
   const liquidityScore = getVectorScore(vectors, "liquidity-risk");
   const aiScore = getVectorScore(vectors, "ai-speculation");
   const volScore = getVectorScore(vectors, "volatility-regime");
@@ -570,7 +571,7 @@ function buildKeyRisks(vectors: RiskVector[], pressure: FaultlinePressureOutput)
 }
 
 function buildAwarenessChecks(vectors: RiskVector[], pressure: FaultlinePressureOutput): AwarenessCheck[] {
-  const creditScore = getVectorScore(vectors, "credit-contagion");
+  const creditScore = getVectorScore(vectors, "credit-stress");
   const liquidityScore = getVectorScore(vectors, "liquidity-risk");
   const aiScore = getVectorScore(vectors, "ai-speculation");
   const volScore = getVectorScore(vectors, "volatility-regime");
@@ -657,7 +658,7 @@ async function generateDailyBrief(
   awarenessScore: number,
   marketStatus: "Cleared" | "Caution" | "Defensive",
 ): Promise<string> {
-  const creditScore = getVectorScore(vectors, "credit-contagion");
+  const creditScore = getVectorScore(vectors, "credit-stress");
   const liquidityScore = getVectorScore(vectors, "liquidity-risk");
   const aiScore = getVectorScore(vectors, "ai-speculation");
   const volScore = getVectorScore(vectors, "volatility-regime");

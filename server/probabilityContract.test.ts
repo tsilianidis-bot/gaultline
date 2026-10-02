@@ -8,7 +8,6 @@ import {
   NOT_OFFERED_EVENTS,
   PROBABILITY_DISPLAY_TEXT,
   RETIRED_PROBABILITY_GENERATORS,
-  SEISMOGRAPH_EVIDENCE_VOTE_V2_SEISMOGRAPH_VERSION,
   buildProbabilityClaim,
   mostRestrictiveDisplay,
   notOfferedClaim,
@@ -22,8 +21,6 @@ import {
 } from "../shared/probabilityContract";
 import { buildCanonicalProbabilityContract } from "./probabilityContract";
 import { assembleCanonicalMarketState } from "./marketStateService";
-import { computeSimilarity, normalizeSubScore, buildEvidenceFamilies, type HistoricalMonth } from "./seismographUnified";
-import { fmosToEvidencePackets } from "./seismographAdapters";
 import { regimeModelScoreDisplay } from "../shared/credibilityLabels";
 import { mergeCanonicalMarketState } from "../client/src/lib/canonicalNowProjection";
 import { selectBrowserMarketOutput, engineProbabilityText } from "../client/src/lib/marketStateProjection";
@@ -120,11 +117,10 @@ describe("canonical contract on the 2026-10-01 production state", () => {
     expect(notOfferedClaim("crash").display.percent).toBeNull();
   });
 
-  it("versions the evidence-vote model by seismograph version (old manifests keep v1)", () => {
+  it("labels the current evidence vote as model v1 for every seismograph version (methodology unchanged)", () => {
     expect(scenarioModelForSeismographVersion("2.0").modelVersion).toBe("seismograph-evidence-vote-v1");
-    expect(scenarioModelForSeismographVersion(SEISMOGRAPH_EVIDENCE_VOTE_V2_SEISMOGRAPH_VERSION).modelVersion).toBe("seismograph-evidence-vote-v2");
+    expect(scenarioModelForSeismographVersion("2.1").modelVersion).toBe("seismograph-evidence-vote-v1");
     expect(contract.scenarioSet.model.modelVersion).toBe("seismograph-evidence-vote-v1");
-    expect(buildCanonicalProbabilityContract(prodManifest({ modelVersion: "2.1" })).scenarioSet.model.modelVersion).toBe("seismograph-evidence-vote-v2");
     expect(RETIRED_PROBABILITY_GENERATORS.length).toBeGreaterThan(0);
   });
 });
@@ -146,49 +142,6 @@ describe("systemic regime HMM (ECE 0.5152)", () => {
     }
     expect(regimeModelScoreDisplay(reading, false).value).toBe("Uncalibrated");
     expect(systemicRegimeProbabilityClaims({ ...reading, freshnessStatus: "UNAVAILABLE", currentRegime: null } as never)!.crisis.display.text).toBe("Unavailable");
-  });
-});
-
-describe("historical-analog packet (evidence-vote v2 defect fix)", () => {
-  it("never votes bear from similarity", () => {
-    const output = {
-      regime: { pressureLevel: "Low", currentRegime: "Calm", confidence: 70, description: "d" },
-      confidence: { score: 60 },
-      probability: { bull: 60, neutral: 30, bear: 10, confidence: 50, primaryDriver: "x", bullEvidence: [], bearEvidence: [] },
-      analogs: [{ label: "Fed Pivot Rally", similarity: 91, period: "2019-07" }],
-      transition: null,
-    };
-    const packets = fmosToEvidencePackets(output as never);
-    const analog = packets.find(p => p.evidenceType === "historical_analog");
-    expect(analog?.signal).toBe("neutral");
-  });
-});
-
-describe("missing sub-scores are null, never a neutral 50", () => {
-  const month = (overrides: Partial<HistoricalMonth>): HistoricalMonth => ({
-    month: "2026-09", score: 40, regime: "MODERATE RISK", liquidity: 40, credit: 40, volatility: 40, macro: 40, breadth: 40, aiBubble: 40,
-    baaSpread: null, hySpread: null, tsy10y: null, tsy2y: null, fedfunds: null, cpiYoy: null, unemployment: null, sp500: null,
-    ...overrides,
-  });
-
-  it("normalizeSubScore fails closed", () => {
-    expect(normalizeSubScore(0)).toBeNull();
-    expect(normalizeSubScore(undefined)).toBeNull();
-    expect(normalizeSubScore(Number.NaN)).toBeNull();
-    expect(normalizeSubScore(37)).toBe(37);
-  });
-
-  it("two months with all sub-scores missing are not a perfect sub-score match", () => {
-    const empty = { liquidity: null, credit: null, volatility: null, macro: null, breadth: null };
-    expect(computeSimilarity(month(empty), month(empty))).toBe(Math.round(100 * 0.4 + 0 * 0.4 + 70 * 0.2));
-    expect(computeSimilarity(month({}), month({}))).toBe(100 * 0.4 + 100 * 0.4 + 70 * 0.2);
-  });
-
-  it("omits an evidence family whose current sub-score is missing", () => {
-    const latest = month({ credit: null });
-    const names = buildEvidenceFamilies(latest, [latest]).map(f => f.name);
-    expect(names).not.toContain("Credit Markets");
-    expect(names).toContain("Liquidity Conditions");
   });
 });
 
@@ -223,6 +176,12 @@ describe("MarketState overlay and client projections", () => {
     const none = assembleCanonicalMarketState(src, options);
     expect(none.outlook.probabilities.bull).toBeNaN();
     expect(none.outlook.probabilityContract).toBeNull();
+    // Posture is a calculated output and still reads the source weights (unchanged
+    // calculation): Low stress + source bull 64 stays "opportunistic" even though
+    // the displayed bull is withheld.
+    const low = assembleCanonicalMarketState({ ...(src as object), currentStressLevel: "Low" } as never, { ...options, probabilityContract: contract });
+    expect(low.outlook.probabilities.bull).toBeNaN();
+    expect(low.act.marketPosture).toBe("opportunistic");
   });
 
   it("merge + browser projection carry contract text, never numbers or the 5300% defect", () => {

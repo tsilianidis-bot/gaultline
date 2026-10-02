@@ -153,9 +153,8 @@ function marketPosture(
   stressLevel: CanonicalMarketStateSource["currentStressLevel"],
   probabilities: CanonicalMarketState["outlook"]["probabilities"],
 ): CanonicalMarketState["act"]["marketPosture"] {
-  // Withheld (NaN) scenario numbers never move the posture; NaN comparisons are false.
-  if (stressLevel === "Crisis" || (Number.isFinite(probabilities.bear) && probabilities.bear >= 55)) return "defensive";
-  if (stressLevel === "Low" && Number.isFinite(probabilities.bull) && probabilities.bull >= 50) return "opportunistic";
+  if (stressLevel === "Crisis" || probabilities.bear >= 55) return "defensive";
+  if (stressLevel === "Low" && probabilities.bull >= 50) return "opportunistic";
   return "balanced";
 }
 
@@ -187,7 +186,16 @@ export function assembleCanonicalMarketState(
     // Forecast confidence starts from a 50 baseline and is not calibrated.
     confidence: Number.NaN,
   };
-  const posture = marketPosture(source.currentStressLevel, probabilities);
+  // Posture is a calculated output: it keeps reading the source scenario
+  // weights exactly as before the contract (unchanged calculation). The
+  // contract only governs what is displayed.
+  const posture = marketPosture(source.currentStressLevel, {
+    ...source.probabilities,
+    bull: normalizeCanonicalMetric(source.probabilities.bull),
+    neutral: normalizeCanonicalMetric(source.probabilities.neutral),
+    bear: normalizeCanonicalMetric(source.probabilities.bear),
+    confidence: normalizeCanonicalMetric(source.probabilities.confidence),
+  });
 
   return {
     version: "1.0",
