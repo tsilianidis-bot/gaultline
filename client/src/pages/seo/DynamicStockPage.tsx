@@ -40,7 +40,7 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     faqs: [
       { q: "Is NVDA a buy right now?", a: "FAULTLINE evaluates NVDA through a macro regime lens. In bull regimes with low systemic pressure, NVDA tends to outperform. In elevated-pressure or crash regimes, NVDA's high beta amplifies drawdowns. Always check the current regime before entering." },
       { q: "What is NVDA's AI risk score?", a: "FAULTLINE's AI risk score for NVDA incorporates valuation multiples, AI concentration exposure, momentum regime, and systemic market pressure. High AI concentration scores indicate elevated bubble risk." },
-      { q: "How does NVDA perform in a market crash?", a: "NVDA is a high-beta AI-concentrated stock. In the 2022 bear market, NVDA experienced a drawdown of 60–70%. FAULTLINE's crash probability indicator is a critical input for NVDA position sizing." },
+      { q: "How does NVDA perform in a market crash?", a: "NVDA is a high-beta AI-concentrated stock. In the 2022 bear market, NVDA experienced a drawdown of 60–70%. FAULTLINE's Market Risk Context 2026 page is one input for judging NVDA's exposure to a systemic sell-off." },
       { q: "What are the key risks for NVDA?", a: "The primary risks are: AI capex cycle deceleration, China export restrictions reducing addressable market, custom ASIC competition from hyperscalers, and valuation compression if growth slows." },
       { q: "How does FAULTLINE track NVDA?", a: "FAULTLINE monitors NVDA's momentum score, macro regime fit, AI bubble exposure, and systemic risk alignment. Signals are updated daily and classified as Bullish, Neutral, or Risk-Off." },
     ],

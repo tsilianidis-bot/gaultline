@@ -57,7 +57,7 @@ export const HISTORICAL_PERIODS = [
     startMonth: "2021-06",
     endMonth: "2023-01",
     peakMonth: "2022-06",
-    description: "The Fed raised rates 525bps in 18 months — the fastest tightening cycle in 40 years. What did the pressure engine see?",
+    description: "The Fed raised rates 525bps in about 16 months — the fastest tightening cycle in 40 years. What did the pressure engine see?",
     outcome: "S&P 500 fell 25%. NASDAQ fell 33%. Bonds had their worst year since 1788. Rate-sensitive sectors collapsed.",
     category: "Monetary Tightening",
   },
