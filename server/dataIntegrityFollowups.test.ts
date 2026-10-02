@@ -917,35 +917,72 @@ describe("no hard-coded $ figures in quote surfaces; NOW example price/change ar
     expect(offenders(src(f))).toEqual([]);
   });
 
-  // N1: other ways to spell a hard-coded price. SVG geometry (path d=, x1=, points=…) is excluded.
-  const SVG_GEOMETRY = /<(?:path|line|circle|rect|polyline|polygon|svg|ellipse)\b|\b(?:d|points|viewBox|x[12]?|y[12]?|cx|cy|r|rx|ry)=["{]/;
+  // N1/N2: other ways to spell a hard-coded price.
+  // Decimal check: any 1–6 digit number with 1–2 decimals (924.58, 924.5, 9.87),
+  // after removing styling / logic contexts that are not prices: rgba()/hsla(),
+  // cubic-bezier(), CSS-unit numbers, style props (lineHeight, opacity, strokeWidth…),
+  // comparisons / arithmetic (>= 1.5, * 0.38), "×1.5" multipliers and 0.x ratios.
+  // Only a real SVG tag on the line (<path, <line, …) exempts the decimal check;
+  // an x={…} attribute alone does not. The $-spelling checks apply to every line.
+  const SVG_TAG = /<(?:path|line|circle|rect|polyline|polygon|svg|ellipse|stop|g|linearGradient|radialGradient)\b/;
+  const NON_PRICE_CONTEXTS = [
+    /rgba?\([^)]*\)/g, /hsla?\([^)]*\)/g, /cubic-bezier\([^)]*\)/g,
+    /\b\d+(?:\.\d+)?(?:px|em|rem|ms|s|%|deg|fr|vh|vw)\b/g,
+    /\b(?:lineHeight|opacity|flex|flexGrow|flexShrink|scale|strokeWidth|strokeOpacity|fillOpacity|zIndex|delay|duration|stiffness|damping|mass|threshold|step)\s*[:=]\s*[{"']?\s*-?\d+(?:\.\d+)?/g,
+    /\s(?:[<>]=?|===?|[*/])\s+-?\d+(?:\.\d+)?/g, // spaced operators only: '>924.58' (a tag end) is still flagged
+    /×\s*\d+(?:\.\d+)?/g,
+    /(?<![\w.])0\.\d+/g,
+  ];
+  const DECIMAL = /(?<![\w.])\d{1,6}\.\d{1,2}(?![\w.])/;
+  const isComment = (l: string) => /^\s*(?:\/\/|\/\*|\*|\{\/\*)/.test(l);
+  const decimalOffender = (l: string) => {
+    if (isComment(l) || SVG_TAG.test(l)) return false;
+    let t = l;
+    for (const re of NON_PRICE_CONTEXTS) t = t.replace(re, " ");
+    return DECIMAL.test(t);
+  };
   const PRICE_SPELLINGS: Array<[string, RegExp]> = [
-    ["price-like decimal literal", /\b\d{2,6}\.\d{2}\b/],
-    ["'$' + concatenation", /['"`]\$['"`]\s*\+/],
-    ["${'$'} interpolation", /\$\{\s*['"`]\$['"`]\s*\}/],
+    ["lone '$' string literal ('$' +, {'$'}, ${'$'})", /['"`]\$['"`]/],
     ["String.fromCharCode(36)", /fromCharCode\(\s*36\s*\)/],
-    ["escaped dollar (\\u0024 / &#36; / &dollar;)", /\\u0024|&#36;|&dollar;/],
+    ["escaped dollar (\\u0024 / \\u{24} / \\x24 / &#36; / &#x24; / &dollar;)", /\\u0024|\\u\{0*24\}|\\x24|&#0*36;|&#x0*24;|&dollar;/i],
   ];
   const spellingOffenders = (text: string) =>
-    text.split("\n").flatMap((l, i) => SVG_GEOMETRY.test(l) ? [] : PRICE_SPELLINGS.filter(([, re]) => re.test(l)).map(([name]) => `${i + 1}: ${name}: ${l.trim()}`));
+    text.split("\n").flatMap((l, i) => [
+      ...(decimalOffender(l) ? [`${i + 1}: price-like decimal: ${l.trim()}`] : []),
+      ...PRICE_SPELLINGS.filter(([, re]) => re.test(l)).map(([name]) => `${i + 1}: ${name}: ${l.trim()}`),
+    ]);
 
-  it.each(QUOTE_SURFACES)("%s has no price-like decimal, '$' +, ${'$'}, fromCharCode(36) or escaped $ (N1)", f => {
+  it.each(QUOTE_SURFACES)("%s has no price-like decimal, lone '$' literal, fromCharCode(36) or escaped $ (N1/N2)", f => {
     expect(spellingOffenders(src(f))).toEqual([]);
   });
 
   it.each([
     ["price-like decimal", "<span>924.58</span>"],
     ["price-like decimal in a string", "const BTC = '64250.12';"],
+    ["1-decimal price", "<span>924.5</span>"],
+    ["1-digit price", "{ label: 'Last', value: '9.87' }"],
+    ["decimal in an x={…} attribute (no SVG tag)", "<Tile x={924.58} />"],
     ["'$' + concatenation", "const p = '$' + 924;"],
     ["${'$'} interpolation", "const p = `${'$'}924`;"],
+    ["{'$'}{X} in JSX", "<span>{'$'}{last}</span>"],
     ["String.fromCharCode(36)", "const p = String.fromCharCode(36) + 924;"],
     ["\\u0024", "const p = '\\u0024924';"],
-  ])("N1 mutation: %s is caught", (_name, line) => {
+    ["'\\x24' +", "const p = '\\x24' + last;"],
+    ["&#x24;", "<span>&#x24;{last}</span>"],
+  ])("N1/N2 mutation: %s is caught", (_name, line) => {
     expect(spellingOffenders(`x\n${line}\n`).length).toBeGreaterThan(0);
   });
 
-  it("N1: SVG geometry decimals are not flagged", () => {
-    expect(spellingOffenders(`<line x1="21" y1="21" x2="16.65" y2="16.65"/>\n<path d="M12.50 10.25"/>`)).toEqual([]);
+  it("N1/N2: real SVG tags, styling and logic decimals are not flagged", () => {
+    expect(spellingOffenders([
+      `<line x1="21" y1="21" x2="16.65" y2="16.65"/>`,
+      `<path d="M12.50 10.25"/>`,
+      `<div style={{ lineHeight: 1.45, opacity: 0.6, background: 'rgba(0,212,255,0.08)' }}>`,
+      `color: (rr ?? 0) >= 1.5 ? '#FFD700' : '#FF9500', sub: \`ATR ×1.5\``,
+      `const r = size * 0.38;`,
+      `strokeWidth="1.5"`,
+      `// Phase 3.5 fields`,
+    ].join("\n"))).toEqual([]);
   });
 
   const PRICE_CELL = /<div data-preview-price style=\{\{[^}]*\}\}>—<\/div>/;
@@ -1121,14 +1158,37 @@ describe("Watchlist domain scores on the 0–100 display scale (stored 0–10 un
     expect(def.format(def.stressLevel)).toBe(String(Math.round(def.stressLevel * 10)));
   });
 
-  it.each(DOMAIN)("%s: slider runs 0–100 step 10 and saves the stored 0–10 value", (key) => {
+  it.each(DOMAIN)("%s: slider runs 0–100 step 5 and saves the stored 0–10 value", (key) => {
     const sl = thresholdSlider(MAP[key]);
-    expect([sl.min, sl.max, sl.step]).toEqual([0, 100, 10]);
+    expect([sl.min, sl.max, sl.step]).toEqual([0, 100, 5]);
+    expect(sl.toDisplay(7.5)).toBe(75);
+    expect(sl.toStored(75)).toBe(7.5);
+    expect(sl.toStored(85)).toBe(8.5);
+    for (let pos = sl.min; pos <= sl.max; pos += sl.step) expect(sl.toDisplay(sl.toStored(pos))).toBe(pos);
     expect(sl.toDisplay(7)).toBe(70);
     expect(sl.toStored(80)).toBe(8);
     expect(sl.toStored(sl.toDisplay(7.5))).toBe(7.5);
     const saved = buildWatchlistItem({ indicatorKey: key, thresholdValue: sl.toStored(80), condition: "above", severity: "high", note: "" }, null, () => 1, () => "id");
     expect(saved.thresholdValue).toBe(8);
+  });
+
+  it.each(DOMAIN)("%s: default / stress / normal presets land exactly on a slider step (75 and 85 reachable)", (key) => {
+    const def = MAP[key];
+    const sl = thresholdSlider(def);
+    for (const v of [def.defaultThreshold, def.stressLevel, def.normalRange[0], def.normalRange[1], 7.5, 8.5]) {
+      const pos = sl.toDisplay(v);
+      expect(pos).toBeGreaterThanOrEqual(sl.min);
+      expect(pos).toBeLessThanOrEqual(sl.max);
+      expect(Math.abs((pos - sl.min) / sl.step - Math.round((pos - sl.min) / sl.step))).toBeLessThan(1e-9);
+      expect(sl.toStored(pos)).toBe(v);
+    }
+  });
+
+  it("CRE Stress 8.5 default is reachable on its own 0.1 input step (no display scaling)", () => {
+    const sl = thresholdSlider(MAP.creStress);
+    expect([sl.min, sl.max, sl.step]).toEqual([0, 10, 0.1]);
+    expect(sl.toStored(sl.toDisplay(8.5))).toBe(8.5);
+    expect(Math.abs(Math.round(8.5 / sl.step) * sl.step - 8.5)).toBeLessThan(1e-9);
   });
 
   it("score_overall slider stays on its canonical 0–100 scale (step 1); raw indicators keep their own scale", () => {
@@ -1175,6 +1235,9 @@ describe("missing delta renders '—' / Unavailable, never 'Stable' or '0 vs bas
     expect(deltaDirection({ delta: -0.35, deltaAvailable: true })).toBe("Improving");
     expect(vsBaselineText({ delta: 0.35 })).toBe("+3.5 pts vs baseline");
     expect(vsBaselineText({ delta: -0.2 })).toBe("-2.0 pts vs baseline");
+    expect(vsBaselineText({ delta: 0 })).toBe("Stable");
+    expect(vsBaselineText({ delta: 0.004, deltaAvailable: true })).toBe("Stable");
+    expect(vsBaselineText({ delta: 0, deltaAvailable: false })).toBe("Δ unavailable");
   });
 
   it("canonical projection (prod fixture): any delta flagged unavailable renders Unavailable", () => {
@@ -1204,7 +1267,7 @@ describe("missing delta renders '—' / Unavailable, never 'Stable' or '0 vs bas
     const s = src("client/src/pages/Pressure.tsx");
     expect(s).toMatch(/const d = knownDelta\(domain\);/);
     expect(s).toMatch(/\{vsBaselineText\(domain\)\}/);
-    expect(s).not.toMatch(/domain\.delta\.toFixed|domain\.delta !== 0/);
+    expect(s).not.toMatch(/domain\.delta\.toFixed|domain\.delta !== 0|if \(d === 0\) return null;/);
     expect(s).not.toMatch(/trend \?\? "stable"/);
     expect(s).toMatch(/engine\.direction === "Stable" \? "stable" : "unavailable"/);
     expect(s).not.toMatch(/\{domain\.score\.toFixed\(1\)\}/);
@@ -1251,5 +1314,33 @@ describe("B1: Simulate probability row never shows a withheld probability as 0% 
     expect(probabilityCellText(out("UNCALIBRATED", 7), "crashProbability", true)).toBe("—");
     expect(probabilityCellText({ probability: {}, probabilityDisplay: {} }, "crashProbability", true)).toBe("—");
     expect(probabilityCellText(null, "crashProbability", true)).toBe("—");
+  });
+});
+
+describe("B2: Signals HISTORICAL ANALOG carries no return figures", () => {
+  const data = src("client/src/lib/signalsData.ts");
+  const analogs = [...data.matchAll(/historicalAnalog:\s*(['"`])((?:(?!\1).)*)\1/g)].map(m => m[2]);
+  const RETURN = /%|\+\s*\d|\bx\d|\d+x\b|\bin \d+ (?:months?|weeks?|days?|years?)\b/i;
+
+  it("every historicalAnalog is a dated label without a % return, '+N' or 'in N months'", () => {
+    expect(analogs.length).toBeGreaterThan(0);
+    expect(analogs.filter(a => RETURN.test(a))).toEqual([]);
+    expect(analogs).toEqual(expect.arrayContaining(["NVDA 2023 AI breakout", "MSFT 2019 cloud re-rating", "AAPL 2020 services re-rating"]));
+  });
+
+  it("Signals renders the analog text as-is (no figure appended)", () => {
+    const sig = src("client/src/pages/Signals.tsx");
+    expect(sig).toMatch(/>\{stock\.historicalAnalog\}<\/div>/);
+  });
+
+  it.each([
+    "NVDA 2023 AI breakout (+240% in 8 months)",
+    "MSFT 2019 cloud re-rating (+85% in 12 months)",
+    "AAPL 2020 services re-rating (+120% in 18 months)",
+    "TSLA 2020 run (+700%)",
+    "AMD 2016 turnaround +12",
+    "SMCI 2024 squeeze, 3x in 6 weeks",
+  ])("mutation: %s is caught", (a) => {
+    expect(RETURN.test(a)).toBe(true);
   });
 });
