@@ -22,7 +22,7 @@ import { computeTradingSignal, TradingSignalsInput } from "./tradingSignals";
 import { computeCryptoSignal, CryptoSignalInput } from "./cryptoSignals";
 import { getCoinMarketData, getCoinOHLC, getGlobalStats } from "./coingeckoProxy";
 import { getQuote } from "./yahooProxy";
-import { invokeLLM } from "./_core/llm";
+import { claimOwnerSimLlmCall, invokeBackgroundLLM } from "./llmCapacity";
 import { log } from "./logger";
 
 // ── Constants ─────────────────────────────────────────────────
@@ -341,9 +341,12 @@ async function generateOpportunityRationale(
   signal: ReturnType<typeof computeTradingSignal>,
   objectiveLabel: string,
 ): Promise<{ whyNow: string; invalidation: string; keyRisks: string[]; labels: string[] }> {
+  if ((direction !== "LONG" && direction !== "WATCH") || !claimOwnerSimLlmCall()) {
+    return deterministicOpportunityRationale(ticker, signal, pressure);
+  }
   const domainStr = Object.entries(domains).map(([k, v]) => `${k}: ${v}/100`).join(", ");
   try {
-    const resp = await invokeLLM({
+    const resp = await invokeBackgroundLLM({
       messages: [
         {
           role: "system",
@@ -416,9 +419,17 @@ Labels must be chosen from: ["AI Bubble Exposure", "Momentum Breakout", "Oversol
   } catch (err) {
     log.warn(`[OwnerSim] LLM rationale failed for ${ticker}`, { err: err as Error });
   }
+  return deterministicOpportunityRationale(ticker, signal, pressure);
+}
+
+function deterministicOpportunityRationale(
+  ticker: string,
+  signal: { action: string; confidence: number },
+  pressure: { regime: string },
+): { whyNow: string; invalidation: string; keyRisks: string[]; labels: string[] } {
   return {
     whyNow: `${ticker} shows ${signal.action} signal with ${signal.confidence}/100 confidence under ${pressure.regime} regime.`,
-    invalidation: `Break below stop-loss level invalidates the thesis.`,
+    invalidation: "Break below stop-loss level invalidates the thesis.",
     keyRisks: ["Market regime shift", "Liquidity deterioration", "Macro surprise"],
     labels: [signal.action === "BUY" ? "Momentum Breakout" : "Regime Aligned"],
   };
@@ -1088,7 +1099,7 @@ export async function generateOwnerJournal(
     : "No trades today";
 
   try {
-    const resp = await invokeLLM({
+    const resp = await invokeBackgroundLLM({
       messages: [
         { role: "system", content: "You are FAULTLINE's simulation journal AI. Write a concise, analytical daily journal entry for the owner's simulation account. This is for research/educational purposes only." },
         {
@@ -1221,7 +1232,7 @@ export async function getOptimalAction(
   const domains = extractDomainScores(pressure);
 
   try {
-    const resp = await invokeLLM({
+    const resp = await invokeBackgroundLLM({
       messages: [
         {
           role: "system",

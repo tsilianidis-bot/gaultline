@@ -16,7 +16,7 @@
 // Output: FMOSAIInterpretation
 // ============================================================
 
-import { invokeLLM } from "../../_core/llm";
+import { invokeBackgroundLLM } from "../../llmCapacity";
 import type { FaultlinePressureOutput } from "../../pressure/engine";
 import type {
   FMOSRegimeOutput,
@@ -144,7 +144,7 @@ export async function computeAIInterpretation(
       pressure, regime, probability, confidence, decision, topAnalog, dna, symbol
     );
 
-    const response = await invokeLLM({
+    const response = await invokeBackgroundLLM({
       messages: [
         {
           role: "system",

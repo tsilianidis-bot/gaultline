@@ -27,7 +27,7 @@ import {
   dailyBriefSnapshots,
   users,
 } from "../drizzle/schema";
-import { invokeLLM } from "./_core/llm";
+import { invokeBackgroundLLM } from "./llmCapacity";
 import { sdk } from "./_core/sdk";
 import { notifyOwner } from "./_core/notification";
 import { sendEmail } from "./email";
@@ -613,7 +613,7 @@ CRITICAL: Base all analysis on the provided data. Do not invent statistics. Mini
   let metaDescription = `FAULTLINE ${config.label} for ${dateStr}. Institutional market intelligence powered by live FAULTLINE engine data.`;
 
   try {
-    const metaResponse = await invokeLLM({
+    const metaResponse = await invokeBackgroundLLM({
       messages: [
         { role: "system", content: "Generate SEO-optimized titles and meta descriptions for market intelligence articles. Return JSON only." },
         { role: "user", content: `Generate a title (max 65 chars) and meta description (max 155 chars) for a FAULTLINE ${config.label} dated ${dateStr}. Context: ${ctx}. Return JSON: {"title": "...", "metaDescription": "..."}` }
@@ -641,7 +641,7 @@ CRITICAL: Base all analysis on the provided data. Do not invent statistics. Mini
   } catch { /* use defaults */ }
 
   // ── Step 5: Generate full content ─────────────────────────────────────────
-  const contentResponse = await invokeLLM({
+  const contentResponse = await invokeBackgroundLLM({
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: contentPrompts[publishType] }
