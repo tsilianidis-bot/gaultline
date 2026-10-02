@@ -93,7 +93,10 @@ describe("OUTLOOK destination composition", () => {
     expect(outlookSource).toContain("probabilityOrWithheld(\n    probabilityDistribution.confidence");
     expect(outlookSource).not.toContain("formatCanonicalPercent(scenario.probability)");
     expect(outlookSource).toContain("formatCanonicalPercent(topAnalog.similarity)");
-    expect(outlookSource).toContain("formatCanonicalScore(marketState?.now.pressureScore ?? output.overall.score * 10)");
+    // Pressure is canonical-only: without a canonical state (e.g. a 503) it reads Unavailable, never the demo engine score.
+    expect(outlookSource).toContain("marketState ? formatCanonicalScore(marketState.now.pressureScore) : PROBABILITY_DISPLAY_TEXT.UNAVAILABLE");
+    expect(outlookSource).not.toContain("output.overall.score * 10");
+    expect(outlookSource).not.toContain("output.narrative.summary");
     expect(outlookSource).not.toMatch(/\}\s*\/10\b/);
     expect(outlookSource).not.toContain("/10</");
   });
