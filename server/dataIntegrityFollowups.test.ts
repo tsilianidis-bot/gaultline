@@ -1344,3 +1344,74 @@ describe("B2: Signals HISTORICAL ANALOG carries no return figures", () => {
     expect(RETURN.test(a)).toBe(true);
   });
 });
+
+describe("no unsourced stated probability / likelihood % in #59 copy", () => {
+  const FILES = [
+    "client/src/components/AppLayout.tsx",
+    "client/src/components/DashboardSearchPanels.tsx",
+    "client/src/components/GlobalMarketTicker.tsx",
+    "client/src/components/HomeStockIntelSection.tsx",
+    "client/src/components/ScoreExplainer.tsx",
+    "client/src/components/TickerSearch.tsx",
+    "client/src/components/watchlist/WatchlistEditModal.tsx",
+    "client/src/lib/aiWatchMetrics.ts",
+    "client/src/lib/chartsInstrumentReadings.ts",
+    "client/src/lib/data.ts",
+    "client/src/lib/deltaAvailability.ts",
+    "client/src/lib/pressureVectorWeights.ts",
+    "client/src/lib/signalQuoteView.ts",
+    "client/src/lib/signalsData.ts",
+    "client/src/lib/simulatePressureView.ts",
+    "client/src/lib/watchlist.ts",
+    "client/src/pages/AIWatch.tsx",
+    "client/src/pages/AshaIntelligenceCenter.tsx",
+    "client/src/pages/Charts.tsx",
+    "client/src/pages/Now.tsx",
+    "client/src/pages/Pressure.tsx",
+    "client/src/pages/Signals.tsx",
+    "client/src/pages/SimulatePressure.tsx",
+    "client/src/pages/Watchlist.tsx",
+    "server/signalsProxy.ts",
+    "shared/dataIntegrityReadout.ts",
+  ];
+  const STATED_PROBABILITY = [
+    /probabilit\w*\s*:?\s*(?:of\s[^'"`\n]{0,60})?(?:is\s|at\s|has risen to\s|rises to\s|above\s|over\s|near\s)?[<>≥≤~]?\s*\d+(?:\.\d+)?\s*%/i,
+    /\d+(?:\.\d+)?\s*%\s*(?:chance|probability|likelihood|odds)\b/i,
+    /\b(?:chance|likelihood|odds)\s*(?:of\s[^'"`\n]{0,60})?(?:is\s|at\s)?[<>≥≤~]?\s*\d+(?:\.\d+)?\s*%/i,
+  ];
+  const statedProbabilityLines = (text: string) =>
+    text.split("\n").map((l, i) => ({ l, n: i + 1 })).filter(({ l }) => STATED_PROBABILITY.some(re => re.test(l)));
+
+  it.each(FILES)("%s states no 'probability >N%' / 'N% chance' / 'likelihood N%'", (f) => {
+    expect(statedProbabilityLines(src(f)).map(({ n, l }) => `${f}:${n}: ${l.trim()}`)).toEqual([]);
+  });
+
+  it("deep-inversion copy is qualitative in Simulate and the default watchlist alert (thresholds unchanged)", async () => {
+    expect(src("client/src/pages/SimulatePressure.tsx")).toContain("stressNote: 'Below -200bps: deep inversion, historically a recession warning sign',");
+    expect(src("client/src/lib/watchlist.ts")).toContain("note: 'Deep inversion — historically a recession warning sign',");
+    const { getDefaultWatchlist } = await import("../client/src/lib/watchlist") as unknown as { getDefaultWatchlist?: () => Array<{ indicatorKey: string; thresholdValue: number; note?: string }> };
+    if (getDefaultWatchlist) {
+      const curve = getDefaultWatchlist().find(i => /Deep inversion/.test(i.note ?? ""));
+      expect(curve?.note).toBe("Deep inversion — historically a recession warning sign");
+    }
+  });
+
+  it("data.ts no longer exports the static scenario / regime / daily-report probabilities", async () => {
+    const mod = await import("../client/src/lib/data") as Record<string, unknown>;
+    expect(mod.scenarios).toBeUndefined();
+    expect(mod.marketRegime).toBeUndefined();
+    expect(mod.dailyReport).toBeUndefined();
+  });
+
+  it.each([
+    "stressNote: 'Below -200bps: deep inversion, recession probability >80%',",
+    "note: 'Deep inversion — recession probability >80%',",
+    "The probability of a severe systemic event has risen to 30%",
+    "a 65% chance of recession",
+    "crash probability: 12.5%",
+    "likelihood of default at 40%",
+    "odds of a crash ~25%",
+  ])("mutation: %s is caught", (line) => {
+    expect(statedProbabilityLines(`x\n${line}\n`).length).toBe(1);
+  });
+});
