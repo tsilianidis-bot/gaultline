@@ -1,11 +1,12 @@
 import SEOLandingPage from '@/pages/SEOLandingPage';
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 export default function SPYSignal() {
   return (
     <SEOLandingPage
       seo={{
         title: "SPY Outlook: Signal & S&P 500 ETF Analysis | FAULTLINE",
-        description: "Get FAULTLINE's current outlook for SPY (S&P 500 ETF), including current signal, macro conditions, systemic risk, and historical context. Not financial advice.",
+        description: `Get FAULTLINE's current outlook for SPY (S&P 500 ETF), including current signal, macro conditions, systemic risk, and historical context. ${PUBLIC_DISCLAIMER}`,
         canonical: "/stock/spy",
       }}
       badge="STOCK"
@@ -42,11 +43,11 @@ export default function SPYSignal() {
         },
         {
           heading: "Historical Context and What Would Shift the Outlook",
-          body: "FAULTLINE's SPY outlook is always presented within a rich historical context, comparing current market behavior to similar periods in the past. This allows users to see how the present situation aligns with or deviates from historical precedents, offering valuable perspective on potential outcomes. Our current FAULTLINE rating for SPY is **Neutral with a Lean Towards Caution**, primarily driven by persistent inflationary pressures and a tightening liquidity environment, despite robust corporate earnings. A significant shift in this outlook would likely be triggered by a clear deceleration in inflation, a more accommodative stance from central banks, or a sustained improvement in leading economic indicators that signal renewed growth without overheating. Conversely, an escalation of geopolitical tensions or a sharp increase in credit market stress could push the outlook towards a more definitively bearish stance. We monitor these critical factors to provide timely updates.",
+          body: "FAULTLINE's SPY outlook is always presented within a rich historical context, comparing current market behavior to similar periods in the past. This allows users to see how the present situation aligns with or deviates from historical precedents, offering valuable perspective on potential outcomes. The current SPY signal is shown in the FAULTLINE app; this page does not carry a fixed rating. A significant shift in the outlook would likely be triggered by a clear deceleration in inflation, a more accommodative stance from central banks, or a sustained improvement in leading economic indicators that signal renewed growth without overheating. Conversely, an escalation of geopolitical tensions or a sharp increase in credit market stress could push the outlook towards a more definitively bearish stance. We monitor these critical factors to provide timely updates.",
         },
         {
-          heading: "Disclaimer: Market Intelligence, Not Financial Advice",
-          body: "It is crucial to understand that FAULTLINE provides market intelligence and educational content. Our SPY outlook, signals, and analyses are generated through quantitative models and proprietary frameworks for informational purposes only. They are not, and should not be construed as, personalized financial advice, investment recommendations, or an offer to buy or sell any securities. Investing in financial markets involves significant risks, and past performance is not indicative of future results. Users should conduct their own due diligence and consult with a qualified financial advisor before making any investment decisions. FAULTLINE does not assume any liability for investment decisions made based on the information provided on this page or within our platform.",
+          heading: "Disclaimer",
+          body: `${PUBLIC_DISCLAIMER} FAULTLINE's SPY outlook, signals, and analyses are not personalized recommendations or an offer to buy or sell any security. Investing involves risk, and past performance does not guarantee future results.`,
         },
       ]}
       faqs={[

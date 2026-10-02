@@ -67,7 +67,7 @@ Understanding which historical environment today most resembles is useful contex
         },
         {
           question: "What market conditions historically favor buying stocks?",
-          answer: "Historically, the most favorable conditions for buying stocks combine: low systemic pressure (Pressure Index below 25), early-cycle or mid-cycle bull regime, low credit spreads, accommodative Fed policy, and strong market breadth. FAULTLINE tracks all of these as new data is published.",
+          answer: "Historically, the most favorable conditions for buying stocks combine: low systemic pressure (Pressure Index below 25), early-cycle or mid-cycle bull regime, low credit spreads, accommodative Fed policy, and strong market breadth. The Pressure Index and regime classification cover the first four as new data is published; market breadth is context, not a Pressure Index input.",
         },
         {
           question: "What conditions historically suggest caution about buying stocks?",

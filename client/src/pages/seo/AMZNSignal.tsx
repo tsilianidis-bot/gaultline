@@ -73,7 +73,7 @@ const AMZNSignal = () => {
         },
         {
           question: "Does FAULTLINE consider consumer spending risk for AMZN?",
-          answer: "Absolutely. Given Amazon's significant e-commerce presence, consumer spending risk is a key factor. We monitor various consumer-related metrics, including retail sales, consumer confidence, and employment data, to assess the potential impact on Amazon's retail segment."
+          answer: "Consumer spending risk is relevant context for Amazon's retail segment. FAULTLINE does not ingest retail sales or consumer-confidence data; the macro inputs it reads that bear on the consumer are the unemployment rate and CPI from FRED."
         },
         {
           question: "How often is FAULTLINE's AMZN outlook updated?",

@@ -218,3 +218,56 @@ describe("public claims truth: Product-QA gate follow-ups (PR #56)", () => {
     }
   });
 });
+
+describe("public claims truth: Pressure Index inputs (PR #56 r2)", () => {
+  // Any sentence that attributes VIX or market breadth to the Pressure Index as an
+  // input fails, unless the same sentence says it is not an input / is context / a proxy.
+  const extraPublic = [
+    "client/src/pages/Methodology.tsx",
+    "client/src/pages/MarketingSite.tsx",
+    "client/src/pages/TrackRecord.tsx",
+    "server/seoMeta.ts",
+  ].map((path) => ({ path, text: read(path) }));
+  const attributesInput = [
+    /Pressure Index[^.]{0,80}\b(synthesi[sz]\w*|combin\w*|integrat\w*|incorporat\w*|aggregat\w*|built from|inputs?)\b[^.]{0,160}\b(VIX|breadth)\b/i,
+    /\b(VIX|breadth)\b[^.]{0,120}\binto (a |the |its |one |FAULTLINE's )?[^.]{0,30}Pressure Index/i,
+  ];
+  const exempt = /\bnot\b|separate|context|proxy/i;
+  // "…VIX, credit spreads, …. The Pressure Index synthesizes these…" across two sentences.
+  const attributesByReference = /\b(VIX|breadth)\b[\s\S]{0,240}Pressure Index[^.]{0,40}\b(synthesi[sz]\w*|integrat\w*|combin\w*|aggregat\w*) (these|them|this)\b/i;
+
+  it("never lists VIX or market breadth as Pressure Index inputs", () => {
+    const hits: string[] = [];
+    for (const page of [...seoPages, ...publicPages, ...extraPublic]) {
+      const sentences = page.text.split(/(?<=[.!?])\s+|\n/);
+      sentences.forEach((sentence, i) => {
+        const pair = `${sentences[i - 1] ?? ""} ${sentence}`;
+        const hit = attributesInput.some((re) => re.test(sentence)) || attributesByReference.test(pair);
+        if (hit && !exempt.test(sentence)) {
+          hits.push(`${page.path}: ${sentence.trim().slice(0, 120)}`);
+        }
+      });
+    }
+    expect(hits).toEqual([]);
+  });
+
+  it("best-market-risk-indicators and stock-market-risk meta match the engine", () => {
+    const page = read("client/src/pages/seo/BestMarketRiskIndicators.tsx");
+    expect(page).not.toMatch(/VIX, credit spreads, yield curve, market breadth, and liquidity/);
+    expect(page).toContain("eight FRED series");
+    expect(read("client/src/hooks/useSEO.ts")).not.toMatch(/volatility, and equity breadth|breadth deterioration/);
+  });
+
+  it("track record footer carries the shared disclaimer and no hard-coded year", () => {
+    const tr = read("client/src/pages/TrackRecord.tsx");
+    expect(tr).toContain("{PUBLIC_DISCLAIMER}");
+    expect(tr).not.toContain("© 2025");
+    expect(tr).not.toContain("Live Verified Early Warning Intelligence");
+  });
+
+  it("no public subscription or billing copy while paid plans are not on sale", () => {
+    const trust = read("client/src/pages/TrustCenter.tsx");
+    expect(trust).not.toMatch(/Can I cancel my subscription|billed monthly|Lifetime Access/);
+    expect(read("client/src/pages/seo/vs/VsBloomberg.tsx")).not.toContain("subscription model is tailored");
+  });
+});

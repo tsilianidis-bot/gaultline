@@ -275,7 +275,7 @@ export const PAGE_SEO = {
   pressureIndex: {
     title: "FAULTLINE Pressure Index™ — Systemic Market Stress",
     description:
-      "Track the FAULTLINE Pressure Index™: a regularly refreshed systemic market stress score aggregating volatility, credit spreads, liquidity, and breadth deterioration.",
+      "Track the FAULTLINE Pressure Index™: a systemic market stress score built from credit spreads, funding, rates, inflation, and labor data, recalculated as new FRED data is published.",
     canonical: "/pressure-index",
   },
   // ── Public SEO landing pages ──────────────────────────────────
@@ -294,7 +294,7 @@ export const PAGE_SEO = {
   publicStockMarketRisk: {
     title: "Stock Market Risk Today | FAULTLINE",
     description:
-      "Stock market risk intelligence for understanding systemic pressure, market regimes, credit conditions, volatility, and equity breadth.",
+      "Stock market risk intelligence for understanding systemic pressure, market regimes, credit conditions, rates, and volatility context.",
     canonical: "/stock-market-risk-dashboard",
   },
   publicCryptoMarketRisk: {

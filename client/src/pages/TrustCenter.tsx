@@ -330,8 +330,8 @@ function FAQTab() {
       a: "Yes. FAULTLINE uses industry-standard encryption for all data in transit (TLS 1.3) and at rest. We do not sell user data to third parties. Authentication is handled via OAuth 2.0. See the Security tab for more details.",
     },
     {
-      q: "Can I cancel my subscription?",
-      a: "Yes. You can cancel your subscription at any time from your account settings. Cancellation takes effect at the end of the current billing period.",
+      q: "Do I need a paid subscription?",
+      a: "No. Paid plans are not on sale yet, so there is no subscription to buy or cancel. The public Pressure Index is free to read, and signed-in access starts with a free account.",
     },
     {
       q: "Who built FAULTLINE?",
@@ -407,7 +407,7 @@ function TermsTab() {
       <P>You may use FAULTLINE for personal, non-commercial investment research and education. You may not redistribute, resell, or republish FAULTLINE content without written permission. You may not use automated tools to scrape or extract data from the platform.</P>
 
       <H3>Subscriptions and Payments</H3>
-      <P>Subscriptions are billed monthly or as a one-time payment (Lifetime Access). Subscriptions renew automatically unless cancelled. Cancellation takes effect at the end of the current billing period. Lifetime Access purchases are non-refundable.</P>
+      <P>Paid plans are not on sale yet. FAULTLINE does not currently charge for access.</P>
 
       <H3>Limitation of Liability</H3>
       <P>FAULTLINE and Phoenix Systems are not liable for any investment losses, trading decisions, or financial outcomes resulting from use of the platform. The platform is for educational purposes only.</P>

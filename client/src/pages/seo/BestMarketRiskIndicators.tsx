@@ -5,7 +5,7 @@ const BestMarketRiskIndicators = () => {
     <SEOLandingPage
       seo={{
         title: 'Best Market Risk Indicators | FAULTLINE',
-        description: 'Explore top market risk indicators like VIX, credit spreads, and yield curve. Discover how FAULTLINE\'s Pressure Index synthesizes these into a single, actionable score.',
+        description: 'Explore top market risk indicators like VIX, credit spreads, and the yield curve. FAULTLINE\'s Pressure Index combines six weighted vectors from eight FRED series plus a static AI baseline; VIX is context, not an input.',
         canonical: '/best-market-risk-indicators',
       }}
       badge="Comparison"
@@ -37,7 +37,7 @@ const BestMarketRiskIndicators = () => {
         },
         {
           heading: 'FAULTLINE\'s Unique Approach: The Pressure Index',
-          body: `FAULTLINE\'s core innovation lies in its Pressure Index, a proprietary metric that synthesizes the most critical market risk indicators into a single, easy-to-understand score. Unlike traditional approaches that analyze VIX, credit spreads, yield curve, market breadth, and liquidity conditions in isolation, the Pressure Index integrates these diverse data streams. Our advanced algorithms process and weigh these factors, providing a regularly refreshed, holistic assessment of market pressure. This unique synthesis allows investors to quickly grasp the overall risk environment without needing to be experts in each individual indicator. The Pressure Index offers a dynamic, forward-looking perspective, highlighting shifts in market dynamics and providing a clear context for current conditions, historical comparisons, and what factors are driving the change.`, 
+          body: `FAULTLINE\'s Pressure Index combines six weighted vectors into a single 0-100 score. The vectors are built from eight FRED series: the ICE BofA high-yield spread, SOFR, the 10-year and 2-year Treasury yields, CPI, PPI, the federal funds rate, and unemployment. A static AI-concentration baseline, adjusted by rates and credit, is added on top. VIX and market breadth are useful context shown elsewhere in FAULTLINE, but they are not Pressure Index inputs. The index is recalculated as new FRED data is published, and it shows which vectors are driving the reading. It describes current structural pressure; it does not forecast a crash date.`, 
         },
       ]}
       faqs={[
@@ -55,7 +55,7 @@ const BestMarketRiskIndicators = () => {
         },
         {
           question: 'How does FAULTLINE\'s Pressure Index differ from traditional indicators?',
-          answer: 'FAULTLINE\'s Pressure Index is a composite metric that synthesizes multiple traditional market risk indicators (like VIX, credit spreads, yield curve, market breadth, and liquidity) into a single, comprehensive score. Unlike analyzing each indicator separately, the Pressure Index provides a holistic, integrated view of market risk, offering a more nuanced and actionable assessment.',
+          answer: 'FAULTLINE\'s Pressure Index is a composite of six weighted vectors built from eight FRED series (credit spreads, SOFR funding, the Treasury curve, inflation, the federal funds rate, and unemployment) plus a static AI baseline. VIX and market breadth are separate context, not inputs. Rather than reading each indicator separately, it combines these inputs into one score and shows which vectors drive it.',
         },
         {
           question: 'Can these indicators predict market crashes?',

@@ -9,7 +9,7 @@ const CreditMarketStress = () => {
         canonical: "/credit-market-stress",
       }}
       badge="Market Intelligence"
-      headline="Credit Market Stress: Uncover Early Warning Signs"
+      headline="Credit Market Stress: See Where Pressure Is Building"
       subheadline="Regularly refreshed monitoring of credit spreads and funding conditions — the credit side of the FAULTLINE Pressure Index — to see the pressure before the break."
       ctaLabel="Explore FAULTLINE Credit Insights"
       ctaHref="/faultline-platform"

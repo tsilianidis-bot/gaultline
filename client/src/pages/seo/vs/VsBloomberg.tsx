@@ -36,7 +36,7 @@ FAULTLINE, in contrast, is a specialized market intelligence platform built from
           heading: 'Key Differences: Accessibility, Focus, and Cost',
           body: `The primary distinction between FAULTLINE and Bloomberg lies in their target audience, analytical focus, and cost structure. Bloomberg is designed for institutional professionals who require deep, granular data across a vast array of financial instruments and markets. Its interface is powerful but demands significant expertise to navigate effectively. The cost of a Bloomberg Terminal subscription is prohibitive for most retail investors, reflecting its institutional-grade capabilities and support.
 
-FAULTLINE, conversely, prioritizes accessibility and a focused approach to macro risk. It distills complex quantitative models into clear, actionable indicators relevant to retail investors. The platform's design emphasizes ease of use, ensuring that insights into systemic risk and market regimes are readily understandable. Its subscription model is tailored for individual investors, offering advanced intelligence at a fraction of the cost, making sophisticated risk analysis available to a much wider audience.`,
+FAULTLINE, conversely, prioritizes accessibility and a focused approach to macro risk. It distills complex quantitative models into clear, actionable indicators relevant to retail investors. The platform's design emphasizes ease of use, ensuring that insights into systemic risk and market regimes are readily understandable. It is built for individual investors: the public Pressure Index is free to read, signed-in access starts with a free account, and paid plans are not on sale yet.`,
         },
         {
           heading: 'Who FAULTLINE Is For: The Informed Retail Investor',

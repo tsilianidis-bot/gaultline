@@ -1,4 +1,5 @@
 import SEOLandingPage from "@/pages/SEOLandingPage";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const TreasuryYieldStress = () => {
   const currentDate = "2026-07-10"; // Current date for datePublished and dateModified
@@ -39,8 +40,8 @@ const TreasuryYieldStress = () => {
           body: "Treasury yield stress matters because it directly impacts borrowing costs for governments and corporations, influences mortgage rates, and signals investor confidence in future economic growth and inflation. A sustained period of high yield stress can lead to tighter financial conditions, potentially stifling economic activity and increasing the risk of recession. For stock markets, rising yields can make equities less attractive relative to bonds, while falling yields might signal economic weakness. For bond markets, volatility in yields directly affects portfolio valuations. The outlook for treasury yield stress could change significantly with clearer signals on inflation's trajectory, a definitive shift in Federal Reserve policy (e.g., a pivot to easing or further tightening), or unexpected geopolitical events. A sustained period of economic growth without inflationary pressures, or a clear resolution of supply-chain issues, could also alleviate current stress levels. FAULTLINE monitors these catalysts to provide updated perspectives.",
         },
         {
-          heading: "Disclaimer: Market Intelligence, Not Financial Advice",
-          body: "FAULTLINE provides market intelligence and educational content for informational purposes only. Our Treasury Yield Stress Tracker and all associated analyses are designed to help users understand market dynamics and are not intended as, nor should they be construed as, personalized financial advice, investment recommendations, or an offer to buy or sell any securities. Investing in financial markets involves risks, and past performance is not indicative of future results. Users should consult with a qualified financial professional before making any investment decisions. FAULTLINE does not assume any liability for investment decisions made based on the information provided.",
+          heading: "Disclaimer",
+          body: `${PUBLIC_DISCLAIMER} The Treasury Yield Stress Tracker and its analyses are not personalized recommendations or an offer to buy or sell any security. Investing involves risk, and past performance does not guarantee future results.`,
         },
       ]}
       faqs={[

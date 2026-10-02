@@ -61,7 +61,7 @@ Sector Rotation Signals: Monitor capital flows between AI infrastructure, AI sof
       faqs={[
         {
           question: "What are the best AI stocks to buy in 2026?",
-          answer: "FAULTLINE does not provide investment advice or stock recommendations. The AI Stocks Dashboard provides regularly refreshed macro-aligned signal classifications (BUY, SELL, HOLD, WATCH) for all tracked AI stocks based on macro regime alignment, momentum, and technical structure. Access the live signals on the FAULTLINE Signals tab.",
+          answer: "FAULTLINE does not provide investment advice or stock recommendations. The AI Stocks Dashboard provides regularly refreshed macro-aligned signal classifications (BUY, SELL, HOLD, WATCH) for all tracked AI stocks based on macro regime alignment, momentum, and technical structure. Current signal classifications are on the FAULTLINE Signals tab.",
         },
         {
           question: "Is the AI stock bubble going to burst?",

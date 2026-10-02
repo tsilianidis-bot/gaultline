@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
 import FullInventory from "@/components/methodology/FullInventory";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const bands = [
   ["0–24", "Low Risk", "LOW RISK"],
@@ -128,7 +129,7 @@ export default function Methodology() {
             <li>Relationships can change. Series are revised. Some series are late.</li>
             <li>The framework produces false positives and false negatives.</li>
             <li>Weights and bands are fixed. They are not re-estimated on each refresh.</li>
-            <li>This is not investment advice and not a solicitation to buy or sell any security.</li>
+            <li>{PUBLIC_DISCLAIMER} It is not a solicitation to buy or sell any security.</li>
           </ul>
         </section>
 
