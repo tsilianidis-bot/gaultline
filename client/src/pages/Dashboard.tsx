@@ -34,10 +34,21 @@ import SOBPanel from "@/components/SOBPanel";
 import FaultlineTerm from "@/components/FaultlineTerm";
 import { engineProbabilityPercent, engineProbabilityText } from "@/lib/marketStateProjection";
 import { formatCanonicalScore } from "@shared/marketMetrics";
-import { finiteOrNull, pointsDeltaText, score100Value, similarityText } from "@/lib/displayFallbacks";
+import { availableDelta, finiteOrNull, pointsDeltaText, score100Value, similarityText } from "@/lib/displayFallbacks";
 import type { ProbabilityDisplay } from "@shared/probabilityContract";
 
 /** Engine 0–10 domain/overall score shown on the canonical 0–100 scale. */
+// Canonical composite direction (state.now.direction) → strip cell. "Unavailable" when absent.
+function canonicalDirectionView(direction: string | undefined): { label: string; color: string } {
+  switch (direction) {
+    case 'Accelerating': return { label: 'ACCELERATING ▲', color: '#FF2D55' };
+    case 'Deteriorating': return { label: 'DETERIORATING ▲', color: '#FF9500' };
+    case 'Improving': return { label: 'IMPROVING ▼', color: '#00FF88' };
+    case 'Stable': return { label: 'STABLE —', color: '#B0C4D8' };
+    default: return { label: 'UNAVAILABLE', color: '#94A3B8' };
+  }
+}
+
 function score100(score: number | null | undefined): string {
   return typeof score === "number" && Number.isFinite(score) ? formatCanonicalScore(score * 10) : "—";
 }
@@ -432,7 +443,7 @@ function MiniWidget({ label, reading, unit, decimals, color }: {
 }
 
 // ── What Changed Today item ───────────────────────────────────
-function ChangeItem({ label, delta, color, detail }: { label: string; delta: number; color: string; detail: string }) {
+function ChangeItem({ label, delta, color, detail }: { label: string; delta: number | null; color: string; detail: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.14)' }}>
       <div style={{ width: '3px', height: '30px', background: color, borderRadius: '2px', boxShadow: `0 0 8px ${color}60`, flexShrink: 0 }} />
@@ -541,20 +552,23 @@ export default function Dashboard() {
 
   // Key shifts for Current Regime section
   const keyShifts = useMemo(() => {
-    const sorted = [...domains].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
-    return sorted.slice(0, 4).map(d => ({
+    const sorted = [...domains].sort((a, b) => Math.abs(availableDelta(b) ?? 0) - Math.abs(availableDelta(a) ?? 0));
+    return sorted.slice(0, 4).map(d => {
+      const delta = availableDelta(d);
+      return {
       label: d.label.split(' ')[0],
-      direction: d.delta > 0.05 ? 'rising' : d.delta < -0.05 ? 'easing' : 'stable',
+      direction: delta === null ? '—' : delta > 0.05 ? 'rising' : delta < -0.05 ? 'easing' : 'stable',
       severity: severityLabel(d.riskLevel),
       color: getRiskColor(d.riskLevel),
-    }));
+      };
+    });
   }, [domains]);
 
   // Stable memoized derived data
   const heatmapScores = useMemo(() => domains.map(d => ({ label: d.label.split(' ')[0], score: d.score })), [domains]);
   const topThreat = useMemo(() => [...domains].sort((a, b) => b.score - a.score)[0], [domains]);
   const topStabilizer = useMemo(() => [...domains].sort((a, b) => a.score - b.score)[0], [domains]);
-  const changedDomains = useMemo(() => [...domains].filter(d => Math.abs(d.delta) > 0.1).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 4), [domains]);
+  const changedDomains = useMemo(() => [...domains].filter(d => Math.abs(availableDelta(d) ?? 0) > 0.1).sort((a, b) => Math.abs(availableDelta(b) ?? 0) - Math.abs(availableDelta(a) ?? 0)).slice(0, 4), [domains]);
   const aiDomain = useMemo(() => domains.find(d => d.id === 'ai-bubble'), [domains]);
   const color = regime.color;
 
@@ -591,7 +605,7 @@ export default function Dashboard() {
         { label: 'CRASH PROB.', value: engineProbabilityText(output, 'crashProbability'), color: '#94A3B8' },
         { label: 'TOP THREAT', value: topThreat?.label?.split(' ')[0] ?? '—', color: '#FF2D55' },
         { label: 'ANALOG', value: analogs[0]?.era?.split(' ').slice(0, 2).join(' ') ?? '—', color: '#00E5FF' },
-        { label: 'DELTA', value: pointsDeltaText(overall.delta), color },
+        { label: 'DELTA', value: pointsDeltaText(availableDelta(overall)), color },
         { label: 'STATUS', value: integrityLabel === 'LIVE' ? 'LIVE FEED' : integrityLabel, color: integrityLabel === 'LIVE' ? '#00FF88' : integrityLabel === 'UNAVAILABLE' ? '#94A3B8' : '#FF9500' },
       ]} />
 
@@ -717,8 +731,12 @@ export default function Dashboard() {
 
         {/* ── Live Intelligence Strip — 8 cells, Bloomberg-terminal style ── */}
         {(() => {
-          const directionColor = overall.delta > 0.2 ? '#FF9500' : overall.delta < -0.2 ? '#00FF88' : '#B0C4D8';
-          const directionLabel = overall.delta > 0.2 ? 'RISING ▲' : overall.delta < -0.2 ? 'FALLING ▼' : 'STABLE —';
+          // Direction: the engine delta when known; otherwise the canonical
+          // composite direction (state.now.direction), never derived from a 0.
+          const overallDelta = availableDelta(overall);
+          const { label: directionLabel, color: directionColor } = overallDelta !== null
+            ? (overallDelta > 0.2 ? { label: 'RISING ▲', color: '#FF9500' } : overallDelta < -0.2 ? { label: 'FALLING ▼', color: '#00FF88' } : { label: 'STABLE —', color: '#B0C4D8' })
+            : canonicalDirectionView(overall.direction);
           const analogLabel = analogs[0]?.era?.split(' ').slice(0, 3).join(' ') ?? '—';
           // No analog → "Unavailable", never a 0% match.
           const analogSim = typeof analogs[0]?.similarity === 'number' && Number.isFinite(analogs[0].similarity) ? Math.round(analogs[0].similarity) : null;
@@ -729,7 +747,7 @@ export default function Dashboard() {
             { label: 'REGIME', value: regime.label.split(' ').slice(0, 2).join(' '), sub: regime.sublabel.slice(0, 18), valueColor: color },
             { label: 'BULL SCENARIO', value: engineProbabilityText(output, 'bullProbability'), sub: 'scenario weight', valueColor: engineProbabilityPercent(output, 'bullProbability') !== null ? '#00FF88' : '#94A3B8' },
             { label: 'CRASH PROBABILITY', value: engineProbabilityText(output, 'crashProbability'), sub: 'no governed model', valueColor: '#94A3B8' },
-            { label: 'DIRECTION', value: directionLabel, sub: `Δ ${pointsDeltaText(overall.delta)} vs baseline`, valueColor: directionColor },
+            { label: 'DIRECTION', value: directionLabel, sub: `Δ ${pointsDeltaText(overallDelta)} vs baseline`, valueColor: directionColor },
             { label: 'CLOSEST ANALOG', value: analogLabel, sub: analogSim !== null ? `${analogSim}% match` : 'Unavailable', valueColor: '#00E5FF' },
             { label: 'TOP THREAT', value: topThreat?.label?.split(' ').slice(0, 2).join(' ') ?? '—', sub: score100(topThreat?.score), valueColor: '#FF2D55' },
             { label: "TODAY'S VERDICT", value: verdictLabel, sub: 'FAULTLINE signal', valueColor: verdictColor },
@@ -881,7 +899,7 @@ export default function Dashboard() {
           {
             label: 'LARGEST ROTATION',
             value: biggestShift ? `${biggestShift.label.split(' ')[0]} ${biggestShift.delta > 0 ? '↑' : '↓'}` : '—',
-            sub: biggestShift ? `Δ ${pointsDeltaText(biggestShift.delta)} vs baseline` : 'No major shifts',
+            sub: biggestShift ? `Δ ${pointsDeltaText(availableDelta(biggestShift))} vs baseline` : 'No major shifts',
             color: biggestShift ? (biggestShift.delta > 0 ? '#FF9500' : '#00FF88') : '#B0C4D8',
             href: '/app/pressure',
           },
@@ -1223,7 +1241,7 @@ export default function Dashboard() {
               );
             })()}
             {changedDomains.map(d => (
-              <ChangeItem key={d.id} label={d.label} delta={d.delta} color={getRiskColor(d.riskLevel)} detail={d.drivers[0] ?? d.description} />
+              <ChangeItem key={d.id} label={d.label} delta={availableDelta(d)} color={getRiskColor(d.riskLevel)} detail={d.drivers[0] ?? d.description} />
             ))}
           </div>
         )}

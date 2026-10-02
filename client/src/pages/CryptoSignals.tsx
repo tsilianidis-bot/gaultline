@@ -335,7 +335,7 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
 
       {/* Regime alignment */}
       <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.08em" }}>REGIME:</span>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.08em" }}>REGIME ALIGNMENT:</span>
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", fontWeight: 700, color: regimeAlignColor }}>{sig.regimeAlignment.toUpperCase()}</span>
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.4)" }}>({sig.regimeAlignmentScore}/10)</span>
       </div>
@@ -430,7 +430,7 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
                 { label: "BTC DOMINANCE", value: sig.cryptoFactors.btcDominanceEffect, color: sig.cryptoFactors.btcDominanceEffect === "Tailwind" ? "#00D4FF" : sig.cryptoFactors.btcDominanceEffect === "Headwind" ? "#FF2D55" : "#94A3B8" },
                 { label: "VOLATILITY", value: sig.cryptoFactors.volatilityRegime, color: sig.cryptoFactors.volatilityRegime === "High" ? "#FF9500" : sig.cryptoFactors.volatilityRegime === "Low" ? "#00D4FF" : "#94A3B8" },
                 { label: "ATH PROXIMITY", value: sig.cryptoFactors.athProximity, color: sig.cryptoFactors.athProximity === "Near ATH" ? "#FF9500" : sig.cryptoFactors.athProximity === "Deep Discount" ? "#00D4FF" : "#94A3B8" },
-                { label: "LIQUIDITY SCORE", value: `${sig.cryptoFactors.liquidityScore.toFixed(1)}/10`, color: sig.cryptoFactors.liquidityScore >= 7 ? "#00D4FF" : sig.cryptoFactors.liquidityScore >= 4 ? "#FFD700" : "#FF2D55" },
+                { label: "ASSET VOLUME LIQUIDITY", value: `${sig.cryptoFactors.liquidityScore.toFixed(1)}/10`, color: sig.cryptoFactors.liquidityScore >= 7 ? "#00D4FF" : sig.cryptoFactors.liquidityScore >= 4 ? "#FFD700" : "#FF2D55" },
               ].map(({ label, value, color }) => (
                 <div key={label}>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>{label}</div>

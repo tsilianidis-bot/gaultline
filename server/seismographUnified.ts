@@ -1080,8 +1080,10 @@ export function computeEvolution(history: HistoricalMonth[]): EvolutionAnalysis 
   const delta30 = avg7 - avg30;
   const delta90 = avg30 - avg90;
 
-  const sevenDayTrend =
-    delta7 >= 8
+  // Fail closed: no prior comparable window → no delta and no "Stable" claim.
+  const sevenDayTrend = !Number.isFinite(delta7)
+    ? "Unavailable (no prior-week reading)"
+    : delta7 >= 8
       ? `Rising sharply (+${delta7.toFixed(1)} pts vs prior week)`
       : delta7 >= 3
       ? `Rising moderately (+${delta7.toFixed(1)} pts vs prior week)`
@@ -1091,8 +1093,9 @@ export function computeEvolution(history: HistoricalMonth[]): EvolutionAnalysis 
       ? `Declining moderately (${delta7.toFixed(1)} pts vs prior week)`
       : `Stable (${delta7 >= 0 ? "+" : ""}${delta7.toFixed(1)} pts vs prior week)`;
 
-  const thirtyDayTrend =
-    delta30 >= 10
+  const thirtyDayTrend = !Number.isFinite(delta30)
+    ? "Unavailable (no 30-day comparison)"
+    : delta30 >= 10
       ? `Elevated vs 30-day average (+${delta30.toFixed(1)} pts)`
       : delta30 >= 5
       ? `Slightly above 30-day average (+${delta30.toFixed(1)} pts)`
@@ -1102,16 +1105,18 @@ export function computeEvolution(history: HistoricalMonth[]): EvolutionAnalysis 
       ? `Slightly below 30-day average (${delta30.toFixed(1)} pts)`
       : `Near 30-day average (${delta30 >= 0 ? "+" : ""}${delta30.toFixed(1)} pts)`;
 
-  const ninetyDayTrend =
-    delta90 >= 10
+  const ninetyDayTrend = !Number.isFinite(delta90)
+    ? "Unavailable (no 90-day comparison)"
+    : delta90 >= 10
       ? `Pressure has built significantly over 90 days (+${delta90.toFixed(1)} pts)`
       : delta90 <= -10
       ? `Pressure has eased significantly over 90 days (${delta90.toFixed(1)} pts)`
       : `Pressure is broadly stable over 90 days (${delta90 >= 0 ? "+" : ""}${delta90.toFixed(1)} pts)`;
 
   const yearDelta = currentScore - avg12m;
-  const yearTrend =
-    yearDelta >= 15
+  const yearTrend = !Number.isFinite(yearDelta)
+    ? "Unavailable (no 12-month comparison)"
+    : yearDelta >= 15
       ? `Significantly elevated vs 12-month average (+${yearDelta.toFixed(1)} pts)`
       : yearDelta <= -15
       ? `Significantly below 12-month average (${yearDelta.toFixed(1)} pts)`

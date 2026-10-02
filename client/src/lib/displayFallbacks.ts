@@ -40,6 +40,18 @@ export function score100Value(score010: unknown): string {
   return v === null ? MISSING_VALUE_TEXT : String(Math.round(v));
 }
 
+/**
+ * A score's delta when it is known. Canonical projections have no prior
+ * comparable reading, so they mark `deltaAvailable: false` (the numeric field
+ * stays 0 for legacy consumers); those render "—", never "0 pts" or "Stable".
+ */
+export function availableDelta(
+  item: { delta?: unknown; deltaAvailable?: boolean } | null | undefined,
+): number | null {
+  if (!item || item.deltaAvailable === false) return null;
+  return finiteOrNull(item.delta);
+}
+
 /** "+3 pts" for a 0–10 delta of 0.3 (canonical 0–100 points); "—" when missing. */
 export function pointsDeltaText(delta010: unknown): string {
   const v = toCanonical100(delta010);

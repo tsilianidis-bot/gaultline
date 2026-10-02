@@ -117,7 +117,9 @@ export function projectCanonicalMarketState(
       id: `canonical-${index}-${family.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
       label: family.name,
       score: domainScore,
+      // No prior comparable family reading: delta unknown (renders "—").
       delta: 0,
+      deltaAvailable: false,
       riskLevel: riskLevel(domainScore),
       description: family.whyItMatters,
       drivers: [family.currentValue, family.historicalContext].filter(Boolean),
@@ -147,7 +149,11 @@ export function projectCanonicalMarketState(
       id: "canonical-market-pressure",
       label: "Market Pressure",
       score: score10,
+      // No prior comparable composite in the projection: delta unknown ("—");
+      // the composite direction comes from the canonical state itself.
       delta: 0,
+      deltaAvailable: false,
+      direction: state.now.direction,
       riskLevel: riskLevel(score10),
       description: state.now.headline,
       drivers: state.now.topDrivers,

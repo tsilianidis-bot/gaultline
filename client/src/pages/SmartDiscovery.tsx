@@ -12,6 +12,7 @@
  *   - 13-stage loading sequence
  */
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { buildEngineSnapshot, canonicalPressure100, type EngineSnapshotPayload } from "@/lib/engineSnapshot";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -2413,15 +2414,18 @@ const QUICK_ACTIONS: Array<{ emoji: string; label: string; prompt: string }> = [
 
 // ── V3.0 Market Snapshot Component ───────────────────────────
 function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => void }) {
-  const { output, lastUpdated, isLoading } = useEngine();
+  const { output, lastUpdated, isLoading, marketMode } = useEngine();
   const { overall, regime, domains, probability } = output;
 
-  const pressureScore = Math.round(overall.score * 10); // 0-100
+  // Fail closed: only a canonical state yields a pressure reading. Under a
+  // canonical 503 the engine runs on demo defaults (≈45) — show "—" instead.
+  const pressureScore = canonicalPressure100(output, marketMode); // 0-100 | null
   const liquidityDomain = domains.find(d => d.id === 'liquidity');
   const creditDomain = domains.find(d => d.id === 'credit-stress');
 
   // Derive institutional bias
   const bias = useMemo(() => {
+    if (pressureScore === null) return 'Unavailable';
     const p = pressureScore;
     const r = regime.label.toLowerCase();
     if (p < 25) return r.includes('expansion') || r.includes('bull') ? 'Strongly Bullish' : 'Moderately Bullish';
@@ -2431,12 +2435,14 @@ function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => 
     return 'Risk-Off';
   }, [pressureScore, regime.label]);
 
-  const biasColor = bias.includes('Bull') ? '#00FF88' : bias === 'Neutral to Cautious' ? '#FFD700' : bias === 'Cautious' ? '#FF9500' : '#FF4444';
+  const biasColor = bias === 'Unavailable' ? '#94A3B8' : bias.includes('Bull') ? '#00FF88' : bias === 'Neutral to Cautious' ? '#FFD700' : bias === 'Cautious' ? '#FF9500' : '#FF4444';
 
   // Market health
-  const breadth = Math.max(0, Math.min(100, Math.round(100 - overall.score * 10)));
-  const liquidity = liquidityDomain ? Math.max(0, Math.min(100, Math.round((10 - liquidityDomain.score) * 10))) : 50;
+  // No neutral 50 liquidity default: without both readings, health is Unavailable.
+  const breadth = pressureScore === null ? null : Math.max(0, Math.min(100, 100 - pressureScore));
+  const liquidity = liquidityDomain && Number.isFinite(liquidityDomain.score) ? Math.max(0, Math.min(100, Math.round((10 - liquidityDomain.score) * 10))) : null;
   const health = useMemo(() => {
+    if (pressureScore === null || breadth === null || liquidity === null) return { label: 'UNAVAILABLE', color: '#94A3B8' };
     const composite = (100 - pressureScore) * 0.4 + breadth * 0.3 + liquidity * 0.3;
     if (composite >= 75) return { label: 'HEALTHY', color: '#00FF88' };
     if (composite >= 55) return { label: 'MODERATE', color: '#FFD700' };
@@ -2444,7 +2450,7 @@ function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => 
     return { label: 'CRITICAL', color: '#FF4444' };
   }, [pressureScore, breadth, liquidity]);
 
-  const pressureColor = pressureScore < 30 ? '#00FF88' : pressureScore < 55 ? '#FFD700' : pressureScore < 75 ? '#FF9500' : '#FF4444';
+  const pressureColor = pressureScore === null ? '#94A3B8' : pressureScore < 30 ? '#00FF88' : pressureScore < 55 ? '#FFD700' : pressureScore < 75 ? '#FF9500' : '#FF4444';
   const freshness = lastUpdated ? `${Math.round((Date.now() - lastUpdated.getTime()) / 60000)}m ago` : 'Loading...';
 
   if (isLoading) {
@@ -2468,11 +2474,11 @@ function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => 
           <span style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: '#F0F4FF', lineHeight: 1.3 }}>{regime.label}</span>
         </button>
         {/* Pressure Index — clickable */}
-        <button onClick={() => onQuickAction(`The Pressure Index is at ${pressureScore}/100. What does this mean and what should I do?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+        <button onClick={() => onQuickAction(pressureScore === null ? `The Pressure Index is currently unavailable. What does that mean and what should I watch?` : `The Pressure Index is at ${pressureScore}/100. What does this mean and what should I do?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
           <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>PRESSURE INDEX ↗</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <span style={{ ...MONO, fontSize: '13px', fontWeight: 700, color: pressureColor }}>{pressureScore}</span>
-            <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.25)', fontSize: '9px' }}>/100</span>
+            <span data-snapshot-pressure style={{ ...MONO, fontSize: '13px', fontWeight: 700, color: pressureColor }}>{pressureScore ?? '—'}</span>
+            {pressureScore !== null && <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.25)', fontSize: '9px' }}>/100</span>}
           </div>
         </button>
         {/* Institutional Bias — clickable */}
@@ -2498,31 +2504,18 @@ function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => 
 
 // ── V3.0 Since Last Visit Component ──────────────────────────
 function SinceLastVisit({ onQuickAction }: { onQuickAction: (prompt: string) => void }) {
-  const { output } = useEngine();
-  const { overall, regime, domains } = output;
-  const pressureScore = Math.round(overall.score * 10);
-  const liquidityDomain = domains.find(d => d.id === 'liquidity');
-  const creditDomain = domains.find(d => d.id === 'credit-stress');
+  const { output, marketMode } = useEngine();
+  // null (nothing compared or sent) unless the canonical state is available.
+  const snapshot = buildEngineSnapshot(output, marketMode);
 
   const getPreferences = trpc.dailyBrief.getPreferences.useQuery(undefined, { retry: false });
   const getChanges = trpc.dailyBrief.getChanges.useQuery(
-    {
-      currentSnapshot: {
-        overallPressure: pressureScore,
-        regime: regime.label,
-        liquidity: liquidityDomain ? Math.round((10 - liquidityDomain.score) * 10) : 50,
-        credit: creditDomain ? Math.round(creditDomain.score * 10) : 30,
-        breadth: Math.max(0, Math.min(100, Math.round(100 - overall.score * 10))),
-        aiConcentration: 32,
-        volatility: 40,
-        bullProbability: Number.isFinite(output.probability.bullProbability) ? output.probability.bullProbability : null,
-        timestamp: Date.now(),
-      },
-    },
-    { enabled: !!getPreferences.data?.lastVisitAt, retry: false }
+    // Disabled (never sent) when snapshot is null.
+    { currentSnapshot: (snapshot ?? {}) as EngineSnapshotPayload },
+    { enabled: !!getPreferences.data?.lastVisitAt && snapshot !== null, retry: false }
   );
 
-  if (!getPreferences.data?.lastVisitAt) return null;
+  if (!getPreferences.data?.lastVisitAt || snapshot === null) return null;
   if (getChanges.isLoading) return null;
 
   const { changes, hasChanges } = getChanges.data ?? { changes: [], hasChanges: false };
@@ -2633,30 +2626,18 @@ export default function SmartDiscovery() {
   });
   const recordVisitMutation = trpc.dailyBrief.recordVisit.useMutation();
   const generateBriefMutation = trpc.dailyBrief.generateBrief.useMutation();
-  const { output: engineOutput } = useEngine();
-  // Record visit on mount (for Since Your Last Visit tracking)
+  const { output: engineOutput, marketMode: engineMarketMode } = useEngine();
+  // Record visit once per user (for Since Your Last Visit tracking) — only from
+  // a canonical state. Under a canonical 503 nothing is sent (no demo 45).
+  const visitRecordedFor = useRef<string | number | null>(null);
   useEffect(() => {
-    if (!user) return;
-    const { overall, regime, domains, probability } = engineOutput;
-    const pressureScore = Math.round(overall.score * 10);
-    const liquidityDomain = domains.find(d => d.id === 'liquidity');
-    const creditDomain = domains.find(d => d.id === 'credit-stress');
-    recordVisitMutation.mutate({
-      snapshot: {
-        overallPressure: pressureScore,
-        regime: regime.label,
-        liquidity: liquidityDomain ? Math.round((10 - liquidityDomain.score) * 10) : 50,
-        credit: creditDomain ? Math.round(creditDomain.score * 10) : 30,
-        breadth: Math.max(0, Math.min(100, Math.round(100 - overall.score * 10))),
-        aiConcentration: 32,
-        volatility: 40,
-        // Withheld (NaN) → null; zod rejects NaN.
-        bullProbability: Number.isFinite(probability.bullProbability) ? probability.bullProbability : null,
-        timestamp: Date.now(),
-      },
-    });
+    if (!user || visitRecordedFor.current === user.id) return;
+    const snapshot = buildEngineSnapshot(engineOutput, engineMarketMode);
+    if (!snapshot) return;
+    visitRecordedFor.current = user.id;
+    recordVisitMutation.mutate({ snapshot });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, engineMarketMode]);
   // Focus input on mount
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 100);
@@ -2757,24 +2738,16 @@ export default function SmartDiscovery() {
           setIsExecuting(false);
           return;
         }
-        const { overall, regime, domains, probability } = engineOutput;
-        const pressureScore = Math.round(overall.score * 10);
-        const liquidityDomain = domains.find(d => d.id === 'liquidity');
-        const creditDomain = domains.find(d => d.id === 'credit-stress');
-        const briefResult = await generateBriefMutation.mutateAsync({
-          engineSnapshot: {
-            overallPressure: pressureScore,
-            regime: regime.label,
-            liquidity: liquidityDomain ? Math.round((10 - liquidityDomain.score) * 10) : 50,
-            credit: creditDomain ? Math.round(creditDomain.score * 10) : 30,
-            breadth: Math.max(0, Math.min(100, Math.round(100 - overall.score * 10))),
-            aiConcentration: 32,
-            volatility: 40,
-            // Withheld (NaN) → null; zod rejects NaN.
-            bullProbability: Number.isFinite(probability.bullProbability) ? probability.bullProbability : null,
-            timestamp: Date.now(),
-          },
-        });
+        // Fail closed: no canonical state → no brief built from demo inputs.
+        const engineSnapshot = buildEngineSnapshot(engineOutput, engineMarketMode);
+        if (!engineSnapshot) {
+          stopExecutionSequence();
+          setError('The Full Market Briefing is unavailable: the canonical market state is unavailable.');
+          setConversation(prev => prev.slice(0, -1));
+          setIsExecuting(false);
+          return;
+        }
+        const briefResult = await generateBriefMutation.mutateAsync({ engineSnapshot });
         stopExecutionSequence();
         const briefMsg: ConversationMessage = {
           role: 'assistant',

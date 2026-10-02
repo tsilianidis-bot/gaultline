@@ -50,11 +50,13 @@ export const OVERALL_CONFIDENCE_DISPLAY_TEXT = "Uncalibrated" as const;
 export function computeOverallConfidence(engineSnapshot: {
   overallPressure: number;
   breadth: number;
-  liquidity: number;
+  liquidity: number | null;
   bullProbability?: number | null;
 }): number | null {
   const bullProbability = engineSnapshot.bullProbability;
   if (typeof bullProbability !== "number" || !Number.isFinite(bullProbability)) return null;
+  // Fail closed: a missing liquidity reading is not replaced with a neutral value.
+  if (typeof engineSnapshot.liquidity !== "number" || !Number.isFinite(engineSnapshot.liquidity)) return null;
   return Math.round(
     (100 - engineSnapshot.overallPressure) * 0.35 +
     engineSnapshot.breadth * 0.25 +
@@ -67,11 +69,13 @@ export function computeOverallConfidence(engineSnapshot: {
 export const EngineSnapshotSchema = z.object({
   overallPressure:  z.number(),
   regime:           z.string(),
-  liquidity:        z.number(),
-  credit:           z.number(),
+  // null = no reading available (the client no longer substitutes 50/30/32/40
+  // defaults). Older stored snapshots may still carry numbers.
+  liquidity:        z.number().nullable(),
+  credit:           z.number().nullable(),
   breadth:          z.number(),
-  aiConcentration:  z.number(),
-  volatility:       z.number(),
+  aiConcentration:  z.number().nullable(),
+  volatility:       z.number().nullable(),
   // Probability contract: the bull scenario is withheld unless AVAILABLE, so the
   // client sends null. Older stored snapshots may still carry a number.
   bullProbability:  z.number().nullable().optional(),
@@ -121,13 +125,23 @@ function deriveInstitutionalBias(pressure: number, regime: string): string {
 }
 
 // ── Helper: derive market health label ───────────────────────────────────────
-function deriveMarketHealth(pressure: number, breadth: number, liquidity: number): string {
+function deriveMarketHealth(pressure: number, breadth: number, liquidity: number | null): string {
+  if (liquidity === null || !Number.isFinite(liquidity)) return "UNAVAILABLE";
   const composite = (100 - pressure) * 0.4 + breadth * 0.3 + liquidity * 0.3;
   if (composite >= 75) return "HEALTHY";
   if (composite >= 55) return "MODERATE";
   if (composite >= 35) return "STRESSED";
   return "CRITICAL";
 }
+
+function knownDelta(current: number | null | undefined, previous: number | null | undefined): number | null {
+  return typeof current === "number" && Number.isFinite(current) && typeof previous === "number" && Number.isFinite(previous)
+    ? current - previous
+    : null;
+}
+
+const known = (v: number | null | undefined): v is number => typeof v === "number" && Number.isFinite(v);
+const readingText = (v: number | null | undefined): string => (known(v) ? `${v}/100` : "Unavailable");
 
 // ── Helper: compute "since last visit" changes ───────────────────────────────
 function computeChanges(
@@ -158,8 +172,9 @@ function computeChanges(
   }
 
   // Liquidity
-  const liquidityDelta = current.liquidity - previous.liquidity;
-  if (Math.abs(liquidityDelta) >= 5) {
+  // Skip when either side has no reading (never compare against a default).
+  const liquidityDelta = knownDelta(current.liquidity, previous.liquidity);
+  if (liquidityDelta !== null && Math.abs(liquidityDelta) >= 5) {
     changes.push({
       label: `Liquidity ${liquidityDelta > 0 ? "improved" : "contracted"}`,
       direction: liquidityDelta > 0 ? "up" : "down",
@@ -169,8 +184,8 @@ function computeChanges(
   }
 
   // Credit stress
-  const creditDelta = current.credit - previous.credit;
-  if (Math.abs(creditDelta) >= 5) {
+  const creditDelta = knownDelta(current.credit, previous.credit);
+  if (creditDelta !== null && Math.abs(creditDelta) >= 5) {
     changes.push({
       label: `Credit stress ${creditDelta > 0 ? "increased" : "decreased"}`,
       direction: creditDelta > 0 ? "up" : "down",
@@ -359,11 +374,11 @@ export const dailyBriefRouter = router({
 
       // Build top risks from engine data
       const topRisks: string[] = [];
-      if (engineSnapshot.credit > 60) topRisks.push("Credit market deterioration");
+      if (known(engineSnapshot.credit) && engineSnapshot.credit > 60) topRisks.push("Credit market deterioration");
       if (engineSnapshot.breadth < 40) topRisks.push("Weak market breadth — narrow participation");
-      if (engineSnapshot.liquidity < 40) topRisks.push("Liquidity contraction");
-      if (engineSnapshot.aiConcentration > 65) topRisks.push("Overextended AI sector concentration");
-      if (engineSnapshot.volatility > 60) topRisks.push("Elevated volatility regime");
+      if (known(engineSnapshot.liquidity) && engineSnapshot.liquidity < 40) topRisks.push("Liquidity contraction");
+      if (known(engineSnapshot.aiConcentration) && engineSnapshot.aiConcentration > 65) topRisks.push("Overextended AI sector concentration");
+      if (known(engineSnapshot.volatility) && engineSnapshot.volatility > 60) topRisks.push("Elevated volatility regime");
       if (engineSnapshot.overallPressure > 55) topRisks.push("Macro uncertainty — elevated pressure index");
       if ((engineSnapshot.vix ?? 0) > 25) topRisks.push("VIX elevated — options market pricing risk");
       if ((engineSnapshot.treasury10y ?? 0) > 4.5) topRisks.push("High long-term yields constraining valuations");
@@ -387,8 +402,8 @@ Write exactly 3 sentences in measured language. Do not invent price action, mark
 - Regime: ${engineSnapshot.regime}
 - Pressure Index: ${engineSnapshot.overallPressure}/100
 - Institutional Bias: ${institutionalBias}
-- Liquidity: ${engineSnapshot.liquidity}/100
-- Credit Stress: ${engineSnapshot.credit}/100
+- Liquidity: ${readingText(engineSnapshot.liquidity)}
+- Credit Stress: ${readingText(engineSnapshot.credit)}
 - Market Breadth: ${engineSnapshot.breadth}/100
 - Scenario probabilities: not offered (FAULTLINE probability contract); do not state any bull, bear, crash or recession percentage
 - VIX: ${engineSnapshot.vix ?? "N/A"}

@@ -5,6 +5,7 @@
    Uses trpc.altRotation.getData (coreProcedure).
    ============================================================ */
 import { useMemo } from "react";
+import { finiteOrNull } from "@/lib/displayFallbacks";
 import { trpc } from "@/lib/trpc";
 import { TrendingUp, TrendingDown, Minus, ChevronRight } from "lucide-react";
 
@@ -80,8 +81,13 @@ export default function MobileRotation() {
     retry: false,
   });
 
-  const riskStatus = useMemo(() => getRiskOnOff(rotation?.score ?? 40), [rotation?.score]);
-  const regimeColor = useMemo(() => getRegimeColor(rotation?.regimeKey ?? "btc_dominance"), [rotation?.regimeKey]);
+  // Fail closed: no rotation data → Unavailable (no invented 40 score or BTC-dominance regime).
+  const rotationScore = finiteOrNull(rotation?.score);
+  const riskStatus = useMemo(
+    () => rotationScore === null ? { label: "UNAVAILABLE", color: "#64748B", icon: <Minus size={14} /> } : getRiskOnOff(rotationScore),
+    [rotationScore],
+  );
+  const regimeColor = useMemo(() => getRegimeColor(rotation?.regimeKey ?? ""), [rotation?.regimeKey]);
 
   // Top 4 sectors by absolute momentum for the mobile view
   const topSectors = useMemo(() => {
@@ -134,7 +140,7 @@ export default function MobileRotation() {
           CURRENT REGIME
         </div>
         <div className="text-base font-bold font-mono text-white mb-1">
-          {rotation?.regime ?? "BTC DOMINANCE"}
+          {rotation?.regime ?? "Unavailable"}
         </div>
         {rotation?.aiCommentary && (
           <p className="text-[10px] font-mono text-[#A8B8CC] leading-relaxed line-clamp-2">
@@ -145,12 +151,12 @@ export default function MobileRotation() {
         <div className="mt-3">
           <div className="flex justify-between text-[9px] font-mono text-[#64748B] mb-1">
             <span>ROTATION SCORE</span>
-            <span style={{ color: regimeColor }}>{rotation?.score ?? 0}/100</span>
+            <span style={{ color: regimeColor }}>{rotationScore === null ? "—" : `${rotationScore}/100`}</span>
           </div>
           <div className="h-1.5 rounded-full bg-[rgba(255,255,255,0.06)] overflow-hidden">
             <div
               className="h-full rounded-full"
-              style={{ width: `${rotation?.score ?? 0}%`, background: regimeColor }}
+              style={{ width: `${rotationScore ?? 0}%`, background: regimeColor }}
             />
           </div>
         </div>

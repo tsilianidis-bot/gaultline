@@ -4,7 +4,7 @@
  * Calm · Clean · Fast · Mobile-friendly
  */
 import { useMemo } from "react";
-import { score100Value } from "@/lib/displayFallbacks";
+import { availableDelta, score100Value } from "@/lib/displayFallbacks";
 import { useEngine } from "@/contexts/EngineContext";
 import { engineProbabilityText } from "@/lib/marketStateProjection";
 import { getRiskColor } from "@/components/RiskBadge";
@@ -160,11 +160,12 @@ function WhatChangedToday() {
   const { domains, overall } = output;
 
   const updates = useMemo(() => {
-    const sorted = [...domains].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+    const sorted = [...domains].sort((a, b) => Math.abs(availableDelta(b) ?? 0) - Math.abs(availableDelta(a) ?? 0));
     return sorted.slice(0, 5).map((d) => {
       const c = getRiskColor(d.riskLevel);
-      const direction = d.delta > 0.05 ? "rising" : d.delta < -0.05 ? "easing" : "stable";
-      const directionLabel = direction === "rising" ? "↑ Rising" : direction === "easing" ? "↓ Easing" : "→ Stable";
+      const delta = availableDelta(d);
+      const direction = delta === null ? "unavailable" : delta > 0.05 ? "rising" : delta < -0.05 ? "easing" : "stable";
+      const directionLabel = direction === "unavailable" ? "— Unavailable" : direction === "rising" ? "↑ Rising" : direction === "easing" ? "↓ Easing" : "→ Stable";
       const directionColor = direction === "rising" ? "#FF2D55" : direction === "easing" ? "#00FF88" : "#94A3B8";
       return { label: d.label, riskLevel: d.riskLevel, delta: d.delta, color: c, directionLabel, directionColor, score: d.score };
     });

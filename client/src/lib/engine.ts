@@ -81,6 +81,10 @@ export interface DomainScore {
   label: string;
   score: number;       // 0–10
   delta: number;       // vs baseline
+  /** false when no prior comparable reading exists (canonical projection); render "—". */
+  deltaAvailable?: boolean;
+  /** Canonical composite direction (overall only), from state.now.direction. */
+  direction?: 'Improving' | 'Stable' | 'Deteriorating' | 'Accelerating' | 'Unavailable';
   riskLevel: 'critical' | 'high' | 'elevated' | 'moderate' | 'low';
   description: string;
   drivers: string[];   // top contributing factors

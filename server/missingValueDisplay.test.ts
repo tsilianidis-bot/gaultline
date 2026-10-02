@@ -104,9 +104,9 @@ describe("0–10 engine deltas and scores display on the canonical /100 scale", 
   }
   it("Dashboard DELTA / DIRECTION / LARGEST ROTATION / change items render pts via the helper", () => {
     const dashboard = read("client/src/pages/Dashboard.tsx");
-    expect(dashboard).toContain("{ label: 'DELTA', value: pointsDeltaText(overall.delta), color }");
-    expect(dashboard).toContain("`Δ ${pointsDeltaText(overall.delta)} vs baseline`");
-    expect(dashboard).toContain("`Δ ${pointsDeltaText(biggestShift.delta)} vs baseline`");
+    expect(dashboard).toContain("{ label: 'DELTA', value: pointsDeltaText(availableDelta(overall)), color }");
+    expect(dashboard).toContain("`Δ ${pointsDeltaText(overallDelta)} vs baseline`");
+    expect(dashboard).toContain("`Δ ${pointsDeltaText(availableDelta(biggestShift))} vs baseline`");
     expect(dashboard).toContain("{pointsDeltaText(delta)}");
     expect(dashboard).not.toMatch(/% since last reading/);
   });
