@@ -590,7 +590,12 @@ export const appRouter = router({
         const vectors = pressure.vectors;
 
         // Helper: find vector score by id
-        const vs = (id: string) => vectors.find(v => v.id === id)?.score ?? 50;
+        // Fail closed: a missing or non-finite vector score is null, never a 50 default.
+        const vs = (id: string): number | null => {
+          const score = vectors.find(v => v.id === id)?.score;
+          return typeof score === "number" && Number.isFinite(score) ? score : null;
+        };
+        const UNAVAILABLE_COLOR = "#64748B";
         const vd = (id: string) => vectors.find(v => v.id === id)?.driver ?? "";
         const vt = (id: string) => vectors.find(v => v.id === id)?.trend ?? "stable";
 
@@ -618,20 +623,23 @@ export const appRouter = router({
 
         // 2. AI Bubble Exposure — ai-bubble vector, amplified by AI/tech stock ratio
         const aiBubbleBase = vs("ai-bubble");
-        const aiBubbleScore = Math.min(100, Math.round(aiBubbleBase * (1 + stockRatio * 0.2)));
+        const aiBubbleScore = aiBubbleBase === null ? null : Math.min(100, Math.round(aiBubbleBase * (1 + stockRatio * 0.2)));
 
         // 3. Interest Rate Sensitivity — volatility-regime + macro-sensitivity
-        const rateSensScore = Math.min(100, Math.round((vs("volatility-regime") * 0.5 + vs("macro-sensitivity") * 0.5)));
+        const volRegime = vs("volatility-regime");
+        const macroSens = vs("macro-sensitivity");
+        const rateSensScore = volRegime === null || macroSens === null ? null : Math.min(100, Math.round(volRegime * 0.5 + macroSens * 0.5));
 
         // 4. Concentration Risk — position count heuristic
         const concentrationRiskScore = concentrationScore;
 
         // 5. Liquidity Risk — liquidity-stress vector, amplified by crypto ratio
         const liquidityBase = vs("liquidity-stress");
-        const liquidityScore = Math.min(100, Math.round(liquidityBase * (1 + cryptoRatio * 0.3)));
+        const liquidityScore = liquidityBase === null ? null : Math.min(100, Math.round(liquidityBase * (1 + cryptoRatio * 0.3)));
 
         // 6. Recession Exposure — credit-contagion + macro-sensitivity
-        const recessionScore = Math.min(100, Math.round((vs("credit-contagion") * 0.6 + vs("macro-sensitivity") * 0.4)));
+        const creditContagion = vs("credit-contagion");
+        const recessionScore = creditContagion === null || macroSens === null ? null : Math.min(100, Math.round(creditContagion * 0.6 + macroSens * 0.4));
 
         // 7. Historical Crash Vulnerability — top analog similarity as proxy
         const crashVulnScore = Math.min(100, Math.round(pressure.topAnalog.similarity * 0.85 + portfolioPressureScore * 0.15));
@@ -640,8 +648,8 @@ export const appRouter = router({
         // Low pressure = good alignment; high pressure = poor alignment
         const regimeAlignmentScore = Math.max(0, 100 - portfolioPressureScore);
 
-        const scoreToLevel = (s: number) =>
-          s >= 75 ? "Critical" : s >= 60 ? "High" : s >= 40 ? "Elevated" : s >= 20 ? "Moderate" : "Low";
+        const scoreToLevel = (s: number | null) =>
+          s === null ? "Unavailable" : s >= 75 ? "Critical" : s >= 60 ? "High" : s >= 40 ? "Elevated" : s >= 20 ? "Moderate" : "Low";
 
         return {
           regime: pressure.regime,
@@ -667,7 +675,7 @@ export const appRouter = router({
               level: scoreToLevel(aiBubbleScore),
               driver: vd("ai-bubble"),
               trend: vt("ai-bubble"),
-              color: aiBubbleScore >= 75 ? "#FF2D55" : aiBubbleScore >= 55 ? "#FF6B35" : aiBubbleScore >= 35 ? "#FFD60A" : "#00FF88",
+              color: aiBubbleScore === null ? UNAVAILABLE_COLOR : aiBubbleScore >= 75 ? "#FF2D55" : aiBubbleScore >= 55 ? "#FF6B35" : aiBubbleScore >= 35 ? "#FFD60A" : "#00FF88",
             },
             {
               id: "rate-sensitivity",
@@ -677,7 +685,7 @@ export const appRouter = router({
               level: scoreToLevel(rateSensScore),
               driver: vd("macro-sensitivity"),
               trend: vt("macro-sensitivity"),
-              color: rateSensScore >= 75 ? "#FF2D55" : rateSensScore >= 55 ? "#FF6B35" : rateSensScore >= 35 ? "#FFD60A" : "#00FF88",
+              color: rateSensScore === null ? UNAVAILABLE_COLOR : rateSensScore >= 75 ? "#FF2D55" : rateSensScore >= 55 ? "#FF6B35" : rateSensScore >= 35 ? "#FFD60A" : "#00FF88",
             },
             {
               id: "concentration-risk",
@@ -697,7 +705,7 @@ export const appRouter = router({
               level: scoreToLevel(liquidityScore),
               driver: vd("liquidity-stress"),
               trend: vt("liquidity-stress"),
-              color: liquidityScore >= 75 ? "#FF2D55" : liquidityScore >= 55 ? "#FF6B35" : liquidityScore >= 35 ? "#FFD60A" : "#00FF88",
+              color: liquidityScore === null ? UNAVAILABLE_COLOR : liquidityScore >= 75 ? "#FF2D55" : liquidityScore >= 55 ? "#FF6B35" : liquidityScore >= 35 ? "#FFD60A" : "#00FF88",
             },
             {
               id: "recession-exposure",
@@ -707,7 +715,7 @@ export const appRouter = router({
               level: scoreToLevel(recessionScore),
               driver: vd("credit-contagion"),
               trend: vt("credit-contagion"),
-              color: recessionScore >= 75 ? "#FF2D55" : recessionScore >= 55 ? "#FF6B35" : recessionScore >= 35 ? "#FFD60A" : "#00FF88",
+              color: recessionScore === null ? UNAVAILABLE_COLOR : recessionScore >= 75 ? "#FF2D55" : recessionScore >= 55 ? "#FF6B35" : recessionScore >= 35 ? "#FFD60A" : "#00FF88",
             },
             {
               id: "crash-vulnerability",

@@ -209,7 +209,7 @@ function RebalancingSuggestions({ positions, totalValue }: CommandCenterProps) {
 }
 
 // ── Institutional Commentary ──────────────────────────────────
-function InstitutionalCommentary() {
+export function InstitutionalCommentary() {
   const { data, isLoading, error, refetch, isFetching } = trpc.portfolio.getIntelligence.useQuery(undefined, {
     staleTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -236,7 +236,10 @@ function InstitutionalCommentary() {
   const topMetrics = (data.metrics ?? []).slice(0, 4);
 
   // Derive overall assessment from regime + top metric
-  const topRiskMetric = [...(data.metrics ?? [])].sort((a, b) => b.score - a.score)[0];
+  // A metric whose input is missing has score null; it is never ranked or quoted.
+  const topRiskMetric = (data.metrics ?? [])
+    .filter((m): m is typeof m & { score: number } => m.score !== null)
+    .sort((a, b) => b.score - a.score)[0];
   const overallAssessment = topRiskMetric
     ? `Current regime: ${data.regime}. Highest risk factor: ${topRiskMetric.label} (${topRiskMetric.score}/100 — ${topRiskMetric.level}). ${topRiskMetric.driver}`
     : `Current regime: ${data.regime}.`;
@@ -256,14 +259,14 @@ function InstitutionalCommentary() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px", marginBottom: "12px" }}>
           {topMetrics.map(m => {
             const score = m.score;
-            const color = m.color ?? (score >= 70 ? "#FF2D55" : score >= 50 ? "#FF9500" : "#22C55E");
+            const color = m.color ?? (score === null ? "#64748B" : score >= 70 ? "#FF2D55" : score >= 50 ? "#FF9500" : "#22C55E");
             return (
               <div key={m.id} style={{ padding: "8px 10px", background: `${color}06`, border: `1px solid ${color}15`, borderRadius: "4px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.08em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100px" }}>{m.label.toUpperCase()}</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, color }}>{score}</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, color }}>{score === null ? "—" : score}</span>
                 </div>
-                <MiniBar pct={score} color={color} />
+                <MiniBar pct={score ?? 0} color={color} />
                 {m.driver && <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(148,163,184,0.5)", marginTop: "4px", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.driver}</div>}
               </div>
             );

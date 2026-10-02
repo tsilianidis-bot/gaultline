@@ -14,7 +14,8 @@ type IntelMetric = {
   id: string;
   label: string;
   description: string;
-  score: number;
+  /** null when the input vector is missing: renders "—", never a default. */
+  score: number | null;
   level: string;
   driver: string;
   trend: "rising" | "falling" | "stable";
@@ -48,7 +49,7 @@ function TrendIcon({ trend, color }: { trend: "rising" | "falling" | "stable"; c
 // ── Single Metric Card ────────────────────────────────────────
 function MetricCard({ metric }: { metric: IntelMetric }) {
   const [expanded, setExpanded] = useState(false);
-  const isHigh = metric.score >= 60;
+  const isHigh = metric.score !== null && metric.score >= 60;
 
   return (
     <div
@@ -86,7 +87,7 @@ function MetricCard({ metric }: { metric: IntelMetric }) {
             fontSize: "16px",
             color: metric.color,
           }}>
-            {metric.score}
+            {metric.score === null ? "—" : metric.score}
           </span>
           <span style={{
             fontFamily: "'IBM Plex Mono', monospace",
@@ -106,7 +107,7 @@ function MetricCard({ metric }: { metric: IntelMetric }) {
       </div>
 
       {/* Gauge bar */}
-      <GaugeBar score={metric.score} color={metric.color} />
+      <GaugeBar score={metric.score ?? 0} color={metric.color} />
 
       {/* Expanded: driver + description */}
       {expanded && (
@@ -167,7 +168,7 @@ export default function PortfolioIntelligence() {
   if (!user) return null;
 
   const metrics = (data?.metrics ?? []) as IntelMetric[];
-  const highRiskCount = metrics.filter(m => m.score >= 60).length;
+  const highRiskCount = metrics.filter(m => m.score !== null && m.score >= 60).length;
   const overallColor = highRiskCount >= 5 ? "#FF2D55" : highRiskCount >= 3 ? "#FF6B35" : highRiskCount >= 1 ? "#FFD60A" : "#00FF88";
 
   return (

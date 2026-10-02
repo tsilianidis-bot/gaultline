@@ -99,7 +99,8 @@ describe("cinematic + marketing preservation plan", () => {
     expect(TOUCHED.cinematic).not.toContain(">\n                ASHA\n");
     expect(TOUCHED.authGate).toContain("PLATO will greet you once your identity is confirmed.");
     expect(TOUCHED.authGate).toContain("PLATO · FAULTLINE INTELLIGENCE LAYER");
-    expect(TOUCHED.briefing).toContain("PLATO \\u00b7 FAULTLINE INTELLIGENCE LAYER");
+    // #58 r9: the middle dot is a JS string expression, so it renders as "·" and not as a literal "\\u00b7".
+    expect(TOUCHED.briefing).toContain('PLATO {"\\u00b7"} FAULTLINE INTELLIGENCE LAYER');
     expect(TOUCHED.guide).toContain("Ask PLATO");
     expect(TOUCHED.guide).not.toContain("Ask ASHA");
     expect(TOUCHED.productExperience).toContain("PLATO synthesizes");

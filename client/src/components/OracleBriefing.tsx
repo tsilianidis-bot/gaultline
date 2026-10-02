@@ -10,6 +10,11 @@ import type { ForecastMetadata } from "@shared/forecastMetadata";
 import { ForecastHorizonDisclosure } from "./ForecastHorizonDisclosure";
 
 // ── Types ──────────────────────────────────────────────────
+/** Fail closed: only a finite pressure reading renders; null, undefined or NaN read "not available". */
+export function pressureAvailable(value: number | null | undefined): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
 export interface OracleBriefingData {
   question: string;
   missionId: string;
@@ -29,8 +34,8 @@ export interface OracleBriefingData {
   suggestedBias?: string;
 
   // Probability
-  bullProbability?: number;
-  bearProbability?: number;
+  bullProbability?: number | null;
+  bearProbability?: number | null;
   questionAnalysis?: AshaQuestionAnalysis;
 
   // Intelligence sections
@@ -189,7 +194,7 @@ function CopyButton({ data }: { data: OracleBriefingData }) {
     ``,
     `MISSION SNAPSHOT`,
     `Bias: ${data.marketBias} | Threat: ${data.threatLevel}${data.confidence === undefined ? "" : ` | Response confidence: ${data.confidence}%`}`,
-    `Regime: ${data.marketRegime} | Pressure Index: ${data.pressureIndex === null ? "Not available" : `${data.pressureIndex}/100`} | Time Horizon: ${data.forecastMetadata.expectedHorizon ?? "Not established"}`,
+    `Regime: ${data.marketRegime} | Pressure Index: ${pressureAvailable(data.pressureIndex) ? `${data.pressureIndex}/100` : "Not available"} | Time Horizon: ${data.forecastMetadata.expectedHorizon ?? "Not established"}`,
     `Action: ${data.missionRecommendationStructured?.verdict || data.finalVerdictAction}`,
     ...(data.questionAnalysis ? [
       `Scope: ${data.questionAnalysis.analysisScope}`,
@@ -420,7 +425,7 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
               { label: "THREAT", value: data.threatLevel, color: tColor },
               { label: "RESPONSE CONFIDENCE", value: data.confidence === undefined ? "NOT ESTABLISHED" : `${data.confidence}%`, color: "#E2E8F0" },
               { label: "REGIME", value: data.marketRegime, color: "#E2E8F0" },
-              { label: "PRESSURE INDEX", value: data.pressureIndex === null ? "NOT AVAILABLE" : `${data.pressureIndex}/100`, color: "#E2E8F0" },
+              { label: "PRESSURE INDEX", value: pressureAvailable(data.pressureIndex) ? `${data.pressureIndex}/100` : "NOT AVAILABLE", color: "#E2E8F0" },
               { label: "TIME HORIZON", value: missionTimeHorizon, color: "#E2E8F0" },
               { label: "ACTION", value: missionAction, color: vColor },
             ].map(item => (

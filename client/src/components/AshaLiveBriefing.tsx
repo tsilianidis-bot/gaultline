@@ -359,7 +359,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
             animation: "asha-briefing-in 0.5s cubic-bezier(0.23,1,0.32,1) 0.2s both",
           }}
         >
-          PLATO \u00b7 FAULTLINE INTELLIGENCE LAYER
+          PLATO {"\u00b7"} FAULTLINE INTELLIGENCE LAYER
         </div>
 
         {/* Live status pill */}

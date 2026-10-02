@@ -308,8 +308,9 @@ export default function AshaPanel() {
         pressureIndex: response.pressureIndex ?? fullPageContext.pressureScore ?? null,
         riskLevel: response.riskLevel ?? "Not stated",
         suggestedBias: response.suggestedBias,
-        bullProbability: response.bullProbability,
-        bearProbability: response.bearProbability,
+        // Fail closed: a missing scenario weight is null, never a 50 default.
+        bullProbability: response.bullProbability ?? null,
+        bearProbability: response.bearProbability ?? null,
         keyFindings: response.keyFindings?.length ? response.keyFindings : [response.reply.slice(0, 180)],
         supportingEvidence: response.supportingEvidence?.length ? response.supportingEvidence : response.sources,
         crossEngineSynthesis: response.crossEngineSynthesis,
