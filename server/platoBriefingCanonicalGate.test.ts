@@ -19,7 +19,7 @@ import {
   buildDailyGreetingContext,
 } from "../client/src/lib/ashaBriefingContext";
 import type { CanonicalMarketState } from "../shared/marketState";
-import { buildAshaCanonicalContextBlock, outlookForModel, withholdScenarioPercents } from "./ashaGateway";
+import { buildAshaCanonicalContextBlock, outlookForModel, pageSupplementForModel, withholdScenarioPercents, withholdScenarioPercentsDeep } from "./ashaGateway";
 
 const engine = vi.hoisted(() => ({ value: null as null | { output: unknown; isLoading: boolean; marketMode: string } }));
 vi.mock("@/contexts/EngineContext", () => ({ useEngine: () => engine.value }));
@@ -298,5 +298,34 @@ describe("PLATO model context carries no scenario percent", () => {
       .toBe("The highest-probability outcome (Uncalibrated) is continuation. The closest analog — Dot-Com (78% similarity) — resolved.");
     expect(withholdScenarioPercents("a transition toward elevated stress (25% historical frequency), driven by credit")).not.toMatch(PERCENT);
     expect(withholdScenarioPercents("bull 53% and crash 2.5 % probability")).toBe("bull Uncalibrated and crash Uncalibrated");
+    expect(withholdScenarioPercents("probability of 60% and confidence: 41%")).toBe("probability of Uncalibrated and confidence: Uncalibrated");
+    expect(withholdScenarioPercents("53% bull / 17% bear")).toBe("Uncalibrated bull / Uncalibrated bear");
+  });
+
+  it("observed values and thresholds keep their percent", () => {
+    for (const text of ["Breadth expands materially — more than 70% of sectors participating", "HY spreads 3.1% and CPI 2.9%"]) {
+      expect(withholdScenarioPercents(text)).toBe(text);
+    }
+  });
+
+  it("act.decisionSummary goes to the model with its embedded percent withheld", () => {
+    const state = canonicalState();
+    state.act.decisionSummary = "Maintain a balanced posture while The highest-probability outcome (60% historical frequency) is continuation.";
+    const block = buildAshaCanonicalContextBlock({ ...context(), marketState: state } as Parameters<typeof buildAshaCanonicalContextBlock>[0]);
+    expect(block).toContain("Maintain a balanced posture while The highest-probability outcome (Uncalibrated) is continuation.");
+    expect(block).not.toContain("60%");
+  });
+
+  it("every other string in the block is filtered too", () => {
+    expect(withholdScenarioPercentsDeep({ a: ["bull 53%"], b: { c: "(25% probability)" }, n: 53 })).toEqual({ a: ["bull Uncalibrated"], b: { c: "(Uncalibrated)" }, n: 53 });
+    const state = canonicalState();
+    state.watch.whatToWatch = ["Crash odds near 20%"];
+    state.why.story = "Recession probability is 30%.";
+    const block = buildAshaCanonicalContextBlock({ ...context(), marketState: state } as Parameters<typeof buildAshaCanonicalContextBlock>[0]);
+    expect(block).not.toMatch(/20%|30%/);
+  });
+
+  it("the page supplement drops a client-sent regimeConfidence and transitionProbability", () => {
+    expect(pageSupplementForModel({ page: "/app/now", regimeConfidence: 0.75, transitionProbability: 20, pressureScore: 33 })).toEqual({ page: "/app/now", pressureScore: 33 });
   });
 });

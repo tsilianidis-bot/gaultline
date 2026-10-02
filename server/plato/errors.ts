@@ -41,7 +41,9 @@ export type PlatoUnavailableReason =
   /** The app-wide daily PLATO call cap is reached. */
   | "daily_limit"
   /** This signed-in user's daily question cap is reached. */
-  | "user_daily_limit";
+  | "user_daily_limit"
+  /** This signed-in user's daily greeting cap is reached. */
+  | "user_daily_greeting_limit";
 
 export class PlatoRouteError extends Error {
   readonly httpStatus: number | null;
@@ -179,7 +181,7 @@ export function shouldFallback(error: unknown): boolean {
  * answer is produced; the tRPC layer maps it to TOO_MANY_REQUESTS with honest copy.
  */
 export function platoDailyLimitError(
-  scope: "global" | "user",
+  scope: "global" | "user" | "user_greeting",
   attempts: PlatoAttemptRecord[] = [],
 ): PlatoUnavailableError {
   const failure = new PlatoRouteError(`PLATO ${scope} daily limit reached.`, {
@@ -188,7 +190,7 @@ export function platoDailyLimitError(
     provider: "plato-limits",
     model: "none",
   });
-  return new PlatoUnavailableError(failure, attempts, scope === "user" ? "user_daily_limit" : "daily_limit");
+  return new PlatoUnavailableError(failure, attempts, scope === "user" ? "user_daily_limit" : scope === "user_greeting" ? "user_daily_greeting_limit" : "daily_limit");
 }
 
 /** Server-log summary of an upstream error: status line only, key-like strings removed, bounded length. */

@@ -76,15 +76,40 @@ export const PLATO_SCENARIO_WITHHELD = "Uncalibrated";
  * Owner rule: a scenario/probability % may be shown only when its contract status is AVAILABLE,
  * and none is today, so the model gets the status text and the non-numeric evidence only.
  */
+const PCT = String.raw`\d+(?:\.\d+)?\s*%`;
+const PROBABILITY_WORDS = String.raw`(?:historical frequency|frequency|probability|probabilities|chance|chances|likelihood|odds|confidence)`;
+const SCENARIO_WORDS = String.raw`(?:bull(?:ish)?|bear(?:ish)?|neutral|crash|recession|soft[- ]landing|stagflation|remain(?:ing)? in regime|transition(?: to \w+)?)`;
+const SCENARIO_PERCENT_RULES: Array<[RegExp, string]> = [
+  // "(60% historical frequency)", "(25% probability)", or a bare "(60%)"
+  [new RegExp(String.raw`\(\s*${PCT}(?:\s+${PROBABILITY_WORDS}[^)]*)?\s*\)`, "gi"), "(Uncalibrated)"],
+  // "60% historical frequency", "2.5 % probability", "30% chance"
+  [new RegExp(String.raw`${PCT}\s+${PROBABILITY_WORDS}`, "gi"), "Uncalibrated"],
+  // "probability of 60%", "confidence: 41%", "odds near 20%"
+  [new RegExp(String.raw`(${PROBABILITY_WORDS})((?:\s+(?:of|at|is|was|near|around|about|~|=))*\s*:?\s*)${PCT}`, "gi"), "$1$2Uncalibrated"],
+  // "bull 53%", "crash: 2%", "remain in regime 60%"
+  [new RegExp(String.raw`(\b${SCENARIO_WORDS})(\s*[:=]?\s*)${PCT}`, "gi"), "$1$2Uncalibrated"],
+  // "53% bull", "60% remain in regime"
+  [new RegExp(String.raw`${PCT}(\s+${SCENARIO_WORDS}\b)`, "gi"), "Uncalibrated$1"],
+];
+
 /**
- * Outlook prose can embed a scenario/transition percent (e.g. "(60% historical frequency)").
- * Every percent is replaced with the withheld status, except an analog similarity, which is
- * regime resemblance, not a probability.
+ * Text sent to PLATO can embed a scenario/transition percent (e.g. highestProbabilityPath and the
+ * act.decisionSummary built from it: "(60% historical frequency)"). Probability-shaped percents are
+ * replaced with the withheld status. Observed values and thresholds ("more than 70% of sectors")
+ * and analog "% similarity" (regime resemblance, not a probability) are kept.
  */
 export function withholdScenarioPercents(text: string): string {
-  return text
-    .replace(/\(\s*\d+(?:\.\d+)?\s*%(?!\s*similarity)[^)]*\)/gi, `(${PLATO_SCENARIO_WITHHELD})`)
-    .replace(/\d+(?:\.\d+)?\s*%(?!\s*similarity)(?:\s+(?:historical frequency|probability|chance|likelihood|odds))?/gi, PLATO_SCENARIO_WITHHELD);
+  return SCENARIO_PERCENT_RULES.reduce((out, [pattern, replacement]) => out.replace(pattern, replacement), text);
+}
+
+/** Applies withholdScenarioPercents to every string in a model-bound value. Numbers are untouched. */
+export function withholdScenarioPercentsDeep<T>(value: T): T {
+  if (typeof value === "string") return withholdScenarioPercents(value) as T;
+  if (Array.isArray(value)) return value.map(entry => withholdScenarioPercentsDeep(entry)) as T;
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, withholdScenarioPercentsDeep(entry)])) as T;
+  }
+  return value;
 }
 
 export function outlookForModel(outlook: CanonicalMarketState["outlook"]): Record<string, unknown> {
@@ -110,9 +135,17 @@ export function outlookForModel(outlook: CanonicalMarketState["outlook"]): Recor
   };
 }
 
-/** Client page supplement without any probability number. */
-function pageSupplementForModel(page: AshaPageContext): AshaPageContext {
-  const { transitionProbability: _withheld, ...rest } = page;
+/** Act as sent to PLATO: decisionSummary embeds highestProbabilityPath (marketStateService), so it carries the same percent. */
+export function actForModel(act: CanonicalMarketState["act"]): CanonicalMarketState["act"] {
+  return {
+    ...act,
+    decisionSummary: typeof act.decisionSummary === "string" ? withholdScenarioPercents(act.decisionSummary) : act.decisionSummary,
+  };
+}
+
+/** Client page supplement without any probability number or client-sent confidence. */
+export function pageSupplementForModel(page: AshaPageContext): AshaPageContext {
+  const { transitionProbability: _transition, regimeConfidence: _confidence, ...rest } = page;
   return rest;
 }
 
@@ -151,11 +184,15 @@ export function buildAshaCanonicalContextBlock(context: AshaGatewayContext): str
       accelerating: marketState.watch.accelerating,
       buildingPressure: marketState.watch.buildingPressure,
     },
-    act: marketState.act,
+    act: actForModel(marketState.act),
     history: marketState.history,
     questionAnalysis: context.questionAnalysis ?? null,
     pageSupplement: pageSupplementForModel(context.page),
   };
+
+  // Belt and braces: every string in the block goes through the same filter (act, watch, why, now,
+  // warnings, questionAnalysis text, page supplement), so no other field can carry a scenario %.
+  const modelContext = withholdScenarioPercentsDeep(boundedContext);
 
   const scopeRule = context.questionAnalysis?.analysisScope === "MARKET"
     ? "QUESTION SCOPE IS MARKET. Do not retrieve, infer from, or mention active-ticker/company fundamentals, price levels, technicals, catalysts, LEAP commentary, or ticker invalidation conditions."
@@ -163,7 +200,7 @@ export function buildAshaCanonicalContextBlock(context: AshaGatewayContext): str
       ? "QUESTION SCOPE IS TICKER. Use ticker-specific evidence only when it is present in the sanitized page supplement and relevant to the user’s question."
       : "QUESTION SCOPE IS MARKET_TICKER_RELATIONSHIP. Separate broad-market evidence from the ticker-specific transmission analysis.";
 
-  return `\n\nCANONICAL FAULTLINE MARKETSTATE (SERVER-GENERATED):\n${JSON.stringify(boundedContext)}\n\nSCOPE RULE: ${scopeRule}\n\nPROVENANCE RULES: Treat this MarketState as the authoritative current context. Distinguish current observations, model estimates, inferences, and historical relationships. Never claim a source or engine is available when sourceHealth marks it unavailable. If freshness is stale, cache status is stale-if-error, or warnings are present, disclose that limitation in the answer. Do not invent missing values. Historical analog similarity is evidence of regime resemblance, never forecast probability. Use questionAnalysis probability only when its availability is CALIBRATED; never convert a similarity score or generic bear scenario into an unsupported event probability.\n\n${evidenceNarrativePromptContract()}`;
+  return `\n\nCANONICAL FAULTLINE MARKETSTATE (SERVER-GENERATED):\n${JSON.stringify(modelContext)}\n\nSCOPE RULE: ${scopeRule}\n\nPROVENANCE RULES: Treat this MarketState as the authoritative current context. Distinguish current observations, model estimates, inferences, and historical relationships. Never claim a source or engine is available when sourceHealth marks it unavailable. If freshness is stale, cache status is stale-if-error, or warnings are present, disclose that limitation in the answer. Do not invent missing values. Historical analog similarity is evidence of regime resemblance, never forecast probability. Use questionAnalysis probability only when its availability is CALIBRATED; never convert a similarity score or generic bear scenario into an unsupported event probability.\n\n${evidenceNarrativePromptContract()}`;
 }
 
 /**

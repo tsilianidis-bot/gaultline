@@ -6,6 +6,7 @@
    ============================================================ */
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
+import { platoGreetingLimitMessage } from "@shared/ashaPanelMachine";
 import { useEngine } from "@/contexts/EngineContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import AshaOrb from "./AshaOrb";
@@ -41,9 +42,9 @@ export default function AshaDailyGreeting() {
       engineContext: buildDailyGreetingContext(canonicalState, output, marketMode),
     }).then(res => {
       setGreeting(res.greeting);
-    }).catch(() => {
-      // Never substitute a canned market reading for PLATO's answer.
-      setGreeting("PLATO is temporarily unavailable, so there is no PLATO greeting right now. It will return when the language model is reachable.");
+    }).catch((error: unknown) => {
+      // Never substitute a canned market reading for PLATO's answer. A daily cap says so.
+      setGreeting(platoGreetingLimitMessage(error) ?? "PLATO is temporarily unavailable, so there is no PLATO greeting right now. It will return when the language model is reachable.");
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canonicalState, isLoading, dismissed, fetched]);

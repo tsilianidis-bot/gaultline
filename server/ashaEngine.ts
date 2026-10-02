@@ -825,7 +825,7 @@ export async function generateAshaDailyGreeting(req: AshaDailyGreetingRequest): 
   const page: AshaPageContext = { page: "daily-greeting" };
   if (engineContext.pressureScore !== undefined) page.pressureScore = engineContext.pressureScore;
   if (engineContext.regime) page.regime = engineContext.regime;
-  if (engineContext.regimeConfidence !== undefined) page.regimeConfidence = engineContext.regimeConfidence;
+  // A client-sent regimeConfidence is never forwarded: no real confidence exists for the greeting.
   if (engineContext.narrative) page.narrative = engineContext.narrative;
   if (engineContext.trend) page.trend = engineContext.trend;
   if (engineContext.keyDrivers && engineContext.keyDrivers.length > 0) page.keyDrivers = engineContext.keyDrivers;

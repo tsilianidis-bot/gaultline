@@ -3413,7 +3413,7 @@ export const appRouter = router({
         // (in-memory, per process; see server/plato/limits.ts).
         const userDailyGreetings = readPlatoLimits().userDailyGreetings;
         if (!platoUsage.tryReserveUserGreeting(ctx.user.id, userDailyGreetings)) {
-          const mapped = mapAshaProcedureError(platoDailyLimitError("user"));
+          const mapped = mapAshaProcedureError(platoDailyLimitError("user_greeting"));
           log.warn("[PLATO] daily greeting unavailable", { code: mapped.code, reason: "user_daily_greeting_limit", limit: userDailyGreetings });
           throw mapped;
         }

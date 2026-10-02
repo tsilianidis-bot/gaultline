@@ -13,6 +13,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { platoGreetingLimitMessage } from "@shared/ashaPanelMachine";
 import { useEngine } from "@/contexts/EngineContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import AshaOrb from "@/components/AshaOrb";
@@ -187,10 +188,12 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
           setGreeting(data.greeting);
           setGreetingReady(true);
         },
-        onError: () => {
+        onError: (error: unknown) => {
           // Honest unavailable line: no "monitoring" claim, no change narrative and no numbers
           // (the projection can carry zero deltas or default indicators when PLATO is down).
-          const fallback = `Welcome back${firstName !== "there" ? `, ${firstName}` : ""}. PLATO is temporarily unavailable, so there is no PLATO greeting right now.`;
+          // A daily cap says so (no retry today); anything else is the temporary-unavailable line.
+          const limit = platoGreetingLimitMessage(error);
+          const fallback = `Welcome back${firstName !== "there" ? `, ${firstName}` : ""}. ${limit ?? "PLATO is temporarily unavailable, so there is no PLATO greeting right now."}`;
           setGreeting(fallback);
           setGreetingReady(true);
         },

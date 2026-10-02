@@ -28,7 +28,9 @@ import {
 import { routePlatoCompletion } from "./plato/router";
 import {
   PLATO_DAILY_LIMIT_MESSAGE,
+  PLATO_USER_DAILY_GREETING_LIMIT_MESSAGE,
   PLATO_USER_DAILY_LIMIT_MESSAGE,
+  platoGreetingLimitMessage,
   reduceAshaAskFailure,
 } from "../shared/ashaPanelMachine";
 
@@ -205,7 +207,9 @@ describe("asha.dailyGreeting: per-signed-in-user daily greeting cap", () => {
     for (let i = 0; i < 10; i++) await expect(caller.asha.dailyGreeting(greetingInput)).resolves.toEqual({ greeting: "Welcome back." });
     const failure = await caller.asha.dailyGreeting(greetingInput).catch(error => error);
     expect(engine.greeting).toHaveBeenCalledTimes(10);
-    expect(failure).toMatchObject({ code: "TOO_MANY_REQUESTS", message: PLATO_USER_DAILY_LIMIT_MESSAGE });
+    expect(failure).toMatchObject({ code: "TOO_MANY_REQUESTS", message: PLATO_USER_DAILY_GREETING_LIMIT_MESSAGE });
+    expect(failure.message).toBe("You have reached today's PLATO greeting limit. Please try again tomorrow.");
+    expect(failure.message).not.toContain("question");
     expect(JSON.stringify(failure)).not.toContain("Welcome back");
     // Another user has their own allowance, and the greeting cap does not consume questions.
     await expect(appRouter.createCaller(ctx(12)).asha.dailyGreeting(greetingInput)).resolves.toEqual({ greeting: "Welcome back." });
@@ -235,6 +239,15 @@ describe("asha.dailyGreeting: per-signed-in-user daily greeting cap", () => {
     await expect(caller.asha.dailyGreeting(greetingInput)).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
     expect(platoUsage.greetingsUsed(14)).toBe(1);
     expect(platoUsage.questionsUsed(14)).toBe(1);
+  });
+});
+
+describe("client: greeting daily-limit copy", () => {
+  it("the briefing and dashboard greeting show the greeting or global limit copy, and nothing else from the server", () => {
+    expect(platoGreetingLimitMessage({ message: PLATO_USER_DAILY_GREETING_LIMIT_MESSAGE, data: { code: "TOO_MANY_REQUESTS" } })).toBe(PLATO_USER_DAILY_GREETING_LIMIT_MESSAGE);
+    expect(platoGreetingLimitMessage({ message: PLATO_DAILY_LIMIT_MESSAGE, data: { code: "TOO_MANY_REQUESTS" } })).toBe(PLATO_DAILY_LIMIT_MESSAGE);
+    expect(platoGreetingLimitMessage({ message: "PLATO is temporarily unavailable. Please try again.", data: { code: "SERVICE_UNAVAILABLE" } })).toBeNull();
+    expect(platoGreetingLimitMessage({ message: "upstream said 77% chance", data: { code: "TOO_MANY_REQUESTS" } })).toBeNull();
   });
 });
 

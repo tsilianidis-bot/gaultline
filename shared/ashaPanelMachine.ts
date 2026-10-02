@@ -6,6 +6,7 @@ export const ASHA_SIGN_IN_DETAIL = "PLATO conversations, memory and thesis histo
 /** Server copy for the app-side daily caps (server/plato/limits.ts). Shared so the client can recognise it. */
 export const PLATO_DAILY_LIMIT_MESSAGE = "PLATO has reached today's limit. Please try again tomorrow.";
 export const PLATO_USER_DAILY_LIMIT_MESSAGE = "You have reached today's PLATO question limit. Please try again tomorrow.";
+export const PLATO_USER_DAILY_GREETING_LIMIT_MESSAGE = "You have reached today's PLATO greeting limit. Please try again tomorrow.";
 
 export type AshaAskFailureKind = "unauthorized" | "rate_limit" | "daily_limit" | "capacity" | "unavailable";
 
@@ -24,6 +25,13 @@ function readTrpcMessage(error: unknown): string | null {
   if (!error || typeof error !== "object") return null;
   const message = (error as { message?: unknown }).message;
   return typeof message === "string" ? message : null;
+}
+
+/** The daily-limit copy when a greeting failed on an app-side cap (global or per-user greeting), else null. */
+export function platoGreetingLimitMessage(error: unknown): string | null {
+  if (readTrpcCode(error) !== "TOO_MANY_REQUESTS") return null;
+  const message = readTrpcMessage(error);
+  return message === PLATO_DAILY_LIMIT_MESSAGE || message === PLATO_USER_DAILY_GREETING_LIMIT_MESSAGE ? message : null;
 }
 
 function readTrpcCode(error: unknown): string | null {
