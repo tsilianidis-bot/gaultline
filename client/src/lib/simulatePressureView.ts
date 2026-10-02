@@ -29,6 +29,32 @@ export function probabilityPercentText(value: unknown): string {
   return `${value}%`;
 }
 
+/**
+ * Simulate probability cell (Crash/Bear, Recession, Stagflation). Display only.
+ *
+ * - With #60's probability contract on the output (`probabilityDisplay`), the
+ *   contract decides: a number only when that field is AVAILABLE, else "—".
+ * - Without a contract (#59 alone), canonical and deterministic-fallback values
+ *   cannot be trusted: marketStateService / marketStateProjection turn a withheld
+ *   (NaN) probability into 0 via normalizeCanonicalMetric, and the fallback is
+ *   the demo baseline. Those render "—". Only the sandbox (the user's own
+ *   overrides through the browser model) shows its finite result.
+ */
+export type SimProbabilityKey = "crashProbability" | "recessionProbability" | "stagflationProbability";
+type ProbabilityContractEntry = { state?: string; percent?: number | null } | null | undefined;
+export function probabilityCellText(
+  output: { probability?: Partial<Record<SimProbabilityKey, unknown>>; probabilityDisplay?: Partial<Record<SimProbabilityKey, ProbabilityContractEntry>> } | null | undefined,
+  key: SimProbabilityKey,
+  isSimulating: boolean,
+): string {
+  const contract = output?.probabilityDisplay;
+  if (contract) {
+    const entry = contract?.[key];
+    return entry?.state === "AVAILABLE" ? probabilityPercentText(entry?.percent) : "—";
+  }
+  return isSimulating ? probabilityPercentText(output?.probability?.[key]) : "—";
+}
+
 /** value is null when the engine published no score: rendered "—", never 0. */
 export interface CanonicalVectorRow { id: string; label: string; value: number | null }
 

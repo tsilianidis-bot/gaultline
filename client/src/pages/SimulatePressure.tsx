@@ -20,7 +20,7 @@ import { Zap, RotateCcw, AlertTriangle, TrendingUp, TrendingDown,
 } from 'lucide-react';
 import { PreflightTrigger } from '@/components/MarketPreflight';
 import { useSEO } from '@/hooks/useSEO';
-import { canonicalSummary, probabilityPercentText, sandboxScoreOn100, SANDBOX_BASIS } from '@/lib/simulatePressureView';
+import { canonicalSummary, probabilityCellText, sandboxScoreOn100, SANDBOX_BASIS } from '@/lib/simulatePressureView';
 
 // ── Slider config ─────────────────────────────────────────────
 interface SliderConfig {
@@ -277,7 +277,7 @@ export default function SimulatePressure() {
   const [activeCategory, setActiveCategory] = useState<Category>('all');
   const [showPresets, setShowPresets] = useState(true);
 
-  const { overall, domains, regime, probability } = output;
+  const { overall, domains, regime } = output;
   const color = getRiskColor(overall.riskLevel);
 
   // Slider values: merge live + overrides
@@ -400,13 +400,13 @@ export default function SimulatePressure() {
         {/* Probability row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '14px' }}>
           {[
-            { label: 'Crash/Bear', value: probability.crashProbability, color: '#FF2D55' },
-            { label: 'Recession', value: probability.recessionProbability, color: '#FF9500' },
-            { label: 'Stagflation', value: probability.stagflationProbability, color: '#FFD700' },
-          ].map(p => (
+            { label: 'Crash/Bear', key: 'crashProbability' as const, color: '#FF2D55' },
+            { label: 'Recession', key: 'recessionProbability' as const, color: '#FF9500' },
+            { label: 'Stagflation', key: 'stagflationProbability' as const, color: '#FFD700' },
+          ].map(p => ({ ...p, text: probabilityCellText(output, p.key, isSimulating) })).map(p => (
             <div key={p.label} style={{ background: 'rgba(5,6,8,0.6)', borderRadius: '4px', padding: '8px', textAlign: 'center', border: `1px solid ${p.color}15` }}>
-              <div data-sim-probability={p.label} style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: probabilityPercentText(p.value) === '—' ? '#6B7280' : p.color, lineHeight: 1, transition: 'color 0.3s ease' }}>
-                {probabilityPercentText(p.value)}
+              <div data-sim-probability={p.label} style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: p.text === '—' ? '#6B7280' : p.color, lineHeight: 1, transition: 'color 0.3s ease' }}>
+                {p.text}
               </div>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                 {p.label}
