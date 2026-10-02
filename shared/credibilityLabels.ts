@@ -125,7 +125,7 @@ export function headerRegimeChip(kind: "EQ" | "BTC", summary: HeaderRegimeInput 
       regime,
       tag: "RULE-BASED",
       title:
-        "Rule-based equity regime label from the Pressure Index, credit/liquidity/breadth vectors and SPY daily moving averages (last close)." +
+        "Rule-based equity regime label from the Pressure Index, credit/liquidity/Labor & Rates vectors and SPY daily moving averages (last close)." +
         when +
         " No validated confidence or forecast horizon; no percentage is shown.",
     };
