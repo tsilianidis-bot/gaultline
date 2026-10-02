@@ -249,7 +249,7 @@ const SECTIONS: Section[] = [
             { name: "Treasury Stress Score", fred: "DGS10, DGS30", desc: "Measures stress in the US Treasury market. Elevated when the 10Y yield is rising rapidly or when the yield curve inverts (long rates below short rates), signalling recession expectations." },
             { name: "Inflation Pressure Score", fred: "CPIAUCSL", desc: "Tracks the degree to which inflation is above or below the Fed's 2% target. High scores indicate the Fed is likely to maintain or increase restrictive monetary policy." },
             { name: "Credit Risk Score", fred: "BAMLH0A0HYM2", desc: "Derived from the ICE BofA High Yield OAS spread. When this spread widens, it means credit markets are pricing in higher default risk — a classic leading indicator of financial stress." },
-            { name: "AI Bubble Risk Score", fred: "Equity valuations + sector data", desc: "A proprietary score estimating the degree to which AI and speculative technology valuations are stretched relative to fundamentals. High scores indicate bubble dynamics." },
+            { name: "AI Bubble Risk Score", fred: "Static AI-concentration baseline", desc: "The engine's AI-concentration vector (ai-bubble), scored 0–100. It reads a static AI-concentration baseline, not live equity valuations or sector data, so it changes only when that baseline is revised." },
             { name: "Liquidity Stress Score", fred: "SOFR, NFCI, BAMLH0A0HYM2", desc: "Composite score measuring tightness in short-term funding markets. Elevated SOFR, wide HY spreads, and a tight NFCI all contribute to a high liquidity stress score." },
             { name: "Recession Risk Score", fred: "UNRATE, yield curve, FRED composite", desc: "Probability-weighted recession risk score. Incorporates unemployment trends, yield curve inversion depth, and leading indicator deterioration." },
           ].map(({ name, fred, desc }) => (
@@ -317,7 +317,7 @@ const SECTIONS: Section[] = [
         <div className="space-y-1">
           {[
             { name: "AI Concentration Baseline", desc: "FAULTLINE uses a static AI-concentration baseline as an input to the AI-concentration vector. It does not ingest AI capital-expenditure data and does not track announced capex totals." },
-            { name: "AI Bubble Risk Score", desc: "A 0–10 score updated by the engine estimating the current degree of AI-sector overvaluation. Scores above 7 indicate bubble dynamics; scores above 9 indicate critical bubble risk." },
+            { name: "AI Bubble Risk Score", desc: "The engine's AI-concentration vector (ai-bubble), scored 0–100 on the same scale as the other pressure vectors. Its input is a static AI-concentration baseline, not a live feed, so the score changes only when that baseline is revised; it does not measure live AI-sector valuations." },
             { name: "Live Intelligence Feed", desc: "A curated stream of macro and AI-sector news items, each tagged with a relevance score and regime impact assessment. Items are filtered for systemic relevance — not noise." },
             { name: "Sector Concentration Monitor", desc: "Tracks the degree to which the S&P 500 and Nasdaq are concentrated in AI and technology names. High concentration amplifies systemic risk when sentiment reverses." },
             { name: "Regime Narrative", desc: "An AI-generated paragraph updated with each engine cycle that contextualises the current AI/tech environment within the broader macro regime. Written in institutional language." },
