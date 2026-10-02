@@ -19,7 +19,8 @@ export function sandboxScoreOn100(score0to10: number | null | undefined): number
   return Math.round(Math.min(10, Math.max(0, score0to10)) * 10);
 }
 
-export interface CanonicalVectorRow { id: string; label: string; value: number }
+/** value is null when the engine published no score: rendered "—", never 0. */
+export interface CanonicalVectorRow { id: string; label: string; value: number | null }
 
 export type CanonicalSummary =
   | { available: false; basis: string }
@@ -34,8 +35,12 @@ export function canonicalSummary(state: StateLike): CanonicalSummary {
     return { available: false, basis: "Canonical Pressure Index unavailable" };
   }
   const vectors = (state.engines ?? [])
-    .filter(e => e.unit === "score_0_to_100" && typeof e.value === "number" && Number.isFinite(e.value))
-    .map(e => ({ id: e.engineId, label: pressureVectorLabel(e.engineId, e.engineName), value: Math.round(e.value as number) }));
+    .filter(e => e.unit === "score_0_to_100")
+    .map(e => ({
+      id: e.engineId,
+      label: pressureVectorLabel(e.engineId, e.engineName),
+      value: typeof e.value === "number" && Number.isFinite(e.value) && e.value >= 0 && e.value <= 100 ? Math.round(e.value) : null,
+    }));
   return {
     available: true,
     score: Math.round(p),

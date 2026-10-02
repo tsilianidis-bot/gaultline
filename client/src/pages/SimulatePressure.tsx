@@ -531,7 +531,7 @@ export default function SimulatePressure() {
                       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>/100</span>
                     </div>
                     <div style={{ height: '2px', background: 'rgba(255,255,255,0.06)', borderRadius: '1px', marginTop: '6px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${v ?? 0}%`, background: dc, borderRadius: '1px' }} />
+                      {v != null && <div style={{ height: '100%', width: `${v}%`, background: dc, borderRadius: '1px' }} />}
                     </div>
                   </div>
                 );
@@ -541,11 +541,11 @@ export default function SimulatePressure() {
                   <div key={vec.id} data-canonical-vector={vec.id} style={{ background: 'rgba(10,12,16,0.8)', border: '1px solid rgba(0,212,255,0.12)', borderRadius: '4px', padding: '10px' }}>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>{vec.label}</div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                      <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: '#00D4FF', lineHeight: 1 }}>{vec.value}</span>
+                      <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: '#00D4FF', lineHeight: 1 }} data-canonical-vector-score={vec.value ?? 'unavailable'}>{vec.value ?? '—'}</span>
                       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>/100</span>
                     </div>
                     <div style={{ height: '2px', background: 'rgba(255,255,255,0.06)', borderRadius: '1px', marginTop: '6px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${vec.value}%`, background: '#00D4FF', borderRadius: '1px' }} />
+                      {vec.value != null && <div style={{ height: '100%', width: `${vec.value}%`, background: '#00D4FF', borderRadius: '1px' }} />}
                     </div>
                   </div>
                 ))

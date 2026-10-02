@@ -26,7 +26,7 @@ import { useEngine } from "@/contexts/EngineContext";
 import ScoreExplainer from "@/components/ScoreExplainer";
 import { customerIntegrityBadgeColor, customerPressureBadge, customerPressureUnavailableCopy, humanizeConflictType, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
 import { pressureVectorLabel } from "@shared/pressureVectorLabels";
-import { pressureVectorLevel, pressureVectorWeight } from "@/lib/pressureVectorWeights";
+import { canonicalVectorScore, contagionSummary, pressureVectorLevel, pressureVectorWeight, topScoredVectors, vectorScoreText } from "@/lib/pressureVectorWeights";
 import { canonicalDirectionTrend, canonicalHistoricalPercentile } from "@shared/canonicalReadout";
 import { directionDisplay } from "@shared/snapshotEvidence";
 import { canonicalRunBasisNote } from "@shared/dataIntegrityReadout";
@@ -70,14 +70,14 @@ interface RiskVector {
   id: string;
   label: string;
   description: string;
-  score: number;
-  level: PressureLevel;
+  /** Own 0–100 score; null when the engine published none (rendered "—", never 0). */
+  score: number | null;
+  /** Own level from its own score; null when there is no score (no level shown). */
+  level: PressureLevel | null;
   driver: string;
   trend: "rising" | "falling" | "stable";
   /** Composite weight (0–1); null when the source does not publish one. */
   weight: number | null;
-  /** False when the vector has no valid own score: no level label is shown. */
-  levelKnown?: boolean;
   rawInputs: Record<string, number | null>;
 }
 
@@ -128,7 +128,11 @@ const SEVERITY_COLORS = {
   moderate: "#00D4FF",
 };
 
-function getLevelColor(level: PressureLevel) {
+const UNAVAILABLE_LEVEL_COLORS = { primary: "#64748B", glow: "rgba(100,116,139,0.25)", bg: "rgba(100,116,139,0.06)", text: "#94A3B8" };
+
+/** Colours for a level; a missing level (no score) is neutral grey, never a band colour. */
+function getLevelColor(level: PressureLevel | null) {
+  if (level == null) return UNAVAILABLE_LEVEL_COLORS;
   return LEVEL_COLORS[level] ?? LEVEL_COLORS.Moderate;
 }
 
@@ -261,8 +265,10 @@ function PressureGaugeArc({ value, level }: { value: number; level: PressureLeve
 }
 
 // ── Mini bar for vector score ─────────────────────────────────
-function ScoreBar({ score, level }: { score: number; level: PressureLevel }) {
+function ScoreBar({ score, level }: { score: number | null; level: PressureLevel | null }) {
   const colors = getLevelColor(level);
+  // No score → empty track (no bar), never a 0-width "zero" reading.
+  if (score == null) return <div data-score-bar="unavailable" style={{ width: "100%", height: "4px", background: "rgba(255,255,255,0.06)", borderRadius: "2px" }} />;
   return (
     <div style={{ width: "100%", height: "4px", background: "rgba(255,255,255,0.06)", borderRadius: "2px", overflow: "hidden" }}>
       <motion.div
@@ -329,8 +335,8 @@ function VectorCard({ vector, index }: { vector: RiskVector; index: number }) {
             color: colors.primary,
             textShadow: `0 0 12px ${colors.glow}`,
             lineHeight: 1,
-          }}>
-            {vector.score}
+          }} data-vector-score={vector.score ?? "unavailable"}>
+            {vectorScoreText(vector.score)}
           </div>
         </div>
       </div>
@@ -338,7 +344,7 @@ function VectorCard({ vector, index }: { vector: RiskVector; index: number }) {
       <ScoreBar score={vector.score} level={vector.level} />
 
       <div style={{ marginTop: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        {vector.levelKnown !== false ? <div data-vector-level={vector.level} style={{
+        {vector.level != null ? <div data-vector-level={vector.level} style={{
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: "9px",
           color: colors.text,
@@ -350,7 +356,7 @@ function VectorCard({ vector, index }: { vector: RiskVector; index: number }) {
           textTransform: "uppercase",
         }}>
           {vector.level}
-        </div> : <div />}
+        </div> : <div data-vector-level="unavailable" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase" }}>Unavailable</div>}
         {vector.weight != null && Number.isFinite(vector.weight) && (
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.06em" }}>
             WT {Math.round(vector.weight * 100)}%
@@ -490,25 +496,25 @@ function LiquidityStressMeter({ vectors, integrityLabel }: { vectors: RiskVector
           fontFamily: "'Rajdhani', sans-serif",
           fontWeight: 900,
           fontSize: "44px",
-          color: getLevelColor(liq?.level ?? "Moderate").primary,
-          textShadow: `0 0 20px ${getLevelColor(liq?.level ?? "Moderate").glow}`,
+          color: getLevelColor(liq?.level ?? null).primary,
+          textShadow: `0 0 20px ${getLevelColor(liq?.level ?? null).glow}`,
           lineHeight: 1,
         }}>
-          {liq?.score ?? "—"}
+          {vectorScoreText(liq?.score)}
         </div>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#4B5563" }}>/100</div>
         <div style={{
           marginLeft: "auto",
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: "10px",
-          color: getLevelColor(liq?.level ?? "Moderate").text,
-          background: getLevelColor(liq?.level ?? "Moderate").bg,
-          border: `1px solid ${getLevelColor(liq?.level ?? "Moderate").primary}33`,
+          color: getLevelColor(liq?.level ?? null).text,
+          background: getLevelColor(liq?.level ?? null).bg,
+          border: `1px solid ${getLevelColor(liq?.level ?? null).primary}33`,
           borderRadius: "3px",
           padding: "2px 8px",
           letterSpacing: "0.1em",
         }}>
-          {(liq?.level ?? "MODERATE").toUpperCase()}
+          {(liq?.level ?? "Unavailable").toUpperCase()}
         </div>
       </div>
 
@@ -578,13 +584,15 @@ function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVec
   // Build ordered nodes from vectors
   const nodes = CONTAGION_ORDER.map(o => {
     const v = vectors.find(v2 => v2.id === o.id);
-    return { ...o, score: v?.score ?? 0, level: v?.level ?? ("Low" as PressureLevel), trend: v?.trend ?? "stable" as const };
+    // A missing vector stays null (shown "—", no level), never 0 / "Low".
+    return { ...o, score: v?.score ?? null, level: v?.level ?? null, trend: v?.trend ?? "stable" as const };
   });
 
-  // Contagion threshold: a node "fires" if score > 35
+  // Contagion threshold: a node "fires" if score > 35. Only scored vectors count.
   const THRESHOLD = 35;
-  const fired = nodes.filter(n => n.score > THRESHOLD);
-  const contagionPct = Math.round((fired.length / nodes.length) * 100);
+  const contagion = contagionSummary(nodes, THRESHOLD);
+  const fired = contagion.fired;
+  const contagionPct = contagion.pct ?? 0; // colour only; the text shows "—" when null
 
   return (
     <motion.div
@@ -616,7 +624,7 @@ function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVec
           textShadow: contagionPct >= 67 ? "0 0 20px rgba(255,45,85,0.5)" : contagionPct >= 33 ? "0 0 20px rgba(255,184,0,0.4)" : "0 0 20px rgba(0,255,136,0.4)",
           lineHeight: 1,
         }}>
-          {contagionPct}%
+          {contagion.pct == null ? "—" : `${contagion.pct}%`}
         </div>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#4B5563" }}>SPREAD</div>
         <div style={{
@@ -630,7 +638,7 @@ function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVec
           padding: "2px 8px",
           letterSpacing: "0.1em",
         }}>
-          {fired.length}/{nodes.length} VECTORS
+          {fired.length}/{contagion.scored} SCORED VECTORS{contagion.scored < contagion.total ? ` · ${contagion.total - contagion.scored} UNAVAILABLE` : ""}
         </div>
       </div>
 
@@ -648,7 +656,7 @@ function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVec
 
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {nodes.map((node, i) => {
-            const active = node.score > THRESHOLD;
+            const active = node.score != null && node.score > THRESHOLD;
             const nodeColor = active ? getLevelColor(node.level).primary : "#1F2937";
             const glowColor = active ? getLevelColor(node.level).glow : "transparent";
             return (
@@ -688,7 +696,7 @@ function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVec
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     {/* Mini score bar */}
                     <div style={{ width: "60px", height: "3px", background: "rgba(255,255,255,0.05)", borderRadius: "2px", overflow: "hidden" }}>
-                      <motion.div
+                      {node.score != null && <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${node.score}%` }}
                         transition={{ duration: 1, ease: [0.23, 1, 0.32, 1], delay: 0.8 + i * 0.08 }}
@@ -698,7 +706,7 @@ function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVec
                           borderRadius: "2px",
                           boxShadow: active ? `0 0 4px ${glowColor}` : "none",
                         }}
-                      />
+                      />}
                     </div>
                     <div style={{
                       fontFamily: "'IBM Plex Mono', monospace",
@@ -708,7 +716,7 @@ function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVec
                       minWidth: "24px",
                       textAlign: "right",
                     }}>
-                      {node.score}
+                      {vectorScoreText(node.score)}
                     </div>
                     <TrendIcon trend={node.trend} />
                   </div>
@@ -721,7 +729,9 @@ function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVec
 
       <div style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
         <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "10px", color: "#4B5563", lineHeight: 1.5 }}>
-          {fired.length === 0
+          {contagion.scored === 0
+            ? "Vector scores unavailable — contagion cannot be assessed."
+            : fired.length === 0
             ? "No active contagion vectors — systemic linkages contained."
             : `${fired.length} vector${fired.length > 1 ? "s" : ""} above stress threshold (35/100). Contagion risk is ${contagionPct >= 67 ? "elevated" : contagionPct >= 33 ? "moderate" : "low"}.`}
         </div>
@@ -752,9 +762,8 @@ function SnapshotPeriodView({ data }: { data: { overallPressure: number; level: 
   };
   const contextSentence = contextSentences[period];
 
-  const topVectors = [...data.vectors]
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3);
+  // Vectors without a score are not ranked (never treated as 0).
+  const topVectors = topScoredVectors(data.vectors, 3);
 
   const topAlert = data.alerts[0];
 
@@ -844,7 +853,7 @@ function SnapshotPeriodView({ data }: { data: { overallPressure: number; level: 
               const vc = getLevelColor(v.level);
               return (
                 <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: vc.primary, fontWeight: 700, minWidth: '28px' }}>{v.score}</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: vc.primary, fontWeight: 700, minWidth: '28px' }}>{vectorScoreText(v.score)}</div>
                   <div style={{ flex: 1, height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${v.score}%`, background: vc.primary, borderRadius: '2px' }} />
                   </div>
@@ -1018,10 +1027,10 @@ export default function Pressure() {
       id: engine.engineId,
       label: pressureVectorLabel(engine.engineId, engine.engineName),
       description: `Canonical engine ${engine.engineId}.`,
-      score: engine.value ?? 0,
-      // The vector's own level from its own score (engine thresholds), not the composite's.
-      level: pressureVectorLevel(engine.value) ?? "Low",
-      levelKnown: pressureVectorLevel(engine.value) != null,
+      // A missing engine value stays null to render ("—" / Unavailable), never 0.
+      score: canonicalVectorScore(engine.value),
+      // The vector's own level from its own score (engine thresholds), not the composite's; null when no score.
+      level: pressureVectorLevel(engine.value),
       driver: engine.sourceInputIds.length ? `Inputs: ${engine.sourceInputIds.join(", ")}` : "Canonical input detail unavailable.",
       trend: engine.direction === "Improving" ? "falling" : engine.direction === "Deteriorating" ? "rising" : "stable",
       // The canonical contract publishes only whether a vector contributes; the
