@@ -20,6 +20,7 @@ import { Zap, RotateCcw, AlertTriangle, TrendingUp, TrendingDown,
 } from 'lucide-react';
 import { PreflightTrigger } from '@/components/MarketPreflight';
 import { useSEO } from '@/hooks/useSEO';
+import { canonicalSummary, sandboxScoreOn100, SANDBOX_BASIS } from '@/lib/simulatePressureView';
 
 // ── Slider config ─────────────────────────────────────────────
 interface SliderConfig {
@@ -122,8 +123,8 @@ const CATEGORY_COLORS: Record<Category, string> = {
 // ── Presets ───────────────────────────────────────────────────
 const PRESETS = [
   {
-    id: 'baseline', label: 'Current Baseline', color: '#00D4FF',
-    description: 'Live market conditions as of today',
+    id: 'baseline', label: 'Example Defaults', color: '#00D4FF',
+    description: 'Reset to the fixed example inputs (not live market data)',
     overrides: {} as Partial<RawIndicators>,
   },
   {
@@ -152,19 +153,6 @@ const PRESETS = [
     overrides: { vix: 78, bankLiquidityStress: 9.8, hySpread: 1100, fedBalanceSheet: 6.0 } as Partial<RawIndicators>,
   },
 ];
-
-// ── Seeded sparkline for score history ────────────────────────
-function buildScoreHistory(score: number): { t: number; v: number }[] {
-  const points = 24;
-  const result = [];
-  let v = Math.max(1, score - 1.5);
-  const step = (score - v) / points;
-  for (let i = 0; i < points; i++) {
-    v = Math.min(10, v + step + (Math.random() - 0.48) * 0.3);
-    result.push({ t: i, v: parseFloat(v.toFixed(2)) });
-  }
-  return result;
-}
 
 // ── Tooltip style ─────────────────────────────────────────────
 const TT: React.CSSProperties = {
@@ -278,12 +266,12 @@ function PressureSlider({
 export default function SimulatePressure() {
   useSEO({
     title: "Simulate Pressure — Interactive Macro Stress-Test Engine",
-    description: "Drag live macro indicators to stress-test the global financial system. Watch FAULTLINE's pressure engine react instantly to your custom macro scenarios.",
+    description: "Drag macro indicators from fixed example inputs to stress-test a sandbox model of the financial system and see how it reacts to your custom scenarios.",
     canonical: "/simulate",
   });
   const {
     indicators, output, simulateOverrides,
-    setSimulateOverride, resetSimulation, isSimulating,
+    setSimulateOverride, resetSimulation, isSimulating, canonicalState,
   } = useEngine();
 
   const [activeCategory, setActiveCategory] = useState<Category>('all');
@@ -320,8 +308,13 @@ export default function SimulatePressure() {
     baseline: Math.max(0, d.score - Math.abs(d.delta)),
   })), [domains]);
 
-  // Score history sparkline
-  const scoreHistory = useMemo(() => buildScoreHistory(overall.score), [overall.score]);
+  // Not simulating: show the canonical Pressure Index and vectors (0–100).
+  // Simulating: show the sandbox model result on the same 0–100 scale.
+  const canonical = useMemo(() => canonicalSummary(canonicalState), [canonicalState]);
+  const showCanonical = !isSimulating && canonical.available;
+  const headlineScore = showCanonical && canonical.available ? canonical.score : isSimulating ? sandboxScoreOn100(overall.score) : null;
+  const headlineRegime = showCanonical && canonical.available ? (canonical.regime ?? '—') : isSimulating ? regime.label : '—';
+  const headlineBasis = isSimulating ? SANDBOX_BASIS : canonical.basis;
 
   const overrideCount = Object.keys(simulateOverrides).length;
 
@@ -384,13 +377,13 @@ export default function SimulatePressure() {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '14px' }}>
           <div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '3px' }}>
-              {isSimulating ? '⚡ SIMULATED REGIME' : 'CURRENT REGIME'}
+              {isSimulating ? '⚡ SIMULATED REGIME (SANDBOX)' : 'CURRENT REGIME · CANONICAL'}
             </div>
             <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color, lineHeight: 1, textShadow: `0 0 20px ${color}50` }}>
-              {regime.label}
+              {headlineRegime}
             </div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', marginTop: '2px' }}>
-              {regime.sublabel}
+            <div data-simulate-basis style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', marginTop: '2px' }}>
+              {headlineBasis}
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
@@ -398,9 +391,9 @@ export default function SimulatePressure() {
               Systemic Risk
             </div>
             <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '40px', color, lineHeight: 1, textShadow: `0 0 24px ${color}60`, transition: 'color 0.4s ease' }}>
-              {overall.score.toFixed(1)}
+              {headlineScore ?? '—'}
             </div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563' }}>/ 10.0</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563' }}>{headlineScore != null ? '/ 100' : 'Unavailable'}</div>
           </div>
         </div>
 
@@ -422,23 +415,10 @@ export default function SimulatePressure() {
           ))}
         </div>
 
-        {/* Score history sparkline */}
-        <ResponsiveContainer width="100%" height={50}>
-          <AreaChart data={scoreHistory} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id="simGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={color} stopOpacity={0.4} />
-                <stop offset="100%" stopColor={color} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <Area type="monotone" dataKey="v" stroke={color} strokeWidth={1.5} fill="url(#simGrad)" dot={false} style={{ filter: `drop-shadow(0 0 4px ${color}60)` }} />
-          </AreaChart>
-        </ResponsiveContainer>
-
-        {/* Domain radar */}
-        <div style={{ marginTop: '12px' }}>
+        {/* Domain radar: sandbox only (the browser model's domains are not the canonical vectors) */}
+        {isSimulating && <div style={{ marginTop: '12px' }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '6px' }}>
-            Domain Impact Map
+            Domain Impact Map · Sandbox
           </div>
           <ResponsiveContainer width="100%" height={180}>
             <RadarChart data={radarData} margin={{ top: 0, right: 20, left: 20, bottom: 0 }}>
@@ -448,7 +428,7 @@ export default function SimulatePressure() {
               <Radar name="Baseline" dataKey="baseline" stroke="rgba(255,255,255,0.2)" fill="none" strokeWidth={1} strokeDasharray="3 3" />
             </RadarChart>
           </ResponsiveContainer>
-        </div>
+        </div>}
 
         {isSimulating && (
           <div style={{ marginTop: '10px', padding: '8px 10px', background: 'rgba(255,149,0,0.06)', border: '1px solid rgba(255,149,0,0.2)', borderRadius: '4px' }}>
@@ -489,6 +469,11 @@ export default function SimulatePressure() {
         </div>
       )}
 
+      {/* Slider starting values are fixed example inputs, not live readings */}
+      <div data-simulate-defaults-note style={{ marginBottom: '10px', padding: '6px 10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '4px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B', lineHeight: 1.5 }}>
+        EXAMPLE DEFAULTS · NOT LIVE — sliders start from fixed example inputs (e.g. 10Y {DEFAULT_INDICATORS.yield10Y}%, 10Y–2Y {DEFAULT_INDICATORS.yieldCurveSpread} bps, HY {DEFAULT_INDICATORS.hySpread} bps, VIX {DEFAULT_INDICATORS.vix}), not current market readings. Current readings with source and as-of are on the Charts tab.
+      </div>
+
       {/* ── Category Filter ── */}
       <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '12px', animation: 'cinematic-reveal 0.6s cubic-bezier(0.23,1,0.32,1) 140ms both' }}>
         {CATEGORIES.map(cat => (
@@ -523,36 +508,48 @@ export default function SimulatePressure() {
         ))}
       </div>
 
-      {/* ── Domain Score Breakdown ── */}
+      {/* ── Score Breakdown: canonical vectors, or sandbox domains while simulating ── */}
       <div style={{ marginBottom: '16px', animation: 'cinematic-reveal 0.6s cubic-bezier(0.23,1,0.32,1) 200ms both' }}>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: '8px' }}>
-          ── Live Domain Scores ──
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: '4px' }}>
+          {isSimulating ? '── Sandbox Domain Scores ──' : '── Canonical Vector Scores ──'}
+        </div>
+        <div data-simulate-breakdown-basis style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', marginBottom: '8px' }}>
+          {isSimulating ? SANDBOX_BASIS : canonical.basis}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
-          {domains.map(d => {
-            const dc = getRiskColor(d.riskLevel);
-            return (
-              <div key={d.id} style={{ background: 'rgba(10,12,16,0.8)', border: `1px solid ${dc}18`, borderRadius: '4px', padding: '10px' }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>
-                  {d.label.replace(' Stress', '').replace(' Conditions', '').replace(' Risk', '').replace(' Pressure', '').replace(' Market', '').replace(' System', '')}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                  <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: dc, lineHeight: 1, transition: 'color 0.3s ease, text-shadow 0.3s ease', textShadow: `0 0 12px ${dc}50` }}>
-                    {d.score.toFixed(1)}
-                  </span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>/10</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: d.delta > 0 ? '#FF9500' : '#00FF88', marginLeft: 'auto' }}>
-                    {d.delta > 0 ? <TrendingUp size={8} style={{ display: 'inline' }} /> : <TrendingDown size={8} style={{ display: 'inline' }} />}
-                    {' '}{d.delta > 0 ? '+' : ''}{d.delta.toFixed(1)}
-                  </span>
-                </div>
-                {/* Score bar */}
-                <div style={{ height: '2px', background: 'rgba(255,255,255,0.06)', borderRadius: '1px', marginTop: '6px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${d.score * 10}%`, background: dc, borderRadius: '1px', transition: 'width 0.4s cubic-bezier(0.23,1,0.32,1)', boxShadow: `0 0 6px ${dc}60` }} />
-                </div>
-              </div>
-            );
-          })}
+          {isSimulating
+            ? domains.map(d => {
+                const dc = getRiskColor(d.riskLevel);
+                const v = sandboxScoreOn100(d.score);
+                return (
+                  <div key={d.id} data-sandbox-domain={d.id} style={{ background: 'rgba(10,12,16,0.8)', border: `1px solid ${dc}18`, borderRadius: '4px', padding: '10px' }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>
+                      {d.label.replace(' Stress', '').replace(' Conditions', '').replace(' Risk', '').replace(' Pressure', '').replace(' Market', '').replace(' System', '')}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                      <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: dc, lineHeight: 1 }}>{v ?? '—'}</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>/100</span>
+                    </div>
+                    <div style={{ height: '2px', background: 'rgba(255,255,255,0.06)', borderRadius: '1px', marginTop: '6px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${v ?? 0}%`, background: dc, borderRadius: '1px' }} />
+                    </div>
+                  </div>
+                );
+              })
+            : canonical.available
+              ? canonical.vectors.map(vec => (
+                  <div key={vec.id} data-canonical-vector={vec.id} style={{ background: 'rgba(10,12,16,0.8)', border: '1px solid rgba(0,212,255,0.12)', borderRadius: '4px', padding: '10px' }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>{vec.label}</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                      <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: '#00D4FF', lineHeight: 1 }}>{vec.value}</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>/100</span>
+                    </div>
+                    <div style={{ height: '2px', background: 'rgba(255,255,255,0.06)', borderRadius: '1px', marginTop: '6px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${vec.value}%`, background: '#00D4FF', borderRadius: '1px' }} />
+                    </div>
+                  </div>
+                ))
+              : <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#64748B' }}>Unavailable</div>}
         </div>
       </div>
 

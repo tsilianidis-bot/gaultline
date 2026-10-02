@@ -17,8 +17,6 @@ import {
 } from "recharts";
 import {
   Timeframe,
-  getSystemicPressureData,
-  getSystemicPressureSnapshot,
   macroChartCards,
   MacroChartCard,
   historicalOverlayScenarios,
@@ -32,6 +30,9 @@ import { useEngine } from "@/contexts/EngineContext";
 import { trpc } from "@/lib/trpc";
 import { useAppHeaderFred } from "@/hooks/useAppHeaderFred";
 import { buildChartsInstruments } from "@/lib/chartsInstrumentReadings";
+import { usePressureSnapshot } from "@/hooks/usePressureSnapshot";
+import { PRESSURE_BANDS, PRESSURE_UNAVAILABLE_COLOR } from "@/lib/pressureSnapshot";
+import { formatEt } from "@shared/credibilityLabels";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
@@ -125,115 +126,79 @@ function SectionHeader({ eyebrow, title, subtitle, color = '#00D4FF' }: {
   );
 }
 
-// ── 1. Systemic Pressure Timeline ──────────────────────────────
+// ── 1. Systemic Pressure (canonical /100) ──────────────────────
+// The composite is the canonical Pressure Index (marketState.canonicalCurrent,
+// 0–100), the same value as NOW, Pressure and the header strip, with its
+// as-of time in ET. No 0–10 engine score, no seeded timeline, no static prior.
 function SystemicPressureTimeline() {
-  const [tf, setTf] = useState<Timeframe>('1M');
-  const data = useMemo(() => getSystemicPressureData(tf), [tf]);
-  const staticSnap = useMemo(() => getSystemicPressureSnapshot(tf), [tf]);
-  // Override snapshot with live engine values when available
-  const { output, isLive } = useEngine();
-  const liveScore = parseFloat(output.overall.score.toFixed(1));
-  const snap = isLive
-    ? { ...staticSnap, current: liveScore.toFixed(1), prior: (liveScore - output.overall.delta).toFixed(1), deltaLabel: `${output.overall.delta >= 0 ? '+' : ''}${output.overall.delta.toFixed(1)}`, trend: output.overall.delta > 0.1 ? 'rising' as const : output.overall.delta < -0.1 ? 'falling' as const : 'stable' as const }
-    : staticSnap;
-  const TrendIcon = snap.trend === 'rising' ? TrendingUp : snap.trend === 'falling' ? TrendingDown : Minus;
-  const trendColor = snap.trend === 'rising' ? '#FF9500' : snap.trend === 'falling' ? '#00FF88' : '#6B7280';
+  const view = usePressureSnapshot();
+  // Freshness label = the same customer integrity label as the header chip (never a hard-coded "LIVE").
+  const { integrityLabel } = useEngine();
+  const ready = view.status === 'ready' ? view : null;
+  const color = ready ? ready.band.color : PRESSURE_UNAVAILABLE_COLOR;
+  const asOf = ready ? formatEt(ready.provenance.asOf) : null;
   return (
     <SectionCard delay={0} accentColor="rgba(255,149,0,0.25)">
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
         <div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: '3px' }}>
-            Composite Score · Live
+            Composite Score · Canonical Pressure Index
           </div>
           <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#E2E8F0', lineHeight: 1 }}>
-            Systemic Pressure Timeline
+            Systemic Pressure
           </div>
         </div>
-        <TFToggle value={tf} onChange={setTf} />
       </div>
 
-      {/* Score snapshot row */}
       <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-end', marginBottom: '14px', flexWrap: 'wrap' }}>
         <div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#6B7280', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '2px' }}>
             Current
           </div>
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '42px', color: '#FF9500', lineHeight: 1, textShadow: '0 0 24px rgba(255,149,0,0.5)' }}>
-            {snap.current}
+          <div data-charts-pressure={ready ? ready.displayScore : 'unavailable'} style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '42px', color, lineHeight: 1 }}>
+            {ready ? ready.displayScore : view.status === 'loading' ? '…' : '—'}
           </div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563', marginTop: '2px' }}>/ 10.0</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563', marginTop: '2px' }}>{ready ? '/ 100' : view.status === 'loading' ? 'Loading' : 'Unavailable'}</div>
         </div>
-        <div style={{ paddingBottom: '6px' }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#6B7280', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '2px' }}>
-            Prior ({tf})
+        {ready && (
+          <div style={{ paddingBottom: '6px' }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#6B7280', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '2px' }}>
+              Direction
+            </div>
+            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: '20px', color: '#94A3B8', lineHeight: 1 }}>
+              {ready.state.pressureDirection === 'Unknown' ? 'Unavailable' : ready.state.pressureDirection}
+            </div>
           </div>
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: '24px', color: '#94A3B8', lineHeight: 1 }}>
-            {snap.prior}
+        )}
+        {ready && (
+          <div style={{ marginLeft: 'auto', paddingBottom: '6px', textAlign: 'right' }}>
+            <div style={{
+              fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px',
+              color, background: `${color}12`, border: `1px solid ${color}30`, borderRadius: '2px',
+              padding: '3px 8px', letterSpacing: '0.1em', textTransform: 'uppercase',
+            }}>
+              ◆ {ready.regime}
+            </div>
           </div>
-        </div>
-        <div style={{ paddingBottom: '6px' }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#6B7280', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '2px' }}>
-            Delta
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <TrendIcon size={14} style={{ color: trendColor }} />
-            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: trendColor, lineHeight: 1, textShadow: `0 0 12px ${trendColor}60` }}>
-              {snap.deltaLabel}
-            </span>
-          </div>
-        </div>
-        <div style={{ marginLeft: 'auto', paddingBottom: '6px', textAlign: 'right' }}>
-          <div style={{
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px',
-            color: output.regime.color, background: `${output.regime.color}12`,
-            border: `1px solid ${output.regime.color}30`, borderRadius: '2px',
-            padding: '3px 8px', letterSpacing: '0.1em', textTransform: 'uppercase',
-          }}>
-            ◆ {output.regime.label}
-          </div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', marginTop: '4px' }}>
-            {output.regime.sublabel}
-          </div>
-        </div>
+        )}
+      </div>
+      <div data-charts-pressure-basis style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', marginBottom: '10px' }}>
+        {ready
+          ? `${integrityLabel} · Canonical Pressure Index · as of ${asOf ?? '—'} · evidence ${ready.provenance.evidenceQuality}`
+          : view.status === 'loading' ? 'Loading canonical Pressure state…' : 'Canonical Pressure state unavailable'}
       </div>
 
-      {/* Chart */}
-      <ResponsiveContainer width="100%" height={200}>
-        <AreaChart data={data} margin={{ top: 6, right: 4, left: -18, bottom: 0 }}>
-          <defs>
-            <linearGradient id="pressureGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#FF9500" stopOpacity={0.35} />
-              <stop offset="100%" stopColor="#FF9500" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-          <XAxis dataKey="date" tick={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, fill: '#4B5563' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-          <YAxis domain={[4, 10]} tick={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, fill: '#4B5563' }} tickLine={false} axisLine={false} />
-          <Tooltip contentStyle={TT} labelStyle={{ color: '#6B7280' }} formatter={(v: number) => [`${v.toFixed(2)} / 10`, 'Systemic Pressure']} />
-          {/* Danger zone reference */}
-          <ReferenceLine y={7.5} stroke="rgba(255,45,85,0.3)" strokeDasharray="4 4" label={{ value: 'DANGER', position: 'right', fill: '#FF2D55', fontSize: 8, fontFamily: "'IBM Plex Mono', monospace" }} />
-          <ReferenceLine y={6.0} stroke="rgba(255,215,0,0.2)" strokeDasharray="4 4" label={{ value: 'ELEVATED', position: 'right', fill: '#FFD700', fontSize: 8, fontFamily: "'IBM Plex Mono', monospace" }} />
-          <Area
-            type="monotone" dataKey="value" stroke="#FF9500" strokeWidth={2.5}
-            fill="url(#pressureGrad)" dot={false}
-            style={{ filter: 'drop-shadow(0 0 8px rgba(255,149,0,0.6))' }}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-
-      {/* Zone legend */}
-      <div style={{ display: 'flex', gap: '14px', marginTop: '10px', flexWrap: 'wrap' }}>
-        {[
-          { color: '#FF2D55', label: '7.5+ Danger Zone' },
-          { color: '#FF9500', label: '6.0–7.5 High Risk' },
-          { color: '#FFD700', label: '4.5–6.0 Elevated' },
-          { color: '#00FF88', label: '<4.5 Moderate' },
-        ].map(z => (
-          <div key={z.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '1px', background: z.color, opacity: 0.7 }} />
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>{z.label}</span>
+      {/* Engine bands (0–100), from the engine thresholds */}
+      <div style={{ display: 'flex', gap: '14px', marginTop: '4px', flexWrap: 'wrap' }}>
+        {PRESSURE_BANDS.map(b => (
+          <div key={b.regime} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '1px', background: b.color, opacity: 0.7 }} />
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>{b.range} {b.label}</span>
           </div>
         ))}
+      </div>
+      <div style={{ marginTop: '8px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>
+        History: <a href="/app/pressure-history" style={{ color: '#00D4FF' }}>Pressure history</a>
       </div>
     </SectionCard>
   );
