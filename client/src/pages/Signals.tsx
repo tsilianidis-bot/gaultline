@@ -871,24 +871,24 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
               color: '#00D4FF',
               border: '1px solid rgba(0,212,255,0.15)',
             }}>{stock.timeframe.toUpperCase()}</span>
-            {/* Momentum */}
-            <span style={{
+            {/* Momentum — static catalog score (signalsData.ts), not computed from the quote */}
+            <span data-catalog-static-chip="momentum" style={{
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: '9px', letterSpacing: '0.1em',
               padding: '2px 6px', borderRadius: '2px',
               background: 'rgba(100,116,139,0.06)',
               color: stock.momentum >= 70 ? '#00D4FF' : stock.momentum >= 50 ? '#FBB724' : '#FF2D55',
               border: '1px solid rgba(255,255,255,0.06)',
-            }}>MOM: {stock.momentum}</span>
-            {/* Bias */}
-            <span style={{
+            }}>Catalog · static · MOM {stock.momentum}</span>
+            {/* Bias — static catalog descriptor, not a current call */}
+            <span data-catalog-static-chip="bias" style={{
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: '9px', letterSpacing: '0.1em',
               padding: '2px 6px', borderRadius: '2px',
               background: stock.bias === 'Bullish' ? 'rgba(0,212,255,0.08)' : stock.bias === 'Bearish' ? 'rgba(255,45,85,0.08)' : 'rgba(255,215,0,0.08)',
               color: stock.bias === 'Bullish' ? '#00D4FF' : stock.bias === 'Bearish' ? '#FF2D55' : '#FFD700',
               border: `1px solid ${stock.bias === 'Bullish' ? 'rgba(0,212,255,0.2)' : stock.bias === 'Bearish' ? 'rgba(255,45,85,0.2)' : 'rgba(255,215,0,0.2)'}`,
-            }}>{stock.bias.toUpperCase()}</span>
+            }}>Catalog · static · {stock.bias.toUpperCase()}</span>
           </div>
 
           {/* Bull / Bear / Invalidation / Why FAULTLINE Likes It */}
