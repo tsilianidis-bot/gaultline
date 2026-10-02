@@ -2,11 +2,18 @@
  * Customer-facing data-integrity labels.
  * LIVE is reserved for truly live evidence. Fallback, cache, stale, and
  * unavailable states must never be presented as LIVE / MODE LIVE.
+ *
+ * Fallback / stale / delayed follow the single definition in
+ * shared/snapshotEvidence.ts: FALLBACK only when an input is on a governed
+ * fallback; STALE only when an input is past its allowed age; DELAYED when
+ * inputs carry publication lag (e.g. monthly FRED series) but are within age.
  */
+import { snapshotEvidenceCounts, type EvidenceSnapshotLike } from "./snapshotEvidence";
 
 export const CUSTOMER_INTEGRITY_LABELS = [
   "LIVE",
   "CACHED",
+  "DELAYED",
   "STALE",
   "FALLBACK",
   "UNAVAILABLE",
@@ -25,6 +32,7 @@ export type CustomerIntegrityInput = {
   fallbackActive?: boolean;
   fallbackInputCount?: number;
   staleInputCount?: number;
+  delayedInputCount?: number;
   marketMode?: string | null;
   pressureDataSource?: string | null;
 };
@@ -33,9 +41,11 @@ export type CustomerIntegrityEngineSnapshot = {
   canonicalState?: {
     confidenceOrEvidenceQuality?: string | null;
     provenance?: { coherenceStatus?: string | null };
-    dataQualitySummary?: { fallbackInputCount?: number; staleInputCount?: number };
-    fallbackInputs?: unknown[];
-    staleInputs?: unknown[];
+    dataQualitySummary?: { fallbackInputCount?: number; staleInputCount?: number; delayedInputCount?: number; unavailableInputCount?: number };
+    fallbackInputs?: string[];
+    staleInputs?: string[];
+    delayedInputs?: string[];
+    unavailableInputs?: string[];
   } | null;
   marketState?: {
     freshness?: string | null;
@@ -79,9 +89,10 @@ export function customerIntegrityLabel(input: CustomerIntegrityInput): CustomerI
   if (fred === "unavailable") return "UNAVAILABLE";
   if (input.requiredUnavailable) return "UNAVAILABLE";
 
+  // PARTIAL quality alone is not a fallback: it is caused by delayed, stale,
+  // static or optional-unavailable inputs, which are labelled below.
   const fallback =
     quality === "DEGRADED" ||
-    quality === "PARTIAL" ||
     coherence === "DEGRADED" ||
     fred === "degraded" ||
     input.fallbackActive === true ||
@@ -99,6 +110,8 @@ export function customerIntegrityLabel(input: CustomerIntegrityInput): CustomerI
 
   if (stale) return "STALE";
 
+  if ((input.delayedInputCount ?? 0) > 0 || quality === "PARTIAL") return "DELAYED";
+
   const trulyLive =
     freshness === "live" &&
     (quality === "HEALTHY" || quality === "") &&
@@ -113,6 +126,7 @@ export function customerIntegrityLabel(input: CustomerIntegrityInput): CustomerI
 export function customerIntegrityFromEngine(snapshot: CustomerIntegrityEngineSnapshot): CustomerIntegrityLabel {
   const sourceHealth = snapshot.sourceHealth ?? [];
   const fred = sourceHealth.find(source => source.id === "fred");
+  const counts = snapshotEvidenceCounts(snapshot.canonicalState);
   return customerIntegrityLabel({
     hasState: Boolean(snapshot.canonicalState || snapshot.marketState),
     freshness: snapshot.marketState?.freshness,
@@ -121,20 +135,37 @@ export function customerIntegrityFromEngine(snapshot: CustomerIntegrityEngineSna
     coherence: snapshot.canonicalState?.provenance?.coherenceStatus,
     fredStatus: fred?.status,
     requiredUnavailable: sourceHealth.some(source => source.required && source.status === "unavailable"),
-    fallbackActive: (snapshot.canonicalState?.fallbackInputs?.length ?? 0) > 0,
-    fallbackInputCount: snapshot.canonicalState?.dataQualitySummary?.fallbackInputCount
-      ?? snapshot.canonicalState?.fallbackInputs?.length
-      ?? 0,
-    staleInputCount: snapshot.canonicalState?.dataQualitySummary?.staleInputCount
-      ?? snapshot.canonicalState?.staleInputs?.length
-      ?? 0,
+    fallbackActive: counts.fallback > 0,
+    fallbackInputCount: counts.fallback,
+    staleInputCount: counts.stale,
+    delayedInputCount: counts.delayed,
     marketMode: snapshot.marketMode,
+  });
+}
+
+export type CanonicalEvidenceSnapshot = EvidenceSnapshotLike & {
+  confidenceOrEvidenceQuality?: string | null;
+  provenance?: { coherenceStatus?: string | null } | null;
+};
+
+/** Integrity label for a canonical snapshot alone (landing, worked example, Pressure Index). */
+export function customerIntegrityFromCanonical(state: CanonicalEvidenceSnapshot | null | undefined): CustomerIntegrityLabel {
+  if (!state) return "UNAVAILABLE";
+  const counts = snapshotEvidenceCounts(state);
+  return customerIntegrityLabel({
+    hasState: true,
+    quality: state.confidenceOrEvidenceQuality,
+    coherence: state.provenance?.coherenceStatus,
+    fallbackInputCount: counts.fallback,
+    staleInputCount: counts.stale,
+    delayedInputCount: counts.delayed,
   });
 }
 
 export function customerIntegrityColor(label: CustomerIntegrityLabel): string {
   if (label === "LIVE") return "#00FF88";
   if (label === "CACHED") return "#A78BFA";
+  if (label === "DELAYED") return "#7DD3FC";
   if (label === "STALE") return "#FBBF24";
   if (label === "FALLBACK") return "#FF9500";
   return "#94A3B8";
@@ -142,7 +173,7 @@ export function customerIntegrityColor(label: CustomerIntegrityLabel): string {
 
 export function customerIntegrityBadgeColor(label: CustomerIntegrityLabel): "green" | "amber" | "blue" | "gray" {
   if (label === "LIVE") return "green";
-  if (label === "CACHED") return "blue";
+  if (label === "CACHED" || label === "DELAYED") return "blue";
   if (label === "STALE" || label === "FALLBACK") return "amber";
   return "gray";
 }
@@ -150,9 +181,10 @@ export function customerIntegrityBadgeColor(label: CustomerIntegrityLabel): "gre
 /** Map integrity onto DataFreshnessChip levels. LIVE only when truly live. */
 export function customerIntegrityChipLevel(
   label: CustomerIntegrityLabel,
-): "live" | "cached" | "stale" | "fallback" | "unavailable" {
+): "live" | "cached" | "delayed" | "stale" | "fallback" | "unavailable" {
   if (label === "LIVE") return "live";
   if (label === "CACHED") return "cached";
+  if (label === "DELAYED") return "delayed";
   if (label === "STALE") return "stale";
   if (label === "FALLBACK") return "fallback";
   return "unavailable";

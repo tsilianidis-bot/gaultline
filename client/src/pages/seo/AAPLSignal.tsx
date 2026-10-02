@@ -4,18 +4,18 @@ export default function AAPLSignal() {
   return (
     <SEOLandingPage
       seo={{
-        title: "AAPL Stock Outlook: FAULTLINE's Real-time Signal & Analysis",
-        description: "Get FAULTLINE's real-time outlook for Apple (AAPL) stock, including current signal, macro sensitivity, AI exposure, and key risk factors. For market intelligence, not advice.",
+        title: "AAPL Stock Outlook: FAULTLINE's Signal & Analysis",
+        description: "Get FAULTLINE's current outlook for Apple (AAPL) stock, including current signal, macro sensitivity, AI exposure, and key risk factors. For market intelligence, not advice.",
         canonical: "/stock/aapl",
       }}
       badge="Stock Outlook"
-      headline="AAPL Stock Outlook: FAULTLINE's Real-time Signal & Analysis"
+      headline="AAPL Stock Outlook: FAULTLINE's Signal & Analysis"
       subheadline="Discover FAULTLINE's current signal for Apple (AAPL) stock, understand its macro sensitivity, AI exposure, and the factors that could shift its outlook. FAULTLINE provides market intelligence and education, not personalized financial advice."
       ctaLabel="Explore FAULTLINE for AAPL"
       ctaHref="/app"
       accentColor="#00D4FF"
       features={[
-        { icon: "◈", title: "Real-time FAULTLINE Signal for AAPL", desc: "Real-time FAULTLINE Signal for AAPL" },
+        { icon: "◈", title: "Regularly refreshed FAULTLINE Signal for AAPL", desc: "Regularly refreshed FAULTLINE Signal for AAPL" },
         { icon: "◎", title: "Macro Sensitivity Analysis", desc: "Macro Sensitivity Analysis" },
         { icon: "⬡", title: "AI Exposure & Impact Assessment", desc: "AI Exposure & Impact Assessment" },
         { icon: "◈", title: "Key Risk Factors Identified", desc: "Key Risk Factors Identified" },
@@ -25,7 +25,7 @@ export default function AAPLSignal() {
       contentSections={[
         {
           heading: "Understanding FAULTLINE's AAPL Stock Signal",
-          body: "FAULTLINE provides a dynamic, real-time signal for Apple (AAPL) stock, reflecting a comprehensive analysis of various market and fundamental factors. This signal is designed to offer a data-driven perspective on AAPL's current market posture, moving beyond simple price movements to incorporate deeper insights into underlying trends. Our methodology integrates quantitative models with qualitative assessments, ensuring a robust and nuanced outlook. The signal is continuously updated to reflect the latest market conditions, economic data, and company-specific news, offering users an up-to-the-minute view of AAPL's potential trajectory. It's a tool for understanding market dynamics, not a recommendation to buy or sell. Investors should always conduct their own due diligence and consider their personal financial situation.",
+          body: "FAULTLINE provides a dynamic, regularly refreshed signal for Apple (AAPL) stock, reflecting a comprehensive analysis of various market and fundamental factors. This signal is designed to offer a data-driven perspective on AAPL's current market posture, moving beyond simple price movements to incorporate deeper insights into underlying trends. Our methodology integrates quantitative models with qualitative assessments, ensuring a robust and nuanced outlook. The signal is continuously updated to reflect the latest market conditions, economic data, and company-specific news, offering users an up-to-the-minute view of AAPL's potential trajectory. It's a tool for understanding market dynamics, not a recommendation to buy or sell. Investors should always conduct their own due diligence and consider their personal financial situation.",
         },
         {
           heading: "Macro Sensitivity and Apple's Performance",
@@ -42,8 +42,8 @@ export default function AAPLSignal() {
       ]}
       faqs={[
         {
-          question: "What is FAULTLINE's real-time signal for AAPL stock?",
-          answer: "FAULTLINE's real-time signal for AAPL stock is a dynamic, data-driven assessment of Apple's market posture, integrating quantitative models and qualitative factors. It provides an up-to-the-minute outlook based on market conditions, economic data, and company news, designed for market intelligence and educational purposes.",
+          question: "What is FAULTLINE's regularly refreshed signal for AAPL stock?",
+          answer: "FAULTLINE's regularly refreshed signal for AAPL stock is a dynamic, data-driven assessment of Apple's market posture, integrating quantitative models and qualitative factors. It provides an up-to-the-minute outlook based on market conditions, economic data, and company news, designed for market intelligence and educational purposes.",
         },
         {
           question: "How does FAULTLINE analyze Apple's macro sensitivity?",

@@ -126,8 +126,8 @@ const INSTITUTIONAL_METRICS = [
   { id: 'transition_prec',  label: 'Transition Precision',       category: 'Regime',       value: '40.0%',  target: '> 60%',  status: 'bad',   tooltip: 'When the engine signals a regime transition, it is correct 40% of the time. High false-positive rate requires improvement in the transition detection algorithm.' },
   { id: 'transition_recall',label: 'Transition Recall',          category: 'Regime',       value: '25.0%',  target: '> 50%',  status: 'bad',   tooltip: 'The engine detects only 25% of actual regime transitions. Most transitions are missed, which is the primary calibration challenge for FMOS v1.' },
   { id: 'avg_lead_time',    label: 'Avg Lead Time',              category: 'Regime',       value: '11.6d',  target: '> 14d',  status: 'warn',  tooltip: 'Average number of days before a regime transition that the engine first signals the change. 11.6 days provides meaningful advance warning for portfolio positioning.' },
-  { id: 'backtest_obs',     label: 'Backtest Observations',      category: 'Coverage',     value: '1,902',  target: '> 1,000',status: 'good',  tooltip: '36 years of weekly observations (1990-2026) covering 6 major market crises: 1990 recession, Dot-com bubble, 2008 GFC, 2011 EU crisis, 2020 COVID, 2022 rate shock.' },
-  { id: 'regime_coverage',  label: 'Regime Coverage',            category: 'Coverage',     value: '3/5',    target: '5/5',    status: 'warn',  tooltip: 'Only 3 of 5 regime states were triggered in 36 years of backtesting. HIGH RISK and CRITICAL RISK thresholds were never breached, indicating the pressure model needs recalibration.' },
+  { id: 'backtest_obs',     label: 'Backtest Observations',      category: 'Coverage',     value: '1,902',  target: '> 1,000',status: 'good',  tooltip: 'Static Phase-2 demo: 1,902 displayed observations. The date span and values are reference data, not a verified backtest of the live engine.' },
+  { id: 'regime_coverage',  label: 'Regime Coverage',            category: 'Coverage',     value: '3/5',    target: '5/5',    status: 'warn',  tooltip: 'Only 3 of 5 regime states were triggered in the static Phase-2 demo snapshot. HIGH RISK and CRITICAL RISK thresholds were never breached, indicating the pressure model needs recalibration.' },
   { id: 'data_coverage',    label: 'Data Coverage',              category: 'Data Quality', value: '99.8%',  target: '> 95%',  status: 'good',  tooltip: 'Percentage of weekly observations with complete macro data from FRED. 99.8% coverage across 1,902 weeks demonstrates robust data pipeline reliability.' },
   { id: 'credit_coverage',  label: 'Credit Stress Coverage',     category: 'Data Quality', value: '8.1%',   target: '> 90%',  status: 'bad',   tooltip: 'CRITICAL: HY credit spread data only available for 8.1% of the backtest period due to a unit mismatch bug. FRED returns % values but the formula expects basis points, causing credit_stress scores to compute as 0 for 91.9% of observations.' },
   { id: 'evidence_families',label: 'Evidence Families',          category: 'Architecture', value: '14',     target: '14',     status: 'good',  tooltip: '14 independent evidence families covering: yield curve, credit stress, volatility, rate level, labor market, sentiment, monetary policy, fiscal policy, geopolitical risk, sector rotation, earnings quality, liquidity conditions, AI concentration, and global macro.' },
@@ -243,7 +243,7 @@ export default function ValidationLab() {
         {/* STATIC REFERENCE CARDS banner */}
         <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200 mb-4">
           <span className="font-semibold text-amber-300">STATIC REFERENCE CARDS</span>
-          {" — "}Phase-2 research snapshot metrics. Not live FMOS output and not governed MODEL_PROBABILITY.
+          {" — "}Phase-2 research snapshot metrics. Not live FMOS output, not independently validated backtesting, and not governed MODEL_PROBABILITY.
           Data class: {INSTITUTIONAL_METRICS_DATA_CLASS}.
         </div>
 
@@ -401,7 +401,7 @@ export default function ValidationLab() {
             <div className="flex items-center justify-between mb-2">
               <div>
                 <p className="text-sm font-semibold">14 Institutional Performance Metrics</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Hover any metric for a detailed explanation. Based on 1,902 weekly backtest observations (1990-2026).</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Hover any metric for a detailed explanation. Static Phase-2 demo: 1,902 displayed observations, not independently validated live-engine results.</p>
               </div>
               <div className="flex items-center gap-3 text-xs">
                 {(['good','warn','bad'] as const).map(s => (
@@ -518,7 +518,7 @@ export default function ValidationLab() {
                   <Shield className="w-4 h-4 text-primary" />
                   FRED Data Feed Status
                 </CardTitle>
-                <CardDescription className="text-xs">Real-time status of all macro data feeds powering FMOS</CardDescription>
+                <CardDescription className="text-xs">Current status of all macro data feeds powering FMOS</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">

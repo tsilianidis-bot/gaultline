@@ -61,6 +61,7 @@ export interface GovernedClaimRecord {
 
 export interface AtomicIntelligenceStateManifest {
   stateId: string;
+  originatingRunId: string;
   generatedAt: string;
   championVersion: string;
   modelVersion: string;
@@ -265,7 +266,44 @@ export function buildGovernedClaims(seismograph: SeismographOutput | null, gener
   return [...scenarioClaims, ...transitionClaims, ...analogClaims, ...patternClaims];
 }
 
-export function buildAtomicIntelligenceStateManifest({ pressure, seismograph, generatedAt = new Date().toISOString(), persistedHooks }: { pressure: FaultlinePressureOutput; seismograph: SeismographOutput | null; generatedAt?: string; persistedHooks?: { systemicRegime?: unknown; signalConvergence?: unknown } }): { manifest: AtomicIntelligenceStateManifest; claims: GovernedClaimRecord[]; inputQuality: LiveInputQualityManifestEntry[] } {
+/**
+ * Forward-evidence provenance stored inside the existing manifestJson column
+ * (no migration). Kept OUTSIDE the stateHash core so state identity semantics
+ * are unchanged. Records written by the live scheduled run are forward
+ * records (made at the time); corrections are new append-only rows that point
+ * at the original via `correctionOf`, never in-place edits.
+ */
+export interface ManifestRunProvenance {
+  recordClass: "LIVE_FORWARD_RECORD" | "LIVE_FORWARD_CORRECTION";
+  recordedAt: string;
+  originatingRunId: string;
+  codeVersion: string | null;
+  methodology: {
+    championVersion: string;
+    seismographModelVersion: string;
+    scoringVersion: string;
+    configurationVersion: string;
+    systemicRegimeModelVersion: string | null;
+    systemicRegimeModelType: string | null;
+    systemicRegimeDataAsOf: string | null;
+  };
+  inputSnapshotId: string;
+  /** Per-series provider observation dates are not exposed by the pressure engine yet. */
+  inputObservationDatesCaptured: false;
+  writePolicy: "APPEND_ONLY_INSERT_IF_ABSENT";
+  correctionOf: { stateId: string; reason: string } | null;
+}
+
+function regimeHookField(hook: unknown, key: "modelVersion" | "modelType" | "dataAsOf"): string | null {
+  if (!hook || typeof hook !== "object") return null;
+  const value = (hook as Record<string, unknown>)[key];
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+export function buildAtomicIntelligenceStateManifest({ pressure, seismograph, originatingRunId, generatedAt = new Date().toISOString(), persistedHooks, codeVersion = null, correctionOf = null }: { pressure: FaultlinePressureOutput; seismograph: SeismographOutput | null; originatingRunId: string; generatedAt?: string; persistedHooks?: { systemicRegime?: unknown; signalConvergence?: unknown }; codeVersion?: string | null; correctionOf?: { stateId: string; reason: string } | null }): { manifest: AtomicIntelligenceStateManifest; claims: GovernedClaimRecord[]; inputQuality: LiveInputQualityManifestEntry[]; runProvenance: ManifestRunProvenance } {
+  if (!originatingRunId.trim()) {
+    throw new Error("Canonical intelligence manifests require an originatingRunId");
+  }
   const inputQuality = buildLiveInputQualityManifest(pressure);
   const inputSnapshotId = `input:${sha256(inputQuality).slice(0, 32)}`;
   const claims = buildGovernedClaims(seismograph, generatedAt);
@@ -282,6 +320,7 @@ export function buildAtomicIntelligenceStateManifest({ pressure, seismograph, ge
   const engineDirections = Object.fromEntries(pressure.vectors.map(vector => [vector.id, vector.trend]));
   const scenarioOutputs: Record<string, number> = seismograph ? { bull: seismograph.probabilities.bull, neutral: seismograph.probabilities.neutral, bear: seismograph.probabilities.bear } : {};
   const core = {
+    originatingRunId,
     championVersion: CHAMPION_V1_GOVERNANCE_VERSION,
     modelVersion: seismograph?.version ?? "seismograph-unavailable",
     scoringVersion: "faultline-pressure-v1-frozen",
@@ -327,7 +366,26 @@ export function buildAtomicIntelligenceStateManifest({ pressure, seismograph, ge
     ...core,
     stateHash,
   };
-  return { manifest, claims, inputQuality };
+  const runProvenance: ManifestRunProvenance = {
+    recordClass: correctionOf ? "LIVE_FORWARD_CORRECTION" : "LIVE_FORWARD_RECORD",
+    recordedAt: generatedAt,
+    originatingRunId,
+    codeVersion: codeVersion && codeVersion.trim() ? codeVersion.trim() : null,
+    methodology: {
+      championVersion: core.championVersion,
+      seismographModelVersion: core.modelVersion,
+      scoringVersion: core.scoringVersion,
+      configurationVersion: core.configurationVersion,
+      systemicRegimeModelVersion: regimeHookField(persistedHooks?.systemicRegime, "modelVersion"),
+      systemicRegimeModelType: regimeHookField(persistedHooks?.systemicRegime, "modelType"),
+      systemicRegimeDataAsOf: regimeHookField(persistedHooks?.systemicRegime, "dataAsOf"),
+    },
+    inputSnapshotId,
+    inputObservationDatesCaptured: false,
+    writePolicy: "APPEND_ONLY_INSERT_IF_ABSENT",
+    correctionOf: correctionOf ?? null,
+  };
+  return { manifest, claims, inputQuality, runProvenance };
 }
 
 export async function persistAtomicIntelligenceStateManifest(result: ReturnType<typeof buildAtomicIntelligenceStateManifest>): Promise<{ stateId: string; created: boolean; claimsCreated: number }> {
@@ -337,6 +395,7 @@ export async function persistAtomicIntelligenceStateManifest(result: ReturnType<
   if (existing[0]) return { stateId: result.manifest.stateId, created: false, claimsCreated: 0 };
   await db.insert(intelligenceStateManifests).values({
     stateId: result.manifest.stateId,
+    originatingRunId: result.manifest.originatingRunId,
     generatedAt: new Date(result.manifest.generatedAt),
     championVersion: result.manifest.championVersion,
     modelVersion: result.manifest.modelVersion,
@@ -345,7 +404,7 @@ export async function persistAtomicIntelligenceStateManifest(result: ReturnType<
     inputSnapshotId: result.manifest.inputSnapshotId,
     stateHash: result.manifest.stateHash,
     coherenceStatus: result.manifest.coherenceStatus,
-    manifestJson: JSON.stringify({ ...result.manifest, inputQuality: result.inputQuality }),
+    manifestJson: JSON.stringify({ ...result.manifest, inputQuality: result.inputQuality, ...(result.runProvenance ? { runProvenance: result.runProvenance } : {}) }),
   });
   if (result.claims.length) {
     await db.insert(governedIntelligenceClaims).values(result.claims.map(claim => ({

@@ -4,18 +4,18 @@ const CreditMarketStress = () => {
   return (
     <SEOLandingPage
       seo={{
-        title: "Credit Market Stress Index: Real-time Monitoring & Analysis",
-        description: "Monitor real-time credit market stress with FAULTLINE. Analyze high-yield spreads, investment grade spreads, and credit conditions. Understand historical equity market dislocations.",
+        title: "Credit Market Stress Index: Monitoring & Analysis",
+        description: "Monitor credit market stress with FAULTLINE. Analyze high-yield spreads, investment grade spreads, and credit conditions. Understand historical equity market dislocations.",
         canonical: "/credit-market-stress",
       }}
       badge="Market Intelligence"
       headline="Credit Market Stress Index: Uncover Early Warning Signs"
-      subheadline="Real-time monitoring of credit spreads and credit conditions to anticipate equity market dislocations."
+      subheadline="Regularly refreshed monitoring of credit spreads and credit conditions to anticipate equity market dislocations."
       ctaLabel="Explore FAULTLINE Credit Insights"
       ctaHref="/faultline-platform"
       accentColor="#FF4444"
       features={[
-        { icon: "◈", title: "Real-time High-Yield Spread Tracking", desc: "Real-time High-Yield Spread Tracking" },
+        { icon: "◈", title: "Regularly refreshed High-Yield Spread Tracking", desc: "Regularly refreshed High-Yield Spread Tracking" },
         { icon: "◎", title: "Investment Grade Spread Analysis", desc: "Investment Grade Spread Analysis" },
         { icon: "⬡", title: "Credit Conditions Tightening Indicators", desc: "Credit Conditions Tightening Indicators" },
         { icon: "◈", title: "Historical Dislocation Precursors", desc: "Historical Dislocation Precursors" },
@@ -25,10 +25,10 @@ const CreditMarketStress = () => {
       contentSections={[
         {
           heading: "Understanding the Credit Market Stress Index",
-          body: `The **Credit Market Stress Index** is a proprietary FAULTLINE metric designed to provide a real-time pulse on the health and stability of global credit markets. It synthesizes data from various credit instruments, with a particular focus on high-yield and investment-grade corporate bond spreads. A rising index indicates increasing stress, signaling that investors are demanding higher compensation for lending to corporations, often due to heightened perceived risk. Conversely, a falling index suggests improving credit conditions and reduced risk aversion. FAULTLINE's index offers a comprehensive view, moving beyond simple spread analysis to incorporate a broader range of credit market indicators, providing a nuanced understanding of underlying systemic pressures. This index serves as a critical early warning system for potential market turbulence, as credit market dislocations frequently precede broader economic downturns and equity market corrections. It's a vital tool for understanding the current financial landscape and anticipating future shifts.`,
+          body: `The **Credit Market Stress Index** is a proprietary FAULTLINE metric designed to provide a regularly refreshed pulse on the health and stability of global credit markets. It synthesizes data from various credit instruments, with a particular focus on high-yield and investment-grade corporate bond spreads. A rising index indicates increasing stress, signaling that investors are demanding higher compensation for lending to corporations, often due to heightened perceived risk. Conversely, a falling index suggests improving credit conditions and reduced risk aversion. FAULTLINE's index offers a comprehensive view, moving beyond simple spread analysis to incorporate a broader range of credit market indicators, providing a nuanced understanding of underlying systemic pressures. This index serves as a critical early warning system for potential market turbulence, as credit market dislocations frequently precede broader economic downturns and equity market corrections. It's a vital tool for understanding the current financial landscape and anticipating future shifts.`,
         },
         {
-          heading: "FAULTLINE's Real-time Credit Market Rating & Historical Context",
+          heading: "FAULTLINE's Credit Market Rating & Historical Context",
           body: `Currently, the FAULTLINE Credit Market Stress Index indicates a **Moderate Stress** level, reflecting a cautious but not yet alarming environment. This rating is primarily driven by a gradual widening in specific segments of the high-yield market, coupled with some tightening in lending standards observed in recent economic reports. Historically, similar periods of moderate stress have often served as inflection points, sometimes resolving benignly and other times escalating into more severe dislocations. For instance, during the lead-up to the 2008 financial crisis, credit spreads widened dramatically over an extended period, whereas the COVID-19 shock in 2020 saw an abrupt, sharp spike. What has changed recently is the persistence of inflation and the subsequent aggressive monetary policy tightening, which is now visibly impacting corporate borrowing costs and debt servicing capabilities. This contrasts with periods of stress driven purely by idiosyncratic corporate defaults or geopolitical events. Understanding these nuances is crucial for interpreting the current outlook.`,
         },
         {
@@ -55,7 +55,7 @@ const CreditMarketStress = () => {
         },
         {
           question: "How can FAULTLINE help me monitor credit risk?",
-          answer: "FAULTLINE's Credit Market Stress Index provides real-time data and analysis on credit spreads, lending conditions, and historical patterns. Our platform helps you identify early warning signs of market dislocations and understand the drivers of credit market movements.",
+          answer: "FAULTLINE's Credit Market Stress Index provides regularly refreshed data and analysis on credit spreads, lending conditions, and historical patterns. Our platform helps you identify early warning signs of market dislocations and understand the drivers of credit market movements.",
         },
         {
           question: "Is FAULTLINE's Credit Market Stress Index a predictive tool?",
@@ -63,7 +63,7 @@ const CreditMarketStress = () => {
         },
         {
           question: "What data sources does FAULTLINE use for its Credit Market Stress Index?",
-          answer: "FAULTLINE's index incorporates a diverse range of data sources, including real-time pricing from corporate bond markets (both high-yield and investment-grade), credit default swap (CDS) data, interbank lending rates, and other proprietary indicators of market liquidity and risk appetite.",
+          answer: "FAULTLINE's index incorporates a diverse range of data sources, including published spread data for corporate bond markets (both high-yield and investment-grade), credit default swap (CDS) data, interbank lending rates, and other proprietary indicators of market liquidity and risk appetite.",
         },
       ]}
       internalLinks={[

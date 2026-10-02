@@ -15,7 +15,7 @@ export default function CryptoSignalsIntelligence() {
       ctaHref="/app/crypto"
       accentColor="#F7931A"
       features={[
-        { icon: "◈", title: "BTC Dominance Tracking", desc: "Monitor Bitcoin dominance cycles in real time. Know when capital is rotating into altcoins before the move is obvious." },
+        { icon: "◈", title: "BTC Dominance Tracking", desc: "Monitor Bitcoin dominance cycles as new data is published. Know when capital is rotating into altcoins before the move is obvious." },
         { icon: "◎", title: "Altcoin Rotation Intelligence", desc: "Identify which altcoin sectors are leading the current rotation — AI tokens, DeFi, Layer-2, gaming, or memes." },
         { icon: "⬡", title: "Macro Regime Alignment", desc: "Each crypto signal classified against the live macro regime. Risk-on vs. risk-off conditions change everything in crypto." },
         { icon: "◈", title: "Liquidity Sensitivity Scoring", desc: "Crypto is the most liquidity-sensitive asset class. FAULTLINE flags which coins are most exposed to liquidity withdrawal." },
@@ -31,7 +31,7 @@ FAULTLINE crypto signals are built on the same macro foundation as stock signals
         },
         {
           heading: "Understanding the Altcoin Rotation Cycle",
-          body: `The crypto market follows a predictable rotation cycle that FAULTLINE tracks in real time:
+          body: `The crypto market follows a predictable rotation cycle that FAULTLINE tracks as new data is published:
 
 Phase 1 — BTC Accumulation: Bitcoin dominance rises as capital concentrates in the safest crypto asset. Altcoins underperform. This phase typically follows a macro stress event or crypto-specific shock.
 
@@ -69,7 +69,7 @@ Each asset is scored for momentum, macro alignment, liquidity sensitivity, and s
         },
         {
           question: "Are crypto signals available on the free tier?",
-          answer: "FAULTLINE offers limited crypto signal previews on the free tier. Full access to all tracked assets, altcoin rotation intelligence, and real-time macro-aligned signals requires a Trader or Power subscription.",
+          answer: "FAULTLINE offers limited crypto signal previews on the free tier. Full access to all tracked assets, altcoin rotation intelligence, and regularly refreshed macro-aligned signals requires a Trader or Power subscription.",
         },
         {
           question: "How does FAULTLINE handle crypto market volatility?",

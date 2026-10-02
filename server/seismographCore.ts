@@ -54,7 +54,7 @@ export function deriveProviderProvenance(
     return {
       fred: {
         status: "live",
-        detail: "Live FRED macro and credit observations contributed through the pressure engine.",
+        detail: "FRED macro and credit observations (latest published releases) contributed through the pressure engine.",
         asOf: pressurePacket?.timestamp ?? computedAt,
       },
     };

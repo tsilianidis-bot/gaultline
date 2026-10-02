@@ -20,7 +20,7 @@ function source(overrides: Partial<CanonicalMarketStateSource> = {}): CanonicalM
     providerProvenance: {
       fred: {
         status: "live",
-        detail: "Live FRED macro and credit observations contributed through the pressure engine.",
+        detail: "FRED macro and credit observations (latest published releases) contributed through the pressure engine.",
         asOf: Date.parse("2026-07-23T12:00:00.000Z"),
       },
     },

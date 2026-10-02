@@ -8,19 +8,19 @@ const IWMSignal = () => {
     <SEOLandingPage
       seo={{
         title: "IWM Outlook & Signal | Russell 2000 ETF Analysis - FAULTLINE",
-        description: "Get FAULTLINE's real-time outlook for IWM (Russell 2000 ETF). Analyze current signal, regime fit, credit sensitivity, and recession risk impact on small caps.",
+        description: "Get FAULTLINE's current outlook for IWM (Russell 2000 ETF). Analyze current signal, regime fit, credit sensitivity, and recession risk impact on small caps.",
         canonical: "/stock/iwm",
       }}
       badge="STOCK"
-      headline="IWM Outlook: FAULTLINE's Real-Time Signal for Russell 2000 Small Caps"
+      headline="IWM Outlook: FAULTLINE's Signal for Russell 2000 Small Caps"
       subheadline="Uncover the current signal, regime fit, credit sensitivity, and recession risk impact on the iShares Russell 2000 ETF (IWM)."
       ctaLabel="Explore IWM on FAULTLINE"
       ctaHref="/app"
       accentColor="#00FF88"
       features={[
-        { icon: "◈", title: "Real-Time IWM Signal", desc: "FAULTLINE's real-time signal and outlook for IWM — the Russell 2000 small-cap ETF." },
+        { icon: "◈", title: "Regularly Refreshed IWM Signal", desc: "FAULTLINE's regularly refreshed signal and outlook for IWM — the Russell 2000 small-cap ETF." },
         { icon: "◎", title: "Market Regime Fit", desc: "In-depth market regime fit analysis for small-cap stocks in the current environment." },
-        { icon: "⬡", title: "Credit Sensitivity", desc: "Small-cap stocks are highly sensitive to credit conditions — FAULTLINE tracks this in real time." },
+        { icon: "⬡", title: "Credit Sensitivity", desc: "Small-cap stocks are highly sensitive to credit conditions — FAULTLINE tracks this as new data is published." },
         { icon: "◈", title: "Recession Risk Impact", desc: "Recession risk impact on Russell 2000 — small-caps are the most sensitive to economic slowdowns." },
         { icon: "◎", title: "Historical Performance", desc: "Historical performance of IWM across different macro regimes and Pressure Index levels." },
         { icon: "⬡", title: "Relative Strength vs Large-Cap", desc: "IWM vs SPY relative performance — when do small-caps outperform and why?" },
@@ -31,8 +31,8 @@ const IWMSignal = () => {
           body: `The iShares Russell 2000 ETF (IWM) is a widely followed benchmark for small-capitalization U.S. equities. It tracks the Russell 2000 Index, which comprises the smallest 2,000 companies in the broader Russell 3000 Index. Small-cap stocks are often seen as a bellwether for the domestic economy, as they tend to be more sensitive to U.S. economic conditions than their large-cap counterparts. Their performance can offer insights into investor sentiment regarding growth prospects, inflation, and interest rates. FAULTLINE provides a dynamic outlook for IWM, integrating various market intelligence factors to assess its current trajectory and potential risks. This includes analyzing its sensitivity to credit conditions, its fit within prevailing market regimes, and the specific impact of recessionary pressures on this crucial segment of the market. Understanding these dynamics is key for investors seeking to navigate the complexities of small-cap investing.`,
         },
         {
-          heading: "FAULTLINE's Real-Time Signal for IWM",
-          body: `FAULTLINE's proprietary system generates a real-time signal for IWM, offering a data-driven perspective on its current market positioning. This signal is not a static recommendation but a dynamic assessment derived from a confluence of macroeconomic indicators, technical analysis, and behavioral finance metrics. We evaluate how well IWM's current performance aligns with the prevailing market regime – whether it's a growth, inflation, or deflationary environment. Furthermore, given small caps' inherent sensitivity to credit markets, FAULTLINE meticulously tracks credit spreads and liquidity conditions to gauge potential headwinds or tailwinds. This comprehensive approach helps users understand the 'why' behind the signal, providing context beyond simple price movements and enabling more informed decision-making in a rapidly evolving market landscape.`,
+          heading: "FAULTLINE's Signal for IWM",
+          body: `FAULTLINE's proprietary system generates a regularly refreshed signal for IWM, offering a data-driven perspective on its current market positioning. This signal is not a static recommendation but a dynamic assessment derived from a confluence of macroeconomic indicators, technical analysis, and behavioral finance metrics. We evaluate how well IWM's current performance aligns with the prevailing market regime – whether it's a growth, inflation, or deflationary environment. Furthermore, given small caps' inherent sensitivity to credit markets, FAULTLINE meticulously tracks credit spreads and liquidity conditions to gauge potential headwinds or tailwinds. This comprehensive approach helps users understand the 'why' behind the signal, providing context beyond simple price movements and enabling more informed decision-making in a rapidly evolving market landscape.`,
         },
         {
           heading: "Recession Risk and Credit Sensitivity for Small Caps",
@@ -40,7 +40,7 @@ const IWMSignal = () => {
         },
         {
           heading: "What Would Change the IWM Outlook?",
-          body: `FAULTLINE's outlook for IWM is continuously updated, reflecting the dynamic nature of financial markets. Several key conditions could significantly alter the current signal and future trajectory. A material shift in the Federal Reserve's monetary policy stance, particularly regarding interest rates or quantitative easing, would have a profound impact on small-cap financing and growth. Significant changes in credit market conditions, such as a sharp widening or tightening of credit spreads, would also be a critical factor. Furthermore, a clear inflection point in economic data, indicating either a stronger-than-expected recovery or a deeper recession, would necessitate a re-evaluation. FAULTLINE's framework is designed to identify these pivotal shifts, providing users with timely updates and analysis on 'what changed' and 'why it matters' for their IWM positions. This ensures that the outlook remains relevant and actionable in real-time.`,
+          body: `FAULTLINE's outlook for IWM is continuously updated, reflecting the dynamic nature of financial markets. Several key conditions could significantly alter the current signal and future trajectory. A material shift in the Federal Reserve's monetary policy stance, particularly regarding interest rates or quantitative easing, would have a profound impact on small-cap financing and growth. Significant changes in credit market conditions, such as a sharp widening or tightening of credit spreads, would also be a critical factor. Furthermore, a clear inflection point in economic data, indicating either a stronger-than-expected recovery or a deeper recession, would necessitate a re-evaluation. FAULTLINE's framework is designed to identify these pivotal shifts, providing users with timely updates and analysis on 'what changed' and 'why it matters' for their IWM positions. This ensures that the outlook remains relevant and actionable as new data is published.`,
         },
       ]}
       faqs={[
@@ -54,7 +54,7 @@ const IWMSignal = () => {
         },
         {
           question: "How does FAULTLINE assess the IWM outlook?",
-          answer: "FAULTLINE uses a multi-faceted approach, analyzing real-time market data, macroeconomic indicators, credit market conditions, and market regime fit. This comprehensive analysis generates a dynamic signal and outlook for IWM, highlighting key risks and opportunities.",
+          answer: "FAULTLINE uses a multi-faceted approach, analyzing regularly refreshed market data, macroeconomic indicators, credit market conditions, and market regime fit. This comprehensive analysis generates a dynamic signal and outlook for IWM, highlighting key risks and opportunities.",
         },
         {
           question: "What is 'credit sensitivity' in the context of IWM?",

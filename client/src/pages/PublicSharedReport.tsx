@@ -267,11 +267,11 @@ export default function PublicSharedReport() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-zinc-400 leading-relaxed">
-              This is a snapshot shared by a subscriber. The live FAULTLINE platform gives you real-time market pressure readings, AI-powered signal intelligence, crypto regime analysis, and shareable reports — updated continuously.
+              This is a snapshot shared by a subscriber. The live FAULTLINE platform gives you regularly refreshed market pressure readings, AI-powered signal intelligence, crypto regime analysis, and shareable reports — updated continuously.
             </p>
             <div className="grid grid-cols-2 gap-2 text-xs text-zinc-400">
               {[
-                "Real-time FAULTLINE Pressure Index",
+                "Regularly refreshed FAULTLINE Pressure Index",
                 "Stock & Crypto Signal Intelligence",
                 "AI Diagnostic Reports",
                 "Market Preflight Checklist",

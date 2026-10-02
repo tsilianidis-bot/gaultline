@@ -16,8 +16,8 @@ export default function BestStockMarketRiskDashboard() {
       accentColor="#FF4444"
       features={[
         { icon: "◈", title: "Systemic Pressure Score", desc: "A single 0-100 score aggregating credit spreads, VIX regime, yield curve, liquidity, AI concentration, recession probability, and breadth." },
-        { icon: "◎", title: "Regime Classification", desc: "Real-time classification of the current market regime — bull, bear, risk-on, risk-off, late-cycle — updated continuously." },
-        { icon: "⬡", title: "Credit Spread Monitoring", desc: "High-yield and investment-grade credit spreads are the earliest institutional signal of systemic stress. Track them in real time." },
+        { icon: "◎", title: "Regime Classification", desc: "Regularly refreshed classification of the current market regime — bull, bear, risk-on, risk-off, late-cycle — updated continuously." },
+        { icon: "⬡", title: "Credit Spread Monitoring", desc: "High-yield and investment-grade credit spreads are the earliest institutional signal of systemic stress. Track them as new data is published." },
         { icon: "◈", title: "Liquidity Conditions", desc: "Fed QT, bank lending tightening, and global liquidity withdrawal are the mechanism behind most major market dislocations." },
         { icon: "◎", title: "Historical Analog Matching", desc: "Compare current conditions against historical periods to understand which past environment today most resembles." },
         { icon: "⬡", title: "No Login Required for Core Data", desc: "The FAULTLINE Pressure Index — the core risk score — is publicly accessible. No credit card required." },
@@ -43,7 +43,7 @@ Historical context transforms raw data into actionable intelligence. Knowing tha
           heading: "How FAULTLINE Approaches Market Risk",
           body: `FAULTLINE is not a charting tool, a stock screener, or a news aggregator. It is a market condition and systemic-risk intelligence platform designed to answer one question: what is building beneath the surface of the market?
 
-The Pressure Index aggregates seven risk vectors into a single score updated continuously throughout the trading day. The regime engine classifies the current market environment and compares it to historical analogs. The liquidity monitor tracks Fed QT, bank lending conditions, and global liquidity flows. The credit monitor tracks high-yield and investment-grade spread dynamics in real time.
+The Pressure Index aggregates seven risk vectors into a single score recalculated as new data is published. The regime engine classifies the current market environment and compares it to historical analogs. The liquidity monitor tracks Fed QT, bank lending conditions, and global liquidity flows. The credit monitor tracks high-yield and investment-grade spread dynamics as new data is published.
 
 Every reading is contextualized against history. When the Pressure Index enters HIGH STRESS territory, FAULTLINE shows which historical periods had similar readings and what happened next — not as a prediction, but as a probability distribution based on historical precedent. This is what separates a genuine risk intelligence platform from a dashboard that simply displays today's numbers.`,
         },
@@ -67,7 +67,7 @@ Every reading is contextualized against history. When the Pressure Index enters 
         },
         {
           question: "How often is FAULTLINE's risk dashboard updated?",
-          answer: "FAULTLINE's Pressure Index updates continuously throughout the trading day as new data arrives from FRED, Polygon.io, and market data feeds. Credit spread data, VIX levels, and market breadth indicators are refreshed in near real-time. Economic data from FRED updates on its standard release schedule.",
+          answer: "FAULTLINE's Pressure Index is recalculated as new data is published by FRED, Polygon.io, and market data feeds. Credit spread data, VIX levels, and market breadth indicators are refreshed in near regularly refreshed. Economic data from FRED updates on its standard release schedule.",
         },
         {
           question: "Is FAULTLINE financial advice?",
@@ -76,7 +76,7 @@ Every reading is contextualized against history. When the Pressure Index enters 
       ]}
       internalLinks={[
         { label: "PRESSURE INDEX", href: "/pressure-index", desc: "The core systemic risk score — 7 vectors aggregated into a single 0-100 reading." },
-        { label: "MARKET REGIME TRACKER", href: "/market-regime-tracker", desc: "Real-time classification of the current market regime." },
+        { label: "MARKET REGIME TRACKER", href: "/market-regime-tracker", desc: "Regularly refreshed classification of the current market regime." },
         { label: "DAILY BRIEF", href: "/daily-brief", desc: "Today's market conditions, key drivers, and risk assessment." },
         { label: "CREDIT MARKET STRESS", href: "/credit-market-stress", desc: "High-yield and investment-grade credit spread monitoring." },
         { label: "LIQUIDITY MONITOR", href: "/liquidity-monitor", desc: "Track liquidity withdrawal — the mechanism behind market crashes." },

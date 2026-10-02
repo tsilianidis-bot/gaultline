@@ -10,14 +10,23 @@
  *
  * TIER NAMES (as of July 2026):
  * - free     → "Free"           — existing free daily market awareness
- * - core     → "Trader"         — core market intelligence ($59/mo)
- * - premium  → "Power"          — deepest professional toolset ($99/mo)
- * - founding → "Founding"       — rate locked for life ($49/mo)
+ * - core     → "Trader"         — core market intelligence
+ * - premium  → "Power"          — deepest professional toolset
+ * - founding → "Founding"       — founding membership
  *
  * PRICING NOTE:
- * - The `founding` plan is a monthly subscription at $49/mo locked for life.
- * - The `lifetime` plan is a one-time payment of $299.
+ * - Paid plans are NOT on sale. Every user-facing price string (`priceLabel`)
+ *   reads PLAN_NOT_ON_SALE_LABEL and upgrade-to-buy CTAs are hidden while
+ *   PAID_PLANS_ON_SALE is false. This is display-only: `amountCents`, plan IDs,
+ *   `available`, tier gating and the Stripe verification path are unchanged.
  */
+
+/** Display-only switch: paid plans are not on sale. Does not affect checkout logic. */
+export const PAID_PLANS_ON_SALE: boolean = false;
+/** Short label shown wherever a plan price used to be displayed. */
+export const PLAN_NOT_ON_SALE_LABEL = 'Not on sale yet';
+/** Sentence used in app/email/chat copy while paid plans are not on sale. */
+export const PAID_PLANS_NOT_ON_SALE_COPY = 'Paid plans are not on sale yet.';
 
 // ─── Canonical Access Tier IDs ────────────────────────────────────────────────
 // These match the `accessTier` enum in drizzle/schema.ts and server/db.ts.
@@ -147,14 +156,14 @@ export const TIER_META: Record<AccessTier, TierMeta> = {
     id: 'founding',
     label: 'FOUNDING',
     displayName: 'Founding',
-    sublabel: 'Early Institutional Access — Rate Locked Forever',
-    description: 'Everything in Pro at the founding rate. Locked forever. Never increases. Limited cohort.',
+    sublabel: 'Founding Access',
+    description: 'Everything in Pro. Founding membership is not on sale yet.',
     color: '#FFD700',
     glow: 'rgba(255,215,0,0.2)',
     border: 'rgba(255,215,0,0.4)',
     features: [
       { label: 'Everything in Pro', available: true },
-      { label: 'Founding rate $49/mo — locked for life', available: true },
+      { label: 'Founding membership — not on sale yet', available: true },
       { label: 'Founding member badge', available: true },
       { label: 'Future feature grandfathering', available: true },
       { label: 'Roadmap previews & early beta', available: true },
@@ -174,7 +183,7 @@ export interface PricingPlan {
   name: string;
   /** Price in cents */
   amountCents: number;
-  /** Human-readable price string (e.g. "$9.99/mo") */
+  /** User-facing price string. PLAN_NOT_ON_SALE_LABEL while paid plans are not on sale. */
   priceLabel: string;
   /** Billing interval */
   interval: 'month' | 'year' | 'one_time';
@@ -190,7 +199,7 @@ export const PRICING_PLANS: Record<StripePlanId, PricingPlan> = {
     tier: 'core',
     name: 'FAULTLINE Trader',
     amountCents: 5900,
-    priceLabel: '$59/mo',
+    priceLabel: PLAN_NOT_ON_SALE_LABEL,
     interval: 'month',
     description: 'Core market intelligence, monitoring, signals, watch tools, interpretation, and decision support.',
     available: true,
@@ -210,7 +219,7 @@ export const PRICING_PLANS: Record<StripePlanId, PricingPlan> = {
     tier: 'premium',
     name: 'FAULTLINE Power',
     amountCents: 9900,
-    priceLabel: '$99/mo',
+    priceLabel: PLAN_NOT_ON_SALE_LABEL,
     interval: 'month',
     description: 'Advanced analysis, expanded research capabilities, and the full professional FAULTLINE toolset.',
     available: true,
@@ -230,9 +239,9 @@ export const PRICING_PLANS: Record<StripePlanId, PricingPlan> = {
     tier: 'founding',
     name: 'FAULTLINE Founding Member',
     amountCents: 4900,
-    priceLabel: '$49/mo (locked while active)',
+    priceLabel: PLAN_NOT_ON_SALE_LABEL,
     interval: 'month',
-    description: 'Founding member rate — $49/month locked while membership remains active.',
+    description: 'Founding membership. Not on sale yet.',
     available: true,
   },
   lifetime: {
@@ -240,7 +249,7 @@ export const PRICING_PLANS: Record<StripePlanId, PricingPlan> = {
     tier: 'founding',
     name: 'FAULTLINE Founding Lifetime (Legacy)',
     amountCents: 29900,
-    priceLabel: '$299 one-time',
+    priceLabel: PLAN_NOT_ON_SALE_LABEL,
     interval: 'one_time',
     description: 'One-time payment — full founding access forever. No monthly charges, no renewals.',
     available: false,
@@ -334,7 +343,7 @@ export const MARKETING_TIER_CARDS: MarketingTierCard[] = [
     price: PRICING_PLANS.core.priceLabel,
     tagline: 'The primary full investor experience',
     color: '#22D3EE',
-    badge: 'MOST POPULAR',
+    badge: 'NOT ON SALE YET',
     features: [
       'Unlimited Ask Intelligence',
       'Complete Symbol Intelligence',
@@ -346,7 +355,7 @@ export const MARKETING_TIER_CARDS: MarketingTierCard[] = [
       'Advanced Alerts & Trade Journal',
       'Full Daily Intelligence Report',
     ],
-    ctaLabel: 'GET TRADER',
+    ctaLabel: 'NOT ON SALE YET',
   },
   {
     tier: 'premium',
@@ -355,7 +364,7 @@ export const MARKETING_TIER_CARDS: MarketingTierCard[] = [
     price: PRICING_PLANS.premium.priceLabel,
     tagline: 'The deepest advanced intelligence experience',
     color: '#00D4FF',
-    badge: 'INSTITUTIONAL',
+    badge: 'NOT ON SALE YET',
     features: [
       'Everything in Trader',
       'Situation Room',
@@ -367,23 +376,22 @@ export const MARKETING_TIER_CARDS: MarketingTierCard[] = [
       'Advanced probability models',
       'Full Crypto Intelligence suite',
     ],
-    ctaLabel: 'GET POWER',
+    ctaLabel: 'NOT ON SALE YET',
   },
   {
     tier: 'founding',
     planId: 'founding',
     marketingName: 'Founding Member',
     price: PRICING_PLANS.founding.priceLabel,
-    tagline: 'Rate locked for life',
+    tagline: 'Founding membership',
     color: '#FFD700',
-    badge: 'LIMITED',
+    badge: 'NOT ON SALE YET',
     features: [
       'Everything in Power',
-      'Rate locked forever',
       'Founding member badge',
       'Future feature grandfathering',
       'Early beta access',
     ],
-    ctaLabel: 'LOCK IN FOUNDER RATE',
+    ctaLabel: 'NOT ON SALE YET',
   },
 ];

@@ -6,10 +6,10 @@
    ============================================================ */
 import { useState, useEffect, useRef, useMemo } from "react";
 import { TrendingUp, TrendingDown, Minus, Share2, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
-import { metrics, MetricCard } from "@/lib/data";
 import { useEngine } from "@/contexts/EngineContext";
+import { useLiveIndicatorReadings } from "@/hooks/useLiveIndicatorReadings";
+import { evaluableIndicatorValues, type IndicatorReading } from "@/lib/liveIndicatorReadings";
 import { getRiskColor } from "@/components/RiskBadge";
-import { LineChart, Line, ResponsiveContainer } from "recharts";
 import DataIntegrity from "@/components/DataIntegrity";
 import HomeCryptoSection from "@/components/HomeCryptoSection";
 import WaitlistSection from "@/components/WaitlistSection";
@@ -40,7 +40,7 @@ import { SectionErrorBoundary } from "@/components/ErrorBoundary";
 import AshaOrb, { AshaRegimeState } from "@/components/AshaOrb";
 import SeismicWaveShared from "@/components/SeismicWave";
 import { Activity } from "lucide-react";
-import { PageDegradedBanner } from "@/components/PageStateViews";
+import { PageDegradedBanner, PageLoadingState } from "@/components/PageStateViews";
 import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
 type DashboardMode = "pulse" | "signals" | "intelligence";
 
@@ -81,20 +81,6 @@ function DashboardUpgradePrompt() {
 }
 
 const HERO_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663562889431/oAHJBBc62GHpVJwTBFZPAm/faultline-hero-bg-5aiJwmUWM5RkwbakA3ZsnX.webp";
-
-// ── Seeded deterministic mini-series ─────────────────────────
-function seededRand(seed: number) {
-  let s = seed;
-  return () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
-}
-function buildMiniSeries(seed: number, n: number, base: number, vol: number) {
-  const r = seededRand(seed);
-  let v = base;
-  return Array.from({ length: n }, () => {
-    v = Math.max(1, Math.min(9.9, v + (r() - 0.48) * vol));
-    return { v: parseFloat(v.toFixed(2)) };
-  });
-}
 
 // ── Ambient particle canvas ───────────────────────────────────
 function AmbientParticles({ riskLevel }: { riskLevel: string }) {
@@ -395,14 +381,17 @@ function HeatCell({ label, score, delay }: { label: string; score: number; delay
 }
 
 // ── Mini live instrument widget ───────────────────────────────
-function MiniWidget({ label, value, unit, color, seed, trend }: {
-  label: string; value: string; unit?: string; color: string; seed: number; trend: 'up' | 'down' | 'flat';
+/**
+ * One real macro reading (FRED / markets snapshot) with its own freshness tag.
+ * No reading → "—" UNAVAILABLE. Never the DEFAULT_INDICATORS demo baseline and
+ * no synthetic sparkline.
+ */
+function MiniWidget({ label, reading, unit, decimals, color }: {
+  label: string; reading: IndicatorReading | undefined; unit?: string; decimals: number; color: string;
 }) {
-  const data = useMemo(() => buildMiniSeries(seed, 20, 5, 1.2), [seed]);
-  const trendColor = trend === 'up' ? '#FF9500' : trend === 'down' ? '#00FF88' : '#8A9AB0';
-  const trendChar = trend === 'up' ? '▲' : trend === 'down' ? '▼' : '—';
+  const stateLabel = reading ? reading.stateLabel : 'UNAVAILABLE';
   return (
-    <div style={{
+    <div title={reading?.source ?? 'No real source for this indicator'} style={{
       background: 'rgba(12,15,22,0.92)', border: `1px solid ${color}18`, borderRadius: '4px',
       padding: '12px', position: 'relative', overflow: 'hidden',
       transition: 'transform 0.2s cubic-bezier(0.23,1,0.32,1)',
@@ -414,19 +403,17 @@ function MiniWidget({ label, value, unit, color, seed, trend }: {
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '5px' }}>
           {label}
         </div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '7px' }}>
-          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color, textShadow: `0 0 12px ${color}60`, lineHeight: 1 }}>
-            {value}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '4px' }}>
+          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: reading ? color : '#64748B', lineHeight: 1 }}>
+            {reading ? reading.value.toFixed(decimals) : '—'}
           </span>
-          {unit && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#B0C4D8' }}>{unit}</span>}
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: trendColor, marginLeft: 'auto' }}>{trendChar}</span>
+          {unit && reading && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#B0C4D8' }}>{unit}</span>}
         </div>
-        <ResponsiveContainer width="100%" height={28}>
-          <LineChart data={data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-            <Line type="monotone" dataKey="v" stroke={color} strokeWidth={1.5} dot={false}
-              style={{ filter: `drop-shadow(0 0 3px ${color}60)` }} />
-          </LineChart>
-        </ResponsiveContainer>
+        {stateLabel && (
+          <div data-indicator-state={stateLabel} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: stateLabel === 'UNAVAILABLE' || stateLabel === 'STALE' ? '#F59E0B' : '#94A3B8', letterSpacing: '0.08em' }}>
+            {stateLabel}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -445,50 +432,6 @@ function ChangeItem({ label, delta, color, detail }: { label: string; delta: num
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', fontWeight: 600, color, background: `${color}12`, border: `1px solid ${color}25`, borderRadius: '3px', padding: '3px 8px', flexShrink: 0 }}>
         {sign}{delta.toFixed(1)}
       </div>
-    </div>
-  );
-}
-
-// ── MetricCard item ───────────────────────────────────────────
-function MetricCardItem({ metric, index }: { metric: MetricCard; index: number }) {
-  const [expanded, setExpanded] = useState(false);
-  const color = getRiskColor(metric.riskLevel);
-  return (
-    <div onClick={() => setExpanded(!expanded)} style={{
-      background: 'rgba(12,15,22,0.92)', border: '1px solid rgba(255,255,255,0.09)',
-      borderLeft: `2px solid ${color}`, borderRadius: '4px', padding: '13px',
-      cursor: 'pointer', transition: 'background 0.2s ease',
-      animation: `fade-slide-up 0.5s cubic-bezier(0.23,1,0.32,1) ${index * 40}ms both`,
-      position: 'relative', overflow: 'hidden',
-    }}
-    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(17,19,24,0.95)'}
-    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(10,12,16,0.85)'}
-    >
-      <div style={{ position: 'absolute', top: 0, right: 0, width: '8px', height: '8px', borderTop: `1px solid ${color}25`, borderRight: `1px solid ${color}25` }} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{metric.category}</span>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color, background: `${color}12`, border: `1px solid ${color}25`, borderRadius: '2px', padding: '1px 5px', textTransform: 'uppercase' }}>{metric.riskLevel}</span>
-          </div>
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: '14px', color: '#F0F6FF', marginBottom: '3px' }}>{metric.label}</div>
-          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#B0C4D8', lineHeight: 1.45 }}>{metric.interpretation}</div>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px', flexShrink: 0 }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '18px', fontWeight: 700, color, textShadow: `0 0 12px ${color}60`, lineHeight: 1 }}>{metric.value}</div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B' }}>{metric.unit}</div>
-          {expanded ? <ChevronUp size={12} style={{ color: '#64748B' }} /> : <ChevronDown size={12} style={{ color: '#64748B' }} />}
-        </div>
-      </div>
-      {expanded && (
-        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.09)', animation: 'fade-slide-up 0.25s ease both' }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>Signal Drivers</div>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
-              <span style={{ color, fontSize: '13px', flexShrink: 0, marginTop: '2px' }}>›</span>
-              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#B0C4D8', lineHeight: 1.45 }}>{metric.historicalComparison}</span>
-            </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -531,7 +474,10 @@ function DashboardAwarenessSection() {
 
 export default function Dashboard() {
   useSEO(PAGE_SEO.home);
-  const { output, rawFred, indicators, isLoading, isLive, integrityLabel, lastUpdated, isSimulating } = useEngine();
+  const { output, isLoading, isLive, integrityLabel, lastUpdated, isSimulating, marketMode } = useEngine();
+  // Macro stress widgets read real FRED / markets-snapshot readings only.
+  const { readings: liveReadings } = useLiveIndicatorReadings();
+  const liveValues = useMemo(() => evaluableIndicatorValues(liveReadings), [liveReadings]);
   const { overall, domains, regime, probability, analogs, narrative } = output;
   const [showShare, setShowShare] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -595,6 +541,16 @@ export default function Dashboard() {
 
   // Map riskLevel to data-regime attribute for reactive CSS lighting
   const regimeAttr = overall.riskLevel === 'low' ? 'bullish' : overall.riskLevel === 'moderate' ? 'moderate' : overall.riskLevel === 'elevated' ? 'elevated' : 'crisis';
+
+  // Fail closed (after every hook): without the canonical market state the
+  // browser engine runs on the fixed DEFAULT_INDICATORS demo inputs, so the
+  // deep view must not present that output as the current market reading.
+  if (marketMode === 'deterministic-fallback') {
+    if (isLoading) {
+      return <PageLoadingState eyebrow="NOW · Deep view" message="Loading canonical market state…" />;
+    }
+    return <PageDegradedBanner message="Current canonical state is unavailable." detail="The deep view withholds the current market reading until one authoritative state is available." />;
+  }
 
   return (
     <div data-regime={regimeAttr} style={{ background: '#080A0F', minHeight: '100vh', position: 'relative' }} className="ambient-bg">
@@ -1302,15 +1258,15 @@ export default function Dashboard() {
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: integrityLabel === 'LIVE' ? '#00FF88' : '#FF9500', letterSpacing: '0.1em' }}>FRED {integrityLabel}</span>
             </div>
           </div>
-          {/* What Changed — Market Stress */}
-          {indicators.hySpread > 400 && (
+          {/* What Changed — Market Stress (real readings only; STALE is not evaluated) */}
+          {liveValues.hySpread != null && liveValues.hySpread > 400 && (
             <div style={{ padding: '7px 10px', background: 'rgba(255,45,85,0.04)', borderLeft: '2px solid rgba(255,45,85,0.3)', borderRadius: '3px', marginBottom: '10px' }}>
               <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: '#B0C4D8', fontStyle: 'italic', lineHeight: 1.5 }}>
                 Credit spreads widened while equities remain elevated — a divergence historically associated with deteriorating credit conditions.
               </span>
             </div>
           )}
-          {indicators.yield10Y > 4.5 && indicators.hySpread <= 400 && (
+          {liveValues.yield10Y != null && liveValues.yield10Y > 4.5 && (liveValues.hySpread == null || liveValues.hySpread <= 400) && (
             <div style={{ padding: '7px 10px', background: 'rgba(255,149,0,0.04)', borderLeft: '2px solid rgba(255,149,0,0.3)', borderRadius: '3px', marginBottom: '10px' }}>
               <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: '#B0C4D8', fontStyle: 'italic', lineHeight: 1.5 }}>
                 Elevated long-end yields continue to pressure rate-sensitive sectors and increase the cost of refinancing.
@@ -1318,18 +1274,12 @@ export default function Dashboard() {
             </div>
           )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-            <MiniWidget label="10Y Treasury" value={(rawFred['DGS10'] ?? indicators.yield10Y).toFixed(2)} unit="%" color="#00E5FF" seed={11} trend={(rawFred['DGS10'] ?? indicators.yield10Y) > 4.5 ? 'up' : 'flat'} />
-            <MiniWidget label="SOFR Rate" value={(rawFred['SOFR'] ?? indicators.fedFundsRate).toFixed(2)} unit="%" color="#00E5FF" seed={66} trend={(rawFred['SOFR'] ?? indicators.fedFundsRate) > 5 ? 'up' : 'flat'} />
-            <MiniWidget
-              label="HY Spread"
-              value={(() => { const v = rawFred['BAMLH0A0HYM2']; return v != null ? (v > 20 ? Math.round(v) : Math.round(v * 100)).toString() : indicators.hySpread.toString(); })()}
-              unit="bps"
-              color={indicators.hySpread > 400 ? '#FF2D55' : '#FF9500'} seed={33}
-              trend={indicators.hySpread > 400 ? 'up' : 'flat'}
-            />
-            <MiniWidget label="CPI YoY" value={indicators.cpi.toFixed(1)} unit="%" color={indicators.cpi > 3.5 ? '#FF9500' : '#FFD700'} seed={44} trend={indicators.cpi > 3 ? 'up' : 'down'} />
-            <MiniWidget label="Unemployment" value={(rawFred['UNRATE'] ?? indicators.unemployment).toFixed(1)} unit="%" color={indicators.unemployment > 4.5 ? '#FF9500' : '#00FF88'} seed={77} trend={indicators.unemployment > 4.5 ? 'up' : 'flat'} />
-            <MiniWidget label="30Y Treasury" value={(rawFred['DGS30'] ?? indicators.yield30Y).toFixed(2)} unit="%" color="#00E5FF" seed={88} trend={(rawFred['DGS30'] ?? indicators.yield30Y) > 4.8 ? 'up' : 'flat'} />
+            <MiniWidget label="10Y Treasury" reading={liveReadings.yield10Y} unit="%" decimals={2} color="#00E5FF" />
+            <MiniWidget label="Fed Funds (eff.)" reading={liveReadings.fedFundsRate} unit="%" decimals={2} color="#00E5FF" />
+            <MiniWidget label="HY Spread" reading={liveReadings.hySpread} unit="bps" decimals={0} color={liveValues.hySpread != null && liveValues.hySpread > 400 ? '#FF2D55' : '#FF9500'} />
+            <MiniWidget label="CPI YoY" reading={liveReadings.cpi} unit="%" decimals={1} color="#FFD700" />
+            <MiniWidget label="10Y–2Y Curve" reading={liveReadings.yieldCurveSpread} unit="bps" decimals={0} color="#00E5FF" />
+            <MiniWidget label="30Y Treasury" reading={liveReadings.yield30Y} unit="%" decimals={2} color="#00E5FF" />
           </div>
         </div>
 
@@ -1385,16 +1335,9 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Core metrics */}
-        <div className="intel-module" style={{ padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 640ms both' }}>
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Core High-Signal Metrics</div>
-            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: 'rgba(100,116,139,0.6)', lineHeight: 1.5 }}>Key indicators that carry the highest predictive weight in the pressure model. Deviations from historical norms are flagged as regime stress signals.</div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
-            {metrics.map((metric, i) => <MetricCardItem key={metric.id} metric={metric} index={i} />)}
-          </div>
-        </div>
+        {/* Core metrics: removed (Data Integrity, Oct 2 2026). It rendered the static
+            lib/data.ts `metrics` demo set (10Y 4.68%, 30Y 4.91%, random chart data)
+            as current readings; the real readings are in Market Stress Indicators. */}
 
         {/* How FAULTLINE Works */}
         <details className="intel-module" style={{ padding: '14px 16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 700ms both' }}>
@@ -1404,7 +1347,7 @@ export default function Dashboard() {
           </summary>
           <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.09)', paddingTop: '12px' }}>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#B0C4D8', lineHeight: 1.7, marginBottom: '10px' }}>
-              FAULTLINE monitors six distinct sources of systemic stress and converts them into a real-time Pressure Index designed to identify elevated market risk before broader instability becomes obvious.
+              FAULTLINE monitors six distinct sources of systemic stress and converts them into a regularly refreshed Pressure Index designed to identify elevated market risk before broader instability becomes obvious.
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
               {[
@@ -1465,7 +1408,7 @@ export default function Dashboard() {
                 FAULTLINE Pressure Index™
               </h3>
               <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.7, margin: 0 }}>
-                A composite macroeconomic risk intelligence score synthesizing credit spreads, volatility regimes, liquidity conditions, and systemic market pressure across equity, bond, and credit markets. Updated in real time.
+                A composite macroeconomic risk intelligence score synthesizing credit spreads, volatility regimes, liquidity conditions, and systemic market pressure across equity, bond, and credit markets. Updated regularly.
               </p>
             </article>
             {/* Aftershock Engine */}

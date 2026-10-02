@@ -278,7 +278,7 @@ function PressureSlider({
 export default function SimulatePressure() {
   useSEO({
     title: "Simulate Pressure — Interactive Macro Stress-Test Engine",
-    description: "Drag live macro indicators to stress-test the global financial system. Watch FAULTLINE's pressure engine react in real time to your custom macro scenarios.",
+    description: "Drag live macro indicators to stress-test the global financial system. Watch FAULTLINE's pressure engine react instantly to your custom macro scenarios.",
     canonical: "/simulate",
   });
   const {
@@ -339,7 +339,7 @@ export default function SimulatePressure() {
               Simulate Pressure
             </h1>
             <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#6B7280' }}>
-              Move any macro variable and watch the systemic risk engine react in real time.
+              Move any macro variable and watch the systemic risk engine react instantly.
             </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

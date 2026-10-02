@@ -23,20 +23,22 @@ describe('surgical public FAULTLINE brand and pricing repair', () => {
     expect(publicPricing).toBeGreaterThan(goldConstant);
   });
 
-  it('keeps marketing JSON-LD on the public ladder and does not advertise Lifetime $299', () => {
+  it('keeps landing JSON-LD free of offers and prices while checkout is off', () => {
     const homepage = read('client/index.html');
     const softwareApp = homepage.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
     expect(softwareApp?.[1]).toBeTruthy();
     const schema = JSON.parse(softwareApp![1]);
     expect(schema['@type']).toBe('SoftwareApplication');
-    const offerNames = schema.offers.map((offer: { name: string }) => offer.name);
-    const offerPrices = schema.offers.map((offer: { price: string }) => offer.price);
-    expect(offerNames).toEqual(['Free', 'Trader', 'Power', 'Founding']);
-    expect(offerPrices).toEqual(['0', '59.00', '99.00', '49.00']);
+    expect(schema.offers).toBeUndefined();
+    expect(schema.aggregateRating).toBeUndefined();
+    expect(homepage).not.toContain('"@type": "Offer"');
     expect(homepage).not.toContain('Founding Lifetime');
     expect(homepage).not.toContain('299.00');
     expect(homepage).not.toContain('$299');
     expect(homepage).not.toContain('"9.99"');
+    expect(homepage).not.toContain('"59.00"');
+    expect(homepage).not.toContain('"99.00"');
+    expect(homepage).not.toContain('"49.00"');
   });
 
   it('keeps annual checkout unavailable and does not advertise Lifetime publicly', () => {
@@ -52,12 +54,13 @@ describe('surgical public FAULTLINE brand and pricing repair', () => {
     expect(productExperience).not.toContain("handlePricingInterest('Lifetime Access — $299')");
     expect(productExperience).toContain('LOCK IN FOUNDER RATE');
     expect(productExperience).toContain("gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))'");
-    expect(marketing).toContain('MARKETING_TIER_CARDS');
-    expect(marketing).toContain('trader.marketingName');
-    expect(marketing).toContain('founding.marketingName');
-    expect(marketing).toContain('trader.ctaLabel');
-    expect(marketing).toContain('power.ctaLabel');
-    expect(marketing).toContain('founding.ctaLabel');
+    expect(marketing).toContain("Checkout is not offered on this page.");
+    expect(marketing).not.toContain("MARKETING_TIER_CARDS");
+    expect(marketing).not.toContain("trader.marketingName");
+    expect(marketing).not.toContain("founding.marketingName");
+    expect(marketing).not.toContain("trader.ctaLabel");
+    expect(marketing).not.toContain("power.ctaLabel");
+    expect(marketing).not.toContain("founding.ctaLabel");
     expect(marketing).not.toContain('GET FOUNDING LIFETIME ACCESS — $299');
     expect(marketing).not.toContain('FOUNDING LIFETIME ACCESS');
     expect(marketing).not.toContain('$299');

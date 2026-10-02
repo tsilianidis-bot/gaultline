@@ -4,19 +4,19 @@ export default function SPYSignal() {
   return (
     <SEOLandingPage
       seo={{
-        title: "SPY Outlook: Real-time Signal & S&P 500 ETF Analysis | FAULTLINE",
-        description: "Get FAULTLINE's real-time outlook for SPY (S&P 500 ETF), including current signal, macro conditions, systemic risk, and historical context. Not financial advice.",
+        title: "SPY Outlook: Signal & S&P 500 ETF Analysis | FAULTLINE",
+        description: "Get FAULTLINE's current outlook for SPY (S&P 500 ETF), including current signal, macro conditions, systemic risk, and historical context. Not financial advice.",
         canonical: "/stock/spy",
       }}
       badge="STOCK"
-      headline="SPY Outlook: S&P 500 ETF Real-time Analysis"
+      headline="SPY Outlook: S&P 500 ETF Analysis"
       subheadline="FAULTLINE provides a dynamic, data-driven outlook for the SPDR S&P 500 ETF Trust (SPY), integrating current market signals, macroeconomic conditions, and systemic risk levels to offer a comprehensive perspective on its potential trajectory. Our analysis is designed to help you understand the forces shaping the S&P 500, not to provide personalized investment recommendations."
       ctaLabel="Explore FAULTLINE"
       ctaHref="/app"
       accentColor="#00D4FF"
       features={[
         { icon: "◈",
-          title: "Real-time Signal",
+          title: "Current Signal",
           desc: "Access FAULTLINE's immediate, data-backed signal for SPY, indicating current market sentiment and momentum.",
         },
         { icon: "◈", title: "Macro Conditions", desc: "Understand how prevailing macroeconomic factors are influencing the broader S&P 500 index and its ETF." },
@@ -34,7 +34,7 @@ export default function SPYSignal() {
       contentSections={[
         {
           heading: "Understanding FAULTLINE's SPY Outlook",
-          body: "The SPDR S&P 500 ETF Trust (SPY) is one of the most widely traded and followed exchange-traded funds, designed to track the performance of the S&P 500 index. FAULTLINE's outlook for SPY is a sophisticated, multi-factor assessment, not a simple prediction. We synthesize vast amounts of market data, including price action, volume, volatility, and intermarket relationships, to generate a real-time signal. This signal is then contextualized by our proprietary market regime analysis, which identifies whether the market is in a growth, contraction, inflationary, or disinflationary phase. Our goal is to provide clarity on the underlying dynamics, helping users understand the 'why' behind market movements rather than just the 'what'. This comprehensive approach allows for a more nuanced understanding of SPY's potential path, moving beyond simplistic bullish or bearish calls.",
+          body: "The SPDR S&P 500 ETF Trust (SPY) is one of the most widely traded and followed exchange-traded funds, designed to track the performance of the S&P 500 index. FAULTLINE's outlook for SPY is a sophisticated, multi-factor assessment, not a simple prediction. We synthesize vast amounts of market data, including price action, volume, volatility, and intermarket relationships, to generate a regularly refreshed signal. This signal is then contextualized by our proprietary market regime analysis, which identifies whether the market is in a growth, contraction, inflationary, or disinflationary phase. Our goal is to provide clarity on the underlying dynamics, helping users understand the 'why' behind market movements rather than just the 'what'. This comprehensive approach allows for a more nuanced understanding of SPY's potential path, moving beyond simplistic bullish or bearish calls.",
         },
         {
           heading: "Why the SPY Outlook Matters for Investors",
@@ -52,11 +52,11 @@ export default function SPYSignal() {
       faqs={[
         {
           question: "What is FAULTLINE's SPY Outlook?",
-          answer: "FAULTLINE's SPY Outlook is a comprehensive, data-driven analysis of the SPDR S&P 500 ETF Trust. It integrates real-time market signals, macroeconomic conditions, systemic risk levels, and historical context to provide a nuanced view of SPY's potential trajectory. It is designed to inform, not to advise.",
+          answer: "FAULTLINE's SPY Outlook is a comprehensive, data-driven analysis of the SPDR S&P 500 ETF Trust. It integrates regularly refreshed market signals, macroeconomic conditions, systemic risk levels, and historical context to provide a nuanced view of SPY's potential trajectory. It is designed to inform, not to advise.",
         },
         {
           question: "How often is the SPY Outlook updated?",
-          answer: "Our SPY Outlook is updated in real-time as market conditions evolve. Our models continuously process new data, ensuring that the signal and contextual analysis reflect the most current market dynamics.",
+          answer: "Our SPY Outlook is updated regularly as market conditions evolve. Our models continuously process new data, ensuring that the signal and contextual analysis reflect the most current market dynamics.",
         },
         {
           question: "Is the SPY Outlook a buy/sell recommendation?",

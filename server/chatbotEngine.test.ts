@@ -3,24 +3,25 @@
  * Covers: intent detection, lead scoring, aggregation, pricing validation
  */
 import { describe, it, expect } from "vitest";
-import { detectIntent, aggregateLeadScore, validatePricing, CANONICAL_PRICING } from "./chatbotEngine";
+import { detectIntent, aggregateLeadScore, validatePricing, CANONICAL_PRICING, PRICE_NOT_ON_SALE_ANSWER, isPlanPriceQuestion } from "./chatbotEngine";
 
 // ── CANONICAL_PRICING tests ───────────────────────────────────────────────────
 describe("CANONICAL_PRICING (single source of truth)", () => {
-  it("Trader plan is $59/month", () => {
-    expect(CANONICAL_PRICING.core.priceLabel).toBe("$59/mo");
+  it("Trader plan keeps its configured $59 amount but displays as not on sale", () => {
+    expect(CANONICAL_PRICING.core.priceLabel).toBe("Not on sale yet");
     expect(CANONICAL_PRICING.core.price).toBe("$59.00");
     expect(CANONICAL_PRICING.core.interval).toBe("month");
   });
 
-  it("Power plan is $99/month", () => {
-    expect(CANONICAL_PRICING.premium.priceLabel).toBe("$99/mo");
+  it("Power plan keeps its configured $99 amount but displays as not on sale", () => {
+    expect(CANONICAL_PRICING.premium.priceLabel).toBe("Not on sale yet");
     expect(CANONICAL_PRICING.premium.price).toBe("$99.00");
     expect(CANONICAL_PRICING.premium.interval).toBe("month");
   });
 
-  it("Founding Member plan is $49/month while membership remains active", () => {
-    expect(CANONICAL_PRICING.founding.priceLabel).toBe("$49/mo (locked while active)");
+  it("Founding Member plan keeps its configured $49 amount but displays as not on sale", () => {
+    expect(CANONICAL_PRICING.founding.priceLabel).toBe("Not on sale yet");
+    expect(CANONICAL_PRICING.founding.description).not.toMatch(/\$/);
     expect(CANONICAL_PRICING.founding.price).toBe("$49.00");
     expect(CANONICAL_PRICING.founding.interval).toBe("month");
   });
@@ -47,16 +48,21 @@ describe("CANONICAL_PRICING (single source of truth)", () => {
 
 // ── validatePricing tests ─────────────────────────────────────────────────────
 describe("validatePricing", () => {
-  it("accepts a response with correct Trader price $59", () => {
-    expect(validatePricing("The Trader plan is $59/mo.")).toBe(true);
+  it("rejects a quoted Trader price while paid plans are not on sale", () => {
+    expect(validatePricing("The Trader plan is $59/mo.")).toBe(false);
   });
 
-  it("accepts a response with correct Power price $99", () => {
-    expect(validatePricing("The Power plan is $99/mo.")).toBe(true);
+  it("rejects a quoted Power price while paid plans are not on sale", () => {
+    expect(validatePricing("The Power plan is $99/mo.")).toBe(false);
   });
 
-  it("accepts a response with correct Founding price $49", () => {
-    expect(validatePricing("Founding Member is $49/mo locked while active.")).toBe(true);
+  it("rejects a quoted Founding price while paid plans are not on sale", () => {
+    expect(validatePricing("Founding Member is $49/mo locked while active.")).toBe(false);
+  });
+
+  it("accepts the not-on-sale answer", () => {
+    expect(validatePricing(PRICE_NOT_ON_SALE_ANSWER)).toBe(true);
+    expect(PRICE_NOT_ON_SALE_ANSWER).toContain("Paid plans are not on sale yet.");
   });
 
   it("rejects a response containing retired public lifetime pricing", () => {
@@ -94,13 +100,22 @@ describe("validatePricing", () => {
     expect(validatePricing(response)).toBe(false);
   });
 
-  it("accepts a full plan comparison with correct prices", () => {
+  it("rejects a full plan comparison that quotes prices", () => {
     const response = `Here are the FAULTLINE plans:
 • Founding Member — $49/mo locked while active: Founding rate
 • Trader — $59/mo: Primary investor experience
 • Power — $99/mo: Full professional toolset`;
-    expect(validatePricing(response)).toBe(true);
+    expect(validatePricing(response)).toBe(false);
   });
+});
+
+describe("isPlanPriceQuestion (answered with the not-on-sale reply)", () => {
+  for (const q of ["How much does it cost?", "What is your pricing?", "How do I upgrade?", "What's the founding rate?", "Can I buy Power?"]) {
+    it(`treats "${q}" as a price question`, () => expect(isPlanPriceQuestion(q)).toBe(true));
+  }
+  for (const q of ["What is the Pressure Index?", "Explain the yield curve", "hello"]) {
+    it(`does not treat "${q}" as a price question`, () => expect(isPlanPriceQuestion(q)).toBe(false));
+  }
 });
 
 // ── detectIntent tests ────────────────────────────────────────────────────────

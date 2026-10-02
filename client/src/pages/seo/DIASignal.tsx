@@ -7,18 +7,18 @@ export default function DIASignal() {
   return (
     <SEOLandingPage
       seo={{
-        title: "DIA Outlook: FAULTLINE's Real-Time Signal & Analysis",
-        description: "Get FAULTLINE's real-time outlook for DIA (Dow Jones ETF), including current signal, regime fit, industrial/cyclical exposure, macro sensitivity, and what conditions would change the outlook.",
+        title: "DIA Outlook: FAULTLINE's Signal & Analysis",
+        description: "Get FAULTLINE's current outlook for DIA (Dow Jones ETF), including current signal, regime fit, industrial/cyclical exposure, macro sensitivity, and what conditions would change the outlook.",
         canonical: "/stock/dia",
       }}
       badge="STOCK"
-      headline="DIA Outlook: FAULTLINE's Real-Time Signal & Analysis"
+      headline="DIA Outlook: FAULTLINE's Signal & Analysis"
       subheadline="Understand the current signal, regime fit, industrial/cyclical exposure, macro sensitivity, and what conditions would change the outlook for the SPDR Dow Jones Industrial Average ETF."
       ctaLabel="Explore DIA on FAULTLINE"
       ctaHref="/app"
       accentColor="#00D4FF"
       features={[
-        { icon: "◈", title: "Real-Time DIA Signal", desc: "FAULTLINE's real-time signal for DIA — the Dow Jones Industrial Average ETF." },
+        { icon: "◈", title: "Regularly Refreshed DIA Signal", desc: "FAULTLINE's regularly refreshed signal for DIA — the Dow Jones Industrial Average ETF." },
         { icon: "◎", title: "Macro Regime Fit", desc: "How does the current macro regime affect Dow Jones large-cap industrials and financials?" },
         { icon: "⬡", title: "Credit and Rate Sensitivity", desc: "DIA's sensitivity to interest rates, credit conditions, and Fed policy changes." },
         { icon: "◈", title: "Recession Risk Impact", desc: "How recession probability and economic slowdown affect the Dow Jones 30 components." },
@@ -28,7 +28,7 @@ export default function DIASignal() {
       contentSections={[
         {
           heading: "DIA Outlook: Understanding the Dow Jones ETF with FAULTLINE",
-          body: `The SPDR Dow Jones Industrial Average ETF (DIA) is a widely followed exchange-traded fund designed to track the performance of the Dow Jones Industrial Average. Representing 30 large, publicly traded U.S. companies, DIA serves as a bellwether for the broader U.S. stock market and economic health. Investors and analysts closely monitor DIA for insights into industrial sector performance and overall market sentiment. FAULTLINE provides a real-time, data-driven outlook for DIA, moving beyond simple price action to analyze underlying market dynamics. Our platform integrates a comprehensive suite of indicators to deliver a nuanced perspective on DIA's potential trajectory, helping you navigate its complexities with greater clarity. This page offers a deep dive into FAULTLINE's methodology and current assessment of DIA.`,
+          body: `The SPDR Dow Jones Industrial Average ETF (DIA) is a widely followed exchange-traded fund designed to track the performance of the Dow Jones Industrial Average. Representing 30 large, publicly traded U.S. companies, DIA serves as a bellwether for the broader U.S. stock market and economic health. Investors and analysts closely monitor DIA for insights into industrial sector performance and overall market sentiment. FAULTLINE provides a regularly refreshed, data-driven outlook for DIA, moving beyond simple price action to analyze underlying market dynamics. Our platform integrates a comprehensive suite of indicators to deliver a nuanced perspective on DIA's potential trajectory, helping you navigate its complexities with greater clarity. This page offers a deep dive into FAULTLINE's methodology and current assessment of DIA.`,
         },
         {
           heading: "FAULTLINE's Current Signal and Regime Fit for DIA",
@@ -50,7 +50,7 @@ export default function DIASignal() {
         },
         {
           question: "How does FAULTLINE determine its DIA outlook?",
-          answer: "FAULTLINE employs a multi-factor quantitative model that analyzes price action, volume, market regime, industrial sector trends, and macro-economic indicators to generate a real-time signal and outlook for DIA. It's designed to provide a comprehensive, data-driven perspective.",
+          answer: "FAULTLINE employs a multi-factor quantitative model that analyzes price action, volume, market regime, industrial sector trends, and macro-economic indicators to generate a regularly refreshed signal and outlook for DIA. It's designed to provide a comprehensive, data-driven perspective.",
         },
         {
           question: "What does 'regime fit' mean in the context of DIA?",
@@ -62,7 +62,7 @@ export default function DIASignal() {
         },
         {
           question: "How often is the DIA outlook updated on FAULTLINE?",
-          answer: "FAULTLINE's outlook for DIA is updated in real-time as market conditions and underlying data points evolve. Our system continuously processes new information to ensure the most current and relevant analysis is available to users.",
+          answer: "FAULTLINE's outlook for DIA is updated regularly as market conditions and underlying data points evolve. Our system continuously processes new information to ensure the most current and relevant analysis is available to users.",
         },
         {
           question: "Can I see historical DIA outlooks on FAULTLINE?",

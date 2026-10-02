@@ -86,7 +86,10 @@ describe("WATCH destination composition", () => {
     expect(watchSource).toContain("marketState?.outlook.invalidationConditions ?? []");
     expect(watchSource).toContain("sourceHealth.map");
     expect(watchSource).toContain("marketState?.warnings.length");
-    expect(watchSource).toContain("marketState?.freshness ?? \"Fallback\"");
+    // Freshness follows the header integrity label + canonical input lists (Data Integrity, Oct 2 2026);
+    // the legacy cache-age marketState.freshness ("live") is no longer shown.
+    expect(watchSource).toContain("canonicalFreshnessReadout({ integrityLabel, canonical: canonicalState })");
+    expect(watchSource).not.toContain("Canonical source state is");
     expect(watchSource).toContain("marketState?.history.observationCount");
     expect(watchSource).toContain("lastUpdated?.toLocaleString()");
   });
@@ -102,7 +105,10 @@ describe("WATCH destination composition", () => {
 
   it("formats every confidence, pressure, and evidence-strength metric on the shared canonical 0–100 scale", () => {
     expect(watchSource).toContain("formatCanonicalScore(pressure)");
-    expect(watchSource).toContain("formatCanonicalPercent(confidence)");
+    // Forecast confidence is display-gated (forecastConfidenceDisplay); when a % is
+    // supported it is still formatted on the canonical 0–100 scale.
+    expect(watchSource).toContain("formatCanonicalPercent(confidenceDisplay.percent)");
+    expect(watchSource).not.toContain("formatCanonicalPercent(confidence)");
     expect(watchSource).toContain("formatCanonicalPercent(pattern.confidence)");
     expect(watchSource).toContain("formatCanonicalScore(indicator.strength)");
     expect(watchSource).toContain("normalizeCanonicalMetric(domain.score * 10)");

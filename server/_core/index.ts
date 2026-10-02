@@ -4,9 +4,11 @@ import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import rateLimit from "express-rate-limit";
+import { canonicalBrowserHost } from "./canonicalHost";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { registerFredProxy } from "../fredProxy";
+import { SORO_FEATURED_IMAGE_CSP_SOURCE } from "../soroBlogFeed";
 import { registerSignalsProxy } from "../signalsProxy";
 import { registerCoinGeckoProxy } from "../coingeckoProxy";
 import { registerSEORoutes } from "../seoRoutes";
@@ -33,10 +35,11 @@ import { handleDripEmail } from "../scheduledDripEmail";
 import { handleScheduledSeismograph } from "../scheduledSeismograph";
 import { handleShadowForwardOutcomes, handleShadowDailySummary } from "../scheduledShadowModel";
 import { handleScheduledRisingStarsContinuity } from "../scheduledRisingStarsHistory";
-import { handleScheduledSystemicRegimeInfer, handleScheduledSystemicRegimeTrain } from "../systemicRegime/scheduled";
+import { handleScheduledSystemicRegimeInfer } from "../systemicRegime/scheduled";
 import { appRouter } from "../routers.ts";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { requireCron } from "./cronGuard";
 import { captureError, flushErrorTracking } from "../errorTracking";
 import { handleQaAccess, handleQaAccessLogout } from "../qaAccess";
 import { resolveBuildIdentity } from "../buildIdentity";
@@ -135,7 +138,8 @@ async function startServer() {
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://manus-analytics.com https://us.umami.is https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://www.clarity.ms https://*.clarity.ms https://app.trysoro.com",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "font-src 'self' https://fonts.gstatic.com data:",
-        "img-src 'self' data: blob: https://assets.coingecko.com https://*.cloudfront.net https://www.google-analytics.com https://www.googletagmanager.com",
+        // Soro featured images: one Supabase storage folder only (SORO_FEATURED_IMAGE_CSP_SOURCE)
+        `img-src 'self' data: blob: https://assets.coingecko.com https://*.cloudfront.net https://www.google-analytics.com https://www.googletagmanager.com ${SORO_FEATURED_IMAGE_CSP_SOURCE}`,
         "media-src 'self' blob:",
         // Allow connections to first-party analytics, GA4 collect endpoints, and the approved Soro Blog feed
         "connect-src 'self' https://manus-analytics.com https://us.umami.is https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://region1.google-analytics.com https://www.googletagmanager.com https://www.clarity.ms https://*.clarity.ms https://app.trysoro.com",
@@ -154,6 +158,8 @@ async function startServer() {
     delete req.headers['x-internal'];
     next();
   });
+
+  app.use(canonicalBrowserHost);
 
   // Stripe webhook MUST use raw body BEFORE express.json() for signature verification
   app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
@@ -178,20 +184,8 @@ async function startServer() {
   registerSEORoutes(app);
   app.use("/api/analytics", analyticsRoutes);
 
-  // Cron authentication helper — all scheduled endpoints must use this
-  const CRON_SECRET = process.env.CRON_SECRET ?? process.env.HEARTBEAT_SECRET ?? '';
-  function requireCron(req: express.Request, res: express.Response, next: express.NextFunction) {
-    const auth = req.headers['authorization'] ?? '';
-    const token = typeof auth === 'string' ? auth.replace(/^Bearer\s+/i, '') : '';
-    // Allow if token matches CRON_SECRET, or if request is from localhost (dev)
-    const isLocalhost = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1';
-    if (!CRON_SECRET || (CRON_SECRET && token === CRON_SECRET) || (isLocalhost && process.env.NODE_ENV === 'development')) {
-      return next();
-    }
-    res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  // Scheduled cron endpoints — must be before tRPC / Vite fallthrough
+  // Scheduled cron endpoints — all use the canonical exact-bearer guard and
+  // are registered before tRPC / Vite fallthrough.
   app.post("/api/scheduled/ping", requireCron, (_req, res) => res.json({ ok: true }));
   app.post("/api/scheduled/daily-snapshot", requireCron, handleScheduledDailySnapshot);
   app.post("/api/scheduled/publish-blog", requireCron, handleScheduledPublishBlog);
@@ -209,7 +203,6 @@ async function startServer() {
   app.post("/api/scheduled/shadow-daily-summary", requireCron, handleShadowDailySummary);
   app.post("/api/scheduled/rising-stars-continuity", requireCron, handleScheduledRisingStarsContinuity);
   app.post("/api/scheduled/systemic-regime-infer", requireCron, handleScheduledSystemicRegimeInfer);
-  app.post("/api/scheduled/systemic-regime-train", requireCron, handleScheduledSystemicRegimeTrain);
   // Autonomous publishing pipeline
   app.post("/api/scheduled/daily-brief", requireCron, handleDailyBrief);
   app.post("/api/scheduled/weekly-review", requireCron, handleWeeklyReview);

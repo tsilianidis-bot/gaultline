@@ -10,7 +10,7 @@ const LearnCryptoCycles = () => {
       }}
       badge="Educational Guide"
       headline="How Crypto Cycles Differ From Stock Market Cycles"
-      subheadline="Understanding the unique dynamics of crypto and traditional equity markets is crucial for informed investing. FAULTLINE provides real-time intelligence to navigate these distinct regimes."
+      subheadline="Understanding the unique dynamics of crypto and traditional equity markets is crucial for informed investing. FAULTLINE provides regularly refreshed intelligence to navigate these distinct regimes."
       ctaLabel="Explore FAULTLINE's Market Intelligence"
       ctaHref="/app"
       accentColor="#9945FF"
@@ -37,7 +37,7 @@ const LearnCryptoCycles = () => {
         },
         {
           heading: 'How FAULTLINE Monitors and Interprets Crypto vs. Equity Regimes',
-          body: `FAULTLINE provides a sophisticated framework for monitoring and interpreting the distinct cycles of cryptocurrency and traditional equity markets. Our platform integrates real-time data, proprietary algorithms, and expert analysis to identify shifts in market regimes. For crypto, we track on-chain metrics, network health, and sentiment indicators alongside macro overlays to anticipate halving cycle impacts and altcoin rotations. For equities, our tools analyze economic data, earnings trends, and liquidity flows to pinpoint phases of expansion or contraction. By offering a comparative lens, FAULTLINE helps users understand when these markets are converging or diverging, providing actionable insights into their current state and potential future trajectories. This dual-perspective approach empowers investors to make more informed decisions across their diversified portfolios. Please note: FAULTLINE provides market intelligence and education, not personalized financial advice.`,
+          body: `FAULTLINE provides a sophisticated framework for monitoring and interpreting the distinct cycles of cryptocurrency and traditional equity markets. Our platform integrates regularly refreshed data, proprietary algorithms, and expert analysis to identify shifts in market regimes. For crypto, we track on-chain metrics, network health, and sentiment indicators alongside macro overlays to anticipate halving cycle impacts and altcoin rotations. For equities, our tools analyze economic data, earnings trends, and liquidity flows to pinpoint phases of expansion or contraction. By offering a comparative lens, FAULTLINE helps users understand when these markets are converging or diverging, providing actionable insights into their current state and potential future trajectories. This dual-perspective approach empowers investors to make more informed decisions across their diversified portfolios. Please note: FAULTLINE provides market intelligence and education, not personalized financial advice.`,
         },
       ]}
       faqs={[

@@ -5,12 +5,12 @@ export default function TAOSignal() {
     <SEOLandingPage
       seo={{
         title: "TAO Signal — Bittensor Analysis, Risk Score & Key Levels | FAULTLINE",
-        description: "Real-time TAO (Bittensor) signal analysis: macro alignment score, AI crypto exposure rating, key support and resistance levels, bull and bear case scenarios, and regime-based signal classification.",
+        description: "TAO (Bittensor) signal analysis: macro alignment score, AI crypto exposure rating, key support and resistance levels, bull and bear case scenarios, and regime-based signal classification.",
         canonical: "/crypto/tao",
       }}
       badge="TAO SIGNAL INTELLIGENCE"
       headline={"TAO Signal\nBittensor AI Crypto Risk & Macro Analysis"}
-      subheadline="FAULTLINE provides real-time macro-aligned signal analysis for Bittensor (TAO) — the leading decentralized AI network. Track TAO's regime fit score, AI crypto exposure, key price levels, and bull/bear case scenarios."
+      subheadline="FAULTLINE provides regularly refreshed macro-aligned signal analysis for Bittensor (TAO) — the leading decentralized AI network. Track TAO's regime fit score, AI crypto exposure, key price levels, and bull/bear case scenarios."
       ctaLabel="ANALYZE TAO NOW"
       ctaHref="/app/crypto"
       accentColor="#E6007A"

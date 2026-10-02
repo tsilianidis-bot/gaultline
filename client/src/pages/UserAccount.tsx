@@ -11,7 +11,7 @@ import { navigateToLogin } from '@/const';
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import { toast } from 'sonner';
 import { useSearch } from 'wouter';
-import { TIER_META, PRICING_PLANS, type AccessTier } from '../../../shared/tiers';
+import { TIER_META, PRICING_PLANS, PAID_PLANS_ON_SALE, PAID_PLANS_NOT_ON_SALE_COPY, type AccessTier } from '../../../shared/tiers';
 
 // Icon map for tiers (React nodes cannot live in shared/)
 const TIER_ICONS: Record<AccessTier, React.ReactNode> = {
@@ -82,15 +82,15 @@ const TIER_CONFIG = {
   },
   founding: {
     label: 'FOUNDING',
-    sublabel: 'Rate Locked for Life',
+    sublabel: 'Founding Access',
     color: '#FFD700',
     glow: 'rgba(255,215,0,0.2)',
     border: 'rgba(255,215,0,0.4)',
     icon: <Crown size={18} />,
-    description: 'Everything in Pro at the founding rate. Locked forever. Never increases. Limited cohort.',
+    description: 'Everything in Pro. Founding membership is not on sale yet.',
     features: [
       { label: 'Everything in Pro', available: true },
-      { label: 'Founding rate locked at $49/mo forever', available: true },
+      { label: 'Founding membership — not on sale yet', available: true },
       { label: 'Founding member badge', available: true },
       { label: 'Future feature grandfathering', available: true },
       { label: 'Roadmap previews & early beta', available: true },
@@ -734,8 +734,45 @@ export default function UserAccount() {
       {/* ── Market Preflight Prompts Preference ── */}
       <PreflightPreferenceCard />
 
-      {/* ── Upgrade section (only for free tier) ── */}
-      {!isPremium && !isCore && (
+      {/* ── Paid plans not on sale: neutral notice instead of upgrade CTAs ── */}
+      {!PAID_PLANS_ON_SALE && !isPremium && !isCore && (
+        <div data-paid-plans-not-on-sale style={{
+          marginTop: '24px',
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '12px',
+          padding: '20px 24px',
+        }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#9CA3AF', letterSpacing: '0.12em', marginBottom: '6px' }}>
+            PAID PLANS
+          </div>
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#9CA3AF', lineHeight: 1.6, margin: 0 }}>
+            {PAID_PLANS_NOT_ON_SALE_COPY} Your free account stays active, and nothing here will charge you.
+          </p>
+        </div>
+      )}
+
+      {/* ── Founding access request (no prices, no checkout — only submits a request for manual review) ── */}
+      {!PAID_PLANS_ON_SALE && !isPremium && !isCore && (
+        <div id="founding-form" data-founding-request style={{
+          marginTop: '16px',
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '12px',
+          padding: '20px 24px',
+        }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#9CA3AF', letterSpacing: '0.12em', marginBottom: '6px' }}>
+            REQUEST FOUNDING ACCESS
+          </div>
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#9CA3AF', lineHeight: 1.6, margin: '0 0 16px' }}>
+            Interested in founding access? Send a request and we review each one manually. Submitting a request does not start a purchase or charge you.
+          </p>
+          <FoundingAccessForm userEmail={profile?.email ?? user?.email} />
+        </div>
+      )}
+
+      {/* ── Upgrade section (only for free tier, only while paid plans are on sale) ── */}
+      {PAID_PLANS_ON_SALE && !isPremium && !isCore && (
         <div style={{
           marginTop: '24px',
           background: 'rgba(255,215,0,0.03)',
@@ -891,8 +928,8 @@ export default function UserAccount() {
         </div>
       )}
 
-      {/* ── Premium tier: upgrade prompt ── */}
-      {tier === 'premium' && (
+      {/* ── Premium tier: upgrade prompt (only while paid plans are on sale) ── */}
+      {PAID_PLANS_ON_SALE && tier === 'premium' && (
         <div style={{
           marginTop: '24px',
           background: 'rgba(255,215,0,0.03)',

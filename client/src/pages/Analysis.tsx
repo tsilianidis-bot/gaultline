@@ -351,11 +351,11 @@ export default function Analysis() {
                 </span>
               </div>
               <h3 className="text-sm font-semibold text-white mb-2">
-                Real-Time Market Risk Intelligence
+                Market Risk Intelligence
               </h3>
               <p className="text-xs text-slate-500 leading-relaxed mb-4">
                 The FAULTLINE Pressure Index™ monitors systemic stress, liquidity conditions,
-                and macro regime shifts in real time — so you position before the move, not after.
+                and macro regime shifts as new data is published — so you position before the move, not after.
               </p>
               <a href="/app">
                 <span className="inline-flex items-center gap-2 text-xs text-cyan-400 font-['IBM_Plex_Mono'] hover:underline cursor-pointer">

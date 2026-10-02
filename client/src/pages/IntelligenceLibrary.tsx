@@ -347,7 +347,7 @@ export default function IntelligenceLibrary() {
       <div style={{ borderTop: '1px solid rgba(0,212,255,0.08)', background: 'rgba(0,212,255,0.02)', marginTop: '2rem' }}>
         <div className="max-w-6xl mx-auto px-4 py-12 text-center">
           <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#F1F5F9', marginBottom: '0.75rem' }}>
-            Apply This Research in Real Time
+            Apply This Research
           </h2>
           <p style={{ color: '#94A3B8', maxWidth: 480, margin: '0 auto 1.5rem', lineHeight: 1.7, fontSize: '0.9rem' }}>
             Ask PLATO any market question and get an institutional-grade answer grounded in live engine data and this research library.

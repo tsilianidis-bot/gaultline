@@ -2,7 +2,7 @@
    FAULTLINE — Product Experience Gate
    Preserved product-experience source. Not mounted on first-run
    (cinematic → MarketingSite). If reached later, pricing and claims
-   must match MarketingSite: Free / Trader $59 / Power $99 / Founding $49.
+   paid plans are not on sale yet, so no prices are shown.
 
    Sections:
    1.  Hero — full-viewport atmospheric opener with "See the Proof" CTA
@@ -43,22 +43,22 @@ const PUBLIC_PRICING = [
     features: ['Live FAULTLINE Pressure Index™', 'Current market regime context', 'Daily intelligence summary'],
   },
   {
-    id: 'trader', name: 'TRADER', price: '$59', period: '/ month', color: CYAN,
+    id: 'trader', name: 'TRADER', price: 'Not on sale yet', period: '', color: CYAN,
     badge: 'PRIMARY EXPERIENCE', cta: 'GET TRADER',
     tagline: 'For serious investors who want FAULTLINE’s core market intelligence, monitoring, signals, watch tools, interpretation, and decision support.',
     features: ['Core market intelligence and monitoring', 'Signals, watch tools, and market interpretation', 'Decision support for active investors'],
   },
   {
-    id: 'power', name: 'POWER', price: '$99', period: '/ month', color: PURPLE,
+    id: 'power', name: 'POWER', price: 'Not on sale yet', period: '', color: PURPLE,
     badge: 'FULL PROFESSIONAL TOOLSET', cta: 'GET POWER',
     tagline: 'For users who want the deepest FAULTLINE intelligence experience, advanced analysis, expanded research capabilities, and the full professional toolset.',
     features: ['Everything in Trader', 'Advanced analysis and expanded research', 'Full professional intelligence toolset'],
   },
   {
-    id: 'founding', name: 'FOUNDING MEMBER', price: '$49', period: '/ month', color: GOLD,
+    id: 'founding', name: 'FOUNDING MEMBER', price: 'Not on sale yet', period: '', color: GOLD,
     badge: 'FOUNDING RATE — LOCKED', cta: 'LOCK IN FOUNDER RATE',
-    tagline: 'Join FAULTLINE during the founding period and keep your $49 monthly rate locked as long as your membership remains active.',
-    features: ['Everything in Power', 'Locked $49 monthly rate while membership remains active', 'Founding member recognition'],
+    tagline: 'Founding membership. Paid plans are not on sale yet.',
+    features: ['Everything in Power', 'Founding member recognition'],
   },
 ] as const;
 
@@ -319,7 +319,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       accent: CYAN,
       bullets: [
         'Understand whether the macro backdrop supports or contradicts your setup',
-        'See real-time pressure readings before entering positions',
+        'See regularly refreshed pressure readings before entering positions',
         'Get AI-synthesized briefings that explain what is driving the market today',
         'Access day trade intelligence with current regime context and source-quality disclosures',
       ],
@@ -401,7 +401,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       event: 'Tariff Shock & AI Bubble Pressure',
       drawdown: '−19%',
       duration: 'Ongoing',
-      signal: 'Live forward tracking (ongoing): AI sector concentration risk, macro regime deterioration, and trade policy uncertainty are currently monitored in real time across all five FAULTLINE engines. This is not a completed forecast.',
+      signal: 'Live forward tracking (ongoing): AI sector concentration risk, macro regime deterioration, and trade policy uncertainty are currently monitored as new data is published across all five FAULTLINE engines. This is not a completed forecast.',
       accent: CYAN,
       delay: 400,
     },
@@ -501,7 +501,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
             maxWidth: '640px', margin: '0 auto 16px',
           }}>
             The systemic pressure that precedes market crashes is measurable.<br />
-            FAULTLINE measures it — in real time.
+            FAULTLINE measures it — as new data is published.
           </p>
           <p style={{
             fontFamily: SANS, fontSize: 'clamp(13px, 1.8vw, 16px)',
@@ -517,7 +517,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
             borderRadius: '8px', padding: '10px 20px', marginBottom: '40px',
           }}>
             <span style={{ fontFamily: MONO, fontSize: '10px', color: GOLD, letterSpacing: '0.15em' }}>
-              ◆ FOUNDING MEMBER · $49 / MONTH · RATE LOCKED
+              ◆ FOUNDING MEMBER · NOT ON SALE YET
             </span>
           </div>
           <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -541,7 +541,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                 cursor: 'pointer', padding: '16px 36px', borderRadius: '8px',
                 transition: 'all 0.15s ease-out',
               }}
-              aria-label="See 25-year historical track record"
+              aria-label="See archived retrospective reconstruction"
             >See the Proof ↓</button>
           </div>
         </div>
@@ -657,7 +657,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                   Retrospective testing shows how FAULTLINE's current framework would have interpreted systemic pressure conditions across major historical dislocations from 2000 to 2025.
                 </p>
                 <p style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(255,255,255,0.25)', lineHeight: 1.6, maxWidth: '640px', margin: '0 auto 32px', letterSpacing: '0.05em' }}>
-                  BACKTEST DISCLAIMER: The analysis below is retrospective. It applies FAULTLINE's current methodology to historical data. It does not represent live forward performance or a real-time prediction record. Past indicator behavior does not guarantee future results.
+                  BACKTEST DISCLAIMER: The analysis below is retrospective. It applies FAULTLINE's current methodology to historical data. It does not represent live forward performance or a regularly refreshed prediction record. Past indicator behavior does not guarantee future results.
                 </p>
                 {/* Trust strip */}
                 <div style={{ display: 'flex', justifyContent: 'center', gap: 'clamp(20px,4vw,48px)', flexWrap: 'wrap', marginBottom: '16px' }}>

@@ -85,7 +85,7 @@ const DIAG_TOOLS: DiagTool[] = [
   {
     id: "simulate",
     label: "Pressure Simulator",
-    description: "Simulate custom FAULTLINE Pressure Index scenarios. Adjust individual domain scores and observe regime transitions in real time.",
+    description: "Simulate custom FAULTLINE Pressure Index scenarios. Adjust individual domain scores and observe regime transitions instantly.",
     path: "/app/simulate",
     icon: Activity,
     category: "simulation",

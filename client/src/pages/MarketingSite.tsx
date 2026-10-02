@@ -1,94 +1,51 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { MARKETING_TIER_CARDS, TIER_META } from "../../../shared/tiers";
 import { getLoginUrl, handleLoginCtaClick } from "@/const";
 import { useSEO } from "@/hooks/useSEO";
-import { trackPricingViewed, trackStartFreeClicked } from "@/hooks/useAnalytics";
+import { trackStartFreeClicked } from "@/hooks/useAnalytics";
+import SeismicUnderlay from "@/components/landing/SeismicUnderlay";
+import AmberSeismograph from "@/components/landing/AmberSeismograph";
+import MarketTicker from "@/components/landing/ticker/MarketTicker";
+import HeroProof from "@/components/landing/HeroProof";
+import PentagonalThesis from "@/components/landing/PentagonalThesis";
+import HistoricalContext from "@/components/landing/HistoricalContext";
+import { PRESSURE_BANDS, PRESSURE_VECTOR_ORDER, useLandingPressure } from "@/components/landing/useLandingPressure";
+import { PRESSURE_VECTOR_DISPLAY } from "@shared/pressureVectorLabels";
 
-const PLATFORM_URL = "/app";
+const EXPLORE_HREF = "/pressure-index";
+const METHOD_HREF = "/methodology";
+const TRUST_HREF = "/trust";
+const DAILY_BRIEF_HREF = "/daily-brief";
+const BLOG_HREF = "/blog";
+
+const PAGE_TITLE = "FAULTLINE | Structural Market Intelligence";
+const PAGE_DESCRIPTION =
+  "FAULTLINE reads high-yield credit, SOFR, the Treasury curve, macro conditions, equities, and crypto to show where systemic pressure is building.";
 
 const navItems = [
-  { label: "Methodology", href: "#methodology" },
-  { label: "Pentagonal Thesis", href: "#thesis" },
-  { label: "Intelligence System", href: "#system" },
-  { label: "Historical Intelligence", href: "#historical" },
-  { label: "Pricing", href: "#access" },
+  { label: "Thesis", href: "#thesis" },
+  { label: "Pressure Index", href: "#pressure" },
+  { label: "History", href: "#analogs" },
+  { label: "PLATO", href: "#plato" },
+  { label: "Methodology", href: METHOD_HREF },
+  { label: "Brief", href: DAILY_BRIEF_HREF },
+  { label: "Blog", href: BLOG_HREF },
 ];
 
-const thesisQuestions = [
-  {
-    number: "01",
-    question: "What’s happening?",
-    description: "Establish the current market state across systemic pressure, regime, liquidity, volatility, credit, breadth, positioning, and cross-asset behavior.",
-    emphasis: "State before story",
-  },
-  {
-    number: "02",
-    question: "Why?",
-    description: "Identify the forces driving the state, while separating observed conditions from FAULTLINE’s interpretation of their significance.",
-    emphasis: "Evidence before narrative",
-  },
-  {
-    number: "03",
-    question: "What’s next?",
-    description: "Frame plausible paths, consequences, and uncertainty. Scenarios are not forecasts presented as certainty.",
-    emphasis: "Scenarios before certainty",
-  },
-  {
-    number: "04",
-    question: "What should I watch?",
-    description: "Track thresholds, divergences, confirmations, and invalidations that can strengthen or weaken the current interpretation.",
-    emphasis: "Confirmation before conviction",
-  },
-  {
-    number: "05",
-    question: "What should I do?",
-    description: "Translate intelligence into decision awareness: exposure, risk, patience, preparation, and positioning context—not simplistic buy or sell commands.",
-    emphasis: "Awareness before action",
-  },
+
+const founderParagraphs = [
+  "I built FAULTLINE because I believe the most important risks in markets rarely appear in isolation.",
+  "A market can look healthy on the surface while pressure is quietly building underneath — in credit, liquidity, rates, volatility, currencies, commodities, equities, and other interconnected markets.",
+  "The challenge isn't access to more data.",
+  "There is already more data than anyone can reasonably process.",
+  "The challenge is understanding what the data means together.",
+  "FAULTLINE was built to look across those relationships, identify where pressure is developing, and translate complex market conditions into intelligence that people can actually understand.",
+  "The goal isn't to tell you what to buy or sell.",
+  "The goal is to help you see what may be changing beneath the surface, understand the forces driving it, and make your own decisions with better information.",
 ];
 
-const methodologySteps = [
-  ["01", "Collect", "Bring together market, macro, liquidity, credit, volatility, and cross-asset inputs."],
-  ["02", "Structure", "Separate current observations, derived indicators, historical context, and interpretation."],
-  ["03", "Compare", "Evaluate change, persistence, divergence, and relevant historical context."],
-  ["04", "Explain", "State the evidence, uncertainty, confirmation criteria, and what matters next."],
-] as const;
-
-const systemGroups = [
-  {
-    label: "Market State",
-    description: "A structured read of present conditions.",
-    items: ["Pressure Index™", "Regime analysis", "Risk vectors", "Cross-asset conditions"],
-  },
-  {
-    label: "Signals",
-    description: "Market-aware intelligence for instruments and rotations.",
-    items: ["Equity intelligence", "Macro-aware signals", "Rotation context", "Watchlists"],
-  },
-  {
-    label: "Historical Context",
-    description: "Use history as context—not as a guarantee.",
-    items: ["Historical Truth Engine™", "Time Machine", "Analog analysis", "Aftershock Engine™"],
-  },
-  {
-    label: "Interpretation",
-    description: "Current product capabilities that turn evidence into context.",
-    items: ["PLATO market explanation", "Scenario framing", "Evidence retrieval", "Decision awareness"],
-  },
-];
-
-const earlyWarningRelationships = [
-  ["Liquidity", "Equity conditions"],
-  ["Credit", "Equity strength"],
-  ["Volatility", "Complacency"],
-  ["Breadth", "Index concentration"],
-  ["Rates", "Risk assets"],
-  ["Crypto", "Broader risk appetite"],
-] as const;
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <p className="mb-4 text-[10px] font-mono font-semibold tracking-[0.28em] text-[#00D4FF]">{children}</p>;
+function SectionLabel({ children }: { children: string }) {
+  return <p className="mb-4 text-[12px] font-[inherit] font-semibold tracking-[0.06em] text-[#65D6E5]">{children}</p>;
 }
 
 function Arrow() {
@@ -96,16 +53,6 @@ function Arrow() {
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M2.5 7.5h10M8.8 3.7l3.7 3.8-3.7 3.8" />
     </svg>
-  );
-}
-
-function StatusStrip() {
-  return (
-    <div className="border-b border-[#00D4FF]/15 bg-[#050608] px-4 py-2 text-center">
-      <p className="text-[9px] font-mono tracking-[0.22em] text-[#00D4FF]/75">
-        FAULTLINE MARKET RISK INTELLIGENCE <span className="mx-2 text-white/20">/</span> EVIDENCE-FIRST MARKET AWARENESS
-      </p>
-    </div>
   );
 }
 
@@ -125,38 +72,37 @@ function SignInCta({ className }: { className: string }) {
   );
 }
 
+const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00D4FF]";
+
 function Header() {
   const [open, setOpen] = useState(false);
-
   const close = () => setOpen(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/[0.07] bg-[#050608]/95 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-white/[0.07] bg-[#0A0D12]/95 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
-        <Link href="/" className="flex items-center gap-3" onClick={close}>
-          <span className="relative flex h-2 w-2" aria-hidden="true">
-            <span className="absolute inset-0 animate-ping rounded-full bg-[#00FF88]/50" />
-            <span className="relative h-2 w-2 rounded-full bg-[#00D4FF]" />
-          </span>
-          <span className="font-mono text-sm font-black tracking-[0.28em] text-white">FAULTLINE</span>
-          <span className="hidden border-l border-white/10 pl-3 text-[9px] font-mono tracking-[0.2em] text-[#A8B8CC]/60 lg:inline">MARKET RISK INTELLIGENCE</span>
+        <Link href="/" className={`flex shrink-0 items-center gap-3 ${focusRing}`} onClick={close}>
+          <span className="h-2 w-2 rounded-full bg-[#65D6E5]" aria-hidden="true" />
+          <span className="font-[inherit] text-sm font-semibold tracking-[0.06em] text-white">FAULTLINE</span>
+          <span className="hidden whitespace-nowrap border-l border-white/10 pl-3 text-[12px] font-[inherit] tracking-[0.06em] text-[#B7C1CD] min-[1180px]:inline">STRUCTURAL MARKET INTELLIGENCE</span>
         </Link>
 
-        <nav className="hidden items-center gap-5 lg:flex" aria-label="Marketing navigation">
+        <nav className="hidden items-center gap-5 whitespace-nowrap lg:flex" aria-label="Landing navigation">
           {navItems.map((item) => (
-            <a key={item.href} href={item.href} className="text-[10px] font-mono tracking-[0.12em] text-[#A8B8CC] transition-colors hover:text-[#00D4FF]">
+            <a key={item.href} href={item.href} className={`text-[12px] font-[inherit] tracking-[0.06em] text-[#C5D0DC] transition-colors hover:text-[#65D6E5] ${focusRing}`}>
               {item.label.toUpperCase()}
             </a>
           ))}
-          <a href="/blog" className="text-[10px] font-mono tracking-[0.12em] text-[#A8B8CC] transition-colors hover:text-[#00D4FF]">RESEARCH</a>
         </nav>
 
-        <div className="hidden items-center gap-3 lg:flex">
-          <SignInCta className="rounded-lg border border-white/15 px-3 py-2 text-[10px] font-mono tracking-[0.14em] text-[#A8B8CC] transition-colors hover:border-[#00D4FF]/50 hover:text-white" />
-          <a href="#access" className="rounded-lg bg-[#00D4FF] px-3 py-2 text-[10px] font-mono font-black tracking-[0.14em] text-[#050608] transition-colors hover:bg-[#6EE7FF]">FOUNDING ACCESS</a>
+        <div className="hidden shrink-0 items-center gap-3 whitespace-nowrap lg:flex">
+          <SignInCta className={`rounded-lg border border-white/15 px-3 py-2 text-[12px] font-[inherit] tracking-[0.06em] text-[#C5D0DC] transition-colors hover:border-[#00D4FF]/50 hover:text-white ${focusRing}`} />
+          <a href={EXPLORE_HREF} onClick={() => trackStartFreeClicked("marketing_rebuild_hero")} className={`rounded-lg bg-[#65D6E5] px-3 py-2 text-[12px] font-[inherit] font-semibold tracking-[0.06em] text-[#050608] transition-colors hover:bg-[#6EE7FF] ${focusRing}`}>
+            EXPLORE FAULTLINE
+          </a>
         </div>
 
-        <button type="button" className="rounded-lg border border-white/15 p-3 text-[#A8B8CC] lg:hidden" onClick={() => setOpen(!open)} aria-expanded={open} aria-label={open ? "Close navigation" : "Open navigation"}>
+        <button type="button" className={`rounded-lg border border-white/15 p-3 text-[#C5D0DC] lg:hidden ${focusRing}`} onClick={() => setOpen(!open)} aria-expanded={open} aria-label={open ? "Close navigation" : "Open navigation"}>
           <span className="block h-px w-5 bg-current" />
           <span className="my-1 block h-px w-5 bg-current" />
           <span className="block h-px w-5 bg-current" />
@@ -164,16 +110,19 @@ function Header() {
       </div>
 
       {open && (
-        <nav className="border-t border-white/[0.07] bg-[#080B10] px-5 py-4 lg:hidden" aria-label="Mobile marketing navigation">
+        <nav className="border-t border-white/[0.07] bg-[#080B10] px-5 py-4 lg:hidden" aria-label="Mobile landing navigation">
           <div className="mx-auto grid max-w-7xl gap-1">
-            {navItems.map((item) => (
-              <a key={item.href} href={item.href} onClick={close} className="rounded-lg px-3 py-3 text-[12px] font-mono tracking-[0.12em] text-white/85 active:bg-white/5">
-                {item.label.toUpperCase()}
-              </a>
-            ))}
-            <a href="/blog" onClick={close} className="rounded-lg px-3 py-3 text-[12px] font-mono tracking-[0.12em] text-white/85 active:bg-white/5">RESEARCH</a>
-            <SignInCta className="rounded-lg px-3 py-3 text-left text-[12px] font-mono tracking-[0.12em] text-white/85" />
-            <a href="#access" onClick={close} className="mt-2 rounded-lg bg-[#00D4FF] px-3 py-3 text-center text-[12px] font-mono font-black tracking-[0.12em] text-[#050608]">FOUNDING ACCESS</a>
+            <div className="grid grid-cols-2 gap-1">
+              {navItems.map((item) => (
+                <a key={item.href} href={item.href} onClick={close} className={`rounded-lg px-3 py-3 text-[12px] font-[inherit] tracking-[0.06em] text-white ${focusRing}`}>
+                  {item.label.toUpperCase()}
+                </a>
+              ))}
+            </div>
+            <SignInCta className={`rounded-lg px-3 py-3 text-left text-[12px] font-[inherit] tracking-[0.06em] text-white ${focusRing}`} />
+            <a href={EXPLORE_HREF} onClick={close} className={`mt-2 rounded-lg bg-[#65D6E5] px-3 py-3 text-center text-[12px] font-[inherit] font-semibold tracking-[0.06em] text-[#050608] ${focusRing}`}>
+              EXPLORE FAULTLINE
+            </a>
           </div>
         </nav>
       )}
@@ -181,380 +130,338 @@ function Header() {
   );
 }
 
+function Ctas({ primaryTrack }: { primaryTrack?: boolean }) {
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row">
+      <a
+        href={EXPLORE_HREF}
+        onClick={primaryTrack ? () => trackStartFreeClicked("marketing_rebuild_hero") : undefined}
+        className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[#65D6E5] px-7 py-4 text-center text-[12px] font-[inherit] font-semibold tracking-[0.06em] text-[#050608] transition hover:bg-[#6EE7FF] ${focusRing}`}
+      >
+        EXPLORE FAULTLINE <Arrow />
+      </a>
+      <a href={METHOD_HREF} className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-[#00D4FF]/40 bg-[#0A0D12]/70 px-7 py-4 text-center text-[12px] font-[inherit] font-bold tracking-[0.06em] text-[#65D6E5] transition hover:border-[#00D4FF]/70 hover:bg-[#65D6E5]/10 ${focusRing}`}>
+        VIEW METHODOLOGY
+      </a>
+    </div>
+  );
+}
+
 function Hero() {
   return (
-    <section className="relative isolate overflow-hidden border-b border-[#00D4FF]/10 bg-[#050608]">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_70%_at_20%_35%,rgba(0,212,255,0.16),transparent_60%),linear-gradient(180deg,rgba(5,6,8,0.25),#050608_92%)]" />
-      <div className="absolute inset-0 opacity-[0.045] [background-image:linear-gradient(rgba(0,212,255,1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,212,255,1)_1px,transparent_1px)] [background-size:72px_72px]" />
-      <div className="relative mx-auto grid min-h-[calc(100svh-102px)] max-w-7xl items-center gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[1.08fr_0.92fr] lg:py-24">
-        <div className="max-w-3xl">
-          <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-[#00D4FF]/25 bg-[#00D4FF]/5 px-4 py-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#00FF88]" />
-            <span className="text-[10px] font-mono tracking-[0.24em] text-[#00D4FF]">INSTITUTIONAL-STYLE MARKET INTELLIGENCE</span>
-          </div>
-          <h1 className="max-w-4xl text-4xl font-bold leading-[1.04] tracking-[-0.045em] text-white sm:text-6xl lg:text-7xl">
-            Recognize when the market environment <span className="text-[#00D4FF]">has changed.</span>
+    <section className="relative isolate overflow-hidden border-b border-[#00D4FF]/10 bg-[#0A0D12]">
+      <SeismicUnderlay className="pointer-events-none absolute inset-0 h-full w-full [mask-image:linear-gradient(180deg,transparent_0%,transparent_42%,#000_68%)] lg:[mask-image:linear-gradient(90deg,transparent_0%,transparent_38%,rgba(0,0,0,0.4)_54%,#000_72%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,8,0.94)_0%,rgba(5,6,8,0.9)_48%,rgba(5,6,8,0.45)_72%,rgba(5,6,8,0.12)_100%)] lg:bg-[linear-gradient(90deg,rgba(5,6,8,0.96)_0%,rgba(5,6,8,0.92)_42%,rgba(5,6,8,0.55)_62%,rgba(5,6,8,0.08)_100%)]" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#0A0D12] to-transparent" aria-hidden="true" />
+      <AmberSeismograph className="absolute inset-x-0 bottom-10 h-28 sm:bottom-16 sm:h-36" />
+      <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-5 pb-16 pt-10 sm:px-8 sm:pt-16 lg:min-h-[calc(100svh-88px)] lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)] lg:gap-12 lg:py-12 xl:py-24">
+        <div className="max-w-4xl">
+          <h1 className="max-w-5xl">
+            <span className="block font-[inherit] text-[2.65rem] font-semibold leading-[1] tracking-[0.06em] text-white sm:text-7xl sm:tracking-[0.06em] lg:text-[4.5rem] xl:text-[6.25rem]">
+              FAULTLINE
+            </span>
+            <span className="mt-4 block h-px w-16 bg-[#65D6E5] sm:mt-6 sm:w-24" aria-hidden="true" />
+            <span className="mt-4 block max-w-4xl text-[1.85rem] font-bold leading-[1.08] tracking-[-0.04em] text-white sm:mt-6 sm:text-5xl lg:text-[2.75rem] xl:text-6xl">
+              See the pressure before the break.
+            </span>
           </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[#C7D2DF] sm:text-xl">
-            FAULTLINE turns fragmented market, macro, liquidity, credit, volatility, and positioning data into a structured view of market risk—so investors can understand what is happening, why it matters, and what to watch next.
+          <p className="mt-6 max-w-2xl text-lg leading-[1.75] text-[#E3E5E8] sm:text-xl lg:mt-5 lg:text-lg xl:text-xl">
+            FAULTLINE monitors credit, liquidity, rates, macro conditions, equities and crypto together to show where systemic pressure is building.
           </p>
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[#8291A6] sm:text-base">
-            Not another prediction engine. A market intelligence system built to identify changing conditions before they become obvious in headline narratives.
+          <p className="mt-4 max-w-2xl text-base leading-[1.75] text-[#B7C1CD]">
+            Built on the <a href="#thesis" className={`font-semibold text-white underline decoration-[#65D6E5]/60 underline-offset-4 hover:decoration-[#65D6E5] ${focusRing}`}>Pentagonal Thesis™</a>: what is happening, why, what could come next, what to watch, and how to frame a decision. It does not claim to know that a crash will happen.
           </p>
-          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <a href={PLATFORM_URL} onClick={() => trackStartFreeClicked("marketing_rebuild_hero")} className="inline-flex min-h-[54px] items-center justify-center gap-2 rounded-xl bg-[#00D4FF] px-7 py-4 text-center text-[12px] font-mono font-black tracking-[0.13em] text-[#050608] shadow-[0_0_36px_rgba(0,212,255,0.25)] transition hover:bg-[#6EE7FF] active:scale-[0.98]">
-              SEE TODAY’S MARKET ENVIRONMENT <Arrow />
-            </a>
-            <a href="/app/pressure" className="inline-flex min-h-[54px] items-center justify-center gap-2 rounded-xl border border-[#00D4FF]/35 bg-[#00D4FF]/5 px-7 py-4 text-center text-[12px] font-mono font-bold tracking-[0.13em] text-[#00D4FF] transition hover:border-[#00D4FF]/70 hover:bg-[#00D4FF]/10 active:scale-[0.98]">
-              EXPLORE THE PRESSURE INDEX™
-            </a>
+          <div className="mt-7 sm:mt-9 lg:mt-7 xl:mt-9">
+            <Ctas primaryTrack />
           </div>
-          <p className="mt-4 text-[11px] font-mono tracking-wide text-[#718096]">Free market-environment preview available. Not investment advice.</p>
+          <p className="mt-4 text-[12px] leading-[1.75] text-[#A8B4C2]">
+            Explore opens the public Pressure Index. No account is required.
+          </p>
         </div>
-
-        <div className="relative mx-auto w-full max-w-xl rounded-2xl border border-[#00D4FF]/20 bg-[#080D14]/90 p-4 shadow-[0_0_80px_rgba(0,212,255,0.08)] backdrop-blur">
-          <div className="mb-4 flex items-center justify-between border-b border-white/[0.07] pb-3">
-            <span className="text-[10px] font-mono tracking-[0.18em] text-[#00D4FF]/75">FAULTLINE INTELLIGENCE VIEW</span>
-            <span className="rounded border border-white/10 px-2 py-1 text-[8px] font-mono tracking-[0.13em] text-[#8FA0B3]">ILLUSTRATIVE INTERFACE</span>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {[
-              ["MARKET STATE", "Pressure, regime, and cross-asset conditions", "#00D4FF"],
-              ["WHY IT MATTERS", "Evidence and the forces shaping the current state", "#00FF88"],
-              ["WHAT CHANGED", "Developments that altered the interpretation", "#FFB020"],
-              ["WHAT TO WATCH", "Confirmations, thresholds, and invalidations", "#A78BFA"],
-            ].map(([label, value, color]) => (
-              <div key={label} className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-4">
-                <p className="text-[9px] font-mono tracking-[0.18em] text-white/45">{label}</p>
-                <p className="mt-3 text-sm font-semibold leading-snug" style={{ color }}>{value}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-3 rounded-xl border border-[#00D4FF]/15 bg-[#00D4FF]/[0.035] p-4">
-            <p className="text-[9px] font-mono tracking-[0.18em] text-[#00D4FF]/70">ONE CURRENT MARKET MOMENT</p>
-            <p className="mt-2 text-sm leading-relaxed text-[#B9C7D8]">One organized decision context—rather than disconnected indicators, headlines, and opinions.</p>
-          </div>
+        <div className="w-full max-w-md lg:justify-self-end">
+          <HeroProof />
         </div>
       </div>
     </section>
   );
 }
 
-function Methodology() {
+function Pressure() {
+  const reading = useLandingPressure();
+  const currentBand = reading.status === "available" ? reading.band : null;
   return (
-    <section id="methodology" className="scroll-mt-20 border-b border-white/[0.06] bg-[#070A0F] py-20 sm:py-28">
+    <section id="pressure" className="scroll-mt-24 border-b border-[#00D4FF]/15 bg-[#07121A] py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
-        <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+        <SectionLabel>FAULTLINE PRESSURE INDEX™</SectionLabel>
+        <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
           <div>
-            <SectionLabel>FAULTLINE METHODOLOGY™</SectionLabel>
-            <h2 className="text-3xl font-bold leading-tight tracking-[-0.035em] text-white sm:text-5xl">The reasoning system behind the intelligence.</h2>
-          </div>
-          <div>
-            <p className="text-lg leading-relaxed text-[#C7D2DF]">Markets generate enormous amounts of data. The problem is not access. It is determining what matters, what is changing, why it may be changing, whether the change is persistent, what could invalidate the interpretation, and what deserves attention now.</p>
-            <p className="mt-5 text-base leading-relaxed text-[#8796A9]">FAULTLINE Methodology™ structures that problem into a repeatable intelligence process. It is designed to improve market awareness—not to eliminate uncertainty or make guarantees about future outcomes.</p>
-          </div>
-        </div>
-        <div className="mt-12 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {methodologySteps.map(([number, title, description]) => (
-            <article key={number} className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
-              <p className="font-mono text-[11px] tracking-[0.2em] text-[#00D4FF]">{number}</p>
-              <h3 className="mt-5 text-lg font-semibold text-white">{title}</h3>
-              <p className="mt-3 text-sm leading-relaxed text-[#8FA0B3]">{description}</p>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function PentagonalThesis() {
-  return (
-    <section id="thesis" className="scroll-mt-20 overflow-hidden bg-[#050608] py-20 sm:py-28">
-      <div className="mx-auto max-w-7xl px-5 sm:px-8">
-        <div className="max-w-3xl">
-          <SectionLabel>FAULTLINE PENTAGONAL THESIS™</SectionLabel>
-          <h2 className="text-3xl font-bold leading-tight tracking-[-0.04em] text-white sm:text-5xl">Five questions. One connected intelligence system.</h2>
-          <p className="mt-5 text-lg leading-relaxed text-[#A8B8CC]">The point is not to produce more indicators. It is to turn changing conditions into an organized decision context: current state, drivers, plausible paths, what to monitor, and how to prepare.</p>
-        </div>
-        <div className="relative mt-12">
-          <div className="absolute left-[10%] right-[10%] top-10 hidden h-px bg-gradient-to-r from-transparent via-[#00D4FF]/45 to-transparent lg:block" />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {thesisQuestions.map((item, index) => (
-              <article key={item.number} className="relative rounded-2xl border border-[#00D4FF]/15 bg-[linear-gradient(180deg,rgba(0,212,255,0.075),rgba(255,255,255,0.02))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                <div className="relative z-10 flex h-11 w-11 items-center justify-center rounded-full border border-[#00D4FF]/35 bg-[#050608] font-mono text-xs font-bold text-[#00D4FF]">{item.number}</div>
-                <h3 className="mt-7 text-xl font-bold leading-tight text-white">{item.question}</h3>
-                <p className="mt-4 text-sm leading-relaxed text-[#98A7B9]">{item.description}</p>
-                <p className="mt-6 border-t border-white/[0.08] pt-4 text-[10px] font-mono tracking-[0.13em] text-[#00D4FF]/75">{item.emphasis.toUpperCase()}</p>
-                {index < thesisQuestions.length - 1 && <span className="absolute -right-3 top-9 z-20 hidden h-6 w-6 items-center justify-center rounded-full border border-[#00D4FF]/25 bg-[#050608] text-[#00D4FF] lg:flex">→</span>}
-              </article>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function PressureIndex() {
-  return (
-    <section className="border-y border-[#00D4FF]/10 bg-[#07121A] py-20 sm:py-28">
-      <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 sm:px-8 lg:grid-cols-[0.88fr_1.12fr]">
-        <div className="relative mx-auto flex aspect-square w-full max-w-sm items-center justify-center rounded-full border border-[#00D4FF]/25 bg-[radial-gradient(circle,rgba(0,212,255,0.14)_0%,rgba(0,212,255,0.035)_42%,transparent_70%)]">
-          <div className="absolute inset-7 rounded-full border border-dashed border-[#00D4FF]/25" />
-          <div className="absolute inset-16 rounded-full border border-[#00D4FF]/20" />
-          <div className="relative text-center">
-            <p className="font-mono text-[10px] tracking-[0.25em] text-[#00D4FF]">FLAGSHIP INDICATOR</p>
-            <p className="mt-4 text-5xl font-bold tracking-[-0.06em] text-white">0–100</p>
-            <p className="mt-2 text-[11px] font-mono tracking-[0.17em] text-[#95A6B8]">SYSTEMIC PRESSURE SCALE</p>
-          </div>
-        </div>
-        <div>
-          <SectionLabel>FAULTLINE PRESSURE INDEX™</SectionLabel>
-          <h2 className="text-3xl font-bold leading-tight tracking-[-0.035em] text-white sm:text-5xl">A starting point for investigation—not a conclusion.</h2>
-          <p className="mt-6 text-lg leading-relaxed text-[#C7D2DF]">The FAULTLINE Pressure Index™ is a 0–100 measure designed to summarize systemic market pressure across multiple risk dimensions. It gives the investor a place to begin asking better questions.</p>
-          <div className="mt-7 grid gap-3 sm:grid-cols-2">
-            {["Regime and primary pressure vectors", "What changed and supporting evidence", "Historical context and relevant analogs", "Conditions that confirm or invalidate the read"].map((item) => (
-              <div key={item} className="flex items-start gap-3 rounded-lg border border-white/[0.08] bg-white/[0.025] p-4 text-sm leading-relaxed text-[#A8B8CC]">
-                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#00D4FF]" />{item}
-              </div>
-            ))}
-          </div>
-          <a href="/app/pressure" className="mt-8 inline-flex items-center gap-2 text-[12px] font-mono font-bold tracking-[0.14em] text-[#00D4FF] hover:text-[#6EE7FF]">EXPLORE THE PRESSURE INDEX™ <Arrow /></a>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function EarlyWarning() {
-  return (
-    <section className="bg-[#050608] py-20 sm:py-28">
-      <div className="mx-auto max-w-7xl px-5 sm:px-8">
-        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
-          <div>
-            <SectionLabel>EARLY WARNING INTELLIGENCE™</SectionLabel>
-            <h2 className="text-3xl font-bold leading-tight tracking-[-0.035em] text-white sm:text-5xl">Pressure often builds somewhere before it becomes a headline.</h2>
-          </div>
-          <div>
-            <p className="text-lg leading-relaxed text-[#C7D2DF]">FAULTLINE monitors developing stress relationships across market systems and is expanding this capability into a dedicated Early Warning Intelligence™ system.</p>
-            <p className="mt-5 text-sm leading-relaxed text-[#8291A6]">This work is about identifying relationships worth investigating—not claiming that every future architecture or every warning signal is already operational.</p>
-          </div>
-        </div>
-        <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {earlyWarningRelationships.map(([left, right]) => (
-            <div key={left} className="group flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
-              <span className="text-sm font-semibold text-white">{left}</span>
-              <span className="mx-3 h-px flex-1 bg-gradient-to-r from-[#00D4FF]/50 to-[#00FF88]/40" />
-              <span className="text-right text-sm text-[#A8B8CC]">{right}</span>
+            <h2 className="text-3xl font-semibold leading-tight tracking-[-0.035em] text-white sm:text-5xl">A 0–100 measure of systemic pressure.</h2>
+            <p className="mt-6 text-lg leading-[1.75] text-[#E3E5E8]">
+              Six weighted vectors, built from FRED series and one static reference value, combine into one score. A higher number means more of those inputs sit in stressed ranges at the same time. It measures pressure inside this framework. It does not predict a specific crash, and it does not name a date.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 text-[12px] font-bold tracking-[0.06em] sm:flex-row sm:gap-6">
+              <a href={EXPLORE_HREF} className={`inline-flex items-center gap-2 text-[#65D6E5] hover:text-[#6EE7FF] ${focusRing}`}>
+                OPEN THE PUBLIC PRESSURE INDEX <Arrow />
+              </a>
+              <a href="/methodology#weights" className={`inline-flex items-center gap-2 text-[#C5D0DC] hover:text-white ${focusRing}`}>
+                FULL VECTOR INVENTORY <Arrow />
+              </a>
             </div>
-          ))}
+          </div>
+          <div className="grid gap-8">
+            <div>
+              <ol className="grid gap-2" aria-label="Pressure bands">
+                {PRESSURE_BANDS.map((band) => {
+                  const current = currentBand === band.regime;
+                  return (
+                    <li key={band.regime} aria-current={current ? "true" : undefined} className={`grid grid-cols-[4.75rem_1fr_auto] items-center gap-3 rounded-lg border px-4 py-3 ${current ? "border-[#65D6E5]/60 bg-[#65D6E5]/[0.08]" : "border-white/[0.08] bg-[#0A0D12]/60"}`}>
+                      <span className="font-[inherit] text-sm text-[#65D6E5]">{band.range}</span>
+                      <span className="text-sm font-semibold tracking-[0.04em] text-white">{band.regime}</span>
+                      {current ? <span className="text-[11px] font-semibold tracking-[0.06em] text-[#8BE6F0]">CURRENT</span> : <span aria-hidden="true" />}
+                    </li>
+                  );
+                })}
+              </ol>
+              <p className="mt-3 text-[12px] leading-[1.75] text-[#A8B4C2]">Engine labels and thresholds, inclusive at the lower bound: 25, 45, 65, and 80. Source: the classifier in the pressure engine.</p>
+            </div>
+            <div>
+              <h3 className="text-[12px] font-semibold tracking-[0.06em] text-[#B7C1CD]">THE SIX VECTORS</h3>
+              <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                {PRESSURE_VECTOR_ORDER.map(([id, weight]) => {
+                  const live = reading.status === "available" ? reading.vectors.find((vector) => vector.id === id) : undefined;
+                  return (
+                    <li key={id} className="flex items-baseline justify-between gap-3 rounded-lg border border-white/[0.08] px-4 py-3">
+                      <span className="text-sm text-white">
+                        {PRESSURE_VECTOR_DISPLAY[id].label}
+                        <span className="ml-2 text-[12px] text-[#A8B4C2]">{weight}</span>
+                      </span>
+                      {live && live.value != null && (
+                        <span className="shrink-0 text-sm tabular-nums text-[#E3E5E8]">{Math.round(live.value)}</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="mt-3 text-[12px] leading-[1.75] text-[#A8B4C2]" role="status">
+                {reading.status === "available"
+                  ? "Values are the current vector scores from the same public reading as the hero. The AI / Speculation vector uses a static reference value, not a live measurement."
+                  : reading.status === "loading"
+                    ? "Loading current vector scores. None are shown until they arrive."
+                    : "Current vector scores are unavailable, so none are shown. The AI / Speculation vector uses a static reference value, not a live measurement."}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
-function IntelligenceSystem() {
+function Plato() {
   return (
-    <section id="system" className="scroll-mt-20 border-y border-white/[0.06] bg-[#070A0F] py-20 sm:py-28">
+    <section id="plato" className="scroll-mt-24 bg-[#0A0D12] py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
-        <div className="max-w-3xl">
-          <SectionLabel>INTELLIGENCE SYSTEM</SectionLabel>
-          <h2 className="text-3xl font-bold tracking-[-0.035em] text-white sm:text-5xl">One system. Four ways to understand the market.</h2>
-          <p className="mt-5 text-lg leading-relaxed text-[#A8B8CC]">FAULTLINE brings existing capabilities into a coherent intelligence flow instead of presenting a long catalogue of disconnected tools.</p>
+        <SectionLabel>PLATO</SectionLabel>
+        <h2 className="max-w-3xl text-3xl font-semibold tracking-[-0.035em] text-white sm:text-5xl">FAULTLINE detects the signals. PLATO helps explain what they mean.</h2>
+        <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_1fr] lg:gap-16">
+          <div>
+            <p className="text-lg leading-[1.75] text-[#C9D4E0]">
+              PLATO is the interpretation layer. The quantitative measurements come from the FAULTLINE engines. PLATO market explanation synthesizes those measurements into context: what changed, and why it matters. It does not replace the score.
+            </p>
+            <p className="mt-5 text-base leading-[1.75] text-[#B7C1CD]">
+              When a persisted systemic-regime reading is available, PLATO is instructed to read that contract as-is and not to invent a regime, a crisis probability, or a factor. If the reading is missing, the instruction is to say it is unavailable.
+            </p>
+          </div>
+          <article className="rounded-2xl border border-[#00D4FF]/20 bg-[#071018] p-5 sm:p-6" aria-labelledby="plato-how-title">
+            <p className="inline-flex rounded-full border border-white/15 px-3 py-1 text-[11px] font-semibold tracking-[0.06em] text-[#C5D0DC]">
+              STATIC DESCRIPTION · NOT LIVE PLATO OUTPUT
+            </p>
+            <h3 id="plato-how-title" className="mt-4 text-lg font-semibold text-white">How a PLATO read is put together</h3>
+            <ol className="mt-4 grid gap-3">
+              {[
+                ["Market data", "FRED, Polygon, Yahoo, and CoinGecko inputs."],
+                ["FAULTLINE signals", "Vector scores, regimes, and cross-market alignment."],
+                ["Systemic-risk analysis", "The Pressure Index and the separate systemic-regime reading."],
+                ["PLATO", "Reads those persisted outputs. It does not rescore them."],
+                ["Context / why it matters", "A plain-language explanation, with unavailable inputs stated as unavailable."],
+              ].map(([step, detail], index) => (
+                <li key={step} className="grid grid-cols-[2rem_1fr] gap-2">
+                  <span className="text-[12px] font-semibold tracking-[0.06em] text-[#65D6E5]">0{index + 1}</span>
+                  <span>
+                    <span className="block text-sm font-semibold text-white">{step}</span>
+                    <span className="block text-sm leading-[1.65] text-[#B7C1CD]">{detail}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+            <p className="mt-5 text-[12px] leading-[1.7] text-[#A8B4C2]">
+              No public endpoint publishes PLATO output, so this page shows no PLATO text. PLATO reads are available inside the product.
+            </p>
+          </article>
         </div>
-        <div className="mt-12 grid gap-4 md:grid-cols-2">
-          {systemGroups.map((group, index) => (
-            <article key={group.label} className="rounded-2xl border border-white/[0.08] bg-[linear-gradient(135deg,rgba(0,212,255,0.055),rgba(255,255,255,0.015)_55%)] p-6 sm:p-7">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[10px] tracking-[0.22em] text-[#00D4FF]">0{index + 1}</span>
-                <span className="h-2 w-2 rounded-full bg-[#00D4FF]/70" />
+      </div>
+    </section>
+  );
+}
+
+const capabilityModules = [
+  {
+    title: "Systemic pressure and regimes",
+    body: "The Pressure Index, its six vectors and bands, plus a separate two-state systemic-regime model that never feeds the index.",
+    links: [["Open the Pressure Index", EXPLORE_HREF], ["Vector inventory", "/methodology#weights"]],
+  },
+  {
+    title: "Cross-market and crypto",
+    body: "Equity regime against crypto regime, read as aligned or diverging. The crypto stress score includes the Pressure Index.",
+    links: [["How alignment works", "/methodology#cross-market"], ["Data sources", "/methodology#sources"]],
+  },
+  {
+    title: "Daily intelligence",
+    body: "A written brief generated from the engine snapshot, a public archive, and long-form research on the blog.",
+    links: [["Daily brief", DAILY_BRIEF_HREF], ["Blog", BLOG_HREF]],
+  },
+] as const;
+
+function Capabilities() {
+  return (
+    <section id="stack" className="scroll-mt-24 border-y border-white/[0.06] bg-[#070A0F] py-20 sm:py-28">
+      <div className="mx-auto max-w-7xl px-5 sm:px-8">
+        <SectionLabel>CAPABILITIES</SectionLabel>
+        <h2 className="max-w-3xl text-3xl font-semibold tracking-[-0.035em] text-white sm:text-5xl">Three things FAULTLINE does every day.</h2>
+        <div className="mt-12 grid gap-4 lg:grid-cols-3">
+          {capabilityModules.map((module) => (
+            <article key={module.title} className="flex flex-col rounded-2xl border border-white/[0.08] bg-[#0A1018] p-6">
+              <h3 className="text-xl font-semibold text-white">{module.title}</h3>
+              <p className="mt-3 flex-1 text-base leading-[1.75] text-[#B7C1CD]">{module.body}</p>
+              <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2">
+                {module.links.map(([label, href]) => (
+                  <a key={href} href={href} className={`inline-flex items-center gap-2 text-[12px] font-bold tracking-[0.06em] text-[#65D6E5] hover:text-[#6EE7FF] ${focusRing}`}>
+                    {label.toUpperCase()} <Arrow />
+                  </a>
+                ))}
               </div>
-              <h3 className="mt-8 text-2xl font-bold text-white">{group.label}</h3>
-              <p className="mt-3 text-sm leading-relaxed text-[#93A2B4]">{group.description}</p>
-              <ul className="mt-6 grid gap-2 border-t border-white/[0.08] pt-5 sm:grid-cols-2">
-                {group.items.map((item) => <li key={item} className="flex items-center gap-2 text-sm text-[#C7D2DF]"><span className="h-1 w-1 rounded-full bg-[#00D4FF]" />{item}</li>)}
-              </ul>
             </article>
           ))}
         </div>
+        <p className="mt-6 text-sm leading-[1.75] text-[#A8B4C2]">
+          The full tool inventory, and the ideas that are not live yet, are on the <a href="/methodology#stack" className={`text-[#65D6E5] hover:text-[#8BE6F0] ${focusRing}`}>methodology page</a>.
+        </p>
       </div>
     </section>
   );
 }
 
-function HistoricalIntelligence() {
+const trustPoints = [
+  "Every input, weight, and band is published, including the static AI-concentration baseline.",
+  "No 25-year backtest is claimed. Analogs are resemblance tests, and the research windows are validation labels only.",
+  "High pressure does not mean an immediate crash. Low pressure does not mean risk is absent.",
+  "FAULTLINE does not tell you what to buy or sell. Nothing on this page is a solicitation or a personal recommendation.",
+];
+
+const trustLinks = [
+  ["Methodology", METHOD_HREF],
+  ["Data sources", "/methodology#sources"],
+  ["Limitations", "/methodology#limitations"],
+  ["Future intelligence", "/methodology#future"],
+  ["Trust Center", TRUST_HREF],
+] as const;
+
+function TrustTeaser() {
   return (
-    <section id="historical" className="scroll-mt-20 bg-[#050608] py-20 sm:py-28">
-      <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 sm:px-8 lg:grid-cols-[1fr_0.9fr]">
+    <section id="methodology" className="scroll-mt-24 bg-[#0A0D12] py-20 sm:py-28">
+      <div className="mx-auto grid max-w-7xl gap-12 px-5 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
         <div>
-          <SectionLabel>HISTORICAL INTELLIGENCE</SectionLabel>
-          <h2 className="text-3xl font-bold leading-tight tracking-[-0.035em] text-white sm:text-5xl">Use history to challenge the interpretation.</h2>
-          <p className="mt-6 text-lg leading-relaxed text-[#C7D2DF]">The Historical Truth Engine™ and Time Machine provide retrospective reconstructions: how the current FAULTLINE methodology would interpret conditions using information available in the historical dataset.</p>
-          <p className="mt-4 text-sm leading-relaxed text-[#8291A6]">These reconstructions were not generated live at those historical dates. They do not represent contemporaneous FAULTLINE warnings, investment recommendations, or guaranteed outcomes.</p>
-          <a href="/track-record" className="mt-8 inline-flex items-center gap-2 rounded-xl border border-[#00D4FF]/30 bg-[#00D4FF]/5 px-6 py-4 text-[12px] font-mono font-bold tracking-[0.13em] text-[#00D4FF] transition hover:border-[#00D4FF]/60">VIEW HISTORICAL INTELLIGENCE <Arrow /></a>
+          <SectionLabel>TRUST AND METHODOLOGY</SectionLabel>
+          <h2 className="text-3xl font-semibold tracking-[-0.035em] text-white sm:text-5xl">Built to be checked.</h2>
+          <ul className="mt-8 grid gap-3">
+            {trustPoints.map((point) => (
+              <li key={point} className="rounded-lg border border-white/[0.08] bg-white/[0.02] px-5 py-4 text-base leading-[1.75] text-[#E3E5E8]">{point}</li>
+            ))}
+          </ul>
+          <nav aria-label="Methodology and trust" className="mt-6 flex flex-wrap gap-x-5 gap-y-3">
+            {trustLinks.map(([label, href]) => (
+              <a key={href} href={href} className={`inline-flex items-center gap-2 text-[12px] font-bold tracking-[0.06em] text-[#65D6E5] hover:text-[#6EE7FF] ${focusRing}`}>
+                {label.toUpperCase()} <Arrow />
+              </a>
+            ))}
+          </nav>
         </div>
-        <div className="rounded-2xl border border-[#00D4FF]/15 bg-[#081018] p-6 sm:p-8">
-          <p className="font-mono text-[10px] tracking-[0.22em] text-[#00D4FF]">RETROSPECTIVE RECONSTRUCTION</p>
-          <div className="mt-8 space-y-5">
-            {[
-              ["Select a period", "Choose a market period and load the relevant historical dataset."],
-              ["Examine the evidence", "Review the methodology’s interpretation of conditions that were available at the time."],
-              ["Compare context and outcome", "Use the subsequent outcome as context for evaluating the evidence—not as data available to the original read."],
-            ].map(([title, text], index) => (
-              <div key={title} className="flex gap-4">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#00D4FF]/30 font-mono text-xs text-[#00D4FF]">0{index + 1}</span>
-                <div><h3 className="font-semibold text-white">{title}</h3><p className="mt-1 text-sm leading-relaxed text-[#8FA0B3]">{text}</p></div>
-              </div>
+        <aside className="rounded-2xl border border-white/[0.08] bg-[#070A0F] p-6 sm:p-8" aria-labelledby="founder-title">
+          <h2 id="founder-title" className="text-[12px] font-[inherit] font-semibold tracking-[0.06em] text-[#65D6E5]">A NOTE FROM THE FOUNDER</h2>
+          <div className="mt-6 space-y-4 text-base leading-[1.75] text-[#E3E5E8]">
+            {founderParagraphs.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
             ))}
           </div>
-        </div>
+          <p className="mt-6 text-sm font-semibold tracking-[0.06em] text-white">SEE THE PRESSURE BEFORE THE BREAK.</p>
+          <p className="mt-4 text-base text-[#C9D4E0]">— JT</p>
+        </aside>
       </div>
     </section>
   );
 }
 
-function Trust() {
+function FinalCta() {
   return (
-    <section className="border-y border-white/[0.06] bg-[#071018] py-20 sm:py-28">
-      <div className="mx-auto max-w-7xl px-5 sm:px-8">
-        <div className="max-w-3xl">
-          <SectionLabel>DATA, EVIDENCE, AND TRUST</SectionLabel>
-          <h2 className="text-3xl font-bold tracking-[-0.035em] text-white sm:text-5xl">Know what the information is—and what it is not.</h2>
-          <p className="mt-5 text-lg leading-relaxed text-[#C7D2DF]">FAULTLINE combines underlying public-market and economic data with derived calculations and contextual interpretation. Different inputs update at different frequencies; a market quote, an economic release, a cached read, and a scheduled calculation should not be treated as the same thing.</p>
+    <section id="access" className="relative isolate scroll-mt-24 overflow-hidden border-t border-white/[0.06] bg-[#0A0D12] py-24 sm:py-32">
+      <SeismicUnderlay intensity={0.72} />
+      <div className="pointer-events-none absolute inset-0 bg-[#0A0D12]/72" aria-hidden="true" />
+      <div className="relative mx-auto max-w-4xl px-5 text-center sm:px-8">
+        <h2 className="text-3xl font-semibold leading-tight tracking-[-0.04em] text-white sm:text-5xl">
+          THE MARKET IS A SYSTEM. UNDERSTAND THE PRESSURE BUILDING BENEATH IT.
+        </h2>
+        <div className="mt-10 flex justify-center">
+          <Ctas />
         </div>
-        <div className="mt-12 grid gap-4 md:grid-cols-3">
-          {[
-            ["Underlying data", "Market data, economic releases, Treasury information, and other source inputs each carry their own publication cadence."],
-            ["Derived intelligence", "Pressure, regime, scenario, and other FAULTLINE metrics are calculations built from available inputs."],
-            ["Interpretation", "Explanations distinguish evidence and context from judgment. FAULTLINE is decision support, not individualized financial advice."],
-          ].map(([title, text]) => (
-            <article key={title} className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-6"><h3 className="text-lg font-semibold text-white">{title}</h3><p className="mt-3 text-sm leading-relaxed text-[#9AA9BA]">{text}</p></article>
-          ))}
-        </div>
-        <div className="mt-8 flex flex-wrap gap-4"><a href="/trust#data-sources" className="text-[11px] font-mono font-bold tracking-[0.13em] text-[#00D4FF] hover:text-[#6EE7FF]">FULL DATA SOURCES <Arrow /></a><a href="/methodology" className="text-[11px] font-mono font-bold tracking-[0.13em] text-[#A8B8CC] hover:text-white">METHODOLOGY <Arrow /></a></div>
+        <p className="mx-auto mt-6 max-w-2xl text-sm leading-[1.75] text-[#C9D4E0]">
+          Checkout is not offered on this page. The public Pressure Index and the methodology do not require an account. Paid checkout stays unavailable from the landing page.
+        </p>
+        <p className="mt-3 text-sm text-[#B7C1CD]">
+          Already a member? <SignInCta className={`font-semibold text-[#65D6E5] underline-offset-4 hover:underline ${focusRing}`} />
+        </p>
       </div>
     </section>
   );
-}
-
-function Audience() {
-  return (
-    <section className="bg-[#050608] py-20 sm:py-28">
-      <div className="mx-auto max-w-7xl px-5 sm:px-8">
-        <SectionLabel>WHO FAULTLINE IS FOR</SectionLabel>
-        <div className="grid gap-8 lg:grid-cols-[0.7fr_1.3fr]">
-          <h2 className="text-3xl font-bold leading-tight tracking-[-0.035em] text-white sm:text-5xl">For investors who want context before they act.</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {["Self-directed investors seeking a structured market read", "Active traders who want regime and risk context", "Long-term allocators monitoring evolving macro conditions", "Crypto participants tracking broader liquidity and risk appetite"].map((item) => <div key={item} className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5 text-sm leading-relaxed text-[#B6C4D3]">{item}</div>)}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Pricing() {
-  const free = TIER_META.free;
-  const trader = MARKETING_TIER_CARDS.find((card) => card.tier === "core");
-  const power = MARKETING_TIER_CARDS.find((card) => card.tier === "premium");
-  const founding = MARKETING_TIER_CARDS.find((card) => card.tier === "founding");
-  return (
-    <section id="access" className="scroll-mt-20 border-y border-[#00D4FF]/15 bg-[radial-gradient(ellipse_80%_100%_at_50%_0%,rgba(0,212,255,0.1),transparent_62%),#071018] py-20 sm:py-28">
-      <div className="mx-auto max-w-7xl px-5 sm:px-8">
-        <div className="mx-auto max-w-3xl text-center">
-          <SectionLabel>ACCESS</SectionLabel>
-          <h2 className="text-3xl font-bold tracking-[-0.04em] text-white sm:text-5xl">A clear way to start. A clear founding offer.</h2>
-          <p className="mt-5 text-lg leading-relaxed text-[#B7C5D5]">Begin with the market environment. Upgrade when you want Trader, Power, or Founding access at the published monthly rates.</p>
-        </div>
-        <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          <article className="rounded-2xl border border-white/[0.1] bg-[#050608]/70 p-6 sm:p-7">
-            <p className="font-mono text-[10px] tracking-[0.2em] text-[#A8B8CC]">START HERE</p>
-            <h3 className="mt-5 text-2xl font-bold text-white">{free.displayName}</h3>
-            <p className="mt-3 text-sm leading-relaxed text-[#98A7B9]">{free.description}</p>
-            <p className="mt-7 text-3xl font-bold text-white">$0</p>
-            <a href={PLATFORM_URL} onClick={() => trackStartFreeClicked("marketing_pricing_free")} className="mt-7 inline-flex w-full items-center justify-center rounded-xl border border-[#00D4FF]/35 px-5 py-4 text-[11px] font-mono font-bold tracking-[0.13em] text-[#00D4FF] hover:bg-[#00D4FF]/10">SEE TODAY’S MARKET ENVIRONMENT</a>
-          </article>
-          {trader && (
-            <article className="rounded-2xl border border-white/[0.1] bg-[#050608]/70 p-6 sm:p-7">
-              <p className="font-mono text-[10px] tracking-[0.2em] text-[#A8B8CC]">{trader.badge ?? "MONTHLY ACCESS"}</p>
-              <h3 className="mt-5 text-2xl font-bold text-white">{trader.marketingName}</h3>
-              <p className="mt-3 text-sm leading-relaxed text-[#98A7B9]">{trader.tagline}</p>
-              <p className="mt-7 text-3xl font-bold text-white">{trader.price}</p>
-              <ul className="mt-4 grid gap-2 text-sm text-[#98A7B9]">
-                {trader.features.slice(0, 4).map((feature) => (
-                  <li key={feature} className="flex items-start gap-2"><span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-[#22D3EE]" />{feature}</li>
-                ))}
-              </ul>
-              <a href={PLATFORM_URL} className="mt-7 inline-flex w-full items-center justify-center rounded-xl border border-white/15 px-5 py-4 text-[11px] font-mono font-bold tracking-[0.13em] text-[#D0DAE6] hover:border-white/35">{trader.ctaLabel}</a>
-            </article>
-          )}
-          {power && (
-            <article className="rounded-2xl border border-white/[0.1] bg-[#050608]/70 p-6 sm:p-7">
-              <p className="font-mono text-[10px] tracking-[0.2em] text-[#A8B8CC]">{power.badge ?? "PROFESSIONAL"}</p>
-              <h3 className="mt-5 text-2xl font-bold text-white">{power.marketingName}</h3>
-              <p className="mt-3 text-sm leading-relaxed text-[#98A7B9]">{power.tagline}</p>
-              <p className="mt-7 text-3xl font-bold text-white">{power.price}</p>
-              <ul className="mt-4 grid gap-2 text-sm text-[#98A7B9]">
-                {power.features.slice(0, 4).map((feature) => (
-                  <li key={feature} className="flex items-start gap-2"><span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-[#00D4FF]" />{feature}</li>
-                ))}
-              </ul>
-              <a href={PLATFORM_URL} className="mt-7 inline-flex w-full items-center justify-center rounded-xl border border-white/15 px-5 py-4 text-[11px] font-mono font-bold tracking-[0.13em] text-[#D0DAE6] hover:border-white/35">{power.ctaLabel}</a>
-            </article>
-          )}
-          {founding && (
-            <article className="relative overflow-hidden rounded-2xl border border-[#FFD700]/45 bg-[linear-gradient(145deg,rgba(255,215,0,0.12),rgba(0,212,255,0.08)_55%,rgba(5,6,8,0.9))] p-6 shadow-[0_0_50px_rgba(255,215,0,0.1)] sm:p-7">
-              <div className="absolute right-0 top-0 rounded-bl-xl border-b border-l border-[#FFD700]/35 bg-[#FFD700]/10 px-3 py-2 text-[9px] font-mono font-bold tracking-[0.15em] text-[#FFD700]">FOUNDING RATE</div>
-              <p className="font-mono text-[10px] tracking-[0.2em] text-[#FFD700]">FOUNDING MEMBER</p>
-              <h3 className="mt-5 text-2xl font-bold text-white">{founding.marketingName}</h3>
-              <p className="mt-3 text-sm leading-relaxed text-[#D2DCE6]">{founding.tagline}. Everything in Power at the founding monthly rate, locked while membership remains active.</p>
-              <div className="mt-7 flex items-end gap-3">
-                <p className="text-5xl font-bold tracking-[-0.06em] text-[#FFD700]">{founding.price.replace(" (locked while active)", "")}</p>
-              </div>
-              <ul className="mt-4 grid gap-2 text-sm text-[#B9C8D8]">
-                {founding.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2"><span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-[#FFD700]" />{feature}</li>
-                ))}
-              </ul>
-              <a href={PLATFORM_URL} className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#FFD700] px-5 py-4 text-[11px] font-mono font-black tracking-[0.13em] text-[#050608] transition hover:bg-[#FFE277]">{founding.ctaLabel} <Arrow /></a>
-            </article>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function FAQ() {
-  const questions = [
-    ["Is FAULTLINE investment advice?", "No. FAULTLINE provides market intelligence and educational analysis, not individualized investment advice, a recommendation to buy or sell a security, or a guarantee of future results."],
-    ["What does the Pressure Index™ tell me?", "It is a 0–100 starting point for investigating systemic pressure. The surrounding regime, evidence, what changed, and historical context matter as much as the number."],
-    ["How should I interpret historical analysis?", "Historical views are retrospective reconstructions using historical datasets. They were not generated live at those dates and should not be treated as contemporaneous warnings or proof of future outcomes."],
-  ];
-  return <section className="border-y border-white/[0.06] bg-[#070A0F] py-20 sm:py-24"><div className="mx-auto max-w-4xl px-5 sm:px-8"><SectionLabel>COMMON QUESTIONS</SectionLabel><h2 className="text-3xl font-bold tracking-[-0.035em] text-white sm:text-4xl">Clear about the limits of the platform.</h2><div className="mt-9 divide-y divide-white/[0.08] rounded-xl border border-white/[0.08] bg-white/[0.015]">{questions.map(([question, answer]) => <details key={question} className="group p-5"><summary className="cursor-pointer list-none pr-8 text-base font-semibold text-white marker:hidden">{question}<span className="float-right text-[#00D4FF] transition-transform group-open:rotate-45">+</span></summary><p className="mt-4 max-w-3xl text-sm leading-relaxed text-[#9AA9BA]">{answer}</p></details>)}</div><p className="mt-6 text-sm leading-relaxed text-[#718096]">All investing involves risk, including possible loss of principal. <a href="/trust#disclaimers" className="text-[#00D4FF] hover:text-[#6EE7FF]">Read the full disclosures.</a></p></div></section>;
-}
-
-function ResearchLibrary() {
-  return <section className="bg-[#050608] py-20 sm:py-24"><div className="mx-auto max-w-7xl px-5 sm:px-8"><div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><SectionLabel>INTELLIGENCE LIBRARY</SectionLabel><h2 className="text-3xl font-bold tracking-[-0.035em] text-white sm:text-4xl">Research for deeper investigation.</h2></div><a href="/analysis" className="inline-flex items-center gap-2 text-[11px] font-mono font-bold tracking-[0.13em] text-[#00D4FF]">VIEW ALL ANALYSIS <Arrow /></a></div><div className="mt-10 grid gap-4 md:grid-cols-3">{[["Market risk", "Understand market regimes, pressure, liquidity, and volatility."], ["Macro context", "Explore rates, inflation, credit, and economic transmission channels."], ["Crypto and concentration", "Study liquidity, risk appetite, and concentration across evolving markets."]].map(([title, text]) => <a key={title} href="/analysis" className="group rounded-xl border border-white/[0.08] bg-white/[0.02] p-6 transition hover:border-[#00D4FF]/35 hover:bg-[#00D4FF]/[0.03]"><p className="text-[10px] font-mono tracking-[0.18em] text-[#00D4FF]">RESEARCH</p><h3 className="mt-5 text-xl font-semibold text-white">{title}</h3><p className="mt-3 text-sm leading-relaxed text-[#93A2B4]">{text}</p><span className="mt-6 inline-flex text-[#00D4FF] transition group-hover:translate-x-1">→</span></a>)}</div></div></section>;
 }
 
 function Footer() {
-  return <footer className="border-t border-white/[0.07] bg-[#030405] py-12"><div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 sm:px-8"><div className="flex flex-col justify-between gap-6 sm:flex-row"><div><p className="font-mono text-lg font-black tracking-[0.23em] text-white">FAULTLINE</p><p className="mt-3 max-w-md text-sm leading-relaxed text-[#7F90A3]">Market risk intelligence for understanding changing conditions before headline narratives make them obvious.</p></div><div className="flex flex-wrap gap-x-5 gap-y-3 text-[11px] font-mono tracking-[0.1em] text-[#A8B8CC]"><a href="/methodology" className="hover:text-[#00D4FF]">METHODOLOGY</a><a href="/trust" className="hover:text-[#00D4FF]">TRUST CENTER</a><a href="/contact" className="hover:text-[#00D4FF]">CONTACT</a><a href="/blog" className="hover:text-[#00D4FF]">RESEARCH</a><a href="/pricing" className="hover:text-[#00D4FF]">PRICING</a></div></div><div className="flex flex-col justify-between gap-3 border-t border-white/[0.07] pt-6 text-[10px] font-mono tracking-wide text-[#64748B] sm:flex-row"><span>© 2026 FAULTLINE · A PHOENIX SYSTEMS PLATFORM</span><span>MARKET AWARENESS. BEFORE THE CONSENSUS FORMS.</span></div></div></footer>;
+  return (
+    <footer className="border-t border-white/[0.07] bg-[#030405] py-12">
+      <div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 sm:px-8">
+        <div className="flex flex-col justify-between gap-6 sm:flex-row">
+          <div>
+            <p className="font-[inherit] text-lg font-semibold tracking-[0.06em] text-white">FAULTLINE</p>
+            <p className="mt-3 max-w-md text-base leading-[1.75] text-[#B7C1CD]">Structural Market Intelligence. See the pressure before the break.</p>
+          </div>
+          <nav className="flex flex-wrap gap-x-5 gap-y-3 text-[12px] font-[inherit] tracking-[0.06em] text-[#C5D0DC]" aria-label="Footer">
+            <a href={EXPLORE_HREF} className={`hover:text-[#65D6E5] ${focusRing}`}>PRESSURE INDEX</a>
+            <a href={METHOD_HREF} className={`hover:text-[#65D6E5] ${focusRing}`}>METHODOLOGY</a>
+            <a href={TRUST_HREF} className={`hover:text-[#65D6E5] ${focusRing}`}>TRUST CENTER</a>
+            <a href={DAILY_BRIEF_HREF} className={`hover:text-[#65D6E5] ${focusRing}`}>DAILY BRIEF</a>
+            <a href={BLOG_HREF} className={`hover:text-[#65D6E5] ${focusRing}`}>BLOG</a>
+            <a href="/about" className={`hover:text-[#65D6E5] ${focusRing}`}>ABOUT</a>
+            <a href="/contact" className={`hover:text-[#65D6E5] ${focusRing}`}>CONTACT</a>
+          </nav>
+        </div>
+        <div className="flex flex-col justify-between gap-3 border-t border-white/[0.07] pt-6 text-[12px] leading-[1.75] text-[#A8B4C2] sm:flex-row">
+          <span>© 2026 FAULTLINE · A PHOENIX SYSTEMS PLATFORM</span>
+          <span>NOT INVESTMENT ADVICE.</span>
+        </div>
+      </div>
+    </footer>
+  );
 }
 
-type MarketingSitePlacement = "methodology" | "thesis" | "system" | "historical" | "access" | "pricing";
+type MarketingSitePlacement = "methodology" | "pressure" | "plato" | "analogs" | "stack" | "access" | "pricing";
 
 export default function MarketingSite({ initialSection }: { initialSection?: MarketingSitePlacement } = {}) {
   useSEO({
-    title: "FAULTLINE | Market Risk Intelligence, Systemic Risk & Early Warning Signals",
-    description: "Market risk intelligence for understanding systemic market stress, early warning signals, macroeconomic risk, and changing market regimes with actionable context.",
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
     canonical: "/",
   });
 
   useEffect(() => {
-    trackPricingViewed();
     if (!initialSection) return;
     const targetSection = initialSection === "pricing" ? "access" : initialSection;
     const timer = window.setTimeout(() => document.getElementById(targetSection)?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
@@ -562,22 +469,26 @@ export default function MarketingSite({ initialSection }: { initialSection?: Mar
   }, [initialSection]);
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#050608] text-white">
-      <StatusStrip />
+    <div className="min-h-screen overflow-x-hidden bg-[#0A0D12] text-[#F4F2ED]" style={{ fontFamily: '"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+      <a href="#main" className={`absolute left-4 top-4 z-[60] -translate-y-24 rounded bg-[#65D6E5] px-3 py-2 text-sm font-semibold text-[#050608] focus:translate-y-0 ${focusRing}`}>
+        Skip to content
+      </a>
+      <MarketTicker />
+      <div className="border-b border-[#00D4FF]/15 bg-[#0A0D12] px-4 py-2 text-center">
+        <p className="text-[12px] font-[inherit] tracking-[0.06em] text-[#65D6E5] sm:text-[12px] sm:tracking-[0.06em]">
+          FAULTLINE STRUCTURAL MARKET INTELLIGENCE <span className="mx-2 text-white/30">/</span> SYSTEMIC PRESSURE AND INTERPRETATION
+        </p>
+      </div>
       <Header />
-      <main>
+      <main id="main">
         <Hero />
-        <Methodology />
         <PentagonalThesis />
-        <PressureIndex />
-        <EarlyWarning />
-        <IntelligenceSystem />
-        <HistoricalIntelligence />
-        <Trust />
-        <Audience />
-        <Pricing />
-        <FAQ />
-        <ResearchLibrary />
+        <Pressure />
+        <HistoricalContext />
+        <Plato />
+        <Capabilities />
+        <TrustTeaser />
+        <FinalCta />
       </main>
       <Footer />
     </div>

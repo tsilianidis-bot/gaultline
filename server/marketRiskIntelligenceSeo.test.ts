@@ -10,20 +10,23 @@ const robots = readFileSync(resolve(root, "client/public/robots.txt"), "utf8");
 const sitemap = readFileSync(resolve(root, "client/public/sitemap.xml"), "utf8");
 
 describe("Market Risk Intelligence SEO positioning", () => {
-  const homepageTitle = "FAULTLINE | Market Risk Intelligence, Systemic Risk & Early Warning Signals";
+  const homepageTitle = "FAULTLINE | Structural Market Intelligence";
 
   it("keeps FAULTLINE as the master brand while applying the approved homepage category descriptor", () => {
     expect(getPageMeta("/").title).toBe(homepageTitle);
     expect(homepage).toContain(`<title>${homepageTitle.replace("&", "&amp;")}</title>`);
-    expect(marketingPage).toContain("FAULTLINE MARKET RISK INTELLIGENCE");
-    expect(marketingPage).toContain("MARKET RISK INTELLIGENCE");
+    expect(marketingPage).toContain("FAULTLINE STRUCTURAL MARKET INTELLIGENCE");
+    expect(marketingPage).toContain(">STRUCTURAL MARKET INTELLIGENCE<");
+    expect(marketingPage).toContain("See the pressure before the break.");
+    expect(marketingPage).not.toMatch(/see the fault before the break/i);
+    expect(homepage).not.toMatch(/see the fault before the break/i);
   });
 
   it("uses matching primary, Open Graph, Twitter, canonical, and indexability metadata on the homepage", () => {
     const html = injectPageMeta(homepage, "/");
     expect((html.match(/<title>/g) ?? [])).toHaveLength(1);
-    expect(html).toContain('property="og:title" content="FAULTLINE | Market Risk Intelligence, Systemic Risk &amp; Early Warning Signals"');
-    expect(html).toContain('name="twitter:title" content="FAULTLINE | Market Risk Intelligence, Systemic Risk &amp; Early Warning Signals"');
+    expect(html).toContain('property="og:title" content="FAULTLINE | Structural Market Intelligence"');
+    expect(html).toContain('name="twitter:title" content="FAULTLINE | Structural Market Intelligence"');
     expect(html).toContain('rel="canonical" href="https://getfaultline.live"');
     expect(html).not.toContain('name="robots" content="noindex,follow"');
   });
@@ -34,14 +37,18 @@ describe("Market Risk Intelligence SEO positioning", () => {
     expect(homepage).toContain('"description": "FAULTLINE is a market risk intelligence platform');
   });
 
-  it("advertises only the public pricing ladder in SoftwareApplication JSON-LD", () => {
-    expect(homepage).toContain('"name": "Trader"');
-    expect(homepage).toContain('"name": "Power"');
-    expect(homepage).toContain('"name": "Founding"');
-    expect(homepage).toContain('"price": "59.00"');
-    expect(homepage).toContain('"price": "99.00"');
-    expect(homepage).toContain('"price": "49.00"');
+  it("keeps SoftwareApplication structured data free of prices, offers, and ratings", () => {
+    const softwareApp = homepage.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+    expect(softwareApp?.[1]).toBeTruthy();
+    const schema = JSON.parse(softwareApp![1]);
+    expect(schema["@type"]).toBe("SoftwareApplication");
+    expect(schema.offers).toBeUndefined();
+    expect(schema.aggregateRating).toBeUndefined();
+    expect(homepage).not.toContain('"@type": "Offer"');
     expect(homepage).not.toContain('"name": "Founding Lifetime"');
+    expect(homepage).not.toContain('"price": "59.00"');
+    expect(homepage).not.toContain('"price": "99.00"');
+    expect(homepage).not.toContain('"price": "49.00"');
     expect(homepage).not.toContain('"price": "299.00"');
     expect(homepage).not.toContain('"price": "9.99"');
   });

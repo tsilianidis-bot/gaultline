@@ -16,7 +16,7 @@ export default function IsNowGoodTimeToBuyStocks() {
       accentColor="#00FF88"
       features={[
         { icon: "◈", title: "Pressure Index Score", desc: "A 0-100 systemic risk score aggregating credit spreads, VIX regime, yield curve, liquidity, AI concentration, and breadth." },
-        { icon: "◎", title: "Market Regime Classification", desc: "Real-time classification of the current regime — bull, bear, risk-on, risk-off, late-cycle — updated continuously." },
+        { icon: "◎", title: "Market Regime Classification", desc: "Regularly refreshed classification of the current regime — bull, bear, risk-on, risk-off, late-cycle — updated continuously." },
         { icon: "⬡", title: "Historical Analog Matching", desc: "Compare current conditions against historical periods to understand which past environment today most resembles." },
         { icon: "◈", title: "Recession Probability", desc: "Leading economic indicators of recession risk — the single biggest driver of sustained bear markets." },
         { icon: "◎", title: "Liquidity Conditions", desc: "Fed QT, bank lending tightening, and global liquidity withdrawal are the mechanism behind most major market dislocations." },
@@ -35,7 +35,7 @@ This is not a timing tool — it is a risk assessment framework. A low Pressure 
           heading: "Market Regime and What It Means for Stock Buying",
           body: `Market regime matters as much as valuation. Buying stocks in a confirmed bull market regime with low systemic pressure is structurally different from buying in a late-cycle environment with elevated credit stress and deteriorating breadth — even if valuations look similar on the surface.
 
-FAULTLINE's regime engine classifies the current market environment in real time. Early-cycle bull regimes historically produce the strongest forward returns. Late-cycle regimes with elevated Pressure Index readings have historically produced the weakest risk-adjusted returns and the highest probability of drawdowns exceeding 20%.
+FAULTLINE's regime engine classifies the current market environment as new data is published. Early-cycle bull regimes historically produce the strongest forward returns. Late-cycle regimes with elevated Pressure Index readings have historically produced the weakest risk-adjusted returns and the highest probability of drawdowns exceeding 20%.
 
 The regime classification also determines how other signals should be interpreted. A rising VIX in a bull regime is often a buying opportunity. The same VIX move in a late-cycle regime with deteriorating credit conditions is a warning signal. Context is everything.`,
         },
@@ -67,7 +67,7 @@ Understanding which historical environment today most resembles is one of the mo
         },
         {
           question: "What market conditions historically favor buying stocks?",
-          answer: "Historically, the most favorable conditions for buying stocks combine: low systemic pressure (Pressure Index below 30), early-cycle or mid-cycle bull regime, low credit spreads, accommodative Fed policy, and strong market breadth. FAULTLINE tracks all of these in real time.",
+          answer: "Historically, the most favorable conditions for buying stocks combine: low systemic pressure (Pressure Index below 30), early-cycle or mid-cycle bull regime, low credit spreads, accommodative Fed policy, and strong market breadth. FAULTLINE tracks all of these as new data is published.",
         },
         {
           question: "What conditions historically suggest caution about buying stocks?",
@@ -75,12 +75,12 @@ Understanding which historical environment today most resembles is one of the mo
         },
         {
           question: "How often is FAULTLINE's market assessment updated?",
-          answer: "FAULTLINE's Pressure Index and regime classification update continuously throughout the trading day as new data arrives from FRED, Polygon.io, and market data feeds. Economic data from FRED updates on its standard release schedule.",
+          answer: "FAULTLINE's Pressure Index and regime classification are recalculated as new data is published by FRED, Polygon.io, and market data feeds. Economic data from FRED updates on its standard release schedule.",
         },
       ]}
       internalLinks={[
         { label: "PRESSURE INDEX", href: "/pressure-index", desc: "The core systemic risk score — 7 vectors aggregated into a single 0-100 reading." },
-        { label: "MARKET REGIME TRACKER", href: "/market-regime-tracker", desc: "Real-time classification of the current market regime." },
+        { label: "MARKET REGIME TRACKER", href: "/market-regime-tracker", desc: "Regularly refreshed classification of the current market regime." },
         { label: "DAILY BRIEF", href: "/daily-brief", desc: "Today's market conditions, key drivers, and risk assessment." },
         { label: "RECESSION PROBABILITY", href: "/recession-probability", desc: "Leading economic indicators of recession risk — the biggest driver of sustained bear markets." },
         { label: "HISTORICAL ANALOGS", href: "/analogs", desc: "Compare current conditions against historical environments to understand what happened next." },

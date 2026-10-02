@@ -1758,6 +1758,7 @@ export type InsertDailyBriefSnapshot = typeof dailyBriefSnapshots.$inferInsert;
 export const intelligenceStateManifests = mysqlTable("intelligenceStateManifests", {
   id:                   int("id").autoincrement().primaryKey(),
   stateId:              varchar("stateId", { length: 96 }).notNull().unique(),
+  originatingRunId:     varchar("originatingRunId", { length: 160 }).notNull(),
   generatedAt:          timestamp("generatedAt").notNull(),
   championVersion:      varchar("championVersion", { length: 96 }).notNull(),
   modelVersion:         varchar("modelVersion", { length: 96 }).notNull(),
@@ -1770,6 +1771,7 @@ export const intelligenceStateManifests = mysqlTable("intelligenceStateManifests
   createdAt:            timestamp("createdAt").defaultNow().notNull(),
 }, (t) => ({
   generatedAtIdx: index("intelligenceStateManifests_generatedAt_idx").on(t.generatedAt),
+  originatingRunIdIdx: uniqueIndex("intelligenceStateManifests_originatingRunId_uniq").on(t.originatingRunId),
   coherenceIdx: index("intelligenceStateManifests_coherence_idx").on(t.coherenceStatus),
 }));
 export type IntelligenceStateManifest = typeof intelligenceStateManifests.$inferSelect;

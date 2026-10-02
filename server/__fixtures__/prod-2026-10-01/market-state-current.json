@@ -1,0 +1,203 @@
+{
+ "version": "1.0",
+ "generatedAt": "2026-10-02T00:08:26.954Z",
+ "sourceUpdatedAt": "2026-10-01T18:00:34.009Z",
+ "freshness": "live",
+ "cache": {
+  "status": "fresh-cache",
+  "ageMs": 13662,
+  "staleReason": null
+ },
+ "sourceHealth": [
+  {
+   "id": "seismograph",
+   "label": "Canonical Seismograph",
+   "status": "healthy",
+   "required": true,
+   "asOf": "2026-10-01T18:00:34.009Z",
+   "detail": "Unified Seismograph synthesis is current and available."
+  },
+  {
+   "id": "historical-memory",
+   "label": "Historical Market Memory",
+   "status": "healthy",
+   "required": true,
+   "asOf": "2026-10-01T18:00:34.009Z",
+   "detail": "6 observations across Apr 2026 to Sep 2026 (6 months)."
+  },
+  {
+   "id": "fred",
+   "label": "Macro and Credit Evidence",
+   "status": "healthy",
+   "required": true,
+   "asOf": "2026-10-01T18:00:32.884Z",
+   "detail": "Live FRED macro and credit observations contributed through the pressure engine."
+  },
+  {
+   "id": "coingecko",
+   "label": "Crypto Market Overlay",
+   "status": "unavailable",
+   "required": false,
+   "asOf": "2026-10-01T18:00:34.009Z",
+   "detail": "Optional live crypto overlay is not required for the canonical Seismograph state."
+  }
+ ],
+ "warnings": [],
+ "now": {
+  "pressureScore": 33,
+  "regime": "MODERATE RISK",
+  "stressLevel": "Elevated",
+  "direction": "Stable",
+  "historicalPercentile": 83,
+  "headline": "Elevated stress in a MODERATE RISK regime; pressure is stable.",
+  "topDrivers": [
+   "Market Breadth: 45/100",
+   "Volatility Regime: 40/100",
+   "Macro Sensitivity: 35/100"
+  ]
+ },
+ "why": {
+  "story": "FAULTLINE's Seismograph is reading 33/100 \u2014 moderate conditions \u2014 with conditions broadly stable. The market is in a Moderate Risk regime, placing current conditions in the 83rd historical percentile (historically elevated) across 5 intelligence domains. The primary pressure driver is market breadth, which is signaling neutral conditions.",
+  "whyThisScore": "The 33/100 reading reflects 0 of 5 intelligence engines signaling elevated stress, with 3 signaling constructive conditions. This places current pressure in the 83rd historical percentile (historically elevated) \u2014 meaning 83% of all historical months recorded lower pressure than today.",
+  "whyThisRegime": "The Moderate Risk regime classification is driven primarily by market breadth, volatility regime, macro sensitivity. These factors collectively indicate that the market environment is broadly supportive of measured risk-taking with standard risk management.",
+  "keyDevelopments": [
+   "Market has cycled through 3 different regimes in the past 90 days \u2014 elevated instability"
+  ],
+  "narrative": {
+   "whatIsHappening": "The market is operating under moderate systemic pressure (33/100), in the 83rd percentile historically (historically elevated). 3 of 5 intelligence engines are signaling strength or recovery, consistent with a constructive risk environment.",
+   "whyIsItHappening": "The primary drivers of current strength are Macro Sensitivity (35/100), Credit Markets (30/100). Broad-based strength across independent engines suggests the current environment has structural support.",
+   "whatHasChanged": "Market has cycled through 3 different regimes in the past 90 days \u2014 elevated instability",
+   "whatIsBuildingBeneathSurface": "No clear sub-surface pressure is building at this time. The current reading appears to reflect conditions accurately across all monitored engines."
+  },
+  "evidenceFamilies": [
+   {
+    "name": "Market Breadth",
+    "signal": "neutral",
+    "strength": 45,
+    "currentValue": "45/100",
+    "historicalContext": "6-month average: 47/100. Market breadth is moderate \u2014 neither confirming nor contradicting the current trend.",
+    "trend": "stable",
+    "whyItMatters": "Market breadth measures participation in market moves. Narrow breadth during rallies historically precedes reversals; wide breadth during selloffs signals capitulation."
+   },
+   {
+    "name": "Volatility Regime",
+    "signal": "neutral",
+    "strength": 40,
+    "currentValue": "40/100",
+    "historicalContext": "6-month average: 38/100. Volatility is contained, consistent with normal market functioning.",
+    "trend": "stable",
+    "whyItMatters": "Volatility regime determines the cost of capital and risk appetite. Sustained elevated volatility forces institutional de-risking regardless of fundamental valuations."
+   },
+   {
+    "name": "Macro Sensitivity",
+    "signal": "bullish",
+    "strength": 35,
+    "currentValue": "35/100",
+    "historicalContext": "6-month average: 33/100. Macro sensitivity composite reflects inflation, employment, and monetary policy dynamics.",
+    "trend": "stable",
+    "whyItMatters": "Macro sensitivity captures how exposed markets are to economic deterioration. High readings mean that negative economic surprises will have outsized market impact."
+   },
+   {
+    "name": "Credit Markets",
+    "signal": "bullish",
+    "strength": 30,
+    "currentValue": "30/100",
+    "historicalContext": "6-month average: 29/100. Credit contagion index based on composite spread signals.",
+    "trend": "stable",
+    "whyItMatters": "Credit spreads are the most reliable leading indicator of systemic stress. Widening spreads signal that institutional investors are pricing in elevated default risk."
+   },
+   {
+    "name": "Liquidity Conditions",
+    "signal": "recovering",
+    "strength": 17,
+    "currentValue": "17/100",
+    "historicalContext": "6-month average: 18/100. Liquidity conditions are consistent with recent trend.",
+    "trend": "stable",
+    "whyItMatters": "Liquidity stress drives credit tightening and forced selling. Elevated readings historically precede broader market dislocations by 2\u20134 months."
+   }
+  ],
+  "evidenceConsensus": "moderate"
+ },
+ "outlook": {
+  "probabilities": {
+   "bull": 64,
+   "neutral": 21,
+   "bear": 15,
+   "confidence": 50,
+   "primaryDriver": "Market Breadth",
+   "evidenceBasis": "0 of 5 intelligence engines are signaling stress. 3 are signaling constructive conditions.",
+   "historicalBasis": "Based on 6 historical months with similar pressure levels."
+  },
+  "regimeProbabilities": {
+   "bull": 53,
+   "softLanding": 33,
+   "stagflation": 8,
+   "recession": 4,
+   "crash": 2
+  },
+  "transitionProbabilities": {
+   "remainInRegime": 60,
+   "transitionToElevated": 20,
+   "transitionToLow": 20,
+   "transitionToCrisis": 0,
+   "confidence": 41,
+   "historicalBasis": "Analysis of 5 historical observations with pressure within \u00b110 points of current level (33/100). Transition rates computed from 3-month forward windows.",
+   "currentEvidence": [
+    "Low pressure environment \u2014 regime persistence historically high at this level",
+    "Based on 5 historical months with similar pressure (\u00b110 points)"
+   ]
+  },
+  "highestProbabilityPath": "The highest-probability outcome (60% historical frequency) is continuation of the current MODERATE RISK regime over the next 30\u201360 days.  Analysis of 5 historical observations with pressure within \u00b110 points of current level (33/100). Transition rates computed from 3-month forward windows.",
+  "invalidationConditions": [
+   "Pressure drops below 20 for 3+ consecutive months",
+   "Credit spreads narrow by 50+ basis points",
+   "Regime stabilizes for 3+ consecutive months",
+   "Breadth expands materially \u2014 more than 70% of sectors participating"
+  ],
+  "topAnalog": null
+ },
+ "watch": {
+  "developingConditions": [
+   {
+    "title": "Broad Recovery Signal",
+    "description": "3 engines are signaling recovery or bullish conditions. Broad multi-engine recovery at this pressure level has historically been a reliable early indicator of a sustained risk-on environment.",
+    "severity": "Low",
+    "trend": "easing",
+    "durationDescription": "Recovery signals detected across the current measurement window",
+    "evidence": "Macro Sensitivity: 35/100; Credit Markets: 30/100; Liquidity Conditions: 17/100",
+    "expectedImpact": "If recovery signals persist, expect continued pressure decompression and improving risk-adjusted return environment"
+   }
+  ],
+  "activePatterns": [],
+  "whatChanged": [
+   "Market has cycled through 3 different regimes in the past 90 days \u2014 elevated instability"
+  ],
+  "whatToWatch": [
+   "Credit spread direction \u2014 widening accelerates systemic pressure, narrowing provides relief",
+   "Treasury market volatility \u2014 elevated MOVE index sustains stress conditions",
+   "Liquidity conditions \u2014 tightening amplifies all other risk factors",
+   "Breadth divergence \u2014 narrow market leadership historically precedes reversals",
+   "Fed communication \u2014 any shift in rate expectations will reprice risk assets immediately"
+  ],
+  "accelerating": false,
+  "buildingPressure": false
+ },
+ "act": {
+  "marketPosture": "balanced",
+  "decisionSummary": "Maintain a balanced posture while The highest-probability outcome (60% historical frequency) is continuation of the current MODERATE RISK regime over the next 30\u201360 days.  Analysis of 5 historical observations with pressure within \u00b110 points of current level (33/100). Transition rates computed from 3-month forward windows.",
+  "whatWouldInvalidate": "Pressure drops below 20 for 3+ consecutive months Credit spreads narrow by 50+ basis points Regime stabilizes for 3+ consecutive months A score move above 48 or below 18 would signal a regime change and require reassessment of the current outlook.",
+  "riskControls": [
+   "Pressure drops below 20 for 3+ consecutive months",
+   "Credit spreads narrow by 50+ basis points",
+   "Regime stabilizes for 3+ consecutive months",
+   "Breadth expands materially \u2014 more than 70% of sectors participating"
+  ]
+ },
+ "history": {
+  "observationCount": 6,
+  "datasetSpan": "Apr 2026 to Sep 2026 (6 months)",
+  "currentStreakDescription": "Current Moderate Risk regime entered 2 months ago.",
+  "lastMajorShift": "Elevated Risk \u2192 Moderate Risk (Aug 2026)",
+  "analogSummary": "No close historical analogs identified."
+ }
+}

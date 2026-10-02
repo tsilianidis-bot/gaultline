@@ -5,12 +5,12 @@ export default function MarketRegimeTracker() {
     <SEOLandingPage
       seo={{
         title: "Market Regime Tracker — Current Macro Regime Classification | FAULTLINE",
-        description: "Real-time market regime classification: Risk-On, Risk-Off, Transition, or Crisis. Track the current macro regime using FAULTLINE's seven-vector Pressure Index and understand what it means for your portfolio.",
+        description: "Market regime classification: Risk-On, Risk-Off, Transition, or Crisis. Track the current macro regime using FAULTLINE's seven-vector Pressure Index and understand what it means for your portfolio.",
         canonical: "/market-regime-tracker",
       }}
       badge="REGIME INTELLIGENCE"
       headline={"Market Regime Tracker\nWhat Regime Are We In Right Now?"}
-      subheadline="FAULTLINE's Market Regime Tracker classifies the current macro environment in real time — Risk-On, Risk-Off, Transition, or Crisis — using seven independent risk vectors. Know the regime. Position accordingly."
+      subheadline="FAULTLINE's Market Regime Tracker classifies the current macro environment as new data is published — Risk-On, Risk-Off, Transition, or Crisis — using seven independent risk vectors. Know the regime. Position accordingly."
       ctaLabel="VIEW LIVE REGIME"
       ctaHref="/pressure-index"
       accentColor="#9B59B6"
@@ -71,7 +71,7 @@ Crisis Regime: Maximum defensive positioning is historically appropriate. Cash, 
       faqs={[
         {
           question: "What market regime are we in right now?",
-          answer: "The current market regime is classified in real time by the FAULTLINE Pressure Index. Visit /pressure-index for the live regime classification, Pressure Index score, and the seven individual risk vectors that determine the regime.",
+          answer: "The current market regime is classified by the FAULTLINE Pressure Index as new data is published. Visit /pressure-index for the live regime classification, Pressure Index score, and the seven individual risk vectors that determine the regime.",
         },
         {
           question: "How does FAULTLINE classify market regimes?",

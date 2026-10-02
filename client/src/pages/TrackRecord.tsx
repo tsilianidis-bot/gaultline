@@ -208,7 +208,7 @@ const CRISIS_CALLOUTS = [
 export default function TrackRecord() {
   useSEO({
     title: "Track Record | FAULTLINE — Historical Pressure Index 2000–Present",
-    description: "FAULTLINE's retrospective Pressure Index from 2000 to present — applying the current methodology to historical FRED data. See how the indicators scored the 2008 financial crisis (82/CRITICAL), COVID crash (72/HIGH RISK), and dot-com bust against actual market outcomes. Retrospective analysis only.",
+    description: "FAULTLINE's archived retrospective Pressure Index reconstruction from 2000, built from historical FRED data. See how the stored reconstruction scored the 2008 financial crisis (82/CRITICAL), COVID crash (72/HIGH RISK), and dot-com bust against actual market outcomes. Retrospective only — not an independently validated backtest.",
     canonical: "/track-record",
   });
 
@@ -227,7 +227,7 @@ export default function TrackRecord() {
         "@context": "https://schema.org",
         "@type": "WebPage",
         "name": "FAULTLINE Track Record — Historical Pressure Index 2000–Present",
-        "description": "25 years of FAULTLINE Pressure Index scores applied to historical FRED macroeconomic data. Retrospective audit of the methodology across the 2000 dot-com bust, 2008 financial crisis, COVID crash, and 2022 rate shock.",
+        "description": "Archived retrospective reconstruction of FAULTLINE Pressure Index scores from historical FRED macroeconomic data, covering the 2000 dot-com bust, 2008 financial crisis, COVID crash, and 2022 rate shock. Not a live record, not a point-in-time backtest, and not independently validated.",
         "url": "https://getfaultline.live/track-record",
         "publisher": {
           "@type": "Organization",
@@ -239,7 +239,7 @@ export default function TrackRecord() {
         "@context": "https://schema.org",
         "@type": "Dataset",
         "name": "FAULTLINE Historical Pressure Index 2000–Present",
-        "description": "Monthly FAULTLINE Pressure Index scores from January 2000 to present, computed from FRED macroeconomic data using the same six-vector engine as the live platform.",
+        "description": "Monthly FAULTLINE Pressure Index scores from January 2000, stored from a single historical batch built on FRED macroeconomic data. The batch formula was not versioned and is not reproduced by the live six-vector formula.",
         "url": "https://getfaultline.live/track-record",
         "creator": {
           "@type": "Organization",
@@ -293,7 +293,7 @@ export default function TrackRecord() {
 
       <PageHeader
         title="Track Record"
-        subtitle="25 years of FAULTLINE stress scores applied to historical FRED data — a retrospective audit of the methodology."
+        subtitle="Monthly stress scores from an archived retrospective reconstruction on historical FRED data — historical context, not a validated backtest."
         badge="HISTORICAL DATA"
         badgeColor="amber"
 	  />
@@ -310,57 +310,57 @@ export default function TrackRecord() {
             HISTORICAL RECORD
           </div>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-5">
-            25 Years of<br />
+            2000 to Today:<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">
-              Systemic Risk Intelligence
+              A Retrospective Stress Reconstruction
             </span>
           </h1>
           <p className="text-zinc-400 text-lg max-w-2xl leading-relaxed mb-4">
-            Every month from January 2000 to today, re-scored using the <strong className="text-zinc-200">exact same six-vector engine</strong> that powers FAULTLINE's live readings — applied to publicly available FRED macroeconomic data, with no hindsight and no curve-fitting.
+            Monthly readings from January 2000 onward, stored from a <strong className="text-zinc-200">single historical batch</strong> built on publicly available FRED macroeconomic data. The batch was calibrated against known historical stress episodes, including a crisis amplifier (documented maximum of 82 in October 2008). Its formula was not versioned, and an internal provenance audit found that the current live six-vector formula reproduces only 14 of the 317 stored months.
           </p>
           <p className="text-zinc-400 text-base max-w-2xl leading-relaxed">
-            The result is a 25-year stress test of the methodology itself. If the engine is sound, it should have flagged the 2008 financial crisis at CRITICAL, the dot-com bust at HIGH RISK, and COVID at HIGH RISK — while staying calm during the long expansions in between. It did.
+            Treat it as historical context, not proof. Because the batch was calibrated with knowledge of past crises, uses revised rather than point-in-time data, and has not been independently validated, it cannot show that FAULTLINE would have warned in advance. A separate, reproducible research reconstruction of the frozen live formula peaked at 56, reached the Elevated band before 10 of 26 registered 10% S&amp;P 500 drawdowns, and was rated inconclusive.
           </p>
         </div>
 
         {/* Why This Matters */}
         <div className="mb-10 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-5 rounded-lg border border-zinc-800 bg-zinc-900/30">
-            <div className="text-sm font-mono text-cyan-400 tracking-widest uppercase mb-2">Validation, Not Prediction</div>
+            <div className="text-sm font-mono text-cyan-400 tracking-widest uppercase mb-2">Context, Not Validation</div>
             <p className="text-sm text-zinc-400 leading-relaxed">
-              The backfill is not a forecast. It is a <strong className="text-zinc-200">retrospective audit</strong>: does the same methodology that runs today produce historically coherent risk readings when applied to past data? The answer determines whether the live engine can be trusted — or whether it is just a dashboard that looks good in hindsight.
+              The archive is not a forecast and not an independent validation of the live engine. It is a <strong className="text-zinc-200">retrospective reconstruction</strong> whose generating formula differs from the formula that runs today, so its readings describe how that batch scored the past — not how the live index would have behaved at the time.
             </p>
           </div>
           <div className="p-5 rounded-lg border border-zinc-800 bg-zinc-900/30">
             <div className="text-sm font-mono text-orange-400 tracking-widest uppercase mb-2">Regime Context for Live Readings</div>
             <p className="text-sm text-zinc-400 leading-relaxed">
-              When the live engine reads 65 (HIGH RISK) today, that number is only meaningful if you know how rare it is. The historical record shows HIGH RISK or CRITICAL has occurred in just <strong className="text-zinc-200">13% of months</strong> over 25 years — reserved for the dot-com bust, the GFC, the European debt crisis, and COVID. A current HIGH RISK reading is not noise.
+              The archived reconstruction labels only <strong className="text-zinc-200">13% of months</strong> HIGH RISK or CRITICAL, concentrated in the dot-com bust, the GFC, the European debt crisis, and COVID. Its regime labels and thresholds are not guaranteed to match the live index, so use this as rough context for how rare severe readings were in that reconstruction.
             </p>
           </div>
           <div className="p-5 rounded-lg border border-zinc-800 bg-zinc-900/30">
-            <div className="text-sm font-mono text-yellow-400 tracking-widest uppercase mb-2">No Survivorship Bias</div>
+            <div className="text-sm font-mono text-yellow-400 tracking-widest uppercase mb-2">Data Limitations</div>
             <p className="text-sm text-zinc-400 leading-relaxed">
-              All inputs are <strong className="text-zinc-200">lagging FRED economic releases</strong> — Moody's Baa spreads, Treasury yields, CPI, unemployment — not real-time market prices. The engine cannot see the future, and the backfill cannot be accused of being fitted to known outcomes. The same data that was available at the time produces the same score.
+              Inputs are <strong className="text-zinc-200">FRED economic series as currently published</strong> — Moody's Baa spreads, Treasury yields, CPI, unemployment — not point-in-time vintages, so revised values may differ from what was known at the time. Because the crisis amplifier was calibrated against known historical episodes, the archive is partly fitted to the outcomes it is compared with.
             </p>
           </div>
           <div className="p-5 rounded-lg border border-zinc-800 bg-zinc-900/30">
-            <div className="text-sm font-mono text-emerald-400 tracking-widest uppercase mb-2">Calibrated, Not Alarmist</div>
+            <div className="text-sm font-mono text-emerald-400 tracking-widest uppercase mb-2">Score Distribution</div>
             <p className="text-sm text-zinc-400 leading-relaxed">
-              The distribution matters as much as the peaks. <strong className="text-zinc-200">56% of months since 2000 scored ELEVATED or below</strong>, and only 8 months ever reached CRITICAL. The engine is not a perma-bear alarm — it reserves its highest readings for genuine systemic dislocations, which makes those readings actionable when they occur.
+              In the archived reconstruction, <strong className="text-zinc-200">56% of months since 2000 scored ELEVATED or below</strong>, and 8 months reached CRITICAL. These shares describe the archived batch; they are not a measured false-alarm or hit rate for the live index.
             </p>
           </div>
         </div>
 
         {/* Methodology note */}
         <div className="mb-10 p-4 border border-zinc-800 rounded-lg bg-zinc-900/40 text-sm text-zinc-400 leading-relaxed">
-          <strong className="text-zinc-300">How the score is computed:</strong> Each monthly reading is the weighted composite of six independent risk vectors —
-          <strong className="text-zinc-300"> Liquidity Stress</strong> (HY spread, SOFR, NFCI),
-          <strong className="text-zinc-300"> Credit Contagion</strong> (Baa/HY spread, 10Y yield, unemployment),
-          <strong className="text-zinc-300"> Volatility Regime</strong> (yield curve shape, 10Y/2Y spread),
-          <strong className="text-zinc-300"> Macro Sensitivity</strong> (CPI, Fed Funds rate),
-          <strong className="text-zinc-300"> Market Breadth</strong> (unemployment, 10Y yield context), and
-          <strong className="text-zinc-300"> Speculative Bubble Exposure</strong> (rate and credit context).
-          Each vector scores 0–100 and is weighted into the composite. A crisis amplifier applies a score floor when both liquidity and credit vectors are simultaneously in severe territory — preventing the weighted average from understating genuine systemic crises like 2008, where the Fed's emergency rate cuts would otherwise have suppressed the yield curve vector.
+          <strong className="text-zinc-300">How the archive relates to the live score:</strong> Each stored month carries six vector columns named after the live vectors —
+          <strong className="text-zinc-300"> Liquidity Stress</strong>,
+          <strong className="text-zinc-300"> Credit Contagion</strong>,
+          <strong className="text-zinc-300"> Yield Curve (10Y–2Y) &amp; 10Y Level</strong> (formerly labelled Volatility Regime),
+          <strong className="text-zinc-300"> Macro Sensitivity</strong>,
+          <strong className="text-zinc-300"> Labor &amp; Rates</strong> (formerly labelled Market Breadth), and
+          <strong className="text-zinc-300"> AI / Speculation</strong> (a static baseline in the live index).
+          The formulas that produced the historical columns were not preserved, so they should not be assumed to match the live vectors. The batch also applied a crisis amplifier calibrated against historical stress episodes; its exact triggers, floor and cap were not preserved, which is why the archived composite cannot be reproduced from the live weights.
           <span className="block mt-2 text-zinc-400 text-sm">
             Data source: Federal Reserve Economic Data (FRED). Moody's Baa Corporate Bond Spread used as primary credit proxy. HY spread estimated as Baa10Y × 1.8 + 1.5 for pre-2023 periods where direct HY data is unavailable.
           </span>
@@ -436,7 +436,7 @@ export default function TrackRecord() {
         <div className="mb-12">
           <h2 className="text-lg font-semibold text-white mb-2">Crisis Period Analysis</h2>
           <p className="text-sm text-zinc-400 mb-6">
-            How the FAULTLINE model scored each major market crisis against actual outcomes. The BEFORE column shows what the engine flagged; the AFTER column shows what happened.
+            How the archived reconstruction scored each major market crisis, next to what actually happened. Reconstructed readings were not issued live and are not evidence of advance warning.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {CRISIS_CALLOUTS.map(c => {
@@ -457,11 +457,11 @@ export default function TrackRecord() {
 
                   {/* BEFORE */}
                   <div className="px-5 pt-4 pb-3">
-                    <div className="text-[9px] font-mono tracking-[0.3em] text-zinc-500 mb-2">BEFORE — FAULTLINE SIGNAL</div>
+                    <div className="text-[9px] font-mono tracking-[0.3em] text-zinc-500 mb-2">RECONSTRUCTED READING — NOT ISSUED LIVE</div>
                     <div className="flex items-center gap-2 mb-1">
                       <div className={`w-2 h-2 rounded-full flex-shrink-0 ${rc.text.replace('text-', 'bg-')}`} style={{ boxShadow: `0 0 6px currentColor` }} />
                       <span className={`text-sm font-mono font-bold ${rc.text}`}>{c.regime}</span>
-                      <span className="text-zinc-500 text-xs">flagged</span>
+                      <span className="text-zinc-500 text-xs">reconstructed</span>
                     </div>
                     <p className="text-sm text-zinc-400 leading-relaxed">{c.description}</p>
                   </div>
@@ -477,7 +477,7 @@ export default function TrackRecord() {
 
                   {/* AFTER */}
                   <div className="px-5 pb-5">
-                    <div className="text-[9px] font-mono tracking-[0.3em] text-zinc-500 mb-2">AFTER — ACTUAL OUTCOME</div>
+                    <div className="text-[9px] font-mono tracking-[0.3em] text-zinc-500 mb-2">ACTUAL OUTCOME</div>
                     <p className="text-sm text-zinc-300 leading-relaxed font-medium">{c.outcome}</p>
                   </div>
                 </div>
@@ -553,7 +553,7 @@ export default function TrackRecord() {
         <div className="border border-zinc-800 rounded-xl p-8 bg-zinc-900/40 text-center">
           <h2 className="text-2xl font-bold text-white mb-3">See Today's Reading</h2>
           <p className="text-zinc-400 mb-6 max-w-lg mx-auto">
-            The live Pressure Index updates daily with real-time market data. Access the full platform to see current risk vectors, scenario analysis, and the Aftershock Engine.
+            The live Pressure Index updates daily with the latest published data. Access the full platform to see current risk vectors, scenario analysis, and the Aftershock Engine.
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <Link href="/pressure-index" className="px-6 py-3 bg-white text-black font-semibold rounded-lg hover:bg-zinc-200 transition-colors text-sm">

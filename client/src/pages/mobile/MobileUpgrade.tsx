@@ -7,7 +7,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import { PRICING_PLANS } from "../../../../shared/tiers";
+import { PRICING_PLANS, PAID_PLANS_ON_SALE, PAID_PLANS_NOT_ON_SALE_COPY } from "../../../../shared/tiers";
 import {
   Check, Zap, Crown, Activity, Lock, RefreshCw, ChevronLeft, Star,
 } from "lucide-react";
@@ -17,7 +17,7 @@ const PLANS = [
   {
     id: "founding" as const,
     name: "Founding Member",
-    badge: "FOUNDING RATE — LOCKED",
+    badge: "FOUNDING ACCESS",
     price: PRICING_PLANS.founding.priceLabel,
     color: "#FFD700",
     glow: "rgba(255,215,0,0.12)",
@@ -25,7 +25,6 @@ const PLANS = [
     features: [
       "Founding-member access to FAULTLINE",
       "Founding Member badge",
-      "Locked $49 monthly rate while active",
       "Core market intelligence and monitoring",
     ],
     locked: [],
@@ -145,6 +144,13 @@ function PlanCard({
         <div className="text-[9px] font-mono text-[#64748B] text-center py-2">
           Manage via billing portal to downgrade
         </div>
+      ) : !PAID_PLANS_ON_SALE ? (
+        <div
+          className="w-full py-2.5 text-center text-[11px] font-mono font-bold tracking-widest rounded-lg"
+          style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "#64748B" }}
+        >
+          NOT ON SALE YET
+        </div>
       ) : (
         <button
           onClick={() => onSelect(plan.id)}
@@ -178,7 +184,7 @@ export default function MobileUpgrade() {
 
   const handleSelect = (planId: string) => {
     const name = PLANS.find((plan) => plan.id === planId)?.name ?? "Selected membership";
-    alert(`${name} is displayed at its current public rate. Checkout will remain unavailable until its Stripe price configuration is independently verified.`);
+    alert(`${name}: ${PAID_PLANS_NOT_ON_SALE_COPY}`);
   };
 
   if (authLoading || tierQuery.isLoading) {
@@ -198,9 +204,11 @@ export default function MobileUpgrade() {
           <ChevronLeft size={14} /> BACK
         </a>
         <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-1">FAULTLINE PLANS</div>
-        <h1 className="text-[20px] font-bold text-white mb-1">Upgrade Your Intelligence</h1>
+        <h1 className="text-[20px] font-bold text-white mb-1">{PAID_PLANS_ON_SALE ? "Upgrade Your Intelligence" : "FAULTLINE Plans"}</h1>
         <p className="text-[12px] text-[#64748B] leading-relaxed">
-          Choose the level of intelligence you need. Checkout activates only after the displayed Stripe price is independently verified.
+          {PAID_PLANS_ON_SALE
+            ? "Choose the level of intelligence you need. Checkout activates only after the displayed Stripe price is independently verified."
+            : `${PAID_PLANS_NOT_ON_SALE_COPY} Your free account stays active, and nothing here will charge you.`}
         </p>
       </div>
 
@@ -223,8 +231,10 @@ export default function MobileUpgrade() {
         <div className="flex items-start gap-2">
           <Star size={12} className="text-[#64748B] flex-shrink-0 mt-0.5" />
           <div className="text-[10px] font-mono text-[#64748B] leading-relaxed">
-            Founding Member, Trader, and Power are monthly memberships. Existing subscriptions remain managed through the billing portal.
-            Payments are processed securely by Stripe only after a matching price configuration is verified. FAULTLINE is not a registered investment
+            {PAID_PLANS_ON_SALE
+              ? "Founding Member, Trader, and Power are monthly memberships. Existing subscriptions remain managed through the billing portal. Payments are processed securely by Stripe only after a matching price configuration is verified."
+              : `${PAID_PLANS_NOT_ON_SALE_COPY} Existing subscriptions remain managed through the billing portal.`}{" "}
+            FAULTLINE is not a registered investment
             adviser. All content is for informational purposes only.
           </div>
         </div>

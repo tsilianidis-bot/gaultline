@@ -4,12 +4,12 @@ export default function VolatilityDashboard() {
   return (
     <SEOLandingPage
       seo={{
-        title: "Volatility Dashboard — Real-Time VIX Regime Analysis | FAULTLINE",
-        description: "Real-time volatility dashboard tracking VIX regime, implied vs realized volatility, volatility term structure, and equity risk premium. Know when volatility is signaling a regime shift.",
+        title: "Volatility Dashboard — VIX Regime Analysis | FAULTLINE",
+        description: "Volatility dashboard tracking VIX regime, implied vs realized volatility, volatility term structure, and equity risk premium. Know when volatility is signaling a regime shift.",
         canonical: "/volatility-dashboard",
       }}
       badge="VOLATILITY INTELLIGENCE"
-      headline={"Volatility Dashboard\nVIX Regime in Real Time"}
+      headline={"Volatility Dashboard\nVIX Regime Analysis"}
       subheadline="FAULTLINE's volatility dashboard goes beyond the VIX level. Track volatility regimes, implied vs. realized volatility spreads, term structure dynamics, and historical volatility comparisons to understand what volatility is actually signaling about market risk."
       ctaLabel="VIEW VOLATILITY DATA"
       ctaHref="/pressure-index"
@@ -71,7 +71,7 @@ The combination of these three dimensions — level, trend, and term structure �
         },
       ]}
       internalLinks={[
-        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Live systemic stress score with volatility vector." },
+        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Systemic stress score with volatility vector." },
         { label: "MARKET CRASH INDICATOR", href: "/market-crash-indicator", desc: "Crash risk detection incorporating volatility regime." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy impact on volatility and market conditions." },
         { label: "LIQUIDITY MONITOR", href: "/liquidity-monitor", desc: "Liquidity conditions that drive volatility spikes." },

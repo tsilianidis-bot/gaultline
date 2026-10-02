@@ -129,7 +129,8 @@ export interface EngineOutput {
   analogs: AnalogSimilarity[];
   narrative: NarrativeOutput;
   tickerValues: { label: string; value: string; direction: 'up' | 'down' | 'flat' }[];
-  alertPressure: { treasury: number; credit: number; aiRisk: number; liquidity: number };
+  /** 0–100 gauges from the deterministic (simulation) engine only; null in canonical mode. */
+  alertPressure: { treasury: number | null; credit: number | null; aiRisk: number | null; liquidity: number | null };
   /** Phase 2 current-state provenance for canonical-derived compatibility output. */
   canonicalEnvelope?: CanonicalConsumerEnvelope<CanonicalMarketState>;
 }

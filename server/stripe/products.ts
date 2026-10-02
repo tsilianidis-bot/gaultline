@@ -4,7 +4,7 @@
  * Only Stripe-specific fields (priceId from env) are added here.
  */
 import { PRICING_PLANS, type StripePlanId, type AccessTier } from '../../shared/tiers';
-import { stripe } from './client';
+import { stripe, stripeRuntimeMode } from './client';
 
 export type PlanId = StripePlanId;
 
@@ -54,6 +54,9 @@ export async function verifyStripePlanConfiguration(plan: Plan): Promise<{ verif
   if (!stripe) {
     return { verified: false, reason: 'Stripe is not configured.' };
   }
+  if (stripeRuntimeMode === 'unavailable') {
+    return { verified: false, reason: 'Stripe runtime mode is unavailable.' };
+  }
 
   try {
     const price = await stripe.prices.retrieve(plan.priceId, { expand: ['product'] });
@@ -65,10 +68,11 @@ export async function verifyStripePlanConfiguration(plan: Plan): Promise<{ verif
       && price.unit_amount === plan.amount
       && price.type === expectedType
       && (expectedInterval === null || price.recurring?.interval === expectedInterval)
+      && price.livemode === (stripeRuntimeMode === 'live')
       && Boolean(product && !product.deleted && "name" in product && product.name === plan.name);
 
     if (!valid) {
-      return { verified: false, reason: 'The configured Stripe price does not exactly match the current public plan name, amount, currency, or billing interval.' };
+      return { verified: false, reason: 'The configured Stripe price does not exactly match the active runtime mode, public plan name, amount, currency, or billing interval.' };
     }
     return { verified: true };
   } catch {

@@ -4,13 +4,13 @@ export default function LiquidityMonitor() {
   return (
     <SEOLandingPage
       seo={{
-        title: "Liquidity Monitor — Real-Time Market Liquidity Conditions | FAULTLINE",
-        description: "Track real-time market liquidity conditions: Fed balance sheet, repo market stress, bank lending standards, and liquidity withdrawal signals. Know when liquidity is tightening before it hits prices.",
+        title: "Liquidity Monitor — Market Liquidity Conditions | FAULTLINE",
+        description: "Track market liquidity conditions: Fed balance sheet, repo market stress, bank lending standards, and liquidity withdrawal signals. Know when liquidity is tightening before it hits prices.",
         canonical: "/liquidity-monitor",
       }}
       badge="LIQUIDITY INTELLIGENCE"
       headline={"Liquidity Monitor\nThe Hidden Driver of Markets"}
-      subheadline="Liquidity is the lifeblood of financial markets. FAULTLINE tracks real-time liquidity conditions — Fed balance sheet dynamics, repo market stress, bank lending standards, and global liquidity flows — to identify when liquidity is tightening before it hits asset prices."
+      subheadline="Liquidity is the lifeblood of financial markets. FAULTLINE tracks liquidity conditions — Fed balance sheet dynamics, repo market stress, bank lending standards, and global liquidity flows — to identify when liquidity is tightening before it hits asset prices."
       ctaLabel="VIEW LIQUIDITY DATA"
       ctaHref="/pressure-index"
       accentColor="#00C896"
@@ -65,7 +65,7 @@ Repo Market Stress: The repo market is the plumbing of the financial system — 
         },
       ]}
       internalLinks={[
-        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Live systemic stress score with liquidity vector." },
+        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Systemic stress score with liquidity vector." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy and balance sheet dynamics driving liquidity." },
         { label: "MARKET CRASH INDICATOR", href: "/market-crash-indicator", desc: "Crash risk detection incorporating liquidity conditions." },
         { label: "CRYPTO MARKET RISK", href: "/crypto-market-risk-dashboard", desc: "Crypto liquidity sensitivity and systemic risk." },

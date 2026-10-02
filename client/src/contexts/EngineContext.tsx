@@ -20,6 +20,7 @@ import { RawIndicators, DEFAULT_INDICATORS, EngineOutput } from '@/lib/engine';
 import type { FetchStatus } from '@/lib/useLiveData';
 import { selectBrowserMarketOutput, type BrowserMarketMode } from '@/lib/marketStateProjection';
 import { trpc } from '@/lib/trpc';
+import { mergeCanonicalMarketState } from '@/lib/canonicalNowProjection';
 import type { CanonicalMarketState, MarketStateSourceHealth } from '@shared/marketState';
 import type { PublicCanonicalIntelligenceState } from '@shared/canonicalIntelligenceState';
 import {
@@ -92,20 +93,9 @@ export function EngineProvider({ children }: { children: ReactNode }) {
     if (!canonicalState) return null;
     const legacy = legacyProjectionQuery.data;
     if (!legacy) return null;
-    const pressureScore = canonicalState.pressureIndex ?? legacy.now.pressureScore;
-    const regime = canonicalState.regime ?? legacy.now.regime;
-    return {
-      ...legacy,
-      generatedAt: canonicalState.generatedAt,
-      sourceUpdatedAt: canonicalState.effectiveAt,
-      now: {
-        ...legacy.now,
-        pressureScore,
-        regime,
-        direction: canonicalState.pressureDirection === 'Unknown' ? legacy.now.direction : canonicalState.pressureDirection,
-      },
-      warnings: Array.from(new Set([...legacy.warnings, ...canonicalState.warnings])),
-    };
+    // Canonical merge (band/direction/headline, scenario set, threat/support
+    // classification) lives in lib/canonicalNowProjection so it is unit-testable.
+    return mergeCanonicalMarketState(canonicalState, legacy);
   }, [canonicalState, legacyProjectionQuery.data]);
   const canonicalEnvelope = useMemo<CanonicalConsumerEnvelope<CanonicalMarketState> | null>(() => {
     if (!canonicalState || !marketState) return null;

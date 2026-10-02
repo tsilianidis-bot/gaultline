@@ -4,6 +4,7 @@ import type {
   MarketStateSourceHealth,
 } from "../shared/marketState";
 import { normalizeCanonicalMetric } from "../shared/marketMetrics";
+import { classifyEvidenceFamilies } from "../shared/canonicalReadout";
 import {
   getUnifiedSeismographIntelligence,
   type UnifiedSeismographIntelligence,
@@ -40,7 +41,7 @@ export type CanonicalMarketStateSource = Pick<
   | "developingConditions"
   | "marketNarrative"
   | "activePatterns"
->;
+> & Partial<Pick<UnifiedSeismographIntelligence, "macroTicker">>;
 
 interface AssembleMarketStateOptions {
   generatedAt: string;
@@ -145,6 +146,7 @@ export function assembleCanonicalMarketState(
     .sort((a, b) => b.strength - a.strength)
     .slice(0, 3)
     .map(family => `${family.name}: ${family.currentValue}`);
+  const classified = classifyEvidenceFamilies(source.evidenceFamilies);
   const probabilities = {
     ...source.probabilities,
     bull: normalizeCanonicalMetric(source.probabilities.bull),
@@ -174,6 +176,8 @@ export function assembleCanonicalMarketState(
       historicalPercentile: normalizeCanonicalMetric(source.currentPercentile),
       headline: `${source.currentStressLevel} stress in a ${source.currentRegime} regime; pressure is ${source.currentDirection.toLowerCase()}.`,
       topDrivers,
+      threats: classified.threats,
+      supports: classified.supports,
     },
     why: {
       story: source.todayStory,
@@ -191,6 +195,7 @@ export function assembleCanonicalMarketState(
         strength: normalizeCanonicalMetric(family.strength),
       })),
       evidenceConsensus: source.evidenceConsensus,
+      evidenceAsOfMonth: source.macroTicker?.dataMonth ?? null,
     },
     outlook: {
       probabilities,

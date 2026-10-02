@@ -15,7 +15,7 @@ export default function CryptoBullOrBear() {
       ctaHref="/app"
       accentColor="#9945FF"
       features={[
-        { icon: "◈", title: "Real-time Crypto Regime Classification", desc: "Real-time Crypto Regime Classification" },
+        { icon: "◈", title: "Regularly refreshed Crypto Regime Classification", desc: "Regularly refreshed Crypto Regime Classification" },
         { icon: "◎", title: "Bitcoin Dominance & Altcoin Cycle", desc: "Bitcoin Dominance & Altcoin Cycle Analysis" },
         { icon: "⬡", title: "Historical Market Comparisons", desc: "Historical Market Comparisons" },
         { icon: "◈", title: "Key Drivers of Crypto Market", desc: "Key Drivers of Crypto Market Shifts" },

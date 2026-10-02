@@ -7,19 +7,19 @@ const AMZNSignal = () => {
   return (
     <SEOLandingPage
       seo={{
-        title: "AMZN Stock Outlook: FAULTLINE's Real-Time Signal & Analysis",
-        description: "Get FAULTLINE's real-time outlook for Amazon (AMZN) stock, including current signal, regime fit, macro sensitivity, AWS/AI exposure, and consumer spending risk.",
+        title: "AMZN Stock Outlook: FAULTLINE's Signal & Analysis",
+        description: "Get FAULTLINE's current outlook for Amazon (AMZN) stock, including current signal, regime fit, macro sensitivity, AWS/AI exposure, and consumer spending risk.",
         canonical: "/stock/amzn",
       }}
       badge="STOCK"
-      headline="AMZN Stock Outlook: FAULTLINE's Real-Time Signal & Analysis"
+      headline="AMZN Stock Outlook: FAULTLINE's Signal & Analysis"
       subheadline="Uncover the forces driving Amazon (AMZN) stock with FAULTLINE's comprehensive market intelligence. Understand current signals, macro sensitivities, and key risks."
       ctaLabel="Explore AMZN on FAULTLINE"
       ctaHref="/app"
       accentColor="#FF9900"
       features={[
         { icon: "◈",
-          title: "Real-Time Signal",
+          title: "Current Signal",
           desc: "Instantaneous insights into AMZN's current market posture based on proprietary FAULTLINE algorithms."
         },
         { icon: "◎",
@@ -43,7 +43,7 @@ const AMZNSignal = () => {
       contentSections={[
         {
           heading: "Understanding Amazon (AMZN) Stock: A FAULTLINE Perspective",
-          body: `Amazon.com Inc. (AMZN) stands as a titan in both e-commerce and cloud computing, with its stock performance often reflecting broader trends in consumer spending, technological innovation, and global economic health. FAULTLINE provides a nuanced, real-time outlook for AMZN, moving beyond conventional analysis to integrate macro-economic factors, sector-specific dynamics, and proprietary signals. Our approach helps investors understand not just what AMZN is doing now, but why, and what conditions could alter its trajectory. This includes evaluating its resilience in various market regimes and its sensitivity to shifts in consumer discretionary spending, a critical component of its retail segment. The goal is to offer a comprehensive view that anticipates market movements rather than merely reacting to them.`
+          body: `Amazon.com Inc. (AMZN) stands as a titan in both e-commerce and cloud computing, with its stock performance often reflecting broader trends in consumer spending, technological innovation, and global economic health. FAULTLINE provides a nuanced, regularly refreshed outlook for AMZN, moving beyond conventional analysis to integrate macro-economic factors, sector-specific dynamics, and proprietary signals. Our approach helps investors understand not just what AMZN is doing now, but why, and what conditions could alter its trajectory. This includes evaluating its resilience in various market regimes and its sensitivity to shifts in consumer discretionary spending, a critical component of its retail segment. The goal is to offer a comprehensive view that anticipates market movements rather than merely reacting to them.`
         },
         {
           heading: "FAULTLINE's Current Signal for AMZN: What Changed and Why it Matters",
@@ -61,7 +61,7 @@ const AMZNSignal = () => {
       faqs={[
         {
           question: "What is FAULTLINE's outlook for AMZN stock?",
-          answer: "FAULTLINE provides a real-time, data-driven outlook for AMZN, integrating macro, sector, and proprietary signals. Our current signal reflects a comprehensive analysis of its market position, growth drivers, and potential risks. For the most up-to-date signal, please explore the FAULTLINE platform."
+          answer: "FAULTLINE provides a regularly refreshed, data-driven outlook for AMZN, integrating macro, sector, and proprietary signals. Our current signal reflects a comprehensive analysis of its market position, growth drivers, and potential risks. For the most up-to-date signal, please explore the FAULTLINE platform."
         },
         {
           question: "How does FAULTLINE analyze AMZN's macro sensitivity?",
@@ -77,7 +77,7 @@ const AMZNSignal = () => {
         },
         {
           question: "How often is FAULTLINE's AMZN outlook updated?",
-          answer: "FAULTLINE's outlooks and signals are updated in real-time as new data becomes available and market conditions evolve. Our proprietary algorithms continuously process information to provide the most current insights."
+          answer: "FAULTLINE's outlooks and signals are updated regularly as new data becomes available and market conditions evolve. Our proprietary algorithms continuously process information to provide the most current insights."
         },
         {
           question: "Is FAULTLINE's analysis personalized financial advice?",

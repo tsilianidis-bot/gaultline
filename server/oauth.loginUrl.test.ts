@@ -40,6 +40,17 @@ describe("client login URL bootstrap", () => {
     expect(parsed.searchParams.get("type")).toBe("signIn");
   });
 
+  it("uses the apex callback from either production hostname, preserving staging", () => {
+    for (const origin of ["https://getfaultline.live", "https://www.getfaultline.live"]) {
+      const url = new URL(buildLoginUrl(PORTAL, APP_ID, origin));
+      const callback = "https://getfaultline.live/api/oauth/callback";
+      expect(url.searchParams.get("redirectUri")).toBe(callback);
+      expect(atob(url.searchParams.get("state")!)).toBe(callback);
+    }
+    expect(new URL(buildLoginUrl(PORTAL, APP_ID, ORIGIN)).searchParams.get("redirectUri"))
+      .toBe(`${ORIGIN}/api/oauth/callback`);
+  });
+
   it("treats only http(s) absolute URLs as a usable OAuth portal", () => {
     expect(isValidAbsoluteUrl("https://manus.im")).toBe(true);
     expect(isValidAbsoluteUrl("http://localhost:3000")).toBe(true);

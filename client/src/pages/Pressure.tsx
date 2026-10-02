@@ -5,6 +5,9 @@
    ============================================================ */
 import DisclaimerBanner from "@/components/DisclaimerBanner";
 import SOBPanel from "@/components/SOBPanel";
+import { trpc } from "@/lib/trpc";
+import { useAppHeaderFred } from "@/hooks/useAppHeaderFred";
+import { buildSOBSourceInputs } from "@/lib/appHeaderStrip";
 import { useRef, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap, BarChart2, Activity, Waves, Clock, GitBranch, BookOpen } from "lucide-react";
@@ -22,6 +25,10 @@ import HistoricalContextEngine from "./HistoricalContextEngine";
 import { useEngine } from "@/contexts/EngineContext";
 import ScoreExplainer from "@/components/ScoreExplainer";
 import { customerIntegrityBadgeColor, customerPressureBadge, customerPressureUnavailableCopy, humanizeConflictType, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
+import { pressureVectorLabel } from "@shared/pressureVectorLabels";
+import { canonicalDirectionTrend, canonicalHistoricalPercentile } from "@shared/canonicalReadout";
+import { directionDisplay } from "@shared/snapshotEvidence";
+import { canonicalRunBasisNote } from "@shared/dataIntegrityReadout";
 
 // ── Market Stress sub-nav tabs ──────────────────────────────────
 // All stress-related analysis lives under one roof — in-page state, no navigation
@@ -66,7 +73,8 @@ interface RiskVector {
   level: PressureLevel;
   driver: string;
   trend: "rising" | "falling" | "stable";
-  weight: number;
+  /** Composite weight (0–1); null when the source does not publish one. */
+  weight: number | null;
   rawInputs: Record<string, number | null>;
 }
 
@@ -340,9 +348,11 @@ function VectorCard({ vector, index }: { vector: RiskVector; index: number }) {
         }}>
           {vector.level}
         </div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.06em" }}>
-          WT {Math.round(vector.weight * 100)}%
-        </div>
+        {vector.weight != null && Number.isFinite(vector.weight) && (
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.06em" }}>
+            WT {Math.round(vector.weight * 100)}%
+          </div>
+        )}
       </div>
 
       <div style={{ marginTop: "10px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#94A3B8", lineHeight: 1.5 }}>
@@ -555,10 +565,10 @@ function LiquidityStressMeter({ vectors, integrityLabel }: { vectors: RiskVector
 const CONTAGION_ORDER = [
   { id: "liquidity-stress",   label: "LIQUIDITY",    icon: "💧" },
   { id: "credit-contagion",   label: "CREDIT",       icon: "📉" },
-  { id: "volatility-regime", label: "VOLATILITY",   icon: "⚡" },
+  { id: "volatility-regime", label: "YIELD CURVE",  icon: "⚡" },
   { id: "macro-sensitivity", label: "MACRO",         icon: "🏛" },
-  { id: "market-breadth",    label: "BREADTH",       icon: "📊" },
-  { id: "ai-bubble",         label: "SPECULATIVE",   icon: "🤖" },
+  { id: "market-breadth",    label: "LABOR/RATES",   icon: "📊" },
+  { id: "ai-bubble",         label: "AI BASELINE",   icon: "🤖" },
 ];
 
 function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVector[]; overallPressure: number }) {
@@ -981,7 +991,15 @@ export default function Pressure() {
     const requested = new URLSearchParams(window.location.search).get('tab');
     return STRESS_TABS.some(tab => tab.id === requested) ? requested as StressTabId : 'pressure';
   });
-  const { canonicalState, canonicalEnvelope, isLoading, isRefreshing, dataError, refresh, integrityLabel } = useEngine();
+  const { canonicalState, canonicalEnvelope, marketState, isLoading, isRefreshing, dataError, refresh, integrityLabel } = useEngine();
+  // S.O.B. inputs come from the same real sources as the /app header strip
+  // (FRED HY spread + Fed funds, snapshot 2Y10Y + VIX). Missing → null → UNAVAILABLE pillar.
+  const { data: marketSnapshot } = trpc.markets.getGlobalSnapshot.useQuery(undefined, { refetchInterval: 90_000, staleTime: 60_000, retry: 2 });
+  const headerFred = useAppHeaderFred();
+  const sobInputs = useMemo(
+    () => buildSOBSourceInputs({ quotes: marketSnapshot?.items ?? null, fred: headerFred, now: Date.now() }),
+    [marketSnapshot?.items, headerFred],
+  );
   const data = useMemo(() => {
     if (!canonicalState || canonicalState.pressureIndex === null || Number.isNaN(canonicalState.pressureIndex)) return null;
     const pressureLevel = resolvePressureLevel(canonicalState.pressureLevel, canonicalState.pressureIndex);
@@ -995,13 +1013,15 @@ export default function Pressure() {
     ];
     const vectors: RiskVector[] = canonicalState.engines.map(engine => ({
       id: engine.engineId,
-      label: engine.engineName,
+      label: pressureVectorLabel(engine.engineId, engine.engineName),
       description: `Canonical engine ${engine.engineId}.`,
       score: engine.value ?? 0,
       level: pressureLevel,
       driver: engine.sourceInputIds.length ? `Inputs: ${engine.sourceInputIds.join(", ")}` : "Canonical input detail unavailable.",
       trend: engine.direction === "Improving" ? "falling" : engine.direction === "Deteriorating" ? "rising" : "stable",
-      weight: 0,
+      // The canonical contract publishes only whether a vector contributes, not
+      // its weight: no weight is shown rather than a false "WT 0%".
+      weight: null,
       rawInputs: {},
     }));
     return {
@@ -1078,7 +1098,7 @@ export default function Pressure() {
       <div style={{ position: "relative", zIndex: 2, maxWidth: "1400px", margin: "0 auto" }}>
         <PageHeader
           title="Market Stress"
-          subtitle="Real-time systemic risk pressure across credit, rates, liquidity, and macro domains. A higher score means more stress in the system."
+          subtitle="Systemic risk pressure across credit, rates, liquidity, and macro domains, built from published FRED data. Each reading shows its as-of time; a higher score means more stress in the system."
           badge={customerPressureBadge(integrityLabel)}
           badgeColor={customerIntegrityBadgeColor(integrityLabel)}
           rightSlot={<PreflightTrigger currentPage="pressure" regimeLabel={data.regime} actionKey="viewed_pressure" />}
@@ -1212,8 +1232,8 @@ export default function Pressure() {
               <ScoreExplainer
                 scoreKey="pressureIndex"
                 value={data.overallPressure}
-                trend={data.overallPressure > 60 ? 'rising' : data.overallPressure < 40 ? 'falling' : 'stable'}
-                historicalPercentile={data.overallPressure}
+                trend={canonicalDirectionTrend(directionDisplay(canonicalState?.pressureDirection))}
+                historicalPercentile={canonicalHistoricalPercentile(marketState?.now.historicalPercentile)}
                 defaultExpanded={false}
               />
             </div>
@@ -1318,6 +1338,9 @@ export default function Pressure() {
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.15em", marginBottom: "14px" }}>
             RISK VECTORS — {data.vectors.length} ACTIVE
           </div>
+          <div data-evidence-basis="canonical-run" style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#64748B", lineHeight: 1.5, marginTop: "-8px", marginBottom: "14px" }}>
+            {canonicalRunBasisNote(canonicalState?.generatedAt)}
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "12px" }}>
             {data.vectors.map((vector, i) => (
               <VectorCard key={vector.id} vector={vector} index={i} />
@@ -1395,6 +1418,10 @@ export default function Pressure() {
             canonicalEnvelope={canonicalEnvelope ?? undefined}
             regime={data.regime}
             pressureIndex={data.overallPressure}
+            creditSpread={sobInputs.creditSpread}
+            yieldSpread={sobInputs.yieldSpread}
+            fedFundsRate={sobInputs.fedFundsRate}
+            vix={sobInputs.vix}
           />
         </div>
 

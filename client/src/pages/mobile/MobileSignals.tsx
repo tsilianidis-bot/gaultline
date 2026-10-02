@@ -224,21 +224,34 @@ function CryptoSignalCard({ id, name, price, changePercent, signal, loading }: C
 export default function MobileSignals() {
   const [tab, setTab] = useState<"stocks" | "crypto">("stocks");
   const [quotes, setQuotes] = useState<Record<string, { price: number; changePercent: number; open: number; high: number; low: number; volumeMillions: number; avgVolume: number; sparkline: number[] }>>({});
-  const [quotesLoading, setQuotesLoading] = useState(true);
+  const [quoteState, setQuoteState] = useState<"loading" | "available" | "unavailable">("loading");
   const [cryptoData, setCryptoData] = useState<Record<string, { price: number; changePercent: number }>>({});
+  const quotesLoading = quoteState === "loading";
 
   // Fetch stock quotes from the signals proxy
   useEffect(() => {
-    setQuotesLoading(true);
-    fetch("/api/signals/quotes")
-      .then(r => r.json())
+    const controller = new AbortController();
+    setQuoteState("loading");
+    fetch("/api/signals/quotes", { signal: controller.signal })
+      .then(async response => {
+        if (!response.ok) throw new Error(`Quote response unavailable: ${response.status}`);
+        return response.json() as Promise<{ quotes?: { ticker: string; price: number; changePercent: number; open: number; high: number; low: number; volumeMillions: number; avgVolume: number; sparkline: number[] }[] }>;
+      })
       .then((data: { quotes?: { ticker: string; price: number; changePercent: number; open: number; high: number; low: number; volumeMillions: number; avgVolume: number; sparkline: number[] }[] }) => {
         const map: Record<string, { price: number; changePercent: number; open: number; high: number; low: number; volumeMillions: number; avgVolume: number; sparkline: number[] }> = {};
         (data.quotes ?? []).forEach(q => { map[q.ticker] = q; });
+        if (!CORE_TICKERS.every(ticker => map[ticker])) {
+          throw new Error("Quote response is incomplete");
+        }
         setQuotes(map);
+        setQuoteState("available");
       })
-      .catch(() => {})
-      .finally(() => setQuotesLoading(false));
+      .catch(error => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setQuotes({});
+        setQuoteState("unavailable");
+      });
+    return () => controller.abort();
   }, []);
 
   // Fetch crypto prices from CoinGecko via existing endpoint
@@ -302,6 +315,22 @@ export default function MobileSignals() {
     }).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [coreQuoteInputs.length, regime.label]);
+
+  if (quoteState === "unavailable") {
+    return (
+      <div className="px-4 py-8 text-center">
+        <div className="text-[10px] font-mono tracking-widest text-[#FBBF24]">SIGNALS UNAVAILABLE</div>
+      </div>
+    );
+  }
+
+  if (quoteState === "loading") {
+    return (
+      <div className="px-4 py-8 text-center">
+        <div className="text-[10px] font-mono tracking-widest text-[#64748B]">LOADING SIGNALS</div>
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 py-4 pb-6 space-y-4">

@@ -31,7 +31,12 @@ def save_bundle(
 ) -> Path:
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
-    n_states = hmm_model.n_states
+    n_states = int(hmm_model.n_states)
+    if n_states != CHOSEN_N_STATES:
+        raise ValueError(
+            f"Production Systemic Regime bundles are locked to exactly "
+            f"{CHOSEN_N_STATES} states; received {n_states}."
+        )
     model_type = f"gaussian-hmm-{n_states}state"
     model_version = f"sre-hmm{n_states}-v1.0.0"
     bundle = {
@@ -72,6 +77,14 @@ def load_bundle(directory: str | Path, *, approved_only: bool = True) -> dict[st
     bundle = joblib.load(path)
     if "pca" not in bundle or "hmm" not in bundle:
         raise ValueError("Model bundle missing pca/hmm payloads")
+    n_states = int(bundle.get("nStates", getattr(bundle["hmm"], "n_states", 0)))
+    if n_states != CHOSEN_N_STATES:
+        raise ValueError(
+            f"Refusing unapproved {n_states}-state Systemic Regime bundle; "
+            f"production is locked to exactly {CHOSEN_N_STATES} states."
+        )
+    if bundle.get("modelType") != f"gaussian-hmm-{CHOSEN_N_STATES}state":
+        raise ValueError("Model bundle identity does not match the approved two-state production type")
     return bundle
 
 

@@ -1,6 +1,6 @@
 /* ============================================================
    FAULTLINE — Social Intelligence™
-   Real-time market narrative tracking, sentiment analysis,
+   Regularly refreshed market narrative tracking, sentiment analysis,
    and social buzz monitoring powered by Polygon.io News API
    and Yahoo Finance trending/screener data.
    ============================================================ */
@@ -1126,7 +1126,7 @@ function TickerSearchPanel() {
 function SocialIntelligenceInner() {
   useSEO({
     title: "Social Intelligence | FAULTLINE",
-    description: "Real-time market narrative tracking, sentiment analysis, and social buzz monitoring.",
+    description: "Market narrative tracking, sentiment analysis, and social buzz monitoring.",
   });
 
   const [activeTab, setActiveTab] = useState<"trending" | "sentiment" | "news" | "narratives" | "active" | "search">("search");
@@ -1157,7 +1157,7 @@ function SocialIntelligenceInner() {
     <div style={{ minHeight: "100vh", background: "var(--fl-void)", color: "var(--fl-text-primary)" }}>
       <PageHeader
         title="Social Intelligence"
-        subtitle="Real-time narrative tracking, sentiment analysis, and social buzz monitoring"
+        subtitle="Narrative tracking, sentiment analysis, and social buzz monitoring, refreshed every 5 minutes"
       />
 
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 16px 40px" }}>

@@ -1,6 +1,6 @@
 /* ============================================================
    FAULTLINE — Market Movers
-   Top gainers, losers, and most active stocks in real time.
+   Top gainers, losers, and most active stocks as new data is published.
    ============================================================ */
 import { useSEO } from "@/hooks/useSEO";
 import MarketOverview from "@/components/MarketOverview";
@@ -9,7 +9,7 @@ import PageHeader from "@/components/PageHeader";
 export default function MarketMovers() {
   useSEO({
     title: "FAULTLINE — Market Movers",
-    description: "Real-time top gainers, losers, and most active stocks. Live market intelligence powered by FAULTLINE.",
+    description: "Top gainers, losers, and most active stocks. Market intelligence powered by FAULTLINE.",
   });
 
   return (

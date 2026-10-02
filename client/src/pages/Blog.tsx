@@ -280,11 +280,21 @@ function PostModal({
 }
 
 export default function Blog() {
+  // Soro deep links (/blog?post=<slug>) are server-rendered with a self-referencing
+  // canonical; keep it so hydration does not point the article back at /blog.
+  const soroPostSlug = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("post") : null;
+  // An unknown Soro slug is served as 404 + noindex by the server (publicContentSsr.ts);
+  // keep that title and do not re-add a self-referencing canonical on hydration.
+  const [soroPostNotFound] = useState(() =>
+    Boolean(soroPostSlug) && typeof document !== "undefined"
+      && /noindex/i.test(document.querySelector<HTMLMetaElement>('meta[name="robots"]')?.content ?? "")
+      && /not found/i.test(document.title),
+  );
   useSEO({
-    title: "Intelligence Briefings — Macro Commentary & Market Analysis",
+    title: soroPostNotFound ? "Article not found | FAULTLINE" : "Intelligence Briefings — Macro Commentary & Market Analysis",
     description:
       "FAULTLINE Intelligence Briefings: institutional macro commentary, market risk analysis, systemic pressure updates, and fault line reports from the FAULTLINE intelligence team.",
-    canonical: "/blog",
+    canonical: soroPostSlug && !soroPostNotFound ? `/blog?post=${encodeURIComponent(soroPostSlug)}` : "/blog",
   });
 
   // Inject CollectionPage + Blog JSON-LD structured data for Googlebot
@@ -440,6 +450,11 @@ export default function Blog() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-12">
+        {soroPostNotFound && (
+          <div role="status" data-soro-not-found className="mb-6 rounded border border-amber-400/30 bg-amber-400/5 px-4 py-3 text-sm text-amber-200">
+            Article not found. It may have been removed or the link is incorrect — the latest briefings are below.
+          </div>
+        )}
         {/* Page title */}
         <PageHeader
           title="Intelligence Briefings"
@@ -470,7 +485,7 @@ export default function Blog() {
             <strong className="text-white">FAULTLINE Intelligence Briefings</strong> is the editorial arm of the FAULTLINE macro risk platform — a publication dedicated to understanding systemic market pressure, macro regime shifts, and the fault lines forming beneath global financial markets before they become crises.
           </p>
           <p className="text-slate-400 text-sm leading-relaxed mb-4 max-w-3xl" style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
-            Every briefing is grounded in the same analytical framework that powers the FAULTLINE Pressure Index™: a multi-factor model that aggregates credit spreads, volatility regimes, liquidity conditions, breadth deterioration, and macro policy signals into a single, real-time risk score. When the index moves, we explain why — and what it means for your portfolio.
+            Every briefing is grounded in the same analytical framework that powers the FAULTLINE Pressure Index™: a multi-factor model that aggregates credit spreads, volatility regimes, liquidity conditions, breadth deterioration, and macro policy signals into a single, regularly refreshed risk score. When the index moves, we explain why — and what it means for your portfolio.
           </p>
           <p className="text-slate-400 text-sm leading-relaxed max-w-3xl" style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
             Our intelligence covers five core domains: <strong className="text-slate-300">macro intelligence</strong> (Fed policy, yield curves, credit cycles), <strong className="text-slate-300">market risk analysis</strong> (equity regime, sector rotation, momentum breakdowns), <strong className="text-slate-300">risk intelligence</strong> (systemic contagion, tail risk, crash analogs), <strong className="text-slate-300">crypto intelligence</strong> (digital asset macro correlation, stablecoin liquidity, BTC dominance cycles), and <strong className="text-slate-300">platform updates</strong> (new FAULTLINE features, methodology changes, and signal improvements).

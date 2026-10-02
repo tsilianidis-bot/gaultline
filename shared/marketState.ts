@@ -36,11 +36,18 @@ export interface CanonicalMarketState {
   now: {
     pressureScore: number;
     regime: string;
-    stressLevel: "Low" | "Elevated" | "High" | "Crisis";
-    direction: "Improving" | "Stable" | "Deteriorating" | "Accelerating";
+    /** Legacy seismograph labels, or the engine band level ("Moderate", "Critical") once projected from canonical state. */
+    stressLevel: "Low" | "Moderate" | "Elevated" | "High" | "Critical" | "Crisis";
+    /** "Unavailable" when the canonical composite direction cannot be derived (no prior comparable reading). */
+    direction: "Improving" | "Stable" | "Deteriorating" | "Accelerating" | "Unavailable";
     historicalPercentile: number;
     headline: string;
+    /** Strongest evidence families by strength. Ordering only — NOT a threat/support classification. */
     topDrivers: string[];
+    /** Families whose own signal is bearish/stressed (shared/canonicalReadout classifyEvidenceFamilies). */
+    threats: string[];
+    /** Families whose own signal is bullish/recovering (same classifier). */
+    supports: string[];
   };
   why: {
     story: string;
@@ -63,6 +70,12 @@ export interface CanonicalMarketState {
       whyItMatters: string;
     }>;
     evidenceConsensus: "strong" | "moderate" | "weak" | "divergent";
+    /**
+     * Month ("YYYY-MM") of the pressure-history record the evidence families are
+     * read from. They are a MONTHLY record, not the current canonical run
+     * (canonicalCurrent.engines), so the same label can carry a different value.
+     */
+    evidenceAsOfMonth?: string | null;
   };
   outlook: {
     probabilities: MarketStateProbabilityDistribution;

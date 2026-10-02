@@ -5,17 +5,17 @@ export default function EthereumRiskDashboard() {
     <SEOLandingPage
       seo={{
         title: "Ethereum Risk Dashboard — ETH Risk Score, Key Levels & Macro Analysis | FAULTLINE",
-        description: "Real-time Ethereum risk dashboard: ETH macro alignment score, ETH/BTC ratio tracking, key support and resistance levels, DeFi ecosystem risk, and regime-based bull/bear case analysis.",
+        description: "Ethereum risk dashboard: ETH macro alignment score, ETH/BTC ratio tracking, key support and resistance levels, DeFi ecosystem risk, and regime-based bull/bear case analysis.",
         canonical: "/ethereum-risk-dashboard",
       }}
       badge="ETHEREUM RISK INTELLIGENCE"
-      headline={"Ethereum Risk Dashboard\nETH Macro Analysis in Real Time"}
+      headline={"Ethereum Risk Dashboard\nETH Macro Analysis"}
       subheadline="FAULTLINE's Ethereum Risk Dashboard provides a comprehensive macro-aligned risk assessment for ETH — covering ETH/BTC ratio dynamics, DeFi ecosystem exposure, key price levels, macro regime alignment, and bull and bear case scenarios."
       ctaLabel="VIEW ETH RISK DATA"
       ctaHref="/app/crypto"
       accentColor="#627EEA"
       features={[
-        { icon: "◈", title: "ETH/BTC Ratio Tracking", desc: "The ETH/BTC ratio is the primary indicator of Ethereum's relative strength vs. Bitcoin. FAULTLINE tracks this ratio and its trend in real time." },
+        { icon: "◈", title: "ETH/BTC Ratio Tracking", desc: "The ETH/BTC ratio is the primary indicator of Ethereum's relative strength vs. Bitcoin. FAULTLINE tracks this ratio and its trend as new data is published." },
         { icon: "◎", title: "DeFi Ecosystem Risk Score", desc: "Ethereum hosts the majority of DeFi protocols. FAULTLINE tracks DeFi TVL trends, protocol risk, and contagion exposure." },
         { icon: "⬡", title: "Macro Regime Alignment", desc: "ETH is more sensitive to macro conditions than BTC due to its higher beta. FAULTLINE scores ETH's alignment with the current macro regime." },
         { icon: "◈", title: "Key Support & Resistance Levels", desc: "Critical ETH price levels updated continuously: major support zones, resistance clusters, and key psychological levels." },
@@ -57,7 +57,7 @@ Bear Case Conditions: Fed QT acceleration or rate hikes, falling ETH/BTC ratio (
 
 Base Case: Moderate macro conditions with ETH tracking BTC performance, L2 ecosystem growing steadily, staking yield providing fundamental support, and ETH/BTC ratio consolidating in a range. This scenario is associated with ETH delivering positive but not exceptional returns relative to BTC.
 
-FAULTLINE's real-time risk score reflects which scenario conditions are currently most prevalent, updating continuously as macro data and market conditions change.`,
+FAULTLINE's regularly refreshed risk score reflects which scenario conditions are currently most prevalent, updating continuously as macro data and market conditions change.`,
         },
       ]}
       faqs={[

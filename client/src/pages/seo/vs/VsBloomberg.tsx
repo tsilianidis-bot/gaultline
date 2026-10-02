@@ -28,7 +28,7 @@ export default function VsBloomberg() {
       contentSections={[
         {
           heading: 'What Each Tool Does: FAULTLINE vs. Bloomberg',
-          body: `Bloomberg Terminal is the gold standard for institutional financial data, news, and analytics, offering an unparalleled breadth of information across all asset classes. It serves professional traders, portfolio managers, and analysts with real-time data feeds, sophisticated charting tools, and direct access to market participants. Its strength lies in its comprehensive, all-encompassing nature, providing everything from bond pricing to company fundamentals and geopolitical news. However, its complexity and high cost make it largely inaccessible and often overwhelming for retail investors.
+          body: `Bloomberg Terminal is the gold standard for institutional financial data, news, and analytics, offering an unparalleled breadth of information across all asset classes. It serves professional traders, portfolio managers, and analysts with regularly refreshed data feeds, sophisticated charting tools, and direct access to market participants. Its strength lies in its comprehensive, all-encompassing nature, providing everything from bond pricing to company fundamentals and geopolitical news. However, its complexity and high cost make it largely inaccessible and often overwhelming for retail investors.
 
 FAULTLINE, in contrast, is a specialized market intelligence platform built from the ground up for retail investors. It focuses specifically on macro risk, systemic vulnerabilities, and market regime classification. Instead of broad data, FAULTLINE delivers curated insights into crash probability, liquidity conditions, and investor sentiment, all presented in an intuitive, accessible format. Its purpose is to help individual investors understand the bigger picture of market health and anticipate significant shifts, without the need for a multi-thousand-dollar annual subscription or extensive training.`,
         },
@@ -70,7 +70,7 @@ Bloomberg provides the raw materials for such analysis, but the synthesis and in
         },
         {
           question: 'What is the cost difference between FAULTLINE and Bloomberg?',
-          answer: 'Bloomberg Terminal subscriptions typically cost tens of thousands of dollars annually, making it inaccessible for most retail investors. FAULTLINE offers its specialized macro risk intelligence at a significantly lower, retail-investor-friendly price point, providing advanced insights without the institutional cost.',
+          answer: 'Bloomberg Terminal subscriptions typically cost tens of thousands of dollars annually, making it inaccessible for most retail investors. FAULTLINE’s public Pressure Index and methodology are free to read, and signed-in access starts with a free account. It is a focused macro-pressure tool, not a replacement for a terminal’s breadth of data.',
         },
         {
           question: 'Does FAULTLINE offer personalized financial advice?',

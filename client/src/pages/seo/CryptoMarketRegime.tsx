@@ -5,17 +5,17 @@ export default function CryptoMarketRegime() {
     <SEOLandingPage
       seo={{
         title: 'Crypto Market Regime Tracker | FAULTLINE',
-        description: 'Track real-time crypto market regimes: bull, bear, accumulation, distribution. FAULTLINE uses on-chain data, Bitcoin dominance, and macro conditions.',
+        description: 'Track crypto market regimes: bull, bear, accumulation, distribution. FAULTLINE uses on-chain data, Bitcoin dominance, and macro conditions.',
         canonical: '/crypto-market-regime',
       }}
       badge="CRYPTO"
       headline="Crypto Market Regime Tracker"
-      subheadline="Real-time insights into crypto market phases: bull, bear, accumulation, and distribution. Understand how FAULTLINE classifies regimes using on-chain data, Bitcoin dominance, and macro conditions to inform your strategy."
+      subheadline="Regularly refreshed insights into crypto market phases: bull, bear, accumulation, and distribution. Understand how FAULTLINE classifies regimes using on-chain data, Bitcoin dominance, and macro conditions to inform your strategy."
       ctaLabel="Explore FAULTLINE Crypto Insights"
       ctaHref="/app"
       accentColor="#9945FF"
       features={[
-        { icon: "◈", title: "Real-time Regime Classification", desc: "Real-time Regime Classification" },
+        { icon: "◈", title: "Regularly refreshed Regime Classification", desc: "Regularly refreshed Regime Classification" },
         { icon: "◎", title: "On-Chain Data Integration", desc: "On-Chain Data Integration" },
         { icon: "⬡", title: "Bitcoin Dominance Analysis", desc: "Bitcoin Dominance Analysis" },
         { icon: "◈", title: "Macro Condition Impact", desc: "Macro Condition Impact" },
