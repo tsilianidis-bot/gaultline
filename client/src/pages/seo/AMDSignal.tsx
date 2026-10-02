@@ -59,7 +59,7 @@ Historical Context: AMD set a then-record high in late 2021, then fell approxima
         { label: "NVDA SIGNAL", href: "/stock/nvda", desc: "NVIDIA — AMD's primary AI GPU competitor." },
         { label: "AI STOCKS DASHBOARD", href: "/ai-stocks-dashboard", desc: "All AI-exposed stocks in one dashboard." },
         { label: "AI BUBBLE MONITOR", href: "/ai-bubble-risk-tracker", desc: "Track AI concentration and valuation risk." },
-        { label: "MARKET CRASH PROBABILITY", href: "/market-crash-probability-2026", desc: "Systemic risk that could trigger AMD drawdowns." },
+        { label: "MARKET CRASH RISK 2026", href: "/market-crash-probability-2026", desc: "Systemic risk that could trigger AMD drawdowns." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy impact on semiconductor stocks." },
         { label: "STOCK SIGNALS", href: "/signals", desc: "All FAULTLINE stock signals in one view." },
       ]}

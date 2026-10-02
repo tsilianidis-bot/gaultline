@@ -20,7 +20,7 @@ export default function AltSeasonIndicator() {
         { icon: "⬡", title: "Altcoin Sector Momentum", desc: "Track momentum across DeFi, Layer-2, AI tokens, gaming, and meme coins simultaneously to identify which sectors are leading the rotation." },
         { icon: "◈", title: "Macro Regime Alignment", desc: "Alt season requires a risk-on macro environment. FAULTLINE checks whether the macro regime supports altcoin outperformance." },
         { icon: "◎", title: "Social Sentiment Surge Detection", desc: "Retail capital floods into altcoins during alt season. FAULTLINE tracks social sentiment across Reddit, StockTwits, and crypto news." },
-        { icon: "⬡", title: "Historical Alt Season Comparisons", desc: "Compare current conditions against 2017, 2020-2021, and 2023 alt season periods to understand the historical precedent." },
+        { icon: "⬡", title: "Historical Alt Season Comparisons", desc: "Compare current conditions against past alt season periods to understand the historical precedent." },
       ]}
       contentSections={[
         {
@@ -57,7 +57,7 @@ FAULTLINE's Alt Season Indicator tracks which phase the market is currently in a
         },
         {
           heading: "2024-2025 Alt Season: What Happened and What It Means for 2026",
-          body: `The 2024-2025 crypto cycle provided a textbook example of the alt season rotation pattern. Bitcoin led the cycle, setting then-record highs in late 2024. Ethereum followed, with the ETH/BTC ratio recovering from multi-year lows. AI tokens (TAO, FET, RNDR) outperformed during Phase 3.
+          body: `The 2024-2025 crypto cycle provided a textbook example of the alt season rotation pattern. Bitcoin led the cycle, setting then-record highs in late 2024. Ethereum followed, with the ETH/BTC ratio recovering from multi-year lows. AI tokens such as TAO, FET, and RNDR drew heavy speculative interest during the cycle.
 
 The key lessons from the 2024-2025 cycle for 2026 positioning:
 
@@ -77,7 +77,7 @@ FAULTLINE's Alt Season Indicator tracks all of these conditions as new data is p
         },
         {
           question: "How long does alt season typically last?",
-          answer: "Historical alt seasons have ranged from 2-3 months (2019) to 6-9 months (2017, 2020-2021). The duration depends on the macro environment, BTC dominance dynamics, and the degree of retail participation. Alt seasons that are supported by a favorable macro regime (expanding liquidity, risk-on sentiment) tend to last longer than those driven purely by crypto-specific factors.",
+          answer: "Historical alt seasons have varied widely in length, from a few weeks to several months. The duration depends on the macro environment, BTC dominance dynamics, and the degree of retail participation. Alt seasons that are supported by a favorable macro regime (expanding liquidity, risk-on sentiment) tend to last longer than those driven purely by crypto-specific factors.",
         },
         {
           question: "Which altcoins perform best during alt season?",

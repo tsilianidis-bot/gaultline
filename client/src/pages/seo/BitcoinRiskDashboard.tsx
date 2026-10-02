@@ -27,7 +27,7 @@ export default function BitcoinRiskDashboard() {
           heading: "Why Bitcoin Risk Analysis Requires a Macro Framework",
           body: `Bitcoin is often analyzed in isolation — using on-chain metrics, technical analysis, and crypto-specific indicators. While these tools have value, they miss the most important driver of BTC price action: global macro conditions.
 
-Bitcoin's price history shows a clear correlation with global liquidity cycles. During periods of Federal Reserve quantitative easing (QE) and expanding global liquidity, Bitcoin has delivered extraordinary returns. During periods of quantitative tightening (QT) and contracting liquidity, Bitcoin has experienced severe drawdowns — 50-80% declines that wiped out years of gains in months.
+Bitcoin's price history shows a clear correlation with global liquidity cycles. During periods of Federal Reserve quantitative easing (QE) and expanding global liquidity, Bitcoin has delivered extraordinary returns. During periods of quantitative tightening (QT) and contracting liquidity, Bitcoin has experienced severe drawdowns — cycle bear-market declines of roughly 75–85% that wiped out years of gains.
 
 The 2022 bear market is the clearest example. Bitcoin fell from approximately $69,000 to $16,000 — a 77% decline — driven primarily by the most aggressive Fed tightening cycle since the 1980s. On-chain metrics remained relatively healthy throughout much of this decline; the driver was macro, not crypto-specific.
 
@@ -43,7 +43,7 @@ FAULTLINE's Bitcoin Risk Dashboard uses the macro framework as the primary analy
 
 3. Regulatory Environment — Regulatory clarity or uncertainty in major markets (U.S., EU, Asia) affects institutional adoption and capital flows into Bitcoin. Regulatory developments are qualitative context; FAULTLINE does not ingest them as data.
 
-4. Bitcoin Halving Cycle — Bitcoin's supply issuance halves approximately every four years. Historically, the 12-18 months following a halving have been associated with significant price appreciation. The most recent halving occurred in April 2024, placing the 2025-2026 period in the historically favorable post-halving window.
+4. Bitcoin Halving Cycle — Bitcoin's supply issuance halves approximately every four years. Historically, the 12-18 months following a halving have been associated with significant price appreciation. The most recent halving occurred in April 2024; the 12-18 month window after it ran through late 2025.
 
 5. Institutional Adoption Dynamics — The approval of Bitcoin spot ETFs in January 2024 opened BTC to a new class of institutional investors. ETF inflows and outflows are now a significant driver of BTC price action and liquidity.`,
         },
@@ -65,7 +65,7 @@ Psychological Levels: major round numbers that attract significant options posit
         },
         {
           question: "How does the Bitcoin halving affect risk in 2026?",
-          answer: "The April 2024 Bitcoin halving reduced the daily supply issuance from approximately 900 BTC/day to 450 BTC/day. Historically, the 12-24 months following a halving have been associated with significant price appreciation as reduced supply meets sustained or growing demand. The 2025-2026 period falls within this historically favorable post-halving window, which FAULTLINE factors into the BTC bull case scenario.",
+          answer: "The April 2024 Bitcoin halving reduced the daily supply issuance from approximately 900 BTC/day to 450 BTC/day. Historically, the 12-18 months following a halving have been associated with significant price appreciation as reduced supply meets sustained or growing demand. For the April 2024 halving, that window ran through late 2025.",
         },
         {
           question: "What is Bitcoin's correlation with the stock market?",

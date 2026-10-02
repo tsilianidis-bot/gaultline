@@ -54,7 +54,7 @@ describe("Market Risk Intelligence SEO positioning", () => {
   });
 
   it("gives eligible public risk pages distinct, content-aligned search-intent titles", () => {
-    expect(getPageMeta("/market-crash-probability-2026").title).toBe("Market Crash Probability | FAULTLINE");
+    expect(getPageMeta("/market-crash-probability-2026").title).toBe("Market Crash Risk 2026 | FAULTLINE");
     expect(getPageMeta("/recession-probability").title).toBe("Recession Probability | FAULTLINE");
     expect(getPageMeta("/bitcoin-risk-dashboard").title).toBe("Bitcoin Risk Indicator | FAULTLINE");
     expect(getPageMeta("/stock-market-risk-dashboard").title).toBe("Stock Market Risk Today | FAULTLINE");

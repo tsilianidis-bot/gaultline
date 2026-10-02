@@ -79,7 +79,7 @@ Dollar: Fed rate hikes strengthen the dollar relative to other currencies. A str
         },
         {
           question: "What does a Fed pivot mean for markets?",
-          answer: "A Fed pivot — when the Fed shifts from raising rates to cutting rates — is often anticipated as a bullish catalyst for markets. However, historically, the first rate cut does not immediately stabilize markets. It often signals that economic conditions have deteriorated enough to warrant emergency action. The market typically bottoms 3-6 months after the first cut, not on the day of the cut.",
+          answer: "A Fed pivot — when the Fed shifts from raising rates to cutting rates — is often anticipated as a bullish catalyst for markets. However, historically, the first rate cut does not immediately stabilize markets. It often signals that economic conditions have deteriorated enough to warrant emergency action. The market has often bottomed some months after the first cut, not on the day of the cut.",
         },
         {
           question: "Is Fed policy data available for free on FAULTLINE?",

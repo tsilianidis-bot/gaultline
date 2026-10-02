@@ -86,7 +86,7 @@ Sector Rotation Signals: Compare relative price momentum across AI infrastructur
         { label: "AMD SIGNAL", href: "/stock/amd", desc: "AMD — NVIDIA's primary AI GPU competitor." },
         { label: "META SIGNAL", href: "/stock/meta", desc: "Meta — AI-powered advertising platform." },
         { label: "AI BUBBLE MONITOR", href: "/ai-bubble-risk-tracker", desc: "Systemic AI concentration risk dashboard." },
-        { label: "MARKET CRASH PROBABILITY", href: "/market-crash-probability-2026", desc: "Crash risk driven by AI concentration." },
+        { label: "MARKET CRASH RISK 2026", href: "/market-crash-probability-2026", desc: "Crash risk driven by AI concentration." },
       ]}
       schemaType="Article"
       datePublished="2024-06-01"

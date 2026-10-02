@@ -15,7 +15,7 @@ export default function RecessionProbability() {
       ctaHref="/pressure-index"
       accentColor="#FF8C00"
       features={[
-        { icon: "◈", title: "Yield Curve Inversion Depth", desc: "The 2yr/10yr spread has inverted before every U.S. recession since 1955. FAULTLINE tracks inversion depth and re-steepening signals." },
+        { icon: "◈", title: "Yield Curve Inversion Depth", desc: "The yield curve has inverted before every U.S. recession since 1955. FAULTLINE tracks inversion depth and re-steepening signals." },
         { icon: "◎", title: "Unemployment Rate", desc: "The monthly U.S. unemployment rate (FRED UNRATE). FAULTLINE does not ingest weekly jobless claims." },
         { icon: "⬡", title: "Inflation and Policy Rates", desc: "CPI (CPIAUCSL), PPI (PPIACO), and the federal funds rate (FEDFUNDS) from FRED, on their standard release schedules." },
         { icon: "◈", title: "Credit Spread Analysis", desc: "High-yield credit spreads widen as recession risk rises. FAULTLINE reads the ICE BofA US High Yield spread (BAMLH0A0HYM2) from FRED." },
@@ -25,9 +25,9 @@ export default function RecessionProbability() {
       contentSections={[
         {
           heading: "What Is Recession Probability and Why Does It Matter?",
-          body: `Recession probability is an estimate of the likelihood that the U.S. economy will enter a formal recession — defined as two consecutive quarters of negative GDP growth — within a specified time horizon (typically 12 months).
+          body: `Recession probability is an estimate of the likelihood that the U.S. economy will enter a recession (as dated by the NBER; two consecutive quarters of negative GDP growth is a common rule of thumb, not the official definition) within a specified time horizon (typically 12 months).
 
-For investors, recession probability matters because recessions are associated with significant equity market drawdowns. The average S&P 500 decline during recessions since 1945 is approximately 30%. Some recessions — 2000-2002 (49% decline) and 2008-2009 (57% decline) — produced much larger drawdowns.
+For investors, recession probability matters because recessions are associated with significant equity market drawdowns. Recession-era equity declines have historically been larger than ordinary corrections. Some recessions — 2000-2002 (49% decline) and 2007-2009 (57% decline) — produced much larger drawdowns.
 
 More importantly, recession risk affects which asset classes, sectors, and individual equities are likely to outperform or underperform. Defensive sectors (utilities, consumer staples, healthcare) historically outperform during recessions. Cyclical sectors (technology, consumer discretionary, industrials) underperform. Understanding recession probability helps you position your portfolio for the environment ahead, not the one behind you.`,
         },
@@ -53,7 +53,7 @@ FAULTLINE does not ingest PMI or ISM surveys, jobless claims, or consumer-confid
 
 A market correction (10-20% decline) can occur without a recession — driven by valuation compression, sentiment shifts, or technical factors. These corrections are typically shorter in duration and shallower in depth than recession-driven bear markets.
 
-A recession-driven bear market (typically 30-50%+ decline) is characterized by fundamental deterioration: falling earnings, rising unemployment, tightening credit conditions, and declining consumer spending. These bear markets last longer and require more time to recover.
+A recession-driven bear market (typically deeper than a correction) is characterized by fundamental deterioration: falling earnings, rising unemployment, tightening credit conditions, and declining consumer spending. These bear markets last longer and require more time to recover.
 
 FAULTLINE's recession probability score helps you distinguish between the two scenarios. When recession probability is LOW and the Pressure Index is below the HIGH STRESS band (LOW RISK through ELEVATED RISK), a market correction is more likely than a full recession-driven bear market. When recession probability is HIGH and the Pressure Index is in the HIGH STRESS or SYSTEMIC CRISIS band, the risk profile shifts toward a more severe, longer-duration drawdown.`,
         },
@@ -73,7 +73,7 @@ FAULTLINE's recession probability score helps you distinguish between the two sc
         },
         {
           question: "How does the yield curve predict recessions?",
-          answer: "When the 2-year Treasury yield rises above the 10-year Treasury yield (yield curve inversion), it signals that investors expect the Fed to cut rates in the future — typically because they anticipate economic weakness. This inversion has preceded every U.S. recession since 1955, with a lead time of 6-18 months. The re-steepening that follows the inversion (as the Fed begins cutting) is often the final warning before recession arrives.",
+          answer: "When the 2-year Treasury yield rises above the 10-year Treasury yield (yield curve inversion), it signals that investors expect the Fed to cut rates in the future — typically because they anticipate economic weakness. Yield-curve inversion has preceded every U.S. recession since 1955, with a lead time of 6-24 months, though not every inversion has been followed by a recession. The re-steepening that follows the inversion (as the Fed begins cutting) is often the final warning before recession arrives.",
         },
         {
           question: "Is recession probability data available for free?",

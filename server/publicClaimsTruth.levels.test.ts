@@ -465,3 +465,65 @@ describe("public claims truth: templated S/R strings in the Dynamic stock/crypto
     }
   });
 });
+
+describe("public claims truth: historical accuracy and remaining present-tense claims (PR #56 r14)", () => {
+  const R14_SKIP = new Set<string>(["client/src/pages/seo/MarketCrashProbability2026.tsx"]);
+  const seoAll = walkRel("client/src/pages/seo").filter((p) => !R14_SKIP.has(p));
+  const files = [...new Set([...seoAll, ...publicSurfaces, "client/src/pages/SEOLandingPage.tsx", "server/seoMeta.ts", "server/publicContentSsr.ts", "server/seoRoutes.ts", "client/src/hooks/useSEO.ts", "client/index.html", "client/src/pages/TrackRecord.tsx"])];
+  const lineHits = (paths: string[], re: RegExp) =>
+    paths.flatMap((path) => read(path).split("\n").flatMap((line, i) => (re.test(line) ? [`${path}:${i + 1}`] : [])));
+
+  const guards: Record<string, RegExp> = {
+    recordSetting: /\brecord[- ]setting\b/i,
+    percentShare: /\b\d+(?:\.\d+)?\s*(?:%|percent)\s+(?:of the\s+)?(?:\w+\s+){0,3}market share\b/i,
+    peOf: /\bP\/?E(?: ratio)? of \d/i,
+    timesEarnings: /\b\d+(?:\.\d+)?\s+times\s+(?:forward\s+|trailing\s+)?(?:earnings|sales|revenue)\b/i,
+    trillionCap: /\$\d+(?:\.\d+)?\s*(?:T|trillion)\b[^.\n]{0,20}\bmarket cap/i,
+    tradingAbove: /\bis trading (?:above|below|over|under) \$\d/i,
+    newHighs: /\b(?:is|are|making|makes|hits?|hitting|at|reach(?:es|ing)|sets?|setting)\s+(?:fresh\s+|new\s+)+highs?\b/i,
+  };
+  const planted: Record<string, string> = {
+    recordSetting: "NVDA posted a record-setting quarter.",
+    percentShare: "NVIDIA holds 40 percent market share.",
+    peOf: "TSLA has a P/E of 45.",
+    timesEarnings: "META trades at 45 times earnings.",
+    trillionCap: "NVDA has a $4 trillion market cap.",
+    tradingAbove: "AMD is trading above $200.",
+    newHighs: "The S&P 500 is making new highs.",
+  };
+  // Historical figures corrected in r14 must not come back.
+  const historicalRegressions = /50-70% bear market drawdowns|50-80% declines|from 0% to 5\.25% in 18 months|Baa credit spreads hit|HY proxy ~11\.45%|2yr\/10yr spread has inverted before every|exceeded 80% during bear market|longest bull market in U\.S\. history ran from March 2009|average decline of around 36%|fastest liquidity withdrawal in history|\(QT\) since the 1980s|lead time of 6-18 months|defined as two consecutive quarters of negative GDP|the month Lehman Brothers collapsed|Elevated unemployment \(9–10%\)|\(Lehman\) and March 2020/i;
+
+  it("each guard catches its planted phrase", () => {
+    for (const [name, re] of Object.entries(guards)) expect(planted[name], name).toMatch(re);
+    expect("Bitcoin led the cycle, setting then-record highs in late 2024.").not.toMatch(guards.newHighs);
+    expect("compared to Bitcoin's typical 50-70% bear market drawdowns").toMatch(historicalRegressions);
+    expect("the Fed raised rates from 0% to 5.25% in 18 months").toMatch(historicalRegressions);
+    expect("Baa credit spreads hit 5.53% (HY proxy ~11.45%)").toMatch(historicalRegressions);
+  });
+
+  it("no scanned surface carries those phrases", () => {
+    expect(files.length).toBeGreaterThan(80);
+    for (const [name, re] of Object.entries(guards)) expect(lineHits(files, re), name).toEqual([]);
+  });
+
+  it("the historical figures corrected in r14 stay corrected", () => {
+    expect(lineHits(files, historicalRegressions)).toEqual([]);
+    const meta = read("server/seoMeta.ts");
+    expect(meta).toContain("in about 16 months (March 2022 to July 2023)");
+    expect(meta).toContain("5.53% on October 31, 2008 (FRED BAA10Y)");
+    expect(read("client/src/pages/seo/TAOSignal.tsx")).toContain("roughly 75–85% cycle bear-market drawdowns");
+  });
+
+  it("the /market-crash-probability-2026 title, description and link labels read 'Market Crash Risk 2026'", () => {
+    for (const path of ["server/seoMeta.ts", "client/src/pages/SEOLandingPage.tsx"]) {
+      const text = read(path);
+      expect(text, path).toContain('title: "Market Crash Risk 2026 | FAULTLINE"');
+      expect(text, path).not.toContain('title: "Market Crash Probability | FAULTLINE"');
+      expect(text, path).not.toMatch(/description: "Market crash probability context/);
+    }
+    expect(lineHits(seoAll, /label: "MARKET CRASH PROBABILITY"|>Crash Probability 2026</)).toEqual([]);
+    // Slug unchanged.
+    expect(read("server/seoMeta.ts")).toContain('"/market-crash-probability-2026": {');
+  });
+});

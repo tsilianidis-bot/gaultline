@@ -32,7 +32,7 @@ const BullBearConditions = () => {
         },
         {
           heading: "Regime Readings and Historical Context",
-          body: `This page does not carry a fixed regime reading. The current Pressure Index reading and regime band are on the public Pressure Index page at /pressure-index. Historically, transitional phases between clearly bullish and clearly bearish conditions are common. The late-1990s dot-com bust followed a long period of speculative excess, while the 2008 financial crisis emerged from conditions that deteriorated quickly once credit stress spread. Understanding these historical parallels helps put current volatility in context.`,
+          body: `This page does not carry a fixed regime reading. The current Pressure Index reading and regime band are on the public Pressure Index page at /pressure-index. Historically, transitional phases between clearly bullish and clearly bearish conditions are common. The 2000–2002 dot-com bust followed the speculative excess of the late 1990s, while the 2008 financial crisis emerged from conditions that deteriorated quickly once credit stress spread. Understanding these historical parallels helps put current volatility in context.`,
         },
         {
           heading: "What Changed and Why It Matters for Investors",

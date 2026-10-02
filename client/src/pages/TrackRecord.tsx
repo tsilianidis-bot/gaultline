@@ -184,7 +184,7 @@ const CRISIS_CALLOUTS = [
     label: "Global Financial Crisis",
     peak: 82,
     regime: "CRITICAL",
-    description: "Retrospective analysis shows CRITICAL (82/100) in October 2008 — the month Lehman Brothers collapsed. Baa credit spreads hit 5.53% (HY proxy ~11.45%), with CRITICAL readings sustained for 8 consecutive months through May 2009.",
+    description: "Retrospective analysis shows CRITICAL (82/100) in October 2008 — the month after Lehman Brothers' September 15, 2008 bankruptcy filing. The Moody's Baa–10-year Treasury spread stood at 5.53% on October 31, 2008 (FRED BAA10Y), with CRITICAL readings sustained for 8 consecutive months through May 2009.",
     outcome: "S&P 500 fell ~57% from peak (Oct 2007) to trough (Mar 2009). Unemployment peaked at 10%.",
   },
   {
@@ -192,7 +192,7 @@ const CRISIS_CALLOUTS = [
     label: "European Debt Crisis",
     peak: 72,
     regime: "HIGH RISK",
-    description: "Elevated unemployment (9–10%) and persistent credit stress kept the model in HIGH RISK territory through much of 2010–2012, capturing the eurozone sovereign debt contagion that threatened global financial stability.",
+    description: "Elevated unemployment (7.7–9.9% over 2010–2012) and persistent credit stress kept the model in HIGH RISK territory through much of 2010–2012, capturing the eurozone sovereign debt contagion that threatened global financial stability.",
     outcome: "Multiple EU sovereign downgrades, ECB emergency interventions, Greek restructuring.",
   },
   {

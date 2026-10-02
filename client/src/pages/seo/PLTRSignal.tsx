@@ -75,7 +75,7 @@ Technical Context: PLTR has historically exhibited high volatility relative to t
         { label: "META SIGNAL", href: "/stock/meta", desc: "Meta AI signal analysis." },
         { label: "AI STOCKS DASHBOARD", href: "/ai-stocks-dashboard", desc: "All AI-exposed stocks in one dashboard." },
         { label: "AI BUBBLE MONITOR", href: "/ai-bubble-risk-tracker", desc: "Track AI concentration and valuation risk." },
-        { label: "MARKET CRASH PROBABILITY", href: "/market-crash-probability-2026", desc: "Systemic risk that could trigger PLTR drawdowns." },
+        { label: "MARKET CRASH RISK 2026", href: "/market-crash-probability-2026", desc: "Systemic risk that could trigger PLTR drawdowns." },
         { label: "STOCK SIGNALS", href: "/signals", desc: "All FAULTLINE stock signals in one view." },
       ]}
     />

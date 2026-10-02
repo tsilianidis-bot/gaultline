@@ -25,9 +25,9 @@ export default function LearnBullAndBearMarkets() {
       contentSections={[
         {
           heading: "What Are Bull and Bear Markets?",
-          body: `A bull market is a sustained period of rising stock prices, typically defined as a gain of 20% or more from a recent low. Bull markets are characterized by strong investor confidence, expanding corporate earnings, and often accommodative monetary policy. The longest bull market in U.S. history ran from March 2009 to February 2020 — over 11 years — driven by post-crisis monetary stimulus, technology sector growth, and expanding profit margins.
+          body: `A bull market is a sustained period of rising stock prices, typically defined as a gain of 20% or more from a recent low. Bull markets are characterized by strong investor confidence, expanding corporate earnings, and often accommodative monetary policy. One of the longest bull markets in U.S. history ran from March 2009 to February 2020 — nearly 11 years — driven by post-crisis monetary stimulus, technology sector growth, and expanding profit margins.
 
-A bear market is the opposite: a sustained decline of 20% or more from a recent high. Bear markets are characterized by declining investor confidence, contracting earnings, and often tightening monetary conditions. They are typically shorter than bull markets but more intense. The average bear market since 1929 has lasted approximately 9-10 months, with an average decline of around 36%.
+A bear market is the opposite: a sustained decline of 20% or more from a recent high. Bear markets are characterized by declining investor confidence, contracting earnings, and often tightening monetary conditions. They are typically shorter than bull markets but more intense. The average S&P 500 bear market since 1928 has lasted approximately 9-10 months, with an average decline of around 35%.
 
 The distinction matters because the investment environment is fundamentally different in each regime. Asset classes, sectors, and strategies that perform well in bull markets often perform poorly in bear markets, and vice versa.`,
         },
@@ -43,7 +43,7 @@ FAULTLINE's regime classification system is designed to help investors understan
           heading: "How Investors Misunderstand Bull and Bear Markets",
           body: `The most common misunderstanding is that bull and bear markets are defined solely by price. In reality, price is a lagging indicator. The structural conditions that drive regime transitions — credit deterioration, liquidity withdrawal, breadth deterioration — develop well before prices reflect them.
 
-A second common misunderstanding is that bear markets are caused by unexpected events. The structural vulnerabilities that make a market susceptible to a sharp decline often build up over months. The 2000 crash was preceded by historically extreme valuations and AI/tech concentration. The 2008 crash was preceded by credit spread widening and liquidity stress. The 2022 decline was preceded by the most aggressive Fed tightening cycle in decades.
+A second common misunderstanding is that bear markets are caused by unexpected events. The structural vulnerabilities that make a market susceptible to a sharp decline often build up over months. The 2000 crash was preceded by historically extreme valuations and tech concentration. The 2008 crash was preceded by credit spread widening and liquidity stress. The 2022 decline was preceded by the most aggressive Fed tightening cycle in decades.
 
 FAULTLINE's Pressure Index is designed to measure these structural vulnerabilities as new data is published — not to predict crashes, but to quantify how structurally vulnerable the market is to a rapid decline.`,
         },
@@ -67,7 +67,7 @@ FAULTLINE is not a prediction tool. It is a risk assessment framework that provi
         },
         {
           question: "How long do bull and bear markets typically last?",
-          answer: "Bull markets have historically lasted much longer than bear markets. The average bull market since 1929 has lasted approximately 2.7 years, with some lasting over a decade. The average bear market has lasted approximately 9-10 months. However, there is significant variation — the 2020 bear market lasted only about 33 days.",
+          answer: "Bull markets have historically lasted much longer than bear markets. The average bull market since 1928 has lasted approximately 2.7 years, with some lasting over a decade. The average bear market has lasted approximately 9-10 months. However, there is significant variation — the 2020 bear market lasted only about 33 days.",
         },
         {
           question: "What causes a bull market to end?",

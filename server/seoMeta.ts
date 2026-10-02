@@ -89,8 +89,8 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   // ── SEO Flagship Pages ────────────────────────────────────────────────────
   "/market-crash-probability-2026": {
-    title: "Market Crash Probability | FAULTLINE",
-    description: "Market crash probability context using systemic market stress, credit conditions, volatility, liquidity, and market-regime evidence.",
+    title: "Market Crash Risk 2026 | FAULTLINE",
+    description: "Market Crash Risk 2026: systemic-pressure context from credit spreads, funding rates, the Treasury curve, inflation, and labor data. FAULTLINE does not offer a crash probability.",
     ogType: "article",
   },
   "/market-crash-indicator": {
@@ -324,10 +324,10 @@ export async function injectPageMetaAsync(html: string, urlPath: string): Promis
 <h2>Reconstructed Crisis Periods</h2>
 <ul>
 <li><strong>2000–2002 Dot-com Bust:</strong> Retrospective analysis shows HIGH RISK readings from Sep 2001 through Feb 2003 — 18 consecutive months. Credit contagion and liquidity stress spiked as tech valuations collapsed and post-9/11 uncertainty froze capital markets. S&amp;P 500 fell ~49% over 30 months.</li>
-<li><strong>October 2008 Lehman Collapse:</strong> Retrospective analysis shows CRITICAL (82/100) in October 2008 — the month Lehman Brothers collapsed. Baa credit spreads hit 5.53% (HY proxy ~11.45%), with CRITICAL readings sustained for 8 consecutive months through May 2009. S&amp;P 500 fell ~57% peak-to-trough.</li>
-<li><strong>2010–2012 Eurozone Crisis:</strong> Elevated unemployment (9–10%) and persistent credit stress kept the model in HIGH RISK territory through much of 2010–2012, capturing the eurozone sovereign debt contagion that threatened global financial stability.</li>
+<li><strong>October 2008, After the Lehman Collapse:</strong> Retrospective analysis shows CRITICAL (82/100) in October 2008 — the month after Lehman Brothers' September 15, 2008 bankruptcy filing. The Moody's Baa–10-year Treasury spread stood at 5.53% on October 31, 2008 (FRED BAA10Y), with CRITICAL readings sustained for 8 consecutive months through May 2009. S&amp;P 500 fell ~57% peak-to-trough.</li>
+<li><strong>2010–2012 Eurozone Crisis:</strong> Elevated unemployment (7.7–9.9% over 2010–2012) and persistent credit stress kept the model in HIGH RISK territory through much of 2010–2012, capturing the eurozone sovereign debt contagion that threatened global financial stability.</li>
 <li><strong>March 2020 COVID Crash:</strong> Retrospective analysis shows HIGH RISK in March 2020 as credit spreads spiked and unemployment surged to 14.8% by April. The rapid Fed response (QE, rate cuts to zero) compressed spreads quickly, limiting the duration of the HIGH RISK reading. S&amp;P 500 fell ~34% in 33 days.</li>
-<li><strong>2022 Fed Rate Shock:</strong> Retrospective analysis shows ELEVATED RISK as the Fed raised rates from 0% to 5.25% in 18 months — the fastest tightening cycle since 1980. S&amp;P 500 fell ~25%, Nasdaq ~35%.</li>
+<li><strong>2022 Fed Rate Shock:</strong> Retrospective analysis shows ELEVATED RISK as the Fed raised rates from 0% to 5.25% in about 16 months (March 2022 to July 2023) — the fastest tightening cycle since the early 1980s. S&amp;P 500 fell ~25%, Nasdaq ~36%.</li>
 </ul>
 <h2>Methodology</h2>
 <p>The current FAULTLINE Pressure Index™ is a composite of six weighted vectors: Liquidity Stress (20%), Credit Contagion (20%), Macro Sensitivity (20%), Yield Curve (10Y–2Y) &amp; 10Y Level (15%), AI / Speculation — a static concentration baseline adjusted by rates and credit (15%), and Labor &amp; Rates — unemployment and the 10Y yield (10%). Each vector is scored 0–100. The archived historical batch also applied a crisis amplifier whose formula was not preserved.</p>
