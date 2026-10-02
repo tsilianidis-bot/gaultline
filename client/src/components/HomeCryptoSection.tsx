@@ -4,6 +4,7 @@
    for the main Dashboard. Matches Palantir Noir aesthetic.
    ============================================================ */
 import { useState, useCallback } from "react";
+import { score100Value } from "@/lib/displayFallbacks";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -64,7 +65,7 @@ const EXAMPLE_SYMBOLS = ["BTC", "ETH", "SOL", "RNDR", "SEI", "HYPE"];
 
 const FEATURE_BLOCKS = [
   { icon: "⬡", label: "Search Any Cryptocurrency", desc: "Analyze any digital asset through FAULTLINE's systemic-risk framework." },
-  { icon: "◈", label: "Crypto Systemic Risk Engine", desc: "0–10 risk score derived from stablecoin liquidity, leverage, breadth, and macro conditions." },
+  { icon: "◈", label: "Crypto Systemic Risk Engine", desc: "0–100 risk score derived from stablecoin liquidity, leverage, breadth, and macro conditions." },
   { icon: "◉", label: "Stablecoin Liquidity Monitoring", desc: "Track USDT/USDC supply expansion and contraction as a leading liquidity signal." },
   { icon: "◆", label: "Bitcoin Macro Correlation", desc: "Connect BTC price action to Fed policy, DXY strength, and Treasury yield regimes." },
   { icon: "◇", label: "AI Token Speculation Monitoring", desc: "Identify elevated speculative intensity in AI-narrative tokens before conditions shift." },
@@ -185,16 +186,16 @@ function SystemicRiskMini({ risk }: { risk: CryptoSystemicRisk }) {
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '10px' }}>
         <span style={{ fontFamily: RAJDHANI, fontWeight: 700, fontSize: '28px', color, textShadow: `0 0 16px ${color}60` }}>
-          {risk.score.toFixed(1)}
+          {score100Value(risk.score)}
         </span>
-        <span style={{ fontFamily: MONO, fontSize: '10px', color: '#4B5563' }}>/10</span>
+        <span style={{ fontFamily: MONO, fontSize: '10px', color: '#4B5563' }}>/100</span>
         <span style={{ fontFamily: MONO, fontSize: '13px', color, marginLeft: '4px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
           {risk.level}
         </span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {[
-          { label: "Crypto Risk Score", value: `${risk.score.toFixed(1)} / 10` },
+          { label: "Crypto Risk Score", value: `${score100Value(risk.score)}/100` },
           { label: "BTC Dominance", value: `${risk.btcDominance.toFixed(1)}%` },
           { label: "Stablecoin Liquidity", value: risk.stablecoinLiquidity },
           { label: "AI Token Speculation", value: risk.speculativeIntensity },

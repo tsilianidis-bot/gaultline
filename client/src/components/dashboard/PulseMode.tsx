@@ -4,6 +4,7 @@
  * Calm · Clean · Fast · Mobile-friendly
  */
 import { useMemo } from "react";
+import { score100Value } from "@/lib/displayFallbacks";
 import { useEngine } from "@/contexts/EngineContext";
 import { engineProbabilityText } from "@/lib/marketStateProjection";
 import { getRiskColor } from "@/components/RiskBadge";
@@ -105,7 +106,7 @@ function PressureHero() {
               }}
             >
               {/* Pressure Index on its canonical 0–100 scale (engine score is 0–10 internally). */}
-            {Math.round(overall.score * 10)}
+            {score100Value(overall.score)}
             </div>
           )}
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: "0.2em", color: "rgba(100,116,139,0.5)", marginTop: 2 }}>
@@ -242,7 +243,7 @@ function TopRiskCard() {
         {topThreat.label}
       </div>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 20, fontWeight: 700, color, marginBottom: 6 }}>
-        {Math.round(topThreat.score * 10)}<span style={{ fontSize: 11, color: "rgba(100,116,139,0.5)" }}>/100</span>
+        {score100Value(topThreat.score)}<span style={{ fontSize: 11, color: "rgba(100,116,139,0.5)" }}>/100</span>
       </div>
       <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "rgba(148,163,184,0.8)", lineHeight: 1.6 }}>
         {topThreat.description}

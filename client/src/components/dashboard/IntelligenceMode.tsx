@@ -4,6 +4,7 @@
  * Analytical · Deep · Structural · Institutional
  */
 import { useMemo } from "react";
+import { finiteOrNull, score100Value } from "@/lib/displayFallbacks";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
@@ -46,7 +47,7 @@ function MacroRegimePanel() {
         <div className="text-right">
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 28, fontWeight: 700, color, lineHeight: 1 }}>
             {/* Pressure Index on its canonical 0–100 scale (engine score is 0–10 internally). */}
-            {Math.round(overall.score * 10)}
+            {score100Value(overall.score)}
           </div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "rgba(100,116,139,0.5)" }}>
             / 100
@@ -58,7 +59,7 @@ function MacroRegimePanel() {
       <div className="p-3 grid grid-cols-2 gap-1.5">
         {topDomains.map((d) => {
           const dc = getRiskColor(d.riskLevel);
-          const pct = Math.min(100, d.score * 10);
+          const pct = Math.min(100, (finiteOrNull(d.score) ?? 0) * 10);
           return (
             <div
               key={d.id}
@@ -70,7 +71,7 @@ function MacroRegimePanel() {
                   {d.label}
                 </span>
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: dc, fontWeight: 700, flexShrink: 0, marginLeft: 4 }}>
-                  {Math.round(d.score * 10)}
+                  {score100Value(d.score)}
                 </span>
               </div>
               <div className="h-0.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.11)" }}>

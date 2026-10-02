@@ -220,7 +220,7 @@ function scoreCreditMarket(ind: RawIndicators): DomainScore {
   const drivers: string[] = [];
   if (hyScore > 3) drivers.push(`HY spreads ${ind.hySpread}bps — widening`);
   if (igScore > 3) drivers.push(`IG spreads ${ind.igSpread}bps — stress migrating`);
-  if (creScore > 5) drivers.push(`CRE stress ${ind.creStress.toFixed(1)}/10 — cascade risk`);
+  if (creScore > 5) drivers.push(`CRE stress ${Math.round(ind.creStress * 10)}/100 — cascade risk`);
   if (delinqScore > 4) drivers.push(`Consumer delinquencies ${ind.consumerDelinquencies.toFixed(1)}%`);
 
   return {
@@ -264,7 +264,7 @@ function scoreLiquidity(ind: RawIndicators): DomainScore {
 
   const score = clamp(bankScore * 0.35 + balanceSheetScore * 0.25 + vixScore * 0.20 + unemployScore * 0.20);
   const drivers: string[] = [];
-  if (bankScore > 5) drivers.push(`Bank liquidity stress ${ind.bankLiquidityStress.toFixed(1)}/10`);
+  if (bankScore > 5) drivers.push(`Bank liquidity stress ${Math.round(ind.bankLiquidityStress * 10)}/100`);
   if (balanceSheetScore > 3) drivers.push(`Fed balance sheet $${ind.fedBalanceSheet.toFixed(1)}T — QT ongoing`);
   if (vixScore > 3) drivers.push(`VIX ${ind.vix.toFixed(1)} — volatility elevated`);
   if (unemployScore > 3) drivers.push(`Unemployment ${ind.unemployment.toFixed(1)}% — rising`);
@@ -308,8 +308,8 @@ function scoreBanking(ind: RawIndicators): DomainScore {
 
   const score = clamp(liquidityScore * 0.40 + creScore * 0.30 + delinqScore * 0.15 + spreadScore * 0.15);
   const drivers: string[] = [];
-  if (liquidityScore > 5) drivers.push(`Bank liquidity stress ${ind.bankLiquidityStress.toFixed(1)}/10`);
-  if (creScore > 5) drivers.push(`CRE exposure ${ind.creStress.toFixed(1)}/10 — regional bank risk`);
+  if (liquidityScore > 5) drivers.push(`Bank liquidity stress ${Math.round(ind.bankLiquidityStress * 10)}/100`);
+  if (creScore > 5) drivers.push(`CRE exposure ${Math.round(ind.creStress * 10)}/100 — regional bank risk`);
 
   return {
     id: 'banking', label: 'Banking System Stress', score: parseFloat(score.toFixed(2)),
@@ -339,7 +339,7 @@ function computeOverall(domains: DomainScore[]): DomainScore {
     delta: parseFloat((clamped - 7.4).toFixed(2)),
     riskLevel: toRiskLevel(clamped),
     description: 'Weighted composite of all systemic stress dimensions.',
-    drivers: domains.filter(d => d.score >= 7.0).map(d => `${d.label}: ${d.score.toFixed(1)}`),
+    drivers: domains.filter(d => d.score >= 7.0).map(d => `${d.label}: ${Math.round(d.score * 10)}/100`),
   };
 }
 
@@ -504,7 +504,7 @@ function computeAnalogSimilarity(ind: RawIndicators, domains: DomainScore[]): An
       similarity: normalize(dotcomSim, 92),
       matchReasons: [
         `AI/mega-cap concentration ${ind.aiConcentration.toFixed(1)}% — exceeds 2000 peak`,
-        `Speculation index ${aiScore.toFixed(1)}/10`,
+        `Speculation index ${Math.round(aiScore * 10)}/100`,
         aiScore > 8 ? 'Monetization gap widening — capex vs revenue divergence' : 'Capex growth elevated',
       ].filter(Boolean),
     },
@@ -513,7 +513,7 @@ function computeAnalogSimilarity(ind: RawIndicators, domains: DomainScore[]): An
       similarity: normalize(gfcSim, 88),
       matchReasons: [
         `HY spreads ${ind.hySpread}bps — widening`,
-        `CRE stress ${ind.creStress.toFixed(1)}/10 — regional bank exposure`,
+        `CRE stress ${Math.round(ind.creStress * 10)}/100 — regional bank exposure`,
         creditScore > 7 ? 'Credit contagion pathway open' : 'Credit stress building',
       ].filter(Boolean),
     },
@@ -578,7 +578,7 @@ function generateNarrative(
   const keyRisks = [...domains]
     .sort((a, b) => b.score - a.score)
     .slice(0, 5)
-    .map(d => `${d.label} (${d.score.toFixed(1)}/10): ${d.drivers[0] ?? d.description}`);
+    .map(d => `${d.label} (${Math.round(d.score * 10)}/100): ${d.drivers[0] ?? d.description}`);
 
   return {
     regimeAssessment: `${regime.label} — ${regime.sublabel.toUpperCase()}`,
@@ -595,8 +595,8 @@ function buildTicker(ind: RawIndicators, overall: DomainScore): EngineOutput['ti
     { label: 'CPI', value: `${ind.cpi.toFixed(1)}%`, direction: ind.cpi > 3.0 ? 'up' : 'down' },
     { label: 'FED FUNDS', value: `${ind.fedFundsRate.toFixed(2)}%`, direction: 'flat' },
     { label: 'AI CONC.', value: `${ind.aiConcentration.toFixed(1)}%`, direction: 'up' },
-    { label: 'SYSTEMIC RISK', value: `${overall.score.toFixed(1)}/10`, direction: overall.delta > 0 ? 'up' : 'down' },
-    { label: 'CRE STRESS', value: `${ind.creStress.toFixed(1)}/10`, direction: 'up' },
+    { label: 'SYSTEMIC RISK', value: `${Math.round(overall.score * 10)}/100`, direction: overall.delta > 0 ? 'up' : 'down' },
+    { label: 'CRE STRESS', value: `${Math.round(ind.creStress * 10)}/100`, direction: 'up' },
     { label: 'VIX', value: ind.vix.toFixed(1), direction: ind.vix > 20 ? 'up' : 'down' },
     { label: 'RECESSION RISK', value: `${Math.round((ind.unemployment - 3.5) / 0.35 * 10)}%`, direction: 'up' },
     { label: 'YIELD CURVE', value: `${ind.yieldCurveSpread}bps`, direction: ind.yieldCurveSpread < 0 ? 'down' : 'up' },

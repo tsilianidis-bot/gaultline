@@ -23,3 +23,29 @@ export function similarityText(value: unknown): string {
   const similarity = finiteOrNull(value);
   return similarity === null ? MISSING_VALUE_TEXT : `${Math.round(similarity)}%`;
 }
+
+/**
+ * Engine domain/composite scores and their deltas are 0–10 internally; the
+ * product displays them on the canonical 0–100 scale. Display conversion only
+ * (×10); the composite calculation is unchanged.
+ */
+function toCanonical100(value010: unknown): number | null {
+  const v = finiteOrNull(value010);
+  return v === null ? null : Math.round(v * 10 * 10) / 10;
+}
+
+/** "33" for a 0–10 engine score of 3.3 (render with a "/100" suffix); "—" when missing. */
+export function score100Value(score010: unknown): string {
+  const v = toCanonical100(score010);
+  return v === null ? MISSING_VALUE_TEXT : String(Math.round(v));
+}
+
+/** "+3 pts" for a 0–10 delta of 0.3 (canonical 0–100 points); "—" when missing. */
+export function pointsDeltaText(delta010: unknown): string {
+  const v = toCanonical100(delta010);
+  if (v === null) return MISSING_VALUE_TEXT;
+  const shown = Object.is(v, -0) || v === 0 ? 0 : v;
+  const sign = shown > 0 ? "+" : shown < 0 ? "-" : "";
+  const abs = Math.abs(shown);
+  return `${sign}${Number.isInteger(abs) ? abs.toFixed(0) : abs.toFixed(1)} pts`;
+}
