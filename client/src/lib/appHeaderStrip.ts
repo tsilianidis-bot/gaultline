@@ -61,7 +61,7 @@ function unavailable(label: string, title?: string): HeaderStripItem {
   return { label, value: "—", direction: null, stateLabel: UNAVAILABLE, title };
 }
 
-function validObservations(observations: readonly FredObservation[] | null | undefined): Array<{ date: string; value: number }> {
+export function validObservations(observations: readonly FredObservation[] | null | undefined): Array<{ date: string; value: number }> {
   return (observations ?? [])
     .map(obs => ({ date: obs.date, value: Number.parseFloat(obs.value) }))
     .filter(obs => /^\d{4}-\d{2}-\d{2}$/.test(obs.date) && Number.isFinite(obs.value));

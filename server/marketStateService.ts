@@ -41,7 +41,7 @@ export type CanonicalMarketStateSource = Pick<
   | "developingConditions"
   | "marketNarrative"
   | "activePatterns"
->;
+> & Partial<Pick<UnifiedSeismographIntelligence, "macroTicker">>;
 
 interface AssembleMarketStateOptions {
   generatedAt: string;
@@ -195,6 +195,7 @@ export function assembleCanonicalMarketState(
         strength: normalizeCanonicalMetric(family.strength),
       })),
       evidenceConsensus: source.evidenceConsensus,
+      evidenceAsOfMonth: source.macroTicker?.dataMonth ?? null,
     },
     outlook: {
       probabilities,

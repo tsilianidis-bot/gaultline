@@ -27,6 +27,8 @@ import AshaPanel from "@/components/AshaPanel";
 import { customerIntegrityColor } from "@shared/customerIntegrityLabels";
 import { buildAppHeaderStrip } from "@/lib/appHeaderStrip";
 import { useAppHeaderFred } from "@/hooks/useAppHeaderFred";
+import { useLiveIndicatorReadings } from "@/hooks/useLiveIndicatorReadings";
+import { evaluableIndicatorValues } from "@/lib/liveIndicatorReadings";
 import { DrawerProvider } from "@/contexts/DrawerContext";
 import LeftNavDrawer from "@/components/LeftNavDrawer";
 import RightActionDrawer from "@/components/RightActionDrawer";
@@ -107,7 +109,7 @@ interface AppLayoutProps {
 export default function AppLayout({ children }: AppLayoutProps) {
   const [location, navigate] = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
-  const { output, isLoading, isLive, integrityLabel, isRefreshing, lastUpdated, isSimulating, forceRefresh, indicators, canonicalState } = useEngine();
+  const { output, isLoading, isLive, integrityLabel, isRefreshing, lastUpdated, isSimulating, forceRefresh, canonicalState, marketMode } = useEngine();
   const { user: authUser, logout } = useAuth();
   const isAdmin = authUser?.role === "admin";
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -120,23 +122,28 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const isMobile = useIsMobile();
 
   // Count breached watchlist items for badge
+  // Same sources as the Watchlist page: canonical Pressure Index (÷10) for the
+  // overall score, real FRED / markets-snapshot readings (STALE excluded) for raw
+  // indicators. Never the DEFAULT_INDICATORS demo baseline; other domain scores
+  // have no canonical source and are not evaluated.
+  const { readings: liveIndicatorReadings } = useLiveIndicatorReadings();
   const breachCount = useMemo(() => {
+    const evaluable = evaluableIndicatorValues(liveIndicatorReadings) as Record<string, number | undefined>;
+    // In canonical mode output.overall.score is the canonical Pressure Index ÷ 10.
+    const overall10 = marketMode === 'canonical' ? output.overall.score : null;
     const items = loadWatchlist();
     let count = 0;
     items.forEach(item => {
       const def = INDICATOR_MAP[item.indicatorKey];
       if (!def) return;
       let lv: number | null = null;
-      if (item.indicatorKey === 'score_overall') lv = output.overall.score;
-      else if (item.indicatorKey === 'score_credit') lv = output.domains.find(d => d.id === 'credit-stress')?.score ?? null;
-      else if (item.indicatorKey === 'score_ai') lv = output.domains.find(d => d.id === 'ai-bubble')?.score ?? null;
-      else if (item.indicatorKey === 'score_treasury') lv = output.domains.find(d => d.id === 'treasury-debt')?.score ?? null;
-      else if (item.indicatorKey === 'score_recession') lv = output.domains.find(d => d.id === 'recession')?.score ?? null;
-      else lv = (indicators as unknown as Record<string, number>)[item.indicatorKey] ?? null;
+      if (item.indicatorKey === 'score_overall') lv = typeof overall10 === 'number' && Number.isFinite(overall10) ? overall10 : null;
+      else if (item.indicatorKey.startsWith('score_')) lv = null;
+      else lv = evaluable[item.indicatorKey] ?? null;
       if (lv != null && evaluateBreach(item, lv)) count++;
     });
     return count;
-  }, [output, indicators]);
+  }, [liveIndicatorReadings, marketMode, output.overall.score]);
 
   // Header strip: every value from a real source (canonical snapshot, markets.getGlobalSnapshot,
   // FRED via /api/fred), tagged DELAYED / LAST CLOSE / STALE / UNAVAILABLE like the landing ticker.

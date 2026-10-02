@@ -86,7 +86,10 @@ describe("WATCH destination composition", () => {
     expect(watchSource).toContain("marketState?.outlook.invalidationConditions ?? []");
     expect(watchSource).toContain("sourceHealth.map");
     expect(watchSource).toContain("marketState?.warnings.length");
-    expect(watchSource).toContain("marketState?.freshness ?? \"Fallback\"");
+    // Freshness follows the header integrity label + canonical input lists (Data Integrity, Oct 2 2026);
+    // the legacy cache-age marketState.freshness ("live") is no longer shown.
+    expect(watchSource).toContain("canonicalFreshnessReadout({ integrityLabel, canonical: canonicalState })");
+    expect(watchSource).not.toContain("Canonical source state is");
     expect(watchSource).toContain("marketState?.history.observationCount");
     expect(watchSource).toContain("lastUpdated?.toLocaleString()");
   });

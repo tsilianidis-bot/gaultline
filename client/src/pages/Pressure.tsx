@@ -28,6 +28,7 @@ import { customerIntegrityBadgeColor, customerPressureBadge, customerPressureUna
 import { pressureVectorLabel } from "@shared/pressureVectorLabels";
 import { canonicalDirectionTrend, canonicalHistoricalPercentile } from "@shared/canonicalReadout";
 import { directionDisplay } from "@shared/snapshotEvidence";
+import { canonicalRunBasisNote } from "@shared/dataIntegrityReadout";
 
 // ── Market Stress sub-nav tabs ──────────────────────────────────
 // All stress-related analysis lives under one roof — in-page state, no navigation
@@ -72,7 +73,8 @@ interface RiskVector {
   level: PressureLevel;
   driver: string;
   trend: "rising" | "falling" | "stable";
-  weight: number;
+  /** Composite weight (0–1); null when the source does not publish one. */
+  weight: number | null;
   rawInputs: Record<string, number | null>;
 }
 
@@ -346,9 +348,11 @@ function VectorCard({ vector, index }: { vector: RiskVector; index: number }) {
         }}>
           {vector.level}
         </div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.06em" }}>
-          WT {Math.round(vector.weight * 100)}%
-        </div>
+        {vector.weight != null && Number.isFinite(vector.weight) && (
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.06em" }}>
+            WT {Math.round(vector.weight * 100)}%
+          </div>
+        )}
       </div>
 
       <div style={{ marginTop: "10px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#94A3B8", lineHeight: 1.5 }}>
@@ -1015,7 +1019,9 @@ export default function Pressure() {
       level: pressureLevel,
       driver: engine.sourceInputIds.length ? `Inputs: ${engine.sourceInputIds.join(", ")}` : "Canonical input detail unavailable.",
       trend: engine.direction === "Improving" ? "falling" : engine.direction === "Deteriorating" ? "rising" : "stable",
-      weight: 0,
+      // The canonical contract publishes only whether a vector contributes, not
+      // its weight: no weight is shown rather than a false "WT 0%".
+      weight: null,
       rawInputs: {},
     }));
     return {
@@ -1331,6 +1337,9 @@ export default function Pressure() {
           <CornerBrackets color="rgba(0,212,255,0.25)" size={10} />
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.15em", marginBottom: "14px" }}>
             RISK VECTORS — {data.vectors.length} ACTIVE
+          </div>
+          <div data-evidence-basis="canonical-run" style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#64748B", lineHeight: 1.5, marginTop: "-8px", marginBottom: "14px" }}>
+            {canonicalRunBasisNote(canonicalState?.generatedAt)}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "12px" }}>
             {data.vectors.map((vector, i) => (

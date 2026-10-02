@@ -198,7 +198,8 @@ export function detectDirectionalChanges(
 // ── Alert generation from engine output ──────────────────────
 export function generateAlerts(
   output: EngineOutput,
-  indicators: RawIndicators,
+  /** Real indicator readings only (absent = unavailable). Never DEFAULT_INDICATORS. */
+  indicators: Partial<Record<keyof RawIndicators, number>>,
   prevRegimeCode: string | null,
   prevDomainScores: Record<string, number>,
 ): RegimeAlert[] {
