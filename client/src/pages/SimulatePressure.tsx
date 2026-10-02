@@ -90,7 +90,7 @@ const SLIDERS: SliderConfig[] = [
     stressNote: 'Above 40%: dot-com 2000 analog exceeded, bubble fragility extreme',
   },
   {
-    key: 'bankLiquidityStress', label: 'Bank Liquidity Stress', sublabel: 'NFCI proxy', unit: '/10',
+    key: 'bankLiquidityStress', label: 'Bank Liquidity Stress', sublabel: 'NFCI proxy · input scale 0–10', unit: '',
     min: 0, max: 10, step: 0.1, defaultVal: 6.8, stressVal: 9.5,
     color: '#FF9500', category: 'liquidity',
     description: 'Bank stress triggers credit contraction and systemic contagion.',
@@ -104,7 +104,7 @@ const SLIDERS: SliderConfig[] = [
     stressNote: 'Above 6%: Sahm Rule triggered, recession confirmed',
   },
   {
-    key: 'creStress', label: 'Commercial Real Estate Stress', sublabel: 'CRE composite', unit: '/10',
+    key: 'creStress', label: 'Commercial Real Estate Stress', sublabel: 'CRE composite · input scale 0–10', unit: '',
     min: 0, max: 10, step: 0.1, defaultVal: 7.2, stressVal: 9.8,
     color: '#FF2D55', category: 'credit',
     description: 'CRE distress cascades through regional banks and CMBS markets.',

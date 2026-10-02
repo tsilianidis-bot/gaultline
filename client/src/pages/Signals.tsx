@@ -225,16 +225,17 @@ function ConfidenceBar({ confidence, action }: { confidence: number; action: Tra
 }
 
 // ── Regime Alignment Badge ────────────────────────────────────
-function RegimeAlignmentBadge({ alignment, score }: {
+// Label only. The server's regimeAlignmentScore is a fixed tier (2 / 5 / 6 / 9)
+// that just restates the alignment label, so it is not shown as a score.
+function RegimeAlignmentBadge({ alignment }: {
   alignment: 'Aligned' | 'Neutral' | 'Counter-Trend';
-  score: number;
 }) {
   const color = alignment === 'Aligned' ? '#00D4FF'
     : alignment === 'Counter-Trend' ? '#FF2D55'
     : '#FFD700';
   const icon = alignment === 'Aligned' ? '✓' : alignment === 'Counter-Trend' ? '✗' : '~';
   return (
-    <span style={{
+    <span data-regime-alignment={alignment} style={{
       display: 'inline-flex', alignItems: 'center', gap: '3px',
       fontFamily: "'IBM Plex Mono', monospace",
       fontSize: '11px', letterSpacing: '0.08em',
@@ -243,7 +244,7 @@ function RegimeAlignmentBadge({ alignment, score }: {
       border: `1px solid ${color}25`,
       borderRadius: '2px',
     }}>
-      {icon} {alignment === 'Counter-Trend' ? 'COUNTER' : alignment.toUpperCase()} {score.toFixed(0)}/10
+      {icon} {alignment === 'Counter-Trend' ? 'COUNTER' : alignment.toUpperCase()}
     </span>
   );
 }
@@ -482,10 +483,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
               strength={tradingSignal.strength}
               assetClass="STOCK"
             />
-            <RegimeAlignmentBadge
-              alignment={tradingSignal.regimeAlignment}
-              score={tradingSignal.regimeAlignmentScore}
-            />
+            <RegimeAlignmentBadge alignment={tradingSignal.regimeAlignment} />
           </div>
           <ConfidenceBar confidence={tradingSignal.confidence} action={tradingSignal.action} />
           <div style={{

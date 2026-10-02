@@ -574,8 +574,8 @@ describe("composite is the canonical /100 Pressure Index, never a 0–10 score",
 
   it("SimulatePressure: canonical score when not simulating, sandbox ×10 labelled SANDBOX when simulating", () => {
     const s = src("client/src/pages/SimulatePressure.tsx");
-    // Slider inputs keep their own 0–10 unit (unit: '/10'); no score is shown on /10.
-    expect(s.replace(/unit: '\/10'/g, "")).not.toMatch(/\/ 10\.0|\/ ?10\b/);
+    // Slider inputs show their 0–10 input scale in the sublabel, not as "x/10".
+    expect(s).not.toMatch(/\/ 10\.0|\/ ?10\b/);
     expect(s).not.toMatch(/Live market conditions/);
     expect(s).toMatch(/label: 'Example Defaults'/);
     expect(s).toMatch(/EXAMPLE DEFAULTS · NOT LIVE/);
@@ -947,5 +947,41 @@ describe("no hard-coded $ figures in quote surfaces; NOW example price/change ar
   });
   it("mutation: {label:'Last', value:'$924.58'} in Signals is caught", () => {
     expect(offenders(`${signals}\n  {label:'Last', value:'$924.58'},`).length).toBeGreaterThan(0);
+  });
+});
+
+describe("no X/10 score text on routed #59 pages (Signals, Charts, SimulatePressure)", () => {
+  const SLASH_TEN = /\/\s?10(?:\.0)?\b|out of 10\b/i;
+  const slashTenLines = (text: string) =>
+    text.split("\n").map((l, i) => ({ l, n: i + 1 })).filter(({ l }) => SLASH_TEN.test(l));
+  const files = ["client/src/pages/Signals.tsx", "client/src/pages/Charts.tsx", "client/src/pages/SimulatePressure.tsx"];
+
+  it.each(files)("%s has no /10 or /10.0 score text", (f) => {
+    expect(slashTenLines(src(f)).map(({ n, l }) => `${f}:${n}: ${l.trim()}`)).toEqual([]);
+  });
+
+  it("Signals regime alignment badge shows the label only (no tier score)", () => {
+    const s = src("client/src/pages/Signals.tsx");
+    expect(s).toMatch(/function RegimeAlignmentBadge\(\{ alignment \}: \{/);
+    expect(s).toMatch(/<RegimeAlignmentBadge alignment=\{tradingSignal\.regimeAlignment\} \/>/);
+    expect(s).not.toMatch(/score\.toFixed\(0\)\}\/10/);
+  });
+
+  it("SimulatePressure 0–10 slider inputs carry the scale in the sublabel, unit empty", () => {
+    const s = src("client/src/pages/SimulatePressure.tsx");
+    expect(s).toMatch(/sublabel: 'NFCI proxy · input scale 0–10', unit: '',/);
+    expect(s).toMatch(/sublabel: 'CRE composite · input scale 0–10', unit: '',/);
+  });
+
+  it.each([
+    ["Signals alignment", "{score.toFixed(0)}/10"],
+    ["Charts current", "<div>/ 10.0</div>"],
+    ["Charts tooltip", "formatter={(v: number) => [`${v.toFixed(2)} / 10`, 'Systemic Pressure']}"],
+    ["Simulate headline", "<div>/ 10.0</div>"],
+    ["Simulate vector", "<span>/10</span>"],
+    ["slider unit", "unit: '/10',"],
+  ])("mutation: %s is caught", (_name, line) => {
+    expect(slashTenLines(`x\n${line}\n`).length).toBe(1);
+    expect(slashTenLines("<span>/100</span> {v}/100 `/ 100`").length).toBe(0);
   });
 });
