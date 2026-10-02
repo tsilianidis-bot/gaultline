@@ -24,23 +24,34 @@ const NUMBER_WORDS = String.raw`(?:one|two|three|four|five|six|seven|eight|nine|
 const COUNT = String.raw`(?:\d+|${NUMBER_WORDS})`;
 /** Odds: "1 in 4", "one-in-five". */
 const ODDS = String.raw`\b${COUNT}(?:\s+|-)in(?:\s+|-)${COUNT}\b`;
+/** A fraction: "1/5". Only withheld next to a probability word, so "33/100" alone is kept. */
+const FRACTION = String.raw`\b\d+\s*\/\s*\d+\b`;
 const PROBABILITY_WORDS = String.raw`(?:historical frequency|frequency|probability|probabilities|chance|chances|likelihood|odds|confidence)`;
-const SCENARIO_WORDS = String.raw`(?:bull(?:ish)?|bear(?:ish)?|neutral|crash|recession|soft[- ]landing|stagflation|remain(?:ing)? in regime|transition(?: to \w+)?)`;
-const CONNECTORS = String.raw`(?:(?:\s+(?:of|at|is|was|near|around|about|roughly|approximately|=|~))*\s*:?\s*)`;
+const SCENARIO_WORDS = String.raw`(?:bull(?:ish)?|bear(?:ish)?|neutral|crash|recession|soft[- ]landing|stagflation|stress|remain(?:ing)? in regime|transition(?: to \w+)?)`;
+/** "=", ":", "~" with or without spaces, and "of", "at", "is", "near", ... */
+const CONNECTORS = String.raw`(?:\s*(?:[:=~]|(?:of|at|is|was|near|around|about|roughly|approximately)\b))*\s*`;
+/**
+ * At most one word between a scenario/probability word and its number ("Bull case 53%", "crash
+ * risk 2%"). Words that name an observed series are excluded, so "neutral rate 2.5%" is kept.
+ */
+const GAP = String.raw`(?:\s+(?!(?:rate|rates|yield|yields|spread|spreads|index|level|levels|score|scores|inflation|cpi|unemployment|real|z)\b)[a-z][a-z-]*)?`;
+/** Frequency phrasing that is a probability: "60% of the time", "40% of cases". */
+const FREQUENCY_TAIL = String.raw`\s+of\s+(?:the\s+)?(?:time|cases|outcomes|scenarios|occasions|instances)\b`;
 
 const RULES: Array<[RegExp, string]> = [
   // "(60% historical frequency)", "(25 percent probability)", or a bare "(60%)"
   [new RegExp(String.raw`\(\s*${PCT}(?:\s*${PROBABILITY_WORDS}[^)]*)?\s*\)`, "gi"), `(${W})`],
   // "60% historical frequency", "60%historical frequency", "2.5 % probability", "30 percent chance"
   [new RegExp(String.raw`${PCT}\s*(${PROBABILITY_WORDS})`, "gi"), `${W} $1`],
-  // "1 in 4 chance", "one-in-five odds"
-  [new RegExp(String.raw`${ODDS}(\s+${PROBABILITY_WORDS})`, "gi"), `${W}$1`],
-  // "probability of 60%", "confidence: 41%", "odds near 20 percent", "chance of 1 in 4"
-  [new RegExp(String.raw`(${PROBABILITY_WORDS})(${CONNECTORS})(?:${PCT}|${ODDS})`, "gi"), `$1$2${W}`],
-  // "probability of 0.6", "confidence 0.996", "crash probability: .03"
-  [new RegExp(String.raw`(${PROBABILITY_WORDS})(${CONNECTORS})${DECIMAL}`, "gi"), `$1$2${W}`],
-  // "bull 53%", "crash: 2 percent", "remain in regime 60%", "recession 0.04"
-  [new RegExp(String.raw`(\b${SCENARIO_WORDS})(\s*[:=]?\s*)(?:${PCT}|${DECIMAL})`, "gi"), `$1$2${W}`],
+  // "60% of the time", "40 percent of cases"
+  [new RegExp(String.raw`${PCT}(${FREQUENCY_TAIL})`, "gi"), `${W}$1`],
+  // "1 in 4 chance", "one-in-five odds", "1/5 chance"
+  [new RegExp(String.raw`(?:${ODDS}|${FRACTION})(\s*${PROBABILITY_WORDS})`, "gi"), `${W}$1`],
+  // "probability of 60%", "confidence: 41%", "probability=0.64", "odds near 20 percent",
+  // "chance of 1 in 4", "chance of 1/5", "crash probability: .03", "probability estimate 0.6"
+  [new RegExp(String.raw`(${PROBABILITY_WORDS}${GAP})(${CONNECTORS})(?:${PCT}|${ODDS}|${FRACTION}|${DECIMAL})`, "gi"), `$1$2${W}`],
+  // "bull 53%", "Bull case 53%", "crash risk 2%", "stress: 20%", "remain in regime 60%", "recession 0.04"
+  [new RegExp(String.raw`(\b${SCENARIO_WORDS}\b${GAP})(${CONNECTORS})(?:${PCT}|${DECIMAL})`, "gi"), `$1$2${W}`],
   // "53% bull", "60 percent remain in regime"
   [new RegExp(String.raw`${PCT}(\s+${SCENARIO_WORDS}\b)`, "gi"), `${W}$1`],
 ];

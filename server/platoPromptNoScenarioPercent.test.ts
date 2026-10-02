@@ -166,6 +166,7 @@ describe("assembled PLATO prompts from the prod 2026-10-01 snapshot", () => {
     expect(text).toContain("-0.3194692564612353");
     expect(text).toContain("-0.12031238964456506");
     expect(text).toMatch(/\\?"freshnessStatus\\?":\\?"CURRENT/);
+    expect(text).toContain(`crisisProbability, transitionProbability and regimeConfidence are ${PLATO_SCENARIO_WITHHELD}: do not state, estimate or imply a value for them.`);
     for (const key of ["crisisProbability", "transitionProbability", "regimeConfidence"]) {
       expect(text).toMatch(new RegExp(`\\\\?"${key}\\\\?":\\\\?"${PLATO_SCENARIO_WITHHELD}`));
     }
@@ -213,6 +214,15 @@ describe("scenario withholding filter: hardened forms", () => {
     ["1 in 4 chance", "Uncalibrated chance"],
     ["odds of one in five", "odds of Uncalibrated"],
     ["chance of 1-in-4", "chance of Uncalibrated"],
+    // r8: no-space connectors, one word between, fraction and frequency phrasing
+    ["probability=0.64", "probability=Uncalibrated"],
+    ["probability:0.64", "probability:Uncalibrated"],
+    ["1/5 chance", "Uncalibrated chance"],
+    ["chance of 1/5", "chance of Uncalibrated"],
+    ["60% of the time", "Uncalibrated of the time"],
+    ["Bull case 53%", "Bull case Uncalibrated"],
+    ["crash risk 2%", "crash risk Uncalibrated"],
+    ["stress: 20%", "stress: Uncalibrated"],
   ];
   for (const [input, output] of withheld) {
     it(`withholds: ${input}`, () => expect(withholdScenarioPercents(input)).toBe(output));
@@ -227,6 +237,15 @@ describe("scenario withholding filter: hardened forms", () => {
     "creditStressZ 0.26, rates 4.25% and 10y 4.1 pct",
     "Dot-Com (78% similarity)",
     "Pressure 33/100, percentile 83",
+    // r8: must still pass through unchanged
+    "CPI 2.9 percent",
+    "70% of sectors",
+    "83% of months",
+    "% similarity",
+    "33/100",
+    "neutral rate 2.5%",
+    "confidence interval width 1.5",
+    "Credit stress is building; spreads 3.1%",
   ];
   for (const text of kept) {
     it(`keeps: ${text}`, () => expect(withholdScenarioPercents(text)).toBe(text));
