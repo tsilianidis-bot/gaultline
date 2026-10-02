@@ -5,7 +5,7 @@
    ============================================================ */
 import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { signalQuoteView, signalsFeedLabel, hasUsableSignalQuote, signalsPriceBadge } from "@/lib/signalQuoteView";
+import { signalQuoteView, signalsFeedLabel, hasUsableSignalQuote, signalsPriceBadge, catalogQuotes } from "@/lib/signalQuoteView";
 import { useEngine } from '@/contexts/EngineContext';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
@@ -1812,7 +1812,7 @@ function SignalsInner() {
             tradeDate={quotesData?.tradeDate}
             lastUpdated={quotesData?.timestamp ?? null}
             isLoading={quotesLoading}
-            quotes={quotesData?.quotes ?? []}
+            quotes={catalogQuotes(quotesData?.quotes, SIGNAL_STOCKS.map(s => s.ticker))}
             tickerCount={SIGNAL_STOCKS.length}
           />
         </div>

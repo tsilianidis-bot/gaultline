@@ -24,7 +24,9 @@ import {
   signalQuoteView,
   signalsFeedLabel,
   signalsPriceBadge,
+  catalogQuotes,
 } from "@/lib/signalQuoteView";
+import { SIGNAL_STOCKS } from "@/lib/signalsData";
 import { mergeCanonicalMarketState } from "@/lib/canonicalNowProjection";
 import {
   canonicalDirectionTrend,
@@ -112,12 +114,16 @@ describe("S.O.B. fail-closed", () => {
     const inputs = buildSOBSourceInputs({
       quotes: globalSnapshot.items,
       fred: {
-        BAMLH0A0HYM2: [{ date: "2026-09-30", value: "2.81" }, { date: "2026-09-29", value: "2.84" }],
-        FEDFUNDS: [{ date: "2026-09-01", value: "4.33" }, { date: "2026-08-01", value: "4.33" }],
+        // FRED observations served by prod /api/fred during the same QA capture
+        BAMLH0A0HYM2: [{ date: "2026-09-30", value: "3.12" }, { date: "2026-09-29", value: "3.08" }],
+        FEDFUNDS: [{ date: "2026-09-01", value: "3.75" }, { date: "2026-08-01", value: "3.63" }],
       },
       now,
     });
-    expect(inputs).toEqual({ creditSpread: 281, yieldSpread: 0.41, fedFundsRate: 4.33, vix: 16.39 });
+    expect(inputs).toEqual({ creditSpread: 312, yieldSpread: 0.41, fedFundsRate: 3.75, vix: 16.39 });
+    const sob = computeSOB({ pressureIndex: 33, ...inputs });
+    expect(sob.availablePillarCount).toBe(4);
+    expect(sob.label).toBe(SOB_INSUFFICIENT_LABEL); // breadth + momentum still UNAVAILABLE
 
     // stale / missing → null (→ UNAVAILABLE pillar), never a substituted value
     const stale = buildSOBSourceInputs({
@@ -237,6 +243,19 @@ describe("Signals quotes fail closed", () => {
     expect(feed.coverage).toMatch(/UNAVAILABLE/);
     expect(signalsPriceBadge(quotes).label).toBe("LAST CLOSE");
     expect(signalsPriceBadge([]).label).toBe("UNAVAILABLE");
+  });
+
+  it("coverage counts only catalog tickers the server actually quoted (never > catalog size)", () => {
+    const catalog = SIGNAL_STOCKS.map(s => s.ticker);
+    const scoped = catalogQuotes(quotes, catalog);
+    expect(scoped.length).toBeLessThanOrEqual(catalog.length);
+    const feed = signalsFeedLabel({ source: "live", quotes: scoped, tickerCount: catalog.length });
+    const [quoted, total] = feed.coverage.split(" ")[0].split("/").map(Number);
+    expect(quoted).toBeLessThanOrEqual(total);
+    expect(total).toBe(catalog.length);
+    const unquoted = catalog.filter(t => !quoteMap.has(t));
+    expect(quoted + unquoted.length).toBe(catalog.length);
+    expect(src("client/src/pages/Signals.tsx")).toMatch(/quotes=\{catalogQuotes\(quotesData\?\.quotes, SIGNAL_STOCKS\.map/);
   });
 
   it("LIVE only for a live quote in an open session", () => {

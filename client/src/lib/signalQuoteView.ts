@@ -97,3 +97,12 @@ export function signalsPriceBadge(quotes: readonly SignalQuoteLike[] | null | un
   if (badges.has("DELAYED")) return { label: "DELAYED", color: "amber" };
   return { label: "UNAVAILABLE", color: "gray" };
 }
+
+/** Quotes for the scanner's own catalog only (the quote feed also carries index/ETF symbols). */
+export function catalogQuotes<Q extends { ticker: string }>(
+  quotes: readonly Q[] | null | undefined,
+  catalogTickers: readonly string[],
+): Q[] {
+  const catalog = new Set(catalogTickers);
+  return (quotes ?? []).filter(q => catalog.has(q.ticker));
+}
