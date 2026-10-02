@@ -26,17 +26,52 @@ import { runSeismographBackfill, RECONSTRUCTED_RECORD_CLASS } from "../seismogra
 import { getUnifiedSeismographIntelligence } from "../seismographUnified";
 import { overlayAssembledSeismographOutput, overlayUnifiedSeismographIntelligence } from "../probabilityContract";
 import type { CanonicalProbabilityContract } from "../../shared/probabilityContract";
+import { applySeismographDisplayContext, type CanonicalDataQualityInput } from "../seismographDisplayContext";
 
 /**
  * The stateId-bound probability contract from the authoritative canonical
  * state. Any failure returns null, which withholds every number (fail closed).
  */
 async function loadProbabilityContract(): Promise<CanonicalProbabilityContract | null> {
+  return (await loadCanonicalForDisplay()).contract;
+}
+
+/**
+ * One read of the authoritative canonical state for the response overlays:
+ * the probability contract and the input data quality. Fail closed: null.
+ */
+async function loadCanonicalForDisplay(): Promise<{
+  contract: CanonicalProbabilityContract | null;
+  dataQuality: CanonicalDataQualityInput | null;
+}> {
   try {
     const { getAuthoritativeCanonicalIntelligenceState } = await import("../canonicalIntelligenceState");
-    return (await getAuthoritativeCanonicalIntelligenceState())?.probabilityContract ?? null;
+    const state = await getAuthoritativeCanonicalIntelligenceState();
+    if (!state) return { contract: null, dataQuality: null };
+    return {
+      contract: state.probabilityContract ?? null,
+      dataQuality: {
+        generatedAt: state.generatedAt ?? null,
+        confidenceOrEvidenceQuality: state.confidenceOrEvidenceQuality ?? null,
+        delayedInputs: state.delayedInputs ?? [],
+        staleInputs: state.staleInputs ?? [],
+        unavailableInputs: state.unavailableInputs ?? [],
+        fallbackInputs: state.fallbackInputs ?? [],
+        engineInputIds: Array.from(new Set(state.engines.flatMap(engine => engine.sourceInputIds ?? []))),
+      },
+    };
   } catch {
-    return null;
+    return { contract: null, dataQuality: null };
+  }
+}
+
+/** True only when the canonical outlook (MarketState) has a top analog. Fail closed: false. */
+async function canonicalTopAnalogAvailable(): Promise<boolean> {
+  try {
+    const { getCanonicalMarketState } = await import("../marketStateService");
+    return (await getCanonicalMarketState()).outlook.topAnalog != null;
+  } catch {
+    return false;
   }
 }
 
@@ -130,9 +165,15 @@ export const seismographRouter = router({
   getAssembledOutput: publicProcedure.query(async () => {
     const output = await getLatestSeismographOutput();
     if (!output) return null;
-    // Probability contract: scenario and transition numbers are overlaid with
-    // the contract display (null unless AVAILABLE). Calculation is unchanged.
-    return overlayAssembledSeismographOutput(output, await loadProbabilityContract());
+    // Display context (FRED status and freshness from canonical data quality;
+    // analog only when the canonical outlook has one), then the probability
+    // contract overlay (null unless AVAILABLE). Calculation is unchanged.
+    const [{ contract, dataQuality }, topAnalogAvailable] = await Promise.all([
+      loadCanonicalForDisplay(),
+      canonicalTopAnalogAvailable(),
+    ]);
+    const display = applySeismographDisplayContext(output, { dataQuality, canonicalTopAnalogAvailable: topAnalogAvailable });
+    return overlayAssembledSeismographOutput(display, contract);
   }),
 
   /**
