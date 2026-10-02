@@ -47,7 +47,7 @@ The FAULTLINE TAO signal is most bullish when BOTH conditions are met: crypto ma
         },
         {
           heading: "How Technical Levels Are Read: TAO, and Its Historical Volatility",
-          body: `TAO is among the most volatile assets in the FAULTLINE signal universe. Historical drawdowns from cycle highs have exceeded 80% during bear market phases. This volatility reflects TAO's position at the intersection of two high-beta themes (AI and crypto) and its relatively small market cap compared to BTC or ETH.
+          body: `TAO is among the most volatile assets in the FAULTLINE signal universe. Its drawdown from its 2024 cycle high has been approximately 80%. This volatility reflects TAO's position at the intersection of two high-beta themes (AI and crypto) and its relatively small market cap compared to BTC or ETH.
 
 FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:
 
@@ -77,7 +77,7 @@ Historical Context: TAO set a then-record high in early 2024 during the converge
         },
         {
           question: "How volatile is TAO compared to Bitcoin?",
-          answer: "TAO is significantly more volatile than Bitcoin. Historical drawdowns from cycle highs have exceeded 80% during bear market phases, compared to Bitcoin's typical 50-70% bear market drawdowns. This elevated volatility reflects TAO's smaller market cap, lower liquidity, and position at the intersection of two high-beta themes (AI and crypto). FAULTLINE's TAO risk score accounts for this elevated volatility.",
+          answer: "TAO is significantly more volatile than Bitcoin. Its drawdown from its 2024 cycle high has been approximately 80%, comparable to Bitcoin's roughly 75–85% cycle bear-market drawdowns. This elevated volatility reflects TAO's smaller market cap, lower liquidity, and position at the intersection of two high-beta themes (AI and crypto). FAULTLINE's TAO risk score accounts for this elevated volatility.",
         },
       ]}
       internalLinks={[

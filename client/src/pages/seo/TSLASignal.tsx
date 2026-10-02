@@ -36,7 +36,7 @@ Major Support Zones: The 200-day moving average is the primary long-term support
 
 Resistance Clusters: Prior peaks before they were broken, and major psychological round numbers.
 
-Historical Volatility Context: TSLA is one of the most volatile large-cap stocks in the market, with a historical beta well above the S&P 500's. Drawdowns from cycle highs have exceeded 70% in bear market phases (2022: -73% peak to trough). This elevated volatility is a core feature of TSLA's risk profile.`}
+Historical Volatility Context: TSLA is one of the most volatile large-cap stocks in the market, with a historical beta well above the S&P 500's. Drawdowns from cycle highs have exceeded 70% in bear market phases (November 2021 to January 2023: about -73%). This elevated volatility is a core feature of TSLA's risk profile.`}
       riskFactors={`TSLA faces five primary risk factors that FAULTLINE monitors:
 
 1. EV Competition Intensification: BYD (China), Volkswagen, GM, Ford, and dozens of EV startups are competing aggressively for market share. Tesla's market share in key markets has declined as competition intensified. Further market share erosion would pressure revenue growth and margins.

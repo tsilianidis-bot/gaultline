@@ -37,7 +37,7 @@ Elevated Risk (45-64): Pressure is building across several vectors. Historically
 
 High Stress (65-79): Multiple vectors are simultaneously under strain. The system is structurally fragile, and shocks are more likely to propagate.
 
-Systemic Crisis (80+): Acute, broad-based systemic stress across credit, funding, and rates. Periods such as October 2008 (Lehman) and March 2020 (COVID) are the kind of episodes this band describes.
+Systemic Crisis (80+): Acute, broad-based systemic stress across credit, funding, and rates. Periods such as October 2008 (after Lehman's September 2008 failure) and March 2020 (COVID) are the kind of episodes this band describes.
 
 The bands describe the pressure in the system today. They are not a forecast of a crash or its date.`,
         },
@@ -97,7 +97,7 @@ This is educational and informational context, not investment advice.`,
         },
         {
           question: "How does the macro regime affect crypto markets?",
-          answer: "Crypto markets are highly sensitive to macro regime changes. In calm regimes, crypto has tended to outperform equities. In stressed regimes, crypto has typically fallen more severely than equities due to its higher beta and lower liquidity. The 2022 stress period produced some of the worst crypto drawdowns in history (BTC -77%, ETH -80%, altcoins -90%+).",
+          answer: "Crypto markets are highly sensitive to macro regime changes. In calm regimes, crypto has tended to outperform equities. In stressed regimes, crypto has typically fallen more severely than equities due to its higher beta and lower liquidity. The 2022 stress period produced some of the worst crypto drawdowns in history (BTC about -77%, ETH about -80%, with many altcoins falling further).",
         },
       ]}
       internalLinks={[

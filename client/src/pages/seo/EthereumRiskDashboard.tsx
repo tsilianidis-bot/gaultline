@@ -45,7 +45,7 @@ The introduction of ETH staking (through Ethereum's transition to Proof of Stake
 
 4. Staking Dynamics — ETH staking participation (roughly a quarter or more of total ETH supply in recent years) reduces circulating supply and creates yield-based demand. Changes in staking yield relative to risk-free rates affect institutional demand for ETH.
 
-5. Regulatory Treatment of ETH — The SEC's treatment of ETH as a commodity (following the approval of ETH spot ETFs in May 2024) has significant implications for institutional adoption. Regulatory developments are qualitative context; FAULTLINE does not ingest them as data.`,
+5. Regulatory Treatment of ETH — The regulatory treatment of ETH, following the SEC's approval of spot ETH ETFs in May 2024, has significant implications for institutional adoption. Regulatory developments are qualitative context; FAULTLINE does not ingest them as data.`,
         },
         {
           heading: "ETH Bull Case and Bear Case Scenarios",

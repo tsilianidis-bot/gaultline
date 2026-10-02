@@ -35,7 +35,7 @@ Elevated (VIX 15-25): Normal market uncertainty. Investors are pricing in some r
 
 Stress (VIX 25-35): Elevated fear and uncertainty. Institutional investors are hedging aggressively. Equity markets are typically experiencing a correction or early bear market.
 
-Crisis (VIX 35+): Acute market stress. Panic selling, forced liquidations, and liquidity withdrawal. Historical examples: March 2020 (VIX 85), October 2008 (VIX 89), August 2015 (VIX 53).`,
+Crisis (VIX 35+): Acute market stress. Panic selling, forced liquidations, and liquidity withdrawal. Historical examples (intraday highs): March 2020 (VIX 85), October 2008 (VIX 89), August 2015 (VIX 53).`,
         },
         {
           heading: "Why Volatility Regime Transitions Matter More Than Levels",
@@ -45,7 +45,7 @@ Three dimensions of volatility dynamics matter:
 
 1. Level: The current VIX reading and its regime classification.
 
-2. Trend: Is volatility rising or falling? The rate of change matters. A VIX that doubles in a week (as it did in February 2018 and March 2020) signals a regime transition that requires immediate attention.
+2. Trend: Is volatility rising or falling? The rate of change matters. A VIX that doubles in a week (as it did in February 2018 and late February 2020) signals a regime transition that requires immediate attention.
 
 3. Term Structure: The relationship between short-term and long-term implied volatility. In normal markets, longer-dated volatility is higher than shorter-dated volatility (contango). When near-term volatility spikes above longer-dated volatility (backwardation), it signals acute near-term stress.
 

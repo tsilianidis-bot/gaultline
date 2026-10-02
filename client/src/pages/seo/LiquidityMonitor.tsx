@@ -25,7 +25,7 @@ export default function LiquidityMonitor() {
       contentSections={[
         {
           heading: "Why Liquidity Is the Most Important Market Variable",
-          body: `Many of the major market crashes of modern history have involved a liquidity withdrawal event. The 2008 Global Financial Crisis was fundamentally a liquidity crisis — the interbank lending market froze, repo markets seized, and credit stopped flowing. The March 2020 COVID crash was the fastest liquidity withdrawal in history. The 2022 bear market was driven by the most aggressive Fed liquidity withdrawal (QT) since the 1980s.
+          body: `Many of the major market crashes of modern history have involved a liquidity withdrawal event. The 2008 Global Financial Crisis was fundamentally a liquidity crisis — the interbank lending market froze, repo markets seized, and credit stopped flowing. The March 2020 COVID crash was one of the most abrupt liquidity shocks on record. The 2022 bear market was driven by the most aggressive Fed tightening since the early 1980s, alongside quantitative tightening (QT).
 
 Liquidity determines the price of every asset class. When liquidity is abundant, investors are willing to pay higher multiples for equities, accept lower yields on bonds, and take on more risk in crypto and alternative assets. When liquidity contracts, the reverse occurs — and the contraction is rarely gradual.
 

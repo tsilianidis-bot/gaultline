@@ -27,7 +27,7 @@ export default function RecessionProbability() {
           heading: "What a Recession Probability Is — and Why FAULTLINE Does Not Publish One",
           body: `A recession probability is an estimate of the likelihood that the U.S. economy enters a recession within a stated horizon. Publishing one responsibly needs three things: a defined event (for example, an NBER-dated recession), a fixed horizon, and a calibration record against resolved outcomes. FAULTLINE has none of these for recessions, so it does not offer a recession probability. What it shows instead is the FRED data below and the Pressure Index as current-conditions context.
 
-For investors, recession risk matters because recessions are associated with significant equity market drawdowns. The average S&P 500 decline during recessions since 1945 is approximately 30%. Some recessions — 2000-2002 (49% decline) and 2008-2009 (57% decline) — produced much larger drawdowns.
+For investors, recession risk matters because recessions are associated with significant equity market drawdowns. Recession-era equity declines have historically been larger than ordinary corrections. Some recessions — 2000-2002 (49% decline) and 2007-2009 (57% decline) — produced much larger drawdowns.
 
 More importantly, recession risk affects which asset classes, sectors, and individual equities are likely to outperform or underperform. Defensive sectors (utilities, consumer staples, healthcare) historically outperform during recessions. Cyclical sectors (technology, consumer discretionary, industrials) underperform. Understanding recession risk helps you think about the environment ahead, not only the one behind you.`,
         },
@@ -53,7 +53,7 @@ FAULTLINE does not ingest PMI or ISM surveys, jobless claims, or consumer-confid
 
 A market correction (10-20% decline) can occur without a recession — driven by valuation compression, sentiment shifts, or technical factors. These corrections are typically shorter in duration and shallower in depth than recession-driven bear markets.
 
-A recession-driven bear market (typically 30-50%+ decline) is characterized by fundamental deterioration: falling earnings, rising unemployment, tightening credit conditions, and declining consumer spending. These bear markets last longer and require more time to recover.
+A recession-driven bear market (typically deeper than a correction) is characterized by fundamental deterioration: falling earnings, rising unemployment, tightening credit conditions, and declining consumer spending. These bear markets last longer and require more time to recover.
 
 FAULTLINE does not produce a recession probability or score, and it does not forecast which of the two will happen. The Pressure Index band describes current systemic pressure only: readings below HIGH STRESS (LOW RISK through ELEVATED RISK) describe less modeled pressure, and HIGH STRESS or SYSTEMIC CRISIS readings describe more. Neither band is a forecast of a correction or of a recession-driven bear market.`,
         },

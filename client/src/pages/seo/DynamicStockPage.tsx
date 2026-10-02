@@ -472,7 +472,7 @@ export default function DynamicStockPage() {
             </Link>
             <Link href="/market-crash-probability-2026" onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-red-400/30 transition-all">
               <div className="text-[10px] font-mono tracking-widest text-red-400 mb-2">CRASH RISK</div>
-              <div className="text-white text-sm font-semibold group-hover:text-[#00D4FF] transition-colors">Crash Probability 2026</div>
+              <div className="text-white text-sm font-semibold group-hover:text-[#00D4FF] transition-colors">Market Risk Context 2026</div>
             </Link>
             <Link href="/volatility-dashboard" onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-yellow-400/30 transition-all">
               <div className="text-[10px] font-mono tracking-widest text-yellow-400 mb-2">VOLATILITY</div>
