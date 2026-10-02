@@ -67,8 +67,8 @@ interface PublishResult {
 // ── Internal link map ─────────────────────────────────────────────────────────
 
 const INTERNAL_LINKS = [
-  { text: "FAULTLINE Market Risk Context 2026", href: "/market-crash-probability-2026" },
-  { text: "Recession Probability Tracker", href: "/recession-probability" },
+  { text: "Market Crash Risk 2026", href: "/market-crash-probability-2026" },
+  { text: "Recession Risk Context", href: "/recession-probability" },
   { text: "Federal Reserve Tracker", href: "/federal-reserve-tracker" },
   { text: "Liquidity Monitor", href: "/liquidity-monitor" },
   { text: "Volatility Dashboard", href: "/volatility-dashboard" },
@@ -559,7 +559,7 @@ async function runPublishingPipeline(
     `FAULTLINE Pressure Index™: ${engineData.pressureScore}/100`,
     `Market Regime: ${engineData.regime}`,
     `Stress Level: ${engineData.stressLevel}`,
-    `Scenario, crash, and recession probabilities: not offered (FAULTLINE probability contract); do not state any probability percentage`,
+    `Probabilities: FAULTLINE does not offer a crash probability, does not offer a recession probability, and its scenario weights are uncalibrated (probability contract); do not state any probability percentage`,
     engineData.topDrivers.length > 0 ? `Top Drivers: ${engineData.topDrivers.join(", ")}` : null,
     `Date: ${dateStr}`,
   ].filter(Boolean).join(". ");

@@ -76,8 +76,8 @@ Every user’s circumstances differ. FAULTLINE provides research context and sho
           answer: "The current Pressure Index does not rank a single market risk as a forecast. It displays six component readings so users can see the current model contribution of liquidity, credit, yield-curve volatility proxy, macro sensitivity, market-breadth proxy, and AI/speculation sensitivity.",
         },
         {
-          question: "Does FAULTLINE publish a crash probability?",
-          answer: "No. FAULTLINE does not offer a crash probability: no governed model with a defined crash event, horizon and calibration record exists. The Pressure Index is a proprietary systemic-stress measure, not an analyst forecast or a crash-probability model. Availability and freshness depend on the underlying sources; macro inputs have known publication lags and the AI/speculation baseline is explicitly static.",
+          question: "Does FAULTLINE publish a crash-risk forecast?",
+          answer: "No. FAULTLINE does not offer a crash probability: no governed model with a defined crash event, horizon and calibration record exists. The Pressure Index is a proprietary systemic-stress measure. It is not an analyst forecast, and it is not a crash probability. Availability and freshness depend on the underlying sources; macro inputs have known publication lags and the AI/speculation baseline is explicitly static.",
         },
         {
           question: "How should historical Pressure Index material be interpreted?",
