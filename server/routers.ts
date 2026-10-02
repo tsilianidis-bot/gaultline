@@ -587,7 +587,8 @@ export const appRouter = router({
       try {
         const rows = await getPositionsByUser(ctx.user.id);
         const pressure = await calculateFaultlinePressure();
-        const vectors = pressure.vectors;
+        // Fail closed: missing vectors read as no vectors (every vector metric Unavailable), not an error.
+        const vectors = Array.isArray(pressure.vectors) ? pressure.vectors : [];
 
         // Helper: find vector score by id
         // Fail closed: a missing or non-finite vector score is null, never a 50 default.
@@ -600,6 +601,9 @@ export const appRouter = router({
         // A missing vector has no trend: null (no trend icon), never a "stable" default.
         const vt = (id: string) => vectors.find(v => v.id === id)?.trend ?? null;
         const finite = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
+        const text = (value: unknown): string | null => (typeof value === "string" && value.trim() !== "" ? value : null);
+        // A missing regime name is null (shown as Unavailable), never "undefined".
+        const regimeName = text(pressure.regime);
 
         // Analyse position composition
         const totalPositions = rows.length;
@@ -622,7 +626,8 @@ export const appRouter = router({
           : 20;
 
         // 1. Portfolio Pressure Score — weighted composite of all vectors
-        const portfolioPressureScore = pressure.overallPressure;
+        // Fail closed: a missing or non-finite overall pressure is null ("Unavailable").
+        const portfolioPressureScore = finite(pressure.overallPressure) ? pressure.overallPressure : null;
 
         // 2. AI Bubble Exposure — ai-bubble vector, amplified by AI/tech stock ratio
         const aiBubbleBase = vs("ai-bubble");
@@ -647,6 +652,8 @@ export const appRouter = router({
         // 7. Historical Crash Vulnerability — top analog similarity as proxy
         // Fail closed: a missing or non-finite input gives null ("Unavailable").
         const analogSimilarity = pressure.topAnalog?.similarity;
+        const analogLabel = text(pressure.topAnalog?.label);
+        const analogDescription = text(pressure.topAnalog?.description);
         const crashVulnScore = finite(analogSimilarity) && finite(portfolioPressureScore)
           ? Math.min(100, Math.round(analogSimilarity * 0.85 + portfolioPressureScore * 0.15))
           : null;
@@ -659,7 +666,7 @@ export const appRouter = router({
           s === null ? "Unavailable" : s >= 75 ? "Critical" : s >= 60 ? "High" : s >= 40 ? "Elevated" : s >= 20 ? "Moderate" : "Low";
 
         return {
-          regime: pressure.regime,
+          regime: regimeName,
           regimeLevel: pressure.level,
           dataSource: pressure.dataSource,
           timestamp: pressure.timestamp,
@@ -670,9 +677,9 @@ export const appRouter = router({
               description: "Composite macro-risk pressure index applied to your current portfolio",
               score: portfolioPressureScore,
               level: scoreToLevel(portfolioPressureScore),
-              driver: `FAULTLINE Pressure Index at ${portfolioPressureScore}/100 — ${pressure.regime}`,
-              trend: pressure.overallPressure > 60 ? "rising" : pressure.overallPressure < 30 ? "falling" : "stable" as const,
-              color: portfolioPressureScore >= 75 ? "#FF2D55" : portfolioPressureScore >= 55 ? "#FF6B35" : portfolioPressureScore >= 35 ? "#FFD60A" : "#00FF88",
+              driver: portfolioPressureScore === null ? "" : `FAULTLINE Pressure Index at ${portfolioPressureScore}/100${regimeName === null ? "" : ` — ${regimeName}`}`,
+              trend: portfolioPressureScore === null ? null : portfolioPressureScore > 60 ? "rising" : portfolioPressureScore < 30 ? "falling" : "stable" as const,
+              color: portfolioPressureScore === null ? UNAVAILABLE_COLOR : portfolioPressureScore >= 75 ? "#FF2D55" : portfolioPressureScore >= 55 ? "#FF6B35" : portfolioPressureScore >= 35 ? "#FFD60A" : "#00FF88",
             },
             {
               id: "ai-bubble-exposure",
@@ -680,8 +687,8 @@ export const appRouter = router({
               description: "Concentration risk from AI mega-cap and speculative growth assets",
               score: aiBubbleScore,
               level: scoreToLevel(aiBubbleScore),
-              driver: vd("ai-bubble"),
-              trend: vt("ai-bubble"),
+              driver: aiBubbleScore === null ? "" : vd("ai-bubble"),
+              trend: aiBubbleScore === null ? null : vt("ai-bubble"),
               color: aiBubbleScore === null ? UNAVAILABLE_COLOR : aiBubbleScore >= 75 ? "#FF2D55" : aiBubbleScore >= 55 ? "#FF6B35" : aiBubbleScore >= 35 ? "#FFD60A" : "#00FF88",
             },
             {
@@ -690,8 +697,8 @@ export const appRouter = router({
               description: "Exposure to rate-driven repricing from Fed policy and yield curve dynamics",
               score: rateSensScore,
               level: scoreToLevel(rateSensScore),
-              driver: vd("macro-sensitivity"),
-              trend: vt("macro-sensitivity"),
+              driver: rateSensScore === null ? "" : vd("macro-sensitivity"),
+              trend: rateSensScore === null ? null : vt("macro-sensitivity"),
               color: rateSensScore === null ? UNAVAILABLE_COLOR : rateSensScore >= 75 ? "#FF2D55" : rateSensScore >= 55 ? "#FF6B35" : rateSensScore >= 35 ? "#FFD60A" : "#00FF88",
             },
             {
@@ -701,7 +708,7 @@ export const appRouter = router({
               score: concentrationRiskScore,
               level: concentrationRiskScore === null ? "No positions" : scoreToLevel(concentrationRiskScore),
               driver: totalPositions === 0 ? "No positions tracked" : totalPositions <= 3 ? `Only ${totalPositions} position${totalPositions !== 1 ? "s" : ""} — high single-name risk` : `${totalPositions} positions — diversification improving`,
-              trend: "stable" as const,
+              trend: concentrationRiskScore === null ? null : "stable" as const,
               color: concentrationRiskScore === null ? UNAVAILABLE_COLOR : concentrationRiskScore >= 75 ? "#FF2D55" : concentrationRiskScore >= 55 ? "#FF6B35" : concentrationRiskScore >= 35 ? "#FFD60A" : "#00FF88",
             },
             {
@@ -710,8 +717,8 @@ export const appRouter = router({
               description: "Credit market liquidity conditions affecting exit and re-entry costs",
               score: liquidityScore,
               level: scoreToLevel(liquidityScore),
-              driver: vd("liquidity-stress"),
-              trend: vt("liquidity-stress"),
+              driver: liquidityScore === null ? "" : vd("liquidity-stress"),
+              trend: liquidityScore === null ? null : vt("liquidity-stress"),
               color: liquidityScore === null ? UNAVAILABLE_COLOR : liquidityScore >= 75 ? "#FF2D55" : liquidityScore >= 55 ? "#FF6B35" : liquidityScore >= 35 ? "#FFD60A" : "#00FF88",
             },
             {
@@ -720,19 +727,19 @@ export const appRouter = router({
               description: "Probability of macro contraction impacting portfolio valuations",
               score: recessionScore,
               level: scoreToLevel(recessionScore),
-              driver: vd("credit-contagion"),
-              trend: vt("credit-contagion"),
+              driver: recessionScore === null ? "" : vd("credit-contagion"),
+              trend: recessionScore === null ? null : vt("credit-contagion"),
               color: recessionScore === null ? UNAVAILABLE_COLOR : recessionScore >= 75 ? "#FF2D55" : recessionScore >= 55 ? "#FF6B35" : recessionScore >= 35 ? "#FFD60A" : "#00FF88",
             },
             {
               id: "crash-vulnerability",
               label: "Historical Crash Vulnerability",
-              description: finite(analogSimilarity)
-                ? `Current conditions match ${pressure.topAnalog.label} (${pressure.topAnalog.similarity}% similarity)`
-                : `Closest historical analog similarity unavailable`,
+              description: finite(analogSimilarity) && analogLabel !== null
+                ? `Current conditions match ${analogLabel} (${analogSimilarity}% similarity)`
+                : "Closest historical analog unavailable",
               score: crashVulnScore,
               level: scoreToLevel(crashVulnScore),
-              driver: crashVulnScore === null ? "" : `Closest analog: ${pressure.topAnalog.label} — ${pressure.topAnalog.description}`,
+              driver: crashVulnScore === null || analogLabel === null ? "" : `Closest analog: ${analogLabel}${analogDescription === null ? "" : ` — ${analogDescription}`}`,
               trend: crashVulnScore === null ? null : "stable" as const,
               color: crashVulnScore === null ? UNAVAILABLE_COLOR : crashVulnScore >= 75 ? "#FF2D55" : crashVulnScore >= 55 ? "#FF6B35" : crashVulnScore >= 35 ? "#FFD60A" : "#00FF88",
             },
@@ -742,8 +749,8 @@ export const appRouter = router({
               description: "How well your portfolio is positioned for the current macro regime",
               score: regimeAlignmentScore,
               level: scoreToLevel(regimeAlignmentScore),
-              driver: regimeAlignmentScore === null ? "" : regimeAlignmentScore >= 60 ? `Portfolio well-aligned with ${pressure.regime} regime` : `Portfolio exposed to ${pressure.regime} headwinds`,
-              trend: regimeAlignmentScore === null ? null : pressure.overallPressure > 60 ? "falling" : "rising" as const,
+              driver: regimeAlignmentScore === null || regimeName === null ? "" : regimeAlignmentScore >= 60 ? `Portfolio well-aligned with ${regimeName} regime` : `Portfolio exposed to ${regimeName} headwinds`,
+              trend: regimeAlignmentScore === null || portfolioPressureScore === null ? null : portfolioPressureScore > 60 ? "falling" : "rising" as const,
               color: regimeAlignmentScore === null ? UNAVAILABLE_COLOR : regimeAlignmentScore >= 60 ? "#00FF88" : regimeAlignmentScore >= 40 ? "#FFD60A" : regimeAlignmentScore >= 20 ? "#FF6B35" : "#FF2D55",
             },
           ],

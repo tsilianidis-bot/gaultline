@@ -266,4 +266,14 @@ describe("3. /app/portfolio intelligence consumers render a null score as —", 
     expect(commentary.split('data-gauge="unavailable"').length - 1).toBe(3);
     expect(commentary).not.toContain("width:0%");
   });
+
+  it("r11: a null regime reads Regime unavailable / Current regime: Unavailable, never undefined", () => {
+    state.intelligence = { regime: null, dataSource: "live", metrics: [metric("portfolio-pressure", null, "Unavailable", "#64748B", null)] };
+    const html = renderToStaticMarkup(createElement(PortfolioIntelligence));
+    expect(html).toContain("Regime unavailable");
+    const commentary = renderToStaticMarkup(createElement(InstitutionalCommentary));
+    expect(commentary).toContain("Current regime: Unavailable.");
+    for (const out of [html, commentary]) expect(out).not.toMatch(/undefined|null/);
+  });
 });
+

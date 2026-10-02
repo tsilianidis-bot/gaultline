@@ -214,7 +214,7 @@ export default function PortfolioIntelligence() {
                 color: "#374151",
                 letterSpacing: "0.08em",
               }}>
-                {data.regime} · {data.dataSource === "live" ? "LIVE DATA" : "FALLBACK DATA"}
+                {data.regime ?? "Regime unavailable"} · {data.dataSource === "live" ? "LIVE DATA" : "FALLBACK DATA"}
               </span>
             )}
           </div>

@@ -241,8 +241,8 @@ export function InstitutionalCommentary() {
     .filter((m): m is typeof m & { score: number } => m.score !== null)
     .sort((a, b) => b.score - a.score)[0];
   const overallAssessment = topRiskMetric
-    ? `Current regime: ${data.regime}. Highest risk factor: ${topRiskMetric.label} (${topRiskMetric.score}/100 — ${topRiskMetric.level}). ${topRiskMetric.driver}`
-    : `Current regime: ${data.regime}.`;
+    ? `Current regime: ${data.regime ?? "Unavailable"}. Highest risk factor: ${topRiskMetric.label} (${topRiskMetric.score}/100 — ${topRiskMetric.level}). ${topRiskMetric.driver}`
+    : `Current regime: ${data.regime ?? "Unavailable"}.`;
 
   return (
     <div>

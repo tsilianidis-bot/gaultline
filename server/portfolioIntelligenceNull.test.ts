@@ -149,3 +149,109 @@ describe("portfolio.getIntelligence: crash vulnerability and regime alignment fa
     expect([byId["regime-alignment"].score, byId["regime-alignment"].level, byId["regime-alignment"].trend]).toEqual([67, "High", "rising"]);
   });
 });
+
+describe("portfolio.getIntelligence: Portfolio Pressure Score and remaining fields fail closed (r11)", () => {
+  const BAD = [null, undefined, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, "33"];
+  const full = () => ALL.map(id => vector(id, 60, "rising"));
+  const view = (m: { score: unknown; level: string; color: string; trend: unknown; driver: string }) => [m.score, m.level, m.color, m.trend, m.driver];
+
+  it("a missing or non-finite overall pressure gives null / Unavailable / no trend / empty driver, never NaN/100", async () => {
+    for (const overallPressure of BAD) {
+      const byId = await metrics(full(), { overallPressure });
+      expect(view(byId["portfolio-pressure"])).toEqual([null, "Unavailable", "#64748B", null, ""]);
+      expect(JSON.stringify(byId)).not.toMatch(/NaN|Infinity|undefined/);
+    }
+  });
+
+  it("with a valid pressure the Portfolio Pressure Score is unchanged (falling / stable / rising bands)", async () => {
+    const cases: Array<[number, unknown[]]> = [
+      [20, [20, "Moderate", "#00FF88", "falling", "FAULTLINE Pressure Index at 20/100 — Moderate Risk"]],
+      [33, [33, "Moderate", "#00FF88", "stable", "FAULTLINE Pressure Index at 33/100 — Moderate Risk"]],
+      [70, [70, "High", "#FF6B35", "rising", "FAULTLINE Pressure Index at 70/100 — Moderate Risk"]],
+      [0, [0, "Low", "#00FF88", "falling", "FAULTLINE Pressure Index at 0/100 — Moderate Risk"]],
+    ];
+    for (const [overallPressure, expected] of cases) {
+      const byId = await metrics(full(), { overallPressure });
+      expect(view(byId["portfolio-pressure"])).toEqual(expected);
+    }
+  });
+
+  it("a missing regime name is null at the top level and never printed as undefined", async () => {
+    for (const regime of [undefined, null, "", "  ", 7]) {
+      mocks.pressure.mockResolvedValue(pressure(full(), { regime }));
+      const result = await appRouter.createCaller(ctx()).portfolio.getIntelligence();
+      expect(result.regime).toBeNull();
+      const byId = Object.fromEntries(result.metrics.map(m => [m.id, m]));
+      expect(byId["portfolio-pressure"].driver).toBe("FAULTLINE Pressure Index at 33/100");
+      expect(byId["regime-alignment"].score).toBe(67);
+      expect(byId["regime-alignment"].driver).toBe("");
+      expect(JSON.stringify(result)).not.toMatch(/undefined|null regime|\b7 regime/);
+    }
+  });
+
+  it("missing vectors (not an array) read as no vectors instead of failing the request", async () => {
+    for (const vectors of [undefined, null, "x"]) {
+      const byId = await metrics(vectors as unknown as unknown[]);
+      for (const id of VECTOR_METRICS) expect(view(byId[id])).toEqual([null, "Unavailable", "#64748B", null, ""]);
+    }
+  });
+
+  it("a vector metric with a null score sends no driver and no trend, even if the vector has them", async () => {
+    const vectors = ALL.map(id => vector(id, id === "ai-bubble" || id === "volatility-regime" ? Number.NaN : 60, "rising"));
+    const byId = await metrics(vectors);
+    expect(view(byId["ai-bubble-exposure"])).toEqual([null, "Unavailable", "#64748B", null, ""]);
+    // rate sensitivity is missing volatility-regime; its macro-sensitivity driver must not show
+    expect(view(byId["rate-sensitivity"])).toEqual([null, "Unavailable", "#64748B", null, ""]);
+    expect(view(byId["liquidity-risk"])).toEqual([60, "High", "#FF6B35", "rising", "liquidity-stress driver"]);
+    expect(view(byId["recession-exposure"])).toEqual([60, "High", "#FF6B35", "rising", "credit-contagion driver"]);
+  });
+
+  it("a scored vector with no trend sends trend null, never stable", async () => {
+    const byId = await metrics(ALL.map(id => ({ id, label: id, score: 60, driver: `${id} driver` })));
+    for (const id of VECTOR_METRICS) {
+      expect(byId[id].score).toBe(60);
+      expect(byId[id].trend).toBeNull();
+    }
+  });
+
+  it("concentration with 0 positions has no trend", async () => {
+    expect((await metrics(full()))["concentration-risk"].trend).toBeNull();
+    mocks.positions.mockResolvedValue(positions(2));
+    expect((await metrics(full()))["concentration-risk"].trend).toBe("stable");
+  });
+
+  it("a missing analog label or description is never printed as undefined", async () => {
+    const noLabel = (await metrics(full(), { topAnalog: { description: "Mid-cycle", similarity: 40 } }))["crash-vulnerability"];
+    expect(noLabel.score).toBe(39);
+    expect(noLabel.description).toBe("Closest historical analog unavailable");
+    expect(noLabel.driver).toBe("");
+    const noDescription = (await metrics(full(), { topAnalog: { label: "2019", similarity: 40 } }))["crash-vulnerability"];
+    expect(noDescription.description).toBe("Current conditions match 2019 (40% similarity)");
+    expect(noDescription.driver).toBe("Closest analog: 2019");
+    const fullAnalog = (await metrics(full()))["crash-vulnerability"];
+    expect(fullAnalog.driver).toBe("Closest analog: 2019 — Mid-cycle");
+  });
+
+  it("sweep: no broken input prints NaN, Infinity or undefined, and a null score never has a trend, driver or real level", async () => {
+    const breakages: Array<Record<string, unknown>> = [
+      { overallPressure: Number.NaN }, { overallPressure: undefined }, { regime: undefined }, { topAnalog: undefined },
+      { topAnalog: { label: undefined, description: undefined, similarity: Number.NaN } }, { vectors: undefined },
+    ];
+    for (const n of [0, 1, 7]) {
+      mocks.positions.mockResolvedValue(positions(n));
+      for (const overrides of breakages) {
+        mocks.pressure.mockResolvedValue(pressure(ALL.map(id => vector(id, 60)), overrides));
+        const result = await appRouter.createCaller(ctx()).portfolio.getIntelligence();
+        expect(JSON.stringify(result)).not.toMatch(/NaN|Infinity|undefined/);
+        for (const m of result.metrics) {
+          if (m.score !== null) continue;
+          expect(m.trend).toBeNull();
+          expect(["Unavailable", "No positions"]).toContain(m.level);
+          expect(m.color).toBe("#64748B");
+          if (m.id !== "concentration-risk") expect(m.driver).toBe("");
+        }
+      }
+    }
+  });
+});
+
