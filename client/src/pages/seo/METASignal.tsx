@@ -23,7 +23,7 @@ Meta's AI strategy is among the most aggressive in the technology sector. The co
 FAULTLINE classifies META as having HIGH AI Infrastructure Exposure (as a major NVDA customer and AI capex spender) and HIGH Advertising Cycle Sensitivity (as a company whose revenue is almost entirely dependent on digital advertising budgets, which are cyclically sensitive).`}
       signalAnalysis={`FAULTLINE's META signal analysis incorporates three primary inputs:
 
-Advertising Cycle Alignment: Meta's revenue is approximately 98% advertising-based. Digital advertising budgets are highly correlated with corporate revenue expectations and consumer confidence. In LOW STRESS macro environments, advertising budgets expand and META's revenue grows. In HIGH STRESS environments, advertising budgets are cut, compressing META's revenue.
+Advertising Cycle Alignment: Meta's revenue is approximately 98% advertising-based. Digital advertising budgets are highly correlated with corporate revenue expectations and consumer confidence. In LOW RISK macro environments, advertising budgets expand and META's revenue grows. In HIGH STRESS environments, advertising budgets are cut, compressing META's revenue.
 
 AI Infrastructure ROI: Meta is spending $60-65 billion annually on AI infrastructure. The market's assessment of whether this investment is generating adequate returns — through improved ad targeting, engagement, and new AI-powered products — directly affects META's valuation multiple. Strong AI ROI signals expand the multiple; ROI concerns compress it.
 
@@ -45,7 +45,7 @@ Historical Context: META experienced one of the most dramatic large-cap drawdown
 
 4. Competition for Attention: TikTok, YouTube, and emerging platforms compete for user attention and advertising budgets. A sustained shift of user engagement away from Meta's apps would reduce advertising revenue and growth prospects.
 
-5. Macro Regime Sensitivity: META's high valuation multiple (typically 20-30x forward earnings) makes it sensitive to macro regime transitions. A shift to HIGH STRESS (FAULTLINE Pressure Index 60+) typically triggers multiple compression in high-multiple technology stocks.`}
+5. Macro Regime Sensitivity: META's high valuation multiple (typically 20-30x forward earnings) makes it sensitive to macro regime transitions. A shift to HIGH STRESS (FAULTLINE Pressure Index 65+) typically triggers multiple compression in high-multiple technology stocks.`}
       faqs={[
         { question: "Is META a buy or sell right now?", answer: "FAULTLINE's META signal classification is available on the Signals tab, based on macro regime alignment, advertising cycle conditions, AI capex ROI assessment, and technical structure. This is not investment advice." },
         { question: "How does Meta make money?", answer: "Meta generates approximately 98% of its revenue from digital advertising across Facebook, Instagram, WhatsApp, and Threads. Advertisers pay to show targeted ads to Meta's approximately 3.3 billion daily active users. AI-powered ad targeting systems have significantly improved revenue per user over time." },

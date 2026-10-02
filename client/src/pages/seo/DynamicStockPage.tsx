@@ -374,7 +374,7 @@ export default function DynamicStockPage() {
         <div className="p-6 rounded-xl border border-[#00D4FF]/20 bg-[#00D4FF]/5 mb-12">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-2">LIVE SIGNAL</div>
+              <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-2">CURRENT SIGNAL</div>
               <p className="text-white font-semibold mb-1">Access the current {upper} signal</p>
               <p className="text-[#A8B8CC] text-sm">Macro regime fit · Momentum score · Risk classification · Key levels</p>
             </div>

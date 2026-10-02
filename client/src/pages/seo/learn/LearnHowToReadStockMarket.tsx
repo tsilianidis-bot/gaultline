@@ -7,7 +7,7 @@ const LearnHowToReadStockMarket = () => {
     <SEOLandingPage
       seo={{
         title: "How to Read the Stock Market: A FAULTLINE Guide",
-        description: "Master stock market conditions: price action, volume, market breadth, and economic indicators. Learn how FAULTLINE's Pressure Index synthesizes these signals for clarity.",
+        description: "Master stock market conditions: price action, volume, market breadth, and economic indicators. Learn how FAULTLINE's Pressure Index adds the structural macro layer.",
         canonical: "/learn/how-to-read-the-stock-market",
       }}
       badge="EDUCATIONAL GUIDE"
@@ -43,7 +43,7 @@ FAULTLINE's current rating context and historical comparisons help users underst
         },
         {
           heading: "How FAULTLINE's Pressure Index Synthesizes Market Signals",
-          body: `FAULTLINE's proprietary Pressure Index offers a sophisticated solution to the challenge of reading the stock market by synthesizing a multitude of critical signals into a single, coherent metric. Unlike traditional indicators that focus on isolated aspects, the Pressure Index integrates price action, volume dynamics, market breadth, and key economic indicators. It goes beyond simple aggregation, employing advanced algorithms to weigh and interpret these diverse inputs, identifying periods of market strength, weakness, and inflection points. For example, it can detect divergences between price and volume, or identify when market breadth is deteriorating despite a rising index. This synthesis provides a nuanced, regularly refreshed assessment of market pressure, helping investors understand not just 'what' is happening, but 'why' it's happening and 'what would change the outlook'. By offering a consolidated, objective view, the Pressure Index empowers users to make more confident decisions, providing a clear lens through which to navigate the complexities of the stock market and anticipate shifts before they become widely apparent.`,
+          body: `FAULTLINE's Pressure Index adds the structural layer that price charts leave out. Rather than reading price, volume, or breadth, it combines six weighted vectors — liquidity stress, credit contagion, the yield curve, macro sensitivity, labor and rates, and a static AI-concentration baseline — built from eight FRED series: high-yield credit spreads, SOFR, the 2-year and 10-year Treasury yields, CPI, PPI, the federal funds rate, and unemployment. Read alongside price action and breadth, it shows when a rising index is sitting on deteriorating credit and funding conditions. This provides a regularly refreshed, published-weight assessment of systemic pressure, helping investors understand not just 'what' is happening, but 'why' it's happening and 'what would change the outlook'. By offering a consolidated, objective view, the Pressure Index empowers users to make more confident decisions, providing a clear lens through which to navigate the complexities of the stock market and see the pressure before the break.`,
         },
       ]}
       faqs={[
@@ -65,7 +65,7 @@ FAULTLINE's current rating context and historical comparisons help users underst
         },
         {
           question: "What is FAULTLINE's Pressure Index?",
-          answer: "The FAULTLINE Pressure Index is a proprietary tool that synthesizes various market signals—including price action, volume, market breadth, and economic data—into a single, comprehensive metric. It's designed to provide a clear, objective assessment of market strength or weakness, helping investors identify key turning points and manage risk effectively.",
+          answer: "The FAULTLINE Pressure Index is a 0-100 systemic pressure score built from six weighted vectors using eight FRED series — credit spreads, SOFR, Treasury yields, CPI, PPI, federal funds, and unemployment — plus a static AI-concentration baseline. It does not read price, volume, or breadth. It is designed to give a clear, published-methodology view of structural market stress, helping investors manage risk; it does not predict turning points or crash dates.",
         },
         {
           question: "Is FAULTLINE suitable for beginners learning about the stock market?",

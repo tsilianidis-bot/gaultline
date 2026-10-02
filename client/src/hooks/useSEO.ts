@@ -312,7 +312,7 @@ export const PAGE_SEO = {
   publicAnalogs: {
     title: "Historical Market Analogs — Crash Pattern Matching",
     description:
-      "Pattern-match today's macro conditions against 2000, 2008, 2020, and 2022. See which historical fracture your regime most resembles, the timeline of what followed, and how top funds were positioned.",
+      "Compare today's pressure-vector profile with fixed reference profiles of 1973, 1998, 2000, 2008, 2020, and 2022. See which historical fracture today most resembles — resemblance, not a forecast.",
     canonical: "/analogs",
   },
   publicAIBubble: {

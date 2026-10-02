@@ -5,101 +5,107 @@ export default function MarketRegimeTracker() {
     <SEOLandingPage
       seo={{
         title: "Market Regime Tracker — Current Macro Regime Classification | FAULTLINE",
-        description: "Market regime classification: Risk-On, Risk-Off, Transition, or Crisis. Track the current macro regime using FAULTLINE's seven-vector Pressure Index and understand what it means for your portfolio.",
+        description: "Market regime classification from the FAULTLINE Pressure Index: Low Risk, Moderate Risk, Elevated Risk, High Stress, or Systemic Crisis. See which band the six-vector score sits in and what it means for systemic pressure.",
         canonical: "/market-regime-tracker",
       }}
       badge="REGIME INTELLIGENCE"
       headline={"Market Regime Tracker\nWhat Regime Are We In Right Now?"}
-      subheadline="FAULTLINE's Market Regime Tracker classifies the current macro environment as new data is published — Risk-On, Risk-Off, Transition, or Crisis — using seven independent risk vectors. Know the regime. Position accordingly."
-      ctaLabel="VIEW LIVE REGIME"
+      subheadline="FAULTLINE's Market Regime Tracker classifies the current macro environment as new data is published — Low Risk, Moderate Risk, Elevated Risk, High Stress, or Systemic Crisis — from the six weighted vectors of the Pressure Index. Know the regime. See the pressure before the break."
+      ctaLabel="VIEW CURRENT REGIME"
       ctaHref="/pressure-index"
       accentColor="#9B59B6"
       features={[
-        { icon: "◈", title: "Four-Regime Classification", desc: "Risk-On, Risk-Off, Transition, and Crisis — each with distinct implications for asset allocation and risk management." },
-        { icon: "◎", title: "Seven-Vector Analysis", desc: "Credit spreads, VIX regime, yield curve, liquidity, AI concentration, recession probability, and breadth — all synthesized into one regime score." },
-        { icon: "⬡", title: "Regime Transition Signals", desc: "Early warning signals when the regime is shifting — before the transition is obvious in price action." },
-        { icon: "◈", title: "Historical Regime Comparisons", desc: "Compare the current regime to historical periods: 2008, 2011, 2018, 2020, 2022. Understand the precedent." },
-        { icon: "◎", title: "Asset Class Implications", desc: "What does the current regime mean for stocks, bonds, crypto, commodities, and cash? FAULTLINE maps regime to asset class positioning." },
-        { icon: "⬡", title: "Regime Duration Tracking", desc: "How long has the current regime been in place? Historical regime durations provide context for positioning decisions." },
+        { icon: "◈", title: "Five-Band Classification", desc: "Low Risk (below 25), Moderate Risk (25-44), Elevated Risk (45-64), High Stress (65-79), and Systemic Crisis (80+) — each with distinct implications for risk management." },
+        { icon: "◎", title: "Six-Vector Analysis", desc: "Liquidity stress, credit contagion, yield curve, macro sensitivity, labor and rates, and a static AI-concentration baseline — combined into one 0-100 score from eight FRED series." },
+        { icon: "⬡", title: "Regime Transition Context", desc: "See which vectors are moving and how close the score sits to the next band threshold — structural pressure that often builds before it is obvious in price action." },
+        { icon: "◈", title: "Historical Regime Context", desc: "Reference context from past stress periods — 2008, 2011, 2018, 2020, 2022 — to understand the precedent. Resemblance, not a forecast." },
+        { icon: "◎", title: "Asset Class Context", desc: "Educational context on how stocks, bonds, crypto, commodities, and cash have historically behaved in calmer and more stressed regimes." },
+        { icon: "⬡", title: "Regime Duration Context", desc: "How long has the current band been in place? Stored daily readings show the streak and trend." },
       ]}
       contentSections={[
         {
           heading: "What Is a Market Regime and Why Does It Matter?",
-          body: `A market regime is a persistent state of the financial system characterized by a consistent set of conditions — risk appetite, liquidity, volatility, credit conditions, and economic momentum. Understanding the current regime is the foundation of sound investment decision-making because different regimes require fundamentally different positioning strategies.
+          body: `A market regime is a persistent state of the financial system characterized by a consistent set of conditions — risk appetite, liquidity, volatility, credit conditions, and economic momentum. Understanding the current regime matters because different regimes carry fundamentally different risks.
 
-FAULTLINE classifies the market into four regimes:
+FAULTLINE classifies the market into five bands of the Pressure Index:
 
-Risk-On (FAULTLINE Pressure Index 0-39): The macro environment is supportive of risk-taking. Credit spreads are tight, volatility is low, liquidity is ample, the yield curve is positively sloped, and economic momentum is positive. In Risk-On regimes, growth assets (equities, crypto, high-yield bonds) outperform defensive assets (Treasuries, cash, gold). This is the regime where the highest returns are generated.
+Low Risk (Pressure Index below 25): The measured inputs show little structural stress. Credit spreads are contained, funding is orderly, and the yield curve, inflation, and labor data are not adding pressure.
 
-Risk-Off (Pressure Index 40-59): The macro environment is showing signs of stress. One or more risk vectors are deteriorating, but the system has not entered acute stress. In Risk-Off regimes, defensive positioning becomes more appropriate — reducing cyclical exposure, increasing cash, and adding defensive sector positions.
+Moderate Risk (25-44): Some pressure is present in one or more vectors, but the system is not under broad stress. This is a common resting state for the score.
 
-Transition (Pressure Index 40-59, rapidly changing): The regime is actively shifting from Risk-On to Risk-Off or vice versa. Transition periods are the most dangerous because the old positioning is no longer appropriate but the new regime is not yet confirmed. FAULTLINE's regime transition signals provide advance warning of these shifts.
+Elevated Risk (45-64): Pressure is building across several vectors. Historically, conditions like these have warranted closer attention to credit, funding, and rate dynamics.
 
-Crisis (Pressure Index 60+): Acute systemic stress. Multiple risk vectors are simultaneously deteriorating. Historical crisis regimes include March 2020 (COVID), October 2008 (Lehman), and August 2011 (U.S. debt ceiling/European sovereign debt). In Crisis regimes, maximum defensive positioning is historically appropriate.`,
+High Stress (65-79): Multiple vectors are simultaneously under strain. The system is structurally fragile, and shocks are more likely to propagate.
+
+Systemic Crisis (80+): Acute, broad-based systemic stress across credit, funding, and rates. Periods such as October 2008 (Lehman) and March 2020 (COVID) are the kind of episodes this band describes.
+
+The bands describe the pressure in the system today. They are not a forecast of a crash or its date.`,
         },
         {
-          heading: "The Seven Vectors That Determine the Regime",
-          body: `FAULTLINE's regime classification is built on seven independent risk vectors, each with a historical track record as a leading indicator of regime transitions:
+          heading: "The Six Vectors That Determine the Regime",
+          body: `FAULTLINE's regime classification is built on the six weighted vectors of the Pressure Index, computed from eight FRED series plus one static baseline:
 
-1. Credit Spread Dynamics: High-yield credit spreads (BAMLH0A0HYM2) reflect the premium investors demand to hold below-investment-grade debt. Spread widening signals deteriorating credit conditions — one of the earliest institutional signals of regime deterioration.
+1. Liquidity Stress (20%): The ICE BofA U.S. high-yield spread (BAMLH0A0HYM2) and SOFR. Wider spreads and rising funding costs signal that capital is becoming scarcer.
 
-2. VIX Regime: The VIX level and trend reflect the market's expectation of near-term volatility. A rising VIX from low levels is a stronger regime transition signal than a high VIX that is declining.
+2. Credit Contagion (20%): High-yield spreads read alongside the 10-year Treasury yield and the unemployment rate — how credit stress could spread into the real economy.
 
-3. Yield Curve Dynamics: The 2yr/10yr Treasury spread reflects the market's expectation of future economic growth and Fed policy. Inversion signals recession risk; re-steepening after inversion signals the recession is arriving.
+3. Yield Curve & 10Y Level (15%): The 2yr/10yr Treasury spread blended with the level of the 10-year yield. Inversion signals recession risk; a high 10-year level adds rate pressure.
 
-4. Liquidity Conditions: Fed balance sheet trajectory, bank lending standards, and money market conditions reflect the availability of capital for risk asset investment. Liquidity withdrawal is the mechanism behind most major market dislocations.
+4. Macro Sensitivity (20%): CPI and PPI inflation (year over year) and the federal funds rate — how much inflation and policy are constraining the system.
 
-5. AI Concentration Risk: The historically unprecedented concentration of S&P 500 market cap in AI-exposed equities creates systemic vulnerability. When concentrated positions begin to unwind, the cascade effect amplifies regime deterioration.
+5. Labor & Rates (10%): The unemployment rate and the 10-year yield — labor deterioration under restrictive rates.
 
-6. Recession Probability: Leading economic indicators (PMI, unemployment claims, consumer confidence, yield curve) feed into a recession probability score that reflects the fundamental economic backdrop.
+6. AI/Speculation (15%): A static baseline (score 65) reflecting the concentration of S&P 500 market cap in AI-exposed equities. It is not a live market feed.
 
-7. Market Breadth: The percentage of stocks participating in a rally or decline reflects the underlying health of the market. Breadth deterioration — fewer stocks participating in a rally — precedes major market tops.`,
+FAULTLINE publishes these weights. The Pressure Index does not read VIX, market breadth, or a recession probability; VIX appears separately as a delayed quote and in FAULTLINE's separate systemic-regime model.`,
         },
         {
-          heading: "How to Position for Each Regime",
-          body: `FAULTLINE's regime classification provides a framework for positioning decisions, not specific investment recommendations. Here is the historical precedent for each regime:
+          heading: "What Each Regime Has Historically Meant",
+          body: `FAULTLINE's regime classification provides context for risk decisions, not specific investment recommendations. Here is the general historical precedent:
 
-Risk-On Regime: Growth assets historically outperform. Equities (particularly cyclical and growth sectors), crypto, high-yield bonds, and commodities tend to deliver the strongest returns. Defensive assets (Treasuries, cash, gold) tend to underperform. This is the regime where taking calculated risk is historically rewarded.
+Low and Moderate Risk: Growth assets have historically tended to do well when credit and funding conditions are calm, and defensive assets have tended to lag. Calm conditions can also breed complacency.
 
-Risk-Off Regime: Defensive positioning becomes more appropriate. Reducing cyclical and growth exposure, increasing cash allocation, and adding defensive sector positions (utilities, consumer staples, healthcare) is historically prudent. Monitoring for regime transition signals is critical.
+Elevated Risk: Investors have historically paid closer attention to cyclical and growth exposure, liquidity, and concentration when pressure builds across several vectors. Watching which vectors are moving is critical.
 
-Transition Regime: The most dangerous positioning environment. The old regime's positioning is no longer appropriate, but the new regime is not yet confirmed. FAULTLINE's transition signals provide advance warning, but maintaining flexibility and avoiding large concentrated bets is historically prudent.
+High Stress: Historically the most difficult environment to navigate. Flexibility and avoiding large concentrated bets have often mattered most.
 
-Crisis Regime: Maximum defensive positioning is historically appropriate. Cash, short-duration Treasuries, and gold have historically preserved capital during crisis regimes. The crisis regime also creates the conditions for the most significant buying opportunities — but timing the bottom is extremely difficult. FAULTLINE monitors for signs that multiple risk vectors are simultaneously improving before signaling a potential regime recovery.`,
+Systemic Crisis: Cash, short-duration Treasuries, and gold have historically preserved capital in acute crises. Such periods have also preceded some of the most significant recoveries — but timing the bottom is extremely difficult. A falling Pressure Index across several vectors at once shows stress easing.
+
+This is educational and informational context, not investment advice.`,
         },
       ]}
       faqs={[
         {
           question: "What market regime are we in right now?",
-          answer: "The current market regime is classified by the FAULTLINE Pressure Index as new data is published. Visit /pressure-index for the live regime classification, Pressure Index score, and the seven individual risk vectors that determine the regime.",
+          answer: "The current market regime is classified by the FAULTLINE Pressure Index as new data is published. Visit /pressure-index for the latest published regime band, Pressure Index score, and the six weighted vectors that determine it.",
         },
         {
           question: "How does FAULTLINE classify market regimes?",
-          answer: "FAULTLINE uses seven independent risk vectors — credit spreads, VIX regime, yield curve dynamics, liquidity conditions, AI concentration risk, recession probability, and market breadth — to calculate the Pressure Index (0-100). Risk-On is 0-39, Risk-Off is 40-59, and Crisis is 60+. Transition regimes are identified when the Pressure Index is rapidly changing direction.",
+          answer: "FAULTLINE combines six weighted vectors — liquidity stress, credit contagion, yield curve and 10-year level, macro sensitivity, labor and rates, and a static AI-concentration baseline — built from eight FRED series into the Pressure Index (0-100). Low Risk is below 25, Moderate Risk 25-44, Elevated Risk 45-64, High Stress 65-79, and Systemic Crisis 80 and above.",
         },
         {
           question: "How long do market regimes typically last?",
-          answer: "Risk-On regimes are the most durable, historically lasting 12-36 months during bull market phases. Risk-Off regimes typically last 3-12 months. Crisis regimes are the shortest but most intense — typically lasting 1-6 months before either resolving or deepening into a prolonged bear market. The 2022 Risk-Off regime lasted approximately 10 months.",
+          answer: "Calm, low-stress periods have historically been the most durable, often lasting years during bull market phases. Stressed periods have typically lasted months. Acute crises are the shortest but most intense — typically lasting weeks to a few months before either resolving or deepening into a prolonged bear market.",
         },
         {
           question: "Can the regime change quickly?",
-          answer: "Yes — regime transitions can occur rapidly. The March 2020 COVID crash took the market from Risk-On to Crisis in approximately 23 trading days. The February 2018 volatility spike (VIX doubled in one day) created a brief Transition regime before recovering. FAULTLINE's regime transition signals are designed to provide advance warning of these rapid shifts.",
+          answer: "Yes — regime transitions can occur rapidly. The March 2020 COVID crash moved markets from calm to crisis in roughly 23 trading days. Because several Pressure Index inputs are published daily or monthly, the score shows structural pressure building but can lag a sudden shock.",
         },
         {
-          question: "What is the difference between a Risk-Off regime and a market crash?",
-          answer: "A Risk-Off regime is a period of elevated but not acute stress — the Pressure Index is 40-59. A market crash is typically associated with a Crisis regime (Pressure Index 60+) characterized by acute, self-reinforcing stress across multiple risk vectors simultaneously. Risk-Off regimes can resolve without a crash if the underlying risk vectors improve; Crisis regimes have historically been associated with significant market dislocations.",
+          question: "What is the difference between an Elevated Risk regime and a market crash?",
+          answer: "Elevated Risk (Pressure Index 45-64) means pressure is building but is not acute. A market crash is typically associated with High Stress or Systemic Crisis conditions — acute, self-reinforcing stress across multiple vectors simultaneously. Elevated readings can resolve without a crash if the underlying vectors improve. The score is not a calibrated crash probability.",
         },
         {
           question: "How does the macro regime affect crypto markets?",
-          answer: "Crypto markets are highly sensitive to macro regime changes. In Risk-On regimes, crypto tends to outperform equities significantly. In Risk-Off and Crisis regimes, crypto typically falls more severely than equities due to its higher beta and lower liquidity. The 2022 Risk-Off/Crisis regime produced some of the worst crypto drawdowns in history (BTC -77%, ETH -80%, altcoins -90%+).",
+          answer: "Crypto markets are highly sensitive to macro regime changes. In calm regimes, crypto has tended to outperform equities. In stressed regimes, crypto has typically fallen more severely than equities due to its higher beta and lower liquidity. The 2022 stress period produced some of the worst crypto drawdowns in history (BTC -77%, ETH -80%, altcoins -90%+).",
         },
       ]}
       internalLinks={[
-        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "The live regime classification engine — seven vectors in one score." },
+        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "The regime classification engine — six weighted vectors in one score." },
         { label: "MARKET CRASH PROBABILITY", href: "/market-crash-probability-2026", desc: "Crash risk assessment based on current regime conditions." },
         { label: "RECESSION PROBABILITY", href: "/recession-probability", desc: "Economic recession risk — a key regime driver." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy — the primary regime-setting force." },
-        { label: "VOLATILITY DASHBOARD", href: "/volatility-dashboard", desc: "VIX regime — one of the seven regime vectors." },
+        { label: "VOLATILITY DASHBOARD", href: "/volatility-dashboard", desc: "VIX context — read alongside the Pressure Index, not an input to it." },
         { label: "LIQUIDITY MONITOR", href: "/liquidity-monitor", desc: "Liquidity conditions — the mechanism behind regime shifts." },
       ]}
       schemaType="Article"

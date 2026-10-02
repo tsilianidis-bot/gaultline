@@ -27,7 +27,7 @@ AI Accelerator Market Share: AMD's Instinct MI300X and successor products compet
 
 Data Center CPU Cycle: AMD's EPYC server CPUs have gained significant market share from Intel over the past five years. The data center CPU cycle (server refresh cycles, cloud capex) directly affects AMD's core CPU revenue.
 
-Macro Regime Alignment: AMD is a high-beta semiconductor stock. In LOW STRESS macro environments, semiconductor stocks tend to outperform as technology capex expands. In HIGH STRESS environments, semiconductor stocks are vulnerable to both multiple compression and earnings estimate cuts.
+Macro Regime Alignment: AMD is a high-beta semiconductor stock. In LOW RISK macro environments, semiconductor stocks tend to outperform as technology capex expands. In HIGH STRESS environments, semiconductor stocks are vulnerable to both multiple compression and earnings estimate cuts.
 
 NVDA Competitive Dynamics: AMD's valuation is partially determined by its position relative to NVIDIA. When NVIDIA faces supply constraints, export restrictions, or competitive challenges, AMD benefits. When NVIDIA's competitive position strengthens, AMD's relative valuation is pressured.`}
       keyLevels={`FAULTLINE tracks the following key AMD price levels:
@@ -47,7 +47,7 @@ Historical Context: AMD reached its all-time high in late 2021 at approximately 
 
 4. Semiconductor Cycle Sensitivity: The semiconductor industry is cyclical. Inventory corrections (as occurred in 2022-2023) can cause rapid revenue declines even for companies with strong competitive positions.
 
-5. Macro Regime Sensitivity: AMD's high valuation multiple makes it sensitive to macro regime transitions. A shift to HIGH STRESS (FAULTLINE Pressure Index 60+) typically triggers significant semiconductor stock drawdowns.`}
+5. Macro Regime Sensitivity: AMD's high valuation multiple makes it sensitive to macro regime transitions. A shift to HIGH STRESS (FAULTLINE Pressure Index 65+) typically triggers significant semiconductor stock drawdowns.`}
       faqs={[
         { question: "Is AMD a buy or sell right now?", answer: "FAULTLINE's AMD signal classification is available on the Signals tab, based on macro regime alignment, AI accelerator market share dynamics, data center cycle conditions, and technical structure. This is not investment advice." },
         { question: "How does AMD compare to NVIDIA for AI?", answer: "NVIDIA dominates the AI accelerator market with approximately 80%+ market share, driven by its CUDA software ecosystem and H100/H200/Blackwell hardware advantage. AMD's Instinct MI300X and successor products are competitive on raw performance but face significant software ecosystem disadvantages. AMD is the primary alternative for hyperscalers seeking supply diversification." },

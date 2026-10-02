@@ -48,7 +48,7 @@ const StockMarketRiskToday = () => {
         { question: "Does a high Pressure Index mean a market crash is imminent?", answer: "Not necessarily. A high Pressure Index indicates elevated systemic risk and warrants caution, but it does not predict the exact timing or severity of market downturns. It's a tool for proactive risk management." },
         { question: "How can I use FAULTLINE to manage my portfolio risk?", answer: "FAULTLINE provides data and insights to help you understand market conditions, identify potential risks, and inform your investment strategy. It's a tool for intelligence, not direct advice." },
         { question: "What are 'systemic risk vectors'?", answer: "Systemic risk vectors are broad factors that can impact the entire financial system, such as interest rate changes, inflation, geopolitical events, and credit market conditions, all of which are monitored by FAULTLINE." },
-        { question: "Is FAULTLINE suitable for individual investors?", answer: "FAULTLINE is designed for both institutional and sophisticated individual investors seeking deep market intelligence and analytical tools to enhance their understanding of market dynamics and risk." },
+        { question: "Is FAULTLINE suitable for individual investors?", answer: "FAULTLINE is designed for self-directed investors seeking structural market intelligence and analytical tools to enhance their understanding of market dynamics and risk." },
       ]}
       internalLinks={[
         { label: "Pressure Index", href: "/pressure-index", desc: "View Pressure Index on FAULTLINE" },

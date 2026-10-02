@@ -32,25 +32,25 @@ const PLATFORM_PILLARS = [
   {
     label: "Pressure Index",
     desc:
-      "A composite 0–100 score synthesising macroeconomic, financial, and market stress indicators across seven risk vectors. Updated continuously.",
+      "A 0–100 composite of six weighted vectors built from eight FRED credit, funding, rates, inflation, and labor series plus one static AI-concentration baseline. Recalculated when source data is published; monthly series lag.",
     color: "#00D4FF",
   },
   {
     label: "Regime Detection",
     desc:
-      "Classifies the current macro environment into five regimes: Low Risk, Moderate Risk, Elevated Risk, High Risk, and Critical. Regime context is applied to every signal.",
+      "Classifies the current reading into five bands: Low Risk, Moderate Risk, Elevated Risk, High Stress, and Systemic Crisis. Signals and symbol labels are read against that regime.",
     color: "#22D3EE",
   },
   {
     label: "Signal Intelligence",
     desc:
-      "Institutional-grade signals across equities, crypto, and macro. Includes directional bias, conviction scores, and regime context for every signal.",
+      "Directional signals across equities and crypto. Includes directional bias, conviction scores, and regime context for every signal.",
     color: "#00D4FF",
   },
   {
     label: "Ask Intelligence",
     desc:
-      "An AI-powered diagnostic layer that answers questions about the current macro environment, specific assets, and risk scenarios — grounded in live platform data.",
+      "An AI-powered diagnostic layer that answers questions about the current macro environment, specific assets, and risk scenarios — grounded in the platform's published market state, with unavailable inputs stated as unavailable.",
     color: "#22D3EE",
   },
   {
@@ -62,7 +62,7 @@ const PLATFORM_PILLARS = [
   {
     label: "Symbol Intelligence",
     desc:
-      "Deep-dive analysis for individual stocks and crypto assets. Includes pressure context, institutional flow, signal overlay, and AI diagnostic summary.",
+      "Deep-dive analysis for individual stocks and crypto assets. Includes pressure context, regime overlay, signal overlay, and AI diagnostic summary.",
     color: "#22D3EE",
   },
 ];
@@ -241,8 +241,9 @@ export default function About() {
         >
           FAULTLINE is a macroeconomic risk intelligence platform developed by
           Phoenix Systems. It monitors the economic, financial, and market fault
-          lines where stress builds beneath the surface — detecting regime shifts
-          before they become obvious in price action.
+          lines where stress builds beneath the surface — showing where systemic
+          pressure and regime change are building, without claiming to predict a
+          specific crash or date.
         </p>
       </section>
 
@@ -705,6 +706,17 @@ export default function About() {
           <Link href="/legal" style={{ color: "#4B5563" }}>
             Privacy &amp; Terms
           </Link>
+        </p>
+        <p
+          style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: "10px",
+            color: "#4B5563",
+            letterSpacing: "0.1em",
+            marginTop: "8px",
+          }}
+        >
+          For educational and informational purposes only. Not investment advice.
         </p>
       </footer>
     </div>

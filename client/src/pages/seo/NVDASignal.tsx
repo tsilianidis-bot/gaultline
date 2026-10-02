@@ -23,7 +23,7 @@ NVIDIA's financial metrics as of mid-2026 reflect its extraordinary market posit
 NVIDIA belongs to the FAULTLINE AI Bubble Exposure category — a designation given to stocks whose valuations are most sensitive to changes in AI narrative momentum and capital allocation toward AI infrastructure. This designation is not a negative judgment; it is a risk classification that reflects NVDA's position as the highest-beta play on the AI infrastructure cycle.`}
       signalAnalysis={`FAULTLINE classifies NVDA's signal based on three primary inputs: macro regime alignment, AI narrative momentum, and technical structure.
 
-Macro Regime Alignment: NVDA performs best in LOW STRESS macro environments characterized by expanding liquidity, risk-on sentiment, and growth outperforming value. In HIGH STRESS environments (FAULTLINE Pressure Index 60+), NVDA's high valuation multiple (typically 30-50x forward earnings) creates significant downside risk as investors rotate from growth to defensive assets.
+Macro Regime Alignment: NVDA performs best in LOW RISK macro environments characterized by expanding liquidity, risk-on sentiment, and growth outperforming value. In HIGH STRESS environments (FAULTLINE Pressure Index 65+), NVDA's high valuation multiple (typically 30-50x forward earnings) creates significant downside risk as investors rotate from growth to defensive assets.
 
 AI Narrative Momentum: NVDA's revenue and valuation are directly tied to AI infrastructure spending by hyperscalers (Microsoft, Amazon, Google, Meta). When AI capex guidance from these companies is strong and rising, NVDA's forward estimates expand and the stock outperforms. When AI capex guidance disappoints or shows signs of peaking, NVDA's forward estimates compress rapidly.
 
@@ -39,7 +39,7 @@ Resistance Clusters: Previous all-time highs before they were broken become resi
 Entry Zone: FAULTLINE's signal engine identifies optimal entry zones based on the combination of technical support, momentum indicators, and macro regime alignment. Entry zones are not buy recommendations — they are risk-defined areas where the risk/reward profile is most favorable given current conditions.
 
 Stop-Loss Levels: FAULTLINE identifies stop-loss levels based on technical structure — the price at which the bullish thesis is invalidated. For NVDA, the 200-day moving average is typically the key stop-loss reference.`}
-      riskFactors={`NVDA faces five primary risk factors that FAULTLINE monitors continuously:
+      riskFactors={`NVDA faces five primary risk factors that FAULTLINE monitors:
 
 1. AI Capex Cycle Peak Risk: NVDA's extraordinary revenue growth depends on continued massive AI infrastructure investment by hyperscalers. If AI capex growth decelerates — due to ROI concerns, economic slowdown, or strategic pivots — NVDA's forward estimates would compress rapidly.
 
@@ -49,11 +49,11 @@ Stop-Loss Levels: FAULTLINE identifies stop-loss levels based on technical struc
 
 4. Export Restrictions: U.S. government restrictions on exporting advanced AI chips to China have already impacted NVDA's revenue. Further tightening of export controls represents a significant downside risk.
 
-5. Macro Regime Shift: NVDA is among the most sensitive stocks to macro regime transitions. A shift from LOW STRESS to HIGH STRESS (FAULTLINE Pressure Index rising above 60) historically triggers significant NVDA drawdowns.`}
+5. Macro Regime Shift: NVDA is among the most sensitive stocks to macro regime transitions. A shift from LOW RISK to HIGH STRESS (FAULTLINE Pressure Index rising to 65 or above) historically triggers significant NVDA drawdowns.`}
       faqs={[
         {
           question: "Is NVDA a buy or sell right now?",
-          answer: "FAULTLINE's NVDA signal classification (BUY, SELL, HOLD, or WATCH) is available on the Signals tab. The classification is based on macro regime alignment, AI narrative momentum, and technical structure — updated continuously. This is not investment advice; it is a data-driven signal classification.",
+          answer: "FAULTLINE's NVDA signal classification (BUY, SELL, HOLD, or WATCH) is available on the Signals tab. The classification is based on macro regime alignment, AI narrative momentum, and technical structure — refreshed as new data is published. This is not investment advice; it is a data-driven signal classification.",
         },
         {
           question: "What is NVDA's AI bubble exposure rating?",
@@ -61,7 +61,7 @@ Stop-Loss Levels: FAULTLINE identifies stop-loss levels based on technical struc
         },
         {
           question: "What are NVDA's key support levels?",
-          answer: "FAULTLINE tracks NVDA's key support levels as new data is published, including the 200-day moving average, previous all-time highs that became support, and major round numbers. These levels are updated continuously as new price data arrives from Polygon.io. Access the live levels on the FAULTLINE Signals tab.",
+          answer: "FAULTLINE tracks NVDA's key support levels as new data is published, including the 200-day moving average, previous all-time highs that became support, and major round numbers. These levels are updated as new daily price data arrives from Polygon.io. Access the latest levels on the FAULTLINE Signals tab.",
         },
         {
           question: "How does the Federal Reserve affect NVDA's stock price?",
@@ -69,7 +69,7 @@ Stop-Loss Levels: FAULTLINE identifies stop-loss levels based on technical struc
         },
         {
           question: "What would cause NVDA to fall 50%?",
-          answer: "Historical analysis suggests NVDA could experience a 50%+ decline in scenarios involving: a significant deceleration in AI capex from hyperscalers, a broader market crash (FAULTLINE Pressure Index entering CRITICAL STRESS), aggressive Fed tightening compressing growth stock multiples, or a major geopolitical event affecting semiconductor supply chains. FAULTLINE's Pressure Index monitors all of these risk factors.",
+          answer: "Historical analysis suggests NVDA could experience a 50%+ decline in scenarios involving: a significant deceleration in AI capex from hyperscalers, a broader market crash (FAULTLINE Pressure Index entering SYSTEMIC CRISIS), aggressive Fed tightening compressing growth stock multiples, or a major geopolitical event affecting semiconductor supply chains. FAULTLINE's Pressure Index monitors all of these risk factors.",
         },
       ]}
       internalLinks={[

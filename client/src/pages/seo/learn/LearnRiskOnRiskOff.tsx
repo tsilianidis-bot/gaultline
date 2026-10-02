@@ -13,7 +13,7 @@ const LearnRiskOnRiskOff = () => {
       }}
       badge="EDUCATIONAL GUIDE"
       headline="How to Tell If the Market Is Risk-On or Risk-Off"
-      subheadline="Understanding whether the market is risk-on or risk-off is crucial for investors. FAULTLINE tracks regime shifts as new data is published — from risk-on rallies to risk-off flight-to-safety environments — so you always know which way the tide is turning."
+      subheadline="Understanding whether the market is risk-on or risk-off is crucial for investors. FAULTLINE tracks regime shifts as new data is published — from calm, risk-on conditions to risk-off flight-to-safety environments — so you can see the pressure before the break."
       ctaLabel="Explore FAULTLINE"
       ctaHref="/app"
       accentColor="#00FF88"
@@ -37,7 +37,7 @@ const LearnRiskOnRiskOff = () => {
           body: `Many investors misunderstand risk-on/risk-off dynamics, often viewing them as binary switches rather than a spectrum. A common mistake is assuming a regime will persist indefinitely or failing to recognize the subtle signals of a transition. Another misconception is that these regimes are solely driven by a single factor, such as interest rates or inflation. In reality, they are complex phenomena influenced by a confluence of macroeconomic, geopolitical, and sentiment-driven factors. Investors also frequently misinterpret short-term market rallies during a broader risk-off trend as a definitive reversal, leading to premature re-risking. FAULTLINE addresses these misunderstandings by providing a multi-faceted analysis, offering a nuanced view of market sentiment, and highlighting the various indicators that contribute to the overall risk posture, helping users avoid simplistic interpretations and make more informed decisions.`,        },
         {
           heading: "How FAULTLINE Classifies the Current Market Environment",
-          body: `FAULTLINE employs a sophisticated, multi-indicator framework to classify the current market environment as risk-on, risk-off, or neutral. Our proprietary algorithms analyze a broad spectrum of data points, including equity market volatility (e.g., VIX), credit spreads, commodity prices, currency flows (e.g., USD strength), bond yields, and macroeconomic sentiment indicators. We also integrate qualitative factors such as central bank communications and geopolitical developments. Unlike simplistic models, FAULTLINE's approach considers the interdependencies between these factors, providing a holistic and dynamic assessment. This allows us to identify not just the current state but also the momentum and potential inflection points, offering users a forward-looking perspective on market risk. Our system provides a clear, data-driven rating, helping subscribers understand the 'why' behind market movements and anticipate future trends.`,        },
+          body: `FAULTLINE reads the risk-on/risk-off spectrum through the Pressure Index: six weighted vectors built from eight FRED series — high-yield credit spreads, SOFR, the 2-year and 10-year Treasury yields, CPI, PPI, the federal funds rate, and unemployment — plus a static AI-concentration baseline, classified into five bands from Low Risk to Systemic Crisis. Delayed quotes for the VIX, the U.S. Dollar Index, and commodities appear on the markets board as context but are not Pressure Index inputs. Because the vectors are published with their weights, you can see not just the current state but which inputs are moving it. The result is a clear, data-driven rating that helps users understand the 'why' behind market pressure — not a forecast of future prices.`,        },
       ]}
       faqs={[
         {
@@ -54,7 +54,7 @@ const LearnRiskOnRiskOff = () => {
         },
         {
           question: "How does FAULTLINE help identify market regimes?",
-          answer: "FAULTLINE uses a proprietary multi-indicator framework that analyzes volatility, credit spreads, commodity prices, currency flows, bond yields, and macroeconomic sentiment to provide a dynamic, data-driven assessment of the current market environment.",
+          answer: "FAULTLINE uses the Pressure Index — credit spreads, funding rates, Treasury yields, inflation, policy rates, and unemployment from FRED, plus a static AI-concentration baseline — to provide a data-driven assessment of the current market environment. VIX, dollar, and commodity quotes are shown as context, not as index inputs.",
         },
         {
           question: "Can markets be both risk-on and risk-off simultaneously?",

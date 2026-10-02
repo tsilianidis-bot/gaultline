@@ -25,7 +25,7 @@ export default function AAPLSignal() {
       contentSections={[
         {
           heading: "Understanding FAULTLINE's AAPL Stock Signal",
-          body: "FAULTLINE provides a dynamic, regularly refreshed signal for Apple (AAPL) stock, reflecting a comprehensive analysis of various market and fundamental factors. This signal is designed to offer a data-driven perspective on AAPL's current market posture, moving beyond simple price movements to incorporate deeper insights into underlying trends. Our methodology integrates quantitative models with qualitative assessments, ensuring a robust and nuanced outlook. The signal is continuously updated to reflect the latest market conditions, economic data, and company-specific news, offering users an up-to-the-minute view of AAPL's potential trajectory. It's a tool for understanding market dynamics, not a recommendation to buy or sell. Investors should always conduct their own due diligence and consider their personal financial situation.",
+          body: "FAULTLINE provides a dynamic, regularly refreshed signal for Apple (AAPL) stock, reflecting a comprehensive analysis of various market and fundamental factors. This signal is designed to offer a data-driven perspective on AAPL's current market posture, moving beyond simple price movements to incorporate deeper insights into underlying trends. Our methodology integrates quantitative models with qualitative assessments, ensuring a robust and nuanced outlook. The signal is regularly updated to reflect the latest market conditions, economic data, and company-specific news, offering users an up-to-the-minute view of AAPL's potential trajectory. It's a tool for understanding market dynamics, not a recommendation to buy or sell. Investors should always conduct their own due diligence and consider their personal financial situation.",
         },
         {
           heading: "Macro Sensitivity and Apple's Performance",
@@ -63,7 +63,7 @@ export default function AAPLSignal() {
         },
         {
           question: "How often is the AAPL stock outlook updated?",
-          answer: "The AAPL stock outlook and signal are continuously updated to reflect the latest market conditions, economic data, and company-specific news, ensuring users have access to the most current analysis.",
+          answer: "The AAPL stock outlook and signal are regularly updated to reflect the latest market conditions, economic data, and company-specific news, ensuring users have access to the most current analysis.",
         },
       ]}
       internalLinks={[

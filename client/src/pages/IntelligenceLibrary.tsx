@@ -124,7 +124,7 @@ export default function IntelligenceLibrary() {
             <span style={{ color: '#374151' }}>·</span>
             <div className="flex items-center gap-2 text-sm" style={{ color: '#6B7280' }}>
               <Clock style={{ width: 14, height: 14 }} />
-              <span>Updated continuously</span>
+              <span>Updated as new research is published</span>
             </div>
             <span style={{ color: '#374151' }}>·</span>
             <Link href="/daily-brief" className="text-sm transition-colors hover:text-cyan-400" style={{ color: '#6B7280' }}>

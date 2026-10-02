@@ -45,10 +45,10 @@ const CRYPTO_DATA: Record<string, CryptoData> = {
     relatedCrypto: ["eth", "sol", "tao"],
     relatedStocks: ["nvda", "pltr"],
     faqs: [
-      { q: "Is Bitcoin in a bull market in 2025?", a: "FAULTLINE's Bitcoin Risk Dashboard tracks BTC's macro regime as new data is published. The current regime classification — Bull, Bear, or Crash — is updated daily based on on-chain signals, liquidity conditions, and systemic pressure." },
+      { q: "Is Bitcoin in a bull market in 2025?", a: "FAULTLINE's Bitcoin Risk Dashboard tracks BTC's macro regime as new data is published. The current regime classification — Bull, Bear, or Crash — is updated daily based on liquidity conditions and systemic pressure from the Pressure Index, with CoinGecko market data for context. FAULTLINE does not use on-chain data." },
       { q: "What drives Bitcoin's price?", a: "Bitcoin is driven by macro liquidity conditions, institutional demand (ETF flows), halving supply dynamics, regulatory developments, and correlation with broader risk assets during stress events." },
       { q: "How does Bitcoin perform in a market crash?", a: "Bitcoin initially correlates with risk assets during systemic stress events (as seen in COVID crash, 2022 bear market). However, Bitcoin often recovers faster than traditional assets once liquidity conditions stabilize." },
-      { q: "What is Bitcoin's risk score?", a: "FAULTLINE's Bitcoin Risk Dashboard generates a daily risk score incorporating macro regime, on-chain signals, liquidity conditions, and systemic pressure. Access the live score at FAULTLINE." },
+      { q: "What is Bitcoin's risk score?", a: "FAULTLINE's Bitcoin Risk Dashboard generates a daily risk score incorporating macro regime, liquidity conditions, and systemic pressure. Access the latest published score at FAULTLINE." },
       { q: "Should I buy Bitcoin now?", a: "FAULTLINE does not provide financial advice. We provide macro regime context, risk scores, and signal intelligence to help you make informed decisions. Check the current Bitcoin regime before entering any position." },
     ],
   },
@@ -63,11 +63,11 @@ const CRYPTO_DATA: Record<string, CryptoData> = {
     relatedCrypto: ["btc", "sol", "tao"],
     relatedStocks: ["nvda"],
     faqs: [
-      { q: "Is Ethereum a good investment in 2025?", a: "Ethereum's investment case depends on macro regime, ETH/BTC ratio trends, and DeFi/Layer 2 adoption. FAULTLINE's Ethereum Risk Dashboard tracks all three dimensions daily." },
+      { q: "Is Ethereum a good investment in 2025?", a: "Ethereum's investment case depends on macro regime, ETH/BTC ratio trends, and DeFi/Layer 2 adoption. FAULTLINE's Ethereum Risk Dashboard tracks the macro regime and ETH/BTC ratio daily; DeFi and Layer 2 adoption are qualitative context, not data inputs." },
       { q: "How does Ethereum compare to Bitcoin?", a: "Ethereum offers higher risk/reward than Bitcoin due to its smart contract utility and DeFi exposure, but also higher volatility and more complex risk factors. FAULTLINE tracks both with separate risk dashboards." },
       { q: "What is the ETH/BTC ratio and why does it matter?", a: "The ETH/BTC ratio measures Ethereum's performance relative to Bitcoin. A rising ratio indicates altcoin season conditions; a falling ratio suggests Bitcoin dominance and risk-off rotation." },
       { q: "What are Ethereum's key risks?", a: "Key risks include L1 competition from Solana, regulatory uncertainty around staking, Layer 2 fee cannibalization, and correlation with Bitcoin during macro risk-off events." },
-      { q: "How does FAULTLINE track Ethereum?", a: "FAULTLINE's Ethereum Risk Dashboard monitors ETH macro regime, on-chain signals, liquidity conditions, ETH/BTC ratio, and systemic risk score. Updated daily." },
+      { q: "How does FAULTLINE track Ethereum?", a: "FAULTLINE's Ethereum Risk Dashboard monitors ETH macro regime, liquidity conditions, ETH/BTC ratio, and systemic risk score. Updated daily." },
     ],
   },
   sol: {
@@ -128,7 +128,7 @@ function getCryptoData(symbol: string): CryptoData {
       { q: `How does ${upper} perform in different market regimes?`, a: `${upper}'s performance varies significantly across bull, bear, and crash regimes. FAULTLINE's regime tracker classifies current conditions to help you align ${upper} exposure appropriately.` },
       { q: `What are the key risks for ${upper}?`, a: `Key risks include BTC correlation, macro risk-off sensitivity, liquidity tightening, and regulatory uncertainty. FAULTLINE monitors all dimensions daily.` },
       { q: `How does FAULTLINE track ${upper}?`, a: `FAULTLINE monitors ${upper}'s momentum score, macro regime fit, and systemic pressure alignment. Signals are updated daily and classified as Bullish, Neutral, or Risk-Off.` },
-      { q: `Is ${upper} in an alt season?`, a: `FAULTLINE's Alt Season Indicator tracks Bitcoin dominance, altcoin momentum, and liquidity rotation to determine if alt season conditions are present. Check the live indicator for current status.` },
+      { q: `Is ${upper} in an alt season?`, a: `FAULTLINE's Alt Season Indicator tracks Bitcoin dominance, altcoin momentum, and liquidity rotation to determine if alt season conditions are present. Check the indicator for the latest published status.` },
     ],
   };
 }
@@ -240,7 +240,7 @@ export default function DynamicCryptoPage() {
         <div className="p-6 rounded-xl border border-[#00D4FF]/20 bg-[#00D4FF]/5 mb-12">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-2">LIVE SIGNAL</div>
+              <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-2">CURRENT SIGNAL</div>
               <p className="text-white font-semibold mb-1">Access the current {upper} signal</p>
               <p className="text-[#A8B8CC] text-sm">Macro regime fit · Momentum score · Risk classification · Key levels</p>
             </div>
@@ -312,7 +312,7 @@ export default function DynamicCryptoPage() {
             {upper}'s performance is tightly linked to the macro regime and Bitcoin's trend. FAULTLINE classifies the current market environment as Bull, Bear, Crash, or Recovery — and each regime has distinct implications for {upper} positioning.
           </p>
           <p className="text-[#A8B8CC] leading-relaxed mb-4">
-            In bull regimes with expanding liquidity and low systemic pressure, {upper} tends to benefit from risk appetite expansion. In elevated-pressure environments, FAULTLINE's Pressure Index™ detects the warning signals before they become apparent in price action.
+            In bull regimes with expanding liquidity and low systemic pressure, {upper} tends to benefit from risk appetite expansion. In elevated-pressure environments, FAULTLINE's Pressure Index™ shows structural pressure building in credit, funding, and rates — often before it is fully apparent in price action.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
             <Link href="/bitcoin-risk-dashboard" className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-orange-400/30 transition-all">

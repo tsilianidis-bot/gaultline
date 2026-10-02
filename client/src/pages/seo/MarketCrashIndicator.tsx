@@ -17,7 +17,7 @@ export default function MarketCrashIndicator() {
       features={[
         { icon: "◈", title: "Credit Spread Monitoring", desc: "High-yield credit spreads are the earliest warning system for systemic stress. FAULTLINE tracks them as new data is published." },
         { icon: "◎", title: "Yield Curve Monitoring", desc: "The 10Y–2Y Treasury spread in inversion and flatness bands, blended with the 10Y yield level. The Pressure Index does not read VIX." },
-        { icon: "⬡", title: "Liquidity Withdrawal Signals", desc: "Identify when institutional liquidity is being pulled from markets — the precursor to every major crash." },
+        { icon: "⬡", title: "Liquidity Withdrawal Signals", desc: "See when funding conditions tighten — high-yield spreads and SOFR — a common thread in many major crashes." },
         { icon: "◈", title: "Labor & Rates Vector", desc: "The unemployment rate blended with the 10Y Treasury yield. It is not an advance/decline or market-breadth measure." },
         { icon: "◎", title: "Historical Analog Matching", desc: "Pattern-match current conditions against 2000, 2008, 2020, and 2022 to see which historical fracture today most resembles." },
         { icon: "⬡", title: "Historical Context", desc: "Reference profiles for past stress episodes and an archived retrospective reconstruction from 2000. Neither is an independently validated backtest." },
@@ -73,7 +73,7 @@ Note: Past readings do not guarantee future results. The Pressure Index is a ris
         },
         {
           question: "Is the crash indicator available for free?",
-          answer: "Yes. The FAULTLINE Pressure Index — the core of the crash indicator — is available for free at /pressure-index. No login required. Full access to all six risk vectors, historical data, and regime analysis requires a Trader or Power subscription.",
+          answer: "Yes. The FAULTLINE Pressure Index — the core of the crash indicator — is available for free at /pressure-index. No login required. The full vector breakdown, historical data, and regime analysis are signed-in tools. Signed-in tools start with a free account; paid plans are not on sale.",
         },
         {
           question: "How often does the crash indicator update?",

@@ -40,7 +40,7 @@ export default function DIASignal() {
         },
         {
           heading: "Why DIA's Outlook Matters and What Could Change It",
-          body: `The outlook for DIA is significant not only for investors holding the ETF but also as a proxy for broader market sentiment and economic health. A robust DIA often signals confidence in corporate earnings and economic expansion, while weakness can foreshadow broader market corrections or economic slowdowns. FAULTLINE's analysis helps investors anticipate these shifts, providing an edge in risk management and portfolio positioning. Key conditions that could change FAULTLINE's outlook for DIA include significant shifts in monetary policy expectations, unexpected economic data releases (e.g., inflation, employment), geopolitical events impacting global trade, or a material change in the earnings outlook for its constituent companies. Our system continuously monitors these factors, providing timely updates to the DIA signal.`, 
+          body: `The outlook for DIA is significant not only for investors holding the ETF but also as a proxy for broader market sentiment and economic health. A robust DIA often signals confidence in corporate earnings and economic expansion, while weakness can foreshadow broader market corrections or economic slowdowns. FAULTLINE's analysis helps investors anticipate these shifts, providing an edge in risk management and portfolio positioning. Key conditions that could change FAULTLINE's outlook for DIA include significant shifts in monetary policy expectations, unexpected economic data releases (e.g., inflation, employment), geopolitical events impacting global trade, or a material change in the earnings outlook for its constituent companies. Our system monitors these factors, providing timely updates to the DIA signal.`, 
         },
       ]}
       faqs={[
@@ -62,7 +62,7 @@ export default function DIASignal() {
         },
         {
           question: "How often is the DIA outlook updated on FAULTLINE?",
-          answer: "FAULTLINE's outlook for DIA is updated regularly as market conditions and underlying data points evolve. Our system continuously processes new information to ensure the most current and relevant analysis is available to users.",
+          answer: "FAULTLINE's outlook for DIA is updated regularly as market conditions and underlying data points evolve. Our system processes new information as it is published to ensure the most current and relevant analysis is available to users.",
         },
         {
           question: "Can I see historical DIA outlooks on FAULTLINE?",

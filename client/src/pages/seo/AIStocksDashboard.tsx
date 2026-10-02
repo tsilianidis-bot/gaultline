@@ -16,7 +16,7 @@ export default function AIStocksDashboard() {
       accentColor="#00D4FF"
       features={[
         { icon: "◈", title: "AI Bubble Exposure Ratings", desc: "Every AI stock classified by its sensitivity to AI narrative momentum — from HIGH to MODERATE to LOW exposure." },
-        { icon: "◎", title: "Regime Fit Scores", desc: "How well does each AI stock fit the current macro regime? Scores from 0-10 updated continuously." },
+        { icon: "◎", title: "Regime Fit Scores", desc: "How well does each AI stock fit the current macro regime? Scores from 0-10 refreshed as new data is published." },
         { icon: "⬡", title: "Live Signal Classification", desc: "BUY, SELL, HOLD, or WATCH for every tracked AI stock — based on macro alignment, momentum, and technical structure." },
         { icon: "◈", title: "AI Concentration Risk Monitor", desc: "Track the aggregate AI concentration in the S&P 500 and the systemic risk it creates for the broader market." },
         { icon: "◎", title: "Sector Rotation Signals", desc: "Monitor capital flows between AI infrastructure, AI software, and AI-powered platforms to identify rotation opportunities." },
@@ -49,7 +49,7 @@ The key insight is that AI stock analysis cannot be done in isolation from the s
           heading: "How to Use the AI Stocks Dashboard",
           body: `FAULTLINE's AI Stocks Dashboard is designed to be used as a risk management tool, not a trading signal generator. Here is how to use it effectively:
 
-Regime Alignment First: Before looking at individual stock signals, check the FAULTLINE Pressure Index and macro regime. In HIGH STRESS environments (Pressure Index 60+), even the strongest individual AI stock signals should be treated with caution — systemic risk can overwhelm individual stock fundamentals.
+Regime Alignment First: Before looking at individual stock signals, check the FAULTLINE Pressure Index and macro regime. In HIGH STRESS environments (Pressure Index 65+), even the strongest individual AI stock signals should be treated with caution — systemic risk can overwhelm individual stock fundamentals.
 
 AI Bubble Exposure as Risk Filter: Use the AI Bubble Exposure rating to understand each stock's sensitivity to AI narrative changes. HIGH exposure stocks (NVDA, AMD, PLTR) will amplify both upside and downside moves when AI narrative momentum shifts. MODERATE exposure stocks (META, GOOGL) have more fundamental revenue support that provides a floor during AI narrative corrections.
 

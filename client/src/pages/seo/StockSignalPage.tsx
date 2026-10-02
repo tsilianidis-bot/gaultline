@@ -49,7 +49,7 @@ export default function StockSignalPage({
       ctaHref={`/app/signals?ticker=${ticker}`}
       accentColor={accentColor}
       features={[
-        { icon: "◈", title: "Live Signal Classification", desc: `FAULTLINE classifies ${ticker} against the current macro regime — BUY, SELL, HOLD, or WATCH — updated continuously.` },
+        { icon: "◈", title: "Live Signal Classification", desc: `FAULTLINE classifies ${ticker} against the current macro regime — BUY, SELL, HOLD, or WATCH — refreshed as new data is published.` },
         { icon: "◎", title: "Regime Fit Score", desc: `How well does ${ticker} fit the current macro environment? FAULTLINE scores regime alignment from 0-10.` },
         { icon: "⬡", title: "Key Price Levels", desc: `Support, resistance, entry zone, and stop-loss levels for ${ticker} derived from technical analysis and FAULTLINE's signal engine.` },
         { icon: "◈", title: "Bull & Bear Case", desc: `Structured bull and bear case scenarios for ${ticker} based on macro conditions, sector dynamics, and technical structure.` },

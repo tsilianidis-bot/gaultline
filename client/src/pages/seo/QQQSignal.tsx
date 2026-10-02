@@ -29,7 +29,7 @@ export default function QQQSignal() {
         },
         {
           heading: "Historical Context and What's Changed for QQQ",
-          body: "QQQ has experienced significant volatility and growth cycles throughout its history, driven by technological advancements and shifting economic paradigms. Understanding its historical performance in various market regimes provides critical context for the present. FAULTLINE continuously monitors how QQQ's behavior aligns with past patterns and, more importantly, identifies what has fundamentally changed. Factors such as the unprecedented rise of AI, evolving monetary policy, and geopolitical shifts can alter traditional correlations and risk profiles. Our 'what changed' context highlights these divergences, ensuring that our regularly refreshed outlook is not just a reflection of the past, but an adaptation to the current, unique market environment. This dynamic assessment is vital for informed decision-making.",
+          body: "QQQ has experienced significant volatility and growth cycles throughout its history, driven by technological advancements and shifting economic paradigms. Understanding its historical performance in various market regimes provides critical context for the present. FAULTLINE monitors how QQQ's behavior aligns with past patterns and, more importantly, identifies what has fundamentally changed. Factors such as the unprecedented rise of AI, evolving monetary policy, and geopolitical shifts can alter traditional correlations and risk profiles. Our 'what changed' context highlights these divergences, ensuring that our regularly refreshed outlook is not just a reflection of the past, but an adaptation to the current, unique market environment. This dynamic assessment is vital for informed decision-making.",
         },
         {
           heading: "Key Risk Factors and Conditions for a Shift in QQQ's Outlook",
@@ -59,7 +59,7 @@ export default function QQQSignal() {
         },
         {
           question: "How often is FAULTLINE's QQQ outlook updated?",
-          answer: "FAULTLINE's QQQ outlook is updated regularly, reflecting the continuous flow of market data and changes in underlying indicators. This ensures that our signal is always current and responsive to evolving market dynamics.",
+          answer: "FAULTLINE's QQQ outlook is updated regularly, reflecting new market data and changes in underlying indicators. This ensures that our signal is always current and responsive to evolving market dynamics.",
         },
       ]}
       internalLinks={[

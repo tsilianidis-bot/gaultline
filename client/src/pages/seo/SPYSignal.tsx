@@ -42,7 +42,7 @@ export default function SPYSignal() {
         },
         {
           heading: "Historical Context and What Would Shift the Outlook",
-          body: "FAULTLINE's SPY outlook is always presented within a rich historical context, comparing current market behavior to similar periods in the past. This allows users to see how the present situation aligns with or deviates from historical precedents, offering valuable perspective on potential outcomes. Our current FAULTLINE rating for SPY is **Neutral with a Lean Towards Caution**, primarily driven by persistent inflationary pressures and a tightening liquidity environment, despite robust corporate earnings. A significant shift in this outlook would likely be triggered by a clear deceleration in inflation, a more accommodative stance from central banks, or a sustained improvement in leading economic indicators that signal renewed growth without overheating. Conversely, an escalation of geopolitical tensions or a sharp increase in credit market stress could push the outlook towards a more definitively bearish stance. We continuously monitor these critical factors to provide timely updates.",
+          body: "FAULTLINE's SPY outlook is always presented within a rich historical context, comparing current market behavior to similar periods in the past. This allows users to see how the present situation aligns with or deviates from historical precedents, offering valuable perspective on potential outcomes. Our current FAULTLINE rating for SPY is **Neutral with a Lean Towards Caution**, primarily driven by persistent inflationary pressures and a tightening liquidity environment, despite robust corporate earnings. A significant shift in this outlook would likely be triggered by a clear deceleration in inflation, a more accommodative stance from central banks, or a sustained improvement in leading economic indicators that signal renewed growth without overheating. Conversely, an escalation of geopolitical tensions or a sharp increase in credit market stress could push the outlook towards a more definitively bearish stance. We monitor these critical factors to provide timely updates.",
         },
         {
           heading: "Disclaimer: Market Intelligence, Not Financial Advice",
@@ -56,7 +56,7 @@ export default function SPYSignal() {
         },
         {
           question: "How often is the SPY Outlook updated?",
-          answer: "Our SPY Outlook is updated regularly as market conditions evolve. Our models continuously process new data, ensuring that the signal and contextual analysis reflect the most current market dynamics.",
+          answer: "Our SPY Outlook is updated regularly as market conditions evolve. Our models process new data as it is published, ensuring that the signal and contextual analysis reflect the most current market dynamics.",
         },
         {
           question: "Is the SPY Outlook a buy/sell recommendation?",

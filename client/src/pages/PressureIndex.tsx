@@ -296,7 +296,7 @@ export default function PressureIndex() {
                 {
                   icon: "◉",
                   title: "Regime Classification",
-                  desc: "Classifies market conditions into five regimes — from Low Risk to Systemic Crisis — enabling regime-aware position sizing and risk management.",
+                  desc: "Classifies the reading into five regimes — from Low Risk to Systemic Crisis — at fixed thresholds of 25, 45, 65, and 80, as context for risk-aware decisions. It does not size positions.",
                   color: "#22D3EE",
                 },
                 {
@@ -337,17 +337,17 @@ export default function PressureIndex() {
               />
               <LockedCard
                 title="PORTFOLIO INTELLIGENCE — CORE"
-                description="Live P&L tracking with AI-powered position guidance, risk scoring, and regime-aware allocation analysis."
+                description="P&L tracking on delayed quotes, with AI-powered position context, risk scoring, and regime-aware allocation analysis."
                 accentColor="#22D3EE"
               />
               <LockedCard
                 title="ALT ROTATION ENGINE — CORE"
-                description="Momentum-based rotation signals across equities, commodities, and alternatives. Know when to rotate before the crowd."
+                description="Momentum-based rotation signals across equities, commodities, and alternatives, read against the current regime."
                 accentColor="#22D3EE"
               />
               <LockedCard
                 title="DIAGNOSTIC AI™ — PRO"
-                description="Full institutional diagnostic report. Identifies the top 3 systemic risks, regime probability, and actionable intelligence for the next 30 days."
+                description="Full diagnostic report. Identifies the top 3 systemic risks, regime probability, and actionable intelligence for the next 30 days."
                 accentColor="#00E5FF"
               />
               <LockedCard
@@ -357,7 +357,7 @@ export default function PressureIndex() {
               />
               <LockedCard
                 title="AFTERSHOCK ENGINE™ — PRO"
-                description="Contagion chain analysis. Maps how stress propagates across asset classes and identifies second-order shock vectors before they materialize."
+                description="Contagion chain analysis. Maps how stress could propagate across asset classes through a fixed contagion graph and flags second-order exposure."
                 accentColor="#00E5FF"
               />
             </div>
@@ -418,7 +418,7 @@ export default function PressureIndex() {
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/[0.04] px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="text-[9px] font-mono text-white/15 tracking-widest">
-          FAULTLINE — INSTITUTIONAL MARKET INTELLIGENCE
+          FAULTLINE — STRUCTURAL MARKET INTELLIGENCE · EDUCATIONAL AND INFORMATIONAL ONLY · NOT INVESTMENT ADVICE
         </div>
         <div className="flex items-center gap-6 text-[9px] font-mono text-white/15">
           <Link href="/legal">

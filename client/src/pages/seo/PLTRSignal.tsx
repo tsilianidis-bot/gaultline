@@ -29,7 +29,7 @@ Government AI Spending Momentum: PLTR's government business is directly tied to 
 
 AIP Commercial Adoption: Palantir's AIP (Artificial Intelligence Platform) is the primary commercial growth driver. AIP boot camp adoption rates, net dollar retention, and customer count growth are the key metrics. Strong AIP adoption signals expanding commercial revenue and multiple expansion potential.
 
-The combination of these inputs produces FAULTLINE's PLTR regime fit score (0-10) and signal classification, updated continuously.`}
+The combination of these inputs produces FAULTLINE's PLTR regime fit score (0-10) and signal classification, refreshed as new data is published.`}
       keyLevels={`FAULTLINE tracks the following key PLTR price levels:
 
 Major Support Zones: The 200-day moving average is the primary long-term support. Previous breakout levels (the price at which PLTR broke out of consolidation ranges) become support after the breakout. Major round numbers ($20, $25, $30, $40, $50) attract significant options positioning.
@@ -47,11 +47,11 @@ Technical Context: PLTR has historically exhibited high volatility relative to t
 
 4. Competition in AI Software: Microsoft (Copilot), Salesforce (Einstein), and specialized AI software vendors are competing for enterprise AI software budgets. PLTR's competitive moat in commercial AI software is less established than in government analytics.
 
-5. Macro Regime Sensitivity: Despite its government revenue base, PLTR's high valuation multiple makes it sensitive to macro regime transitions. A shift to HIGH STRESS (FAULTLINE Pressure Index 60+) typically triggers significant drawdowns in high-multiple growth stocks.`}
+5. Macro Regime Sensitivity: Despite its government revenue base, PLTR's high valuation multiple makes it sensitive to macro regime transitions. A shift to HIGH STRESS (FAULTLINE Pressure Index 65+) typically triggers significant drawdowns in high-multiple growth stocks.`}
       faqs={[
         {
           question: "Is PLTR a buy or sell right now?",
-          answer: "FAULTLINE's PLTR signal classification (BUY, SELL, HOLD, or WATCH) is available on the Signals tab. The classification is based on macro regime alignment, government AI spending momentum, AIP commercial adoption, and technical structure — updated continuously. This is not investment advice.",
+          answer: "FAULTLINE's PLTR signal classification (BUY, SELL, HOLD, or WATCH) is available on the Signals tab. The classification is based on macro regime alignment, government AI spending momentum, AIP commercial adoption, and technical structure — refreshed as new data is published. This is not investment advice.",
         },
         {
           question: "What makes Palantir different from other AI stocks?",
@@ -67,7 +67,7 @@ Technical Context: PLTR has historically exhibited high volatility relative to t
         },
         {
           question: "What would cause PLTR to fall significantly?",
-          answer: "Scenarios that could cause significant PLTR drawdowns include: deceleration in AIP commercial adoption, loss of major government contracts, broader AI software multiple compression, a HIGH STRESS macro environment (FAULTLINE Pressure Index 60+), or a broader market crash that triggers risk-off rotation away from high-multiple growth stocks.",
+          answer: "Scenarios that could cause significant PLTR drawdowns include: deceleration in AIP commercial adoption, loss of major government contracts, broader AI software multiple compression, a HIGH STRESS macro environment (FAULTLINE Pressure Index 65+), or a broader market crash that triggers risk-off rotation away from high-multiple growth stocks.",
         },
       ]}
       internalLinks={[

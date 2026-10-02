@@ -55,7 +55,7 @@ const AMZNSignal = () => {
         },
         {
           heading: "What Would Change the Outlook for AMZN?",
-          body: `The outlook for Amazon (AMZN) stock, as determined by FAULTLINE, is dynamic and responsive to a confluence of factors. A significant shift could be triggered by a sustained acceleration or deceleration in global cloud spending, directly impacting AWS's revenue and profitability. Similarly, a material change in consumer confidence or discretionary income, perhaps due to a deeper economic downturn or a robust recovery, would directly influence Amazon's retail segment. Regulatory interventions, particularly those targeting big tech or specific business practices, could also introduce new risks or opportunities. Furthermore, breakthroughs or setbacks in Amazon's AI initiatives, or a significant competitive move from rivals in either e-commerce or cloud, could prompt a re-evaluation of our signal. FAULTLINE continuously monitors these variables to provide timely updates on AMZN's evolving market position.`
+          body: `The outlook for Amazon (AMZN) stock, as determined by FAULTLINE, is dynamic and responsive to a confluence of factors. A significant shift could be triggered by a sustained acceleration or deceleration in global cloud spending, directly impacting AWS's revenue and profitability. Similarly, a material change in consumer confidence or discretionary income, perhaps due to a deeper economic downturn or a robust recovery, would directly influence Amazon's retail segment. Regulatory interventions, particularly those targeting big tech or specific business practices, could also introduce new risks or opportunities. Furthermore, breakthroughs or setbacks in Amazon's AI initiatives, or a significant competitive move from rivals in either e-commerce or cloud, could prompt a re-evaluation of our signal. FAULTLINE monitors these variables to provide timely updates on AMZN's evolving market position.`
         },
       ]}
       faqs={[
@@ -77,7 +77,7 @@ const AMZNSignal = () => {
         },
         {
           question: "How often is FAULTLINE's AMZN outlook updated?",
-          answer: "FAULTLINE's outlooks and signals are updated regularly as new data becomes available and market conditions evolve. Our proprietary algorithms continuously process information to provide the most current insights."
+          answer: "FAULTLINE's outlooks and signals are updated regularly as new data becomes available and market conditions evolve. Our models process new data as it is published."
         },
         {
           question: "Is FAULTLINE's analysis personalized financial advice?",

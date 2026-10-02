@@ -27,11 +27,11 @@ export default function CryptoSignalsIntelligence() {
           heading: "Why Macro Matters for Crypto Signals",
           body: `Crypto markets do not exist in isolation. Bitcoin and altcoins are highly sensitive to global liquidity conditions, Federal Reserve policy, credit market stress, and risk appetite across all asset classes. A crypto signal that ignores the macro environment is incomplete at best and dangerous at worst.
 
-FAULTLINE crypto signals are built on the same macro foundation as stock signals — the FAULTLINE Pressure Index™, which aggregates credit spreads, volatility, treasury yield dynamics, and liquidity conditions into a single systemic stress score. When the Pressure Index is in HIGH or CRITICAL STRESS, crypto signals reflect the elevated risk of a liquidity-driven selloff. When the regime is LOW STRESS with expanding liquidity, altcoin momentum signals carry higher conviction.`,
+FAULTLINE crypto signals are built on the same macro foundation as stock signals — the FAULTLINE Pressure Index™, which combines credit spreads, funding rates, Treasury yield dynamics, inflation, and labor data from FRED into a single systemic stress score. When the Pressure Index is in HIGH STRESS or SYSTEMIC CRISIS, crypto signals reflect the elevated risk of a liquidity-driven selloff. When the regime is LOW RISK with expanding liquidity, altcoin momentum signals carry higher conviction.`,
         },
         {
           heading: "Understanding the Altcoin Rotation Cycle",
-          body: `The crypto market follows a predictable rotation cycle that FAULTLINE tracks as new data is published:
+          body: `The crypto market has historically followed a recognizable rotation cycle that FAULTLINE tracks as new data is published:
 
 Phase 1 — BTC Accumulation: Bitcoin dominance rises as capital concentrates in the safest crypto asset. Altcoins underperform. This phase typically follows a macro stress event or crypto-specific shock.
 
@@ -61,7 +61,7 @@ Each asset is scored for momentum, macro alignment, liquidity sensitivity, and s
       faqs={[
         {
           question: "What makes FAULTLINE crypto signals different from other crypto signal services?",
-          answer: "FAULTLINE crypto signals are macro-regime-aware. Most crypto signal services focus exclusively on technical analysis — price patterns, RSI, MACD. FAULTLINE incorporates the broader macro environment: Federal Reserve policy, credit market conditions, global liquidity, and systemic risk. A technically bullish signal in a HIGH STRESS macro regime carries fundamentally different risk than the same signal in a LOW STRESS environment.",
+          answer: "FAULTLINE crypto signals are macro-regime-aware. Most crypto signal services focus exclusively on technical analysis — price patterns, RSI, MACD. FAULTLINE incorporates the broader macro environment: Federal Reserve policy, credit market conditions, global liquidity, and systemic risk. A technically bullish signal in a HIGH STRESS macro regime carries fundamentally different risk than the same signal in a LOW RISK environment.",
         },
         {
           question: "How does FAULTLINE track the alt season cycle?",
@@ -69,7 +69,7 @@ Each asset is scored for momentum, macro alignment, liquidity sensitivity, and s
         },
         {
           question: "Are crypto signals available on the free tier?",
-          answer: "FAULTLINE offers limited crypto signal previews on the free tier. Full access to all tracked assets, altcoin rotation intelligence, and regularly refreshed macro-aligned signals requires a Trader or Power subscription.",
+          answer: "FAULTLINE offers limited crypto signal previews on the free tier. All tracked assets, altcoin rotation intelligence, and macro-aligned signals are signed-in tools. Signed-in tools start with a free account; paid plans are not on sale.",
         },
         {
           question: "How does FAULTLINE handle crypto market volatility?",
@@ -83,7 +83,7 @@ Each asset is scored for momentum, macro alignment, liquidity sensitivity, and s
       internalLinks={[
         { label: "CRYPTO MARKET RISK", href: "/crypto-market-risk-dashboard", desc: "Live crypto systemic risk dashboard: BTC dominance, altcoin risk, contagion indicators." },
         { label: "ALT SEASON INDICATOR", href: "/alt-season-indicator", desc: "Track the altcoin rotation cycle and know when alt season is building." },
-        { label: "BITCOIN RISK DASHBOARD", href: "/bitcoin-risk-dashboard", desc: "Deep-dive BTC risk analysis: on-chain metrics, macro alignment, key levels." },
+        { label: "BITCOIN RISK DASHBOARD", href: "/bitcoin-risk-dashboard", desc: "Deep-dive BTC risk analysis: macro alignment, liquidity sensitivity, key levels." },
         { label: "AI STOCK SIGNALS", href: "/ai-stock-signals", desc: "Macro-aligned AI signals for equities — the same intelligence applied to stocks." },
         { label: "PRESSURE INDEX", href: "/pressure-index", desc: "The macro foundation behind every FAULTLINE signal." },
         { label: "ANALYSIS HUB", href: "/analysis", desc: "Deep research on crypto cycles, macro analysis, and market risk." },

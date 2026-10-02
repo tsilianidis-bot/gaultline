@@ -20,11 +20,11 @@ const LearnTreasuryYields = () => {
       ctaHref="/app"
       accentColor="#FFD700"
       features={[
-        { icon: "◈", title: "Yield Curve Dynamics", desc: "Demystify the yield curve and its inversions — the most reliable recession predictor in history." },
+        { icon: "◈", title: "Yield Curve Dynamics", desc: "Demystify the yield curve and its inversions — one of the most widely watched recession warning signals." },
         { icon: "◎", title: "Yields and Stock Returns", desc: "Understand the impact of rising and falling yields on stock market performance and valuations." },
         { icon: "⬡", title: "Inflation and Fed Policy", desc: "Learn how inflation and Fed policy influence bond markets and the yield curve shape." },
         { icon: "◈", title: "FAULTLINE Yield Tracking", desc: "Discover how FAULTLINE tracks treasury yield dynamics as part of the Pressure Index." },
-        { icon: "◎", title: "2yr/10yr Spread Monitor", desc: "The 2-year/10-year spread is one of FAULTLINE's seven core risk vectors — tracked as new data is published." },
+        { icon: "◎", title: "2yr/10yr Spread Monitor", desc: "The 2-year/10-year spread, blended with the 10-year level, is one of the six weighted Pressure Index vectors — tracked as new FRED data is published." },
         { icon: "⬡", title: "Historical Yield Regimes", desc: "Compare current yield conditions against historical periods and what typically happened next." },
       ]}
       contentSections={[
@@ -42,7 +42,7 @@ const LearnTreasuryYields = () => {
         },
         {
           heading: "How FAULTLINE Tracks and Interprets Treasury Yield Dynamics",
-          body: "FAULTLINE provides sophisticated tools to help investors cut through the noise and accurately interpret treasury yield dynamics. Our platform integrates regularly refreshed yield data with proprietary analytics, offering a comprehensive view of the yield curve's shape, historical context, and predictive signals. We track key metrics such as the 2s10s spread, 3m10s spread, and various yield stress indicators, allowing users to identify potential inversions or steepening trends early. FAULTLINE's dashboards highlight \"what changed\" in yield behavior, providing context on recent shifts and their potential implications for different asset classes. By combining quantitative analysis with macro-economic insights, FAULTLINE empowers users to understand not just what yields are doing, but why they are doing it, and what it means for their portfolios. Please note: FAULTLINE provides market intelligence and education, not personalized financial advice."
+          body: "FAULTLINE helps investors cut through the noise and interpret treasury yield dynamics. It reads the 2-year and 10-year Treasury yields (FRED: DGS2, DGS10) as new data is published; the Pressure Index's Yield Curve vector (15% weight) blends the 2s10s spread with the 10-year level, and the 10-year yield also feeds the Credit Contagion and Labor & Rates vectors. This shows inversions and steepening as they develop. FAULTLINE's dashboards highlight \"what changed\" in yield behavior, providing context on recent shifts and their potential implications for different asset classes. By combining quantitative analysis with macro-economic insights, FAULTLINE empowers users to understand not just what yields are doing, but why they are doing it, and what it means for their portfolios. Please note: FAULTLINE provides market intelligence and education, not personalized financial advice."
         },
       ]}
       faqs={[

@@ -28,7 +28,7 @@ export default function VsTradingView() {
         },
         { icon: "◈", title: "Educational & Contextual", desc: "Gain a comprehensive understanding of market dynamics with educational content and actionable context, not just signals." },
         { icon: "◈", title: "Data-Driven Insights", desc: "Leverage unique data sets and analytical models to uncover hidden risks and opportunities as new data is published." },
-        { icon: "◈", title: "Strategic Investment Focus", desc: "Designed for macro investors, hedge funds, and institutional allocators seeking strategic advantage." },
+        { icon: "◈", title: "Strategic Investment Focus", desc: "Designed for macro-minded investors who want to understand the systemic environment behind the chart." },
       ]}
       contentSections={[
         {
@@ -41,7 +41,7 @@ export default function VsTradingView() {
         },
         {
           heading: "Who FAULTLINE Is For",
-          body: `FAULTLINE is built for sophisticated macro investors, hedge fund managers, institutional allocators, and serious individual investors who understand that market outcomes are often driven by forces far greater than individual stock charts. If your investment strategy involves understanding global liquidity, credit cycles, inflation regimes, or geopolitical risks, FAULTLINE provides the specialized intelligence you need. It's not for day traders looking for quick signals, nor is it a stock screener for identifying undervalued companies. Instead, FAULTLINE empowers users to make informed decisions based on a deep comprehension of systemic vulnerabilities and macro trends. It serves as an essential tool for those who aim to position their portfolios proactively against unseen risks and capitalize on emerging opportunities driven by fundamental shifts.`,
+          body: `FAULTLINE is built for macro-minded investors and serious self-directed investors who understand that market outcomes are often driven by forces far greater than individual stock charts. If your investment strategy involves understanding global liquidity, credit cycles, inflation regimes, or geopolitical risks, FAULTLINE provides the specialized intelligence you need. It's not for day traders looking for quick signals, nor is it a stock screener for identifying undervalued companies. Instead, FAULTLINE empowers users to make informed decisions based on a deep comprehension of systemic vulnerabilities and macro trends. It serves as an essential tool for those who aim to position their portfolios proactively against unseen risks and capitalize on emerging opportunities driven by fundamental shifts.`,
         },
         {
           heading: "FAULTLINE's Unique Approach to Market Intelligence",

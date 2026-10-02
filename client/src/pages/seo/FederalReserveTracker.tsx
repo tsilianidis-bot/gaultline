@@ -10,17 +10,17 @@ export default function FederalReserveTracker() {
       }}
       badge="FED POLICY INTELLIGENCE"
       headline={"Federal Reserve Tracker\nPolicy Signals, As Published"}
-      subheadline="The Federal Reserve is the single most important driver of market conditions. FAULTLINE tracks Fed policy signals, rate expectations, balance sheet dynamics, and their regularly refreshed impact on credit spreads, liquidity, and systemic market stress."
+      subheadline="The Federal Reserve is one of the most important drivers of market conditions. FAULTLINE reads the federal funds rate, SOFR, and the Treasury curve from FRED, and shows their regularly refreshed impact on credit spreads, liquidity, and systemic market pressure."
       ctaLabel="VIEW FED IMPACT"
       ctaHref="/pressure-index"
       accentColor="#7C3AED"
       features={[
-        { icon: "◈", title: "Rate Expectation Tracking", desc: "Monitor market-implied Fed funds rate expectations and how shifts in rate expectations affect equity valuations and credit conditions." },
-        { icon: "◎", title: "Balance Sheet Dynamics", desc: "Fed QE (quantitative easing) and QT (quantitative tightening) directly drive market liquidity. FAULTLINE tracks balance sheet trends." },
+        { icon: "◈", title: "Policy Rate Tracking", desc: "Follow the effective federal funds rate and the 2-year Treasury yield — the market's read on the expected policy path — and how shifts affect credit conditions." },
+        { icon: "◎", title: "Funding Conditions", desc: "SOFR and high-yield spreads show how policy is transmitting into funding and credit markets — the Pressure Index's Liquidity Stress vector." },
         { icon: "⬡", title: "Credit Spread Impact", desc: "Fed policy is the primary driver of credit spread compression and expansion. Track how policy shifts affect high-yield and investment-grade spreads." },
         { icon: "◈", title: "Yield Curve Monitoring", desc: "The 2yr/10yr spread reflects Fed policy expectations. FAULTLINE tracks inversion depth, re-steepening signals, and historical comparisons." },
-        { icon: "◎", title: "Liquidity Regime Classification", desc: "Classify the current liquidity regime — expanding, neutral, or contracting — based on Fed policy stance and monetary conditions." },
-        { icon: "⬡", title: "Historical Fed Cycle Analysis", desc: "Compare current Fed policy to historical tightening and easing cycles to understand the typical market impact at each stage." },
+        { icon: "◎", title: "Macro Sensitivity Vector", desc: "The federal funds rate is read alongside CPI and PPI inflation in the Macro Sensitivity vector (20% weight) of the Pressure Index." },
+        { icon: "⬡", title: "Fed Cycle Context", desc: "Educational context on how tightening and easing cycles have typically affected markets at each stage." },
       ]}
       contentSections={[
         {
@@ -29,7 +29,7 @@ export default function FederalReserveTracker() {
 
 Beyond the federal funds rate, the Fed's balance sheet policy — quantitative easing (QE) and quantitative tightening (QT) — directly affects market liquidity. During QE, the Fed purchases Treasury bonds and mortgage-backed securities, injecting liquidity into the financial system. During QT, the Fed allows its balance sheet to shrink, withdrawing liquidity from markets.
 
-FAULTLINE tracks both dimensions of Fed policy — the rate path and the balance sheet — and synthesizes their combined impact into the FAULTLINE Pressure Index™. Fed-driven liquidity withdrawal is one of the seven core risk vectors in the Pressure Index.`,
+FAULTLINE reads the rate side of Fed policy — the federal funds rate, SOFR, and the 2-year and 10-year Treasury yields from FRED — and carries its impact into the FAULTLINE Pressure Index™ through the Macro Sensitivity, Liquidity Stress, and Yield Curve vectors. FAULTLINE does not currently ingest Federal Reserve balance sheet data.`,
         },
         {
           heading: "The Fed Policy Cycle and Market Regimes",
@@ -45,7 +45,7 @@ Pivot / Early Easing (First Rate Cuts): The Fed begins cutting rates in response
 
 Deep Easing (Aggressive Cuts / QE): The Fed cuts aggressively and/or restarts QE. Liquidity floods back into markets. This phase typically marks the beginning of the next bull market cycle.
 
-FAULTLINE's Pressure Index tracks where the current Fed cycle sits and what it means for systemic market risk.`,
+FAULTLINE's Pressure Index shows how the current rate setting is feeding into systemic market pressure.`,
         },
         {
           heading: "How Fed Policy Affects Different Asset Classes",
@@ -67,7 +67,7 @@ Dollar: Fed rate hikes strengthen the dollar relative to other currencies. A str
       faqs={[
         {
           question: "How does FAULTLINE track Federal Reserve policy?",
-          answer: "FAULTLINE tracks Fed policy through multiple data streams: the federal funds rate (from FRED), 2-year and 10-year Treasury yields (reflecting market expectations), the Fed's balance sheet size, high-yield credit spreads (which reflect the market's assessment of Fed policy impact), and the FAULTLINE Pressure Index's liquidity vector.",
+          answer: "FAULTLINE reads Fed policy through FRED data: the federal funds rate, SOFR, 2-year and 10-year Treasury yields (reflecting market expectations), and high-yield credit spreads (reflecting how policy is transmitting into credit). These feed the Pressure Index's Macro Sensitivity, Liquidity Stress, and Yield Curve vectors. Fed balance sheet data is not currently ingested.",
         },
         {
           question: "What is the difference between QE and QT?",
@@ -83,15 +83,15 @@ Dollar: Fed rate hikes strengthen the dollar relative to other currencies. A str
         },
         {
           question: "Is Fed policy data available for free on FAULTLINE?",
-          answer: "Yes. The FAULTLINE Pressure Index — which incorporates Fed policy impact through its liquidity and treasury yield vectors — is available for free at /pressure-index. Full access to detailed Fed policy analysis, historical cycle comparisons, and macro regime intelligence requires a Trader or Power subscription.",
+          answer: "Yes. The FAULTLINE Pressure Index — which incorporates Fed policy impact through its macro sensitivity, liquidity, and yield curve vectors — is free to read at /pressure-index. Signed-in tools start with a free account; paid plans are not on sale.",
         },
       ]}
       internalLinks={[
         { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Systemic stress score incorporating Fed policy impact." },
-        { label: "LIQUIDITY MONITOR", href: "/liquidity-monitor", desc: "Track liquidity conditions driven by Fed balance sheet policy." },
+        { label: "LIQUIDITY MONITOR", href: "/liquidity-monitor", desc: "Track funding conditions through credit spreads and SOFR." },
         { label: "RECESSION PROBABILITY", href: "/recession-probability", desc: "Leading indicators of recession risk — the outcome of Fed policy." },
         { label: "MARKET CRASH INDICATOR", href: "/market-crash-indicator", desc: "Regularly refreshed crash risk detection and systemic stress monitoring." },
-        { label: "VOLATILITY DASHBOARD", href: "/volatility-dashboard", desc: "VIX regime monitoring and volatility analysis." },
+        { label: "VOLATILITY DASHBOARD", href: "/volatility-dashboard", desc: "VIX context and volatility analysis." },
         { label: "HISTORICAL ANALOGS", href: "/analogs", desc: "Compare current Fed cycle to historical tightening and easing periods." },
       ]}
       schemaType="Article"

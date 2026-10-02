@@ -17,7 +17,7 @@ export default function TAOSignal() {
       features={[
         { icon: "◈", title: "AI Crypto Exposure Rating", desc: "TAO is the highest-beta play on the intersection of AI and crypto. FAULTLINE scores TAO's sensitivity to AI narrative momentum and crypto market cycles." },
         { icon: "◎", title: "Macro Regime Alignment", desc: "TAO requires a risk-on macro environment AND positive AI narrative momentum simultaneously. FAULTLINE tracks both conditions." },
-        { icon: "⬡", title: "Key Price Levels", desc: "Critical TAO support and resistance levels updated continuously from Polygon.io data." },
+        { icon: "⬡", title: "Key Price Levels", desc: "Critical TAO support and resistance levels updated from Polygon.io daily data." },
         { icon: "◈", title: "BTC/ETH Correlation", desc: "TAO's price action is correlated with both BTC (crypto market beta) and AI stock momentum. FAULTLINE tracks both correlations." },
         { icon: "◎", title: "Subnet Activity Monitor", desc: "Bittensor's subnet ecosystem growth is a fundamental driver of TAO demand. FAULTLINE tracks subnet launches and validator activity." },
         { icon: "⬡", title: "Risk Score (0-100)", desc: "A composite TAO risk score aggregating macro alignment, crypto market conditions, AI narrative momentum, and technical structure." },

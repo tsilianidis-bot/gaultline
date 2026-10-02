@@ -47,7 +47,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/intel-archive": {
     title: "Intelligence Archive — FAULTLINE Historical Market Records",
-    description: "Complete archive of FAULTLINE intelligence records, regime readings, and market pressure history. Full transparency and track record.",
+    description: "Archive of FAULTLINE intelligence records, regime readings, and stored market pressure history, each with its as-of date.",
   },
 
   "/pressure-index": {
@@ -64,7 +64,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/stock-market-risk-dashboard": {
     title: "Stock Market Risk Today | FAULTLINE",
-    description: "Stock market risk intelligence for understanding systemic pressure, market regimes, credit conditions, volatility, and equity breadth.",
+    description: "Stock market risk intelligence for understanding systemic pressure, market regimes, credit conditions, rates, and volatility context.",
   },
   "/crypto-market-risk-dashboard": {
     title: "Crypto Market Risk Dashboard — Digital Asset Risk | FAULTLINE",
@@ -72,11 +72,11 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/situation-room": {
     title: "Situation Room — Pre-Trade Stress Test | FAULTLINE",
-    description: "Simulate any portfolio move against live macro conditions. FAULTLINE's Situation Room stress-tests your trades before you execute them.",
+    description: "Simulate a portfolio move against current macro conditions. FAULTLINE's Situation Room stress-tests a trade idea against the latest published pressure reading before you act.",
   },
   "/analogs": {
     title: "Historical Market Analogs — Crash Pattern Matching | FAULTLINE",
-    description: "FAULTLINE's Historical Analog Engine matches current market conditions to historical crash patterns. Identify which past crises today's setup most resembles.",
+    description: "FAULTLINE's Historical Analog Engine ranks how closely today's pressure-vector profile resembles reference profiles of past stress episodes. Resemblance, not a forecast.",
   },
   "/ai-bubble-risk-tracker": {
     title: "AI Bubble Risk Monitor | FAULTLINE",
@@ -94,7 +94,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/market-crash-indicator": {
     title: "Market Crash Indicator — Systemic Risk Score | FAULTLINE",
-    description: "The FAULTLINE Market Crash Indicator aggregates 12 systemic risk signals into a crash probability score. Know when risk is building before markets break.",
+    description: "The FAULTLINE Market Crash Indicator reads the six-vector Pressure Index — credit spreads, funding rates, the Treasury curve, inflation, unemployment, and a static AI-concentration baseline — to show when systemic pressure is building. It is not a calibrated crash probability.",
     ogType: "article",
   },
   "/recession-probability": {
@@ -114,22 +114,22 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/ethereum-risk-dashboard": {
     title: "Ethereum Risk Dashboard — ETH Risk Score & Analysis | FAULTLINE",
-    description: "Ethereum risk dashboard tracking ETH macro regime, network activity, liquidity conditions, and systemic risk score. FAULTLINE ETH intelligence.",
+    description: "Ethereum risk dashboard tracking ETH macro regime, ETH/BTC context, liquidity conditions, and systemic risk score from CoinGecko market data and the Pressure Index.",
     ogType: "article",
   },
   "/federal-reserve-tracker": {
     title: "Federal Reserve Tracker — Fed Policy Impact on Markets | FAULTLINE",
-    description: "Track Federal Reserve policy as new data is published. FAULTLINE monitors Fed funds rate, balance sheet, forward guidance, and market impact across equities and crypto.",
+    description: "Track Federal Reserve policy as new data is published. FAULTLINE reads the federal funds rate, SOFR, Treasury yields, and credit spreads from FRED, and their impact on systemic pressure across equities and crypto.",
     ogType: "article",
   },
   "/liquidity-monitor": {
     title: "Liquidity Monitor — Market Liquidity Conditions | FAULTLINE",
-    description: "Market liquidity monitor tracking Fed balance sheet, repo markets, credit conditions, and global liquidity flows. FAULTLINE liquidity intelligence.",
+    description: "Market liquidity monitor built on high-yield credit spreads and SOFR funding rates from FRED — the Liquidity Stress vector of the FAULTLINE Pressure Index.",
     ogType: "article",
   },
   "/volatility-dashboard": {
     title: "Volatility Dashboard — VIX Regime & Market Volatility | FAULTLINE",
-    description: "Volatility dashboard tracking VIX regime, implied volatility, term structure, and volatility risk premium. FAULTLINE volatility intelligence.",
+    description: "Volatility context from delayed VIX quotes and the daily VIX close used by FAULTLINE's separate systemic-regime model. The Pressure Index itself does not read VIX.",
     ogType: "article",
   },
   "/ai-stocks-dashboard": {
@@ -210,16 +210,16 @@ const PAGE_META: Record<string, PageMeta> = {
     description: "FAULTLINE press resources, media kit, and coverage. Contact the FAULTLINE team for media inquiries, interviews, and partnership opportunities.",
   },
   "/pricing": {
-    title: "FAULTLINE Pricing — Free, Trader, Power & Founding Member Plans",
-    description: "FAULTLINE pricing plans: Free market awareness, Trader at $59/month, Power at $99/month, and Founding Member at $49/month locked while active.",
+    title: "FAULTLINE Access — Free Account; Paid Plans Not on Sale",
+    description: "The public Pressure Index and methodology are free to read without an account. Signed-in access starts with a free account. Paid plans are not on sale.",
   },
   "/intelligence-library": {
     title: "Intelligence Library — FAULTLINE Research & Analysis",
-    description: "FAULTLINE Intelligence Library: deep-dive research, macro analysis, and market intelligence reports. Institutional-quality research for self-directed investors.",
+    description: "FAULTLINE Intelligence Library: deep-dive research, macro analysis, and market intelligence reports for self-directed investors.",
   },
   "/daily-brief": {
     title: "Daily Intelligence Brief — FAULTLINE Market Briefings",
-    description: "FAULTLINE Daily Intelligence Brief: market briefings, regime updates, and systemic risk alerts. Published daily from FRED and market data.",
+    description: "FAULTLINE Daily Intelligence Brief: market briefings, regime updates, and systemic risk alerts built from FRED and market data. Scheduled each weekday; each brief shows its as-of date.",
   },
   "/track-record": {
     title: "Track Record | FAULTLINE — Historical Pressure Index 2000–Present",
@@ -307,7 +307,7 @@ export async function injectPageMetaAsync(html: string, urlPath: string): Promis
         }),
       ];
       if (articleLinks.length > 0) {
-        const noscriptBlock = `<noscript><section aria-label="FAULTLINE Intelligence Briefings"><h1>FAULTLINE Intelligence Briefings</h1><p>Institutional macro commentary, market risk analysis, and systemic pressure updates.</p>${articleLinks.join("\n")}</section></noscript>`;
+        const noscriptBlock = `<noscript><section aria-label="FAULTLINE Intelligence Briefings"><h1>FAULTLINE Intelligence Briefings</h1><p>Macro commentary, market risk analysis, and systemic pressure updates.</p>${articleLinks.join("\n")}</section></noscript>`;
         result = result.replace("</body>", () => `${noscriptBlock}</body>`);
       }
       return result;

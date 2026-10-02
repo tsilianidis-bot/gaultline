@@ -313,7 +313,7 @@ export default function SEOLandingPage({
       <section className="py-20 px-6 bg-[#0C0F16]">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-white mb-4">
-            Move before the market does.
+            See the pressure before the break.
           </h2>
           <p className="text-[#A8B8CC] mb-8">
             Free account. No credit card required. Paid plans are not on sale.
@@ -346,7 +346,7 @@ export default function SEOLandingPage({
             <a href="/legal" className="hover:text-[#00D4FF] transition-colors">LEGAL</a>
           </div>
           <div className="text-[10px] font-mono text-[#374151]">
-            © {new Date().getFullYear()} FAULTLINE. Not financial advice.
+            © {new Date().getFullYear()} FAULTLINE. For educational and informational purposes only. Not investment advice.
           </div>
         </div>
       </footer>

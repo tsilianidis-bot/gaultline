@@ -15,8 +15,8 @@ export default function AIStockSignals() {
       ctaHref="/app/signals"
       accentColor="#00D4FF"
       features={[
-        { icon: "◈", title: "Macro Regime Alignment", desc: "Every signal classified against the live macro regime. Know which equities fit the environment before the crowd notices the shift." },
-        { icon: "◎", title: "AI Bubble Exposure Scoring", desc: "Quantify AI-driven valuation risk in each equity. Flag concentration exposure before the crowded trade reverses." },
+        { icon: "◈", title: "Macro Regime Alignment", desc: "Every signal classified against the current macro regime. Know which equities fit the environment as systemic pressure shifts." },
+        { icon: "◎", title: "AI Bubble Exposure Scoring", desc: "Gauge AI-driven valuation risk in each equity and flag concentration exposure in a crowded trade." },
         { icon: "⬡", title: "Momentum Breakout Detection", desc: "Surface pre-move setups using momentum, volume, and macro confirmation. No lagging indicators." },
         { icon: "◈", title: "Liquidity Sensitivity Ranking", desc: "Identify which equities are most vulnerable to liquidity withdrawal — the first to break when conditions tighten." },
         { icon: "◎", title: "Recession-Defensive Classification", desc: "Separate true defensive names from false safety. Regime analysis identifies which equities hold in contraction." },
@@ -27,7 +27,7 @@ export default function AIStockSignals() {
           heading: "What Are AI Stock Signals?",
           body: `AI stock signals are algorithmically generated trading intelligence outputs that combine multiple data streams — price action, volume, macro indicators, credit spreads, liquidity conditions, and sector rotation — into a single, actionable classification for each equity.
 
-Unlike traditional technical analysis signals that rely solely on price patterns, FAULTLINE AI stock signals incorporate the broader macro environment. A momentum breakout in a HIGH STRESS regime carries fundamentally different risk than the same breakout in a LOW STRESS environment. FAULTLINE accounts for this distinction in every signal it generates.
+Unlike traditional technical analysis signals that rely solely on price patterns, FAULTLINE AI stock signals incorporate the broader macro environment. A momentum breakout in a HIGH STRESS regime carries fundamentally different risk than the same breakout in a LOW RISK environment. FAULTLINE accounts for this distinction in every signal it generates.
 
 The FAULTLINE signal engine processes over 40 tracked equities across 20 discovery categories — from mega-cap leaders to small-cap speculative plays — and classifies each one against the current macro regime, credit conditions, liquidity environment, and systemic pressure score.`,
         },
@@ -35,7 +35,7 @@ The FAULTLINE signal engine processes over 40 tracked equities across 20 discove
           heading: "How FAULTLINE AI Signals Work",
           body: `FAULTLINE's signal generation process runs through four layers of analysis:
 
-1. Macro Regime Detection — The FAULTLINE Pressure Index™ aggregates credit spreads, volatility (VIX), treasury yield spreads, liquidity conditions, and breadth deterioration into a single systemic stress score. This score determines the active macro regime: LOW / ELEVATED / HIGH / CRITICAL STRESS.
+1. Macro Regime Detection — The FAULTLINE Pressure Index™ combines six weighted vectors — liquidity stress, credit contagion, the Treasury yield curve, macro sensitivity (inflation and policy rates), labor and rates, and a static AI-concentration baseline — built from eight FRED series into a single systemic stress score. This score determines the active macro regime: LOW RISK / MODERATE RISK / ELEVATED RISK / HIGH STRESS / SYSTEMIC CRISIS.
 
 2. Signal Classification — Each equity is scored against momentum indicators (RSI, MACD, SMA crossovers), volume confirmation, sector relative strength, and macro regime alignment. Signals are classified as BULLISH, BEARISH, NEUTRAL, or WATCH.
 
@@ -49,7 +49,7 @@ The FAULTLINE signal engine processes over 40 tracked equities across 20 discove
 
 FAULTLINE AI signals are different in three key ways:
 
-First, they are regime-aware. The same equity can be a BULLISH signal in a LOW STRESS regime and a BEARISH signal in a HIGH STRESS regime. Traditional screeners don't make this distinction.
+First, they are regime-aware. The same equity can be a BULLISH signal in a LOW RISK regime and a BEARISH signal in a HIGH STRESS regime. Traditional screeners don't make this distinction.
 
 Second, they incorporate systemic risk. Credit spread deterioration, liquidity withdrawal, and AI concentration risk are all factored into each signal. A stock can look technically strong while being fundamentally exposed to the next macro shock.
 
@@ -86,7 +86,7 @@ Each category is designed to surface different types of opportunities across dif
         },
         {
           question: "Do I need to be a paid subscriber to see AI stock signals?",
-          answer: "FAULTLINE offers free access to a limited set of signals. Full access to all 100+ tracked equities, asymmetry analysis, and regularly refreshed regime-aligned signals requires a Trader or Power subscription.",
+          answer: "FAULTLINE offers free access to a limited set of signals. The full tracked-equity list, asymmetry analysis, and regime-aligned signals are signed-in tools. Signed-in tools start with a free account; paid plans are not on sale.",
         },
         {
           question: "How does FAULTLINE handle AI bubble risk in stock signals?",

@@ -468,7 +468,7 @@ describe("non-article routes keep existing behaviour", () => {
   it("delegates to the generic per-page metadata", async () => {
     const page = await renderSpaPage(template, "/pricing", loaders());
     expect(page.status).toBe(200);
-    expect(head(page.html).title).toBe("FAULTLINE Pricing — Free, Trader, Power &amp; Founding Member Plans");
+    expect(head(page.html).title).toBe("FAULTLINE Access — Free Account; Paid Plans Not on Sale");
     expect(jsonLdBlocks(page.html).map((b) => b["@type"])).toContain("FAQPage");
   });
 });

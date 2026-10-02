@@ -4,32 +4,32 @@ const CreditMarketStress = () => {
   return (
     <SEOLandingPage
       seo={{
-        title: "Credit Market Stress Index: Monitoring & Analysis",
+        title: "Credit Market Stress: Monitoring & Analysis | FAULTLINE",
         description: "Monitor credit market stress with FAULTLINE. Analyze high-yield spreads, investment grade spreads, and credit conditions. Understand historical equity market dislocations.",
         canonical: "/credit-market-stress",
       }}
       badge="Market Intelligence"
-      headline="Credit Market Stress Index: Uncover Early Warning Signs"
-      subheadline="Regularly refreshed monitoring of credit spreads and credit conditions to anticipate equity market dislocations."
+      headline="Credit Market Stress: Uncover Early Warning Signs"
+      subheadline="Regularly refreshed monitoring of credit spreads and funding conditions — the credit side of the FAULTLINE Pressure Index — to see the pressure before the break."
       ctaLabel="Explore FAULTLINE Credit Insights"
       ctaHref="/faultline-platform"
       accentColor="#FF4444"
       features={[
-        { icon: "◈", title: "Regularly refreshed High-Yield Spread Tracking", desc: "Regularly refreshed High-Yield Spread Tracking" },
-        { icon: "◎", title: "Investment Grade Spread Analysis", desc: "Investment Grade Spread Analysis" },
-        { icon: "⬡", title: "Credit Conditions Tightening Indicators", desc: "Credit Conditions Tightening Indicators" },
-        { icon: "◈", title: "Historical Dislocation Precursors", desc: "Historical Dislocation Precursors" },
-        { icon: "◎", title: "Cross-Asset Correlation Insights", desc: "Cross-Asset Correlation Insights" },
-        { icon: "⬡", title: "Proprietary Stress Index Scoring", desc: "Proprietary Stress Index Scoring" }
+        { icon: "◈", title: "High-Yield Spread Tracking", desc: "The ICE BofA U.S. high-yield spread (FRED: BAMLH0A0HYM2), refreshed as new data is published." },
+        { icon: "◎", title: "Investment Grade Spread Context", desc: "The ICE BofA U.S. corporate (investment-grade) spread, read by FAULTLINE's separate systemic-regime model." },
+        { icon: "⬡", title: "Funding Conditions", desc: "SOFR alongside high-yield spreads — the Liquidity Stress vector of the Pressure Index." },
+        { icon: "◈", title: "Historical Dislocation Context", desc: "How credit spreads behaved before and during 2008, 2020, and other stress episodes — context, not a forecast." },
+        { icon: "◎", title: "Credit Contagion Vector", desc: "High-yield spreads read with the 10-year yield and unemployment — how credit stress could spread." },
+        { icon: "⬡", title: "Published Weights", desc: "Credit feeds two of six Pressure Index vectors, together 40% of the score." }
       ]}
       contentSections={[
         {
-          heading: "Understanding the Credit Market Stress Index",
-          body: `The **Credit Market Stress Index** is a proprietary FAULTLINE metric designed to provide a regularly refreshed pulse on the health and stability of global credit markets. It synthesizes data from various credit instruments, with a particular focus on high-yield and investment-grade corporate bond spreads. A rising index indicates increasing stress, signaling that investors are demanding higher compensation for lending to corporations, often due to heightened perceived risk. Conversely, a falling index suggests improving credit conditions and reduced risk aversion. FAULTLINE's index offers a comprehensive view, moving beyond simple spread analysis to incorporate a broader range of credit market indicators, providing a nuanced understanding of underlying systemic pressures. This index serves as a critical early warning system for potential market turbulence, as credit market dislocations frequently precede broader economic downturns and equity market corrections. It's a vital tool for understanding the current financial landscape and anticipating future shifts.`,
+          heading: "Understanding Credit Market Stress in FAULTLINE",
+          body: `FAULTLINE reads credit market stress through the Pressure Index rather than a separate credit index. The ICE BofA U.S. high-yield option-adjusted spread (FRED: BAMLH0A0HYM2) feeds two of the six weighted vectors: Liquidity Stress, where it is combined with SOFR, and Credit Contagion, where it is read with the 10-year Treasury yield and the unemployment rate. Together these vectors carry 40% of the score. FAULTLINE's separate systemic-regime model also reads the investment-grade corporate spread (BAMLC0A0CM). A rising spread means investors are demanding higher compensation for lending to corporations, often due to heightened perceived risk; a falling spread suggests improving credit conditions. Because credit market dislocations have often built up before broader economic downturns and equity market corrections, credit is one of the clearest places to see systemic pressure building.`,
         },
         {
-          heading: "FAULTLINE's Credit Market Rating & Historical Context",
-          body: `Currently, the FAULTLINE Credit Market Stress Index indicates a **Moderate Stress** level, reflecting a cautious but not yet alarming environment. This rating is primarily driven by a gradual widening in specific segments of the high-yield market, coupled with some tightening in lending standards observed in recent economic reports. Historically, similar periods of moderate stress have often served as inflection points, sometimes resolving benignly and other times escalating into more severe dislocations. For instance, during the lead-up to the 2008 financial crisis, credit spreads widened dramatically over an extended period, whereas the COVID-19 shock in 2020 saw an abrupt, sharp spike. What has changed recently is the persistence of inflation and the subsequent aggressive monetary policy tightening, which is now visibly impacting corporate borrowing costs and debt servicing capabilities. This contrasts with periods of stress driven purely by idiosyncratic corporate defaults or geopolitical events. Understanding these nuances is crucial for interpreting the current outlook.`,
+          heading: "Reading Credit Stress in Historical Context",
+          body: `The current credit reading is shown on the Pressure Index page, with the date of the latest data. Historically, periods of moderate credit stress have often served as inflection points, sometimes resolving benignly and other times escalating into more severe dislocations. For instance, during the lead-up to the 2008 financial crisis, credit spreads widened dramatically over an extended period, whereas the COVID-19 shock in 2020 saw an abrupt, sharp spike. Stress driven by persistent inflation and aggressive monetary tightening shows up differently from stress driven purely by idiosyncratic corporate defaults or geopolitical events — which is why FAULTLINE reads credit spreads alongside funding rates, Treasury yields, inflation, and labor data. Understanding these nuances is crucial for interpreting the current reading.`,
         },
         {
           heading: "Why Credit Market Stress Matters for Equity Investors",
@@ -37,7 +37,7 @@ const CreditMarketStress = () => {
         },
         {
           heading: "Navigating Credit Market Volatility with FAULTLINE",
-          body: `FAULTLINE provides the tools necessary to navigate the complexities of credit market volatility. Our platform offers granular data on various credit segments, allowing users to drill down into specific industries or ratings tiers. Beyond the headline index, you can analyze individual bond spreads, credit default swap (CDS) movements, and liquidity metrics. Our historical data and analytical overlays enable you to compare current conditions against past cycles, helping to identify patterns and potential divergences. Furthermore, FAULTLINE integrates credit market insights with other macro indicators, providing a holistic view of market health. This comprehensive approach empowers investors to make informed decisions, whether it's identifying sectors resilient to credit tightening or recognizing early signs of distress in vulnerable areas. Use FAULTLINE to stay ahead of the curve and transform credit market signals into actionable intelligence for your investment strategy. Disclaimer: FAULTLINE is for market intelligence and educational purposes only and does not constitute personalized financial advice.`,
+          body: `FAULTLINE helps you navigate credit market volatility by putting credit spreads in their systemic context. The Pressure Index shows how the high-yield spread is contributing to the Liquidity Stress and Credit Contagion vectors, how those compare with the rates, inflation, and labor vectors, and how the overall score has moved over time. FAULTLINE does not currently ingest individual bond spreads, ratings-tier or industry spread data, credit default swap (CDS) data, or bank lending surveys. Use FAULTLINE to see credit pressure building before the break. Disclaimer: FAULTLINE is for educational and informational purposes only and is not investment advice.`,
         },
       ]}
       faqs={[
@@ -55,15 +55,15 @@ const CreditMarketStress = () => {
         },
         {
           question: "How can FAULTLINE help me monitor credit risk?",
-          answer: "FAULTLINE's Credit Market Stress Index provides regularly refreshed data and analysis on credit spreads, lending conditions, and historical patterns. Our platform helps you identify early warning signs of market dislocations and understand the drivers of credit market movements.",
+          answer: "FAULTLINE's Pressure Index provides regularly refreshed data and analysis on credit spreads, funding conditions, and historical patterns. Our platform helps you identify early warning signs of market dislocations and understand the drivers of credit market movements.",
         },
         {
-          question: "Is FAULTLINE's Credit Market Stress Index a predictive tool?",
-          answer: "While the Credit Market Stress Index is a powerful leading indicator, it is not a direct predictive tool. It highlights conditions that have historically preceded market events, offering insights into potential future scenarios rather than guaranteeing specific outcomes. It's a tool for informed decision-making.",
+          question: "Is FAULTLINE's credit stress reading a predictive tool?",
+          answer: "No. Credit spreads are a widely watched early warning signal, but FAULTLINE's credit reading is not a predictive tool. It highlights conditions that have historically preceded market events, offering insights into potential future scenarios rather than guaranteeing specific outcomes. It's a tool for informed decision-making.",
         },
         {
-          question: "What data sources does FAULTLINE use for its Credit Market Stress Index?",
-          answer: "FAULTLINE's index incorporates a diverse range of data sources, including published spread data for corporate bond markets (both high-yield and investment-grade), credit default swap (CDS) data, interbank lending rates, and other proprietary indicators of market liquidity and risk appetite.",
+          question: "What data sources does FAULTLINE use for credit market stress?",
+          answer: "FAULTLINE uses FRED data: the ICE BofA U.S. high-yield spread (BAMLH0A0HYM2) and SOFR in the Pressure Index, with the 10-year Treasury yield and unemployment in the Credit Contagion vector, and the ICE BofA investment-grade corporate spread (BAMLC0A0CM) in the separate systemic-regime model. FAULTLINE does not currently ingest CDS data or interbank lending rates.",
         },
       ]}
       internalLinks={[

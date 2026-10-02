@@ -5,7 +5,7 @@ export default function EthereumRiskDashboard() {
     <SEOLandingPage
       seo={{
         title: "Ethereum Risk Dashboard — ETH Risk Score, Key Levels & Macro Analysis | FAULTLINE",
-        description: "Ethereum risk dashboard: ETH macro alignment score, ETH/BTC ratio tracking, key support and resistance levels, DeFi ecosystem risk, and regime-based bull/bear case analysis.",
+        description: "Ethereum risk dashboard: ETH macro alignment score, ETH/BTC ratio tracking, key support and resistance levels, and regime-based bull/bear case analysis built on the FAULTLINE Pressure Index.",
         canonical: "/ethereum-risk-dashboard",
       }}
       badge="ETHEREUM RISK INTELLIGENCE"
@@ -16,11 +16,11 @@ export default function EthereumRiskDashboard() {
       accentColor="#627EEA"
       features={[
         { icon: "◈", title: "ETH/BTC Ratio Tracking", desc: "The ETH/BTC ratio is the primary indicator of Ethereum's relative strength vs. Bitcoin. FAULTLINE tracks this ratio and its trend as new data is published." },
-        { icon: "◎", title: "DeFi Ecosystem Risk Score", desc: "Ethereum hosts the majority of DeFi protocols. FAULTLINE tracks DeFi TVL trends, protocol risk, and contagion exposure." },
+        { icon: "◎", title: "DeFi Ecosystem Context", desc: "Ethereum hosts the majority of DeFi protocols. DeFi protocol risk and contagion exposure are covered as qualitative context; FAULTLINE does not ingest TVL data." },
         { icon: "⬡", title: "Macro Regime Alignment", desc: "ETH is more sensitive to macro conditions than BTC due to its higher beta. FAULTLINE scores ETH's alignment with the current macro regime." },
-        { icon: "◈", title: "Key Support & Resistance Levels", desc: "Critical ETH price levels updated continuously: major support zones, resistance clusters, and key psychological levels." },
-        { icon: "◎", title: "Staking Yield vs. Risk-Free Rate", desc: "ETH staking yield relative to U.S. Treasury yields affects institutional demand. FAULTLINE tracks this spread as a valuation input." },
-        { icon: "⬡", title: "Layer-2 Ecosystem Momentum", desc: "Arbitrum, Optimism, Base, and other L2s drive ETH demand through gas fees. FAULTLINE tracks L2 activity as an ETH demand indicator." },
+        { icon: "◈", title: "Key Support & Resistance Levels", desc: "Critical ETH price levels refreshed as new data is published: major support zones, resistance clusters, and key psychological levels." },
+        { icon: "◎", title: "Staking Yield vs. Risk-Free Rate", desc: "Educational context: ETH staking yield relative to U.S. Treasury yields affects demand. FAULTLINE tracks Treasury yields; staking yield is not a data input." },
+        { icon: "⬡", title: "Layer-2 Ecosystem Context", desc: "Arbitrum, Optimism, Base, and other L2s drive ETH demand through fees. L2 activity is qualitative context, not a FAULTLINE data input." },
       ]}
       contentSections={[
         {
@@ -51,13 +51,13 @@ The introduction of ETH staking (through Ethereum's transition to Proof of Stake
           heading: "ETH Bull Case and Bear Case Scenarios",
           body: `FAULTLINE's structured scenario analysis for Ethereum in 2026:
 
-Bull Case Conditions: Expanding global liquidity (Fed rate cuts, QE restart), rising ETH/BTC ratio, strong L2 ecosystem growth, ETH staking yield above risk-free rates, continued institutional ETF inflows, and a LOW STRESS macro regime. In this scenario, ETH has historically outperformed BTC by 2-5x.
+Bull Case Conditions: Expanding global liquidity (Fed rate cuts, QE restart), rising ETH/BTC ratio, strong L2 ecosystem growth, ETH staking yield above risk-free rates, continued institutional ETF inflows, and a LOW RISK macro regime. In this scenario, ETH has historically outperformed BTC by 2-5x.
 
 Bear Case Conditions: Fed QT acceleration or rate hikes, falling ETH/BTC ratio (capital concentration in BTC), DeFi TVL decline, major protocol exploit or stablecoin de-peg, regulatory action against ETH or DeFi, and HIGH STRESS macro regime. In this scenario, ETH has historically fallen 60-80% from cycle highs.
 
 Base Case: Moderate macro conditions with ETH tracking BTC performance, L2 ecosystem growing steadily, staking yield providing fundamental support, and ETH/BTC ratio consolidating in a range. This scenario is associated with ETH delivering positive but not exceptional returns relative to BTC.
 
-FAULTLINE's regularly refreshed risk score reflects which scenario conditions are currently most prevalent, updating continuously as macro data and market conditions change.`,
+FAULTLINE's regularly refreshed risk score reflects which scenario conditions are currently most prevalent, updating as macro data and market conditions change.`,
         },
       ]}
       faqs={[
@@ -75,11 +75,11 @@ FAULTLINE's regularly refreshed risk score reflects which scenario conditions ar
         },
         {
           question: "How does FAULTLINE calculate the Ethereum risk score?",
-          answer: "FAULTLINE's ETH risk score is a composite of macro regime alignment (FAULTLINE Pressure Index), ETH/BTC ratio trend, DeFi TVL momentum, L2 activity growth, staking yield vs. risk-free rate spread, and technical structure (proximity to key support/resistance levels). Each factor is weighted and combined into a single 0-100 risk score.",
+          answer: "FAULTLINE's ETH risk reading is anchored on macro regime alignment (the FAULTLINE Pressure Index), with the ETH/BTC ratio trend from CoinGecko and price-based key levels as context. DeFi TVL, Layer-2 activity, and staking yield are discussed as qualitative context but are not data inputs to the score.",
         },
         {
           question: "Is Ethereum a good investment in 2026?",
-          answer: "FAULTLINE does not provide investment advice. The Ethereum Risk Dashboard provides a data-driven risk assessment based on macro conditions, technical structure, and on-chain dynamics. Whether ETH is appropriate for a specific investor depends on their risk tolerance, time horizon, portfolio composition, and financial situation. Always conduct your own research and consult a qualified financial advisor.",
+          answer: "FAULTLINE does not provide investment advice. The Ethereum Risk Dashboard provides a data-driven risk assessment based on macro conditions and technical structure. Whether ETH is appropriate for a specific investor depends on their risk tolerance, time horizon, portfolio composition, and financial situation. Always conduct your own research and consult a qualified financial advisor.",
         },
       ]}
       internalLinks={[

@@ -96,7 +96,7 @@ function MethodologyTab() {
       <SectionLabel>How it works</SectionLabel>
       <H2>Pressure Index Methodology</H2>
       <P>
-        The FAULTLINE Pressure Index is a composite risk score that combines six weighted vectors, built from FRED macroeconomic series and one static reference value, into a single 0–100 reading. Higher scores indicate greater systemic pressure. The engine is designed to identify building risk <em>before</em> it becomes obvious in price action.
+        The FAULTLINE Pressure Index is a composite risk score that combines six weighted vectors, built from FRED macroeconomic series and one static reference value, into a single 0–100 reading. Higher scores indicate greater systemic pressure. The score shows where pressure is building across those inputs; it is not a crash forecast and does not name a date.
       </P>
       <P>
         Live inputs are publicly available FRED series; the AI-concentration input is a static reference value, not a live measurement. Each live reading uses the latest observations available when it is calculated. Historical figures elsewhere on the site are retrospective reconstructions, not readings recorded at the time.
@@ -128,7 +128,7 @@ function MethodologyTab() {
       </div>
 
       <H3>Regime Classification</H3>
-      <P>In addition to the numeric score, the engine classifies the current environment into one of five macro regimes: <strong style={{ color: "#F0F4FF" }}>Expansion, Moderate Pressure, Elevated Risk, High Risk,</strong> and <strong style={{ color: "#F0F4FF" }}>Systemic Stress</strong>. Regime classification drives the signal weighting applied to individual asset analysis.</P>
+      <P>In addition to the numeric score, the engine classifies the current reading into one of five regimes, using the thresholds shown above: <strong style={{ color: "#F0F4FF" }}>Low Risk, Moderate Risk, Elevated Risk, High Stress,</strong> and <strong style={{ color: "#F0F4FF" }}>Systemic Crisis</strong>. The equity regime, the crypto macro link, and the interpretation layer read this score as their starting context.</P>
 
       <H3>Known Limitations</H3>
       <Card>
@@ -188,6 +188,22 @@ function DataSourcesTab() {
       updateFreq: "By endpoint and cache",
       notes: "Used by crypto features; these data are not inputs to the six-vector Pressure Index formula.",
     },
+    {
+      name: "Yahoo Finance",
+      url: "https://finance.yahoo.com",
+      category: "Market quote board — separate from Pressure Index scoring",
+      inputs: ["Index quotes", "VIX", "FX", "Commodities", "Bitcoin and Ethereum quotes"],
+      updateFreq: "Snapshot quotes; delayed or last close",
+      notes: "Feeds the markets board and a second quote path for signals. Each quote carries its own delayed or last-close state. These quotes are context, not inputs to the Pressure Index.",
+    },
+    {
+      name: "FRED — systemic-regime panel",
+      url: "https://fred.stlouisfed.org",
+      category: "Separate systemic-regime model — does not feed the Pressure Index",
+      inputs: ["HY OAS (BAMLH0A0HYM2)", "IG OAS (BAMLC0A0CM)", "NFCI", "10Y and 2Y yields", "10Y–2Y spread (T10Y2Y)", "SOFR", "St. Louis Fed Financial Stress Index (STLFSI4)", "VIX close (VIXCLS)", "S&P 500 (SP500)"],
+      updateFreq: "Daily / Weekly, by series",
+      notes: "Read by the two-state systemic-regime model (sre-hmm2). The code forbids adding this model into the Pressure Index weights.",
+    },
   ];
 
   return (
@@ -195,7 +211,7 @@ function DataSourcesTab() {
       <SectionLabel>Transparency</SectionLabel>
       <H2>Data Sources</H2>
       <P>
-        FAULTLINE synthesizes data from multiple publicly available, institutional-grade sources into a unified risk framework. We do not expose proprietary processing logic, but we are fully transparent about where our data originates.
+        FAULTLINE combines publicly available economic statistics and commercial market-data feeds into a unified risk framework. The sources below are the ones the code actually calls; the formulas that combine them are published on the Methodology tab and the methodology page.
       </P>
       <P>
         The Pressure Index uses the FRED series listed below plus a static AI concentration baseline. Live observations, delayed releases, static references, and fallback values have different evidence limits; check the reading’s timestamp and data-quality labels.
@@ -227,8 +243,8 @@ function DataSourcesTab() {
       </div>
 
       <Card>
-        <div style={{ fontFamily: MONO, fontSize: "11px", color: "#22C55E", letterSpacing: "0.15em", marginBottom: "10px" }}>WHAT WE DO NOT EXPOSE</div>
-        <P>FAULTLINE does not disclose proprietary weighting algorithms, signal combination logic, or internal scoring thresholds. The data sources above represent the raw inputs — the synthesis methodology is described in the Methodology tab.</P>
+        <div style={{ fontFamily: MONO, fontSize: "11px", color: "#22C55E", letterSpacing: "0.15em", marginBottom: "10px" }}>WHAT IS PUBLISHED</div>
+        <P>Every Pressure Index input, weight, and band threshold is published, including the static AI-concentration baseline. FAULTLINE does not ingest on-chain, institutional-flow, options-flow, or direct BLS/BEA/Treasury.gov feeds. The full inventory, and its limits, are on the methodology page.</P>
       </Card>
     </div>
   );
@@ -282,7 +298,7 @@ function FAQTab() {
   const FAQS = [
     {
       q: "What is the FAULTLINE Pressure Index?",
-      a: "The Pressure Index is a composite 0–100 score that measures systemic market stress across six weighted vectors: liquidity stress, credit contagion, the 10Y–2Y yield curve and 10Y level, macro sensitivity (inflation and policy rates), labor and rates (unemployment and the 10Y yield), and AI / speculation (a static concentration baseline adjusted by rates and credit). Higher scores indicate greater systemic pressure. It is designed to identify building risk before it becomes obvious in price action.",
+      a: "The Pressure Index is a composite 0–100 score that measures systemic market stress across six weighted vectors: liquidity stress, credit contagion, the 10Y–2Y yield curve and 10Y level, macro sensitivity (inflation and policy rates), labor and rates (unemployment and the 10Y yield), and AI / speculation (a static concentration baseline adjusted by rates and credit). Higher scores indicate greater systemic pressure. It shows where pressure is building across those inputs; it is not a crash forecast.",
     },
     {
       q: "Is FAULTLINE investment advice?",
@@ -294,7 +310,7 @@ function FAQTab() {
     },
     {
       q: "Where does FAULTLINE get its data?",
-      a: "The current Pressure Index requests eight FRED series: HY spread, 10Y and 2Y yields, SOFR, CPI, PPI, federal funds rate, and unemployment. Its AI concentration baseline is static. Equity and crypto features separately use Polygon.io and CoinGecko. See the Data Sources tab for the distinction.",
+      a: "The current Pressure Index requests eight FRED series: HY spread, 10Y and 2Y yields, SOFR, CPI, PPI, federal funds rate, and unemployment. Its AI concentration baseline is static. Equity and crypto features separately use Polygon.io, Yahoo Finance quotes, and CoinGecko, and a separate systemic-regime model reads a broader FRED panel. See the Data Sources tab for the distinction.",
     },
     {
       q: "How often is the Pressure Index updated?",
@@ -318,7 +334,7 @@ function FAQTab() {
     },
     {
       q: "Who built FAULTLINE?",
-      a: "FAULTLINE was built by Phoenix Systems, an independent technology company focused on making institutional-quality macro intelligence accessible to self-directed investors. See the About page for more information.",
+      a: "FAULTLINE was built by Phoenix Systems, an independent technology company focused on making structural market intelligence accessible to self-directed investors. See the About page for more information.",
     },
   ];
 
