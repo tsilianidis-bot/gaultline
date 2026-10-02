@@ -42,12 +42,22 @@ describe("ASHA cross-surface continuity", () => {
     expect(panel).toContain('window.addEventListener("asha:summon", handler)');
   });
 
-  it("does not append a failed live request to the shared thread and resets the panel for retry", () => {
-    const catchBranch = panel.match(/\}\s*catch\s*\{([\s\S]*?)\n\s*\}\n\s*\}, \[/)?.[1] ?? "";
+  it("does not append a failed live request to the shared thread and shows an unavailable state instead of the summon intro", () => {
+    const catchBranch = panel.match(/catch\s*\([^)]*\)\s*\{([\s\S]*?)\n\s*\}/)?.[1] ?? "";
 
+    expect(catchBranch).toContain("reduceAshaAskFailure");
     expect(catchBranch).toContain("setSynthSteps([])");
-    expect(catchBranch).toContain('setPanelState("summon")');
+    expect(catchBranch).toContain("setPanelState(failure.panelState)");
+    expect(catchBranch).not.toContain('setPanelState("summon")');
     expect(catchBranch).not.toContain("appendThreadExchange");
+    expect(panel).toContain("askFailure.title");
+    expect(panel).toMatch(/>\s*Retry\s*</);
+    expect(panel).toContain("data-asha-unavailable");
+    const machine = read("shared/ashaPanelMachine.ts");
+    expect(machine).toContain('title: ASHA_UNAVAILABLE_TITLE');
+    expect(machine).toContain('export const ASHA_UNAVAILABLE_TITLE = "PLATO is temporarily unavailable"');
+    expect(machine).toContain('panelState: "unavailable"');
+    expect(machine).not.toContain('panelState: "summon"');
   });
 
   it("keeps every canonical destination attached to the same registry-owned ASHA utility", () => {

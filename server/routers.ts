@@ -74,6 +74,7 @@ import { getTradeJournalEntries, insertTradeJournalEntry, updateTradeJournalEntr
 import { analyzeSeoUrl, generateMetaTags, generateAutoFix } from './seoOptimizer';
 import { computeSOB } from './sobEngine';
 import { askAsha, generateAshaDailyGreeting, ASHA_FIRST_INTRODUCTION } from './ashaEngine';
+import { mapAshaProcedureError, platoFailureLogFields } from './ashaProcedureError';
 import { generateBotResponse, detectIntent, aggregateLeadScore } from './chatbotEngine';
 import {
   createChatbotSession, updateChatbotSession, addChatbotMessage, getChatbotMessages,
@@ -3364,12 +3365,20 @@ export const appRouter = router({
         }),
       }))
       .mutation(async ({ input }) => {
-        const response = await askAsha({
-          userMessage: input.userMessage,
-          history: input.history,
-          pageContext: input.pageContext,
-        });
-        return response;
+        try {
+          return await askAsha({
+            userMessage: input.userMessage,
+            history: input.history,
+            pageContext: input.pageContext,
+          });
+        } catch (error) {
+          const mapped = mapAshaProcedureError(error);
+          log.warn("[PLATO] ask unavailable", { code: mapped.code, ...platoFailureLogFields(error) });
+          if (mapped.code === "INTERNAL_SERVER_ERROR") {
+            log.error("[PLATO] ask failed", { err: error instanceof Error ? error : new Error(String(error)) });
+          }
+          throw mapped;
+        }
       }),
 
     // Generate personalized daily greeting
@@ -3387,11 +3396,17 @@ export const appRouter = router({
         }),
       }))
       .mutation(async ({ input }) => {
-        const greeting = await generateAshaDailyGreeting({
-          userName: input.userName,
-          engineContext: input.engineContext,
-        });
-        return { greeting };
+        try {
+          const greeting = await generateAshaDailyGreeting({
+            userName: input.userName,
+            engineContext: input.engineContext,
+          });
+          return { greeting };
+        } catch (error) {
+          const mapped = mapAshaProcedureError(error);
+          log.warn("[PLATO] daily greeting unavailable", { code: mapped.code, ...platoFailureLogFields(error) });
+          throw mapped;
+        }
       }),
 
     // Get ASHA's first-login introduction text

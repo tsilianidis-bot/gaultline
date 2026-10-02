@@ -17,6 +17,7 @@ import IntelligenceSynthesis, { SynthesisStep } from "./IntelligenceSynthesis";
 import OracleBriefing, { OracleBriefingData } from "./OracleBriefing";
 import { useIsMobile } from "@/hooks/useMobile";
 import { insufficientHorizonMetadata } from "@shared/forecastMetadata";
+import { reduceAshaAskFailure, type AshaAskFailureState } from "@shared/ashaPanelMachine";
 
 // ── Context-aware suggestions per page ───────────────────────
 const PAGE_SUGGESTIONS: Record<string, string[]> = {
@@ -107,7 +108,7 @@ const SYNTHESIS_STEPS: Array<{ id: string; label: string; detail?: string }> = [
 ];
 
 // ── Panel state ───────────────────────────────────────────────
-type PanelState = "idle" | "summon" | "synthesizing" | "briefing";
+type PanelState = "idle" | "summon" | "synthesizing" | "briefing" | "unavailable";
 
 // ── Mission ID ────────────────────────────────────────────────
 function generateMissionId(): string {
@@ -127,6 +128,7 @@ export default function AshaPanel() {
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [synthSteps, setSynthSteps] = useState<SynthesisStep[]>([]);
   const [briefingData, setBriefingData] = useState<OracleBriefingData | null>(null);
+  const [askFailure, setAskFailure] = useState<AshaAskFailureState | null>(null);
   const isMobile = useIsMobile();
   const synthTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -222,6 +224,7 @@ export default function AshaPanel() {
 
     const question = text.trim();
     setCurrentQuestion(question);
+    setAskFailure(null);
     setPanelState("synthesizing");
 
     // Initialize synthesis steps
@@ -297,9 +300,12 @@ export default function AshaPanel() {
       setBriefingData(data);
       setPanelState("briefing");
 
-    } catch {
+    } catch (error) {
+      if (synthTimerRef.current) clearTimeout(synthTimerRef.current);
+      const failure = reduceAshaAskFailure(error);
+      setAskFailure(failure);
       setSynthSteps([]);
-      setPanelState("summon");
+      setPanelState(failure.panelState);
     }
   }, [askMutation, fullPageContext, threadHistory, appendThreadExchange, advanceSynthesisSteps, suggestions]);
 
@@ -315,6 +321,7 @@ export default function AshaPanel() {
   const handleDismiss = useCallback(() => {
     setPanelState("idle");
     setCurrentQuestion("");
+    setAskFailure(null);
     setSynthSteps([]);
     setBriefingData(null);
   }, []);
@@ -380,6 +387,111 @@ export default function AshaPanel() {
               Ask PLATO
             </span>
           </button>
+        </div>
+      )}
+
+      {/* ── Failed ask: keep the question, never replay the intro ── */}
+      {panelState === "unavailable" && askFailure && (
+        <div
+          role="alertdialog"
+          aria-labelledby="asha-unavailable-title"
+          data-asha-unavailable="true"
+          data-asha-failure-kind={askFailure.kind}
+          style={{
+            position: "fixed",
+            left: "50%",
+            bottom: isMobile ? "calc(72px + env(safe-area-inset-bottom, 0px))" : "24px",
+            transform: "translateX(-50%)",
+            width: "min(440px, calc(100vw - 32px))",
+            zIndex: 1100,
+            background: "rgba(6,10,20,0.96)",
+            border: "1px solid rgba(0,229,255,0.38)",
+            borderRadius: "8px",
+            padding: "16px 16px 14px",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.55), 0 0 24px rgba(0,229,255,0.12)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          <div style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: "9px",
+            letterSpacing: "0.16em",
+            color: "#00E5FF",
+            textTransform: "uppercase",
+            marginBottom: "8px",
+          }}>
+            PLATO
+          </div>
+          <h2 id="asha-unavailable-title" style={{
+            margin: "0 0 8px",
+            fontFamily: "'IBM Plex Sans', sans-serif",
+            fontSize: "15px",
+            fontWeight: 600,
+            color: "#E6EDF3",
+          }}>
+            {askFailure.title}
+          </h2>
+          <p style={{
+            margin: "0 0 10px",
+            fontFamily: "'IBM Plex Sans', sans-serif",
+            fontSize: "13px",
+            lineHeight: 1.45,
+            color: "rgba(226,232,240,0.82)",
+          }}>
+            {askFailure.detail}
+          </p>
+          <div style={{
+            margin: "0 0 12px",
+            padding: "8px 10px",
+            borderRadius: "4px",
+            background: "rgba(255,255,255,0.03)",
+            border: "1px solid rgba(148,163,184,0.18)",
+            fontFamily: "'IBM Plex Sans', sans-serif",
+            fontSize: "12px",
+            color: "#CBD5E1",
+          }}>
+            {currentQuestion}
+          </div>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            {askFailure.showRetry && (
+              <button
+                type="button"
+                onClick={() => sendMessage(currentQuestion)}
+                style={{
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: "10px",
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "#041018",
+                  background: "#00E5FF",
+                  border: "none",
+                  borderRadius: "4px",
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                }}
+              >
+                Retry
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleDismiss}
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: "10px",
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "rgba(226,232,240,0.7)",
+                background: "transparent",
+                border: "1px solid rgba(148,163,184,0.25)",
+                borderRadius: "4px",
+                padding: "8px 12px",
+                cursor: "pointer",
+              }}
+            >
+              Close
+            </button>
+          </div>
         </div>
       )}
 

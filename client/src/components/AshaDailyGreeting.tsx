@@ -50,7 +50,8 @@ export default function AshaDailyGreeting() {
     }).then(res => {
       setGreeting(res.greeting);
     }).catch(() => {
-      setGreeting("Good morning. Current market pressure is elevated. I am monitoring conditions across all active engines. Here is what is building beneath the surface.");
+      // Never substitute a canned market reading for PLATO's answer.
+      setGreeting("PLATO is temporarily unavailable. The readings on this page are still live; PLATO's greeting will return when the language model is reachable.");
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canonicalState, isLoading, dismissed, fetched]);

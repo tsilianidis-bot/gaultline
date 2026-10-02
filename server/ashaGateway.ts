@@ -1,8 +1,4 @@
-import {
-  invokeLLM,
-  type InvokeParams,
-  type InvokeResult,
-} from "./_core/llm";
+import type { InvokeParams, InvokeResult } from "./_core/llm";
 import {
   CANONICAL_DESTINATION_BY_ID,
   resolveCanonicalDestination,
@@ -18,10 +14,8 @@ import type { AshaQuestionAnalysis } from "../shared/ashaQuestionAnalysis";
 import type { CanonicalMarketState } from "../shared/marketState";
 import { evidenceNarrativePromptContract } from "../shared/evidenceContract";
 import { getCanonicalMarketState } from "./marketStateService";
-import {
-  resolveAshaModelCandidates,
-  type AshaModelResolution,
-} from "./ashaModelPolicy";
+import type { PlatoConfig } from "./plato/config";
+import { routePlatoCompletion, type RouteDependencies } from "./plato/router";
 
 type InvokeGatewayModel = (params: InvokeParams) => Promise<InvokeResult>;
 
@@ -124,36 +118,43 @@ export function buildAshaCanonicalContextBlock(context: AshaGatewayContext): str
   return `\n\nCANONICAL FAULTLINE MARKETSTATE (SERVER-GENERATED):\n${JSON.stringify(boundedContext)}\n\nSCOPE RULE: ${scopeRule}\n\nPROVENANCE RULES: Treat this MarketState as the authoritative current context. Distinguish current observations, model estimates, inferences, and historical relationships. Never claim a source or engine is available when sourceHealth marks it unavailable. If freshness is stale, cache status is stale-if-error, or warnings are present, disclose that limitation in the answer. Do not invent missing values. Historical analog similarity is evidence of regime resemblance, never forecast probability. Use questionAnalysis probability only when its availability is CALIBRATED; never convert a similarity score or generic bear scenario into an unsupported event probability.\n\n${evidenceNarrativePromptContract()}`;
 }
 
+/**
+ * Every PLATO model call goes through the PLATO router: the approved
+ * OpenAI-compatible provider, an explicit chat-model chain, bounded retries,
+ * per-attempt and total deadlines. On total failure this throws a typed
+ * `PlatoUnavailableError` (see server/plato/errors.ts); it never returns a
+ * synthetic answer.
+ */
 export async function invokeAshaGateway(
-  params: Omit<InvokeParams, "model">,
+  params: Omit<InvokeParams, "model" | "signal">,
   dependencies: {
-    resolveModels?: () => Promise<AshaModelResolution>;
     invokeModel?: InvokeGatewayModel;
+    config?: PlatoConfig;
+    sleep?: RouteDependencies["sleep"];
   } = {},
 ): Promise<{ response: InvokeResult; trace: AshaModelTrace }> {
-  const resolution = await (dependencies.resolveModels ?? resolveAshaModelCandidates)();
-  const invokeModel = dependencies.invokeModel ?? invokeLLM;
-  const attemptedModels: string[] = [];
-  let lastError: unknown;
-
-  for (const model of resolution.candidates) {
-    attemptedModels.push(model);
-    try {
-      const response = await invokeModel({ ...params, model });
-      return {
-        response,
-        trace: {
-          selectedModel: model,
-          attemptedModels,
-          resolutionSource: resolution.source,
-          resolvedAt: resolution.resolvedAt,
-        },
-      };
-    } catch (error) {
-      lastError = error;
-    }
-  }
-
-  const reason = lastError instanceof Error ? lastError.message : "unknown model failure";
-  throw new Error(`ASHA model gateway failed after ${attemptedModels.length} attempt(s): ${reason}`);
+  const routed = await routePlatoCompletion(
+    {
+      messages: params.messages,
+      tools: params.tools,
+      toolChoice: params.toolChoice,
+      tool_choice: params.tool_choice,
+      maxTokens: params.maxTokens,
+      max_tokens: params.max_tokens,
+      outputSchema: params.outputSchema,
+      output_schema: params.output_schema,
+      responseFormat: params.responseFormat,
+      response_format: params.response_format,
+    },
+    { invoke: dependencies.invokeModel, config: dependencies.config, sleep: dependencies.sleep },
+  );
+  return {
+    response: routed.response,
+    trace: {
+      selectedModel: routed.trace.selectedModel,
+      attemptedModels: routed.trace.attemptedModels,
+      resolutionSource: routed.trace.resolutionSource,
+      resolvedAt: routed.trace.resolvedAt,
+    },
+  };
 }
