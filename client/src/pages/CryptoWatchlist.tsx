@@ -12,6 +12,7 @@ import { getLoginUrl } from "@/const";
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import { TickerChip } from "@/components/TickerActionMenu";
+import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
 
 // ── Style constants ───────────────────────────────────────────
 const MONO = "'IBM Plex Mono', monospace";
@@ -28,7 +29,7 @@ type CryptoSignalLabel =
 
 interface CryptoAssetIntelligence {
   id: string; symbol: string; name: string; image: string;
-  currentPrice: number; priceChangePercent24h: number;
+  currentPrice: number; priceChangePercent24h: number; priceChangePercent24hDisplay?: number | null;
   marketCap: number; totalVolume: number;
   signalBias: CryptoSignalBias; signalScore: number;
   riskLevel: CryptoRiskLevel; riskScore: number;
@@ -101,7 +102,7 @@ function WatchlistRow({
 
   const biasColor = asset ? BIAS_COLORS[asset.signalBias] : "#64748B";
   const riskColor = asset ? RISK_COLORS[asset.riskLevel] : "#64748B";
-  const priceUp = (asset?.priceChangePercent24h ?? 0) >= 0;
+  const change24h = displayChange24h(asset);
 
   return (
     <div style={{
@@ -133,8 +134,8 @@ function WatchlistRow({
                   ? asset.currentPrice.toFixed(2)
                   : asset.currentPrice.toFixed(4)}
             </div>
-            <div style={{ fontFamily: MONO, fontSize: '9px', color: priceUp ? '#00FF88' : '#FF2D55' }}>
-              {priceUp ? '+' : ''}{asset.priceChangePercent24h.toFixed(2)}%
+            <div style={{ fontFamily: MONO, fontSize: '9px', color: change24hColor(change24h) }}>
+              {change24hText(change24h)}
             </div>
           </>
         ) : null}
@@ -229,7 +230,7 @@ function CompareColumn({ symbol, onRemove }: { symbol: string; onRemove: () => v
   const asset = intelResult?.asset as CryptoAssetIntelligence | undefined;
   const biasColor = asset ? BIAS_COLORS[asset.signalBias] : "#64748B";
   const riskColor = asset ? RISK_COLORS[asset.riskLevel] : "#64748B";
-  const priceUp = (asset?.priceChangePercent24h ?? 0) >= 0;
+  const change24h = displayChange24h(asset);
 
   const ROWS = [
     { label: "Signal Bias",        value: asset?.signalBias,           color: biasColor },
@@ -279,8 +280,8 @@ function CompareColumn({ symbol, onRemove }: { symbol: string; onRemove: () => v
                 ? asset.currentPrice.toLocaleString('en-US', { maximumFractionDigits: 0 })
                 : asset.currentPrice >= 1 ? asset.currentPrice.toFixed(2) : asset.currentPrice.toFixed(4)}
             </span>
-            <span style={{ fontFamily: MONO, fontSize: '10px', color: priceUp ? '#00FF88' : '#FF2D55', marginLeft: '6px' }}>
-              {priceUp ? '+' : ''}{asset.priceChangePercent24h.toFixed(2)}%
+            <span style={{ fontFamily: MONO, fontSize: '10px', color: change24hColor(change24h), marginLeft: '6px' }}>
+              {change24hText(change24h)}
             </span>
           </div>
         ) : null}

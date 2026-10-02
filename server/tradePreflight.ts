@@ -1879,8 +1879,7 @@ A user wants to simulate the move: "${moveLabel}"${tickerNote} over the timefram
 Current market conditions:
 - FAULTLINE Pressure Index: ${output.marketCondition.pressureIndex}/100 (${output.marketCondition.regimeLevel})
 - Regime: ${output.marketCondition.regime}
-- Bull Probability: ${output.marketCondition.bullProbability}%
-- Crash Probability: ${output.marketCondition.crashProbability}%
+- Probabilities: FAULTLINE does not offer a crash probability, and its bull scenario weight is uncalibrated; state no probability percentage
 - Liquidity: ${output.marketCondition.liquidityCondition}
 - Credit Stress: ${output.marketCondition.creditStress}
 - Volatility: ${output.marketCondition.volatilityCondition}
@@ -1899,9 +1898,9 @@ Write a concise 3-4 sentence institutional-grade explanation of this simulation 
 - Reference the specific move${tickerNote} and timeframe explicitly
 - Explain why the current market regime supports or challenges this specific move
 - Reference specific pressure vectors (liquidity, credit, volatility, breadth) that are most relevant
-- Conclude with a probability-weighted recommendation referencing the verdict
+- Conclude with a regime-conditioned reading referencing the verdict (no probability or percentage chance)
 - Do NOT use phrases like "guaranteed", "certain", "will definitely", or "I recommend"
-- Frame as market-regime simulation and probability-weighted setup reading
+- Frame as market-regime simulation and regime-conditioned setup reading
 - Tone: authoritative, analytical, institutional — like a senior risk manager briefing a portfolio committee
 - Keep it under 100 words`;
 

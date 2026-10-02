@@ -18,6 +18,7 @@
  */
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
+import { CRASH_RISK_DISPLAY_TEXT, contractScenarioText } from "@/lib/contractProbabilityText";
 import { trackEvent } from "@/hooks/useAnalytics";
 import { useExperience, type ExperienceMode } from "../contexts/ExperienceContext";
 
@@ -348,9 +349,11 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const regime = pd?.regime ?? null;
   const pressureTrend = pd?.confidenceOrEvidenceQuality === "HEALTHY" ? "stable" : "data-limited";
 
-  // Derive bull/crash from pressure score (same formula used across the platform)
-  const bullProb = pressureScore !== null ? Math.round(Math.max(5, 100 - pressureScore * 1.1)) : null;
-  const crashProb = pressureScore !== null ? Math.round(Math.min(95, pressureScore * 0.85)) : null;
+  // Probability contract: the bull field is the canonical contract's display
+  // text (e.g. "Uncalibrated"); crash risk is not offered. Neither is derived
+  // from the pressure score.
+  const bullText = contractScenarioText(pd?.probabilityContract, "bull");
+  const crashText = CRASH_RISK_DISPLAY_TEXT;
 
   // Primary drivers from top engines
   const topDrivers = pd?.engines
@@ -541,8 +544,8 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                     <div style={{ padding: "14px 16px", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px" }}>
                       <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", fontSize: "9px", letterSpacing: "0.12em", marginBottom: "6px" }}>BULL CONTINUATION</div>
-                      <div style={{ ...MONO, fontSize: "22px", fontWeight: 700, color: "#00FF88", marginBottom: "4px" }}>
-                        {bullProb !== null ? `${bullProb}%` : "—"}
+                      <div data-onboarding-bull style={{ ...MONO, fontSize: "22px", fontWeight: 700, color: "#94A3B8", marginBottom: "4px" }}>
+                        {bullText}
                       </div>
                       <p style={{ ...SANS, fontSize: "11px", color: "rgba(255,255,255,0.4)", lineHeight: 1.4, margin: 0 }}>
                         How supportive conditions are for the existing trend to continue.
@@ -550,11 +553,11 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                     </div>
                     <div style={{ padding: "14px 16px", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px" }}>
                       <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", fontSize: "9px", letterSpacing: "0.12em", marginBottom: "6px" }}>CRASH RISK</div>
-                      <div style={{ ...MONO, fontSize: "22px", fontWeight: 700, color: "#FF4444", marginBottom: "4px" }}>
-                        {crashProb !== null ? `${crashProb}%` : "—"}
+                      <div data-onboarding-crash style={{ ...MONO, fontSize: "22px", fontWeight: 700, color: "#94A3B8", marginBottom: "4px" }}>
+                        {crashText}
                       </div>
                       <p style={{ ...SANS, fontSize: "11px", color: "rgba(255,255,255,0.4)", lineHeight: 1.4, margin: 0 }}>
-                        Current evidence supporting the possibility of a meaningful breakdown.
+                        FAULTLINE has no governed crash model, so no crash percentage is shown.
                       </p>
                     </div>
                   </div>
@@ -740,16 +743,16 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                   {
                     label: "BULL CONTINUATION",
                     color: "#00FF88",
-                    range: "0 – 100%",
+                    range: "Uncalibrated",
                     definition: "How supportive current conditions are for the existing bullish trend to continue.",
                     detail: "Not a guaranteed price forecast. High values indicate supportive macro conditions, not certainty.",
                   },
                   {
                     label: "CRASH RISK",
                     color: "#FF4444",
-                    range: "0 – 100%",
-                    definition: "How much current evidence supports the possibility of a meaningful market breakdown.",
-                    detail: "Based on historical analog matching, pressure levels, and regime classification.",
+                    range: "Not offered",
+                    definition: "FAULTLINE does not offer a crash probability: no governed model with a defined crash event, horizon and calibration record exists.",
+                    detail: "Use the Pressure Index and regime as stress context, not as a crash forecast.",
                   },
                 ].map((item, i) => (
                   <div key={i} style={{ padding: "14px 16px", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px" }}>
@@ -810,8 +813,8 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                   {[
                     { label: "Pressure", value: "68", sub: "Elevated Stress", color: "#FF9500" },
                     { label: "Regime", value: "Elevated", sub: "Stress", color: ACCENT },
-                    { label: "Bull Prob", value: "34%", sub: "Weakening", color: "#FFD700" },
-                    { label: "Crash Risk", value: "58%", sub: "Elevated", color: "#FF4444" },
+                    { label: "Bull scenario", value: "Uncalibrated", sub: "Contract text", color: "#94A3B8" },
+                    { label: "Crash Risk", value: "Not offered", sub: "No governed model", color: "#94A3B8" },
                   ].map((item, i) => (
                     <div key={i} style={{ textAlign: "center" }}>
                       <div style={{ ...MONO, fontSize: "18px", fontWeight: 700, color: item.color }}>{item.value}</div>

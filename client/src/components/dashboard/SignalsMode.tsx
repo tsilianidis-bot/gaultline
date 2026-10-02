@@ -10,6 +10,7 @@ import { useEngine } from "@/contexts/EngineContext";
 import { getRiskColor } from "@/components/RiskBadge";
 import { ArrowRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
 
 type FilterTab = "crypto" | "stocks" | "rotation";
 
@@ -87,9 +88,9 @@ function CryptoSignalGrid() {
 
       <div className="flex flex-col gap-1.5">
         {(data ?? []).slice(0, 8).map((coin) => {
-          const change = coin.priceChangePercent24h ?? 0;
-          const changeColor = change >= 0 ? "#00FF88" : "#FF2D55";
-          const changeIcon = change >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />;
+          const change = displayChange24h(coin);
+          const changeColor = change24hColor(change);
+          const changeIcon = change === null ? null : change >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />;
 
           return (
             <div
@@ -122,7 +123,7 @@ function CryptoSignalGrid() {
                 >
                   {changeIcon}
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 600 }}>
-                    {change >= 0 ? "+" : ""}{change.toFixed(2)}%
+                    {change24hText(change)}
                   </span>
                 </div>
               </div>

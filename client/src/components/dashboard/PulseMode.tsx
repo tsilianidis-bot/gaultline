@@ -13,6 +13,7 @@ import { FaultlineInterpretation } from "./FaultlineInterpretation";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function riskLabel(level: string): string {
@@ -327,8 +328,8 @@ function CompactSignalFooter() {
       {cryptoData ? (
         <div className="flex flex-col gap-1.5">
           {cryptoData.slice(0, 3).map((coin) => {
-            const change = coin.priceChangePercent24h ?? 0;
-            const changeColor = change >= 0 ? "#00FF88" : "#FF2D55";
+            const change = displayChange24h(coin);
+            const changeColor = change24hColor(change);
             return (
               <div key={coin.id} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -344,7 +345,7 @@ function CompactSignalFooter() {
                     ${coin.currentPrice.toLocaleString()}
                   </span>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: changeColor, fontWeight: 600 }}>
-                    {change >= 0 ? "+" : ""}{change.toFixed(2)}%
+                    {change24hText(change)}
                   </span>
                 </div>
               </div>

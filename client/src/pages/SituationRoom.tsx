@@ -7,6 +7,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
+import { engineProbabilityPercent, engineProbabilityText } from "@/lib/marketStateProjection";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import { SectionErrorBoundary } from "@/components/ErrorBoundary";
@@ -474,7 +475,7 @@ function CollapsiblePanel({
 // ── Main component ────────────────────────────────────────────
 export default function SituationRoom() {
   useSEO(PAGE_SEO.situationRoom);
-  const { marketState, canonicalState, marketMode, sourceHealth } = useEngine();
+  const { marketState, canonicalState, marketMode, sourceHealth, output } = useEngine();
   const evidenceAvailable =
     Boolean(canonicalState) &&
     canonicalState?.confidenceOrEvidenceQuality !== "UNAVAILABLE" &&
@@ -636,12 +637,11 @@ export default function SituationRoom() {
     ? (canonicalState?.pressureIndex ?? marketState?.now.pressureScore ?? null)
     : null;
   const pColor = pressureScore == null ? "#64748B" : pressureColor(pressureScore);
-  const bullProbability = evidenceAvailable
-    ? (marketState?.outlook.regimeProbabilities.bull ?? null)
-    : null;
-  const crashProbability = evidenceAvailable
-    ? (marketState?.outlook.regimeProbabilities.crash ?? null)
-    : null;
+  // Probability contract: the payload numbers are withheld (NaN), so render the
+  // contract display text ("Uncalibrated" / "Not offered"), never `${NaN}%`.
+  const bullProbabilityText = evidenceAvailable ? engineProbabilityText(output, "bullProbability") : "UNAVAILABLE";
+  const crashProbabilityText = evidenceAvailable ? engineProbabilityText(output, "crashProbability") : "UNAVAILABLE";
+  const bullProbability = evidenceAvailable ? engineProbabilityPercent(output, "bullProbability") : null;
   const regimeLabel = evidenceAvailable
     ? (canonicalState?.regime ?? marketState?.now.regime ?? "UNAVAILABLE")
     : "UNAVAILABLE";
@@ -712,12 +712,12 @@ export default function SituationRoom() {
             <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
               <TrendingUp size={13} color="#00FF88" />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)" }}>Bull</span>
-              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#00FF88" }}>{bullProbability == null ? "UNAVAILABLE" : `${bullProbability}%`}</span>
+              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#00FF88" }}>{bullProbabilityText}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
               <TrendingDown size={13} color="#FF2D55" />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)" }}>Drawdown</span>
-              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#FF2D55" }}>{crashProbability == null ? "UNAVAILABLE" : `${crashProbability}%`}</span>
+              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#FF2D55" }}>{crashProbabilityText}</span>
             </div>
           </div>
 
@@ -728,8 +728,7 @@ export default function SituationRoom() {
             ) : (
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#64748B" }}>Pressure Index UNAVAILABLE — withheld</div>
             )}
-            {bullProbability != null ? <ScoreExplainer scoreKey="bullProbability" value={bullProbability} trend="stable" compact /> : null}
-            {crashProbability != null ? <ScoreExplainer scoreKey="crashRisk" value={crashProbability} trend="stable" compact /> : null}
+            {bullProbability != null && Number.isFinite(bullProbability) ? <ScoreExplainer scoreKey="bullProbability" value={bullProbability} trend="stable" compact /> : null}
           </div>
           {/* Condition chips — canonical evidence families only; never browser-computed current truth */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>

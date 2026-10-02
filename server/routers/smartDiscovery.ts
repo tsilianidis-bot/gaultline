@@ -35,6 +35,7 @@ import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligen
 import { buildInterpretationPromptContract, createInterpretationTransaction, validateInterpretationOutput, type InterpretationTransaction, type InterpretationValidationResult } from "../../shared/interpretationIntegrity";
 import { buildCrossEngineSynthesis, buildCrossEngineSynthesisPromptContract } from "../crossEngineSynthesis";
 import { buildEarlyWarningPresentationPromptContract, getCurrentGovernedEarlyWarningPresentation } from "../earlyWarningPresentation";
+import { stripProbabilityPercentClaims } from "../stripProbabilityClaims";
 
 // ── LLM timeout helper ───────────────────────────────────────
 // Wraps any promise with a 55-second timeout so the user gets a friendly
@@ -1123,7 +1124,7 @@ INTENT ROUTING RULES (MUST follow):
 5. Always answer the broad question first. If an active symbol is relevant, note its rank in the list.
 
 Current Market Regime: ${regimeLabel} (Pressure Score: ${pressureScore}/10)
-${fmos ? `Bull Probability: ${fmos.probability.bull}% | Bear Probability: ${fmos.probability.bear}% | Primary Driver: ${fmos.probability.primaryDriver}` : ""}
+Bull/bear balance: describe it qualitatively only. FAULTLINE does not offer a crash probability or a recession probability, and its bull/bear scenario weights are uncalibrated, so never state any probability, odds or percentage chance.${fmos?.probability?.primaryDriver ? ` Primary Driver: ${fmos.probability.primaryDriver}` : ""}
 
 ========================
 IF NO BUY OPPORTUNITIES EXIST
@@ -1137,7 +1138,7 @@ If no BUY exists, explain: "There are currently no BUY-rated opportunities becau
 OPPORTUNITY SCAN STRUCTURE (ALL SECTIONS REQUIRED)
 ========================
 
-1. MARKET SUMMARY — Current Regime, Pressure Index, Opportunity Level, Bull/Bear Probability, Confidence. Briefly explain WHY this environment exists.
+1. MARKET SUMMARY — Current Regime, Pressure Index, Opportunity Level, and a qualitative bull/bear balance (words only, no percentages or probabilities). Briefly explain WHY this environment exists.
 
 2. TOP OPPORTUNITIES — ALWAYS at least 5 ranked assets. Each must include:
    • Asset + Current Rating (BUY/ACCUMULATE/WATCH/HOLD/AVOID)
@@ -1342,16 +1343,28 @@ Respond with a JSON object matching this exact schema:
     "What are the highest conviction setups?",
   ];
 
+  // Model prose never carries an invented probability: drop any sentence that
+  // states one as a percentage (James's rule; probability contract).
+  const opportunities = Array.isArray(raw.topOpportunities)
+    ? (raw.topOpportunities as Record<string, unknown>[]).map(o => ({
+        ...o,
+        primaryDriver: stripProbabilityPercentClaims(o.primaryDriver),
+        thesisSummary: stripProbabilityPercentClaims(o.thesisSummary),
+        keyRisk: stripProbabilityPercentClaims(o.keyRisk),
+        nearTermCatalyst: stripProbabilityPercentClaims(o.nearTermCatalyst),
+      }))
+    : raw.topOpportunities;
+
   return sanitize({
     queryType: "opportunity" as const,
-    macroContext: raw.macroContext,
+    macroContext: stripProbabilityPercentClaims(raw.macroContext),
     regimeLabel,
     regimeColor,
-    topOpportunities: raw.topOpportunities,
+    topOpportunities: opportunities,
     avoidList: raw.avoidList,
     sectorLeaderboard: raw.sectorLeaderboard,
-    whyTheseRankHighest: raw.whyTheseRankHighest,
-    portfolioPositioning: raw.portfolioPositioning,
+    whyTheseRankHighest: stripProbabilityPercentClaims(raw.whyTheseRankHighest),
+    portfolioPositioning: stripProbabilityPercentClaims(raw.portfolioPositioning),
     followUpChips,
     dataFreshness: "Live — updated just now",
     deepDiveLinks: [

@@ -162,7 +162,8 @@ interface TradeType {
 // Probability contract: bull / recession / crash are NOT_OFFERED (null), so the
 // trade-type rows key on the Pressure Index only and never quote a percentage.
 function pctOrNotOffered(value: number | null): string {
-  return value == null ? "not offered" : `${value}%`;
+  // Withheld payload numbers arrive as NaN/null: never render `NaN%`.
+  return value == null || !Number.isFinite(value) ? "not offered" : `${value}%`;
 }
 
 function deriveTradeTypes(score: number, direction: string, regime: string, bull: number | null, recession: number | null, crash: number | null): TradeType[] {
@@ -208,19 +209,15 @@ function deriveTradeTypes(score: number, direction: string, regime: string, bull
 }
 
 // ── Cautions derivation ────────────────────────────────────────────────────────
-function deriveCautions(score: number, direction: string, crash: number | null, recession: number | null, stressLevel: string): string[] {
+// Crash and recession probabilities are not offered (probability contract), so
+// no caution is keyed off or quotes one.
+function deriveCautions(score: number, direction: string, stressLevel: string): string[] {
   const cautions: string[] = [];
   if (score >= 65 || stressLevel === "High" || stressLevel === "Crisis") {
     cautions.push("Reduce leverage across all positions — elevated systemic pressure increases drawdown risk.");
   }
   if (direction === "Accelerating" || direction === "Deteriorating") {
     cautions.push("Avoid adding new risk exposure while pressure is accelerating — wait for stabilization.");
-  }
-  if (crash != null && crash > 20) {
-    cautions.push(`Avoid highly leveraged or illiquid positions — crash probability at ${crash}%.`);
-  }
-  if (recession != null && recession > 25) {
-    cautions.push("Remain selective with cyclical and growth exposure — recession probability elevated.");
   }
   if (score >= 45) {
     cautions.push("Avoid chasing overextended breakouts — elevated pressure increases reversal risk.");
@@ -703,8 +700,9 @@ export default function SeismographIntelligence() {
 
   // Derived data
   const tradingConditions = deriveTradingConditions(currentScore, currentDirection, probabilities.confidence);
-  const tradeTypes = deriveTradeTypes(currentScore, currentDirection, currentRegime, regimeProbs.bull, regimeProbs.recession, regimeProbs.crash);
-  const cautions = deriveCautions(currentScore, currentDirection, regimeProbs.crash, regimeProbs.recession, currentStressLevel);
+  // Recession / crash probabilities are not offered: never passed as numbers.
+  const tradeTypes = deriveTradeTypes(currentScore, currentDirection, currentRegime, regimeProbs.bull, null, null);
+  const cautions = deriveCautions(currentScore, currentDirection, currentStressLevel);
 
   return (
     <div style={{ minHeight: "100vh", background: "#000", color: "#e2e8f0", padding: "0 0 80px", opacity: loadPhase >= 1 ? 1 : 0, transition: "opacity 0.4s ease-out", position: "relative", overflow: "hidden" }}>

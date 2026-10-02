@@ -21,7 +21,7 @@ import { getRisingStarVisualDetail } from "../risingStarsVisual";
 import { forecastHorizonPromptContract, insufficientHorizonMetadata } from "../../shared/forecastMetadata";
 import { evidenceNarrativePromptContract } from "../../shared/evidenceContract";
 import { recordForecastObservation } from "../forecastHorizon";
-import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "../canonicalIntelligenceState";
+import { getAuthoritativeCanonicalIntelligenceState, toClientCanonicalIntelligenceState } from "../canonicalIntelligenceState";
 
 const timeframeSchema = z.enum(["day", "short", "swing", "long"]).default("swing");
 const assetTypeSchema = z.enum(["stock", "crypto"]);
@@ -77,7 +77,7 @@ export const outlookRouter = router({
           ...(sanitizeNumbers(result) as typeof result),
           analysisTimeframe: input.timeframe,
           forecastMetadata,
-          canonicalState: canonicalState ? toPublicCanonicalIntelligenceState(canonicalState) : null,
+          canonicalState: canonicalState ? toClientCanonicalIntelligenceState(canonicalState) : null,
         };
       } catch (err) {
         if (err instanceof TRPCError) throw err;
@@ -110,7 +110,7 @@ export const outlookRouter = router({
         return {
           ...(sanitizeNumbers(result) as typeof result),
           forecastMetadata,
-          canonicalState: canonicalState ? toPublicCanonicalIntelligenceState(canonicalState) : null,
+          canonicalState: canonicalState ? toClientCanonicalIntelligenceState(canonicalState) : null,
         };
       } catch (err) {
         if (err instanceof TRPCError) throw err;

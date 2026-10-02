@@ -13,6 +13,7 @@ import { RecoveryStatusCard, RecoveryStatusBadge } from "@/components/RecoverySt
 import { TickerChip } from "@/components/TickerActionMenu";
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
 // ── Inline types (mirrored from server/cryptoEngine.ts) ─────────
 type CryptoSignalLabel =
   | "Speculative Acceleration"
@@ -38,7 +39,7 @@ interface CryptoSignalVector {
 
 interface CryptoAssetIntelligence {
   id: string; symbol: string; name: string; image: string;
-  currentPrice: number; priceChangePercent24h: number; priceChangePercent7d: number | null;
+  currentPrice: number; priceChangePercent24h: number; priceChangePercent24hDisplay?: number | null; priceChangePercent7d: number | null;
   marketCap: number; totalVolume: number; high24h: number; low24h: number;
   circulatingSupply: number; ath: number; athChangePercent: number;
   sparkline7d: number[]; volatility24h: number; distanceFromAth: number;
@@ -207,9 +208,9 @@ function SignalBar({ label, score, color }: { label: string; score: number; colo
 }
 
 // ── Heatmap cell ──────────────────────────────────────────────
-function HeatCell({ symbol, change, price, rank }: { symbol: string; change: number; price: number; rank: number }) {
-  const intensity = Math.min(Math.abs(change) / 15, 1);
-  const color = change >= 0 ? "#00FF88" : "#FF2D55";
+function HeatCell({ symbol, change, price, rank }: { symbol: string; change: number | null; price: number; rank: number }) {
+  const intensity = change === null ? 0 : Math.min(Math.abs(change) / 15, 1);
+  const color = change24hColor(change);
   const alpha = Math.round(intensity * 200).toString(16).padStart(2, "0");
   return (
     <div style={{
@@ -223,7 +224,7 @@ function HeatCell({ symbol, change, price, rank }: { symbol: string; change: num
     }}>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#94A3B8", marginBottom: "2px" }}>#{rank}</div>
       <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "11px", color: "#F0F4FF" }}>{symbol}</div>
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color, fontWeight: 600 }}>{fmtPct(change)}</div>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color, fontWeight: 600 }}>{change24hText(change)}</div>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#64748B", marginTop: "1px" }}>{fmt(price, price < 1 ? 4 : 2)}</div>
     </div>
   );
@@ -297,9 +298,9 @@ function AssetCard({ asset, risk }: { asset: CryptoAssetIntelligence; risk: Cryp
   const biasColor  = BIAS_COLORS[asset.signalBias];
   const riskColor  = RISK_COLORS[asset.riskLevel];
   const labelColor = SIGNAL_COLORS[asset.primaryLabel];
-  const change24h  = asset.priceChangePercent24h;
-  const priceColor = change24h >= 0 ? "#00FF88" : "#FF2D55";
-  const TrendIcon  = change24h > 0 ? TrendingUp : change24h < 0 ? TrendingDown : Minus;
+  const change24h  = displayChange24h(asset);
+  const priceColor = change24hColor(change24h);
+  const TrendIcon  = change24h === null ? null : change24h > 0 ? TrendingUp : change24h < 0 ? TrendingDown : Minus;
 
   return (
     <div style={{
@@ -328,8 +329,8 @@ function AssetCard({ asset, risk }: { asset: CryptoAssetIntelligence; risk: Cryp
             <div style={{ textAlign: "right" }}>
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "20px", color: "#F0F4FF", lineHeight: 1 }}>{fmt(asset.currentPrice, asset.currentPrice < 1 ? 4 : 2)}</div>
               <div style={{ display: "flex", alignItems: "center", gap: "4px", justifyContent: "flex-end", marginTop: "3px" }}>
-                <TrendIcon size={10} style={{ color: priceColor }} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: priceColor, fontWeight: 600 }}>{fmtPct(change24h)}</span>
+                {TrendIcon ? <TrendIcon size={10} style={{ color: priceColor }} /> : null}
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: priceColor, fontWeight: 600 }}>{change24hText(change24h)}</span>
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#374151" }}>24h</span>
               </div>
             </div>
@@ -854,7 +855,7 @@ function CryptoSearchInner() {
                 <div key={coin.id} onClick={() => handleSearch(coin.id)} style={{ cursor: "pointer" }}>
                   <HeatCell
                     symbol={coin.symbol}
-                    change={coin.priceChangePercent24h}
+                    change={displayChange24h(coin)}
                     price={coin.currentPrice}
                     rank={coin.marketCapRank}
                   />

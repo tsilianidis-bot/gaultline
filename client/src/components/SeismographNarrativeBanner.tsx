@@ -18,7 +18,7 @@ import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { formatCanonicalScore } from "@shared/marketMetrics";
 import { formatOrdinal } from "@shared/historicalPercentile";
-import { PROBABILITY_DISPLAY_TEXT } from "@shared/probabilityContract";
+import { PROBABILITY_DISPLAY_TEXT, probabilityPercent, probabilityText } from "@shared/probabilityContract";
 import { useEngine } from "@/contexts/EngineContext";
 import { customerIntegrityChipLevel, customerIntegrityColor } from "@shared/customerIntegrityLabels";
 
@@ -371,9 +371,14 @@ export default function SeismographNarrativeBanner({
         <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.3)", borderRadius: "4px", borderLeft: "2px solid rgba(0,229,255,0.45)" }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(0,212,255,0.7)", letterSpacing: "0.15em", marginBottom: "5px" }}>WHAT TO MONITOR NEXT</div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>
-            {output.transitionProbabilities.transitionToCrisis != null && output.transitionProbabilities.transitionToCrisis > 20 && (
-              <><strong style={{ color: "#FF2D55" }}>Crisis transition risk: {output.transitionProbabilities.transitionToCrisis}%.</strong>{" "}</>
-            )}
+            {/* Probability contract: only an AVAILABLE contract claim is quoted, via its display text. */}
+            {(() => {
+              const crisisClaim = output.probabilityContract?.transitions.find(c => c.scenario.scenarioId === "transitionToCrisis") ?? null;
+              const crisisPct = probabilityPercent(crisisClaim);
+              return crisisPct != null && crisisPct > 20
+                ? <><strong style={{ color: "#FF2D55" }}>Crisis transition frequency: {probabilityText(crisisClaim)}.</strong>{" "}</>
+                : null;
+            })()}
             {output.marketMemory.keyMemoryPoints.slice(0, 2).map((pt, i) => (
               <span key={i}>{pt}{i < 1 ? " · " : ""}</span>
             ))}

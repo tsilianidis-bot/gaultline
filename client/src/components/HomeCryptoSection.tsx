@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { TickerChip } from "@/components/TickerActionMenu";
+import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
 
 // ── Types (mirrored from server/cryptoEngine.ts) ─────────────
 type CryptoSignalLabel =
@@ -20,7 +21,7 @@ type CryptoRiskLevel = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
 
 interface CryptoAssetIntelligence {
   id: string; symbol: string; name: string; image: string;
-  currentPrice: number; priceChangePercent24h: number;
+  currentPrice: number; priceChangePercent24h: number; priceChangePercent24hDisplay?: number | null;
   marketCap: number; totalVolume: number;
   signalBias: "Bullish" | "Neutral" | "Bearish";
   signalScore: number; riskLevel: CryptoRiskLevel; riskScore: number;
@@ -92,7 +93,7 @@ function LabelBadge({ label }: { label: CryptoSignalLabel }) {
 function MiniAssetCard({ asset }: { asset: CryptoAssetIntelligence }) {
   const biasColor = BIAS_COLORS[asset.signalBias];
   const riskColor = RISK_COLORS[asset.riskLevel];
-  const priceUp = asset.priceChangePercent24h >= 0;
+  const change24h = displayChange24h(asset);
 
   return (
     <div style={{
@@ -122,8 +123,8 @@ function MiniAssetCard({ asset }: { asset: CryptoAssetIntelligence }) {
                 ? asset.currentPrice.toFixed(2)
                 : asset.currentPrice.toFixed(4)}
           </div>
-          <div style={{ fontFamily: MONO, fontSize: '13px', color: priceUp ? '#00FF88' : '#FF2D55' }}>
-            {priceUp ? '+' : ''}{asset.priceChangePercent24h.toFixed(2)}%
+          <div style={{ fontFamily: MONO, fontSize: '13px', color: change24hColor(change24h) }}>
+            {change24hText(change24h)}
           </div>
         </div>
       </div>
@@ -377,14 +378,14 @@ export default function HomeCryptoSection() {
             Top Digital Assets
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '5px' }}>
-            {(topMarkets ?? []).slice(0, 6).map((coin: { id: string; symbol: string; name: string; priceChangePercent24h: number }) => {
-              const pct = coin.priceChangePercent24h;
-              const up = pct >= 0;
-              const intensity = Math.min(Math.abs(pct) / 10, 1);
-              const bg = up
+            {(topMarkets ?? []).slice(0, 6).map((coin: { id: string; symbol: string; name: string; priceChangePercent24h: number; priceChangePercent24hDisplay?: number | null }) => {
+              const pct = displayChange24h(coin);
+              const up = pct !== null && pct >= 0;
+              const intensity = pct === null ? 0 : Math.min(Math.abs(pct) / 10, 1);
+              const bg = pct === null ? 'rgba(100,116,139,0.06)' : up
                 ? `rgba(0,255,136,${0.06 + intensity * 0.18})`
                 : `rgba(255,45,85,${0.06 + intensity * 0.18})`;
-              const border = up ? `rgba(0,255,136,${0.15 + intensity * 0.25})` : `rgba(255,45,85,${0.15 + intensity * 0.25})`;
+              const border = pct === null ? 'rgba(100,116,139,0.15)' : up ? `rgba(0,255,136,${0.15 + intensity * 0.25})` : `rgba(255,45,85,${0.15 + intensity * 0.25})`;
               return (
                 <div
                   key={coin.id}
@@ -398,8 +399,8 @@ export default function HomeCryptoSection() {
                   onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
                 >
                   <div style={{ fontFamily: RAJDHANI, fontWeight: 700, fontSize: '11px', color: '#D1D5DB' }}>{coin.symbol}</div>
-                  <div style={{ fontFamily: MONO, fontSize: '12px', color: up ? '#00FF88' : '#FF2D55' }}>
-                    {up ? '+' : ''}{pct.toFixed(1)}%
+                  <div style={{ fontFamily: MONO, fontSize: '12px', color: change24hColor(pct) }}>
+                    {change24hText(pct, 1)}
                   </div>
                 </div>
               );

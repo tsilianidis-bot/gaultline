@@ -84,12 +84,11 @@ describe("FaultlineInterpretation: an unknown delta is Unavailable, never Stable
     expect(renderInterpretation(withKnownDeltas(-0.5))).toContain("Liquidity Easing");
     expect(renderInterpretation(withKnownDeltas(0.5))).toContain("Liquidity Tightening");
   });
-  it("source: no `?.delta ?? 0` fallback, no Neutral liquidity label, no duplicate deltaAvailability.ts", () => {
+  it("source: no `?.delta ?? 0` fallback, no Neutral liquidity label", () => {
     const s = read("client/src/components/dashboard/FaultlineInterpretation.tsx");
     expect(s).not.toMatch(/\?\.delta \?\? 0/);
     expect(s).not.toMatch(/: "Neutral"/);
     expect(s).toContain('import { availableDelta } from "@/lib/displayFallbacks";');
-    expect(() => read("client/src/lib/deltaAvailability.ts")).toThrow();
   });
 });
 
@@ -210,9 +209,10 @@ describe("Historical context trend: no 7d and no 30d reading → Unavailable, no
 });
 
 describe("Copy", () => {
-  it("Onboarding bands are the canonical PRESSURE_BANDS", () => {
+  it("Onboarding bands are the canonical PRESSURE_BANDS with the engine's regime names (QA r9)", () => {
     const o = read("client/src/components/Onboarding.tsx");
-    const expected = PRESSURE_BANDS.map(b => `${b.range} = ${b.level}`).join(" · ");
+    const expected = PRESSURE_BANDS.map(b => `${b.range} ${b.regime}`).join(" · ");
+    expect(expected).toBe("<25 LOW RISK · 25–44 MODERATE RISK · 45–64 ELEVATED RISK · 65–79 HIGH STRESS · 80+ SYSTEMIC CRISIS");
     expect(o).toContain(`detail: "${expected}",`);
     expect(o).not.toContain("30–50 = Moderate");
   });

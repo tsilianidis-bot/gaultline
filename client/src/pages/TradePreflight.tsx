@@ -7,6 +7,7 @@
 import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
+import { engineProbabilityText } from "@/lib/marketStateProjection";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { AlertTriangle, CheckCircle, XCircle, Target, Zap, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Activity, Shield, BarChart2, RefreshCw } from "lucide-react";
@@ -264,12 +265,12 @@ export default function TradePreflight() {
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <TrendingUp size={13} color="#00FF88" />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.7)" }}>Bull</span>
-              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#00FF88" }}>{output.probability.bullProbability}%</span>
+              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#00FF88" }}>{engineProbabilityText(output, "bullProbability")}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <TrendingDown size={13} color="#FF2D55" />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.7)" }}>Crash</span>
-              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#FF2D55" }}>{output.probability.crashProbability}%</span>
+              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#FF2D55" }}>{engineProbabilityText(output, "crashProbability")}</span>
             </div>
           </div>
 
@@ -641,7 +642,7 @@ export default function TradePreflight() {
             }}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", lineHeight: 1.6, textAlign: "center", letterSpacing: "0.04em" }}>
                 FAULTLINE simulations are market-regime guidance, not personalized financial advice or guaranteed predictions.
-                All readings are probability-weighted estimates derived from macroeconomic data and should not be the sole basis for any investment decision.
+                All readings are model-derived estimates (not probabilities) from macroeconomic data and should not be the sole basis for any investment decision.
               </div>
             </div>
           </div>

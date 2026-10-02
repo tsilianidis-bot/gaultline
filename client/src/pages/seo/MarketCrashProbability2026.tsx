@@ -77,7 +77,7 @@ Every user’s circumstances differ. FAULTLINE provides research context and sho
         },
         {
           question: "Does FAULTLINE publish a crash-risk forecast?",
-          answer: "No. FAULTLINE does not offer a crash probability: no governed model with a defined crash event, horizon and calibration record exists. The Pressure Index is a proprietary systemic-stress measure, not an analyst forecast or a crash-probability model. Availability and freshness depend on the underlying sources; macro inputs have known publication lags and the AI/speculation baseline is explicitly static.",
+          answer: "No. FAULTLINE does not offer a crash probability: no governed model with a defined crash event, horizon and calibration record exists. The Pressure Index is a proprietary systemic-stress measure. It is not an analyst forecast, and it is not a crash probability. Availability and freshness depend on the underlying sources; macro inputs have known publication lags and the AI/speculation baseline is explicitly static.",
         },
         {
           question: "How should historical Pressure Index material be interpreted?",

@@ -48,8 +48,8 @@ export const TRACKED_CRYPTO = [
 
 // ── Internal link map ────────────────────────────────────────────────────────
 const INTERNAL_LINKS = [
-  { text: "FAULTLINE Market Risk Context 2026", href: "/market-crash-probability-2026" },
-  { text: "Recession Probability Tracker", href: "/recession-probability" },
+  { text: "Market Crash Risk 2026", href: "/market-crash-probability-2026" },
+  { text: "Recession Risk Context", href: "/recession-probability" },
   { text: "Federal Reserve Tracker", href: "/federal-reserve-tracker" },
   { text: "Liquidity Monitor", href: "/liquidity-monitor" },
   { text: "Volatility Dashboard", href: "/volatility-dashboard" },
@@ -210,7 +210,7 @@ export async function generateOrganicContent(
 
   // Build context string for LLM
   const ctx = contextData
-    ? `Current FAULTLINE readings: Pressure Score ${contextData.pressureScore ?? "N/A"}/100, Regime: ${contextData.regime ?? "Unknown"}, Stress: ${contextData.stressLevel ?? "Unknown"}${contextData.crashProbability != null ? `, Crash Probability: ${contextData.crashProbability}%` : ""}${contextData.bullProbability != null ? `, Bull Probability: ${contextData.bullProbability}%` : ""}${contextData.topDrivers?.length ? `, Top Drivers: ${contextData.topDrivers.join(", ")}` : ""}.`
+    ? `Current FAULTLINE readings: Pressure Score ${contextData.pressureScore ?? "N/A"}/100, Regime: ${contextData.regime ?? "Unknown"}, Stress: ${contextData.stressLevel ?? "Unknown"}. FAULTLINE does not offer a crash probability, does not offer a recession probability, and its scenario weights are uncalibrated, so state no probability percentage${contextData.topDrivers?.length ? `, Top Drivers: ${contextData.topDrivers.join(", ")}` : ""}.`
     : "";
 
   // Select relevant internal links (3-5 per article)

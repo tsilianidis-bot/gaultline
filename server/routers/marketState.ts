@@ -1,6 +1,6 @@
 import { publicProcedure, router } from "../_core/trpc";
 import { getCanonicalMarketState } from "../marketStateService";
-import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "../canonicalIntelligenceState";
+import { getAuthoritativeCanonicalIntelligenceState, toClientCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "../canonicalIntelligenceState";
 import { buildCanonicalEvidencePacket } from "../evidencePacket";
 import { getAuthoritativeCrossEngineSynthesis } from "../crossEngineSynthesis";
 import { getCurrentGovernedEarlyWarningPresentation, getCurrentGovernedEarlyWarningTimeline } from "../earlyWarningPresentation";
@@ -9,7 +9,7 @@ export const marketStateRouter = router({
   current: publicProcedure.query(() => getCanonicalMarketState()),
   canonicalCurrent: publicProcedure.query(async () => {
     const state = await getAuthoritativeCanonicalIntelligenceState();
-    return state ? toPublicCanonicalIntelligenceState(state) : null;
+    return state ? toClientCanonicalIntelligenceState(state) : null;
   }),
   evidenceCurrent: publicProcedure.query(async () => {
     const state = await getAuthoritativeCanonicalIntelligenceState();

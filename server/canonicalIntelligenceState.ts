@@ -189,3 +189,33 @@ export function toPublicCanonicalIntelligenceState(state: CanonicalIntelligenceS
     },
   };
 }
+
+/**
+ * Browser-facing projection (tRPC responses only). The probability contract
+ * withholds the scenario set as uncalibrated, so the raw scenario arithmetic
+ * (e.g. bull 43 / neutral 43 / bear 14) is not shipped to the client, where
+ * it could be rendered as a percentage. Display boundary only: the manifest,
+ * every engine / scoring input, and the server-side public state used by
+ * evidence packets, synthesis and prompts are unchanged.
+ */
+export function toClientCanonicalIntelligenceState(state: CanonicalIntelligenceState): PublicCanonicalIntelligenceState {
+  const publicState = toPublicCanonicalIntelligenceState(state);
+  return {
+    ...publicState,
+    scenarioOutputs: {},
+    probabilityContract: withholdUndisplayedClaimValues(publicState.probabilityContract),
+  };
+}
+
+/** Copy of a contract tree where every claim whose display is not AVAILABLE carries value null. */
+export function withholdUndisplayedClaimValues<T>(node: T): T {
+  if (Array.isArray(node)) return node.map(item => withholdUndisplayedClaimValues(item)) as T;
+  if (!node || typeof node !== "object") return node;
+  const out: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(node as Record<string, unknown>)) out[key] = withholdUndisplayedClaimValues(child);
+  const display = out.display as { state?: unknown } | undefined;
+  if (typeof out.claimId === "string" && "value" in out && display && typeof display === "object" && display.state !== "AVAILABLE") {
+    out.value = null;
+  }
+  return out as T;
+}
