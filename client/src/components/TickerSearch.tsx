@@ -306,26 +306,23 @@ function StockIntelligenceCard({
                 fontWeight: 700, fontSize: '22px',
                 color: '#F0F4FF', letterSpacing: '0.06em',
               }}>{profile.ticker}</span>
-              {profile.isLive && (
-                // Real freshness: Yahoo/Polygon quotes carry isDelayed → DELAYED, not LIVE.
-                <span style={{
-                  fontSize: '11px', letterSpacing: '0.1em',
-                  color: signalQuoteBadge(profile) === 'LIVE' ? '#00D4FF' : '#94A3B8',
-                  background: signalQuoteBadge(profile) === 'LIVE' ? 'rgba(0,212,255,0.08)' : 'rgba(255,255,255,0.04)',
-                  padding: '2px 5px', borderRadius: '2px',
-                  border: `1px solid ${signalQuoteBadge(profile) === 'LIVE' ? 'rgba(0,212,255,0.15)' : 'rgba(255,255,255,0.1)'}`,
-                  fontFamily: "'IBM Plex Mono', monospace",
-                }}>{signalQuoteBadge(profile)}</span>
-              )}
-              {profile.source === 'stale' && (
-                <span style={{
-                  fontSize: '11px', letterSpacing: '0.1em',
-                  color: '#FF9500', background: 'rgba(255,149,0,0.08)',
-                  padding: '2px 5px', borderRadius: '2px',
-                  border: '1px solid rgba(255,149,0,0.15)',
-                  fontFamily: "'IBM Plex Mono', monospace",
-                }}>STALE</span>
-              )}
+              {/* One freshness badge from the quote AND its response source:
+                  stale → STALE, fallback → UNAVAILABLE, delayed → DELAYED, closed → LAST CLOSE. */}
+              {(() => {
+                const badge = signalQuoteBadge(profile, profile.source);
+                const live = badge === 'LIVE';
+                const stale = badge === 'STALE';
+                return (
+                  <span data-ticker-freshness={badge} style={{
+                    fontSize: '11px', letterSpacing: '0.1em',
+                    color: live ? '#00D4FF' : stale ? '#FF9500' : '#94A3B8',
+                    background: live ? 'rgba(0,212,255,0.08)' : stale ? 'rgba(255,149,0,0.08)' : 'rgba(255,255,255,0.04)',
+                    padding: '2px 5px', borderRadius: '2px',
+                    border: `1px solid ${live ? 'rgba(0,212,255,0.15)' : stale ? 'rgba(255,149,0,0.15)' : 'rgba(255,255,255,0.1)'}`,
+                    fontFamily: "'IBM Plex Mono', monospace",
+                  }}>{badge}</span>
+                );
+              })()}
               <span style={{
                 fontSize: '11px', letterSpacing: '0.08em',
                 color: 'rgba(100,116,139,0.75)',
