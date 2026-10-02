@@ -4,11 +4,28 @@ import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
 
-/** True when auth.me never got a server answer (fetch rejected, e.g. offline), as opposed to a server error. */
+/**
+ * True only for a real network failure: fetch() rejected (TypeError, wrapped by tRPC as `cause`)
+ * or the browser reports it is offline. Malformed or non-tRPC response bodies are server answers, not offline.
+ */
 export function isAuthNetworkError(error: unknown): boolean {
   if (!error) return false;
-  if (error instanceof TRPCClientError) return !error.data && !error.shape;
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
+  if (error instanceof TRPCClientError) return error.cause instanceof TypeError;
   return error instanceof TypeError;
+}
+
+/** 5xx from the server (tRPC error or a proxy/HTML error wrapped by safeFetch). Never 401/4xx or network failures. */
+export function isAuthServerError(error: unknown): boolean {
+  if (!(error instanceof TRPCClientError)) return false;
+  const status = (error.data as { httpStatus?: unknown } | undefined)?.httpStatus;
+  return typeof status === "number" && status >= 500;
+}
+
+/** One bounded retry, only for a transient server error, so a brief 5xx on first load heals without a reload. */
+export const AUTH_ME_SERVER_RETRIES = 1;
+export function shouldRetryAuthMe(failureCount: number, error: unknown): boolean {
+  return failureCount < AUTH_ME_SERVER_RETRIES && isAuthServerError(error);
 }
 
 type UseAuthOptions = {
@@ -25,7 +42,8 @@ export function useAuth(options?: UseAuthOptions) {
   const isDemo = isDemoPath();
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
-    retry: false,
+    retry: shouldRetryAuthMe,
+    retryDelay: 1000,
     refetchOnWindowFocus: false,
     // A failed auth.me must not refetch each time another useAuth() consumer mounts.
     // Offline, that made gate <-> page remounts refetch auth.me hundreds of times per second.

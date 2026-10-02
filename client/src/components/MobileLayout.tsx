@@ -147,7 +147,7 @@ function CoreGate() {
 // ── Offline state: identity unknown because auth.me got no server answer ──
 function OfflineGate({ onRetry }: { onRetry: () => void }) {
   return (
-    <div role="status" className="flex-1 flex flex-col items-center justify-center bg-[#050608] px-6 text-center">
+    <div role="status" className="h-full min-h-full flex flex-col items-center justify-center bg-[#050608] px-6 text-center">
       <div className="text-[10px] font-mono tracking-[0.3em] text-[#F59E0B]/70 mb-2">OFFLINE</div>
       <h2 className="text-xl font-bold text-white mb-3">You're offline</h2>
       <p className="text-[#A8B8CC] text-sm mb-8 leading-relaxed">
@@ -157,7 +157,7 @@ function OfflineGate({ onRetry }: { onRetry: () => void }) {
         type="button"
         onClick={onRetry}
         className="w-full max-w-xs py-3 text-center font-mono text-xs tracking-widest rounded-lg text-[#00D4FF]"
-        style={{ border: "1px solid rgba(0,212,255,0.3)" }}
+        style={{ border: "1px solid rgba(0,212,255,0.3)", textAlign: "center", display: "block" }}
       >
         RETRY
       </button>
