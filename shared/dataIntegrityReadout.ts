@@ -33,7 +33,7 @@ function plural(n: number, word: string): string {
 
 export function canonicalFreshnessReadout(input: {
   integrityLabel: CustomerIntegrityLabel;
-  canonical: (EvidenceSnapshotLike & { generatedAt?: string | null }) | null | undefined;
+  canonical: (EvidenceSnapshotLike & { generatedAt?: string | null; confidenceOrEvidenceQuality?: string | null }) | null | undefined;
 }): FreshnessReadout {
   const { integrityLabel: label, canonical } = input;
   if (!canonical || label === "UNAVAILABLE") {
@@ -48,7 +48,11 @@ export function canonicalFreshnessReadout(input: {
   if (counts.fallback > 0) parts.push(`${plural(counts.fallback, "input")} on fallback`);
   if (counts.unavailable > 0) parts.push(`${plural(counts.unavailable, "input")} unavailable`);
   const inputs = parts.length ? `${parts.join(", ")}.` : "No delayed, stale, fallback or unavailable inputs.";
-  return { label, detail: `${runText} ${inputs}` };
+  // The snapshot's own evidence-quality grade (e.g. PARTIAL), stated beside the inputs.
+  const grade = typeof canonical.confidenceOrEvidenceQuality === "string" && canonical.confidenceOrEvidenceQuality.trim()
+    ? ` Evidence quality: ${canonical.confidenceOrEvidenceQuality.trim().toUpperCase()}.`
+    : "";
+  return { label, detail: `${runText}${grade} ${inputs}` };
 }
 
 /** "Sep 2026" for "2026-09" / "2026-09-30"; null when not a month. */
