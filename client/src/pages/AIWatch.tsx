@@ -139,7 +139,7 @@ export default function AIWatch() {
 
   // AI bubble metrics
   const aiMetrics = [
-    { label: 'Total AI Capex 2024', value: '$214B', color: '#FF9500', delta: '+42% YoY' },
+    { label: 'Total AI Capex', value: 'Not tracked', color: '#64748B', delta: 'No sourced figure in the app' },
     { label: 'AI Concentration (S&P)', value: '32.4%', color: '#FF2D55', delta: '+1.8%' },
     { label: 'Hyperscaler GPU Orders', value: '2.4M', color: '#FF9500', delta: '+180% YoY' },
     { label: 'AI Startup Valuations', value: '$890B', color: '#FFD700', delta: '+65% YoY' },
