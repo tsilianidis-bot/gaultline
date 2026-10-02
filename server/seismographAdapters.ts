@@ -146,10 +146,12 @@ export function fmosToEvidencePackets(
   // 3. Historical Analogs
   if (output.analogs && output.analogs.length > 0) {
     const topAnalog = output.analogs[0];
-    const analogSignal: EvidenceSignal =
-      topAnalog.similarity > 70 ? "stressed" :
-      topAnalog.similarity > 50 ? "bearish" :
-      "neutral";
+    // Defect fix (scenario evidence-vote v2): similarity measures resemblance to a
+    // reference period, not stress or direction. Mapping similarity > 70 to
+    // "stressed" made a 91%-similar bullish analog ("Fed Pivot Rally") the only
+    // bearish vote in the scenario set while the canonical state showed no
+    // verified analog. The packet is kept as non-directional context.
+    const analogSignal: EvidenceSignal = "neutral";
 
     packets.push({
       source: "fmos-historical-analogs",

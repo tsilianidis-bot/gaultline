@@ -117,9 +117,9 @@ describe("canonical contract on the 2026-10-01 production state", () => {
     expect(notOfferedClaim("crash").display.percent).toBeNull();
   });
 
-  it("labels the current evidence vote as model v1 for every seismograph version (methodology unchanged)", () => {
+  it("labels the evidence vote by seismograph version (held: 2.1 = v2)", () => {
     expect(scenarioModelForSeismographVersion("2.0").modelVersion).toBe("seismograph-evidence-vote-v1");
-    expect(scenarioModelForSeismographVersion("2.1").modelVersion).toBe("seismograph-evidence-vote-v1");
+    expect(scenarioModelForSeismographVersion("2.1").modelVersion).toBe("seismograph-evidence-vote-v2");
     expect(contract.scenarioSet.model.modelVersion).toBe("seismograph-evidence-vote-v1");
     expect(RETIRED_PROBABILITY_GENERATORS.length).toBeGreaterThan(0);
   });
