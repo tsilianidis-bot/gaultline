@@ -555,21 +555,21 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
       return "Low Curve Pressure";
     },
     meaning: (v) => {
-      if (v >= 75) return "The curve shape and the 10Y level are in a high-pressure band (deep inversion or a sharp re-steepening from inversion, and/or a high 10Y yield).";
-      if (v >= 55) return "The curve shape and the 10Y level are adding meaningful rate-structure pressure.";
+      if (v >= 75) return "The curve is deeply inverted and the 10Y yield is high. A normal or steep curve scores low on this vector.";
+      if (v >= 55) return "An inverted curve and/or a high 10Y yield are adding meaningful rate-structure pressure.";
       if (v >= 35) return "The curve shape and the 10Y level are adding some rate-structure pressure.";
       return "The curve shape and the 10Y level are adding little rate-structure pressure.";
     },
     measures: "The 10-year minus 2-year Treasury spread (DGS10 − DGS2) in inversion and flatness bands, blended with the 10-year yield level. Formerly labelled Volatility Regime; it does not read VIX or realized volatility.",
     howCalculated: "FRED DGS10 and DGS2: the 10Y–2Y spread is scored in inversion/flatness bands and blended with a score for the 10Y yield level. No VIX, options or realized-volatility input.",
-    whyItMatters: "The curve and the 10Y level summarize the rate structure facing borrowers and risk assets. Inversions have historically preceded tighter credit conditions; a high 10Y raises refinancing costs.",
+    whyItMatters: "The curve and the 10Y level summarize the rate structure facing borrowers and risk assets. Inversion scores highest; a normal or steep curve scores lowest; a high 10Y yield adds pressure (refinancing costs).",
     ranges: [
       { label: "Low Curve Pressure", range: "0–34", description: "Curve and 10Y level add little pressure." },
       { label: "Elevated Curve Pressure", range: "35–54", description: "Some rate-structure pressure." },
       { label: "High Curve Pressure", range: "55–74", description: "Meaningful rate-structure pressure." },
-      { label: "Extreme Curve Pressure", range: "75–100", description: "Deep inversion or high 10Y level." },
+      { label: "Extreme Curve Pressure", range: "75–100", description: "Deep inversion together with a high 10Y level." },
     ],
-    watchNext: (_v) => "Watch the 10Y–2Y spread (inversion deepening or re-steepening) and the 10Y yield level as FRED publishes new daily observations.",
+    watchNext: (_v) => "Watch the 10Y–2Y spread (moves toward or deeper into inversion raise the score) and the 10Y yield level as FRED publishes new daily observations.",
     historicalContext: (pct, analog) => {
       if (pct === undefined && !analog) return null;
       const parts: string[] = [];

@@ -18,6 +18,12 @@ export interface WatchlistItem {
   createdAt: number;
   lastBreached?: number;      // timestamp of last breach
   breachCount: number;
+  /**
+   * Schema marker stored inside the item (same faultline_watchlist_v1 value):
+   * 100 = this score_overall threshold is on the canonical 0–100 scale.
+   * Absent = written by a pre-/100 bundle (0–10 scale).
+   */
+  overallScale?: 100;
 }
 
 export interface IndicatorDef {
@@ -324,47 +330,82 @@ export const INDICATOR_MAP = Object.fromEntries(INDICATOR_CATALOG.map(d => [d.ke
 
 // ── Persistence ───────────────────────────────────────────────
 const STORAGE_KEY = 'faultline_watchlist_v1';
-/** Set once saved score_overall thresholds have been moved from 0–10 to 0–100. */
-export const OVERALL_SCALE_KEY = 'faultline_watchlist_overall_scale';
+export const WATCHLIST_STORAGE_KEY = STORAGE_KEY;
+/** Fallback for a missing / invalid score_overall threshold (never null or 0). */
+export const OVERALL_DEFAULT_THRESHOLD = 70;
+
+function validOverallThreshold(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v) && v > 0;
+}
 
 /**
- * One-time migration: score_overall thresholds were stored on the old 0–10
- * scale. Multiply them by 10 exactly once (guarded by OVERALL_SCALE_KEY), so a
- * saved "above 7.0" stays "above 70" instead of firing at 7/100.
+ * Normalize one stored item to the canonical 0–100 overall-score scale.
+ * The scale marker lives on the item itself, so every read and write path
+ * agrees without a separate flag key:
+ *  - overallScale === 100 → already /100; kept (invalid → default 70).
+ *  - unmarked, finite and ≤ 10 → old 0–10 value; ×10 exactly once.
+ *  - unmarked and > 10 → already /100; kept as is.
+ *  - null / NaN / non-finite / ≤ 0 → default 70.
+ * The result is always marked, so normalizing again is a no-op (idempotent).
  */
-export function migrateOverallScale(items: WatchlistItem[], alreadyMigrated: boolean): WatchlistItem[] {
-  if (alreadyMigrated) return items;
+export function normalizeOverallItem(item: WatchlistItem): WatchlistItem {
+  if (item.indicatorKey !== 'score_overall') return item;
+  const v = item.thresholdValue as unknown;
+  let thresholdValue: number;
+  if (!validOverallThreshold(v)) thresholdValue = OVERALL_DEFAULT_THRESHOLD;
+  else if (item.overallScale === 100 || v > 10) thresholdValue = v;
+  else thresholdValue = Math.round(v * 100) / 10;
+  return { ...item, thresholdValue, overallScale: 100 };
+}
+
+/** Pure migration of a stored list (idempotent). */
+export function migrateOverallScale(items: WatchlistItem[]): WatchlistItem[] {
+  return items
+    .filter((item): item is WatchlistItem => !!item && typeof item === 'object' && typeof (item as WatchlistItem).indicatorKey === 'string')
+    .map(normalizeOverallItem);
+}
+
+/** Items written by this bundle are /100: mark them (invalid → default 70), never ×10. */
+function markForSave(items: WatchlistItem[]): WatchlistItem[] {
   return items.map(item => item.indicatorKey === 'score_overall'
-    ? { ...item, thresholdValue: Math.round(item.thresholdValue * 10 * 10) / 10 }
+    ? { ...item, thresholdValue: validOverallThreshold(item.thresholdValue) ? item.thresholdValue : OVERALL_DEFAULT_THRESHOLD, overallScale: 100 as const }
     : item);
 }
 
-export function loadWatchlist(): WatchlistItem[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(OVERALL_SCALE_KEY, '100');
-      return getDefaultWatchlist();
-    }
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return getDefaultWatchlist();
-    const migrated = localStorage.getItem(OVERALL_SCALE_KEY) === '100';
-    if (migrated) return parsed;
-    const next = migrateOverallScale(parsed, false);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    localStorage.setItem(OVERALL_SCALE_KEY, '100');
-    return next;
-  } catch {
-    return getDefaultWatchlist();
-  }
-}
-
-export function saveWatchlist(items: WatchlistItem[]): void {
+function writeItems(items: WatchlistItem[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   } catch {
     // Storage full or unavailable — fail silently
   }
+}
+
+export function loadWatchlist(): WatchlistItem[] {
+  let raw: string | null;
+  try {
+    raw = localStorage.getItem(STORAGE_KEY);
+  } catch {
+    // Storage unavailable: defaults (already /100, marked); nothing to persist.
+    return getDefaultWatchlist();
+  }
+  let parsed: unknown = null;
+  if (raw) {
+    try { parsed = JSON.parse(raw); } catch { parsed = null; }
+  }
+  if (!Array.isArray(parsed)) {
+    // No key, corrupt JSON or wrong shape: store marked /100 defaults so no
+    // later load (e.g. AppLayout) can mistake them for 0–10 values.
+    const defaults = getDefaultWatchlist();
+    writeItems(defaults);
+    return defaults;
+  }
+  const next = migrateOverallScale(parsed as WatchlistItem[]);
+  if (JSON.stringify(next) !== raw) writeItems(next);
+  return next;
+}
+
+export function saveWatchlist(items: WatchlistItem[]): void {
+  writeItems(markForSave(items));
 }
 
 export function getDefaultWatchlist(): WatchlistItem[] {
@@ -373,7 +414,8 @@ export function getDefaultWatchlist(): WatchlistItem[] {
     {
       id: 'default-1',
       indicatorKey: 'score_overall',
-      thresholdValue: 70,
+      thresholdValue: OVERALL_DEFAULT_THRESHOLD,
+      overallScale: 100,
       condition: 'above',
       severity: 'critical',
       note: 'Systemic risk entering high-stress territory',

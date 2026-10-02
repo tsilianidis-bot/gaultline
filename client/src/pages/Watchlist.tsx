@@ -156,6 +156,7 @@ function WatchlistCard({ item, reading, def, onEdit, onDelete, index }: Watchlis
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
             <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '26px', color: isBreached ? sevCfg.color : catColor, textShadow: isBreached ? `0 0 20px ${sevCfg.color}80` : `0 0 12px ${catColor}60`, lineHeight: 1 }}>
               {liveValue != null ? def.format(liveValue) : '—'}
+              {liveValue != null && def.unit === '/100' && <span data-watchlist-score-suffix style={{ fontSize: '12px', color: '#6B7280', marginLeft: '2px' }}>/100</span>}
             </div>
             <div
               data-watchlist-state={reading.stateLabel ?? 'LIVE'}
