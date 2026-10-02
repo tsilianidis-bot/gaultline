@@ -985,3 +985,57 @@ describe("no X/10 score text on routed #59 pages (Signals, Charts, SimulatePress
     expect(slashTenLines("<span>/100</span> {v}/100 `/ 100`").length).toBe(0);
   });
 });
+
+describe("QA r7 blockers: Simulate probability NaN%, Charts legend/ribbon/footer, slider inputs", async () => {
+  const { probabilityPercentText } = await import("../client/src/lib/simulatePressureView");
+  const { selectBrowserMarketOutput } = await import("../client/src/lib/marketStateProjection");
+  const { DEFAULT_INDICATORS } = await import("../client/src/lib/engine");
+  const sim = src("client/src/pages/SimulatePressure.tsx");
+  const charts = src("client/src/pages/Charts.tsx");
+  const KEYS = ["crashProbability", "recessionProbability", "stagflationProbability"] as const;
+
+  it("probabilityPercentText: finite 0–100 → 'N%', withheld (NaN / null / undefined / ±Infinity / out of range) → '—'", () => {
+    expect(probabilityPercentText(34)).toBe("34%");
+    expect(probabilityPercentText(0)).toBe("0%");
+    for (const v of [Number.NaN, null, undefined, Infinity, -Infinity, -1, 101, "34"]) expect(probabilityPercentText(v)).toBe("—");
+  });
+
+  it("SimulatePressure probability row renders through the guard, never a raw {p.value}%", () => {
+    expect(sim).not.toMatch(/\{p\.value\}%/);
+    expect(sim).toMatch(/data-sim-probability=\{p\.label\}/);
+    expect(sim).toMatch(/\{probabilityPercentText\(p\.value\)\}/);
+  });
+
+  // Runs against whatever engine/projection is in the tree: at #59's base the
+  // values are finite; with #60 merged the withheld ones are NaN. Neither may
+  // reach the page as "NaN%".
+  it.each([
+    ["deterministic fallback", {}],
+    ["simulation", { vix: 35 }],
+  ])("browser engine output (%s): probability cells never render NaN%%", (_mode, overrides) => {
+    const { output } = selectBrowserMarketOutput({ marketState: null, baselineIndicators: DEFAULT_INDICATORS, simulationOverrides: overrides });
+    for (const k of KEYS) {
+      const raw = (output.probability as unknown as Record<string, number>)[k];
+      const text = probabilityPercentText(raw);
+      expect(text).not.toMatch(/NaN/);
+      if (Number.isFinite(raw)) expect(text).toBe(`${raw}%`);
+      else expect(text).toBe("—");
+    }
+  });
+
+  it("Charts: no 0–10 zone legend (7.5+ Danger Zone / 6.0–7.5 / 4.5–6.0)", () => {
+    expect(charts).not.toMatch(/Danger Zone|7\.5\+|6\.0–7\.5|4\.5–6\.0/);
+  });
+
+  it("Charts: ribbon has no static Liquidity 5.8/10, AI Sentiment 72/100 EXTREME or VIX 22.8; no MODEL DATA footer", () => {
+    expect(charts).not.toMatch(/'5\.8'|'72'|'22\.8'|EXTREME/);
+    expect(charts).not.toMatch(/MODEL DATA/);
+    expect(charts).toMatch(/buildChartsInstruments\(\{ quotes: quotesQuery\.data\?\.items \?\? null, fred, now: Date\.now\(\) \}\)/);
+  });
+
+  it("SimulatePressure 0–10 sliders are labelled as inputs (not a FAULTLINE score) and show no /10", () => {
+    const sliders = sim.slice(sim.indexOf("const SLIDERS"), sim.indexOf("const CATEGORIES"));
+    expect(sliders).not.toMatch(/FAULTLINE|score/i);
+    expect(sliders).not.toMatch(/unit: '\/10'/);
+  });
+});

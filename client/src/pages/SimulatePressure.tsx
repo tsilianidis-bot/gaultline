@@ -20,7 +20,7 @@ import { Zap, RotateCcw, AlertTriangle, TrendingUp, TrendingDown,
 } from 'lucide-react';
 import { PreflightTrigger } from '@/components/MarketPreflight';
 import { useSEO } from '@/hooks/useSEO';
-import { canonicalSummary, sandboxScoreOn100, SANDBOX_BASIS } from '@/lib/simulatePressureView';
+import { canonicalSummary, probabilityPercentText, sandboxScoreOn100, SANDBOX_BASIS } from '@/lib/simulatePressureView';
 
 // ── Slider config ─────────────────────────────────────────────
 interface SliderConfig {
@@ -405,8 +405,8 @@ export default function SimulatePressure() {
             { label: 'Stagflation', value: probability.stagflationProbability, color: '#FFD700' },
           ].map(p => (
             <div key={p.label} style={{ background: 'rgba(5,6,8,0.6)', borderRadius: '4px', padding: '8px', textAlign: 'center', border: `1px solid ${p.color}15` }}>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: p.color, lineHeight: 1, transition: 'color 0.3s ease' }}>
-                {p.value}%
+              <div data-sim-probability={p.label} style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: probabilityPercentText(p.value) === '—' ? '#6B7280' : p.color, lineHeight: 1, transition: 'color 0.3s ease' }}>
+                {probabilityPercentText(p.value)}
               </div>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                 {p.label}

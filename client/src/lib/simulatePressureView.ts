@@ -19,6 +19,16 @@ export function sandboxScoreOn100(score0to10: number | null | undefined): number
   return Math.round(Math.min(10, Math.max(0, score0to10)) * 10);
 }
 
+/**
+ * Probability cell text. A finite 0–100 number renders as "N%"; anything else
+ * (null, undefined, NaN for a withheld probability, out of range) renders "—",
+ * never "NaN%" or "0%".
+ */
+export function probabilityPercentText(value: unknown): string {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 100) return "—";
+  return `${value}%`;
+}
+
 /** value is null when the engine published no score: rendered "—", never 0. */
 export interface CanonicalVectorRow { id: string; label: string; value: number | null }
 
