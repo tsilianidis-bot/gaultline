@@ -130,3 +130,53 @@ describe("public claims truth: price levels, figures, engine counts (PR #56 r7)"
     expect(meta.match(/\$60[–-]65 billion|\$60B/g)?.length).toBe(1);
   });
 });
+
+describe("public claims truth: no '$214B' AI capex figure on public pages or SEO (PR #56 r9)", () => {
+  // Public and SEO surfaces: every SEO landing page, every Public* page, the
+  // marketing/landing/methodology components, client meta (useSEO, index.html),
+  // and the server-rendered meta/SSR. App-only files owned by other PRs
+  // (AIWatch.tsx and lib/data.ts: #59; Guide.tsx and lib/chartData.ts: #60)
+  // are deliberately out of scope here.
+  const walkExt = (dir: string, exts: string[]): string[] =>
+    readdirSync(join(root, dir)).flatMap((name) => {
+      const rel = `${dir}/${name}`;
+      return statSync(join(root, rel)).isDirectory() ? walkExt(rel, exts) : exts.some((e) => name.endsWith(e)) ? [rel] : [];
+    });
+  const surfaces = [
+    ...walkExt("client/src/pages/seo", [".tsx", ".ts"]),
+    ...readdirSync(join(root, "client/src/pages")).filter((n) => /^Public\w*\.tsx$/.test(n)).map((n) => `client/src/pages/${n}`),
+    ...walkExt("client/src/components/landing", [".tsx", ".ts"]),
+    ...walkExt("client/src/components/methodology", [".tsx", ".ts"]),
+    "client/src/pages/SEOLandingPage.tsx",
+    "client/src/pages/MarketingSite.tsx",
+    "client/src/pages/Methodology.tsx",
+    "client/src/pages/Press.tsx",
+    "client/src/pages/About.tsx",
+    "client/src/pages/TrustCenter.tsx",
+    "client/src/pages/PressureIndex.tsx",
+    "client/src/pages/TrackRecord.tsx",
+    "client/src/hooks/useSEO.ts",
+    "client/index.html",
+    "client/public/sitemap.xml",
+    "server/seoMeta.ts",
+    "server/publicContentSsr.ts",
+    "server/seoRoutes.ts",
+  ];
+  const figure214 = /\$\s?214\s?(B\b|billion)/i;
+
+  it("flags the original r4 copies", () => {
+    expect("Monitor $214B+ in AI capex commitments and the equities most exposed to AI infrastructure spending cycles.").toMatch(figure214);
+    expect("Track $214B+ in AI capex commitments and mega-cap concentration.").toMatch(figure214);
+    expect("Currently tracking $214 billion in announced AI capex.").toMatch(figure214);
+  });
+
+  it("no public or SEO surface carries the figure", () => {
+    expect(surfaces.length).toBeGreaterThan(80);
+    expect(surfaces.filter((path) => figure214.test(read(path)))).toEqual([]);
+  });
+
+  it("the AIWatch meta and the AI bubble page describe the static baseline instead", () => {
+    expect(read("client/src/hooks/useSEO.ts")).toContain("FAULTLINE uses a static AI-concentration baseline and does not ingest AI capex data.");
+    expect(read("client/src/pages/PublicAIBubble.tsx")).toContain("FAULTLINE does not ingest capex data.");
+  });
+});
