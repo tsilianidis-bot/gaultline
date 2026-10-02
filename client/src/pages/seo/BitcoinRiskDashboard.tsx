@@ -5,18 +5,18 @@ export default function BitcoinRiskDashboard() {
     <SEOLandingPage
       seo={{
         title: "Bitcoin Risk Dashboard — BTC Risk Score, Key Levels & Macro Analysis | FAULTLINE",
-        description: "Bitcoin risk dashboard: BTC macro alignment score, key support and resistance levels, liquidity sensitivity, and regime-based bull/bear case analysis built on the FAULTLINE Pressure Index.",
+        description: "Bitcoin risk dashboard: BTC macro alignment score, liquidity sensitivity, and regime-based bull/bear case analysis built on the FAULTLINE Pressure Index.",
         canonical: "/bitcoin-risk-dashboard",
       }}
       badge="BITCOIN RISK INTELLIGENCE"
       headline={"Bitcoin Risk Dashboard\nBTC Macro Analysis"}
-      subheadline="FAULTLINE's Bitcoin Risk Dashboard provides a comprehensive macro-aligned risk assessment for BTC — covering key price levels, liquidity sensitivity, macro regime alignment, bull and bear case scenarios, and systemic risk exposure."
+      subheadline="FAULTLINE's Bitcoin Risk Dashboard provides a comprehensive macro-aligned risk assessment for BTC — covering liquidity sensitivity, macro regime alignment, bull and bear case scenarios, and systemic risk exposure."
       ctaLabel="VIEW BTC RISK DATA"
       ctaHref="/app/crypto"
       accentColor="#F7931A"
       features={[
         { icon: "◈", title: "Macro Regime Alignment Score", desc: "BTC classified against the current macro regime. Risk-on vs. risk-off conditions fundamentally change Bitcoin's risk/reward profile." },
-        { icon: "◎", title: "Key Support & Resistance Levels", desc: "Critical BTC price levels refreshed as new data is published: major support zones, resistance clusters, and key psychological levels." },
+        { icon: "◎", title: "Price Levels", desc: "FAULTLINE does not publish price targets or support/resistance levels." },
         { icon: "⬡", title: "Liquidity Sensitivity Rating", desc: "Bitcoin is the most liquidity-sensitive major asset. FAULTLINE scores BTC's vulnerability to Fed QT and global liquidity withdrawal." },
         { icon: "◈", title: "Bull Case / Bear Case Analysis", desc: "Structured bull and bear case context for BTC based on current macro conditions and technical structure." },
         { icon: "◎", title: "BTC Dominance Tracking", desc: "Monitor Bitcoin's share of total crypto market cap — the primary indicator of whether capital is flowing into or out of altcoins." },
@@ -49,7 +49,7 @@ FAULTLINE's Bitcoin Risk Dashboard uses the macro framework as the primary analy
         },
         {
           heading: "Bitcoin Key Price Levels and Technical Structure",
-          body: `FAULTLINE tracks the following key Bitcoin price levels as part of the risk dashboard:
+          body: `FAULTLINE does not publish price targets or support/resistance levels. How technical levels are commonly read:
 
 Major Support Zones: These are price levels where significant buying interest has historically emerged — previous all-time highs that became support and major moving averages (200-day, 200-week).
 
@@ -57,7 +57,7 @@ Resistance Clusters: Price levels where significant selling pressure has histori
 
 Key Psychological Levels: Round numbers ($100K, $150K, $200K) that attract significant options positioning and retail attention.
 
-The relationship between current price and these key levels determines the risk/reward profile of BTC at any given time. FAULTLINE's risk score incorporates the proximity to support vs. resistance as one of its inputs.`,
+FAULTLINE does not publish price targets or support/resistance levels.`,
         },
       ]}
       faqs={[
@@ -74,8 +74,8 @@ The relationship between current price and these key levels determines the risk/
           answer: "Bitcoin's correlation with the S&P 500 has increased significantly since 2020 as institutional adoption has grown. During risk-off events (market stress, recession fears), BTC typically falls alongside equities — often more severely due to its higher volatility. During risk-on environments, BTC can outperform equities significantly. FAULTLINE's macro regime alignment score reflects this by reading BTC through the same systemic pressure conditions as equities.",
         },
         {
-          question: "What BTC price levels does FAULTLINE track?",
-          answer: "FAULTLINE tracks major support zones (previous all-time highs that became support, 200-day and 200-week moving averages), resistance clusters (previous all-time highs before they were broken, major round numbers), and key psychological levels. These levels are updated as new daily data arrives from Polygon.io.",
+          question: "Does FAULTLINE publish BTC price levels?",
+          answer: "No. FAULTLINE does not publish price targets or support/resistance levels. Traders commonly watch previous all-time highs, the 200-day and 200-week moving averages, and major round numbers; those are general technical-analysis conventions, not FAULTLINE outputs.",
         },
         {
           question: "Is Bitcoin a good hedge against inflation?",

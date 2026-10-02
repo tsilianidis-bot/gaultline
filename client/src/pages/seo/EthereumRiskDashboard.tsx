@@ -5,12 +5,12 @@ export default function EthereumRiskDashboard() {
     <SEOLandingPage
       seo={{
         title: "Ethereum Risk Dashboard — ETH Risk Score, Key Levels & Macro Analysis | FAULTLINE",
-        description: "Ethereum risk dashboard: ETH macro alignment score, ETH/BTC ratio tracking, key support and resistance levels, and regime-based bull/bear case analysis built on the FAULTLINE Pressure Index.",
+        description: "Ethereum risk dashboard: ETH macro alignment score, ETH/BTC ratio tracking, and regime-based bull/bear case analysis built on the FAULTLINE Pressure Index.",
         canonical: "/ethereum-risk-dashboard",
       }}
       badge="ETHEREUM RISK INTELLIGENCE"
       headline={"Ethereum Risk Dashboard\nETH Macro Analysis"}
-      subheadline="FAULTLINE's Ethereum Risk Dashboard provides a comprehensive macro-aligned risk assessment for ETH — covering ETH/BTC ratio dynamics, DeFi ecosystem exposure, key price levels, macro regime alignment, and bull and bear case scenarios."
+      subheadline="FAULTLINE's Ethereum Risk Dashboard provides a comprehensive macro-aligned risk assessment for ETH — covering ETH/BTC ratio dynamics, DeFi ecosystem exposure, macro regime alignment, and bull and bear case scenarios."
       ctaLabel="VIEW ETH RISK DATA"
       ctaHref="/app/crypto"
       accentColor="#627EEA"
@@ -18,7 +18,7 @@ export default function EthereumRiskDashboard() {
         { icon: "◈", title: "ETH/BTC Ratio Tracking", desc: "The ETH/BTC ratio is the primary indicator of Ethereum's relative strength vs. Bitcoin. FAULTLINE tracks this ratio and its trend as new data is published." },
         { icon: "◎", title: "DeFi Ecosystem Context", desc: "Ethereum hosts the majority of DeFi protocols. DeFi protocol risk and contagion exposure are covered as qualitative context; FAULTLINE does not ingest TVL data." },
         { icon: "⬡", title: "Macro Regime Alignment", desc: "ETH is more sensitive to macro conditions than BTC due to its higher beta. FAULTLINE scores ETH's alignment with the current macro regime." },
-        { icon: "◈", title: "Key Support & Resistance Levels", desc: "Critical ETH price levels refreshed as new data is published: major support zones, resistance clusters, and key psychological levels." },
+        { icon: "◈", title: "Price Levels", desc: "FAULTLINE does not publish price targets or support/resistance levels." },
         { icon: "◎", title: "Staking Yield vs. Risk-Free Rate", desc: "Educational context: ETH staking yield relative to U.S. Treasury yields affects demand. FAULTLINE tracks Treasury yields; staking yield is not a data input." },
         { icon: "⬡", title: "Layer-2 Ecosystem Context", desc: "Arbitrum, Optimism, Base, and other L2s drive ETH demand through fees. L2 activity is qualitative context, not a FAULTLINE data input." },
       ]}
@@ -75,7 +75,7 @@ FAULTLINE's regularly refreshed risk score reflects which scenario conditions ar
         },
         {
           question: "How does FAULTLINE calculate the Ethereum risk score?",
-          answer: "FAULTLINE's ETH risk reading is anchored on macro regime alignment (the FAULTLINE Pressure Index), with the ETH/BTC ratio trend from CoinGecko and price-based key levels as context. DeFi TVL, Layer-2 activity, and staking yield are discussed as qualitative context but are not data inputs to the score.",
+          answer: "FAULTLINE's ETH risk reading is anchored on macro regime alignment (the FAULTLINE Pressure Index), with the ETH/BTC ratio trend from CoinGecko as context. DeFi TVL, Layer-2 activity, and staking yield are discussed as qualitative context but are not data inputs to the score.",
         },
         {
           question: "Is Ethereum a good investment in 2026?",

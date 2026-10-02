@@ -5,21 +5,21 @@ export default function TAOSignal() {
     <SEOLandingPage
       seo={{
         title: "TAO Signal — Bittensor Analysis, Risk Score & Key Levels | FAULTLINE",
-        description: "TAO (Bittensor) signal analysis: macro alignment score, AI crypto exposure rating, key support and resistance levels, bull and bear case scenarios, and regime-based signal classification.",
+        description: "TAO (Bittensor) signal analysis: macro alignment score, AI crypto exposure rating, bull and bear case scenarios, and regime-based signal classification.",
         canonical: "/crypto/tao",
       }}
       badge="TAO SIGNAL INTELLIGENCE"
       headline={"TAO Signal\nBittensor AI Crypto Risk & Macro Analysis"}
-      subheadline="FAULTLINE provides regularly refreshed macro-aligned signal analysis for Bittensor (TAO) — the leading decentralized AI network. Track TAO's regime fit score, AI crypto exposure, key price levels, and bull/bear case scenarios."
+      subheadline="FAULTLINE provides regularly refreshed macro-aligned signal analysis for Bittensor (TAO) — the leading decentralized AI network. Track TAO's regime fit score, AI crypto exposure, and bull/bear case scenarios."
       ctaLabel="ANALYZE TAO NOW"
       ctaHref="/app/crypto"
       accentColor="#E6007A"
       features={[
         { icon: "◈", title: "AI Crypto Exposure Rating", desc: "TAO is the highest-beta play on the intersection of AI and crypto. FAULTLINE scores TAO's sensitivity to AI narrative momentum and crypto market cycles." },
         { icon: "◎", title: "Macro Regime Alignment", desc: "TAO requires a risk-on macro environment AND positive AI narrative momentum simultaneously. FAULTLINE tracks both conditions." },
-        { icon: "⬡", title: "Key Price Levels", desc: "Critical TAO support and resistance levels updated from CoinGecko market data." },
+        { icon: "⬡", title: "Price Levels", desc: "FAULTLINE does not publish price targets or support/resistance levels." },
         { icon: "◈", title: "BTC/ETH Correlation", desc: "TAO's price action is correlated with both BTC (crypto market beta) and AI stock momentum. FAULTLINE tracks both correlations." },
-        { icon: "◎", title: "Subnet Activity Monitor", desc: "Bittensor's subnet ecosystem growth is a fundamental driver of TAO demand. FAULTLINE tracks subnet launches and validator activity." },
+        { icon: "◎", title: "Subnet Ecosystem Context", desc: "Bittensor's subnet ecosystem growth is a fundamental driver of TAO demand. This is qualitative context; FAULTLINE does not ingest subnet or validator data." },
         { icon: "⬡", title: "Risk Score (0-100)", desc: "A composite TAO risk score aggregating macro alignment, crypto market conditions, AI narrative momentum, and technical structure." },
       ]}
       contentSections={[
@@ -49,7 +49,7 @@ The FAULTLINE TAO signal is most bullish when BOTH conditions are met: crypto ma
           heading: "TAO Key Price Levels and Historical Volatility",
           body: `TAO is among the most volatile assets in the FAULTLINE signal universe. Historical drawdowns from cycle highs have exceeded 80% during bear market phases. This volatility reflects TAO's position at the intersection of two high-beta themes (AI and crypto) and its relatively small market cap compared to BTC or ETH.
 
-FAULTLINE tracks the following key TAO price levels:
+FAULTLINE does not publish price targets or support/resistance levels. How technical levels are commonly read:
 
 Major Support Zones: Previous cycle highs that became support after being broken, major moving averages (50-day, 200-day), and key psychological round numbers.
 
@@ -69,7 +69,7 @@ Historical Context: TAO reached its all-time high in early 2024 during the conve
         },
         {
           question: "How does TAO relate to AI stocks like NVDA?",
-          answer: "TAO and NVDA are both AI-themed assets, but they are fundamentally different. NVDA is an equity in a profitable semiconductor company with $130B+ in annual revenue. TAO is a crypto token in a decentralized AI protocol with no traditional revenue or earnings. They share AI narrative correlation — when AI themes are strong, both tend to benefit — but their fundamental drivers, risk profiles, and investor bases are distinct.",
+          answer: "TAO and NVDA are both AI-themed assets, but they are fundamentally different. NVDA is an equity in a profitable semiconductor company. TAO is a crypto token in a decentralized AI protocol with no traditional revenue or earnings. They share AI narrative correlation — when AI themes are strong, both tend to benefit — but their fundamental drivers, risk profiles, and investor bases are distinct.",
         },
         {
           question: "What causes TAO to go up or down?",
