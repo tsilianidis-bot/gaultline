@@ -7,6 +7,7 @@ import { PRESSURE_SCALE } from "@shared/pressureScale";
 import { useState } from "react";
 import { useSEO } from "../hooks/useSEO";
 import { Link } from "wouter";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const MONO = "'IBM Plex Mono', 'Courier New', monospace";
 const SANS = "'IBM Plex Sans', 'Inter', sans-serif";
@@ -147,7 +148,7 @@ function MethodologyTab() {
           VIEW TRACK RECORD →
         </a>
         <a href="/pressure-index" style={{ fontFamily: MONO, fontSize: "11px", letterSpacing: "0.15em", color: "#94A3B8", textDecoration: "none", padding: "10px 20px", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "4px" }}>
-          LIVE PRESSURE INDEX →
+          PRESSURE INDEX →
         </a>
       </div>
     </div>
@@ -306,7 +307,7 @@ function FAQTab() {
     },
     {
       q: "How accurate is the Pressure Index?",
-      a: "The Pressure Index has not been independently validated as a predictive backtest. Its historical analogs compare current vector scores with fixed reference profiles for past stress episodes (1973, 1998, 2000, 2008, 2020, and 2022). The Track Record page shows an archived retrospective reconstruction from 2000 onward that was calibrated against known historical stress episodes; its formula was not versioned and the current live formula does not reproduce it. A separate, reproducible research reconstruction of the live formula was rated inconclusive: it reached the Elevated band before 10 of 26 registered 10% S&P 500 drawdowns and never reached High Stress. Past readings do not guarantee future results. The index is a probabilistic tool, not a certainty.",
+      a: "The Pressure Index has not been independently validated as a predictive backtest. Its historical analogs compare current vector scores with fixed reference profiles for past stress episodes (1973, 1998, 2000, 2008, 2020, and 2022); the extended library adds 2011, 2015, 2019, and 2023. The Track Record page shows an archived retrospective reconstruction from 2000 onward that was calibrated against known historical stress episodes; its formula was not versioned and the current live formula does not reproduce it. A separate, reproducible research reconstruction of the live formula was rated inconclusive: it reached the Elevated band before 10 of 26 registered 10% S&P 500 drawdowns and never reached High Stress. Past readings do not guarantee future results. The index is a probabilistic tool, not a certainty.",
     },
     {
       q: "Where does FAULTLINE get its data?",
@@ -559,8 +560,8 @@ export default function TrustCenter() {
 
       {/* Footer disclaimer */}
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: "24px", textAlign: "center" }}>
-        <p style={{ fontFamily: MONO, fontSize: "10px", color: "#334155", letterSpacing: "0.1em", maxWidth: "700px", margin: "0 auto", lineHeight: 1.8 }}>
-          FAULTLINE IS FOR EDUCATIONAL AND INFORMATIONAL PURPOSES ONLY. NOT INVESTMENT ADVICE. INVESTING INVOLVES RISK. PAST PERFORMANCE DOES NOT GUARANTEE FUTURE RESULTS. © {new Date().getFullYear()} PHOENIX SYSTEMS. ALL RIGHTS RESERVED.
+        <p style={{ fontFamily: MONO, fontSize: "10px", color: "#334155", letterSpacing: "0.1em", maxWidth: "700px", margin: "0 auto", lineHeight: 1.8, textTransform: "uppercase" }}>
+          FAULTLINE · {PUBLIC_DISCLAIMER} Investing involves risk. Past performance does not guarantee future results. © {new Date().getFullYear()} Phoenix Systems. All rights reserved.
         </p>
       </div>
     </div>

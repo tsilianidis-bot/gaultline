@@ -49,7 +49,7 @@ The live index labels scores of 65-79 HIGH STRESS and 80+ SYSTEMIC CRISIS. Those
           heading: "What the Historical Evidence Shows",
           body: `FAULTLINE has not published an independently validated predictive backtest. The historical evidence that exists is limited:
 
-Historical analogs: The analog library compares current vector scores with fixed reference profiles for past stress episodes (1973, 1998, 2000, 2008, 2020, and 2022). Similarity is not an outcome forecast.
+Historical analogs: The analog library compares current vector scores with fixed reference profiles for past stress episodes (1973, 1998, 2000, 2008, 2020, and 2022); the extended library adds 2011, 2015, 2019, and 2023. Similarity is not an outcome forecast.
 
 Track Record archive: The Track Record page shows an archived retrospective reconstruction from 2000 onward. It was calibrated against known historical stress episodes, uses revised rather than point-in-time data, and its formula was not versioned; the current live formula does not reproduce it.
 

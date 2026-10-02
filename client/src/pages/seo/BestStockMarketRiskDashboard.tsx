@@ -67,7 +67,7 @@ Every reading is contextualized against history. When the Pressure Index enters 
         },
         {
           question: "How often is FAULTLINE's risk dashboard updated?",
-          answer: "FAULTLINE's Pressure Index is recalculated as new data is published by FRED, Polygon.io, and market data feeds. Credit spread data, VIX levels, and market breadth indicators are refreshed in near regularly refreshed. Economic data from FRED updates on its standard release schedule.",
+          answer: "FAULTLINE's Pressure Index is recalculated as new FRED data is published. Daily series such as high-yield spreads, Treasury yields, and SOFR update each business day; monthly series such as CPI, PPI, and unemployment update on FRED's standard release schedule.",
         },
         {
           question: "Is FAULTLINE financial advice?",

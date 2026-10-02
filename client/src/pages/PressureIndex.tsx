@@ -18,6 +18,7 @@ import { pressureDisplayBand } from "@shared/pressureScale";
 import { usePressureSnapshot } from "@/hooks/usePressureSnapshot";
 import { PressureBandLegend, PressureSnapshotGauge } from "@/components/PressureSnapshotGauge";
 import { PRESSURE_UNAVAILABLE_COLOR, pressureBandFor } from "@/lib/pressureSnapshot";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const PLATFORM_URL = "/app";
 
@@ -417,8 +418,8 @@ export default function PressureIndex() {
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/[0.04] px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="text-[9px] font-mono text-white/15 tracking-widest">
-          FAULTLINE — STRUCTURAL MARKET INTELLIGENCE · EDUCATIONAL AND INFORMATIONAL ONLY · NOT INVESTMENT ADVICE
+        <div className="text-[9px] font-mono text-white/15 tracking-widest uppercase">
+          FAULTLINE — STRUCTURAL MARKET INTELLIGENCE · {PUBLIC_DISCLAIMER}
         </div>
         <div className="flex items-center gap-6 text-[9px] font-mono text-white/15">
           <Link href="/legal">

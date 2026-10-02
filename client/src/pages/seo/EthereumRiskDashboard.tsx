@@ -86,7 +86,7 @@ FAULTLINE's regularly refreshed risk score reflects which scenario conditions ar
         { label: "BITCOIN RISK DASHBOARD", href: "/bitcoin-risk-dashboard", desc: "Comprehensive BTC risk analysis and macro alignment." },
         { label: "ALT SEASON INDICATOR", href: "/alt-season-indicator", desc: "Track ETH/BTC ratio and altcoin rotation signals." },
         { label: "CRYPTO SIGNALS", href: "/crypto-signals", desc: "Macro-aligned signals for all tracked digital assets." },
-        { label: "CRYPTO MARKET RISK", href: "/crypto-market-risk-dashboard", desc: "Live crypto systemic risk dashboard." },
+        { label: "CRYPTO MARKET RISK", href: "/crypto-market-risk-dashboard", desc: "Crypto systemic risk dashboard." },
         { label: "TAO SIGNAL", href: "/crypto/tao", desc: "Bittensor (TAO) macro-aligned signal analysis." },
         { label: "LIQUIDITY MONITOR", href: "/liquidity-monitor", desc: "Global liquidity conditions that drive ETH cycles." },
       ]}

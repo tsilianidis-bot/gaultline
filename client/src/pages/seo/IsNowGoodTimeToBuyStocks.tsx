@@ -43,7 +43,7 @@ The regime classification also determines how other signals should be interprete
           heading: "Historical Context: What Has Happened After Similar Conditions?",
           body: `FAULTLINE's historical analog engine compares the current pressure-vector profile with hand-set reference profiles of past stress episodes to identify the closest resemblances. It shows how closely today resembles each episode — resemblance, not a prediction and not a distribution of forward returns.
 
-The reference episodes are 1973, 1998, 2000, 2008, 2020, and 2022. A close resemblance to 2000 points to concentration and valuation stress; a close resemblance to 2008 or 2020 points to credit and liquidity stress; a close resemblance to 1973 or 2022 points to inflation and rate stress. Which kind of pressure is building matters as much as how much.
+The library holds ten fixed reference profiles: six core stress episodes (1973, 1998, 2000, 2008, 2020, and 2022) plus 2011, 2015, 2019, and 2023 in the extended library. A close resemblance to 2000 points to concentration and valuation stress; a close resemblance to 2008 or 2020 points to credit and liquidity stress; a close resemblance to 1973 or 2022 points to inflation and rate stress. Which kind of pressure is building matters as much as how much.
 
 Understanding which historical environment today most resembles is useful context for evaluating market conditions — not a signal on its own.`,
         },
@@ -75,7 +75,7 @@ Understanding which historical environment today most resembles is useful contex
         },
         {
           question: "How often is FAULTLINE's market assessment updated?",
-          answer: "FAULTLINE's Pressure Index and regime classification are recalculated as new data is published by FRED, Polygon.io, and market data feeds. Economic data from FRED updates on its standard release schedule.",
+          answer: "FAULTLINE's Pressure Index and regime classification are recalculated as new FRED data is published. Economic data from FRED updates on its standard release schedule.",
         },
       ]}
       internalLinks={[

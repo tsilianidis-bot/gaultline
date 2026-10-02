@@ -11,6 +11,7 @@ import PentagonalThesis from "@/components/landing/PentagonalThesis";
 import HistoricalContext from "@/components/landing/HistoricalContext";
 import { PRESSURE_BANDS, PRESSURE_VECTOR_ORDER, useLandingPressure } from "@/components/landing/useLandingPressure";
 import { PRESSURE_VECTOR_DISPLAY } from "@shared/pressureVectorLabels";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const EXPLORE_HREF = "/pressure-index";
 const METHOD_HREF = "/methodology";
@@ -445,7 +446,7 @@ function Footer() {
         </div>
         <div className="flex flex-col justify-between gap-3 border-t border-white/[0.07] pt-6 text-[12px] leading-[1.75] text-[#A8B4C2] sm:flex-row">
           <span>© 2026 FAULTLINE · A PHOENIX SYSTEMS PLATFORM</span>
-          <span>NOT INVESTMENT ADVICE.</span>
+          <span>{PUBLIC_DISCLAIMER}</span>
         </div>
       </div>
     </footer>

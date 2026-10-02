@@ -7,7 +7,7 @@ export default function PublicAnalogs() {
       seo={PAGE_SEO.publicAnalogs}
       badge="HISTORICAL ANALOG ENGINE"
       headline={"Which Crash Does Today\nMost Resemble?"}
-      subheadline="Compare today's pressure-vector profile — liquidity, credit, AI concentration, and macro sensitivity — with fixed reference profiles of six past stress episodes: 1973, 1998, 2000, 2008, 2020, and 2022. See which historical fracture today most resembles. Resemblance, not a forecast of what follows."
+      subheadline="Compare today's pressure-vector profile with a library of ten fixed, hand-set reference profiles: six core stress episodes (1973, 1998, 2000, 2008, 2020, and 2022) plus 2011, 2015, 2019, and 2023 in the extended library. See which historical period today most resembles. Resemblance, not a forecast of what follows."
       ctaLabel="VIEW CRASH ANALOGS"
       ctaHref="/app/analogs"
       accentColor="#A855F7"

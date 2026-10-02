@@ -18,8 +18,8 @@ export default function LearnBullAndBearMarkets() {
         { icon: "◈", title: "Regime Classification", desc: "FAULTLINE classifies systemic pressure into five bands — Low Risk, Moderate Risk, Elevated Risk, High Stress, Systemic Crisis — refreshed as new data is published." },
         { icon: "◎", title: "Historical Precedent", desc: "Every regime transition since 2000 is documented with duration, depth, and recovery data." },
         { icon: "⬡", title: "Transition Signals", desc: "Credit spread widening, funding stress, and liquidity withdrawal are among the earliest structural signals of regime transitions." },
-        { icon: "◈", title: "Pressure Index", desc: "A 0-100 systemic risk score that rises before bear markets and falls before recoveries." },
-        { icon: "◎", title: "Analog Matching", desc: "Compare current conditions to historical bull and bear environments to understand what typically happened next." },
+        { icon: "◈", title: "Pressure Index", desc: "A 0-100 systemic risk score that shows where systemic pressure is building." },
+        { icon: "◎", title: "Analog Matching", desc: "Compare current conditions with fixed reference profiles of past market environments — resemblance, not a forecast." },
         { icon: "⬡", title: "No Login Required", desc: "The core regime classification and Pressure Index are publicly accessible without a login." },
       ]}
       contentSections={[

@@ -1,5 +1,6 @@
 import { useSEO } from "@/hooks/useSEO";
 import { Link } from "wouter";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const TEAM_PRINCIPLES = [
   {
@@ -716,7 +717,7 @@ export default function About() {
             marginTop: "8px",
           }}
         >
-          For educational and informational purposes only. Not investment advice.
+          {PUBLIC_DISCLAIMER}
         </p>
       </footer>
     </div>

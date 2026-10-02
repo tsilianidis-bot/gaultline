@@ -17,7 +17,7 @@ export default function AIStocksDashboard() {
       features={[
         { icon: "◈", title: "AI Bubble Exposure Ratings", desc: "Every AI stock classified by its sensitivity to AI narrative momentum — from HIGH to MODERATE to LOW exposure." },
         { icon: "◎", title: "Regime Fit Scores", desc: "How well does each AI stock fit the current macro regime? Scores from 0-10 refreshed as new data is published." },
-        { icon: "⬡", title: "Live Signal Classification", desc: "BUY, SELL, HOLD, or WATCH for every tracked AI stock — based on macro alignment, momentum, and technical structure." },
+        { icon: "⬡", title: "Signal Classification", desc: "BUY, SELL, HOLD, or WATCH for every tracked AI stock — based on macro alignment, momentum, and technical structure." },
         { icon: "◈", title: "AI Concentration Risk Monitor", desc: "Track the aggregate AI concentration in the S&P 500 and the systemic risk it creates for the broader market." },
         { icon: "◎", title: "Sector Rotation Signals", desc: "Monitor capital flows between AI infrastructure, AI software, and AI-powered platforms to identify rotation opportunities." },
         { icon: "⬡", title: "Earnings Catalyst Tracking", desc: "AI stock earnings are the most market-moving events in the current cycle. FAULTLINE tracks upcoming catalysts and their potential impact." },

@@ -70,7 +70,7 @@ export const PAGE_SEO = {
   pressure: {
     title: "FAULTLINE Pressure Index™ — Systemic Risk Monitor",
     description:
-      "Track the FAULTLINE Pressure Index™ live. Monitor systemic market stress, credit spreads, liquidity conditions, and volatility regimes across equity, bond, and credit markets.",
+      "Track the FAULTLINE Pressure Index™ as new FRED data is published. Monitor systemic market stress through credit spreads, funding conditions, rates, inflation, and labor data.",
     canonical: "/app/pressure",
   },
   // 46 chars ✓
@@ -273,7 +273,7 @@ export const PAGE_SEO = {
     canonical: "/app/seo-optimizer",
   },
   pressureIndex: {
-    title: "FAULTLINE Pressure Index™ — Live Market Stress",
+    title: "FAULTLINE Pressure Index™ — Systemic Market Stress",
     description:
       "Track the FAULTLINE Pressure Index™: a regularly refreshed systemic market stress score aggregating volatility, credit spreads, liquidity, and breadth deterioration.",
     canonical: "/pressure-index",
@@ -300,7 +300,7 @@ export const PAGE_SEO = {
   publicCryptoMarketRisk: {
     title: "Crypto Market Risk Dashboard — Digital Asset Risk",
     description:
-      "Live crypto market risk dashboard: BTC dominance, altcoin risk, systemic crypto pressure, contagion risk, and digital asset macro alignment. Monitor crypto systemic risk as new data is published.",
+      "Crypto market risk dashboard: BTC dominance, altcoin risk, systemic crypto pressure, contagion risk, and digital asset macro alignment. Monitor crypto systemic risk as new data is published.",
     canonical: "/crypto-market-risk-dashboard",
   },
   publicSituationRoom: {
@@ -312,7 +312,7 @@ export const PAGE_SEO = {
   publicAnalogs: {
     title: "Historical Market Analogs — Crash Pattern Matching",
     description:
-      "Compare today's pressure-vector profile with fixed reference profiles of 1973, 1998, 2000, 2008, 2020, and 2022. See which historical fracture today most resembles — resemblance, not a forecast.",
+      "Compare today's pressure-vector profile with ten fixed reference profiles: 1973, 1998, 2000, 2008, 2020, and 2022, plus 2011, 2015, 2019, and 2023 in the extended library. Resemblance, not a forecast.",
     canonical: "/analogs",
   },
   publicAIBubble: {

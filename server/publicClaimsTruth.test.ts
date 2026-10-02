@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { getPageMeta } from "./seoMeta";
+import { PUBLIC_DISCLAIMER } from "../shared/publicDisclaimer";
 
 /**
  * Truth/Claims regression guard for public marketing, SEO, and press copy.
@@ -142,8 +143,78 @@ describe("public claims truth: server-rendered meta", () => {
     for (const path of ["client/src/pages/SEOLandingPage.tsx", "client/src/pages/PublicLandingPage.tsx"]) {
       const text = read(path);
       expect(text).toContain("See the pressure before the break.");
-      expect(text).toContain("For educational and informational purposes only. Not investment advice.");
+      expect(text).toContain("{PUBLIC_DISCLAIMER}");
       expect(text).not.toContain("Move before the market does.");
+    }
+  });
+});
+
+describe("public claims truth: Product-QA gate follow-ups (PR #56)", () => {
+  it("server-rendered /track-record methodology uses the engine bands", () => {
+    const seo = read("server/seoMeta.ts");
+    expect(seo).not.toMatch(/MINIMAL RISK|61–75 HIGH RISK|76–100 CRITICAL/);
+    expect(seo).toContain("below 25 LOW RISK, 25–44 MODERATE RISK, 45–64 ELEVATED RISK, 65–79 HIGH STRESS, 80+ SYSTEMIC CRISIS");
+  });
+
+  it("names the right providers and does not claim feeds the index does not read", () => {
+    expect(read("client/src/pages/seo/TAOSignal.tsx")).not.toContain("Polygon.io");
+    for (const path of ["client/src/pages/seo/BestStockMarketRiskDashboard.tsx", "client/src/pages/seo/IsNowGoodTimeToBuyStocks.tsx"]) {
+      expect(read(path)).not.toMatch(/published by FRED, Polygon\.io|VIX levels, and market breadth indicators|near regularly refreshed/);
+    }
+    expect(read("client/src/pages/Blog.tsx")).not.toMatch(/exchange flows|leading indicator of broader stress/);
+    expect(read("client/src/pages/IntelligenceLibrary.tsx")).not.toMatch(/on-chain/i);
+  });
+
+  it("does not claim the index rises before bear markets", () => {
+    expect(offenders([...seoPages, ...publicPages], /rises before bear markets|falls before recoveries/i)).toEqual([]);
+  });
+
+  it("describes the ten-profile analog library consistently", () => {
+    const library = read("server/fmos/engines/historicalAnalog.ts");
+    const db = library.slice(library.indexOf("const ANALOG_DATABASE"), library.indexOf("export function computeHistoricalAnalogs"));
+    expect(db.match(/^\s+year: \d{4},/gm)?.length).toBe(10);
+    for (const path of ["client/src/pages/PublicAnalogs.tsx", "client/src/hooks/useSEO.ts", "client/src/pages/seo/IsNowGoodTimeToBuyStocks.tsx"]) {
+      expect(read(path)).toContain("2011, 2015, 2019, and 2023");
+    }
+    expect(offenders([...seoPages, ...publicPages], /reference profiles of six past stress episodes/)).toEqual([]);
+  });
+
+  it("uses one shared disclaimer constant on public surfaces and /legal meta", () => {
+    for (const path of [
+      "client/src/pages/PressureIndex.tsx",
+      "client/src/pages/MarketingSite.tsx",
+      "client/src/pages/Legal.tsx",
+      "client/src/pages/TrustCenter.tsx",
+      "client/src/pages/Press.tsx",
+      "client/src/pages/DailyBriefArchive.tsx",
+      "client/src/pages/About.tsx",
+      "client/src/pages/PhoenixSystems.tsx",
+    ]) {
+      expect(read(path)).toContain("PUBLIC_DISCLAIMER");
+    }
+    expect(getPageMeta("/legal").description).toContain(PUBLIC_DISCLAIMER);
+  });
+
+  it("drops 'Live' labels on public signal pages", () => {
+    expect(offenders(seoPages, /Live Signal Classification|Get the Live \{upper\} Signal|Live crypto systemic risk dashboard/)).toEqual([]);
+    expect(read("client/src/pages/TrustCenter.tsx")).not.toContain("LIVE PRESSURE INDEX");
+  });
+
+  it("daily brief does not claim a weekday schedule", () => {
+    expect(read("client/src/pages/DailyBriefArchive.tsx")).not.toMatch(/weekday/i);
+    const meta = getPageMeta("/daily-brief").description;
+    expect(meta).not.toMatch(/weekday/i);
+    expect(meta).toContain("No briefs have been published yet");
+  });
+
+  it("recession and alt-season pages carry no false non-probability claims", () => {
+    const recession = read("client/src/pages/seo/RecessionProbability.tsx");
+    const altSeason = read("client/src/pages/seo/AltSeasonIndicator.tsx");
+    expect(recession).not.toMatch(/seven (risk )?vectors|ELEVATED STRESS|CRITICAL STRESS|PMI Deterioration|Unemployment Claims Monitoring|Consumer Confidence Tracking|incorporating recession probability/);
+    expect(recession).not.toMatch(/live recession probability/i);
+    for (const text of [recession, altSeason]) {
+      expect(text).not.toContain("Trader or Power subscription");
+      expect(text).not.toMatch(/Live Probability/i);
     }
   });
 });

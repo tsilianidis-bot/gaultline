@@ -11,6 +11,7 @@
 
 import { getBlogPosts } from "./db";
 import { getSoroArticles } from "./soroBlogFeed";
+import { PUBLIC_DISCLAIMER } from "../shared/publicDisclaimer";
 
 const BASE_URL = "https://getfaultline.live";
 const DEFAULT_OG_IMAGE = "https://getfaultline.live/og-image.jpg";
@@ -195,7 +196,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/legal": {
     title: "Legal — Terms, Disclaimers & Privacy | FAULTLINE",
-    description: "FAULTLINE legal terms, disclaimers, and privacy policy. Not financial advice — for informational purposes only.",
+    description: `FAULTLINE legal terms, disclaimers, and privacy policy. ${PUBLIC_DISCLAIMER}`,
   },
   "/about": {
     title: "About FAULTLINE — Why I Built This Platform",
@@ -219,7 +220,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/daily-brief": {
     title: "Daily Intelligence Brief — FAULTLINE Market Briefings",
-    description: "FAULTLINE Daily Intelligence Brief: market briefings, regime updates, and systemic risk alerts built from FRED and market data. Scheduled each weekday; each brief shows its as-of date.",
+    description: "FAULTLINE Daily Intelligence Brief: market briefings, regime updates, and systemic risk alerts built from FRED and market data. No briefs have been published yet; each brief will show its as-of date.",
   },
   "/track-record": {
     title: "Track Record | FAULTLINE — Historical Pressure Index 2000–Present",
@@ -330,7 +331,7 @@ export async function injectPageMetaAsync(html: string, urlPath: string): Promis
 </ul>
 <h2>Methodology</h2>
 <p>The live FAULTLINE Pressure Index™ is a composite of six weighted vectors: Liquidity Stress (20%), Credit Contagion (20%), Macro Sensitivity (20%), Yield Curve (10Y–2Y) &amp; 10Y Level (15%), AI / Speculation — a static concentration baseline adjusted by rates and credit (15%), and Labor &amp; Rates — unemployment and the 10Y yield (10%). Each vector is scored 0–100. The archived historical batch also applied a crisis amplifier whose formula was not preserved.</p>
-<p>Regime thresholds: 0–25 MINIMAL RISK, 26–45 MODERATE RISK, 46–60 ELEVATED RISK, 61–75 HIGH RISK, 76–100 CRITICAL.</p>
+<p>Regime thresholds: below 25 LOW RISK, 25–44 MODERATE RISK, 45–64 ELEVATED RISK, 65–79 HIGH STRESS, 80+ SYSTEMIC CRISIS.</p>
 <h2>Important Limitations</h2>
 <p>This is a retrospective reconstruction. FAULTLINE did not exist during the 2000, 2008, or 2020 crises. These scores use revised historical data rather than point-in-time vintages and do not show what the current live methodology would have produced at the time. Past readings do not guarantee future accuracy. Not investment advice.</p>
 </section></noscript>`;

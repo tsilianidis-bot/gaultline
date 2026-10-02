@@ -8,6 +8,7 @@ import { useEffect, useMemo } from "react";
 import { useSEO } from "@/hooks/useSEO";
 import { getLoginUrl } from "@/const";
 import { trackStartFreeClicked } from "@/hooks/useAnalytics";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const PLATFORM_URL = "/app";
 
@@ -346,7 +347,7 @@ export default function SEOLandingPage({
             <a href="/legal" className="hover:text-[#00D4FF] transition-colors">LEGAL</a>
           </div>
           <div className="text-[10px] font-mono text-[#374151]">
-            © {new Date().getFullYear()} FAULTLINE. For educational and informational purposes only. Not investment advice.
+            © {new Date().getFullYear()} FAULTLINE. {PUBLIC_DISCLAIMER}
           </div>
         </div>
       </footer>

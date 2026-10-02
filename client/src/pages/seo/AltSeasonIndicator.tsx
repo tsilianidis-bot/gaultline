@@ -4,7 +4,7 @@ export default function AltSeasonIndicator() {
   return (
     <SEOLandingPage
       seo={{
-        title: "Alt Season Indicator — Is Alt Season Here? Live Probability | FAULTLINE",
+        title: "Alt Season Indicator — Is Alt Season Here? | FAULTLINE",
         description: "Track alt season probability as new data is published. Monitor BTC dominance, ETH/BTC ratio, altcoin momentum, and capital rotation signals to know when alt season is building — before the move is obvious.",
         canonical: "/alt-season-indicator",
       }}
@@ -89,7 +89,7 @@ FAULTLINE's Alt Season Indicator tracks all of these conditions as new data is p
         },
         {
           question: "Is FAULTLINE's alt season data free?",
-          answer: "FAULTLINE offers free access to the Pressure Index and basic crypto market data. Full access to the Alt Season Indicator, BTC dominance tracking, ETH/BTC ratio monitoring, and sector-level altcoin momentum requires a Trader or Power subscription.",
+          answer: "The public Pressure Index is free to read without an account, and signed-in access starts with a free account. Paid plans are not on sale.",
         },
         {
           question: "What is the difference between alt season and a crypto bull market?",
@@ -100,7 +100,7 @@ FAULTLINE's Alt Season Indicator tracks all of these conditions as new data is p
         { label: "CRYPTO SIGNALS", href: "/crypto-signals", desc: "Macro-aligned signals for all tracked digital assets." },
         { label: "BITCOIN RISK DASHBOARD", href: "/bitcoin-risk-dashboard", desc: "Deep-dive BTC risk analysis and key level monitoring." },
         { label: "ETHEREUM RISK DASHBOARD", href: "/ethereum-risk-dashboard", desc: "ETH analysis including ETH/BTC ratio and macro alignment." },
-        { label: "CRYPTO MARKET RISK", href: "/crypto-market-risk-dashboard", desc: "Live crypto systemic risk dashboard and contagion indicators." },
+        { label: "CRYPTO MARKET RISK", href: "/crypto-market-risk-dashboard", desc: "Crypto systemic risk dashboard and contagion indicators." },
         { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Macro regime foundation — essential context for alt season." },
         { label: "MARKET REGIME TRACKER", href: "/market-regime-tracker", desc: "Current macro regime classification and forward implications." },
       ]}

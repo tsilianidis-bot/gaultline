@@ -15,7 +15,7 @@ export default function BitcoinRiskDashboard() {
       ctaHref="/app/crypto"
       accentColor="#F7931A"
       features={[
-        { icon: "◈", title: "Macro Regime Alignment Score", desc: "BTC classified against the live macro regime. Risk-on vs. risk-off conditions fundamentally change Bitcoin's risk/reward profile." },
+        { icon: "◈", title: "Macro Regime Alignment Score", desc: "BTC classified against the current macro regime. Risk-on vs. risk-off conditions fundamentally change Bitcoin's risk/reward profile." },
         { icon: "◎", title: "Key Support & Resistance Levels", desc: "Critical BTC price levels refreshed as new data is published: major support zones, resistance clusters, and key psychological levels." },
         { icon: "⬡", title: "Liquidity Sensitivity Rating", desc: "Bitcoin is the most liquidity-sensitive major asset. FAULTLINE scores BTC's vulnerability to Fed QT and global liquidity withdrawal." },
         { icon: "◈", title: "Bull Case / Bear Case Analysis", desc: "Structured bull and bear case context for BTC based on current macro conditions and technical structure." },
@@ -86,7 +86,7 @@ The relationship between current price and these key levels determines the risk/
         { label: "ETHEREUM RISK DASHBOARD", href: "/ethereum-risk-dashboard", desc: "Comprehensive ETH risk analysis and macro alignment." },
         { label: "ALT SEASON INDICATOR", href: "/alt-season-indicator", desc: "Track BTC dominance and altcoin rotation signals." },
         { label: "CRYPTO SIGNALS", href: "/crypto-signals", desc: "Macro-aligned signals for all tracked digital assets." },
-        { label: "CRYPTO MARKET RISK", href: "/crypto-market-risk-dashboard", desc: "Live crypto systemic risk dashboard." },
+        { label: "CRYPTO MARKET RISK", href: "/crypto-market-risk-dashboard", desc: "Crypto systemic risk dashboard." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy — the primary macro driver of BTC price action." },
         { label: "LIQUIDITY MONITOR", href: "/liquidity-monitor", desc: "Global liquidity conditions that drive BTC cycles." },
       ]}

@@ -1,5 +1,6 @@
 import { useSEO } from "@/hooks/useSEO";
 import { Link } from "wouter";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 export default function PhoenixSystems() {
   useSEO({
@@ -534,7 +535,7 @@ export default function PhoenixSystems() {
             marginTop: "8px",
           }}
         >
-          For educational and informational purposes only. Not investment advice.
+          {PUBLIC_DISCLAIMER}
         </p>
       </footer>
     </div>

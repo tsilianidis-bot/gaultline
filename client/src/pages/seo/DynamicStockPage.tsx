@@ -370,7 +370,7 @@ export default function DynamicStockPage() {
           )}
         </div>
 
-        {/* Live Signal CTA */}
+        {/* Current Signal CTA */}
         <div className="p-6 rounded-xl border border-[#00D4FF]/20 bg-[#00D4FF]/5 mb-12">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
@@ -532,9 +532,9 @@ export default function DynamicStockPage() {
         {/* Final CTA */}
         <section className="p-8 rounded-xl border border-[#00D4FF]/20 bg-gradient-to-br from-[#00D4FF]/5 to-transparent text-center">
           <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-3">FAULTLINE INTELLIGENCE</div>
-          <h2 className="text-2xl font-bold text-white mb-3">Get the Live {upper} Signal</h2>
+          <h2 className="text-2xl font-bold text-white mb-3">See the {upper} Signal</h2>
           <p className="text-[#A8B8CC] text-sm mb-6 max-w-md mx-auto">
-            Access regularly refreshed {upper} signals, macro regime classification, and systemic risk scores. Updated daily by FAULTLINE's intelligence engine.
+            See FAULTLINE's {upper} signal classification, macro regime, and systemic risk scores, refreshed as new data is published.
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <a href={getLoginUrl()} onClick={() => handleCtaClick("start_free")} className="inline-flex items-center gap-2 text-[12px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-8 py-4 rounded font-bold transition-colors">

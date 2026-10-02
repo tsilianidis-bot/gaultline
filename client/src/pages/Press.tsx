@@ -1,6 +1,7 @@
 import { useSEO } from "@/hooks/useSEO";
 import { Link } from "wouter";
 import { useState } from "react";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DOWNLOADABLE ASSET CONTENT
@@ -138,7 +139,7 @@ PHILOSOPHY
 We believe the most valuable intelligence is not a recommendation — it is context. Phoenix Systems products emphasise probabilistic reasoning over binary predictions. We surface likelihoods, regimes, and stress indicators — not buy or sell signals. PLATO is designed to augment human judgment, not replace it.
 
 DISCLAIMER
-FAULTLINE is a macroeconomic risk intelligence platform. It provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice.
+FAULTLINE is a macroeconomic risk intelligence platform. ${PUBLIC_DISCLAIMER} It is not a financial adviser.
 
 CONTACT
 press@getfaultline.live
@@ -205,7 +206,7 @@ PWA: Available on iOS and Android
 Access: public Pressure Index (no account) · free account for the signed-in app · paid plans not on sale
 
 DISCLAIMER
-FAULTLINE provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice.
+${PUBLIC_DISCLAIMER} FAULTLINE is not a financial adviser.
 
 PRESS CONTACT
 press@getfaultline.live`;
@@ -711,7 +712,7 @@ export default function Press() {
             FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The public Pressure Index and methodology are free to read; signed-in access starts with a free account. Paid plans are not on sale.
           </p>
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", lineHeight: 1.7, margin: 0, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "16px" }}>
-            FAULTLINE is a macroeconomic risk intelligence platform. It provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice. Past performance of any indicator or signal does not guarantee future results. All content is for informational purposes only.
+            FAULTLINE is a macroeconomic risk intelligence platform. {PUBLIC_DISCLAIMER} It is not a financial adviser. Past performance of any indicator or signal does not guarantee future results.
           </p>
         </div>
       </section>
@@ -980,7 +981,7 @@ export default function Press() {
       {/* ── Disclaimer ── */}
       <section style={{ ...maxW, padding: "0 24px 40px" }}>
         <p style={{ fontSize: "11px", color: "#4B5563", lineHeight: 1.7, borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "24px" }}>
-          FAULTLINE is a macroeconomic risk intelligence platform developed by Phoenix Systems. It provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice. Past performance of any indicator or signal does not guarantee future results. All content is for informational purposes only.
+          FAULTLINE is a macroeconomic risk intelligence platform developed by Phoenix Systems. {PUBLIC_DISCLAIMER} It is not a financial adviser. Past performance of any indicator or signal does not guarantee future results.
         </p>
       </section>
 

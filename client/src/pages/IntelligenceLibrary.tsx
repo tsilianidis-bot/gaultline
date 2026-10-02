@@ -21,7 +21,7 @@ const CATEGORIES = [
   { id: "market-cycles",         label: "Market Cycles",           icon: RotateCcw,     color: "#A78BFA", desc: "Bull and bear market identification, cycle timing, and regime transitions" },
   { id: "recession-indicators",  label: "Recession Indicators",    icon: AlertTriangle, color: "#FF9500", desc: "Leading indicators, yield curve, and recession probability frameworks" },
   { id: "ai-investing",          label: "AI & Technology",         icon: Brain,         color: "#00FF88", desc: "AI sector analysis, concentration risk, and technology market dynamics" },
-  { id: "crypto-cycles",         label: "Crypto Cycles",           icon: Bitcoin,       color: "#F59E0B", desc: "Bitcoin cycles, altcoin rotation, and on-chain market intelligence" },
+  { id: "crypto-cycles",         label: "Crypto Cycles",           icon: Bitcoin,       color: "#F59E0B", desc: "Bitcoin cycles, altcoin rotation, and crypto market intelligence" },
   { id: "risk-management",       label: "Risk Management",         icon: Shield,        color: "#EF4444", desc: "Portfolio protection, drawdown management, and position sizing" },
   { id: "liquidity-analysis",    label: "Liquidity & Credit",      icon: Activity,      color: "#06B6D4", desc: "Market liquidity conditions, credit spreads, and financial stress" },
   { id: "volatility",            label: "Volatility",              icon: Zap,           color: "#F97316", desc: "VIX analysis, volatility regimes, and options market intelligence" },
@@ -350,7 +350,7 @@ export default function IntelligenceLibrary() {
             Apply This Research
           </h2>
           <p style={{ color: '#94A3B8', maxWidth: 480, margin: '0 auto 1.5rem', lineHeight: 1.7, fontSize: '0.9rem' }}>
-            Ask PLATO any market question and get an institutional-grade answer grounded in live engine data and this research library.
+            Ask PLATO any market question and get an answer grounded in the current engine reading and this research library.
           </p>
           <Link href="/app/discover">
             <button style={{

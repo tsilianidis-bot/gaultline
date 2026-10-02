@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 type Tab = "privacy" | "terms";
 
@@ -100,6 +101,16 @@ export default function Legal() {
             }}
           >
             Last updated: May 24, 2026
+          </p>
+          <p
+            style={{
+              fontFamily: "'IBM Plex Sans', sans-serif",
+              fontSize: "13px",
+              color: "#94A3B8",
+              marginTop: "12px",
+            }}
+          >
+            {PUBLIC_DISCLAIMER}
           </p>
         </div>
 
@@ -342,7 +353,7 @@ function TermsOfUse() {
         purposes only.
       </Para>
 
-      <SectionHeading>2. Not Financial Advice</SectionHeading>
+      <SectionHeading>2. Not Investment Advice</SectionHeading>
       <Para>
         <strong style={{ color: "#FF4444" }}>
           FAULTLINE does not provide financial, investment, legal, or tax advice.

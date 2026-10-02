@@ -10,14 +10,14 @@ export default function CryptoSignalsIntelligence() {
       }}
       badge="CRYPTO INTELLIGENCE ENGINE"
       headline={"Crypto Signals\nMacro-Aligned Intelligence"}
-      subheadline="FAULTLINE crypto signals go beyond price action. Every digital asset is classified against the live macro regime, BTC dominance cycle, altcoin rotation phase, and systemic liquidity conditions — so you know which crypto fits the current environment."
+      subheadline="FAULTLINE crypto signals go beyond price action. Every digital asset is classified against the current macro regime, BTC dominance cycle, altcoin rotation phase, and systemic liquidity conditions — so you know which crypto fits the current environment."
       ctaLabel="VIEW CRYPTO SIGNALS"
       ctaHref="/app/crypto"
       accentColor="#F7931A"
       features={[
         { icon: "◈", title: "BTC Dominance Tracking", desc: "Monitor Bitcoin dominance cycles as new data is published. Know when capital is rotating into altcoins before the move is obvious." },
         { icon: "◎", title: "Altcoin Rotation Intelligence", desc: "Identify which altcoin sectors are leading the current rotation — AI tokens, DeFi, Layer-2, gaming, or memes." },
-        { icon: "⬡", title: "Macro Regime Alignment", desc: "Each crypto signal classified against the live macro regime. Risk-on vs. risk-off conditions change everything in crypto." },
+        { icon: "⬡", title: "Macro Regime Alignment", desc: "Each crypto signal classified against the current macro regime. Risk-on vs. risk-off conditions change everything in crypto." },
         { icon: "◈", title: "Liquidity Sensitivity Scoring", desc: "Crypto is the most liquidity-sensitive asset class. FAULTLINE flags which coins are most exposed to liquidity withdrawal." },
         { icon: "◎", title: "Alt Season Indicator", desc: "Track the alt season cycle — when BTC dominance falls and altcoin momentum accelerates across the board." },
         { icon: "⬡", title: "Social Intelligence Integration", desc: "Reddit, StockTwits, and news sentiment aggregated per coin. Know when retail conviction is building or fading." },
@@ -81,7 +81,7 @@ Each asset is scored for momentum, macro alignment, liquidity sensitivity, and s
         },
       ]}
       internalLinks={[
-        { label: "CRYPTO MARKET RISK", href: "/crypto-market-risk-dashboard", desc: "Live crypto systemic risk dashboard: BTC dominance, altcoin risk, contagion indicators." },
+        { label: "CRYPTO MARKET RISK", href: "/crypto-market-risk-dashboard", desc: "Crypto systemic risk dashboard: BTC dominance, altcoin risk, contagion indicators." },
         { label: "ALT SEASON INDICATOR", href: "/alt-season-indicator", desc: "Track the altcoin rotation cycle and know when alt season is building." },
         { label: "BITCOIN RISK DASHBOARD", href: "/bitcoin-risk-dashboard", desc: "Deep-dive BTC risk analysis: macro alignment, liquidity sensitivity, key levels." },
         { label: "AI STOCK SIGNALS", href: "/ai-stock-signals", desc: "Macro-aligned AI signals for equities — the same intelligence applied to stocks." },
