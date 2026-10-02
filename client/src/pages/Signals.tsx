@@ -1499,6 +1499,11 @@ function SignalsInner() {
   // regime. Outside canonical mode (marketState unavailable) the browser engine
   // runs on DEFAULT_INDICATORS demo inputs, so no regime is sent or displayed.
   const canonicalRegimeAvailable = engine?.marketMode === 'canonical';
+  // Shown on the same 0–100 scale as NOW / Pressure / the header strip.
+  const rawCanonicalPressure = engine?.canonicalState?.pressureIndex;
+  const canonicalPressureIndex = canonicalRegimeAvailable && typeof rawCanonicalPressure === 'number' && Number.isFinite(rawCanonicalPressure)
+    ? rawCanonicalPressure
+    : null;
   const regimeForSignals = useMemo(() => (
     canonicalRegimeAvailable && engine?.output?.regime?.label && Number.isFinite(engine?.output?.overall?.score)
       ? { label: engine.output.regime.label, score: engine.output.overall.score }
@@ -1830,7 +1835,7 @@ function SignalsInner() {
               fontFamily: "'Rajdhani', sans-serif",
               fontWeight: 700, fontSize: '22px',
               color: regimeColor,
-            }}>{regimeForSignals ? regimeForSignals.score.toFixed(1) : '—'}<span style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)' }}>/10</span></div>
+            }} data-canonical-pressure={canonicalPressureIndex ?? 'unavailable'}>{canonicalPressureIndex != null ? Math.round(canonicalPressureIndex) : '—'}<span style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)' }}>/100</span></div>
           </div>
         </div>
 

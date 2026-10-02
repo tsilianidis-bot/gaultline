@@ -29,6 +29,7 @@ import { customerIntegrityChipLevel, customerIntegrityColor, type CustomerIntegr
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 import { monthlyRecordBasisNote } from "@shared/dataIntegrityReadout";
+import { formatEt } from "@shared/credibilityLabels";
 import SystemicRegimeModule from "@/components/SystemicRegimeModule";
 import { trpc } from "@/lib/trpc";
 
@@ -1298,12 +1299,12 @@ export default function Now() {
             {(sourceHealth.length ? sourceHealth : [{ id: "fallback", label: "Deterministic fallback", status: "degraded", required: true, asOf: lastUpdated?.toISOString() ?? "Unavailable", detail: "Canonical source health is not currently available." }]).map(source => (
               <div key={source.id} className="flex gap-3 rounded border border-white/10 bg-white/[0.025] p-4">
                 {source.status === "healthy" ? <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-300" size={16} /> : <ShieldCheck className="mt-0.5 shrink-0 text-amber-300" size={16} />}
-                <div><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-semibold text-white">{source.label}</p><span className="font-mono text-[8px] uppercase tracking-[0.13em] text-slate-500">{source.status}</span></div><p className="mt-2 text-xs leading-5 text-slate-400">{source.detail}</p><p className="mt-2 font-mono text-[8px] uppercase tracking-[0.12em] text-slate-600">As of {source.asOf}</p></div>
+                <div><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-semibold text-white">{source.label}</p><span className="font-mono text-[8px] uppercase tracking-[0.13em] text-slate-500">{source.status}</span></div><p className="mt-2 text-xs leading-5 text-slate-400">{source.detail}</p><p className="mt-2 font-mono text-[8px] uppercase tracking-[0.12em] text-slate-600">As of {formatEt(source.asOf) ?? "unavailable"}</p></div>
               </div>
             ))}
           </div>
           <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-5">
-            <p className="font-mono text-[9px] uppercase tracking-[0.13em] text-slate-500">Mode: {marketMode} · Updated {lastUpdated ? lastUpdated.toLocaleString() : "unavailable"}</p>
+            <p className="font-mono text-[9px] uppercase tracking-[0.13em] text-slate-500">Mode: {marketMode} · Updated {formatEt(lastUpdated?.getTime() ?? null) ?? "unavailable"}</p>
             <Link href={NOW_DEEP_PATH} className="font-mono text-[9px] uppercase tracking-[0.13em] text-cyan-300 hover:text-cyan-200">Inspect every legacy dashboard module →</Link>
           </div>
         </Section>

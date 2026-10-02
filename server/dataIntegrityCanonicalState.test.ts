@@ -167,3 +167,54 @@ describe("source guards — production surfaces", () => {
     expect(s).toMatch(/canonicalRunBasisNote/);
   });
 });
+
+describe("Product-QA guest baseline items (Oct 2 2026)", () => {
+  it("Signals shows the canonical Pressure Index on the 0–100 scale", () => {
+    const s = src("client/src/pages/Signals.tsx");
+    expect(s).toMatch(/engine\?\.canonicalState\?\.pressureIndex/);
+    expect(s).toMatch(/Math\.round\(canonicalPressureIndex\) : '—'\}<span[^>]*>\/100</);
+    expect(s).not.toMatch(/regimeForSignals\.score\.toFixed\(1\)/);
+  });
+
+  it("Watchlist breach badge in AppLayout never evaluates demo indicators", () => {
+    const s = src("client/src/components/AppLayout.tsx");
+    expect(s).not.toMatch(/\(indicators as unknown as Record/);
+    expect(s).toMatch(/evaluableIndicatorValues\(liveIndicatorReadings\)/);
+  });
+
+  it("PWA manifest declares the served icons and scope", () => {
+    const m = JSON.parse(src("client/public/manifest.json"));
+    expect(m.scope).toBe("/");
+    expect(m.icons.map((i: { src: string; sizes: string }) => `${i.src} ${i.sizes}`)).toEqual([
+      "/icon-192x192.png 192x192",
+      "/icon-512x512.png 512x512",
+    ]);
+    for (const icon of m.icons) {
+      const png = readFileSync(resolve(root, "client/public", icon.src.slice(1)));
+      expect(png.subarray(1, 4).toString()).toBe("PNG");
+      const [w, h] = [png.readUInt32BE(16), png.readUInt32BE(20)];
+      expect(`${w}x${h}`).toBe(icon.sizes);
+    }
+  });
+
+  it("guests on /app/asha get an in-page sign-in prompt; ashaMemory queries mount only for a user", () => {
+    const s = src("client/src/pages/AshaIntelligenceCenter.tsx");
+    const gate = s.slice(s.indexOf("export default function AshaIntelligenceCenter"), s.indexOf("function AshaIntelligenceWorkspace"));
+    expect(gate).toMatch(/if \(!user\) return <AshaGuestSignIn \/>;/);
+    expect(gate).not.toMatch(/ashaMemory/);
+    const workspace = s.slice(s.indexOf("function AshaIntelligenceWorkspace"));
+    expect((workspace.match(/trpc\.ashaMemory\.\w+\.useQuery\(/g) ?? []).length).toBe(8);
+    expect((s.match(/trpc\.ashaMemory\./g) ?? []).length).toBe((workspace.match(/trpc\.ashaMemory\./g) ?? []).length);
+    // main.tsx redirect contract (Auth stream) is untouched by this change
+    expect(src("client/src/main.tsx")).toMatch(/navigateToLogin\(\);/);
+  });
+
+  it("NOW formats source timestamps in ET; mobile pulse fails closed offline", () => {
+    const now = src("client/src/pages/Now.tsx");
+    expect(now).toMatch(/As of \{formatEt\(source\.asOf\)/);
+    expect(now).not.toMatch(/lastUpdated\.toLocaleString\(\)/);
+    const pulse = src("client/src/pages/mobile/MobilePulse.tsx");
+    expect(pulse).toMatch(/fetchStatus === "paused"/);
+    expect(pulse).toMatch(/canonicalLoading && !offlinePaused/);
+  });
+});

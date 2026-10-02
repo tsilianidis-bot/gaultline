@@ -13,6 +13,9 @@ import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
 import { useAshaContext } from "@/contexts/AshaContext";
 import { useLocation } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { navigateToLogin } from "@/const";
+import { CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 import AshaOrb from "@/components/AshaOrb";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -124,7 +127,50 @@ function IntelCard({ children, accent }: { children: React.ReactNode; accent?: s
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
+/**
+ * Auth gate. Every ashaMemory.* query below is a protected procedure; mounting
+ * them for a guest returned UNAUTHORIZED, which tripped the global login
+ * redirect in main.tsx and bounced guests straight to the OAuth portal. The
+ * workspace (and its queries) now mounts only for a signed-in user; a guest gets
+ * an in-page sign-in prompt. main.tsx / navigateToLogin are unchanged (Auth).
+ */
 export default function AshaIntelligenceCenter() {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <main style={{ minHeight: "70vh", background: "#070910", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", letterSpacing: "0.18em", color: "#64748B" }}>LOADING PLATO…</span>
+      </main>
+    );
+  }
+  if (!user) return <AshaGuestSignIn />;
+  return <AshaIntelligenceWorkspace />;
+}
+
+function AshaGuestSignIn() {
+  const [, navigate] = useLocation();
+  return (
+    <main data-plato-guest-gate style={{ minHeight: "70vh", background: "#070910", color: "#F0F6FF", display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 20px" }}>
+      <div style={{ maxWidth: "460px", width: "100%", border: "1px solid rgba(0,229,255,0.18)", background: "rgba(0,229,255,0.03)", borderRadius: "6px", padding: "28px 24px", textAlign: "center" }}>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", letterSpacing: "0.18em", color: "#00E5FF", textTransform: "uppercase" }}>PLATO Intelligence Center</div>
+        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "26px", margin: "12px 0 8px" }}>Sign in to use PLATO</h1>
+        <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", lineHeight: 1.6, color: "#94A3B8", margin: "0 0 20px" }}>
+          PLATO conversations, memory and thesis history are tied to your account. Guest access does not include PLATO.
+        </p>
+        <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+          <button type="button" onClick={() => { navigateToLogin(); }} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", letterSpacing: "0.1em", padding: "10px 18px", background: "#00E5FF", color: "#041016", border: "none", borderRadius: "3px", cursor: "pointer", fontWeight: 700 }}>
+            SIGN IN
+          </button>
+          <button type="button" onClick={() => navigate(CANONICAL_DESTINATION_BY_ID.now.path)} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", letterSpacing: "0.1em", padding: "10px 18px", background: "transparent", color: "#94A3B8", border: "1px solid rgba(148,163,184,0.3)", borderRadius: "3px", cursor: "pointer" }}>
+            BACK TO NOW
+          </button>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function AshaIntelligenceWorkspace() {
   const [, navigate] = useLocation();
   const { output } = useEngine();
   const { threadMessages, clearThread } = useAshaContext();
