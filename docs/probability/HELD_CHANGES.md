@@ -123,3 +123,13 @@ The unreachable ≥75 display band ("Extreme Curve Pressure", 75–100) exists o
   - `outlook.probabilities` / `regimeProbabilities` / `transitionProbabilities` payload numbers are withheld (NaN), with contract text shown.
   - preFlight bull/bear/recession/crash become `null` ("Not offered").
   - The canonical state gains `probabilityContract` (scenario text "Uncalibrated").
+
+## 5. Seismograph 7-day trend window (added 2026-10-02 5:10 PM ET, found in #60 cac333e)
+- CURRENT: `computeEvolution` compares against `last7.slice(0, -7)`, which is always empty, so the 7-day trend was always NaN ("Stable (NaN pts vs prior week)", live in prod). #60 now shows "Unavailable (no prior-week reading)".
+- PROPOSED: compute a real prior-week window from stored history.
+- WHY HELD: it changes what the trend measures (a methodology change), so it needs James's decision. Display stays fail-closed until then.
+
+## 6. Seismograph unified 30-/90-reading trend windows (added 2026-10-02 6:05 PM ET, QA r8 on #60 cac333e)
+- CURRENT: `computeEvolution` (`server/seismographUnified.ts`) runs on MONTHLY `pressureHistory` rows but slices them as if they were days: `recent = history.slice(-90)`, `last30 = recent.slice(-30)`, `last90 = recent.slice(-90)`. On a short history (production has about 12 months) `last30` and `last90` are the same rows, so `delta90 = avg30 − avg90` is identically 0 and the page said "Pressure is broadly stable over 90 days (+0.0 pts)". `delta30` likewise compared a 7-month average with a partial 12-row "30-day" window. #60 (QA r8 FF) only changes labels: a comparison is shown only when both windows are full and distinct, otherwise "Unavailable (insufficient history)", and the windows are labelled 7-/30-/90-month (the client cards and the sparkline say MONTH/MONTHLY READINGS, not DAY). The formulas are unchanged.
+- PROPOSED: define the windows by calendar span on the monthly series (for example latest month vs the prior 3 months and vs the prior 12 months, with non-overlapping comparison windows and a minimum row count per window), or compute them from the daily `seismographReadings` table if day windows are wanted. Then decide the bands (±5/±10 pts) for the new windows.
+- WHY HELD: it changes what the trend measures and which rows feed `accelerating` / `buildingPressure` / `whatChanged` (a methodology change), so it needs James's decision. Display stays fail-closed until then.
