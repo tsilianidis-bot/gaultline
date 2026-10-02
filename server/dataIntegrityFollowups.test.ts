@@ -556,7 +556,8 @@ describe("Charts Market Intelligence Ribbon (no fixed values, no MODEL lines)", 
 
 // ── PR #59 r5: QA prod consistency (snapshot-1401) + gate r3/r4 D1–D5 ─────────
 import { signalQuoteBadge, signalQuoteView, signalsFeedLabel, signalsPriceBadge, signalsFooter } from "../client/src/lib/signalQuoteView";
-import { pressureVectorWeight, pressureVectorLevel } from "../client/src/lib/pressureVectorWeights";
+import { pressureVectorWeight, pressureVectorLevel, canonicalVectorScore, vectorScoreText, contagionSummary, topScoredVectors } from "../client/src/lib/pressureVectorWeights";
+import { macroCardSourceText } from "../client/src/lib/chartsInstrumentReadings";
 import { canonicalSummary, sandboxScoreOn100, SANDBOX_BASIS } from "../client/src/lib/simulatePressureView";
 import { canonicalFreshnessReadout } from "../shared/dataIntegrityReadout";
 
@@ -592,7 +593,8 @@ describe("composite is the canonical /100 Pressure Index, never a 0–10 score",
     const sum = canonicalSummary({ pressureIndex: 34, regime: "MODERATE RISK", effectiveAt: "2026-10-02T18:01:25.427Z", engines, confidenceOrEvidenceQuality: "PARTIAL" } as never);
     expect(sum).toMatchObject({ available: true, score: 34, regime: "MODERATE RISK" });
     if (sum.available) {
-      expect(sum.vectors.map(v => v.value)).toEqual([23, 29]);
+      // A missing engine value stays null (rendered "—"), never dropped into a 0.
+      expect(sum.vectors.map(v => v.value)).toEqual([23, 29, null]);
       expect(sum.basis).toMatch(/ET · evidence PARTIAL$/);
     }
     expect(canonicalSummary(null).available).toBe(false);
@@ -626,7 +628,8 @@ describe("Pressure vectors: the engine's real weights and each vector's own leve
     expect(engine).toMatch(/score >= 80[\s\S]{0,80}score >= 65[\s\S]{0,80}score >= 45[\s\S]{0,80}score >= 25/);
     const p = src("client/src/pages/Pressure.tsx");
     expect(p).toMatch(/weight: pressureVectorWeight\(engine\.engineId, engine\.contributionToComposite\)/);
-    expect(p).toMatch(/level: pressureVectorLevel\(engine\.value\) \?\? "Low",\s*levelKnown: pressureVectorLevel\(engine\.value\) != null,/);
+    expect(p).toMatch(/level: pressureVectorLevel\(engine\.value\),/);
+    expect(p).not.toMatch(/levelKnown/);
     expect(p).not.toMatch(/weight: null,/);
   });
 });
@@ -780,5 +783,107 @@ describe("price-level guard covers bare numeric levels and level tiles", () => {
     const s = src("client/src/pages/Signals.tsx");
     expect(s).not.toMatch(/Computed from LIVE/);
     expect((s.match(/priceLevelsBasis\(liveQuote, quote\.badge\)/g) ?? []).length).toBe(2);
+  });
+});
+
+// ── PR #59 r6: missing vectors stay null to render; Charts seeded/illustrative content ──
+describe("a missing vector value is null all the way to render (never 0)", () => {
+  // Same mapping Pressure.tsx uses for canonicalState.engines → vector rows.
+  const engines = [
+    { engineId: "liquidity-stress", value: 23 },
+    { engineId: "credit-contagion", value: null },
+    { engineId: "volatility-regime", value: Number.NaN },
+    { engineId: "macro-sensitivity", value: 0 },
+  ];
+  const rows = engines.map(e => ({ id: e.engineId, score: canonicalVectorScore(e.value as number | null), level: pressureVectorLevel(e.value as number | null) }));
+
+  it("maps missing / invalid values to null score and null level; a genuine 0 stays 0", () => {
+    expect(rows.map(r => r.score)).toEqual([23, null, null, 0]);
+    expect(rows.map(r => r.level)).toEqual(["Low", null, null, "Low"]);
+    expect(canonicalVectorScore(undefined)).toBeNull();
+    expect(canonicalVectorScore(140)).toBeNull();
+  });
+
+  it("renders '—' for a missing vector — no '0' text, no level", () => {
+    const missing = rows.filter(r => r.score == null);
+    expect(missing.map(r => vectorScoreText(r.score))).toEqual(["—", "—"]);
+    for (const r of missing) expect(vectorScoreText(r.score)).not.toMatch(/\d/);
+    expect(vectorScoreText(0)).toBe("0");
+    expect(vectorScoreText(23)).toBe("23");
+  });
+
+  it("contagion and top-vector read-outs skip missing vectors instead of treating them as 0", () => {
+    const c = contagionSummary(rows, 35);
+    expect(c).toMatchObject({ scored: 2, total: 4, pct: 0 });
+    expect(contagionSummary([{ score: null }, { score: null }], 35).pct).toBeNull();
+    expect(contagionSummary([{ score: 50 }, { score: null }], 35)).toMatchObject({ scored: 1, pct: 100 });
+    expect(topScoredVectors(rows, 3).map(r => r.id)).toEqual(["liquidity-stress", "macro-sensitivity"]);
+  });
+
+  it("Pressure / Scenarios source: no '?? 0' or '|| 0' fallback on a score, vector or level", () => {
+    for (const f of ["client/src/pages/Pressure.tsx", "client/src/pages/SimulatePressure.tsx", "client/src/lib/simulatePressureView.ts", "client/src/lib/pressureVectorWeights.ts", "client/src/pages/Charts.tsx"]) {
+      const s = src(f);
+      expect(s, f).not.toMatch(/(score|value|vector|level|\bv)\)?\s*(\?\?|\|\|)\s*0\b/i);
+      expect(s, f).not.toMatch(/\?\? \("Low" as PressureLevel\)|\?\? "Moderate"\)|\?\? "MODERATE"/);
+    }
+    const p = src("client/src/pages/Pressure.tsx");
+    expect(p).toMatch(/score: canonicalVectorScore\(engine\.value\),/);
+    expect(p).toMatch(/level: pressureVectorLevel\(engine\.value\),/);
+    expect(p).toMatch(/score: v\?\.score \?\? null, level: v\?\.level \?\? null/);
+    expect(p).toMatch(/\{vectorScoreText\(vector\.score\)\}/);
+    expect(p).toMatch(/data-vector-level="unavailable"[^>]*>Unavailable</);
+    expect(p).toMatch(/\{\(liq\?\.level \?\? "Unavailable"\)\.toUpperCase\(\)\}/);
+    expect(p).toMatch(/if \(score == null\) return <div data-score-bar="unavailable"/);
+    const sim = src("client/src/pages/SimulatePressure.tsx");
+    expect(sim).toMatch(/\{vec\.value \?\? '—'\}/);
+  });
+});
+
+describe("Charts: no seeded paths, no false source claims (QA #60 follow-up)", () => {
+  const s = src("client/src/pages/Charts.tsx");
+  it("macro card source: no 'API:' prefix before the no-feed note", () => {
+    expect(macroCardSourceText("No live data feed is connected to this card.")).toBe("No live data feed is connected to this card.");
+    expect(macroCardSourceText("")).toBe("No live data feed is connected to this card.");
+    expect(macroCardSourceText("FRED: T10Y2Y")).toBe("API: FRED: T10Y2Y");
+    expect(s).not.toMatch(/API: \{card\.apiSource\}/);
+    expect(s).toMatch(/\{macroCardSourceText\(card\.apiSource\)\}/);
+  });
+  it("no MODEL DATA footer claiming FRED / Polygon / Alpha Vantage integration", () => {
+    expect(s).not.toMatch(/MODEL DATA|Alpha Vantage|Polygon\.io|Full live integration/);
+  });
+  it("no 0–10 engine score and no seeded crisis paths / current trajectory plotted", () => {
+    expect(s).not.toMatch(/output\.overall|currentTrajectoryData|s\.data\[i\]/);
+    expect(s).toMatch(/Historical Reference · Not a data overlay/);
+  });
+  it("correlation map is labelled illustrative and shows no static stress/correlation figures", () => {
+    expect(s).not.toMatch(/Stress contagion detected/);
+    expect(s).not.toMatch(/\{node\.value\}|edge\.correlation\.toFixed/);
+    expect(s).toMatch(/Cross-Asset Relationships · Illustrative/);
+  });
+});
+
+describe("lib/data.ts: no relative 'h ago' / 'd ago' stamps", () => {
+  it("the unimported static alert list with relative stamps is gone", async () => {
+    const s = src("client/src/lib/data.ts");
+    expect(s).not.toMatch(/timestamp: '\d+[hd] ago'/);
+    const mod = await import("../client/src/lib/data") as Record<string, unknown>;
+    expect(mod.alerts).toBeUndefined();
+  });
+});
+
+describe("Signals card: static fundamentals are Unavailable, never current-looking", () => {
+  const s = src("client/src/pages/Signals.tsx");
+  it("market cap / short interest / debt-equity / avg volume show Unavailable; descriptors labelled static", () => {
+    for (const label of ["Market Cap", "Short Interest", "Debt/Equity", "Avg Volume"]) {
+      expect(s).toContain(`{ label: '${label}', value: 'Unavailable' }`);
+    }
+    expect(s).not.toMatch(/fmtCap\(|stock\.shortInterest|stock\.debtToEquity|stock\.avgVolume\.toFixed/);
+    expect(s).toMatch(/FUNDAMENTALS · NO CURRENT SOURCE CONNECTED/);
+    expect(s).toMatch(/label: 'AI Exposure · static'/);
+    expect(s).toMatch(/label: `Day Open · \$\{quote\.badge\}`/);
+  });
+  it("no static 'EARN nd' badge and no volume ratio against the static average", () => {
+    expect(s).not.toMatch(/EARN \{stock\.earningsDaysAway\}d/);
+    expect(s).not.toMatch(/volumeSurge\(/);
   });
 });
