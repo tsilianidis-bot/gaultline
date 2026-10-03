@@ -1,9 +1,11 @@
 /* ============================================================
    FAULTLINE — Decision Confidence Panel™
    Reusable confidence layer for every recommendation.
-   Shows: Confidence Score, Probability Range, Supporting/
-   Conflicting Signals, Data Freshness, Institutional Agreement,
-   Historical Similarity, Expected Volatility, Reward/Risk.
+   Shows: Confidence Score, Supporting/Conflicting Signals,
+   Expected Volatility, Reward/Risk. Data freshness, heuristic
+   agreement and historical similarity render only when a caller
+   supplies a real value (QA r11 B7: no probability range, no
+   fabricated freshness/similarity defaults).
    ============================================================ */
 import { useState } from "react";
 import {
@@ -14,12 +16,11 @@ import {
 // ── Types ─────────────────────────────────────────────────────
 export interface ConfidenceData {
   confidenceScore: number;           // 0-100
-  probabilityRange: [number, number]; // [low%, high%]
   supportingSignals: string[];
   conflictingSignals: string[];
-  dataFreshnessMinutes: number;       // minutes since last data update
-  institutionalAgreement: number;     // 0-100 (% of institutional signals aligned)
-  historicalSimilarity: number;       // 0-100 (% similarity to historical setups)
+  dataFreshnessMinutes: number | null; // real minutes since last data update; null = not shown
+  institutionalAgreement?: number | null; // heuristic 0-100 score (not a % of institutions); omitted = not shown
+  historicalSimilarity?: number | null;   // 0-100 similarity score from a real analog match; omitted = not shown
   historicalWinRate?: number;         // 0-100 (win rate in similar historical setups)
   expectedVolatility: "LOW" | "MODERATE" | "HIGH" | "EXTREME";
   rewardRisk: number;                 // e.g. 2.4 means 2.4:1
@@ -82,7 +83,10 @@ export default function DecisionConfidencePanel({ data, compact = false, default
 
   const confidenceColor = data.confidenceScore >= 80 ? "#22C55E" : data.confidenceScore >= 60 ? "#FFD700" : data.confidenceScore >= 40 ? "#FF9500" : "#FF2D55";
   const rrColor = data.rewardRisk >= 3 ? "#22C55E" : data.rewardRisk >= 2 ? "#FFD700" : data.rewardRisk >= 1 ? "#FF9500" : "#FF2D55";
-  const instColor = data.institutionalAgreement >= 70 ? "#22C55E" : data.institutionalAgreement >= 50 ? "#FFD700" : "#FF9500";
+  const hasFreshness = typeof data.dataFreshnessMinutes === "number" && Number.isFinite(data.dataFreshnessMinutes);
+  const hasAgreement = typeof data.institutionalAgreement === "number" && Number.isFinite(data.institutionalAgreement);
+  const hasSimilarity = typeof data.historicalSimilarity === "number" && Number.isFinite(data.historicalSimilarity);
+  const instColor = (data.institutionalAgreement ?? 0) >= 70 ? "#22C55E" : (data.institutionalAgreement ?? 0) >= 50 ? "#FFD700" : "#FF9500";
 
   return (
     <div style={{
@@ -115,8 +119,12 @@ export default function DecisionConfidencePanel({ data, compact = false, default
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: confidenceColor, fontWeight: 700 }}>{data.confidenceScore}%</span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>|</span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: rrColor }}>{data.rewardRisk.toFixed(1)}:1 R:R</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>|</span>
-              <FreshnessIndicator minutes={data.dataFreshnessMinutes} />
+              {hasFreshness && (
+                <>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>|</span>
+                  <FreshnessIndicator minutes={data.dataFreshnessMinutes as number} />
+                </>
+              )}
             </span>
           )}
         </div>
@@ -135,12 +143,6 @@ export default function DecisionConfidencePanel({ data, compact = false, default
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 900, fontSize: "22px", color: confidenceColor, lineHeight: 1 }}>{data.confidenceScore}%</div>
             </div>
 
-            {/* Probability Range */}
-            <div style={{ padding: "8px 10px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "4px" }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.12em", marginBottom: "3px" }}>PROB RANGE</div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#E2E8F0", lineHeight: 1 }}>{data.probabilityRange[0]}–{data.probabilityRange[1]}%</div>
-            </div>
-
             {/* Reward/Risk */}
             <div style={{ padding: "8px 10px", background: `${rrColor}08`, border: `1px solid ${rrColor}20`, borderRadius: "4px" }}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.12em", marginBottom: "3px" }}>REWARD:RISK</div>
@@ -156,19 +158,25 @@ export default function DecisionConfidencePanel({ data, compact = false, default
 
           {/* Bars */}
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <ConfidenceBar value={data.institutionalAgreement} color={instColor} label="INSTITUTIONAL AGREE" />
-            <ConfidenceBar value={data.historicalSimilarity} color="#A78BFA" label="HISTORICAL SIMILARITY" />
+            {hasAgreement && (
+              <ConfidenceBar value={data.institutionalAgreement as number} color={instColor} label="AGREEMENT (HEURISTIC /100)" />
+            )}
+            {hasSimilarity && (
+              <ConfidenceBar value={data.historicalSimilarity as number} color="#A78BFA" label="HISTORICAL SIMILARITY" />
+            )}
             {data.historicalWinRate !== undefined && (
               <ConfidenceBar value={data.historicalWinRate} color="#00D4FF" label="HISTORICAL WIN RATE" />
             )}
           </div>
 
-          {/* Data freshness */}
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <Clock size={10} style={{ color: "rgba(100,116,139,0.4)" }} />
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>DATA FRESHNESS:</span>
-            <FreshnessIndicator minutes={data.dataFreshnessMinutes} />
-          </div>
+          {/* Data freshness — only when a real as-of age is supplied */}
+          {hasFreshness && (
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <Clock size={10} style={{ color: "rgba(100,116,139,0.4)" }} />
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>DATA FRESHNESS:</span>
+              <FreshnessIndicator minutes={data.dataFreshnessMinutes as number} />
+            </div>
+          )}
 
           {/* Supporting / Conflicting signals */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
@@ -209,7 +217,7 @@ export default function DecisionConfidencePanel({ data, compact = false, default
           <div style={{ display: "flex", gap: "5px", alignItems: "flex-start", paddingTop: "4px", borderTop: "1px solid rgba(255,255,255,0.03)" }}>
             <Info size={9} style={{ color: "#374151", flexShrink: 0, marginTop: "1px" }} />
             <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#374151", letterSpacing: "0.06em", lineHeight: 1.5, margin: 0 }}>
-              CONFIDENCE SCORES ARE PROBABILISTIC, NOT DETERMINISTIC. PAST HISTORICAL SIMILARITY DOES NOT GUARANTEE FUTURE OUTCOMES. NOT FINANCIAL ADVICE.
+              CONFIDENCE SCORES ARE HEURISTIC, NOT CALIBRATED PROBABILITIES. PAST HISTORICAL SIMILARITY DOES NOT GUARANTEE FUTURE OUTCOMES. NOT FINANCIAL ADVICE.
             </p>
           </div>
         </div>

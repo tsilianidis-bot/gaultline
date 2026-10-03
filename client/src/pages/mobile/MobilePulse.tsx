@@ -169,7 +169,7 @@ export default function MobilePulse() {
           >
             <div className="flex items-center gap-1.5">
               <TrendingUp size={10} className="text-[#34D399]" />
-              <span className="text-[8px] font-mono tracking-widest text-[#34D399]/70">BULL PROB</span>
+              <span className="text-[8px] font-mono tracking-widest text-[#34D399]/70">BULL SCENARIO</span>
             </div>
             <div data-mobile-bull className="text-xl font-black font-mono text-[#34D399]">{bullText}</div>
           </div>

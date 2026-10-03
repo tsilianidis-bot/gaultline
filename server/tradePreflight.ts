@@ -149,8 +149,9 @@ export interface MarketConditionSnapshot {
   pressureIndex: number;
   regime: string;
   regimeLevel: string;
-  bullProbability: number;
-  crashProbability: number;
+  // QA r11 B7: trade.simulate never ships a bull/crash probability (uncalibrated).
+  bullProbability: null;
+  crashProbability: null;
   liquidityCondition: string;
   creditStress: string;
   volatilityCondition: string;
@@ -171,13 +172,13 @@ export interface DecisionVerdict {
 
 export interface OutcomeScenario {
   label: "Bull Case" | "Base Case" | "Bear Case";
-  probability: number;       // 0–100 %
-  expectedReturn: number;    // signed %, e.g. +18 or -10
+  probability: null;         // QA r11 B7: no scenario probability is assigned (uncalibrated)
+  expectedReturn: number;    // signed %, e.g. +18 or -10 (uncalibrated scenario return)
 }
 
 export interface OutcomeSimulator {
   scenarios: [OutcomeScenario, OutcomeScenario, OutcomeScenario];
-  weightedOutcome: number;   // probability-weighted expected return
+  weightedOutcome: null;     // QA r11 B7: no probability weights exist, so no weighted outcome
 }
 
 export type EntryGrade = "A+" | "A" | "A-" | "B+" | "B" | "B-" | "C";
@@ -636,8 +637,6 @@ function buildMarketCondition(pressure: FaultlinePressureOutput): MarketConditio
   const breadthScore    = getVectorScore(vectors, "market-breadth");
   const aiScore         = getVectorScore(vectors, "ai-bubble");
 
-  const bullProbability  = clamp(Math.round(invertScore(overallPressure) * 0.80 + invertScore(creditScore) * 0.20), 5, 95);
-  const crashProbability = clamp(Math.round(overallPressure * 0.60 + creditScore * 0.40) / 2, 5, 95);
   const fedPressureScore = macroScore;
   const recessionScore   = Math.round(creditScore * 0.35 + breadthScore * 0.35 + overallPressure * 0.30);
 
@@ -646,8 +645,8 @@ function buildMarketCondition(pressure: FaultlinePressureOutput): MarketConditio
     pressureIndex: overallPressure,
     regime,
     regimeLevel: level,
-    bullProbability,
-    crashProbability,
+    bullProbability: null,
+    crashProbability: null,
     liquidityCondition: levelLabel(liquidityScore),
     creditStress: levelLabel(creditScore),
     volatilityCondition: levelLabel(volatilityScore),
@@ -1213,25 +1212,16 @@ function computeOutcomeSimulator(
   bullReturn = Math.max(bullReturn, baseReturn + 3);
   bearReturn = Math.min(bearReturn, baseReturn - 3);
 
-  // Probabilities derived from favorability and pressure
-  const bullProb = clamp(Math.round(favorability * 0.55 + (100 - p) * 0.15 + 5), 15, 65);
-  const bearProb = clamp(Math.round((100 - favorability) * 0.30 + p * 0.15 + 5), 10, 50);
-  const baseProb = clamp(100 - bullProb - bearProb, 15, 55);
-
-  // Weighted outcome
-  const weightedOutcome = Math.round(
-    (bullProb / 100) * bullReturn +
-    (baseProb / 100) * baseReturn +
-    (bearProb / 100) * bearReturn
-  );
-
+  // QA r11 B7: scenario probabilities and the probability-weighted outcome
+  // were heuristic weights presented as likelihoods. They are not shipped;
+  // only the (unchanged) uncalibrated scenario returns leave the server.
   return {
     scenarios: [
-      { label: "Bull Case", probability: bullProb, expectedReturn: bullReturn },
-      { label: "Base Case", probability: baseProb, expectedReturn: baseReturn },
-      { label: "Bear Case", probability: bearProb, expectedReturn: bearReturn },
+      { label: "Bull Case", probability: null, expectedReturn: bullReturn },
+      { label: "Base Case", probability: null, expectedReturn: baseReturn },
+      { label: "Bear Case", probability: null, expectedReturn: bearReturn },
     ],
-    weightedOutcome,
+    weightedOutcome: null,
   };
 }
 
@@ -1894,7 +1884,6 @@ Simulation result:
 - Adverse Pressure score: ${output.adversePressureProbability}/100 (heuristic score, not a likelihood)
 - Risk Level: ${output.riskLevel}
 - Entry Quality Overall Grade: ${output.entryQuality.overallGrade}
-- Expected Weighted Outcome: ${output.outcomeSimulator.weightedOutcome > 0 ? "+" : ""}${output.outcomeSimulator.weightedOutcome}%
 
 Write a concise 3-4 sentence institutional-grade explanation of this simulation result.
 - Reference the specific move${tickerNote} and timeframe explicitly
@@ -2762,8 +2751,9 @@ export async function runTradePreflightSimulation(
     greenLights,
     confirmationTriggers: watchNext,
     invalidationTriggers,
-    bullContinuationProbability: marketCondition.bullProbability,
-    crashDrawdownProbability: marketCondition.crashProbability,
+    // QA r11 B7: no bull/crash probability is passed, so none reaches decisionLight output/evidence.
+    bullContinuationProbability: null,
+    crashDrawdownProbability: null,
     timestamp: generatedAt,
     canonicalStateId: canonical?.stateId ?? null,
     evidenceQuality: canonical?.qualityStatus ?? (pressure.dataSource === "fallback" ? "UNAVAILABLE" : "HEALTHY"),

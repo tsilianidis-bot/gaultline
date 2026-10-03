@@ -35,6 +35,7 @@ import { HistoricalContextPanel } from "@/components/HistoricalContextPanel";
 import type { HistoricalIntelligenceData } from "@/components/HistoricalContextPanel";
 import { engineProbabilityText } from "@/lib/marketStateProjection";
 import { PROBABILITY_DISPLAY_TEXT } from "@shared/probabilityContract";
+import { CONFIDENCE_NOT_ESTABLISHED, confidenceDisplayText, hasConfidenceValue } from "@/lib/confidenceDisplay";
 
 // ── Design tokens ─────────────────────────────────────────────
 const BG = "#050608";
@@ -58,7 +59,8 @@ interface FaultlineAnswer {
   verdict: string;
   verdictColor: "green" | "yellow" | "red" | "blue";
   opportunityScore: number;
-  confidence: number;
+  /** QA r11 B9: the integrity validator withholds model confidence (null). */
+  confidence: number | null;
   confidenceLabel: string;
   confidenceReasons: string[];
   ticker: string | null;
@@ -149,7 +151,7 @@ interface FaultlineAnswer {
   historicalIntelligence?: HistoricalIntelligenceData | null;
   // ── NEW V3 FIELDS — Final Verdict + Institutional Intelligence ──────────────────────────────
   finalVerdictAction?: "BUY" | "ACCUMULATE" | "HOLD" | "WATCH" | "REDUCE" | "SELL" | "AVOID";
-  finalVerdictConfidence?: number;
+  finalVerdictConfidence?: number | null;
   finalVerdictRiskLevel?: "LOW" | "MODERATE" | "HIGH" | "EXTREME";
   finalVerdictTimeHorizon?: string;
   finalVerdictRationale?: string;
@@ -1123,6 +1125,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
   const confidenceColor = confidenceLabelNorm === "HIGH" ? "#00FF88"
     : confidenceLabelNorm === "MODERATE" ? "#FFD700"
     : confidenceLabelNorm === "LOW" ? "#FF4444"
+    : !hasConfidenceValue(answer.confidence) ? "#94A3B8"
     : answer.confidence >= 70 ? "#00FF88" : answer.confidence >= 45 ? "#FFD700" : "#FF4444";
   const confidenceBg = confidenceLabelNorm === "HIGH" ? "rgba(0,255,136,0.08)"
     : confidenceLabelNorm === "MODERATE" ? "rgba(255,215,0,0.08)"
@@ -1186,15 +1189,15 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
         {/* Row 2: opportunity + confidence bars */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
           {[
-            { label: "OPPORTUNITY", value: answer.opportunityScore, color: answer.verdictColor },
-            { label: "CONFIDENCE", value: answer.confidence, color: confidenceLabelNorm === "HIGH" ? "green" : confidenceLabelNorm === "MODERATE" ? "yellow" : "red" },
+            { label: "OPPORTUNITY", value: answer.opportunityScore as number | null, color: answer.verdictColor },
+            { label: "CONFIDENCE", value: hasConfidenceValue(answer.confidence) ? answer.confidence : null, color: confidenceLabelNorm === "HIGH" ? "green" : confidenceLabelNorm === "MODERATE" ? "yellow" : "red" },
           ].map(({ label, value, color }) => (
             <div key={label}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                 <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.4)" }}>{label}</span>
-                <span style={{ ...MONO_SM, color: verdictStyle(color).color, fontWeight: 700 }}>{value}</span>
+                <span style={{ ...MONO_SM, color: value == null ? "#94A3B8" : verdictStyle(color).color, fontWeight: 700 }}>{value == null ? CONFIDENCE_NOT_ESTABLISHED : value}</span>
               </div>
-              <div style={scoreBar(value, color)} />
+              {value != null && <div style={scoreBar(value, color)} />}
             </div>
           ))}
         </div>
@@ -1230,7 +1233,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
         <EngineCard
           icon={<BarChart2 size={9} />}
           label="Confidence"
-          value={`${answer.confidence}%`}
+          value={confidenceDisplayText(answer.confidence)}
           color={confidenceColor}
           sub={answer.confidenceLabel}
           subColor={confidenceColor}
@@ -1447,7 +1450,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginBottom: "12px" }}>
               {[
                 { label: "PROBABILITY", value: PROBABILITY_DISPLAY_TEXT.NOT_OFFERED, color: "#94A3B8" },
-                { label: "CONFIDENCE", value: `${answer.finalVerdictConfidence ?? 0}%`, color: confidenceColor },
+                { label: "CONFIDENCE", value: confidenceDisplayText(answer.finalVerdictConfidence), color: hasConfidenceValue(answer.finalVerdictConfidence) ? confidenceColor : "#94A3B8" },
                 { label: "RISK LEVEL", value: answer.finalVerdictRiskLevel ?? "—", color: rlColor },
               ].map(({ label, value, color }) => (
                 <div key={label} style={{
