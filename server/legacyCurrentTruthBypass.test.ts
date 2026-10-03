@@ -27,7 +27,9 @@ describe("legacy current-truth bypasses", () => {
     expect(mobileBrief).toContain("marketState.canonicalCurrent");
     expect(mobileBrief).not.toContain("pressure.getCurrentPressure");
     expect(mobileBrief).not.toContain("pressureScore * 0.7");
-    expect(mobileBrief).toContain("scenarioOutputs");
+    // Probabilities come from the canonical contract, not raw scenarioOutputs (QA r9).
+    expect(mobileBrief).toContain("canonicalState.probabilityContract");
+    expect(mobileBrief).not.toContain("scenarioOutputs");
   });
 
   it("binds public Pressure Index to canonical state and never seeds placeholder vector scores", () => {

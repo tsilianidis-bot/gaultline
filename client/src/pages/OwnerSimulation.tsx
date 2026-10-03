@@ -22,6 +22,7 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
 import {
   Trophy, Target, TrendingUp, TrendingDown, Shield, Zap, RefreshCw,
   AlertTriangle, ChevronDown, ChevronUp, BookOpen, BarChart3, DollarSign,
@@ -154,7 +155,8 @@ function ManualSearch({ accountValue, onTrade }: { accountValue: number; onTrade
             {[
               { label: "PRICE", value: `$${fmt(result.currentPrice)}`, color: "text-[#F4F8FF]" },
               { label: "24H CHANGE", value: fmtPct(result.changePercent), color: result.changePercent >= 0 ? "text-[#00FF88]" : "text-[#FF2D55]" },
-              { label: "CONFIDENCE", value: `${result.faultlineConfidence}%`, color: result.faultlineConfidence >= 70 ? "text-[#00FF88]" : result.faultlineConfidence >= 50 ? "text-[#FFD700]" : "text-[#FF2D55]" },
+              // QA r13 B14: faultlineConfidence is the signal formula min(95, 55 + |score| × 5).
+              { label: "CONFIDENCE", value: CONFIDENCE_NOT_ESTABLISHED, color: "text-[#94A3B8]" },
               { label: "COMPOSITE SCORE", value: result.compositeScore.toString(), color: result.compositeScore >= 70 ? "text-[#00FF88]" : result.compositeScore >= 50 ? "text-[#FFD700]" : "text-[#FF2D55]" },
             ].map(({ label, value, color }) => (
               <div key={label} className="bg-white/3 rounded-lg p-3">
@@ -763,13 +765,12 @@ function OpportunityCard({ opp, onTrade, onReject }: {
           </span>
         </div>
 
-        {/* FAULTLINE confidence */}
+        {/* FAULTLINE confidence — QA r13 B14: signal formula, not calibrated: no value, no bar. */}
         <div className="mt-2">
           <div className="flex justify-between text-[10px] text-[#64748B] font-mono mb-1">
             <span>FAULTLINE CONFIDENCE</span>
-            <span>{opp.faultlineConfidence}/100</span>
+            <span>{CONFIDENCE_NOT_ESTABLISHED}</span>
           </div>
-          {scoreBar(opp.faultlineConfidence)}
         </div>
 
         {/* Objective fit */}

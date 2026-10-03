@@ -4,13 +4,16 @@
  * Calm · Clean · Fast · Mobile-friendly
  */
 import { useMemo } from "react";
+import { availableDelta, score100Value } from "@/lib/displayFallbacks";
 import { useEngine } from "@/contexts/EngineContext";
+import { engineProbabilityText } from "@/lib/marketStateProjection";
 import { getRiskColor } from "@/components/RiskBadge";
 import { TrendingUp, TrendingDown, Minus, ArrowRight } from "lucide-react";
 import { FaultlineInterpretation } from "./FaultlineInterpretation";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function riskLabel(level: string): string {
@@ -35,7 +38,7 @@ function PressureHero() {
     refetchOnWindowFocus: false,
   });
   if (!canonicalState) return null;
-  const { overall, regime, probability, domains } = output;
+  const { overall, regime, domains } = output;
   const canonicalRiskLevel = canonicalState.regime === "LOW RISK" ? "low" : canonicalState.regime === "MODERATE RISK" ? "moderate" : canonicalState.regime === "ELEVATED RISK" ? "elevated" : canonicalState.regime === "HIGH STRESS" ? "high" : "critical";
   const color = getRiskColor(canonicalRiskLevel);
 
@@ -103,19 +106,20 @@ function PressureHero() {
                 lineHeight: 1,
               }}
             >
-              {overall.score.toFixed(1)}
+              {/* Pressure Index on its canonical 0–100 scale (engine score is 0–10 internally). */}
+            {score100Value(overall.score)}
             </div>
           )}
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: "0.2em", color: "rgba(100,116,139,0.5)", marginTop: 2 }}>
-            / 10.0
+            / 100
           </div>
         </div>
 
         {/* 4-stat grid: Bull · Crash · Volatility · Liquidity */}
         <div className="grid grid-cols-2 gap-2 mb-4">
           {[
-            { label: "BULL PROB", value: `${probability.bullProbability}%`, color: "#00FF88" },
-            { label: "CRASH PROB", value: `${probability.crashProbability}%`, color: "#FF2D55" },
+            { label: "BULL SCENARIO", value: engineProbabilityText(output, "bullProbability"), color: "#00FF88" },
+            { label: "CRASH PROB", value: engineProbabilityText(output, "crashProbability"), color: "#94A3B8" },
             {
               label: "VOLATILITY",
               value: volatilityDomain ? riskLabel(volatilityDomain.riskLevel) : "—",
@@ -157,11 +161,12 @@ function WhatChangedToday() {
   const { domains, overall } = output;
 
   const updates = useMemo(() => {
-    const sorted = [...domains].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+    const sorted = [...domains].sort((a, b) => Math.abs(availableDelta(b) ?? 0) - Math.abs(availableDelta(a) ?? 0));
     return sorted.slice(0, 5).map((d) => {
       const c = getRiskColor(d.riskLevel);
-      const direction = d.delta > 0.05 ? "rising" : d.delta < -0.05 ? "easing" : "stable";
-      const directionLabel = direction === "rising" ? "↑ Rising" : direction === "easing" ? "↓ Easing" : "→ Stable";
+      const delta = availableDelta(d);
+      const direction = delta === null ? "unavailable" : delta > 0.05 ? "rising" : delta < -0.05 ? "easing" : "stable";
+      const directionLabel = direction === "unavailable" ? "— Unavailable" : direction === "rising" ? "↑ Rising" : direction === "easing" ? "↓ Easing" : "→ Stable";
       const directionColor = direction === "rising" ? "#FF2D55" : direction === "easing" ? "#00FF88" : "#94A3B8";
       return { label: d.label, riskLevel: d.riskLevel, delta: d.delta, color: c, directionLabel, directionColor, score: d.score };
     });
@@ -240,7 +245,7 @@ function TopRiskCard() {
         {topThreat.label}
       </div>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 20, fontWeight: 700, color, marginBottom: 6 }}>
-        {topThreat.score.toFixed(1)}<span style={{ fontSize: 11, color: "rgba(100,116,139,0.5)" }}>/10</span>
+        {score100Value(topThreat.score)}<span style={{ fontSize: 11, color: "rgba(100,116,139,0.5)" }}>/100</span>
       </div>
       <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "rgba(148,163,184,0.8)", lineHeight: 1.6 }}>
         {topThreat.description}
@@ -323,8 +328,8 @@ function CompactSignalFooter() {
       {cryptoData ? (
         <div className="flex flex-col gap-1.5">
           {cryptoData.slice(0, 3).map((coin) => {
-            const change = coin.priceChangePercent24h ?? 0;
-            const changeColor = change >= 0 ? "#00FF88" : "#FF2D55";
+            const change = displayChange24h(coin);
+            const changeColor = change24hColor(change);
             return (
               <div key={coin.id} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -340,7 +345,7 @@ function CompactSignalFooter() {
                     ${coin.currentPrice.toLocaleString()}
                   </span>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: changeColor, fontWeight: 600 }}>
-                    {change >= 0 ? "+" : ""}{change.toFixed(2)}%
+                    {change24hText(change)}
                   </span>
                 </div>
               </div>

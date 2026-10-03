@@ -220,12 +220,10 @@ export const intelligenceValidationRouter = router({
 
     return Object.entries(groups).map(([engine, rows]) => {
       const stats = computeAccuracy(rows);
-      const avgConfidence = rows.length > 0
-        ? Math.round(rows.reduce((sum, r) => sum + r.confidence, 0) / rows.length)
-        : null;
-      const avgOpportunityScore = rows.length > 0
-        ? Math.round(rows.reduce((sum, r) => sum + r.opportunityScore, 0) / rows.length)
-        : null;
+      // QA r12 (B9b): ledger confidence / opportunityScore are client defaults
+      // (?? 50 / ?? 5), not model output — no average is computed or shown.
+      const avgConfidence = null;
+      const avgOpportunityScore = null;
       return {
         engine,
         ...stats,
@@ -243,43 +241,17 @@ export const intelligenceValidationRouter = router({
   }),
 
   /**
-   * Confidence calibration — accuracy at each confidence band.
-   * Bands: 50-59, 60-69, 70-79, 80-89, 90-100
+   * Confidence calibration — not established (QA r12): the ledger holds no
+   * stated model confidence, so no confidence bands are computed.
    */
-  confidenceCalibration: protectedProcedure.query(async ({ ctx }) => {
-    try {
-    const db = await getDb();
-    if (!db) return [];
-
-    const entries = await db
-      .select()
-      .from(decisionLedger)
-      .where(eq(decisionLedger.userId, ctx.user.id));
-
-    const bands = [
-      { label: "50–59", min: 50, max: 59 },
-      { label: "60–69", min: 60, max: 69 },
-      { label: "70–79", min: 70, max: 79 },
-      { label: "80–89", min: 80, max: 89 },
-      { label: "90–100", min: 90, max: 100 },
-    ];
-
-    return bands.map(band => {
-      const rows = (entries as DecisionLedgerEntry[]).filter(e => e.confidence >= band.min && e.confidence <= band.max);
-      const stats = computeAccuracy(rows);
-      // Calibration delta: how far actual accuracy is from stated confidence midpoint
-      const midpoint = (band.min + band.max) / 2;
-      const calibrationDelta = stats.winRate !== null ? stats.winRate - midpoint : null;
-      return {
-        band: band.label,
-        midpoint,
-        ...stats,
-        calibrationDelta,
-        // Calibrated = within ±10% of stated confidence
-        isCalibrated: calibrationDelta !== null ? Math.abs(calibrationDelta) <= 10 : null,
-      };
-    });
-    } catch (err) { console.error("[intelligenceValidation] confidenceCalibration error:", err); return []; }
+  confidenceCalibration: protectedProcedure.query(async (): Promise<Array<{
+    band: string; midpoint: number; total: number; resolved: number; correct: number; partial: number;
+    incorrect: number; stillActive: number; winRate: number | null; calibrationDelta: number | null; isCalibrated: boolean | null;
+  }>> => {
+    // QA r12 (B9b): decision_ledger.confidence is a client default (?? 50; the
+    // validator always withholds model confidence), not a stated confidence.
+    // Calibration by confidence band is therefore not established: no bands.
+    return [];
   }),
 
   /**

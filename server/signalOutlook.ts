@@ -59,8 +59,13 @@ export interface FaultlineEnvironmentContext {
   pressureIndex: number;
   pressureTrend: "Rising" | "Falling" | "Stable";
   regimeLabel: string;
-  bullProbability: number;    // 0–100
-  bearProbability: number;    // 0–100
+  /**
+   * Withheld (faultline-probability-contract-v1): the former values were
+   * 100 − 0.85·P and 0.75·P, fixed formulas over the Pressure Index, not a
+   * governed or calibrated model. Always null; render "Not offered".
+   */
+  bullProbability: null;
+  bearProbability: null;
   environmentImpact: string;  // AI-generated plain-English explanation
 }
 
@@ -106,7 +111,7 @@ export interface DiagnosticAI2Integration {
   sensitiveTrigger: string;
   macroPath: string;
   historicalAnalog: string;
-  confidence: number;
+  confidence: number | null;
 }
 
 export interface PreflightImpact {
@@ -333,13 +338,11 @@ function scoreToDirection(score: number): OutlookDirection {
   return "Avoid";
 }
 
-function pressureToBullProb(pressure: number): number {
-  // Inverse relationship: high pressure = low bull probability
-  return clamp(Math.round(100 - pressure * 0.85));
-}
-
-function pressureToBearProb(pressure: number): number {
-  return clamp(Math.round(pressure * 0.75));
+// Retired: pressureToBullProb (100 − 0.85·P) and pressureToBearProb (0.75·P)
+// were displayed as "Bull/Bear Probability". No governed model exists, so the
+// environment fields are null (probability contract).
+function retiredPressureProbability(): null {
+  return null;
 }
 
 function timeframeLabel(tf: OutlookTimeframe): string {
@@ -1182,7 +1185,7 @@ async function generateOutlookInterpretation(
 - Seismograph Evidence Consensus: ${seismographOutput.evidenceConsensus}
 - Active Historical Analog: ${seismographOutput.analogMatches[0]?.label ?? 'None'} (${seismographOutput.analogMatches[0]?.similarity ?? 0}% similarity)
 - Market Direction: ${seismographOutput.direction} for ${seismographOutput.marketMemory.streakDays} days
-- Transition Probability (stay in regime): ${seismographOutput.transitionProbabilities.remainInRegime}%` : '';
+- Regime transition: not offered as a probability (the transition claim is unavailable)` : '';
   const prompt = `You are FAULTLINE's Signal Outlook AI. Provide plain-English market intelligence for ${symbol} (${assetType.toUpperCase()}).
 
 CURRENT DATA:
@@ -1278,7 +1281,8 @@ Respond with JSON matching this exact schema:
         sensitiveTrigger: parsed.sensitiveTrigger,
         macroPath: parsed.macroPath,
         historicalAnalog: parsed.historicalAnalog,
-        confidence: clamp(parsed.diagnosticConfidence ?? 60),
+        // QA r13 B12: no "?? 60" default; an absent model value stays absent.
+        confidence: typeof parsed.diagnosticConfidence === "number" ? clamp(parsed.diagnosticConfidence) : null,
       },
     };
   } catch {
@@ -1304,7 +1308,7 @@ Respond with JSON matching this exact schema:
         sensitiveTrigger: "Significant change in FAULTLINE Pressure Index",
         macroPath: `Pressure trend: ${pressure.regime}`,
         historicalAnalog: "No clear analog available",
-        confidence: 55,
+        confidence: null, // QA r13 B12: no hard-coded 55
       },
     };
   }
@@ -1432,8 +1436,8 @@ export async function getFullOutlook(
     pressureIndex: p,
     pressureTrend: pressure.vectors.find(v => v.trend === "rising") ? "Rising" : pressure.vectors.find(v => v.trend === "falling") ? "Falling" : "Stable",
     regimeLabel: classifyRegimeLabel(p),
-    bullProbability: pressureToBullProb(p),
-    bearProbability: pressureToBearProb(p),
+    bullProbability: retiredPressureProbability(),
+    bearProbability: retiredPressureProbability(),
     environmentImpact: "", // filled by AI
   };
 

@@ -102,8 +102,6 @@ RECOMMENDATION:
 - Asset: ${entry.ticker ?? "Macro/General"} (${entry.assetType ?? "N/A"})
 - Sector: ${entry.sector ?? "Unknown"}
 - Verdict: ${entry.verdict}
-- Opportunity Score: ${entry.opportunityScore}/100
-- Confidence: ${entry.confidence}%
 - Primary Driver: "${entry.primaryDriver}"
 - Expected Timeframe: ${entry.expectedTimeframe}
 - Engine: ${entry.engineSource ?? "Ask Intelligence"}

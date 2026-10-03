@@ -63,6 +63,8 @@ export interface CoinMarketData {
   low24h: number;
   priceChange24h: number;
   priceChangePercent24h: number;
+  /** Display only: null when CoinGecko supplied no 24h change (priceChangePercent24h then stays 0 for the engine). */
+  priceChangePercent24hDisplay?: number | null;
   priceChangePercent7d: number | null;
   priceChangePercent30d: number | null;
   marketCapChange24h: number;
@@ -336,7 +338,7 @@ function resolveCgId(query: string): string {
   return SYMBOL_MAP[upper] ?? NAME_MAP[upper] ?? query.toLowerCase().trim();
 }
 
-function mapRawCoin(c: Record<string, unknown>): CoinMarketData {
+export function mapRawCoin(c: Record<string, unknown>): CoinMarketData {
   const high = (c.high_24h as number) ?? 0;
   const low  = (c.low_24h  as number) ?? 0;
   const ath  = (c.ath      as number) ?? 0;
@@ -356,6 +358,7 @@ function mapRawCoin(c: Record<string, unknown>): CoinMarketData {
     low24h:                   low,
     priceChange24h:           (c.price_change_24h as number) ?? 0,
     priceChangePercent24h:    (c.price_change_percentage_24h as number) ?? 0,
+    priceChangePercent24hDisplay: typeof c.price_change_percentage_24h === "number" && Number.isFinite(c.price_change_percentage_24h) ? c.price_change_percentage_24h : null,
     priceChangePercent7d:     (c.price_change_percentage_7d_in_currency as number | null) ?? null,
     priceChangePercent30d:    (c.price_change_percentage_30d_in_currency as number | null) ?? null,
     marketCapChange24h:       (c.market_cap_change_24h as number) ?? 0,

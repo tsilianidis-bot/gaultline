@@ -8,12 +8,12 @@
  *  1. Sticky header (live clock, refresh)
  *  2. FAULTLINE VERDICT — regime + one-line narrative
  *  3. TRADING CONDITIONS — conditions, bias, position size, confidence, cash, risk env
- *  4. BULL vs BEAR — two large animated probability cards
+ *  4. BULL vs BEAR — scenario cards (probability contract: Not offered)
  *  5. PRESSURE CORE — living seismic sensor (canvas, always alive)
  *  6. SEISMOGRAPH WAVEFORM — 90-day pressure history
  *  7. TODAY'S BEST TRADE TYPES — dynamic from engines
  *  8. CURRENT CAUTIONS — what to avoid
- *  9. SCENARIO DISTRIBUTION — animated 5-way regime bars
+ *  9. SCENARIO DISTRIBUTION — retired 5-way split (Not offered)
  * 10. PRESSURE DRIVERS — evidence families + engine contributions
  * 11. HISTORICAL COMPARISON — analogs + trend summaries
  * 12. WHAT COULD CHANGE — shifts, watch list, invalidation
@@ -29,6 +29,7 @@ import { useRegisterAshaContext } from "@/contexts/AshaContext";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import { SectionErrorBoundary } from "@/components/ErrorBoundary";
 import { formatOrdinal } from "@shared/historicalPercentile";
+import { PROBABILITY_DISPLAY_TEXT } from "@shared/probabilityContract";
 
 // ── Reduced-motion helper ─────────────────────────────────────────────────────
 function prefersReducedMotion(): boolean {
@@ -87,7 +88,7 @@ interface TradingConditionsData {
   riskEnvironmentColor: string;
 }
 
-function deriveTradingConditions(score: number, direction: string, confidence: number): TradingConditionsData {
+function deriveTradingConditions(score: number, direction: string, confidence: number | null): TradingConditionsData {
   let conditionLabel: string;
   let conditionColor: string;
   let bias: string;
@@ -136,8 +137,9 @@ function deriveTradingConditions(score: number, direction: string, confidence: n
     riskEnvironment = "Constructive"; riskEnvironmentColor = "#10b981";
   }
 
-  const confidenceLabel = confidence >= 75 ? "High" : confidence >= 50 ? "Moderate" : "Low";
-  const confidenceColor = confidence >= 75 ? "#22c55e" : confidence >= 50 ? "#f59e0b" : "#ef4444";
+  // Probability contract: forecast confidence is uncalibrated and withheld (null).
+  const confidenceLabel = confidence == null ? "Uncalibrated" : confidence >= 75 ? "High" : confidence >= 50 ? "Moderate" : "Low";
+  const confidenceColor = confidence == null ? "#94a3b8" : confidence >= 75 ? "#22c55e" : confidence >= 50 ? "#f59e0b" : "#ef4444";
 
   if (direction === "Deteriorating" || direction === "Accelerating") {
     if (conditionLabel === "FAVORABLE" || conditionLabel === "HIGHLY FAVORABLE") {
@@ -157,62 +159,65 @@ interface TradeType {
   evidence: string;
 }
 
-function deriveTradeTypes(score: number, direction: string, regime: string, bull: number, recession: number, crash: number): TradeType[] {
+// Probability contract: bull / recession / crash are NOT_OFFERED (null), so the
+// trade-type rows key on the Pressure Index only and never quote a percentage.
+function pctOrNotOffered(value: number | null): string {
+  // Withheld payload numbers arrive as NaN/null: never render `NaN%`.
+  return value == null || !Number.isFinite(value) ? "not offered" : `${value}%`;
+}
+
+function deriveTradeTypes(score: number, direction: string, regime: string, bull: number | null, recession: number | null, crash: number | null): TradeType[] {
   const isRisk = score < 40;
   const isElevated = score >= 50 && score < 70;
   const isCrisis = score >= 70;
-  const isBullish = bull > 45;
-  const isDefensive = recession + crash > 30;
+  const isBullish = bull != null && bull > 45;
+  const isDefensive = recession != null && crash != null && recession + crash > 30;
 
   const types: TradeType[] = [];
 
   if (isRisk && isBullish) {
-    types.push({ name: "Swing Longs", stars: 5, why: "Low systemic pressure with bullish regime probability supports multi-day long positions", confidence: "High", evidence: `Bull probability ${bull}%, pressure ${score}` });
+    types.push({ name: "Swing Longs", stars: 5, why: "Low systemic pressure with a bullish regime supports multi-day long positions", confidence: "High", evidence: `Bull scenario ${pctOrNotOffered(bull)}, pressure ${score}` });
     types.push({ name: "Trend Following", stars: 5, why: "Constructive macro environment favors momentum-driven trend strategies", confidence: "High", evidence: `Regime: ${regime}, direction: ${direction}` });
     types.push({ name: "Momentum", stars: 4, why: "Favorable conditions support breakout momentum plays in leading sectors", confidence: "Moderate", evidence: `Pressure ${score}, direction: ${direction}` });
     types.push({ name: "Mean Reversion", stars: 2, why: "Trending conditions reduce mean-reversion edge", confidence: "Low", evidence: "Momentum environment unfavorable for reversals" });
-    types.push({ name: "Aggressive Shorts", stars: 1, why: "Bullish regime makes aggressive short exposure high-risk", confidence: "Low", evidence: `Bull probability ${bull}%` });
+    types.push({ name: "Aggressive Shorts", stars: 1, why: "Bullish regime makes aggressive short exposure high-risk", confidence: "Low", evidence: `Bull scenario ${pctOrNotOffered(bull)}` });
     types.push({ name: "Defensive Rotation", stars: 1, why: "Defensive positioning not warranted at current pressure levels", confidence: "Low", evidence: `Pressure ${score}` });
   } else if (isElevated) {
     types.push({ name: "Selective Longs", stars: 3, why: "Elevated pressure warrants selectivity — only highest-conviction setups", confidence: "Moderate", evidence: `Pressure ${score}, direction: ${direction}` });
-    types.push({ name: "Defensive Rotation", stars: 4, why: "Rotating toward defensive sectors reduces drawdown risk in elevated environments", confidence: "High", evidence: `Pressure ${score}, recession ${recession}%` });
+    types.push({ name: "Defensive Rotation", stars: 4, why: "Rotating toward defensive sectors reduces drawdown risk in elevated environments", confidence: "High", evidence: `Pressure ${score}, recession risk ${pctOrNotOffered(recession)}` });
     types.push({ name: "Mean Reversion", stars: 3, why: "Elevated pressure creates oversold conditions suitable for short-term reversals", confidence: "Moderate", evidence: `Pressure ${score}` });
     types.push({ name: "Trend Following", stars: 2, why: "Elevated pressure increases whipsaw risk for trend strategies", confidence: "Low", evidence: `Direction: ${direction}` });
     types.push({ name: "Swing Longs", stars: 2, why: "Elevated systemic pressure reduces multi-day long conviction", confidence: "Low", evidence: `Pressure ${score}` });
-    types.push({ name: "Aggressive Shorts", stars: 2, why: "Selective short exposure in weakest sectors may be warranted", confidence: "Low", evidence: `Recession ${recession}%, crash ${crash}%` });
+    types.push({ name: "Aggressive Shorts", stars: 2, why: "Selective short exposure in weakest sectors may be warranted", confidence: "Low", evidence: `Recession risk ${pctOrNotOffered(recession)}, crash risk ${pctOrNotOffered(crash)}` });
   } else if (isCrisis) {
-    types.push({ name: "Defensive Rotation", stars: 5, why: "High systemic pressure demands defensive positioning in safe-haven assets", confidence: "High", evidence: `Pressure ${score}, crash ${crash}%` });
-    types.push({ name: "Aggressive Shorts", stars: isDefensive ? 4 : 3, why: "Crisis-level pressure supports short exposure in vulnerable sectors", confidence: "Moderate", evidence: `Recession ${recession}%, crash ${crash}%` });
+    types.push({ name: "Defensive Rotation", stars: 5, why: "High systemic pressure demands defensive positioning in safe-haven assets", confidence: "High", evidence: `Pressure ${score}, crash risk ${pctOrNotOffered(crash)}` });
+    types.push({ name: "Aggressive Shorts", stars: isDefensive ? 4 : 3, why: "Crisis-level pressure supports short exposure in vulnerable sectors", confidence: "Moderate", evidence: `Recession risk ${pctOrNotOffered(recession)}, crash risk ${pctOrNotOffered(crash)}` });
     types.push({ name: "Mean Reversion", stars: 2, why: "Volatile conditions create short-term reversals but with elevated risk", confidence: "Low", evidence: `Pressure ${score}` });
     types.push({ name: "Swing Longs", stars: 1, why: "Crisis pressure makes sustained long exposure high-risk", confidence: "Low", evidence: `Pressure ${score}` });
     types.push({ name: "Trend Following", stars: 1, why: "Trend strategies suffer in crisis volatility spikes", confidence: "Low", evidence: `Direction: ${direction}` });
     types.push({ name: "Momentum", stars: 1, why: "Momentum strategies face elevated reversal risk in crisis conditions", confidence: "Low", evidence: `Pressure ${score}` });
   } else {
-    types.push({ name: "Swing Longs", stars: 4, why: "Moderate conditions support selective long exposure with defined risk", confidence: "Moderate", evidence: `Pressure ${score}, bull ${bull}%` });
+    types.push({ name: "Swing Longs", stars: 4, why: "Moderate conditions support selective long exposure with defined risk", confidence: "Moderate", evidence: `Pressure ${score}, bull scenario ${pctOrNotOffered(bull)}` });
     types.push({ name: "Trend Following", stars: 4, why: "Stable macro backdrop supports trend-following in leading sectors", confidence: "Moderate", evidence: `Regime: ${regime}` });
     types.push({ name: "Momentum", stars: 3, why: "Moderate environment supports momentum in select sectors", confidence: "Moderate", evidence: `Pressure ${score}` });
     types.push({ name: "Mean Reversion", stars: 3, why: "Stable conditions support mean-reversion in range-bound markets", confidence: "Moderate", evidence: `Pressure ${score}` });
     types.push({ name: "Defensive Rotation", stars: 2, why: "Defensive rotation not a priority at moderate pressure levels", confidence: "Low", evidence: `Pressure ${score}` });
-    types.push({ name: "Aggressive Shorts", stars: 1, why: "Moderate conditions do not support aggressive short exposure", confidence: "Low", evidence: `Bull ${bull}%` });
+    types.push({ name: "Aggressive Shorts", stars: 1, why: "Moderate conditions do not support aggressive short exposure", confidence: "Low", evidence: `Bull scenario ${pctOrNotOffered(bull)}` });
   }
 
   return types;
 }
 
 // ── Cautions derivation ────────────────────────────────────────────────────────
-function deriveCautions(score: number, direction: string, crash: number, recession: number, stressLevel: string): string[] {
+// Crash and recession risk: not offered as probabilities (probability contract), so
+// no caution is keyed off or quotes one.
+function deriveCautions(score: number, direction: string, stressLevel: string): string[] {
   const cautions: string[] = [];
   if (score >= 65 || stressLevel === "High" || stressLevel === "Crisis") {
     cautions.push("Reduce leverage across all positions — elevated systemic pressure increases drawdown risk.");
   }
   if (direction === "Accelerating" || direction === "Deteriorating") {
     cautions.push("Avoid adding new risk exposure while pressure is accelerating — wait for stabilization.");
-  }
-  if (crash > 20) {
-    cautions.push(`Avoid highly leveraged or illiquid positions — crash probability at ${crash}%.`);
-  }
-  if (recession > 25) {
-    cautions.push("Remain selective with cyclical and growth exposure — recession probability elevated.");
   }
   if (score >= 45) {
     cautions.push("Avoid chasing overextended breakouts — elevated pressure increases reversal risk.");
@@ -614,11 +619,7 @@ export default function SeismographIntelligence() {
   const loadPhase = useStagedLoad(true);
   // Use safe fallback values for hooks that depend on intel data
   const _score = intel?.currentScore ?? 0;
-  const _bull = intel?.regimeProbabilities5way?.bull ?? 0;
-  const _crash = (intel?.regimeProbabilities5way?.crash ?? 0) + (intel?.regimeProbabilities5way?.recession ?? 0);
   const animatedScore = useCountUp(_score, 1100, 400);
-  const animatedBull = useCountUp(_bull, 1000, 600);
-  const animatedCrash = useCountUp(_crash, 1000, 700);
 
   const ashaCtxMemo = useMemo(() => ({
     page: "seismograph" as const,
@@ -627,8 +628,10 @@ export default function SeismographIntelligence() {
     narrative: intel?.todayStory ?? "",
     trend: intel?.currentDirection ?? "",
     keyDrivers: (intel?.keyDevelopments ?? []).slice(0, 3),
-    historicalAnalog: intel?.analogs?.[0] ? `${intel.analogs[0].period} (similarity: ${(intel.analogs[0].similarity * 100).toFixed(0)}%)` : undefined,
-    transitionProbability: intel?.transitionProbabilities?.transitionToElevated,
+    // similarity is already 0–100 (never ×100).
+    historicalAnalog: intel?.analogs?.[0] ? `${intel.analogs[0].period} (similarity: ${Math.round(intel.analogs[0].similarity)}%)` : undefined,
+    // Transition components are withheld by the probability contract (null unless AVAILABLE).
+    transitionProbability: intel?.transitionProbabilities?.transitionToElevated ?? undefined,
     additionalContext: {
       stressLevel: intel?.currentStressLevel ?? "",
       percentile: intel?.currentPercentile ?? 0,
@@ -677,7 +680,11 @@ export default function SeismographIntelligence() {
     macroTicker, dataFreshness, lastUpdated,
   } = intel;
 
-  const regimeProbs = regimeProbabilities5way ?? { bull: 0, softLanding: 0, stagflation: 0, recession: 0, crash: 0 };
+  // Probability contract: the 5-way split is NOT_OFFERED; the server sends nulls.
+  const regimeProbs: Record<"bull" | "softLanding" | "stagflation" | "recession" | "crash", number | null> =
+    regimeProbabilities5way ?? { bull: null, softLanding: null, stagflation: null, recession: null, crash: null };
+  const notOfferedText = PROBABILITY_DISPLAY_TEXT.NOT_OFFERED;
+  const confidenceText = probabilities.confidence == null ? PROBABILITY_DISPLAY_TEXT.UNCALIBRATED : `${probabilities.confidence}%`;
   const safeEngineContributions = engineContributions ?? [];
   const safeEvidenceFamilies = evidenceFamilies ?? [];
   const safeAnalogs = analogs ?? [];
@@ -693,8 +700,9 @@ export default function SeismographIntelligence() {
 
   // Derived data
   const tradingConditions = deriveTradingConditions(currentScore, currentDirection, probabilities.confidence);
-  const tradeTypes = deriveTradeTypes(currentScore, currentDirection, currentRegime, regimeProbs.bull, regimeProbs.recession, regimeProbs.crash);
-  const cautions = deriveCautions(currentScore, currentDirection, regimeProbs.crash, regimeProbs.recession, currentStressLevel);
+  // Recession / crash risk: not offered as probabilities; never passed as numbers.
+  const tradeTypes = deriveTradeTypes(currentScore, currentDirection, currentRegime, regimeProbs.bull, null, null);
+  const cautions = deriveCautions(currentScore, currentDirection, currentStressLevel);
 
   return (
     <div style={{ minHeight: "100vh", background: "#000", color: "#e2e8f0", padding: "0 0 80px", opacity: loadPhase >= 1 ? 1 : 0, transition: "opacity 0.4s ease-out", position: "relative", overflow: "hidden" }}>
@@ -794,48 +802,22 @@ export default function SeismographIntelligence() {
             SECTION 3 — BULL VS BEAR PROBABILITY
         ══════════════════════════════════════════════════════ */}
         <div style={{ marginBottom: "32px", opacity: loadPhase >= 3 ? 1 : 0, transition: "opacity 0.5s ease-out 0.15s" }}>
-          <SectionLabel text="BULL vs BEAR PROBABILITY" />
+          <SectionLabel text="BULL vs BEAR SCENARIOS" />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
-            {/* Bull card */}
-            <div style={{ padding: "24px", background: "rgba(34,197,94,0.04)", borderRadius: "8px", border: "1px solid rgba(34,197,94,0.2)", borderTop: "3px solid #22c55e", position: "relative", overflow: "hidden" }}>
-              {!prefersReducedMotion() && (
-                <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 100%, rgba(34,197,94,0.06) 0%, transparent 70%)", pointerEvents: "none" }} />
-              )}
-              <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.14em", color: "rgba(34,197,94,0.6)", marginBottom: "8px" }}>BULL CONTINUATION</div>
-              <div style={{ ...mono, fontSize: "48px", fontWeight: 800, color: "#22c55e", lineHeight: 1, marginBottom: "8px", textShadow: "0 0 30px rgba(34,197,94,0.3)", animation: loadPhase >= 3 ? "score-breathe-deep 4s ease-in-out infinite 0.5s" : "none" }}>
-                {animatedBull}%
+            {[
+              { label: "BULL CONTINUATION", color: "#22c55e", border: "rgba(34,197,94,0.2)", bg: "rgba(34,197,94,0.04)", text: "No governed model produces a bull-continuation probability, so FAULTLINE does not offer one. Read the Pressure Index and the evidence families instead." },
+              { label: "MAJOR DRAWDOWN RISK", color: "#ef4444", border: "rgba(239,68,68,0.2)", bg: "rgba(239,68,68,0.04)", text: "FAULTLINE does not offer a crash probability and does not offer a recession probability: no governed model produces one. Read the Pressure Index and the evidence families instead." },
+            ].map(card => (
+              <div key={card.label} style={{ padding: "24px", background: card.bg, borderRadius: "8px", border: `1px solid ${card.border}`, borderTop: `3px solid ${card.color}`, position: "relative", overflow: "hidden" }}>
+                <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.14em", color: card.color, opacity: 0.6, marginBottom: "8px" }}>{card.label}</div>
+                <div style={{ ...mono, fontSize: "28px", fontWeight: 800, color: card.color, lineHeight: 1, marginBottom: "10px" }}>
+                  {notOfferedText}
+                </div>
+                <p style={{ fontSize: "12px", color: "rgba(226,232,240,0.55)", lineHeight: 1.55, margin: 0, fontFamily: "'IBM Plex Sans',system-ui,sans-serif" }}>
+                  {card.text}
+                </p>
               </div>
-              <div style={{ height: "4px", background: "rgba(34,197,94,0.12)", borderRadius: "2px", marginBottom: "10px", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${regimeProbs.bull}%`, background: "#22c55e", borderRadius: "2px", transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
-              </div>
-              <p style={{ fontSize: "12px", color: "rgba(226,232,240,0.55)", lineHeight: 1.55, margin: 0, fontFamily: "'IBM Plex Sans',system-ui,sans-serif" }}>
-                {regimeProbs.bull > 50
-                  ? "Dominant regime probability. Constructive macro environment supports continued upside."
-                  : regimeProbs.bull > 30
-                  ? "Meaningful bull probability. Conditions support selective long exposure."
-                  : "Bull continuation probability is subdued. Elevated caution warranted."}
-              </p>
-            </div>
-            {/* Bear/drawdown card */}
-            <div style={{ padding: "24px", background: "rgba(239,68,68,0.04)", borderRadius: "8px", border: "1px solid rgba(239,68,68,0.2)", borderTop: "3px solid #ef4444", position: "relative", overflow: "hidden" }}>
-              {!prefersReducedMotion() && (
-                <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 100%, rgba(239,68,68,0.05) 0%, transparent 70%)", pointerEvents: "none" }} />
-              )}
-              <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.14em", color: "rgba(239,68,68,0.6)", marginBottom: "8px" }}>MAJOR DRAWDOWN RISK</div>
-              <div style={{ ...mono, fontSize: "48px", fontWeight: 800, color: "#ef4444", lineHeight: 1, marginBottom: "8px", textShadow: "0 0 30px rgba(239,68,68,0.3)", animation: loadPhase >= 3 ? "score-breathe-deep 4s ease-in-out infinite 0.7s" : "none" }}>
-                {animatedCrash}%
-              </div>
-              <div style={{ height: "4px", background: "rgba(239,68,68,0.12)", borderRadius: "2px", marginBottom: "10px", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${regimeProbs.crash + regimeProbs.recession}%`, background: "#ef4444", borderRadius: "2px", transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
-              </div>
-              <p style={{ fontSize: "12px", color: "rgba(226,232,240,0.55)", lineHeight: 1.55, margin: 0, fontFamily: "'IBM Plex Sans',system-ui,sans-serif" }}>
-                {regimeProbs.crash + regimeProbs.recession > 40
-                  ? "Elevated drawdown probability. Recession and crash scenarios carry significant combined weight."
-                  : regimeProbs.crash + regimeProbs.recession > 20
-                  ? "Moderate drawdown risk. Tail scenarios warrant defensive positioning in a portion of the portfolio."
-                  : "Drawdown risk is contained. Tail scenarios are low-probability at current conditions."}
-              </p>
-            </div>
+            ))}
           </div>
         </div>
 
@@ -873,8 +855,8 @@ export default function SeismographIntelligence() {
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                   {[
-                    { label: "7-DAY TREND", value: safeEvolution.sevenDayTrend ? safeEvolution.sevenDayTrend.split(" ").slice(0, 4).join(" ") + "…" : "N/A" },
-                    { label: "30-DAY TREND", value: safeEvolution.thirtyDayTrend ? safeEvolution.thirtyDayTrend.split(" ").slice(0, 4).join(" ") + "…" : "N/A" },
+                    { label: "7-MONTH TREND", value: safeEvolution.sevenDayTrend ? safeEvolution.sevenDayTrend.split(" ").slice(0, 4).join(" ") + "…" : "N/A" },
+                    { label: "7 VS 30-MONTH", value: safeEvolution.thirtyDayTrend ? safeEvolution.thirtyDayTrend.split(" ").slice(0, 4).join(" ") + "…" : "N/A" },
                   ].map(({ label, value }) => (
                     <div key={label} style={{ padding: "8px 10px", background: "rgba(6,182,212,0.03)", borderRadius: "4px", border: "1px solid rgba(6,182,212,0.07)" }}>
                       <div style={{ ...mono, fontSize: "7px", letterSpacing: "0.1em", color: "rgba(6,182,212,0.32)", marginBottom: "3px" }}>{label}</div>
@@ -891,7 +873,7 @@ export default function SeismographIntelligence() {
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "10px", marginBottom: "16px" }}>
                   {[
                     { label: "ACCELERATION", value: safeEvolution.accelerating ? "Building" : "Stable", color: safeEvolution.accelerating ? "#f97316" : "#22c55e" },
-                    { label: "CONFIDENCE", value: `${probabilities.confidence}%`, color: "rgba(6,182,212,0.8)" },
+                    { label: "CONFIDENCE", value: confidenceText, color: "rgba(6,182,212,0.8)" },
                     { label: "REGIME DURATION", value: safeMemory.currentStreakDescription.split(" ").slice(-3).join(" ") || "N/A", color: "rgba(6,182,212,0.7)" },
                     { label: "OBSERVATIONS", value: `${safeMemory.observationCount}`, color: "rgba(6,182,212,0.6)" },
                   ].map(({ label, value, color }) => (
@@ -927,7 +909,7 @@ export default function SeismographIntelligence() {
         {safeEvolution.sparkline90d.length > 0 && (
           <div style={{ marginBottom: "32px", opacity: loadPhase >= 4 ? 1 : 0, transition: "opacity 0.5s ease-out 0.25s" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
-              <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.18em", color: "rgba(6,182,212,0.4)", fontWeight: 700 }}>LIVE PRESSURE SIGNAL — 90 DAYS</div>
+              <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.18em", color: "rgba(6,182,212,0.4)", fontWeight: 700 }}>LIVE PRESSURE SIGNAL — LAST {safeEvolution.sparkline90d.length} MONTHLY READINGS</div>
               <span style={{ position: "relative", display: "inline-block", width: "5px", height: "5px", flexShrink: 0 }}>
                 <span style={{ position: "absolute", inset: "-3px", borderRadius: "50%", background: scoreColor, opacity: 0, animation: "live-ripple 2.2s ease-out infinite", animationDelay: "0.4s" }} />
                 <span style={{ display: "block", width: "5px", height: "5px", borderRadius: "50%", background: scoreColor, boxShadow: `0 0 6px ${scoreColor}`, animation: "livepulse 2s infinite", position: "relative", zIndex: 1 }} />
@@ -935,7 +917,7 @@ export default function SeismographIntelligence() {
             </div>
             <LiveSeismographWave sparkline={safeEvolution.sparkline90d} scoreColor={scoreColor} currentScore={currentScore} />
             <div style={{ display: "flex", justifyContent: "space-between", ...mono, fontSize: "8px", color: "rgba(6,182,212,0.28)", marginTop: "5px" }}>
-              <span>90 DAYS AGO</span><span>LIVE</span>
+              <span>{safeEvolution.sparkline90d.length - 1} MONTHS AGO</span><span>LIVE</span>
             </div>
           </div>
         )}
@@ -992,15 +974,23 @@ export default function SeismographIntelligence() {
         <div style={{ marginBottom: "32px", opacity: loadPhase >= 5 ? 1 : 0, transition: "opacity 0.5s ease-out 0.4s" }}>
           <SectionLabel text="SCENARIO DISTRIBUTION" />
           <div style={{ padding: "22px 20px", background: "rgba(6,182,212,0.02)", borderRadius: "8px", border: "1px solid rgba(6,182,212,0.1)" }}>
-            <AnimProbBar label="BULL MARKET" value={regimeProbs.bull} color="#22c55e" revealDelay={0} />
-            <AnimProbBar label="SOFT LANDING" value={regimeProbs.softLanding} color="#06b6d4" revealDelay={80} />
-            <AnimProbBar label="STAGFLATION" value={regimeProbs.stagflation} color="#f59e0b" revealDelay={160} />
-            <AnimProbBar label="RECESSION" value={regimeProbs.recession} color="#f97316" revealDelay={240} />
-            <AnimProbBar label="CRISIS / CRASH" value={regimeProbs.crash} color="#ef4444" revealDelay={320} />
+            {/* Probability contract: the retired 5-way split is NOT_OFFERED. */}
+            {[
+              { label: "BULL MARKET", color: "#22c55e" },
+              { label: "SOFT LANDING", color: "#06b6d4" },
+              { label: "STAGFLATION", color: "#f59e0b" },
+              { label: "RECESSION", color: "#f97316" },
+              { label: "CRISIS / CRASH", color: "#ef4444" },
+            ].map(row => (
+              <div key={row.label} style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+                <div style={{ ...mono, width: "140px", fontSize: "9px", color: "rgba(6,182,212,0.55)", letterSpacing: "0.06em", flexShrink: 0 }}>{row.label}</div>
+                <div style={{ ...mono, fontSize: "11px", color: row.color, fontWeight: 700 }}>{notOfferedText}</div>
+              </div>
+            ))}
             <div style={{ marginTop: "16px", paddingTop: "14px", borderTop: "1px solid rgba(6,182,212,0.08)", display: "flex", gap: "20px", flexWrap: "wrap" }}>
               <div>
                 <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.1em", color: "rgba(6,182,212,0.35)", marginBottom: "3px" }}>MODEL CONFIDENCE</div>
-                <div style={{ ...mono, fontSize: "13px", fontWeight: 700, color: "rgba(6,182,212,0.8)" }}>{probabilities.confidence}%</div>
+                <div style={{ ...mono, fontSize: "13px", fontWeight: 700, color: "rgba(6,182,212,0.8)" }}>{confidenceText}</div>
               </div>
               {probabilities.primaryDriver && (
                 <div style={{ flex: 1, minWidth: "160px" }}>
@@ -1104,9 +1094,9 @@ export default function SeismographIntelligence() {
           {/* Trend summaries */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "16px" }}>
             {([
-              { label: "7-DAY TREND", text: safeEvolution.sevenDayTrend },
-              { label: "30-DAY TREND", text: safeEvolution.thirtyDayTrend },
-              { label: "90-DAY TREND", text: safeEvolution.ninetyDayTrend },
+              { label: "7-MONTH TREND", text: safeEvolution.sevenDayTrend },
+              { label: "7- VS 30-MONTH TREND", text: safeEvolution.thirtyDayTrend },
+              { label: "30- VS 90-MONTH TREND", text: safeEvolution.ninetyDayTrend },
               { label: "12-MONTH TREND", text: safeEvolution.yearTrend },
             ] as { label: string; text: string }[]).filter(t => t.text).map(({ label, text }, i) => (
               <div key={i} style={{ padding: "10px 12px", background: "rgba(6,182,212,0.02)", borderRadius: "5px", border: "1px solid rgba(6,182,212,0.08)" }}>
@@ -1234,10 +1224,12 @@ export default function SeismographIntelligence() {
               <div style={{ padding: "12px 14px", background: "rgba(34,197,94,0.04)", borderRadius: "6px", border: "1px solid rgba(34,197,94,0.15)" }}>
                 <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.12em", color: "rgba(34,197,94,0.5)", marginBottom: "7px" }}>BIGGEST OPPORTUNITY</div>
                 <p style={{ fontSize: "12px", color: "rgba(226,232,240,0.7)", lineHeight: 1.5, margin: 0, fontFamily: "'IBM Plex Sans',system-ui,sans-serif" }}>
-                  {regimeProbs.bull > 40
+                  {regimeProbs.bull != null && regimeProbs.bull > 40
                     ? "Long exposure in leading sectors with strong momentum and low systemic risk."
-                    : regimeProbs.softLanding > 30
+                    : regimeProbs.softLanding != null && regimeProbs.softLanding > 30
                     ? "Quality growth names benefiting from soft-landing macro trajectory."
+                    : regimeProbs.bull == null
+                    ? `${tradeTypes[0]?.name ?? "Selective positioning"}, keyed to the Pressure Index (${currentScore}/100). No scenario probability is offered.`
                     : "Defensive positioning and income-generating strategies in a challenging environment."}
                 </p>
               </div>

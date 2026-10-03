@@ -122,7 +122,7 @@ export default function IntelligenceValidation() {
   const { data: bySector } = trpc.intelligenceValidation.breakdownBySector.useQuery(undefined, { enabled: !!user });
   const { data: byType } = trpc.intelligenceValidation.breakdownByRecommendationType.useQuery(undefined, { enabled: !!user });
   const { data: engines } = trpc.intelligenceValidation.engineScorecards.useQuery(undefined, { enabled: !!user });
-  const { data: calibration } = trpc.intelligenceValidation.confidenceCalibration.useQuery(undefined, { enabled: !!user });
+  // QA r12 (B9b): confidence calibration is not established; it is not queried.
   const { data: perfOverTime } = trpc.intelligenceValidation.performanceOverTime.useQuery({ weeks: 12 }, { enabled: !!user });
   const { data: regimeAnalysis } = trpc.intelligenceValidation.marketRegimeAnalysis.useQuery(undefined, { enabled: !!user });
   const { data: leaderboard } = trpc.intelligenceValidation.symbolLeaderboard.useQuery(undefined, { enabled: !!user });
@@ -402,7 +402,6 @@ export default function IntelligenceValidation() {
                     <OutcomeBar correct={eng.correct} partial={eng.partial} incorrect={eng.incorrect} stillActive={eng.stillActive} total={eng.total} />
                     <div className="flex gap-4 mt-3 text-xs text-zinc-500">
                       <span>Win Rate: <span className={eng.winRate !== null && eng.winRate >= 60 ? "text-emerald-400" : "text-amber-400"}>{eng.winRate !== null ? `${eng.winRate}%` : "N/A"}</span></span>
-                      {eng.avgConfidence !== null && <span>Avg Conf: {eng.avgConfidence}%</span>}
                     </div>
                   </CardContent>
                 </Card>
@@ -419,52 +418,15 @@ export default function IntelligenceValidation() {
           <section>
             <SectionHeader
               title="Confidence Calibration"
-              subtitle="Is FAULTLINE's stated confidence aligned with actual accuracy? Well-calibrated = within ±10pp of stated confidence."
+              subtitle="Whether stated confidence matches actual accuracy."
               icon={Target}
             />
             <Card className="bg-zinc-900/60 border-zinc-800">
               <CardContent className="p-4">
-                <div className="space-y-3">
-                  {(calibration ?? []).map(band => (
-                    <div key={band.band} className="flex items-center gap-3">
-                      <div className="w-16 text-xs text-zinc-400 font-mono flex-shrink-0">{band.band}</div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-zinc-500">{band.total} entries</span>
-                          <div className="flex items-center gap-2">
-                            {band.isCalibrated !== null && (
-                              band.isCalibrated
-                                ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                                : <XCircle className="w-3.5 h-3.5 text-red-400" />
-                            )}
-                            <span className={`text-xs font-mono ${
-                              band.winRate !== null && band.winRate >= band.midpoint - 10 && band.winRate <= band.midpoint + 10
-                                ? "text-emerald-400" : "text-amber-400"
-                            }`}>
-                              {band.winRate !== null ? `${band.winRate}% actual` : "N/A"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                          {band.winRate !== null && (
-                            <div
-                              className={`h-full rounded-full ${band.isCalibrated ? "bg-emerald-500" : "bg-amber-500"}`}
-                              style={{ width: `${band.winRate}%` }}
-                            />
-                          )}
-                        </div>
-                        {band.calibrationDelta !== null && (
-                          <div className="text-xs text-zinc-600 mt-0.5">
-                            {band.calibrationDelta > 0 ? "+" : ""}{Math.round(band.calibrationDelta)}pp vs stated midpoint ({band.midpoint}%)
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  {(!calibration || calibration.every(b => b.total === 0)) && (
-                    <p className="text-zinc-500 text-sm text-center py-4">No resolved entries yet for calibration analysis</p>
-                  )}
-                </div>
+                {/* QA r12 (B9b): the ledger stores no stated model confidence (logged values are defaults), so no bands are shown. */}
+                <p data-calibration-status="not-established" className="text-zinc-400 text-sm text-center py-4">
+                  Not established — recommendations are logged without a stated model confidence, so calibration cannot be measured.
+                </p>
               </CardContent>
             </Card>
           </section>
@@ -625,7 +587,6 @@ export default function IntelligenceValidation() {
                     <div className="mt-3 pt-3 border-t border-zinc-800 text-xs text-zinc-500 flex gap-4 flex-wrap">
                       {lesson.engineSource && <span>Engine: {lesson.engineSource}</span>}
                       {lesson.regimeAtTime && <span>Regime: {lesson.regimeAtTime}</span>}
-                      {lesson.confidence !== null && <span>Confidence: {lesson.confidence}%</span>}
                       <span>{new Date(lesson.createdAt).toLocaleDateString()}</span>
                     </div>
                   )}
@@ -717,7 +678,7 @@ export default function IntelligenceValidation() {
             <CardContent className="p-4 space-y-3 text-xs text-zinc-500 leading-relaxed">
               <p><span className="text-zinc-300 font-medium">Win Rate:</span> Correct outcomes score 1 point, Partially Correct score 0.5 points, Incorrect and Still Active score 0 points. Win Rate = total points / resolved entries × 100.</p>
               <p><span className="text-zinc-300 font-medium">Conservative Scoring:</span> Auto-evaluation only marks "Correct" if price moved ≥60% toward the target. "Incorrect" requires ≥50% adverse move. Ambiguous outcomes are marked "Still Active" for manual review.</p>
-              <p><span className="text-zinc-300 font-medium">Confidence Calibration:</span> A well-calibrated system at 80% stated confidence should achieve ~80% actual accuracy. Deviations beyond ±10pp indicate systematic over- or under-confidence.</p>
+              <p><span className="text-zinc-300 font-medium">Confidence Calibration:</span> Not established. Recommendations are logged without a stated model confidence, so no confidence bands or calibration deltas are reported.</p>
               <p><span className="text-zinc-300 font-medium">Sample Size:</span> Metrics with fewer than 10 resolved entries are flagged as low-sample and should be interpreted with caution.</p>
               <p><span className="text-zinc-300 font-medium">Not Financial Advice:</span> All recommendations and accuracy metrics are for informational and research purposes only. Past accuracy does not guarantee future performance. FAULTLINE is an intelligence tool, not a financial advisor.</p>
             </CardContent>

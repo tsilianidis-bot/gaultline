@@ -49,18 +49,21 @@ describe("1a NOW systemic regime score label", () => {
   it("labels it an uncalibrated model score with an as-of time, not confidence or accuracy", () => {
     const d = regimeModelScoreDisplay(reading, false);
     expect(d.label).toBe("Model score (uncalibrated)");
-    expect(d.value).toBe("99.6%");
+    // Probability contract: uncalibrated (ECE 0.5152) → no number.
+    expect(d.value).toBe("Uncalibrated");
     expect(d.asOf).toBe("data through 2026-09-30 · computed Oct 1, 3:00 PM ET");
     expect(d.explanation).toMatch(/not calibrated/);
     expect(d.explanation).toMatch(/not a forecast or a measure of accuracy/);
     expect(regimeModelScoreDisplay(null, true).value).toBe("—");
   });
 
-  it("renders 99.6% Model score (uncalibrated) instead of CONFIDENCE 100%", () => {
+  it("renders the Model score as Uncalibrated (probability contract, ECE 0.5152) instead of CONFIDENCE 100%", () => {
     const html = renderToStaticMarkup(createElement(SystemicRegimeModule, { reading, convergence: null }));
     expect(html).toContain("Model score");
     expect(html).toContain("uncalibrated");
-    expect(html).toContain("99.6%");
+    expect(html).toContain("Uncalibrated");
+    expect(html).not.toContain("99.6%");
+    expect(html).not.toMatch(/>\d+(\.\d+)?%</);
     expect(html).toContain(REGIME_MODEL_SCORE_LABEL);
     expect(html).toContain("computed Oct 1, 3:00 PM ET");
     expect(html).not.toContain(">100%<");

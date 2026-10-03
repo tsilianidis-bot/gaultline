@@ -24,6 +24,12 @@ import {
   PERSISTENT_UTILITY_BY_ID,
 } from "@shared/routeRegistry";
 import { formatCanonicalPercent, formatCanonicalScore, normalizeCanonicalMetric } from "@shared/marketMetrics";
+import { PROBABILITY_DISPLAY_TEXT, probabilityText } from "@shared/probabilityContract";
+
+/** Percent text when a number may render; the contract's withheld text otherwise (never "0%"). */
+function probabilityOrWithheld(value: number, withheld: string): string {
+  return Number.isFinite(value) ? formatCanonicalPercent(value) : withheld;
+}
 import type { CanonicalMarketState } from "@shared/marketState";
 import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
@@ -63,12 +69,12 @@ function Section({
 }
 
 // ── Branching scenario pathway ───────────────────────────────────────────────
-function ScenarioPathways({ rankedScenarios }: { rankedScenarios: Array<{ key: ScenarioKey; probability: number; label: string; shortLabel: string; tone: string; description: string }> }) {
+function ScenarioPathways({ rankedScenarios }: { rankedScenarios: Array<{ key: ScenarioKey; probability: number; text: string; label: string; shortLabel: string; tone: string; description: string }> }) {
   const topTwo = rankedScenarios.slice(0, 2);
   const rest = rankedScenarios.slice(2);
   return (
     <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5">
-      <p className="mb-5 font-mono text-[9px] uppercase tracking-[0.18em] text-violet-300/70">Scenario branching — highest to lowest probability</p>
+      <p className="mb-5 font-mono text-[9px] uppercase tracking-[0.18em] text-violet-300/70">{rankedScenarios.some(s => Number.isFinite(s.probability)) ? "Scenario branching — highest to lowest probability" : "Scenario branching — probabilities not offered"}</p>
       {/* Current state node */}
       <div className="flex flex-col items-center">
         <div className="rounded-sm border border-white/20 bg-white/[0.04] px-5 py-3 text-center">
@@ -91,7 +97,7 @@ function ScenarioPathways({ rankedScenarios }: { rankedScenarios: Array<{ key: S
                   {String(i + 1).padStart(2, "0")} · {scenario.shortLabel}
                 </p>
                 <p className="mt-2 font-['Rajdhani'] text-3xl font-semibold" style={{ color: scenario.tone }}>
-                  {formatCanonicalPercent(scenario.probability)}
+                  {scenario.text}
                 </p>
                 <p className="mt-2 text-xs leading-5 text-slate-400">{scenario.description}</p>
               </div>
@@ -112,7 +118,7 @@ function ScenarioPathways({ rankedScenarios }: { rankedScenarios: Array<{ key: S
                   >
                     <span className="font-mono text-[9px]" style={{ color: scenario.tone }}>{String(i + 3).padStart(2, "0")}</span>
                     <span className="font-mono text-[9px] text-slate-300">{scenario.shortLabel}</span>
-                    <span className="font-mono text-[9px] font-semibold" style={{ color: scenario.tone }}>{formatCanonicalPercent(scenario.probability)}</span>
+                    <span className="font-mono text-[9px] font-semibold" style={{ color: scenario.tone }}>{scenario.text}</span>
                   </div>
                 ))}
               </div>
@@ -125,20 +131,25 @@ function ScenarioPathways({ rankedScenarios }: { rankedScenarios: Array<{ key: S
 }
 
 // ── Probability band bar ─────────────────────────────────────────────────────
-function ProbabilityBandBar({ scenarios }: { scenarios: Array<{ key: ScenarioKey; probability: number; label: string; tone: string }> }) {
-  const total = scenarios.reduce((s, sc) => s + sc.probability, 0) || 100;
+function ProbabilityBandBar({ scenarios }: { scenarios: Array<{ key: ScenarioKey; probability: number; text: string; label: string; tone: string }> }) {
+  const shown = scenarios.filter(sc => Number.isFinite(sc.probability));
+  const total = shown.reduce((s, sc) => s + sc.probability, 0) || 100;
   return (
     <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5">
       <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.18em] text-violet-300/70">Probability distribution band</p>
       {/* Stacked bar */}
       <div className="flex h-8 w-full overflow-hidden rounded-sm" style={{ gap: "1px" }}>
-        {scenarios.map(sc => (
+        {shown.length ? shown.map(sc => (
           <div
             key={sc.key}
             style={{ width: `${(sc.probability / total) * 100}%`, background: sc.tone, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }}
-            title={`${sc.label}: ${formatCanonicalPercent(sc.probability)}`}
+            title={`${sc.label}: ${sc.text}`}
           />
-        ))}
+        )) : (
+          <div className="flex w-full items-center justify-center bg-white/[0.04] font-mono text-[9px] uppercase tracking-[0.14em] text-slate-500">
+            {scenarios[0]?.text ?? PROBABILITY_DISPLAY_TEXT.UNAVAILABLE}
+          </div>
+        )}
       </div>
       {/* Labels */}
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
@@ -146,7 +157,7 @@ function ProbabilityBandBar({ scenarios }: { scenarios: Array<{ key: ScenarioKey
           <div key={sc.key} className="flex items-center gap-1.5">
             <div className="h-2 w-2 rounded-full" style={{ background: sc.tone }} />
             <span className="font-mono text-[9px] text-slate-400">{sc.label}</span>
-            <span className="font-mono text-[9px] font-semibold" style={{ color: sc.tone }}>{formatCanonicalPercent(sc.probability)}</span>
+            <span className="font-mono text-[9px] font-semibold" style={{ color: sc.tone }}>{sc.text}</span>
           </div>
         ))}
       </div>
@@ -212,54 +223,58 @@ export default function Outlook() {
     integrityLabel,
   } = useEngine();
 
+  // Probability contract. The 5-way regime split is a retired generator
+  // (NOT_OFFERED): the server sends NaN for every member, and the browser
+  // engine's heuristic numbers are never a fallback. NaN renders as text.
+  const contract = marketState?.outlook.probabilityContract ?? null;
+  const fiveWayWithheld = marketState ? PROBABILITY_DISPLAY_TEXT.NOT_OFFERED : PROBABILITY_DISPLAY_TEXT.UNAVAILABLE;
   const regimeProbabilities: CanonicalMarketState["outlook"]["regimeProbabilities"] = marketState?.outlook.regimeProbabilities ?? {
-    bull: normalizeCanonicalMetric(output.probability.bullProbability),
-    softLanding: normalizeCanonicalMetric(output.probability.softLandingProbability),
-    stagflation: normalizeCanonicalMetric(output.probability.stagflationProbability),
-    recession: normalizeCanonicalMetric(output.probability.recessionProbability),
-    crash: normalizeCanonicalMetric(output.probability.crashProbability),
+    bull: Number.NaN,
+    softLanding: Number.NaN,
+    stagflation: Number.NaN,
+    recession: Number.NaN,
+    crash: Number.NaN,
   };
 
   const rankedScenarios = (Object.entries(regimeProbabilities) as Array<[ScenarioKey, number]>)
-    .map(([key, probability]) => ({ key, probability: normalizeCanonicalMetric(probability), ...SCENARIO_DEFINITIONS[key] }))
-    .sort((a, b) => b.probability - a.probability);
+    .map(([key, probability]) => ({
+      key,
+      probability: Number.isFinite(probability) ? normalizeCanonicalMetric(probability) : Number.NaN,
+      text: probabilityOrWithheld(probability, fiveWayWithheld),
+      ...SCENARIO_DEFINITIONS[key],
+    }))
+    .sort((a, b) => (Number.isFinite(b.probability) ? b.probability : -1) - (Number.isFinite(a.probability) ? a.probability : -1));
 
-  const fallbackBear = normalizeCanonicalMetric(output.probability.crashProbability);
-  const fallbackBull = normalizeCanonicalMetric(output.probability.bullProbability);
-  const fallbackNeutral = normalizeCanonicalMetric(Math.max(0, 100 - fallbackBull - fallbackBear));
-  const topFallbackAnalog = output.analogs[0];
   const probabilityDistribution = marketState?.outlook.probabilities ?? {
-    bull: fallbackBull,
-    neutral: fallbackNeutral,
-    bear: fallbackBear,
-    confidence: 50,
-    primaryDriver: [...output.domains].sort((a, b) => b.score - a.score)[0]?.label ?? "Deterministic engine composite",
-    evidenceBasis: output.narrative.summary,
-    historicalBasis: topFallbackAnalog ? `${topFallbackAnalog.era} ${topFallbackAnalog.year} at ${formatCanonicalPercent(topFallbackAnalog.similarity)} similarity` : "No deterministic analog available",
+    bull: Number.NaN,
+    neutral: Number.NaN,
+    bear: Number.NaN,
+    confidence: Number.NaN,
+    // No canonical state (e.g. a 503): the browser demo baseline is not data, so
+    // no driver, narrative or analog from it is shown.
+    primaryDriver: PROBABILITY_DISPLAY_TEXT.UNAVAILABLE,
+    evidenceBasis: PROBABILITY_DISPLAY_TEXT.UNAVAILABLE,
+    historicalBasis: PROBABILITY_DISPLAY_TEXT.UNAVAILABLE,
   };
+  // Forecast confidence starts from a 50 baseline and is uncalibrated.
+  const confidenceText = probabilityOrWithheld(
+    probabilityDistribution.confidence,
+    marketState ? PROBABILITY_DISPLAY_TEXT.UNCALIBRATED : PROBABILITY_DISPLAY_TEXT.UNAVAILABLE,
+  );
+  const transitionClaimText = (id: string) =>
+    probabilityText(contract?.transitions.find(claim => claim.scenario.scenarioId === id) ?? null);
   const transition = marketState?.outlook.transitionProbabilities ?? null;
-  const topAnalog = marketState?.outlook.topAnalog ?? (topFallbackAnalog ? {
-    period: `${topFallbackAnalog.era} ${topFallbackAnalog.year}`,
-    label: `${topFallbackAnalog.era} analog`,
-    similarity: normalizeCanonicalMetric(topFallbackAnalog.similarity),
-    resolution: "Canonical resolution detail is unavailable in deterministic fallback mode.",
-  } : null);
-  const highestProbabilityPath = marketState?.outlook.highestProbabilityPath ?? `${rankedScenarios[0]?.label ?? "Current regime"} is the highest deterministic scenario.`;
+  // Without canonical state there is no analog (the demo baseline's analog is not shown).
+  const topAnalog = marketState?.outlook.topAnalog ?? null;
+  const highestProbabilityPath = marketState?.outlook.highestProbabilityPath ?? "Canonical outlook is unavailable; no scenario is ranked.";
   const probabilityChanges = marketState?.watch.whatChanged ?? [];
   const invalidationConditions = marketState?.outlook.invalidationConditions ?? [];
-  const triggerEvidence = transition?.currentEvidence ?? marketState?.watch.whatToWatch ?? output.narrative.keyRisks;
-  const evidenceFamilies: EvidenceFamily[] = marketState?.why.evidenceFamilies ?? output.domains.map(domain => ({
-    name: domain.label,
-    signal: domain.score >= 7 ? "stressed" : domain.score >= 5 ? "bearish" : domain.score <= 3 ? "recovering" : "neutral",
-    strength: normalizeCanonicalMetric(domain.score * 10),
-    trend: domain.delta > 0.1 ? "deteriorating" : domain.delta < -0.1 ? "improving" : "stable",
-    currentValue: formatCanonicalScore(domain.score * 10),
-    historicalContext: domain.description,
-    whyItMatters: domain.drivers.join(" · ") || domain.description,
-  }));
+  const triggerEvidence = transition?.currentEvidence ?? marketState?.watch.whatToWatch ?? [];
+  // Without canonical state the demo domains are not shown as evidence.
+  const evidenceFamilies: EvidenceFamily[] = marketState?.why.evidenceFamilies ?? [];
   const developingConditions = marketState?.watch.developingConditions ?? [];
   const ashaPath = PERSISTENT_UTILITY_BY_ID.asha.path ?? "/app/asha";
-  const topScenario = rankedScenarios[0];
+  const topScenario = rankedScenarios.find(scenario => Number.isFinite(scenario.probability)) ?? null;
 
   if (isLoading && !marketState) return <PageLoadingState eyebrow="OUTLOOK · Probability analysis" message="Loading canonical probability state…" />;
 
@@ -302,7 +317,7 @@ export default function Outlook() {
 
             <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_280px] lg:items-start">
               <div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">Highest-probability path</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">Most frequent historical path</p>
                 <h1 className="mt-4 max-w-4xl font-['Rajdhani'] text-4xl font-semibold leading-[1.02] text-white md:text-5xl">{highestProbabilityPath}</h1>
                 <p className="mt-5 max-w-4xl text-base leading-7 text-slate-300">{probabilityDistribution.evidenceBasis}</p>
                 <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-500">Primary driver: {probabilityDistribution.primaryDriver}. Historical basis: {probabilityDistribution.historicalBasis}.</p>
@@ -311,12 +326,12 @@ export default function Outlook() {
               {/* Confidence panel */}
               <div className="rounded-sm border border-violet-300/20 bg-violet-300/[0.03] p-5">
                 <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-500">Model confidence</p>
-                <p className="mt-3 font-['Rajdhani'] text-5xl font-semibold text-violet-300">{formatCanonicalPercent(probabilityDistribution.confidence)}</p>
+                <p className="mt-3 font-['Rajdhani'] text-5xl font-semibold text-violet-300">{confidenceText}</p>
                 <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full bg-violet-400" style={{ width: `${probabilityDistribution.confidence}%`, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
+                  <div className="h-full rounded-full bg-violet-400" style={{ width: `${Number.isFinite(probabilityDistribution.confidence) ? probabilityDistribution.confidence : 0}%`, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
                 </div>
                 <p className="mt-3 font-mono text-[9px] uppercase tracking-[0.12em] text-violet-300/75">
-                  Pressure {formatCanonicalScore(marketState?.now.pressureScore ?? output.overall.score * 10)}
+                  Pressure {marketState ? formatCanonicalScore(marketState.now.pressureScore) : PROBABILITY_DISPLAY_TEXT.UNAVAILABLE}
                 </p>
                 <p className="mt-4 text-xs leading-5 text-slate-500">Updated {lastUpdated?.toLocaleString() ?? "unavailable"}</p>
                 {/* Top scenario badge */}
@@ -324,7 +339,7 @@ export default function Outlook() {
                   <div className="mt-5 rounded-sm border p-3" style={{ borderColor: `${topScenario.tone}40`, background: `${topScenario.tone}08` }}>
                     <p className="font-mono text-[8px] uppercase tracking-[0.12em] text-slate-500">Base case</p>
                     <p className="mt-1 font-mono text-[10px] font-semibold" style={{ color: topScenario.tone }}>{topScenario.label}</p>
-                    <p className="font-['Rajdhani'] text-2xl font-semibold" style={{ color: topScenario.tone }}>{formatCanonicalPercent(topScenario.probability)}</p>
+                    <p className="font-['Rajdhani'] text-2xl font-semibold" style={{ color: topScenario.tone }}>{topScenario.text}</p>
                   </div>
                 )}
               </div>
@@ -348,7 +363,7 @@ export default function Outlook() {
           <ScenarioPathways rankedScenarios={rankedScenarios} />
         </Section>
 
-        <Section id="probability-bands" index="02" eyebrow="Probability bands" title="The probability stack—ordered, not dramatized" description="Current regime probabilities are ranked from most to least likely. These are model distributions, not promises or price targets.">
+        <Section id="probability-bands" index="02" eyebrow="Probability bands" title="The probability stack—ordered, not dramatized" description="The five-way regime split (bull, soft landing, stagflation, recession, crash) is not offered: no governed model with a defined event, horizon and calibration record produces it.">
           <ProbabilityBandBar scenarios={rankedScenarios} />
           <div className="mt-4 space-y-3">
             {rankedScenarios.map((scenario, index) => (
@@ -363,9 +378,9 @@ export default function Outlook() {
                   <p className="mt-1 text-sm leading-6 text-slate-400">{scenario.description}</p>
                 </div>
                 <div className="text-left md:text-right">
-                  <p className="font-['Rajdhani'] text-3xl font-semibold" style={{ color: scenario.tone }}>{formatCanonicalPercent(scenario.probability)}</p>
+                  <p className="font-['Rajdhani'] text-3xl font-semibold" style={{ color: scenario.tone }}>{scenario.text}</p>
                   <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/5">
-                    <div className="h-full rounded-full" style={{ width: `${scenario.probability}%`, background: scenario.tone, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
+                    <div className="h-full rounded-full" style={{ width: `${Number.isFinite(scenario.probability) ? scenario.probability : 0}%`, background: scenario.tone, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
                   </div>
                 </div>
               </article>
@@ -385,8 +400,8 @@ export default function Outlook() {
 
         <Section id="horizons" index="04" eyebrow="Forecast horizons" title="Separate the current state, transition path, and historical resolution" description="The canonical state does not attach arbitrary calendar targets. OUTLOOK therefore labels each available horizon by evidence type rather than inventing dates. Canonical transition timing is unavailable in deterministic fallback mode.">
           <div className="grid gap-3 lg:grid-cols-3">
-            <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5"><div className="flex items-center gap-2 text-violet-300"><Eye size={14} /><p className="font-mono text-[9px] uppercase tracking-[0.13em]">Current state</p></div><p className="mt-4 font-['Rajdhani'] text-xl font-semibold text-white">{marketState?.now.regime ?? output.regime.label}</p><p className="mt-2 text-xs leading-5 text-slate-500">Direction: {marketState?.now.direction ?? "Deterministic fallback"}. This is the state from which the forecast begins.</p></div>
-            <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5"><div className="flex items-center gap-2 text-violet-300"><GitBranch size={14} /><p className="font-mono text-[9px] uppercase tracking-[0.13em]">Transition horizon</p></div><p className="mt-4 font-['Rajdhani'] text-xl font-semibold text-white">{transition ? `${formatCanonicalPercent(transition.remainInRegime)} in current regime` : "Unavailable"}</p><p className="mt-2 text-xs leading-5 text-slate-500">{transition?.historicalBasis ?? "No canonical transition-horizon record in fallback mode."}</p></div>
+            <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5"><div className="flex items-center gap-2 text-violet-300"><Eye size={14} /><p className="font-mono text-[9px] uppercase tracking-[0.13em]">Current state</p></div><p className="mt-4 font-['Rajdhani'] text-xl font-semibold text-white">{marketState?.now.regime ?? PROBABILITY_DISPLAY_TEXT.UNAVAILABLE}</p><p className="mt-2 text-xs leading-5 text-slate-500">Direction: {marketState?.now.direction ?? "Deterministic fallback"}. This is the state from which the forecast begins.</p></div>
+            <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5"><div className="flex items-center gap-2 text-violet-300"><GitBranch size={14} /><p className="font-mono text-[9px] uppercase tracking-[0.13em]">Transition horizon</p></div><p className="mt-4 font-['Rajdhani'] text-xl font-semibold text-white">{transition ? (Number.isFinite(transition.remainInRegime) ? `${formatCanonicalPercent(transition.remainInRegime)} in current regime` : `Remain-in-regime frequency: ${transitionClaimText("remainInRegime")}`) : "Unavailable"}</p><p className="mt-2 text-xs leading-5 text-slate-500">{transition?.historicalBasis ?? "No canonical transition-horizon record in fallback mode."}</p></div>
             <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5"><div className="flex items-center gap-2 text-violet-300"><Clock3 size={14} /><p className="font-mono text-[9px] uppercase tracking-[0.13em]">Historical resolution</p></div><p className="mt-4 font-['Rajdhani'] text-xl font-semibold text-white">{topAnalog?.period ?? "No analog"}</p><p className="mt-2 text-xs leading-5 text-slate-500">{topAnalog?.resolution ?? "No defensible historical resolution is attached."}</p></div>
           </div>
         </Section>
@@ -428,7 +443,7 @@ export default function Outlook() {
           ) : (
             <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5 text-sm text-slate-500">No historical analog is available for this snapshot.</div>
           )}
-          {output.analogs.length > 1 && (
+          {marketState && output.analogs.length > 1 && (
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {output.analogs.slice(1, 3).map(analog => (
                 <div key={`${analog.era}-${analog.year}`} className="rounded-sm border border-white/10 bg-white/[0.02] p-4">
@@ -447,8 +462,8 @@ export default function Outlook() {
 
         <Section id="confidence" index="09" eyebrow="Confidence and provenance" title="What this outlook rests on" description="Model confidence, transition confidence, source health, freshness, and warnings stay visible beside the forecast.">
           <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5"><div className="flex items-center gap-2 text-violet-300"><CheckCircle2 size={14} /><p className="font-mono text-[9px] uppercase tracking-[0.13em]">Model confidence</p></div><p className="mt-4 font-['Rajdhani'] text-3xl font-semibold text-white">{formatCanonicalPercent(probabilityDistribution.confidence)}</p><p className="mt-2 text-xs leading-5 text-slate-500">Confidence attached to the bull/neutral/bear distribution.</p></div>
-            <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5"><div className="flex items-center gap-2 text-violet-300"><GitBranch size={14} /><p className="font-mono text-[9px] uppercase tracking-[0.13em]">Transition confidence</p></div><p className="mt-4 font-['Rajdhani'] text-3xl font-semibold text-white">{transition ? formatCanonicalPercent(transition.confidence) : "Unavailable"}</p><p className="mt-2 text-xs leading-5 text-slate-500">{transition?.historicalBasis ?? "No canonical transition-confidence record in fallback mode."}</p></div>
+            <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5"><div className="flex items-center gap-2 text-violet-300"><CheckCircle2 size={14} /><p className="font-mono text-[9px] uppercase tracking-[0.13em]">Model confidence</p></div><p className="mt-4 font-['Rajdhani'] text-3xl font-semibold text-white">{confidenceText}</p><p className="mt-2 text-xs leading-5 text-slate-500">Confidence attached to the bull/neutral/bear distribution. It has no calibration record, so no percentage is shown.</p></div>
+            <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5"><div className="flex items-center gap-2 text-violet-300"><GitBranch size={14} /><p className="font-mono text-[9px] uppercase tracking-[0.13em]">Transition confidence</p></div><p className="mt-4 font-['Rajdhani'] text-3xl font-semibold text-white">{transition ? probabilityOrWithheld(transition.confidence, PROBABILITY_DISPLAY_TEXT.UNCALIBRATED) : "Unavailable"}</p><p className="mt-2 text-xs leading-5 text-slate-500">{transition?.historicalBasis ?? "No canonical transition-confidence record in fallback mode."}</p></div>
             <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5"><div className="flex items-center gap-2 text-violet-300"><Database size={14} /><p className="font-mono text-[9px] uppercase tracking-[0.13em]">Historical record</p></div><p className="mt-4 font-['Rajdhani'] text-3xl font-semibold text-white">{marketState?.history.observationCount ?? "Unavailable"}</p><p className="mt-2 text-xs leading-5 text-slate-500">{marketState?.history.datasetSpan ?? "Canonical history metadata is unavailable."}</p></div>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2">{sourceHealth.length ? sourceHealth.map(source => <SourceStatus key={source.id} source={source} />) : <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5 text-sm text-slate-500 md:col-span-2">Provider-level source health is unavailable in deterministic fallback mode.</div>}</div>

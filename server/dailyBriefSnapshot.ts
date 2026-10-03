@@ -189,7 +189,7 @@ export function buildDailyBriefSnapshot({
       `FAULTLINE Pressure Index: ${pressureIndex}/100`,
       `FAULTLINE Regime: ${regime}`,
       `FAULTLINE Structural Stress Classification: ${stressClassification}`,
-      ...(probabilities ? [`FAULTLINE Regime Probabilities: Bull ${probabilities.bull}%, Neutral ${probabilities.neutral}%, Bear ${probabilities.bear}%`] : []),
+      ...(probabilities ? ["FAULTLINE Scenario Readings: Uncalibrated. Bull/neutral/bear weights have no defined event, horizon, or calibration record, so they are not offered as probabilities (FAULTLINE probability contract). Do not state any scenario, crash, or recession percentage."] : []),
     ],
     unavailableData,
     validation: { passed: errors.length === 0, errors, warnings },
@@ -210,7 +210,7 @@ export function buildDailyBriefPromptContext(snapshot: DailyBriefSnapshotPayload
     "FAULTLINE PROPRIETARY OUTPUTS (label as FAULTLINE outputs, not external observations):",
     ...snapshot.proprietaryOutputs.map(item => `- ${item}`),
     snapshot.historicalAnalog ? `- FAULTLINE Historical Analog Similarity Score: ${snapshot.historicalAnalog.similarity}% (${snapshot.historicalAnalog.label}). This is feature-set similarity, not an outcome probability or a statement about current policy.` : "- Historical analog unavailable.",
-    snapshot.transition ? `- FAULTLINE Regime Transition Confidence: ${snapshot.probabilities?.confidence ?? "unavailable"}%. ${snapshot.transition.note}` : "- Transition output unavailable.",
+    snapshot.transition ? "- FAULTLINE Regime Transition Confidence: Uncalibrated. Regime transition probabilities are unavailable (no calibrated transition model); do not state a transition percentage." : "- Transition output unavailable.",
     "UNAVAILABLE DATA:",
     unavailable,
   ].join("\n");

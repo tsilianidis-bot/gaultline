@@ -196,7 +196,11 @@ describe("assembleCanonicalMarketState", () => {
 
     expect(state.now.pressureScore).toBe(100);
     expect(state.now.historicalPercentile).toBe(0);
-    expect(state.outlook.probabilities).toMatchObject({ bull: 100, bear: 0, confidence: 61.3 });
+    // Probability contract: without an AVAILABLE contract claim every
+    // probability is withheld (NaN), never clamped to 100 / 0.
+    expect(state.outlook.probabilities.bull).toBeNaN();
+    expect(state.outlook.probabilities.bear).toBeNaN();
+    expect(state.outlook.probabilities.confidence).toBeNaN();
   });
 });
 

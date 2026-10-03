@@ -1,5 +1,6 @@
 import type { FactorArrow, SignalConvergenceSnapshot, SystemicRegimeReading } from "@shared/systemicRegime";
 import { regimeModelScoreDisplay } from "@shared/credibilityLabels";
+import { probabilityText, systemicRegimeProbabilityClaims } from "@shared/probabilityContract";
 
 function regimeColor(regime: string | null | undefined) {
   if (!regime) return "#64748b";
@@ -14,11 +15,6 @@ function arrowGlyph(arrow: FactorArrow) {
   return "→";
 }
 
-function pct(value: number | null | undefined) {
-  if (value == null || !Number.isFinite(value)) return "—";
-  return `${Math.round(value * 100)}%`;
-}
-
 export default function SystemicRegimeModule({
   reading,
   convergence,
@@ -30,6 +26,9 @@ export default function SystemicRegimeModule({
   const accent = unavailable ? "#64748b" : regimeColor(reading.currentRegime);
   // HMM state posterior: shown as an uncalibrated model score (not "confidence").
   const score = regimeModelScoreDisplay(reading, unavailable);
+  // Probability contract: Stress and Crisis p are HMM posteriors (0–1 fractions,
+  // converted once in the contract) with no calibration record → text only.
+  const claims = systemicRegimeProbabilityClaims(reading);
   return (
     <div className="mt-5 rounded border border-white/10 bg-white/[0.03] p-4" data-testid="systemic-regime-module">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -45,11 +44,11 @@ export default function SystemicRegimeModule({
         <div className="grid grid-cols-3 gap-3 text-center">
           <div>
             <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-slate-500">Stress</p>
-            <p className="mt-1 font-['Rajdhani'] text-xl font-semibold text-white">{unavailable ? "—" : `${reading.systemicRiskScore ?? "—"}%`}</p>
+            <p className="mt-1 font-['Rajdhani'] text-xl font-semibold text-white">{unavailable ? "—" : probabilityText(claims?.stressScore)}</p>
           </div>
           <div>
             <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-slate-500">Crisis p</p>
-            <p className="mt-1 font-['Rajdhani'] text-xl font-semibold text-white">{unavailable ? "—" : pct(reading.crisisProbability)}</p>
+            <p className="mt-1 font-['Rajdhani'] text-xl font-semibold text-white">{unavailable ? "—" : probabilityText(claims?.crisis)}</p>
           </div>
           <div data-testid="systemic-regime-model-score" title={`${score.explanation} ${score.asOf}.`}>
             <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-slate-500">Model score</p>

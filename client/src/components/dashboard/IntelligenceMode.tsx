@@ -4,9 +4,11 @@
  * Analytical · Deep · Structural · Institutional
  */
 import { useMemo } from "react";
+import { finiteOrNull, score100Value } from "@/lib/displayFallbacks";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
+import { engineProbabilityText } from "@/lib/marketStateProjection";
 import { getRiskColor } from "@/components/RiskBadge";
 import { ArrowRight, Shield, Zap, TrendingDown } from "lucide-react";
 import { FaultlineInterpretation } from "./FaultlineInterpretation";
@@ -16,7 +18,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 function MacroRegimePanel() {
   const [, navigate] = useLocation();
   const { output } = useEngine();
-  const { regime, overall, domains, probability } = output;
+  const { regime, overall, domains } = output;
   const color = regime.color;
 
   const topDomains = useMemo(
@@ -44,10 +46,11 @@ function MacroRegimePanel() {
         </div>
         <div className="text-right">
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 28, fontWeight: 700, color, lineHeight: 1 }}>
-            {overall.score.toFixed(1)}
+            {/* Pressure Index on its canonical 0–100 scale (engine score is 0–10 internally). */}
+            {score100Value(overall.score)}
           </div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "rgba(100,116,139,0.5)" }}>
-            / 10.0
+            / 100
           </div>
         </div>
       </div>
@@ -56,7 +59,7 @@ function MacroRegimePanel() {
       <div className="p-3 grid grid-cols-2 gap-1.5">
         {topDomains.map((d) => {
           const dc = getRiskColor(d.riskLevel);
-          const pct = Math.min(100, d.score * 10);
+          const pct = Math.min(100, (finiteOrNull(d.score) ?? 0) * 10);
           return (
             <div
               key={d.id}
@@ -68,7 +71,7 @@ function MacroRegimePanel() {
                   {d.label}
                 </span>
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: dc, fontWeight: 700, flexShrink: 0, marginLeft: 4 }}>
-                  {d.score.toFixed(1)}
+                  {score100Value(d.score)}
                 </span>
               </div>
               <div className="h-0.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.11)" }}>
@@ -94,10 +97,10 @@ function MacroRegimePanel() {
           style={{ background: "rgba(0,255,136,0.06)", border: "1px solid rgba(0,255,136,0.15)" }}
         >
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, letterSpacing: "0.2em", color: "rgba(100,116,139,0.5)", marginBottom: 3 }}>
-            BULL PROBABILITY
+            BULL SCENARIO
           </div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 18, fontWeight: 700, color: "#00FF88" }}>
-            {probability.bullProbability}%
+            {engineProbabilityText(output, "bullProbability")}
           </div>
         </div>
         <div
@@ -107,8 +110,8 @@ function MacroRegimePanel() {
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, letterSpacing: "0.2em", color: "rgba(100,116,139,0.5)", marginBottom: 3 }}>
             CRASH PROBABILITY
           </div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 18, fontWeight: 700, color: "#FF2D55" }}>
-            {probability.crashProbability}%
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 18, fontWeight: 700, color: "#94A3B8" }}>
+            {engineProbabilityText(output, "crashProbability")}
           </div>
         </div>
       </div>

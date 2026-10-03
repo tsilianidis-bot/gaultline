@@ -8,6 +8,7 @@ import { useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
 import {
   TrendingUp, TrendingDown, Minus, Lock, RefreshCw, Zap, Crown,
   ChevronRight, AlertTriangle, Activity, BarChart2,
@@ -27,20 +28,6 @@ function actionIcon(action: string) {
   return <Minus size={13} />;
 }
 
-function confidenceBar(score: number, color: string) {
-  return (
-    <div className="w-full h-1 rounded-full bg-white/5 overflow-hidden">
-      <div
-        className="h-full rounded-full"
-        style={{
-          width: `${score}%`,
-          background: color,
-          boxShadow: `0 0 4px ${color}80`,
-        }}
-      />
-    </div>
-  );
-}
 
 function formatPrice(price: number): string {
   if (price >= 1000) return `$${price.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
@@ -131,10 +118,9 @@ function SignalCard({
           </span>
         </div>
 
-        {/* Confidence bar */}
+        {/* QA r13 B14: signal confidence is a formula (min(95, 55 + |score| × 5)): no bar, no %. */}
         <div className="flex items-center gap-2">
-          <div className="flex-1">{confidenceBar(signal.confidence, color)}</div>
-          <span className="text-[9px] font-mono text-[#64748B]">{signal.confidence}%</span>
+          <span className="text-[9px] font-mono text-[#64748B]">CONFIDENCE {CONFIDENCE_NOT_ESTABLISHED}</span>
         </div>
       </button>
 

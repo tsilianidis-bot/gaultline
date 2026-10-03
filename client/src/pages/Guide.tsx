@@ -116,7 +116,7 @@ const SECTIONS: Section[] = [
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
             { icon: Database, label: "Live FRED Data", desc: "10+ Federal Reserve economic series, updated as FRED publishes them: yields, spreads, inflation, unemployment, SOFR, and more." },
-            { icon: Cpu, label: "AI Regime Engine", desc: "A proprietary macro regime classifier that continuously evaluates systemic risk across 6 stress domains and assigns a 0–10 pressure score." },
+            { icon: Cpu, label: "AI Regime Engine", desc: "A proprietary macro regime classifier that continuously evaluates systemic risk across 6 stress domains and assigns a 0–100 pressure score." },
             { icon: Target, label: "S.O.B.™ Framework", desc: "Signals of Breakdown — FAULTLINE's proprietary framework measuring the accumulation of market stress across 6 weighted pillars with shared inputs. Not a crash prediction system. A structured awareness tool." },
           ].map(({ icon: Icon, label, desc }) => (
             <Panel key={label} accentColor="rgba(0,212,255,0.2)">
@@ -214,9 +214,9 @@ const SECTIONS: Section[] = [
           <p className="text-[10px] font-mono text-white/40 tracking-widest uppercase">Dashboard Sections</p>
           <div className="space-y-1">
             {[
-              { name: "Regime Banner", desc: "Shows the current macro regime label (e.g. 'Late Cycle Stress', 'Expansion', 'Crisis Mode') with a 0–10 systemic risk score and a colour-coded severity indicator. The regime is recalculated every time FRED data refreshes." },
+              { name: "Regime Banner", desc: "Shows the current macro regime label (e.g. 'Late Cycle Stress', 'Expansion', 'Crisis Mode') with a 0–100 systemic pressure score and a colour-coded severity indicator. The regime is recalculated every time FRED data refreshes." },
               { name: "Live FRED Ticker", desc: "A scrolling marquee at the top of the screen showing the latest available values for 10Y yield, 30Y yield, HY spread, CPI, SOFR, and unemployment rate. Values update automatically." },
-              { name: "Bull vs Crash Probability", desc: "A probability gauge showing the engine's current estimate of bullish continuation vs systemic crash risk, expressed as a percentage split. Derived from the composite regime score." },
+              { name: "Scenario Readings", desc: "Bull/neutral/bear scenario weights are evidence-vote shares with no defined event, horizon, or calibration record, so they show as Uncalibrated. Crash, recession, stagflation, and soft-landing probabilities are Not offered." },
               { name: "Risk Domain Heatmap", desc: "A 6-cell grid showing the stress level for each domain: Treasury Stress, Inflation Pressure, Credit Risk, AI Bubble Risk, Liquidity Stress, and Recession Risk. Each cell is colour-coded from green (low) to red (critical)." },
               { name: "AI Intelligence Narrative", desc: "A live AI-generated paragraph summarising the current macro environment in institutional language. Updates with the regime engine on each data refresh." },
               { name: "Top Signals Today", desc: "A curated list of the highest-scoring tickers from the Signals screener given the current regime, surfaced automatically by the engine." },
@@ -241,7 +241,7 @@ const SECTIONS: Section[] = [
       <div className="space-y-4">
         <Panel accentColor="rgba(167,139,250,0.3)">
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            The <span className="text-purple-400">Scores Tab</span> provides a granular breakdown of each of the 6 risk domains with individual 0–10 scores, trend direction indicators, and supporting FRED data points. This is the analytical layer beneath the Dashboard's heatmap.
+            The <span className="text-purple-400">Scores Tab</span> provides a granular breakdown of each of the 6 risk domains with individual 0–100 scores, trend direction indicators, and supporting FRED data points. This is the analytical layer beneath the Dashboard's heatmap.
           </p>
         </Panel>
         <div className="space-y-1">
@@ -249,7 +249,7 @@ const SECTIONS: Section[] = [
             { name: "Treasury Stress Score", fred: "DGS10, DGS30", desc: "Measures stress in the US Treasury market. Elevated when the 10Y yield is rising rapidly or when the yield curve inverts (long rates below short rates), signalling recession expectations." },
             { name: "Inflation Pressure Score", fred: "CPIAUCSL", desc: "Tracks the degree to which inflation is above or below the Fed's 2% target. High scores indicate the Fed is likely to maintain or increase restrictive monetary policy." },
             { name: "Credit Risk Score", fred: "BAMLH0A0HYM2", desc: "Derived from the ICE BofA High Yield OAS spread. When this spread widens, it means credit markets are pricing in higher default risk — a classic leading indicator of financial stress." },
-            { name: "AI Bubble Risk Score", fred: "Equity valuations + sector data", desc: "A proprietary score estimating the degree to which AI and speculative technology valuations are stretched relative to fundamentals. High scores indicate bubble dynamics." },
+            { name: "AI Bubble Risk Score", fred: "Static AI-concentration baseline", desc: "The engine's AI-concentration vector (ai-bubble), scored 0–100. It reads a static AI-concentration baseline, not live equity valuations or sector data, so it changes only when that baseline is revised." },
             { name: "Liquidity Stress Score", fred: "SOFR, NFCI, BAMLH0A0HYM2", desc: "Composite score measuring tightness in short-term funding markets. Elevated SOFR, wide HY spreads, and a tight NFCI all contribute to a high liquidity stress score." },
             { name: "Recession Risk Score", fred: "UNRATE, yield curve, FRED composite", desc: "Probability-weighted recession risk score. Incorporates unemployment trends, yield curve inversion depth, and leading indicator deterioration." },
           ].map(({ name, fred, desc }) => (
@@ -316,8 +316,8 @@ const SECTIONS: Section[] = [
         </Panel>
         <div className="space-y-1">
           {[
-            { name: "AI Capex Tracker", desc: "Tracks the aggregate capital expenditure commitments from major AI infrastructure players (Microsoft, Google, Amazon, Meta, NVIDIA). Currently tracking $214B+ in announced AI capex. High capex concentration is a leading indicator of AI bubble risk." },
-            { name: "AI Bubble Risk Score", desc: "A 0–10 score updated by the engine estimating the current degree of AI-sector overvaluation. Scores above 7 indicate bubble dynamics; scores above 9 indicate critical bubble risk." },
+            { name: "AI Concentration Baseline", desc: "FAULTLINE uses a static AI-concentration baseline as an input to the AI-concentration vector. It does not ingest AI capital-expenditure data and does not track announced capex totals." },
+            { name: "AI Bubble Risk Score", desc: "The engine's AI-concentration vector (ai-bubble), scored 0–100 on the same scale as the other pressure vectors. Its input is a static AI-concentration baseline, not a live feed, so the score changes only when that baseline is revised; it does not measure live AI-sector valuations." },
             { name: "Live Intelligence Feed", desc: "A curated stream of macro and AI-sector news items, each tagged with a relevance score and regime impact assessment. Items are filtered for systemic relevance — not noise." },
             { name: "Sector Concentration Monitor", desc: "Tracks the degree to which the S&P 500 and Nasdaq are concentrated in AI and technology names. High concentration amplifies systemic risk when sentiment reverses." },
             { name: "Regime Narrative", desc: "An AI-generated paragraph updated with each engine cycle that contextualises the current AI/tech environment within the broader macro regime. Written in institutional language." },
@@ -487,7 +487,7 @@ const SECTIONS: Section[] = [
         </Panel>
         <div className="space-y-1">
           {[
-            { name: "Scenario Library", desc: "A curated set of named scenarios (e.g. 'Fed Pivot', 'Credit Crunch', 'AI Bubble Pop', 'Soft Landing', 'Stagflation Return'). Each scenario has a probability estimate derived from the current regime score." },
+            { name: "Scenario Library", desc: "A curated set of named scenarios (e.g. 'Fed Pivot', 'Credit Crunch', 'AI Bubble Pop', 'Soft Landing', 'Stagflation Return'). Scenario probabilities are not offered: FAULTLINE's scenario likelihoods are uncalibrated, so each scenario is described qualitatively rather than given a probability." },
             { name: "Domain Impact Radar", desc: "A radar chart for each scenario showing how it would affect each of the 6 risk domains. Allows you to quickly see which scenarios are most dangerous for specific areas of the market." },
             { name: "Probability Ranking", desc: "Scenarios are ranked by current probability. The most likely scenario is shown first. Probabilities update as the regime engine recalculates." },
             { name: "Scenario Detail", desc: "Expand any scenario to see the full narrative, the specific FRED conditions that would trigger it, and the expected market impact across asset classes." },

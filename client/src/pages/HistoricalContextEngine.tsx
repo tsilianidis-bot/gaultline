@@ -179,6 +179,12 @@ export default function HistoricalContextEngine() {
     undefined,
     { staleTime: 5 * 60 * 1000, refetchOnWindowFocus: false }
   );
+  // Reference-library analogs (and the interpretation that names one) are shown
+  // only when the canonical outlook has a top analog. Fail closed while loading.
+  const { data: marketState } = trpc.marketState.current.useQuery(undefined, { staleTime: 60_000, refetchOnWindowFocus: false });
+  const governedAnalog = marketState?.outlook.topAnalog != null;
+  const analogMatches = governedAnalog ? data?.analogMatches ?? [] : [];
+  const NO_GOVERNED_ANALOG = "The canonical outlook has no governed top analog for the current state, so no reference period is shown.";
 
   function handleRefresh() {
     refetch();
@@ -262,7 +268,7 @@ export default function HistoricalContextEngine() {
         <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
           <StatPill label="Pressure Index" value={d.currentPressure} color={levelColor(d.currentLevel)} />
           <StatPill label="Regime" value={d.currentRegime} color={C.cyan} />
-          <StatPill label="Percentile" value={formatOrdinal(d.rarityContext.percentile)} color={levelColor(d.currentLevel)} />
+          <StatPill label="Percentile" value={d.rarityContext.percentile !== null ? formatOrdinal(d.rarityContext.percentile) : "Insufficient data"} color={d.rarityContext.percentile !== null ? levelColor(d.currentLevel) : C.textDim} />
           <StatPill label="Months in Regime" value={d.timeline.monthsInCurrentRegime} color={C.textMid} />
           <StatPill label="Trend" value={d.trendAssessment.label} color={trendColor(d.trendAssessment.label)} />
         </div>
@@ -351,8 +357,8 @@ export default function HistoricalContextEngine() {
               <StatPill label="Days in Regime" value={d.timeline.daysInCurrentRegime > 0 ? d.timeline.daysInCurrentRegime : "—"} color={C.textMid} />
               <StatPill label="Elevated Streak" value={`${d.timeline.consecutiveElevatedMonths}mo`} color={d.timeline.consecutiveElevatedMonths >= 6 ? C.orange : C.textMid} />
               <StatPill label="High Streak" value={`${d.timeline.consecutiveHighMonths}mo`} color={d.timeline.consecutiveHighMonths >= 3 ? C.red : C.textMid} />
-              <StatPill label="Cycle High" value={d.timeline.cycleHigh} color={C.red} />
-              <StatPill label="Cycle Low" value={d.timeline.cycleLow} color={C.green} />
+              <StatPill label="Stored-month high (excl. today)" value={d.timeline.cycleHigh} color={C.red} />
+              <StatPill label="Stored-month low (excl. today)" value={d.timeline.cycleLow} color={C.green} />
             </div>
 
             {/* Trend indicators */}
@@ -401,7 +407,7 @@ export default function HistoricalContextEngine() {
       <Section
         title="Historical Context"
         icon={<Activity size={13} />}
-        badge={d ? `${d.analogMatches.length} ANALOGS` : undefined}
+        badge={d ? `${analogMatches.length} ANALOGS` : undefined}
       >
         {isLoading ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -409,7 +415,10 @@ export default function HistoricalContextEngine() {
           </div>
         ) : d ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {d.analogMatches.map((analog, i) => {
+            {analogMatches.length === 0 && (
+              <p style={{ fontFamily: C.sans, fontSize: "12px", color: C.textMid, margin: 0 }}>{governedAnalog ? "No comparable reference period was returned." : NO_GOVERNED_ANALOG}</p>
+            )}
+            {analogMatches.map((analog, i) => {
               const isExpanded = expandedAnalog === i;
               return (
                 <div key={i} style={{
@@ -607,7 +616,7 @@ export default function HistoricalContextEngine() {
         ) : d ? (
           <div>
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "14px" }}>
-              <StatPill label="Percentile" value={formatOrdinal(d.rarityContext.percentile)} color={levelColor(d.currentLevel)} />
+              <StatPill label="Percentile" value={d.rarityContext.percentile !== null ? formatOrdinal(d.rarityContext.percentile) : "Insufficient data"} color={d.rarityContext.percentile !== null ? levelColor(d.currentLevel) : C.textDim} />
               <StatPill label="Months at Level" value={d.rarityContext.monthsAtOrAbove} color={C.textMid} />
               <StatPill label="Frequency" value={`${d.rarityContext.frequencyPct}%`} color={C.textMid} />
               <StatPill label="Sample Size" value={`${d.rarityContext.sampleSize}mo`} color={C.textDim} />
@@ -621,7 +630,7 @@ export default function HistoricalContextEngine() {
                 {d.rarityContext.rarityLabel}
               </div>
               <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.textMid, lineHeight: 1.5 }}>
-                The current reading of {d.currentPressure} is at the {formatOrdinal(d.rarityContext.percentile)} percentile of all {d.rarityContext.sampleSize} monthly readings from {d.rarityContext.dataStartMonth} to {d.rarityContext.dataEndMonth}. Readings at this level or higher have occurred in {d.rarityContext.frequencyPct}% of all historical months ({d.rarityContext.monthsAtOrAbove} of {d.rarityContext.sampleSize} months).
+                {d.rarityContext.percentile === null ? `There are too few recorded monthly readings (${d.rarityContext.sampleSize}) for a percentile; 10 are required.` : <>The current reading of {d.currentPressure} is at the {formatOrdinal(d.rarityContext.percentile)} percentile of all {d.rarityContext.sampleSize} monthly readings from {d.rarityContext.dataStartMonth} to {d.rarityContext.dataEndMonth}. Readings at this level or higher have occurred in {d.rarityContext.frequencyPct}% of all historical months ({d.rarityContext.monthsAtOrAbove} of {d.rarityContext.sampleSize} months).</>}
               </div>
             </div>
 
@@ -651,10 +660,10 @@ export default function HistoricalContextEngine() {
         ) : d ? (
           <div>
             <p style={{ fontFamily: C.sans, fontSize: "14px", color: C.text, lineHeight: 1.7, margin: "0 0 12px" }}>
-              {d.institutionalInterpretation}
+              {governedAnalog ? d.institutionalInterpretation : NO_GOVERNED_ANALOG}
             </p>
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <CopyButton text={d.institutionalInterpretation} />
+              <CopyButton text={governedAnalog ? d.institutionalInterpretation : NO_GOVERNED_ANALOG} />
             </div>
             <div style={{
               marginTop: "12px", background: "#060A12", border: `1px solid ${C.border}`,

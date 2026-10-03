@@ -31,6 +31,7 @@ import {
 } from "@/lib/signalQuoteView";
 import { SIGNAL_STOCKS } from "@/lib/signalsData";
 import { mergeCanonicalMarketState } from "@/lib/canonicalNowProjection";
+import { buildCanonicalProbabilityContract } from "./probabilityContract";
 import {
   canonicalDirectionTrend,
   canonicalHistoricalPercentile,
@@ -365,15 +366,21 @@ describe("canonical consistency (one source)", () => {
     expect(canonicalDirectionTrend("Unknown")).toBeUndefined();
   });
 
-  it("(b) one scenario set = governed snapshot scenarioOutputs (43/43/14) everywhere", () => {
+  it("(b) one scenario set = governed snapshot scenarioOutputs (43/43/14), withheld as Uncalibrated everywhere", () => {
     expect(canonicalScenarioSet(canonical.scenarioOutputs)).toEqual({ bull: 43, neutral: 43, bear: 14 });
-    const { bull, neutral, bear } = merged.outlook.probabilities;
-    expect({ bull, neutral, bear }).toEqual({ bull: 43, neutral: 43, bear: 14 });
+    // Probability contract: the set is uncalibrated, so the merged numbers are
+    // withheld (NaN) and every page renders the contract text instead.
+    const contracted = mergeCanonicalMarketState({ ...canonical, probabilityContract: buildCanonicalProbabilityContract({ ...canonical, coherenceStatus: "COHERENT" }) }, legacy)!;
+    const { bull, neutral, bear } = contracted.outlook.probabilities;
+    expect([bull, neutral, bear].every(Number.isNaN)).toBe(true);
+    expect(contracted.outlook.probabilityContract?.scenarioSet.scenarios.map(c => c.value)).toEqual([43, 43, 14]);
+    expect(contracted.outlook.probabilityContract?.scenarioSet.display.text).toBe("Uncalibrated");
     // not the seismograph 3-way (64/21/15) or the 5-way regime split (53/33/8/4/2)
     expect(legacy.outlook.probabilities.bull).toBe(64);
     expect(bull).not.toBe(64);
-    expect(canonicalScenarioLeader(merged.outlook.probabilities)).toEqual({ keys: ["bull", "neutral"], value: 43 });
-    expect(formatScenarioPercent(merged.outlook.probabilities.bear)).toBe("14%");
+    expect(Object.values(contracted.outlook.regimeProbabilities).every(Number.isNaN)).toBe(true);
+    expect(canonicalScenarioLeader(contracted.outlook.probabilities)).toBeNull();
+    expect(formatScenarioPercent(contracted.outlook.probabilities.bear)).toBe("—");
 
     // missing canonical set → withheld ("—"), never back-filled from another distribution
     const withheld = mergeCanonicalMarketState({ ...canonical, scenarioOutputs: null }, legacy)!;
@@ -475,7 +482,8 @@ describe("ACT/WATCH forecast confidence display gating", () => {
   it("this snapshot (PARTIAL evidence, no verified analog) → 'Confidence: Insufficient data', no %", () => {
     expect(canonical.confidenceOrEvidenceQuality).toBe("PARTIAL");
     expect(merged.outlook.topAnalog).toBeNull();
-    expect(merged.outlook.probabilities.confidence).toBe(50); // engine value preserved
+    // Probability contract: the 50-baseline engine confidence is uncalibrated → withheld (NaN).
+    expect(merged.outlook.probabilities.confidence).toBeNaN();
     const d = forecastConfidenceDisplay({
       confidence: merged.outlook.probabilities.confidence,
       evidenceQuality: canonical.confidenceOrEvidenceQuality,

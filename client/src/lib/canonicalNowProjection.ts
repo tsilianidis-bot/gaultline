@@ -14,7 +14,20 @@ import type { CanonicalMarketState } from "@shared/marketState";
 import type { PublicCanonicalIntelligenceState } from "@shared/canonicalIntelligenceState";
 import { directionDisplay, type DirectionDisplay } from "@shared/snapshotEvidence";
 import { isValidPressureScore, pressureBandFor, type PressureBand } from "./pressureSnapshot";
-import { canonicalScenarioSet, classifyEvidenceFamilies } from "@shared/canonicalReadout";
+import { classifyEvidenceFamilies } from "@shared/canonicalReadout";
+import { probabilityPercent, type CanonicalProbabilityContract } from "@shared/probabilityContract";
+
+/** Contract percent for a scenario/transition claim id, or NaN when withheld. */
+export function contractScenarioPercent(
+  contract: CanonicalProbabilityContract | null | undefined,
+  scenarioId: string,
+): number {
+  const claim = contract?.scenarioSet.scenarios.find(c => c.scenario.scenarioId === scenarioId)
+    ?? contract?.transitions.find(c => c.scenario.scenarioId === scenarioId)
+    ?? null;
+  const percent = probabilityPercent(claim);
+  return percent === null ? Number.NaN : percent;
+}
 
 type NowFields = CanonicalMarketState["now"];
 
@@ -86,10 +99,12 @@ export function mergeCanonicalMarketState(
   // Band, direction and headline come from the canonical snapshot and the engine
   // thresholds; the seismograph's own direction/stress labels are not used here.
   const now = projectCanonicalNow(canonicalState, legacy.now);
-  // One canonical scenario set for every page: the governed snapshot's
-  // scenarioOutputs (bull/neutral/bear). Missing → NaN → shown as "—"/UNAVAILABLE,
-  // never the seismograph's separate 3-way or 5-way distributions.
-  const scenario = canonicalScenarioSet(canonicalState.scenarioOutputs);
+  // One canonical scenario set for every page, through the probability
+  // contract: a number survives only when its claim is AVAILABLE (calibrated,
+  // complete, fresh). Withheld → NaN, and surfaces render the claim's text
+  // ("Uncalibrated", "Insufficient data", …). Raw scenarioOutputs and the
+  // seismograph's 3-way / 5-way distributions are never displayed.
+  const contract = canonicalState.probabilityContract ?? legacy.outlook.probabilityContract ?? null;
   // Threat/support classification: one classifier over the same evidence families.
   const classified = classifyEvidenceFamilies(legacy.why.evidenceFamilies);
   return {
@@ -110,10 +125,27 @@ export function mergeCanonicalMarketState(
       ...legacy.outlook,
       probabilities: {
         ...legacy.outlook.probabilities,
-        bull: scenario?.bull ?? Number.NaN,
-        neutral: scenario?.neutral ?? Number.NaN,
-        bear: scenario?.bear ?? Number.NaN,
+        bull: contractScenarioPercent(contract, "bull"),
+        neutral: contractScenarioPercent(contract, "neutral"),
+        bear: contractScenarioPercent(contract, "bear"),
+        confidence: Number.NaN,
       },
+      regimeProbabilities: {
+        bull: Number.NaN,
+        softLanding: Number.NaN,
+        stagflation: Number.NaN,
+        recession: Number.NaN,
+        crash: Number.NaN,
+      },
+      transitionProbabilities: {
+        ...legacy.outlook.transitionProbabilities,
+        remainInRegime: contractScenarioPercent(contract, "remainInRegime"),
+        transitionToElevated: contractScenarioPercent(contract, "transitionToElevated"),
+        transitionToLow: contractScenarioPercent(contract, "transitionToLow"),
+        transitionToCrisis: contractScenarioPercent(contract, "transitionToCrisis"),
+        confidence: Number.NaN,
+      },
+      probabilityContract: contract,
     },
     why: { ...legacy.why, story: canonicalStoryLead(legacy.why.story, canonicalState) },
     warnings: Array.from(new Set([...legacy.warnings, ...canonicalState.warnings])),

@@ -50,7 +50,9 @@ describe("Phase 1B intelligence governance", () => {
 
   it("governs scenario scores and analog similarity with different semantics", () => {
     const claims = buildGovernedClaims(seismograph, "2026-08-20T16:00:00.000Z");
-    expect(claims.find(claim => claim.claimId === "seismograph.scenario.bull")).toMatchObject({ claimType: "DERIVED_SCENARIO_SCORE", displayStatus: "SUPPRESS_PREDICTIVE_PRESENTATION", timeHorizon: null });
+    expect(claims.find(claim => claim.claimId === "seismograph.scenario.bull")).toMatchObject({ claimType: "DERIVED_SCENARIO_SCORE", displayStatus: "SUPPRESS_PREDICTIVE_PRESENTATION", timeHorizon: "NOT_ESTABLISHED", modelVersion: "seismograph-core-v1" });
+    // The claim modelVersion is unchanged; the contract model reference rides in metadata.
+    expect(claims.find(claim => claim.claimId === "seismograph.scenario.bull")?.metadata).toMatchObject({ contractModelVersion: "seismograph-evidence-vote-v1", calibrationStatus: "UNCALIBRATED" });
     expect(claims.find(claim => claim.claimType === "ANALOG_SIMILARITY")).toMatchObject({ displayStatus: "DISPLAY_WITH_QUALIFICATION", evidenceStatus: "UNVERIFIED" });
     expect(claims.find(claim => claim.claimType === "UNSUPPORTED")).toMatchObject({ displayStatus: "SUPPRESS_PREDICTIVE_PRESENTATION" });
   });

@@ -50,8 +50,8 @@ const ARTICLES = [
 <p>Bull markets die from the inside out. When fewer and fewer stocks participate in an advancing index — a condition known as breadth deterioration — the market is becoming increasingly dependent on a small number of mega-cap names. FAULTLINE monitors the percentage of S&amp;P 500 stocks above their 200-day moving average, the advance-decline line, and the new highs/new lows ratio. When breadth deteriorates while the index continues to advance, a regime change is forming beneath the surface.</p>
 
 <h2>How FAULTLINE Synthesizes These Signals</h2>
-<p>No single indicator reliably predicts regime changes. The FAULTLINE Pressure Index synthesizes all seven signals into a single composite score from 0 to 100. Readings above 70 indicate elevated systemic pressure and a high probability of regime transition. Readings below 30 indicate stable, risk-on conditions.</p>
-<p>The key insight is that regime changes are not events — they are processes. By monitoring the underlying forces continuously, FAULTLINE can identify when the probability of a regime change is rising, allowing investors to adjust positioning <em>before</em> the transition becomes obvious to the market.</p>
+<p>No single indicator reliably predicts regime changes. The FAULTLINE Pressure Index synthesizes all seven signals into a single composite score from 0 to 100. Readings above 70 indicate elevated systemic pressure, historically a condition in which regime transitions have been more common; it is not a probability of transition. Readings below 30 indicate stable, risk-on conditions.</p>
+<p>The key insight is that regime changes are not events — they are processes. By monitoring the underlying forces continuously, FAULTLINE can identify when the pressure behind a regime change is building, allowing investors to adjust positioning <em>before</em> the transition becomes obvious to the market.</p>
 
 <h2>Practical Application</h2>
 <p>Understanding regime changes is not about predicting the future — it is about improving the quality of your decision-making process. When multiple regime signals align, the appropriate response is not necessarily to exit all positions, but to:</p>
@@ -137,7 +137,7 @@ const ARTICLES = [
 <p><strong>Key indicators:</strong> Rising unemployment, falling earnings, widening credit spreads, tightening liquidity, and declining consumer confidence.</p>
 
 <h2>Where Are We Now?</h2>
-<p>Identifying the current phase of the market cycle requires synthesizing multiple data points across economics, credit markets, monetary policy, and investor sentiment. FAULTLINE's FMOS engine continuously monitors these signals and provides a real-time assessment of the current market phase and the probability of transitioning to the next phase.</p>
+<p>Identifying the current phase of the market cycle requires synthesizing multiple data points across economics, credit markets, monetary policy, and investor sentiment. FAULTLINE's FMOS engine continuously monitors these signals and provides a real-time assessment of the current market phase and the conditions that would mark a transition to the next phase. It does not state a probability of that transition.</p>
 
 <h2>Conclusion</h2>
 <p>Market cycles are the most powerful force in investing. By understanding the four phases — accumulation, markup, distribution, and markdown — and learning to identify which phase you are in, you can make better decisions about risk exposure, asset allocation, and timing. The goal is not to predict every move, but to avoid being on the wrong side of major cycle transitions.</p>`,
@@ -150,7 +150,7 @@ const ARTICLES = [
     wordCount: 2200,
     content: `<h2>Why Recession Indicators Matter</h2>
 <p>The word "recession" strikes fear into investors. But recessions are not sudden events — they are processes that develop over months or years, driven by the accumulation of imbalances in the economy. By monitoring the right leading indicators, investors can identify when recession risk is rising and adjust their positioning accordingly — often 6–18 months before the recession officially begins.</p>
-<p>FAULTLINE monitors 12 recession indicators continuously, synthesizing them into a single Recession Probability score that updates in real time.</p>
+<p>FAULTLINE tracks recession-risk indicators as market context. FAULTLINE does not offer a recession probability: no governed model with a defined recession event, horizon and calibration record exists.</p>
 
 <h2>The 12 Indicators</h2>
 
@@ -167,7 +167,7 @@ const ARTICLES = [
 <p>The Institute for Supply Management's Manufacturing Purchasing Managers' Index measures the health of the manufacturing sector. A reading below 50 indicates contraction. When the manufacturing PMI falls below 48 and remains there for 3+ months, it signals broader economic weakness.</p>
 
 <h3>5. Credit Spreads (HY-IG)</h3>
-<p>High-yield credit spreads are a real-time measure of credit market stress. When HY spreads widen significantly — particularly when they diverge from investment-grade spreads — it signals that credit markets are pricing in higher default probabilities, which precedes economic contraction.</p>
+<p>High-yield credit spreads are a real-time measure of credit market stress. When HY spreads widen significantly — particularly when they diverge from investment-grade spreads — it signals that credit markets are pricing in higher default risk, which precedes economic contraction.</p>
 
 <h3>6. Housing Starts</h3>
 <p>The housing sector is one of the most interest-rate-sensitive parts of the economy. When housing starts decline significantly — typically more than 20% from their peak — it signals that the Fed's rate hikes are beginning to bite into economic activity.</p>
@@ -190,12 +190,12 @@ const ARTICLES = [
 <h3>12. Sahm Rule</h3>
 <p>The Sahm Rule, developed by economist Claudia Sahm, states that a recession has begun when the 3-month moving average of the national unemployment rate rises by 0.5 percentage points or more relative to its low during the previous 12 months. Unlike the other indicators on this list, the Sahm Rule is a coincident indicator — it confirms that a recession has begun rather than predicting it.</p>
 
-<h2>The FAULTLINE Recession Probability Score</h2>
-<p>FAULTLINE synthesizes these 12 indicators into a single Recession Probability score from 0% to 100%. A score above 50% indicates that the balance of evidence suggests a recession is likely within the next 12 months. A score above 75% indicates high probability of imminent recession.</p>
+<h2>Recession-Risk Context on FAULTLINE</h2>
+<p>FAULTLINE shows these indicators as recession-risk context alongside its systemic Pressure Index. It does not convert them into a percentage, and FAULTLINE does not offer a recession probability. Read the indicators together: several deteriorating at once is historically a warning sign, not a forecast with a stated likelihood.</p>
 
 <h2>Conclusion</h2>
 <p>Recessions are not surprises — they are processes. By monitoring the 12 leading indicators described above, investors can identify when recession risk is rising and adjust their positioning accordingly, often well before the recession officially begins. This is the essence of institutional risk management: not predicting the future with certainty, but systematically improving the quality of your decision-making by monitoring the right signals.</p>`,
-    internalLinks: [{ text: "Recession Probability Dashboard", url: "/recession-probability" }, { text: "FAULTLINE Pressure Index", url: "/pressure-index" }, { text: "Ask FAULTLINE", url: "/app/discover" }],
+    internalLinks: [{ text: "Recession Risk Context", url: "/recession-probability" }, { text: "FAULTLINE Pressure Index", url: "/pressure-index" }, { text: "Ask FAULTLINE", url: "/app/discover" }],
   },
   {
     title: "AI Bubble Risk: How to Measure Concentration Risk in Technology",

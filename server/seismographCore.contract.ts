@@ -38,7 +38,7 @@ export interface EvidencePacket {
 
 export interface SeismographProviderProvenance {
   fred: {
-    status: "live" | "fallback" | "unavailable";
+    status: "live" | "delayed" | "stale" | "fallback" | "unavailable";
     detail: string;
     asOf: number;
   };

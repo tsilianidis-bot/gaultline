@@ -24,6 +24,8 @@
  *    Neither has a horizon or a validation record, so the % is suppressed.
  */
 
+import { PROBABILITY_DISPLAY_TEXT, SYSTEMIC_REGIME_CALIBRATION } from "./probabilityContract";
+
 export const REGIME_MODEL_SCORE_LABEL = "Model score (uncalibrated)";
 
 /** Format a 0..1 model score to one decimal place without rounding up to 100%. */
@@ -83,11 +85,13 @@ export function regimeModelScoreDisplay(reading: RegimeScoreInput | null | undef
   const states = reading.nStates ? `${reading.nStates}-state ` : "";
   return {
     label: REGIME_MODEL_SCORE_LABEL,
-    value: formatModelScorePct(reading.regimeConfidence),
+    // Probability contract: the HMM posterior is uncalibrated (validation ECE
+    // 0.5152), so its number is withheld; the state name above still renders.
+    value: PROBABILITY_DISPLAY_TEXT.UNCALIBRATED,
     asOf,
     explanation:
       `Posterior weight the ${states}statistical HMM gives its current state (${reading.currentRegime ?? "—"}) on the latest scored day. ` +
-      "It describes model fit, is not calibrated, and is not a forecast or a measure of accuracy.",
+      `It describes model fit, is not calibrated (validation ECE ${SYSTEMIC_REGIME_CALIBRATION.value}), and is not a forecast or a measure of accuracy, so no percentage is shown.`,
   };
 }
 

@@ -605,8 +605,10 @@ function computeEvolution(readings: SeismographReadingRow[]): SeismographState["
   const sevenDayDelta = avg7 - avgPrior7;
   const thirtyDayDelta = avg7 - avg30;
 
-  const sevenDayTrend =
-    sevenDayDelta >= 5
+  // Fail closed: without a prior-week window there is no comparison to call "Stable".
+  const sevenDayTrend = prior7.length === 0
+    ? "Unavailable (no prior-week reading)"
+    : sevenDayDelta >= 5
       ? `Rising (+${sevenDayDelta.toFixed(1)} pts)`
       : sevenDayDelta <= -5
       ? `Declining (${sevenDayDelta.toFixed(1)} pts)`
