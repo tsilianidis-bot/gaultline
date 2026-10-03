@@ -18,6 +18,12 @@ export interface WatchlistItem {
   createdAt: number;
   lastBreached?: number;      // timestamp of last breach
   breachCount: number;
+  /**
+   * Schema marker stored inside the item (same faultline_watchlist_v1 value):
+   * 100 = this score_overall threshold is on the canonical 0–100 scale.
+   * Absent = written by a pre-/100 bundle (0–10 scale).
+   */
+  overallScale?: 100;
 }
 
 export interface IndicatorDef {
@@ -34,6 +40,13 @@ export interface IndicatorDef {
   max: number;
   step: number;
   format: (v: number) => string;
+  /**
+   * Display only. Stored thresholds stay on the def's own min/max/step scale
+   * (localStorage / API / DB unchanged); the UI shows value × displayFactor and
+   * the slider moves in displayStep units on that display scale.
+   */
+  displayFactor?: number;
+  displayStep?: number;
   // API source for future live data wiring
   apiSource?: string;
   stressLevel: number;        // value at which this is "stressed"
@@ -46,30 +59,33 @@ export const INDICATOR_CATALOG: IndicatorDef[] = [
   {
     key: 'score_overall',
     label: 'Overall Systemic Risk',
-    sublabel: 'Composite Score',
-    unit: '/10',
+    sublabel: 'Canonical Pressure Index',
+    // Same 0–100 scale as NOW, Pressure and the header strip (was 0–10).
+    unit: '/100',
     category: 'score',
     color: '#00D4FF',
-    description: 'Composite of all 7 domain risk scores. The primary FAULTLINE signal.',
-    defaultThreshold: 7.0,
+    description: 'The canonical FAULTLINE Pressure Index (0–100), the same score shown on NOW and the Pressure Engine.',
+    defaultThreshold: 70,
     defaultCondition: 'above',
-    min: 0, max: 10, step: 0.1,
-    format: (v) => v.toFixed(1),
-    stressLevel: 7.0,
-    normalRange: [2, 5],
+    min: 0, max: 100, step: 1,
+    format: (v) => v.toFixed(0),
+    stressLevel: 70,
+    normalRange: [20, 50],
   },
   {
     key: 'score_credit',
     label: 'Credit Risk Score',
     sublabel: 'Domain Score',
-    unit: '/10',
+    unit: '/100',
     category: 'score',
     color: '#FF9500',
     description: 'Credit market stress composite: HY spreads, CRE, bank liquidity.',
     defaultThreshold: 7.5,
     defaultCondition: 'above',
     min: 0, max: 10, step: 0.1,
-    format: (v) => v.toFixed(1),
+    // Stored 0–10 (unchanged); shown on the 0–100 display scale.
+    format: (v) => (v * 10).toFixed(0),
+    displayFactor: 10, displayStep: 5,
     stressLevel: 7.0,
     normalRange: [2, 5],
   },
@@ -77,14 +93,16 @@ export const INDICATOR_CATALOG: IndicatorDef[] = [
     key: 'score_ai',
     label: 'AI Bubble Score',
     sublabel: 'Speculation Domain',
-    unit: '/10',
+    unit: '/100',
     category: 'score',
     color: '#C084FC',
     description: 'AI/mega-cap concentration and speculation index.',
     defaultThreshold: 8.0,
     defaultCondition: 'above',
     min: 0, max: 10, step: 0.1,
-    format: (v) => v.toFixed(1),
+    // Stored 0–10 (unchanged); shown on the 0–100 display scale.
+    format: (v) => (v * 10).toFixed(0),
+    displayFactor: 10, displayStep: 5,
     stressLevel: 7.5,
     normalRange: [2, 5],
   },
@@ -92,14 +110,16 @@ export const INDICATOR_CATALOG: IndicatorDef[] = [
     key: 'score_treasury',
     label: 'Treasury Stress Score',
     sublabel: 'Fiscal Domain',
-    unit: '/10',
+    unit: '/100',
     category: 'score',
     color: '#FFD700',
     description: 'Sovereign debt, auction demand, and fiscal trajectory.',
     defaultThreshold: 7.0,
     defaultCondition: 'above',
     min: 0, max: 10, step: 0.1,
-    format: (v) => v.toFixed(1),
+    // Stored 0–10 (unchanged); shown on the 0–100 display scale.
+    format: (v) => (v * 10).toFixed(0),
+    displayFactor: 10, displayStep: 5,
     stressLevel: 7.0,
     normalRange: [2, 5],
   },
@@ -107,14 +127,16 @@ export const INDICATOR_CATALOG: IndicatorDef[] = [
     key: 'score_recession',
     label: 'Recession Risk Score',
     sublabel: 'Economic Domain',
-    unit: '/10',
+    unit: '/100',
     category: 'score',
     color: '#FF2D55',
     description: 'Yield curve, unemployment, and leading indicator composite.',
     defaultThreshold: 7.0,
     defaultCondition: 'above',
     min: 0, max: 10, step: 0.1,
-    format: (v) => v.toFixed(1),
+    // Stored 0–10 (unchanged); shown on the 0–100 display scale.
+    format: (v) => (v * 10).toFixed(0),
+    displayFactor: 10, displayStep: 5,
     stressLevel: 7.0,
     normalRange: [2, 5],
   },
@@ -206,7 +228,7 @@ export const INDICATOR_CATALOG: IndicatorDef[] = [
     key: 'bankLiquidityStress',
     label: 'Bank Liquidity Stress',
     sublabel: 'NFCI proxy',
-    unit: '/10',
+    unit: 'index 0–10',
     category: 'liquidity',
     color: '#FF9500',
     description: 'Bank stress triggers credit contraction and systemic contagion risk.',
@@ -222,7 +244,7 @@ export const INDICATOR_CATALOG: IndicatorDef[] = [
     key: 'creStress',
     label: 'CRE Stress Index',
     sublabel: 'CRE composite',
-    unit: '/10',
+    unit: 'index 0–10',
     category: 'credit',
     color: '#FF2D55',
     description: 'Commercial real estate distress cascades through regional banks and CMBS.',
@@ -323,24 +345,111 @@ export const INDICATOR_MAP = Object.fromEntries(INDICATOR_CATALOG.map(d => [d.ke
 
 // ── Persistence ───────────────────────────────────────────────
 const STORAGE_KEY = 'faultline_watchlist_v1';
+export const WATCHLIST_STORAGE_KEY = STORAGE_KEY;
+/** Fallback for a missing / invalid 'above' score_overall threshold (the stress level). */
+export const OVERALL_DEFAULT_THRESHOLD = 70;
+/** Fallback for a missing / invalid 'below' threshold: bottom of the normal range, so it doesn't fire at a normal reading. */
+export const OVERALL_DEFAULT_BELOW_THRESHOLD = 20;
+/**
+ * Flag key written only by the pre-release 96c3256 build of this PR. When it is
+ * '100', unmarked items were already converted to /100 by that build and must not
+ * be scaled again. It is removed after the first successful load.
+ */
+export const LEGACY_OVERALL_SCALE_KEY = 'faultline_watchlist_overall_scale';
 
-export function loadWatchlist(): WatchlistItem[] {
+/** Direction-aware fallback: never 'below 70', which would breach at a normal 33. */
+export function overallFallbackThreshold(condition: unknown): number {
+  // evaluateBreach treats anything other than 'above' as 'below'.
+  return condition === 'above' ? OVERALL_DEFAULT_THRESHOLD : OVERALL_DEFAULT_BELOW_THRESHOLD;
+}
+
+/** 0 is a legitimate threshold (the edit dialog's minimum); negatives / non-finite are not. */
+function validOverallThreshold(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0;
+}
+
+/**
+ * Normalize one stored item to the canonical 0–100 overall-score scale.
+ * The scale marker lives on the item itself, so every read and write path
+ * agrees without a separate flag key:
+ *  - overallScale === 100 → already /100; kept.
+ *  - unmarked, finite, 0–10 → old 0–10 value; ×10 exactly once.
+ *  - unmarked and > 10 → already /100; kept as is.
+ *  - null / NaN / non-number / negative → direction-aware fallback
+ *    (above → 70, below → 20). Never null.
+ * The result is always marked, so normalizing again is a no-op (idempotent).
+ * `alreadyScaled` (legacy 96c3256 flag present) keeps unmarked values unscaled.
+ */
+export function normalizeOverallItem(item: WatchlistItem, alreadyScaled = false): WatchlistItem {
+  if (item.indicatorKey !== 'score_overall') return item;
+  const v = item.thresholdValue as unknown;
+  let thresholdValue: number;
+  if (!validOverallThreshold(v)) thresholdValue = overallFallbackThreshold(item.condition);
+  else if (item.overallScale === 100 || alreadyScaled || v > 10) thresholdValue = v;
+  else thresholdValue = Math.round(v * 100) / 10;
+  return { ...item, thresholdValue, overallScale: 100 };
+}
+
+/** Pure migration of a stored list (idempotent). */
+export function migrateOverallScale(items: WatchlistItem[], alreadyScaled = false): WatchlistItem[] {
+  return items
+    .filter((item): item is WatchlistItem => !!item && typeof item === 'object' && typeof (item as WatchlistItem).indicatorKey === 'string')
+    .map(item => normalizeOverallItem(item, alreadyScaled));
+}
+
+/** Items written by this bundle are /100: mark them (invalid → direction-aware fallback), never ×10. */
+function markForSave(items: WatchlistItem[]): WatchlistItem[] {
+  return items.map(item => item.indicatorKey === 'score_overall'
+    ? { ...item, thresholdValue: validOverallThreshold(item.thresholdValue) ? item.thresholdValue : overallFallbackThreshold(item.condition), overallScale: 100 as const }
+    : item);
+}
+
+function readLegacyScaleFlag(): boolean {
+  try { return localStorage.getItem(LEGACY_OVERALL_SCALE_KEY) === '100'; } catch { return false; }
+}
+
+function removeLegacyScaleFlag(): void {
+  try { localStorage.removeItem(LEGACY_OVERALL_SCALE_KEY); } catch { /* unavailable */ }
+}
+
+function writeItems(items: WatchlistItem[]): boolean {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return getDefaultWatchlist();
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : getDefaultWatchlist();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    return true;
   } catch {
-    return getDefaultWatchlist();
+    // Storage full or unavailable — fail silently
+    return false;
   }
 }
 
-export function saveWatchlist(items: WatchlistItem[]): void {
+export function loadWatchlist(): WatchlistItem[] {
+  let raw: string | null;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    raw = localStorage.getItem(STORAGE_KEY);
   } catch {
-    // Storage full or unavailable — fail silently
+    // Storage unavailable: defaults (already /100, marked); nothing to persist.
+    return getDefaultWatchlist();
   }
+  let parsed: unknown = null;
+  if (raw) {
+    try { parsed = JSON.parse(raw); } catch { parsed = null; }
+  }
+  if (!Array.isArray(parsed)) {
+    // No key, corrupt JSON or wrong shape: store marked /100 defaults so no
+    // later load (e.g. AppLayout) can mistake them for 0–10 values.
+    const defaults = getDefaultWatchlist();
+    if (writeItems(defaults)) removeLegacyScaleFlag();
+    return defaults;
+  }
+  const next = migrateOverallScale(parsed as WatchlistItem[], readLegacyScaleFlag());
+  // Remove the legacy flag only once the marked list is persisted, so a failed
+  // write can't cause a second ×10 on the next load.
+  if (JSON.stringify(next) === raw || writeItems(next)) removeLegacyScaleFlag();
+  return next;
+}
+
+export function saveWatchlist(items: WatchlistItem[]): void {
+  writeItems(markForSave(items));
 }
 
 export function getDefaultWatchlist(): WatchlistItem[] {
@@ -349,7 +458,8 @@ export function getDefaultWatchlist(): WatchlistItem[] {
     {
       id: 'default-1',
       indicatorKey: 'score_overall',
-      thresholdValue: 7.0,
+      thresholdValue: OVERALL_DEFAULT_THRESHOLD,
+      overallScale: 100,
       condition: 'above',
       severity: 'critical',
       note: 'Systemic risk entering high-stress territory',
@@ -372,7 +482,7 @@ export function getDefaultWatchlist(): WatchlistItem[] {
       thresholdValue: -200,
       condition: 'below',
       severity: 'high',
-      note: 'Deep inversion — recession probability >80%',
+      note: 'Deep inversion — historically a recession warning sign',
       createdAt: now,
       breachCount: 0,
     },
@@ -387,6 +497,27 @@ export function getDefaultWatchlist(): WatchlistItem[] {
       breachCount: 0,
     },
   ];
+}
+
+// ── Threshold slider (display scale ↔ stored scale) ───────────
+export interface ThresholdSlider {
+  min: number; max: number; step: number;
+  /** stored value → slider position */
+  toDisplay: (stored: number) => number;
+  /** slider position → stored value (what is saved) */
+  toStored: (display: number) => number;
+}
+
+export function thresholdSlider(def: Pick<IndicatorDef, 'min' | 'max' | 'step' | 'displayFactor' | 'displayStep'> | undefined): ThresholdSlider {
+  if (!def) return { min: 0, max: 10, step: 0.1, toDisplay: v => v, toStored: v => v };
+  const f = def.displayFactor ?? 1;
+  return {
+    min: def.min * f,
+    max: def.max * f,
+    step: def.displayStep ?? def.step * f,
+    toDisplay: v => Math.round(v * f * 1000) / 1000,
+    toStored: v => Math.round((v / f) * 1000) / 1000,
+  };
 }
 
 // ── Breach evaluation ─────────────────────────────────────────

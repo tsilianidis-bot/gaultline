@@ -17,18 +17,21 @@ import {
 } from "recharts";
 import {
   Timeframe,
-  getSystemicPressureData,
-  getSystemicPressureSnapshot,
   macroChartCards,
   MacroChartCard,
   historicalOverlayScenarios,
-  currentTrajectoryData,
   correlationNodes,
   correlationEdges,
 } from "@/lib/chartData";
 import { getRiskColor } from "@/components/RiskBadge";
 import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
+import { trpc } from "@/lib/trpc";
+import { useAppHeaderFred } from "@/hooks/useAppHeaderFred";
+import { buildChartsInstruments, macroCardSourceText } from "@/lib/chartsInstrumentReadings";
+import { usePressureSnapshot } from "@/hooks/usePressureSnapshot";
+import { PRESSURE_BANDS, PRESSURE_UNAVAILABLE_COLOR } from "@/lib/pressureSnapshot";
+import { formatEt } from "@shared/credibilityLabels";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
@@ -122,115 +125,79 @@ function SectionHeader({ eyebrow, title, subtitle, color = '#00D4FF' }: {
   );
 }
 
-// ── 1. Systemic Pressure Timeline ──────────────────────────────
+// ── 1. Systemic Pressure (canonical /100) ──────────────────────
+// The composite is the canonical Pressure Index (marketState.canonicalCurrent,
+// 0–100), the same value as NOW, Pressure and the header strip, with its
+// as-of time in ET. No 0–10 engine score, no seeded timeline, no static prior.
 function SystemicPressureTimeline() {
-  const [tf, setTf] = useState<Timeframe>('1M');
-  const data = useMemo(() => getSystemicPressureData(tf), [tf]);
-  const staticSnap = useMemo(() => getSystemicPressureSnapshot(tf), [tf]);
-  // Override snapshot with live engine values when available
-  const { output, isLive } = useEngine();
-  const liveScore = parseFloat(output.overall.score.toFixed(1));
-  const snap = isLive
-    ? { ...staticSnap, current: liveScore.toFixed(1), prior: (liveScore - output.overall.delta).toFixed(1), deltaLabel: `${output.overall.delta >= 0 ? '+' : ''}${output.overall.delta.toFixed(1)}`, trend: output.overall.delta > 0.1 ? 'rising' as const : output.overall.delta < -0.1 ? 'falling' as const : 'stable' as const }
-    : staticSnap;
-  const TrendIcon = snap.trend === 'rising' ? TrendingUp : snap.trend === 'falling' ? TrendingDown : Minus;
-  const trendColor = snap.trend === 'rising' ? '#FF9500' : snap.trend === 'falling' ? '#00FF88' : '#6B7280';
+  const view = usePressureSnapshot();
+  // Freshness label = the same customer integrity label as the header chip (never a hard-coded "LIVE").
+  const { integrityLabel } = useEngine();
+  const ready = view.status === 'ready' ? view : null;
+  const color = ready ? ready.band.color : PRESSURE_UNAVAILABLE_COLOR;
+  const asOf = ready ? formatEt(ready.provenance.asOf) : null;
   return (
     <SectionCard delay={0} accentColor="rgba(255,149,0,0.25)">
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
         <div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: '3px' }}>
-            Composite Score · Live
+            Composite Score · Canonical Pressure Index
           </div>
           <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#E2E8F0', lineHeight: 1 }}>
-            Systemic Pressure Timeline
+            Systemic Pressure
           </div>
         </div>
-        <TFToggle value={tf} onChange={setTf} />
       </div>
 
-      {/* Score snapshot row */}
       <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-end', marginBottom: '14px', flexWrap: 'wrap' }}>
         <div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#6B7280', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '2px' }}>
             Current
           </div>
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '42px', color: '#FF9500', lineHeight: 1, textShadow: '0 0 24px rgba(255,149,0,0.5)' }}>
-            {snap.current}
+          <div data-charts-pressure={ready ? ready.displayScore : 'unavailable'} style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '42px', color, lineHeight: 1 }}>
+            {ready ? ready.displayScore : view.status === 'loading' ? '…' : '—'}
           </div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563', marginTop: '2px' }}>/ 10.0</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563', marginTop: '2px' }}>{ready ? '/ 100' : view.status === 'loading' ? 'Loading' : 'Unavailable'}</div>
         </div>
-        <div style={{ paddingBottom: '6px' }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#6B7280', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '2px' }}>
-            Prior ({tf})
+        {ready && (
+          <div style={{ paddingBottom: '6px' }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#6B7280', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '2px' }}>
+              Direction
+            </div>
+            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: '20px', color: '#94A3B8', lineHeight: 1 }}>
+              {ready.state.pressureDirection === 'Unknown' ? 'Unavailable' : ready.state.pressureDirection}
+            </div>
           </div>
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: '24px', color: '#94A3B8', lineHeight: 1 }}>
-            {snap.prior}
+        )}
+        {ready && (
+          <div style={{ marginLeft: 'auto', paddingBottom: '6px', textAlign: 'right' }}>
+            <div style={{
+              fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px',
+              color, background: `${color}12`, border: `1px solid ${color}30`, borderRadius: '2px',
+              padding: '3px 8px', letterSpacing: '0.1em', textTransform: 'uppercase',
+            }}>
+              ◆ {ready.regime}
+            </div>
           </div>
-        </div>
-        <div style={{ paddingBottom: '6px' }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#6B7280', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '2px' }}>
-            Delta
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <TrendIcon size={14} style={{ color: trendColor }} />
-            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: trendColor, lineHeight: 1, textShadow: `0 0 12px ${trendColor}60` }}>
-              {snap.deltaLabel}
-            </span>
-          </div>
-        </div>
-        <div style={{ marginLeft: 'auto', paddingBottom: '6px', textAlign: 'right' }}>
-          <div style={{
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px',
-            color: output.regime.color, background: `${output.regime.color}12`,
-            border: `1px solid ${output.regime.color}30`, borderRadius: '2px',
-            padding: '3px 8px', letterSpacing: '0.1em', textTransform: 'uppercase',
-          }}>
-            ◆ {output.regime.label}
-          </div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', marginTop: '4px' }}>
-            {output.regime.sublabel}
-          </div>
-        </div>
+        )}
+      </div>
+      <div data-charts-pressure-basis style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', marginBottom: '10px' }}>
+        {ready
+          ? `${integrityLabel} · Canonical Pressure Index · as of ${asOf ?? '—'} · evidence ${ready.provenance.evidenceQuality}`
+          : view.status === 'loading' ? 'Loading canonical Pressure state…' : 'Canonical Pressure state unavailable'}
       </div>
 
-      {/* Chart */}
-      <ResponsiveContainer width="100%" height={200}>
-        <AreaChart data={data} margin={{ top: 6, right: 4, left: -18, bottom: 0 }}>
-          <defs>
-            <linearGradient id="pressureGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#FF9500" stopOpacity={0.35} />
-              <stop offset="100%" stopColor="#FF9500" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-          <XAxis dataKey="date" tick={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, fill: '#4B5563' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-          <YAxis domain={[4, 10]} tick={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, fill: '#4B5563' }} tickLine={false} axisLine={false} />
-          <Tooltip contentStyle={TT} labelStyle={{ color: '#6B7280' }} formatter={(v: number) => [`${v.toFixed(2)} / 10`, 'Systemic Pressure']} />
-          {/* Danger zone reference */}
-          <ReferenceLine y={7.5} stroke="rgba(255,45,85,0.3)" strokeDasharray="4 4" label={{ value: 'DANGER', position: 'right', fill: '#FF2D55', fontSize: 8, fontFamily: "'IBM Plex Mono', monospace" }} />
-          <ReferenceLine y={6.0} stroke="rgba(255,215,0,0.2)" strokeDasharray="4 4" label={{ value: 'ELEVATED', position: 'right', fill: '#FFD700', fontSize: 8, fontFamily: "'IBM Plex Mono', monospace" }} />
-          <Area
-            type="monotone" dataKey="value" stroke="#FF9500" strokeWidth={2.5}
-            fill="url(#pressureGrad)" dot={false}
-            style={{ filter: 'drop-shadow(0 0 8px rgba(255,149,0,0.6))' }}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-
-      {/* Zone legend */}
-      <div style={{ display: 'flex', gap: '14px', marginTop: '10px', flexWrap: 'wrap' }}>
-        {[
-          { color: '#FF2D55', label: '7.5+ Danger Zone' },
-          { color: '#FF9500', label: '6.0–7.5 High Risk' },
-          { color: '#FFD700', label: '4.5–6.0 Elevated' },
-          { color: '#00FF88', label: '<4.5 Moderate' },
-        ].map(z => (
-          <div key={z.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '1px', background: z.color, opacity: 0.7 }} />
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>{z.label}</span>
+      {/* Engine bands (0–100), from the engine thresholds */}
+      <div style={{ display: 'flex', gap: '14px', marginTop: '4px', flexWrap: 'wrap' }}>
+        {PRESSURE_BANDS.map(b => (
+          <div key={b.regime} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '1px', background: b.color, opacity: 0.7 }} />
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>{b.range} {b.label}</span>
           </div>
         ))}
+      </div>
+      <div style={{ marginTop: '8px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>
+        History: <a href="/app/pressure-history" style={{ color: '#00D4FF' }}>Pressure history</a>
       </div>
     </SectionCard>
   );
@@ -333,7 +300,7 @@ function MacroCard({ card, index }: { card: MacroChartCard; index: number }) {
             background: 'rgba(255,255,255,0.02)', borderRadius: '3px', padding: '5px 8px',
             borderLeft: `2px solid ${color}30`,
           }}>
-            API: {card.apiSource}
+            {macroCardSourceText(card.apiSource)}
           </div>
         </div>
       )}
@@ -341,82 +308,21 @@ function MacroCard({ card, index }: { card: MacroChartCard; index: number }) {
   );
 }
 
-// ── 3. Historical Overlay Mode ────────────────────────────────
+// ── 3. Historical Crisis Reference ────────────────────────────
+// The former overlay plotted seeded crisis "paths" and a seeded "current
+// trajectory" on recent calendar dates. No indexed historical series is
+// connected, so nothing is plotted: the episodes are listed as reference only.
 function HistoricalOverlay() {
-  const [active, setActive] = useState<string[]>(['dotcom', 'gfc']);
-
-  const toggle = (id: string) => {
-    setActive(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  };
-
-  // Build merged dataset with all active series
-  const mergedData = useMemo(() => {
-    const len = currentTrajectoryData.length;
-    return currentTrajectoryData.map((pt, i) => {
-      const row: Record<string, number | string> = { date: pt.date, current: pt.value };
-      historicalOverlayScenarios.forEach(s => {
-        if (active.includes(s.id)) row[s.id] = s.data[i]?.value ?? 100;
-      });
-      return row;
-    });
-  }, [active]);
-
   return (
     <SectionCard delay={0} accentColor="rgba(192,132,252,0.2)">
       <SectionHeader
-        eyebrow="Pattern Recognition · Indexed to 100"
-        title="Historical Overlay Mode"
-        subtitle="Current trajectory vs historical crisis paths"
+        eyebrow="Historical Reference · Not a data overlay"
+        title="Historical Crisis Reference"
+        subtitle="Past stress episodes for context. No current trajectory or crisis path is plotted: no indexed historical series is connected."
         color="#C084FC"
       />
-
-      {/* Scenario toggles */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
+      <div data-historical-reference style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {historicalOverlayScenarios.map(s => (
-          <button
-            key={s.id}
-            onClick={() => toggle(s.id)}
-            style={{
-              fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.06em',
-              padding: '4px 10px', borderRadius: '2px',
-              border: `1px solid ${active.includes(s.id) ? s.color + '60' : 'rgba(255,255,255,0.07)'}`,
-              background: active.includes(s.id) ? `${s.color}18` : 'transparent',
-              color: active.includes(s.id) ? s.color : '#6B7280',
-              cursor: 'pointer', transition: 'all 0.15s ease',
-            }}
-          >
-            {s.shortLabel}
-          </button>
-        ))}
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', display: 'flex', alignItems: 'center', gap: '3px', marginLeft: 'auto' }}>
-          <div style={{ width: '8px', height: '2px', background: '#00D4FF', borderRadius: '1px' }} />
-          Current
-        </div>
-      </div>
-
-      {/* Overlay chart */}
-      <ResponsiveContainer width="100%" height={220}>
-        <LineChart data={mergedData} margin={{ top: 4, right: 4, left: -18, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-          <XAxis dataKey="date" tick={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, fill: '#4B5563' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-          <YAxis domain={[25, 135]} tick={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, fill: '#4B5563' }} tickLine={false} axisLine={false} width={32} />
-          <Tooltip contentStyle={TT} labelStyle={{ color: '#6B7280' }} formatter={(v: number, name: string) => {
-            const s = historicalOverlayScenarios.find(x => x.id === name);
-            return [`${v.toFixed(1)}`, s ? s.shortLabel : 'Current'];
-          }} />
-          <ReferenceLine y={100} stroke="rgba(255,255,255,0.1)" strokeDasharray="2 4" />
-          {/* Current trajectory */}
-          <Line type="monotone" dataKey="current" stroke="#00D4FF" strokeWidth={2.5} dot={false} name="current" style={{ filter: 'drop-shadow(0 0 6px rgba(0,212,255,0.6))' }} />
-          {/* Historical lines */}
-          {historicalOverlayScenarios.map(s => active.includes(s.id) && (
-            <Line key={s.id} type="monotone" dataKey={s.id} stroke={s.color} strokeWidth={1.5} dot={false} name={s.id} strokeDasharray="5 3" style={{ filter: `drop-shadow(0 0 4px ${s.color}50)` }} />
-          ))}
-        </LineChart>
-      </ResponsiveContainer>
-
-      {/* Scenario detail cards */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '12px' }}>
-        {historicalOverlayScenarios.filter(s => active.includes(s.id)).map(s => (
           <div key={s.id} style={{
             background: `${s.color}08`, border: `1px solid ${s.color}20`,
             borderLeft: `3px solid ${s.color}`, borderRadius: '4px', padding: '10px',
@@ -432,30 +338,17 @@ function HistoricalOverlay() {
               </div>
               <div style={{ display: 'flex', gap: '12px', flexShrink: 0 }}>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: s.color, lineHeight: 1 }}>
-                    {s.peakDrawdown}
-                  </div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    Peak DD
-                  </div>
+                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: s.color, lineHeight: 1 }}>{s.peakDrawdown}</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Peak DD (approx.)</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#94A3B8', lineHeight: 1 }}>
-                    {s.duration}
-                  </div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    Duration
-                  </div>
+                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#94A3B8', lineHeight: 1 }}>{s.duration}</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Duration</div>
                 </div>
               </div>
             </div>
           </div>
         ))}
-        {active.length === 0 && (
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#4B5563', textAlign: 'center', padding: '12px' }}>
-            Select a scenario above to overlay
-          </div>
-        )}
       </div>
     </SectionCard>
   );
@@ -492,9 +385,9 @@ function CorrelationRiskMap() {
   return (
     <SectionCard delay={0} accentColor="rgba(0,212,255,0.15)">
       <SectionHeader
-        eyebrow="Cross-Asset Relationships"
+        eyebrow="Cross-Asset Relationships · Illustrative"
         title="Correlation / Risk Map"
-        subtitle="Node size = stress level · Edge color = correlation direction · Dashed = breakdown"
+        subtitle="Illustrative layout of how stress can travel between asset classes. Node sizes, edges and links are static, not computed from market data."
       />
 
       <div ref={containerRef} style={{ width: '100%' }}>
@@ -538,18 +431,7 @@ function CorrelationRiskMap() {
                   strokeDasharray={edge.stressed ? '5 3' : undefined}
                   opacity={0.7}
                 />
-                {/* Correlation label at midpoint */}
-                <text
-                  x={(fp.cx + tp.cx) / 2}
-                  y={(fp.cy + tp.cy) / 2 - 3}
-                  fill={edgeColor}
-                  fontSize="7"
-                  fontFamily="'IBM Plex Mono', monospace"
-                  textAnchor="middle"
-                  opacity={0.8}
-                >
-                  {edge.correlation > 0 ? '+' : ''}{edge.correlation.toFixed(2)}
-                </text>
+                {/* No correlation figure: the edge values are static, not measured. */}
               </g>
             );
           })}
@@ -557,7 +439,7 @@ function CorrelationRiskMap() {
           {/* Nodes */}
           {correlationNodes.map(node => {
             const pos = nodePos(node.x, node.y);
-            const r = 10 + (node.value / 100) * 14;
+            const r = 16; // uniform: node values are static, so size encodes nothing
             return (
               <g key={node.id}>
                 {/* Outer glow ring */}
@@ -579,18 +461,7 @@ function CorrelationRiskMap() {
                   cx={pos.cx} cy={pos.cy} r={r * 0.55}
                   fill={`${node.color}35`}
                 />
-                {/* Value label */}
-                <text
-                  x={pos.cx} y={pos.cy + 1}
-                  fill={node.color}
-                  fontSize="9"
-                  fontFamily="'Rajdhani', sans-serif"
-                  fontWeight="700"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                >
-                  {node.value}
-                </text>
+                {/* No stress figure: node values are static, not current readings. */}
                 {/* Name label */}
                 <text
                   x={pos.cx}
@@ -611,7 +482,7 @@ function CorrelationRiskMap() {
       {/* Legend */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '10px' }}>
         {[
-          { color: 'rgba(255,45,85,0.7)', label: 'Stress contagion (dashed)', dashed: true },
+          { color: 'rgba(255,45,85,0.7)', label: 'Stress channel (dashed, illustrative)', dashed: true },
           { color: 'rgba(255,149,0,0.6)', label: 'Positive correlation', dashed: false },
           { color: 'rgba(0,212,255,0.6)', label: 'Negative correlation', dashed: false },
         ].map(l => (
@@ -624,7 +495,7 @@ function CorrelationRiskMap() {
         ))}
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
           <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'rgba(255,149,0,0.3)', border: '1px solid rgba(255,149,0,0.6)' }} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>Node size = stress level</span>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>Illustrative · static layout, not market data</span>
         </div>
       </div>
 
@@ -637,7 +508,7 @@ function CorrelationRiskMap() {
         <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
           <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FF2D55', boxShadow: '0 0 6px rgba(255,45,85,0.8)', flexShrink: 0, marginTop: '3px', animation: 'blink-alert 5s ease-in-out infinite' }} />
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.5 }}>
-            <strong style={{ color: '#FF2D55' }}>Stress contagion detected</strong> across Credit ↔ Liquidity ↔ Bonds ↔ Equities. Correlation breakdown between Equities and Bonds (traditional hedge) signals late-cycle regime shift. Cross-asset diversification effectiveness reduced.
+            <strong style={{ color: '#94A3B8' }}>Illustrative.</strong> The dashed links show the channels (Credit ↔ Liquidity ↔ Bonds ↔ Equities) the Pressure Index watches; they are not a detected or measured contagion reading.
           </p>
         </div>
       </div>
@@ -646,127 +517,43 @@ function CorrelationRiskMap() {
 }
 
 // ── 5. Institutional Depth Widgets ──────────────────────────
-function seededRandW(seed: number) {
-  let s = seed;
-  return () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
-}
-function buildW(seed: number, n: number, base: number, vol: number) {
-  const r = seededRandW(seed);
-  let v = base;
-  return Array.from({ length: n }, (_, i) => {
-    v = Math.max(-3, Math.min(8, v + (r() - 0.48) * vol));
-    return { t: i, v: parseFloat(v.toFixed(2)) };
-  });
-}
-
+// Bound to the app's existing readings (markets.getGlobalSnapshot + FRED via
+// /api/fred) with source and as-of; otherwise Unavailable / Not tracked.
+// No fixed values and no modelled sparklines.
 function InstitutionalWidgets() {
-  const yieldCurveData = useMemo(() => buildW(301, 36, -0.4, 0.18), []);
-  const vixData = useMemo(() => buildW(302, 36, 22, 2.5), []);
-  const treasuryData = useMemo(() => buildW(303, 36, 4.4, 0.12), []);
-  const aiSentData = useMemo(() => buildW(304, 36, 72, 4), []);
-  const liquidityData = useMemo(() => buildW(305, 36, 5.8, 0.4), []);
-  const creditData = useMemo(() => buildW(306, 36, 380, 18), []);
-
-  const widgets = [
-    {
-      id: 'yield-curve', label: 'Yield Curve', sublabel: '10Y–2Y Spread', value: '-0.42', unit: '%',
-      color: '#FF2D55', data: yieldCurveData, trend: 'inverted',
-      note: 'Inverted — recession signal active',
-      apiSource: 'FRED: T10Y2Y',
-    },
-    {
-      id: 'vix', label: 'VIX Pulse', sublabel: 'Volatility Index', value: '22.8', unit: '',
-      color: '#FF9500', data: vixData, trend: 'elevated',
-      note: 'Elevated — above 20 threshold',
-      apiSource: 'CBOE via Polygon.io',
-    },
-    {
-      id: 'treasury', label: 'Treasury Ribbon', sublabel: '10Y Yield', value: '4.42', unit: '%',
-      color: '#00D4FF', data: treasuryData, trend: 'rising',
-      note: 'Rising — duration risk elevated',
-      apiSource: 'FRED: DGS10',
-    },
-    {
-      id: 'ai-sentiment', label: 'AI Sentiment', sublabel: 'Speculation Index', value: '72', unit: '/100',
-      color: '#C084FC', data: aiSentData, trend: 'extreme',
-      note: 'Extreme greed — bubble risk',
-      apiSource: 'Alpha Vantage: Sentiment',
-    },
-    {
-      id: 'liquidity', label: 'Liquidity Flow', sublabel: 'M2 / Fed Balance', value: '5.8', unit: '/10',
-      color: '#FFD700', data: liquidityData, trend: 'tightening',
-      note: 'Tightening — QT in progress',
-      apiSource: 'FRED: M2SL, WALCL',
-    },
-    {
-      id: 'credit-spread', label: 'Credit Spread', sublabel: 'HY OAS (bps)', value: '380', unit: 'bps',
-      color: '#FF9500', data: creditData, trend: 'widening',
-      note: 'Widening — credit stress rising',
-      apiSource: 'FRED: BAMLH0A0HYM2',
-    },
-  ];
-
-  const trendConfig: Record<string, { color: string; label: string }> = {
-    inverted: { color: '#FF2D55', label: 'INVERTED' },
-    elevated: { color: '#FF9500', label: 'ELEVATED' },
-    rising: { color: '#FF9500', label: 'RISING' },
-    extreme: { color: '#C084FC', label: 'EXTREME' },
-    tightening: { color: '#FFD700', label: 'TIGHTENING' },
-    widening: { color: '#FF9500', label: 'WIDENING' },
-  };
+  const quotesQuery = trpc.markets.getGlobalSnapshot.useQuery(undefined, { staleTime: 60_000, refetchOnWindowFocus: false });
+  const fred = useAppHeaderFred();
+  const widgets = useMemo(
+    () => buildChartsInstruments({ quotes: quotesQuery.data?.items ?? null, fred, now: Date.now() }),
+    [quotesQuery.data, fred],
+  );
 
   return (
     <SectionCard delay={0} accentColor="rgba(0,212,255,0.15)">
       <SectionHeader
-        eyebrow="Institutional Depth · Live Instruments"
+        eyebrow="Institutional Depth · Market Readings"
         title="Market Intelligence Ribbon"
-        subtitle="Six high-signal instruments — structured for FRED, Polygon.io, Alpha Vantage, TradingView"
+        subtitle="Current or delayed readings from the app's market snapshot and FRED, each with its source and as-of time"
         color="#00D4FF"
       />
-      {/* Data status banner */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', padding: '6px 10px', background: 'rgba(255,149,0,0.05)', border: '1px solid rgba(255,149,0,0.15)', borderRadius: '4px' }}>
-        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FF9500', flexShrink: 0 }} />
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#FF9500', letterSpacing: '0.1em' }}>MODEL</span>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>— Chart lines use calibrated baseline models. Current values update when live FRED/Polygon feeds are active.</span>
-      </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-        {widgets.map((w, i) => {
-          const tc = trendConfig[w.trend] ?? { color: '#6B7280', label: w.trend.toUpperCase() };
-          return (
-            <div key={w.id} style={{
-              background: 'rgba(5,6,8,0.9)', border: `1px solid ${w.color}18`,
-              borderRadius: '4px', padding: '10px', position: 'relative', overflow: 'hidden',
-              animation: `cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) ${i * 70}ms both`,
-              transition: 'border-color 0.2s ease',
-            }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = `${w.color}35`}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = `${w.color}18`}
-            >
-              {/* Corner bracket */}
-              <div style={{ position: 'absolute', top: 0, right: 0, width: '8px', height: '8px', borderTop: `1px solid ${w.color}30`, borderRight: `1px solid ${w.color}30` }} />
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>{w.sublabel}</div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#D1D5DB', marginBottom: '4px', lineHeight: 1 }}>{w.label}</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', marginBottom: '4px' }}>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: '20px', color: w.color, textShadow: `0 0 12px ${w.color}60`, lineHeight: 1, animation: 'data-flicker 16s ease-in-out infinite' }}>{w.value}</span>
-                {w.unit && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280' }}>{w.unit}</span>}
-              </div>
-              <ResponsiveContainer width="100%" height={36}>
-                <LineChart data={w.data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                  <Line type="monotone" dataKey="v" stroke={w.color} strokeWidth={1.5} dot={false}
-                    style={{ filter: `drop-shadow(0 0 3px ${w.color}60)` }} />
-                </LineChart>
-              </ResponsiveContainer>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: tc.color, background: `${tc.color}10`, border: `1px solid ${tc.color}25`, borderRadius: '2px', padding: '1px 5px' }}>{tc.label}</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', background: 'rgba(255,149,0,0.08)', border: '1px solid rgba(255,149,0,0.2)', borderRadius: '2px', padding: '1px 4px' }}>MODEL · {w.apiSource.split(':')[0]}</span>
-              </div>
-              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '9px', color: '#4B5563', marginTop: '3px', lineHeight: 1.3 }}>{w.note}</div>
+        {widgets.map((w, i) => (
+          <div key={w.id} data-charts-instrument={w.id} data-status={w.status} style={{
+            background: 'rgba(5,6,8,0.9)', border: `1px solid ${w.color}18`,
+            borderRadius: '4px', padding: '10px', position: 'relative', overflow: 'hidden',
+            animation: `cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) ${i * 70}ms both`,
+          }}>
+            <div style={{ position: 'absolute', top: 0, right: 0, width: '8px', height: '8px', borderTop: `1px solid ${w.color}30`, borderRight: `1px solid ${w.color}30` }} />
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>{w.sublabel}</div>
+            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#D1D5DB', marginBottom: '4px', lineHeight: 1 }}>{w.label}</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', marginBottom: '4px' }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: w.status === 'bound' ? '20px' : '13px', color: w.color, lineHeight: 1 }}>{w.value}</span>
+              {w.unit && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280' }}>{w.unit}</span>}
+              {w.stateLabel && <span style={{ marginLeft: '6px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#94A3B8', border: '1px solid rgba(148,163,184,0.25)', borderRadius: '2px', padding: '1px 4px' }}>{w.stateLabel}</span>}
             </div>
-          );
-        })}
-      </div>
-      <div style={{ marginTop: '10px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#374151', background: 'rgba(255,255,255,0.02)', borderRadius: '3px', padding: '6px 8px', borderLeft: '2px solid rgba(0,212,255,0.15)' }}>
-        API integration ready: FRED (yield curve, treasury, liquidity) · Polygon.io (VIX, equities) · Alpha Vantage (sentiment) · FINRA TRACE (credit spreads) · TradingView (charting)
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', marginTop: '3px', lineHeight: 1.3 }}>{w.basis}</div>
+          </div>
+        ))}
       </div>
     </SectionCard>
   );
@@ -780,7 +567,7 @@ export default function Charts() {
     <div style={{ minHeight: '100vh', background: '#050608', maxWidth: '800px', margin: '0 auto' }}>
       <PageHeader
         title="Charts"
-        subtitle="Systemic pressure timeline and macro chart suite — FRED live data where available, cached or fallback otherwise."
+        subtitle="Canonical Pressure Index and market readings with source and as-of — Unavailable where no feed is connected."
         badge={integrityLabel === 'LIVE' ? 'FRED LIVE' : `FRED ${integrityLabel}`}
         badgeColor={integrityLabel === 'LIVE' ? 'green' : integrityLabel === 'UNAVAILABLE' ? 'gray' : 'amber'}
         rightSlot={<PreflightTrigger currentPage="charts" actionKey="viewed_charts" />}
@@ -845,8 +632,8 @@ export default function Charts() {
       }}>
         <Info size={12} style={{ color: '#4B5563', flexShrink: 0, marginTop: '1px' }} />
         <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563', lineHeight: 1.5, letterSpacing: '0.04em' }}>
-          <strong style={{ color: '#FF9500' }}>MODEL DATA — Not financial advice.</strong>{' '}
-          Chart lines are calibrated baseline models, not live market feeds. The Systemic Pressure score and regime labels update from live FRED data when available. Full live integration (FRED, Polygon.io, Alpha Vantage) is in development. Risk scores are composite models, not guarantees of future outcomes. Consult a qualified financial professional before making investment decisions.
+          <strong style={{ color: '#94A3B8' }}>Not financial advice.</strong>{' '}
+          Systemic Pressure is the canonical Pressure Index with its as-of time. The Market Intelligence Ribbon shows readings from the app's market snapshot and FRED, each with its source and as-of. Macro cards without a connected feed show Unavailable. The historical episodes and the correlation map are reference and illustrative content, not data. Risk scores are composite models, not guarantees of future outcomes.
         </p>
       </div>
       </div>{/* /padding div */}

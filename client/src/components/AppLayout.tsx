@@ -109,7 +109,7 @@ interface AppLayoutProps {
 export default function AppLayout({ children }: AppLayoutProps) {
   const [location, navigate] = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
-  const { output, isLoading, isLive, integrityLabel, isRefreshing, lastUpdated, isSimulating, forceRefresh, canonicalState, marketMode } = useEngine();
+  const { isLoading, isLive, integrityLabel, isRefreshing, lastUpdated, isSimulating, forceRefresh, canonicalState, marketMode } = useEngine();
   const { user: authUser, logout } = useAuth();
   const isAdmin = authUser?.role === "admin";
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -129,21 +129,21 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const { readings: liveIndicatorReadings } = useLiveIndicatorReadings();
   const breachCount = useMemo(() => {
     const evaluable = evaluableIndicatorValues(liveIndicatorReadings) as Record<string, number | undefined>;
-    // In canonical mode output.overall.score is the canonical Pressure Index ÷ 10.
-    const overall10 = marketMode === 'canonical' ? output.overall.score : null;
+    // Canonical Pressure Index on the same 0–100 scale as the Watchlist page.
+    const overall100 = marketMode === 'canonical' ? canonicalState?.pressureIndex : null;
     const items = loadWatchlist();
     let count = 0;
     items.forEach(item => {
       const def = INDICATOR_MAP[item.indicatorKey];
       if (!def) return;
       let lv: number | null = null;
-      if (item.indicatorKey === 'score_overall') lv = typeof overall10 === 'number' && Number.isFinite(overall10) ? overall10 : null;
+      if (item.indicatorKey === 'score_overall') lv = typeof overall100 === 'number' && Number.isFinite(overall100) ? overall100 : null;
       else if (item.indicatorKey.startsWith('score_')) lv = null;
       else lv = evaluable[item.indicatorKey] ?? null;
       if (lv != null && evaluateBreach(item, lv)) count++;
     });
     return count;
-  }, [liveIndicatorReadings, marketMode, output.overall.score]);
+  }, [liveIndicatorReadings, marketMode, canonicalState?.pressureIndex]);
 
   // Header strip: every value from a real source (canonical snapshot, markets.getGlobalSnapshot,
   // FRED via /api/fred), tagged DELAYED / LAST CLOSE / STALE / UNAVAILABLE like the landing ticker.

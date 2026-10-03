@@ -56,9 +56,11 @@ export interface QuoteResult {
   changePercent: number;   // % change vs prior close
   volume: number;          // shares (raw)
   volumeMillions: number;  // volume in millions for display
-  timestamp: number;       // Unix ms of the bar
+  timestamp: number | null; // Unix ms of the quote/bar market time (Yahoo regularMarketTime, Polygon bar t); null when unknown — never the fetch time
   marketStatus: "open" | "closed" | "extended" | "unknown";
   isLive: boolean;
+  /** Provider delay flag. Yahoo's chart feed is ~15-min delayed (yahooProxy isDelayed); Polygon bars are prior closes. */
+  isDelayed?: boolean;
   sparkline: number[];     // 5-day close prices normalized to % change from first
 }
 
@@ -274,9 +276,10 @@ function buildFallbackQuotes(): QuoteResult[] {
     price: 0, open: 0, high: 0, low: 0,
     changePercent: 0,
     volume: 0, volumeMillions: 0,
-    timestamp: Date.now(),
+    timestamp: null,
     marketStatus: "unknown" as const,
     isLive: false,
+    isDelayed: true,
     sparkline: sparklineCache.get(ticker) ?? [],
   }));
 }
@@ -401,9 +404,10 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
         changePercent: parseFloat(changePercent.toFixed(3)),
         volume: volumeRaw,
         volumeMillions,
-        timestamp: Date.now(),
+        timestamp: yahooQ.observedAt ?? null,
         marketStatus,
         isLive: true,
+        isDelayed: yahooQ.isDelayed ?? true,
         sparkline: sparklineCache.get(ticker) ?? [],
       };
     }
@@ -426,9 +430,10 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
         changePercent: parseFloat(changePercent.toFixed(3)),
         volume: volumeRaw,
         volumeMillions,
-        timestamp: Date.now(),
+        timestamp: yahooQ.observedAt ?? null,
         marketStatus: "closed",
         isLive: false,
+        isDelayed: true,
         sparkline: sparklineCache.get(ticker) ?? [],
       };
     }
@@ -451,9 +456,10 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
           changePercent: parseFloat(changePercent.toFixed(3)),
           volume: volumeRaw,
           volumeMillions: parseFloat((volumeRaw / 1_000_000).toFixed(2)),
-          timestamp: Date.now(),
+          timestamp: yahooQ.observedAt ?? null,
           marketStatus: deriveMarketStatus(today) as QuoteResult["marketStatus"],
           isLive: false,
+          isDelayed: true,
           sparkline: sparklineCache.get(ticker) ?? [],
         };
       }
@@ -462,9 +468,10 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
         price: 0, open: 0, high: 0, low: 0,
         changePercent: 0,
         volume: 0, volumeMillions: 0,
-        timestamp: Date.now(),
+        timestamp: null,
         marketStatus: "unknown" as const,
         isLive: false,
+        isDelayed: true,
         sparkline: sparklineCache.get(ticker) ?? [],
       };
     }
@@ -487,9 +494,10 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
       changePercent,
       volume: volumeRaw,
       volumeMillions,
-      timestamp: bar.t ?? Date.now(),
+      timestamp: bar.t ?? null,
       marketStatus: deriveMarketStatus(tradeDate),
       isLive: false,
+      isDelayed: true,
       sparkline: sparklineCache.get(ticker) ?? [],
     };
   });
@@ -519,6 +527,8 @@ export interface TickerProfile {
   tradeDate: string;
   marketStatus: QuoteResult["marketStatus"];
   isLive: boolean;
+  /** Yahoo (~15-min delayed) and Polygon prior-close data are both delayed; never shown as LIVE. */
+  isDelayed?: boolean;
   source: "live" | "stale" | "fallback";
 }
 
@@ -666,6 +676,7 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
     tradeDate: effectiveTradeDate,
     marketStatus,
     isLive: marketStatus === "open" || marketStatus === "extended",
+    isDelayed: true,
     source: "live",
   };
 }
@@ -795,7 +806,8 @@ export function registerSignalsProxy(app: Express) {
       if (quotesCache) {
         res.setHeader("X-Cache", "STALE");
         res.json({
-          quotes: quotesCache.quotes,
+          // A stale-cache quote is not live, whatever it was when it was cached.
+          quotes: quotesCache.quotes.map(q => ({ ...q, isLive: false })),
           timestamp: new Date(quotesCache.fetchedAt).toISOString(),
           marketStatus: quotesCache.marketStatus,
           tradeDate: quotesCache.tradeDate,
@@ -939,6 +951,7 @@ export function registerSignalsProxy(app: Express) {
           tradeDate: quotesCache.tradeDate,
           marketStatus: qr.marketStatus,
           isLive: qr.isLive,
+          isDelayed: qr.isDelayed ?? true,
           source: "live" as const,
         };
         tickerCache.set(raw, { profile, fetchedAt: Date.now() });
@@ -993,6 +1006,7 @@ export function registerSignalsProxy(app: Express) {
         tradeDate: fullBarMapTradeDate,
         marketStatus,
         isLive: marketStatus === "open" || marketStatus === "extended",
+        isDelayed: true,
         source: "live" as const,
       };
       tickerCache.set(raw, { profile, fetchedAt: Date.now() });

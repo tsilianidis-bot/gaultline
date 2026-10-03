@@ -32,6 +32,7 @@ import { monthlyRecordBasisNote } from "@shared/dataIntegrityReadout";
 import { formatEt } from "@shared/credibilityLabels";
 import SystemicRegimeModule from "@/components/SystemicRegimeModule";
 import { trpc } from "@/lib/trpc";
+import { deltaDirection, deltaTrend, knownDelta } from "@/lib/deltaAvailability";
 
 const NOW_DEEP_PATH = "/app/now/deep";
 
@@ -472,7 +473,7 @@ function PressureInstrument({
         )}
         {lastUpdated && (
           <div className="col-span-2 text-center">
-            <p className="font-mono text-[8px] text-slate-600">Updated {lastUpdated.toLocaleTimeString()}</p>
+            <p className="font-mono text-[8px] text-slate-600">Updated {formatEt(lastUpdated.getTime()) ?? "unavailable"}</p>
           </div>
         )}
       </div>
@@ -588,9 +589,10 @@ function ActiveDriverChannel({
 }: { label: string; strength: number; trend: string; index: number; phase: number }) {
   const [expanded, setExpanded] = useState(false);
   const color = pressureColor(strength);
-  const trendIcon = trend === "deteriorating" ? "↑" : trend === "improving" ? "↓" : "→";
+  const trendIcon = trend === "deteriorating" ? "↑" : trend === "improving" ? "↓" : trend === "stable" ? "→" : "—";
   const trendColor = trend === "deteriorating" ? "#ff4d6d" : trend === "improving" ? "#00e599" : "#64748b";
-  const trendLabel = trend === "deteriorating" ? "Accelerating" : trend === "improving" ? "Fading" : "Stable";
+  // Only a known flat trend reads "Stable"; anything else (unavailable / unknown) reads "Unavailable".
+  const trendLabel = trend === "deteriorating" ? "Accelerating" : trend === "improving" ? "Fading" : trend === "stable" ? "Stable" : "Unavailable";
   const animDelay = `${0.1 + index * 0.08}s`;
 
   return (
@@ -759,7 +761,7 @@ function StatusRail({
   const items = [
     { label: "PRESSURE", value: formatCanonicalScore(pressure), color: accent },
     { label: "MODE", value: integrityLabel, color: customerIntegrityColor(integrityLabel) },
-    { label: "UPDATED", value: lastUpdated ? lastUpdated.toLocaleTimeString() : "—", color: "rgba(255,255,255,0.5)" },
+    { label: "UPDATED", value: lastUpdated ? (formatEt(lastUpdated.getTime()) ?? "—") : "—", color: "rgba(255,255,255,0.5)" },
     { label: "STATE", value: marketMode === "simulation" ? "SIMULATION" : integrityLabel, color: "rgba(255,255,255,0.4)" },
   ];
   return (
@@ -828,7 +830,8 @@ export default function Now() {
       name: domain.label,
       signal: domain.riskLevel,
       strength: domain.score * 10,
-      trend: domain.delta > 0.1 ? "deteriorating" : domain.delta < -0.1 ? "improving" : "stable",
+      // Unknown delta (#60 deltaAvailable: false, or non-finite) → "unavailable", not "stable".
+      trend: deltaTrend(domain),
       currentValue: formatCanonicalScore(domain.score * 10),
       historicalContext: "Canonical history is temporarily unavailable.",
       whyItMatters: domain.description,
@@ -841,7 +844,7 @@ export default function Now() {
   const regime = canonicalState?.regime ?? marketState?.now.regime ?? output.regime.label;
   const stressLevel = marketState?.now.stressLevel ?? output.overall.riskLevel;
   const direction = marketState?.now.direction
-    ?? (output.overall.delta > 0.1 ? "Deteriorating" : output.overall.delta < -0.1 ? "Improving" : "Stable");
+    ?? deltaDirection(output.overall);
   const headline = marketState?.now.headline ?? output.narrative.summary;
   const historicalPercentile = marketState?.now.historicalPercentile ?? null;
   const topDrivers = marketState?.now.topDrivers
@@ -864,7 +867,10 @@ export default function Now() {
     : null);
   const watchItems = marketState?.watch.whatToWatch ?? output.narrative.keyRisks;
   const changedItems = marketState?.watch.whatChanged
-    ?? output.domains.filter(domain => Math.abs(domain.delta) > 0.1).map(domain => `${domain.label}: ${domain.delta > 0 ? "pressure increased" : "pressure eased"}.`);
+    ?? output.domains.flatMap(domain => {
+      const d = knownDelta(domain);
+      return d !== null && Math.abs(d) > 0.1 ? [`${domain.label}: ${d > 0 ? "pressure increased" : "pressure eased"}.`] : [];
+    });
   const accent = pressureColor(pressure);
 
   const topDriversWithStrength = useMemo(() => {
@@ -928,7 +934,7 @@ export default function Now() {
                 </span>
                 <DataFreshnessChip
                   freshness={customerIntegrityChipLevel(integrityLabel)}
-                  tooltip={lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : undefined}
+                  tooltip={lastUpdated ? `Updated ${formatEt(lastUpdated.getTime()) ?? "unavailable"}` : undefined}
                 />
               </div>
               <div className="flex items-center gap-2">

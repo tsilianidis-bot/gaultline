@@ -60,7 +60,10 @@ export interface AIWatchItem {
   sentiment: 'bullish' | 'bearish' | 'neutral' | 'warning';
   marketImpact: 'high' | 'medium' | 'low';
   riskInterpretation: string;
-  timestamp: string;
+  /** ISO publication time of the source article (shown in ET). Required: no relative "2h ago" stamps. */
+  publishedAt: string;
+  /** Publisher name and URL of the source article. Required: no unsourced items. */
+  source: { name: string; url: string };
   category: string;
 }
 
@@ -210,7 +213,7 @@ export const metrics: MetricCard[] = [
     changeLabel: '+0.4',
     direction: 'up',
     riskLevel: 'critical',
-    interpretation: 'Office vacancy at record highs. Regional bank CRE exposure creating systemic contagion risk.',
+    interpretation: 'Office vacancy elevated. Regional bank CRE exposure creating systemic contagion risk.',
     historicalComparison: 'Stress levels approaching 2010 post-GFC lows in CRE valuations.',
     category: 'Real Estate',
     chartData: generateChartData(6.2, 30, 0.03),
@@ -270,20 +273,6 @@ export const metrics: MetricCard[] = [
     historicalComparison: 'Maturity wall comparable to 2007-2008 LBO refinancing crisis.',
     category: 'Credit',
     chartData: generateChartData(7.2, 30, 0.02),
-  },
-  {
-    id: 'ai-capex',
-    label: 'AI Infrastructure Capex Race',
-    value: '$214B',
-    unit: '',
-    change: 42,
-    changeLabel: '+42% YoY',
-    direction: 'up',
-    riskLevel: 'elevated',
-    interpretation: 'Hyperscaler AI capex at $214B annualized. ROI unproven at scale. Bubble dynamics intensifying.',
-    historicalComparison: 'Capex growth rate exceeds 1999 fiber optic buildout at peak.',
-    category: 'AI Bubble',
-    chartData: generateChartData(150, 30, 0.04),
   },
 ];
 
@@ -363,33 +352,8 @@ export const riskScores: RiskScore[] = [
   },
 ];
 
-// ---- Scenario Probabilities ----
-export const scenarios: ScenarioProbability[] = [
-  {
-    id: 'melt-up',
-    label: 'Bullish Melt-Up',
-    probability: 22,
-    trend: 'falling',
-    description: 'AI productivity boom materializes, soft landing achieved, Fed pivots successfully. Speculative excess continues.',
-    color: '#00FF88',
-  },
-  {
-    id: 'bear',
-    label: 'Recessionary Bear Market',
-    probability: 48,
-    trend: 'rising',
-    description: 'Credit stress triggers corporate defaults, unemployment rises above 5%, earnings collapse 20-30%. Orderly decline.',
-    color: '#FF9500',
-  },
-  {
-    id: 'crisis',
-    label: 'Severe Systemic Crisis',
-    probability: 30,
-    trend: 'rising',
-    description: 'Treasury auction failure, regional bank cascade, AI bubble implosion, and sovereign debt crisis converge simultaneously.',
-    color: '#FF2D55',
-  },
-];
+// Scenario probabilities: the unimported static set with fixed percentages was
+// removed; scenario output comes only from the canonical snapshot.
 
 // ---- Historical Analogs ----
 export const historicalAnalogs: HistoricalAnalog[] = [
@@ -424,7 +388,7 @@ export const historicalAnalogs: HistoricalAnalog[] = [
     era: 'Dot-Com Bubble',
     year: '2000',
     similarity: 78,
-    description: 'Technology concentration, unproven business models, capex boom with negative ROI. Nasdaq at 100x earnings.',
+    description: 'Technology concentration, unproven business models, capex boom with negative ROI. Extreme Nasdaq valuations.',
     debtLevel: 52,
     speculationIndex: 91,
     liquidityStress: 58,
@@ -474,187 +438,16 @@ export const historicalAnalogs: HistoricalAnalog[] = [
 ];
 
 // ---- AI Watch Feed ----
-export const aiWatchItems: AIWatchItem[] = [
-  {
-    id: 'ai-1',
-    company: 'NVIDIA',
-    headline: 'Nvidia H200 backlog extends to 18 months as hyperscalers accelerate orders',
-    sentiment: 'warning',
-    marketImpact: 'high',
-    riskInterpretation: 'Supply constraint masking demand destruction risk. Single-point-of-failure in global AI infrastructure.',
-    timestamp: '2h ago',
-    category: 'Chip Wars',
-  },
-  {
-    id: 'ai-2',
-    company: 'OpenAI',
-    headline: 'OpenAI raises $6.6B at $157B valuation — largest private funding round in history',
-    sentiment: 'warning',
-    marketImpact: 'high',
-    riskInterpretation: 'Valuation multiples disconnected from revenue. Bubble dynamics intensifying in private AI markets.',
-    timestamp: '4h ago',
-    category: 'Speculation',
-  },
-  {
-    id: 'ai-3',
-    company: 'Microsoft',
-    headline: 'Microsoft Azure AI revenue growth decelerates to 29% — below 35% consensus',
-    sentiment: 'bearish',
-    marketImpact: 'high',
-    riskInterpretation: 'First signs of AI monetization gap. $80B capex commitment with slowing revenue growth is unsustainable.',
-    timestamp: '6h ago',
-    category: 'Earnings',
-  },
-  {
-    id: 'ai-4',
-    company: 'Anthropic',
-    headline: 'Anthropic Claude 4 achieves AGI-adjacent benchmarks — regulatory scrutiny intensifies',
-    sentiment: 'neutral',
-    marketImpact: 'medium',
-    riskInterpretation: 'Regulatory risk rising. EU AI Act enforcement could constrain US AI companies in key markets.',
-    timestamp: '8h ago',
-    category: 'Regulation',
-  },
-  {
-    id: 'ai-5',
-    company: 'Meta',
-    headline: 'Meta Llama 4 open-source release disrupts enterprise AI pricing models',
-    sentiment: 'bearish',
-    marketImpact: 'medium',
-    riskInterpretation: 'Commoditization risk for closed-model AI companies. OpenAI and Anthropic revenue models under pressure.',
-    timestamp: '10h ago',
-    category: 'Competition',
-  },
-  {
-    id: 'ai-6',
-    company: 'Google DeepMind',
-    headline: 'Google Gemini Ultra achieves state-of-art across all major benchmarks',
-    sentiment: 'bullish',
-    marketImpact: 'medium',
-    riskInterpretation: 'Competitive dynamics intensifying. Winner-take-all dynamics may concentrate risk in fewer names.',
-    timestamp: '12h ago',
-    category: 'Competition',
-  },
-  {
-    id: 'ai-7',
-    company: 'xAI',
-    headline: 'Elon Musk\'s xAI raises $6B, announces 100,000 GPU Memphis supercluster',
-    sentiment: 'warning',
-    marketImpact: 'medium',
-    riskInterpretation: 'Capex arms race accelerating. Power grid strain and resource competition creating systemic bottlenecks.',
-    timestamp: '1d ago',
-    category: 'Infrastructure',
-  },
-  {
-    id: 'ai-8',
-    company: 'Sovereign AI',
-    headline: 'UAE, Saudi Arabia announce $100B sovereign AI investment funds',
-    sentiment: 'neutral',
-    marketImpact: 'medium',
-    riskInterpretation: 'Geopolitical AI race intensifying. Chip export controls creating fragmented global AI infrastructure.',
-    timestamp: '1d ago',
-    category: 'Geopolitics',
-  },
-  {
-    id: 'ai-9',
-    company: 'Amazon',
-    headline: 'AWS Trainium3 chips challenge Nvidia dominance — $150B data center investment announced',
-    sentiment: 'neutral',
-    marketImpact: 'high',
-    riskInterpretation: 'Nvidia moat being challenged. Transition risk if custom silicon adoption accelerates.',
-    timestamp: '2d ago',
-    category: 'Chip Wars',
-  },
-];
+// Intentionally empty. The previous items were undated ("2h ago" … "2d ago")
+// and unsourced, so they read as current news when they were not. FAULTLINE
+// does not ingest an AI headline feed; an item may only be added here with its
+// real publication time and source (see AIWatchItem.publishedAt / source).
+export const aiWatchItems: AIWatchItem[] = [];
 
 // ---- Alerts ----
-export const alerts: AlertItem[] = [
-  {
-    id: 'alert-1',
-    trigger: 'Treasury Auction Demand Deterioration',
-    severity: 'critical',
-    description: '30Y auction bid-to-cover fell to 2.24x — lowest since 2019. Primary dealer absorption at 42%. Foreign demand declining.',
-    timestamp: '1h ago',
-    status: 'active',
-  },
-  {
-    id: 'alert-2',
-    trigger: 'CRE Default Cascade — Regional Banks',
-    severity: 'critical',
-    description: 'New York Community Bancorp CRE loss provisions surge 400%. 5 regional banks flagged for elevated CRE concentration.',
-    timestamp: '3h ago',
-    status: 'active',
-  },
-  {
-    id: 'alert-3',
-    trigger: 'HY Credit Spread Widening',
-    severity: 'high',
-    description: 'High-yield spreads +18bps in 48 hours. Energy and real estate sectors leading widening. Contagion risk to IG.',
-    timestamp: '5h ago',
-    status: 'active',
-  },
-  {
-    id: 'alert-4',
-    trigger: 'AI Earnings Disappointment Signal',
-    severity: 'high',
-    description: 'Microsoft Azure AI growth deceleration. Alphabet AI revenue miss. Pattern suggests monetization gap widening.',
-    timestamp: '6h ago',
-    status: 'monitoring',
-  },
-  {
-    id: 'alert-5',
-    trigger: 'Liquidity Freeze Signal — Repo Market',
-    severity: 'elevated',
-    description: 'Overnight repo rates spiking above Fed Funds. Reserve scarcity signal. SOFR-OIS spread widening.',
-    timestamp: '8h ago',
-    status: 'monitoring',
-  },
-  {
-    id: 'alert-6',
-    trigger: 'Fed Policy Error Risk Elevated',
-    severity: 'elevated',
-    description: 'CPI re-acceleration forces Fed to hold longer. Unemployment rising simultaneously. Stagflation probability increasing.',
-    timestamp: '12h ago',
-    status: 'monitoring',
-  },
-  {
-    id: 'alert-7',
-    trigger: 'Sovereign Debt Instability — Japan',
-    severity: 'elevated',
-    description: 'JGB yields at 15-year highs. BoJ yield curve control abandonment creating global bond market volatility.',
-    timestamp: '1d ago',
-    status: 'monitoring',
-  },
-  {
-    id: 'alert-8',
-    trigger: 'Oil Shock Risk — Middle East Escalation',
-    severity: 'moderate',
-    description: 'Strait of Hormuz shipping disruption probability rising. 20% of global oil supply at risk. Stagflation amplifier.',
-    timestamp: '2d ago',
-    status: 'monitoring',
-  },
-];
+// Removed: an unimported static alert list with relative "1h ago" … "2d ago"
+// stamps and no source. It rendered on no route; alerts come from the canonical
+// state (Pressure: canonicalState.conflicts / warnings).
 
-// ---- Market Regime ----
-export const marketRegime = {
-  label: 'LATE-CYCLE FRAGILITY',
-  sublabel: 'Elevated Systemic Stress',
-  color: '#FF9500',
-  description: 'Multiple fault lines converging. Credit stress, AI speculation, sovereign debt pressure, and liquidity deterioration creating compound risk.',
-  bullProbability: 22,
-  crashProbability: 78,
-};
-
-// ---- Daily Report ----
-export const dailyReport = {
-  date: 'May 13, 2026',
-  regimeAssessment: 'LATE-CYCLE FRAGILITY — ELEVATED SYSTEMIC STRESS',
-  summary: `Multiple systemic fault lines are converging simultaneously. The AI concentration bubble has reached historic extremes with the top-7 technology names comprising 32.4% of the S&P 500 — a level that exceeds both the Nifty Fifty era and the 2000 Dot-com peak. Treasury auction demand is deteriorating as foreign buyers reduce exposure, while the $1.2T corporate refinancing wall approaches at rates 2-3x higher than original issuance. Commercial real estate stress is cascading through regional bank balance sheets, and consumer delinquencies are at 12-year highs. The Fed remains trapped between persistent inflation and a softening labor market. The probability of a severe systemic event has risen to 30% — the highest reading since the 2020 COVID shock.`,
-  keyRisks: [
-    'Treasury auction failure risk rising — foreign demand softening',
-    'AI bubble concentration at historic extremes — monetization gap widening',
-    'Regional bank CRE cascade — systemic contagion pathway open',
-    'Corporate refinancing wall — $1.2T maturing at 2-3x higher rates',
-    'Consumer delinquency surge — lower-income cohort under severe stress',
-  ],
-};
+// Market regime / daily report: the unimported static copies with fixed bull /
+// crash percentages and a stated systemic-event probability were removed.
