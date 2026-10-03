@@ -5,6 +5,7 @@
    Runs alongside the existing threshold alert system.
    ============================================================ */
 import { useMemo, useState } from 'react';
+import { score100Value } from "@/lib/displayFallbacks";
 import { AlertTriangle, Activity, Zap, Brain, TrendingDown, Clock } from 'lucide-react';
 import { useEngine } from '@/contexts/EngineContext';
 
@@ -68,9 +69,9 @@ export function generateSystemicAlerts(output: ReturnType<typeof useEngine>['out
       category: 'regime_shift',
       severity: sev,
       title: `Macro Regime: ${regime.label}`,
-      what: `Overall FAULTLINE Pressure Score has reached ${overall.score.toFixed(1)}/10. Current regime is classified as "${regime.label}" — ${regime.sublabel}.`,
+      what: `Overall FAULTLINE Pressure Score has reached ${score100Value(overall.score)}/100. Current regime is classified as "${regime.label}" — ${regime.sublabel}.`,
       why: `Regime transitions at this pressure level historically precede significant volatility compression or expansion events. The ${regime.label} regime indicates that multiple macro stress vectors are simultaneously elevated, reducing the margin for error in risk positioning.`,
-      historical: `In 2007 (GFC onset), the pressure composite crossed 6.5 before Lehman by 14 months. In 2000 (Dot-Com peak), the AI/speculation vector reached this level 8 months before the NASDAQ peaked. Regime shifts of this type have historically been followed by 15–57% drawdowns within 6–24 months.`,
+      historical: `In 2007 (GFC onset), the pressure composite crossed 65/100 before Lehman by 14 months. In 2000 (Dot-Com peak), the AI/speculation vector reached this level 8 months before the NASDAQ peaked. Regime shifts of this type have historically been followed by 15–57% drawdowns within 6–24 months.`,
       color: regime.color,
       score: overall.score,
     });
@@ -83,8 +84,8 @@ export function generateSystemicAlerts(output: ReturnType<typeof useEngine>['out
       id: `liquidity-${Math.round(liquidityScore * 10)}`,
       category: 'liquidity_deterioration',
       severity: sev,
-      title: `Liquidity Conditions Deteriorating — Score ${liquidityScore.toFixed(1)}/10`,
-      what: `The FAULTLINE Liquidity vector has reached ${liquidityScore.toFixed(1)}/10. Indicators include elevated repo stress, widening bid-ask spreads, and declining market depth across risk assets.`,
+      title: `Liquidity Conditions Deteriorating — Score ${score100Value(liquidityScore)}/100`,
+      what: `The FAULTLINE Liquidity vector has reached ${score100Value(liquidityScore)}/100. Indicators include elevated repo stress, widening bid-ask spreads, and declining market depth across risk assets.`,
       why: `Liquidity deterioration is the most dangerous early-warning signal in financial markets. When liquidity dries up, forced selling cascades can compress prices far beyond fundamental values. Illiquidity amplifies every other risk vector — credit, volatility, and recession — simultaneously.`,
       historical: `In March 2020, liquidity froze within 72 hours, triggering a 34% drawdown in 23 trading days. In September 2008, repo market liquidity collapse preceded Lehman's failure by 6 days. In 1998 (LTCM), liquidity deterioration at similar levels required Fed emergency intervention.`,
       color: '#FF2D55',
@@ -99,10 +100,10 @@ export function generateSystemicAlerts(output: ReturnType<typeof useEngine>['out
       id: `credit-stress-${Math.round(creditScore * 10)}`,
       category: 'credit_stress',
       severity: sev,
-      title: `Credit Stress Elevated — Score ${creditScore.toFixed(1)}/10`,
-      what: `The FAULTLINE Credit Stress vector has reached ${creditScore.toFixed(1)}/10. This reflects widening high-yield spreads, rising corporate default probabilities, and deteriorating credit conditions in the leveraged loan market.`,
+      title: `Credit Stress Elevated — Score ${score100Value(creditScore)}/100`,
+      what: `The FAULTLINE Credit Stress vector has reached ${score100Value(creditScore)}/100. This reflects widening high-yield spreads, rising corporate default probabilities, and deteriorating credit conditions in the leveraged loan market.`,
       why: `Credit stress is the transmission mechanism through which financial stress becomes economic stress. When credit conditions tighten, businesses face higher borrowing costs, investment declines, and employment contracts. The credit cycle leads the business cycle by 6–18 months.`,
-      historical: `HY spreads above 500bps have preceded recessions in 1990, 2001, 2008, and 2020. In 2007, credit stress reached this level 9 months before the official recession start. In 2022, credit stress at 5.0+ coincided with the worst bond market performance since 1788.`,
+      historical: `HY spreads above 500bps have preceded recessions in 1990, 2001, 2008, and 2020. In 2007, credit stress reached this level 9 months before the official recession start. In 2022, credit stress at 50+/100 coincided with the worst bond market performance since 1788.`,
       color: '#FF6B35',
       score: creditScore,
     });
@@ -115,8 +116,8 @@ export function generateSystemicAlerts(output: ReturnType<typeof useEngine>['out
       id: `ai-concentration-${Math.round(aiBubbleScore * 10)}`,
       category: 'ai_concentration_risk',
       severity: sev,
-      title: `AI/Mega-Cap Concentration Risk — Score ${aiBubbleScore.toFixed(1)}/10`,
-      what: `The FAULTLINE AI / Speculation vector has reached ${aiBubbleScore.toFixed(1)}/10. Its concentration baseline is a disclosed static model estimate, not a live market-cap series.`,
+      title: `AI/Mega-Cap Concentration Risk — Score ${score100Value(aiBubbleScore)}/100`,
+      what: `The FAULTLINE AI / Speculation vector has reached ${score100Value(aiBubbleScore)}/100. Its concentration baseline is a disclosed static model estimate, not a live market-cap series.`,
       why: `Concentration is a structural context factor in the current model. This alert does not quantify an index-level drawdown or predict a market outcome.`,
       historical: `Historical concentration comparisons require a separately sourced study and are not used here as a forecast or outcome-rate claim.`,
       color: '#C084FC',
@@ -133,7 +134,7 @@ export function generateSystemicAlerts(output: ReturnType<typeof useEngine>['out
       category: 'systemic_risk_escalation',
       severity: sev,
       title: `Systemic Risk Escalation — ${elevatedDomains.length} Vectors Elevated`,
-      what: `${elevatedDomains.length} of ${domains.length} FAULTLINE risk vectors are simultaneously elevated above 6.0/10: ${elevatedDomains.map(d => d.label).join(', ')}. Multi-vector stress elevation indicates systemic, not idiosyncratic, risk.`,
+      what: `${elevatedDomains.length} of ${domains.length} FAULTLINE risk vectors are simultaneously elevated above 60/100: ${elevatedDomains.map(d => d.label).join(', ')}. Multi-vector stress elevation indicates systemic, not idiosyncratic, risk.`,
       why: `Systemic risk is qualitatively different from isolated sector stress. When multiple independent risk vectors elevate simultaneously, it signals that macro conditions — not company-specific factors — are the primary driver. Systemic risk cannot be diversified away within a single asset class.`,
       historical: `This alert describes the current vector configuration only. It does not claim that FAULTLINE existed or issued historical warnings before prior events.`,
       color: '#FF2D55',

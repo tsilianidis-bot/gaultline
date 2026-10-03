@@ -203,10 +203,10 @@ function buildPrimaryReason(
     return `Systemic pressure at ${p}/100 with ${actionBias} bias — capital preservation is the priority. ${probability.primaryDriver}`;
   }
   if (verdict === "STRONG BUY" || verdict === "BUY") {
-    return `Low systemic pressure (${p}/100) with ${probability.bull}% bull probability — conditions favor risk-on positioning. ${probability.primaryDriver}`;
+    return `Low systemic pressure (${p}/100) — conditions favor risk-on positioning. ${probability.primaryDriver}`;
   }
   if (verdict === "HOLD" || verdict === "WATCH") {
-    return `Mixed signals with ${probability.bull}% bull / ${probability.bear}% bear probability — wait for clearer direction. ${probability.primaryDriver}`;
+    return `Mixed signals — wait for clearer direction. ${probability.primaryDriver}`;
   }
   return `Pressure at ${p}/100 — ${probability.primaryDriver}`;
 }

@@ -6,6 +6,7 @@
 import { useMemo } from "react";
 import { RefreshCw, TrendingUp, TrendingDown, AlertTriangle, Zap, ArrowRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { CRASH_RISK_DISPLAY_TEXT, contractScenarioText } from "@/lib/contractProbabilityText";
 
 // ── Helpers ───────────────────────────────────────────────────
 function getRegimeColor(regime: string): string {
@@ -75,8 +76,10 @@ export default function MobilePulse() {
   const withheld = quality === "UNAVAILABLE" || score == null;
   const verdict = getCanonicalAnswer(quality, canonicalState.regime);
   const regimeLabel = withheld ? "UNAVAILABLE" : getRegimeLabel(canonicalState.regime ?? "Unavailable");
-  const bullProb = canonicalState.scenarioOutputs.bull ?? canonicalState.scenarioOutputs.softLanding ?? null;
-  const crashProb = canonicalState.scenarioOutputs.crash ?? canonicalState.scenarioOutputs.bear ?? null;
+  // Probability contract: bull renders the contract's display text; crash risk
+  // is not offered (the bear scenario weight is not a crash probability).
+  const bullText = withheld ? "UNAVAILABLE" : contractScenarioText(canonicalState.probabilityContract, "bull");
+  const crashText = CRASH_RISK_DISPLAY_TEXT;
 
   const riskVectors = [...canonicalState.engines]
     .filter(engine => engine.value != null && engine.qualityStatus !== "UNAVAILABLE")
@@ -166,22 +169,22 @@ export default function MobilePulse() {
           >
             <div className="flex items-center gap-1.5">
               <TrendingUp size={10} className="text-[#34D399]" />
-              <span className="text-[8px] font-mono tracking-widest text-[#34D399]/70">BULL PROB</span>
+              <span className="text-[8px] font-mono tracking-widest text-[#34D399]/70">BULL SCENARIO</span>
             </div>
-            <div className="text-xl font-black font-mono text-[#34D399]">{bullProb == null ? "UNAVAILABLE" : `${Math.round(bullProb)}%`}</div>
+            <div data-mobile-bull className="text-xl font-black font-mono text-[#34D399]">{bullText}</div>
           </div>
           <div
             className="rounded-xl p-3 flex flex-col gap-1"
             style={{
-              background: crashProb != null && crashProb >= 50 ? "rgba(255,45,85,0.06)" : "rgba(255,149,0,0.06)",
-              border: `1px solid ${crashProb != null && crashProb >= 50 ? "rgba(255,45,85,0.2)" : "rgba(255,149,0,0.2)"}`,
+              background: "rgba(148,163,184,0.06)",
+              border: "1px solid rgba(148,163,184,0.2)",
             }}
           >
             <div className="flex items-center gap-1.5">
-              <TrendingDown size={10} style={{ color: crashProb != null && crashProb >= 50 ? "#FF2D55" : "#FF9500" }} />
-              <span className="text-[8px] font-mono tracking-widest" style={{ color: crashProb != null && crashProb >= 50 ? "rgba(255,45,85,0.7)" : "rgba(255,149,0,0.7)" }}>CRASH RISK</span>
+              <TrendingDown size={10} style={{ color: "#94A3B8" }} />
+              <span className="text-[8px] font-mono tracking-widest" style={{ color: "rgba(148,163,184,0.7)" }}>CRASH RISK</span>
             </div>
-            <div className="text-xl font-black font-mono" style={{ color: crashProb != null && crashProb >= 50 ? "#FF2D55" : "#FF9500" }}>{crashProb == null ? "UNAVAILABLE" : `${Math.round(crashProb)}%`}</div>
+            <div data-mobile-crash className="text-xl font-black font-mono" style={{ color: "#94A3B8" }}>{crashText}</div>
           </div>
         </div>
       </div>

@@ -130,7 +130,7 @@ export function fmosToEvidencePackets(
     strength: Math.max(output.probability.bull, output.probability.bear),
     confidence: output.probability.confidence,
     primaryReading: `bull=${output.probability.bull} neutral=${output.probability.neutral} bear=${output.probability.bear}`,
-    humanReadable: `${output.probability.bull}% bull / ${output.probability.neutral}% neutral / ${output.probability.bear}% bear — ${output.probability.primaryDriver}`,
+    humanReadable: `Scenario weights uncalibrated (not offered as probabilities) — ${output.probability.primaryDriver}`,
     subScores: {
       bull: output.probability.bull,
       neutral: output.probability.neutral,

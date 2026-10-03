@@ -5,12 +5,12 @@ export default function MarketCrashProbability2026() {
     <SEOLandingPage
       seo={{
         title: "Market Risk Context 2026 — Systemic Pressure Assessment | FAULTLINE",
-        description: "Review FAULTLINE's current systemic-pressure context across credit, liquidity, rates, inflation, labor, and AI/speculation sensitivity. The Pressure Index is a proprietary stress measure, not a calibrated crash probability.",
+        description: "Review FAULTLINE's current systemic-pressure context across credit, liquidity, rates, inflation, labor, and AI/speculation sensitivity. The Pressure Index is a proprietary stress measure. FAULTLINE does not offer a crash probability.",
         canonical: "/market-crash-probability-2026",
       }}
       badge="2026 SYSTEMIC RISK MONITOR"
       headline={"Market Risk Context\n2026 — Current Assessment"}
-      subheadline="FAULTLINE combines six systemic-pressure vectors — liquidity, credit, yield-curve volatility proxy, macro sensitivity, market-breadth proxy, and AI/speculation sensitivity — into a proprietary 0–100 Pressure Index. It is a current conditions measure, not a calibrated crash probability."
+      subheadline="FAULTLINE combines six systemic-pressure vectors — liquidity, credit, yield-curve volatility proxy, macro sensitivity, market-breadth proxy, and AI/speculation sensitivity — into a proprietary 0–100 Pressure Index. It is a current-conditions measure. FAULTLINE does not offer a crash probability."
       ctaLabel="VIEW CURRENT PRESSURE"
       ctaHref="/pressure-index"
       accentColor="#FF4444"
@@ -27,7 +27,7 @@ export default function MarketCrashProbability2026() {
           heading: "What Does the FAULTLINE Pressure Index Measure?",
           body: `The FAULTLINE Pressure Index™ is a proprietary 0–100 measure of current systemic market stress based on six documented vectors. It is designed to organize the current credit, liquidity, rate, inflation, labor, and AI/speculation context into a single transparent reading with source-status labels.
 
-The index is not a calibrated estimate of the probability that a market crash will occur, and it does not predict a date or direction. Historical research applying the current frozen formula is reconstructed, uses revised/proxy inputs where disclosed, and remains inconclusive for historical early-warning claims.
+The index is not a crash probability (FAULTLINE does not offer a crash probability), and it does not predict a date or direction. Historical research applying the current frozen formula is reconstructed, uses revised/proxy inputs where disclosed, and remains inconclusive for historical early-warning claims.
 
 Higher Pressure Index readings indicate more modeled systemic stress under the current methodology. They should be evaluated alongside source freshness, component detail, and the limits of the historical evidence.`,
         },
@@ -39,7 +39,7 @@ Higher Pressure Index readings indicate more modeled systemic stress under the c
 
 2. Credit Contagion Risk — High-yield spread, 10-year Treasury yield, and unemployment inputs.
 
-3. Volatility Regime — A yield-curve and rate-level proxy; it is not a live VIX input.
+3. Yield Curve (10Y–2Y) & 10Y Level (formerly labelled Volatility Regime) — the 10-year minus 2-year curve and the 10-year level; it is not a VIX input.
 
 4. Macro Sensitivity — CPI, PPI, and the Federal Funds rate, subject to publication lag.
 
@@ -69,26 +69,26 @@ Every user’s circumstances differ. FAULTLINE provides research context and sho
       faqs={[
         {
           question: "Will the stock market crash in 2026?",
-          answer: "FAULTLINE does not predict whether or when a market crash will occur. The Pressure Index measures modeled current systemic stress under a documented six-vector methodology. It is not a calibrated crash probability and does not establish a future market outcome.",
+          answer: "FAULTLINE does not predict whether or when a market crash will occur. The Pressure Index measures modeled current systemic stress under a documented six-vector methodology. It is not a crash probability (FAULTLINE does not offer one) and does not establish a future market outcome.",
         },
         {
           question: "What is the biggest risk to markets in 2026?",
           answer: "The current Pressure Index does not rank a single market risk as a forecast. It displays six component readings so users can see the current model contribution of liquidity, credit, yield-curve volatility proxy, macro sensitivity, market-breadth proxy, and AI/speculation sensitivity.",
         },
         {
-          question: "How is FAULTLINE's crash probability different from analyst forecasts?",
-          answer: "FAULTLINE’s Pressure Index is a proprietary systemic-stress measure rather than an analyst forecast or calibrated crash-probability model. Availability and freshness depend on the underlying sources; macro inputs have known publication lags and the AI/speculation baseline is explicitly static.",
+          question: "Does FAULTLINE publish a crash-risk forecast?",
+          answer: "No. FAULTLINE does not offer a crash probability: no governed model with a defined crash event, horizon and calibration record exists. The Pressure Index is a proprietary systemic-stress measure. It is not an analyst forecast, and it is not a crash probability. Availability and freshness depend on the underlying sources; macro inputs have known publication lags and the AI/speculation baseline is explicitly static.",
         },
         {
           question: "How should historical Pressure Index material be interpreted?",
           answer: "FAULTLINE’s legacy historical series and reconstructed frozen-formula research series are separate. The reconstructed research is retrospective, uses disclosed revised/proxy inputs, and does not support the claim that FAULTLINE historically issued warnings. Historical examples are context, not proof of predictive performance.",
         },
         {
-          question: "Is the crash probability indicator free to access?",
+          question: "Is the Pressure Index free to access?",
           answer: "Yes. The FAULTLINE Pressure Index — the core systemic-pressure context indicator — is available for free at /pressure-index. No login is required. Current access details are shown on the pricing page.",
         },
         {
-          question: "How does AI concentration risk contribute to crash probability in 2026?",
+          question: "How does AI concentration risk contribute to the Pressure Index in 2026?",
           answer: "The current core includes an AI/speculation vector with a disclosed static concentration baseline adjusted by rate and credit conditions. It does not presently use a live market-cap concentration feed, and its reading should be interpreted as a model component rather than a measurement of current index concentration.",
         },
       ]}
@@ -97,8 +97,8 @@ Every user’s circumstances differ. FAULTLINE provides research context and sho
         { label: "AI BUBBLE MONITOR", href: "/ai-bubble-risk-tracker", desc: "Review the AI/speculation context and its disclosed source limitations." },
         { label: "HISTORICAL ANALOGS", href: "/analogs", desc: "Compare current features with retrospective historical reference periods." },
         { label: "RECESSION CONTEXT", href: "/recession-probability", desc: "Review economic indicators as market context, not a calibrated forecast." },
-        { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy signals and their impact on crash risk." },
-        { label: "LIQUIDITY MONITOR", href: "/liquidity-monitor", desc: "Track liquidity withdrawal — the mechanism behind market crashes." },
+        { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy signals as rate and liquidity context." },
+        { label: "LIQUIDITY MONITOR", href: "/liquidity-monitor", desc: "Track liquidity conditions as one systemic-pressure input." },
       ]}
       schemaType="Article"
       datePublished="2026-01-01"

@@ -6,6 +6,7 @@
    Design: Palantir Noir — void-black, neon gold/electric-blue
    Typography: Rajdhani 700 + IBM Plex Mono
    ============================================================ */
+import { pointsDeltaText, score100Value } from "@/lib/displayFallbacks";
 import { useRef, useCallback, useMemo, useState, useEffect } from 'react';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
@@ -114,13 +115,13 @@ export default function DailyReport() {
       `FAULTLINE DAILY INTELLIGENCE BRIEFING — ${formatDate(new Date())}`,
       ``,
       `EXECUTIVE SUMMARY`,
-      `The systemic risk index stands at ${overall.score.toFixed(1)}/10, placing the macro environment in a ${regime.label.toUpperCase()} regime. ${regime.description}`,
+      `The systemic risk index stands at ${score100Value(overall.score)}/100, placing the macro environment in a ${regime.label.toUpperCase()} regime. ${regime.description}`,
       ``,
       `DOMINANT RISK VECTOR`,
-      `${topDomain?.label ?? 'Unknown'} leads systemic pressure at ${topDomain?.score.toFixed(1) ?? '—'}/10. Primary drivers: ${topDomain?.drivers.slice(0, 2).join('; ') ?? '—'}.`,
+      `${topDomain?.label ?? 'Unknown'} leads systemic pressure at ${score100Value(topDomain?.score)}/100. Primary drivers: ${topDomain?.drivers.slice(0, 2).join('; ') ?? '—'}.`,
       ``,
       `STABILIZING FACTOR`,
-      `${bottomDomain?.label ?? 'Unknown'} remains the lowest-stress domain at ${bottomDomain?.score.toFixed(1) ?? '—'}/10, providing relative macro stability.`,
+      `${bottomDomain?.label ?? 'Unknown'} remains the lowest-stress domain at ${score100Value(bottomDomain?.score)}/100, providing relative macro stability.`,
       ``,
       `SCENARIO PROBABILITY MATRIX`,
       `Bull/Recovery: ${bullPct}%  |  Crash/Bear: ${crashPct}%  |  Recession: ${recPct}%  |  Stagflation: ${stagPct}%  |  Soft Landing: ${probability.softLandingProbability}%`,
@@ -159,7 +160,7 @@ export default function DailyReport() {
 
   // Share card handler
   const handleShare = useCallback(async () => {
-    const text = `FAULTLINE Daily Report — ${formatDate(now)}\n\nSystemic Risk: ${overall.score.toFixed(1)}/10 — ${regime.label}\nCrash Probability: ${probability.crashProbability}%\nTop Analog: ${topAnalog.era} (${topAnalog.similarity}% match)\n\nProbabilistic risk intelligence. Not financial advice.`;
+    const text = `FAULTLINE Daily Report — ${formatDate(now)}\n\nSystemic Risk: ${score100Value(overall.score)}/100 — ${regime.label}\nCrash Probability: ${probability.crashProbability}%\nTop Analog: ${topAnalog.era} (${topAnalog.similarity}% match)\n\nProbabilistic risk intelligence. Not financial advice.`;
     if (navigator.share) {
       await navigator.share({ title: 'FAULTLINE Daily Report', text });
     } else {
@@ -231,9 +232,9 @@ export default function DailyReport() {
             <div>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2px' }}>Systemic Risk Index</div>
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '52px', color, lineHeight: 1, textShadow: `0 0 30px ${color}50` }}>
-                {overall.score.toFixed(1)}
+                {score100Value(overall.score)}
               </div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563' }}>/ 10.0</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563' }}>/ 100</div>
             </div>
             <div style={{ flex: 1, minWidth: '160px' }}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>Current Regime</div>
@@ -286,7 +287,7 @@ export default function DailyReport() {
               <Shield size={9} /> Biggest Stabilizer
             </div>
             <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#6B7280', lineHeight: 1.5 }}>
-              {domains.reduce((min, d) => d.score < min.score ? d : min, domains[0]).label} at {domains.reduce((min, d) => d.score < min.score ? d : min, domains[0]).score.toFixed(1)}/10 — lowest systemic stress domain, providing relative stability.
+              {domains.reduce((min, d) => d.score < min.score ? d : min, domains[0]).label} at {score100Value(domains.reduce((min, d) => d.score < min.score ? d : min, domains[0]).score)}/100 — lowest systemic stress domain, providing relative stability.
             </p>
           </div>
         </div>
@@ -308,10 +309,10 @@ export default function DailyReport() {
                     {d.label}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', marginBottom: '5px' }}>
-                    <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: dc, lineHeight: 1, textShadow: `0 0 10px ${dc}40` }}>{d.score.toFixed(1)}</span>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>/10</span>
+                    <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: dc, lineHeight: 1, textShadow: `0 0 10px ${dc}40` }}>{score100Value(d.score)}</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>/100</span>
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: d.delta > 0 ? '#FF9500' : '#00FF88', marginLeft: 'auto' }}>
-                      {d.delta > 0 ? '+' : ''}{d.delta.toFixed(1)}
+                      {pointsDeltaText(d.delta)}
                     </span>
                   </div>
                   <div style={{ height: '2px', background: 'rgba(255,255,255,0.05)', borderRadius: '1px', overflow: 'hidden' }}>

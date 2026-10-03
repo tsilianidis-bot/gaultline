@@ -9,6 +9,13 @@ import {
 import { getDb } from "./db";
 import type { FaultlinePressureOutput, DataStatus, RiskVector } from "./pressure/engine";
 import type { SeismographOutput } from "./seismographCore";
+import {
+  PROBABILITY_CONTRACT_VERSION,
+  SCENARIO_DEFINITIONS,
+  TRANSITION_DEFINITIONS,
+  TRANSITION_MODEL,
+  scenarioModelForSeismographVersion,
+} from "../shared/probabilityContract";
 
 export const PHASE_1B_GOVERNANCE_VERSION = "phase1b-governance-v1";
 export const CHAMPION_V1_GOVERNANCE_VERSION = "champion-v1-frozen";
@@ -201,32 +208,47 @@ function claimBase(generatedAt: string): Pick<GovernedClaimRecord, "sourceModel"
 export function buildGovernedClaims(seismograph: SeismographOutput | null, generatedAt: string): GovernedClaimRecord[] {
   if (!seismograph) return [];
   const base = claimBase(generatedAt);
-  const scenarioClaims: GovernedClaimRecord[] = [
-    ["bull", seismograph.probabilities.bull],
-    ["neutral", seismograph.probabilities.neutral],
-    ["bear", seismograph.probabilities.bear],
-  ].map(([label, value]) => ({
+  // Probability contract (faultline-probability-contract-v1): each scenario and
+  // transition claim carries its own versioned model, a HorizonBucket and an
+  // explicit definition. claimId and the claim modelVersion
+  // ("seismograph-core-v1") are unchanged; the contract model reference is
+  // carried in metadata only. Existing rows are never rewritten.
+  const scenarioModel = scenarioModelForSeismographVersion(seismograph.version);
+  const contractMetadata = (modelId: string, contractModelVersion: string, resolvable: boolean) => ({
+    contractVersion: PROBABILITY_CONTRACT_VERSION,
+    modelId,
+    contractModelVersion,
+    horizonBucket: "NOT_ESTABLISHED",
+    horizonMinDays: null,
+    horizonMaxDays: null,
+    resolvable,
+    calibrationStatus: "UNCALIBRATED",
+  });
+  const scenarioClaims: GovernedClaimRecord[] = (["bull", "neutral", "bear"] as const).map(label => ({
     ...base,
     claimId: `seismograph.scenario.${label}`,
     claimType: "DERIVED_SCENARIO_SCORE",
-    eventDefinition: null,
-    timeHorizon: null,
-    value: Number(value),
+    eventDefinition: SCENARIO_DEFINITIONS[label].definition,
+    timeHorizon: "NOT_ESTABLISHED",
+    value: Number(seismograph.probabilities[label]),
     unit: "score_percent",
-    metadata: { label, primaryDriver: seismograph.probabilities.primaryDriver, rule: "Not a calibrated probability; predictive presentation suppressed." },
+    metadata: { label, primaryDriver: seismograph.probabilities.primaryDriver, rule: "Not a calibrated probability; predictive presentation suppressed.", ...contractMetadata(scenarioModel.modelId, scenarioModel.modelVersion, SCENARIO_DEFINITIONS[label].resolvable) },
   }));
   const transitionClaims: GovernedClaimRecord[] = Object.entries(seismograph.transitionProbabilities)
     .filter(([key, value]) => key !== "primaryDriver" && typeof value === "number")
-    .map(([label, value]) => ({
-      ...base,
-      claimId: `seismograph.transition.${label}`,
-      claimType: "DERIVED_SCENARIO_COMPONENT",
-      eventDefinition: null,
-      timeHorizon: null,
-      value: Number(value),
-      unit: "component_percent",
-      metadata: { label, primaryDriver: seismograph.transitionProbabilities.primaryDriver, rule: "Component is not a complete mutually exclusive or calibrated forecast distribution." },
-    }));
+    .map(([label, value]) => {
+      const definition = TRANSITION_DEFINITIONS[label as keyof typeof TRANSITION_DEFINITIONS];
+      return {
+        ...base,
+        claimId: `seismograph.transition.${label}`,
+        claimType: "DERIVED_SCENARIO_COMPONENT",
+        eventDefinition: definition?.definition ?? null,
+        timeHorizon: "NOT_ESTABLISHED",
+        value: Number(value),
+        unit: "component_percent",
+        metadata: { label, primaryDriver: seismograph.transitionProbabilities.primaryDriver, rule: "Component is not a complete mutually exclusive or calibrated forecast distribution.", ...contractMetadata(TRANSITION_MODEL.modelId, TRANSITION_MODEL.modelVersion, false) },
+      };
+    });
   const analogClaims = seismograph.analogMatches.map((analog, index): GovernedClaimRecord => ({
     claimId: `seismograph.analog.${index}.${analog.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
     claimType: "ANALOG_SIMILARITY",

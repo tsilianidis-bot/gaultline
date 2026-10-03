@@ -4,6 +4,7 @@
    Connects the current page's data to the market context.
    Answers: "So... what does all of this mean?"
    ============================================================ */
+import { engineProbabilityText } from "@/lib/marketStateProjection";
 import { useLocation } from "wouter";
 import { ArrowRight, Lightbulb, AlertTriangle, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
@@ -38,8 +39,9 @@ function getSynthesis(
   context: SynthesisContext,
   riskLevel: string,
   regimeLabel: string,
-  bullProb: number,
-  crashProb: number,
+  /** Probability-contract display text (e.g. "Uncalibrated"), never a raw number. */
+  bullProb: string,
+  crashProb: string,
   keyRisks: string[],
   pageInsight?: string,
 ): { headline: string; body: string; nextLabel: string; nextPath: string } {
@@ -53,8 +55,8 @@ function getSynthesis(
         ? `Elevated systemic pressure detected — ${regime}`
         : `Market stress is contained — ${regime}`,
       body: isStressed
-        ? `The Pressure Index is signaling elevated systemic context. ${pageInsight ? pageInsight + " " : ""}Derived scenario scores are bull ${bullProb}% and bear-stress ${crashProb}%; they are not calibrated forecasts. Review the contributing vectors and source-quality status.`
-        : `Current pressure readings are within the model's lower stress range. ${pageInsight ? pageInsight + " " : ""}The derived bull scenario score is ${bullProb}%; it is context rather than a return forecast. Review individual evidence before acting.`,
+        ? `The Pressure Index is signaling elevated systemic context. ${pageInsight ? pageInsight + " " : ""}Bull scenario score: ${bullProb}. Crash risk is not expressed as a probability (${crashProb}). Review the contributing vectors and source-quality status.`
+        : `Current pressure readings are within the model's lower stress range. ${pageInsight ? pageInsight + " " : ""}The derived bull scenario score is ${bullProb}; it is context rather than a return forecast. Review individual evidence before acting.`,
       nextLabel: "Find opportunities that fit this environment →",
       nextPath: "/app/opportunities",
     },
@@ -72,7 +74,7 @@ function getSynthesis(
       headline: `${regime} — here is what the signal landscape means`,
       body: isStressed
         ? `Signal quality degrades in high-stress regimes. ${pageInsight ? pageInsight + " " : ""}Prioritize signals with multiple confirming factors: institutional flow, catalyst support, and technical structure alignment. Avoid chasing momentum without confirmation.`
-        : `Signal context is less stressed in the current regime. ${pageInsight ? pageInsight + " " : ""}The ${bullProb}% bull scenario score is a derived context value, not a trend-following forecast.`,
+        : `Signal context is less stressed in the current regime. ${pageInsight ? pageInsight + " " : ""}The bull scenario score (${bullProb}) is a derived context value, not a trend-following forecast.`,
       nextLabel: "Identify the best opportunities now →",
       nextPath: "/app/opportunities",
     },
@@ -80,25 +82,25 @@ function getSynthesis(
       headline: `Opportunities must be evaluated in the context of ${regime}`,
       body: isStressed
         ? `${pageInsight ? pageInsight + " " : ""}In the current ${regime} environment, compare opportunity-specific evidence and risk controls rather than assigning probability from the market context alone.`
-        : `${pageInsight ? pageInsight + " " : ""}The ${bullProb}% bull scenario score is uncalibrated context. Evaluate each asset on its own evidence, liquidity, and risk controls.`,
+        : `${pageInsight ? pageInsight + " " : ""}The bull scenario score (${bullProb}) is uncalibrated context. Evaluate each asset on its own evidence, liquidity, and risk controls.`,
       nextLabel: "Ask PLATO about a specific opportunity →",
       nextPath: "/app/discover",
     },
     dashboard: {
       headline: `Today's market: ${regime}`,
-      body: `${pageInsight ? pageInsight + " " : ""}Bull scenario score: ${bullProb}%. Bear-stress scenario score: ${crashProb}%. These are derived context values, not calibrated probabilities. ${keyRisks.length > 0 ? `Primary risk: ${keyRisks[0]}.` : ""}`,
+      body: `${pageInsight ? pageInsight + " " : ""}Bull scenario score: ${bullProb}. Crash risk is not expressed as a probability (${crashProb}). ${keyRisks.length > 0 ? `Primary risk: ${keyRisks[0]}.` : ""}`,
       nextLabel: "See today's opportunities →",
       nextPath: "/app/opportunities",
     },
     "daily-brief": {
       headline: `Today's briefing in context: ${regime}`,
-      body: `${pageInsight ? pageInsight + " " : ""}The current ${regime} environment provides context for today's news and events. ${isStressed ? "Review elevated-stress contributors and source quality." : `The ${bullProb}% bull scenario score is not evidence that positive catalysts will sustain moves.`}`,
+      body: `${pageInsight ? pageInsight + " " : ""}The current ${regime} environment provides context for today's news and events. ${isStressed ? "Review elevated-stress contributors and source quality." : `The bull scenario score (${bullProb}) is not evidence that positive catalysts will sustain moves.`}`,
       nextLabel: "Ask PLATO about today's market →",
       nextPath: "/app/discover",
     },
     diagnostic: {
       headline: `AI Diagnostic results in context: ${regime}`,
-      body: `${pageInsight ? pageInsight + " " : ""}The diagnostic output should be interpreted within the current ${regime} environment. ${isStressed ? `Bear-stress scenario score: ${crashProb}%. This is not a calibrated urgency forecast.` : `Bull scenario score: ${bullProb}%. This does not establish that diagnostic alerts will resolve positively.`}`,
+      body: `${pageInsight ? pageInsight + " " : ""}The diagnostic output should be interpreted within the current ${regime} environment. ${isStressed ? `Crash risk is not expressed as a probability (${crashProb}); no calibrated urgency forecast exists.` : `Bull scenario score: ${bullProb}. This does not establish that diagnostic alerts will resolve positively.`}`,
       nextLabel: "See the full pressure analysis →",
       nextPath: "/app/pressure",
     },
@@ -108,13 +110,13 @@ function getSynthesis(
         : `Macro environment is supportive for crypto — ${regime}`,
       body: isStressed
         ? `${pageInsight ? pageInsight + " " : ""}Use the macro stress context as one input when evaluating crypto-specific evidence; it does not establish a typical crypto outcome or leading indicator.`
-        : `${pageInsight ? pageInsight + " " : ""}The ${bullProb}% bull scenario score is not evidence of institutional appetite or a crypto breakout forecast.`,
+        : `${pageInsight ? pageInsight + " " : ""}The bull scenario score (${bullProb}) is not evidence of institutional appetite or a crypto breakout forecast.`,
       nextLabel: "Ask PLATO about crypto opportunities →",
       nextPath: "/app/discover",
     },
     situation: {
       headline: `Situational awareness: ${regime}`,
-      body: `${pageInsight ? pageInsight + " " : ""}The market is currently in a ${regime} environment with derived bull scenario score ${bullProb}% and bear-stress scenario score ${crashProb}%. These values are not calibrated probabilities. ${keyRisks.length > 0 ? `Key risk: ${keyRisks[0]}.` : ""}`,
+      body: `${pageInsight ? pageInsight + " " : ""}The market is currently in a ${regime} environment with bull scenario score ${bullProb}; crash risk is not expressed as a probability (${crashProb}). These are not calibrated forecasts. ${keyRisks.length > 0 ? `Key risk: ${keyRisks[0]}.` : ""}`,
       nextLabel: "Understand what this means →",
       nextPath: "/app/signal-outlook",
     },
@@ -123,8 +125,8 @@ function getSynthesis(
         ? `Portfolio risk elevated — ${regime} environment`
         : `Portfolio conditions favorable — ${regime} environment`,
       body: isStressed
-        ? `${pageInsight ? pageInsight + " " : ""}In the current ${regime} environment, review portfolio-specific risks and controls. The ${crashProb}% bear-stress scenario score is not a calibrated hedging instruction.`
-        : `${pageInsight ? pageInsight + " " : ""}The ${bullProb}% bull scenario score is current context, not a recommendation to hold or add positions.`,
+        ? `${pageInsight ? pageInsight + " " : ""}In the current ${regime} environment, review portfolio-specific risks and controls. Crash risk is not expressed as a probability (${crashProb}); nothing here is a calibrated hedging instruction.`
+        : `${pageInsight ? pageInsight + " " : ""}The bull scenario score (${bullProb}) is current context, not a recommendation to hold or add positions.`,
       nextLabel: "Monitor your alerts →",
       nextPath: "/app/alerts",
     },
@@ -134,7 +136,7 @@ function getSynthesis(
         : `Macro environment supports premarket momentum — ${regime}`,
       body: isStressed
         ? `${pageInsight ? pageInsight + " " : ""}In ${regime} conditions, assess each premarket setup with its own catalyst, liquidity, and confirmation rather than a market-context fade probability.`
-        : `${pageInsight ? pageInsight + " " : ""}The ${bullProb}% bull scenario score does not establish a gap-and-go or follow-through probability.`,
+        : `${pageInsight ? pageInsight + " " : ""}The bull scenario score (${bullProb}) does not establish a gap-and-go or follow-through probability.`,
       nextLabel: "See today's opportunities →",
       nextPath: "/app/opportunities",
     },
@@ -158,7 +160,7 @@ export default function MarketSynthesisPanel({
 
   if (isLoading || !canonicalState) return null;
 
-  const { overall, regime, probability, narrative } = output;
+  const { overall, regime, narrative } = output;
   const canonicalRiskLevel = canonicalState.regime === "LOW RISK" ? "low" : canonicalState.regime === "MODERATE RISK" ? "moderate" : canonicalState.regime === "ELEVATED RISK" ? "elevated" : canonicalState.regime === "HIGH STRESS" ? "high" : "critical";
   const pressureColor = getRiskColor(canonicalRiskLevel);
 
@@ -166,8 +168,8 @@ export default function MarketSynthesisPanel({
     context,
     canonicalRiskLevel,
     canonicalState.regime ?? "Unavailable",
-    probability.bullProbability,
-    probability.crashProbability,
+    engineProbabilityText(output, "bullProbability"),
+    engineProbabilityText(output, "crashProbability"),
     narrative.keyRisks ?? [],
     pageInsight,
   );

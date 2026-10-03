@@ -4,6 +4,7 @@
    7 tabs: Overview · Scanner · Stocks · Crypto · Symbol · Active · Watchlist
    ============================================================ */
 import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { finiteOrNull, score100Value } from "@/lib/displayFallbacks";
 import { trpc } from "@/lib/trpc";
 import { useLocation, useSearch } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -20,6 +21,7 @@ import { toast } from "sonner";
 import DataFreshnessBadge from "@/components/DataFreshnessBadge";
 import FaultlineTerm from "@/components/FaultlineTerm";
 import { useEngine } from "@/contexts/EngineContext";
+import { engineProbabilityText } from "@/lib/marketStateProjection";
 import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── DataSourceBanner: shown when data is from snapshot or fallback ────────────
@@ -1420,8 +1422,10 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
 
   const regimeLabel = output?.regime?.label ?? "Unknown";
   const regimeColor = output?.regime?.color ?? "#94A3B8";
-  const pressure = output?.overall?.score ?? 0;
-  const bullProb = output?.probability?.bullProbability ?? 50;
+  // Missing pressure stays null and renders "—" (never 0).
+  const pressure = finiteOrNull(output?.overall?.score);
+  // Probability contract: contract display text, never a 50 default or `NaN%`.
+  const bullText = output ? engineProbabilityText(output, "bullProbability") : "Unavailable";
   const lastUpdatedStr = lastUpdated ? lastUpdated.toLocaleTimeString() : "Not available";
 
   const SECTORS_DATA = [
@@ -1462,8 +1466,8 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
 
   const MACRO_DATA = [
     { label: "Market Regime",    value: regimeLabel,                       color: regimeColor },
-    { label: "Pressure Score",   value: `${pressure.toFixed(1)}/10`,       color: pressure >= 6.5 ? "#FF6B6B" : pressure >= 4.0 ? "#FFD700" : "#00FF88" },
-    { label: "Bull Probability", value: `${bullProb}%`,                    color: bullProb >= 60 ? "#00FF88" : bullProb >= 40 ? "#FFD700" : "#FF6B6B" },
+    { label: "Pressure Score",   value: pressure === null ? "—" : `${score100Value(pressure)}/100`, color: pressure === null ? "#94A3B8" : pressure >= 6.5 ? "#FF6B6B" : pressure >= 4.0 ? "#FFD700" : "#00FF88" },
+    { label: "Bull Scenario",    value: bullText,                          color: "#94A3B8" },
     { label: "Data Source",      value: isLive ? "LIVE (FRED)" : "CACHED", color: isLive ? "#00FF88" : "#FFD700" },
     { label: "Last Updated",     value: lastUpdatedStr,                    color: "#94A3B8" },
   ];

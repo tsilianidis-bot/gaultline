@@ -6,10 +6,11 @@
  *
  * Props:
  *   regime        — current regime label from EngineContext
- *   pressureIndex — current pressure index (0–100)
+ *   pressureIndex — current pressure index (0–100); null/missing renders "—" (no invented value)
  *   compact       — if true, shows a condensed single-row summary
  */
 import { useState } from "react";
+import { MISSING_VALUE_TEXT, finiteOrNull } from "@/lib/displayFallbacks";
 import { trpc } from "@/lib/trpc";
 import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle } from "lucide-react";
 import FaultlineTerm from "./FaultlineTerm";
@@ -21,7 +22,7 @@ interface SOBPanelProps {
   /** Current state provenance travels with compatibility inputs but is not sent to the legacy S.O.B. procedure. */
   canonicalEnvelope?: CanonicalConsumerEnvelope<CanonicalMarketState>;
   regime?: string;
-  pressureIndex?: number;
+  pressureIndex?: number | null;
   yieldSpread?: number | null;
   fedFundsRate?: number | null;
   vix?: number | null;
@@ -40,7 +41,7 @@ const SEVERITY_COLORS = { low: "#4B5563", medium: "#F59E0B", high: "#FF2D55" };
 export default function SOBPanel({
   canonicalEnvelope,
   regime,
-  pressureIndex = 30,
+  pressureIndex,
   yieldSpread,
   fedFundsRate,
   vix,
@@ -49,9 +50,11 @@ export default function SOBPanel({
 }: SOBPanelProps) {
   const [expanded, setExpanded] = useState(false);
   const canonicalStateId = canonicalEnvelope?.stateId ?? null;
+  // Missing pressure stays null: no invented 30, and no pressure-derived trend.
+  const pressure = finiteOrNull(pressureIndex);
 
   const { data: sob, isLoading } = trpc.sob.getSOB.useQuery(
-    { regime, pressureIndex, yieldSpread, fedFundsRate, vix, creditSpread },
+    { regime, pressureIndex: pressure ?? undefined, yieldSpread, fedFundsRate, vix, creditSpread },
     { staleTime: 5 * 60 * 1000 }
   );
 
@@ -74,6 +77,10 @@ export default function SOBPanel({
   if (!sob) return null;
 
   const confidenceDisplay = sobConfidenceDisplay(sob);
+  // The S.O.B. trend is a proxy from the pressure index; withheld when pressure is missing.
+  const trendNode = pressure === null
+    ? <span data-sob-trend="unavailable" title="Pressure unavailable — trend withheld" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#64748B" }}>{MISSING_VALUE_TEXT}</span>
+    : TREND_ICONS[sob.trend];
 
   const activePillars = sob.pillars.filter(p => p.active);
   // Only pillars with valid input can be "clear"; missing-input pillars are UNAVAILABLE.
@@ -102,7 +109,7 @@ export default function SOBPanel({
           {sob.label}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          {TREND_ICONS[sob.trend]}
+          {trendNode}
         </div>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#6B7280" }}>
           {sob.level}/6 pillars active · {sob.availablePillarCount}/6 with data
@@ -152,7 +159,7 @@ export default function SOBPanel({
             {sob.label.toUpperCase()}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "3px" }}>
-            {TREND_ICONS[sob.trend]}
+            {trendNode}
           </div>
         </div>
 

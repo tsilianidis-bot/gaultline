@@ -775,10 +775,10 @@ export function buildEvidenceFamilies(
       currentValue: `${latest.volatility}/100`,
       historicalContext: `6-month average: ${Math.round(avgVol)}/100. ${
         latest.volatility > 70
-          ? "Curve shape and the 10Y level are in a high-pressure band (deep inversion or steep re-steepening)."
+          ? "Curve shape and the 10Y level are in the engine's highest band: a deeply inverted 10Y–2Y curve (below −1 pp) with an elevated 10Y yield. A steep curve scores low in this engine."
           : latest.volatility > 55
-          ? "Curve shape and the 10Y level are adding elevated rate-structure pressure."
-          : "Curve shape and the 10Y level are adding limited rate-structure pressure."
+          ? "Curve shape and the 10Y level are adding elevated rate-structure pressure (an inverted 10Y–2Y curve, raised further by a high 10Y yield)."
+          : "Curve shape and the 10Y level are adding limited rate-structure pressure (a flat-to-positive 10Y–2Y curve scores low)."
       }`,
       trend:
         latest.volatility > avgVol + 5
@@ -878,7 +878,7 @@ export function buildEvidenceFamilies(
           ? "improving"
           : "stable",
       whyItMatters:
-        "The yield curve is the most historically reliable recession predictor. An inverted curve has preceded every US recession since 1955 with no false positives.",
+        "An inverted 10Y–2Y curve has historically preceded most U.S. recessions, with long and variable lead times; it is context, not a recession probability.",
     });
   }
 
@@ -1080,8 +1080,22 @@ export function computeEvolution(history: HistoricalMonth[]): EvolutionAnalysis 
   const delta30 = avg7 - avg30;
   const delta90 = avg30 - avg90;
 
-  const sevenDayTrend =
-    delta7 >= 8
+  // Label-only guard (formulas above unchanged). The history is MONTHLY, so the
+  // windows are 7/30/90 monthly readings, not days. A comparison is only shown
+  // when both windows are full and distinct: a short history makes last30 and
+  // last90 the same rows (delta90 ≡ 0 → a false "+0.0 stable"), and a partial
+  // window is not the window its label names. See HELD_CHANGES.md item 6 for
+  // the real windowing fix.
+  const INSUFFICIENT_HISTORY = "Unavailable (insufficient history)";
+  const fullDistinct = (short: HistoricalMonth[], long: HistoricalMonth[], longSize: number) =>
+    long.length >= longSize && long.length > short.length;
+  const thirtyAvailable = Number.isFinite(delta30) && fullDistinct(last7, last30, 30);
+  const ninetyAvailable = Number.isFinite(delta90) && fullDistinct(last30, last90, 90);
+
+  // Fail closed: no prior comparable window → no delta and no "Stable" claim.
+  const sevenDayTrend = !Number.isFinite(delta7)
+    ? INSUFFICIENT_HISTORY
+    : delta7 >= 8
       ? `Rising sharply (+${delta7.toFixed(1)} pts vs prior week)`
       : delta7 >= 3
       ? `Rising moderately (+${delta7.toFixed(1)} pts vs prior week)`
@@ -1091,27 +1105,30 @@ export function computeEvolution(history: HistoricalMonth[]): EvolutionAnalysis 
       ? `Declining moderately (${delta7.toFixed(1)} pts vs prior week)`
       : `Stable (${delta7 >= 0 ? "+" : ""}${delta7.toFixed(1)} pts vs prior week)`;
 
-  const thirtyDayTrend =
-    delta30 >= 10
-      ? `Elevated vs 30-day average (+${delta30.toFixed(1)} pts)`
+  const thirtyDayTrend = !thirtyAvailable
+    ? INSUFFICIENT_HISTORY
+    : delta30 >= 10
+      ? `Elevated vs 30-month average (+${delta30.toFixed(1)} pts, 7-month average)`
       : delta30 >= 5
-      ? `Slightly above 30-day average (+${delta30.toFixed(1)} pts)`
+      ? `Slightly above 30-month average (+${delta30.toFixed(1)} pts, 7-month average)`
       : delta30 <= -10
-      ? `Below 30-day average (${delta30.toFixed(1)} pts)`
+      ? `Below 30-month average (${delta30.toFixed(1)} pts, 7-month average)`
       : delta30 <= -5
-      ? `Slightly below 30-day average (${delta30.toFixed(1)} pts)`
-      : `Near 30-day average (${delta30 >= 0 ? "+" : ""}${delta30.toFixed(1)} pts)`;
+      ? `Slightly below 30-month average (${delta30.toFixed(1)} pts, 7-month average)`
+      : `Near 30-month average (${delta30 >= 0 ? "+" : ""}${delta30.toFixed(1)} pts, 7-month average)`;
 
-  const ninetyDayTrend =
-    delta90 >= 10
-      ? `Pressure has built significantly over 90 days (+${delta90.toFixed(1)} pts)`
+  const ninetyDayTrend = !ninetyAvailable
+    ? INSUFFICIENT_HISTORY
+    : delta90 >= 10
+      ? `Pressure has built significantly (30-month vs 90-month average, +${delta90.toFixed(1)} pts)`
       : delta90 <= -10
-      ? `Pressure has eased significantly over 90 days (${delta90.toFixed(1)} pts)`
-      : `Pressure is broadly stable over 90 days (${delta90 >= 0 ? "+" : ""}${delta90.toFixed(1)} pts)`;
+      ? `Pressure has eased significantly (30-month vs 90-month average, ${delta90.toFixed(1)} pts)`
+      : `Pressure is broadly stable (30-month vs 90-month average, ${delta90 >= 0 ? "+" : ""}${delta90.toFixed(1)} pts)`;
 
   const yearDelta = currentScore - avg12m;
-  const yearTrend =
-    yearDelta >= 15
+  const yearTrend = !Number.isFinite(yearDelta)
+    ? "Unavailable (no 12-month comparison)"
+    : yearDelta >= 15
       ? `Significantly elevated vs 12-month average (+${yearDelta.toFixed(1)} pts)`
       : yearDelta <= -15
       ? `Significantly below 12-month average (${yearDelta.toFixed(1)} pts)`
@@ -1123,17 +1140,17 @@ export function computeEvolution(history: HistoricalMonth[]): EvolutionAnalysis 
   const whatChanged: string[] = [];
   if (Math.abs(delta7) >= 5)
     whatChanged.push(
-      `Pressure ${delta7 > 0 ? "increased" : "decreased"} by ${Math.abs(delta7).toFixed(1)} points over the past 7 days`
+      `Pressure ${delta7 > 0 ? "increased" : "decreased"} by ${Math.abs(delta7).toFixed(1)} points over the past 7 months`
     );
-  if (Math.abs(delta30) >= 8)
+  if (thirtyAvailable && Math.abs(delta30) >= 8)
     whatChanged.push(
-      `30-day trend is ${delta30 > 0 ? "deteriorating" : "improving"} — ${Math.abs(delta30).toFixed(1)} point shift`
+      `7-month vs 30-month trend is ${delta30 > 0 ? "deteriorating" : "improving"} — ${Math.abs(delta30).toFixed(1)} point shift`
     );
 
   // Detect regime instability
   const regimes90 = new Set(last90.map((h) => h.regime));
   if (regimes90.size >= 3)
-    whatChanged.push(`Market has cycled through ${regimes90.size} different regimes in the past 90 days — elevated instability`);
+    whatChanged.push(`Market has cycled through ${regimes90.size} different regimes in the past ${last90.length} months — elevated instability`);
 
   const sparkline90d = last90.map((h) => ({
     month: h.month,
@@ -1755,13 +1772,14 @@ function buildMarketNarrative(
     ? `The composite pressure score is accelerating to the upside, suggesting that conditions are building faster than the headline number reflects. Watch for additional engines to shift from neutral to stressed in the coming weeks.`
     : `No clear sub-surface pressure is building at this time. The current reading appears to reflect conditions accurately across all monitored engines.`;
 
-  // 5. Highest probability path forward
+  // 5. Most frequent historical path (probability contract: transition
+  //    frequencies are uncalibrated, so no percentage is stated in copy).
   const topAnalog = analogs[0];
   const highestProbabilityPath = transitionProbabilities.remainInRegime >= 50
-    ? `The highest-probability outcome (${transitionProbabilities.remainInRegime}% historical frequency) is continuation of the current ${currentRegime} regime over the next 30–60 days. ${topAnalog ? `The closest historical analog — ${topAnalog.label} (${topAnalog.similarity}% similarity) — ${topAnalog.resolution}.` : ""} ${transitionProbabilities.historicalBasis}`
+    ? `The most frequent historical outcome (frequency withheld: uncalibrated) is continuation of the current ${currentRegime} regime over the next 30–60 days. ${topAnalog ? `The closest historical analog — ${topAnalog.label} (${topAnalog.similarity}% similarity) — ${topAnalog.resolution}.` : ""} ${transitionProbabilities.historicalBasis}`
     : transitionProbabilities.transitionToElevated > transitionProbabilities.transitionToLow
-    ? `The highest-probability outcome is a transition toward elevated or higher stress (${transitionProbabilities.transitionToElevated}% historical frequency), driven by ${transitionProbabilities.currentEvidence.slice(0, 2).join(" and ")}. ${topAnalog ? `The closest analog — ${topAnalog.label} — ${topAnalog.resolution}.` : ""}`
-    : `The highest-probability outcome is a transition toward lower pressure (${transitionProbabilities.transitionToLow}% historical frequency), consistent with the current ${currentDirection.toLowerCase()} direction. ${topAnalog ? `The closest analog — ${topAnalog.label} — ${topAnalog.resolution}.` : ""}`;
+    ? `The most frequent historical outcome is a transition toward elevated or higher stress (frequency withheld: uncalibrated), driven by ${transitionProbabilities.currentEvidence.slice(0, 2).join(" and ")}. ${topAnalog ? `The closest analog — ${topAnalog.label} — ${topAnalog.resolution}.` : ""}`
+    : `The most frequent historical outcome is a transition toward lower pressure (frequency withheld: uncalibrated), consistent with the current ${currentDirection.toLowerCase()} direction. ${topAnalog ? `The closest analog — ${topAnalog.label} — ${topAnalog.resolution}.` : ""}`;
 
   // 6. What would invalidate the current assessment?
   const whatWouldInvalidate = evolution.invalidationConditions.length > 0

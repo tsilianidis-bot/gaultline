@@ -24,6 +24,56 @@ import { desc, eq, and, notLike } from "drizzle-orm";
 import { getLatestSeismographOutput, runSeismographPipeline } from "../scheduledSeismograph";
 import { runSeismographBackfill, RECONSTRUCTED_RECORD_CLASS } from "../seismographBackfill";
 import { getUnifiedSeismographIntelligence } from "../seismographUnified";
+import { overlayAssembledSeismographOutput, overlayUnifiedSeismographIntelligence } from "../probabilityContract";
+import type { CanonicalProbabilityContract } from "../../shared/probabilityContract";
+import { applySeismographDisplayContext, type CanonicalDataQualityInput } from "../seismographDisplayContext";
+
+/**
+ * The stateId-bound probability contract from the authoritative canonical
+ * state. Any failure returns null, which withholds every number (fail closed).
+ */
+async function loadProbabilityContract(): Promise<CanonicalProbabilityContract | null> {
+  return (await loadCanonicalForDisplay()).contract;
+}
+
+/**
+ * One read of the authoritative canonical state for the response overlays:
+ * the probability contract and the input data quality. Fail closed: null.
+ */
+async function loadCanonicalForDisplay(): Promise<{
+  contract: CanonicalProbabilityContract | null;
+  dataQuality: CanonicalDataQualityInput | null;
+}> {
+  try {
+    const { getAuthoritativeCanonicalIntelligenceState } = await import("../canonicalIntelligenceState");
+    const state = await getAuthoritativeCanonicalIntelligenceState();
+    if (!state) return { contract: null, dataQuality: null };
+    return {
+      contract: state.probabilityContract ?? null,
+      dataQuality: {
+        generatedAt: state.generatedAt ?? null,
+        confidenceOrEvidenceQuality: state.confidenceOrEvidenceQuality ?? null,
+        delayedInputs: state.delayedInputs ?? [],
+        staleInputs: state.staleInputs ?? [],
+        unavailableInputs: state.unavailableInputs ?? [],
+        fallbackInputs: state.fallbackInputs ?? [],
+        engineInputIds: Array.from(new Set(state.engines.flatMap(engine => engine.sourceInputIds ?? []))),
+      },
+    };
+  } catch {
+    return { contract: null, dataQuality: null };
+  }
+}
+
+/** True only when the canonical outlook (MarketState) has a top analog. Fail closed: false. */
+async function canonicalTopAnalogAvailable(): Promise<boolean> {
+  try {
+    const { getCanonicalMarketState } = await import("../marketStateService");
+    return (await getCanonicalMarketState()).outlook.topAnalog != null;
+  } catch {
+    return false;
+  }
+}
 
 export const seismographRouter = router({
   /**
@@ -113,7 +163,17 @@ export const seismographRouter = router({
    * Returns null if no daily job has run yet.
    */
   getAssembledOutput: publicProcedure.query(async () => {
-    return getLatestSeismographOutput();
+    const output = await getLatestSeismographOutput();
+    if (!output) return null;
+    // Display context (FRED status and freshness from canonical data quality;
+    // analog only when the canonical outlook has one), then the probability
+    // contract overlay (null unless AVAILABLE). Calculation is unchanged.
+    const [{ contract, dataQuality }, topAnalogAvailable] = await Promise.all([
+      loadCanonicalForDisplay(),
+      canonicalTopAnalogAvailable(),
+    ]);
+    const display = applySeismographDisplayContext(output, { dataQuality, canonicalTopAnalogAvailable: topAnalogAvailable });
+    return overlayAssembledSeismographOutput(display, contract);
   }),
 
   /**
@@ -152,7 +212,11 @@ export const seismographRouter = router({
    */
   getUnifiedIntelligence: publicProcedure.query(async () => {
     try {
-      return await getUnifiedSeismographIntelligence();
+      const intel = await getUnifiedSeismographIntelligence();
+      // Probability contract: bull/neutral/bear, the retired 5-way split and the
+      // transition components are overlaid before returning (null unless the
+      // contract claim is AVAILABLE). How they are calculated is unchanged.
+      return overlayUnifiedSeismographIntelligence(intel, await loadProbabilityContract());
     } catch (err) {
       // Return null so the client renders an empty-state instead of crashing
       console.warn('[SeismographRouter] getUnifiedIntelligence failed — no historical data yet:', err);

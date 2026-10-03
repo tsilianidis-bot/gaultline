@@ -149,8 +149,9 @@ export interface MarketConditionSnapshot {
   pressureIndex: number;
   regime: string;
   regimeLevel: string;
-  bullProbability: number;
-  crashProbability: number;
+  // QA r11 B7: trade.simulate never ships a bull/crash probability (uncalibrated).
+  bullProbability: null;
+  crashProbability: null;
   liquidityCondition: string;
   creditStress: string;
   volatilityCondition: string;
@@ -171,13 +172,13 @@ export interface DecisionVerdict {
 
 export interface OutcomeScenario {
   label: "Bull Case" | "Base Case" | "Bear Case";
-  probability: number;       // 0–100 %
-  expectedReturn: number;    // signed %, e.g. +18 or -10
+  probability: null;         // QA r11 B7: no scenario probability is assigned (uncalibrated)
+  expectedReturn: number;    // signed %, e.g. +18 or -10 (uncalibrated scenario return)
 }
 
 export interface OutcomeSimulator {
   scenarios: [OutcomeScenario, OutcomeScenario, OutcomeScenario];
-  weightedOutcome: number;   // probability-weighted expected return
+  weightedOutcome: null;     // QA r11 B7: no probability weights exist, so no weighted outcome
 }
 
 export type EntryGrade = "A+" | "A" | "A-" | "B+" | "B" | "B-" | "C";
@@ -237,8 +238,10 @@ export interface TradeSimulationOutput {
   thesisType?: ThesisType;
   marketCondition: MarketConditionSnapshot;
   moveFavorabilityScore: number;       // 0–100
-  favorableSetupProbability: number;   // 0–100 %
-  adversePressureProbability: number;  // 0–100 %
+  // Heuristic 0–100 scores (favorability × 0.85 + 10 and its complement), NOT
+  // probabilities. Field names kept for API compatibility; shown as /100.
+  favorableSetupProbability: number;   // 0–100 score
+  adversePressureProbability: number;  // 0–100 score
   riskLevel: RiskLevel;
   confidenceLevel: ConfidenceLevel;
   actionBias: string;
@@ -596,7 +599,7 @@ function buildThreatBoard(pressure: FaultlinePressureOutput): ThreatBoardItem[] 
   const recessionScore = Math.round(creditScore * 0.35 + breadthScore * 0.35 + overallPressure * 0.30);
   threats.push({
     category: "Macro",
-    threat: "Recession probability increase — leading indicators deteriorating",
+    threat: "Recession-risk indicators deteriorating — leading indicators weakening",
     severity: recessionScore >= 65 ? "critical" : recessionScore >= 45 ? "elevated" : recessionScore >= 25 ? "moderate" : "low",
     hiddenPressure: recessionScore >= 45 ? "Composite leading indicators softening — watch PMI and yield curve" : undefined,
   });
@@ -634,8 +637,6 @@ function buildMarketCondition(pressure: FaultlinePressureOutput): MarketConditio
   const breadthScore    = getVectorScore(vectors, "market-breadth");
   const aiScore         = getVectorScore(vectors, "ai-bubble");
 
-  const bullProbability  = clamp(Math.round(invertScore(overallPressure) * 0.80 + invertScore(creditScore) * 0.20), 5, 95);
-  const crashProbability = clamp(Math.round(overallPressure * 0.60 + creditScore * 0.40) / 2, 5, 95);
   const fedPressureScore = macroScore;
   const recessionScore   = Math.round(creditScore * 0.35 + breadthScore * 0.35 + overallPressure * 0.30);
 
@@ -644,8 +645,8 @@ function buildMarketCondition(pressure: FaultlinePressureOutput): MarketConditio
     pressureIndex: overallPressure,
     regime,
     regimeLevel: level,
-    bullProbability,
-    crashProbability,
+    bullProbability: null,
+    crashProbability: null,
     liquidityCondition: levelLabel(liquidityScore),
     creditStress: levelLabel(creditScore),
     volatilityCondition: levelLabel(volatilityScore),
@@ -885,7 +886,7 @@ function computeInvalidationTriggers(
 
   if (liquidityScore < 50) triggers.push("Liquidity deterioration — SOFR or repo market stress emerging");
   if (p < 60) triggers.push("AI/speculation pressure spike — mega-cap concentration risk escalating");
-  if (creditScore < 60) triggers.push("Recession probability increase — leading indicators deteriorating");
+  if (creditScore < 60) triggers.push("Recession-risk indicators deteriorating — leading indicators weakening");
 
   switch (moveType) {
     case "add_risk":
@@ -1145,7 +1146,7 @@ function computeVerdict(
   if (favorability >= 78 && highThreats <= 1 && p <= 35) {
     verdict = "HIGH_CONVICTION";
     confidence = clamp(Math.round(favorability * 0.7 + bullProb * 0.3), 75, 97);
-    reason = `Regime conditions are strongly aligned with this move${tickerRef}${tfRef}. Threat levels are contained, pressure is low, and bull probability is elevated. Risk/reward is highly favorable.`;
+    reason = `Regime conditions are strongly aligned with this move${tickerRef}${tfRef}. Threat levels are contained, pressure is low, and bull scenario weight is elevated. Risk/reward is highly favorable.`;
   } else if (favorability >= 62 && highThreats <= 2 && p <= 55) {
     verdict = "APPROVED";
     confidence = clamp(Math.round(favorability * 0.65 + bullProb * 0.35), 60, 88);
@@ -1211,25 +1212,16 @@ function computeOutcomeSimulator(
   bullReturn = Math.max(bullReturn, baseReturn + 3);
   bearReturn = Math.min(bearReturn, baseReturn - 3);
 
-  // Probabilities derived from favorability and pressure
-  const bullProb = clamp(Math.round(favorability * 0.55 + (100 - p) * 0.15 + 5), 15, 65);
-  const bearProb = clamp(Math.round((100 - favorability) * 0.30 + p * 0.15 + 5), 10, 50);
-  const baseProb = clamp(100 - bullProb - bearProb, 15, 55);
-
-  // Weighted outcome
-  const weightedOutcome = Math.round(
-    (bullProb / 100) * bullReturn +
-    (baseProb / 100) * baseReturn +
-    (bearProb / 100) * bearReturn
-  );
-
+  // QA r11 B7: scenario probabilities and the probability-weighted outcome
+  // were heuristic weights presented as likelihoods. They are not shipped;
+  // only the (unchanged) uncalibrated scenario returns leave the server.
   return {
     scenarios: [
-      { label: "Bull Case", probability: bullProb, expectedReturn: bullReturn },
-      { label: "Base Case", probability: baseProb, expectedReturn: baseReturn },
-      { label: "Bear Case", probability: bearProb, expectedReturn: bearReturn },
+      { label: "Bull Case", probability: null, expectedReturn: bullReturn },
+      { label: "Base Case", probability: null, expectedReturn: baseReturn },
+      { label: "Bear Case", probability: null, expectedReturn: bearReturn },
     ],
-    weightedOutcome,
+    weightedOutcome: null,
   };
 }
 
@@ -1879,8 +1871,7 @@ A user wants to simulate the move: "${moveLabel}"${tickerNote} over the timefram
 Current market conditions:
 - FAULTLINE Pressure Index: ${output.marketCondition.pressureIndex}/100 (${output.marketCondition.regimeLevel})
 - Regime: ${output.marketCondition.regime}
-- Bull Probability: ${output.marketCondition.bullProbability}%
-- Crash Probability: ${output.marketCondition.crashProbability}%
+- Probabilities: FAULTLINE does not offer a crash probability, and its bull scenario weight is uncalibrated; state no probability percentage
 - Liquidity: ${output.marketCondition.liquidityCondition}
 - Credit Stress: ${output.marketCondition.creditStress}
 - Volatility: ${output.marketCondition.volatilityCondition}
@@ -1889,19 +1880,18 @@ Current market conditions:
 Simulation result:
 - VERDICT: ${verdictLabel} (Confidence: ${output.verdict.confidence}%)
 - Move Favorability Score: ${output.moveFavorabilityScore}/100
-- Favorable Setup Probability: ${output.favorableSetupProbability}%
-- Adverse Pressure Probability: ${output.adversePressureProbability}%
+- Favorable Setup score: ${output.favorableSetupProbability}/100 (heuristic score, not a likelihood)
+- Adverse Pressure score: ${output.adversePressureProbability}/100 (heuristic score, not a likelihood)
 - Risk Level: ${output.riskLevel}
 - Entry Quality Overall Grade: ${output.entryQuality.overallGrade}
-- Expected Weighted Outcome: ${output.outcomeSimulator.weightedOutcome > 0 ? "+" : ""}${output.outcomeSimulator.weightedOutcome}%
 
 Write a concise 3-4 sentence institutional-grade explanation of this simulation result.
 - Reference the specific move${tickerNote} and timeframe explicitly
 - Explain why the current market regime supports or challenges this specific move
 - Reference specific pressure vectors (liquidity, credit, volatility, breadth) that are most relevant
-- Conclude with a probability-weighted recommendation referencing the verdict
+- Conclude with a regime-conditioned reading referencing the verdict (no probability or percentage chance)
 - Do NOT use phrases like "guaranteed", "certain", "will definitely", or "I recommend"
-- Frame as market-regime simulation and probability-weighted setup reading
+- Frame as market-regime simulation and regime-conditioned setup reading
 - Tone: authoritative, analytical, institutional — like a senior risk manager briefing a portfolio committee
 - Keep it under 100 words`;
 
@@ -1925,7 +1915,7 @@ Write a concise 3-4 sentence institutional-grade explanation of this simulation 
   return `Current market regime ${direction}${tickerStr} over the ${tfLabel.toLowerCase()} timeframe. ` +
     `The FAULTLINE Pressure Index at ${output.marketCondition.pressureIndex}/100 with ${output.marketCondition.creditStress.toLowerCase()} credit stress and ` +
     `${output.marketCondition.liquidityCondition.toLowerCase()} liquidity conditions yields a ${output.moveFavorabilityScore}/100 favorability score and a verdict of ${verdictLabel}. ` +
-    `Favorable setup probability is ${output.favorableSetupProbability}% with ${output.adversePressureProbability}% adverse pressure probability. ` +
+    `The favorable setup score is ${output.favorableSetupProbability}/100 and the adverse pressure score is ${output.adversePressureProbability}/100 (heuristic scores, not probabilities). ` +
     `This is a market-regime simulation — not personalized financial advice or a guaranteed prediction.`;
 }
 
@@ -2703,7 +2693,10 @@ export async function runTradePreflightSimulation(
   const outcomeSimulator = computeOutcomeSimulator(input.moveType, favorability, pressure, input.timeframe, input.ticker);
   const entryQuality = computeEntryQuality(input.moveType, favorability, pressure, input.timeframe);
   const positionSizing = computePositionSizing(input.moveType, favorability, pressure);
-  const historicalAnalogs = computeHistoricalAnalogs(input.moveType, pressure, input.timeframe, input.ticker);
+  // QA r12 (B10): computeHistoricalAnalogs returns hard-coded templates whose
+  // "similarity" is a formula on pressure, not a measured match. Not shipped;
+  // the Situation Room HISTORICAL ANALOGS section hides on an empty list.
+  const historicalAnalogs: HistoricalAnalog[] = [];
   // Auto-infer thesis — user never needs to classify it
   const inferredThesis = inferThesisFromMove(input.moveType, input.timeframe);
   const thesisStressTest = computeThesisStressTest(
@@ -2761,8 +2754,9 @@ export async function runTradePreflightSimulation(
     greenLights,
     confirmationTriggers: watchNext,
     invalidationTriggers,
-    bullContinuationProbability: marketCondition.bullProbability,
-    crashDrawdownProbability: marketCondition.crashProbability,
+    // QA r11 B7: no bull/crash probability is passed, so none reaches decisionLight output/evidence.
+    bullContinuationProbability: null,
+    crashDrawdownProbability: null,
     timestamp: generatedAt,
     canonicalStateId: canonical?.stateId ?? null,
     evidenceQuality: canonical?.qualityStatus ?? (pressure.dataSource === "fallback" ? "UNAVAILABLE" : "HEALTHY"),

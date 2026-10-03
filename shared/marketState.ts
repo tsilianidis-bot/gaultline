@@ -1,3 +1,4 @@
+import type { CanonicalProbabilityContract } from "./probabilityContract";
 export type MarketStateFreshness = "live" | "recent" | "stale";
 export type MarketStateCacheStatus = "fresh-cache" | "refreshed" | "stale-if-error";
 export type MarketStateSourceStatus = "healthy" | "degraded" | "unavailable";
@@ -96,6 +97,13 @@ export interface CanonicalMarketState {
       currentEvidence: string[];
     };
     highestProbabilityPath: string;
+    /**
+     * The canonical probability contract for this state. Every number in
+     * probabilities / transitionProbabilities is NaN unless its claim here is
+     * AVAILABLE; render probabilityText(claim) instead. regimeProbabilities is a
+     * retired generator and is always NaN (NOT_OFFERED).
+     */
+    probabilityContract?: CanonicalProbabilityContract | null;
     invalidationConditions: string[];
     topAnalog: {
       period: string;

@@ -10,6 +10,7 @@ import {
   type PublicCanonicalIntelligenceState,
 } from "../shared/canonicalIntelligenceState";
 import { getDb } from "./db";
+import { buildCanonicalProbabilityContract, withholdUndisplayedClaimValues } from "./probabilityContract";
 import { compositePressureDirection, engineEvidenceStatus, stressTrendDirection } from "../shared/snapshotEvidence";
 
 type StoredManifest = Record<string, any>;
@@ -127,6 +128,7 @@ export function buildCanonicalIntelligenceState(manifest: StoredManifest, option
     pressureDirection: compositePressureDirection(manifest.pressureIndex, options.priorPressureIndex), pressureAcceleration: null, pressurePersistence: null,
     engines, domains: manifest.domainValues ?? {}, scenarioOutputs: manifest.scenarioOutputs ?? {},
     probabilityClaimIds: manifest.probabilityClaimIds ?? [], analogClaimIds: manifest.analogClaimIds ?? [],
+    probabilityContract: buildCanonicalProbabilityContract(manifest),
     historicalContext: {
       canonicalLiveHistory: "intelligenceStateManifests append-only operational snapshots only",
       reconstructedResearch: "reconstructed-champion-v1-2000-2026-research-only",
@@ -187,3 +189,24 @@ export function toPublicCanonicalIntelligenceState(state: CanonicalIntelligenceS
     },
   };
 }
+
+/**
+ * Browser-facing projection (tRPC responses only). The probability contract
+ * withholds the scenario set as uncalibrated, so the raw scenario arithmetic
+ * (e.g. bull 43 / neutral 43 / bear 14) is not shipped to the client, where
+ * it could be rendered as a percentage. Display boundary only: the manifest,
+ * every engine / scoring input, and the server-side public state used by
+ * evidence packets, synthesis and prompts are unchanged.
+ */
+export function toClientCanonicalIntelligenceState(state: CanonicalIntelligenceState): PublicCanonicalIntelligenceState {
+  const publicState = toPublicCanonicalIntelligenceState(state);
+  return {
+    ...publicState,
+    scenarioOutputs: {},
+    probabilityContract: withholdUndisplayedClaimValues(publicState.probabilityContract),
+  };
+}
+
+// withholdUndisplayedClaimValues lives in ./probabilityContract (no import cycle);
+// re-exported here for existing callers.
+export { withholdUndisplayedClaimValues };

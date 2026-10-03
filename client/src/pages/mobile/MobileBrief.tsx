@@ -5,6 +5,7 @@
    ============================================================ */
 import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { CRASH_RISK_DISPLAY_TEXT, contractScenarioClaim, contractScenarioText, contractTransitionClaim, probabilityText } from "@/lib/contractProbabilityText";
 import { TrendingUp, Zap, Shield, RotateCcw, ChevronRight, Clock } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -113,9 +114,13 @@ export default function MobileBrief() {
 
   const pressureScore = canonicalState.pressureIndex;
   const withheld = canonicalState.confidenceOrEvidenceQuality === "UNAVAILABLE" || pressureScore == null;
-  const bullProb = canonicalState.scenarioOutputs.bull ?? canonicalState.scenarioOutputs.softLanding ?? null;
-  const crashProb = canonicalState.scenarioOutputs.crash ?? canonicalState.scenarioOutputs.bear ?? null;
-  const regimeHold = canonicalState.scenarioOutputs.neutral ?? canonicalState.scenarioOutputs.remainInRegime ?? null;
+  // Probability contract: bull / regime-hold render the contract's display
+  // text; crash risk is not offered (the bear weight is not a crash probability).
+  const contract = canonicalState.probabilityContract;
+  const bullText = withheld ? "UNAVAILABLE" : contractScenarioText(contract, "bull");
+  const crashText = CRASH_RISK_DISPLAY_TEXT;
+  const regimeHoldClaim = contractScenarioClaim(contract, "neutral") ?? contractTransitionClaim(contract, "remainInRegime");
+  const regimeHoldText = withheld ? "UNAVAILABLE" : probabilityText(regimeHoldClaim);
 
   return (
     <div className="px-4 py-4 pb-6 space-y-4">
@@ -157,18 +162,18 @@ export default function MobileBrief() {
         <div className="flex gap-4 mt-3">
           <div>
             <div className="text-[8px] font-mono text-[#64748B] mb-0.5">BULL CONTINUATION</div>
-            <div className="text-sm font-mono font-bold text-[#34D399]">{bullProb == null ? "UNAVAILABLE" : `${Math.round(bullProb)}%`}</div>
+            <div data-mobile-bull className="text-sm font-mono font-bold text-[#34D399]">{bullText}</div>
           </div>
           <div>
             <div className="text-[8px] font-mono text-[#64748B] mb-0.5">CRASH RISK</div>
-            <div className="text-sm font-mono font-bold text-[#FF2D55]">
-              {crashProb == null ? "UNAVAILABLE" : `${Math.round(crashProb)}%`}
+            <div data-mobile-crash className="text-sm font-mono font-bold text-[#94A3B8]">
+              {crashText}
             </div>
           </div>
           <div>
             <div className="text-[8px] font-mono text-[#64748B] mb-0.5">REGIME HOLD</div>
             <div className="text-sm font-mono font-bold text-[#FFD700]">
-              {regimeHold == null ? "UNAVAILABLE" : `${Math.round(regimeHold)}%`}
+              {regimeHoldText}
             </div>
           </div>
         </div>

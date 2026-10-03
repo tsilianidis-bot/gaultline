@@ -55,9 +55,10 @@ describe("runTradePreflightSimulation Decision-Light", () => {
     expect(result.decisionLight.decisionLight).toBe("GREEN");
     expect(result.decisionLight.decisionLabel).toBe("PROCEED");
     expect(result.decisionLight.canonicalStateId).toBe("state:preflight-live");
-    expect(result.decisionLight.bullContinuationProbability).not.toBeNull();
-    expect(result.decisionLight.crashDrawdownProbability).not.toBeNull();
-    expect(result.decisionLight.bullContinuationProbability).not.toBe(result.decisionLight.crashDrawdownProbability);
+    // QA r11 B7: trade.simulate ships no bull/crash probability (uncalibrated).
+    expect(result.decisionLight.bullContinuationProbability).toBeNull();
+    expect(result.decisionLight.crashDrawdownProbability).toBeNull();
+    expect(result.decisionLight.supportingEvidence.join(" ")).not.toMatch(/probability/i);
   });
 
   it("marks add_risk RED under live high pressure and reduce_risk GREEN", async () => {

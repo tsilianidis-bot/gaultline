@@ -13,7 +13,6 @@ import { getRiskColor } from "@/components/RiskBadge";
 import DataIntegrity from "@/components/DataIntegrity";
 import HomeCryptoSection from "@/components/HomeCryptoSection";
 import WaitlistSection from "@/components/WaitlistSection";
-import HomeStockIntelSection from "@/components/HomeStockIntelSection";
 import { CryptoPorchPanel, StockPorchPanel } from "@/components/DashboardSearchPanels";
 import { OpportunityDiscoveryPanel } from "@/components/OpportunityDiscoveryPanel";
 import Onboarding from "@/components/Onboarding";
@@ -32,7 +31,26 @@ import HomepageBriefingPanel from "@/components/HomepageBriefingPanel";
 import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner";
 import SOBPanel from "@/components/SOBPanel";
 import FaultlineTerm from "@/components/FaultlineTerm";
-import ScoreExplainer from "@/components/ScoreExplainer";
+import { engineProbabilityPercent, engineProbabilityText } from "@/lib/marketStateProjection";
+import { formatCanonicalScore } from "@shared/marketMetrics";
+import { availableDelta, finiteOrNull, pointsDeltaText, score100Value, similarityText } from "@/lib/displayFallbacks";
+import type { ProbabilityDisplay } from "@shared/probabilityContract";
+
+/** Engine 0–10 domain/overall score shown on the canonical 0–100 scale. */
+// Canonical composite direction (state.now.direction) → strip cell. "Unavailable" when absent.
+function canonicalDirectionView(direction: string | undefined): { label: string; color: string } {
+  switch (direction) {
+    case 'Accelerating': return { label: 'ACCELERATING ▲', color: '#FF2D55' };
+    case 'Deteriorating': return { label: 'DETERIORATING ▲', color: '#FF9500' };
+    case 'Improving': return { label: 'IMPROVING ▼', color: '#00FF88' };
+    case 'Stable': return { label: 'STABLE —', color: '#B0C4D8' };
+    default: return { label: 'UNAVAILABLE', color: '#94A3B8' };
+  }
+}
+
+function score100(score: number | null | undefined): string {
+  return typeof score === "number" && Number.isFinite(score) ? formatCanonicalScore(score * 10) : "—";
+}
 import AshaHeroSection from "@/components/AshaHeroSection";
 import AshaDailyGreeting from "@/components/AshaDailyGreeting";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
@@ -280,25 +298,29 @@ function PressureRing({ score, color, size = 96 }: { score: number; color: strin
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: size > 80 ? '26px' : '18px', color, textShadow: `0 0 20px ${color}80`, lineHeight: 1 }}>
-          {anim.toFixed(1)}
+          {Math.round(anim * 10)}
         </span>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em' }}>/10</span>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em' }}>/100</span>
       </div>
     </div>
   );
 }
 
 // ── Animated probability bar ──────────────────────────────────
-function ProbBar({ label, value, color }: { label: string; value: number; color: string }) {
+function ProbBar({ label, display, color }: { label: string; display: ProbabilityDisplay; color: string }) {
+  // Probability contract: a bar and a number render only when the claim is AVAILABLE.
+  const percent = display.state === 'AVAILABLE' ? display.percent : null;
   const [anim, setAnim] = useState(0);
-  useEffect(() => { const t = setTimeout(() => setAnim(value), 600); return () => clearTimeout(t); }, [value]);
+  useEffect(() => { const t = setTimeout(() => setAnim(percent ?? 0), 600); return () => clearTimeout(t); }, [percent]);
   return (
     <div style={{ flex: 1, minWidth: '72px' }}>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>{label}</div>
-      <div style={{ position: 'relative', height: '4px', background: 'rgba(255,255,255,0.14)', borderRadius: '2px', overflow: 'hidden', marginBottom: '4px' }}>
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${anim}%`, background: `linear-gradient(90deg, ${color}70, ${color})`, boxShadow: `0 0 6px ${color}60`, borderRadius: '2px', transition: 'width 1.4s cubic-bezier(0.23,1,0.32,1)' }} />
-      </div>
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color, fontWeight: 600 }}>{value}%</div>
+      {percent !== null && (
+        <div style={{ position: 'relative', height: '4px', background: 'rgba(255,255,255,0.14)', borderRadius: '2px', overflow: 'hidden', marginBottom: '4px' }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${anim}%`, background: `linear-gradient(90deg, ${color}70, ${color})`, boxShadow: `0 0 6px ${color}60`, borderRadius: '2px', transition: 'width 1.4s cubic-bezier(0.23,1,0.32,1)' }} />
+        </div>
+      )}
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: percent !== null ? color : '#94A3B8', fontWeight: 600 }}>{display.text}</div>
     </div>
   );
 }
@@ -368,7 +390,7 @@ function HeatCell({ label, score, delay }: { label: string; score: number; delay
     onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1)'}
     >
       <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color, textShadow: `0 0 10px ${color}80`, animation: score >= 7 ? 'heatmap-pulse 2s ease-in-out infinite' : 'none', lineHeight: 1 }}>
-        {score.toFixed(1)}
+        {score100Value(score)}
       </span>
       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center', lineHeight: 1.3 }}>
         {label}
@@ -420,8 +442,7 @@ function MiniWidget({ label, reading, unit, decimals, color }: {
 }
 
 // ── What Changed Today item ───────────────────────────────────
-function ChangeItem({ label, delta, color, detail }: { label: string; delta: number; color: string; detail: string }) {
-  const sign = delta > 0 ? '+' : '';
+function ChangeItem({ label, delta, color, detail }: { label: string; delta: number | null; color: string; detail: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.14)' }}>
       <div style={{ width: '3px', height: '30px', background: color, borderRadius: '2px', boxShadow: `0 0 8px ${color}60`, flexShrink: 0 }} />
@@ -430,7 +451,7 @@ function ChangeItem({ label, delta, color, detail }: { label: string; delta: num
         <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#B0C4D8', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{detail}</div>
       </div>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', fontWeight: 600, color, background: `${color}12`, border: `1px solid ${color}25`, borderRadius: '3px', padding: '3px 8px', flexShrink: 0 }}>
-        {sign}{delta.toFixed(1)}
+        {pointsDeltaText(delta)}
       </div>
     </div>
   );
@@ -478,7 +499,15 @@ export default function Dashboard() {
   // Macro stress widgets read real FRED / markets-snapshot readings only.
   const { readings: liveReadings } = useLiveIndicatorReadings();
   const liveValues = useMemo(() => evaluableIndicatorValues(liveReadings), [liveReadings]);
-  const { overall, domains, regime, probability, analogs, narrative } = output;
+  const { overall, domains, regime, analogs, narrative } = output;
+  // Closest-analog sentence: names a period only when an analog with a finite
+  // 0–100 similarity exists; otherwise says Unavailable (never "0% match").
+  const analogSentence = (lead: string): string => {
+    const top = analogs[0];
+    return top?.era && typeof top.similarity === 'number' && Number.isFinite(top.similarity)
+      ? `${lead} ${top.era} at ${Math.round(top.similarity)}% similarity.`
+      : `${lead} Unavailable.`;
+  };
   const [showShare, setShowShare] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [heroInputFocused, setHeroInputFocused] = useState(false);
@@ -522,20 +551,23 @@ export default function Dashboard() {
 
   // Key shifts for Current Regime section
   const keyShifts = useMemo(() => {
-    const sorted = [...domains].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
-    return sorted.slice(0, 4).map(d => ({
+    const sorted = [...domains].sort((a, b) => Math.abs(availableDelta(b) ?? 0) - Math.abs(availableDelta(a) ?? 0));
+    return sorted.slice(0, 4).map(d => {
+      const delta = availableDelta(d);
+      return {
       label: d.label.split(' ')[0],
-      direction: d.delta > 0.05 ? 'rising' : d.delta < -0.05 ? 'easing' : 'stable',
+      direction: delta === null ? '—' : delta > 0.05 ? 'rising' : delta < -0.05 ? 'easing' : 'stable',
       severity: severityLabel(d.riskLevel),
       color: getRiskColor(d.riskLevel),
-    }));
+      };
+    });
   }, [domains]);
 
   // Stable memoized derived data
   const heatmapScores = useMemo(() => domains.map(d => ({ label: d.label.split(' ')[0], score: d.score })), [domains]);
   const topThreat = useMemo(() => [...domains].sort((a, b) => b.score - a.score)[0], [domains]);
   const topStabilizer = useMemo(() => [...domains].sort((a, b) => a.score - b.score)[0], [domains]);
-  const changedDomains = useMemo(() => [...domains].filter(d => Math.abs(d.delta) > 0.1).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 4), [domains]);
+  const changedDomains = useMemo(() => [...domains].filter(d => Math.abs(availableDelta(d) ?? 0) > 0.1).sort((a, b) => Math.abs(availableDelta(b) ?? 0) - Math.abs(availableDelta(a) ?? 0)).slice(0, 4), [domains]);
   const aiDomain = useMemo(() => domains.find(d => d.id === 'ai-bubble'), [domains]);
   const color = regime.color;
 
@@ -566,13 +598,13 @@ export default function Dashboard() {
 
       {/* Intelligence Ticker */}
       <IntelTicker items={[
-        { label: 'FAULTLINE', value: `${overall.score.toFixed(1)}/10`, color },
+        { label: 'FAULTLINE', value: score100(overall.score), color },
         { label: 'REGIME', value: regime.label, color },
-        { label: 'BULL', value: `${probability.bullProbability}%`, color: '#00FF88' },
-        { label: 'CRASH', value: `${probability.crashProbability}%`, color: '#FF2D55' },
+        { label: 'BULL SCENARIO', value: engineProbabilityText(output, 'bullProbability'), color: '#00FF88' },
+        { label: 'CRASH PROB.', value: engineProbabilityText(output, 'crashProbability'), color: '#94A3B8' },
         { label: 'TOP THREAT', value: topThreat?.label?.split(' ')[0] ?? '—', color: '#FF2D55' },
         { label: 'ANALOG', value: analogs[0]?.era?.split(' ').slice(0, 2).join(' ') ?? '—', color: '#00E5FF' },
-        { label: 'DELTA', value: `${overall.delta >= 0 ? '+' : ''}${overall.delta.toFixed(1)}`, color },
+        { label: 'DELTA', value: pointsDeltaText(availableDelta(overall)), color },
         { label: 'STATUS', value: integrityLabel === 'LIVE' ? 'LIVE FEED' : integrityLabel, color: integrityLabel === 'LIVE' ? '#00FF88' : integrityLabel === 'UNAVAILABLE' ? '#94A3B8' : '#FF9500' },
       ]} />
 
@@ -640,7 +672,7 @@ export default function Dashboard() {
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', letterSpacing: '0.25em', color: 'rgba(0,229,255,0.55)', marginBottom: '3px' }}>PLATO · FAULTLINE INTELLIGENCE LAYER</div>
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 'clamp(28px, 7vw, 40px)', lineHeight: 1, color, textShadow: `0 0 30px ${color}70`, letterSpacing: '-0.01em' }}>
-                {overall.score.toFixed(1)}<span style={{ fontSize: '0.45em', color: 'rgba(255,255,255,0.3)', fontWeight: 400 }}>/10</span>
+                {score100Value(overall.score)}<span style={{ fontSize: '0.45em', color: 'rgba(255,255,255,0.3)', fontWeight: 400 }}>/100</span>
               </div>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(240,244,255,0.4)', letterSpacing: '0.12em', marginTop: '2px' }}>{regime.sublabel}</div>
             </div>
@@ -698,20 +730,25 @@ export default function Dashboard() {
 
         {/* ── Live Intelligence Strip — 8 cells, Bloomberg-terminal style ── */}
         {(() => {
-          const directionColor = overall.delta > 0.2 ? '#FF9500' : overall.delta < -0.2 ? '#00FF88' : '#B0C4D8';
-          const directionLabel = overall.delta > 0.2 ? 'RISING ▲' : overall.delta < -0.2 ? 'FALLING ▼' : 'STABLE —';
+          // Direction: the engine delta when known; otherwise the canonical
+          // composite direction (state.now.direction), never derived from a 0.
+          const overallDelta = availableDelta(overall);
+          const { label: directionLabel, color: directionColor } = overallDelta !== null
+            ? (overallDelta > 0.2 ? { label: 'RISING ▲', color: '#FF9500' } : overallDelta < -0.2 ? { label: 'FALLING ▼', color: '#00FF88' } : { label: 'STABLE —', color: '#B0C4D8' })
+            : canonicalDirectionView(overall.direction);
           const analogLabel = analogs[0]?.era?.split(' ').slice(0, 3).join(' ') ?? '—';
-          const analogSim = analogs[0]?.similarity ?? 0;
+          // No analog → "Unavailable", never a 0% match.
+          const analogSim = typeof analogs[0]?.similarity === 'number' && Number.isFinite(analogs[0].similarity) ? Math.round(analogs[0].similarity) : null;
           const verdictColor = overall.riskLevel === 'low' ? '#00FF88' : overall.riskLevel === 'moderate' ? '#FFD700' : overall.riskLevel === 'elevated' ? '#FF9500' : '#FF2D55';
           const verdictLabel = overall.riskLevel === 'low' ? 'RISK ON' : overall.riskLevel === 'moderate' ? 'STAY SELECTIVE' : overall.riskLevel === 'elevated' ? 'REDUCE EXPOSURE' : 'STEP ASIDE';
           const cells = [
-            { label: 'PRESSURE INDEX', value: overall.score.toFixed(1), sub: '/ 10', valueColor: color },
+            { label: 'PRESSURE INDEX', value: score100Value(overall.score), sub: '/ 100', valueColor: color },
             { label: 'REGIME', value: regime.label.split(' ').slice(0, 2).join(' '), sub: regime.sublabel.slice(0, 18), valueColor: color },
-            { label: 'BULL', value: `${probability.bullProbability}%`, sub: 'probability', valueColor: '#00FF88' },
-            { label: 'CRASH RISK', value: `${probability.crashProbability}%`, sub: 'probability', valueColor: '#FF2D55' },
-            { label: 'DIRECTION', value: directionLabel, sub: `Δ${overall.delta >= 0 ? '+' : ''}${overall.delta.toFixed(1)} vs baseline`, valueColor: directionColor },
-            { label: 'CLOSEST ANALOG', value: analogLabel, sub: `${analogSim}% match`, valueColor: '#00E5FF' },
-            { label: 'TOP THREAT', value: topThreat?.label?.split(' ').slice(0, 2).join(' ') ?? '—', sub: `${topThreat?.score.toFixed(1) ?? '—'}/10`, valueColor: '#FF2D55' },
+            { label: 'BULL SCENARIO', value: engineProbabilityText(output, 'bullProbability'), sub: 'scenario weight', valueColor: engineProbabilityPercent(output, 'bullProbability') !== null ? '#00FF88' : '#94A3B8' },
+            { label: 'CRASH PROBABILITY', value: engineProbabilityText(output, 'crashProbability'), sub: 'no governed model', valueColor: '#94A3B8' },
+            { label: 'DIRECTION', value: directionLabel, sub: `Δ ${pointsDeltaText(overallDelta)} vs baseline`, valueColor: directionColor },
+            { label: 'CLOSEST ANALOG', value: analogLabel, sub: analogSim !== null ? `${analogSim}% match` : 'Unavailable', valueColor: '#00E5FF' },
+            { label: 'TOP THREAT', value: topThreat?.label?.split(' ').slice(0, 2).join(' ') ?? '—', sub: score100(topThreat?.score), valueColor: '#FF2D55' },
             { label: "TODAY'S VERDICT", value: verdictLabel, sub: 'FAULTLINE signal', valueColor: verdictColor },
           ];
           return (
@@ -755,13 +792,13 @@ export default function Dashboard() {
           }}>
             <span style={{ color, fontWeight: 600 }}>PLATO:</span>{' '}
             {overall.riskLevel === 'low'
-              ? `Systemic pressure is low at ${overall.score.toFixed(1)}/10 — conditions favor risk-taking with bull probability at ${probability.bullProbability}%. The closest historical analog is ${analogs[0]?.era ?? 'a low-stress period'} at ${analogs[0]?.similarity ?? 0}% similarity.`
+              ? `Systemic pressure is low at ${score100(overall.score)} — conditions favor risk-taking. ${analogSentence('The closest historical analog is')}`
               : overall.riskLevel === 'moderate'
-              ? `Systemic pressure is building at ${overall.score.toFixed(1)}/10 — mixed signals favor selective positioning with crash risk at ${probability.crashProbability}%. The closest analog is ${analogs[0]?.era ?? 'a moderate-stress period'} at ${analogs[0]?.similarity ?? 0}% similarity.`
+              ? `Systemic pressure is building at ${score100(overall.score)} — mixed signals favor selective positioning. ${analogSentence('The closest analog is')}`
               : overall.riskLevel === 'elevated'
-              ? `Systemic pressure is elevated at ${overall.score.toFixed(1)}/10 — reduce exposure and tighten stops with crash risk at ${probability.crashProbability}%. The closest analog is ${analogs[0]?.era ?? 'an elevated-stress period'} at ${analogs[0]?.similarity ?? 0}% similarity.`
-              : `Systemic pressure is at crisis levels — ${overall.score.toFixed(1)}/10 with crash probability at ${probability.crashProbability}%. Capital preservation is the trade. Closest analog: ${analogs[0]?.era ?? 'a crisis period'} at ${analogs[0]?.similarity ?? 0}% match.`
-            }
+              ? `Systemic pressure is elevated at ${score100(overall.score)} — reduce exposure and tighten stops. ${analogSentence('The closest analog is')}`
+              : `Systemic pressure is at crisis levels — ${score100(overall.score)}. Capital preservation is the trade. ${analogSentence('Closest analog:')}`
+            }{' '}Bull scenario: {engineProbabilityText(output, 'bullProbability')}. Crash probability: {engineProbabilityText(output, 'crashProbability')}.
           </p>
         </div>
       </div>
@@ -821,8 +858,6 @@ export default function Dashboard() {
         const biggestShift = changedDomains[0];
         const topAnalog = analogs[0];
         const riskScore = overall.score;
-        const bullProb = probability.bullProbability;
-        const crashProb = probability.crashProbability;
 
         const cards = [
           {
@@ -842,14 +877,14 @@ export default function Dashboard() {
           {
             label: 'HIGHEST RISK',
             value: topDomain?.label?.split(' ').slice(0, 2).join(' ') ?? '—',
-            sub: `Score: ${topDomain?.score?.toFixed(1) ?? '—'}/10 · ${topDomain?.riskLevel ?? '—'} risk`,
+            sub: `Score: ${score100(topDomain?.score)} · ${topDomain?.riskLevel ?? '—'} risk`,
             color: '#FF2D55',
             href: '/app/pressure',
           },
           {
             label: 'BEST SECTOR',
             value: bestDomain?.label?.split(' ').slice(0, 2).join(' ') ?? '—',
-            sub: `Score: ${bestDomain?.score?.toFixed(1) ?? '—'}/10 · lowest pressure`,
+            sub: `Score: ${score100(bestDomain?.score)} · lowest pressure`,
             color: '#00FF88',
             href: '/app/signal-outlook',
           },
@@ -863,7 +898,7 @@ export default function Dashboard() {
           {
             label: 'LARGEST ROTATION',
             value: biggestShift ? `${biggestShift.label.split(' ')[0]} ${biggestShift.delta > 0 ? '↑' : '↓'}` : '—',
-            sub: biggestShift ? `Δ${biggestShift.delta >= 0 ? '+' : ''}${biggestShift.delta.toFixed(2)} vs baseline` : 'No major shifts',
+            sub: biggestShift ? `Δ ${pointsDeltaText(availableDelta(biggestShift))} vs baseline` : 'No major shifts',
             color: biggestShift ? (biggestShift.delta > 0 ? '#FF9500' : '#00FF88') : '#B0C4D8',
             href: '/app/pressure',
           },
@@ -891,7 +926,7 @@ export default function Dashboard() {
           {
             label: 'TOP CATALYST',
             value: topAnalog?.era?.split(' ').slice(0, 2).join(' ') ?? 'FED POLICY',
-            sub: topAnalog ? `${topAnalog.similarity}% analog match · ${topAnalog.year?.slice(0, 4) ?? ''}` : 'Watch FOMC + CPI',
+            sub: topAnalog ? `${similarityText(topAnalog.similarity)} analog match · ${topAnalog.year?.slice(0, 4) ?? ''}` : 'Watch FOMC + CPI',
             color: '#C084FC',
             href: '/app/pre-flight',
           },
@@ -1001,7 +1036,7 @@ export default function Dashboard() {
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(0,212,255,0.55)', border: '1px solid rgba(0,229,255,0.45)', padding: '1px 6px', borderRadius: '3px', letterSpacing: '0.1em' }}>STEP 1 — MARKET AWARENESS</span>
               </div>
               <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#B0C4D8', lineHeight: 1.55, maxWidth: '500px' }}>
-                Understand current market conditions before risking capital. Awareness Score, Pressure Index, Bull/Bear probability, Regime Analysis, and Daily Intelligence Brief.
+                Understand current market conditions before risking capital. Awareness Score, Pressure Index, scenario readings, Regime Analysis, and Daily Intelligence Brief.
               </div>
             </div>
             <a href="/app/pre-flight" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: 'rgba(0,212,255,0.10)', border: '1px solid rgba(0,212,255,0.45)', borderRadius: '4px', color: '#00E5FF', textDecoration: 'none', fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', letterSpacing: '0.15em', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.18s cubic-bezier(0.23,1,0.32,1)', boxShadow: '0 0 20px rgba(0,229,255,0.14)' }}
@@ -1101,50 +1136,29 @@ export default function Dashboard() {
           <SOBPanel
             canonicalEnvelope={output?.canonicalEnvelope}
             regime={regime?.label}
-            pressureIndex={overall ? Math.round(overall.score * 10) : 30}
+            pressureIndex={finiteOrNull(overall?.score) === null ? null : Math.round(overall.score * 10)}
           />
         </div>
 
-        {/* Bull vs Crash */}
+        {/* Scenario readings — probability contract (shared/probabilityContract):
+            a number renders only for a calibrated claim with complete, fresh data. */}
         <div className="intel-module" style={{ padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 150ms both' }}>
           <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Market Outcome Probability</div>
-            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: 'rgba(100,116,139,0.6)', lineHeight: 1.5 }}>Derived from the weighted composite of all domain scores. Historically, rising systemic pressure has preceded periods of increased volatility and liquidity stress.</div>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '24px', color: '#00FF88', textShadow: '0 0 16px rgba(0,255,136,0.6)' }}>
-              {probability.bullProbability}% <span style={{ fontSize: '10px', fontFamily: "'IBM Plex Mono', monospace", color: '#64748B' }}>BULL</span>
-            </span>
-            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '24px', color: '#FF2D55', textShadow: '0 0 16px rgba(255,45,85,0.6)' }}>
-              {probability.crashProbability}% <span style={{ fontSize: '10px', fontFamily: "'IBM Plex Mono', monospace", color: '#64748B' }}>CRASH</span>
-            </span>
-          </div>
-          <div style={{ display: 'flex', height: '6px', borderRadius: '3px', overflow: 'hidden', marginBottom: '14px', gap: '1px' }}>
-            <div style={{ flex: probability.bullProbability, background: 'linear-gradient(90deg, #00FF88, #00CC6A)', boxShadow: '0 0 8px rgba(0,255,136,0.4)', transition: 'flex 1.4s cubic-bezier(0.23,1,0.32,1)' }} />
-            <div style={{ flex: probability.crashProbability, background: 'linear-gradient(90deg, #FF9500, #FF2D55)', boxShadow: '0 0 8px rgba(255,45,85,0.4)', transition: 'flex 1.4s cubic-bezier(0.23,1,0.32,1)' }} />
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Scenario Readings</div>
+            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: 'rgba(100,116,139,0.6)', lineHeight: 1.5 }}>The bull/neutral/bear scenario weights are evidence-vote shares with no defined event, horizon or calibration record, so no percentage is shown. FAULTLINE does not offer crash, recession, stagflation or soft-landing probabilities.</div>
           </div>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <ProbBar label="Recession" value={probability.recessionProbability} color="#FF9500" />
-            <ProbBar label="Stagflation" value={probability.stagflationProbability} color="#FFD700" />
-            <ProbBar label="Soft Landing" value={probability.softLandingProbability} color="#00E5FF" />
-          </div>
-          {/* Score Explainer: Bull Probability */}
-          <div style={{ marginTop: '12px' }}>
-            <ScoreExplainer
-              scoreKey="bullProbability"
-              value={probability.bullProbability}
-              trend={probability.bullProbability > 55 ? 'rising' : probability.bullProbability < 45 ? 'falling' : 'stable'}
-              historicalPercentile={probability.bullProbability}
-            />
-          </div>
-          {/* Score Explainer: Crash Risk */}
-          <div style={{ marginTop: '8px' }}>
-            <ScoreExplainer
-              scoreKey="crashRisk"
-              value={probability.crashProbability}
-              trend={probability.crashProbability > 35 ? 'rising' : 'stable'}
-              historicalPercentile={probability.crashProbability}
-            />
+            {output.probabilityDisplay ? (
+              <>
+                <ProbBar label="Bull scenario" display={output.probabilityDisplay.bullProbability} color="#00FF88" />
+                <ProbBar label="Crash" display={output.probabilityDisplay.crashProbability} color="#FF2D55" />
+                <ProbBar label="Recession" display={output.probabilityDisplay.recessionProbability} color="#FF9500" />
+                <ProbBar label="Stagflation" display={output.probabilityDisplay.stagflationProbability} color="#FFD700" />
+                <ProbBar label="Soft Landing" display={output.probabilityDisplay.softLandingProbability} color="#00E5FF" />
+              </>
+            ) : (
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#94A3B8' }}>{engineProbabilityText(output, 'bullProbability')}</span>
+            )}
           </div>
         </div>
 
@@ -1215,18 +1229,18 @@ export default function Dashboard() {
             {changedDomains.length > 0 && (() => {
               const topMover = changedDomains[0];
               const direction = topMover.delta > 0 ? 'increased' : 'eased';
-              const pct = Math.abs(Math.round(topMover.delta * 10));
+              const moved = finiteOrNull(topMover.delta) !== null && Math.abs(Math.round(topMover.delta * 10)) > 0;
               return (
                 <div style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: '4px', marginBottom: '10px', borderLeft: `2px solid ${getRiskColor(topMover.riskLevel)}40` }}>
                   <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#B0C4D8', lineHeight: 1.5, fontStyle: 'italic' }}>
-                    {topMover.label.split(' ')[0]} pressure {direction}{pct > 0 ? ` ${pct}% since last reading` : ''}.{' '}
+                    {topMover.label.split(' ')[0]} pressure {direction}{moved ? ` ${pointsDeltaText(Math.abs(topMover.delta)).replace(/^\+/, '')} since last reading` : ''}.{' '}
                     {topMover.delta > 0.2 ? 'Sustained directional moves of this magnitude often precede regime reclassification.' : 'Monitor for continuation.'}
                   </span>
                 </div>
               );
             })()}
             {changedDomains.map(d => (
-              <ChangeItem key={d.id} label={d.label} delta={d.delta} color={getRiskColor(d.riskLevel)} detail={d.drivers[0] ?? d.description} />
+              <ChangeItem key={d.id} label={d.label} delta={availableDelta(d)} color={getRiskColor(d.riskLevel)} detail={d.drivers[0] ?? d.description} />
             ))}
           </div>
         )}
@@ -1236,13 +1250,13 @@ export default function Dashboard() {
           <div className="intel-module" style={{ padding: '14px', borderLeft: '3px solid #FF2D55' }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#FF2D55', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '7px' }}>Top Threat</div>
             <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#F0F6FF', marginBottom: '4px' }}>{topThreat.label}</div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '22px', color: '#FF2D55', textShadow: '0 0 16px rgba(255,45,85,0.6)', marginBottom: '5px', lineHeight: 1 }}>{topThreat.score.toFixed(1)}<span style={{ fontSize: '10px', color: '#64748B' }}>/10</span></div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '22px', color: '#FF2D55', textShadow: '0 0 16px rgba(255,45,85,0.6)', marginBottom: '5px', lineHeight: 1 }}>{score100Value(topThreat.score)}<span style={{ fontSize: '10px', color: '#64748B' }}>/100</span></div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#B0C4D8', lineHeight: 1.45 }}>{topThreat.drivers[0] ?? topThreat.description}</div>
           </div>
           <div className="intel-module" style={{ padding: '14px', borderLeft: '3px solid #00FF88' }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#00FF88', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '7px' }}>Stabilizer</div>
             <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#F0F6FF', marginBottom: '4px' }}>{topStabilizer.label}</div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '22px', color: '#00FF88', textShadow: '0 0 16px rgba(0,255,136,0.6)', marginBottom: '5px', lineHeight: 1 }}>{topStabilizer.score.toFixed(1)}<span style={{ fontSize: '10px', color: '#64748B' }}>/10</span></div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '22px', color: '#00FF88', textShadow: '0 0 16px rgba(0,255,136,0.6)', marginBottom: '5px', lineHeight: 1 }}>{score100Value(topStabilizer.score)}<span style={{ fontSize: '10px', color: '#64748B' }}>/100</span></div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#B0C4D8', lineHeight: 1.45 }}>{topStabilizer.drivers[0] ?? topStabilizer.description}</div>
           </div>
         </div>
@@ -1293,7 +1307,7 @@ export default function Dashboard() {
           {analogs[0] && (
             <div style={{ padding: '7px 10px', background: 'rgba(0,212,255,0.04)', borderLeft: '2px solid rgba(0,229,255,0.32)', borderRadius: '3px', marginBottom: '10px' }}>
               <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: '#B0C4D8', fontStyle: 'italic', lineHeight: 1.5 }}>
-                Structural alignment with {analogs[0].era} ({analogs[0].year.slice(0, 4)}) at {analogs[0].similarity}% similarity. {analogs[0].matchReasons?.[0] ?? 'Pattern overlap across multiple pressure domains.'}
+                Structural alignment with {analogs[0].era} ({analogs[0].year.slice(0, 4)}) at {similarityText(analogs[0].similarity)} similarity. {analogs[0].matchReasons?.[0] ?? 'Pattern overlap across multiple pressure domains.'}
               </span>
             </div>
           )}
@@ -1308,10 +1322,10 @@ export default function Dashboard() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: '13px', color: '#D1D5DB', marginBottom: '4px' }}>{analog.era}</div>
                     <div style={{ position: 'relative', height: '3px', background: 'rgba(255,255,255,0.11)', borderRadius: '2px' }}>
-                      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${analog.similarity}%`, background: `linear-gradient(90deg, ${aColor}60, ${aColor})`, borderRadius: '2px', boxShadow: `0 0 6px ${aColor}60`, transition: 'width 1.4s cubic-bezier(0.23,1,0.32,1)' }} />
+                      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${finiteOrNull(analog.similarity) ?? 0}%`, background: `linear-gradient(90deg, ${aColor}60, ${aColor})`, borderRadius: '2px', boxShadow: `0 0 6px ${aColor}60`, transition: 'width 1.4s cubic-bezier(0.23,1,0.32,1)' }} />
                     </div>
                   </div>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: aColor, fontWeight: 600, flexShrink: 0 }}>{analog.similarity}%</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: aColor, fontWeight: 600, flexShrink: 0 }}>{similarityText(analog.similarity)}</span>
                 </div>
               );
             })}
@@ -1326,8 +1340,8 @@ export default function Dashboard() {
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#C084FC', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Speculative Concentration Risk</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '7px' }}>
-              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '30px', color: '#C084FC', textShadow: '0 0 20px rgba(192,132,252,0.6)', lineHeight: 1 }}>{aiDomain.score.toFixed(1)}</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#B0C4D8' }}>/10 — {aiDomain.riskLevel.toUpperCase()}</span>
+              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '30px', color: '#C084FC', textShadow: '0 0 20px rgba(192,132,252,0.6)', lineHeight: 1 }}>{score100Value(aiDomain.score)}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#B0C4D8' }}>/100 — {aiDomain.riskLevel.toUpperCase()}</span>
             </div>
             <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#B0C4D8', lineHeight: 1.65 }}>
               {aiDomain.description} {aiDomain.drivers.slice(0, 2).join('. ')}.
@@ -1379,8 +1393,8 @@ export default function Dashboard() {
         {/* Opportunity Discovery Engine — proactive security-specific opportunities */}
         <OpportunityDiscoveryPanel />
 
-        {/* Real-Time Market & Stock Intelligence */}
-        <HomeStockIntelSection />
+        {/* QA r13 B13: the static "LIVE SIGNAL PREVIEW" demo rows (hard-coded prices,
+            actions and confidence) are not mounted in the app. */}
 
         {/* Digital Asset & Crypto Intelligence */}
         <HomeCryptoSection />

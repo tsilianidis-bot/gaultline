@@ -35,6 +35,7 @@ import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligen
 import { buildInterpretationPromptContract, createInterpretationTransaction, validateInterpretationOutput, type InterpretationTransaction, type InterpretationValidationResult } from "../../shared/interpretationIntegrity";
 import { buildCrossEngineSynthesis, buildCrossEngineSynthesisPromptContract } from "../crossEngineSynthesis";
 import { buildEarlyWarningPresentationPromptContract, getCurrentGovernedEarlyWarningPresentation } from "../earlyWarningPresentation";
+import { stripProbabilityPercentClaims } from "../stripProbabilityClaims";
 
 // ── LLM timeout helper ───────────────────────────────────────
 // Wraps any promise with a 55-second timeout so the user gets a friendly
@@ -140,12 +141,12 @@ export interface FaultlineAnswer {
   executiveSummary: string;       // 2 sentences — the strategist's opening statement
   whyThisVerdict: string;         // The reasoning chain
 
-  // Bull / Bear with probabilities (Sections 7-8)
+  // Bull / Bear cases (Sections 7-8). Qualitative only: no model probability
+  // numbers (James's rule). Scenario text on screen comes from the canonical
+  // probability contract, never from the model.
   bullCase: string;
-  bullProbability: number;        // 0–100
   bullKeyDrivers: string[];       // 2-3 items
   bearCase: string;
-  bearProbability: number;        // 0–100
   bearKeyDrivers: string[];       // 2-3 items
 
   catalysts: string[];
@@ -187,7 +188,6 @@ export interface FaultlineAnswer {
   // ── FINAL VERDICT — mandatory closing section ─────────────────────────────
   // The definitive institutional verdict that closes every response.
   finalVerdictAction: "BUY" | "ACCUMULATE" | "HOLD" | "WATCH" | "REDUCE" | "SELL" | "AVOID";
-  finalVerdictProbability: number;   // 0–100 — probability the verdict plays out
   finalVerdictConfidence: number;    // 0–100 — confidence in the verdict
   finalVerdictRiskLevel: "LOW" | "MODERATE" | "HIGH" | "EXTREME";
   finalVerdictTimeHorizon: string;   // e.g. "1–3 days", "1–3 weeks", "1–3 months"
@@ -384,8 +384,10 @@ async function orchestrateAnswer(
 
   // 3. Build context for LLM
   const regimeLabel = fmos?.regime?.currentRegime ?? pressureData?.regime ?? "UNCERTAIN";
-  const pressureScore = pressureData ? (pressureData.overallPressure / 10) : 5;
-  const regimeColor: "green" | "yellow" | "red" = pressureScore <= 3 ? "green" : pressureScore <= 6 ? "yellow" : "red";
+  // Canonical 0–100 Pressure Index; null when missing (no invented default of 5/10).
+  // Color bands unchanged: <=30 green (was <=3/10), <=60 yellow (was <=6/10); missing → yellow (as the old default).
+  const pressureIndex = pressureData && Number.isFinite(pressureData.overallPressure) ? pressureData.overallPressure : null;
+  const regimeColor: "green" | "yellow" | "red" = pressureIndex === null ? "yellow" : pressureIndex <= 30 ? "green" : pressureIndex <= 60 ? "yellow" : "red";
 
   // Extract FMOS evidence families for context
   const evidenceFamilies = fmos?.evidence?.families ?? [];
@@ -410,7 +412,6 @@ async function orchestrateAnswer(
   const outlookSummary = outlookData ? `
 Symbol: ${ticker}
 Direction: ${outlookData.direction}
-Confidence: ${outlookData.confidence}%
 Risk Level: ${outlookData.riskLevel}
 Outlook Score: ${outlookData.outlookScore}
 Data Status: ${outlookData.dataStatus}
@@ -549,7 +550,7 @@ BANNED OPENING PHRASES — NEVER use these:
   ✗ "Before I answer..."
 
 INSTEAD, open with the verdict. Examples:
-  ✓ "RKT is FAVORABLE for day trading today. Bull probability: 64%."
+  ✓ "RKT is FAVORABLE for day trading today. Momentum and liquidity both support the setup."
   ✓ "NVDA is a BUY at current levels. The AI infrastructure cycle remains intact."
   ✓ "Bitcoin is in a Bull Market Continuation phase. Momentum is accelerating."
   ✓ "SPY is a HOLD. Current evidence does not support adding exposure here."
@@ -565,11 +566,9 @@ Every response MUST contain ALL of the following sections in this exact order:
   1. DIRECT ANSWER (executiveSummary) — State the verdict immediately. Asset name + verdict + primary reason.
      Format: "[ASSET] is [VERDICT]. [Primary reason in one sentence]."
 
-  2. PROBABILITY ENGINE (bullProbability / bearProbability / confidence)
-     - Bull Probability: X%
-     - Bear Probability: Y%  
-     - Confidence: Z%
-     These must be specific to the asset asked about. Never use generic market probabilities for a specific ticker.
+  2. BULL / BEAR BALANCE (bullCase / bearCase)
+     A qualitative balance only, in words. Never state a probability, odds or percentage chance.
+     FAULTLINE does not offer a crash probability; its scenario weights are uncalibrated.
 
   3. SUGGESTED BIAS (suggestedBias / suggestedBiasCondition)
      One clear directional stance. Example: "LONG ONLY while price holds above the 20-day moving average."
@@ -590,10 +589,9 @@ Every response MUST contain ALL of the following sections in this exact order:
      Example: "Similar to NVDA in Q4 2022 before the AI infrastructure breakout."
      If no relevant analog exists, set to null.
 
-  8. FINAL VERDICT (finalVerdictAction + finalVerdictProbability + finalVerdictConfidence + finalVerdictRiskLevel + finalVerdictTimeHorizon + finalVerdictRationale)
+  8. FINAL VERDICT (finalVerdictAction + finalVerdictConfidence + finalVerdictRiskLevel + finalVerdictTimeHorizon + finalVerdictRationale)
      MANDATORY. Every response ends with a Final Verdict.
      - Action: BUY | ACCUMULATE | HOLD | WATCH | REDUCE | SELL | AVOID
-     - Probability: X% (probability the verdict plays out)
      - Confidence: X% (confidence in the verdict)
      - Risk Level: LOW | MODERATE | HIGH | EXTREME
      - Time Horizon: e.g. "1–3 days", "1–3 weeks", "1–3 months"
@@ -607,10 +605,10 @@ Every response MUST contain ALL of the following sections in this exact order:
 ══════════════════════════════════════════════════════════════════════
 INTENT ROUTING RULES
 ══════════════════════════════════════════════════════════════════════
-1. If the user asks about a specific ticker (e.g. "Should I buy NVDA?", "I want to day trade RKT"), answer about THAT ticker ONLY. All probabilities, drivers, risks, and price levels must be specific to that ticker.
+1. If the user asks about a specific ticker (e.g. "Should I buy NVDA?", "I want to day trade RKT"), answer about THAT ticker ONLY. All drivers, risks, and price levels must be specific to that ticker.
 2. If the user asks a broad market question, do NOT default to the active ticker. Answer the broad question.
 3. The active symbol is context only — never assume it is the subject unless the user explicitly refers to it.
-4. Never refuse ordinary market questions. Provide probability-based, evidence-backed intelligence.
+4. Never refuse ordinary market questions. Provide evidence-backed intelligence without probability numbers.
 5. For normal investing/trading questions, NEVER respond with generic AI disclaimers. Provide the analysis.
 
 ══════════════════════════════════════════════════════════════════════
@@ -625,7 +623,7 @@ USE INSTITUTIONAL LANGUAGE INSTEAD:
   ✓ "Current assessment:" not "Here are some insights:"
   ✓ "Based on live intelligence..." not "Based on available information..."
   ✓ "Current evidence suggests..." not "It seems like..."
-  ✓ "Our highest probability scenario is..." not "It's possible that..."
+  ✓ "The evidence favors..." not "It's possible that..."
   ✓ "The thesis holds while..." not "This could work if..."
   ✓ Declarative statements. "Liquidity supports risk assets." Not "Liquidity may support risk assets."
 
@@ -652,7 +650,6 @@ FIELD RULES
 - historicalAnalog: One sentence naming a specific historical analog. Null if no relevant analog exists.
 - historicalAnalogOutcome: One sentence describing what happened in that analog. Null if historicalAnalog is null.
 - finalVerdictAction: BUY | ACCUMULATE | HOLD | WATCH | REDUCE | SELL | AVOID
-- finalVerdictProbability: 0–100 (probability the verdict plays out)
 - finalVerdictConfidence: 0–100 (confidence in the verdict)
 - finalVerdictRiskLevel: LOW | MODERATE | HIGH | EXTREME
 - finalVerdictTimeHorizon: e.g. "1–3 days", "1–3 weeks", "1–3 months"
@@ -662,7 +659,7 @@ FIELD RULES
 
 DISCLAIMER: All output is for informational and educational purposes only. Nothing constitutes financial advice.
 
-Current Market Regime: ${regimeLabel} (Pressure Score: ${pressureScore}/10)
+Current Market Regime: ${regimeLabel} (Pressure Index: ${pressureIndex === null ? "unavailable" : `${pressureIndex}/100`})
 ${crossMarket ? `
 ── MARKET REGIME INTELLIGENCE ──
 Stock Market Regime: ${crossMarket.stockRegime.regime} | Risk: ${crossMarket.stockRegime.riskLevel} | Confidence: ${crossMarket.stockRegime.confidence}% | Trend: ${crossMarket.stockRegime.trend}
@@ -672,7 +669,7 @@ Forward Bias: ${crossMarket.forwardBias}
 Market Summary: ${crossMarket.plainEnglishSummary}
 Key Insights: ${crossMarket.keyInsights.slice(0, 3).join(" | ")}
 ${crossMarket.regimeChangeAlerts.length > 0 ? `ACTIVE REGIME ALERTS: ${crossMarket.regimeChangeAlerts.map(a => `${a.asset} regime changed from ${a.previous} to ${a.current}`).join("; ")}` : ""}` : ""}
-${fmos ? `Action Bias: ${fmos.decision.actionBias}\nFMOS Decision: ${fmos.decision.verdict} (conviction: ${fmos.decision.conviction}%)\nBull Probability: ${fmos.probability.bull}%\nBear Probability: ${fmos.probability.bear}%\nNeutral Probability: ${fmos.probability.neutral}%\nConfidence: ${fmos.confidence.label} (${fmos.confidence.score}/100)\nTransition Risk: ${fmos.transition.transitionProbability}%\nPrimary Driver: ${fmos.probability.primaryDriver}` : ""}
+${fmos ? `Action Bias: ${fmos.decision.actionBias}\nFMOS Decision: ${fmos.decision.verdict} (conviction: ${fmos.decision.conviction}%)\nScenario weights: uncalibrated (not offered as probabilities)\nConfidence: ${fmos.confidence.label} (${fmos.confidence.score}/100)\nTransition Risk: not offered as a probability\nPrimary Driver: ${fmos.probability.primaryDriver}` : ""}
 ${seismographOutput ? `\n${seismographOutput.forASHA.systemPromptBlock}` : seismographState ? `\n── SEISMOGRAPH INTELLIGENCE (PERSISTENT MARKET MEMORY) ──\nCurrent Pressure Score: ${seismographState.today.pressureScore} | Regime: ${seismographState.today.regime} | Stress Level: ${seismographState.today.stressLevel}\nDirection: ${seismographState.today.direction} for ${seismographState.today.streakDays} consecutive days | Historical Percentile: ${formatOrdinal(seismographState.today.historicalPercentile)}\n7-Day Trend: ${seismographState.evolution.sevenDayTrend} | 30-Day Trend: ${seismographState.evolution.thirtyDayTrend}${seismographState.evolution.accelerating ? " | ACCELERATING" : ""}\nRegime Transition Probabilities: Remain=${seismographState.transitionProbabilities.remainInRegime}% | Elevated=${seismographState.transitionProbabilities.transitionToElevated}% | Low=${seismographState.transitionProbabilities.transitionToLow}% | Crisis=${seismographState.transitionProbabilities.transitionToCrisis}%\nActive Patterns: ${seismographState.activePatterns.length > 0 ? seismographState.activePatterns.map((p: { patternName: string }) => p.patternName).join(", ") : "None detected"}\nMarket Memory: ${seismographState.marketMemorySummary.observationCount} observations | ${seismographState.marketMemorySummary.currentStreakDescription}\nNote: Seismograph probabilities are historical base rates, not predictions.` : ""}
 	${evidenceContext}
 ${outlookSummary}${livePriceContext}${historicalIntelligence ? historicalIntelligence.promptBlock : ""}`;  // ← Historical Intelligence injected here
@@ -697,8 +694,8 @@ RESPONSE RULES:
 
   // Explicit global mode instruction when no symbol context
   const globalModeInstruction = !ticker
-    ? `\nCONTEXT: This is a GLOBAL MARKET question. Do NOT focus on any specific security. Answer for the broad market, macro environment, or the specific asset class mentioned. Use "MARKET" as the verdict context. For bull/bear probabilities, use broad market probabilities.`
-    : `\nCONTEXT: This analysis is focused on ${ticker} (${assetType}). All verdicts, probabilities, and price levels must be specific to ${ticker}.`;
+    ? `\nCONTEXT: This is a GLOBAL MARKET question. Do NOT focus on any specific security. Answer for the broad market, macro environment, or the specific asset class mentioned. Use "MARKET" as the verdict context. Describe the bull/bear balance qualitatively; never state a probability.`
+    : `\nCONTEXT: This analysis is focused on ${ticker} (${assetType}). All verdicts and price levels must be specific to ${ticker}. Never state a probability.`;
 
   const userPrompt = `${conversationContext}
 User question: "${query}"
@@ -728,10 +725,8 @@ JSON schema:
   "executiveSummary": string (2 sentences — CIO briefing style),
   "whyThisVerdict": string (3 sentences, each a distinct signal),
   "bullCase": string (2 sentences — strongest argument FOR),
-  "bullProbability": number (0-100),
   "bullKeyDrivers": string[] (exactly 3 items),
   "bearCase": string (2 sentences — strongest argument AGAINST),
-  "bearProbability": number (0-100),
   "bearKeyDrivers": string[] (exactly 3 items),
   "catalysts": string[] (exactly 3 near-term catalysts),
   "threats": string[] (exactly 3 near-term threats),
@@ -788,7 +783,6 @@ JSON schema:
 
   // NEW REQUIRED FIELDS — FINAL VERDICT + INSTITUTIONAL INTELLIGENCE
   "finalVerdictAction": "BUY" | "ACCUMULATE" | "HOLD" | "WATCH" | "REDUCE" | "SELL" | "AVOID",
-  "finalVerdictProbability": number (0-100, probability the verdict plays out),
   "finalVerdictConfidence": number (0-100, confidence in the verdict),
   "finalVerdictRiskLevel": "LOW" | "MODERATE" | "HIGH" | "EXTREME",
   "finalVerdictTimeHorizon": string (e.g. "1-3 days", "1-3 weeks", "1-3 months"),
@@ -828,10 +822,8 @@ JSON schema:
             executiveSummary: { type: "string" },
             whyThisVerdict: { type: "string" },
             bullCase: { type: "string" },
-            bullProbability: { type: "number" },
             bullKeyDrivers: { type: "array", items: { type: "string" } },
             bearCase: { type: "string" },
-            bearProbability: { type: "number" },
             bearKeyDrivers: { type: "array", items: { type: "string" } },
             catalysts: { type: "array", items: { type: "string" } },
             threats: { type: "array", items: { type: "string" } },
@@ -899,7 +891,6 @@ JSON schema:
             followUpChips: { type: "array", items: { type: "string" } },
             // New fields — Final Verdict + Institutional Intelligence
             finalVerdictAction: { type: "string" },
-            finalVerdictProbability: { type: "number" },
             finalVerdictConfidence: { type: "number" },
             finalVerdictRiskLevel: { type: "string" },
             finalVerdictTimeHorizon: { type: "string" },
@@ -928,8 +919,8 @@ JSON schema:
             "verdict","verdictColor","opportunityScore","confidence","confidenceLabel",
             "confidenceReasons","currentRegime","dataFreshness","primaryDriver",
             "executiveSummary","whyThisVerdict",
-            "bullCase","bullProbability","bullKeyDrivers",
-            "bearCase","bearProbability","bearKeyDrivers",
+            "bullCase","bullKeyDrivers",
+            "bearCase","bearKeyDrivers",
             "catalysts","threats","evidenceScores",
             "whyNotBuy","whyNotSell","watchCatalysts",
             "support","resistance","entryZone","profitTargets","stopLevel",
@@ -942,7 +933,7 @@ JSON schema:
             "invalidationPrice","invalidationConditions","invalidationWhatHappens",
             "riskRating","riskSummary","riskFactors","riskRewardRatio","maxDrawdownEstimate",
             "followUpChips","collectiveReading",
-            "finalVerdictAction","finalVerdictProbability","finalVerdictConfidence",
+            "finalVerdictAction","finalVerdictConfidence",
             "finalVerdictRiskLevel","finalVerdictTimeHorizon","finalVerdictRationale",
             "suggestedBias","suggestedBiasCondition",
             "historicalAnalog","historicalAnalogOutcome",
@@ -975,7 +966,7 @@ JSON schema:
   }
 
   const integrityValidation = validateInterpretationOutput(raw, transaction);
-  raw = integrityValidation.normalizedOutput;
+  raw = withoutModelProbabilities(integrityValidation.normalizedOutput);
 
   // Ensure collectiveReading is always present with a fallback
   const rawCollective = raw.collectiveReading as Record<string, unknown> | null | undefined;
@@ -1017,6 +1008,43 @@ JSON schema:
       } : null,
     },
   }) as FaultlineAnswer;
+}
+
+/** Model-written prose fields of an ASHA answer (top level and collectiveReading). */
+export const ANSWER_PROSE_FIELDS = [
+  "executiveSummary", "whyThisVerdict", "primaryDriver", "currentRegime", "bullCase", "bearCase",
+  "finalVerdictRationale", "suggestedAction", "suggestedBias", "suggestedBiasCondition", "whatChangesThesis",
+  "historicalAnalog", "historicalAnalogOutcome", "riskSummary", "actionVerdictReason",
+] as const;
+export const ANSWER_PROSE_LIST_FIELDS = [
+  "bullKeyDrivers", "bearKeyDrivers", "catalysts", "threats", "confidenceReasons", "keyDrivers", "risks",
+  "watchCatalysts", "whyNotBuy", "whyNotSell", "riskFactors", "keyFindings", "supportingEvidence", "limitations",
+] as const;
+const MODEL_PROBABILITY_FIELDS = ["bullProbability", "bearProbability", "neutralProbability", "finalVerdictProbability"] as const;
+
+/**
+ * James's rule: LLM narratives never produce invented probabilities. Drops any
+ * probability-number field the model returns anyway, and every probability-%
+ * sentence from the model's prose. Display only; no scoring input.
+ */
+export function withoutModelProbabilities(answer: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...answer };
+  for (const key of MODEL_PROBABILITY_FIELDS) delete out[key];
+  for (const key of ANSWER_PROSE_FIELDS) if (typeof out[key] === "string") out[key] = stripProbabilityPercentClaims(out[key]);
+  for (const key of ANSWER_PROSE_LIST_FIELDS) {
+    if (Array.isArray(out[key])) {
+      out[key] = (out[key] as unknown[]).map(item => stripProbabilityPercentClaims(item)).filter(item => item !== "");
+    }
+  }
+  const collective = out.collectiveReading;
+  if (collective && typeof collective === "object" && !Array.isArray(collective)) {
+    const c = { ...(collective as Record<string, unknown>) };
+    for (const key of ["summary", "strongestReason", "practicalAction", "invalidation"]) {
+      if (typeof c[key] === "string") c[key] = stripProbabilityPercentClaims(c[key]);
+    }
+    out.collectiveReading = c;
+  }
+  return out;
 }
 
 // ── Opportunity Ranking Types ───────────────────────────────
@@ -1084,8 +1112,10 @@ async function orchestrateOpportunityRanking(
   const fmos = fmosResult ?? null;
   const pressureData = fmos?.pressure ?? null;
   const regimeLabel = fmos?.regime?.currentRegime ?? pressureData?.regime ?? "UNCERTAIN";
-  const pressureScore = pressureData ? (pressureData.overallPressure / 10) : 5;
-  const regimeColor: "green" | "yellow" | "red" = pressureScore <= 3 ? "green" : pressureScore <= 6 ? "yellow" : "red";
+  // Canonical 0–100 Pressure Index; null when missing (no invented default of 5/10).
+  // Color bands unchanged: <=30 green (was <=3/10), <=60 yellow (was <=6/10); missing → yellow (as the old default).
+  const pressureIndex = pressureData && Number.isFinite(pressureData.overallPressure) ? pressureData.overallPressure : null;
+  const regimeColor: "green" | "yellow" | "red" = pressureIndex === null ? "yellow" : pressureIndex <= 30 ? "green" : pressureIndex <= 60 ? "yellow" : "red";
 
   // 2. Scan the full investment universe (top 30 by composite score)
   const rawOpportunities = await scanOpportunities(null, 100000, "both").catch(() => []);
@@ -1122,8 +1152,8 @@ INTENT ROUTING RULES (MUST follow):
 4. If the question specifies a category (e.g. "best AI stocks", "best dividend stocks"), filter the universe to that category.
 5. Always answer the broad question first. If an active symbol is relevant, note its rank in the list.
 
-Current Market Regime: ${regimeLabel} (Pressure Score: ${pressureScore}/10)
-${fmos ? `Bull Probability: ${fmos.probability.bull}% | Bear Probability: ${fmos.probability.bear}% | Primary Driver: ${fmos.probability.primaryDriver}` : ""}
+Current Market Regime: ${regimeLabel} (Pressure Index: ${pressureIndex === null ? "unavailable" : `${pressureIndex}/100`})
+Bull/bear balance: describe it qualitatively only. FAULTLINE does not offer a crash probability, does not offer a recession probability, and its bull/bear scenario weights are uncalibrated, so never state any probability, odds or percentage chance.${fmos?.probability?.primaryDriver ? ` Primary Driver: ${fmos.probability.primaryDriver}` : ""}
 
 ========================
 IF NO BUY OPPORTUNITIES EXIST
@@ -1137,7 +1167,7 @@ If no BUY exists, explain: "There are currently no BUY-rated opportunities becau
 OPPORTUNITY SCAN STRUCTURE (ALL SECTIONS REQUIRED)
 ========================
 
-1. MARKET SUMMARY — Current Regime, Pressure Index, Opportunity Level, Bull/Bear Probability, Confidence. Briefly explain WHY this environment exists.
+1. MARKET SUMMARY — Current Regime, Pressure Index, Opportunity Level, and a qualitative bull/bear balance (words only, no percentages or probabilities). Briefly explain WHY this environment exists.
 
 2. TOP OPPORTUNITIES — ALWAYS at least 5 ranked assets. Each must include:
    • Asset + Current Rating (BUY/ACCUMULATE/WATCH/HOLD/AVOID)
@@ -1342,16 +1372,28 @@ Respond with a JSON object matching this exact schema:
     "What are the highest conviction setups?",
   ];
 
+  // Model prose never carries an invented probability: drop any sentence that
+  // states one as a percentage (James's rule; probability contract).
+  const opportunities = Array.isArray(raw.topOpportunities)
+    ? (raw.topOpportunities as Record<string, unknown>[]).map(o => ({
+        ...o,
+        primaryDriver: stripProbabilityPercentClaims(o.primaryDriver),
+        thesisSummary: stripProbabilityPercentClaims(o.thesisSummary),
+        keyRisk: stripProbabilityPercentClaims(o.keyRisk),
+        nearTermCatalyst: stripProbabilityPercentClaims(o.nearTermCatalyst),
+      }))
+    : raw.topOpportunities;
+
   return sanitize({
     queryType: "opportunity" as const,
-    macroContext: raw.macroContext,
+    macroContext: stripProbabilityPercentClaims(raw.macroContext),
     regimeLabel,
     regimeColor,
-    topOpportunities: raw.topOpportunities,
+    topOpportunities: opportunities,
     avoidList: raw.avoidList,
     sectorLeaderboard: raw.sectorLeaderboard,
-    whyTheseRankHighest: raw.whyTheseRankHighest,
-    portfolioPositioning: raw.portfolioPositioning,
+    whyTheseRankHighest: stripProbabilityPercentClaims(raw.whyTheseRankHighest),
+    portfolioPositioning: stripProbabilityPercentClaims(raw.portfolioPositioning),
     followUpChips,
     dataFreshness: "Live — updated just now",
     deepDiveLinks: [
@@ -1405,6 +1447,16 @@ async function orchestrateWithRouting(
 }
 
 // ── Router ────────────────────────────────────────────────────
+
+/**
+ * QA r12 (B9b): decision_ledger.confidence / opportunityScore are NOT NULL
+ * columns filled with client defaults (confidence ?? 50 — the validator always
+ * withholds model confidence — and opportunityScore ?? 5). They are not model
+ * output, so they never leave the server. Writes are unchanged (no migration).
+ */
+export function withoutLedgerFabricatedScores<T extends Record<string, unknown>>(entries: T[]): Array<Omit<T, "confidence" | "opportunityScore"> & { confidence: null; opportunityScore: null }> {
+  return entries.map(entry => ({ ...entry, confidence: null, opportunityScore: null }));
+}
 
 export const smartDiscoveryRouter = router({
   /**
@@ -1585,7 +1637,7 @@ export const smartDiscoveryRouter = router({
         .where(eq(decisionLedger.userId, ctx.user.id))
         .orderBy(desc(decisionLedger.createdAt))
         .limit(input.limit);
-      return entries;
+      return withoutLedgerFabricatedScores(entries);
     }),
 
   /**

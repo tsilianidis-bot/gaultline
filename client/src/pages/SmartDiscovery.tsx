@@ -5,13 +5,14 @@
  * V2.0 Upgrades:
  *   - Primary Driver sentence (Section 5)
  *   - Evidence Engine grid — 14 categories with signal bars (Section 6)
- *   - Bull/Bear with probabilities and key drivers (Sections 7-8)
+ *   - Bull/Bear qualitative balance (contract scenario text) and key drivers (Sections 7-8)
  *   - Why Not Buy/Sell for WAIT/HOLD verdicts (Section 10)
  *   - What Changes Our View — 4-5 specific catalysts (Section 11)
  *   - Confidence breakdown with reasons
  *   - 13-stage loading sequence
  */
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { buildEngineSnapshot, canonicalPressure100, findDomainByFamily, type EngineSnapshotPayload } from "@/lib/engineSnapshot";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -32,6 +33,9 @@ import OnboardingFlow from "@/components/OnboardingFlow";
 import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { HistoricalContextPanel } from "@/components/HistoricalContextPanel";
 import type { HistoricalIntelligenceData } from "@/components/HistoricalContextPanel";
+import { engineProbabilityText } from "@/lib/marketStateProjection";
+import { PROBABILITY_DISPLAY_TEXT } from "@shared/probabilityContract";
+import { CONFIDENCE_NOT_ESTABLISHED, confidenceDisplayText, hasConfidenceValue } from "@/lib/confidenceDisplay";
 
 // ── Design tokens ─────────────────────────────────────────────
 const BG = "#050608";
@@ -55,7 +59,8 @@ interface FaultlineAnswer {
   verdict: string;
   verdictColor: "green" | "yellow" | "red" | "blue";
   opportunityScore: number;
-  confidence: number;
+  /** QA r11 B9: the integrity validator withholds model confidence (null). */
+  confidence: number | null;
   confidenceLabel: string;
   confidenceReasons: string[];
   ticker: string | null;
@@ -67,9 +72,7 @@ interface FaultlineAnswer {
   // V2.0 fields
   primaryDriver: string;
   evidenceScores: EvidenceScore[];
-  bullProbability: number;
   bullKeyDrivers: string[];
-  bearProbability: number;
   bearKeyDrivers: string[];
   whyNotBuy: string[] | null;
   whyNotSell: string[] | null;
@@ -148,8 +151,7 @@ interface FaultlineAnswer {
   historicalIntelligence?: HistoricalIntelligenceData | null;
   // ── NEW V3 FIELDS — Final Verdict + Institutional Intelligence ──────────────────────────────
   finalVerdictAction?: "BUY" | "ACCUMULATE" | "HOLD" | "WATCH" | "REDUCE" | "SELL" | "AVOID";
-  finalVerdictProbability?: number;
-  finalVerdictConfidence?: number;
+  finalVerdictConfidence?: number | null;
   finalVerdictRiskLevel?: "LOW" | "MODERATE" | "HIGH" | "EXTREME";
   finalVerdictTimeHorizon?: string;
   finalVerdictRationale?: string;
@@ -210,7 +212,9 @@ interface BriefAnswer {
     pressureIndex: number;
     marketHealth: string;
     institutionalBias: string;
-    confidence: number;
+    /** Uncalibrated: rendered only as confidenceText. */
+    confidence: number | null;
+    confidenceText?: string;
     marketStatus: string;
   };
   topOpportunities: Array<{
@@ -257,7 +261,7 @@ const EXECUTION_STEPS = [
   "Evaluating liquidity environment...",
   "Comparing historical analogs...",
   "Running Evidence Engine (14 categories)...",
-  "Calculating bull/bear probability distribution...",
+  "Weighing the bull / bear balance...",
   "Assessing invalidation conditions...",
   "Scoring opportunity and conviction...",
   "Stress-testing the thesis...",
@@ -536,34 +540,34 @@ function ConfidenceBreakdown({ confidence, label, reasons }: {
   );
 }
 
-// ── Bull/Bear with Probabilities (V2.0) ──────────────────────
+// ── Bull/Bear cases (V2.0) ──────────────────────────────────
+// The model gives a qualitative balance only. Scenario text comes from the
+// canonical probability contract (engineProbabilityText), never from the model
+// and never a defaulted number (James's rule).
+
+export function ContractScenarioStrip({ compact = false }: { compact?: boolean }) {
+  const { output } = useEngine();
+  return (
+    <div style={{
+      marginTop: compact ? "12px" : 0,
+      padding: compact ? "10px 12px" : "10px 14px",
+      background: "rgba(255,255,255,0.02)",
+      border: "1px solid rgba(255,255,255,0.05)",
+      borderRadius: compact ? "5px" : "6px",
+    }}>
+      <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "6px", fontSize: "9px", letterSpacing: "0.1em" }}>CANONICAL SCENARIO CONTRACT</div>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+        <span style={{ ...MONO_SM, color: "#94A3B8", fontSize: "10px" }}>BULL SCENARIO {engineProbabilityText(output, "bullProbability")}</span>
+        <span style={{ ...MONO_SM, color: "#94A3B8", fontSize: "10px" }}>CRASH RISK {engineProbabilityText(output, "crashProbability")}</span>
+      </div>
+    </div>
+  );
+}
 
 function BullBearSection({ answer }: { answer: FaultlineAnswer }) {
-  const bullPct = answer.bullProbability ?? 50;
-  const bearPct = answer.bearProbability ?? 50;
-  const neutralPct = Math.max(0, 100 - bullPct - bearPct);
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      {/* Probability bar */}
-      <div style={{
-        padding: "10px 14px",
-        background: "rgba(255,255,255,0.02)",
-        border: "1px solid rgba(255,255,255,0.05)",
-        borderRadius: "6px",
-      }}>
-        <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "8px", fontSize: "9px", letterSpacing: "0.1em" }}>PROBABILITY DISTRIBUTION</div>
-        <div style={{ display: "flex", height: "6px", borderRadius: "3px", overflow: "hidden", gap: "1px" }}>
-          <div style={{ width: `${bullPct}%`, background: "#00FF88", transition: "width 0.5s ease" }} />
-          {neutralPct > 0 && <div style={{ width: `${neutralPct}%`, background: "#FFD700", transition: "width 0.5s ease" }} />}
-          <div style={{ width: `${bearPct}%`, background: "#FF4444", transition: "width 0.5s ease" }} />
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "5px" }}>
-          <span style={{ ...MONO_SM, color: "#00FF88", fontSize: "10px" }}>BULL {bullPct}%</span>
-          {neutralPct > 0 && <span style={{ ...MONO_SM, color: "#FFD700", fontSize: "10px" }}>NEUTRAL {neutralPct}%</span>}
-          <span style={{ ...MONO_SM, color: "#FF4444", fontSize: "10px" }}>BEAR {bearPct}%</span>
-        </div>
-      </div>
+      <ContractScenarioStrip />
 
       {/* Bull / Bear cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "8px" }}>
@@ -574,7 +578,6 @@ function BullBearSection({ answer }: { answer: FaultlineAnswer }) {
               <TrendingUp size={11} style={{ color: "#00FF88" }} />
               <span style={{ ...MONO_SM, color: "#00FF88", letterSpacing: "0.1em" }}>BULL CASE</span>
             </div>
-            <span style={{ ...MONO, fontSize: "12px", fontWeight: 700, color: "#00FF88" }}>{bullPct}%</span>
           </div>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC", lineHeight: 1.6, margin: "0 0 8px" }}>
             {answer.bullCase}
@@ -598,7 +601,6 @@ function BullBearSection({ answer }: { answer: FaultlineAnswer }) {
               <TrendingDown size={11} style={{ color: "#FF4444" }} />
               <span style={{ ...MONO_SM, color: "#FF4444", letterSpacing: "0.1em" }}>BEAR CASE</span>
             </div>
-            <span style={{ ...MONO, fontSize: "12px", fontWeight: 700, color: "#FF4444" }}>{bearPct}%</span>
           </div>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC", lineHeight: 1.6, margin: "0 0 8px" }}>
             {answer.bearCase}
@@ -762,26 +764,6 @@ function WatchCatalysts({ catalysts }: { catalysts: string[] }) {
 
 // ── Direct Answer Panel ───────────────────────────────────────
 // Renders the exact answer to the user's specific question BEFORE the full report
-
-// ── Inline Bull/Bear Probability Bar (used inside DirectAnswerPanel) ────────
-function InlineProbBar({ bull, bear }: { bull: number; bear: number }) {
-  const neutral = Math.max(0, 100 - bull - bear);
-  return (
-    <div style={{ marginTop: "12px", padding: "10px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "5px" }}>
-      <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "6px", fontSize: "9px", letterSpacing: "0.1em" }}>PROBABILITY DISTRIBUTION</div>
-      <div style={{ display: "flex", height: "5px", borderRadius: "3px", overflow: "hidden", gap: "1px" }}>
-        <div style={{ width: `${bull}%`, background: "#00FF88" }} />
-        {neutral > 0 && <div style={{ width: `${neutral}%`, background: "#FFD700" }} />}
-        <div style={{ width: `${bear}%`, background: "#FF4444" }} />
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px" }}>
-        <span style={{ ...MONO_SM, color: "#00FF88", fontSize: "10px" }}>BULL {bull}%</span>
-        {neutral > 0 && <span style={{ ...MONO_SM, color: "#FFD700", fontSize: "10px" }}>NEUTRAL {neutral}%</span>}
-        <span style={{ ...MONO_SM, color: "#FF4444", fontSize: "10px" }}>BEAR {bear}%</span>
-      </div>
-    </div>
-  );
-}
 
 function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
   const intent = answer.questionIntent;
@@ -1070,8 +1052,6 @@ function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
       "HIGH RISK": "#FF4444", "MACRO ANSWER": ACCENT,
     };
     const vc = verdictColors[answer.verdict] ?? "#E8EDF5";
-    const bull = answer.bullProbability ?? 50;
-    const bear = answer.bearProbability ?? 50;
     return (
       <div style={{ ...panelStyle, border: `1px solid ${vc}33`, background: `${vc}06` }}>
         <div style={{ ...labelStyle, color: vc }}>DIRECT ANSWER</div>
@@ -1082,7 +1062,7 @@ function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
         {answer.executiveSummary && (
           <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "rgba(255,255,255,0.65)", lineHeight: 1.6, marginBottom: "4px" }}>{answer.executiveSummary}</div>
         )}
-        <InlineProbBar bull={bull} bear={bear} />
+        <ContractScenarioStrip compact />
       </div>
     );
   }
@@ -1093,8 +1073,6 @@ function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
       "LOW": "#00FF88", "MODERATE": "#FFD700", "HIGH": "#FF8C00", "EXTREME": "#FF4444",
     };
     const rc = answer.riskRating ? (riskColors[answer.riskRating] ?? "#E8EDF5") : "#FFD700";
-    const bull = answer.bullProbability ?? 50;
-    const bear = answer.bearProbability ?? 50;
     return (
       <div style={{ ...panelStyle, border: `1px solid ${rc}33`, background: `${rc}08` }}>
         <div style={{ ...labelStyle, color: rc }}>DIRECT ANSWER — RISK ASSESSMENT</div>
@@ -1124,7 +1102,7 @@ function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
             ))}
           </div>
         )}
-        <InlineProbBar bull={bull} bear={bear} />
+        <ContractScenarioStrip compact />
       </div>
     );
   }
@@ -1147,6 +1125,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
   const confidenceColor = confidenceLabelNorm === "HIGH" ? "#00FF88"
     : confidenceLabelNorm === "MODERATE" ? "#FFD700"
     : confidenceLabelNorm === "LOW" ? "#FF4444"
+    : !hasConfidenceValue(answer.confidence) ? "#94A3B8"
     : answer.confidence >= 70 ? "#00FF88" : answer.confidence >= 45 ? "#FFD700" : "#FF4444";
   const confidenceBg = confidenceLabelNorm === "HIGH" ? "rgba(0,255,136,0.08)"
     : confidenceLabelNorm === "MODERATE" ? "rgba(255,215,0,0.08)"
@@ -1167,7 +1146,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
       {/* ── DIRECT ANSWER PANEL (renders first for ALL question types) ── */}
       <DirectAnswerPanel answer={answer} />
 
-      {/* ── Bull / Bear with Probabilities — always visible, immediately after direct answer ── */}
+      {/* ── Bull / Bear balance (contract text, no model numbers) — always visible, immediately after direct answer ── */}
       {!isGeneralAnalysis && <BullBearSection answer={answer} />}
 
       {/* ── BOTTOM LINE card (verdict + scores + action) ── */}
@@ -1210,15 +1189,15 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
         {/* Row 2: opportunity + confidence bars */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
           {[
-            { label: "OPPORTUNITY", value: answer.opportunityScore, color: answer.verdictColor },
-            { label: "CONFIDENCE", value: answer.confidence, color: confidenceLabelNorm === "HIGH" ? "green" : confidenceLabelNorm === "MODERATE" ? "yellow" : "red" },
+            { label: "OPPORTUNITY", value: answer.opportunityScore as number | null, color: answer.verdictColor },
+            { label: "CONFIDENCE", value: hasConfidenceValue(answer.confidence) ? answer.confidence : null, color: confidenceLabelNorm === "HIGH" ? "green" : confidenceLabelNorm === "MODERATE" ? "yellow" : "red" },
           ].map(({ label, value, color }) => (
             <div key={label}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                 <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.4)" }}>{label}</span>
-                <span style={{ ...MONO_SM, color: verdictStyle(color).color, fontWeight: 700 }}>{value}</span>
+                <span style={{ ...MONO_SM, color: value == null ? "#94A3B8" : verdictStyle(color).color, fontWeight: 700 }}>{value == null ? CONFIDENCE_NOT_ESTABLISHED : value}</span>
               </div>
-              <div style={scoreBar(value, color)} />
+              {value != null && <div style={scoreBar(value, color)} />}
             </div>
           ))}
         </div>
@@ -1254,7 +1233,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
         <EngineCard
           icon={<BarChart2 size={9} />}
           label="Confidence"
-          value={`${answer.confidence}%`}
+          value={confidenceDisplayText(answer.confidence)}
           color={confidenceColor}
           sub={answer.confidenceLabel}
           subColor={confidenceColor}
@@ -1295,7 +1274,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
         <EvidenceEngineGrid scores={answer.evidenceScores} />
       )}
 
-      {/* ── Bull / Bear (shown here for general_analysis since InlineProbBar is already in DirectAnswerPanel) ── */}
+      {/* ── Bull / Bear (shown here for general_analysis since ContractScenarioStrip is already in DirectAnswerPanel) ── */}
       {isGeneralAnalysis && <BullBearSection answer={answer} />}
 
       {/* ── Why Not Buy/Sell (only for WAIT/HOLD) ── */}
@@ -1470,8 +1449,8 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
             {/* Probability + Confidence + Risk grid */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginBottom: "12px" }}>
               {[
-                { label: "PROBABILITY", value: `${answer.finalVerdictProbability ?? 0}%`, color: fvColor },
-                { label: "CONFIDENCE", value: `${answer.finalVerdictConfidence ?? 0}%`, color: confidenceColor },
+                { label: "PROBABILITY", value: PROBABILITY_DISPLAY_TEXT.NOT_OFFERED, color: "#94A3B8" },
+                { label: "CONFIDENCE", value: confidenceDisplayText(answer.finalVerdictConfidence), color: hasConfidenceValue(answer.finalVerdictConfidence) ? confidenceColor : "#94A3B8" },
                 { label: "RISK LEVEL", value: answer.finalVerdictRiskLevel ?? "—", color: rlColor },
               ].map(({ label, value, color }) => (
                 <div key={label} style={{
@@ -2258,7 +2237,7 @@ function FullMarketBriefingCard({ brief, onAskFollowUp, onSelectAsset }: { brief
           <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>BIAS</div><div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: biasColor }}>{brief.todaysMarket.institutionalBias}</div></div>
           <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>HEALTH</div><div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: '#F0F4FF' }}>{brief.todaysMarket.marketHealth}</div></div>
           <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>STATUS</div><div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: statusColor }}>{brief.todaysMarket.marketStatus}</div></div>
-          <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>CONFIDENCE</div><div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: brief.todaysMarket.confidence > 65 ? '#00FF88' : '#FFD700' }}>{brief.todaysMarket.confidence}%</div></div>
+          <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>CONFIDENCE</div><div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: '#94A3B8' }}>{brief.todaysMarket.confidenceText ?? 'Uncalibrated'}</div></div>
         </div>
       </div>
 
@@ -2410,15 +2389,21 @@ const QUICK_ACTIONS: Array<{ emoji: string; label: string; prompt: string }> = [
 
 // ── V3.0 Market Snapshot Component ───────────────────────────
 function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => void }) {
-  const { output, lastUpdated, isLoading } = useEngine();
+  const { output, lastUpdated, isLoading, marketMode } = useEngine();
   const { overall, regime, domains, probability } = output;
 
-  const pressureScore = Math.round(overall.score * 10); // 0-100
-  const liquidityDomain = domains.find(d => d.id === 'liquidity');
-  const creditDomain = domains.find(d => d.id === 'credit-stress');
+  // Fail closed: only a canonical state yields a pressure reading. Under a
+  // canonical 503 the engine runs on demo defaults (≈45) — show "—" instead.
+  const pressureScore = canonicalPressure100(output, marketMode); // 0-100 | null
+  // Same gate for the regime: without a canonical reading the label is the
+  // demo engine's (e.g. "Moderate Risk" under a 503), so it is not shown or asked about.
+  const regimeLabel = pressureScore === null ? null : regime.label;
+  const liquidityDomain = findDomainByFamily(domains, 'liquidity');
+  const creditDomain = findDomainByFamily(domains, 'credit');
 
   // Derive institutional bias
   const bias = useMemo(() => {
+    if (pressureScore === null) return 'Unavailable';
     const p = pressureScore;
     const r = regime.label.toLowerCase();
     if (p < 25) return r.includes('expansion') || r.includes('bull') ? 'Strongly Bullish' : 'Moderately Bullish';
@@ -2428,12 +2413,14 @@ function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => 
     return 'Risk-Off';
   }, [pressureScore, regime.label]);
 
-  const biasColor = bias.includes('Bull') ? '#00FF88' : bias === 'Neutral to Cautious' ? '#FFD700' : bias === 'Cautious' ? '#FF9500' : '#FF4444';
+  const biasColor = bias === 'Unavailable' ? '#94A3B8' : bias.includes('Bull') ? '#00FF88' : bias === 'Neutral to Cautious' ? '#FFD700' : bias === 'Cautious' ? '#FF9500' : '#FF4444';
 
   // Market health
-  const breadth = Math.max(0, Math.min(100, Math.round(100 - overall.score * 10)));
-  const liquidity = liquidityDomain ? Math.max(0, Math.min(100, Math.round((10 - liquidityDomain.score) * 10))) : 50;
+  // No neutral 50 liquidity default: without both readings, health is Unavailable.
+  const breadth = pressureScore === null ? null : Math.max(0, Math.min(100, 100 - pressureScore));
+  const liquidity = liquidityDomain && Number.isFinite(liquidityDomain.score) ? Math.max(0, Math.min(100, Math.round((10 - liquidityDomain.score) * 10))) : null;
   const health = useMemo(() => {
+    if (pressureScore === null || breadth === null || liquidity === null) return { label: 'UNAVAILABLE', color: '#94A3B8' };
     const composite = (100 - pressureScore) * 0.4 + breadth * 0.3 + liquidity * 0.3;
     if (composite >= 75) return { label: 'HEALTHY', color: '#00FF88' };
     if (composite >= 55) return { label: 'MODERATE', color: '#FFD700' };
@@ -2441,7 +2428,7 @@ function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => 
     return { label: 'CRITICAL', color: '#FF4444' };
   }, [pressureScore, breadth, liquidity]);
 
-  const pressureColor = pressureScore < 30 ? '#00FF88' : pressureScore < 55 ? '#FFD700' : pressureScore < 75 ? '#FF9500' : '#FF4444';
+  const pressureColor = pressureScore === null ? '#94A3B8' : pressureScore < 30 ? '#00FF88' : pressureScore < 55 ? '#FFD700' : pressureScore < 75 ? '#FF9500' : '#FF4444';
   const freshness = lastUpdated ? `${Math.round((Date.now() - lastUpdated.getTime()) / 60000)}m ago` : 'Loading...';
 
   if (isLoading) {
@@ -2460,16 +2447,16 @@ function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => 
       </div>
       <div style={{ padding: '12px 14px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px' }}>
         {/* Regime — clickable */}
-        <button onClick={() => onQuickAction(`What is the ${regime.label} regime and what does it mean for my portfolio?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+        <button onClick={() => onQuickAction(regimeLabel === null ? `The market regime is currently unavailable. What does that mean and what should I watch?` : `What is the ${regimeLabel} regime and what does it mean for my portfolio?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
           <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>REGIME ↗</span>
-          <span style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: '#F0F4FF', lineHeight: 1.3 }}>{regime.label}</span>
+          <span data-snapshot-regime style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: regimeLabel === null ? '#94A3B8' : '#F0F4FF', lineHeight: 1.3 }}>{regimeLabel ?? 'Unavailable'}</span>
         </button>
         {/* Pressure Index — clickable */}
-        <button onClick={() => onQuickAction(`The Pressure Index is at ${pressureScore}/100. What does this mean and what should I do?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+        <button onClick={() => onQuickAction(pressureScore === null ? `The Pressure Index is currently unavailable. What does that mean and what should I watch?` : `The Pressure Index is at ${pressureScore}/100. What does this mean and what should I do?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
           <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>PRESSURE INDEX ↗</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <span style={{ ...MONO, fontSize: '13px', fontWeight: 700, color: pressureColor }}>{pressureScore}</span>
-            <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.25)', fontSize: '9px' }}>/100</span>
+            <span data-snapshot-pressure style={{ ...MONO, fontSize: '13px', fontWeight: 700, color: pressureColor }}>{pressureScore ?? '—'}</span>
+            {pressureScore !== null && <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.25)', fontSize: '9px' }}>/100</span>}
           </div>
         </button>
         {/* Institutional Bias — clickable */}
@@ -2483,9 +2470,10 @@ function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => 
           <span style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: health.color }}>{health.label}</span>
         </button>
         {/* Bull Probability — clickable */}
-        <button onClick={() => onQuickAction(`Bull probability is ${probability.bullProbability}%. What are the key factors driving this and what is the outlook?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>BULL PROBABILITY ↗</span>
-          <span style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: probability.bullProbability > 55 ? '#00FF88' : probability.bullProbability > 40 ? '#FFD700' : '#FF4444' }}>{probability.bullProbability}%</span>
+        {/* Probability contract: the bull field renders only its contract display text. */}
+        <button onClick={() => onQuickAction(`FAULTLINE shows the bull scenario as ${engineProbabilityText(output, "bullProbability")}. What are the key factors behind the current Pressure Index and what should I watch?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>BULL SCENARIO ↗</span>
+          <span style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: '#94A3B8' }}>{engineProbabilityText(output, "bullProbability")}</span>
         </button>
       </div>
     </div>
@@ -2494,31 +2482,18 @@ function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => 
 
 // ── V3.0 Since Last Visit Component ──────────────────────────
 function SinceLastVisit({ onQuickAction }: { onQuickAction: (prompt: string) => void }) {
-  const { output } = useEngine();
-  const { overall, regime, domains } = output;
-  const pressureScore = Math.round(overall.score * 10);
-  const liquidityDomain = domains.find(d => d.id === 'liquidity');
-  const creditDomain = domains.find(d => d.id === 'credit-stress');
+  const { output, marketMode } = useEngine();
+  // null (nothing compared or sent) unless the canonical state is available.
+  const snapshot = buildEngineSnapshot(output, marketMode);
 
   const getPreferences = trpc.dailyBrief.getPreferences.useQuery(undefined, { retry: false });
   const getChanges = trpc.dailyBrief.getChanges.useQuery(
-    {
-      currentSnapshot: {
-        overallPressure: pressureScore,
-        regime: regime.label,
-        liquidity: liquidityDomain ? Math.round((10 - liquidityDomain.score) * 10) : 50,
-        credit: creditDomain ? Math.round(creditDomain.score * 10) : 30,
-        breadth: Math.max(0, Math.min(100, Math.round(100 - overall.score * 10))),
-        aiConcentration: 32,
-        volatility: 40,
-        bullProbability: output.probability.bullProbability,
-        timestamp: Date.now(),
-      },
-    },
-    { enabled: !!getPreferences.data?.lastVisitAt, retry: false }
+    // Disabled (never sent) when snapshot is null.
+    { currentSnapshot: (snapshot ?? {}) as EngineSnapshotPayload },
+    { enabled: !!getPreferences.data?.lastVisitAt && snapshot !== null, retry: false }
   );
 
-  if (!getPreferences.data?.lastVisitAt) return null;
+  if (!getPreferences.data?.lastVisitAt || snapshot === null) return null;
   if (getChanges.isLoading) return null;
 
   const { changes, hasChanges } = getChanges.data ?? { changes: [], hasChanges: false };
@@ -2629,29 +2604,18 @@ export default function SmartDiscovery() {
   });
   const recordVisitMutation = trpc.dailyBrief.recordVisit.useMutation();
   const generateBriefMutation = trpc.dailyBrief.generateBrief.useMutation();
-  const { output: engineOutput } = useEngine();
-  // Record visit on mount (for Since Your Last Visit tracking)
+  const { output: engineOutput, marketMode: engineMarketMode } = useEngine();
+  // Record visit once per user (for Since Your Last Visit tracking) — only from
+  // a canonical state. Under a canonical 503 nothing is sent (no demo 45).
+  const visitRecordedFor = useRef<string | number | null>(null);
   useEffect(() => {
-    if (!user) return;
-    const { overall, regime, domains, probability } = engineOutput;
-    const pressureScore = Math.round(overall.score * 10);
-    const liquidityDomain = domains.find(d => d.id === 'liquidity');
-    const creditDomain = domains.find(d => d.id === 'credit-stress');
-    recordVisitMutation.mutate({
-      snapshot: {
-        overallPressure: pressureScore,
-        regime: regime.label,
-        liquidity: liquidityDomain ? Math.round((10 - liquidityDomain.score) * 10) : 50,
-        credit: creditDomain ? Math.round(creditDomain.score * 10) : 30,
-        breadth: Math.max(0, Math.min(100, Math.round(100 - overall.score * 10))),
-        aiConcentration: 32,
-        volatility: 40,
-        bullProbability: probability.bullProbability,
-        timestamp: Date.now(),
-      },
-    });
+    if (!user || visitRecordedFor.current === user.id) return;
+    const snapshot = buildEngineSnapshot(engineOutput, engineMarketMode);
+    if (!snapshot) return;
+    visitRecordedFor.current = user.id;
+    recordVisitMutation.mutate({ snapshot });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, engineMarketMode]);
   // Focus input on mount
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 100);
@@ -2752,23 +2716,16 @@ export default function SmartDiscovery() {
           setIsExecuting(false);
           return;
         }
-        const { overall, regime, domains, probability } = engineOutput;
-        const pressureScore = Math.round(overall.score * 10);
-        const liquidityDomain = domains.find(d => d.id === 'liquidity');
-        const creditDomain = domains.find(d => d.id === 'credit-stress');
-        const briefResult = await generateBriefMutation.mutateAsync({
-          engineSnapshot: {
-            overallPressure: pressureScore,
-            regime: regime.label,
-            liquidity: liquidityDomain ? Math.round((10 - liquidityDomain.score) * 10) : 50,
-            credit: creditDomain ? Math.round(creditDomain.score * 10) : 30,
-            breadth: Math.max(0, Math.min(100, Math.round(100 - overall.score * 10))),
-            aiConcentration: 32,
-            volatility: 40,
-            bullProbability: probability.bullProbability,
-            timestamp: Date.now(),
-          },
-        });
+        // Fail closed: no canonical state → no brief built from demo inputs.
+        const engineSnapshot = buildEngineSnapshot(engineOutput, engineMarketMode);
+        if (!engineSnapshot) {
+          stopExecutionSequence();
+          setError('The Full Market Briefing is unavailable: the canonical market state is unavailable.');
+          setConversation(prev => prev.slice(0, -1));
+          setIsExecuting(false);
+          return;
+        }
+        const briefResult = await generateBriefMutation.mutateAsync({ engineSnapshot });
         stopExecutionSequence();
         const briefMsg: ConversationMessage = {
           role: 'assistant',
@@ -2848,6 +2805,9 @@ export default function SmartDiscovery() {
             ticker: fa.ticker ?? null,
             assetType: (fa.assetType as "stock" | "crypto" | null) ?? null,
             verdict: fa.verdict ?? "NEUTRAL",
+            // QA r12 (B9b): both columns are NOT NULL (drizzle/schema.ts decisionLedger),
+            // so these defaults are still written (no migration), but the server
+            // withholds them on read and nothing displays or prompts with them.
             opportunityScore: fa.opportunityScore ?? 5,
             confidence: fa.confidence ?? 50,
             primaryDriver: fa.primaryDriver ?? "",

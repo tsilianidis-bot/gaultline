@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDailyBriefSnapshot, validateDailyBriefNarrative } from "./dailyBriefSnapshot";
+import { buildDailyBriefPromptContext, buildDailyBriefSnapshot, validateDailyBriefNarrative } from "./dailyBriefSnapshot";
 
 const pressure = { overallPressure: 29, regime: "MODERATE RISK", level: "Elevated" } as any;
 const seismograph = {
@@ -14,6 +14,14 @@ describe("Daily Brief snapshot contract", () => {
     expect(snapshot.canonicalSource).toBe("seismograph");
     expect(snapshot.pressureIndex).toBe(19.8);
     expect(snapshot.proprietaryOutputs.join(" ")).not.toContain("29/100");
+  });
+
+  it("withholds scenario and transition percentages from the brief prompt (probability contract)", () => {
+    const snapshot = buildDailyBriefSnapshot({ pressure, seismograph, now: Date.UTC(2026, 7, 13, 19, 0, 0) });
+    const ctx = buildDailyBriefPromptContext(snapshot);
+    expect(ctx).toContain("Scenario Readings: Uncalibrated");
+    expect(ctx).toContain("Transition Confidence: Uncalibrated");
+    expect(ctx).not.toMatch(/Bull 45%|Neutral 35%|Bear 20%|80%/);
   });
 
   it("blocks a publication when mutually exclusive regime probabilities do not total 100", () => {

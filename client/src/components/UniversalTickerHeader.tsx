@@ -233,13 +233,16 @@ export function UniversalTickerHeader({ symbol, assetType = "stock", className =
         </div>
       )}
 
-      {/* Confidence */}
-      {data.confidence != null && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          <span style={{ color: "#888", fontSize: 10, letterSpacing: 0.5 }}>CONFIDENCE</span>
-          <span style={{ color: "#B0C4D8", fontWeight: 600 }}>{data.confidence}%</span>
-        </div>
-      )}
+      {/* Confidence — QA r12: the former value was |outlookScore − 50| × 2 (distance of a
+          heuristic score from neutral), not a calibrated confidence, so no % is shown. */}
+      <div
+        style={{ display: "flex", flexDirection: "column", gap: 1 }}
+        data-confidence-status="not-established"
+        title="No calibrated confidence exists for this outlook score."
+      >
+        <span style={{ color: "#888", fontSize: 10, letterSpacing: 0.5 }}>CONFIDENCE</span>
+        <span style={{ color: "#B0C4D8", fontWeight: 600 }}>Not established</span>
+      </div>
 
       {/* Spacer */}
       <div style={{ flex: 1 }} />

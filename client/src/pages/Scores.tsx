@@ -12,6 +12,7 @@ import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
 import { customerIntegrityBadgeColor } from "@shared/customerIntegrityLabels";
+import { availableDelta } from "@/lib/displayFallbacks";
 
 // ── Seeded deterministic sparkline ───────────────────────────
 function seededRand(seed: number) {
@@ -62,7 +63,16 @@ function PressureBar({ score, riskLevel, seed }: { score: number; riskLevel: Dom
 }
 
 // ── Momentum indicator ────────────────────────────────────────
-function MomentumArrow({ delta }: { delta: number }) {
+export function MomentumArrow({ delta }: { delta?: number }) {
+  // Unknown delta (missing, non-finite, or deltaAvailable === false): show "—"
+  // with no direction arrow and no RISING/EASING/STABLE claim.
+  if (delta === undefined || !Number.isFinite(delta)) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }} data-momentum="unavailable">
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#6B7280', letterSpacing: '0.08em' }}>—</span>
+      </div>
+    );
+  }
   const isUp = delta > 0.1;
   const isDown = delta < -0.1;
   const color = isUp ? '#FF9500' : isDown ? '#00FF88' : '#6B7280';
@@ -106,6 +116,7 @@ function DomainCard({ score, index }: { score: DomainScore; index: number }) {
   const [expanded, setExpanded] = useState(false);
   const color = getRiskColor(score.riskLevel);
   const isHighPressure = score.riskLevel === 'critical' || score.riskLevel === 'high';
+  const scoreDelta = availableDelta(score);
 
   const borderClass = score.riskLevel === 'critical' ? 'pressure-border-critical'
     : score.riskLevel === 'high' ? 'pressure-border-high'
@@ -138,7 +149,7 @@ function DomainCard({ score, index }: { score: DomainScore; index: number }) {
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative', zIndex: 1 }}>
-        <ScoreRing score={Math.round(score.score * 10)} maxScore={100} riskLevel={score.riskLevel} label="" delta={score.delta * 10} size={64} showLabel={false} />
+        <ScoreRing score={Math.round(score.score * 10)} maxScore={100} riskLevel={score.riskLevel} label="" delta={scoreDelta === null ? undefined : scoreDelta * 10} size={64} showLabel={false} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
             <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '14px', color: '#E2E8F0' }}>{score.label}</span>
@@ -149,7 +160,7 @@ function DomainCard({ score, index }: { score: DomainScore; index: number }) {
             <PressureBar score={score.score * 10} riskLevel={score.riskLevel} seed={index * 17 + 3} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <MomentumArrow delta={score.delta} />
+            <MomentumArrow delta={scoreDelta ?? undefined} />
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: '20px', color, textShadow: `0 0 16px ${color}60`, lineHeight: 1 }}>
               {Math.round(score.score * 10)}<span style={{ fontSize: '10px', color: '#4B5563' }}>/100</span>
             </span>
@@ -193,6 +204,7 @@ export default function Scores() {
   if (!mounted) return null;
 
   const color = getRiskColor(overall.riskLevel);
+  const overallDelta = availableDelta(overall);
   const criticalCount = domains.filter(d => d.riskLevel === 'critical').length;
   const highCount = domains.filter(d => d.riskLevel === 'high').length;
 
@@ -235,7 +247,7 @@ export default function Scores() {
         {/* Ambient glow */}
         <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse 50% 60% at 0% 50%, ${color}06 0%, transparent 60%)`, pointerEvents: 'none' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', position: 'relative', zIndex: 1 }}>
-          <ScoreRing score={Math.round(overall.score * 10)} maxScore={100} riskLevel={overall.riskLevel} label={overall.label} delta={overall.delta * 10} size={110} showLabel={false} />
+          <ScoreRing score={Math.round(overall.score * 10)} maxScore={100} riskLevel={overall.riskLevel} label={overall.label} delta={overallDelta === null ? undefined : overallDelta * 10} size={110} showLabel={false} />
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
               <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#F0F4FF' }}>{overall.label}</span>
@@ -249,7 +261,7 @@ export default function Scores() {
             </div>
             <PressureBar score={overall.score * 10} riskLevel={overall.riskLevel} seed={99} />
             <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <MomentumArrow delta={overall.delta} />
+              <MomentumArrow delta={overallDelta ?? undefined} />
               <PressureLevel riskLevel={overall.riskLevel} score={overall.score} />
             </div>
             {overall.drivers.length > 0 && (

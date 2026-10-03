@@ -268,8 +268,10 @@ function buildLiveContextBlock(ctx: LiveMarketContext): string {
   const parts: string[] = [];
   if (ctx.regimeLabel) parts.push(`Current Market Regime: ${ctx.regimeLabel}`);
   if (ctx.pressureScore !== undefined) parts.push(`FAULTLINE Pressure Index: ${Math.round(ctx.pressureScore)}/100 (${ctx.pressureLevel ?? 'unknown'})`);
-  if (ctx.crashProbability !== undefined) parts.push(`Crash Probability: ${Math.round(ctx.crashProbability)}%`);
-  if (ctx.bullProbability !== undefined) parts.push(`Bull Continuation Probability: ${Math.round(ctx.bullProbability)}%`);
+  // Probability contract: never hand the model a crash or bull percentage to repeat.
+  if (ctx.crashProbability !== undefined || ctx.bullProbability !== undefined) {
+    parts.push("Probabilities: FAULTLINE does not offer a crash probability, and its scenario weights are uncalibrated; state no probability percentage");
+  }
   if (ctx.currentPage) parts.push(`User is currently on: ${ctx.currentPage}`);
 
   // BTC cycle phase context

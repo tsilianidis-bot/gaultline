@@ -87,10 +87,16 @@ describe("OUTLOOK destination composition", () => {
   });
 
   it("formats every probability, confidence, similarity, and pressure metric on the shared canonical 0–100 scale", () => {
-    expect(outlookSource).toContain("formatCanonicalPercent(scenario.probability)");
-    expect(outlookSource).toContain("formatCanonicalPercent(probabilityDistribution.confidence)");
+    // Probability contract: percentages go through probabilityOrWithheld, which
+    // renders withheld (NaN) values as contract text, never formatCanonicalPercent(NaN) = "0%".
+    expect(outlookSource).toContain("probabilityOrWithheld(probability, fiveWayWithheld)");
+    expect(outlookSource).toContain("probabilityOrWithheld(\n    probabilityDistribution.confidence");
+    expect(outlookSource).not.toContain("formatCanonicalPercent(scenario.probability)");
     expect(outlookSource).toContain("formatCanonicalPercent(topAnalog.similarity)");
-    expect(outlookSource).toContain("formatCanonicalScore(marketState?.now.pressureScore ?? output.overall.score * 10)");
+    // Pressure is canonical-only: without a canonical state (e.g. a 503) it reads Unavailable, never the demo engine score.
+    expect(outlookSource).toContain("marketState ? formatCanonicalScore(marketState.now.pressureScore) : PROBABILITY_DISPLAY_TEXT.UNAVAILABLE");
+    expect(outlookSource).not.toContain("output.overall.score * 10");
+    expect(outlookSource).not.toContain("output.narrative.summary");
     expect(outlookSource).not.toMatch(/\}\s*\/10\b/);
     expect(outlookSource).not.toContain("/10</");
   });
