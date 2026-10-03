@@ -13,6 +13,13 @@ import { PRESSURE_BANDS, PRESSURE_VECTOR_ORDER, useLandingPressure } from "@/com
 import { PRESSURE_VECTOR_DISPLAY } from "@shared/pressureVectorLabels";
 import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
+const HERO_BACKGROUND = "/faultline_hero_bg_7d6aaf14.jpg";
+const HERO_BACKGROUND_WIDTHS = [640, 1280, 1920, 2560] as const;
+const HERO_BACKGROUND_SRCSET = {
+  avif: HERO_BACKGROUND_WIDTHS.map(w => `/faultline_hero_bg_7d6aaf14-${w}.avif ${w}w`).join(", "),
+  webp: HERO_BACKGROUND_WIDTHS.map(w => `/faultline_hero_bg_7d6aaf14-${w}.webp ${w}w`).join(", "),
+};
+
 const EXPLORE_HREF = "/pressure-index";
 const METHOD_HREF = "/methodology";
 const TRUST_HREF = "/trust";
@@ -151,6 +158,19 @@ function Ctas({ primaryTrack }: { primaryTrack?: boolean }) {
 function Hero() {
   return (
     <section className="relative isolate overflow-hidden border-b border-[#00D4FF]/10 bg-[#0A0D12]">
+      {/* Restored original hero background (faultline_hero_bg_7d6aaf14.jpg), same treatment as before
+          07f06ac: full-bleed cover, centred, 35% opacity, under the existing overlays. Responsive
+          AVIF/WebP derivatives; the recovered original is the final fallback. Decorative, no animation. */}
+      <picture aria-hidden="true">
+        <source type="image/avif" srcSet={HERO_BACKGROUND_SRCSET.avif} sizes="100vw" />
+        <source type="image/webp" srcSet={HERO_BACKGROUND_SRCSET.webp} sizes="100vw" />
+        <img
+          src={HERO_BACKGROUND}
+          alt=""
+          decoding="async"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center opacity-35"
+        />
+      </picture>
       <SeismicUnderlay className="pointer-events-none absolute inset-0 h-full w-full [mask-image:linear-gradient(180deg,transparent_0%,transparent_42%,#000_68%)] lg:[mask-image:linear-gradient(90deg,transparent_0%,transparent_38%,rgba(0,0,0,0.4)_54%,#000_72%)]" />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,8,0.94)_0%,rgba(5,6,8,0.9)_48%,rgba(5,6,8,0.45)_72%,rgba(5,6,8,0.12)_100%)] lg:bg-[linear-gradient(90deg,rgba(5,6,8,0.96)_0%,rgba(5,6,8,0.92)_42%,rgba(5,6,8,0.55)_62%,rgba(5,6,8,0.08)_100%)]" aria-hidden="true" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#0A0D12] to-transparent" aria-hidden="true" />
