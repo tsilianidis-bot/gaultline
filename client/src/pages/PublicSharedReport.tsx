@@ -35,7 +35,7 @@ function formatDate(ts: number | string | null | undefined) {
 }
 
 // ── Snapshot renderer — renders the JSON snapshot safely ───────
-function SnapshotRenderer({ snapshotJson, reportType }: { snapshotJson: string; reportType: string }) {
+export function SnapshotRenderer({ snapshotJson, reportType }: { snapshotJson: string; reportType: string }) {
   let data: Record<string, unknown> = {};
   try { data = JSON.parse(snapshotJson); } catch { return <p className="text-zinc-500 text-sm">Unable to render report data.</p>; }
 
@@ -79,7 +79,7 @@ function SnapshotRenderer({ snapshotJson, reportType }: { snapshotJson: string; 
         <div className={`space-y-1 ${depth > 0 ? "pl-2 border-l border-zinc-800" : ""}`}>
           {entries.map(([k, v]) => (
             <div key={k} className="flex flex-wrap gap-2 items-start text-sm">
-              <span className="text-zinc-500 font-mono text-xs min-w-[120px] pt-0.5">{k}</span>
+              <span className="text-zinc-500 font-mono text-xs min-w-[120px] pt-0.5">{snapshotKeyLabel(k)}</span>
               <span className="flex-1">{renderValue(v, depth + 1)}</span>
             </div>
           ))}
@@ -97,13 +97,26 @@ function SnapshotRenderer({ snapshotJson, reportType }: { snapshotJson: string; 
         <div key={key} className="bg-zinc-900/40 rounded-lg border border-zinc-800 p-4">
           <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-widest mb-3 flex items-center gap-2">
             <span className="w-1 h-3 bg-cyan-500 rounded-full inline-block" />
-            {key.replace(/_/g, " ")}
+            {snapshotKeyLabel(key)}
           </h4>
           <div className="text-sm">{renderValue(value)}</div>
         </div>
       ))}
     </div>
   );
+}
+
+// QA B11: shared snapshots saved before the #60 score-key rename keep their old
+// camelCase keys. Both the old and the renamed keys are heuristic 0–100 scores,
+// so both render as readable "/100 score" labels instead of raw keys.
+export const SNAPSHOT_KEY_LABELS: Record<string, string> = {
+  favorableSetupProbability: "Favorable setup score (/100)",
+  adversePressureProbability: "Adverse pressure score (/100)",
+  favorableSetupScore: "Favorable setup score (/100)",
+  adversePressureScore: "Adverse pressure score (/100)",
+};
+export function snapshotKeyLabel(key: string): string {
+  return SNAPSHOT_KEY_LABELS[key] ?? key.replace(/_/g, " ");
 }
 
 // ── Main page ──────────────────────────────────────────────────
