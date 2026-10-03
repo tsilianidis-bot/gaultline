@@ -189,37 +189,25 @@ function TradingSignalBadge({ action, actionLabel, confidence, strength, assetCl
   );
 }
 
-// ── Confidence Bar ────────────────────────────────────────────
-function ConfidenceBar({ confidence, action }: { confidence: number; action: TradingAction }) {
-  const c = ACTION_COLORS[action];
+// ── Confidence ────────────────────────────────────────────
+// QA Signals confidence (B14): the signal "confidence" is a formula,
+// min(95, 55 + |score| × 5) (tradingSignals.ts), not a calibrated value.
+// It is shown as "Not established": no %, no bar, no colour band.
+const SIGNAL_CONFIDENCE_NOT_ESTABLISHED = 'Not established';
+function ConfidenceBar(_props: { confidence?: number | null; action: TradingAction }) {
   return (
-    <div>
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        marginBottom: '3px',
-      }}>
-        <span style={{
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: '11px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em',
-        }}>CONFIDENCE</span>
-        <span style={{
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: '12px', fontWeight: 700, color: c.text,
-        }}>{confidence}%</span>
-      </div>
-      <div style={{
-        height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px',
-        overflow: 'hidden',
-      }}>
-        <div style={{
-          height: '100%',
-          width: `${confidence}%`,
-          background: `linear-gradient(90deg, ${c.text}80, ${c.text})`,
-          boxShadow: `0 0 6px ${c.glow}`,
-          borderRadius: '2px',
-          transition: 'width 0.6s cubic-bezier(0.23,1,0.32,1)',
-        }} />
-      </div>
+    <div data-confidence-status="not-established" style={{
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      marginBottom: '3px',
+    }}>
+      <span style={{
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: '11px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em',
+      }}>CONFIDENCE</span>
+      <span style={{
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: '12px', fontWeight: 700, color: '#94A3B8',
+      }}>{SIGNAL_CONFIDENCE_NOT_ESTABLISHED}</span>
     </div>
   );
 }
@@ -485,7 +473,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             />
             <RegimeAlignmentBadge alignment={tradingSignal.regimeAlignment} />
           </div>
-          <ConfidenceBar confidence={tradingSignal.confidence} action={tradingSignal.action} />
+          <ConfidenceBar action={tradingSignal.action} />
           <div style={{
             marginTop: '5px',
             fontFamily: "'IBM Plex Mono', monospace",
@@ -957,7 +945,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '4px' }}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(100,116,139,0.6)', marginBottom: '8px' }}>CATALOG NOTES · STATIC REFERENCE, NOT MARKET DATA</div>
 
-              {/* Row 1: Opportunity Score + Confidence + Macro Alignment (static catalog notes).
+              {/* Row 1: Opportunity Score + Macro Alignment (static catalog notes).
                   No static R:R, entry, support, resistance, stop or targets: price levels live only in KEY PRICE LEVELS. */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '6px' }}>
                 {stock.opportunityScore !== undefined && (
@@ -966,12 +954,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
                     <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: stock.opportunityScore >= 80 ? '#00FF88' : stock.opportunityScore >= 60 ? '#00D4FF' : '#FF9500', lineHeight: 1 }}>{stock.opportunityScore}</div>
                   </div>
                 )}
-                {stock.confidence !== undefined && (
-                  <div style={{ textAlign: 'center', padding: '6px', background: 'rgba(192,132,252,0.04)', border: '1px solid rgba(192,132,252,0.1)', borderRadius: '3px' }}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(192,132,252,0.5)', letterSpacing: '0.1em', marginBottom: '2px' }}>CONFIDENCE</div>
-                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#C084FC', lineHeight: 1 }}>{stock.confidence}%</div>
-                  </div>
-                )}
+                {/* QA Signals confidence (B14): the static catalog "confidence" is not shown. */}
                 {stock.macroAlignment && (
                   <div style={{ textAlign: 'center', padding: '6px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '3px' }}>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em', marginBottom: '2px' }}>MACRO</div>
@@ -1252,9 +1235,6 @@ function TradingSignalsSummaryBar({ signals }: { signals: TradingSignalResult[] 
 
   const strongBuys = signals.filter(s => s.action === 'BUY' && s.strength === 'Strong').length;
   const strongSells = signals.filter(s => s.action === 'SELL' && s.strength === 'Strong').length;
-  const avgConf = signals.length > 0
-    ? Math.round(signals.reduce((s, v) => s + v.confidence, 0) / signals.length)
-    : 0;
 
   const sentiment = counts.BUY > counts.SELL + counts.HOLD
     ? { label: 'BULLISH BIAS', color: '#00D4FF' }
@@ -1293,7 +1273,7 @@ function TradingSignalsSummaryBar({ signals }: { signals: TradingSignalResult[] 
         <span style={{
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: '12px', color: 'rgba(100,116,139,0.65)',
-        }}>AVG CONFIDENCE: <span style={{ color: '#94A3B8' }}>{avgConf}%</span></span>
+        }}>CONFIDENCE: <span style={{ color: '#94A3B8' }}>{SIGNAL_CONFIDENCE_NOT_ESTABLISHED}</span></span>
       </div>
 
       {/* Signal count row */}
@@ -1697,7 +1677,7 @@ function SignalsInner() {
                     actionLabel: s.actionLabel,
                     assetClass: s.assetClass,
                     strength: s.strength,
-                    confidence: s.confidence,
+                    // QA Signals confidence (B14): no signal confidence in new share snapshots.
                     entryZone: s.priceLevels?.entryZone,
                     stopLoss: s.priceLevels?.stopLoss,
                     targetPrice: s.priceLevels?.targetPrice,
