@@ -2805,6 +2805,9 @@ export default function SmartDiscovery() {
             ticker: fa.ticker ?? null,
             assetType: (fa.assetType as "stock" | "crypto" | null) ?? null,
             verdict: fa.verdict ?? "NEUTRAL",
+            // QA r12 (B9b): both columns are NOT NULL (drizzle/schema.ts decisionLedger),
+            // so these defaults are still written (no migration), but the server
+            // withholds them on read and nothing displays or prompts with them.
             opportunityScore: fa.opportunityScore ?? 5,
             confidence: fa.confidence ?? 50,
             primaryDriver: fa.primaryDriver ?? "",

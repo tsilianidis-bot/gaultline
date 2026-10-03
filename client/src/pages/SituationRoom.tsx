@@ -1221,9 +1221,9 @@ export default function SituationRoom() {
                       const bull = result.outcomeSimulator.scenarios.find((s: any) => s.label === "Bull Case");
                       const bear = result.outcomeSimulator.scenarios.find((s: any) => s.label === "Bear Case");
                       if (bull?.expectedReturn && bear?.expectedReturn) return Math.abs(bull.expectedReturn) / Math.max(0.1, Math.abs(bear.expectedReturn));
-                      return 2.0;
+                      return null; // QA r12: no hard-coded 2.0 fallback — shown as "—"
                     })()
-                  : 2.0,
+                  : null,
                 verdict: institutionalLabel[vt] as ConfidenceData["verdict"],
               };
               return (

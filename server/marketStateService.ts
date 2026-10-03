@@ -22,7 +22,7 @@ import {
   type MarketStateCacheOptions,
   type MarketStateCacheResult,
 } from "./marketStateCache";
-import { withholdUndisplayedClaimValues } from "./probabilityContract";
+import { withholdUndisplayedClaimValues, withoutNarrativeProbabilityClaims } from "./probabilityContract";
 
 export type CanonicalMarketStateSource = Pick<
   UnifiedSeismographIntelligence,
@@ -244,6 +244,8 @@ export function assembleCanonicalMarketState(
   options: AssembleMarketStateOptions,
 ): CanonicalMarketState {
   const sourceHealth = buildSourceHealth(source, options.cacheStatus);
+  // QA r12 response boundary: narrative copy carries no probability / historical-frequency %.
+  const narrative = withoutNarrativeProbabilityClaims(source.marketNarrative);
   const warnings = sourceHealth
     .filter(item => item.required && item.status !== "healthy")
     .map(item => `${item.label}: ${item.detail}`);
@@ -313,10 +315,10 @@ export function assembleCanonicalMarketState(
       whyThisRegime: source.whyThisRegime,
       keyDevelopments: source.keyDevelopments,
       narrative: {
-        whatIsHappening: source.marketNarrative.whatIsHappening,
-        whyIsItHappening: source.marketNarrative.whyIsItHappening,
-        whatHasChanged: source.marketNarrative.whatHasChanged,
-        whatIsBuildingBeneathSurface: source.marketNarrative.whatIsBuildingBeneathSurface,
+        whatIsHappening: narrative.whatIsHappening,
+        whyIsItHappening: narrative.whyIsItHappening,
+        whatHasChanged: narrative.whatHasChanged,
+        whatIsBuildingBeneathSurface: narrative.whatIsBuildingBeneathSurface,
       },
       evidenceFamilies: displayFamilies.map(family => ({
         ...family,
@@ -343,7 +345,7 @@ export function assembleCanonicalMarketState(
         transitionToCrisis: contractPercent(transitionClaim(contract, "transitionToCrisis")),
         confidence: Number.NaN,
       },
-      highestProbabilityPath: source.marketNarrative.highestProbabilityPath,
+      highestProbabilityPath: narrative.highestProbabilityPath,
       // Response boundary: non-AVAILABLE claims carry value null (bull 33 / crisis 0.36 never leave the server).
       probabilityContract: withholdUndisplayedClaimValues(contract),
       invalidationConditions: source.evolution.invalidationConditions,
@@ -380,8 +382,8 @@ export function assembleCanonicalMarketState(
     },
     act: {
       marketPosture: posture,
-      decisionSummary: `Maintain a ${posture} posture while ${source.marketNarrative.highestProbabilityPath}`,
-      whatWouldInvalidate: source.marketNarrative.whatWouldInvalidate,
+      decisionSummary: `Maintain a ${posture} posture while ${narrative.highestProbabilityPath}`,
+      whatWouldInvalidate: narrative.whatWouldInvalidate,
       riskControls: source.evolution.invalidationConditions,
     },
     history: {

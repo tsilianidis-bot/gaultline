@@ -257,7 +257,9 @@ export const outlookRouter = router({
           opportunityScore: o?.outlookScore ?? null,
           direction: o?.direction ?? null,
           riskLevel: o?.riskLevel ?? null,
-          confidence: o?.confidence ?? null,
+          // QA r12: quick-outlook "confidence" is |composite − 50| × 2, not a calibrated
+          // confidence; withheld at the response boundary ("Not established" in the header).
+          confidence: null,
         }) as {
           symbol: string;
           assetType: "stock" | "crypto";

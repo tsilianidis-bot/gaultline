@@ -23,7 +23,7 @@ export interface ConfidenceData {
   historicalSimilarity?: number | null;   // 0-100 similarity score from a real analog match; omitted = not shown
   historicalWinRate?: number;         // 0-100 (win rate in similar historical setups)
   expectedVolatility: "LOW" | "MODERATE" | "HIGH" | "EXTREME";
-  rewardRisk: number;                 // e.g. 2.4 means 2.4:1
+  rewardRisk: number | null;          // e.g. 2.4 means 2.4:1; null = not computable, shown as "—"
   verdict?: "BUY" | "HOLD" | "REDUCE" | "WAIT" | "EXIT";
 }
 
@@ -82,7 +82,10 @@ export default function DecisionConfidencePanel({ data, compact = false, default
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   const confidenceColor = data.confidenceScore >= 80 ? "#22C55E" : data.confidenceScore >= 60 ? "#FFD700" : data.confidenceScore >= 40 ? "#FF9500" : "#FF2D55";
-  const rrColor = data.rewardRisk >= 3 ? "#22C55E" : data.rewardRisk >= 2 ? "#FFD700" : data.rewardRisk >= 1 ? "#FF9500" : "#FF2D55";
+  const hasRewardRisk = typeof data.rewardRisk === "number" && Number.isFinite(data.rewardRisk);
+  const rr = hasRewardRisk ? (data.rewardRisk as number) : 0;
+  const rrColor = !hasRewardRisk ? "#94A3B8" : rr >= 3 ? "#22C55E" : rr >= 2 ? "#FFD700" : rr >= 1 ? "#FF9500" : "#FF2D55";
+  const rrText = hasRewardRisk ? `${rr.toFixed(1)}:1` : "—";
   const hasFreshness = typeof data.dataFreshnessMinutes === "number" && Number.isFinite(data.dataFreshnessMinutes);
   const hasAgreement = typeof data.institutionalAgreement === "number" && Number.isFinite(data.institutionalAgreement);
   const hasSimilarity = typeof data.historicalSimilarity === "number" && Number.isFinite(data.historicalSimilarity);
@@ -118,7 +121,7 @@ export default function DecisionConfidencePanel({ data, compact = false, default
             <span style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "4px" }}>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: confidenceColor, fontWeight: 700 }}>{data.confidenceScore}%</span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>|</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: rrColor }}>{data.rewardRisk.toFixed(1)}:1 R:R</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: rrColor }}>{rrText} R:R</span>
               {hasFreshness && (
                 <>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>|</span>
@@ -146,7 +149,7 @@ export default function DecisionConfidencePanel({ data, compact = false, default
             {/* Reward/Risk */}
             <div style={{ padding: "8px 10px", background: `${rrColor}08`, border: `1px solid ${rrColor}20`, borderRadius: "4px" }}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.12em", marginBottom: "3px" }}>REWARD:RISK</div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 900, fontSize: "22px", color: rrColor, lineHeight: 1 }}>{data.rewardRisk.toFixed(1)}:1</div>
+              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 900, fontSize: "22px", color: rrColor, lineHeight: 1 }}>{rrText}</div>
             </div>
 
             {/* Expected Volatility */}

@@ -1,7 +1,7 @@
 /* ============================================================
    FAULTLINE — Trade Preflight Simulator
    Stress-tests a user's intended market move against current
-   market regime conditions and returns a probability-weighted
+   market regime conditions and returns a heuristic (uncalibrated)
    risk/favorability reading.
    ============================================================ */
 import { useState, useRef, useEffect } from "react";
@@ -226,8 +226,10 @@ export default function TradePreflight() {
                   moveFavorabilityScore: result.moveFavorabilityScore,
                   riskLevel: result.riskLevel,
                   confidenceLevel: result.confidenceLevel,
-                  favorableSetupProbability: result.favorableSetupProbability,
-                  adversePressureProbability: result.adversePressureProbability,
+                  // QA r12 (B11): share-snapshot keys are scores, not probabilities
+                  // (API field names unchanged; rename is post-launch).
+                  favorableSetupScore: result.favorableSetupProbability,
+                  adversePressureScore: result.adversePressureProbability,
                 }}
                 size="sm"
               />

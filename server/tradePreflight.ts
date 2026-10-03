@@ -1146,7 +1146,7 @@ function computeVerdict(
   if (favorability >= 78 && highThreats <= 1 && p <= 35) {
     verdict = "HIGH_CONVICTION";
     confidence = clamp(Math.round(favorability * 0.7 + bullProb * 0.3), 75, 97);
-    reason = `Regime conditions are strongly aligned with this move${tickerRef}${tfRef}. Threat levels are contained, pressure is low, and bull probability is elevated. Risk/reward is highly favorable.`;
+    reason = `Regime conditions are strongly aligned with this move${tickerRef}${tfRef}. Threat levels are contained, pressure is low, and bull scenario weight is elevated. Risk/reward is highly favorable.`;
   } else if (favorability >= 62 && highThreats <= 2 && p <= 55) {
     verdict = "APPROVED";
     confidence = clamp(Math.round(favorability * 0.65 + bullProb * 0.35), 60, 88);
@@ -2693,7 +2693,10 @@ export async function runTradePreflightSimulation(
   const outcomeSimulator = computeOutcomeSimulator(input.moveType, favorability, pressure, input.timeframe, input.ticker);
   const entryQuality = computeEntryQuality(input.moveType, favorability, pressure, input.timeframe);
   const positionSizing = computePositionSizing(input.moveType, favorability, pressure);
-  const historicalAnalogs = computeHistoricalAnalogs(input.moveType, pressure, input.timeframe, input.ticker);
+  // QA r12 (B10): computeHistoricalAnalogs returns hard-coded templates whose
+  // "similarity" is a formula on pressure, not a measured match. Not shipped;
+  // the Situation Room HISTORICAL ANALOGS section hides on an empty list.
+  const historicalAnalogs: HistoricalAnalog[] = [];
   // Auto-infer thesis — user never needs to classify it
   const inferredThesis = inferThesisFromMove(input.moveType, input.timeframe);
   const thesisStressTest = computeThesisStressTest(

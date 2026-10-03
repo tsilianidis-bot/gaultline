@@ -27,6 +27,7 @@ import {
   type ProbabilityFreshnessStatus,
 } from "../shared/probabilityContract";
 import type { SystemicRegimeReading } from "../shared/systemicRegime";
+import { stripProbabilityPercentClaims } from "./stripProbabilityClaims";
 
 type StoredManifest = Record<string, any>;
 
@@ -201,5 +202,30 @@ export function overlayAssembledSeismographOutput<O extends object>(output: O, c
 
 /** seismograph.getUnifiedIntelligence response overlay. */
 export function overlayUnifiedSeismographIntelligence<U extends object>(intel: U, contract: CanonicalProbabilityContract | null | undefined) {
-  return { ...overlayPayload(intel, contract), probabilityContract: withholdUndisplayedClaimValues(contract ?? null) };
+  const overlaid = { ...overlayPayload(intel, contract), probabilityContract: withholdUndisplayedClaimValues(contract ?? null) };
+  const narrative = (overlaid as { marketNarrative?: unknown }).marketNarrative;
+  return narrative && typeof narrative === "object"
+    ? { ...overlaid, marketNarrative: withoutNarrativeProbabilityClaims(narrative as Record<string, unknown>) }
+    : overlaid;
+}
+
+/** "(60% historical frequency)" / "60% historical frequency" — an uncalibrated transition frequency stated as a %. */
+const FREQUENCY_PERCENT = /\s*\(\s*\d+(?:\.\d+)?\s*%\s*historical frequency\s*\)|\b\d+(?:\.\d+)?\s*%\s*historical frequency\b/gi;
+
+/**
+ * QA r12 (response boundary): narrative copy never states a probability or a
+ * historical-frequency %, whatever produced it (an older generator, a cached
+ * value). "(N% historical frequency)" becomes "(frequency withheld:
+ * uncalibrated)" and any remaining probability-% sentence is dropped. Display
+ * text only.
+ */
+export function withoutNarrativeText(text: string): string {
+  const rewritten = text.replace(FREQUENCY_PERCENT, match => (match.trim().startsWith("(") ? " (frequency withheld: uncalibrated)" : "frequency withheld (uncalibrated)"));
+  return String(stripProbabilityPercentClaims(rewritten));
+}
+
+export function withoutNarrativeProbabilityClaims<N extends Record<string, unknown>>(narrative: N): N {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(narrative)) out[key] = typeof value === "string" ? withoutNarrativeText(value) : value;
+  return out as N;
 }

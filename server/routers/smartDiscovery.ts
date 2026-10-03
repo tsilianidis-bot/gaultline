@@ -412,7 +412,6 @@ async function orchestrateAnswer(
   const outlookSummary = outlookData ? `
 Symbol: ${ticker}
 Direction: ${outlookData.direction}
-Confidence: ${outlookData.confidence}%
 Risk Level: ${outlookData.riskLevel}
 Outlook Score: ${outlookData.outlookScore}
 Data Status: ${outlookData.dataStatus}
@@ -1449,6 +1448,16 @@ async function orchestrateWithRouting(
 
 // ── Router ────────────────────────────────────────────────────
 
+/**
+ * QA r12 (B9b): decision_ledger.confidence / opportunityScore are NOT NULL
+ * columns filled with client defaults (confidence ?? 50 — the validator always
+ * withholds model confidence — and opportunityScore ?? 5). They are not model
+ * output, so they never leave the server. Writes are unchanged (no migration).
+ */
+export function withoutLedgerFabricatedScores<T extends Record<string, unknown>>(entries: T[]): Array<Omit<T, "confidence" | "opportunityScore"> & { confidence: null; opportunityScore: null }> {
+  return entries.map(entry => ({ ...entry, confidence: null, opportunityScore: null }));
+}
+
 export const smartDiscoveryRouter = router({
   /**
    * The primary FAULTLINE interface.
@@ -1628,7 +1637,7 @@ export const smartDiscoveryRouter = router({
         .where(eq(decisionLedger.userId, ctx.user.id))
         .orderBy(desc(decisionLedger.createdAt))
         .limit(input.limit);
-      return entries;
+      return withoutLedgerFabricatedScores(entries);
     }),
 
   /**
