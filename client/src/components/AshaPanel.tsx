@@ -17,6 +17,27 @@ import IntelligenceSynthesis, { SynthesisStep } from "./IntelligenceSynthesis";
 import OracleBriefing, { OracleBriefingData } from "./OracleBriefing";
 import { useIsMobile } from "@/hooks/useMobile";
 import { insufficientHorizonMetadata } from "@shared/forecastMetadata";
+import { ashaSignInRequiredState, reduceAshaAskFailure, type AshaAskFailureState } from "@shared/ashaPanelMachine";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { navigateToLogin } from "@/const";
+
+/**
+ * Height of anything pinned to the bottom of the viewport. The cookie banner
+ * reserves its height as body padding-bottom while it is visible, so the PLATO
+ * card sits above it instead of under it (no z-index change needed).
+ */
+function useBottomObstructionPx(active: boolean): number {
+  const [px, setPx] = useState(0);
+  useEffect(() => {
+    if (!active || typeof document === "undefined") return;
+    const read = () => setPx(parseFloat(document.body.style.paddingBottom || "0") || 0);
+    read();
+    const observer = typeof MutationObserver !== "undefined" ? new MutationObserver(read) : null;
+    observer?.observe(document.body, { attributes: true, attributeFilter: ["style"] });
+    return () => observer?.disconnect();
+  }, [active]);
+  return px;
+}
 
 // ── Context-aware suggestions per page ───────────────────────
 const PAGE_SUGGESTIONS: Record<string, string[]> = {
@@ -107,7 +128,7 @@ const SYNTHESIS_STEPS: Array<{ id: string; label: string; detail?: string }> = [
 ];
 
 // ── Panel state ───────────────────────────────────────────────
-type PanelState = "idle" | "summon" | "synthesizing" | "briefing";
+type PanelState = "idle" | "summon" | "synthesizing" | "briefing" | "unavailable";
 
 // ── Mission ID ────────────────────────────────────────────────
 function generateMissionId(): string {
@@ -117,7 +138,9 @@ function generateMissionId(): string {
 }
 
 export default function AshaPanel() {
-  const { output } = useEngine();
+  const { output, marketMode } = useEngine();
+  // The engine output is the demo baseline unless the market mode is canonical: never send it as context.
+  const canonicalEngine = marketMode === "canonical" ? output : null;
   const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
     staleTime: 60_000,
     refetchOnWindowFocus: false,
@@ -127,10 +150,16 @@ export default function AshaPanel() {
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [synthSteps, setSynthSteps] = useState<SynthesisStep[]>([]);
   const [briefingData, setBriefingData] = useState<OracleBriefingData | null>(null);
+  const [askFailure, setAskFailure] = useState<AshaAskFailureState | null>(null);
+  const [signInUnavailable, setSignInUnavailable] = useState(false);
   const isMobile = useIsMobile();
   const synthTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const askMutation = trpc.asha.ask.useMutation();
+  // Read-only use of the existing auth hook. Guests never call asha.ask (it is protected and a 401
+  // would trigger the global redirect); they get the in-panel sign-in card instead.
+  const { user, loading: authLoading } = useAuth();
+  const bottomObstructionPx = useBottomObstructionPx(panelState === "unavailable");
 
   // ── Derive regime state for orb ───────────────────────────
   const regimeState: AshaRegimeState = (() => {
@@ -145,12 +174,12 @@ export default function AshaPanel() {
   // ── Build full page context ───────────────────────────────
   const fullPageContext = {
     page: pageContext?.page ?? "dashboard",
-    pressureScore: pageContext?.pressureScore ?? canonicalState?.pressureIndex ?? (output?.overall?.score !== undefined ? output.overall.score * 10 : undefined),
-    regime: pageContext?.regime ?? canonicalState?.regime ?? output?.regime?.label,
+    pressureScore: pageContext?.pressureScore ?? canonicalState?.pressureIndex ?? (canonicalEngine?.overall?.score !== undefined ? canonicalEngine.overall.score * 10 : undefined),
+    regime: pageContext?.regime ?? canonicalState?.regime ?? canonicalEngine?.regime?.label,
     regimeConfidence: pageContext?.regimeConfidence,
-    narrative: pageContext?.narrative ?? output?.narrative?.summary,
+    narrative: pageContext?.narrative ?? canonicalEngine?.narrative?.summary,
     trend: pageContext?.trend,
-    keyDrivers: pageContext?.keyDrivers ?? output?.narrative?.keyRisks,
+    keyDrivers: pageContext?.keyDrivers ?? canonicalEngine?.narrative?.keyRisks,
     historicalAnalog: pageContext?.historicalAnalog,
     transitionProbability: pageContext?.transitionProbability,
     additionalContext: {
@@ -222,6 +251,14 @@ export default function AshaPanel() {
 
     const question = text.trim();
     setCurrentQuestion(question);
+    if (!authLoading && !user) {
+      setSignInUnavailable(false);
+      setAskFailure(ashaSignInRequiredState());
+      setPanelState("unavailable");
+      return;
+    }
+    setAskFailure(null);
+    setSignInUnavailable(false);
     setPanelState("synthesizing");
 
     // Initialize synthesis steps
@@ -254,9 +291,6 @@ export default function AshaPanel() {
       await new Promise(resolve => setTimeout(resolve, 650));
 
       // Map to OracleBriefingData
-      const confidenceNum = response.confidence === "high" ? 82
-        : response.confidence === "moderate" ? 65
-        : 45;
 
       const data: OracleBriefingData = {
         question,
@@ -265,15 +299,18 @@ export default function AshaPanel() {
         directAnswer: response.directAnswer || response.executiveSummary || response.reply.split("\n")[0] || response.reply.slice(0, 200),
         executiveSummary: response.executiveSummary || response.reply.split("\n")[0] || response.reply.slice(0, 200),
         coreThesis: response.coreThesis || response.executiveSummary || response.reply.split("\n")[0],
-        marketBias: response.marketBias || "NEUTRAL",
-        confidence: confidenceNum,
+        // Missing model fields are shown as not stated, never filled with invented values.
+        marketBias: response.marketBias ?? "NOT STATED",
+        // No response confidence is established; OracleBriefing renders NOT ESTABLISHED.
+        confidence: undefined,
         marketRegime: response.marketRegime || fullPageContext.regime || "Unknown",
-        threatLevel: response.threatLevel || "ELEVATED",
-        pressureIndex: response.pressureIndex ?? fullPageContext.pressureScore ?? 50,
-        riskLevel: response.riskLevel || "Moderate",
+        threatLevel: response.threatLevel ?? "NOT STATED",
+        pressureIndex: response.pressureIndex ?? fullPageContext.pressureScore ?? null,
+        riskLevel: response.riskLevel ?? "Not stated",
         suggestedBias: response.suggestedBias,
-        bullProbability: response.bullProbability ?? 50,
-        bearProbability: response.bearProbability ?? 50,
+        // Fail closed: a missing scenario weight is null, never a 50 default.
+        bullProbability: response.bullProbability ?? null,
+        bearProbability: response.bearProbability ?? null,
         keyFindings: response.keyFindings?.length ? response.keyFindings : [response.reply.slice(0, 180)],
         supportingEvidence: response.supportingEvidence?.length ? response.supportingEvidence : response.sources,
         crossEngineSynthesis: response.crossEngineSynthesis,
@@ -284,7 +321,7 @@ export default function AshaPanel() {
         invalidationConditions: response.invalidationConditions?.length ? response.invalidationConditions : [],
         missionRecommendation: response.missionRecommendation || response.reply,
         missionRecommendationStructured: response.missionRecommendationStructured,
-        finalVerdictAction: response.finalVerdictAction || "WATCH",
+        finalVerdictAction: response.finalVerdictAction ?? "NOT STATED",
         expectedTimeframe: undefined,
         forecastMetadata: insufficientHorizonMetadata("oracle-briefing", new Date().toISOString()),
         questionAnalysis: response.questionAnalysis,
@@ -297,11 +334,14 @@ export default function AshaPanel() {
       setBriefingData(data);
       setPanelState("briefing");
 
-    } catch {
+    } catch (error) {
+      if (synthTimerRef.current) clearTimeout(synthTimerRef.current);
+      const failure = reduceAshaAskFailure(error);
+      setAskFailure(failure);
       setSynthSteps([]);
-      setPanelState("summon");
+      setPanelState(failure.panelState);
     }
-  }, [askMutation, fullPageContext, threadHistory, appendThreadExchange, advanceSynthesisSteps, suggestions]);
+  }, [askMutation, fullPageContext, threadHistory, appendThreadExchange, advanceSynthesisSteps, suggestions, authLoading, user]);
 
   // ── Ask another question ──────────────────────────────────
   const handleAskAnother = useCallback(() => {
@@ -315,6 +355,8 @@ export default function AshaPanel() {
   const handleDismiss = useCallback(() => {
     setPanelState("idle");
     setCurrentQuestion("");
+    setAskFailure(null);
+    setSignInUnavailable(false);
     setSynthSteps([]);
     setBriefingData(null);
   }, []);
@@ -380,6 +422,146 @@ export default function AshaPanel() {
               Ask PLATO
             </span>
           </button>
+        </div>
+      )}
+
+      {/* ── Failed ask: keep the question, never replay the intro ── */}
+      {panelState === "unavailable" && askFailure && (
+        <div
+          role="alertdialog"
+          aria-labelledby="asha-unavailable-title"
+          data-asha-unavailable="true"
+          data-asha-failure-kind={askFailure.kind}
+          style={{
+            position: "fixed",
+            left: "50%",
+            bottom: isMobile
+              ? `calc(${72 + bottomObstructionPx}px + env(safe-area-inset-bottom, 0px))`
+              : `${24 + bottomObstructionPx}px`,
+            transform: "translateX(-50%)",
+            // Leave both screen edges clear so the side NAV and ACTIONS tabs (about 34px wide,
+            // vertically centred) stay visible and clickable when the card is raised above the cookie banner.
+            width: "min(440px, calc(100vw - 88px))",
+            zIndex: 1100,
+            background: "rgba(6,10,20,0.96)",
+            border: "1px solid rgba(0,229,255,0.38)",
+            borderRadius: "8px",
+            padding: "16px 16px 14px",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.55), 0 0 24px rgba(0,229,255,0.12)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          <div style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: "9px",
+            letterSpacing: "0.16em",
+            color: "#00E5FF",
+            textTransform: "uppercase",
+            marginBottom: "8px",
+          }}>
+            PLATO
+          </div>
+          <h2 id="asha-unavailable-title" style={{
+            margin: "0 0 8px",
+            fontFamily: "'IBM Plex Sans', sans-serif",
+            fontSize: "15px",
+            fontWeight: 600,
+            color: "#E6EDF3",
+          }}>
+            {askFailure.title}
+          </h2>
+          <p style={{
+            margin: "0 0 10px",
+            fontFamily: "'IBM Plex Sans', sans-serif",
+            fontSize: "13px",
+            lineHeight: 1.45,
+            color: "rgba(226,232,240,0.82)",
+          }}>
+            {askFailure.detail}
+          </p>
+          <div style={{
+            margin: "0 0 12px",
+            padding: "8px 10px",
+            borderRadius: "4px",
+            background: "rgba(255,255,255,0.03)",
+            border: "1px solid rgba(148,163,184,0.18)",
+            fontFamily: "'IBM Plex Sans', sans-serif",
+            fontSize: "12px",
+            color: "#CBD5E1",
+          }}>
+            {currentQuestion}
+          </div>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            {askFailure.showRetry && (
+              <button
+                type="button"
+                onClick={() => sendMessage(currentQuestion)}
+                style={{
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: "10px",
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "#041018",
+                  background: "#00E5FF",
+                  border: "none",
+                  borderRadius: "4px",
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                }}
+              >
+                Retry
+              </button>
+            )}
+            {askFailure.showSignIn && (
+              <button
+                type="button"
+                onClick={() => { setSignInUnavailable(!navigateToLogin()); }}
+                style={{
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: "10px",
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "#041018",
+                  background: "#00E5FF",
+                  border: "none",
+                  borderRadius: "4px",
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  fontWeight: 700,
+                }}
+              >
+                Sign in
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleDismiss}
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: "10px",
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "rgba(226,232,240,0.7)",
+                background: "transparent",
+                border: "1px solid rgba(148,163,184,0.25)",
+                borderRadius: "4px",
+                padding: "8px 12px",
+                cursor: "pointer",
+              }}
+            >
+              Close
+            </button>
+          </div>
+          {askFailure.showSignIn && signInUnavailable && (
+            <p role="status" data-plato-signin-unavailable style={{
+              margin: "10px 0 0",
+              fontFamily: "'IBM Plex Sans', sans-serif",
+              fontSize: "12px",
+              color: "#F59E0B",
+            }}>
+              Sign-in is unavailable right now. Please try again later.
+            </p>
+          )}
         </div>
       )}
 

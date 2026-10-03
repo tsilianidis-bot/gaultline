@@ -74,6 +74,9 @@ import { getTradeJournalEntries, insertTradeJournalEntry, updateTradeJournalEntr
 import { analyzeSeoUrl, generateMetaTags, generateAutoFix } from './seoOptimizer';
 import { computeSOB } from './sobEngine';
 import { askAsha, generateAshaDailyGreeting, ASHA_FIRST_INTRODUCTION } from './ashaEngine';
+import { mapAshaProcedureError, platoFailureLogFields } from './ashaProcedureError';
+import { platoDailyLimitError, PlatoUnavailableError } from './plato/errors';
+import { platoUsage, readPlatoLimits } from './plato/limits';
 import { generateBotResponse, detectIntent, aggregateLeadScore } from './chatbotEngine';
 import {
   createChatbotSession, updateChatbotSession, addChatbotMessage, getChatbotMessages,
@@ -584,12 +587,23 @@ export const appRouter = router({
       try {
         const rows = await getPositionsByUser(ctx.user.id);
         const pressure = await calculateFaultlinePressure();
-        const vectors = pressure.vectors;
+        // Fail closed: missing vectors read as no vectors (every vector metric Unavailable), not an error.
+        const vectors = Array.isArray(pressure.vectors) ? pressure.vectors : [];
 
         // Helper: find vector score by id
-        const vs = (id: string) => vectors.find(v => v.id === id)?.score ?? 50;
+        // Fail closed: a missing or non-finite vector score is null, never a 50 default.
+        const vs = (id: string): number | null => {
+          const score = vectors.find(v => v.id === id)?.score;
+          return typeof score === "number" && Number.isFinite(score) ? score : null;
+        };
+        const UNAVAILABLE_COLOR = "#64748B";
         const vd = (id: string) => vectors.find(v => v.id === id)?.driver ?? "";
-        const vt = (id: string) => vectors.find(v => v.id === id)?.trend ?? "stable";
+        // A missing vector has no trend: null (no trend icon), never a "stable" default.
+        const vt = (id: string) => vectors.find(v => v.id === id)?.trend ?? null;
+        const finite = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
+        const text = (value: unknown): string | null => (typeof value === "string" && value.trim() !== "" ? value : null);
+        // A missing regime name is null (shown as Unavailable), never "undefined".
+        const regimeName = text(pressure.regime);
 
         // Analyse position composition
         const totalPositions = rows.length;
@@ -603,7 +617,8 @@ export const appRouter = router({
         const stockRatio  = totalPositions > 0 ? stockCount  / totalPositions : 0;
 
         // Concentration: Herfindahl-style — if < 5 positions, concentration is high
-        const concentrationScore = totalPositions === 0 ? 50
+        // No positions: there is nothing to measure, so null ("No positions"), never a 50 default.
+        const concentrationScore = totalPositions === 0 ? null
           : totalPositions === 1 ? 90
           : totalPositions <= 3 ? 75
           : totalPositions <= 6 ? 55
@@ -611,37 +626,47 @@ export const appRouter = router({
           : 20;
 
         // 1. Portfolio Pressure Score — weighted composite of all vectors
-        const portfolioPressureScore = pressure.overallPressure;
+        // Fail closed: a missing or non-finite overall pressure is null ("Unavailable").
+        const portfolioPressureScore = finite(pressure.overallPressure) ? pressure.overallPressure : null;
 
         // 2. AI Bubble Exposure — ai-bubble vector, amplified by AI/tech stock ratio
         const aiBubbleBase = vs("ai-bubble");
-        const aiBubbleScore = Math.min(100, Math.round(aiBubbleBase * (1 + stockRatio * 0.2)));
+        const aiBubbleScore = aiBubbleBase === null ? null : Math.min(100, Math.round(aiBubbleBase * (1 + stockRatio * 0.2)));
 
         // 3. Interest Rate Sensitivity — volatility-regime + macro-sensitivity
-        const rateSensScore = Math.min(100, Math.round((vs("volatility-regime") * 0.5 + vs("macro-sensitivity") * 0.5)));
+        const volRegime = vs("volatility-regime");
+        const macroSens = vs("macro-sensitivity");
+        const rateSensScore = volRegime === null || macroSens === null ? null : Math.min(100, Math.round(volRegime * 0.5 + macroSens * 0.5));
 
         // 4. Concentration Risk — position count heuristic
         const concentrationRiskScore = concentrationScore;
 
         // 5. Liquidity Risk — liquidity-stress vector, amplified by crypto ratio
         const liquidityBase = vs("liquidity-stress");
-        const liquidityScore = Math.min(100, Math.round(liquidityBase * (1 + cryptoRatio * 0.3)));
+        const liquidityScore = liquidityBase === null ? null : Math.min(100, Math.round(liquidityBase * (1 + cryptoRatio * 0.3)));
 
         // 6. Recession Exposure — credit-contagion + macro-sensitivity
-        const recessionScore = Math.min(100, Math.round((vs("credit-contagion") * 0.6 + vs("macro-sensitivity") * 0.4)));
+        const creditContagion = vs("credit-contagion");
+        const recessionScore = creditContagion === null || macroSens === null ? null : Math.min(100, Math.round(creditContagion * 0.6 + macroSens * 0.4));
 
         // 7. Historical Crash Vulnerability — top analog similarity as proxy
-        const crashVulnScore = Math.min(100, Math.round(pressure.topAnalog.similarity * 0.85 + portfolioPressureScore * 0.15));
+        // Fail closed: a missing or non-finite input gives null ("Unavailable").
+        const analogSimilarity = pressure.topAnalog?.similarity;
+        const analogLabel = text(pressure.topAnalog?.label);
+        const analogDescription = text(pressure.topAnalog?.description);
+        const crashVulnScore = finite(analogSimilarity) && finite(portfolioPressureScore)
+          ? Math.min(100, Math.round(analogSimilarity * 0.85 + portfolioPressureScore * 0.15))
+          : null;
 
         // 8. Regime Alignment — how well-positioned the portfolio is for the current regime
         // Low pressure = good alignment; high pressure = poor alignment
-        const regimeAlignmentScore = Math.max(0, 100 - portfolioPressureScore);
+        const regimeAlignmentScore = finite(portfolioPressureScore) ? Math.max(0, 100 - portfolioPressureScore) : null;
 
-        const scoreToLevel = (s: number) =>
-          s >= 75 ? "Critical" : s >= 60 ? "High" : s >= 40 ? "Elevated" : s >= 20 ? "Moderate" : "Low";
+        const scoreToLevel = (s: number | null) =>
+          s === null ? "Unavailable" : s >= 75 ? "Critical" : s >= 60 ? "High" : s >= 40 ? "Elevated" : s >= 20 ? "Moderate" : "Low";
 
         return {
-          regime: pressure.regime,
+          regime: regimeName,
           regimeLevel: pressure.level,
           dataSource: pressure.dataSource,
           timestamp: pressure.timestamp,
@@ -652,9 +677,9 @@ export const appRouter = router({
               description: "Composite macro-risk pressure index applied to your current portfolio",
               score: portfolioPressureScore,
               level: scoreToLevel(portfolioPressureScore),
-              driver: `FAULTLINE Pressure Index at ${portfolioPressureScore}/100 — ${pressure.regime}`,
-              trend: pressure.overallPressure > 60 ? "rising" : pressure.overallPressure < 30 ? "falling" : "stable" as const,
-              color: portfolioPressureScore >= 75 ? "#FF2D55" : portfolioPressureScore >= 55 ? "#FF6B35" : portfolioPressureScore >= 35 ? "#FFD60A" : "#00FF88",
+              driver: portfolioPressureScore === null ? "" : `FAULTLINE Pressure Index at ${portfolioPressureScore}/100${regimeName === null ? "" : ` — ${regimeName}`}`,
+              trend: portfolioPressureScore === null ? null : portfolioPressureScore > 60 ? "rising" : portfolioPressureScore < 30 ? "falling" : "stable" as const,
+              color: portfolioPressureScore === null ? UNAVAILABLE_COLOR : portfolioPressureScore >= 75 ? "#FF2D55" : portfolioPressureScore >= 55 ? "#FF6B35" : portfolioPressureScore >= 35 ? "#FFD60A" : "#00FF88",
             },
             {
               id: "ai-bubble-exposure",
@@ -662,9 +687,9 @@ export const appRouter = router({
               description: "Concentration risk from AI mega-cap and speculative growth assets",
               score: aiBubbleScore,
               level: scoreToLevel(aiBubbleScore),
-              driver: vd("ai-bubble"),
-              trend: vt("ai-bubble"),
-              color: aiBubbleScore >= 75 ? "#FF2D55" : aiBubbleScore >= 55 ? "#FF6B35" : aiBubbleScore >= 35 ? "#FFD60A" : "#00FF88",
+              driver: aiBubbleScore === null ? "" : vd("ai-bubble"),
+              trend: aiBubbleScore === null ? null : vt("ai-bubble"),
+              color: aiBubbleScore === null ? UNAVAILABLE_COLOR : aiBubbleScore >= 75 ? "#FF2D55" : aiBubbleScore >= 55 ? "#FF6B35" : aiBubbleScore >= 35 ? "#FFD60A" : "#00FF88",
             },
             {
               id: "rate-sensitivity",
@@ -672,19 +697,19 @@ export const appRouter = router({
               description: "Exposure to rate-driven repricing from Fed policy and yield curve dynamics",
               score: rateSensScore,
               level: scoreToLevel(rateSensScore),
-              driver: vd("macro-sensitivity"),
-              trend: vt("macro-sensitivity"),
-              color: rateSensScore >= 75 ? "#FF2D55" : rateSensScore >= 55 ? "#FF6B35" : rateSensScore >= 35 ? "#FFD60A" : "#00FF88",
+              driver: rateSensScore === null ? "" : vd("macro-sensitivity"),
+              trend: rateSensScore === null ? null : vt("macro-sensitivity"),
+              color: rateSensScore === null ? UNAVAILABLE_COLOR : rateSensScore >= 75 ? "#FF2D55" : rateSensScore >= 55 ? "#FF6B35" : rateSensScore >= 35 ? "#FFD60A" : "#00FF88",
             },
             {
               id: "concentration-risk",
               label: "Concentration Risk",
               description: `Portfolio spread across ${totalPositions} position${totalPositions !== 1 ? "s" : ""}`,
               score: concentrationRiskScore,
-              level: scoreToLevel(concentrationRiskScore),
+              level: concentrationRiskScore === null ? "No positions" : scoreToLevel(concentrationRiskScore),
               driver: totalPositions === 0 ? "No positions tracked" : totalPositions <= 3 ? `Only ${totalPositions} position${totalPositions !== 1 ? "s" : ""} — high single-name risk` : `${totalPositions} positions — diversification improving`,
-              trend: "stable" as const,
-              color: concentrationRiskScore >= 75 ? "#FF2D55" : concentrationRiskScore >= 55 ? "#FF6B35" : concentrationRiskScore >= 35 ? "#FFD60A" : "#00FF88",
+              trend: concentrationRiskScore === null ? null : "stable" as const,
+              color: concentrationRiskScore === null ? UNAVAILABLE_COLOR : concentrationRiskScore >= 75 ? "#FF2D55" : concentrationRiskScore >= 55 ? "#FF6B35" : concentrationRiskScore >= 35 ? "#FFD60A" : "#00FF88",
             },
             {
               id: "liquidity-risk",
@@ -692,9 +717,9 @@ export const appRouter = router({
               description: "Credit market liquidity conditions affecting exit and re-entry costs",
               score: liquidityScore,
               level: scoreToLevel(liquidityScore),
-              driver: vd("liquidity-stress"),
-              trend: vt("liquidity-stress"),
-              color: liquidityScore >= 75 ? "#FF2D55" : liquidityScore >= 55 ? "#FF6B35" : liquidityScore >= 35 ? "#FFD60A" : "#00FF88",
+              driver: liquidityScore === null ? "" : vd("liquidity-stress"),
+              trend: liquidityScore === null ? null : vt("liquidity-stress"),
+              color: liquidityScore === null ? UNAVAILABLE_COLOR : liquidityScore >= 75 ? "#FF2D55" : liquidityScore >= 55 ? "#FF6B35" : liquidityScore >= 35 ? "#FFD60A" : "#00FF88",
             },
             {
               id: "recession-exposure",
@@ -702,19 +727,21 @@ export const appRouter = router({
               description: "Probability of macro contraction impacting portfolio valuations",
               score: recessionScore,
               level: scoreToLevel(recessionScore),
-              driver: vd("credit-contagion"),
-              trend: vt("credit-contagion"),
-              color: recessionScore >= 75 ? "#FF2D55" : recessionScore >= 55 ? "#FF6B35" : recessionScore >= 35 ? "#FFD60A" : "#00FF88",
+              driver: recessionScore === null ? "" : vd("credit-contagion"),
+              trend: recessionScore === null ? null : vt("credit-contagion"),
+              color: recessionScore === null ? UNAVAILABLE_COLOR : recessionScore >= 75 ? "#FF2D55" : recessionScore >= 55 ? "#FF6B35" : recessionScore >= 35 ? "#FFD60A" : "#00FF88",
             },
             {
               id: "crash-vulnerability",
               label: "Historical Crash Vulnerability",
-              description: `Current conditions match ${pressure.topAnalog.label} (${pressure.topAnalog.similarity}% similarity)`,
+              description: finite(analogSimilarity) && analogLabel !== null
+                ? `Current conditions match ${analogLabel} (${analogSimilarity}% similarity)`
+                : "Closest historical analog unavailable",
               score: crashVulnScore,
               level: scoreToLevel(crashVulnScore),
-              driver: `Closest analog: ${pressure.topAnalog.label} — ${pressure.topAnalog.description}`,
-              trend: "stable" as const,
-              color: crashVulnScore >= 75 ? "#FF2D55" : crashVulnScore >= 55 ? "#FF6B35" : crashVulnScore >= 35 ? "#FFD60A" : "#00FF88",
+              driver: crashVulnScore === null || analogLabel === null ? "" : `Closest analog: ${analogLabel}${analogDescription === null ? "" : ` — ${analogDescription}`}`,
+              trend: crashVulnScore === null ? null : "stable" as const,
+              color: crashVulnScore === null ? UNAVAILABLE_COLOR : crashVulnScore >= 75 ? "#FF2D55" : crashVulnScore >= 55 ? "#FF6B35" : crashVulnScore >= 35 ? "#FFD60A" : "#00FF88",
             },
             {
               id: "regime-alignment",
@@ -722,9 +749,9 @@ export const appRouter = router({
               description: "How well your portfolio is positioned for the current macro regime",
               score: regimeAlignmentScore,
               level: scoreToLevel(regimeAlignmentScore),
-              driver: regimeAlignmentScore >= 60 ? `Portfolio well-aligned with ${pressure.regime} regime` : `Portfolio exposed to ${pressure.regime} headwinds`,
-              trend: pressure.overallPressure > 60 ? "falling" : "rising" as const,
-              color: regimeAlignmentScore >= 60 ? "#00FF88" : regimeAlignmentScore >= 40 ? "#FFD60A" : regimeAlignmentScore >= 20 ? "#FF6B35" : "#FF2D55",
+              driver: regimeAlignmentScore === null || regimeName === null ? "" : regimeAlignmentScore >= 60 ? `Portfolio well-aligned with ${regimeName} regime` : `Portfolio exposed to ${regimeName} headwinds`,
+              trend: regimeAlignmentScore === null || portfolioPressureScore === null ? null : portfolioPressureScore > 60 ? "falling" : "rising" as const,
+              color: regimeAlignmentScore === null ? UNAVAILABLE_COLOR : regimeAlignmentScore >= 60 ? "#00FF88" : regimeAlignmentScore >= 40 ? "#FFD60A" : regimeAlignmentScore >= 20 ? "#FF6B35" : "#FF2D55",
             },
           ],
         };
@@ -3363,35 +3390,70 @@ export const appRouter = router({
           additionalContext: z.record(z.string(), z.unknown()).optional(),
         }),
       }))
-      .mutation(async ({ input }) => {
-        const response = await askAsha({
-          userMessage: input.userMessage,
-          history: input.history,
-          pageContext: input.pageContext,
-        });
-        return response;
+      .mutation(async ({ ctx, input }) => {
+        // Per-signed-in-user daily question cap (in-memory, per process; see server/plato/limits.ts).
+        const userDailyQuestions = readPlatoLimits().userDailyQuestions;
+        if (!platoUsage.tryReserveUserQuestion(ctx.user.id, userDailyQuestions)) {
+          const mapped = mapAshaProcedureError(platoDailyLimitError("user"));
+          log.warn("[PLATO] ask unavailable", { code: mapped.code, reason: "user_daily_limit", limit: userDailyQuestions });
+          throw mapped;
+        }
+        try {
+          return await askAsha({
+            userMessage: input.userMessage,
+            history: input.history,
+            pageContext: input.pageContext,
+          });
+        } catch (error) {
+          // PLATO gave no answer: the question does not count against the user's daily cap.
+          if (error instanceof PlatoUnavailableError) platoUsage.releaseUserQuestion(ctx.user.id);
+          const mapped = mapAshaProcedureError(error);
+          log.warn("[PLATO] ask unavailable", { code: mapped.code, ...platoFailureLogFields(error) });
+          if (mapped.code === "INTERNAL_SERVER_ERROR") {
+            log.error("[PLATO] ask failed", { err: error instanceof Error ? error : new Error(String(error)) });
+          }
+          throw mapped;
+        }
       }),
 
     // Generate personalized daily greeting
     dailyGreeting: protectedProcedure
       .input(z.object({
         userName: z.string().optional(),
+        // Every reading is optional: clients send only canonical values and never a default
+        // pressure or an invented confidence. Absent fields are not passed to the model.
         engineContext: z.object({
-          pressureScore: z.number(),
-          regime: z.string(),
-          regimeConfidence: z.number(),
-          narrative: z.string(),
-          trend: z.string(),
-          keyDrivers: z.array(z.string()),
+          pressureScore: z.number().optional(),
+          regime: z.string().optional(),
+          regimeConfidence: z.number().optional(),
+          narrative: z.string().optional(),
+          trend: z.string().optional(),
+          keyDrivers: z.array(z.string()).optional(),
           previousPressureScore: z.number().optional(),
-        }),
+        }).default({}),
       }))
-      .mutation(async ({ input }) => {
-        const greeting = await generateAshaDailyGreeting({
-          userName: input.userName,
-          engineContext: input.engineContext,
-        });
-        return { greeting };
+      .mutation(async ({ ctx, input }) => {
+        // Per-signed-in-user daily greeting cap, so one user cannot drain the global PLATO cap
+        // (in-memory, per process; see server/plato/limits.ts).
+        const userDailyGreetings = readPlatoLimits().userDailyGreetings;
+        if (!platoUsage.tryReserveUserGreeting(ctx.user.id, userDailyGreetings)) {
+          const mapped = mapAshaProcedureError(platoDailyLimitError("user_greeting"));
+          log.warn("[PLATO] daily greeting unavailable", { code: mapped.code, reason: "user_daily_greeting_limit", limit: userDailyGreetings });
+          throw mapped;
+        }
+        try {
+          const greeting = await generateAshaDailyGreeting({
+            userName: input.userName,
+            engineContext: input.engineContext,
+          });
+          return { greeting };
+        } catch (error) {
+          // PLATO produced no greeting: it does not count against the user's daily greeting cap.
+          if (error instanceof PlatoUnavailableError) platoUsage.releaseUserGreeting(ctx.user.id);
+          const mapped = mapAshaProcedureError(error);
+          log.warn("[PLATO] daily greeting unavailable", { code: mapped.code, ...platoFailureLogFields(error) });
+          throw mapped;
+        }
       }),
 
     // Get ASHA's first-login introduction text

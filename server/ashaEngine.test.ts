@@ -42,7 +42,7 @@ describe("ASHA Phase 4 canonical evidence integration", () => {
   it("uses a Phase 4 evidence-bound prompt and returns response transaction provenance", async () => {
     gatewayMocks.invokeGateway.mockResolvedValue({ response: llmResult(JSON.stringify({ reply: "The supplied evidence is limited." })), trace: modelTrace });
     const response = await askAsha({ userMessage: "What is happening?", history: [], pageContext: { page: "/app/now" } });
-    expect(gatewayMocks.invokeGateway).toHaveBeenCalledWith(expect.objectContaining({
+    expect(gatewayMocks.invokeGateway.mock.calls[0][0]).toEqual(expect.objectContaining({
       messages: expect.arrayContaining([expect.objectContaining({
         role: "system",
         content: expect.stringMatching(/You are PLATO, the Spirit of FAULTLINE[\s\S]*PHASE 4 INTERPRETATION CONTRACT/),
@@ -77,15 +77,21 @@ describe("ASHA Phase 4 canonical evidence integration", () => {
       history: [{ role: "user", content: "Yesterday?" }, { role: "assistant", content: "Prior answer." }],
       pageContext: { page: "/app/why" },
     });
-    expect(gatewayMocks.invokeGateway).toHaveBeenCalledWith(expect.objectContaining({ messages: [
+    expect(gatewayMocks.invokeGateway.mock.calls[0][0]).toEqual(expect.objectContaining({ messages: [
       expect.objectContaining({ role: "system" }), { role: "user", content: "Yesterday?" }, { role: "assistant", content: "Prior answer." }, { role: "user", content: "What changed?" },
     ] }));
   });
 
   it("routes daily greeting through the shared Phase 4 evidence transaction and fails safely when no canonical state is available", async () => {
-    gatewayMocks.invokeGateway.mockResolvedValue({ response: llmResult("   "), trace: modelTrace });
+    gatewayMocks.invokeGateway.mockResolvedValue({ response: llmResult("Welcome back. Pressure is building in credit."), trace: modelTrace });
     const greeting = await generateAshaDailyGreeting({ engineContext: { pressureScore: 61, regime: "Late Cycle", regimeConfidence: 0.72, narrative: "Credit is tightening.", trend: "Deteriorating", keyDrivers: ["Credit"] } });
     expect(gatewayMocks.createContext).toHaveBeenCalledWith(expect.objectContaining({ page: "daily-greeting" }));
     expect(greeting).toBe("Canonical state unavailable. Insufficient evidence for a current market interpretation.");
+  });
+
+  it("an empty greeting answer is a typed failure, not a canned greeting", async () => {
+    gatewayMocks.invokeGateway.mockResolvedValue({ response: llmResult("   "), trace: modelTrace });
+    await expect(generateAshaDailyGreeting({ engineContext: { pressureScore: 61, regime: "Late Cycle", regimeConfidence: 0.72, narrative: "Credit is tightening.", trend: "Deteriorating", keyDrivers: ["Credit"] } }))
+      .rejects.toMatchObject({ name: "PlatoUnavailableError", attempts: [expect.objectContaining({ errorClass: "empty_response" })] });
   });
 });

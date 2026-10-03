@@ -23,12 +23,15 @@ import {
 } from "../shared/ashaQuestionAnalysis";
 import { evidenceNarrativePromptContract } from "../shared/evidenceContract";
 import { buildCanonicalEvidencePacket } from "./evidencePacket";
+import { deepStripPlatoProbabilityClaims, stripPlatoProbabilityClaims } from "./platoProbabilityStrip";
 import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 import { buildInterpretationPromptContract, createInterpretationTransaction, validateInterpretationOutput, type InterpretationTransaction, type InterpretationValidationResult } from "../shared/interpretationIntegrity";
 import { buildCrossEngineSynthesis, buildCrossEngineSynthesisPromptContract } from "./crossEngineSynthesis";
 import { buildEarlyWarningPresentationPromptContract, getCurrentGovernedEarlyWarningPresentation } from "./earlyWarningPresentation";
 import { getLatestSignalConvergence, getLatestSystemicRegimeReading } from "./systemicRegime/reader";
 import { buildSystemicRegimePromptContract } from "./systemicRegime/platoRead";
+import { createPlatoBudget, platoBudgetExhausted, type PlatoResponseValidator } from "./plato/router";
+import { platoErrorSummary, unusableAnswerError } from "./plato/errors";
 
 export type { AshaPageContext } from "../shared/ashaContext";
 
@@ -84,7 +87,7 @@ The 10 engines you must consult and synthesize:
 
 3. LIQUIDITY ENGINE — How tight or loose is liquidity? What is the SOFR rate signaling? What are funding market conditions? Are there signs of liquidity stress in short-term markets?
 
-4. TREASURY CONDITIONS — What is the yield curve doing? Is it inverted, steepening, or flattening? What is the 10Y yield signaling? What does the spread between 2Y and 10Y indicate about recession probability?
+4. TREASURY CONDITIONS — What is the yield curve doing? Is it inverted, steepening, or flattening? What is the 10Y yield signaling? What does the spread between 2Y and 10Y indicate as a historical recession warning sign (no probability)?
 
 5. VOLATILITY ENGINE — What is the current volatility regime? What does the yield curve shape, rate environment, and credit spread behavior signal about market uncertainty? Are conditions calm, transitioning, or turbulent? What does the rate structure imply about near-term risk?
 
@@ -153,7 +156,8 @@ export interface AshaRequest {
 
 export interface AshaResponse {
   reply: string;
-  confidence: "high" | "moderate" | "low";
+  /** Not established by the model contract; never keyword-guessed or defaulted. */
+  confidence?: "high" | "moderate" | "low";
   sources: string[];
   enginesConsulted: string[];
   lastUpdated: string;
@@ -218,14 +222,6 @@ export interface AshaResponse {
   };
 }
 
-// ── Determine confidence from response ───────────────────────
-function inferConfidence(reply: string): "high" | "moderate" | "low" {
-  const lower = reply.toLowerCase();
-  if (lower.includes("high confidence") || lower.includes("strongly suggests") || lower.includes("clearly")) return "high";
-  if (lower.includes("uncertain") || lower.includes("unclear") || lower.includes("insufficient data") || lower.includes("low confidence")) return "low";
-  return "moderate";
-}
-
 function readString(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
@@ -249,6 +245,68 @@ function readEnum<T extends string>(value: unknown, allowed: readonly T[]): T | 
 // Strip markdown code fences (```json ... ```) that some LLM responses wrap around JSON
 function stripCodeFences(raw: string): string {
   return raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+}
+
+/**
+ * PLATO only accepts a 200 that parses to the briefing JSON with a non-empty
+ * `reply`. Anything else is rejected inside the router so the next model is
+ * tried within the same per-question budget; it is never shown as an answer.
+ */
+const oracleAnswerProblem: PlatoResponseValidator = response => {
+  const raw = readString(response.choices?.[0]?.message?.content);
+  if (!raw) return "empty_response";
+  try {
+    const candidate = JSON.parse(stripCodeFences(raw));
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return "malformed_response";
+    return readString((candidate as Record<string, unknown>).reply) ? null : "empty_response";
+  } catch {
+    return "malformed_response";
+  }
+};
+
+// ── QA r10 B8 / r13 B8a: no probability % anywhere in a PLATO answer ──
+// Every string the model wrote is stripped, at any depth (citations, timeHorizon, invented keys).
+// The response and integrity.validation.normalizedOutput carry only the known answer fields.
+// Display text only: the evidence packet and every scoring input are untouched.
+export { deepStripPlatoProbabilityClaims, stripPlatoProbabilityClaims };
+
+/** Strips probability-% sentences from every string of a PLATO answer, at any depth. */
+export function withoutPlatoProbabilityClaims(answer: Record<string, unknown>): Record<string, unknown> {
+  return deepStripPlatoProbabilityClaims(answer) as Record<string, unknown>;
+}
+
+/** The PLATO answer fields the client may receive (the oracle response schema). Anything else is dropped. */
+export const PLATO_ANSWER_KNOWN_FIELDS = [
+  "reply", "directAnswer", "executiveSummary", "coreThesis", "marketBias", "marketRegime", "threatLevel",
+  "pressureIndex", "riskLevel", "suggestedBias", "bullProbability", "bearProbability", "keyFindings",
+  "supportingEvidence", "crossEngineSynthesis", "historicalAnalog", "riskFactors", "confirmationConditions",
+  "invalidationConditions", "missionRecommendation", "missionRecommendationStructured", "sourceCitations",
+  "limitations", "disclaimer", "finalVerdictAction", "expectedTimeframe", "followUpChips",
+] as const;
+
+/** Only the known answer fields, taken from the final (stripped, normalized) answer. */
+export function platoKnownAnswerFields(answer: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const key of PLATO_ANSWER_KNOWN_FIELDS) if (answer[key] !== undefined) out[key] = answer[key];
+  return out;
+}
+
+function parseOracleAnswer(content: unknown, model: string): Record<string, unknown> {
+  const raw = readString(content);
+  if (!raw) throw unusableAnswerError("empty_response", "openai-compatible", model);
+  let candidate: unknown;
+  try {
+    candidate = JSON.parse(stripCodeFences(raw));
+  } catch {
+    throw unusableAnswerError("malformed_response", "openai-compatible", model);
+  }
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+    throw unusableAnswerError("malformed_response", "openai-compatible", model);
+  }
+  if (!readString((candidate as Record<string, unknown>).reply)) {
+    throw unusableAnswerError("empty_response", "openai-compatible", model);
+  }
+  return candidate as Record<string, unknown>;
 }
 
 function readBoundedScore(value: unknown, fallback: number): number {
@@ -449,6 +507,8 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     { role: "user", content: req.userMessage },
   ];
 
+  // One budget for the whole question: the answer call and any correction call share it.
+  const questionBudget = createPlatoBudget();
   const { response: llmResponse, trace: initialModelTrace } = await invokeAshaGateway({
     messages,
     response_format: {
@@ -542,18 +602,11 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
         },
       },
     },
-  });
+  }, { budget: questionBudget, validateResponse: oracleAnswerProblem });
 
-  let parsed: Record<string, unknown> = {};
+  // An unparseable, truncated or reply-less answer is a typed failure, never the answer.
+  let parsed: Record<string, unknown> = parseOracleAnswer(llmResponse.choices?.[0]?.message?.content, initialModelTrace.selectedModel);
   let modelTrace = initialModelTrace;
-
-  try {
-  const raw = llmResponse.choices?.[0]?.message?.content as string;
-  parsed = JSON.parse(stripCodeFences(raw));
-} catch {
-    const raw = (llmResponse.choices?.[0]?.message?.content as string) ?? "";
-    parsed = { reply: raw };
-  }
 
   // Run validation — if critical arrays are empty, retry once with a correction prompt
   const validationIssues = validateOracleBriefing(parsed);
@@ -569,7 +622,9 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
           issue.includes("executiveSummary is too long")
   );
 
-  if (criticalFailures.length > 0) {
+  if (criticalFailures.length > 0 && platoBudgetExhausted(questionBudget)) {
+    console.warn("[ASHA Oracle] Correction skipped: the question's provider budget is used up; keeping the validated first answer");
+  } else if (criticalFailures.length > 0) {
     console.warn("[ASHA Oracle] Critical validation failures — retrying:", criticalFailures);
     const correctionMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
       ...messages,
@@ -643,9 +698,8 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
             },
           },
         },
-      });
-      const retryRaw = retryResponse.choices?.[0]?.message?.content as string;
-      const retryParsed = JSON.parse(stripCodeFences(retryRaw));
+      }, { budget: questionBudget, validateResponse: oracleAnswerProblem });
+      const retryParsed = parseOracleAnswer(retryResponse.choices?.[0]?.message?.content, retryTrace.selectedModel);
       const retryIssues = validateOracleBriefing(retryParsed);
       if (retryIssues.length < validationIssues.length) {
         console.log("[ASHA Oracle] Retry improved quality:", retryIssues);
@@ -655,16 +709,19 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
         console.warn("[ASHA Oracle] Retry did not improve quality, using original");
       }
     } catch (retryErr) {
-      console.error("[ASHA Oracle] Retry failed:", retryErr);
+      // Class and status only: never the upstream body, prompt or answer.
+      console.warn("[ASHA Oracle] Correction failed; keeping the validated first answer", platoErrorSummary(retryErr));
     }
   } else if (validationIssues.length > 0) {
     console.warn("[ASHA Oracle] Non-critical validation issues:", validationIssues);
   }
 
   const integrityValidation = validateInterpretationOutput(parsed, transaction);
-  parsed = integrityValidation.normalizedOutput;
+  // QA r10 B8 / r13 B8a: no string the model wrote, at any depth, may state a probability %.
+  parsed = withoutPlatoProbabilityClaims(integrityValidation.normalizedOutput);
 
-  const reply = readString(parsed.reply) || "I was unable to generate a response. Please try again.";
+  const reply = readString(parsed.reply);
+  if (!reply) throw unusableAnswerError("empty_response", "openai-compatible", modelTrace.selectedModel);
   const directAnswer = readString(parsed.directAnswer) || readString(parsed.executiveSummary) || reply.split("\n")[0];
   const coreThesis = readString(parsed.coreThesis) || readString(parsed.executiveSummary) || reply;
   const confirmationConditions = readStringArray(parsed.confirmationConditions);
@@ -720,9 +777,10 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
   const llmLimitations = readStringArray(parsed.limitations);
   const allLimitations = Array.from(new Set([...packetLimitations, ...llmLimitations]));
 
-  return {
+  const response = {
     reply,
-    confidence: inferConfidence(reply),
+    // No response confidence is established: it is never guessed from keywords or defaulted.
+    confidence: undefined,
     sources: packetSources,
     enginesConsulted: packetEngines,
     enginesAvailableCount: packetEngines.length,
@@ -733,11 +791,11 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     directAnswer,
     executiveSummary: readString(parsed.executiveSummary) || reply.split("\n")[0],
     coreThesis,
-    marketBias: readEnum(parsed.marketBias, ["BULLISH", "BEARISH", "NEUTRAL"] as const) || "NEUTRAL",
+    marketBias: readEnum(parsed.marketBias, ["BULLISH", "BEARISH", "NEUTRAL"] as const),
     marketRegime: readString(parsed.marketRegime) || gatewayContext.marketState.now.regime,
-    threatLevel: readEnum(parsed.threatLevel, ["LOW", "ELEVATED", "HIGH", "CRITICAL"] as const) || "ELEVATED",
+    threatLevel: readEnum(parsed.threatLevel, ["LOW", "ELEVATED", "HIGH", "CRITICAL"] as const),
     pressureIndex: readBoundedScore(parsed.pressureIndex, gatewayContext.marketState.now.pressureScore),
-    riskLevel: readString(parsed.riskLevel) || "Moderate",
+    riskLevel: readString(parsed.riskLevel),
     suggestedBias: readString(parsed.suggestedBias),
     bullProbability: readNullableBoundedScore(parsed.bullProbability),
     bearProbability: readNullableBoundedScore(parsed.bearProbability),
@@ -753,15 +811,20 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     sourceCitations,
     limitations: allLimitations.length > 0 ? allLimitations : undefined,
     disclaimer: readString(parsed.disclaimer) || "This briefing is for informational purposes only and does not constitute financial advice.",
-    finalVerdictAction: readEnum(parsed.finalVerdictAction, ["BUY", "ACCUMULATE", "HOLD", "WATCH", "REDUCE", "SELL", "AVOID"] as const) || "WATCH",
+    finalVerdictAction: readEnum(parsed.finalVerdictAction, ["BUY", "ACCUMULATE", "HOLD", "WATCH", "REDUCE", "SELL", "AVOID"] as const),
     expectedTimeframe: readString(parsed.expectedTimeframe) || "Not established",
     followUpChips: readStringArray(parsed.followUpChips),
     questionAnalysis,
     provenance: getAshaContextProvenance(gatewayContext),
     modelTrace,
+  };
+  return {
+    ...response,
     integrity: {
       transaction: { ...transaction, modelVersion: modelTrace.selectedModel },
-      validation: integrityValidation,
+      // QA r13 B8a: the validated output as sent. Only the known answer fields, from the final
+      // stripped and normalized answer: no raw enums, no invented model keys.
+      validation: { ...integrityValidation, normalizedOutput: platoKnownAnswerFields(response) },
       generationAttempts: modelTrace.attemptedModels.length,
       synthesis: governedCrossEngineSynthesis ? {
         synthesisId: governedCrossEngineSynthesis.synthesisId,
@@ -772,37 +835,47 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
 }
 
 // ── Daily greeting generator ──────────────────────────────────
+const GREETING_EVIDENCE_QUALITY_LINE = /^Current evidence quality: (healthy|limited|partial|unavailable)$/;
+
+/** The only client greeting narrative forwarded to PLATO: the fixed evidence-quality line. */
+export function greetingNarrativeForModel(narrative: string | undefined): string | undefined {
+  const trimmed = narrative?.trim();
+  return trimmed && GREETING_EVIDENCE_QUALITY_LINE.test(trimmed) ? trimmed : undefined;
+}
+
 export interface AshaDailyGreetingRequest {
   userName?: string;
+  /** Optional readings: only values the client actually has (canonical) are sent. */
   engineContext: {
-    pressureScore: number;
-    regime: string;
-    regimeConfidence: number;
-    narrative: string;
-    trend: string;
-    keyDrivers: string[];
+    pressureScore?: number;
+    regime?: string;
+    regimeConfidence?: number;
+    narrative?: string;
+    trend?: string;
+    keyDrivers?: string[];
     previousPressureScore?: number;
   };
 }
 
 export async function generateAshaDailyGreeting(req: AshaDailyGreetingRequest): Promise<string> {
   const { engineContext, userName } = req;
-  const pressureChange = engineContext.previousPressureScore !== undefined
+  const pressureChange = engineContext.previousPressureScore !== undefined && engineContext.pressureScore !== undefined
     ? engineContext.pressureScore - engineContext.previousPressureScore
-    : null;
+    : undefined;
 
-  const gatewayContext = await createAshaGatewayContext({
-    page: "daily-greeting",
-    pressureScore: engineContext.pressureScore,
-    regime: engineContext.regime,
-    regimeConfidence: engineContext.regimeConfidence,
-    narrative: engineContext.narrative,
-    trend: engineContext.trend,
-    keyDrivers: engineContext.keyDrivers,
-    additionalContext: {
-      pressureChangeSinceLastSession: pressureChange,
-    },
-  });
+  // Page supplement carries only the readings the client supplied; nothing is defaulted.
+  const page: AshaPageContext = { page: "daily-greeting" };
+  if (engineContext.pressureScore !== undefined) page.pressureScore = engineContext.pressureScore;
+  if (engineContext.regime) page.regime = engineContext.regime;
+  // A client-sent regimeConfidence is never forwarded: no real confidence exists for the greeting.
+  // Client narrative is not market evidence and could carry a probability: only the fixed
+  // evidence-quality line is kept; any other text is dropped (the block has the canonical story).
+  const narrative = greetingNarrativeForModel(engineContext.narrative);
+  if (narrative) page.narrative = narrative;
+  if (engineContext.trend) page.trend = engineContext.trend;
+  if (engineContext.keyDrivers && engineContext.keyDrivers.length > 0) page.keyDrivers = engineContext.keyDrivers;
+  if (pressureChange !== undefined) page.additionalContext = { pressureChangeSinceLastSession: pressureChange };
+  const gatewayContext = await createAshaGatewayContext(page);
   const contextBlock = buildAshaCanonicalContextBlock(gatewayContext);
   const authoritativeState = await getAuthoritativeCanonicalIntelligenceState();
   const evidencePacket = authoritativeState ? buildCanonicalEvidencePacket(toPublicCanonicalIntelligenceState(authoritativeState)) : null;
@@ -820,10 +893,15 @@ export async function generateAshaDailyGreeting(req: AshaDailyGreetingRequest): 
     },
   ];
 
-  const { response: llmResponse } = await invokeAshaGateway({ messages });
-  const candidate = readString(llmResponse.choices?.[0]?.message?.content)
-    ?? "Canonical state unavailable. Insufficient evidence for a current market interpretation.";
-  return String(validateInterpretationOutput({ reply: candidate }, transaction).normalizedOutput.reply);
+  const { response: llmResponse, trace } = await invokeAshaGateway({ messages });
+  // An empty answer is a typed failure, not a canned "canonical state unavailable" greeting.
+  const candidate = readString(llmResponse.choices?.[0]?.message?.content);
+  if (!candidate) throw unusableAnswerError("empty_response", "openai-compatible", trace.selectedModel);
+  const greeting = String(validateInterpretationOutput({ reply: candidate }, transaction).normalizedOutput.reply);
+  // QA r10 B8: the greeting states no probability %.
+  const stripped = String(stripPlatoProbabilityClaims(greeting));
+  if (!stripped) throw unusableAnswerError("empty_response", "openai-compatible", trace.selectedModel);
+  return stripped;
 }
 
 // ── First-login introduction (static, from brand brief) ───────

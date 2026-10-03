@@ -6,15 +6,17 @@
    ============================================================ */
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
+import { platoGreetingLimitMessage } from "@shared/ashaPanelMachine";
 import { useEngine } from "@/contexts/EngineContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import AshaOrb from "./AshaOrb";
+import { buildDailyGreetingContext } from "@/lib/ashaBriefingContext";
 import { X } from "lucide-react";
 
 const SESSION_KEY = "faultline_asha_greeting_dismissed_v2";
 
 export default function AshaDailyGreeting() {
-  const { output, isLoading } = useEngine();
+  const { output, isLoading, marketMode } = useEngine();
   const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
     staleTime: 60_000,
     refetchOnWindowFocus: false,
@@ -33,24 +35,16 @@ export default function AshaDailyGreeting() {
 
   useEffect(() => {
     if (dismissed || fetched || isLoading || !canonicalState || !user) return;
-    const score = (canonicalState.pressureIndex ?? 0) / 10;
-    if (score === undefined || isNaN(score)) return;
-
     setFetched(true);
     greetingMutation.mutateAsync({
       userName: user?.name ?? undefined,
-      engineContext: {
-        pressureScore: score * 10,
-        regime: canonicalState.regime ?? "Unavailable",
-        regimeConfidence: 0.75,
-        narrative: `Current evidence quality: ${canonicalState.confidenceOrEvidenceQuality === "HEALTHY" ? "healthy" : canonicalState.confidenceOrEvidenceQuality === "DEGRADED" ? "limited" : canonicalState.confidenceOrEvidenceQuality === "PARTIAL" ? "partial" : "unavailable"}`,
-        trend: output.regime?.sublabel ?? "",
-        keyDrivers: output.narrative?.keyRisks ?? [],
-      },
+      // Canonical values only; no default pressure and no invented confidence.
+      engineContext: buildDailyGreetingContext(canonicalState, output, marketMode),
     }).then(res => {
       setGreeting(res.greeting);
-    }).catch(() => {
-      setGreeting("Good morning. Current market pressure is elevated. I am monitoring conditions across all active engines. Here is what is building beneath the surface.");
+    }).catch((error: unknown) => {
+      // Never substitute a canned market reading for PLATO's answer. A daily cap says so.
+      setGreeting(platoGreetingLimitMessage(error) ?? "PLATO is temporarily unavailable, so there is no PLATO greeting right now. It will return when the language model is reachable.");
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canonicalState, isLoading, dismissed, fetched]);
@@ -62,17 +56,18 @@ export default function AshaDailyGreeting() {
 
   if (dismissed || (!greeting && !greetingMutation.isPending)) return null;
 
-  const pressureScore = canonicalState?.pressureIndex ?? 0;
+  const pressureKnown = typeof canonicalState?.pressureIndex === "number" && Number.isFinite(canonicalState.pressureIndex);
+  const pressureScore = pressureKnown ? (canonicalState?.pressureIndex as number) : 0;
   const regimeState: "calm" | "rising" | "critical" =
     pressureScore >= 70 ? "critical" : pressureScore >= 45 ? "rising" : "calm";
 
   const regimeLabel = canonicalState?.regime ?? "Canonical state unavailable";
-  const pressureLabel =
+  const pressureLabel = !pressureKnown ? "NOT AVAILABLE" :
     pressureScore >= 70 ? "CRITICAL" :
     pressureScore >= 55 ? "ELEVATED" :
     pressureScore >= 40 ? "MODERATE" : "STABLE";
 
-  const pressureColor =
+  const pressureColor = !pressureKnown ? "#94A3B8" :
     pressureScore >= 70 ? "#FF3B5C" :
     pressureScore >= 55 ? "#FFAA00" :
     pressureScore >= 40 ? "#FFD700" : "#00FF99";

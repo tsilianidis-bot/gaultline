@@ -11,6 +11,7 @@ import { getDb } from "../db";
 import { conversationLogs, conversationMessages, institutionalEvents } from "../../drizzle/schema";
 import { eq, desc, and, gte, sql } from "drizzle-orm";
 import { invokeLLM } from "../_core/llm";
+import { stripPlatoProbabilityClaims } from "../platoProbabilityStrip";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -24,6 +25,51 @@ function sevenDaysAgo(): Date {
   const d = new Date();
   d.setDate(d.getDate() - 7);
   return d;
+}
+
+// ── QA r13 B10: Intelligence Center model text ─────────────────────────────
+// The thesis, the follow-up questions and the what-changed summary are model text rendered on
+// /app/asha: every probability-% sentence is stripped (the same helper as asha.ask). When nothing
+// usable is left, the procedure says so (unavailable: true) instead of rendering an empty card.
+
+const NO_PROBABILITY_INSTRUCTION = "Never state a probability, a percent chance or odds.";
+
+/** Model text with every probability-% sentence removed; null when nothing usable is left. */
+export function platoMemoryText(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const kept = stripPlatoProbabilityClaims(raw.trim());
+  return typeof kept === "string" && kept.trim() ? kept.trim() : null;
+}
+
+/** Follow-up questions with probability-% sentences removed; questions left empty are dropped. */
+export function platoMemoryQuestions(raw: unknown, limit = 4): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map(platoMemoryText)
+    .filter((question): question is string => question !== null)
+    .slice(0, limit);
+}
+
+/**
+ * The market-state clause of the what-changed prompt. Pressure is the canonical 0-100 score sent
+ * as "N/100"; a missing pressure or regime is sent as unavailable and never estimated.
+ */
+export function whatChangedMarketStateClause(currentRegime: string | null | undefined, currentPressureScore: number | null | undefined): string {
+  const regime = typeof currentRegime === "string" && currentRegime.trim() ? currentRegime.trim() : null;
+  const pressure = typeof currentPressureScore === "number" && Number.isFinite(currentPressureScore)
+    ? `${Math.round(currentPressureScore)}/100`
+    : null;
+  const known = [
+    regime ? `the current market regime (${regime})` : null,
+    pressure ? `pressure level (${pressure})` : null,
+  ].filter(Boolean);
+  const unavailable = [regime ? null : "current market regime", pressure ? null : "pressure level"].filter(Boolean);
+  const parts: string[] = [];
+  if (known.length > 0) parts.push(`Be specific about ${known.join(" and ")}.`);
+  if (unavailable.length > 0) {
+    parts.push(`The ${unavailable.join(" and ")} ${unavailable.length > 1 ? "are" : "is"} unavailable: do not state or estimate ${unavailable.length > 1 ? "them" : "it"}.`);
+  }
+  return parts.join(" ");
 }
 
 // ── Router ───────────────────────────────────────────────────────────────────
@@ -329,17 +375,17 @@ Write a 2-3 sentence synthesis of their current market thesis. Start with "Based
 
       const response = await invokeLLM({
         messages: [
-          { role: "system", content: "You are PLATO, the intelligence layer of FAULTLINE. You synthesize market understanding from conversation history. Be concise, institutional, and specific." },
+          { role: "system", content: `You are PLATO, the intelligence layer of FAULTLINE. You synthesize market understanding from conversation history. Be concise, institutional, and specific. ${NO_PROBABILITY_INSTRUCTION}` },
           { role: "user", content: prompt },
         ],
       });
 
-      const rawThesis = response.choices?.[0]?.message?.content;
-      const thesis = typeof rawThesis === 'string' ? rawThesis.trim() : null;
-      return { thesis, generatedAt: new Date() };
+      // QA r13 B10: no probability-% sentence reaches the page; nothing left reads unavailable.
+      const thesis = platoMemoryText(response.choices?.[0]?.message?.content);
+      return { thesis, unavailable: thesis === null, generatedAt: new Date() };
     } catch (err) {
-      // Non-fatal — return null thesis gracefully
-      return { thesis: null, generatedAt: new Date() };
+      // Non-fatal: the thesis reads unavailable
+      return { thesis: null, unavailable: true, generatedAt: new Date() };
     }
   }),
 
@@ -385,7 +431,7 @@ Return exactly this format: ["question 1", "question 2", "question 3", "question
 
       const response = await invokeLLM({
         messages: [
-          { role: "system", content: "You are PLATO. Generate follow-up questions as a JSON array. Return only the JSON array, nothing else." },
+          { role: "system", content: `You are PLATO. Generate follow-up questions as a JSON array. Return only the JSON array, nothing else. ${NO_PROBABILITY_INSTRUCTION}` },
           { role: "user", content: prompt },
         ],
         response_format: {
@@ -410,17 +456,18 @@ Return exactly this format: ["question 1", "question 2", "question 3", "question
 
       const rawContent = response.choices?.[0]?.message?.content;
       const content = typeof rawContent === 'string' ? rawContent : null;
-      if (!content) return { questions: [] };
+      if (!content) return { questions: [], unavailable: true };
 
       try {
         const parsed = JSON.parse(content);
-        const questions = (parsed.questions ?? []).slice(0, 4) as string[];
-        return { questions };
+        // QA r13 B10: each question stripped; questions left empty are dropped.
+        const questions = platoMemoryQuestions(parsed?.questions);
+        return { questions, unavailable: questions.length === 0 };
       } catch {
-        return { questions: [] };
+        return { questions: [], unavailable: true };
       }
     } catch (err) {
-      return { questions: [] };
+      return { questions: [], unavailable: true };
     }
   }),
 
@@ -430,8 +477,9 @@ Return exactly this format: ["question 1", "question 2", "question 3", "question
    */
   getWhatChangedSummary: protectedProcedure
     .input(z.object({
-      currentPressureScore: z.number(),
-      currentRegime: z.string(),
+      // QA r13 B10: canonical pressure on the 0-100 scale; null when there is no canonical reading.
+      currentPressureScore: z.number().min(0).max(100).nullable().optional(),
+      currentRegime: z.string().max(160).nullable().optional(),
     }))
     .query(async ({ ctx, input }) => {
       try {
@@ -468,20 +516,20 @@ Return exactly this format: ["question 1", "question 2", "question 3", "question
           .orderBy(desc(conversationMessages.timestamp))
           .limit(1);
 
-        const prompt = `You are PLATO, the continuously active intelligence layer of FAULTLINE. The user last spoke with you ${daysSince === 0 ? "earlier today" : `${daysSince} day${daysSince > 1 ? "s" : ""} ago`}. Write 2 sentences describing what has continued to develop since their last visit. Be specific about the current market regime (${input.currentRegime}) and pressure level (${input.currentPressureScore.toFixed(1)}/10). Reference the topics they were discussing: ${topics}${symbols ? `. Symbols they were watching: ${symbols}` : ""}${lastUserMsg ? `. Their last question was: "${lastUserMsg.content.slice(0, 150)}"` : ""}. Start with "Since we last spoke..."`;
+        const prompt = `You are PLATO, the continuously active intelligence layer of FAULTLINE. The user last spoke with you ${daysSince === 0 ? "earlier today" : `${daysSince} day${daysSince > 1 ? "s" : ""} ago`}. Write 2 sentences describing what has continued to develop since their last visit. ${whatChangedMarketStateClause(input.currentRegime, input.currentPressureScore)} Reference the topics they were discussing: ${topics}${symbols ? `. Symbols they were watching: ${symbols}` : ""}${lastUserMsg ? `. Their last question was: "${lastUserMsg.content.slice(0, 150)}"` : ""}. Start with "Since we last spoke..."`;
 
         const response = await invokeLLM({
           messages: [
-            { role: "system", content: "You are PLATO. Write a 2-sentence update on what has developed since the user's last visit. Be specific and institutional." },
+            { role: "system", content: `You are PLATO. Write a 2-sentence update on what has developed since the user's last visit. Be specific and institutional. ${NO_PROBABILITY_INSTRUCTION}` },
             { role: "user", content: prompt },
           ],
         });
 
-        const rawSummary = response.choices?.[0]?.message?.content;
-        const summary = typeof rawSummary === 'string' ? rawSummary.trim() : null;
-        return { summary, lastVisit: lastLog.startedAt, daysSince };
+        // QA r13 B10: no probability-% sentence reaches the page; nothing left reads unavailable.
+        const summary = platoMemoryText(response.choices?.[0]?.message?.content);
+        return { summary, unavailable: summary === null, lastVisit: lastLog.startedAt, daysSince };
       } catch (err) {
-        return { summary: null };
+        return { summary: null, unavailable: true };
       }
     }),
 

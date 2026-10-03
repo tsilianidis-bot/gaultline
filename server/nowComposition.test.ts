@@ -60,7 +60,8 @@ describe("NOW destination composition", () => {
 
   it("renders every identified NOW pressure surface on the canonical 0–100 scale", () => {
     const hero = source("client/src/components/AshaHeroSection.tsx");
-    const briefing = source("client/src/components/AshaLiveBriefing.tsx");
+    // The briefing tiles are built by the canonical-gated helper (PR #58 r3).
+    const briefing = source("client/src/components/AshaLiveBriefing.tsx") + source("client/src/lib/ashaBriefingContext.ts");
     const contextStrip = source("client/src/components/MarketContextStrip.tsx");
     const synthesis = source("client/src/components/MarketSynthesisPanel.tsx");
     const narrativeBanner = source("client/src/components/SeismographNarrativeBanner.tsx");
@@ -68,7 +69,7 @@ describe("NOW destination composition", () => {
 
     expect(nowSource).toContain("formatCanonicalScore(pressure)");
     expect(hero).toContain("formatCanonicalScore(score * 10)");
-    expect(briefing).toContain("formatCanonicalScore(overall.score * 10)");
+    expect(briefing).toContain("formatCanonicalScore(score10 * 10)");
     expect(contextStrip).toContain("formatCanonicalScore(canonicalPressure ?? overall.score * 10)");
     expect(synthesis).toContain("formatCanonicalScore(canonicalState.pressureIndex ?? 0)");
     expect(narrativeBanner).toContain("formatCanonicalScore(output.pressureScore)");
