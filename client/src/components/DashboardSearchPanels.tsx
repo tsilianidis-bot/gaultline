@@ -10,6 +10,7 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { navigateToLogin } from "@/const";
+import { formatEt } from "@shared/credibilityLabels";
 
 // ── Style constants ───────────────────────────────────────────
 const MONO = "'IBM Plex Mono', monospace";
@@ -288,7 +289,7 @@ export function CryptoPorchPanel() {
   const priceDisplay = livePrice != null
     ? (livePrice >= 1000 ? `$${livePrice.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : `$${livePrice.toFixed(livePrice < 1 ? 4 : 2)}`)
     : screenerData ? 'N/A' : '...';
-  const lastUpdated = screenerData ? new Date(screenerData.computedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null;
+  const lastUpdated = screenerData ? formatEt(screenerData.computedAt) : null;
 
   const handleSearch = useCallback(() => {
     const sym = input.trim().toUpperCase();
@@ -434,7 +435,7 @@ export function CryptoPorchPanel() {
                 </span>
               )}
               {lastUpdated && (
-                <span style={{ marginLeft: '8px', color: '#334155', fontSize: '10px' }}>↻ {lastUpdated}</span>
+                <span style={{ marginLeft: '8px', color: '#334155', fontSize: '10px' }}>Crypto screener · as of {lastUpdated}</span>
               )}
             </div>
           </div>
@@ -485,7 +486,7 @@ export function StockPorchPanel() {
   const { user } = useAuth();
   const [input, setInput] = useState("");
   const [active, setActive] = useState("NVDA");
-  const [liveQuotes, setLiveQuotes] = useState<Record<string, { price: number; changePercent: number }>>({});
+  const [liveQuotes, setLiveQuotes] = useState<Record<string, { price: number; changePercent: number; timestamp?: number }>>({});
   const [quotesUpdatedAt, setQuotesUpdatedAt] = useState<string | null>(null);
 
   // Fetch live quotes from the signals endpoint
@@ -494,11 +495,11 @@ export function StockPorchPanel() {
       try {
         const res = await fetch('/api/signals/quotes', { signal: AbortSignal.timeout(15000) });
         if (!res.ok) return;
-        const data = await res.json() as { quotes?: Array<{ ticker: string; price: number; changePercent: number }> };
-        const map: Record<string, { price: number; changePercent: number }> = {};
-        for (const q of data.quotes ?? []) map[q.ticker] = { price: q.price, changePercent: q.changePercent };
+        const data = await res.json() as { quotes?: Array<{ ticker: string; price: number; changePercent: number; timestamp?: number }> };
+        const map: Record<string, { price: number; changePercent: number; timestamp?: number }> = {};
+        for (const q of data.quotes ?? []) map[q.ticker] = { price: q.price, changePercent: q.changePercent, timestamp: q.timestamp };
         setLiveQuotes(map);
-        setQuotesUpdatedAt(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+        setQuotesUpdatedAt(formatEt(Date.now()));
       } catch { /* silent — show metadata without price */ }
     };
     fetchQuotes();
@@ -667,8 +668,8 @@ export function StockPorchPanel() {
                   {liveQ.changePercent >= 0 ? '+' : ''}{liveQ.changePercent.toFixed(2)}%
                 </span>
               )}
-              {quotesUpdatedAt && (
-                <span style={{ marginLeft: '8px', color: '#334155', fontSize: '10px' }}>↻ {quotesUpdatedAt}</span>
+              {liveQ?.price != null && (
+                <span style={{ marginLeft: '8px', color: '#334155', fontSize: '10px' }}>Signals quote · as of {formatEt(liveQ.timestamp ?? null) ?? '—'}</span>
               )}
             </div>
           </div>

@@ -87,7 +87,8 @@ describe("independent calc consumers — marketIntelligence regime engines", () 
     expect(layout).toContain("useEngine");
     expect(layout).toContain("marketIntelligence.getAll");
     expect(layout).toContain("intelligence={miData}");
-    expect(layout).toContain("output.overall.score");
+    // CURRENT score for the watchlist badge: canonical Pressure Index from useEngine (0–100).
+    expect(layout).toContain("canonicalState?.pressureIndex");
 
     const mcc = source("client/src/pages/MarketCommandCenter.tsx");
     expect(mcc).toContain("useEngine");

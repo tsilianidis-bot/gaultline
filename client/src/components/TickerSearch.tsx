@@ -9,6 +9,7 @@ import {
   useState, useRef, useEffect, useCallback, useMemo,
 } from 'react';
 import { trpc } from '@/lib/trpc';
+import { signalQuoteBadge } from '@/lib/signalQuoteView';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { RiskFramework, type RiskLevels } from '@/components/RiskFramework';
 import { trackSignalSearch, trackWatchlistAction } from '@/hooks/useAnalytics';
@@ -33,6 +34,8 @@ interface TickerProfile {
   tradeDate: string;
   marketStatus: 'open' | 'closed' | 'extended' | 'unknown';
   isLive: boolean;
+  /** Server delay flag (Yahoo ~15-min delayed / Polygon prior close). */
+  isDelayed?: boolean;
   source: 'live' | 'stale' | 'fallback';
   cached?: boolean;
   error?: string;
@@ -303,24 +306,23 @@ function StockIntelligenceCard({
                 fontWeight: 700, fontSize: '22px',
                 color: '#F0F4FF', letterSpacing: '0.06em',
               }}>{profile.ticker}</span>
-              {profile.isLive && (
-                <span style={{
-                  fontSize: '11px', letterSpacing: '0.1em',
-                  color: '#00D4FF', background: 'rgba(0,212,255,0.08)',
-                  padding: '2px 5px', borderRadius: '2px',
-                  border: '1px solid rgba(0,212,255,0.15)',
-                  fontFamily: "'IBM Plex Mono', monospace",
-                }}>LIVE</span>
-              )}
-              {profile.source === 'stale' && (
-                <span style={{
-                  fontSize: '11px', letterSpacing: '0.1em',
-                  color: '#FF9500', background: 'rgba(255,149,0,0.08)',
-                  padding: '2px 5px', borderRadius: '2px',
-                  border: '1px solid rgba(255,149,0,0.15)',
-                  fontFamily: "'IBM Plex Mono', monospace",
-                }}>STALE</span>
-              )}
+              {/* One freshness badge from the quote AND its response source:
+                  stale → STALE, fallback → UNAVAILABLE, delayed → DELAYED, closed → LAST CLOSE. */}
+              {(() => {
+                const badge = signalQuoteBadge(profile, profile.source);
+                const live = badge === 'LIVE';
+                const stale = badge === 'STALE';
+                return (
+                  <span data-ticker-freshness={badge} style={{
+                    fontSize: '11px', letterSpacing: '0.1em',
+                    color: live ? '#00D4FF' : stale ? '#FF9500' : '#94A3B8',
+                    background: live ? 'rgba(0,212,255,0.08)' : stale ? 'rgba(255,149,0,0.08)' : 'rgba(255,255,255,0.04)',
+                    padding: '2px 5px', borderRadius: '2px',
+                    border: `1px solid ${live ? 'rgba(0,212,255,0.15)' : stale ? 'rgba(255,149,0,0.15)' : 'rgba(255,255,255,0.1)'}`,
+                    fontFamily: "'IBM Plex Mono', monospace",
+                  }}>{badge}</span>
+                );
+              })()}
               <span style={{
                 fontSize: '11px', letterSpacing: '0.08em',
                 color: 'rgba(100,116,139,0.75)',

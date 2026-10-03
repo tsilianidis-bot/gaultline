@@ -8,13 +8,15 @@ import { getLoginUrl } from '@/const';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { TickerChip } from '@/components/TickerActionMenu';
 
-// ── Static demo data (no API calls — pure teaser) ─────────────
+// ── Illustrative layout examples ──────────────────────────────
+// Action / confidence / factors below are a static example of the card layout,
+// not current signals. The example binds NO real quote: pairing a real price with
+// a static action and confidence would read as a current call. Price and change
+// show "—" with an EXAMPLE label; current quotes and signals live in /app/signals.
 const DEMO_STOCKS = [
   {
     ticker: 'NVDA',
     name: 'NVIDIA Corporation',
-    price: 924.58,
-    change: +3.42,
     cap: 'Mega',
     action: 'BUY' as const,
     confidence: 84,
@@ -26,8 +28,6 @@ const DEMO_STOCKS = [
   {
     ticker: 'XLU',
     name: 'Utilities Select SPDR',
-    price: 68.14,
-    change: +0.71,
     cap: 'ETF',
     action: 'WATCH' as const,
     confidence: 61,
@@ -39,8 +39,6 @@ const DEMO_STOCKS = [
   {
     ticker: 'ARKK',
     name: 'ARK Innovation ETF',
-    price: 48.22,
-    change: -1.87,
     cap: 'ETF',
     action: 'SELL' as const,
     confidence: 77,
@@ -181,9 +179,10 @@ function StockCard({ stock, delay }: { stock: typeof DEMO_STOCKS[0]; delay: numb
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.04em' }}>{stock.name}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '15px', color: '#F0F4FF' }}>${stock.price.toFixed(2)}</div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: stock.change >= 0 ? '#00FF88' : '#FF2D55', letterSpacing: '0.06em' }}>
-            {stock.change >= 0 ? '+' : ''}{stock.change.toFixed(2)}%
+          <div data-preview-price style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '15px', color: '#F0F4FF' }}>—</div>
+          <div data-preview-change style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: '#64748B', letterSpacing: '0.06em' }}>—</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.7)', letterSpacing: '0.06em' }}>
+            EXAMPLE · NO QUOTE
           </div>
         </div>
       </div>
@@ -204,6 +203,7 @@ function StockCard({ stock, delay }: { stock: typeof DEMO_STOCKS[0]; delay: numb
         {stock.action === 'WATCH' && '◎ '}
           {stock.action}
         </span>
+        <span data-example-label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.7)', letterSpacing: '0.1em' }}>EXAMPLE</span>
         <span style={{
           fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px',
           color: rc, padding: '2px 6px',
@@ -418,7 +418,7 @@ export default function HomeStockIntelSection() {
 
         {/* Stock intelligence cards */}
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '8px' }}>
-          Live Signal Preview — 3 of 500+ Monitored Assets
+          Signal Card Layout — Illustrative Example, Not Current Signals
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
           {DEMO_STOCKS.map((s, i) => (

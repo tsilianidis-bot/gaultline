@@ -1,8 +1,9 @@
 /* ============================================================
    FAULTLINE — Watchlist Tab
    Pin specific macro indicators, set custom alert thresholds
-   with above/below conditions, and receive live visual alerts
-   when thresholds are crossed. Persisted to localStorage.
+   with above/below conditions; cards are flagged on-page when the latest
+   published (delayed / last-close) reading crosses a threshold.
+   Persisted to localStorage.
 
    Design: Palantir Noir — void-black, neon accents, scanlines.
    ============================================================ */
@@ -55,13 +56,13 @@ interface WatchlistReading {
 function getWatchlistReading(
   indicatorKey: string,
   readings: LiveIndicatorReadings,
-  canonical: { overallScore10: number | null; integrityLabel: string },
+  canonical: { overallScore100: number | null; integrityLabel: string },
 ): WatchlistReading {
   if (indicatorKey === 'score_overall') {
-    const value = canonical.overallScore10;
+    const value = canonical.overallScore100;
     if (value == null || !Number.isFinite(value)) return { value: null, stateLabel: 'UNAVAILABLE', evaluable: false };
     const tag = canonical.integrityLabel === 'LIVE' ? null : canonical.integrityLabel;
-    return { value, stateLabel: tag, evaluable: tag !== 'STALE' && tag !== 'UNAVAILABLE', source: 'Canonical Pressure Index ÷ 10' };
+    return { value, stateLabel: tag, evaluable: tag !== 'STALE' && tag !== 'UNAVAILABLE', source: 'Canonical Pressure Index (0–100)' };
   }
   // Credit / AI / Treasury / Recession domain scores have no canonical source.
   if (indicatorKey.startsWith('score_')) return { value: null, stateLabel: 'UNAVAILABLE', evaluable: false };
@@ -85,7 +86,8 @@ function WatchlistCard({ item, reading, def, onEdit, onDelete, index }: Watchlis
   const liveValue = reading.value;
   const isBreached = reading.evaluable && liveValue != null && evaluateBreach(item, liveValue);
   const proximity = reading.evaluable && liveValue != null ? getBreachDistance(item, liveValue, def) : 0;
-  const sevCfg = SEVERITY_CONFIG[item.severity];
+  // Hand-edited storage can carry an unknown severity; fall back instead of crashing the card.
+  const sevCfg = SEVERITY_CONFIG[item.severity] ?? SEVERITY_CONFIG.moderate;
   const catColor = CATEGORY_COLORS[def.category] ?? '#00D4FF';
 
   const borderColor = isBreached ? sevCfg.color : proximity > 0.6 ? sevCfg.color + '60' : 'rgba(255,255,255,0.06)';
@@ -155,6 +157,7 @@ function WatchlistCard({ item, reading, def, onEdit, onDelete, index }: Watchlis
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
             <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '26px', color: isBreached ? sevCfg.color : catColor, textShadow: isBreached ? `0 0 20px ${sevCfg.color}80` : `0 0 12px ${catColor}60`, lineHeight: 1 }}>
               {liveValue != null ? def.format(liveValue) : '—'}
+              {liveValue != null && def.unit === '/100' && <span data-watchlist-score-suffix style={{ fontSize: '12px', color: '#6B7280', marginLeft: '2px' }}>/100</span>}
             </div>
             <div
               data-watchlist-state={reading.stateLabel ?? 'LIVE'}
@@ -352,10 +355,10 @@ export default function Watchlist() {
   // threshold evaluation (present and not STALE).
   const pressureIndex = canonicalState?.pressureIndex;
   const watchlistReadings = useMemo<Record<string, WatchlistReading>>(() => {
-    const overallScore10 = typeof pressureIndex === 'number' && Number.isFinite(pressureIndex) ? pressureIndex / 10 : null;
+    const overallScore100 = typeof pressureIndex === 'number' && Number.isFinite(pressureIndex) ? pressureIndex : null;
     const map: Record<string, WatchlistReading> = {};
     INDICATOR_CATALOG.forEach(def => {
-      map[def.key] = getWatchlistReading(def.key, readings, { overallScore10, integrityLabel });
+      map[def.key] = getWatchlistReading(def.key, readings, { overallScore100, integrityLabel });
     });
     return map;
   }, [readings, pressureIndex, integrityLabel]);
@@ -451,7 +454,7 @@ export default function Watchlist() {
 
       <PageHeader
         title="Watchlist"
-        subtitle="Pin any macro indicator, set a custom threshold, and get a live visual alert when it’s breached."
+        subtitle="Pin any macro indicator and set a custom threshold. The card is flagged on this page when the latest published reading (delayed or last close) crosses it."
         badge={pageBadge}
         badgeColor={pageBadge === 'LIVE' ? 'green' : pageBadge === 'UNAVAILABLE' ? 'gray' : 'amber'}
         rightSlot={
@@ -565,7 +568,7 @@ export default function Watchlist() {
             </div>
             <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#6B7280', marginBottom: '8px' }}>No indicators pinned</h3>
             <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#374151', lineHeight: 1.6, maxWidth: '280px', margin: '0 auto 20px' }}>
-              Add indicators from the catalog and set custom thresholds to receive live alerts when conditions are breached.
+              Add indicators from the catalog and set custom thresholds. A card is flagged on this page when the latest published reading crosses its threshold; STALE readings never trigger.
             </p>
             <button
               onClick={() => setEditingItem(null)}

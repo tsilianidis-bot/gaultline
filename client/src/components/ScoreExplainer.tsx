@@ -542,36 +542,35 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
     },
   },
 
+  // Internal key "volatilityRegime" = Pressure vector id "volatility-regime",
+  // which reads the 10Y–2Y curve and the 10Y level (DGS10, DGS2), not VIX.
   volatilityRegime: {
-    label: "Volatility Regime",
-    shortLabel: "Volatility",
+    label: "Yield Curve (10Y–2Y) & 10Y Level",
+    shortLabel: "Yield Curve",
     learnMorePath: "/learn/how-to-read-stock-market",
     statusLabel: (v) => {
-      if (v >= 75) return "Extreme Volatility";
-      if (v >= 55) return "High Volatility";
-      if (v >= 35) return "Elevated Volatility";
-      return "Low Volatility";
+      if (v >= 55) return "High Curve Pressure";
+      if (v >= 35) return "Elevated Curve Pressure";
+      return "Low Curve Pressure";
     },
     meaning: (v) => {
-      if (v >= 75) return "Volatility is at extreme levels. Large daily price swings are expected. Options are expensive and risk management is critical.";
-      if (v >= 55) return "Volatility is high. Markets are moving more than normal. Position sizing should reflect the increased uncertainty.";
-      if (v >= 35) return "Volatility is above average. Some caution is warranted but conditions are not yet extreme.";
-      return "Volatility is low. Markets are calm. This can be a sign of complacency — watch for sudden spikes.";
+      if (v >= 55) return "An inverted curve together with an elevated 10Y yield is adding meaningful rate-structure pressure. A high 10Y alone keeps this vector low.";
+      if (v >= 35) return "The curve shape and the 10Y level are adding some rate-structure pressure.";
+      return "The curve shape and the 10Y level are adding little rate-structure pressure. A normal or steep curve scores low on this vector.";
     },
-    measures: "Volatility Regime tracks implied and realized volatility across equity markets, normalized against historical ranges.",
-    howCalculated: "Based on VIX levels, VIX term structure, and realized volatility, normalized against long-term historical distributions.",
-    whyItMatters: "Volatility directly affects position sizing, options pricing, and the risk of stop-outs. High volatility environments require smaller positions and wider stops.",
+    measures: "The 10-year minus 2-year Treasury spread (DGS10 − DGS2) in inversion and flatness bands, blended with the 10-year yield level. Formerly labelled Volatility Regime; it does not read VIX or realized volatility.",
+    howCalculated: "FRED DGS10 and DGS2: the 10Y–2Y spread is scored in inversion/flatness bands and blended with a score for the 10Y yield level. No VIX, options or realized-volatility input.",
+    whyItMatters: "The curve and the 10Y level summarize the rate structure facing borrowers and risk assets. Inversion scores highest; a normal or steep curve scores lowest; a high 10Y yield adds pressure (refinancing costs).",
     ranges: [
-      { label: "Low Volatility", range: "0–34", description: "Calm markets. Watch for complacency." },
-      { label: "Elevated Volatility", range: "35–54", description: "Above-average moves. Adjust position sizes." },
-      { label: "High Volatility", range: "55–74", description: "Significant daily swings. Reduce leverage." },
-      { label: "Extreme Volatility", range: "75–100", description: "Crisis-level volatility. Minimum position sizes." },
+      { label: "Low Curve Pressure", range: "0–34", description: "Curve and 10Y level add little pressure." },
+      { label: "Elevated Curve Pressure", range: "35–54", description: "Some rate-structure pressure." },
+      { label: "High Curve Pressure", range: "55–74", description: "Meaningful rate-structure pressure; 74 is this vector's maximum (deep inversion with a high 10Y level)." },
     ],
-    watchNext: (_v) => "Watch the VIX term structure for signs of normalization (contango returning) or further stress (backwardation deepening). A VIX above 30 historically signals elevated systemic risk.",
+    watchNext: (_v) => "Watch the 10Y–2Y spread (moves toward or deeper into inversion raise the score) and the 10Y yield level as FRED publishes new daily observations.",
     historicalContext: (pct, analog) => {
       if (pct === undefined && !analog) return null;
       const parts: string[] = [];
-      if (pct !== undefined) parts.push(`Higher than ${pct}% of volatility readings since 2000.`);
+      if (pct !== undefined) parts.push(`Higher than ${pct}% of recorded readings of this vector.`);
       if (analog) parts.push(`Most comparable to ${analog}.`);
       return parts.join(" ");
     },
