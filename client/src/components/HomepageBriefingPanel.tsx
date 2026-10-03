@@ -232,12 +232,11 @@ export default function HomepageBriefingPanel() {
               />
             </div>
           )}
-          {metrics.pressureIndex.historicalPercentile !== null && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#475569", letterSpacing: "0.12em" }}>PERCENTILE</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#C084FC", fontWeight: 600 }}>{formatOrdinal(metrics.pressureIndex.historicalPercentile)}</span>
-            </div>
-          )}
+          {/* Canonical percentile only; null renders Unavailable (no history-row fallback). */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#475569", letterSpacing: "0.12em" }}>PERCENTILE</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: metrics.pressureIndex.historicalPercentile !== null ? "#C084FC" : "#64748B", fontWeight: 600 }}>{metrics.pressureIndex.historicalPercentile !== null ? formatOrdinal(metrics.pressureIndex.historicalPercentile) : "Unavailable"}</span>
+          </div>
         </div>
       </div>
 

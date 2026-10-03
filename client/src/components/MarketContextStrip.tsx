@@ -16,6 +16,7 @@ import { PROBABILITY_DISPLAY_TEXT, probabilityText } from "@shared/probabilityCo
 import { humanizeQualityStatus } from "@shared/customerIntegrityLabels";
 import { ForecastHorizonDisclosure } from "./ForecastHorizonDisclosure";
 import { insufficientHorizonMetadata } from "@shared/forecastMetadata";
+import { SYNTHESIS_UNAVAILABLE } from "@/lib/marketStateProjection";
 
 // Pages that should NOT show the strip (landing, auth, public pages)
 const EXCLUDED_PATHS = [
@@ -71,9 +72,12 @@ export default function MarketContextStrip() {
   const { overall, regime, narrative } = output;
   const canonicalPressure = canonicalState?.pressureIndex;
   const canonicalRegime = canonicalState?.regime;
-  const verdictLabel = getVerdictLabel(overall.riskLevel);
+  // Verdict and the regime sublabel come from the engine output: demo inputs without MarketState.
+  const verdictLabel = marketState ? getVerdictLabel(overall.riskLevel) : "UNAVAILABLE";
   const regimeColor = regime.color;
-  const pressureScore = formatCanonicalScore(canonicalPressure ?? overall.score * 10);
+  const pressureScore = typeof canonicalPressure === "number" && Number.isFinite(canonicalPressure)
+    ? formatCanonicalScore(canonicalPressure)
+    : "UNAVAILABLE";
   const pressureColor = getRiskColor(overall.riskLevel);
 
   // Largest scenario from the ONE canonical set (governed snapshot scenarioOutputs,
@@ -108,10 +112,14 @@ export default function MarketContextStrip() {
   const verifiedAnalog = marketState?.outlook.topAnalog ?? null;
   const scenarioHorizon = insufficientHorizonMetadata("market-context-derived-scenario", new Date().toISOString(), "Not yet established");
 
-  // One-line synthesis from narrative
-  const synthesis = narrative.summary
-    ? narrative.summary.split(".")[0].trim() + "."
-    : `${regime.label} — ${narrative.regimeAssessment?.split(".")[0] ?? ""}`;
+  // One-line synthesis from the canonical narrative. Without MarketState the
+  // engine narrative comes from demo inputs: "Synthesis unavailable", no WATCH list.
+  const synthesisAvailable = marketState != null;
+  const synthesis = !synthesisAvailable
+    ? SYNTHESIS_UNAVAILABLE
+    : narrative.summary
+      ? narrative.summary.split(".")[0].trim() + "."
+      : `${regime.label} — ${narrative.regimeAssessment?.split(".")[0] ?? ""}`;
 
   return (
     <div
@@ -191,7 +199,7 @@ export default function MarketContextStrip() {
             >
               <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: regimeColor, boxShadow: `0 0 8px ${regimeColor}` }} />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.15em", color: regimeColor, fontWeight: 600 }}>{(canonicalRegime ?? regime.label).toUpperCase()}</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(148,163,184,0.4)", letterSpacing: "0.08em" }}>{regime.sublabel}</span>
+              {marketState && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(148,163,184,0.4)", letterSpacing: "0.08em" }}>{regime.sublabel}</span>}
             </button>
 
             {/* Pressure Index */}
@@ -252,7 +260,7 @@ export default function MarketContextStrip() {
             </div>
 
             {/* Key risks */}
-            {narrative.keyRisks && narrative.keyRisks.length > 0 && (
+            {synthesisAvailable && narrative.keyRisks && narrative.keyRisks.length > 0 && (
               <div style={{ flex: "1 1 200px" }}>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", letterSpacing: "0.15em", color: "rgba(100,116,139,0.5)", marginBottom: "3px" }}>WATCH</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>

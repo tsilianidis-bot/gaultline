@@ -207,7 +207,7 @@ export default function MarketSynthesisPanel({
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
           <SentimentIcon size={12} color={pressureColor} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: pressureColor, fontWeight: 600 }}>{formatCanonicalScore(canonicalState.pressureIndex ?? 0)}</span>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: pressureColor, fontWeight: 600 }}>{typeof canonicalState.pressureIndex === "number" && Number.isFinite(canonicalState.pressureIndex) ? formatCanonicalScore(canonicalState.pressureIndex) : "UNAVAILABLE"}</span>
         </div>
       </div>
 

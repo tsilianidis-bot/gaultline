@@ -70,8 +70,10 @@ describe("NOW destination composition", () => {
     expect(nowSource).toContain("formatCanonicalScore(pressure)");
     expect(hero).toContain("formatCanonicalScore(score * 10)");
     expect(briefing).toContain("formatCanonicalScore(score10 * 10)");
-    expect(contextStrip).toContain("formatCanonicalScore(canonicalPressure ?? overall.score * 10)");
-    expect(synthesis).toContain("formatCanonicalScore(canonicalState.pressureIndex ?? 0)");
+    expect(contextStrip).toContain("? formatCanonicalScore(canonicalPressure)");
+    expect(contextStrip).not.toContain("overall.score * 10"); // no demo-input fallback number
+    expect(synthesis).toContain("? formatCanonicalScore(canonicalState.pressureIndex) : \"UNAVAILABLE\"");
+    expect(synthesis).not.toContain("pressureIndex ?? 0"); // no 0/100 fallback
     expect(narrativeBanner).toContain("formatCanonicalScore(output.pressureScore)");
     // Header strip Pressure Index reads the canonical snapshot score (0–100), not the legacy 0–10 engine.
     expect(appHeaderStrip).toContain("value: formatCanonicalScore(score as number)");

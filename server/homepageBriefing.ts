@@ -377,10 +377,9 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
       insufficientData: true,
     };
   } else {
-    // Percentile: rank current pressure among all historical months
-    const sorted = [...histRows].sort((a, b) => a.overallPressure - b.overallPressure);
-    const rank = sorted.filter(r => r.overallPressure <= currentOverall).length;
-    const percentile = canonicalPercentile ?? Math.round((rank / N) * 100);
+    // Percentile: the canonical reading only. No fallback to a rank over the
+    // loaded history rows (fail closed: null renders "Unavailable").
+    const percentile = canonicalPercentile;
 
     // Regime duration: count consecutive months ending at latest with same regime
     const latestRegime = pressure.regime;
@@ -410,11 +409,13 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
     // Outcome stats from historical context
     const outcomeStats = histContext?.outcomeStats;
     const bullContinuation = null;
-    const correctionProb = outcomeStats?.avgDrawdownPct != null ? Math.min(95, Math.round(Math.abs(outcomeStats.avgDrawdownPct))) : null;
+    // Not a probability: the average analog drawdown magnitude is not a governed
+    // correction probability, so none is offered (the grid shows no row for it).
+    const correctionProb = null;
     const recoveryProb = null;
     const elevatedVolRate = null;
 
-    const percentileLabel =
+    const percentileLabel = percentile === null ? "Unavailable" :
       percentile >= 90 ? "Extreme — top 10% of all historical readings" :
       percentile >= 75 ? "Very High — top 25% of all historical readings" :
       percentile >= 60 ? "Elevated — above 60% of all historical readings" :
@@ -424,9 +425,13 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
 
     const confidence: "high" | "medium" | "low" = N >= 60 ? "high" : N >= 24 ? "medium" : "low";
 
+    // The rarity sentence is shown only with the canonical percentile.
+    const percentileSentence = percentile !== null
+      ? `Today's pressure reading of ${currentOverall}/100 ranks at the ${formatOrdinal(percentile)} percentile (${describeHistoricalPercentile(percentile)}) on the canonical reading. `
+      : "";
     const plainEnglishSummary = analogMatches.length > 0
-      ? `Today's pressure reading of ${currentOverall}/100 ranks at the ${formatOrdinal(percentile)} percentile (${describeHistoricalPercentile(percentile)})${canonicalPercentile !== null ? " on the canonical reading" : ` of all ${N} historical months analyzed`}. The closest historical analog is ${analogMatches[0].label} (${analogMatches[0].similarity}% similarity). Current conditions have persisted for approximately ${regimeDuration} month${regimeDuration !== 1 ? "s" : ""}.`
-      : `Today's pressure reading of ${currentOverall}/100 ranks at the ${formatOrdinal(percentile)} percentile (${describeHistoricalPercentile(percentile)})${canonicalPercentile !== null ? " on the canonical reading" : ` of all ${N} historical months analyzed`}. Current ${latestRegime} conditions have persisted for approximately ${regimeDuration} month${regimeDuration !== 1 ? "s" : ""}.`;
+      ? `${percentileSentence}The closest historical analog is ${analogMatches[0].label} (${analogMatches[0].similarity}% similarity). Current conditions have persisted for approximately ${regimeDuration} month${regimeDuration !== 1 ? "s" : ""}.`
+      : `${percentileSentence}Current ${latestRegime} conditions have persisted for approximately ${regimeDuration} month${regimeDuration !== 1 ? "s" : ""}.`;
 
     historySays = {
       historicalPercentile: percentile,
@@ -519,9 +524,8 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
     streakDir = "stable";
   }
 
-  const percentileForMetric = canonicalPercentile ?? (histRows.length >= INSUFFICIENT_THRESHOLD
-    ? Math.round((histRows.filter(r => r.overallPressure <= currentOverall).length / histRows.length) * 100)
-    : null);
+  // Canonical percentile only (no history-row fallback); null renders "Unavailable".
+  const percentileForMetric = canonicalPercentile;
 
   const historicalComparison = governedAnalogMatches[0]
     ? `Most similar to ${governedAnalogMatches[0].label}`

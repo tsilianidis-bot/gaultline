@@ -212,5 +212,21 @@ export function selectBrowserMarketOutput(input: {
     };
   }
 
-  return { output: withProbabilityContract(deterministicOutput, "deterministic-fallback", null), mode: "deterministic-fallback" };
+  // No MarketState: the deterministic engine runs on DEFAULT_INDICATORS demo
+  // inputs, so its narrative ("Systemic risk composite at 45/100 — MODERATE
+  // regime", "Banking System Stress (59/100)…") is not shown as market text.
+  return {
+    output: withProbabilityContract(withholdFallbackNarrative(deterministicOutput), "deterministic-fallback", null),
+    mode: "deterministic-fallback",
+  };
+}
+
+/** Shown wherever the market synthesis is unavailable (no MarketState). */
+export const SYNTHESIS_UNAVAILABLE = "Synthesis unavailable";
+
+export function withholdFallbackNarrative(output: EngineOutput): EngineOutput {
+  return {
+    ...output,
+    narrative: { regimeAssessment: SYNTHESIS_UNAVAILABLE, summary: SYNTHESIS_UNAVAILABLE, keyRisks: [] },
+  };
 }
