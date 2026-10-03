@@ -238,6 +238,24 @@ describe("Worked example: live where public, illustrative where not", () => {
     expect(model.next.model.stateProbability).toBeNull();
   });
 
+  it("never renders the uncalibrated HMM as a % (ECE 0.515, SYSTEMIC_REGIME_CALIBRATION)", () => {
+    expect(view).toContain('<Stat label="PROBABILITY OF THAT STATE" value={PROBABILITY_DISPLAY_TEXT.UNCALIBRATED} />');
+    expect(view).toContain('<Stat label="CHANCE OF LEAVING IT" value={PROBABILITY_DISPLAY_TEXT.UNCALIBRATED} />');
+    expect(view).not.toMatch(/stateProbability|leaveProbability|\bpct\(/);
+    expect(view).not.toMatch(/Math\.round\([^)]*\* ?100\)/);
+    // Rendered: QA's prod reading (100% / 3%) and this fixture (91% / 2%) never appear.
+    for (const reading of [hmm, { ...hmm, regimeConfidence: 1, transitionProbability: 0.03 }]) {
+      const model = buildWorkedExample(snap(state), analog("state:example-test"), { status: "available", reading });
+      const html = renderToStaticMarkup(createElement(WorkedExampleView, { model }));
+      const text = html.replace(/<[^>]+>/g, " ");
+      expect(text).toMatch(/PROBABILITY OF THAT STATE\s+Uncalibrated/);
+      expect(text).toMatch(/CHANCE OF LEAVING IT\s+Uncalibrated/);
+      expect(text).not.toMatch(/\b(?:100|91|3|2)%/);
+      expect(text).toContain("are shown as Uncalibrated");
+      expect(text).not.toContain("The first figure is");
+    }
+  });
+
   it("withholds the breakdown when vector values do not reconcile with the score", () => {
     const model = buildWorkedExample(snap({ ...state, pressureIndex: 80 }), { status: "unavailable" }, { status: "unavailable" });
     expect(model.why?.reconciles).toBe(false);

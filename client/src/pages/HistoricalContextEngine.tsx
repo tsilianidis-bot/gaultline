@@ -268,7 +268,7 @@ export default function HistoricalContextEngine() {
         <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
           <StatPill label="Pressure Index" value={d.currentPressure} color={levelColor(d.currentLevel)} />
           <StatPill label="Regime" value={d.currentRegime} color={C.cyan} />
-          <StatPill label="Percentile" value={d.rarityContext.percentile !== null ? formatOrdinal(d.rarityContext.percentile) : "Insufficient data"} color={d.rarityContext.percentile !== null ? levelColor(d.currentLevel) : C.textDim} />
+          <StatPill label="Percentile" value={d.rarityContext.percentile !== null ? formatOrdinal(d.rarityContext.percentile) : d.rarityContext.percentileStatus === "UNAVAILABLE" ? "Unavailable" : "Insufficient data"} color={d.rarityContext.percentile !== null ? levelColor(d.currentLevel) : C.textDim} />
           <StatPill label="Months in Regime" value={d.timeline.monthsInCurrentRegime} color={C.textMid} />
           <StatPill label="Trend" value={d.trendAssessment.label} color={trendColor(d.trendAssessment.label)} />
         </div>
@@ -616,9 +616,9 @@ export default function HistoricalContextEngine() {
         ) : d ? (
           <div>
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "14px" }}>
-              <StatPill label="Percentile" value={d.rarityContext.percentile !== null ? formatOrdinal(d.rarityContext.percentile) : "Insufficient data"} color={d.rarityContext.percentile !== null ? levelColor(d.currentLevel) : C.textDim} />
-              <StatPill label="Months at Level" value={d.rarityContext.monthsAtOrAbove} color={C.textMid} />
-              <StatPill label="Frequency" value={`${d.rarityContext.frequencyPct}%`} color={C.textMid} />
+              <StatPill label="Percentile" value={d.rarityContext.percentile !== null ? formatOrdinal(d.rarityContext.percentile) : d.rarityContext.percentileStatus === "UNAVAILABLE" ? "Unavailable" : "Insufficient data"} color={d.rarityContext.percentile !== null ? levelColor(d.currentLevel) : C.textDim} />
+              <StatPill label="Months at Level" value={d.rarityContext.monthsAtOrAbove ?? "Unavailable"} color={C.textMid} />
+              <StatPill label="Frequency" value={d.rarityContext.frequencyPct !== null ? `${d.rarityContext.frequencyPct}%` : "Unavailable"} color={C.textMid} />
               <StatPill label="Sample Size" value={`${d.rarityContext.sampleSize}mo`} color={C.textDim} />
             </div>
 
@@ -630,7 +630,7 @@ export default function HistoricalContextEngine() {
                 {d.rarityContext.rarityLabel}
               </div>
               <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.textMid, lineHeight: 1.5 }}>
-                {d.rarityContext.percentile === null ? `There are too few recorded monthly readings (${d.rarityContext.sampleSize}) for a percentile; 10 are required.` : <>The current reading of {d.currentPressure} is at the {formatOrdinal(d.rarityContext.percentile)} percentile of all {d.rarityContext.sampleSize} monthly readings from {d.rarityContext.dataStartMonth} to {d.rarityContext.dataEndMonth}. Readings at this level or higher have occurred in {d.rarityContext.frequencyPct}% of all historical months ({d.rarityContext.monthsAtOrAbove} of {d.rarityContext.sampleSize} months).</>}
+                {d.rarityContext.percentileStatus === "UNAVAILABLE" ? "The monthly-history percentile differs from the canonical reading, so it is withheld." : d.rarityContext.percentile === null ? `There are too few recorded monthly readings (${d.rarityContext.sampleSize}) for a percentile; 10 are required.` : <>The current reading of {d.currentPressure} is at the {formatOrdinal(d.rarityContext.percentile)} percentile of all {d.rarityContext.sampleSize} monthly readings from {d.rarityContext.dataStartMonth} to {d.rarityContext.dataEndMonth}. Readings at this level or higher have occurred in {d.rarityContext.frequencyPct}% of all historical months ({d.rarityContext.monthsAtOrAbove} of {d.rarityContext.sampleSize} months).</>}
               </div>
             </div>
 

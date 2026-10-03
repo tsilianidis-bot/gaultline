@@ -155,6 +155,10 @@ function Ctas({ primaryTrack }: { primaryTrack?: boolean }) {
   );
 }
 
+function setHeroBackgroundSrc(img: HTMLImageElement | null) {
+  if (img && !img.getAttribute("src")) img.src = HERO_BACKGROUND;
+}
+
 function Hero() {
   return (
     <section className="relative isolate overflow-hidden border-b border-[#00D4FF]/10 bg-[#0A0D12]">
@@ -164,8 +168,12 @@ function Hero() {
       <picture aria-hidden="true">
         <source type="image/avif" srcSet={HERO_BACKGROUND_SRCSET.avif} sizes="100vw" />
         <source type="image/webp" srcSet={HERO_BACKGROUND_SRCSET.webp} sizes="100vw" />
+        {/* src is set from the ref, i.e. once the <img> is inside the <picture> in the document.
+            React sets props on the detached element, and WebKit then fetches the jpg fallback as
+            well as the selected source. Same frame as the commit, so the request (and LCP) is not
+            deferred, unlike loading="lazy". */}
         <img
-          src={HERO_BACKGROUND}
+          ref={setHeroBackgroundSrc}
           alt=""
           decoding="async"
           className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center opacity-35"

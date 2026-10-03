@@ -9,6 +9,8 @@
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { useEngine } from "@/contexts/EngineContext";
+import { canonicalPressureLabel } from "@/lib/canonicalPressureDisplay";
 import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
 import { useSEO } from "@/hooks/useSEO";
 import NarrativeLoader from "@/components/NarrativeLoader";
@@ -410,6 +412,10 @@ function OpportunitiesInner() {
     staleTime: 8 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
+  // Shown: the canonical Pressure Index (same source as the header strip); the
+  // discovery payload's pressureIndex stays a scoring input only.
+  const { canonicalState } = useEngine();
+  const displayPressureLabel = canonicalPressureLabel(canonicalState);
 
   const handleAnalyze = (ticker: string, assetType: string) => {
     navigate(`/app/signal-outlook?symbol=${ticker}&type=${assetType}`);
@@ -482,7 +488,7 @@ function OpportunitiesInner() {
             </div>
             {data && (
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(255,255,255,0.25)", letterSpacing: "0.08em" }}>
-                PRESSURE {data.pressureIndex} · {data.regime} · {data.buckets.length} CATEGORIES · {allItems.length} SETUPS
+                PRESSURE {displayPressureLabel} · {data.regime} · {data.buckets.length} CATEGORIES · {allItems.length} SETUPS
               </span>
             )}
           </div>

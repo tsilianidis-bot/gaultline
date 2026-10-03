@@ -12,6 +12,7 @@
  */
 
 import { computeHistoricalContext } from "./historicalContextEngine";
+import { reconcileHistoricalContextPercentile } from "./historicalPercentileGuard";
 import { getPressureHistory, getRecentPressureRuns } from "./db";
 import { invokeLLM } from "./_core/llm";
 import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
@@ -234,7 +235,7 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
     );
   }
 
-  const [histContext, recentRuns, historyRows, marketState] = await Promise.all([
+  const [rawHistContext, recentRuns, historyRows, marketState] = await Promise.all([
     computeHistoricalContext(pressure).catch(() => null),
     getRecentPressureRuns(90),
     getPressureHistory({ limit: 36 }),
@@ -244,6 +245,11 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
   const canonicalPercentileRaw = marketState?.now.historicalPercentile;
   const canonicalPercentile = typeof canonicalPercentileRaw === "number" && Number.isFinite(canonicalPercentileRaw)
     ? Math.round(canonicalPercentileRaw)
+    : null;
+  // The historical-context percentile (and the story clause citing it) is
+  // withheld when it differs from the canonical percentile (display only).
+  const histContext = rawHistContext
+    ? reconcileHistoricalContextPercentile(rawHistContext, canonicalPercentile)
     : null;
   // The reference-library analog ranking is shown only when the canonical
   // outlook has a top analog (fail closed when MarketState is unavailable).

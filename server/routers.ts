@@ -373,7 +373,14 @@ export const appRouter = router({
             message: "UNAVAILABLE — no canonical market state is bound. Historical context is withheld.",
           });
         }
-        const context = await computeHistoricalContext(pressure);
+        const [rawContext, marketState] = await Promise.all([
+          computeHistoricalContext(pressure),
+          // Canonical percentile (display only): the context percentile is
+          // withheld when it differs, so no page shows two percentiles.
+          import("./marketStateService").then(m => m.getCanonicalMarketState()).catch(() => null),
+        ]);
+        const { reconcileHistoricalContextPercentile } = await import("./historicalPercentileGuard");
+        const context = reconcileHistoricalContextPercentile(rawContext, marketState?.now.historicalPercentile ?? null);
         return { ...context, canonicalStateId: canonical.stateId, availability: "AVAILABLE" as const };
       } catch (err) {
         if (err instanceof TRPCError) throw err;

@@ -6,10 +6,10 @@
  */
 import React, { type ReactNode } from "react";
 import { INTEGRITY_COPY } from "../landingPressure";
+import { PROBABILITY_DISPLAY_TEXT } from "@shared/probabilityContract";
 import { ILLUSTRATIVE, ILLUSTRATIVE_LABEL, LIVE_SOURCE, MODEL_LIMITS, MODEL_SOURCE, type LiveStatus, type WorkedExampleModel } from "./workedExample";
 
 const LABEL = "text-[11px] font-semibold tracking-[0.08em] text-[#A8B4C2]";
-const pct = (value: number) => `${Math.round(value * 100)}%`;
 const pts = (value: number) => (Number.isInteger(value) ? String(value) : value.toFixed(1));
 
 function LiveBlock({ step, status, source, children, unavailable }: { step: string; status: LiveStatus; source?: string; children?: ReactNode; unavailable: string }) {
@@ -162,8 +162,9 @@ export default function WorkedExampleView({ model }: { model: WorkedExampleModel
                   <div className="grid grid-cols-2 gap-4">
                     <Stat label="MODEL STATE" value={next.model.regime} />
                     <Stat label="DATA THROUGH" value={next.model.dataAsOf ?? "unpublished"} />
-                    <Stat label="PROBABILITY OF THAT STATE" value={next.model.stateProbability != null ? pct(next.model.stateProbability) : "—"} />
-                    <Stat label="CHANCE OF LEAVING IT" value={next.model.leaveProbability != null ? pct(next.model.leaveProbability) : "unpublished"} />
+                    {/* Launch fix-up 2: the 2-state HMM is UNCALIBRATED (ECE 0.515, SYSTEMIC_REGIME_CALIBRATION): no %. */}
+                    <Stat label="PROBABILITY OF THAT STATE" value={PROBABILITY_DISPLAY_TEXT.UNCALIBRATED} />
+                    <Stat label="CHANCE OF LEAVING IT" value={PROBABILITY_DISPLAY_TEXT.UNCALIBRATED} />
                   </div>
                 )}
                 <p className="mt-3 text-[12px] leading-[1.6] text-[#A8B4C2]">{MODEL_LIMITS}</p>

@@ -59,7 +59,7 @@ export const ILLUSTRATIVE = {
 } as const;
 
 export const MODEL_LIMITS =
-  "Separate from the Pressure Index: a two-state hidden Markov model (sre-hmm2-v1.0.0) on one factor of a broader FRED panel. The first figure is the model's probability for the state it is in. The second is its chance of leaving that state at the next observation. Neither is the chance of a crash. Out of sample, days on which the model put near-certain weight on its crisis state fell inside a labelled stress window about 18% of the time.";
+  "Separate from the Pressure Index: a two-state hidden Markov model (sre-hmm2-v1.0.0) on one factor of a broader FRED panel. Its probability for the state it is in, and its chance of leaving that state at the next observation, are shown as Uncalibrated: the model's probabilities are not calibrated, so no figure is given. Neither is the chance of a crash. Out of sample, days on which the model put near-certain weight on its crisis state fell inside a labelled stress window about 18% of the time.";
 
 export type LiveStatus = "loading" | "unavailable" | "ready";
 
