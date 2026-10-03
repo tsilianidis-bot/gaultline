@@ -2,6 +2,12 @@
 
 These are on branch `probability/held-methodology-2026-10-02` (code at b733dfc + 94aba2e), stacked on #60's split commit e51e8f5. The branch is pushed and has no PR.
 
+**What the branch contains (corrected 2026-10-02 8:20 PM ET, QA gate r9):** it is not docs-only. Besides this file (items 1–3 code at b733dfc + 94aba2e; items 4–8 docs only), it carries copy and prompt rewording with no scoring change (e384cc5 and the r10 follow-up):
+- `client/src/pages/seo/MarketCrashProbability2026.tsx`: FAQ / body wording in the #56 r16 disclaimer form.
+- `server/autonomousPublishing.ts`: auto-published link text "Market Crash Risk 2026" / "Recession Risk Context" (URLs unchanged) and the publishing LLM prompt ("does not offer a … probability" forms; no crash / bull %).
+- `server/organicContentEngine.ts`: the organic LLM prompt (same forms; no crash / bull %).
+These mirror #60 r8/r9 wording so the branch merges cleanly with #60; none of them changes a calculated output.
+
 On James's 2026-10-02 11:42 ET decision, every change below alters a calculated output, so it stays out of #60 until he approves it.
 
 ## How the numbers were produced
@@ -145,3 +151,9 @@ The unreachable ≥75 display band ("Extreme Curve Pressure", 75–100) exists o
 - PROPOSED: treat a missing 24h change as missing evidence: drop the 24h Momentum vector from the composite for that coin (re-weighting the remaining vectors) or mark the score as reduced-evidence, and skip the 24h-based volatility, breakout and stress rules instead of evaluating them at 0.
 - WHY: a missing value currently looks like a measured flat day and pulls the coin's score toward neutral.
 - WHY HELD: it changes crypto scoring inputs and weights (a methodology change), so it needs James's decision. Docs only; #60 does not change what the engine receives.
+
+## 9. Missing 24h change becomes 0 in two more engine inputs (added 2026-10-02 8:20 PM ET, QA gate r9 on #60)
+- CURRENT: `server/altRotationEngine.ts:471` maps a missing CoinGecko `usd_24h_change` to `change24h: 0` (`p?.usd_24h_change ?? 0`), and `server/simPortfolioEngine.ts:688` does the same (`raw.usd_24h_change ?? 0`). Both values are engine inputs (alt-rotation scoring and the simulated-portfolio candidate data), so a missing value is scored as a measured flat day, as in item 8.
+- PROPOSED: carry the missing value as null and treat it as missing evidence in those engines (drop or re-weight the 24h term, or mark reduced evidence), with a display of "—".
+- WHY: same as item 8; a missing value currently looks like "no move".
+- WHY HELD: it changes engine inputs (methodology), so it needs James's decision. Docs only; #60 does not change these inputs.
