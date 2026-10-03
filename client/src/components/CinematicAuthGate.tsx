@@ -30,7 +30,8 @@ const SIGN_IN_UNAVAILABLE_MSG = "Sign-in is unavailable right now. Please try ag
 const SIGN_IN_TIMEOUT_MSG = "Sign-in is taking longer than expected. Please try again.";
 
 export default function CinematicAuthGate({ onAuthenticated }: CinematicAuthGateProps) {
-  const { user, loading } = useAuth();
+  // offline: auth.me got no server answer, so identity is unknown (not "signed out").
+  const { user, loading, offline, refresh } = useAuth();
   const [visible, setVisible] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
   const [signInError, setSignInError] = useState<string | null>(null);
@@ -142,21 +143,30 @@ export default function CinematicAuthGate({ onAuthenticated }: CinematicAuthGate
         }}>FAULTLINE</div>
 
         {/* Message */}
-        <div style={{
+        <div role={offline ? "status" : undefined} style={{
           fontFamily: "'IBM Plex Sans', sans-serif",
           fontSize: "clamp(14px, 2vw, 16px)",
           lineHeight: 1.7,
           color: "rgba(255,255,255,0.65)",
           textAlign: "center",
         }}>
-          Sign in to continue.<br />
-          PLATO will greet you once your identity is confirmed.
+          {offline ? (
+            <>
+              You're offline.<br />
+              FAULTLINE can't reach the server. It will reconnect when your connection returns.
+            </>
+          ) : (
+            <>
+              Sign in to continue.<br />
+              PLATO will greet you once your identity is confirmed.
+            </>
+          )}
         </div>
 
-        {/* Sign in button */}
+        {/* Sign in button (RETRY while offline) */}
         <button
-          onClick={handleSignIn}
-          disabled={signingIn || loading}
+          onClick={offline ? () => { void refresh(); } : handleSignIn}
+          disabled={!offline && (signingIn || loading)}
           style={{
             background: "transparent",
             border: "1px solid rgba(0,229,255,0.5)",
@@ -182,7 +192,7 @@ export default function CinematicAuthGate({ onAuthenticated }: CinematicAuthGate
             (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.5)";
           }}
         >
-          {signingIn ? "REDIRECTING…" : loading ? "CHECKING…" : "SIGN IN / SIGN UP"}
+          {offline ? "RETRY" : signingIn ? "REDIRECTING…" : loading ? "CHECKING…" : "SIGN IN / SIGN UP"}
         </button>
 
         {signInError && (
@@ -233,7 +243,7 @@ export default function CinematicAuthGate({ onAuthenticated }: CinematicAuthGate
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.5)"; }}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.25)"; }}
         >
-          CONTINUE AS GUEST →
+          {offline ? "CONTINUE OFFLINE →" : "CONTINUE AS GUEST →"}
         </button>
 
         {/* Status line */}
