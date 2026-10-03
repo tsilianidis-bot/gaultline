@@ -73,7 +73,7 @@ export function SnapshotRenderer({ snapshotJson, reportType }: { snapshotJson: s
       );
     }
     if (typeof val === "object") {
-      const entries = Object.entries(val as Record<string, unknown>);
+      const entries = Object.entries(val as Record<string, unknown>).filter(([k]) => !isHiddenSnapshotKey(k));
       if (depth > 2) return <span className="text-zinc-500 text-xs">[object]</span>;
       return (
         <div className={`space-y-1 ${depth > 0 ? "pl-2 border-l border-zinc-800" : ""}`}>
@@ -89,7 +89,7 @@ export function SnapshotRenderer({ snapshotJson, reportType }: { snapshotJson: s
     return <span className="text-zinc-400">{String(val)}</span>;
   };
 
-  const topLevelEntries = Object.entries(data);
+  const topLevelEntries = Object.entries(data).filter(([key]) => !isHiddenSnapshotKey(key));
 
   return (
     <div className="space-y-4">
@@ -115,8 +115,21 @@ export const SNAPSHOT_KEY_LABELS: Record<string, string> = {
   favorableSetupScore: "Favorable setup score (/100)",
   adversePressureScore: "Adverse pressure score (/100)",
 };
+const hasLabel = (key: string) => Object.prototype.hasOwnProperty.call(SNAPSHOT_KEY_LABELS, key);
 export function snapshotKeyLabel(key: string): string {
-  return SNAPSHOT_KEY_LABELS[key] ?? key.replace(/_/g, " ");
+  return hasLabel(key) ? SNAPSHOT_KEY_LABELS[key] : key.replace(/_/g, " ");
+}
+
+// QA B11 (follow-up): saved Stock and Crypto Signals snapshots carry a formula
+// `confidence` (e.g. min(95, 55 + |score| * 5)); it is not a calibrated measure,
+// so the public page never prints it. Any key that reads as a probability, odds,
+// chance or confidence is hidden too, so a future raw key cannot reach /r/:id.
+// Keys with an explicit label above (the two /100 scores) are remapped, not hidden.
+export const HIDDEN_SNAPSHOT_KEYS = new Set<string>(["confidence"]);
+export const HIDDEN_SNAPSHOT_KEY_PATTERN = /probab|odds|chance|confidence$/i;
+export function isHiddenSnapshotKey(key: string): boolean {
+  if (hasLabel(key)) return false;
+  return HIDDEN_SNAPSHOT_KEYS.has(key) || HIDDEN_SNAPSHOT_KEY_PATTERN.test(key);
 }
 
 // ── Main page ──────────────────────────────────────────────────
