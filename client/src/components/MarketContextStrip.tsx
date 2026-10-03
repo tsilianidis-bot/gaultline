@@ -16,7 +16,7 @@ import { PROBABILITY_DISPLAY_TEXT, probabilityText } from "@shared/probabilityCo
 import { humanizeQualityStatus } from "@shared/customerIntegrityLabels";
 import { ForecastHorizonDisclosure } from "./ForecastHorizonDisclosure";
 import { insufficientHorizonMetadata } from "@shared/forecastMetadata";
-import { SYNTHESIS_UNAVAILABLE } from "@/lib/marketStateProjection";
+import { SYNTHESIS_UNAVAILABLE, UNAVAILABLE_DISPLAY_COLOR, canonicalDisplayRiskLevel, canonicalRegimeDisplayColor } from "@/lib/marketStateProjection";
 
 // Pages that should NOT show the strip (landing, auth, public pages)
 const EXCLUDED_PATHS = [
@@ -74,11 +74,16 @@ export default function MarketContextStrip() {
   const canonicalRegime = canonicalState?.regime;
   // Verdict and the regime sublabel come from the engine output: demo inputs without MarketState.
   const verdictLabel = marketState ? getVerdictLabel(overall.riskLevel) : "UNAVAILABLE";
-  const regimeColor = regime.color;
+  // Colours and the trend icon: without MarketState the engine regime/riskLevel are the
+  // demo engine's, so they come from the canonical regime and pressure (healthy-mode
+  // mapping), or neutral when there is no canonical value.
+  const displayRiskLevel = marketState ? overall.riskLevel : canonicalDisplayRiskLevel(canonicalPressure, canonicalRegime);
+  const regimeColor = marketState ? regime.color : canonicalRegimeDisplayColor(canonicalPressure, canonicalRegime);
+  const regimeLabel = (canonicalRegime ?? (marketState ? regime.label : "REGIME UNAVAILABLE")).toUpperCase();
   const pressureScore = typeof canonicalPressure === "number" && Number.isFinite(canonicalPressure)
     ? formatCanonicalScore(canonicalPressure)
     : "UNAVAILABLE";
-  const pressureColor = getRiskColor(overall.riskLevel);
+  const pressureColor = displayRiskLevel ? getRiskColor(displayRiskLevel) : UNAVAILABLE_DISPLAY_COLOR;
 
   // Largest scenario from the ONE canonical set (governed snapshot scenarioOutputs,
   // merged by EngineContext) for context only; it is not a probability forecast.
@@ -123,6 +128,8 @@ export default function MarketContextStrip() {
 
   return (
     <div
+      data-strip-regime-color={regimeColor}
+      data-strip-pressure-color={pressureColor}
       style={{
         background: `linear-gradient(90deg, rgba(10,12,16,0.98) 0%, ${regimeColor}08 50%, rgba(10,12,16,0.98) 100%)`,
         borderBottom: `1px solid ${regimeColor}25`,
@@ -152,7 +159,7 @@ export default function MarketContextStrip() {
             background: `${regimeColor}15`, border: `1px solid ${regimeColor}30`,
           }}>
             <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: regimeColor, boxShadow: `0 0 6px ${regimeColor}` }} />
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.15em", color: regimeColor, fontWeight: 600 }}>{(canonicalRegime ?? regime.label).toUpperCase()}</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.15em", color: regimeColor, fontWeight: 600 }}>{regimeLabel}</span>
           </div>
 
           {/* Pressure score */}
@@ -198,7 +205,7 @@ export default function MarketContextStrip() {
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = `${regimeColor}15`; }}
             >
               <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: regimeColor, boxShadow: `0 0 8px ${regimeColor}` }} />
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.15em", color: regimeColor, fontWeight: 600 }}>{(canonicalRegime ?? regime.label).toUpperCase()}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.15em", color: regimeColor, fontWeight: 600 }}>{regimeLabel}</span>
               {marketState && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(148,163,184,0.4)", letterSpacing: "0.08em" }}>{regime.sublabel}</span>}
             </button>
 
@@ -211,7 +218,7 @@ export default function MarketContextStrip() {
 
             {/* Verdict */}
             <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-              {overall.riskLevel === "low" ? <TrendingUp size={10} color="#10B981" /> : overall.riskLevel === "critical" || overall.riskLevel === "high" ? <TrendingDown size={10} color="#EF4444" /> : <Minus size={10} color="#F59E0B" />}
+              {displayRiskLevel === null ? <Minus size={10} color={UNAVAILABLE_DISPLAY_COLOR} data-strip-trend="unavailable" /> : displayRiskLevel === "low" ? <TrendingUp size={10} color="#10B981" /> : displayRiskLevel === "critical" || displayRiskLevel === "high" ? <TrendingDown size={10} color="#EF4444" /> : <Minus size={10} color="#F59E0B" />}
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.6)", letterSpacing: "0.1em" }}>VERDICT</span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: pressureColor, fontWeight: 600, letterSpacing: "0.1em" }}>{verdictLabel}</span>
             </div>

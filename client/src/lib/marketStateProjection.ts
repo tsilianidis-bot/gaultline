@@ -161,7 +161,8 @@ export function projectCanonicalMarketState(
       fallbackReason: state.cache.staleReason ?? undefined,
       source: "canonical-market-state",
     },
-    domains: domains.length > 0 ? domains : deterministicFallback.domains,
+    // No canonical evidence families: no domains (never the demo-baseline domains).
+    domains,
     regime: {
       label: state.now.regime,
       sublabel: `${state.now.stressLevel} · ${state.now.direction}`,
@@ -229,4 +230,58 @@ export function withholdFallbackNarrative(output: EngineOutput): EngineOutput {
     ...output,
     narrative: { regimeAssessment: SYNTHESIS_UNAVAILABLE, summary: SYNTHESIS_UNAVAILABLE, keyRisks: [] },
   };
+}
+
+/** Neutral colour for a withheld (unavailable) canonical value. */
+export const UNAVAILABLE_DISPLAY_COLOR = "#64748B";
+
+type DisplayRiskLevel = DomainScore["riskLevel"];
+
+function finitePressure100(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? normalizeCanonicalMetric(value) : null;
+}
+
+/** Canonical regime label → the risk band healthy mode would show for it. */
+function regimeLabelRiskLevel(regime: string | null | undefined): DisplayRiskLevel | null {
+  switch ((regime ?? "").trim().toUpperCase()) {
+    case "LOW RISK": return "low";
+    case "MODERATE RISK": return "moderate";
+    case "ELEVATED RISK": return "elevated";
+    case "HIGH STRESS": return "high";
+    case "SYSTEMIC CRISIS": return "critical";
+    default: return null;
+  }
+}
+
+const REGIME_BAND_COLOR: Record<DisplayRiskLevel, string> = {
+  low: regimeColor(0),
+  moderate: regimeColor(30),
+  elevated: regimeColor(50),
+  high: regimeColor(70),
+  critical: regimeColor(85),
+};
+
+/**
+ * Risk level from the canonical state only (pressure first, then the regime
+ * label), the same banding healthy mode applies to the projected score; null
+ * when there is no canonical value. Never derived from the demo engine.
+ */
+export function canonicalDisplayRiskLevel(
+  pressure100: number | null | undefined,
+  regime: string | null | undefined,
+): DisplayRiskLevel | null {
+  const p = finitePressure100(pressure100);
+  if (p !== null) return riskLevel(p / 10);
+  return regimeLabelRiskLevel(regime);
+}
+
+/** Regime colour from the canonical state (healthy-mode mapping), or neutral #64748B. */
+export function canonicalRegimeDisplayColor(
+  pressure100: number | null | undefined,
+  regime: string | null | undefined,
+): string {
+  const p = finitePressure100(pressure100);
+  if (p !== null) return regimeColor(p);
+  const level = regimeLabelRiskLevel(regime);
+  return level ? REGIME_BAND_COLOR[level] : UNAVAILABLE_DISPLAY_COLOR;
 }

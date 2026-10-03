@@ -76,8 +76,10 @@ describe("WATCH destination composition", () => {
     expect(watchSource).toContain("condition.expectedImpact");
     expect(watchSource).toContain("pattern.daysActive");
     expect(watchSource).toContain("pattern.invalidationConditions");
-    expect(watchSource).toContain("Canonical duration records are unavailable in deterministic fallback mode");
-    expect(watchSource).toContain("Expected-impact language is withheld until canonical monitoring state is restored");
+    // Fix-up 4: without MarketState no demo-domain conditions are shown at all ("Unavailable").
+    expect(watchSource).toContain("marketState?.watch.developingConditions ?? []");
+    expect(watchSource).toContain('<WatchUnavailable id="duration-trend" />');
+    expect(watchSource).toContain('<WatchUnavailable id="expected-impact" />');
     expect(watchSource).toContain("does not promote deterministic domain scores into named historical patterns");
   });
 
@@ -104,7 +106,7 @@ describe("WATCH destination composition", () => {
   });
 
   it("formats every confidence, pressure, and evidence-strength metric on the shared canonical 0–100 scale", () => {
-    expect(watchSource).toContain("formatCanonicalScore(pressure)");
+    expect(watchSource).toContain('pressure === null ? "Unavailable" : formatCanonicalScore(pressure)');
     // Forecast confidence is display-gated (forecastConfidenceDisplay); when a % is
     // supported it is still formatted on the canonical 0–100 scale.
     expect(watchSource).toContain("formatCanonicalPercent(confidenceDisplay.percent)");
@@ -112,7 +114,8 @@ describe("WATCH destination composition", () => {
     // Launch fix-up: pattern confidence is a heuristic and is not shown.
     expect(watchSource).not.toContain("pattern.confidence");
     expect(watchSource).toContain("formatCanonicalScore(indicator.strength)");
-    expect(watchSource).toContain("normalizeCanonicalMetric(domain.score * 10)");
+    expect(watchSource).toContain("normalizeCanonicalMetric(indicator.strength)");
+    expect(watchSource).not.toContain("output.domains");
     expect(watchSource).not.toMatch(/\}\s*\/10\b/);
     expect(watchSource).not.toContain("/10</");
   });

@@ -552,7 +552,7 @@ export default function Act() {
             </div>
             <div className="rounded-sm border border-white/10 bg-white/[0.025] p-5">
               <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-600">Historical observations</div>
-              <div className="mt-3 font-['Rajdhani'] text-2xl font-semibold text-slate-100">{marketState?.history.observationCount ?? 0}</div>
+              <div className="mt-3 font-['Rajdhani'] text-2xl font-semibold text-slate-100">{marketState?.history.observationCount ?? "Unavailable"}</div>
               <div className="mt-2 text-xs text-slate-500">{marketState?.history.datasetSpan ?? "Canonical history unavailable"}</div>
             </div>
             <div className="rounded-sm border border-white/10 bg-white/[0.025] p-5">

@@ -10,6 +10,7 @@ import { score100Value } from "@/lib/displayFallbacks";
 import { trpc } from "@/lib/trpc";
 import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
 import { useEngine } from "@/contexts/EngineContext";
+import { canonicalRegimeDisplayColor } from "@/lib/marketStateProjection";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Link } from "wouter";
 import { RecoveryStatusBadge, AftershockRiskInline } from "@/components/RecoveryStatus";
@@ -101,6 +102,8 @@ const TREND_COLORS: Record<string, string> = {
   Downtrend: "#FF2D55",
   Sideways:  "#FFD700",
 };
+
+const UNAVAILABLE_CRYPTO_CONTEXT = { headline: "REGIME UNAVAILABLE", description: "The canonical market state is unavailable, so crypto regime context is withheld.", bullish: "Unavailable", bearish: "Unavailable" };
 
 const REGIME_CRYPTO_CONTEXT: Record<string, { headline: string; description: string; bullish: string; bearish: string }> = {
   "LOW RISK":      { headline: "RISK-ON CONDITIONS", description: "Liquidity expanding, volatility compressed. Conditions favour momentum and altcoin exposure.", bullish: "BTC, ETH, high-beta alts, DeFi", bearish: "Stablecoins, cash" },
@@ -790,9 +793,21 @@ function CryptoSignalsInner() {
   const engine = useEngine();
   const { user } = useAuth();
 
-  const regimeKey = useMemo(() => mapRegimeToKey(engine?.output?.regime?.label ?? "MODERATE RISK"), [engine?.output?.regime?.label]);
-  const regimeCtx = REGIME_CRYPTO_CONTEXT[regimeKey];
-  const regimeColor = engine?.output?.regime?.color ?? "#00D4FF";
+  // Without MarketState the engine regime/score are the demo baseline: the canonical
+  // regime and pressure are used instead, or the context reads "Unavailable".
+  const degraded = engine?.marketMode === "deterministic-fallback";
+  const canonicalPressure = engine?.canonicalState?.pressureIndex;
+  const canonicalPressure100 = typeof canonicalPressure === "number" && Number.isFinite(canonicalPressure) ? canonicalPressure : null;
+  const regimeSourceLabel = degraded ? (engine?.canonicalState?.regime ?? null) : (engine?.output?.regime?.label ?? "MODERATE RISK");
+  const regimeKey = useMemo(() => (regimeSourceLabel ? mapRegimeToKey(regimeSourceLabel) : null), [regimeSourceLabel]);
+  const regimeCtx = regimeKey ? REGIME_CRYPTO_CONTEXT[regimeKey] : UNAVAILABLE_CRYPTO_CONTEXT;
+  const regimeColor = degraded
+    ? canonicalRegimeDisplayColor(canonicalPressure100, engine?.canonicalState?.regime)
+    : (engine?.output?.regime?.color ?? "#00D4FF");
+  // REGIME SCORE on 0–100: the canonical Pressure Index when degraded, else the engine composite.
+  const regimeScoreText = degraded
+    ? (canonicalPressure100 === null ? score100Value(null) : String(Math.round(canonicalPressure100)))
+    : score100Value(engine?.output?.overall?.score);
 
   const [activeCategory, setActiveCategory] = useState<CryptoCategory>("All");
   const [filterAction, setFilterAction] = useState<TradingAction | "All">("All");
@@ -893,7 +908,7 @@ function CryptoSignalsInner() {
             <div>
               <div style={{ fontSize: "8px", color: "rgba(100,116,139,0.5)", marginBottom: "2px" }}>REGIME SCORE</div>
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color: regimeColor }}>
-                {score100Value(engine?.output?.overall?.score)}<span style={{ fontSize: "12px", color: "rgba(100,116,139,0.5)" }}>/100</span>
+                {regimeScoreText}<span style={{ fontSize: "12px", color: "rgba(100,116,139,0.5)" }}>/100</span>
               </div>
             </div>
           </div>

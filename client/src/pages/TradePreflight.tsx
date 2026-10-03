@@ -7,7 +7,7 @@
 import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
-import { engineProbabilityText } from "@/lib/marketStateProjection";
+import { engineProbabilityText, UNAVAILABLE_DISPLAY_COLOR } from "@/lib/marketStateProjection";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { AlertTriangle, CheckCircle, XCircle, Target, Zap, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Activity, Shield, BarChart2, RefreshCw } from "lucide-react";
@@ -154,7 +154,7 @@ function ListItem({ text, color, icon }: { text: string; color: string; icon: Re
 // ── Main component ────────────────────────────────────────────
 export default function TradePreflight() {
   useSEO(PAGE_SEO.diagnostic); // reuse diagnostic SEO until tradePreflight entry is added
-  const { output } = useEngine();
+  const { output, marketMode, canonicalState } = useEngine();
 
   const [selectedMove, setSelectedMove] = useState<MoveType | null>(null);
   const [selectedTimeframe, setSelectedTimeframe] = useState<SimulatorTimeframe>("today");
@@ -201,7 +201,14 @@ export default function TradePreflight() {
 
   const result = simulate.data;
   const isLoading = simulate.isPending;
-  const color = pressureColor(output.overall.score * 10);
+  // Without MarketState the engine output is the demo baseline: the canonical
+  // pressure/regime are shown instead, or "Unavailable"; no demo domain chips.
+  const degraded = marketMode === "deterministic-fallback";
+  const rawPressure100 = degraded ? canonicalState?.pressureIndex : output.overall.score * 10;
+  const pressure100 = typeof rawPressure100 === "number" && Number.isFinite(rawPressure100) ? rawPressure100 : null;
+  const regimeLabel = degraded ? (canonicalState?.regime ?? "Unavailable") : output.regime.label;
+  const conditionDomains = degraded ? [] : output.domains;
+  const color = pressure100 === null ? UNAVAILABLE_DISPLAY_COLOR : pressureColor(pressure100);
 
   return (
     <div style={{ background: "#050608", minHeight: "100vh", paddingBottom: "60px" }}>
@@ -254,11 +261,11 @@ export default function TradePreflight() {
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: color, boxShadow: `0 0 8px ${color}`, animation: "blink-alert 6s ease-in-out infinite" }} />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.7)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Equity Pressure Index</span>
-              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color, textShadow: `0 0 14px ${color}70` }}>{Math.round(output.overall.score * 10)}</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.5)" }}>/100</span>
+              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color, textShadow: `0 0 14px ${color}70` }} data-preflight-pressure={pressure100 === null ? "unavailable" : Math.round(pressure100)}>{pressure100 === null ? "Unavailable" : Math.round(pressure100)}</span>
+              {pressure100 !== null && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.5)" }}>/100</span>}
             </div>
             <div style={{ padding: "3px 10px", background: `${color}12`, border: `1px solid ${color}30`, borderRadius: "3px" }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color, textTransform: "uppercase", letterSpacing: "0.12em" }}>{output.regime.label}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color, textTransform: "uppercase", letterSpacing: "0.12em" }}>{regimeLabel}</span>
             </div>
           </div>
 
@@ -278,7 +285,8 @@ export default function TradePreflight() {
 
           {/* Condition chips grid */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-            {output.domains.map(d => {
+            {conditionDomains.length === 0 && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#64748B" }}>Domain conditions unavailable</span>}
+            {conditionDomains.map(d => {
               const chipLabel = d.label.split(" ")[0];
               const chipLevel = d.riskLevel === "low" ? "Low" : d.riskLevel === "moderate" ? "Moderate" : d.riskLevel === "elevated" ? "Elevated" : "Critical";
               return <ConditionChip key={d.id} label={chipLabel} value={chipLevel} />;

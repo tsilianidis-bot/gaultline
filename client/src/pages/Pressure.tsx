@@ -915,8 +915,9 @@ function PressureSkeleton() {
 }
 // ── Domain Analysis Tab ─────────────────────────────────────
 function DomainAnalysisTab() {
-  const { output, isLoading: engineLoading } = useEngine();
-  const domains = output?.domains ?? [];
+  const { output, isLoading: engineLoading, marketMode } = useEngine();
+  // Without MarketState the engine domains are the demo baseline: none are shown.
+  const domains = marketMode === 'deterministic-fallback' ? [] : (output?.domains ?? []);
 
   if (engineLoading) {
     return (

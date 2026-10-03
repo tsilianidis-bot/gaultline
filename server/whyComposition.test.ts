@@ -49,11 +49,16 @@ describe("WHY destination composition", () => {
     expect(deepPathIdx, "WHY deep-path route must appear before the canonical destination map").toBeLessThan(canonicalMapIdx);
   });
 
-  it("projects causal explanation from the shared canonical MarketState with explicit deterministic fallback", () => {
+  it("projects causal explanation from the shared canonical MarketState; without it the evidence is Unavailable", () => {
     expect(whySource).toContain("useEngine()");
-    expect(whySource).toContain("marketState?.why.evidenceFamilies ?? output.domains.map");
-    expect(whySource).toContain("marketState?.why.story ?? output.narrative.summary");
-    expect(whySource).toContain("marketState?.why.whyThisRegime ?? output.narrative.regimeAssessment");
+    // Fix-up 4: no demo-engine evidence, drivers, developments or text without MarketState.
+    expect(whySource).toContain("marketState?.why.evidenceFamilies ?? []");
+    expect(whySource).toContain("marketState?.now.topDrivers ?? []");
+    expect(whySource).toContain("marketState?.why.keyDevelopments ?? []");
+    expect(whySource).toContain("marketState?.why.story ?? SYNTHESIS_UNAVAILABLE");
+    expect(whySource).toContain("marketState?.why.whyThisRegime ?? SYNTHESIS_UNAVAILABLE");
+    expect(whySource).not.toContain("output.domains");
+    expect(whySource).not.toContain("output.narrative");
     expect(whySource).toContain("customerChromeModeLabel(integrityLabel)");
     expect(whySource).toContain("customerIntegrityChipLevel(integrityLabel)");
     expect(whySource).toContain("Canonical refresh is degraded");
@@ -78,8 +83,8 @@ describe("WHY destination composition", () => {
   });
 
   it("uses the shared canonical 0–100 pressure formatter and states the positioning evidence boundary", () => {
-    expect(whySource).toContain("formatCanonicalScore(pressure)");
-    expect(whySource).toContain("normalizeCanonicalMetric(domain.score * 10)");
+    expect(whySource).toContain('pressure === null ? "Unavailable" : formatCanonicalScore(pressure)');
+    expect(whySource).toContain("normalizeCanonicalMetric(rawPressure)");
     expect(whySource).toContain("not publish a standalone institutional-positioning feed");
     expect(whySource).not.toMatch(/\}\s*\/10\b/);
     expect(whySource).not.toContain("/10</");

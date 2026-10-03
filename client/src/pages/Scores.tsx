@@ -11,6 +11,7 @@ import ScoreRing from "@/components/ScoreRing";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
+import { PageDegradedBanner } from "@/components/PageStateViews";
 import { customerIntegrityBadgeColor } from "@shared/customerIntegrityLabels";
 import { availableDelta } from "@/lib/displayFallbacks";
 
@@ -186,11 +187,28 @@ function DomainCard({ score, index }: { score: DomainScore; index: number }) {
 export default function Scores() {
   useSEO(PAGE_SEO.scores);
   const [mounted, setMounted] = useState(false);
-  const { output, integrityLabel } = useEngine();
+  const { output, integrityLabel, marketMode } = useEngine();
   const { overall, domains, regime } = output;
 
   useEffect(() => { setMounted(true); }, []);
   if (!mounted) return null;
+
+  // Without MarketState the engine scores are the demo baseline: withheld, never shown.
+  if (marketMode === 'deterministic-fallback') {
+    return (
+      <div data-scores-canonical="unavailable" style={{ minHeight: '100vh', background: '#050608', maxWidth: '800px', margin: '0 auto' }}>
+        <PageHeader
+          title="Risk Score Breakdown"
+          subtitle="Composite scoring across all major stress dimensions."
+          badge={integrityLabel}
+          badgeColor={customerIntegrityBadgeColor(integrityLabel)}
+        />
+        <div style={{ padding: '20px 16px 32px' }}>
+          <PageDegradedBanner message="Current canonical state is unavailable." detail="Risk scores are withheld until one authoritative state is available." />
+        </div>
+      </div>
+    );
+  }
 
   const color = getRiskColor(overall.riskLevel);
   const overallDelta = availableDelta(overall);

@@ -67,17 +67,12 @@ const trendCopy: Record<DevelopingCondition["trend"], { label: string; color: st
   easing:   { label: "EASING",   color: "#34d399" },
 };
 
-function fallbackSeverity(riskLevel: string): DevelopingCondition["severity"] {
-  if (riskLevel === "critical") return "Critical";
-  if (riskLevel === "high") return "High";
-  if (riskLevel === "elevated") return "Moderate";
-  return "Low";
-}
-
-function fallbackTrend(delta: number): DevelopingCondition["trend"] {
-  if (delta > 0.15) return "building";
-  if (delta < -0.15) return "easing";
-  return "stable";
+function WatchUnavailable({ id }: { id: string }) {
+  return (
+    <div data-watch-unavailable={id} className="mb-3 rounded-sm border border-white/10 bg-white/[0.02] p-5 text-sm leading-6 text-slate-400">
+      Unavailable — canonical monitoring evidence is not available, so no domain readings are shown.
+    </div>
+  );
 }
 
 // ── Section wrapper ──────────────────────────────────────────────────────────
@@ -207,7 +202,6 @@ function TriggerDistanceRow({ condition }: { condition: DevelopingCondition }) {
 export default function Watch() {
   const {
     marketState,
-    output,
     sourceHealth,
     isLoading,
     isRefreshing,
@@ -228,33 +222,17 @@ export default function Watch() {
   if (isLoading && !canonicalState) return <PageLoadingState eyebrow="WATCH · Monitoring state" message="Loading authoritative canonical state…" />;
   if (!canonicalState) return <PageDegradedBanner message="Current canonical state is unavailable." detail="WATCH withholds current monitoring interpretation until one authoritative state is available." />;
 
-  const pressure = canonicalState?.pressureIndex ?? marketState?.now.pressureScore ?? output.overall.score * 10;
+  // Without MarketState the browser engine runs on demo inputs: no conditions,
+  // indicators or monitor items come from its domains ("Unavailable" instead).
+  const rawPressure = canonicalState?.pressureIndex ?? marketState?.now.pressureScore ?? null;
+  const pressure = typeof rawPressure === "number" && Number.isFinite(rawPressure) ? rawPressure : null;
   const whatChanged = marketState?.watch.whatChanged ?? [
-    "Canonical change records are unavailable. Deterministic risk domains are shown below without claiming measured changes.",
+    "Canonical change records are unavailable.",
   ];
-  const developingConditions: DevelopingCondition[] = marketState?.watch.developingConditions
-    ?? output.domains.slice(0, 5).map(domain => ({
-      title: domain.label,
-      description: domain.description,
-      severity: fallbackSeverity(domain.riskLevel),
-      trend: fallbackTrend(domain.delta),
-      durationDescription: "Canonical duration records are unavailable in deterministic fallback mode.",
-      evidence: domain.drivers.length > 0 ? domain.drivers.join(" · ") : "No domain-level evidence details are available.",
-      expectedImpact: "Expected-impact language is withheld until canonical monitoring state is restored.",
-    }));
+  const developingConditions: DevelopingCondition[] = marketState?.watch.developingConditions ?? [];
   const activePatterns: ActivePattern[] = marketState?.watch.activePatterns ?? [];
-  const whatToWatch = marketState?.watch.whatToWatch
-    ?? output.domains.slice(0, 5).map(domain => `${domain.label}: ${domain.drivers[0] ?? domain.description}`);
-  const leadingIndicators = marketState?.why.evidenceFamilies
-    ?? output.domains.slice(0, 5).map(domain => ({
-      name: domain.label,
-      signal: domain.riskLevel === "low" ? "neutral" : "stressed",
-      strength: normalizeCanonicalMetric(domain.score * 10),
-      trend: domain.delta > 0.15 ? "deteriorating" : domain.delta < -0.15 ? "improving" : "stable",
-      currentValue: formatCanonicalScore(domain.score * 10),
-      historicalContext: "Canonical historical context is unavailable in deterministic fallback mode.",
-      whyItMatters: domain.description,
-    }));
+  const whatToWatch = marketState?.watch.whatToWatch ?? [];
+  const leadingIndicators = marketState?.why.evidenceFamilies ?? [];
   const invalidations = [
     ...(marketState?.outlook.invalidationConditions ?? []),
     ...activePatterns.map(pattern => pattern.invalidationConditions),
@@ -344,7 +322,7 @@ export default function Watch() {
                 <div className="mt-4 grid grid-cols-2 gap-3 border-t border-white/10 pt-4">
                   <div>
                     <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-slate-600">Pressure</p>
-                    <p className="mt-1 font-mono text-sm text-orange-200">{formatCanonicalScore(pressure)}</p>
+                    <p className="mt-1 font-mono text-sm text-orange-200">{pressure === null ? "Unavailable" : formatCanonicalScore(pressure)}</p>
                   </div>
                   <div>
                     <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-slate-600">Confidence</p>
@@ -388,6 +366,7 @@ export default function Watch() {
         {/* ── SECTIONS ─────────────────────────────────────────────────── */}
 
         <Section id="threshold-meters" index="01" eyebrow="Threshold proximity" title="How close each domain is to its alert threshold" description="Each meter shows the current pressure reading against a normalized 0–100 scale. The closer to 100, the closer the domain is to a critical threshold.">
+          {developingConditions.length === 0 && <WatchUnavailable id="threshold-meters" />}
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {developingConditions.map(condition => (
               <ThresholdMeter
@@ -440,6 +419,7 @@ export default function Watch() {
         </Section>
 
         <Section id="leading-indicators" index="04" eyebrow="Leading indicators" title="Evidence families to monitor before conditions change" description={`Strength, direction, current observation, and historical context remain attached so a signal cannot outrun its evidence. ${monthlyRecordBasisNote(marketState?.why.evidenceAsOfMonth)}`}>
+          {leadingIndicators.length === 0 && <WatchUnavailable id="leading-indicators" />}
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {leadingIndicators.map(indicator => (
               <article key={indicator.name} className="rounded-sm border border-white/10 bg-white/[0.025] p-5">
@@ -463,6 +443,7 @@ export default function Watch() {
           </div>
           <div className="mt-4 rounded-sm border border-white/10 bg-white/[0.02] px-4 py-4">
             <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-600">Monitor next</div>
+            {whatToWatch.length === 0 && <p data-watch-unavailable="monitor-next" className="mt-3 text-xs leading-5 text-slate-500">Unavailable</p>}
             <div className="mt-3 grid gap-2 md:grid-cols-2">
               {whatToWatch.map(item => (
                 <div key={item} className="flex gap-2 text-xs leading-5 text-slate-300">
@@ -475,6 +456,7 @@ export default function Watch() {
         </Section>
 
         <Section id="duration-trend" index="05" eyebrow="Duration and trend" title="How long each condition has been developing" description="Duration is a canonical field, not an estimate inferred from severity. Missing duration remains visibly unavailable.">
+          {developingConditions.length === 0 && <WatchUnavailable id="duration-trend" />}
           <div className="divide-y divide-white/10 rounded-sm border border-white/10 bg-white/[0.025]">
             {developingConditions.map(condition => (
               <div key={`${condition.title}-duration`} className="grid gap-3 p-4 sm:grid-cols-[180px_120px_minmax(0,1fr)] sm:items-center">
@@ -492,6 +474,7 @@ export default function Watch() {
         </Section>
 
         <Section id="expected-impact" index="06" eyebrow="Expected impact" title="What each developing condition could affect" description="Impact language stays conditional. WATCH describes the monitored transmission path without converting it into a trade instruction.">
+          {developingConditions.length === 0 && <WatchUnavailable id="expected-impact" />}
           <div className="grid gap-4 lg:grid-cols-2">
             {developingConditions.map(condition => (
               <article key={`${condition.title}-impact`} className="rounded-sm border border-white/10 bg-white/[0.025] p-5">
@@ -534,7 +517,7 @@ export default function Watch() {
             </div>
             <div className="rounded-sm border border-white/10 bg-white/[0.025] p-5">
               <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-600">Historical observations</div>
-              <div className="mt-3 font-['Rajdhani'] text-2xl font-semibold text-slate-100">{marketState?.history.observationCount ?? 0}</div>
+              <div className="mt-3 font-['Rajdhani'] text-2xl font-semibold text-slate-100">{marketState?.history.observationCount ?? "Unavailable"}</div>
               <div className="mt-2 text-xs text-slate-500">{marketState?.history.datasetSpan ?? "Canonical history unavailable"}</div>
             </div>
             <div className="rounded-sm border border-white/10 bg-white/[0.025] p-5">
@@ -615,7 +598,7 @@ export default function Watch() {
         </Section>
 
         <div className="flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-6 font-mono text-[9px] uppercase tracking-[0.16em] text-slate-700">
-          <span>Regime {marketState?.now.regime ?? output.regime.label}</span>
+          <span>Regime {marketState?.now.regime ?? canonicalState.regime ?? "Unavailable"}</span>
           <Link href={PERSISTENT_UTILITY_BY_ID.alerts.path ?? CANONICAL_DESTINATION_BY_ID.watch.path} className="text-orange-300/80 transition hover:text-orange-200">
             Review alert view
           </Link>

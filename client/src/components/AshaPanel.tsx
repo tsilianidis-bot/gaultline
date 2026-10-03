@@ -165,7 +165,7 @@ export default function AshaPanel() {
   const regimeState: AshaRegimeState = (() => {
     const score = canonicalState?.pressureIndex != null
       ? canonicalState.pressureIndex / 10
-      : output?.overall?.score ?? 0;
+      : canonicalEngine?.overall?.score ?? 0;
     if (score >= 7) return "critical";
     if (score >= 4.5) return "rising";
     return "calm";

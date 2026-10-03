@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import DataFreshnessBadge from "@/components/DataFreshnessBadge";
 import FaultlineTerm from "@/components/FaultlineTerm";
 import { useEngine } from "@/contexts/EngineContext";
-import { engineProbabilityText } from "@/lib/marketStateProjection";
+import { canonicalRegimeDisplayColor, engineProbabilityText } from "@/lib/marketStateProjection";
 import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── DataSourceBanner: shown when data is from snapshot or fallback ────────────
@@ -1400,7 +1400,7 @@ function EmptyState({ icon: _icon, title, message }: { icon: React.ReactNode; ti
 }
 
 function InstitutionalFallback({ message, onRetry }: { message: string; onRetry: () => void }) {
-  const { output, isLive, lastUpdated } = useEngine();
+  const { output, isLive, lastUpdated, marketMode, canonicalState } = useEngine();
   const [showSectors, setShowSectors] = useState(true);
   const [showPlaybook, setShowPlaybook] = useState(true);
   const [showWatchlist, setShowWatchlist] = useState(true);
@@ -1418,10 +1418,14 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
     );
   }
 
-  const regimeLabel = output?.regime?.label ?? "Unknown";
-  const regimeColor = output?.regime?.color ?? "#94A3B8";
+  // Without MarketState the engine output is the demo baseline: canonical regime and
+  // pressure instead (healthy-mode colour mapping), or "Unavailable" / neutral.
+  const degraded = marketMode === "deterministic-fallback";
+  const canonicalPressure = finiteOrNull(canonicalState?.pressureIndex);
+  const regimeLabel = degraded ? (canonicalState?.regime ?? "Unavailable") : (output?.regime?.label ?? "Unknown");
+  const regimeColor = degraded ? canonicalRegimeDisplayColor(canonicalPressure, canonicalState?.regime) : (output?.regime?.color ?? "#94A3B8");
   // Missing pressure stays null and renders "—" (never 0).
-  const pressure = finiteOrNull(output?.overall?.score);
+  const pressure = degraded ? (canonicalPressure === null ? null : canonicalPressure / 10) : finiteOrNull(output?.overall?.score);
   // Probability contract: contract display text, never a 50 default or `NaN%`.
   const bullText = output ? engineProbabilityText(output, "bullProbability") : "Unavailable";
   const lastUpdatedStr = lastUpdated ? lastUpdated.toLocaleTimeString() : "Not available";

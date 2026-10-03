@@ -7,6 +7,7 @@ import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { signalQuoteView, signalsFeedLabel, hasUsableSignalQuote, signalsPriceBadge, catalogQuotes, signalsFooter, signalsSubtitle } from "@/lib/signalQuoteView";
 import { useEngine } from '@/contexts/EngineContext';
+import { UNAVAILABLE_DISPLAY_COLOR } from '@/lib/marketStateProjection';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
 import { TickerSearch } from '@/components/TickerSearch';
@@ -1644,10 +1645,13 @@ function SignalsInner() {
   const pricesBadge = useMemo(() => signalsPriceBadge(quotesData?.quotes, quotesData?.source ?? null), [quotesData?.quotes, quotesData?.source]);
 
   // ── Regime color ───────────────────────────────────────────
+  // Outside canonical mode the engine regime colour is the demo engine's: neutral instead
+  // (regime and pressure are withheld on this page then).
   const regimeColor = useMemo(() => {
+    if (!canonicalRegimeAvailable) return UNAVAILABLE_DISPLAY_COLOR;
     if (!engine?.output?.regime) return '#00D4FF';
     return engine.output.regime.color ?? '#00D4FF';
-  }, [engine?.output?.regime]);
+  }, [canonicalRegimeAvailable, engine?.output?.regime]);
 
   return (
     <div style={{

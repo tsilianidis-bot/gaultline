@@ -26,6 +26,7 @@ import {
   PERSISTENT_UTILITY_BY_ID,
 } from "@shared/routeRegistry";
 import { formatCanonicalScore, normalizeCanonicalMetric } from "@shared/marketMetrics";
+import { SYNTHESIS_UNAVAILABLE, UNAVAILABLE_DISPLAY_COLOR } from "@/lib/marketStateProjection";
 import type { CanonicalMarketState } from "@shared/marketState";
 import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
@@ -34,13 +35,6 @@ import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateView
 type EvidenceFamily = CanonicalMarketState["why"]["evidenceFamilies"][number];
 
 const WHY_DEEP_PATH = "/app/why/deep";
-
-function fallbackSignal(score: number): EvidenceFamily["signal"] {
-  if (score >= 7) return "stressed";
-  if (score >= 5) return "bearish";
-  if (score <= 3) return "recovering";
-  return "neutral";
-}
 
 function signalTone(signal: EvidenceFamily["signal"]): string {
   if (signal === "bullish" || signal === "recovering") return "#34d399";
@@ -215,6 +209,16 @@ function FaultMapChain({ drivers, families }: { drivers: string[]; families: Evi
   );
 }
 
+// ── Unavailable evidence (no MarketState) ─────────────────────────────────────
+function EvidenceUnavailable({ id }: { id: string }) {
+  return (
+    <div data-why-unavailable={id} className="rounded-sm border border-white/10 bg-white/[0.02] p-5">
+      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">Unavailable</p>
+      <p className="mt-2 text-xs leading-5 text-slate-500">Canonical evidence is unavailable, so no drivers or evidence families are shown.</p>
+    </div>
+  );
+}
+
 // ── Source status ────────────────────────────────────────────────────────────
 function SourceStatus({ source }: { source: CanonicalMarketState["sourceHealth"][number] }) {
   const tone = source.status === "healthy" ? "#34d399" : source.status === "degraded" ? "#fbbf24" : "#fb7185";
@@ -238,7 +242,6 @@ export default function Why() {
   });
 
   const {
-    output,
     marketState,
     sourceHealth,
     isLoading,
@@ -256,30 +259,25 @@ export default function Why() {
   if (isLoading && !canonicalState) return <PageLoadingState eyebrow="WHY · Causal analysis" message="Loading authoritative canonical state…" />;
   if (!canonicalState) return <PageDegradedBanner message="Current canonical state is unavailable." detail="WHY withholds current-state interpretation until one authoritative state is available." />;
 
-  const evidenceFamilies: EvidenceFamily[] = marketState?.why.evidenceFamilies ?? output.domains.map(domain => ({
-    name: domain.label,
-    signal: fallbackSignal(domain.score),
-    strength: normalizeCanonicalMetric(domain.score * 10),
-    trend: domain.delta > 0.1 ? "deteriorating" : domain.delta < -0.1 ? "improving" : "stable",
-    currentValue: formatCanonicalScore(domain.score * 10),
-    historicalContext: domain.description,
-    whyItMatters: domain.drivers.length ? domain.drivers.join(" · ") : domain.description,
-  }));
+  // Without MarketState the browser engine runs on demo inputs: no evidence,
+  // drivers, developments or explanation text come from it ("Unavailable").
+  const evidenceFamilies: EvidenceFamily[] = marketState?.why.evidenceFamilies ?? [];
 
-  const primaryDrivers = marketState?.now.topDrivers ?? evidenceFamilies.slice(0, 4).map(family => family.name);
-  const keyDevelopments = marketState?.why.keyDevelopments ?? output.narrative.keyRisks;
+  const primaryDrivers = marketState?.now.topDrivers ?? [];
+  const keyDevelopments = marketState?.why.keyDevelopments ?? [];
   const whatChanged = marketState?.watch.whatChanged ?? [];
   const developingConditions = marketState?.watch.developingConditions ?? [];
   const positioningEvidence = evidenceFamilies.filter(family => /liquid|credit|concentration|volatil|breadth|fund/i.test(family.name));
   const positioningView = positioningEvidence.length ? positioningEvidence : evidenceFamilies.slice(0, 3);
   const invalidationConditions = marketState?.outlook.invalidationConditions ?? [];
-  const pressure = canonicalState?.pressureIndex ?? marketState?.now.pressureScore ?? normalizeCanonicalMetric(output.overall.score * 10);
-  const story = marketState?.why.story ?? output.narrative.summary;
-  const whyThisRegime = marketState?.why.whyThisRegime ?? output.narrative.regimeAssessment;
-  const whyThisScore = marketState?.why.whyThisScore ?? output.overall.description;
+  const rawPressure = canonicalState?.pressureIndex ?? marketState?.now.pressureScore ?? null;
+  const pressure = typeof rawPressure === "number" && Number.isFinite(rawPressure) ? normalizeCanonicalMetric(rawPressure) : null;
+  const story = marketState?.why.story ?? SYNTHESIS_UNAVAILABLE;
+  const whyThisRegime = marketState?.why.whyThisRegime ?? SYNTHESIS_UNAVAILABLE;
+  const whyThisScore = marketState?.why.whyThisScore ?? null;
   const ashaPath = PERSISTENT_UTILITY_BY_ID.asha.path ?? "/app/asha";
-  const evidenceConsensus = marketState?.why.evidenceConsensus ?? "fallback";
-  const pressureColor = pressure >= 75 ? "#ff4d6d" : pressure >= 50 ? "#ffaa00" : pressure >= 30 ? "#00e5ff" : "#00e599";
+  const evidenceConsensus = marketState?.why.evidenceConsensus ?? "Unavailable";
+  const pressureColor = pressure === null ? UNAVAILABLE_DISPLAY_COLOR : pressure >= 75 ? "#ff4d6d" : pressure >= 50 ? "#ffaa00" : pressure >= 30 ? "#00e5ff" : "#00e599";
 
   // Plain sort (not useMemo): must not call hooks after the early returns above.
   const sortedFamilies = [...evidenceFamilies].sort((a, b) => b.strength - a.strength);
@@ -334,21 +332,22 @@ export default function Why() {
                   {marketState?.why.narrative.whyIsItHappening ?? whyThisRegime}
                 </h1>
                 <p className="mt-5 max-w-4xl text-base leading-7 text-slate-300">{story}</p>
-                <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-500">{whyThisScore}</p>
+                {whyThisScore && <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-500">{whyThisScore}</p>}
               </div>
 
               {/* Pressure being explained */}
               <div className="rounded-sm border border-amber-300/20 bg-amber-300/[0.03] p-5">
                 <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-500">Pressure being explained</p>
-                <p className="mt-3 font-['Rajdhani'] text-5xl font-semibold" style={{ color: pressureColor }}>{formatCanonicalScore(pressure)}</p>
+                <p className="mt-3 font-['Rajdhani'] text-5xl font-semibold" style={{ color: pressureColor }} data-why-pressure={pressure === null ? "unavailable" : pressure}>{pressure === null ? "Unavailable" : formatCanonicalScore(pressure)}</p>
                 <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full" style={{ width: `${pressure}%`, background: pressureColor, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
+                  <div className="h-full rounded-full" style={{ width: `${pressure ?? 0}%`, background: pressureColor, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
                 </div>
                 <p className="mt-3 font-mono text-[9px] uppercase tracking-[0.12em] text-amber-300/75">{evidenceConsensus} evidence consensus</p>
                 <p className="mt-4 text-xs leading-5 text-slate-500">Updated {lastUpdated?.toLocaleString() ?? "unavailable"}</p>
                 {/* Top 3 driver mini-bars */}
                 <div className="mt-5 space-y-2 border-t border-white/10 pt-4">
                   <p className="mb-3 font-mono text-[8px] uppercase tracking-[0.14em] text-slate-600">Top contributors</p>
+                  {sortedFamilies.length === 0 && <p data-why-unavailable="contributors" className="font-mono text-[9px] text-slate-500">Unavailable</p>}
                   {sortedFamilies.slice(0, 3).map(f => (
                     <div key={f.name} className="flex items-center gap-2">
                       <span className="w-20 shrink-0 font-mono text-[8px] truncate text-slate-500">{f.name}</span>
@@ -378,6 +377,7 @@ export default function Why() {
 
         <Section id="drivers" index="01" eyebrow="Primary drivers" title="The forces carrying the most explanatory weight" description="These drivers come from the same canonical state as NOW. They are ranked evidence, not post-hoc headlines.">
           {/* Driver contribution bars */}
+          {sortedFamilies.length === 0 && <EvidenceUnavailable id="drivers" />}
           <div className="grid gap-3 md:grid-cols-2">
             {sortedFamilies.map((family, index) => (
               <DriverContributionBar
@@ -406,10 +406,11 @@ export default function Why() {
               <p className="font-mono text-[9px] uppercase tracking-[0.13em] text-amber-300/80">Evidence families reflect the most recent complete data — live sub-scores are temporarily unavailable</p>
             </div>
           ) : null}
-          <FaultMapChain drivers={primaryDrivers} families={evidenceFamilies} />
+          {primaryDrivers.length === 0 ? <EvidenceUnavailable id="fault-map" /> : <FaultMapChain drivers={primaryDrivers} families={evidenceFamilies} />}
         </Section>
 
         <Section id="transmission" index="03" eyebrow="Evidence families" title="Where each driver is concentrated and how strong it is" description="Every family is normalized to the same 0–100 scale. Strength and trend are shown together so concentration and direction are visible at once.">
+          {evidenceFamilies.length === 0 && <EvidenceUnavailable id="evidence-families" />}
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {evidenceFamilies.map(family => <EvidenceCard key={family.name} family={family} />)}
           </div>
@@ -422,6 +423,7 @@ export default function Why() {
               The canonical snapshot does not publish a standalone institutional-positioning feed. The cards below are observable liquidity, credit, concentration, volatility, or breadth proxies—not assertions about undisclosed holdings.
             </p>
           </div>
+          {positioningView.length === 0 && <div className="mt-4"><EvidenceUnavailable id="positioning" /></div>}
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             {positioningView.map(family => (
               <div key={family.name} className="rounded-sm border border-white/10 bg-white/[0.02] p-5">
@@ -454,7 +456,7 @@ export default function Why() {
               <div className="flex items-center gap-2 text-cyan-300"><GitBranch size={15} /><p className="font-mono text-[9px] uppercase tracking-[0.14em]">What changed</p></div>
               <div className="mt-4 space-y-3">
                 {whatChanged.length ? whatChanged.map(item => <p key={item} className="border-l border-cyan-300/25 pl-4 text-sm leading-6 text-slate-300">{item}</p>) : (
-                  <p className="text-sm leading-6 text-slate-500">{marketState?.why.narrative.whatHasChanged ?? "No canonical change list is available; the fallback engine is showing current conditions only."}</p>
+                  <p className="text-sm leading-6 text-slate-500">{marketState?.why.narrative.whatHasChanged ?? "No canonical change list is available."}</p>
                 )}
               </div>
             </div>

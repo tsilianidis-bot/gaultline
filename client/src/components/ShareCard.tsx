@@ -21,7 +21,7 @@ export default function ShareCard({ onClose }: ShareCardProps) {
   const bullPct = engineProbabilityPercent(output, 'bullProbability');
   const [copied, setCopied] = useState(false);
 
-  const topAnalog = analogs[0];
+  const topAnalog = analogs[0] ?? null;
   const date = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   const shareText = [
@@ -178,14 +178,16 @@ export default function ShareCard({ onClose }: ShareCardProps) {
             ))}
           </div>
 
-          {/* Analog */}
-          <div style={{ padding: '8px', background: 'rgba(255,255,255,0.02)', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.04)' }}>
+          {/* Analog: only when a canonical analog exists (none is rendered otherwise) */}
+          {topAnalog && (
+          <div data-share-analog style={{ padding: '8px', background: 'rgba(255,255,255,0.02)', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.04)' }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '3px' }}>Closest Historical Analog</div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: '12px', color: '#D1D5DB' }}>{topAnalog.era} {topAnalog.year}</span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#00D4FF' }}>{topAnalog.similarity}%</span>
             </div>
           </div>
+          )}
 
           {/* Footer */}
           <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

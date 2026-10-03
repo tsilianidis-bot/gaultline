@@ -47,7 +47,10 @@ describe("routed X/10 score text is converted to /100 (class a)", () => {
 
   it("CryptoSignals REGIME SCORE is the engine composite on /100; only the two native 0–10 per-asset ratings keep /10 (class b)", () => {
     const src = code("client/src/pages/CryptoSignals.tsx");
-    expect(src).toContain("{score100Value(engine?.output?.overall?.score)}");
+    expect(src).toContain("{regimeScoreText}<span");
+    expect(src).toContain(": score100Value(engine?.output?.overall?.score);");
+    // Fix-up 4: degraded mode uses the canonical pressure, never the demo engine composite.
+    expect(src).toContain("? (canonicalPressure100 === null ? score100Value(null) : String(Math.round(canonicalPressure100)))");
     expect(src).not.toContain("overall?.score?.toFixed(1)");
     const remaining = src.split("\n").filter(line => slashTen.test(line) && (slashTen.lastIndex = 0, true));
     expect(remaining).toHaveLength(2);

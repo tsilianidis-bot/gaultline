@@ -156,18 +156,22 @@ interface MarketScenario {
   watchNext: string[];
 }
 
-function buildMarketScenarios(output: EngineOutput): MarketScenario[] {
-  const { overall, domains } = output;
-  const score = overall.score;
+function buildMarketScenarios(output: EngineOutput, degraded: boolean, canonicalPressure100: number | null | undefined): MarketScenario[] {
+  // Without MarketState (degraded) the engine output is the demo baseline: the canonical
+  // pressure is used instead (or "unavailable") and no demo domain is named.
+  const rawPressure100 = degraded ? canonicalPressure100 : output.overall.score * 10;
+  const pressure100 = typeof rawPressure100 === "number" && Number.isFinite(rawPressure100) ? rawPressure100 : null;
+  const domains = degraded ? [] : output.domains;
 
   // Probability contract: bull/crash numbers are withheld, so no scenario
   // likelihood rating is derived from them.
   const bullConf = "Uncalibrated";
   const bearConf = "Uncalibrated";
-  const systemicConf = score >= 7.0 ? "Elevated" : "Low";
+  const systemicConf = pressure100 === null ? "Unavailable" : pressure100 >= 70 ? "Elevated" : "Low";
 
   const confColor = (c: string) => {
     if (c === "Uncalibrated") return "#94A3B8";
+    if (c === "Unavailable") return "#64748B";
     if (c === "Elevated") return "#FF9500";
     if (c === "Moderate") return "#FFD700";
     if (c === "High") return "#FF2D55";
@@ -238,7 +242,7 @@ function buildMarketScenarios(output: EngineOutput): MarketScenario[] {
       color: confColor(bearConf),
       description: "Risk conditions deteriorate. Pressure readings rise. Defensive positioning becomes more relevant.",
       supporting: [
-        `Current regime with Pressure Index at ${Math.round(score * 10)} / 100`,
+        pressure100 === null ? "Current Pressure Index unavailable" : `Current regime with Pressure Index at ${Math.round(pressure100)} / 100`,
         topDomains.length > 0 ? `Elevated readings in: ${topDomains.join(", ")}` : "One or more domains at elevated or high risk levels",
         `Recession risk: ${engineProbabilityText(output, "recessionProbability")} (no governed recession model)`,
       ],
@@ -265,7 +269,7 @@ function buildMarketScenarios(output: EngineOutput): MarketScenario[] {
       color: confColor(systemicConf),
       description: "Multiple fault lines escalate simultaneously. Systemic risk becomes the primary concern.",
       supporting: [
-        score >= 7.0 ? "Current score already in late-cycle fragility range" : "Escalation of multiple domain scores simultaneously",
+        pressure100 !== null && pressure100 >= 70 ? "Current score already in late-cycle fragility range" : "Escalation of multiple domain scores simultaneously",
         "Liquidity stress and credit contagion risk both elevated",
         "Historical analog patterns matching prior stress episodes",
       ],
@@ -503,7 +507,10 @@ export function MarketPreflightModal({
     enabled: !!user && open,
     staleTime: 60_000,
   });
-  const { output } = useEngine();
+  const { output, marketMode } = useEngine();
+  const degraded = marketMode === "deterministic-fallback";
+  // A caller's regime label comes from the engine output: demo without MarketState.
+  const displayRegimeLabel = degraded ? (canonicalState?.regime ?? "Unavailable") : regimeLabel;
   const { data: scoreData, isLoading, refetch } = trpc.awareness.getScore.useQuery(undefined, {
     enabled: !!user && open,
     staleTime: 5_000,
@@ -540,7 +547,7 @@ export function MarketPreflightModal({
   const score = scoreData?.score ?? 0;
   const color = scoreData?.rating.color ?? "#00D4FF";
   const completedKeys = new Set(scoreData?.completedKeys ?? []);
-  const outcomes = useMemo(() => buildMarketScenarios(output), [output]);
+  const outcomes = useMemo(() => buildMarketScenarios(output, degraded, canonicalState?.pressureIndex), [output, degraded, canonicalState?.pressureIndex]);
 
   return (
     <div
@@ -768,7 +775,7 @@ export function MarketPreflightModal({
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.6)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "6px" }}>
                   Current Market Regime
                 </div>
-                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#F0F4FF" }}>{regimeLabel || "Unknown"}</div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#F0F4FF" }}>{displayRegimeLabel || "Unknown"}</div>
                 <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", marginTop: "4px" }}>
                   Awareness score is reset daily at midnight UTC. Complete the checklist each trading day for consistent situational awareness.
                 </div>
@@ -874,7 +881,7 @@ export function MarketPreflightModal({
           {activeTab === "outcomes" && (
             <div>
               <div style={{ marginBottom: "14px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", lineHeight: 1.65 }}>
-                Based on your current awareness score of <strong style={{ color }}>{score}/100</strong> and the <strong style={{ color: "#F0F4FF" }}>{regimeLabel}</strong> regime, here are the likely decision-making outcomes:
+                Based on your current awareness score of <strong style={{ color }}>{score}/100</strong> and the <strong style={{ color: "#F0F4FF" }}>{displayRegimeLabel}</strong> regime, here are the likely decision-making outcomes:
               </div>
               {outcomes.map((outcome: MarketScenario, i: number) => (
                 <div
