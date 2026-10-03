@@ -549,7 +549,7 @@ Relative Volume: ${relVol !== null ? relVol.toFixed(2) + "x" : "Unknown"}
 RSI-14: ${rsi}
 Setup Type: ${setupType}
 Direction: ${direction.toUpperCase()}
-Confidence: ${confidence}/100
+Confidence: confidence not established (the setup score is a rule-based heuristic, not a calibrated confidence)
 Risk/Reward: ${rr}:1
 FAULTLINE Regime: ${regime} (Pressure: ${regimePressure}/100)
 Is NO_TRADE: ${isNoTrade}

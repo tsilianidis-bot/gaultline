@@ -521,8 +521,6 @@ export function MarketPreflightModal({
   });
   const completeSession = trpc.awareness.completePreflightSession.useMutation();
 
-  if (open && !canonicalState) return null;
-
   const handleComplete = useCallback(async () => {
     setCompletingPreflight(true);
     await logAction.mutateAsync({
@@ -542,12 +540,16 @@ export function MarketPreflightModal({
     navigate(page);
   }, [logAction, currentPage, onClose, navigate]);
 
+  const outcomes = useMemo(() => buildMarketScenarios(output, degraded, canonicalState?.pressureIndex), [output, degraded, canonicalState?.pressureIndex]);
+
+  // Early returns only after every hook above (same hook count on every render;
+  // React #310 otherwise). Closed, or open without a canonical state: nothing.
   if (!open) return null;
+  if (!canonicalState) return null;
 
   const score = scoreData?.score ?? 0;
   const color = scoreData?.rating.color ?? "#00D4FF";
   const completedKeys = new Set(scoreData?.completedKeys ?? []);
-  const outcomes = useMemo(() => buildMarketScenarios(output, degraded, canonicalState?.pressureIndex), [output, degraded, canonicalState?.pressureIndex]);
 
   return (
     <div

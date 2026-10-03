@@ -1124,7 +1124,7 @@ async function orchestrateOpportunityRanking(
 
   // 3. Build compact context for LLM
   const universeContext = topRaw.map((o, i) =>
-    `${i + 1}. ${o.ticker} (${o.name}) — ${o.sector} — ${o.assetType} — Score: ${o.compositeScore}/100 — Direction: ${o.direction} — Macro Fit: ${o.macroFit}/100 — Momentum: ${o.momentumScore}/100 — R/R: ${o.riskRewardRatio.toFixed(1)} — Confidence: ${o.faultlineConfidence}% — Why: ${o.whyNow}`
+    `${i + 1}. ${o.ticker} (${o.name}) — ${o.sector} — ${o.assetType} — Score: ${o.compositeScore}/100 — Direction: ${o.direction} — Macro Fit: ${o.macroFit}/100 — Momentum: ${o.momentumScore}/100 — R/R: ${o.riskRewardRatio.toFixed(1)} — Confidence: confidence not established — Why: ${o.whyNow}`
   ).join("\n");
 
   const avoidContext = avoidRaw.map(o =>

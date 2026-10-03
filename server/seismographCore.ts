@@ -495,13 +495,11 @@ export function buildDailyBriefContext(output: SeismographOutput): DailyBriefCon
     keyDevelopments.push(`Pressure ${output.direction.toLowerCase()} — ${output.regime}`);
   }
   for (const pattern of output.activePatterns.slice(0, 3)) {
-    keyDevelopments.push(`Pattern detected: ${pattern.name} (${pattern.confidence}% confidence)`);
+    // Pattern confidence is not calibrated: the figure stays internal and never enters brief text.
+    keyDevelopments.push(`Pattern detected: ${pattern.name} (confidence not established)`);
   }
-  if (output.transitionProbabilities.transitionToCrisis > 20) {
-    keyDevelopments.push(
-      `Elevated transition risk: ${output.transitionProbabilities.transitionToCrisis}% probability of crisis regime`
-    );
-  }
+  // No crisis-transition % here: transition components are not calibrated (no transition model),
+  // so this brief text (sent to the publishing model) states no transition probability.
 
   const narrativeContext = `
 Current market conditions reflect a ${output.stressLevel.toLowerCase()} stress environment with a Pressure Score of ${output.pressureScore}/100. 
@@ -616,7 +614,8 @@ export function buildReportContext(output: SeismographOutput): ReportContext {
     keyDevelopments.push(`Market pressure is ${output.direction.toLowerCase()}`);
   }
   for (const pattern of output.activePatterns.slice(0, 2)) {
-    keyDevelopments.push(`${pattern.name} pattern active (${pattern.confidence}% confidence)`);
+    // Pattern confidence is not calibrated: the figure stays internal and never enters report text.
+    keyDevelopments.push(`${pattern.name} pattern active (confidence not established)`);
   }
   if (output.evidenceConsensus === "strong" || output.evidenceConsensus === "divergent") {
     keyDevelopments.push(`Evidence consensus: ${output.evidenceConsensus}`);

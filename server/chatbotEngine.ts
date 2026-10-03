@@ -276,7 +276,8 @@ function buildLiveContextBlock(ctx: LiveMarketContext): string {
 
   // BTC cycle phase context
   if (ctx.btcCyclePhase) {
-    parts.push(`Bitcoin Market Cycle Phase: ${ctx.btcCyclePhase} (${ctx.btcCycleConfidence ?? 0}% confidence)`);
+    // The cycle confidence is not calibrated: no figure is handed to the model.
+    parts.push(`Bitcoin Market Cycle Phase: ${ctx.btcCyclePhase} (confidence not established)`);
   }
 
   // Cross-market regime context
@@ -303,7 +304,7 @@ When any user asks about Bitcoin, BTC, or crypto market cycle, you MUST follow t
 **STEP 1 — Direct Answer First (always lead with this):**
 "${a.directAnswer}"
 
-**STEP 2 — Confidence:** ${a.confidenceLabel} (${ctx.btcCycleConfidence ?? 0}%)
+**STEP 2 — Confidence:** confidence not established (state no confidence figure)
 
 **STEP 3 — Key Evidence (cite 3–5 of these):**
 ${a.keyEvidence.map(e => `- ${e}`).join('\n')}

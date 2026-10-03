@@ -1878,7 +1878,7 @@ Current market conditions:
 - Breadth: ${output.marketCondition.breadthConfirmation}
 
 Simulation result:
-- VERDICT: ${verdictLabel} (Confidence: ${output.verdict.confidence}%)
+- VERDICT: ${verdictLabel} (confidence not established)
 - Move Favorability Score: ${output.moveFavorabilityScore}/100
 - Favorable Setup score: ${output.favorableSetupProbability}/100 (heuristic score, not a likelihood)
 - Adverse Pressure score: ${output.adversePressureProbability}/100 (heuristic score, not a likelihood)

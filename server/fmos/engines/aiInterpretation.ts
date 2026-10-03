@@ -82,19 +82,19 @@ function buildInterpretationPrompt(
 ## Current FMOS Engine Outputs
 
 **Pressure Index:** ${p}/100
-**Regime:** ${regime.currentRegime} (confidence: ${regime.confidence}%, stability: ${regime.stability}%)
+**Regime:** ${regime.currentRegime} (confidence not established, stability: ${regime.stability}%)
 **Transition Risk:** not offered as a probability (uncalibrated)
-**Market DNA:** ${dna.currentDNA} (${dna.confidence}% confidence)
+**Market DNA:** ${dna.currentDNA} (confidence not established)
 
 **Top Risk Vectors:** ${topVectors}
 
 **Scenario weights:** uncalibrated (not offered as probabilities). FAULTLINE does not offer a crash probability; state no probability percentage.
 **Primary Driver:** ${probability.primaryDriver}
 
-**Decision:** ${decision.verdict} (conviction: ${decision.conviction}%)
+**Decision:** ${decision.verdict} (conviction not established)
 **Action Bias:** ${decision.actionBias}
 
-**Confidence:** ${confidence.label} (${confidence.score}/100)
+**Confidence:** confidence not established
 ${confidence.contradictions.length > 0 ? `**Contradictions:** ${confidence.contradictions.join("; ")}` : ""}
 
 **Closest Historical Analog:** ${topAnalog.label} (${topAnalog.similarity}% similarity)

@@ -371,7 +371,7 @@ TECHNICALS:
 - SMA: ${signal.technicals.smaSignal}
 - Trend: ${signal.technicals.trend}
 - Volume: ${signal.technicals.volumeSignal}
-- Signal: ${signal.action} (${signal.confidence}/100 confidence)
+- Signal: ${signal.action} (confidence not established)
 - Regime Alignment: ${signal.regimeAlignment}
 
 Respond with JSON:
@@ -417,7 +417,8 @@ Labels must be chosen from: ["AI Bubble Exposure", "Momentum Breakout", "Oversol
     log.warn(`[OwnerSim] LLM rationale failed for ${ticker}`, { err: err as Error });
   }
   return {
-    whyNow: `${ticker} shows ${signal.action} signal with ${signal.confidence}/100 confidence under ${pressure.regime} regime.`,
+    // The signal confidence is a heuristic, not calibrated: no figure in this customer-visible text.
+    whyNow: `${ticker} shows ${signal.action} signal under ${pressure.regime} regime (confidence not established).`,
     invalidation: `Break below stop-loss level invalidates the thesis.`,
     keyRisks: ["Market regime shift", "Liquidity deterioration", "Macro surprise"],
     labels: [signal.action === "BUY" ? "Momentum Breakout" : "Regime Aligned"],
