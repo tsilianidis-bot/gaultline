@@ -400,7 +400,8 @@ function AftershockCard({ signal }: { signal: AftershockSignal }) {
       <div className="grid grid-cols-3 gap-3 mb-3">
         <div>
           <div className="text-[9px] text-zinc-600 uppercase tracking-widest mb-1">Probability</div>
-          <div className="text-sm font-mono font-bold text-white">{signal.probability}%</div>
+          {/* Launch fix-up: aftershock "probability" is a formula (edge weight × 70 + rupture + pressure, aftershockEngine.ts), not calibrated. */}
+          <div data-probability-status="not-established" className="text-sm font-mono font-bold text-zinc-400">Not established</div>
         </div>
         <div>
           <div className="text-[9px] text-zinc-600 uppercase tracking-widest mb-1">Timing</div>

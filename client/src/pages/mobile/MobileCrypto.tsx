@@ -52,7 +52,7 @@ function SignalCard({
     name: string;
     action: string;
     actionLabel: string;
-    confidence: number;
+    confidence: number | null;
     strength: string;
     timeframe: string;
     rationale: string;

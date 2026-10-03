@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
 import {
   TrendingUp, TrendingDown, Minus, Zap, Star, Target, Cpu,
   Bitcoin, Globe, BarChart2, Flame, ChevronRight, RefreshCw,
@@ -137,7 +138,7 @@ interface DiscoveryItem {
   institutionalConviction?: string;
   macroAlignment?: number;
   riskRewardRatio?: string;
-  confidenceLevel?: number;
+  confidenceLevel?: number | null; // withheld by the server; never rendered
   topCatalyst?: string;
   actionBias?: string;
 }
@@ -282,12 +283,11 @@ function BucketCard({ bucket, onNavigate, onWatchlist }: { bucket: DiscoveryBuck
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, color: item.institutionalConviction === "Very High" || item.institutionalConviction === "High" ? "#22C55E" : item.institutionalConviction === "Moderate" ? "#FFD700" : "#94A3B8" }}>{item.institutionalConviction}</span>
                   </div>
                 )}
-                {item.confidenceLevel != null && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.08em" }}>CONFIDENCE</span>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, color: "#B0C4D8" }}>{item.confidenceLevel}%</span>
-                  </div>
-                )}
+                {/* QA confidence sweep: no calibrated confidence exists for discovery items. */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.08em" }}>CONFIDENCE</span>
+                  <span data-confidence-status="not-established" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, color: "#94A3B8" }}>{CONFIDENCE_NOT_ESTABLISHED}</span>
+                </div>
               </div>
 
               {/* Row 3: Bull / Bear cases */}

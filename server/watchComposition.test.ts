@@ -109,7 +109,8 @@ describe("WATCH destination composition", () => {
     // supported it is still formatted on the canonical 0–100 scale.
     expect(watchSource).toContain("formatCanonicalPercent(confidenceDisplay.percent)");
     expect(watchSource).not.toContain("formatCanonicalPercent(confidence)");
-    expect(watchSource).toContain("formatCanonicalPercent(pattern.confidence)");
+    // Launch fix-up: pattern confidence is a heuristic and is not shown.
+    expect(watchSource).not.toContain("pattern.confidence");
     expect(watchSource).toContain("formatCanonicalScore(indicator.strength)");
     expect(watchSource).toContain("normalizeCanonicalMetric(domain.score * 10)");
     expect(watchSource).not.toMatch(/\}\s*\/10\b/);

@@ -413,20 +413,18 @@ export default function Watch() {
           </div>
         </Section>
 
-        <Section id="active-patterns" index="03" eyebrow="Pattern memory" title="Active patterns with explicit confidence" description="Pattern recognition is shown only when the canonical state provides a named pattern, activation duration, confidence, and invalidation condition.">
+        <Section id="active-patterns" index="03" eyebrow="Pattern memory" title="Active patterns" description="Pattern recognition is shown only when the canonical state provides a named pattern, activation duration, and invalidation condition. Pattern confidence is a heuristic and is not shown.">
           {activePatterns.length > 0 ? (
             <div className="grid gap-4 lg:grid-cols-2">
               {activePatterns.map(pattern => (
                 <article key={pattern.name} className="rounded-sm border border-white/10 bg-white/[0.025] p-5">
                   <div className="flex items-center justify-between gap-4">
                     <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-orange-300">{pattern.daysActive} days active</div>
-                    <div className="font-mono text-sm text-slate-100">{formatCanonicalPercent(pattern.confidence)}</div>
+                    {/* Launch fix-up: pattern confidence is a sample-size heuristic, not calibrated: no % and no bar. */}
+                    <div className="font-mono text-sm text-slate-100" data-confidence-status="not-established">Confidence not established</div>
                   </div>
                   <h3 className="mt-4 text-lg font-semibold text-slate-100">{pattern.name}</h3>
                   <p className="mt-2 text-sm leading-6 text-slate-400">{pattern.description}</p>
-                  <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/10">
-                    <div className="h-full rounded-full bg-orange-400" style={{ width: `${pattern.confidence}%`, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
-                  </div>
                   <div className="mt-4 border-t border-white/10 pt-4 text-xs leading-5 text-rose-200/80">
                     Invalidation: {pattern.invalidationConditions}
                   </div>

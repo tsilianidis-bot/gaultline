@@ -42,3 +42,23 @@ describe("Signals.tsx renders no signal confidence figure", () => {
     expect(block).not.toMatch(/confidence|\[[^\]]*\]\s*:|\.\.\./i);
   });
 });
+
+// QA confidence sweep: the dashboard Stock porch preview (DashboardSearchPanels)
+// had a hard-coded STOCK_META confidence (NVDA 84 …) shown as "N% CONF" and a bar.
+describe("DashboardSearchPanels stock preview shows no confidence figure", () => {
+  const dsp = readFileSync(path.resolve(import.meta.dirname, "../client/src/components/DashboardSearchPanels.tsx"), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  it("STOCK_META carries no confidence and nothing reads one", () => {
+    const meta = dsp.slice(dsp.indexOf("const STOCK_META"), dsp.indexOf("const ACTION_COLORS"));
+    expect(meta).toContain('NVDA: { name: "NVIDIA Corp"');
+    expect(meta).not.toMatch(/confidence|conf\w*\s*:/i);
+    expect(dsp).not.toMatch(/meta\??\.conf|meta\s*\[\s*["'`]conf/i);
+  });
+  it("no '% CONF', no confidence %, no confidence-driven gauge or bar", () => {
+    expect(dsp).not.toMatch(/%\s*CONF|onfidence\w*\s*\}\s*%/);
+    const stock = dsp.slice(dsp.indexOf("export function StockPorchPanel"));
+    expect(stock).toMatch(/<ArcGauge\s+value=\{0\}[\s\S]*?sublabel="CONF NOT ESTABLISHED"/);
+    expect(stock).toMatch(/>Confidence<\/span>\s*<span data-confidence-status="not-established"[^>]*>Not established<\/span>\s*<\/div>/);
+    expect(stock).not.toMatch(/AnimBar value=\{meta\.(?!score)/);
+  });
+});

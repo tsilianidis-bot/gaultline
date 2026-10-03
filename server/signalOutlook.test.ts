@@ -334,6 +334,17 @@ describe("Signal Outlook Center — scoring engine", () => {
     expect(result.generatedAt).toBeGreaterThan(0);
   });
 
+  it("QA confidence sweep: discovery items carry no confidenceLevel (was score × 0.85 + band); scores unchanged", async () => {
+    const result = await getOpportunityDiscovery();
+    const items = result.buckets.flatMap(b => b.items);
+    expect(items.length).toBeGreaterThan(0);
+    for (const item of items) {
+      expect(item.confidenceLevel).toBeNull();
+      expect(typeof item.opportunityScore).toBe("number");
+    }
+    expect(JSON.stringify(result)).not.toMatch(/"confidenceLevel":\d/);
+  });
+
   it("getOpportunityDiscovery buckets have valid items", async () => {
     const result = await getOpportunityDiscovery();
     const VALID_CATEGORIES = [

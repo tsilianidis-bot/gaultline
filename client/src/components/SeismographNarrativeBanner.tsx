@@ -334,7 +334,8 @@ export default function SeismographNarrativeBanner({
                 <div key={p.patternId} style={{ padding: "4px 8px", background: "rgba(255,149,0,0.06)", border: "1px solid rgba(255,149,0,0.15)", borderRadius: "3px" }}>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF9500", marginBottom: "2px" }}>{p.name}</div>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(148,163,184,0.7)" }}>
-                    {p.daysActive}d active · {Math.round(p.confidence)}% confidence
+                    {/* Launch fix-up: pattern confidence is a sample-size heuristic (seismographEngine computePatternConfidence), not calibrated. */}
+                    {p.daysActive}d active · <span data-confidence-status="not-established">confidence not established</span>
                     {p.historicalOutcome && <> · Hist: {p.historicalOutcome}</>}
                   </div>
                 </div>

@@ -36,7 +36,10 @@ interface CryptoSignalResult {
   cryptoRegime?: "Bullish" | "Neutral" | "Defensive" | "Risk-Off";
   regimeConflict?: boolean;
   regimeConflictExplanation?: string | null;
-  confidence: number;
+  // Launch fix-up: the server withholds the formula confidence (always null).
+  confidence: number | null;
+  // Ordinal ordering position from the screener (1 = first). Never displayed.
+  strengthRank?: number;
   strength: "Strong" | "Moderate" | "Weak";
   timeframe: "Short-Term" | "Swing" | "Watch";
   rationale: string;
@@ -110,6 +113,12 @@ const CRYPTO_CATEGORIES = ["All", "Large Cap", "Mid Cap", "DeFi", "Layer-1", "La
 type CryptoCategory = typeof CRYPTO_CATEGORIES[number];
 
 // ── Helpers ───────────────────────────────────────────────────
+
+// Launch fix-up: screener rows are ordered by the server's ordinal
+// strengthRank (1 = first); rows without a rank keep their server order.
+function byStrengthRank(a: CryptoSignalResult, b: CryptoSignalResult): number {
+  return (a.strengthRank ?? Number.MAX_SAFE_INTEGER) - (b.strengthRank ?? Number.MAX_SAFE_INTEGER);
+}
 
 function fmt(n: number, decimals = 2): string {
   if (n === 0) return "0.00";
@@ -809,6 +818,8 @@ function CryptoSignalsInner() {
   }, [screenerData]);
 
   // ── Filter and sort ────────────────────────────────────────
+  // Launch fix-up: rows keep the screener's ordinal strengthRank order (the
+  // confidence number itself is no longer sent).
   const displayedSignals = useMemo(() => {
     if (!screenerData?.signals) return [];
     return screenerData.signals
@@ -817,15 +828,15 @@ function CryptoSignalsInner() {
         if (filterAction !== "All" && sig.action !== filterAction) return false;
         return true;
       })
-      .sort((a, b) => b.confidence - a.confidence);
+      .sort(byStrengthRank);
   }, [screenerData, activeCategory, filterAction]);
 
   // ── Top signals ────────────────────────────────────────────
   const topSignals = useMemo(() => {
     if (!screenerData?.signals || screenerData.signals.length === 0) return null;
     const sigs = screenerData.signals;
-    const buys  = sigs.filter(s => s.action === "BUY").sort((a, b) => b.confidence - a.confidence);
-    const sells = sigs.filter(s => s.action === "SELL").sort((a, b) => b.confidence - a.confidence);
+    const buys  = sigs.filter(s => s.action === "BUY").sort(byStrengthRank);
+    const sells = sigs.filter(s => s.action === "SELL").sort(byStrengthRank);
     const momentum = [...sigs].sort((a, b) => b.technicals.momentumScore - a.technicals.momentumScore);
     const volatile = [...sigs].sort((a, b) => b.technicals.volatility24h - a.technicals.volatility24h);
     return {

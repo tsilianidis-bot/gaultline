@@ -193,7 +193,8 @@ function CopyButton({ data }: { data: OracleBriefingData }) {
     data.executiveSummary,
     ``,
     `MISSION SNAPSHOT`,
-    `Bias: ${data.marketBias} | Threat: ${data.threatLevel}${data.confidence === undefined ? "" : ` | Response confidence: ${data.confidence}%`}`,
+    // Launch fix-up: no response confidence figure is established; none is copied.
+    `Bias: ${data.marketBias} | Threat: ${data.threatLevel} | Response confidence: Not established`,
     `Regime: ${data.marketRegime} | Pressure Index: ${pressureAvailable(data.pressureIndex) ? `${data.pressureIndex}/100` : "Not available"} | Time Horizon: ${data.forecastMetadata.expectedHorizon ?? "Not established"}`,
     `Action: ${data.missionRecommendationStructured?.verdict || data.finalVerdictAction}`,
     ...(data.questionAnalysis ? [
@@ -423,7 +424,7 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
             {[
               { label: "BIAS", value: data.marketBias, color: bColor },
               { label: "THREAT", value: data.threatLevel, color: tColor },
-              { label: "RESPONSE CONFIDENCE", value: data.confidence === undefined ? "NOT ESTABLISHED" : `${data.confidence}%`, color: "#E2E8F0" },
+              { label: "RESPONSE CONFIDENCE", value: "Not established", color: "#E2E8F0" }, // Launch fix-up: never a %
               { label: "REGIME", value: data.marketRegime, color: "#E2E8F0" },
               { label: "PRESSURE INDEX", value: pressureAvailable(data.pressureIndex) ? `${data.pressureIndex}/100` : "NOT AVAILABLE", color: "#E2E8F0" },
               { label: "TIME HORIZON", value: missionTimeHorizon, color: "#E2E8F0" },
@@ -652,7 +653,8 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
             <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
               <div>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.15em", color: "rgba(100,116,139,0.5)", textTransform: "uppercase", marginBottom: "3px" }}>CONFIDENCE</div>
-                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#E2E8F0" }}>{data.confidence === undefined ? "NOT ESTABLISHED" : `${data.confidence}%`}</div>
+                {/* Launch fix-up: never a confidence % */}
+                <div data-confidence-status="not-established" style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#E2E8F0" }}>Not established</div>
               </div>
               <div>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.15em", color: "rgba(100,116,139,0.5)", textTransform: "uppercase", marginBottom: "3px" }}>TIME HORIZON</div>

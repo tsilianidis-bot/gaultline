@@ -520,10 +520,9 @@ function AshaIntelligenceWorkspace() {
                             </div>
                             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.4)", marginTop: "4px" }}>
                               {formatTime(msg.timestamp)}
-                              {msg.confidenceScore != null && msg.role === "assistant" && (
-                                <span style={{ marginLeft: "8px", color: msg.confidenceScore >= 70 ? "#00FF88" : msg.confidenceScore >= 40 ? "#FF9500" : "#FF2D55" }}>
-                                  {Math.round(msg.confidenceScore)}% confidence
-                                </span>
+                              {/* Launch fix-up: the logged confidenceScore is answer.confidence ?? opportunityScore (smartDiscovery.ts), not calibrated: no figure. */}
+                              {msg.role === "assistant" && (
+                                <span data-confidence-status="not-established" style={{ marginLeft: "8px", color: "#94A3B8" }}>Confidence not established</span>
                               )}
                             </div>
                           </div>

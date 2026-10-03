@@ -4,6 +4,7 @@
    Situation Room preflight + Signal Outlook + Day Trade setup + AI Analysis
    ============================================================ */
 import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { withholdConfidenceFigures } from "@/lib/confidenceDisplay";
 import { trpc } from "@/lib/trpc";
 import { useLocation, useSearch } from "wouter";
 import { TickerContext } from "@/components/TickerContext";
@@ -227,7 +228,8 @@ function OverviewTab({ report }: { report: DayTradeReport }) {
       {!isNoTrade && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "10px" }}>
           {[
-            { label: "Confidence", value: `${report.confidence}/100`, color: confColor(report.confidence) },
+            // Launch fix-up: day-trade confidence is a heuristic (dayTradeEngine computeConfidence), not calibrated.
+            { label: "Confidence", value: "Not established", color: "#94A3B8" },
             { label: "Execution Grade", value: `${report.executionGrade} (${report.executionScore})`, color: gradeColor(report.executionGrade) },
             { label: "Risk/Reward", value: `${report.riskRewardRatio.toFixed(1)}:1`, color: "#F0F4FF" },
             { label: "Risk Level", value: report.riskLevel, color: report.riskLevel === "Low" ? "#00FF88" : report.riskLevel === "Medium" ? "#FFD700" : "#FF6B6B" },
@@ -251,7 +253,7 @@ function OverviewTab({ report }: { report: DayTradeReport }) {
             <AlertTriangle size={16} style={{ color: "#FF6B6B", flexShrink: 0, marginTop: "2px" }} />
             <div>
               <div style={{ ...MONO_SM, fontWeight: 700, color: "#FF6B6B", marginBottom: "4px" }}>NO TRADE</div>
-              <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{report.noTradeReason}</div>
+              <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{withholdConfidenceFigures(report.noTradeReason)}</div>
             </div>
           </div>
         </div>
@@ -284,7 +286,7 @@ function TradeSetupTab({ report }: { report: DayTradeReport }) {
           <AlertTriangle size={16} style={{ color: "#FF6B6B", flexShrink: 0, marginTop: "2px" }} />
           <div>
             <div style={{ ...MONO_SM, fontWeight: 700, color: "#FF6B6B", marginBottom: "4px" }}>NO TRADE — Setup Not Valid</div>
-            <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{report.noTradeReason ?? "No valid intraday setup detected."}</div>
+            <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{withholdConfidenceFigures(report.noTradeReason) ?? "No valid intraday setup detected."}</div>
           </div>
         </div>
       </div>
@@ -375,7 +377,7 @@ function TradeSetupTab({ report }: { report: DayTradeReport }) {
       {report.whyTradeExists && (
         <div style={CARD}>
           <div style={LABEL}>Why This Trade Exists</div>
-          <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{report.whyTradeExists}</div>
+          <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{withholdConfidenceFigures(report.whyTradeExists)}</div>
         </div>
       )}
     </div>
@@ -449,13 +451,7 @@ function RiskAnalysisTab({ report }: { report: DayTradeReport }) {
         </div>
       )}
 
-      {/* Confidence reasoning */}
-      {report.confidenceReasoning && (
-        <div style={CARD}>
-          <div style={LABEL}>Confidence Reasoning</div>
-          <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{report.confidenceReasoning}</div>
-        </div>
-      )}
+      {/* Launch fix-up: day-trade confidence is a heuristic (dayTradeEngine computeConfidence), not calibrated: the confidence reasoning (which restates the score) is not shown. */}
     </div>
   );
 }
@@ -476,7 +472,7 @@ function AIAnalysisTab({ report }: { report: DayTradeReport }) {
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(100,116,139,0.6)', marginBottom: '4px' }}>FAULTLINE VERDICT</div>
             <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: '22px', color: verdictColor, letterSpacing: '0.06em', textShadow: `0 0 20px ${verdictColor}50` }}>{verdictLabel}</div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(148,163,184,0.7)', marginTop: '3px' }}>
-              {report.setupType} · {report.executionGrade} grade · {report.confidence}/100 confidence
+              {report.setupType} · {report.executionGrade} grade · <span data-confidence-status="not-established">confidence not established</span>
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
@@ -490,7 +486,7 @@ function AIAnalysisTab({ report }: { report: DayTradeReport }) {
       {report.whyTradeExists && (
         <div style={CARD}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(0,212,255,0.6)', marginBottom: '6px' }}>WHY THIS OPPORTUNITY EXISTS</div>
-          <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{report.whyTradeExists}</div>
+          <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{withholdConfidenceFigures(report.whyTradeExists)}</div>
         </div>
       )}
 
@@ -532,14 +528,10 @@ function AIAnalysisTab({ report }: { report: DayTradeReport }) {
       {/* ── 6. CONFIDENCE ──────────────────────────────────────── */}
       <div style={{ ...CARD, background: 'rgba(0,212,255,0.03)', borderColor: 'rgba(0,212,255,0.15)' }}>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(0,212,255,0.6)', marginBottom: '8px' }}>CONFIDENCE BREAKDOWN</div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
-          <div style={{ flex: 1, height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${report.confidence}%`, background: report.confidence >= 70 ? '#00FF88' : report.confidence >= 50 ? '#00D4FF' : '#FF9500', borderRadius: '2px', transition: 'width 0.5s ease' }} />
-          </div>
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '16px', color: report.confidence >= 70 ? '#00FF88' : report.confidence >= 50 ? '#00D4FF' : '#FF9500', minWidth: '40px', textAlign: 'right' }}>{report.confidence}%</div>
-        </div>
+        {/* Launch fix-up: day-trade confidence is a heuristic (dayTradeEngine computeConfidence), not calibrated: no bar, no %, no conviction band. */}
+        <div data-confidence-status="not-established" style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '16px', color: '#94A3B8' }}>Not established</div>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.5)' }}>
-          {report.confidence >= 70 ? 'High conviction — setup quality meets institutional threshold' : report.confidence >= 50 ? 'Moderate conviction — proceed with reduced size' : 'Low conviction — wait for better entry or skip'}
+          Setup confidence is a rule-based heuristic and is not calibrated, so no confidence figure is shown.
         </div>
       </div>
 

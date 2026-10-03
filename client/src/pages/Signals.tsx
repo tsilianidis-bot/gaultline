@@ -84,7 +84,7 @@ interface TradingSignalResult {
   assetClass?: 'STOCK' | 'CRYPTO' | 'ETF';
   action: TradingAction;
   actionLabel?: string;        // precision label e.g. "Accumulation Zone"
-  confidence: number;
+  confidence: number | null;
   strength: 'Strong' | 'Moderate' | 'Weak';
   timeframe: 'Short-Term' | 'Swing' | 'Watch';
   rationale: string;
@@ -150,7 +150,7 @@ const ACTION_COLORS: Record<TradingAction, { bg: string; text: string; glow: str
 function TradingSignalBadge({ action, actionLabel, confidence, strength, assetClass }: {
   action: TradingAction;
   actionLabel?: string;
-  confidence: number;
+  confidence?: number | null;
   strength: 'Strong' | 'Moderate' | 'Weak';
   assetClass?: 'STOCK' | 'CRYPTO' | 'ETF';
 }) {

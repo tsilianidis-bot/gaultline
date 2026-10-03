@@ -13,6 +13,7 @@ import { runV3HShadow } from "./pressure/shadowEngine";
 import { computeHistoricalContext } from "./historicalContextEngine";
 import { computeHomepageBriefing } from "./homepageBriefing";
 import { computeTradingSignals, computeTradingSignal, clearSignalCache } from "./tradingSignals";
+import { withholdSignalConfidence, withholdSignalsConfidence, withholdScreenerConfidence } from "./signalConfidenceBoundary";
 import { getSignalVisualDetailPayload } from "./signalVisualDetail";
 import { getDiagnosticReport, clearDiagnosticCache } from "./diagnosticAI";
 import { getPositionGuidance, clearGuidanceCache, getGuidanceForTicker } from "./positionGuidance";
@@ -246,7 +247,8 @@ export const appRouter = router({
       }))
       .mutation(({ input }) => {
         try {
-          return computeTradingSignals(input.tickers, input.regime);
+          // Launch fix-up: formula confidence is withheld at the response boundary.
+          return withholdSignalsConfidence(computeTradingSignals(input.tickers, input.regime));
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trading signal computation failed", cause: err });
         }
@@ -281,7 +283,8 @@ export const appRouter = router({
       .mutation(({ input }) => {
         try {
           const { regime, ...tickerInput } = input;
-          return computeTradingSignal(tickerInput, regime);
+          // Launch fix-up: formula confidence is withheld at the response boundary.
+          return withholdSignalConfidence(computeTradingSignal(tickerInput, regime));
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trading signal computation failed", cause: err });
         }
@@ -878,7 +881,9 @@ export const appRouter = router({
             if (typeof v === 'object') return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNumbers(val)]));
             return v;
           };
-          return sanitizeNumbers(result) as typeof result;
+          // Launch fix-up: formula confidence is withheld at the response boundary.
+          const withheld = withholdSignalConfidence(result);
+          return sanitizeNumbers(withheld) as typeof withheld;
         } catch (err) {
           if (err instanceof TRPCError) throw err;
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Crypto signal computation failed", cause: err });
@@ -910,7 +915,8 @@ export const appRouter = router({
             return v;
           };
           const screenerResult = {
-            signals: results,
+            // Launch fix-up: formula confidence is withheld at the response boundary.
+            signals: withholdScreenerConfidence(results),
             regime,
             btcDominance,
             totalMarketCap: globalStats?.totalMarketCap ?? 0,

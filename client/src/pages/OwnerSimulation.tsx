@@ -22,7 +22,7 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
+import { CONFIDENCE_NOT_ESTABLISHED, withholdConfidenceFigures } from "@/lib/confidenceDisplay";
 import {
   Trophy, Target, TrendingUp, TrendingDown, Shield, Zap, RefreshCw,
   AlertTriangle, ChevronDown, ChevronUp, BookOpen, BarChart3, DollarSign,
@@ -187,7 +187,7 @@ function ManualSearch({ accountValue, onTrade }: { accountValue: number; onTrade
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 border-b border-white/8">
             <div className="bg-[#00FF88]/5 border border-[#00FF88]/15 rounded-lg p-3">
               <div className="text-[#00FF88] text-[10px] font-mono tracking-widest mb-2 font-bold">WHY NOW</div>
-              <div className="text-[#A8B8CC] text-xs leading-relaxed">{result.whyNow}</div>
+              <div className="text-[#A8B8CC] text-xs leading-relaxed">{withholdConfidenceFigures(result.whyNow)}</div>
             </div>
             <div className="bg-[#FF2D55]/5 border border-[#FF2D55]/15 rounded-lg p-3">
               <div className="text-[#FF2D55] text-[10px] font-mono tracking-widest mb-2 font-bold">INVALIDATION</div>
@@ -800,7 +800,7 @@ function OpportunityCard({ opp, onTrade, onReject }: {
         <div className="px-4 pb-4 space-y-3 border-t border-white/5">
           <div>
             <div className="text-[10px] text-[#00D4FF] font-mono tracking-widest mb-1">WHY NOW</div>
-            <p className="text-xs text-[#A8B8CC] leading-relaxed">{opp.whyNow}</p>
+            <p className="text-xs text-[#A8B8CC] leading-relaxed">{withholdConfidenceFigures(opp.whyNow)}</p>
           </div>
           <div>
             <div className="text-[10px] text-[#FF9500] font-mono tracking-widest mb-1">INVALIDATION</div>
@@ -1244,8 +1244,9 @@ export default function OwnerSimulation() {
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="text-right">
+                        {/* QA confidence sweep: the optimal-action confidence is the LLM's self-rating, not calibrated. */}
                         <div className="text-xs text-[#64748B] font-mono">CONFIDENCE</div>
-                        <div className="text-sm font-mono font-bold text-[#F4F8FF]">{optimalAction.confidence}%</div>
+                        <div data-confidence-status="not-established" className="text-sm font-mono font-bold text-[#94A3B8]">{CONFIDENCE_NOT_ESTABLISHED}</div>
                       </div>
                       <Button
                         size="sm" variant="outline"
@@ -1257,16 +1258,6 @@ export default function OwnerSimulation() {
                         REFRESH
                       </Button>
                     </div>
-                  </div>
-                  {/* Confidence bar */}
-                  <div className="w-full bg-white/5 rounded-full h-1">
-                    <div
-                      className={`h-1 rounded-full transition-all ${
-                        optimalAction.confidence >= 75 ? "bg-[#00D4FF]" :
-                        optimalAction.confidence >= 50 ? "bg-[#FFD700]" : "bg-[#FF6B35]"
-                      }`}
-                      style={{ width: `${optimalAction.confidence}%` }}
-                    />
                   </div>
                   {/* Headline */}
                   <p className="text-[#F4F8FF] font-mono text-sm font-semibold leading-snug">{optimalAction.headline}</p>

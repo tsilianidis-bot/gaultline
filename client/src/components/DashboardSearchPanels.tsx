@@ -459,15 +459,15 @@ const STOCK_EXAMPLES = ["NVDA", "AAPL", "TSLA", "SPY", "XLU", "ARKK"];
 // Static metadata only — prices come from live /api/signals/quotes
 const STOCK_META: Record<string, {
   name: string;
-  score: number; action: string; confidence: number;
+  score: number; action: string;
   signals: string[]; regime: string; color: string;
 }> = {
-  NVDA: { name: "NVIDIA Corp",        score: 84, action: "BUY",   confidence: 84, signals: ["Momentum Breakout", "AI Bubble Exposure"],  regime: "Aligned",       color: "#00D4FF" },
-  AAPL: { name: "Apple Inc",          score: 61, action: "HOLD",  confidence: 61, signals: ["Macro Beneficiary", "Neutral / Watch"],      regime: "Neutral",       color: "#FFD700" },
-  TSLA: { name: "Tesla Inc",          score: 72, action: "WATCH", confidence: 58, signals: ["Liquidity Sensitive", "Macro Vulnerable"],   regime: "Counter-Trend", color: "#FF9500" },
-  SPY:  { name: "S&P 500 ETF",        score: 55, action: "HOLD",  confidence: 65, signals: ["Macro Beneficiary"],                         regime: "Neutral",       color: "#00FF88" },
-  XLU:  { name: "Utilities SPDR",     score: 48, action: "WATCH", confidence: 61, signals: ["Recession Defensive", "Macro Beneficiary"],  regime: "Neutral",       color: "#94A3B8" },
-  ARKK: { name: "ARK Innovation ETF", score: 77, action: "SELL",  confidence: 77, signals: ["Liquidity Sensitive", "Macro Vulnerable"],   regime: "Counter-Trend", color: "#FF2D55" },
+  NVDA: { name: "NVIDIA Corp",        score: 84, action: "BUY",   signals: ["Momentum Breakout", "AI Bubble Exposure"],  regime: "Aligned",       color: "#00D4FF" },
+  AAPL: { name: "Apple Inc",          score: 61, action: "HOLD",  signals: ["Macro Beneficiary", "Neutral / Watch"],      regime: "Neutral",       color: "#FFD700" },
+  TSLA: { name: "Tesla Inc",          score: 72, action: "WATCH", signals: ["Liquidity Sensitive", "Macro Vulnerable"],   regime: "Counter-Trend", color: "#FF9500" },
+  SPY:  { name: "S&P 500 ETF",        score: 55, action: "HOLD",  signals: ["Macro Beneficiary"],                         regime: "Neutral",       color: "#00FF88" },
+  XLU:  { name: "Utilities SPDR",     score: 48, action: "WATCH", signals: ["Recession Defensive", "Macro Beneficiary"],  regime: "Neutral",       color: "#94A3B8" },
+  ARKK: { name: "ARK Innovation ETF", score: 77, action: "SELL",  signals: ["Liquidity Sensitive", "Macro Vulnerable"],   regime: "Counter-Trend", color: "#FF2D55" },
 };
 
 const ACTION_COLORS: Record<string, { text: string; border: string; bg: string }> = {
@@ -560,7 +560,7 @@ export function StockPorchPanel() {
           Stock Signal Engine
         </div>
         <div style={{ fontFamily: SANS, fontSize: '10px', color: '#4B5563', lineHeight: 1.5, marginBottom: '12px' }}>
-          BUY / HOLD / SELL signals with macro regime alignment and confidence score.
+          BUY / HOLD / SELL signals with macro regime alignment.
         </div>
 
         {/* Search bar */}
@@ -622,11 +622,12 @@ export function StockPorchPanel() {
       <div style={{ padding: '0 16px 16px', position: 'relative', zIndex: 2 }}>
         <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
           {/* Arc gauge */}
+          {/* QA confidence sweep: the static preview carries no confidence figure. */}
           <ArcGauge
-            value={meta.confidence}
+            value={0}
             color={actionStyle.text}
             label={meta.action}
-            sublabel={`${meta.confidence}% CONF`}
+            sublabel="CONF NOT ESTABLISHED"
             size={108}
             blurred={true}
           />
@@ -654,9 +655,8 @@ export function StockPorchPanel() {
             <div style={{ marginBottom: '8px', filter: 'blur(5px)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
                 <span style={{ fontFamily: MONO, fontSize: '11px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Confidence</span>
-                <span style={{ fontFamily: MONO, fontSize: '11px', color: actionStyle.text }}>{meta.confidence}%</span>
+                <span data-confidence-status="not-established" style={{ fontFamily: MONO, fontSize: '11px', color: '#94A3B8' }}>Not established</span>
               </div>
-              <AnimBar value={meta.confidence} color={actionStyle.text} />
             </div>
             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', filter: 'blur(5px)' }}>
               {meta.signals.map(s => <SignalBadge key={s} label={s} color="#64748B" />)}

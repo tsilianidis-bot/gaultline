@@ -240,7 +240,7 @@ interface PriceLevels {
 }
 interface TradingSignalData {
   action: string;
-  confidence: number;
+  confidence: number | null;
   priceLevels: PriceLevels;
 }
 

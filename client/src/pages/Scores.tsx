@@ -25,8 +25,6 @@ function PressureBar({ score, riskLevel, seed }: { score: number; riskLevel: Dom
   const [width, setWidth] = useState(0);
   const color = getRiskColor(riskLevel);
   const pct = Math.max(0, Math.min(100, score));
-  const confLow = Math.max(0, pct - 5);
-  const confHigh = Math.min(100, pct + 5);
 
   useEffect(() => { const t = setTimeout(() => setWidth(pct), 350); return () => clearTimeout(t); }, [pct]);
 
@@ -43,13 +41,7 @@ function PressureBar({ score, riskLevel, seed }: { score: number; riskLevel: Dom
 
   return (
     <div style={{ position: 'relative', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'visible' }}>
-      {/* Confidence interval band */}
-      <div style={{
-        position: 'absolute', top: '-2px', bottom: '-2px',
-        left: `${confLow}%`, width: `${confHigh - confLow}%`,
-        background: `${color}10`, borderRadius: '4px',
-        transition: 'all 1.4s cubic-bezier(0.23,1,0.32,1)',
-      }} />
+      {/* Launch fix-up: the fixed ±5 band was not a computed confidence interval; removed. */}
       {/* Main bar */}
       <div style={{
         position: 'absolute', left: 0, top: 0, bottom: 0,
@@ -183,10 +175,7 @@ function DomainCard({ score, index }: { score: DomainScore; index: number }) {
               ))}
             </div>
           )}
-          {/* Confidence interval note */}
-          <div style={{ marginTop: '8px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#374151', background: 'rgba(255,255,255,0.02)', borderRadius: '3px', padding: '5px 8px', borderLeft: `2px solid ${color}20` }}>
-            Confidence interval: {Math.round(Math.max(0, score.score - 0.5) * 10)} – {Math.round(Math.min(10, score.score + 0.5) * 10)} /100 · ±5-point band shown on bar
-          </div>
+          {/* Launch fix-up: no confidence interval is computed for this score (the old ±5 note was fixed text). */}
         </div>
       )}
     </div>
@@ -299,7 +288,7 @@ export default function Scores() {
           ))}
         </div>
         <div style={{ marginTop: '8px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#374151', textAlign: 'center' }}>
-          Shaded bands on bars represent ±5% confidence intervals · Tap any card for live drivers
+          Tap any card for live drivers
         </div>
       </div>
 

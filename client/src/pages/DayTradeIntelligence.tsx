@@ -4,6 +4,7 @@
    7 tabs: Overview · Scanner · Stocks · Crypto · Symbol · Active · Watchlist
    ============================================================ */
 import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { withholdConfidenceFigures } from "@/lib/confidenceDisplay";
 import { finiteOrNull, score100Value } from "@/lib/displayFallbacks";
 import { trpc } from "@/lib/trpc";
 import { useLocation, useSearch } from "wouter";
@@ -264,7 +265,8 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
           {ds && (
             <div style={{ textAlign: "center" }}>
               <div style={{ ...MONO_SM, fontSize: "10px", color: "#6B7280" }}>CONF</div>
-              <div style={{ ...MONO_SM, fontWeight: 700, color: confColor(ds.confidence) }}>{ds.confidence}</div>
+              {/* Launch fix-up: day-trade confidence is a heuristic (dayTradeEngine computeConfidence), not calibrated. */}
+              <div data-confidence-status="not-established" style={{ ...MONO_SM, fontWeight: 700, color: "#94A3B8" }}>Not established</div>
             </div>
           )}
           {ds && (
@@ -306,7 +308,8 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
             <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>R/R: <strong style={{ color: "#F0F4FF" }}>{ds.riskRewardRatio.toFixed(1)}:1</strong></span>
             <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>Hold: <strong style={{ color: "#F0F4FF" }}>{fmtHold(ds.expectedHoldMinutes)}</strong></span>
             <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>Risk: <strong style={{ color: riskColor(ds.riskLevel) }}>{ds.riskLevel}</strong></span>
-            <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>Prob: <strong style={{ color: confColor(ds.probabilityRating) }}>{ds.probabilityRating}%</strong></span>
+            {/* Launch fix-up: probabilityRating is confidence × 0.9 + momentum × 0.1, not a probability. */}
+            <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>Prob: <strong data-probability-status="not-established" style={{ color: "#94A3B8" }}>Not established</strong></span>
           </>
         )}
       </div>
@@ -316,7 +319,7 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "12px" }}>
                     {noTrade ? (
             <div style={{ ...MONO_SM, color: "#FF6B6B", lineHeight: 1.6 }}>
-              <strong style={{ color: "#FF6B6B" }}>NO TRADE</strong> — {(s as NoTradeResult).noTradeReason ?? "No valid intraday setup detected for this symbol."}
+              <strong style={{ color: "#FF6B6B" }}>NO TRADE</strong> — {withholdConfidenceFigures((s as NoTradeResult).noTradeReason) ?? "No valid intraday setup detected for this symbol."}
             </div>
           ) : ds ? (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "12px" }}>
@@ -392,7 +395,7 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
               )}
               <div>
                 <div style={LABEL}>Why This Trade</div>
-                <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.5 }}>{ds.whyTradeExists ?? ds.reasonForRecommendation}</div>
+                <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.5 }}>{withholdConfidenceFigures(ds.whyTradeExists ?? ds.reasonForRecommendation)}</div>
               </div>
               {ds.whatCancelsThisTrade && (
                 <div>
@@ -404,12 +407,7 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
                 <div style={LABEL}>Regime Impact</div>
                 <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.5 }}>{ds.regimeImpact}</div>
               </div>
-              {ds.confidenceReasoning && (
-                <div>
-                  <div style={LABEL}>Confidence Reasoning</div>
-                  <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.5 }}>{ds.confidenceReasoning}</div>
-                </div>
-              )}
+              {/* Launch fix-up: the confidence reasoning restates the heuristic score; not shown. */}
             </div>
           )}
 
@@ -1696,7 +1694,8 @@ function Top10RankedTab({ onSearch }: { onSearch: (sym: string, type: "stock" | 
                   <div style={{ flexShrink: 0 }}><DirIcon d={s.direction} /></div>
                   <div style={{ textAlign: "center", flexShrink: 0 }}>
                     <div style={{ ...MONO_SM, fontSize: "9px", color: "#374151" }}>CONF</div>
-                    <div style={{ ...MONO_SM, fontWeight: 700, color: confColor(s.confidence), fontSize: "13px" }}>{s.confidence}</div>
+                    {/* Launch fix-up: heuristic confidence, not calibrated. */}
+                    <div data-confidence-status="not-established" style={{ ...MONO_SM, fontWeight: 700, color: "#94A3B8", fontSize: "11px" }}>Not established</div>
                   </div>
                   <div style={{ width: "26px", height: "26px", borderRadius: "3px", background: `${gradeColor}15`, border: `1px solid ${gradeColor}35`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "13px", color: gradeColor }}>{s.executionGrade}</span>
@@ -1713,7 +1712,8 @@ function Top10RankedTab({ onSearch }: { onSearch: (sym: string, type: "stock" | 
                     { label: "T1",      value: fmt(s.target1),            color: "#00FF88" },
                     { label: "T2",      value: fmt(s.target2),            color: "#7CFF7C" },
                     { label: "STOP",    value: fmt(s.stopLoss),           color: "#FF6B6B" },
-                    { label: "PROB",    value: `${s.probabilityRating}%`, color: confColor(s.probabilityRating) },
+                    // Launch fix-up: probabilityRating is a blend of heuristic scores, not a probability.
+                    { label: "PROB",    value: "Not established", color: "#94A3B8" },
                     { label: "RISK",    value: s.riskLevel,               color: riskColor(s.riskLevel) },
                     { label: "REL-VOL", value: s.relativeVolume != null ? `${s.relativeVolume.toFixed(1)}x` : "N/A", color: s.relativeVolume != null && s.relativeVolume >= 1.5 ? "#00FF88" : "#94A3B8" },
                   ].map(kv => (

@@ -1727,7 +1727,7 @@ export interface DiscoveryItem {
   institutionalConviction: "Low" | "Moderate" | "High" | "Very High";
   macroAlignment: number;         // 0–100
   riskRewardRatio: string;        // e.g. "2.5:1"
-  confidenceLevel: number;        // 0–100
+  confidenceLevel: number | null; // QA confidence sweep: withheld (was score × 0.85 + band, a formula)
   topCatalyst: string;
   actionBias: "BUY" | "WATCH" | "HOLD" | "REDUCE" | "AVOID";
 }
@@ -2468,7 +2468,9 @@ export async function getOpportunityDiscovery(options: { forceRefresh?: boolean;
         institutionalConviction: discoveryInstitutionalConviction(score, category),
         macroAlignment,
         riskRewardRatio: rr,
-        confidenceLevel: Math.round(score * 0.85 + (p < 40 ? 10 : p < 60 ? 5 : 0)),
+        // QA confidence sweep: was Math.round(score × 0.85 + pressure band), a formula
+        // restating the score, not a calibrated confidence. Withheld at the source.
+        confidenceLevel: null,
         topCatalyst: discoveryCatalyst(category, score),
         actionBias: discoveryActionBias(score, p),
       };

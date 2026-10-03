@@ -327,9 +327,7 @@ export default function Outlook() {
               <div className="rounded-sm border border-violet-300/20 bg-violet-300/[0.03] p-5">
                 <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-500">Model confidence</p>
                 <p className="mt-3 font-['Rajdhani'] text-5xl font-semibold text-violet-300">{confidenceText}</p>
-                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full bg-violet-400" style={{ width: `${Number.isFinite(probabilityDistribution.confidence) ? probabilityDistribution.confidence : 0}%`, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
-                </div>
+                {/* Launch fix-up: forecast confidence is uncalibrated: no bar. */}
                 <p className="mt-3 font-mono text-[9px] uppercase tracking-[0.12em] text-violet-300/75">
                   Pressure {marketState ? formatCanonicalScore(marketState.now.pressureScore) : PROBABILITY_DISPLAY_TEXT.UNAVAILABLE}
                 </p>

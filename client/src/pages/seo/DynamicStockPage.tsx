@@ -357,11 +357,7 @@ export default function DynamicStockPage() {
               <span className={`text-sm font-mono font-bold ${signalColor(liveSignal.signalLabel)}`}>
                 {liveSignal.signalLabel}
               </span>
-              {liveSignal.confidenceScore != null && (
-                <span className="text-[11px] font-mono text-[#64748B]">
-                  {liveSignal.confidenceScore}% confidence
-                </span>
-              )}
+              {/* Launch fix-up: the signal page confidenceScore is LLM-generated, not calibrated: no % shown. */}
               {liveSignal.regime && (
                 <span className="text-[11px] font-mono text-[#64748B]">
                   Regime: {liveSignal.regime}
