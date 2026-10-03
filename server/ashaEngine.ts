@@ -23,6 +23,7 @@ import {
 } from "../shared/ashaQuestionAnalysis";
 import { evidenceNarrativePromptContract } from "../shared/evidenceContract";
 import { buildCanonicalEvidencePacket } from "./evidencePacket";
+import { isProbabilityPercentClaim, stripProbabilityPercentClaims } from "./stripProbabilityClaims";
 import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 import { buildInterpretationPromptContract, createInterpretationTransaction, validateInterpretationOutput, type InterpretationTransaction, type InterpretationValidationResult } from "../shared/interpretationIntegrity";
 import { buildCrossEngineSynthesis, buildCrossEngineSynthesisPromptContract } from "./crossEngineSynthesis";
@@ -86,7 +87,7 @@ The 10 engines you must consult and synthesize:
 
 3. LIQUIDITY ENGINE — How tight or loose is liquidity? What is the SOFR rate signaling? What are funding market conditions? Are there signs of liquidity stress in short-term markets?
 
-4. TREASURY CONDITIONS — What is the yield curve doing? Is it inverted, steepening, or flattening? What is the 10Y yield signaling? What does the spread between 2Y and 10Y indicate about recession probability?
+4. TREASURY CONDITIONS — What is the yield curve doing? Is it inverted, steepening, or flattening? What is the 10Y yield signaling? What does the spread between 2Y and 10Y indicate as a historical recession warning sign (no probability)?
 
 5. VOLATILITY ENGINE — What is the current volatility regime? What does the yield curve shape, rate environment, and credit spread behavior signal about market uncertainty? Are conditions calm, transitioning, or turbulent? What does the rate structure imply about near-term risk?
 
@@ -262,6 +263,81 @@ const oracleAnswerProblem: PlatoResponseValidator = response => {
     return "malformed_response";
   }
 };
+
+// ── QA r10 B8: no probability % in PLATO answer text ───────────
+// The same answer prose fields as #60's withoutModelProbabilities (smartDiscovery), plus PLATO's
+// own answer fields. Display text only: the evidence packet and every scoring input are untouched.
+export const PLATO_ANSWER_PROSE_FIELDS = [
+  "reply", "directAnswer", "coreThesis", "missionRecommendation", "riskLevel", "marketRegime", "disclaimer",
+  "executiveSummary", "whyThisVerdict", "primaryDriver", "currentRegime", "bullCase", "bearCase",
+  "finalVerdictRationale", "suggestedAction", "suggestedBias", "suggestedBiasCondition", "whatChangesThesis",
+  "historicalAnalog", "historicalAnalogOutcome", "riskSummary", "actionVerdictReason",
+] as const;
+export const PLATO_ANSWER_PROSE_LIST_FIELDS = [
+  "bullKeyDrivers", "bearKeyDrivers", "catalysts", "threats", "confidenceReasons", "keyDrivers", "risks",
+  "watchCatalysts", "whyNotBuy", "whyNotSell", "riskFactors", "keyFindings", "supportingEvidence", "limitations",
+  "confirmationConditions", "invalidationConditions", "followUpChips",
+] as const;
+
+const SENTENCE_BREAK = /(?<=[.!?])\s+/;
+const lineHasProbabilityClaim = (line: string) => line.split(SENTENCE_BREAK).some(isProbabilityPercentClaim);
+
+/**
+ * Removes every sentence that states a probability % (stripProbabilityPercentClaims, #60's shared
+ * helper), line by line so the answer keeps its paragraphs. Text without such a claim is returned
+ * unchanged, byte for byte.
+ */
+export function stripPlatoProbabilityClaims(text: unknown): unknown {
+  if (typeof text !== "string") return text;
+  const lines = text.split("\n");
+  if (!lines.some(lineHasProbabilityClaim)) return text;
+  return lines
+    .flatMap(line => {
+      if (!lineHasProbabilityClaim(line)) return [line];
+      const kept = stripProbabilityPercentClaims(line) as string;
+      return kept ? [kept] : [];
+    })
+    .join("\n")
+    .trim();
+}
+
+/** Strips probability-% sentences from every model-written text field of a PLATO answer. */
+export function withoutPlatoProbabilityClaims(answer: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...answer };
+  for (const key of PLATO_ANSWER_PROSE_FIELDS) if (typeof out[key] === "string") out[key] = stripPlatoProbabilityClaims(out[key]);
+  for (const key of PLATO_ANSWER_PROSE_LIST_FIELDS) {
+    if (Array.isArray(out[key])) {
+      out[key] = (out[key] as unknown[]).map(item => stripPlatoProbabilityClaims(item)).filter(item => item !== "");
+    }
+  }
+  const stripRows = (value: unknown, keys: string[]) => Array.isArray(value)
+    ? value.map(row => {
+        if (!row || typeof row !== "object") return row;
+        const copy = { ...(row as Record<string, unknown>) };
+        for (const key of keys) if (typeof copy[key] === "string") copy[key] = stripPlatoProbabilityClaims(copy[key]);
+        return copy;
+      })
+    : value;
+  out.crossEngineSynthesis = stripRows(out.crossEngineSynthesis, ["engine", "currentSignal", "relevance"]);
+  out.sourceCitations = stripRows(out.sourceCitations, ["claim"]);
+  const structured = out.missionRecommendationStructured;
+  if (structured && typeof structured === "object" && !Array.isArray(structured)) {
+    const m = { ...(structured as Record<string, unknown>) };
+    for (const key of ["verdict", "rationale"]) if (typeof m[key] === "string") m[key] = stripPlatoProbabilityClaims(m[key]);
+    m.decisionPaths = stripRows(m.decisionPaths, ["scenario", "response"]);
+    out.missionRecommendationStructured = m;
+  }
+  const collective = out.collectiveReading;
+  if (collective && typeof collective === "object" && !Array.isArray(collective)) {
+    const c = { ...(collective as Record<string, unknown>) };
+    for (const key of ["summary", "strongestReason", "practicalAction", "invalidation"]) {
+      if (typeof c[key] === "string") c[key] = stripPlatoProbabilityClaims(c[key]);
+    }
+    out.collectiveReading = c;
+  }
+  for (const key of ["crossEngineSynthesis", "sourceCitations"]) if (out[key] === undefined && !(key in answer)) delete out[key];
+  return out;
+}
 
 function parseOracleAnswer(content: unknown, model: string): Record<string, unknown> {
   const raw = readString(content);
@@ -689,7 +765,8 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
   }
 
   const integrityValidation = validateInterpretationOutput(parsed, transaction);
-  parsed = integrityValidation.normalizedOutput;
+  // QA r10 B8: no answer text field may state a probability %.
+  parsed = withoutPlatoProbabilityClaims(integrityValidation.normalizedOutput);
 
   const reply = readString(parsed.reply);
   if (!reply) throw unusableAnswerError("empty_response", "openai-compatible", modelTrace.selectedModel);
@@ -790,7 +867,8 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     modelTrace,
     integrity: {
       transaction: { ...transaction, modelVersion: modelTrace.selectedModel },
-      validation: integrityValidation,
+      // The validated output as sent: probability-% sentences already stripped.
+      validation: { ...integrityValidation, normalizedOutput: parsed },
       generationAttempts: modelTrace.attemptedModels.length,
       synthesis: governedCrossEngineSynthesis ? {
         synthesisId: governedCrossEngineSynthesis.synthesisId,
@@ -863,7 +941,11 @@ export async function generateAshaDailyGreeting(req: AshaDailyGreetingRequest): 
   // An empty answer is a typed failure, not a canned "canonical state unavailable" greeting.
   const candidate = readString(llmResponse.choices?.[0]?.message?.content);
   if (!candidate) throw unusableAnswerError("empty_response", "openai-compatible", trace.selectedModel);
-  return String(validateInterpretationOutput({ reply: candidate }, transaction).normalizedOutput.reply);
+  const greeting = String(validateInterpretationOutput({ reply: candidate }, transaction).normalizedOutput.reply);
+  // QA r10 B8: the greeting states no probability %.
+  const stripped = String(stripPlatoProbabilityClaims(greeting));
+  if (!stripped) throw unusableAnswerError("empty_response", "openai-compatible", trace.selectedModel);
+  return stripped;
 }
 
 // ── First-login introduction (static, from brand brief) ───────
