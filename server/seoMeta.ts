@@ -11,6 +11,7 @@
 
 import { getBlogPosts } from "./db";
 import { getSoroArticles } from "./soroBlogFeed";
+import { PUBLIC_DISCLAIMER } from "../shared/publicDisclaimer";
 
 const BASE_URL = "https://getfaultline.live";
 const DEFAULT_OG_IMAGE = "https://getfaultline.live/og-image.jpg";
@@ -47,7 +48,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/intel-archive": {
     title: "Intelligence Archive — FAULTLINE Historical Market Records",
-    description: "Complete archive of FAULTLINE intelligence records, regime readings, and market pressure history. Full transparency and track record.",
+    description: "Archive of FAULTLINE intelligence records, regime readings, and stored market pressure history, each with its as-of date.",
   },
 
   "/pressure-index": {
@@ -64,7 +65,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/stock-market-risk-dashboard": {
     title: "Stock Market Risk Today | FAULTLINE",
-    description: "Stock market risk intelligence for understanding systemic pressure, market regimes, credit conditions, volatility, and equity breadth.",
+    description: "Stock market risk intelligence for understanding systemic pressure, market regimes, credit conditions, rates, and volatility context.",
   },
   "/crypto-market-risk-dashboard": {
     title: "Crypto Market Risk Dashboard — Digital Asset Risk | FAULTLINE",
@@ -72,11 +73,11 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/situation-room": {
     title: "Situation Room — Pre-Trade Stress Test | FAULTLINE",
-    description: "Simulate any portfolio move against live macro conditions. FAULTLINE's Situation Room stress-tests your trades before you execute them.",
+    description: "Simulate a portfolio move against current macro conditions. FAULTLINE's Situation Room stress-tests a trade idea against the latest published pressure reading before you act.",
   },
   "/analogs": {
     title: "Historical Market Analogs — Crash Pattern Matching | FAULTLINE",
-    description: "FAULTLINE's Historical Analog Engine matches current market conditions to historical crash patterns. Identify which past crises today's setup most resembles.",
+    description: "FAULTLINE's Historical Analog Engine ranks how closely today's pressure-vector profile resembles reference profiles of past stress episodes. Resemblance, not a forecast.",
   },
   "/ai-bubble-risk-tracker": {
     title: "AI Bubble Risk Monitor | FAULTLINE",
@@ -88,23 +89,23 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   // ── SEO Flagship Pages ────────────────────────────────────────────────────
   "/market-crash-probability-2026": {
-    title: "Market Crash Probability | FAULTLINE",
-    description: "Market crash probability context using systemic market stress, credit conditions, volatility, liquidity, and market-regime evidence.",
+    title: "Market Crash Risk 2026 | FAULTLINE",
+    description: "Market Crash Risk 2026: systemic-pressure context from credit spreads, funding rates, the Treasury curve, inflation, and labor data. FAULTLINE does not offer a crash probability.",
     ogType: "article",
   },
   "/market-crash-indicator": {
     title: "Market Crash Indicator — Systemic Risk Score | FAULTLINE",
-    description: "The FAULTLINE Market Crash Indicator aggregates 12 systemic risk signals into a crash probability score. Know when risk is building before markets break.",
+    description: "The FAULTLINE Market Crash Indicator reads the six-vector Pressure Index — credit spreads, funding rates, the Treasury curve, inflation, unemployment, and a static AI-concentration baseline — to show when systemic pressure is building. It is not a calibrated crash probability.",
     ogType: "article",
   },
   "/recession-probability": {
-    title: "Recession Probability | FAULTLINE",
-    description: "Recession probability intelligence using yield curves, credit conditions, leading indicators, policy context, and market-regime evidence.",
+    title: "Recession Risk Context | FAULTLINE",
+    description: "Recession-risk context from yield curves, credit spreads, labor data, inflation, and policy rates. FAULTLINE does not offer a recession probability.",
     ogType: "article",
   },
   "/alt-season-indicator": {
     title: "Alt Season Indicator — Is Alt Season Here? | FAULTLINE",
-    description: "Track alt season probability as new data is published. FAULTLINE's Alt Season Indicator monitors Bitcoin dominance, altcoin momentum, and liquidity rotation signals.",
+    description: "Alt season context as new data is published. FAULTLINE's Alt Season Indicator monitors Bitcoin dominance, altcoin momentum, and liquidity rotation signals.",
     ogType: "article",
   },
   "/bitcoin-risk-dashboard": {
@@ -114,22 +115,22 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/ethereum-risk-dashboard": {
     title: "Ethereum Risk Dashboard — ETH Risk Score & Analysis | FAULTLINE",
-    description: "Ethereum risk dashboard tracking ETH macro regime, network activity, liquidity conditions, and systemic risk score. FAULTLINE ETH intelligence.",
+    description: "Ethereum risk dashboard tracking ETH macro regime, ETH/BTC context, liquidity conditions, and systemic risk score from CoinGecko market data and the Pressure Index.",
     ogType: "article",
   },
   "/federal-reserve-tracker": {
     title: "Federal Reserve Tracker — Fed Policy Impact on Markets | FAULTLINE",
-    description: "Track Federal Reserve policy as new data is published. FAULTLINE monitors Fed funds rate, balance sheet, forward guidance, and market impact across equities and crypto.",
+    description: "Track Federal Reserve policy as new data is published. FAULTLINE reads the federal funds rate, SOFR, Treasury yields, and credit spreads from FRED, and their impact on systemic pressure across equities and crypto.",
     ogType: "article",
   },
   "/liquidity-monitor": {
     title: "Liquidity Monitor — Market Liquidity Conditions | FAULTLINE",
-    description: "Market liquidity monitor tracking Fed balance sheet, repo markets, credit conditions, and global liquidity flows. FAULTLINE liquidity intelligence.",
+    description: "Market liquidity monitor built on high-yield credit spreads and SOFR funding rates from FRED — the Liquidity Stress vector of the FAULTLINE Pressure Index.",
     ogType: "article",
   },
   "/volatility-dashboard": {
     title: "Volatility Dashboard — VIX Regime & Market Volatility | FAULTLINE",
-    description: "Volatility dashboard tracking VIX regime, implied volatility, term structure, and volatility risk premium. FAULTLINE volatility intelligence.",
+    description: "Volatility context from delayed VIX quotes and the daily VIX close used by FAULTLINE's separate systemic-regime model. The Pressure Index itself does not read VIX.",
     ogType: "article",
   },
   "/ai-stocks-dashboard": {
@@ -155,33 +156,33 @@ const PAGE_META: Record<string, PageMeta> = {
   // ── Stock signal pages ────────────────────────────────────────────────────
   "/stock/nvda": {
     title: "NVDA Signal — NVIDIA AI Risk Score & Analysis | FAULTLINE",
-    description: "NVIDIA (NVDA) signal analysis. FAULTLINE tracks NVDA macro regime fit, AI bubble exposure, momentum score, and key price levels.",
+    description: "NVIDIA (NVDA) signal analysis. FAULTLINE tracks NVDA macro regime fit, AI bubble exposure, and momentum score.",
     ogType: "article",
   },
   "/stock/pltr": {
     title: "PLTR Signal — Palantir Risk Score & Analysis | FAULTLINE",
-    description: "Palantir (PLTR) signal analysis. FAULTLINE tracks PLTR macro regime fit, AI exposure, momentum score, and key price levels.",
+    description: "Palantir (PLTR) signal analysis. FAULTLINE tracks PLTR macro regime fit, AI exposure, and momentum score.",
     ogType: "article",
   },
   "/stock/tsla": {
     title: "TSLA Signal — Tesla Risk Score & Analysis | FAULTLINE",
-    description: "Tesla (TSLA) signal analysis. FAULTLINE tracks TSLA macro regime fit, momentum score, volatility risk, and key price levels.",
+    description: "Tesla (TSLA) signal analysis. FAULTLINE tracks TSLA macro regime fit, momentum score, and volatility risk.",
     ogType: "article",
   },
   "/stock/meta": {
     title: "META Signal — Meta Platforms Risk & Analysis | FAULTLINE",
-    description: "Meta Platforms (META) signal analysis. FAULTLINE tracks META macro regime fit, AI exposure, momentum score, and key price levels.",
+    description: "Meta Platforms (META) signal analysis. FAULTLINE tracks META macro regime fit, AI exposure, and momentum score.",
     ogType: "article",
   },
   "/stock/amd": {
     title: "AMD Signal — AMD AI Chip Risk & Analysis | FAULTLINE",
-    description: "AMD signal analysis. FAULTLINE tracks AMD macro regime fit, AI chip exposure, momentum score, and key price levels.",
+    description: "AMD signal analysis. FAULTLINE tracks AMD macro regime fit, AI chip exposure, and momentum score.",
     ogType: "article",
   },
   // ── Crypto signal pages ───────────────────────────────────────────────────
   "/crypto/tao": {
     title: "TAO Signal — Bittensor Risk Score & Analysis | FAULTLINE",
-    description: "Bittensor (TAO) signal analysis. FAULTLINE tracks TAO macro regime fit, AI network risk, momentum score, and key price levels.",
+    description: "Bittensor (TAO) signal analysis. FAULTLINE tracks TAO macro regime fit, AI network risk, and momentum score.",
     ogType: "article",
   },
   // ── Static pages ──────────────────────────────────────────────────────────
@@ -195,7 +196,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/legal": {
     title: "Legal — Terms, Disclaimers & Privacy | FAULTLINE",
-    description: "FAULTLINE legal terms, disclaimers, and privacy policy. Not financial advice — for informational purposes only.",
+    description: `FAULTLINE legal terms, disclaimers, and privacy policy. ${PUBLIC_DISCLAIMER}`,
   },
   "/about": {
     title: "About FAULTLINE — Why I Built This Platform",
@@ -210,16 +211,16 @@ const PAGE_META: Record<string, PageMeta> = {
     description: "FAULTLINE press resources, media kit, and coverage. Contact the FAULTLINE team for media inquiries, interviews, and partnership opportunities.",
   },
   "/pricing": {
-    title: "FAULTLINE Pricing — Free, Trader, Power & Founding Member Plans",
-    description: "FAULTLINE pricing plans: Free market awareness, Trader at $59/month, Power at $99/month, and Founding Member at $49/month locked while active.",
+    title: "FAULTLINE Access — Free Account; Paid Plans Not on Sale",
+    description: "The public Pressure Index and methodology are free to read without an account. Signed-in access starts with a free account. Paid plans are not on sale.",
   },
   "/intelligence-library": {
     title: "Intelligence Library — FAULTLINE Research & Analysis",
-    description: "FAULTLINE Intelligence Library: deep-dive research, macro analysis, and market intelligence reports. Institutional-quality research for self-directed investors.",
+    description: "FAULTLINE Intelligence Library: deep-dive research, macro analysis, and market intelligence reports for self-directed investors.",
   },
   "/daily-brief": {
     title: "Daily Intelligence Brief — FAULTLINE Market Briefings",
-    description: "FAULTLINE Daily Intelligence Brief: market briefings, regime updates, and systemic risk alerts. Published daily from FRED and market data.",
+    description: "FAULTLINE Daily Intelligence Brief: market briefings, regime updates, and systemic risk alerts built from FRED and market data. No briefs have been published yet; each brief will show its as-of date.",
   },
   "/track-record": {
     title: "Track Record | FAULTLINE — Historical Pressure Index 2000–Present",
@@ -245,7 +246,7 @@ export function getPageMeta(urlPath: string): PageMeta {
     const sym = stockMatch[1].toUpperCase();
     return {
       title: `${sym} Signal — Stock Risk Score & Analysis | FAULTLINE`,
-      description: `${sym} signal analysis. FAULTLINE tracks ${sym} macro regime fit, momentum score, volatility risk, and key price levels.`,
+      description: `${sym} signal analysis. FAULTLINE tracks ${sym} macro regime fit, momentum score, and volatility risk.`,
       ogType: "article",
     };
   }
@@ -256,7 +257,7 @@ export function getPageMeta(urlPath: string): PageMeta {
     const sym = cryptoMatch[1].toUpperCase();
     return {
       title: `${sym} Signal — Crypto Risk Score & Analysis | FAULTLINE`,
-      description: `${sym} signal analysis. FAULTLINE tracks ${sym} macro regime fit, liquidity conditions, momentum score, and key price levels.`,
+      description: `${sym} signal analysis. FAULTLINE tracks ${sym} macro regime fit, liquidity conditions, and momentum score.`,
       ogType: "article",
     };
   }
@@ -307,7 +308,7 @@ export async function injectPageMetaAsync(html: string, urlPath: string): Promis
         }),
       ];
       if (articleLinks.length > 0) {
-        const noscriptBlock = `<noscript><section aria-label="FAULTLINE Intelligence Briefings"><h1>FAULTLINE Intelligence Briefings</h1><p>Institutional macro commentary, market risk analysis, and systemic pressure updates.</p>${articleLinks.join("\n")}</section></noscript>`;
+        const noscriptBlock = `<noscript><section aria-label="FAULTLINE Intelligence Briefings"><h1>FAULTLINE Intelligence Briefings</h1><p>Macro commentary, market risk analysis, and systemic pressure updates.</p>${articleLinks.join("\n")}</section></noscript>`;
         result = result.replace("</body>", () => `${noscriptBlock}</body>`);
       }
       return result;
@@ -323,14 +324,14 @@ export async function injectPageMetaAsync(html: string, urlPath: string): Promis
 <h2>Reconstructed Crisis Periods</h2>
 <ul>
 <li><strong>2000–2002 Dot-com Bust:</strong> Retrospective analysis shows HIGH RISK readings from Sep 2001 through Feb 2003 — 18 consecutive months. Credit contagion and liquidity stress spiked as tech valuations collapsed and post-9/11 uncertainty froze capital markets. S&amp;P 500 fell ~49% over 30 months.</li>
-<li><strong>October 2008 Lehman Collapse:</strong> Retrospective analysis shows CRITICAL (82/100) in October 2008 — the month Lehman Brothers collapsed. Baa credit spreads hit 5.53% (HY proxy ~11.45%), with CRITICAL readings sustained for 8 consecutive months through May 2009. S&amp;P 500 fell ~57% peak-to-trough.</li>
-<li><strong>2010–2012 Eurozone Crisis:</strong> Elevated unemployment (9–10%) and persistent credit stress kept the model in HIGH RISK territory through much of 2010–2012, capturing the eurozone sovereign debt contagion that threatened global financial stability.</li>
+<li><strong>October 2008, After the Lehman Collapse:</strong> Retrospective analysis shows CRITICAL (82/100) in October 2008 — the month after Lehman Brothers' September 15, 2008 bankruptcy filing. The Moody's Baa–10-year Treasury spread stood at 5.53% on October 31, 2008 (FRED BAA10Y), with CRITICAL readings sustained for 8 consecutive months through May 2009. S&amp;P 500 fell ~57% peak-to-trough.</li>
+<li><strong>2010–2012 Eurozone Crisis:</strong> Elevated unemployment (7.7–9.9% over 2010–2012) and persistent credit stress kept the model in HIGH RISK territory through much of 2010–2012, capturing the eurozone sovereign debt contagion that threatened global financial stability.</li>
 <li><strong>March 2020 COVID Crash:</strong> Retrospective analysis shows HIGH RISK in March 2020 as credit spreads spiked and unemployment surged to 14.8% by April. The rapid Fed response (QE, rate cuts to zero) compressed spreads quickly, limiting the duration of the HIGH RISK reading. S&amp;P 500 fell ~34% in 33 days.</li>
-<li><strong>2022 Fed Rate Shock:</strong> Retrospective analysis shows ELEVATED RISK as the Fed raised rates from 0% to 5.25% in 18 months — the fastest tightening cycle since 1980. S&amp;P 500 fell ~25%, Nasdaq ~35%.</li>
+<li><strong>2022 Fed Rate Shock:</strong> Retrospective analysis shows ELEVATED RISK as the Fed raised rates from 0% to 5.25% in about 16 months (March 2022 to July 2023) — the fastest tightening cycle since the early 1980s. S&amp;P 500 fell ~25%, Nasdaq ~36%.</li>
 </ul>
 <h2>Methodology</h2>
-<p>The live FAULTLINE Pressure Index™ is a composite of six weighted vectors: Liquidity Stress (20%), Credit Contagion (20%), Macro Sensitivity (20%), Yield Curve (10Y–2Y) &amp; 10Y Level (15%), AI / Speculation — a static concentration baseline adjusted by rates and credit (15%), and Labor &amp; Rates — unemployment and the 10Y yield (10%). Each vector is scored 0–100. The archived historical batch also applied a crisis amplifier whose formula was not preserved.</p>
-<p>Regime thresholds: 0–25 MINIMAL RISK, 26–45 MODERATE RISK, 46–60 ELEVATED RISK, 61–75 HIGH RISK, 76–100 CRITICAL.</p>
+<p>The current FAULTLINE Pressure Index™ is a composite of six weighted vectors: Liquidity Stress (20%), Credit Contagion (20%), Macro Sensitivity (20%), Yield Curve (10Y–2Y) &amp; 10Y Level (15%), AI / Speculation — a static concentration baseline adjusted by rates and credit (15%), and Labor &amp; Rates — unemployment and the 10Y yield (10%). Each vector is scored 0–100. The archived historical batch also applied a crisis amplifier whose formula was not preserved.</p>
+<p>Regime thresholds: below 25 LOW RISK, 25–44 MODERATE RISK, 45–64 ELEVATED RISK, 65–79 HIGH STRESS, 80+ SYSTEMIC CRISIS.</p>
 <h2>Important Limitations</h2>
 <p>This is a retrospective reconstruction. FAULTLINE did not exist during the 2000, 2008, or 2020 crises. These scores use revised historical data rather than point-in-time vintages and do not show what the current live methodology would have produced at the time. Past readings do not guarantee future accuracy. Not investment advice.</p>
 </section></noscript>`;

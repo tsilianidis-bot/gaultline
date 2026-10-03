@@ -25,15 +25,15 @@ export default function QQQSignal() {
       contentSections={[
         {
           heading: "FAULTLINE's Current Outlook for QQQ: Why It Matters Now",
-          body: "The Invesco QQQ Trust (Nasdaq-100 ETF) is a bellwether for growth and technology stocks, often reflecting broader market sentiment towards innovation and future earnings potential. FAULTLINE's current outlook for QQQ provides a regularly refreshed signal, synthesizing complex data points into an actionable assessment. This isn't just about price movements; it's about understanding the underlying forces driving the Nasdaq-100. Our analysis considers everything from liquidity flows to investor sentiment, offering a nuanced perspective beyond conventional metrics. For investors, knowing FAULTLINE's current signal for QQQ is crucial for positioning portfolios, identifying potential inflection points, and mitigating risks in a rapidly evolving market landscape. A clear, data-driven outlook helps cut through the noise and focus on what truly impacts performance.",
+          body: "The Invesco QQQ Trust (Nasdaq-100 ETF) is a bellwether for growth and technology stocks, often reflecting broader market sentiment towards innovation and future earnings potential. FAULTLINE's current outlook for QQQ provides a regularly refreshed signal, synthesizing complex data points into an actionable assessment. This isn't just about price movements; it's about understanding the underlying forces driving the Nasdaq-100. The signal combines daily price data with the current Pressure Index reading and regime band; it does not ingest fund-flow or sentiment data. For investors, knowing FAULTLINE's current signal for QQQ is crucial for positioning portfolios, identifying potential inflection points, and mitigating risks in a rapidly evolving market landscape. A clear, data-driven outlook helps cut through the noise and focus on what truly impacts performance.",
         },
         {
           heading: "Historical Context and What's Changed for QQQ",
-          body: "QQQ has experienced significant volatility and growth cycles throughout its history, driven by technological advancements and shifting economic paradigms. Understanding its historical performance in various market regimes provides critical context for the present. FAULTLINE continuously monitors how QQQ's behavior aligns with past patterns and, more importantly, identifies what has fundamentally changed. Factors such as the unprecedented rise of AI, evolving monetary policy, and geopolitical shifts can alter traditional correlations and risk profiles. Our 'what changed' context highlights these divergences, ensuring that our regularly refreshed outlook is not just a reflection of the past, but an adaptation to the current, unique market environment. This dynamic assessment is vital for informed decision-making.",
+          body: "QQQ has experienced significant volatility and growth cycles throughout its history, driven by technological advancements and shifting economic paradigms. Understanding its historical performance in various market regimes provides critical context for the present. Past regimes are context for the present. Factors such as the unprecedented rise of AI, evolving monetary policy, and geopolitical shifts can alter traditional correlations and risk profiles. The signal reflects the current regime band as new data is published. This dynamic assessment is vital for informed decision-making.",
         },
         {
           heading: "Key Risk Factors and Conditions for a Shift in QQQ's Outlook",
-          body: "Several critical factors currently influence QQQ's trajectory. FAULTLINE's analysis specifically flags AI concentration risk, given the Nasdaq-100's heavy weighting in technology giants driving the AI revolution. Over-reliance on a few dominant players can introduce systemic vulnerabilities. Furthermore, QQQ's macro sensitivity means it reacts significantly to changes in interest rates, inflation expectations, and economic growth forecasts. We identify these key risk factors and model the conditions that would lead to a change in our outlook. This includes specific thresholds for macro indicators, shifts in AI sector momentum, or changes in market liquidity. Understanding these triggers allows investors to anticipate potential reversals or accelerations, rather than merely reacting to them.",
+          body: "Several structural factors influence QQQ's trajectory. FAULTLINE's analysis specifically flags AI concentration risk, given the Nasdaq-100's heavy weighting in technology giants driving the AI revolution. Over-reliance on a few dominant players can introduce systemic vulnerabilities. Furthermore, QQQ's macro sensitivity means it reacts significantly to changes in interest rates, inflation expectations, and economic growth forecasts. FAULTLINE's QQQ signal reflects these exposures through the Pressure Index's static AI-concentration baseline and its rates, inflation, and funding vectors; the signal changes when those vectors or QQQ's own price trend move. It is context for risk, not a forecast of reversals or accelerations.",
         },
         {
           heading: "How FAULTLINE Measures QQQ's Outlook and Important Disclaimers",
@@ -55,11 +55,11 @@ export default function QQQSignal() {
         },
         {
           question: "Can FAULTLINE predict future QQQ price movements?",
-          answer: "FAULTLINE provides a regularly refreshed outlook and signal based on current market conditions and proprietary models. While it offers insights into potential future trends and risks, it does not provide explicit price predictions or guarantees of future performance. Our focus is on intelligence and risk assessment.",
+          answer: "FAULTLINE provides a regularly refreshed signal computed from daily price data and the current Pressure Index reading. It is a risk assessment, not a price prediction or a guarantee of future performance.",
         },
         {
           question: "How often is FAULTLINE's QQQ outlook updated?",
-          answer: "FAULTLINE's QQQ outlook is updated regularly, reflecting the continuous flow of market data and changes in underlying indicators. This ensures that our signal is always current and responsive to evolving market dynamics.",
+          answer: "FAULTLINE's QQQ signal is recalculated as new price and macro data is published.",
         },
       ]}
       internalLinks={[

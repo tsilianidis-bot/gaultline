@@ -9,6 +9,7 @@ import {
   CalendarDays, Clock, Rss, Plus, X, Eye, EyeOff,
   ChevronRight, Loader2, Pencil, Trash2, Check
 } from "lucide-react";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const CATEGORIES = [
   "Macro Intelligence",
@@ -293,7 +294,7 @@ export default function Blog() {
   useSEO({
     title: soroPostNotFound ? "Article not found | FAULTLINE" : "Intelligence Briefings — Macro Commentary & Market Analysis",
     description:
-      "FAULTLINE Intelligence Briefings: institutional macro commentary, market risk analysis, systemic pressure updates, and fault line reports from the FAULTLINE intelligence team.",
+      "FAULTLINE Intelligence Briefings: macro commentary, market risk analysis, systemic pressure updates, and fault line reports from the FAULTLINE intelligence team.",
     canonical: soroPostSlug && !soroPostNotFound ? `/blog?post=${encodeURIComponent(soroPostSlug)}` : "/blog",
   });
 
@@ -312,7 +313,7 @@ export default function Blog() {
         "@context": "https://schema.org",
         "@type": "CollectionPage",
         "name": "FAULTLINE Intelligence Briefings",
-        "description": "Institutional macro commentary, market risk analysis, systemic pressure updates, and fault line reports from the FAULTLINE intelligence team.",
+        "description": "Macro commentary, market risk analysis, systemic pressure updates, and fault line reports from the FAULTLINE intelligence team.",
         "url": "https://getfaultline.live/blog",
         "publisher": {
           "@type": "Organization",
@@ -485,7 +486,7 @@ export default function Blog() {
             <strong className="text-white">FAULTLINE Intelligence Briefings</strong> is the editorial arm of the FAULTLINE macro risk platform — a publication dedicated to understanding systemic market pressure, macro regime shifts, and the fault lines forming beneath global financial markets before they become crises.
           </p>
           <p className="text-slate-400 text-sm leading-relaxed mb-4 max-w-3xl" style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
-            Every briefing is grounded in the same analytical framework that powers the FAULTLINE Pressure Index™: a multi-factor model that aggregates credit spreads, volatility regimes, liquidity conditions, breadth deterioration, and macro policy signals into a single, regularly refreshed risk score. When the index moves, we explain why — and what it means for your portfolio.
+            Every briefing is grounded in the same analytical framework that powers the FAULTLINE Pressure Index™: a published six-vector model that combines high-yield credit spreads, SOFR funding rates, the Treasury curve, inflation, federal funds, unemployment, and a static AI-concentration baseline into a single 0–100 risk score, recalculated when source data is published. When the index moves, we explain why — and what it means for your portfolio.
           </p>
           <p className="text-slate-400 text-sm leading-relaxed max-w-3xl" style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
             Our intelligence covers five core domains: <strong className="text-slate-300">macro intelligence</strong> (Fed policy, yield curves, credit cycles), <strong className="text-slate-300">market risk analysis</strong> (equity regime, sector rotation, momentum breakdowns), <strong className="text-slate-300">risk intelligence</strong> (systemic contagion, tail risk, crash analogs), <strong className="text-slate-300">crypto intelligence</strong> (digital asset macro correlation, stablecoin liquidity, BTC dominance cycles), and <strong className="text-slate-300">platform updates</strong> (new FAULTLINE features, methodology changes, and signal improvements).
@@ -501,13 +502,13 @@ export default function Blog() {
               color: "#00D4FF",
               label: "MACRO INTELLIGENCE",
               heading: "Fed Policy & Macro Regime",
-              body: "Decoding Federal Reserve signals, yield curve dynamics, credit cycle positioning, and the macro regimes that define whether risk assets advance or retreat. FAULTLINE tracks the full macro stack — from M2 money supply to real rates — and translates it into actionable intelligence.",
+              body: "Decoding Federal Reserve signals, yield curve dynamics, credit cycle positioning, and the macro regimes that define whether risk assets advance or retreat. FAULTLINE reads credit spreads, funding rates, Treasury yields, inflation, and labor data from FRED and translates them into actionable intelligence.",
             },
             {
               color: "#F59E0B",
               label: "MARKET ANALYSIS",
               heading: "Equity Regime & Sector Rotation",
-              body: "Identifying where we are in the market cycle, which sectors are absorbing institutional flows, and where momentum is building or breaking down. Our market analysis integrates breadth data, sector leadership shifts, and FAULTLINE's proprietary signal catalog to surface high-conviction setups.",
+              body: "Identifying where we are in the market cycle, which sectors are leading or lagging, and where momentum is building or breaking down. Our market analysis integrates sector leadership shifts, daily equity price data, and FAULTLINE's proprietary signal catalog to surface high-conviction setups.",
             },
             {
               color: "#EF4444",
@@ -519,7 +520,7 @@ export default function Blog() {
               color: "#A78BFA",
               label: "CRYPTO INTELLIGENCE",
               heading: "Digital Asset Macro Correlation",
-              body: "Bitcoin and digital assets do not move in isolation. FAULTLINE connects crypto market structure — BTC dominance, stablecoin supply, exchange flows, and speculative pressure — to the broader macro regime, helping investors understand when crypto is a risk-on amplifier and when it is a leading indicator of broader stress.",
+              body: "Bitcoin and digital assets do not move in isolation. FAULTLINE connects crypto market structure — BTC dominance, stablecoin supply, and speculative pressure — to the broader macro regime, helping investors understand when crypto is acting as a risk-on amplifier and when it is moving with broader stress.",
             },
             {
               color: "#34D399",
@@ -871,6 +872,7 @@ export default function Blog() {
           onSaved={handleSaved}
         />
       )}
+      <p className="mx-auto max-w-5xl px-4 pb-8 pt-6 text-center text-xs text-slate-500">{PUBLIC_DISCLAIMER}</p>
     </div>
   );
 }

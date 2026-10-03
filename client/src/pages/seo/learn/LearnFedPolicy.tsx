@@ -40,7 +40,7 @@ const LearnFedPolicy = () => {
         },
         {
           heading: 'How FAULTLINE Monitors Federal Reserve Policy',
-          body: `FAULTLINE provides sophisticated market intelligence to help investors navigate the complexities of Federal Reserve policy. Our Federal Reserve Tracker monitors key economic indicators, Fed communications, and market-implied probabilities to offer a nuanced view of the central bank's current stance and future trajectory. We analyze \"current FAULTLINE rating context\" by integrating these policy signals with broader market data, allowing users to understand how Fed actions are influencing liquidity, credit conditions, and overall market risk. Our platform offers historical comparisons, enabling users to contextualize current policy cycles against past periods of tightening or easing. This comprehensive approach helps identify \"what changed\" in the Fed's outlook and \"what would change the outlook,\" providing actionable insights. FAULTLINE is designed for market intelligence and education, offering tools to analyze market dynamics, not personalized financial advice.`, 
+          body: `FAULTLINE provides sophisticated market intelligence to help investors navigate the complexities of Federal Reserve policy. Our Federal Reserve Tracker reads the federal funds rate, SOFR, and the 2-year and 10-year Treasury yields from FRED to offer a clear view of the central bank's current stance and how the market is pricing its path. We analyze \"current FAULTLINE rating context\" by integrating these policy signals with broader market data, allowing users to understand how Fed actions are influencing liquidity, credit conditions, and overall market risk. Our platform offers historical comparisons, enabling users to contextualize current policy cycles against past periods of tightening or easing. This comprehensive approach helps identify \"what changed\" in the Fed's outlook and \"what would change the outlook,\" providing actionable insights. FAULTLINE is designed for market intelligence and education, offering tools to analyze market dynamics, not personalized financial advice.`, 
         },
       ]}
       faqs={[
@@ -66,7 +66,7 @@ const LearnFedPolicy = () => {
         },
         {
           question: 'How can I use FAULTLINE to track Fed policy?',
-          answer: 'FAULTLINE\'s Federal Reserve Tracker monitors key economic indicators, Fed communications, and market-implied probabilities, offering a comprehensive view of the central bank\'s stance and potential market implications.',
+          answer: 'FAULTLINE\'s Federal Reserve Tracker reads the federal funds rate, SOFR, and the 2-year and 10-year Treasury yields from FRED, offering a view of the central bank\'s stance and how the market is pricing its path. It does not ingest Fed communications or market-implied probabilities.',
         },
       ]}
       internalLinks={[

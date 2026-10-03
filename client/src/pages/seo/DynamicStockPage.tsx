@@ -10,6 +10,7 @@ import { useParams, Link } from "wouter";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { useCallback } from "react";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 // ── Per-symbol enrichment data ─────────────────────────────────────────────
 interface SymbolData {
@@ -32,15 +33,15 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     description: "NVIDIA (NVDA) is the dominant AI infrastructure company, supplying the GPU compute layer that powers the global AI buildout. NVDA's data center revenue has grown exponentially as hyperscalers race to deploy AI training and inference capacity.",
     bullCase: "AI infrastructure spending remains in secular growth mode. NVDA's CUDA moat, software ecosystem, and next-generation Blackwell architecture create durable competitive advantages. Hyperscaler capex commitments through 2026 provide revenue visibility.",
     bearCase: "AI capex cycle deceleration, custom ASIC competition from Google TPUs and Amazon Trainium, export restrictions to China, and extreme valuation multiples create significant downside risk if growth disappoints.",
-    keyLevels: "Key support levels: $90–$95 (200-day MA), $80 (major structural support). Key resistance: $140–$145 (all-time high zone). Macro regime alignment is critical — NVDA underperforms sharply in risk-off environments.",
+    keyLevels: "FAULTLINE does not publish price targets or support/resistance levels on this page.",
     riskFactors: ["AI capex cycle risk", "China export restrictions", "Custom ASIC competition", "Valuation multiple compression", "Macro regime deterioration"],
     relatedSymbols: ["amd", "msft", "meta", "pltr"],
     relatedCrypto: ["tao"],
     faqs: [
       { q: "Is NVDA a buy right now?", a: "FAULTLINE evaluates NVDA through a macro regime lens. In bull regimes with low systemic pressure, NVDA tends to outperform. In elevated-pressure or crash regimes, NVDA's high beta amplifies drawdowns. Always check the current regime before entering." },
       { q: "What is NVDA's AI risk score?", a: "FAULTLINE's AI risk score for NVDA incorporates valuation multiples, AI concentration exposure, momentum regime, and systemic market pressure. High AI concentration scores indicate elevated bubble risk." },
-      { q: "How does NVDA perform in a market crash?", a: "NVDA is a high-beta AI-concentrated stock. In historical crash scenarios (2022 bear market, COVID crash), NVDA experienced drawdowns of 60–70%. FAULTLINE's crash probability indicator is a critical input for NVDA position sizing." },
-      { q: "What are the key risks for NVDA in 2025–2026?", a: "The primary risks are: AI capex cycle deceleration, China export restrictions reducing addressable market, custom ASIC competition from hyperscalers, and valuation compression if growth slows." },
+      { q: "How does NVDA perform in a market crash?", a: "NVDA is a high-beta AI-concentrated stock. In the 2022 bear market, NVDA experienced a drawdown of 60–70%. FAULTLINE's Market Crash Risk 2026 context is one input for judging NVDA's exposure to a systemic sell-off." },
+      { q: "What are the key risks for NVDA?", a: "The primary risks are: AI capex cycle deceleration, China export restrictions reducing addressable market, custom ASIC competition from hyperscalers, and valuation compression if growth slows." },
       { q: "How does FAULTLINE track NVDA?", a: "FAULTLINE monitors NVDA's momentum score, macro regime fit, AI bubble exposure, and systemic risk alignment. Signals are updated daily and classified as Bullish, Neutral, or Risk-Off." },
     ],
   },
@@ -49,13 +50,13 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     sector: "AI Software / Defense",
     description: "Palantir (PLTR) is an AI software platform company serving government and commercial clients. Its Foundry and AIP platforms provide AI-powered data analytics and decision intelligence for defense, intelligence agencies, and enterprise customers.",
     bullCase: "PLTR's government contracts provide revenue stability, while AIP commercial adoption is accelerating. The company is one of the few profitable AI software companies with a clear path to enterprise AI dominance.",
-    bearCase: "Extreme valuation multiples (100x+ revenue), heavy government dependency, slow commercial growth relative to expectations, and macro risk-off environments create significant downside risk.",
-    keyLevels: "Key support: $85–$90 (200-day MA zone), $70 (major structural support). Key resistance: $125–$130 (recent highs). PLTR is highly sensitive to macro regime shifts.",
+    bearCase: "Extreme valuation multiples, heavy government dependency, slow commercial growth relative to expectations, and macro risk-off environments create significant downside risk.",
+    keyLevels: "FAULTLINE does not publish price targets or support/resistance levels on this page.",
     riskFactors: ["Extreme valuation multiples", "Government contract concentration", "Commercial growth deceleration", "Macro risk-off sensitivity", "Insider selling pressure"],
     relatedSymbols: ["nvda", "meta", "msft"],
     relatedCrypto: [],
     faqs: [
-      { q: "Is PLTR a good investment in 2025?", a: "PLTR's investment case depends heavily on macro regime. In bull regimes, PLTR's AI software narrative drives outperformance. In risk-off environments, its extreme valuation creates significant drawdown risk." },
+      { q: "Is PLTR a good investment?", a: "PLTR's investment case depends heavily on macro regime. In bull regimes, PLTR's AI software narrative drives outperformance. In risk-off environments, its extreme valuation creates significant drawdown risk." },
       { q: "What drives PLTR's stock price?", a: "PLTR is driven by AI sentiment, government contract wins, commercial revenue growth, and macro risk appetite. FAULTLINE tracks all four dimensions in its PLTR signal analysis." },
       { q: "How risky is PLTR compared to other AI stocks?", a: "PLTR carries above-average risk due to its extreme valuation multiples and government revenue concentration. FAULTLINE's risk score reflects this elevated risk profile." },
       { q: "What is PLTR's bull case?", a: "The bull case is AIP commercial adoption accelerating to match government revenue, creating a durable AI software moat with improving margins and expanding TAM." },
@@ -68,14 +69,14 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     description: "Tesla (TSLA) is an electric vehicle manufacturer, energy storage company, and AI/robotics platform. Tesla's FSD (Full Self-Driving) and Optimus robot programs position it as an AI hardware company beyond its EV business.",
     bullCase: "FSD achieving Level 4/5 autonomy unlocks a robotaxi network with massive margin expansion. Optimus robot production creates a new revenue stream. Energy storage business growing rapidly.",
     bearCase: "EV market share erosion from Chinese competitors, FSD timeline delays, CEO distraction, margin compression from price wars, and macro sensitivity create significant downside risk.",
-    keyLevels: "Key support: $200–$210 (major support zone), $170 (structural floor). Key resistance: $300–$320 (previous highs). TSLA is highly volatile and macro-sensitive.",
+    keyLevels: "FAULTLINE does not publish price targets or support/resistance levels on this page.",
     riskFactors: ["EV market share erosion", "FSD regulatory risk", "CEO distraction risk", "Margin compression", "China competition"],
     relatedSymbols: ["nvda", "amd"],
     relatedCrypto: [],
     faqs: [
       { q: "Is TSLA still a growth stock?", a: "TSLA's growth narrative has shifted from pure EV to AI/robotics. The investment thesis now depends on FSD and Optimus execution, making it a higher-risk, higher-reward bet on AI hardware." },
       { q: "How does TSLA perform in different market regimes?", a: "TSLA is highly sensitive to macro regime. In bull markets, it outperforms significantly. In risk-off environments, its high beta and speculative premium compress rapidly." },
-      { q: "What is TSLA's biggest risk in 2025–2026?", a: "The biggest risks are EV market share loss to BYD and other Chinese manufacturers, FSD regulatory delays, and CEO distraction from core business." },
+      { q: "What is TSLA's biggest risk?", a: "The biggest risks are EV market share loss to BYD and other Chinese manufacturers, FSD regulatory delays, and CEO distraction from core business." },
       { q: "How does FAULTLINE track TSLA?", a: "FAULTLINE monitors TSLA's momentum score, macro regime fit, volatility risk, and systemic pressure alignment. Signals are updated daily." },
       { q: "What is TSLA's relationship to AI stocks?", a: "TSLA is increasingly classified as an AI hardware company due to FSD and Optimus. Its AI exposure creates correlation with NVDA and the broader AI complex during AI sentiment shifts." },
     ],
@@ -86,7 +87,7 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     description: "Meta Platforms (META) operates Facebook, Instagram, WhatsApp, and is investing heavily in AI infrastructure and the metaverse. Meta's AI investments include Llama models, AI assistants, and massive GPU infrastructure buildout.",
     bullCase: "Meta's AI-driven ad targeting improvements are driving revenue growth. Llama open-source strategy creates ecosystem advantages. Strong free cash flow funds AI infrastructure without debt.",
     bearCase: "Reality Labs metaverse losses continue to burn cash. Regulatory risk across multiple jurisdictions. AI ad targeting faces privacy regulation headwinds.",
-    keyLevels: "Key support: $500–$520 (200-day MA), $450 (major structural support). Key resistance: $650–$680 (all-time high zone).",
+    keyLevels: "FAULTLINE does not publish price targets or support/resistance levels on this page.",
     riskFactors: ["Regulatory risk", "Reality Labs losses", "Privacy regulation", "AI competition from Google/Apple", "Macro ad spend sensitivity"],
     relatedSymbols: ["nvda", "msft", "pltr"],
     relatedCrypto: [],
@@ -104,7 +105,7 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     description: "AMD (AMD) is NVIDIA's primary competitor in AI GPUs and CPUs. AMD's MI300X GPU series targets AI training and inference workloads, while its EPYC CPU line dominates data center server deployments.",
     bullCase: "AMD's MI300X gaining traction with hyperscalers as an alternative to NVDA. CPU market share gains from Intel. Open software ecosystem (ROCm) improving. Valuation more reasonable than NVDA.",
     bearCase: "NVDA's CUDA moat is extremely difficult to displace. AMD's AI GPU market share remains small. Software ecosystem maturity gap vs NVDA creates adoption friction.",
-    keyLevels: "Key support: $100–$105 (major support), $90 (structural floor). Key resistance: $140–$150 (previous highs). AMD trades at a significant discount to NVDA.",
+    keyLevels: "FAULTLINE does not publish price targets or support/resistance levels on this page.",
     riskFactors: ["NVDA CUDA moat", "AI GPU market share concentration", "Software ecosystem gap", "Macro risk-off sensitivity", "Intel CPU competition recovery"],
     relatedSymbols: ["nvda", "msft", "meta"],
     relatedCrypto: [],
@@ -120,16 +121,16 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     name: "Microsoft Corporation",
     sector: "AI / Cloud / Software",
     description: "Microsoft (MSFT) is the world's largest software company and a dominant AI platform through its OpenAI partnership, Azure cloud, and Copilot AI integration across its product suite. Azure's AI services are growing rapidly.",
-    bullCase: "Azure AI services growing at 30%+ annually. Copilot monetization across Office 365, GitHub, and enterprise products creates durable recurring revenue. OpenAI partnership provides AI model access.",
+    bullCase: "Azure AI services growing strongly. Copilot monetization across Office 365, GitHub, and enterprise products creates durable recurring revenue. OpenAI partnership provides AI model access.",
     bearCase: "OpenAI partnership costs are substantial. Azure growth deceleration risk. Regulatory scrutiny of AI partnerships. Valuation premium requires sustained execution.",
-    keyLevels: "Key support: $380–$400 (200-day MA zone), $350 (structural support). Key resistance: $450–$470 (all-time high zone).",
+    keyLevels: "FAULTLINE does not publish price targets or support/resistance levels on this page.",
     riskFactors: ["Azure growth deceleration", "OpenAI partnership costs", "Regulatory scrutiny", "AI competition from Google/Amazon", "Valuation compression"],
     relatedSymbols: ["nvda", "meta", "googl", "amzn"],
     relatedCrypto: [],
     faqs: [
       { q: "Is MSFT a good AI investment?", a: "MSFT is one of the most diversified AI plays — Azure cloud, OpenAI partnership, and Copilot integration across enterprise software create multiple AI revenue streams." },
       { q: "How does MSFT compare to other AI stocks?", a: "MSFT offers AI exposure with lower volatility than pure-play AI stocks like NVDA or PLTR. Its enterprise moat and cash flow provide downside protection." },
-      { q: "What is MSFT's Azure AI growth rate?", a: "Azure AI services have been growing at 30%+ annually. FAULTLINE tracks MSFT's AI revenue trajectory as a key indicator of enterprise AI adoption." },
+      { q: "What is MSFT's Azure AI growth rate?", a: "Azure AI services have been a fast-growing part of Microsoft's cloud business. FAULTLINE tracks MSFT's AI revenue trajectory as a key indicator of enterprise AI adoption." },
       { q: "What are MSFT's key risks?", a: "Key risks include Azure growth deceleration, OpenAI partnership costs, regulatory scrutiny of AI monopoly concerns, and competition from Google Cloud and AWS." },
       { q: "How does FAULTLINE track MSFT?", a: "FAULTLINE monitors MSFT's momentum score, AI cloud exposure, macro regime fit, and systemic pressure alignment. Signals are updated daily." },
     ],
@@ -140,7 +141,7 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     description: "Alphabet (GOOGL) operates Google Search, YouTube, Google Cloud, and is a leading AI research organization through DeepMind and Google Brain. Gemini AI models compete directly with OpenAI's GPT series.",
     bullCase: "Google Search maintains dominant market position. Gemini AI integration across Search, Cloud, and Workspace drives monetization. YouTube advertising resilient. Google Cloud AI services accelerating.",
     bearCase: "AI-powered search disruption threatens Google's core search revenue model. OpenAI/Microsoft competition intensifying. Regulatory antitrust actions globally.",
-    keyLevels: "Key support: $150–$160 (200-day MA), $140 (structural support). Key resistance: $200–$210 (all-time high zone).",
+    keyLevels: "FAULTLINE does not publish price targets or support/resistance levels on this page.",
     riskFactors: ["Search disruption from AI", "Antitrust regulatory risk", "OpenAI/Microsoft competition", "YouTube ad spend sensitivity", "Cloud growth deceleration"],
     relatedSymbols: ["msft", "meta", "nvda", "amzn"],
     relatedCrypto: [],
@@ -156,9 +157,9 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     name: "Amazon.com Inc.",
     sector: "AI / Cloud / E-Commerce",
     description: "Amazon (AMZN) operates the world's largest e-commerce platform and AWS cloud infrastructure. AWS is a leading AI infrastructure provider through Bedrock AI services, Trainium chips, and enterprise AI solutions.",
-    bullCase: "AWS AI services growing rapidly. Amazon's custom Trainium chips reduce NVDA dependency. Advertising business growing at 20%+. Retail margins expanding through AI-driven efficiency.",
+    bullCase: "AWS AI services growing rapidly. Amazon's custom Trainium chips reduce NVDA dependency. Advertising business growing quickly. Retail margins expanding through AI-driven efficiency.",
     bearCase: "AWS growth deceleration risk. E-commerce margin pressure. Custom chip development costs. Regulatory scrutiny of marketplace practices.",
-    keyLevels: "Key support: $175–$185 (200-day MA), $160 (structural support). Key resistance: $220–$230 (all-time high zone).",
+    keyLevels: "FAULTLINE does not publish price targets or support/resistance levels on this page.",
     riskFactors: ["AWS growth deceleration", "E-commerce margin pressure", "Regulatory risk", "Custom chip development costs", "Macro consumer spending sensitivity"],
     relatedSymbols: ["msft", "googl", "nvda"],
     relatedCrypto: [],
@@ -174,9 +175,9 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     name: "Apple Inc.",
     sector: "AI / Consumer Technology",
     description: "Apple (AAPL) is the world's most valuable company, operating iPhone, Mac, iPad, and Services businesses. Apple Intelligence AI integration across its device ecosystem positions it as an AI hardware and services platform.",
-    bullCase: "Apple Intelligence driving iPhone upgrade cycle. Services revenue growing at 15%+ annually. Installed base of 2B+ devices creates AI monetization opportunity. Strong cash flow and buybacks.",
+    bullCase: "Apple Intelligence driving iPhone upgrade cycle. Services revenue growing steadily. A very large installed base of devices creates AI monetization opportunity. Strong cash flow and buybacks.",
     bearCase: "iPhone growth maturation. China market risk. AI feature differentiation vs Android. Services regulatory pressure. Valuation premium requires sustained execution.",
-    keyLevels: "Key support: $185–$195 (200-day MA), $170 (structural support). Key resistance: $230–$240 (all-time high zone).",
+    keyLevels: "FAULTLINE does not publish price targets or support/resistance levels on this page.",
     riskFactors: ["iPhone growth maturation", "China market risk", "AI differentiation challenge", "Services regulatory pressure", "Macro consumer spending sensitivity"],
     relatedSymbols: ["msft", "googl", "meta"],
     relatedCrypto: [],
@@ -191,10 +192,10 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
   arm: {
     name: "Arm Holdings",
     sector: "AI Semiconductors / IP",
-    description: "Arm Holdings (ARM) licenses CPU and GPU IP to virtually every semiconductor company. Arm's architecture powers 99% of smartphones and is rapidly expanding into AI data center chips through its Neoverse platform.",
+    description: "Arm Holdings (ARM) licenses CPU and GPU IP to virtually every semiconductor company. Arm's architecture powers the vast majority of smartphones and is rapidly expanding into AI data center chips through its Neoverse platform.",
     bullCase: "AI data center expansion driving Arm architecture adoption. Royalty model creates high-margin recurring revenue. Custom chip trend (Apple, Amazon, Google) all use Arm. AI PC and edge AI expansion.",
     bearCase: "Extreme valuation multiples. Revenue concentration in smartphone market. RISC-V open-source alternative gaining traction. Softbank overhang.",
-    keyLevels: "Key support: $100–$110 (200-day MA), $90 (structural support). Key resistance: $160–$180 (all-time high zone).",
+    keyLevels: "FAULTLINE does not publish price targets or support/resistance levels on this page.",
     riskFactors: ["Extreme valuation", "Smartphone market concentration", "RISC-V competition", "Softbank overhang", "Royalty rate pressure"],
     relatedSymbols: ["nvda", "amd", "msft"],
     relatedCrypto: [],
@@ -212,7 +213,7 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     description: "Super Micro Computer (SMCI) manufactures AI server systems and rack-scale solutions. SMCI is a key beneficiary of AI data center buildout, supplying complete server systems to hyperscalers and enterprises deploying NVDA GPUs.",
     bullCase: "AI data center buildout driving SMCI server demand. Direct NVDA GPU integration creates supply chain advantage. Liquid cooling expertise for next-gen AI chips.",
     bearCase: "Accounting irregularities and audit concerns. Extreme valuation. Revenue concentration in AI server market. Margin pressure from competition.",
-    keyLevels: "Key support: $30–$35 (major support zone), $25 (structural floor). Key resistance: $60–$70 (recovery zone). SMCI is highly volatile.",
+    keyLevels: "FAULTLINE does not publish price targets or support/resistance levels on this page.",
     riskFactors: ["Accounting/audit risk", "Revenue concentration", "Margin pressure", "Competition from Dell/HPE", "AI capex cycle risk"],
     relatedSymbols: ["nvda", "amd", "arm"],
     relatedCrypto: [],
@@ -236,7 +237,7 @@ function getSymbolData(symbol: string): SymbolData {
     description: `${upper} is a publicly traded equity tracked by FAULTLINE's signal intelligence engine. FAULTLINE monitors ${upper}'s macro regime fit, momentum score, and systemic risk alignment to generate daily signals.`,
     bullCase: `${upper} outperforms when macro regime is bullish and systemic pressure is low. Monitor FAULTLINE's Pressure Index™ for regime confirmation before entering long positions.`,
     bearCase: `${upper} faces elevated risk in high-pressure macro environments. Credit spread widening, VIX regime elevation, and liquidity tightening are key warning signals tracked by FAULTLINE.`,
-    keyLevels: `Key levels for ${upper} are updated dynamically based on price action and macro regime. FAULTLINE tracks support, resistance, and regime-aligned entry zones.`,
+    keyLevels: "FAULTLINE does not publish price targets or support/resistance levels on this page.",
     riskFactors: ["Macro regime deterioration", "Systemic pressure elevation", "Liquidity tightening", "Credit spread widening", "Sector rotation risk"],
     relatedSymbols: ["nvda", "pltr", "tsla", "meta", "amd"],
     relatedCrypto: ["btc", "eth"],
@@ -284,7 +285,7 @@ export default function DynamicStockPage() {
       {
         "@type": "Article",
         "headline": `${upper} Signal — Stock Risk Score & Analysis | FAULTLINE`,
-        "description": `Regularly refreshed ${upper} signal analysis. FAULTLINE tracks ${upper} macro regime fit, momentum score, volatility risk, and key price levels.`,
+        "description": `Regularly refreshed ${upper} signal analysis. FAULTLINE tracks ${upper} macro regime fit, momentum score, and volatility risk.`,
         "author": { "@type": "Organization", "name": "FAULTLINE" },
         "publisher": { "@type": "Organization", "name": "FAULTLINE", "url": "https://getfaultline.live" },
         "url": `https://getfaultline.live/stock/${symbol}`,
@@ -370,13 +371,13 @@ export default function DynamicStockPage() {
           )}
         </div>
 
-        {/* Live Signal CTA */}
+        {/* Current Signal CTA */}
         <div className="p-6 rounded-xl border border-[#00D4FF]/20 bg-[#00D4FF]/5 mb-12">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-2">LIVE SIGNAL</div>
+              <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-2">CURRENT SIGNAL</div>
               <p className="text-white font-semibold mb-1">Access the current {upper} signal</p>
-              <p className="text-[#A8B8CC] text-sm">Macro regime fit · Momentum score · Risk classification · Key levels</p>
+              <p className="text-[#A8B8CC] text-sm">Macro regime fit · Momentum score · Risk classification</p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <a href="/pricing" onClick={() => handleCtaClick("pricing")} className="text-[11px] font-mono tracking-widest text-[#A8B8CC] border border-white/20 hover:border-[#00D4FF]/40 px-4 py-2.5 rounded transition-colors">
@@ -436,9 +437,9 @@ export default function DynamicStockPage() {
           </section>
         )}
 
-        {/* Key Levels */}
+        {/* Price levels section: FAULTLINE does not publish levels here */}
         <section className="mb-12">
-          <h2 className="text-2xl font-bold text-white mb-4">{upper} Key Price Levels</h2>
+          <h2 className="text-2xl font-bold text-white mb-4">How Technical Levels Are Read: {upper}</h2>
           <p className="text-[#A8B8CC] leading-relaxed">{data.keyLevels}</p>
         </section>
 
@@ -462,7 +463,7 @@ export default function DynamicStockPage() {
             {upper}'s performance is highly dependent on the prevailing macro regime. FAULTLINE classifies the current market environment as Bull, Bear, Crash, or Recovery — and each regime has distinct implications for {upper} positioning.
           </p>
           <p className="text-[#A8B8CC] leading-relaxed mb-4">
-            In bull regimes with low systemic pressure, {upper} tends to benefit from risk appetite expansion. In elevated-pressure environments — characterized by credit spread widening, VIX regime elevation, and liquidity tightening — {upper} faces headwinds that FAULTLINE's Pressure Index™ detects in advance.
+            In bull regimes with low systemic pressure, {upper} tends to benefit from risk appetite expansion. In elevated-pressure environments — characterized by credit spread widening, VIX regime elevation, and liquidity tightening — {upper} faces headwinds; FAULTLINE's Pressure Index™ shows where systemic pressure is building.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
             <Link href="/market-regime-tracker" onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-cyan-400/30 transition-all">
@@ -471,7 +472,7 @@ export default function DynamicStockPage() {
             </Link>
             <Link href="/market-crash-probability-2026" onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-red-400/30 transition-all">
               <div className="text-[10px] font-mono tracking-widest text-red-400 mb-2">CRASH RISK</div>
-              <div className="text-white text-sm font-semibold group-hover:text-[#00D4FF] transition-colors">Crash Probability 2026</div>
+              <div className="text-white text-sm font-semibold group-hover:text-[#00D4FF] transition-colors">Market Crash Risk 2026</div>
             </Link>
             <Link href="/volatility-dashboard" onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-yellow-400/30 transition-all">
               <div className="text-[10px] font-mono tracking-widest text-yellow-400 mb-2">VOLATILITY</div>
@@ -532,9 +533,9 @@ export default function DynamicStockPage() {
         {/* Final CTA */}
         <section className="p-8 rounded-xl border border-[#00D4FF]/20 bg-gradient-to-br from-[#00D4FF]/5 to-transparent text-center">
           <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-3">FAULTLINE INTELLIGENCE</div>
-          <h2 className="text-2xl font-bold text-white mb-3">Get the Live {upper} Signal</h2>
+          <h2 className="text-2xl font-bold text-white mb-3">See the {upper} Signal</h2>
           <p className="text-[#A8B8CC] text-sm mb-6 max-w-md mx-auto">
-            Access regularly refreshed {upper} signals, macro regime classification, and systemic risk scores. Updated daily by FAULTLINE's intelligence engine.
+            See FAULTLINE's {upper} signal classification, macro regime, and systemic risk scores, refreshed as new data is published.
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <a href={getLoginUrl()} onClick={() => handleCtaClick("start_free")} className="inline-flex items-center gap-2 text-[12px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-8 py-4 rounded font-bold transition-colors">
@@ -546,6 +547,9 @@ export default function DynamicStockPage() {
           </div>
           <p className="text-[#64748B] text-xs mt-3 font-mono">No credit card required</p>
         </section>
+        <p className="mt-10 text-center text-xs text-[#64748B]">
+          © {new Date().getFullYear()} FAULTLINE. {PUBLIC_DISCLAIMER}
+        </p>
       </main>
     </div>
   );

@@ -538,6 +538,12 @@ function Router() {
       <Route path="/crypto/tao">
         <ErrorBoundary><Suspense fallback={<PageLoader />}><TAOSignal /></Suspense></ErrorBoundary>
       </Route>
+      <Route path="/stock/amzn">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><AMZNSignal /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/stock/spy">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><SPYSignal /></Suspense></ErrorBoundary>
+      </Route>
       {/* Dynamic stock/crypto pages — auto-generate for any symbol */}
       <Route path="/stock/:symbol">
         <ErrorBoundary><Suspense fallback={<PageLoader />}><DynamicStockPage /></Suspense></ErrorBoundary>
@@ -605,14 +611,8 @@ function Router() {
       <Route path="/stock/aapl">
         <ErrorBoundary><Suspense fallback={<PageLoader />}><AAPLSignal /></Suspense></ErrorBoundary>
       </Route>
-      <Route path="/stock/amzn">
-        <ErrorBoundary><Suspense fallback={<PageLoader />}><AMZNSignal /></Suspense></ErrorBoundary>
-      </Route>
       <Route path="/stock/msft">
         <ErrorBoundary><Suspense fallback={<PageLoader />}><MSFTSignal /></Suspense></ErrorBoundary>
-      </Route>
-      <Route path="/stock/spy">
-        <ErrorBoundary><Suspense fallback={<PageLoader />}><SPYSignal /></Suspense></ErrorBoundary>
       </Route>
       <Route path="/stock/qqq">
         <ErrorBoundary><Suspense fallback={<PageLoader />}><QQQSignal /></Suspense></ErrorBoundary>

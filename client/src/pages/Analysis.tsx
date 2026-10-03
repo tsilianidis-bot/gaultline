@@ -17,6 +17,7 @@ import {
   BookOpen, ChevronRight, Clock, Eye, Archive,
   TrendingUp, Zap, BarChart2, Globe, Cpu, RefreshCw,
 } from "lucide-react";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 // ── Topic cluster definitions ────────────────────────────────────────────────
 const CLUSTERS = [
@@ -182,7 +183,7 @@ export default function Analysis() {
             </Link>
             <span className="text-white/10">·</span>
             <a href="/app" className="hover:text-cyan-400 transition-colors">
-              Live Platform →
+              Open Platform →
             </a>
           </div>
         </div>
@@ -347,7 +348,7 @@ export default function Analysis() {
               <div className="flex items-center gap-2 mb-3">
                 <Zap className="w-4 h-4 text-cyan-400/70" />
                 <span className="text-[10px] font-mono tracking-widest text-cyan-400/60 uppercase">
-                  Live Platform
+                  The Platform
                 </span>
               </div>
               <h3 className="text-sm font-semibold text-white mb-2">
@@ -355,7 +356,7 @@ export default function Analysis() {
               </h3>
               <p className="text-xs text-slate-500 leading-relaxed mb-4">
                 The FAULTLINE Pressure Index™ monitors systemic stress, liquidity conditions,
-                and macro regime shifts as new data is published — so you position before the move, not after.
+                and macro regime shifts as new data is published, showing where systemic pressure is building.
               </p>
               <a href="/app">
                 <span className="inline-flex items-center gap-2 text-xs text-cyan-400 font-['IBM_Plex_Mono'] hover:underline cursor-pointer">
@@ -366,6 +367,7 @@ export default function Analysis() {
           </div>
         </div>
       </div>
+      <p className="mx-auto max-w-5xl px-4 pb-8 pt-6 text-center text-xs text-slate-500">{PUBLIC_DISCLAIMER}</p>
     </div>
   );
 }

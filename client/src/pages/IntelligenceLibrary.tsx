@@ -15,13 +15,14 @@ import {
   Bitcoin, Globe, Activity, Zap, Clock, ChevronRight, Layers,
   AlertTriangle, DollarSign, Target, RotateCcw,
 } from "lucide-react";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const CATEGORIES = [
   { id: "macro-analysis",        label: "Macro Analysis",          icon: Globe,         color: "#00D4FF", desc: "Global economic forces, Fed policy, and macro regime analysis" },
   { id: "market-cycles",         label: "Market Cycles",           icon: RotateCcw,     color: "#A78BFA", desc: "Bull and bear market identification, cycle timing, and regime transitions" },
   { id: "recession-indicators",  label: "Recession Indicators",    icon: AlertTriangle, color: "#FF9500", desc: "Leading indicators, yield curve, and recession probability frameworks" },
   { id: "ai-investing",          label: "AI & Technology",         icon: Brain,         color: "#00FF88", desc: "AI sector analysis, concentration risk, and technology market dynamics" },
-  { id: "crypto-cycles",         label: "Crypto Cycles",           icon: Bitcoin,       color: "#F59E0B", desc: "Bitcoin cycles, altcoin rotation, and on-chain market intelligence" },
+  { id: "crypto-cycles",         label: "Crypto Cycles",           icon: Bitcoin,       color: "#F59E0B", desc: "Bitcoin cycles, altcoin rotation, and crypto market intelligence" },
   { id: "risk-management",       label: "Risk Management",         icon: Shield,        color: "#EF4444", desc: "Portfolio protection, drawdown management, and position sizing" },
   { id: "liquidity-analysis",    label: "Liquidity & Credit",      icon: Activity,      color: "#06B6D4", desc: "Market liquidity conditions, credit spreads, and financial stress" },
   { id: "volatility",            label: "Volatility",              icon: Zap,           color: "#F97316", desc: "VIX analysis, volatility regimes, and options market intelligence" },
@@ -124,7 +125,7 @@ export default function IntelligenceLibrary() {
             <span style={{ color: '#374151' }}>·</span>
             <div className="flex items-center gap-2 text-sm" style={{ color: '#6B7280' }}>
               <Clock style={{ width: 14, height: 14 }} />
-              <span>Updated continuously</span>
+              <span>Updated as new research is published</span>
             </div>
             <span style={{ color: '#374151' }}>·</span>
             <Link href="/daily-brief" className="text-sm transition-colors hover:text-cyan-400" style={{ color: '#6B7280' }}>
@@ -350,7 +351,7 @@ export default function IntelligenceLibrary() {
             Apply This Research
           </h2>
           <p style={{ color: '#94A3B8', maxWidth: 480, margin: '0 auto 1.5rem', lineHeight: 1.7, fontSize: '0.9rem' }}>
-            Ask PLATO any market question and get an institutional-grade answer grounded in live engine data and this research library.
+            Ask PLATO any market question and get an answer grounded in the current engine reading and this research library.
           </p>
           <Link href="/app/discover">
             <button style={{
@@ -371,6 +372,7 @@ export default function IntelligenceLibrary() {
           </Link>
         </div>
       </div>
+      <p className="mx-auto max-w-5xl px-4 pb-8 pt-6 text-center text-xs text-slate-500">{PUBLIC_DISCLAIMER}</p>
     </div>
   );
 }

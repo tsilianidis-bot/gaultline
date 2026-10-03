@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Streamdown } from "streamdown";
 import { CalendarDays, Clock, ArrowLeft, Tag, ChevronRight, Eye, Archive, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 function formatDate(d: Date | string | null | undefined) {
   if (!d) return "";
@@ -359,13 +360,14 @@ export default function BlogPost() {
               </Link>
               <Link href="/pressure-index">
                 <span className="flex items-center gap-1 text-xs text-cyan-400 font-['IBM_Plex_Mono'] hover:underline cursor-pointer">
-                  VIEW LIVE PRESSURE INDEX <ChevronRight className="w-3 h-3" />
+                  VIEW PRESSURE INDEX <ChevronRight className="w-3 h-3" />
                 </span>
               </Link>
             </div>
           </article>
         )}
       </div>
+      <p className="mx-auto max-w-5xl px-4 pb-8 pt-6 text-center text-xs text-slate-500">{PUBLIC_DISCLAIMER}</p>
     </div>
   );
 }

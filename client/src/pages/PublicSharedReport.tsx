@@ -15,6 +15,7 @@ import {
   Zap, BarChart3, Shield, Activity, Lock, ArrowRight,
   Share2, Calendar
 } from "lucide-react";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 // ── Helpers ────────────────────────────────────────────────────
 const REPORT_TYPE_LABELS: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
@@ -34,7 +35,7 @@ function formatDate(ts: number | string | null | undefined) {
 }
 
 // ── Snapshot renderer — renders the JSON snapshot safely ───────
-function SnapshotRenderer({ snapshotJson, reportType }: { snapshotJson: string; reportType: string }) {
+export function SnapshotRenderer({ snapshotJson, reportType }: { snapshotJson: string; reportType: string }) {
   let data: Record<string, unknown> = {};
   try { data = JSON.parse(snapshotJson); } catch { return <p className="text-zinc-500 text-sm">Unable to render report data.</p>; }
 
@@ -72,13 +73,13 @@ function SnapshotRenderer({ snapshotJson, reportType }: { snapshotJson: string; 
       );
     }
     if (typeof val === "object") {
-      const entries = Object.entries(val as Record<string, unknown>);
+      const entries = Object.entries(val as Record<string, unknown>).filter(([k]) => !isHiddenSnapshotKey(k));
       if (depth > 2) return <span className="text-zinc-500 text-xs">[object]</span>;
       return (
         <div className={`space-y-1 ${depth > 0 ? "pl-2 border-l border-zinc-800" : ""}`}>
           {entries.map(([k, v]) => (
             <div key={k} className="flex flex-wrap gap-2 items-start text-sm">
-              <span className="text-zinc-500 font-mono text-xs min-w-[120px] pt-0.5">{k}</span>
+              <span className="text-zinc-500 font-mono text-xs min-w-[120px] pt-0.5">{snapshotKeyLabel(k)}</span>
               <span className="flex-1">{renderValue(v, depth + 1)}</span>
             </div>
           ))}
@@ -88,7 +89,7 @@ function SnapshotRenderer({ snapshotJson, reportType }: { snapshotJson: string; 
     return <span className="text-zinc-400">{String(val)}</span>;
   };
 
-  const topLevelEntries = Object.entries(data);
+  const topLevelEntries = Object.entries(data).filter(([key]) => !isHiddenSnapshotKey(key));
 
   return (
     <div className="space-y-4">
@@ -96,13 +97,39 @@ function SnapshotRenderer({ snapshotJson, reportType }: { snapshotJson: string; 
         <div key={key} className="bg-zinc-900/40 rounded-lg border border-zinc-800 p-4">
           <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-widest mb-3 flex items-center gap-2">
             <span className="w-1 h-3 bg-cyan-500 rounded-full inline-block" />
-            {key.replace(/_/g, " ")}
+            {snapshotKeyLabel(key)}
           </h4>
           <div className="text-sm">{renderValue(value)}</div>
         </div>
       ))}
     </div>
   );
+}
+
+// QA B11: shared snapshots saved before the #60 score-key rename keep their old
+// camelCase keys. Both the old and the renamed keys are heuristic 0–100 scores,
+// so both render as readable "/100 score" labels instead of raw keys.
+export const SNAPSHOT_KEY_LABELS: Record<string, string> = {
+  favorableSetupProbability: "Favorable setup score (/100)",
+  adversePressureProbability: "Adverse pressure score (/100)",
+  favorableSetupScore: "Favorable setup score (/100)",
+  adversePressureScore: "Adverse pressure score (/100)",
+};
+const hasLabel = (key: string) => Object.prototype.hasOwnProperty.call(SNAPSHOT_KEY_LABELS, key);
+export function snapshotKeyLabel(key: string): string {
+  return hasLabel(key) ? SNAPSHOT_KEY_LABELS[key] : key.replace(/_/g, " ");
+}
+
+// QA B11 (follow-up): saved Stock and Crypto Signals snapshots carry a formula
+// `confidence` (e.g. min(95, 55 + |score| * 5)); it is not a calibrated measure,
+// so the public page never prints it. Any key that reads as a probability, odds,
+// chance or confidence is hidden too, so a future raw key cannot reach /r/:id.
+// Keys with an explicit label above (the two /100 scores) are remapped, not hidden.
+export const HIDDEN_SNAPSHOT_KEYS = new Set<string>(["confidence"]);
+export const HIDDEN_SNAPSHOT_KEY_PATTERN = /probab|odds|chance|confidence$/i;
+export function isHiddenSnapshotKey(key: string): boolean {
+  if (hasLabel(key)) return false;
+  return HIDDEN_SNAPSHOT_KEYS.has(key) || HIDDEN_SNAPSHOT_KEY_PATTERN.test(key);
 }
 
 // ── Main page ──────────────────────────────────────────────────
@@ -245,7 +272,7 @@ export default function PublicSharedReport() {
         <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 flex items-start gap-2">
           <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
           <p className="text-xs text-amber-200/70 leading-relaxed">
-            <strong className="text-amber-300">Not financial advice.</strong> This is a read-only snapshot shared by a FAULTLINE subscriber for informational and educational purposes only. Always conduct your own research before making investment decisions.
+            <strong className="text-amber-300">{PUBLIC_DISCLAIMER}</strong> This is a read-only snapshot shared by a FAULTLINE user. Always conduct your own research before making investment decisions.
           </p>
         </div>
 
@@ -267,7 +294,7 @@ export default function PublicSharedReport() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-zinc-400 leading-relaxed">
-              This is a snapshot shared by a subscriber. The live FAULTLINE platform gives you regularly refreshed market pressure readings, AI-powered signal intelligence, crypto regime analysis, and shareable reports — updated continuously.
+              This is a snapshot shared by a FAULTLINE user. The FAULTLINE platform shows market pressure readings, signal intelligence, crypto regime analysis, and shareable reports, recalculated as new data is published.
             </p>
             <div className="grid grid-cols-2 gap-2 text-xs text-zinc-400">
               {[
@@ -295,7 +322,7 @@ export default function PublicSharedReport() {
 
         {/* Footer */}
         <div className="text-center text-xs text-zinc-700 font-mono pb-4">
-          FAULTLINE INTELLIGENCE TERMINAL · NOT FINANCIAL ADVICE · EDUCATIONAL USE ONLY
+          FAULTLINE INTELLIGENCE TERMINAL · {PUBLIC_DISCLAIMER}
         </div>
       </div>
     </div>

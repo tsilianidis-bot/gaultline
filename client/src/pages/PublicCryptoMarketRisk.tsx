@@ -7,7 +7,7 @@ export default function PublicCryptoMarketRisk() {
       seo={PAGE_SEO.publicCryptoMarketRisk}
       badge="CRYPTO MARKET RISK DASHBOARD"
       headline={"Monitor Crypto Systemic Risk"}
-      subheadline="Live crypto market risk dashboard: BTC dominance, altcoin risk, systemic crypto pressure, contagion risk, and digital asset macro alignment. Know when the environment supports risk-taking and when it doesn't."
+      subheadline="Crypto market risk dashboard: BTC dominance, altcoin risk, systemic crypto pressure, contagion risk, and digital asset macro alignment. Know when the environment supports risk-taking and when it doesn't."
       ctaLabel="VIEW CRYPTO RISK"
       ctaHref="/app/crypto"
       accentColor="#A855F7"

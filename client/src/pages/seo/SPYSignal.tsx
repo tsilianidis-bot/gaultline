@@ -1,11 +1,12 @@
 import SEOLandingPage from '@/pages/SEOLandingPage';
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 export default function SPYSignal() {
   return (
     <SEOLandingPage
       seo={{
         title: "SPY Outlook: Signal & S&P 500 ETF Analysis | FAULTLINE",
-        description: "Get FAULTLINE's current outlook for SPY (S&P 500 ETF), including current signal, macro conditions, systemic risk, and historical context. Not financial advice.",
+        description: `Get FAULTLINE's current outlook for SPY (S&P 500 ETF), including current signal, macro conditions, systemic risk, and historical context. ${PUBLIC_DISCLAIMER}`,
         canonical: "/stock/spy",
       }}
       badge="STOCK"
@@ -34,19 +35,19 @@ export default function SPYSignal() {
       contentSections={[
         {
           heading: "Understanding FAULTLINE's SPY Outlook",
-          body: "The SPDR S&P 500 ETF Trust (SPY) is one of the most widely traded and followed exchange-traded funds, designed to track the performance of the S&P 500 index. FAULTLINE's outlook for SPY is a sophisticated, multi-factor assessment, not a simple prediction. We synthesize vast amounts of market data, including price action, volume, volatility, and intermarket relationships, to generate a regularly refreshed signal. This signal is then contextualized by our proprietary market regime analysis, which identifies whether the market is in a growth, contraction, inflationary, or disinflationary phase. Our goal is to provide clarity on the underlying dynamics, helping users understand the 'why' behind market movements rather than just the 'what'. This comprehensive approach allows for a more nuanced understanding of SPY's potential path, moving beyond simplistic bullish or bearish calls.",
+          body: "The SPDR S&P 500 ETF Trust (SPY) is one of the most widely traded and followed exchange-traded funds, designed to track the performance of the S&P 500 index. FAULTLINE's SPY signal is a risk assessment, not a prediction. The signal combines daily price data with the current Pressure Index reading, its vectors, and the regime band (LOW RISK through SYSTEMIC CRISIS). Our goal is to provide clarity on the underlying dynamics, helping users understand the 'why' behind market movements rather than just the 'what'. It is context for risk, not a bullish or bearish call on SPY's path.",
         },
         {
           heading: "Why the SPY Outlook Matters for Investors",
-          body: "For investors, the S&P 500, and by extension SPY, serves as a crucial benchmark for the overall health of the U.S. stock market and economy. A clear, data-driven outlook can be invaluable for strategic asset allocation and risk management. FAULTLINE's analysis goes beyond surface-level news, diving into the systemic risks and macro conditions that often precede significant market shifts. Understanding these deeper currents can help investors anticipate potential headwinds or tailwinds, adjust their portfolios accordingly, and avoid being caught off guard by sudden market reversals. Our framework highlights 'what changed' in the underlying data, providing actionable insights into the evolving market landscape. This proactive understanding is essential for navigating complex market environments and making informed decisions.",
+          body: "For investors, the S&P 500, and by extension SPY, serves as a crucial benchmark for the overall health of the U.S. stock market and economy. A clear, data-driven outlook can be invaluable for strategic asset allocation and risk management. FAULTLINE's analysis focuses on the systemic risks and macro conditions beneath the index. Understanding these deeper currents gives investors context for potential headwinds or tailwinds. Our framework highlights 'what changed' in the underlying data, providing actionable insights into the evolving market landscape. This proactive understanding is essential for navigating complex market environments and making informed decisions.",
         },
         {
           heading: "Historical Context and What Would Shift the Outlook",
-          body: "FAULTLINE's SPY outlook is always presented within a rich historical context, comparing current market behavior to similar periods in the past. This allows users to see how the present situation aligns with or deviates from historical precedents, offering valuable perspective on potential outcomes. Our current FAULTLINE rating for SPY is **Neutral with a Lean Towards Caution**, primarily driven by persistent inflationary pressures and a tightening liquidity environment, despite robust corporate earnings. A significant shift in this outlook would likely be triggered by a clear deceleration in inflation, a more accommodative stance from central banks, or a sustained improvement in leading economic indicators that signal renewed growth without overheating. Conversely, an escalation of geopolitical tensions or a sharp increase in credit market stress could push the outlook towards a more definitively bearish stance. We continuously monitor these critical factors to provide timely updates.",
+          body: "FAULTLINE's SPY outlook is always presented within a rich historical context, comparing current market behavior to similar periods in the past. This allows users to see how the present situation aligns with or deviates from historical precedents, offering valuable perspective on potential outcomes. The current SPY signal is shown in the FAULTLINE app; this page does not carry a fixed rating. A significant shift in the outlook would likely be triggered by a clear deceleration in inflation, a more accommodative stance from central banks, or a sustained improvement in leading economic indicators that signal renewed growth without overheating. Conversely, an escalation of geopolitical tensions or a sharp increase in credit market stress could push the outlook towards a more definitively bearish stance. Of these, FAULTLINE reads inflation, policy rates, and credit stress through the Pressure Index; it does not track geopolitical events.",
         },
         {
-          heading: "Disclaimer: Market Intelligence, Not Financial Advice",
-          body: "It is crucial to understand that FAULTLINE provides market intelligence and educational content. Our SPY outlook, signals, and analyses are generated through quantitative models and proprietary frameworks for informational purposes only. They are not, and should not be construed as, personalized financial advice, investment recommendations, or an offer to buy or sell any securities. Investing in financial markets involves significant risks, and past performance is not indicative of future results. Users should conduct their own due diligence and consult with a qualified financial advisor before making any investment decisions. FAULTLINE does not assume any liability for investment decisions made based on the information provided on this page or within our platform.",
+          heading: "Disclaimer",
+          body: `${PUBLIC_DISCLAIMER} FAULTLINE's SPY outlook, signals, and analyses are not personalized recommendations or an offer to buy or sell any security. Investing involves risk, and past performance does not guarantee future results.`,
         },
       ]}
       faqs={[
@@ -56,7 +57,7 @@ export default function SPYSignal() {
         },
         {
           question: "How often is the SPY Outlook updated?",
-          answer: "Our SPY Outlook is updated regularly as market conditions evolve. Our models continuously process new data, ensuring that the signal and contextual analysis reflect the most current market dynamics.",
+          answer: "Our SPY Outlook is updated regularly as market conditions evolve. Our models process new data as it is published, ensuring that the signal and contextual analysis reflect the most current market dynamics.",
         },
         {
           question: "Is the SPY Outlook a buy/sell recommendation?",

@@ -5,31 +5,31 @@ export default function LiquidityMonitor() {
     <SEOLandingPage
       seo={{
         title: "Liquidity Monitor — Market Liquidity Conditions | FAULTLINE",
-        description: "Track market liquidity conditions: Fed balance sheet, repo market stress, bank lending standards, and liquidity withdrawal signals. Know when liquidity is tightening before it hits prices.",
+        description: "Track market liquidity conditions through high-yield credit spreads and SOFR funding rates — the Liquidity Stress vector of the FAULTLINE Pressure Index. See funding pressure building before the break.",
         canonical: "/liquidity-monitor",
       }}
       badge="LIQUIDITY INTELLIGENCE"
       headline={"Liquidity Monitor\nThe Hidden Driver of Markets"}
-      subheadline="Liquidity is the lifeblood of financial markets. FAULTLINE tracks liquidity conditions — Fed balance sheet dynamics, repo market stress, bank lending standards, and global liquidity flows — to identify when liquidity is tightening before it hits asset prices."
+      subheadline="Liquidity is the lifeblood of financial markets. FAULTLINE reads liquidity conditions through high-yield credit spreads and SOFR funding rates from FRED, alongside the Treasury curve and the delayed U.S. Dollar Index quote, to show where funding pressure is building across the system."
       ctaLabel="VIEW LIQUIDITY DATA"
       ctaHref="/pressure-index"
       accentColor="#00C896"
       features={[
-        { icon: "◈", title: "Fed Balance Sheet Tracking", desc: "The Fed's balance sheet is the primary driver of market liquidity. FAULTLINE tracks QE/QT dynamics and their impact on risk assets." },
-        { icon: "◎", title: "Repo Market Stress Monitoring", desc: "Repo market dysfunction is an early warning of systemic liquidity stress. FAULTLINE monitors overnight and term repo rates." },
-        { icon: "⬡", title: "Bank Lending Standards", desc: "Tightening bank lending standards reduce credit availability and precede economic slowdowns. FAULTLINE tracks the Senior Loan Officer Survey." },
-        { icon: "◈", title: "Global Liquidity Flows", desc: "Liquidity is global. FAULTLINE tracks dollar strength, EM capital flows, and cross-border liquidity conditions." },
-        { icon: "◎", title: "Crypto Liquidity Sensitivity", desc: "Crypto is the most liquidity-sensitive asset class. FAULTLINE flags when global liquidity withdrawal threatens digital asset markets." },
-        { icon: "⬡", title: "Liquidity Regime Classification", desc: "Classify the current liquidity regime — expanding, neutral, or contracting — with historical context and forward implications." },
+        { icon: "◈", title: "Liquidity Stress Vector", desc: "The Pressure Index's Liquidity Stress vector (20% weight) combines the ICE BofA high-yield spread and SOFR from FRED into one funding-pressure reading." },
+        { icon: "◎", title: "Secured Funding Rate (SOFR)", desc: "SOFR, the overnight rate for borrowing cash against Treasury collateral, is FAULTLINE's window on short-term funding conditions." },
+        { icon: "⬡", title: "Credit Availability", desc: "High-yield credit spreads show how much extra compensation lenders demand for risk — a public read on how freely credit is flowing." },
+        { icon: "◈", title: "Dollar Context", desc: "A delayed U.S. Dollar Index quote is shown on the markets board as context for global dollar conditions. It is not a Pressure Index input." },
+        { icon: "◎", title: "Crypto Liquidity Sensitivity", desc: "Crypto is among the most liquidity-sensitive asset classes. FAULTLINE's crypto regime reads the Pressure Index alongside CoinGecko market data to flag when funding pressure is building." },
+        { icon: "⬡", title: "Liquidity in Context", desc: "Read the liquidity vector against the other five Pressure Index vectors and the current regime band, with historical reference context." },
       ]}
       contentSections={[
         {
           heading: "Why Liquidity Is the Most Important Market Variable",
-          body: `Every major market crash in modern history has been preceded by a liquidity withdrawal event. The 2008 Global Financial Crisis was fundamentally a liquidity crisis — the interbank lending market froze, repo markets seized, and credit stopped flowing. The March 2020 COVID crash was the fastest liquidity withdrawal in history. The 2022 bear market was driven by the most aggressive Fed liquidity withdrawal (QT) since the 1980s.
+          body: `Many of the major market crashes of modern history have involved a liquidity withdrawal event. The 2008 Global Financial Crisis was fundamentally a liquidity crisis — the interbank lending market froze, repo markets seized, and credit stopped flowing. The March 2020 COVID crash was one of the most abrupt liquidity shocks on record. The 2022 bear market was driven by the most aggressive Fed tightening since the early 1980s, alongside quantitative tightening (QT).
 
 Liquidity determines the price of every asset class. When liquidity is abundant, investors are willing to pay higher multiples for equities, accept lower yields on bonds, and take on more risk in crypto and alternative assets. When liquidity contracts, the reverse occurs — and the contraction is rarely gradual.
 
-FAULTLINE's liquidity vector is one of the seven core components of the FAULTLINE Pressure Index™. It aggregates Fed balance sheet dynamics, repo market conditions, bank lending standards, and global dollar liquidity into a single liquidity score that feeds directly into the systemic stress calculation.`,
+FAULTLINE's Liquidity Stress vector is one of the six weighted components of the FAULTLINE Pressure Index™, carrying a 20% weight. It combines the ICE BofA U.S. high-yield spread (BAMLH0A0HYM2) and the Secured Overnight Financing Rate (SOFR) from FRED into a single liquidity score that feeds directly into the systemic pressure calculation. FAULTLINE does not currently ingest Fed balance sheet, repo volume, or bank lending survey data.`,
         },
         {
           heading: "The Mechanics of Liquidity Withdrawal",
@@ -53,7 +53,7 @@ Repo Market Stress: The repo market is the plumbing of the financial system — 
         },
         {
           question: "How does FAULTLINE measure liquidity conditions?",
-          answer: "FAULTLINE measures liquidity through multiple data sources: the Federal Reserve's balance sheet (from FRED), 2-year Treasury yields (reflecting rate expectations), high-yield credit spreads (reflecting credit availability), and the FAULTLINE Pressure Index's liquidity vector which synthesizes these inputs.",
+          answer: "FAULTLINE's Liquidity Stress vector combines two FRED series: the ICE BofA U.S. high-yield spread (reflecting credit availability) and SOFR (reflecting short-term secured funding costs). The 2-year and 10-year Treasury yields and the federal funds rate feed other Pressure Index vectors. FAULTLINE does not currently ingest the Federal Reserve balance sheet.",
         },
         {
           question: "What is the difference between market liquidity and funding liquidity?",
@@ -66,10 +66,10 @@ Repo Market Stress: The repo market is the plumbing of the financial system — 
       ]}
       internalLinks={[
         { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Systemic stress score with liquidity vector." },
-        { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy and balance sheet dynamics driving liquidity." },
+        { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy rates and their impact on funding conditions." },
         { label: "MARKET CRASH INDICATOR", href: "/market-crash-indicator", desc: "Crash risk detection incorporating liquidity conditions." },
         { label: "CRYPTO MARKET RISK", href: "/crypto-market-risk-dashboard", desc: "Crypto liquidity sensitivity and systemic risk." },
-        { label: "RECESSION PROBABILITY", href: "/recession-probability", desc: "Liquidity withdrawal as a recession precursor." },
+        { label: "RECESSION RISK CONTEXT", href: "/recession-probability", desc: "How liquidity conditions relate to recession risk." },
         { label: "VOLATILITY DASHBOARD", href: "/volatility-dashboard", desc: "Volatility regime monitoring and risk analysis." },
       ]}
       schemaType="Article"

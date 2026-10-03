@@ -1,6 +1,7 @@
 import { useSEO } from "@/hooks/useSEO";
 import { Link } from "wouter";
 import { useState } from "react";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DOWNLOADABLE ASSET CONTENT
@@ -8,17 +9,17 @@ import { useState } from "react";
 
 const BOILERPLATE_50 = `About Phoenix Systems
 
-Phoenix Systems is an AI-first technology company building intelligent platforms that transform complex information into actionable understanding. Its flagship product, FAULTLINE, is a macroeconomic risk intelligence platform powered by PLATO — an AI intelligence layer that synthesises ten live market engines to detect regime shifts, systemic pressure, and structural risk before markets reprice them. Available at getfaultline.live.`;
+Phoenix Systems is an AI-first technology company building intelligent platforms that transform complex information into actionable understanding. Its flagship product, FAULTLINE, is a structural market intelligence platform that identifies where systemic pressure is building across credit, funding, rates, macro conditions, equities, and crypto. PLATO, its AI interpretation layer, explains what those readings mean together. Available at getfaultline.live.`;
 
 const BOILERPLATE_150 = `About Phoenix Systems
 
 Phoenix Systems is an AI-first technology company building intelligent platforms that transform complex information into actionable understanding. The company develops decision-intelligence systems designed to reduce the information asymmetry between institutional and individual decision-makers.
 
-Its flagship product, FAULTLINE, is a macroeconomic risk intelligence platform powered by PLATO — an AI intelligence layer that continuously synthesises ten live market engines: Market Regime, Pressure Index, Liquidity, Treasury Conditions, Volatility, Credit Risk, Historical Analog, Probability, Crypto Intelligence, and Signal. PLATO detects regime shifts, systemic pressure, and structural risk before markets reprice them — and delivers institutional-grade intelligence in plain language.
+Its flagship product, FAULTLINE, is a structural market intelligence platform. Its Faultline Pressure Index™ combines six weighted vectors built from eight FRED series and one static reference value into a 0–100 reading of systemic pressure. PLATO, its AI interpretation layer, reads that shared market state — pressure, regime, historical resemblance, crypto and signal context — and explains in plain language where pressure is building and what would change the picture.
 
-FAULTLINE is designed for investors, traders, and analysts who want to understand the risk environment before it reprices. The platform provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice.
+FAULTLINE is designed for investors, traders, and analysts who want to understand the risk environment they are operating in. The platform provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice.
 
-FAULTLINE is available at getfaultline.live with tiered access for individual investors, active traders, and institutional users.
+FAULTLINE is available at getfaultline.live. The public Pressure Index and methodology are free to read; signed-in access starts with a free account. Paid plans are not on sale.
 
 Press contact: press@getfaultline.live`;
 
@@ -30,11 +31,11 @@ Phoenix Systems was created to close that gap.
 
 The company's approach to artificial intelligence is deliberately calibrated. Phoenix Systems does not use AI to generate predictions or recommendations. It uses AI to synthesise, classify, and contextualise — to surface what is happening, why it is happening, how long it has been building, and what has historically happened in similar conditions. Every product Phoenix Systems builds is designed to reduce information asymmetry, not to manufacture false certainty.
 
-FAULTLINE is Phoenix Systems' flagship product. FAULTLINE is a macroeconomic risk intelligence platform powered by PLATO — an AI intelligence layer that continuously synthesises ten live market engines before generating any response or briefing. Rather than beginning with stock selection or trading signals, FAULTLINE begins with the question that institutional risk managers ask first: what is the current state of the system?
+FAULTLINE is Phoenix Systems' flagship product: a structural market intelligence platform built around the Pentagonal Thesis™ — five questions about what is happening, why, what could come next, what to watch, and how to frame a decision. Rather than beginning with stock selection or trading signals, FAULTLINE begins with the question that institutional risk managers ask first: what is the current state of the system?
 
-PLATO — Spirit of FAULTLINE — is the intelligence core of FAULTLINE. Before answering any question, PLATO evaluates all ten engines: Market Regime, Pressure Index, Liquidity Conditions, Treasury Stress, Volatility Environment, Credit Risk, Historical Analog, Probability Distribution, Crypto Intelligence, and Signal Intelligence. PLATO identifies where engines agree, where they diverge, and what the divergence means — delivering a synthesised intelligence briefing rather than a raw data output.
+PLATO — Spirit of FAULTLINE — is the interpretation layer of FAULTLINE. PLATO reads the same persisted market state every surface uses — the Pressure Index and its vectors, regime readings, historical resemblance, crypto context, and signals — and explains what those measurements mean together. Where an input is unavailable, stale, or not supported by governed evidence, PLATO says so rather than filling the gap. PLATO explains measurements; it does not rescore them.
 
-The platform's primary instrument is the Seismograph™ — a continuous composite of macroeconomic, financial, and market stress that tracks how pressure has built over time, not just today's reading. The Seismograph™ drives FAULTLINE's regime classification engine, which categorises current conditions into one of five regimes and tracks how those regimes have historically resolved.
+The platform's primary metric is the Faultline Pressure Index™ — a 0–100 composite of high-yield credit spreads, SOFR, the Treasury curve, inflation, federal funds, unemployment, and a static AI-concentration baseline, classified into five bands from LOW RISK to SYSTEMIC CRISIS. The Seismograph™ records those readings over time, so a level can be read next to the path that produced it.
 
 All FAULTLINE outputs are probabilistic rather than deterministic. The platform does not generate buy or sell signals. It generates probability-weighted assessments of current conditions, historical analog distributions, and scenario likelihoods — designed to support informed judgment, not to replace it.
 
@@ -52,10 +53,10 @@ Founder: JT
 Website: getfaultline.live
 Category: AI-powered financial intelligence / Systemic risk awareness
 AI Intelligence Layer: PLATO (Spirit of FAULTLINE)
-Primary instrument: Seismograph™ (continuous systemic pressure composite)
-Primary metric: Pressure Index™ (0–100 composite score, five regime classifications)
+Primary metric: Pressure Index™ (0–100 composite of six weighted vectors; five bands, LOW RISK to SYSTEMIC CRISIS)
+Pressure record: Seismograph™ (stored Pressure Index readings over time)
 
-Intelligence Engines (10 live):
+Intelligence areas PLATO interprets from one shared market state:
   1. Market Regime Engine
   2. Pressure Index™
   3. Liquidity Intelligence
@@ -67,7 +68,7 @@ Intelligence Engines (10 live):
   9. Crypto Intelligence
   10. Signal Intelligence
 
-Data sources: FRED (Federal Reserve Economic Data), live market feeds, institutional flow data, on-chain crypto data, credit market feeds
+Data sources: FRED (Federal Reserve Economic Data) for credit spreads, rates, inflation, labor and financial-stress series; Polygon daily equity aggregates; Yahoo Finance quotes; CoinGecko crypto market statistics. No on-chain or institutional-flow feed is ingested.
 
 Platform capabilities: PLATO AI Intelligence, Seismograph™, Pressure Index™, Regime Detection, Signal Intelligence, Historical Analog Engine, Decision Engine, Day Trade Intelligence, Pre-Flight Briefing, Symbol Intelligence, Crypto Hub, Portfolio Intelligence, Market Scenarios, Aftershock Engine
 
@@ -82,17 +83,17 @@ Press contact: press@getfaultline.live`;
 
 const PRESS_RELEASE = `FOR IMMEDIATE RELEASE
 
-PHOENIX SYSTEMS INTRODUCES PLATO — THE AI INTELLIGENCE LAYER POWERING FAULTLINE'S TEN-ENGINE MARKET SYNTHESIS
+PHOENIX SYSTEMS INTRODUCES PLATO — THE AI INTERPRETATION LAYER OF FAULTLINE'S STRUCTURAL MARKET INTELLIGENCE
 
-PLATO synthesises ten live market engines as new data is published, delivering institutional-grade macro intelligence to individual investors before conditions reprice.
+PLATO explains FAULTLINE's systemic-pressure readings in plain language, so individual investors can see where pressure is building beneath the surface.
 
-[Mentor, Ohio — July 2026] — Phoenix Systems today announced PLATO, the AI intelligence layer at the core of FAULTLINE, its macroeconomic risk intelligence platform. PLATO — Spirit of FAULTLINE — continuously synthesises ten live market engines to detect regime shifts, systemic pressure, and structural risk before they become visible in price action.
+[Mentor, Ohio — July 2026] — Phoenix Systems today announced PLATO, the AI intelligence layer at the core of FAULTLINE, its macroeconomic risk intelligence platform. PLATO — Spirit of FAULTLINE — reads FAULTLINE's shared market state and explains where systemic pressure, regime change, and structural risk are building beneath the surface.
 
-Unlike AI assistants that answer questions in isolation, PLATO evaluates all ten FAULTLINE engines before generating any response: Market Regime, Pressure Index, Liquidity Conditions, Treasury Stress, Volatility Environment, Credit Risk, Historical Analog, Probability Distribution, Crypto Intelligence, and Signal Intelligence. PLATO identifies where engines agree, where they diverge, and what the divergence means — delivering a synthesised intelligence briefing rather than a raw data output.
+Unlike AI assistants that answer questions in isolation, PLATO answers from the same persisted market state every FAULTLINE surface reads: the Pressure Index and its vectors, regime readings, historical resemblance, crypto context, and signals. PLATO explains what those readings mean together and states plainly when an input is unavailable or not supported by governed evidence — delivering an interpretation rather than a raw data output.
 
-"Most investors see price action. PLATO sees the structural conditions beneath it," said JT, Founder of Phoenix Systems. "Every time a user asks PLATO a question, she has already read the full market context across ten live engines. That is not a chatbot. That is an intelligence layer."
+"Most investors see price action. PLATO sees the structural conditions beneath it," said JT, Founder of Phoenix Systems. "FAULTLINE synthesizes multiple market-risk engines into one decision framework. That is not a chatbot. That is an intelligence layer."
 
-FAULTLINE's Seismograph™ — the platform's primary intelligence instrument — tracks systemic pressure across macroeconomic, financial, and market systems and feeds PLATO's continuous situational awareness. The platform also includes a Historical Analog Engine, Decision Engine, Day Trade Intelligence, Pre-Flight Briefing, Symbol Intelligence, Crypto Hub, Aftershock Engine, and Portfolio Intelligence tools.
+FAULTLINE's Seismograph™ records Pressure Index readings over time and gives PLATO the path behind today's level. The platform also includes a Historical Analog Engine, Decision Engine, Day Trade Intelligence, Pre-Flight Briefing, Symbol Intelligence, Crypto Hub, Aftershock Engine, and Portfolio Intelligence tools.
 
 FAULTLINE is available at getfaultline.live. The public Pressure Index and methodology are free to read, and signed-in access starts with a free account. Paid plans are not on sale.
 
@@ -118,27 +119,27 @@ WHAT WE BUILD
 Phoenix Systems develops AI-powered intelligence systems that help investors, traders, and analysts make better decisions by transforming complex macroeconomic and market data into clear, actionable understanding. Every product Phoenix Systems builds is designed to reduce the information asymmetry between institutional and individual decision-makers — giving individuals access to the same structural awareness that professional risk managers use as a matter of course.
 
 FAULTLINE — FLAGSHIP PLATFORM
-FAULTLINE is a macroeconomic risk intelligence platform powered by PLATO — an AI intelligence layer that continuously synthesises ten live market engines to detect regime shifts, systemic pressure, and structural risk before markets reprice them.
+FAULTLINE is a structural market intelligence platform. It identifies where systemic pressure is building across credit, funding, rates, macro conditions, equities, and crypto, and PLATO — its AI interpretation layer — explains what those readings mean together.
 
-The platform's primary instrument is the Seismograph™ — a continuous composite of macroeconomic, financial, and market stress that drives FAULTLINE's regime classification engine. The Historical Analog Engine identifies historical periods that most closely resemble current conditions and surfaces their outcome distributions. PLATO synthesises all ten engines before answering any question, identifying consensus and divergence across the full intelligence stack.
+The platform's primary metric is the Faultline Pressure Index™ (0–100), and the Seismograph™ records those readings over time. The Historical Analog Engine ranks how closely today's vector profile resembles hand-set reference profiles of past stress episodes; resemblance is not a forecast. PLATO answers from that shared market state and discloses unavailable inputs.
 
-FAULTLINE's ten intelligence engines:
-1. Market Regime Engine — classifies current market conditions into one of five regimes
-2. Pressure Index™ — 0–100 composite systemic stress score
-3. Liquidity Intelligence — monitors funding markets, credit availability, and flow conditions
-4. Treasury Conditions — tracks yield curve dynamics, term premium, and Fed policy signals
-5. Volatility Engine — reads VIX structure, skew, and implied volatility surfaces
-6. Credit Risk Engine — monitors HY spreads, IG spreads, and credit stress indicators
-7. Historical Analog Engine — identifies the closest historical analogs and their forward returns
+Intelligence areas PLATO interprets:
+1. Market Regime — the Pressure Index band, plus separate equity, crypto, and systemic-regime models
+2. Pressure Index™ — 0–100 composite of six weighted vectors from eight FRED series and one static baseline
+3. Liquidity — high-yield credit spreads and SOFR funding rates
+4. Treasury Conditions — the 10-year minus 2-year curve and the 10-year yield level
+5. Volatility — VIX quotes on the markets board and the VIX close in the separate systemic-regime model (the Pressure Index does not read VIX)
+6. Credit Risk — high-yield spreads in the Pressure Index; investment-grade spreads in the systemic-regime model
+7. Historical Analog Engine — ranks resemblance to hand-set reference profiles of past stress episodes; not a forecast or a return distribution
 8. Probability Engine — assigns regime transition probabilities across 1M/3M/6M/12M horizons
-9. Crypto Intelligence — tracks on-chain data, crypto regime, and digital asset stress
-10. Signal Intelligence — institutional-grade directional signals across equities, crypto, and macro
+9. Crypto Intelligence — CoinGecko prices, Bitcoin dominance, 24-hour ranges, crypto regime, and the Pressure Index
+10. Signal Intelligence — regime-contextualised directional labels across equities and crypto
 
 PHILOSOPHY
 We believe the most valuable intelligence is not a recommendation — it is context. Phoenix Systems products emphasise probabilistic reasoning over binary predictions. We surface likelihoods, regimes, and stress indicators — not buy or sell signals. PLATO is designed to augment human judgment, not replace it.
 
 DISCLAIMER
-FAULTLINE is a macroeconomic risk intelligence platform. It provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice.
+FAULTLINE is a macroeconomic risk intelligence platform. ${PUBLIC_DISCLAIMER} It is not a financial adviser.
 
 CONTACT
 press@getfaultline.live
@@ -153,27 +154,27 @@ Website: getfaultline.live
 AI Intelligence Layer: PLATO (Spirit of FAULTLINE)
 
 WHAT FAULTLINE DOES
-FAULTLINE monitors the economic, financial, and market fault lines where stress builds beneath the surface. Powered by PLATO — an AI intelligence layer that synthesises ten live market engines — FAULTLINE gives investors, traders, and analysts a continuous, integrated view of systemic risk before it reprices. The platform answers three questions before any other: What is happening? Why is it happening? How long has it been building?
+FAULTLINE monitors the economic, financial, and market fault lines where stress builds beneath the surface. It gives investors, traders, and analysts an integrated view of systemic pressure, and PLATO — its AI interpretation layer — explains what the readings mean together. The platform answers three questions before any other: What is happening? Why is it happening? How long has it been building?
 
 PLATO — THE INTELLIGENCE LAYER
-PLATO (Spirit of FAULTLINE) is the AI core of FAULTLINE. Before responding to any question, PLATO evaluates all ten live engines, identifies where they agree and where they diverge, and synthesises a single coherent intelligence briefing. PLATO is not a chatbot — she is a continuously active intelligence layer reading the full market context at all times.
+PLATO (Spirit of FAULTLINE) is the interpretation layer of FAULTLINE. Each time she answers, PLATO reads the same persisted market state the rest of the platform uses, explains what the measurements mean together, and says plainly when an input is unavailable. PLATO explains measurements; it does not replace them.
 
 CORE CAPABILITIES
 
 1. Seismograph™
-   FAULTLINE's primary intelligence instrument. A continuous composite of macroeconomic, financial, and market stress that drives regime classification. Tracks how pressure has built over time — not just today's reading.
+   The record of Pressure Index readings over time — score, band, and direction — so today's level is read next to the path that produced it.
 
 2. Pressure Index™
-   A composite 0–100 score synthesising macroeconomic, financial, and market stress indicators. Updated continuously. Five regime classifications: Low Risk / Moderate Risk / Elevated Risk / High Risk / Critical.
+   A 0–100 composite of six weighted vectors built from eight FRED series (high-yield spread, SOFR, 10-year and 2-year yields, CPI, PPI, federal funds, unemployment) and one static AI-concentration baseline. Recalculated when source data is published; monthly series lag. Five bands: LOW RISK / MODERATE RISK / ELEVATED RISK / HIGH STRESS / SYSTEMIC CRISIS.
 
 3. PLATO Daily Intelligence Brief
-   A daily AI-generated briefing synthesising all ten engines — what is happening, why it is happening, how long it has been developing, and what to watch next.
+   A daily AI-generated briefing from the engine snapshot — what is happening, why it is happening, how long it has been developing, and what to watch next.
 
 4. Historical Analog Engine
-   Identifies historical market periods that most closely resemble current conditions. Surfaces outcome distributions — not a single prediction, but a range of historically plausible scenarios with forward return data.
+   Ranks how closely today's vector profile resembles hand-set reference profiles of past stress episodes. Resemblance is context, not a prediction, and not a computed return distribution.
 
 5. Signal Intelligence
-   Institutional-grade directional signals across equities, crypto, and macro. Includes conviction scores, regime context, and PLATO synthesis.
+   Regime-contextualised directional labels across equities and crypto. Includes conviction scores, regime context, and PLATO interpretation.
 
 6. Decision Engine
    A structured decision-support framework that evaluates trade ideas against the current macro regime, pressure environment, and signal consensus.
@@ -185,10 +186,10 @@ CORE CAPABILITIES
    A structured pre-session intelligence briefing covering macro conditions, key risk factors, and PLATO's read on the current environment before each trading session.
 
 9. Symbol Intelligence
-   Deep-dive analysis for individual stocks and crypto assets. Includes pressure context, regime overlay, institutional flow, and PLATO synthesis.
+   Deep-dive analysis for individual stocks and crypto assets. Includes pressure context, regime overlay, and PLATO interpretation. Prices come from Polygon daily aggregates and Yahoo quotes.
 
 10. Crypto Hub & Crypto Intelligence
-    Dedicated crypto intelligence layer covering on-chain data, crypto regime classification, digital asset stress indicators, and PLATO crypto synthesis.
+    Dedicated crypto intelligence layer covering CoinGecko market statistics, Bitcoin dominance, crypto regime classification, digital asset stress indicators, and PLATO crypto interpretation.
 
 11. Portfolio Intelligence
     Portfolio-level regime awareness. Evaluates holdings against current macro conditions and surfaces concentration risk, regime misalignment, and hedging considerations.
@@ -205,7 +206,7 @@ PWA: Available on iOS and Android
 Access: public Pressure Index (no account) · free account for the signed-in app · paid plans not on sale
 
 DISCLAIMER
-FAULTLINE provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice.
+${PUBLIC_DISCLAIMER} FAULTLINE is not a financial adviser.
 
 PRESS CONTACT
 press@getfaultline.live`;
@@ -216,7 +217,7 @@ Dear [Editor/Reporter Name],
 
 I am writing on behalf of Phoenix Systems to introduce FAULTLINE and PLATO — a macroeconomic risk intelligence platform and AI intelligence layer that takes a fundamentally different approach to market analysis.
 
-Most investing platforms begin with stock selection or trading signals. FAULTLINE begins with the question that institutional risk managers ask first: what is the current state of the system? At the core of FAULTLINE is PLATO — an AI intelligence layer that synthesises ten live market engines before generating any response or briefing. PLATO reads Market Regime, Pressure Index, Liquidity, Treasury Conditions, Volatility, Credit Risk, Historical Analog, Probability, Crypto Intelligence, and Signal — identifying where engines agree and where they diverge — before delivering a single synthesised intelligence briefing.
+Most investing platforms begin with stock selection or trading signals. FAULTLINE begins with the question that institutional risk managers ask first: what is the current state of the system? At its core is the Faultline Pressure Index™, a published 0–100 composite of credit, funding, rates, inflation, and labor series, and PLATO — an AI interpretation layer that reads the same shared market state and explains, in plain language, where systemic pressure is building and what would change the picture.
 
 FAULTLINE is available at getfaultline.live and is designed for investors, traders, and analysts who want to understand the risk environment before making investment decisions.
 
@@ -253,30 +254,30 @@ For Journalists, Investors, Enterprise Customers, and Strategic Partners
 As of July 2026
 
 WHAT FAULTLINE IS
-FAULTLINE is an AI Market Intelligence Operating System that continuously monitors the economic, financial, and market fault lines where stress builds beneath the surface — detecting regime shifts before they become obvious in price action. At its core is PLATO, an AI intelligence layer that synthesises ten live market engines to deliver institutional-grade macro intelligence in plain language.
+FAULTLINE is an AI Market Intelligence Operating System that monitors the economic, financial, and market fault lines where stress builds beneath the surface and shows where systemic pressure is building. At its core are the Faultline Pressure Index™ and PLATO, an AI interpretation layer that explains those readings in plain language.
 
 THE PROBLEM
 Markets have become increasingly complex. Information has become abundant. Understanding has become scarce. Most individual investors are making consequential financial decisions with fundamentally incomplete situational awareness. They can see price action. They can access earnings data. What they cannot easily access is a continuous, integrated view of the underlying structural conditions that drive markets — the systemic pressures, regime shifts, and macroeconomic fault lines that institutional investors monitor as a matter of course. FAULTLINE was created to close that gap.
 
 WHY NOW
-The convergence of AI capability, modern data infrastructure, and growing retail investor sophistication has created a unique moment. For the first time, it is technically feasible to deliver institutional-quality systemic intelligence to individual investors at scale — not as a simplified summary, but as a genuine intelligence layer that synthesises multiple data streams, identifies structural patterns, and communicates what is building beneath the surface before it becomes obvious.
+The convergence of AI capability, modern data infrastructure, and growing retail investor sophistication has created a unique moment. It is now practical to deliver structural market intelligence to individual investors at scale — not as a simplified summary, but as an interpretation layer that reads multiple data streams, identifies structural patterns, and communicates what is building beneath the surface.
 
 KEY DIFFERENTIATORS
 • Risk-first architecture: FAULTLINE begins with the state of the system, not a stock pick
-• Ten-engine synthesis: PLATO evaluates ten live engines before every response
-• Historical context: the Analog Engine surfaces what happened in comparable conditions
+• One shared market state: every surface, and PLATO, reads the same persisted reading
+• Historical context: the Analog Engine ranks resemblance to reference profiles of past stress episodes
 • Probabilistic framing: likelihoods and distributions, not binary predictions
-• Plain language intelligence: institutional-grade analysis delivered in clear, direct language
-• Continuous awareness: PLATO is always reading the market — not just when asked
+• Plain language intelligence: structural analysis delivered in clear, direct language
+• Published method: every Pressure Index input, weight, and band is documented on the methodology page
 
 CORE TECHNOLOGY
-The Seismograph™ is FAULTLINE's primary intelligence instrument — a continuous composite of macroeconomic, financial, and market stress that tracks how pressure has built over time. The Pressure Index™ (0–100) synthesises this composite into a single score and drives regime classification. The Historical Analog Engine identifies the closest historical parallels and surfaces their forward return distributions. PLATO synthesises all ten engines into a single coherent briefing before every interaction.
+The Pressure Index™ (0–100) combines six weighted vectors built from eight FRED series and one static reference value, and its bands set the regime label. The Seismograph™ records those readings over time. The Historical Analog Engine ranks resemblance to hand-set reference profiles of past stress episodes; resemblance is not a forecast. PLATO interprets that shared state and discloses unavailable inputs.
 
 PLATO'S ROLE
-PLATO (Spirit of FAULTLINE) is the unified intelligence interface of FAULTLINE. She is not a chatbot. She is a continuously active intelligence layer that reads the full market context at all times. Before answering any question, PLATO evaluates all ten engines, identifies consensus and divergence, and synthesises a single coherent market assessment. She transforms complexity into clarity.
+PLATO (Spirit of FAULTLINE) is the unified intelligence interface of FAULTLINE. She is not a chatbot. Each time she answers, PLATO reads the persisted market state the platform publishes, explains what the measurements mean together, and states plainly what is unavailable or not established. She transforms complexity into clarity.
 
 TARGET CUSTOMERS
-• Individual investors seeking institutional-quality situational awareness
+• Individual investors seeking structural situational awareness
 • Active traders who need regime context before executing
 • Financial advisers who want to communicate macro conditions to clients
 • Enterprise clients requiring embedded macro intelligence in their workflows
@@ -401,7 +402,7 @@ const maxW: React.CSSProperties = { maxWidth: "900px", margin: "0 auto", padding
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function Press() {
-  useSEO({ title: "Press | FAULTLINE", description: "Institutional press package for FAULTLINE — the AI Market Intelligence Operating System powered by PLATO. Press releases, fact sheets, brand standards, and media assets." });
+  useSEO({ title: "Press | FAULTLINE", description: "Press package for FAULTLINE — the AI Market Intelligence Operating System powered by PLATO. Press releases, fact sheets, brand standards, and media assets." });
   const [contactCopied, setContactCopied] = useState(false);
 
   return (
@@ -421,12 +422,12 @@ export default function Press() {
 
       {/* ── Cover / Hero ── */}
       <section style={{ maxWidth: "900px", margin: "0 auto", padding: "100px 24px 80px" }}>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.4em", color: "rgba(0,212,255,0.6)", marginBottom: "24px" }}>INSTITUTIONAL PRESS PACKAGE · JULY 2026</div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.4em", color: "rgba(0,212,255,0.6)", marginBottom: "24px" }}>PRESS PACKAGE · JULY 2026</div>
         <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: "clamp(36px, 6vw, 64px)", fontWeight: 700, letterSpacing: "0.04em", color: "#F0F4FF", lineHeight: 1.05, marginBottom: "28px" }}>
           The Intelligence<br />Behind the Market.
         </h1>
         <p style={{ ...prose, fontSize: "16px", maxWidth: "580px", color: "#CBD5E1", marginBottom: "40px" }}>
-          FAULTLINE is an AI Market Intelligence Operating System. It monitors the economic, financial, and market fault lines where stress builds beneath the surface — detecting regime shifts before they become obvious in price action.
+          FAULTLINE is an AI Market Intelligence Operating System. It monitors the economic, financial, and market fault lines where stress builds beneath the surface and shows where systemic pressure is building. See the pressure before the break.
         </p>
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           <a href="mailto:press@getfaultline.live" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", letterSpacing: "0.2em", color: "#050608", background: "#00D4FF", padding: "12px 24px", borderRadius: "6px", textDecoration: "none", fontWeight: 700 }}>EMAIL PRESS TEAM →</a>
@@ -454,7 +455,7 @@ export default function Press() {
             That asymmetry is not a feature of markets. It is a failure of infrastructure. And it is the problem FAULTLINE was built to solve.
           </p>
           <p style={prose}>
-            We built PLATO — our AI intelligence layer — to do what no single analyst can: read ten live market engines simultaneously, identify where they agree, surface where they diverge, and synthesise everything into a single coherent picture of what is building beneath the surface. Not a prediction. Not a recommendation. A clear, evidence-based understanding of the current state of the system.
+            FAULTLINE synthesizes multiple market-risk engines into one decision framework. Not a prediction. Not a recommendation. A clear, evidence-based understanding of the current state of the system.
           </p>
           <p style={prose}>
             Our mission is straightforward: to help every investor understand markets with greater clarity through evidence-based intelligence. Not to replace human judgment — to make it better informed.
@@ -477,11 +478,11 @@ export default function Press() {
         <SectionHeading>FAULTLINE in Under Two Minutes</SectionHeading>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px", marginBottom: "32px" }}>
           {[
-            { label: "WHAT IT IS", body: "An AI Market Intelligence Operating System that detects regime shifts, systemic pressure, and structural risk before markets reprice them." },
+            { label: "WHAT IT IS", body: "An AI Market Intelligence Operating System that identifies and interprets systemic pressure, regime change, and structural risk building beneath the surface." },
             { label: "THE PROBLEM", body: "Information is abundant. Understanding is scarce. Individual investors lack the structural situational awareness that institutional risk managers use as a matter of course." },
-            { label: "WHY NOW", body: "The convergence of AI capability, modern data infrastructure, and retail investor sophistication has made institutional-quality intelligence deliverable at scale for the first time." },
-            { label: "KEY DIFFERENTIATOR", body: "FAULTLINE begins with the state of the system — not a stock pick. PLATO synthesises ten live engines before every response. No other platform does this." },
-            { label: "CORE TECHNOLOGY", body: "Seismograph™ · Pressure Index™ · Ten-engine synthesis · Historical Analog Engine · Probability Engine · PLATO intelligence layer." },
+            { label: "WHY NOW", body: "The convergence of AI capability, modern data infrastructure, and retail investor sophistication makes structural market intelligence practical for individual investors." },
+            { label: "KEY DIFFERENTIATOR", body: "FAULTLINE begins with the state of the system — not a stock pick. Every surface and every PLATO answer reads the same published market state, and every Pressure Index input, weight, and band is documented." },
+            { label: "CORE TECHNOLOGY", body: "Pressure Index™ · Seismograph™ · Shared market state · Historical Analog Engine · Probability Engine · PLATO interpretation layer." },
             { label: "LONG-TERM VISION", body: "To become the world's most trusted AI Market Intelligence Operating System — the platform serious investors rely on to understand what markets are communicating before they move." },
           ].map((item) => (
             <div key={item.label} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "10px", padding: "24px" }}>
@@ -509,16 +510,16 @@ export default function Press() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "32px" }}>
           <div style={card}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.3em", color: "rgba(0,212,255,0.6)", marginBottom: "12px" }}>WHO SHE IS</div>
-            <p style={{ ...prose, marginBottom: 0 }}>PLATO — Spirit of FAULTLINE — is the unified intelligence interface of FAULTLINE. She is not a chatbot. She is a continuously active intelligence layer that reads the full market context at all times and synthesises it into clear, evidence-based understanding.</p>
+            <p style={{ ...prose, marginBottom: 0 }}>PLATO — Spirit of FAULTLINE — is the unified intelligence interface of FAULTLINE. She is not a chatbot. She is the interpretation layer that reads FAULTLINE's persisted market state and turns it into clear, evidence-based understanding.</p>
           </div>
           <div style={card}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.3em", color: "rgba(0,212,255,0.6)", marginBottom: "12px" }}>WHAT SHE DOES</div>
-            <p style={{ ...prose, marginBottom: 0 }}>Before answering any question, PLATO evaluates all ten FAULTLINE engines, identifies where they agree and where they diverge, and synthesises a single coherent market assessment. She transforms complexity into clarity.</p>
+            <p style={{ ...prose, marginBottom: 0 }}>PLATO answers from the same market state every surface reads — pressure, regime, historical resemblance, crypto context, and signals — explains what those readings mean together, and states plainly when an input is unavailable. She transforms complexity into clarity.</p>
           </div>
         </div>
         <div style={{ ...card, borderColor: "rgba(0,212,255,0.12)", background: "rgba(0,212,255,0.02)" }}>
           <blockquote style={{ borderLeft: "2px solid rgba(0,212,255,0.5)", paddingLeft: "24px", margin: 0, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "16px", color: "#CBD5E1", fontStyle: "italic", lineHeight: 1.75 }}>
-            "Most investors see price action. PLATO sees the structural conditions beneath it. Every time a user asks PLATO a question, she has already read the full market context across ten live engines. That is not a chatbot. That is an intelligence layer."
+            "Most investors see price action. PLATO sees the structural conditions beneath it. FAULTLINE synthesizes multiple market-risk engines into one decision framework. That is not a chatbot. That is an intelligence layer."
             <div style={{ fontStyle: "normal", fontSize: "11px", color: "#64748B", marginTop: "12px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em" }}>JT · FOUNDER · PHOENIX SYSTEMS</div>
           </blockquote>
         </div>
@@ -530,13 +531,13 @@ export default function Press() {
       <section style={{ ...maxW, padding: "80px 24px" }}>
         <SectionEyebrow text="Architecture" />
         <SectionHeading>How FAULTLINE Thinks</SectionHeading>
-        <p style={{ ...prose, maxWidth: "600px" }}>Every conclusion FAULTLINE generates is evidence-based and derived from multiple intelligence engines. No single data point drives a conclusion. PLATO synthesises the full stack before speaking.</p>
+        <p style={{ ...prose, maxWidth: "600px" }}>Every conclusion FAULTLINE generates is evidence-based and traceable to the readings that produced it. No single data point drives a conclusion. PLATO interprets the shared market state; it does not rescore it.</p>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0", margin: "40px 0" }}>
           {[
-            { label: "Live Market Data", sub: "FRED · Market Feeds · On-Chain · Credit Markets", color: "#64748B" },
+            { label: "Market & Economic Data", sub: "FRED · Polygon · Yahoo Finance · CoinGecko", color: "#64748B" },
             { label: "Pressure Index™", sub: "0–100 Composite Systemic Stress Score", color: "#94A3B8" },
-            { label: "Ten Intelligence Engines", sub: "Regime · Liquidity · Treasury · Volatility · Credit · Analog · Probability · Crypto · Signal", color: "#CBD5E1" },
-            { label: "Seismograph™", sub: "Unified Systemic Pressure Instrument", color: "#E2E8F0" },
+            { label: "Intelligence Engines", sub: "Regime · Liquidity · Treasury · Volatility · Credit · Analog · Probability · Crypto · Signal", color: "#CBD5E1" },
+            { label: "Seismograph™", sub: "Shared market state and pressure record over time", color: "#E2E8F0" },
             { label: "PLATO", sub: "Spirit of FAULTLINE", color: "#00D4FF" },
             { label: "Clear Market Understanding", sub: "What is happening · Why · How long it has been building", color: "#F0F4FF" },
           ].map((step, i, arr) => (
@@ -592,18 +593,18 @@ export default function Press() {
         <p style={{ ...prose, maxWidth: "600px" }}>FAULTLINE is not a collection of features. It is one connected operating system. Every module feeds into PLATO. Every conclusion is contextualised against the current regime. Every output is traceable to the engines that produced it.</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "10px", marginTop: "32px" }}>
           {[
-            { name: "Seismograph™", role: "Primary intelligence instrument. Continuous composite of systemic stress. Tracks how pressure has built over time." },
+            { name: "Seismograph™", role: "The record of Pressure Index readings over time. Shows how pressure has built, not just today's level." },
             { name: "Pressure Index™", role: "0–100 composite score. Five regime classifications. The single most important number on the platform." },
-            { name: "PLATO", role: "The unified intelligence interface. Synthesises all ten engines before every response. Transforms complexity into clarity." },
-            { name: "Regime Detection", role: "Classifies current market conditions into one of five regimes. Drives all downstream intelligence." },
-            { name: "Historical Analog Engine", role: "Identifies the closest historical parallels. Surfaces forward return distributions — not predictions, but precedents." },
+            { name: "PLATO", role: "The unified intelligence interface. Interprets the shared market state and discloses unavailable inputs. Transforms complexity into clarity." },
+            { name: "Regime Detection", role: "Classifies current conditions into one of five bands, LOW RISK to SYSTEMIC CRISIS. The equity, crypto, and interpretation layers read it." },
+            { name: "Historical Analog Engine", role: "Ranks resemblance to hand-set reference profiles of past stress episodes — precedents, not predictions." },
             { name: "Probability Engine", role: "Assigns regime transition probabilities across 1M, 3M, 6M, and 12M horizons." },
-            { name: "Signal Intelligence", role: "Institutional-grade directional signals across equities, crypto, and macro. Always contextualised against the current regime." },
+            { name: "Signal Intelligence", role: "Directional labels across equities and crypto. Always contextualised against the current regime." },
             { name: "Decision Engine", role: "Evaluates trade ideas against the current macro regime, pressure environment, and signal consensus." },
             { name: "Day Trade Intelligence", role: "Intraday intelligence layer for active traders. Regime-aware setups and regularly refreshed PLATO synthesis." },
             { name: "Pre-Flight Briefing", role: "Structured pre-session intelligence briefing. PLATO's read on the current environment before each trading session." },
             { name: "Symbol Intelligence", role: "Deep-dive analysis for individual stocks and crypto assets. Pressure context, regime overlay, and PLATO synthesis." },
-            { name: "Crypto Hub", role: "Dedicated crypto intelligence layer. On-chain data, crypto regime classification, and PLATO crypto synthesis." },
+            { name: "Crypto Hub", role: "Dedicated crypto intelligence layer. CoinGecko market statistics, crypto regime classification, and PLATO crypto interpretation." },
             { name: "Portfolio Intelligence", role: "Portfolio-level regime awareness. Surfaces concentration risk, regime misalignment, and hedging considerations." },
             { name: "Aftershock Engine", role: "Detects secondary market stress events and systemic contagion risk following initial regime shifts." },
             { name: "Market Scenarios", role: "Probabilistic scenario analysis for key macro events. Likelihood scores and potential market impact." },
@@ -638,7 +639,7 @@ export default function Press() {
           ))}
         </div>
         <p style={{ ...prose, marginTop: "24px", maxWidth: "600px" }}>
-          FAULTLINE does not display markets. It interprets them. The distinction is the difference between a weather station and a meteorologist — one reports conditions, the other explains what they mean and what is likely to happen next.
+          FAULTLINE does not display markets. It interprets them. The distinction is the difference between a weather station and a meteorologist — one reports conditions, the other explains what they mean and what could come next.
         </p>
       </section>
 
@@ -670,9 +671,9 @@ export default function Press() {
             { label: "CATEGORY", value: "AI Market Intelligence OS" },
             { label: "WEBSITE", value: "getfaultline.live" },
             { label: "AVAILABILITY", value: "Web + PWA (iOS / Android)" },
-            { label: "INTELLIGENCE ENGINES", value: "10 Live Engines" },
+            { label: "PRIMARY METRIC", value: "Pressure Index™ (0–100)" },
             { label: "AI LAYER", value: "PLATO" },
-            { label: "TIERS", value: "Free · Core · Pro · Founding" },
+            { label: "ACCESS", value: "Free account · paid plans not on sale" },
             { label: "PRESS CONTACT", value: "press@getfaultline.live" },
           ].map((fact) => (
             <div key={fact.label} style={{ padding: "20px 24px", background: "#050608" }}>
@@ -692,26 +693,26 @@ export default function Press() {
         <div style={card}>
           <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", letterSpacing: "0.2em", color: "#64748B", marginBottom: "20px" }}>FOR IMMEDIATE RELEASE · PHOENIX SYSTEMS PRESS TEAM · press@getfaultline.live</p>
           <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: "22px", fontWeight: 700, color: "#F0F4FF", lineHeight: 1.3, marginBottom: "8px", letterSpacing: "0.03em" }}>
-            Phoenix Systems Introduces PLATO — The AI Intelligence Layer Powering FAULTLINE's Ten-Engine Market Synthesis
+            Phoenix Systems Introduces PLATO — The AI Interpretation Layer of FAULTLINE's Structural Market Intelligence
           </h3>
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "rgba(0,212,255,0.7)", fontStyle: "italic", marginBottom: "28px", lineHeight: 1.6 }}>
-            PLATO synthesises ten live market engines as new data is published, delivering institutional-grade macro intelligence to individual investors before conditions reprice
+            PLATO explains FAULTLINE's systemic-pressure readings in plain language, so individual investors can see where pressure is building beneath the surface
           </p>
           <p style={prose}>
-            Phoenix Systems, an AI-first technology company focused on decision intelligence, today announced PLATO, the AI intelligence layer at the core of FAULTLINE, its macroeconomic risk intelligence platform. PLATO — Spirit of FAULTLINE — continuously synthesises ten live market engines to detect regime shifts, systemic pressure, and structural risk before they become visible in price action.
+            Phoenix Systems, an AI-first technology company focused on decision intelligence, today announced PLATO, the AI intelligence layer at the core of FAULTLINE, its macroeconomic risk intelligence platform. PLATO — Spirit of FAULTLINE — reads FAULTLINE's shared market state and explains where systemic pressure, regime change, and structural risk are building beneath the surface.
           </p>
           <p style={prose}>
-            Unlike AI assistants that answer questions in isolation, PLATO evaluates all ten FAULTLINE engines before generating any response: Market Regime, Pressure Index, Liquidity Conditions, Treasury Stress, Volatility Environment, Credit Risk, Historical Analog, Probability Distribution, Crypto Intelligence, and Signal Intelligence. PLATO identifies where engines agree, where they diverge, and what the divergence means — delivering a synthesised intelligence briefing rather than a raw data output.
+            Unlike AI assistants that answer questions in isolation, PLATO answers from the same persisted market state every FAULTLINE surface reads: the Pressure Index and its vectors, regime readings, historical resemblance, crypto context, and signals. PLATO explains what those readings mean together and states plainly when an input is unavailable or not supported by governed evidence — delivering an interpretation rather than a raw data output.
           </p>
           <blockquote style={{ borderLeft: "2px solid rgba(0,212,255,0.4)", paddingLeft: "20px", margin: "24px 0", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "15px", color: "#CBD5E1", fontStyle: "italic", lineHeight: 1.7 }}>
-            "Most investors see price action. PLATO sees the structural conditions beneath it. Every time a user asks PLATO a question, she has already read the full market context across ten live engines. That is not a chatbot. That is an intelligence layer."
+            "Most investors see price action. PLATO sees the structural conditions beneath it. FAULTLINE synthesizes multiple market-risk engines into one decision framework. That is not a chatbot. That is an intelligence layer."
             <div style={{ fontStyle: "normal", fontSize: "11px", color: "#64748B", marginTop: "8px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em" }}>JT · FOUNDER · PHOENIX SYSTEMS</div>
           </blockquote>
           <p style={prose}>
             FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The public Pressure Index and methodology are free to read; signed-in access starts with a free account. Paid plans are not on sale.
           </p>
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", lineHeight: 1.7, margin: 0, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "16px" }}>
-            FAULTLINE is a macroeconomic risk intelligence platform. It provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice. Past performance of any indicator or signal does not guarantee future results. All content is for informational purposes only.
+            FAULTLINE is a macroeconomic risk intelligence platform. {PUBLIC_DISCLAIMER} It is not a financial adviser. Past performance of any indicator or signal does not guarantee future results.
           </p>
         </div>
       </section>
@@ -726,19 +727,19 @@ export default function Press() {
           {([
             {
               q: "What is FAULTLINE?",
-              a: "FAULTLINE is an AI Market Intelligence Operating System that continuously monitors the economic, financial, and market fault lines where stress builds beneath the surface. It detects regime shifts before they become obvious in price action — giving investors, traders, and analysts a continuous, integrated view of systemic risk before it reprices. At its core is PLATO, an AI intelligence layer that synthesises ten live market engines to deliver institutional-grade macro intelligence in plain language.",
+              a: "FAULTLINE is an AI Market Intelligence Operating System that monitors the economic, financial, and market fault lines where stress builds beneath the surface. It identifies where systemic pressure is building across credit, funding, rates, macro conditions, equities, and crypto — giving investors, traders, and analysts an integrated view of systemic risk. At its core is PLATO, an AI interpretation layer that explains those readings in plain language. FAULTLINE does not predict a specific crash or name a date.",
             },
             {
               q: "What is the Pressure Index™?",
-              a: "The Pressure Index™ is FAULTLINE's primary composite metric — a continuously updated 0–100 score that synthesises macroeconomic, financial, and market stress indicators across multiple data sources. It drives FAULTLINE's regime classification engine, which categorises current conditions into one of five regimes: Low Risk, Moderate Risk, Elevated Risk, High Risk, and Critical. The Pressure Index™ is the single most important number on the platform — the first thing PLATO reads before generating any response.",
+              a: "The Pressure Index™ is FAULTLINE's primary composite metric — a 0–100 score that combines six weighted vectors built from eight FRED series (high-yield spread, SOFR, 10-year and 2-year yields, CPI, PPI, federal funds, unemployment) and one static AI-concentration baseline. It is recalculated when source data is published; monthly series carry publication lag. Its bands set the regime label: LOW RISK, MODERATE RISK, ELEVATED RISK, HIGH STRESS, and SYSTEMIC CRISIS. It measures pressure inside this framework; it is not a crash forecast. The full method is published at getfaultline.live/methodology.",
             },
             {
               q: "Who is PLATO?",
-              a: "PLATO — Spirit of FAULTLINE — is the AI intelligence layer at the core of FAULTLINE. She is not a chatbot. She is a continuously active intelligence layer that reads the full market context at all times. Before answering any question, PLATO evaluates all ten FAULTLINE engines, identifies where they agree and where they diverge, and synthesises a single coherent market assessment. PLATO transforms complexity into clarity.",
+              a: "PLATO — Spirit of FAULTLINE — is the AI interpretation layer at the core of FAULTLINE. She is not a chatbot. Each time she answers, PLATO reads the persisted market state every FAULTLINE surface uses — pressure, regime, historical resemblance, crypto context, and signals — explains what those readings mean together, and states plainly when an input is unavailable. PLATO transforms complexity into clarity.",
             },
             {
               q: "How is this different from Bloomberg, TradingView, Yahoo Finance, or generic AI?",
-              a: "Bloomberg provides information. Yahoo Finance provides market data. TradingView provides charts. Generic AI provides general answers. FAULTLINE provides market intelligence — a continuous, synthesised understanding of what is building beneath the surface of markets before it becomes obvious in price action. The distinction is the difference between a weather station and a meteorologist. FAULTLINE does not display markets. It interprets them.",
+              a: "Bloomberg provides information. Yahoo Finance provides market data. TradingView provides charts. Generic AI provides general answers. FAULTLINE provides market intelligence — a synthesised understanding of what is building beneath the surface of markets. The distinction is the difference between a weather station and a meteorologist. FAULTLINE does not display markets. It interprets them.",
             },
             {
               q: "Does FAULTLINE provide investment advice?",
@@ -746,7 +747,7 @@ export default function Press() {
             },
             {
               q: "How are conclusions generated?",
-              a: "Every FAULTLINE conclusion is derived from multiple intelligence engines and historical precedents. PLATO evaluates all ten engines before generating any response — identifying consensus across engines, surfacing divergence where it exists, and synthesising a coherent assessment that is traceable to the data that produced it. No single indicator drives a conclusion. No black-box model produces an unexplained output.",
+              a: "Every FAULTLINE conclusion is derived from the published engine readings and historical reference profiles. PLATO answers only from the supplied market state and evidence — surfacing agreement or conflict only where the evidence establishes it, and disclosing unavailable inputs — so each assessment is traceable to the data that produced it. No single indicator drives a conclusion. No black-box model produces an unexplained output.",
             },
             {
               q: "How often is intelligence updated?",
@@ -754,7 +755,7 @@ export default function Press() {
             },
             {
               q: "What data powers the platform?",
-              a: "FAULTLINE aggregates data from FRED (Federal Reserve Economic Data), live market feeds, institutional flow data, on-chain crypto data, credit market feeds, and proprietary composite indicators. The platform synthesises data across macroeconomic, financial, and market domains — covering credit stress, liquidity conditions, volatility, yield curve dynamics, systemic risk indicators, and digital asset markets.",
+              a: "The Pressure Index reads eight FRED (Federal Reserve Economic Data) series plus one static reference value. A separate systemic-regime model reads a broader FRED panel, including investment-grade spreads, NFCI, the St. Louis Fed Financial Stress Index, the VIX close, and the S&P 500. Equity data comes from Polygon daily aggregates and Yahoo Finance quotes; crypto data comes from CoinGecko. FAULTLINE does not ingest on-chain or institutional-flow data. Daily FRED values are the latest published observations and monthly series lag; none of it is a tick feed.",
             },
           ] as Array<{ q: string; a: string }>).map((item, i) => (
             <div key={i} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "22px" }}>
@@ -980,7 +981,7 @@ export default function Press() {
       {/* ── Disclaimer ── */}
       <section style={{ ...maxW, padding: "0 24px 40px" }}>
         <p style={{ fontSize: "11px", color: "#4B5563", lineHeight: 1.7, borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "24px" }}>
-          FAULTLINE is a macroeconomic risk intelligence platform developed by Phoenix Systems. It provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice. Past performance of any indicator or signal does not guarantee future results. All content is for informational purposes only.
+          FAULTLINE is a macroeconomic risk intelligence platform developed by Phoenix Systems. {PUBLIC_DISCLAIMER} It is not a financial adviser. Past performance of any indicator or signal does not guarantee future results.
         </p>
       </section>
 

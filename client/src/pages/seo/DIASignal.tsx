@@ -21,7 +21,7 @@ export default function DIASignal() {
         { icon: "◈", title: "Regularly Refreshed DIA Signal", desc: "FAULTLINE's regularly refreshed signal for DIA — the Dow Jones Industrial Average ETF." },
         { icon: "◎", title: "Macro Regime Fit", desc: "How does the current macro regime affect Dow Jones large-cap industrials and financials?" },
         { icon: "⬡", title: "Credit and Rate Sensitivity", desc: "DIA's sensitivity to interest rates, credit conditions, and Fed policy changes." },
-        { icon: "◈", title: "Recession Risk Impact", desc: "How recession probability and economic slowdown affect the Dow Jones 30 components." },
+        { icon: "◈", title: "Recession Risk Impact", desc: "How recession risk and economic slowdown affect the Dow Jones 30 components." },
         { icon: "◎", title: "Historical Analog Matching", desc: "Compare current DIA conditions against historical Dow Jones environments." },
         { icon: "⬡", title: "Pressure Index Context", desc: "How the FAULTLINE Pressure Index reading affects the outlook for DIA." },
       ]}
@@ -32,7 +32,7 @@ export default function DIASignal() {
         },
         {
           heading: "FAULTLINE's Current Signal and Regime Fit for DIA",
-          body: `FAULTLINE's current outlook for DIA is determined by a proprietary algorithm that assesses multiple quantitative and qualitative factors. This includes analyzing price momentum, volume trends, and relative strength against key benchmarks. Beyond a simple buy/sell signal, we evaluate DIA's 'regime fit' – identifying the prevailing market conditions (e.g., inflationary, deflationary, growth, recessionary) and how well DIA typically performs within such environments. This context is crucial because a strong signal in one regime might be less reliable in another. Our analysis provides a probability-weighted assessment, offering a dynamic view that adapts to changing market landscapes. Understanding the current signal in conjunction with its regime fit provides a robust framework for interpreting DIA's near-term prospects.`, 
+          body: `FAULTLINE's DIA signal is computed from daily price data together with the current Pressure Index reading, its vectors, and the regime band. Beyond a simple classification, it shows DIA's regime fit: how the current band (LOW RISK through SYSTEMIC CRISIS) bears on the ETF. This context matters because a strong price setup in one regime can be less reliable in another.`, 
         },
         {
           heading: "Industrial Exposure, Macro Sensitivity, and 'What Changed' Context",
@@ -40,7 +40,7 @@ export default function DIASignal() {
         },
         {
           heading: "Why DIA's Outlook Matters and What Could Change It",
-          body: `The outlook for DIA is significant not only for investors holding the ETF but also as a proxy for broader market sentiment and economic health. A robust DIA often signals confidence in corporate earnings and economic expansion, while weakness can foreshadow broader market corrections or economic slowdowns. FAULTLINE's analysis helps investors anticipate these shifts, providing an edge in risk management and portfolio positioning. Key conditions that could change FAULTLINE's outlook for DIA include significant shifts in monetary policy expectations, unexpected economic data releases (e.g., inflation, employment), geopolitical events impacting global trade, or a material change in the earnings outlook for its constituent companies. Our system continuously monitors these factors, providing timely updates to the DIA signal.`, 
+          body: `The outlook for DIA is significant not only for investors holding the ETF but also as a proxy for broader market sentiment and economic health. A robust DIA often signals confidence in corporate earnings and economic expansion, while weakness can foreshadow broader market corrections or economic slowdowns. FAULTLINE's regime context shows where systemic pressure is building. Key conditions that could change FAULTLINE's outlook for DIA include significant shifts in monetary policy expectations, unexpected economic data releases (e.g., inflation, employment), geopolitical events impacting global trade, or a material change in the earnings outlook for its constituent companies. Of these, FAULTLINE reads monetary policy, inflation, and employment through FRED; it does not ingest geopolitical events or earnings forecasts.`, 
         },
       ]}
       faqs={[
@@ -62,7 +62,7 @@ export default function DIASignal() {
         },
         {
           question: "How often is the DIA outlook updated on FAULTLINE?",
-          answer: "FAULTLINE's outlook for DIA is updated regularly as market conditions and underlying data points evolve. Our system continuously processes new information to ensure the most current and relevant analysis is available to users.",
+          answer: "FAULTLINE's outlook for DIA is updated regularly as market conditions and underlying data points evolve. Our system processes new information as it is published to ensure the most current and relevant analysis is available to users.",
         },
         {
           question: "Can I see historical DIA outlooks on FAULTLINE?",

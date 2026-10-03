@@ -27,7 +27,7 @@ const LearnInflationAndStocks = () => {
       contentSections={[
         {
           heading: 'What is Inflation and How Does it Affect Stocks?',
-          body: `Inflation refers to the rate at which the general level of prices for goods and services is rising, and subsequently, purchasing power is falling. When inflation is moderate and stable, it can be a sign of a healthy, growing economy, which generally benefits corporate earnings and stock prices. However, high or volatile inflation can erode corporate profits, increase borrowing costs, and reduce consumer spending, leading to lower stock valuations. Companies with strong pricing power or those that benefit from rising commodity prices may fare better, while those with high fixed costs or reliance on consumer discretionary spending can suffer. Understanding this fundamental dynamic is crucial for investors. FAULTLINE provides tools to track economic indicators that signal inflationary pressures, helping you anticipate market shifts. This foundational knowledge is essential before diving into more complex market dynamics. The immediate impact often depends on whether inflation is demand-driven or cost-push, each requiring a different market response.`, 
+          body: `Inflation refers to the rate at which the general level of prices for goods and services is rising, and subsequently, purchasing power is falling. When inflation is moderate and stable, it can be a sign of a healthy, growing economy, which generally benefits corporate earnings and stock prices. However, high or volatile inflation can erode corporate profits, increase borrowing costs, and reduce consumer spending, leading to lower stock valuations. Companies with strong pricing power or those that benefit from rising commodity prices may fare better, while those with high fixed costs or reliance on consumer discretionary spending can suffer. Understanding this fundamental dynamic is crucial for investors. FAULTLINE reads CPI and PPI from FRED as part of the Pressure Index, showing where inflation pressure is building. This foundational knowledge is essential before diving into more complex market dynamics. The immediate impact often depends on whether inflation is demand-driven or cost-push, each requiring a different market response.`, 
         },
         {
           heading: 'Why Inflation\'s Impact on Markets Matters to Investors',
@@ -39,7 +39,7 @@ const LearnInflationAndStocks = () => {
         },
         {
           heading: 'How FAULTLINE Monitors and Measures Inflation\'s Market Impact',
-          body: `FAULTLINE offers a sophisticated suite of tools designed to monitor inflation's impact on financial markets. Our platform integrates regularly refreshed economic data, including CPI, PPI, and wage growth, with market sentiment indicators and Federal Reserve communications. We provide proprietary metrics, such as the Pressure Index and Market Regime Tracker, which help identify periods of rising inflationary pressure and their potential effects on different asset classes. By analyzing historical data and current trends, FAULTLINE helps users understand 'what would change the outlook' for inflation and its implications for their portfolios. Our goal is to equip investors with the market intelligence needed to make informed decisions, offering a clear disclaimer that FAULTLINE is for market intelligence and education, not personalized financial advice. We provide the context to understand 'why it matters' for your investment strategy.`, 
+          body: `FAULTLINE offers a sophisticated suite of tools designed to monitor inflation's impact on financial markets. The Pressure Index reads CPI, PPI, and the federal funds rate from FRED; FAULTLINE does not ingest wage-growth data, sentiment indicators, or Fed communications. We provide proprietary metrics, such as the Pressure Index and Market Regime Tracker, which help identify periods of rising inflationary pressure and their potential effects on different asset classes. By analyzing historical data and current trends, FAULTLINE helps users understand 'what would change the outlook' for inflation and its implications for their portfolios. Our goal is to equip investors with the market intelligence needed to make informed decisions, offering a clear disclaimer that FAULTLINE is for market intelligence and education, not personalized financial advice. We provide the context to understand 'why it matters' for your investment strategy.`, 
         },
       ]}
       faqs={[
@@ -61,7 +61,7 @@ const LearnInflationAndStocks = () => {
         },
         {
           question: 'How does FAULTLINE help investors navigate inflation?',
-          answer: 'FAULTLINE provides market intelligence tools like the Pressure Index and Market Regime Tracker, along with data-driven insights into economic indicators and Fed policy, to help investors understand and anticipate inflation\'s market impact.',
+          answer: 'FAULTLINE provides market intelligence tools like the Pressure Index and Market Regime Tracker, along with data-driven insights into economic indicators and Fed policy, to help investors understand inflation\'s market impact.',
         },
       ]}
       internalLinks={[

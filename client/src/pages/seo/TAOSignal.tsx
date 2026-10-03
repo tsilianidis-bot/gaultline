@@ -4,22 +4,22 @@ export default function TAOSignal() {
   return (
     <SEOLandingPage
       seo={{
-        title: "TAO Signal — Bittensor Analysis, Risk Score & Key Levels | FAULTLINE",
-        description: "TAO (Bittensor) signal analysis: macro alignment score, AI crypto exposure rating, key support and resistance levels, bull and bear case scenarios, and regime-based signal classification.",
+        title: "TAO Signal — Bittensor Analysis, Risk Score | FAULTLINE",
+        description: "TAO (Bittensor) signal analysis: macro alignment score, AI crypto exposure rating, bull and bear case scenarios, and regime-based signal classification.",
         canonical: "/crypto/tao",
       }}
       badge="TAO SIGNAL INTELLIGENCE"
       headline={"TAO Signal\nBittensor AI Crypto Risk & Macro Analysis"}
-      subheadline="FAULTLINE provides regularly refreshed macro-aligned signal analysis for Bittensor (TAO) — the leading decentralized AI network. Track TAO's regime fit score, AI crypto exposure, key price levels, and bull/bear case scenarios."
+      subheadline="FAULTLINE provides regularly refreshed macro-aligned signal analysis for Bittensor (TAO) — the leading decentralized AI network. Track TAO's regime fit score, AI crypto exposure, and bull/bear case scenarios."
       ctaLabel="ANALYZE TAO NOW"
       ctaHref="/app/crypto"
       accentColor="#E6007A"
       features={[
         { icon: "◈", title: "AI Crypto Exposure Rating", desc: "TAO is the highest-beta play on the intersection of AI and crypto. FAULTLINE scores TAO's sensitivity to AI narrative momentum and crypto market cycles." },
         { icon: "◎", title: "Macro Regime Alignment", desc: "TAO requires a risk-on macro environment AND positive AI narrative momentum simultaneously. FAULTLINE tracks both conditions." },
-        { icon: "⬡", title: "Key Price Levels", desc: "Critical TAO support and resistance levels updated continuously from Polygon.io data." },
+        { icon: "⬡", title: "Price Levels", desc: "FAULTLINE does not publish price targets or support/resistance levels on this page." },
         { icon: "◈", title: "BTC/ETH Correlation", desc: "TAO's price action is correlated with both BTC (crypto market beta) and AI stock momentum. FAULTLINE tracks both correlations." },
-        { icon: "◎", title: "Subnet Activity Monitor", desc: "Bittensor's subnet ecosystem growth is a fundamental driver of TAO demand. FAULTLINE tracks subnet launches and validator activity." },
+        { icon: "◎", title: "Subnet Ecosystem Context", desc: "Bittensor's subnet ecosystem growth is a fundamental driver of TAO demand. This is qualitative context; FAULTLINE does not ingest subnet or validator data." },
         { icon: "⬡", title: "Risk Score (0-100)", desc: "A composite TAO risk score aggregating macro alignment, crypto market conditions, AI narrative momentum, and technical structure." },
       ]}
       contentSections={[
@@ -29,7 +29,7 @@ export default function TAOSignal() {
 
 Bittensor operates in the AI Crypto sector — the intersection of artificial intelligence and decentralized blockchain technology. The protocol is built on a Proof of Intelligence consensus mechanism, where validators assess the quality of AI model outputs and distribute TAO rewards accordingly.
 
-The Bittensor network is organized into subnets — specialized AI marketplaces focused on specific tasks such as text generation, image generation, financial prediction, and data validation. Each subnet has its own token (subnet token) that is backed by TAO. As of mid-2026, Bittensor has over 60 active subnets with hundreds of validators and miners.
+The Bittensor network is organized into subnets — specialized AI marketplaces focused on specific tasks such as text generation, image generation, financial prediction, and data validation. Each subnet has its own token (subnet token) that is backed by TAO. Each subnet has its own validators and miners, and the number of active subnets has grown over time.
 
 TAO's tokenomics mirror Bitcoin's: a fixed maximum supply of 21 million TAO, with halving events that reduce issuance over time. This fixed supply combined with growing network demand creates a deflationary pressure on TAO supply that is a key component of the bull case.
 
@@ -46,16 +46,16 @@ AI Narrative Momentum: TAO is also an AI asset, meaning its price is influenced 
 The FAULTLINE TAO signal is most bullish when BOTH conditions are met: crypto market in a risk-on phase (BTC dominance falling, ETH/BTC rising) AND AI narrative momentum is strong (AI stocks outperforming, AI capex guidance strong). When only one condition is met, the signal is WATCH. When neither condition is met, the signal is HOLD or SELL.`,
         },
         {
-          heading: "TAO Key Price Levels and Historical Volatility",
-          body: `TAO is among the most volatile assets in the FAULTLINE signal universe. Historical drawdowns from cycle highs have exceeded 80% during bear market phases. This volatility reflects TAO's position at the intersection of two high-beta themes (AI and crypto) and its relatively small market cap compared to BTC or ETH.
+          heading: "How Technical Levels Are Read: TAO, and Its Historical Volatility",
+          body: `TAO is among the most volatile assets in the FAULTLINE signal universe. Its drawdown from its March 2024 closing high reached approximately 80% by February 2026. This volatility reflects TAO's position at the intersection of two high-beta themes (AI and crypto) and its relatively small market cap compared to BTC or ETH.
 
-FAULTLINE tracks the following key TAO price levels:
+FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:
 
 Major Support Zones: Previous cycle highs that became support after being broken, major moving averages (50-day, 200-day), and key psychological round numbers.
 
-Resistance Clusters: Previous all-time highs before they were broken, major round numbers, and options gamma walls.
+Resistance Clusters: Prior peaks before they were broken, and major round numbers.
 
-Historical Context: TAO reached its all-time high in early 2024 during the convergence of the Bitcoin halving cycle and peak AI narrative momentum. The subsequent correction tested multiple support levels before stabilizing. Understanding these historical levels is essential for positioning in TAO.`,
+Historical Context: TAO set a then-record high in early 2024 during the convergence of the Bitcoin halving cycle and peak AI narrative momentum. The subsequent correction tested multiple support levels before stabilizing. Understanding these historical levels is essential for positioning in TAO.`,
         },
       ]}
       faqs={[
@@ -69,7 +69,7 @@ Historical Context: TAO reached its all-time high in early 2024 during the conve
         },
         {
           question: "How does TAO relate to AI stocks like NVDA?",
-          answer: "TAO and NVDA are both AI-themed assets, but they are fundamentally different. NVDA is an equity in a profitable semiconductor company with $130B+ in annual revenue. TAO is a crypto token in a decentralized AI protocol with no traditional revenue or earnings. They share AI narrative correlation — when AI themes are strong, both tend to benefit — but their fundamental drivers, risk profiles, and investor bases are distinct.",
+          answer: "TAO and NVDA are both AI-themed assets, but they are fundamentally different. NVDA is an equity in a profitable semiconductor company. TAO is a crypto token in a decentralized AI protocol with no traditional revenue or earnings. They share AI narrative correlation — when AI themes are strong, both tend to benefit — but their fundamental drivers, risk profiles, and investor bases are distinct.",
         },
         {
           question: "What causes TAO to go up or down?",
@@ -77,7 +77,7 @@ Historical Context: TAO reached its all-time high in early 2024 during the conve
         },
         {
           question: "How volatile is TAO compared to Bitcoin?",
-          answer: "TAO is significantly more volatile than Bitcoin. Historical drawdowns from cycle highs have exceeded 80% during bear market phases, compared to Bitcoin's typical 50-70% bear market drawdowns. This elevated volatility reflects TAO's smaller market cap, lower liquidity, and position at the intersection of two high-beta themes (AI and crypto). FAULTLINE's TAO risk score accounts for this elevated volatility.",
+          answer: "TAO is significantly more volatile than Bitcoin. Its drawdown from its March 2024 closing high reached approximately 80% by February 2026, comparable to Bitcoin's roughly 75–85% cycle bear-market drawdowns. This elevated volatility reflects TAO's smaller market cap, lower liquidity, and position at the intersection of two high-beta themes (AI and crypto). FAULTLINE's TAO risk score accounts for this elevated volatility.",
         },
       ]}
       internalLinks={[

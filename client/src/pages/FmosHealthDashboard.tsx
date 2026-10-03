@@ -524,8 +524,7 @@ export default function FmosHealthDashboard() {
       {activeTab === "engines" && (
         <div className="space-y-4">
           <p className="text-slate-400 text-sm">
-            14 FMOS engines in <code className="text-cyan-400 bg-cyan-500/10 px-1 rounded">server/fmos/</code>.
-            All engines compiled with 0 TypeScript errors.
+            {ENGINES.length} FMOS engines are listed below, from <code className="text-cyan-400 bg-cyan-500/10 px-1 rounded">server/fmos/</code>.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {ENGINES.map(engine => {
