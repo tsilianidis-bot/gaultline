@@ -1,8 +1,4 @@
-import {
-  invokeLLM,
-  type InvokeParams,
-  type InvokeResult,
-} from "./_core/llm";
+import type { InvokeParams, InvokeResult } from "./_core/llm";
 import {
   CANONICAL_DESTINATION_BY_ID,
   resolveCanonicalDestination,
@@ -18,10 +14,9 @@ import type { AshaQuestionAnalysis } from "../shared/ashaQuestionAnalysis";
 import type { CanonicalMarketState } from "../shared/marketState";
 import { evidenceNarrativePromptContract } from "../shared/evidenceContract";
 import { getCanonicalMarketState } from "./marketStateService";
-import {
-  resolveAshaModelCandidates,
-  type AshaModelResolution,
-} from "./ashaModelPolicy";
+import type { PlatoConfig } from "./plato/config";
+import { routePlatoCompletion, type PlatoBudget, type PlatoResponseValidator, type RouteDependencies } from "./plato/router";
+import { PLATO_SCENARIO_WITHHELD, withholdScenarioPercents, withholdScenarioPercentsDeep } from "./plato/scenarioWithholding";
 
 type InvokeGatewayModel = (params: InvokeParams) => Promise<InvokeResult>;
 
@@ -74,6 +69,50 @@ export function getAshaContextProvenance(
   };
 }
 
+export { PLATO_SCENARIO_WITHHELD, withholdScenarioPercents, withholdScenarioPercentsDeep } from "./plato/scenarioWithholding";
+
+/**
+ * Outlook as sent to PLATO: no scenario, regime or transition percent and no confidence number.
+ * Owner rule: a scenario/probability % may be shown only when its contract status is AVAILABLE,
+ * and none is today, so the model gets the status text and the non-numeric evidence only.
+ */
+export function outlookForModel(outlook: CanonicalMarketState["outlook"]): Record<string, unknown> {
+  const probabilities = outlook.probabilities;
+  const transitions = outlook.transitionProbabilities;
+  return {
+    scenarioProbabilities: PLATO_SCENARIO_WITHHELD,
+    scenarioBasis: {
+      primaryDriver: probabilities?.primaryDriver,
+      evidenceBasis: probabilities?.evidenceBasis,
+      historicalBasis: probabilities?.historicalBasis,
+    },
+    transitionProbabilities: PLATO_SCENARIO_WITHHELD,
+    transitionBasis: {
+      historicalBasis: transitions?.historicalBasis,
+      currentEvidence: transitions?.currentEvidence,
+    },
+    highestProbabilityPath: typeof outlook.highestProbabilityPath === "string"
+      ? withholdScenarioPercents(outlook.highestProbabilityPath)
+      : outlook.highestProbabilityPath,
+    invalidationConditions: outlook.invalidationConditions,
+    topAnalog: outlook.topAnalog,
+  };
+}
+
+/** Act as sent to PLATO: decisionSummary embeds highestProbabilityPath (marketStateService), so it carries the same percent. */
+export function actForModel(act: CanonicalMarketState["act"]): CanonicalMarketState["act"] {
+  return {
+    ...act,
+    decisionSummary: typeof act.decisionSummary === "string" ? withholdScenarioPercents(act.decisionSummary) : act.decisionSummary,
+  };
+}
+
+/** Client page supplement without any probability number or client-sent confidence. */
+export function pageSupplementForModel(page: AshaPageContext): AshaPageContext {
+  const { transitionProbability: _transition, regimeConfidence: _confidence, ...rest } = page;
+  return rest;
+}
+
 export function buildAshaCanonicalContextBlock(context: AshaGatewayContext): string {
   const { marketState } = context;
   const destination = context.destination
@@ -100,7 +139,7 @@ export function buildAshaCanonicalContextBlock(context: AshaGatewayContext): str
       evidenceConsensus: marketState.why.evidenceConsensus,
       evidenceFamilies: marketState.why.evidenceFamilies.slice(0, 10),
     },
-    outlook: marketState.outlook,
+    outlook: outlookForModel(marketState.outlook),
     watch: {
       developingConditions: marketState.watch.developingConditions.slice(0, 6),
       activePatterns: marketState.watch.activePatterns.slice(0, 6),
@@ -109,11 +148,15 @@ export function buildAshaCanonicalContextBlock(context: AshaGatewayContext): str
       accelerating: marketState.watch.accelerating,
       buildingPressure: marketState.watch.buildingPressure,
     },
-    act: marketState.act,
+    act: actForModel(marketState.act),
     history: marketState.history,
     questionAnalysis: context.questionAnalysis ?? null,
-    pageSupplement: context.page,
+    pageSupplement: pageSupplementForModel(context.page),
   };
+
+  // Belt and braces: every string in the block goes through the same filter (act, watch, why, now,
+  // warnings, questionAnalysis text, page supplement), so no other field can carry a scenario %.
+  const modelContext = withholdScenarioPercentsDeep(boundedContext);
 
   const scopeRule = context.questionAnalysis?.analysisScope === "MARKET"
     ? "QUESTION SCOPE IS MARKET. Do not retrieve, infer from, or mention active-ticker/company fundamentals, price levels, technicals, catalysts, LEAP commentary, or ticker invalidation conditions."
@@ -121,39 +164,55 @@ export function buildAshaCanonicalContextBlock(context: AshaGatewayContext): str
       ? "QUESTION SCOPE IS TICKER. Use ticker-specific evidence only when it is present in the sanitized page supplement and relevant to the user’s question."
       : "QUESTION SCOPE IS MARKET_TICKER_RELATIONSHIP. Separate broad-market evidence from the ticker-specific transmission analysis.";
 
-  return `\n\nCANONICAL FAULTLINE MARKETSTATE (SERVER-GENERATED):\n${JSON.stringify(boundedContext)}\n\nSCOPE RULE: ${scopeRule}\n\nPROVENANCE RULES: Treat this MarketState as the authoritative current context. Distinguish current observations, model estimates, inferences, and historical relationships. Never claim a source or engine is available when sourceHealth marks it unavailable. If freshness is stale, cache status is stale-if-error, or warnings are present, disclose that limitation in the answer. Do not invent missing values. Historical analog similarity is evidence of regime resemblance, never forecast probability. Use questionAnalysis probability only when its availability is CALIBRATED; never convert a similarity score or generic bear scenario into an unsupported event probability.\n\n${evidenceNarrativePromptContract()}`;
+  return `\n\nCANONICAL FAULTLINE MARKETSTATE (SERVER-GENERATED):\n${JSON.stringify(modelContext)}\n\nSCOPE RULE: ${scopeRule}\n\nPROVENANCE RULES: Treat this MarketState as the authoritative current context. Distinguish current observations, model estimates, inferences, and historical relationships. Never claim a source or engine is available when sourceHealth marks it unavailable. If freshness is stale, cache status is stale-if-error, or warnings are present, disclose that limitation in the answer. Do not invent missing values. Historical analog similarity is evidence of regime resemblance, never forecast probability. Use questionAnalysis probability only when its availability is CALIBRATED; never convert a similarity score or generic bear scenario into an unsupported event probability.\n\n${evidenceNarrativePromptContract()}`;
 }
 
+/**
+ * Every PLATO model call goes through the PLATO router: the approved
+ * OpenAI-compatible provider, an explicit chat-model chain, bounded retries,
+ * per-attempt and total deadlines. On total failure this throws a typed
+ * `PlatoUnavailableError` (see server/plato/errors.ts); it never returns a
+ * synthetic answer.
+ */
 export async function invokeAshaGateway(
-  params: Omit<InvokeParams, "model">,
+  params: Omit<InvokeParams, "model" | "signal">,
   dependencies: {
-    resolveModels?: () => Promise<AshaModelResolution>;
     invokeModel?: InvokeGatewayModel;
+    config?: PlatoConfig;
+    sleep?: RouteDependencies["sleep"];
+    /** Shared per-question budget (answer + correction share one 4-call / 100 s budget). */
+    budget?: PlatoBudget;
+    validateResponse?: PlatoResponseValidator;
   } = {},
 ): Promise<{ response: InvokeResult; trace: AshaModelTrace }> {
-  const resolution = await (dependencies.resolveModels ?? resolveAshaModelCandidates)();
-  const invokeModel = dependencies.invokeModel ?? invokeLLM;
-  const attemptedModels: string[] = [];
-  let lastError: unknown;
-
-  for (const model of resolution.candidates) {
-    attemptedModels.push(model);
-    try {
-      const response = await invokeModel({ ...params, model });
-      return {
-        response,
-        trace: {
-          selectedModel: model,
-          attemptedModels,
-          resolutionSource: resolution.source,
-          resolvedAt: resolution.resolvedAt,
-        },
-      };
-    } catch (error) {
-      lastError = error;
-    }
-  }
-
-  const reason = lastError instanceof Error ? lastError.message : "unknown model failure";
-  throw new Error(`ASHA model gateway failed after ${attemptedModels.length} attempt(s): ${reason}`);
+  const routed = await routePlatoCompletion(
+    {
+      messages: params.messages,
+      tools: params.tools,
+      toolChoice: params.toolChoice,
+      tool_choice: params.tool_choice,
+      maxTokens: params.maxTokens,
+      max_tokens: params.max_tokens,
+      outputSchema: params.outputSchema,
+      output_schema: params.output_schema,
+      responseFormat: params.responseFormat,
+      response_format: params.response_format,
+    },
+    {
+      invoke: dependencies.invokeModel,
+      config: dependencies.config,
+      sleep: dependencies.sleep,
+      budget: dependencies.budget,
+      validateResponse: dependencies.validateResponse,
+    },
+  );
+  return {
+    response: routed.response,
+    trace: {
+      selectedModel: routed.trace.selectedModel,
+      attemptedModels: routed.trace.attemptedModels,
+      resolutionSource: routed.trace.resolutionSource,
+      resolvedAt: routed.trace.resolvedAt,
+    },
+  };
 }

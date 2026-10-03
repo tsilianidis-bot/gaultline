@@ -17,6 +17,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { navigateToLogin } from "@/const";
 import { CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 import AshaOrb from "@/components/AshaOrb";
+import { buildIntelligenceCenterMarketState } from "@/lib/ashaBriefingContext";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -180,9 +181,10 @@ function AshaGuestSignIn() {
 
 function AshaIntelligenceWorkspace() {
   const [, navigate] = useLocation();
-  const { output } = useEngine();
+  const { output, marketMode } = useEngine();
   const { threadMessages, clearThread } = useAshaContext();
-  const { overall, regime } = output;
+  // QA r13 B10: canonical pressure (0-100) and regime only; never the demo baseline.
+  const marketState = buildIntelligenceCenterMarketState(output, marketMode);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedConv, setExpandedConv] = useState<number | null>(null);
   const [workspacePrompt, setWorkspacePrompt] = useState("");
@@ -195,14 +197,14 @@ function AshaIntelligenceWorkspace() {
   const { data: thesis, isLoading: loadingThesis } = trpc.ashaMemory.synthesizeMarketThesis.useQuery();
   const { data: followUps, isLoading: loadingFollowUps } = trpc.ashaMemory.getFollowUpQuestions.useQuery();
   const { data: whatChanged } = trpc.ashaMemory.getWhatChangedSummary.useQuery({
-    currentPressureScore: overall.score,
-    currentRegime: regime.label,
+    currentPressureScore: marketState.pressure100,
+    currentRegime: marketState.regime,
   });
   const { data: stats } = trpc.ashaMemory.getSessionStats.useQuery();
 
-  // Regime color
-  const color = overall.score >= 7 ? "#FF2D55" : overall.score >= 4.5 ? "#FF9500" : "#00E5FF";
-  const regimeState = overall.score >= 7 ? "critical" : overall.score >= 4.5 ? "rising" : "calm";
+  // Pressure colour: canonical 0-100 bands (70 / 45); neutral when there is no canonical reading.
+  const color = marketState.color;
+  const regimeState = marketState.orbState;
 
   function copyText(text: string, id: string) {
     navigator.clipboard.writeText(text).then(() => {
@@ -274,6 +276,14 @@ function AshaIntelligenceWorkspace() {
       <div style={{ padding: "20px", maxWidth: "680px", margin: "0 auto" }}>
 
         {/* ── What Changed Since Your Last Visit ── */}
+        {!whatChanged?.summary && whatChanged?.unavailable && (
+          <IntelCard accent="#00E5FF">
+            <SectionLabel text="What Changed Since Your Last Visit" />
+            <div data-plato-unavailable="what-changed" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "rgba(100,116,139,0.6)", padding: "4px 0" }}>
+              Summary unavailable.
+            </div>
+          </IntelCard>
+        )}
         {whatChanged?.summary && (
           <IntelCard accent="#00E5FF">
             <SectionLabel text="What Changed Since Your Last Visit" />
@@ -418,6 +428,10 @@ function AshaIntelligenceWorkspace() {
                 </button>
               </div>
             </>
+          ) : thesis?.unavailable ? (
+            <div data-plato-unavailable="thesis" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "rgba(100,116,139,0.6)", padding: "12px 0" }}>
+              Thesis unavailable.
+            </div>
           ) : (
             <EmptyState
               icon="🧠"
@@ -592,6 +606,10 @@ function AshaIntelligenceWorkspace() {
                   <div style={{ flexShrink: 0, color: "rgba(0,229,255,0.4)", fontSize: "11px", marginLeft: "auto" }}>→</div>
                 </button>
               ))}
+            </div>
+          ) : followUps?.unavailable ? (
+            <div data-plato-unavailable="follow-ups" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "rgba(100,116,139,0.6)", padding: "8px 0" }}>
+              Follow-up questions unavailable.
             </div>
           ) : (
             <EmptyState

@@ -67,6 +67,8 @@ export type InvokeParams = {
   output_schema?: OutputSchema;
   responseFormat?: ResponseFormat;
   response_format?: ResponseFormat;
+  /** Aborts the HTTP request (used by the PLATO router's per-attempt deadline). Not sent to the provider. */
+  signal?: AbortSignal;
 };
 
 export type ToolCall = {
@@ -321,6 +323,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     response_format,
     maxTokens,
     max_tokens,
+    signal,
   } = params;
 
   const payload: Record<string, unknown> = {
@@ -360,6 +363,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
       authorization: `Bearer ${ENV.forgeApiKey}`,
     },
     body: JSON.stringify(payload),
+    signal,
   });
 
   if (!response.ok) {
