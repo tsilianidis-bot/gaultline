@@ -428,7 +428,7 @@ function computeProbabilities(overall: number, domains: DomainScore[]): Probabil
   const recessionScore = domains.find(d => d.id === 'recession')?.score ?? 0;
   const liquidityScore = domains.find(d => d.id === 'liquidity')?.score ?? 0;
 
-  // Crash probability: driven by overall + credit + liquidity
+  // Crash-risk heuristic (not offered as a probability): driven by overall + credit + liquidity
   const crashRaw = clamp((overall * 0.40 + creditScore * 0.25 + liquidityScore * 0.20 + aiScore * 0.15) / 10 * 100, 0, 95);
   // Stagflation: driven by inflation + recession + high rates
   const stagflationRaw = clamp((inflationScore * 0.50 + recessionScore * 0.30 + (overall - 3) * 0.20) / 10 * 100, 0, 80);

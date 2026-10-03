@@ -27,7 +27,7 @@ export default function MarketCrashProbability2026() {
           heading: "What Does the FAULTLINE Pressure Index Measure?",
           body: `The FAULTLINE Pressure Index™ is a proprietary 0–100 measure of current systemic market stress based on six documented vectors. It is designed to organize the current credit, liquidity, rate, inflation, labor, and AI/speculation context into a single transparent reading with source-status labels.
 
-The index is not a calibrated estimate of the probability that a market crash will occur, and it does not predict a date or direction. Historical research applying the current frozen formula is reconstructed, uses revised/proxy inputs where disclosed, and remains inconclusive for historical early-warning claims.
+The index is not a crash probability (FAULTLINE does not offer a crash probability), and it does not predict a date or direction. Historical research applying the current frozen formula is reconstructed, uses revised/proxy inputs where disclosed, and remains inconclusive for historical early-warning claims.
 
 Higher Pressure Index readings indicate more modeled systemic stress under the current methodology. They should be evaluated alongside source freshness, component detail, and the limits of the historical evidence.`,
         },

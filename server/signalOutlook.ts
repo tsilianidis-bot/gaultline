@@ -1185,7 +1185,7 @@ async function generateOutlookInterpretation(
 - Seismograph Evidence Consensus: ${seismographOutput.evidenceConsensus}
 - Active Historical Analog: ${seismographOutput.analogMatches[0]?.label ?? 'None'} (${seismographOutput.analogMatches[0]?.similarity ?? 0}% similarity)
 - Market Direction: ${seismographOutput.direction} for ${seismographOutput.marketMemory.streakDays} days
-- Transition Probability (stay in regime): ${seismographOutput.transitionProbabilities.remainInRegime}%` : '';
+- Regime transition: not offered as a probability (the transition claim is unavailable)` : '';
   const prompt = `You are FAULTLINE's Signal Outlook AI. Provide plain-English market intelligence for ${symbol} (${assetType.toUpperCase()}).
 
 CURRENT DATA:

@@ -175,6 +175,19 @@ function overlayPayload<P extends object>(payload: P, contract: CanonicalProbabi
   return out as ContractWithheld<P>;
 }
 
+/** Copy of a contract tree where every claim whose display is not AVAILABLE carries value null. */
+export function withholdUndisplayedClaimValues<T>(node: T): T {
+  if (Array.isArray(node)) return node.map(item => withholdUndisplayedClaimValues(item)) as T;
+  if (!node || typeof node !== "object") return node;
+  const out: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(node as Record<string, unknown>)) out[key] = withholdUndisplayedClaimValues(child);
+  const display = out.display as { state?: unknown } | undefined;
+  if (typeof out.claimId === "string" && "value" in out && display && typeof display === "object" && display.state !== "AVAILABLE") {
+    out.value = null;
+  }
+  return out as T;
+}
+
 const ASSEMBLED_PAYLOAD_KEYS = ["forDashboard", "forASHA", "forDailyBrief", "forAlerts", "forStockPages", "forReports"] as const;
 
 /** seismograph.getAssembledOutput response: top level and every distribution payload overlaid. */
@@ -183,10 +196,10 @@ export function overlayAssembledSeismographOutput<O extends object>(output: O, c
   for (const key of ASSEMBLED_PAYLOAD_KEYS) {
     if (out[key] && typeof out[key] === "object") out[key] = overlayPayload(out[key], contract);
   }
-  return { ...(out as { [K in keyof O]: K extends (typeof ASSEMBLED_PAYLOAD_KEYS)[number] ? ContractWithheld<O[K]> : ContractWithheld<O>[K] }), probabilityContract: contract ?? null };
+  return { ...(out as { [K in keyof O]: K extends (typeof ASSEMBLED_PAYLOAD_KEYS)[number] ? ContractWithheld<O[K]> : ContractWithheld<O>[K] }), probabilityContract: withholdUndisplayedClaimValues(contract ?? null) };
 }
 
 /** seismograph.getUnifiedIntelligence response overlay. */
 export function overlayUnifiedSeismographIntelligence<U extends object>(intel: U, contract: CanonicalProbabilityContract | null | undefined) {
-  return { ...overlayPayload(intel, contract), probabilityContract: contract ?? null };
+  return { ...overlayPayload(intel, contract), probabilityContract: withholdUndisplayedClaimValues(contract ?? null) };
 }

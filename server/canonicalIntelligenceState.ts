@@ -10,7 +10,7 @@ import {
   type PublicCanonicalIntelligenceState,
 } from "../shared/canonicalIntelligenceState";
 import { getDb } from "./db";
-import { buildCanonicalProbabilityContract } from "./probabilityContract";
+import { buildCanonicalProbabilityContract, withholdUndisplayedClaimValues } from "./probabilityContract";
 import { compositePressureDirection, engineEvidenceStatus, stressTrendDirection } from "../shared/snapshotEvidence";
 
 type StoredManifest = Record<string, any>;
@@ -207,15 +207,6 @@ export function toClientCanonicalIntelligenceState(state: CanonicalIntelligenceS
   };
 }
 
-/** Copy of a contract tree where every claim whose display is not AVAILABLE carries value null. */
-export function withholdUndisplayedClaimValues<T>(node: T): T {
-  if (Array.isArray(node)) return node.map(item => withholdUndisplayedClaimValues(item)) as T;
-  if (!node || typeof node !== "object") return node;
-  const out: Record<string, unknown> = {};
-  for (const [key, child] of Object.entries(node as Record<string, unknown>)) out[key] = withholdUndisplayedClaimValues(child);
-  const display = out.display as { state?: unknown } | undefined;
-  if (typeof out.claimId === "string" && "value" in out && display && typeof display === "object" && display.state !== "AVAILABLE") {
-    out.value = null;
-  }
-  return out as T;
-}
+// withholdUndisplayedClaimValues lives in ./probabilityContract (no import cycle);
+// re-exported here for existing callers.
+export { withholdUndisplayedClaimValues };

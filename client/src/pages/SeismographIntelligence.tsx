@@ -176,40 +176,40 @@ function deriveTradeTypes(score: number, direction: string, regime: string, bull
   const types: TradeType[] = [];
 
   if (isRisk && isBullish) {
-    types.push({ name: "Swing Longs", stars: 5, why: "Low systemic pressure with bullish regime probability supports multi-day long positions", confidence: "High", evidence: `Bull probability ${pctOrNotOffered(bull)}, pressure ${score}` });
+    types.push({ name: "Swing Longs", stars: 5, why: "Low systemic pressure with a bullish regime supports multi-day long positions", confidence: "High", evidence: `Bull scenario ${pctOrNotOffered(bull)}, pressure ${score}` });
     types.push({ name: "Trend Following", stars: 5, why: "Constructive macro environment favors momentum-driven trend strategies", confidence: "High", evidence: `Regime: ${regime}, direction: ${direction}` });
     types.push({ name: "Momentum", stars: 4, why: "Favorable conditions support breakout momentum plays in leading sectors", confidence: "Moderate", evidence: `Pressure ${score}, direction: ${direction}` });
     types.push({ name: "Mean Reversion", stars: 2, why: "Trending conditions reduce mean-reversion edge", confidence: "Low", evidence: "Momentum environment unfavorable for reversals" });
-    types.push({ name: "Aggressive Shorts", stars: 1, why: "Bullish regime makes aggressive short exposure high-risk", confidence: "Low", evidence: `Bull probability ${pctOrNotOffered(bull)}` });
+    types.push({ name: "Aggressive Shorts", stars: 1, why: "Bullish regime makes aggressive short exposure high-risk", confidence: "Low", evidence: `Bull scenario ${pctOrNotOffered(bull)}` });
     types.push({ name: "Defensive Rotation", stars: 1, why: "Defensive positioning not warranted at current pressure levels", confidence: "Low", evidence: `Pressure ${score}` });
   } else if (isElevated) {
     types.push({ name: "Selective Longs", stars: 3, why: "Elevated pressure warrants selectivity — only highest-conviction setups", confidence: "Moderate", evidence: `Pressure ${score}, direction: ${direction}` });
-    types.push({ name: "Defensive Rotation", stars: 4, why: "Rotating toward defensive sectors reduces drawdown risk in elevated environments", confidence: "High", evidence: `Pressure ${score}, recession probability ${pctOrNotOffered(recession)}` });
+    types.push({ name: "Defensive Rotation", stars: 4, why: "Rotating toward defensive sectors reduces drawdown risk in elevated environments", confidence: "High", evidence: `Pressure ${score}, recession risk ${pctOrNotOffered(recession)}` });
     types.push({ name: "Mean Reversion", stars: 3, why: "Elevated pressure creates oversold conditions suitable for short-term reversals", confidence: "Moderate", evidence: `Pressure ${score}` });
     types.push({ name: "Trend Following", stars: 2, why: "Elevated pressure increases whipsaw risk for trend strategies", confidence: "Low", evidence: `Direction: ${direction}` });
     types.push({ name: "Swing Longs", stars: 2, why: "Elevated systemic pressure reduces multi-day long conviction", confidence: "Low", evidence: `Pressure ${score}` });
-    types.push({ name: "Aggressive Shorts", stars: 2, why: "Selective short exposure in weakest sectors may be warranted", confidence: "Low", evidence: `Recession probability ${pctOrNotOffered(recession)}, crash probability ${pctOrNotOffered(crash)}` });
+    types.push({ name: "Aggressive Shorts", stars: 2, why: "Selective short exposure in weakest sectors may be warranted", confidence: "Low", evidence: `Recession risk ${pctOrNotOffered(recession)}, crash risk ${pctOrNotOffered(crash)}` });
   } else if (isCrisis) {
-    types.push({ name: "Defensive Rotation", stars: 5, why: "High systemic pressure demands defensive positioning in safe-haven assets", confidence: "High", evidence: `Pressure ${score}, crash probability ${pctOrNotOffered(crash)}` });
-    types.push({ name: "Aggressive Shorts", stars: isDefensive ? 4 : 3, why: "Crisis-level pressure supports short exposure in vulnerable sectors", confidence: "Moderate", evidence: `Recession probability ${pctOrNotOffered(recession)}, crash probability ${pctOrNotOffered(crash)}` });
+    types.push({ name: "Defensive Rotation", stars: 5, why: "High systemic pressure demands defensive positioning in safe-haven assets", confidence: "High", evidence: `Pressure ${score}, crash risk ${pctOrNotOffered(crash)}` });
+    types.push({ name: "Aggressive Shorts", stars: isDefensive ? 4 : 3, why: "Crisis-level pressure supports short exposure in vulnerable sectors", confidence: "Moderate", evidence: `Recession risk ${pctOrNotOffered(recession)}, crash risk ${pctOrNotOffered(crash)}` });
     types.push({ name: "Mean Reversion", stars: 2, why: "Volatile conditions create short-term reversals but with elevated risk", confidence: "Low", evidence: `Pressure ${score}` });
     types.push({ name: "Swing Longs", stars: 1, why: "Crisis pressure makes sustained long exposure high-risk", confidence: "Low", evidence: `Pressure ${score}` });
     types.push({ name: "Trend Following", stars: 1, why: "Trend strategies suffer in crisis volatility spikes", confidence: "Low", evidence: `Direction: ${direction}` });
     types.push({ name: "Momentum", stars: 1, why: "Momentum strategies face elevated reversal risk in crisis conditions", confidence: "Low", evidence: `Pressure ${score}` });
   } else {
-    types.push({ name: "Swing Longs", stars: 4, why: "Moderate conditions support selective long exposure with defined risk", confidence: "Moderate", evidence: `Pressure ${score}, bull probability ${pctOrNotOffered(bull)}` });
+    types.push({ name: "Swing Longs", stars: 4, why: "Moderate conditions support selective long exposure with defined risk", confidence: "Moderate", evidence: `Pressure ${score}, bull scenario ${pctOrNotOffered(bull)}` });
     types.push({ name: "Trend Following", stars: 4, why: "Stable macro backdrop supports trend-following in leading sectors", confidence: "Moderate", evidence: `Regime: ${regime}` });
     types.push({ name: "Momentum", stars: 3, why: "Moderate environment supports momentum in select sectors", confidence: "Moderate", evidence: `Pressure ${score}` });
     types.push({ name: "Mean Reversion", stars: 3, why: "Stable conditions support mean-reversion in range-bound markets", confidence: "Moderate", evidence: `Pressure ${score}` });
     types.push({ name: "Defensive Rotation", stars: 2, why: "Defensive rotation not a priority at moderate pressure levels", confidence: "Low", evidence: `Pressure ${score}` });
-    types.push({ name: "Aggressive Shorts", stars: 1, why: "Moderate conditions do not support aggressive short exposure", confidence: "Low", evidence: `Bull probability ${pctOrNotOffered(bull)}` });
+    types.push({ name: "Aggressive Shorts", stars: 1, why: "Moderate conditions do not support aggressive short exposure", confidence: "Low", evidence: `Bull scenario ${pctOrNotOffered(bull)}` });
   }
 
   return types;
 }
 
 // ── Cautions derivation ────────────────────────────────────────────────────────
-// Crash and recession probabilities are not offered (probability contract), so
+// Crash and recession risk: not offered as probabilities (probability contract), so
 // no caution is keyed off or quotes one.
 function deriveCautions(score: number, direction: string, stressLevel: string): string[] {
   const cautions: string[] = [];
@@ -700,7 +700,7 @@ export default function SeismographIntelligence() {
 
   // Derived data
   const tradingConditions = deriveTradingConditions(currentScore, currentDirection, probabilities.confidence);
-  // Recession / crash probabilities are not offered: never passed as numbers.
+  // Recession / crash risk: not offered as probabilities; never passed as numbers.
   const tradeTypes = deriveTradeTypes(currentScore, currentDirection, currentRegime, regimeProbs.bull, null, null);
   const cautions = deriveCautions(currentScore, currentDirection, currentStressLevel);
 
@@ -806,7 +806,7 @@ export default function SeismographIntelligence() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
             {[
               { label: "BULL CONTINUATION", color: "#22c55e", border: "rgba(34,197,94,0.2)", bg: "rgba(34,197,94,0.04)", text: "No governed model produces a bull-continuation probability, so FAULTLINE does not offer one. Read the Pressure Index and the evidence families instead." },
-              { label: "MAJOR DRAWDOWN RISK", color: "#ef4444", border: "rgba(239,68,68,0.2)", bg: "rgba(239,68,68,0.04)", text: "No governed model produces a crash or recession probability, so FAULTLINE does not offer one. Read the Pressure Index and the evidence families instead." },
+              { label: "MAJOR DRAWDOWN RISK", color: "#ef4444", border: "rgba(239,68,68,0.2)", bg: "rgba(239,68,68,0.04)", text: "FAULTLINE does not offer a crash probability and does not offer a recession probability: no governed model produces one. Read the Pressure Index and the evidence families instead." },
             ].map(card => (
               <div key={card.label} style={{ padding: "24px", background: card.bg, borderRadius: "8px", border: `1px solid ${card.border}`, borderTop: `3px solid ${card.color}`, position: "relative", overflow: "hidden" }}>
                 <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.14em", color: card.color, opacity: 0.6, marginBottom: "8px" }}>{card.label}</div>

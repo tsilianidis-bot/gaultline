@@ -384,8 +384,10 @@ async function orchestrateAnswer(
 
   // 3. Build context for LLM
   const regimeLabel = fmos?.regime?.currentRegime ?? pressureData?.regime ?? "UNCERTAIN";
-  const pressureScore = pressureData ? (pressureData.overallPressure / 10) : 5;
-  const regimeColor: "green" | "yellow" | "red" = pressureScore <= 3 ? "green" : pressureScore <= 6 ? "yellow" : "red";
+  // Canonical 0–100 Pressure Index; null when missing (no invented default of 5/10).
+  // Color bands unchanged: <=30 green (was <=3/10), <=60 yellow (was <=6/10); missing → yellow (as the old default).
+  const pressureIndex = pressureData && Number.isFinite(pressureData.overallPressure) ? pressureData.overallPressure : null;
+  const regimeColor: "green" | "yellow" | "red" = pressureIndex === null ? "yellow" : pressureIndex <= 30 ? "green" : pressureIndex <= 60 ? "yellow" : "red";
 
   // Extract FMOS evidence families for context
   const evidenceFamilies = fmos?.evidence?.families ?? [];
@@ -658,7 +660,7 @@ FIELD RULES
 
 DISCLAIMER: All output is for informational and educational purposes only. Nothing constitutes financial advice.
 
-Current Market Regime: ${regimeLabel} (Pressure Score: ${pressureScore}/10)
+Current Market Regime: ${regimeLabel} (Pressure Index: ${pressureIndex === null ? "unavailable" : `${pressureIndex}/100`})
 ${crossMarket ? `
 ── MARKET REGIME INTELLIGENCE ──
 Stock Market Regime: ${crossMarket.stockRegime.regime} | Risk: ${crossMarket.stockRegime.riskLevel} | Confidence: ${crossMarket.stockRegime.confidence}% | Trend: ${crossMarket.stockRegime.trend}
@@ -1111,8 +1113,10 @@ async function orchestrateOpportunityRanking(
   const fmos = fmosResult ?? null;
   const pressureData = fmos?.pressure ?? null;
   const regimeLabel = fmos?.regime?.currentRegime ?? pressureData?.regime ?? "UNCERTAIN";
-  const pressureScore = pressureData ? (pressureData.overallPressure / 10) : 5;
-  const regimeColor: "green" | "yellow" | "red" = pressureScore <= 3 ? "green" : pressureScore <= 6 ? "yellow" : "red";
+  // Canonical 0–100 Pressure Index; null when missing (no invented default of 5/10).
+  // Color bands unchanged: <=30 green (was <=3/10), <=60 yellow (was <=6/10); missing → yellow (as the old default).
+  const pressureIndex = pressureData && Number.isFinite(pressureData.overallPressure) ? pressureData.overallPressure : null;
+  const regimeColor: "green" | "yellow" | "red" = pressureIndex === null ? "yellow" : pressureIndex <= 30 ? "green" : pressureIndex <= 60 ? "yellow" : "red";
 
   // 2. Scan the full investment universe (top 30 by composite score)
   const rawOpportunities = await scanOpportunities(null, 100000, "both").catch(() => []);
@@ -1149,7 +1153,7 @@ INTENT ROUTING RULES (MUST follow):
 4. If the question specifies a category (e.g. "best AI stocks", "best dividend stocks"), filter the universe to that category.
 5. Always answer the broad question first. If an active symbol is relevant, note its rank in the list.
 
-Current Market Regime: ${regimeLabel} (Pressure Score: ${pressureScore}/10)
+Current Market Regime: ${regimeLabel} (Pressure Index: ${pressureIndex === null ? "unavailable" : `${pressureIndex}/100`})
 Bull/bear balance: describe it qualitatively only. FAULTLINE does not offer a crash probability, does not offer a recession probability, and its bull/bear scenario weights are uncalibrated, so never state any probability, odds or percentage chance.${fmos?.probability?.primaryDriver ? ` Primary Driver: ${fmos.probability.primaryDriver}` : ""}
 
 ========================

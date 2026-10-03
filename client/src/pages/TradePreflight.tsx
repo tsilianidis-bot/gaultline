@@ -102,15 +102,15 @@ function ScoreRing({ score, color, size = 120, label }: { score: number; color: 
   );
 }
 
-// ── Probability bar ───────────────────────────────────────────
-function ProbBar({ value, color, label }: { value: number; color: string; label: string }) {
+// ── Score bar (heuristic 0–100 score, not a probability) ──────
+function ScoreBar({ value, color, label }: { value: number; color: string; label: string }) {
   const [anim, setAnim] = useState(0);
   useEffect(() => { const t = setTimeout(() => setAnim(value), 400); return () => clearTimeout(t); }, [value]);
   return (
     <div style={{ flex: 1 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.8)", textTransform: "uppercase", letterSpacing: "0.1em" }}>{label}</span>
-        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color }}>{value}%</span>
+        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color }}>{value}/100</span>
       </div>
       <div style={{ height: "5px", background: "rgba(255,255,255,0.05)", borderRadius: "3px", overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${anim}%`, background: `linear-gradient(90deg, ${color}60, ${color})`, borderRadius: "3px", boxShadow: `0 0 8px ${color}60`, transition: "width 1.4s cubic-bezier(0.23,1,0.32,1)" }} />
@@ -260,7 +260,7 @@ export default function TradePreflight() {
             </div>
           </div>
 
-          {/* Bull/Crash probabilities */}
+          {/* Bull scenario / crash risk: contract text only */}
           <div style={{ display: "flex", gap: "16px", marginBottom: "14px", flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <TrendingUp size={13} color="#00FF88" />
@@ -480,8 +480,8 @@ export default function TradePreflight() {
               </div>
 
               <div style={{ flex: 1, minWidth: "200px", display: "flex", flexDirection: "column", gap: "14px" }}>
-                <ProbBar value={result.favorableSetupProbability} color="#00FF88" label="Favorable Setup" />
-                <ProbBar value={result.adversePressureProbability} color="#FF2D55" label="Adverse Pressure" />
+                <ScoreBar value={result.favorableSetupProbability} color="#00FF88" label="Favorable Setup score" />
+                <ScoreBar value={result.adversePressureProbability} color="#FF2D55" label="Adverse Pressure score" />
 
                 {/* Risk + Confidence badges */}
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>

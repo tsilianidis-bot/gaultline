@@ -240,7 +240,7 @@ function buildMarketScenarios(output: EngineOutput): MarketScenario[] {
       supporting: [
         `Current regime with Pressure Index at ${Math.round(score * 10)} / 100`,
         topDomains.length > 0 ? `Elevated readings in: ${topDomains.join(", ")}` : "One or more domains at elevated or high risk levels",
-        `Recession probability: ${engineProbabilityText(output, "recessionProbability")} (no governed recession model)`,
+        `Recession risk: ${engineProbabilityText(output, "recessionProbability")} (no governed recession model)`,
       ],
       confirmation: [
         "FAULTLINE Pressure Index rising above current level",

@@ -205,7 +205,7 @@ function computeChanges(
     });
   }
 
-  // Bull probability: compared only when both snapshots carry a displayable number.
+  // Bull scenario weight (uncalibrated; not a probability): compared only when both snapshots carry a number.
   const currentBull = current.bullProbability;
   const previousBull = previous.bullProbability;
   const bullDelta = typeof currentBull === "number" && Number.isFinite(currentBull) && typeof previousBull === "number" && Number.isFinite(previousBull)
@@ -213,9 +213,9 @@ function computeChanges(
     : 0;
   if (Math.abs(bullDelta) >= 4) {
     changes.push({
-      label: `Bull probability ${bullDelta > 0 ? "increased" : "decreased"}`,
+      label: `Bull scenario weight ${bullDelta > 0 ? "rose" : "fell"} (uncalibrated)`,
       direction: bullDelta > 0 ? "up" : "down",
-      delta: `${bullDelta > 0 ? "+" : ""}${bullDelta.toFixed(0)}%`,
+      delta: `${bullDelta > 0 ? "+" : ""}${bullDelta.toFixed(0)} pts`,
       significance: Math.abs(bullDelta) >= 8 ? "high" : "medium",
     });
   }

@@ -811,7 +811,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                   {[
-                    { label: "Pressure", value: "68", sub: "Elevated Stress", color: "#FF9500" },
+                    { label: "Pressure", value: "68/100", sub: "Example value, not live", color: "#FF9500" },
                     { label: "Regime", value: "Elevated", sub: "Stress", color: ACCENT },
                     { label: "Bull scenario", value: "Uncalibrated", sub: "Contract text", color: "#94A3B8" },
                     { label: "Crash Risk", value: "Not offered", sub: "No governed model", color: "#94A3B8" },

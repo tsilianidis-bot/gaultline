@@ -13,7 +13,8 @@ export const marketStateRouter = router({
   }),
   evidenceCurrent: publicProcedure.query(async () => {
     const state = await getAuthoritativeCanonicalIntelligenceState();
-    return state ? buildCanonicalEvidencePacket(toPublicCanonicalIntelligenceState(state)) : null;
+    // Client projection: no scenarioOutputs claims ("Scenario component bull is 33") on the public route.
+    return state ? buildCanonicalEvidencePacket(toClientCanonicalIntelligenceState(state)) : null;
   }),
   synthesisCurrent: publicProcedure.query(() => getAuthoritativeCrossEngineSynthesis()),
   earlyWarningPresentationCurrent: publicProcedure.query(() => getCurrentGovernedEarlyWarningPresentation()),

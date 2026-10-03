@@ -83,12 +83,12 @@ function buildInterpretationPrompt(
 
 **Pressure Index:** ${p}/100
 **Regime:** ${regime.currentRegime} (confidence: ${regime.confidence}%, stability: ${regime.stability}%)
-**Transition Risk:** ${regime.transitionRisk}% (30-day transition probability: ${regime.transitionProbability30d}%)
+**Transition Risk:** not offered as a probability (uncalibrated)
 **Market DNA:** ${dna.currentDNA} (${dna.confidence}% confidence)
 
 **Top Risk Vectors:** ${topVectors}
 
-**Probability Distribution:** Bull ${probability.bull}% / Neutral ${probability.neutral}% / Bear ${probability.bear}%
+**Scenario weights:** uncalibrated (not offered as probabilities). FAULTLINE does not offer a crash probability; state no probability percentage.
 **Primary Driver:** ${probability.primaryDriver}
 
 **Decision:** ${decision.verdict} (conviction: ${decision.conviction}%)
@@ -202,7 +202,7 @@ export function computeQuickInterpretation(
 ): Pick<FMOSAIInterpretation, "headline" | "whyNow" | "portfolioImplications"> {
   const p = pressure.overallPressure;
 
-  const headline = `${regime.currentRegime} — ${decision.verdict} (${probability.bull}% bull / ${probability.bear}% bear)`;
+  const headline = `${regime.currentRegime} — ${decision.verdict}`;
   const whyNow = decision.primaryReason;
   const portfolioImplications = decision.positionSizing;
 

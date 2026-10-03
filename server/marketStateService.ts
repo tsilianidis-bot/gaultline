@@ -22,6 +22,7 @@ import {
   type MarketStateCacheOptions,
   type MarketStateCacheResult,
 } from "./marketStateCache";
+import { withholdUndisplayedClaimValues } from "./probabilityContract";
 
 export type CanonicalMarketStateSource = Pick<
   UnifiedSeismographIntelligence,
@@ -343,7 +344,8 @@ export function assembleCanonicalMarketState(
         confidence: Number.NaN,
       },
       highestProbabilityPath: source.marketNarrative.highestProbabilityPath,
-      probabilityContract: contract,
+      // Response boundary: non-AVAILABLE claims carry value null (bull 33 / crisis 0.36 never leave the server).
+      probabilityContract: withholdUndisplayedClaimValues(contract),
       invalidationConditions: source.evolution.invalidationConditions,
       topAnalog: source.topAnalog
         ? {

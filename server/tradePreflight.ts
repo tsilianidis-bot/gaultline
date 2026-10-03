@@ -237,8 +237,10 @@ export interface TradeSimulationOutput {
   thesisType?: ThesisType;
   marketCondition: MarketConditionSnapshot;
   moveFavorabilityScore: number;       // 0–100
-  favorableSetupProbability: number;   // 0–100 %
-  adversePressureProbability: number;  // 0–100 %
+  // Heuristic 0–100 scores (favorability × 0.85 + 10 and its complement), NOT
+  // probabilities. Field names kept for API compatibility; shown as /100.
+  favorableSetupProbability: number;   // 0–100 score
+  adversePressureProbability: number;  // 0–100 score
   riskLevel: RiskLevel;
   confidenceLevel: ConfidenceLevel;
   actionBias: string;
@@ -596,7 +598,7 @@ function buildThreatBoard(pressure: FaultlinePressureOutput): ThreatBoardItem[] 
   const recessionScore = Math.round(creditScore * 0.35 + breadthScore * 0.35 + overallPressure * 0.30);
   threats.push({
     category: "Macro",
-    threat: "Recession probability increase — leading indicators deteriorating",
+    threat: "Recession-risk indicators deteriorating — leading indicators weakening",
     severity: recessionScore >= 65 ? "critical" : recessionScore >= 45 ? "elevated" : recessionScore >= 25 ? "moderate" : "low",
     hiddenPressure: recessionScore >= 45 ? "Composite leading indicators softening — watch PMI and yield curve" : undefined,
   });
@@ -885,7 +887,7 @@ function computeInvalidationTriggers(
 
   if (liquidityScore < 50) triggers.push("Liquidity deterioration — SOFR or repo market stress emerging");
   if (p < 60) triggers.push("AI/speculation pressure spike — mega-cap concentration risk escalating");
-  if (creditScore < 60) triggers.push("Recession probability increase — leading indicators deteriorating");
+  if (creditScore < 60) triggers.push("Recession-risk indicators deteriorating — leading indicators weakening");
 
   switch (moveType) {
     case "add_risk":
@@ -1888,8 +1890,8 @@ Current market conditions:
 Simulation result:
 - VERDICT: ${verdictLabel} (Confidence: ${output.verdict.confidence}%)
 - Move Favorability Score: ${output.moveFavorabilityScore}/100
-- Favorable Setup Probability: ${output.favorableSetupProbability}%
-- Adverse Pressure Probability: ${output.adversePressureProbability}%
+- Favorable Setup score: ${output.favorableSetupProbability}/100 (heuristic score, not a likelihood)
+- Adverse Pressure score: ${output.adversePressureProbability}/100 (heuristic score, not a likelihood)
 - Risk Level: ${output.riskLevel}
 - Entry Quality Overall Grade: ${output.entryQuality.overallGrade}
 - Expected Weighted Outcome: ${output.outcomeSimulator.weightedOutcome > 0 ? "+" : ""}${output.outcomeSimulator.weightedOutcome}%
@@ -1924,7 +1926,7 @@ Write a concise 3-4 sentence institutional-grade explanation of this simulation 
   return `Current market regime ${direction}${tickerStr} over the ${tfLabel.toLowerCase()} timeframe. ` +
     `The FAULTLINE Pressure Index at ${output.marketCondition.pressureIndex}/100 with ${output.marketCondition.creditStress.toLowerCase()} credit stress and ` +
     `${output.marketCondition.liquidityCondition.toLowerCase()} liquidity conditions yields a ${output.moveFavorabilityScore}/100 favorability score and a verdict of ${verdictLabel}. ` +
-    `Favorable setup probability is ${output.favorableSetupProbability}% with ${output.adversePressureProbability}% adverse pressure probability. ` +
+    `The favorable setup score is ${output.favorableSetupProbability}/100 and the adverse pressure score is ${output.adversePressureProbability}/100 (heuristic scores, not probabilities). ` +
     `This is a market-regime simulation — not personalized financial advice or a guaranteed prediction.`;
 }
 
