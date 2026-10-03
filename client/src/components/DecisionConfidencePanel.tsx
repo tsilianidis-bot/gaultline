@@ -82,6 +82,9 @@ export default function DecisionConfidencePanel({ data, compact = false, default
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   const confidenceColor = data.confidenceScore >= 80 ? "#22C55E" : data.confidenceScore >= 60 ? "#FFD700" : data.confidenceScore >= 40 ? "#FF9500" : "#FF2D55";
+  // QA r13 B15: the verdict "confidence" is a heuristic /100 score, not a
+  // calibrated confidence, so it is never shown as a %.
+  const decisionScoreText = `${Math.round(data.confidenceScore)}/100`;
   const hasRewardRisk = typeof data.rewardRisk === "number" && Number.isFinite(data.rewardRisk);
   const rr = hasRewardRisk ? (data.rewardRisk as number) : 0;
   const rrColor = !hasRewardRisk ? "#94A3B8" : rr >= 3 ? "#22C55E" : rr >= 2 ? "#FFD700" : rr >= 1 ? "#FF9500" : "#FF2D55";
@@ -115,11 +118,11 @@ export default function DecisionConfidencePanel({ data, compact = false, default
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <Shield size={12} style={{ color: confidenceColor }} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", letterSpacing: "0.14em" }}>DECISION CONFIDENCE</span>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", letterSpacing: "0.14em" }}>DECISION SCORE · HEURISTIC</span>
           {/* Compact summary when collapsed */}
           {!expanded && (
             <span style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "4px" }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: confidenceColor, fontWeight: 700 }}>{data.confidenceScore}%</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: confidenceColor, fontWeight: 700 }}>{decisionScoreText}</span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>|</span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: rrColor }}>{rrText} R:R</span>
               {hasFreshness && (
@@ -142,8 +145,8 @@ export default function DecisionConfidencePanel({ data, compact = false, default
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: "8px" }}>
             {/* Confidence Score */}
             <div style={{ padding: "8px 10px", background: `${confidenceColor}08`, border: `1px solid ${confidenceColor}20`, borderRadius: "4px" }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.12em", marginBottom: "3px" }}>CONFIDENCE</div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 900, fontSize: "22px", color: confidenceColor, lineHeight: 1 }}>{data.confidenceScore}%</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.12em", marginBottom: "3px" }}>HEURISTIC SCORE</div>
+              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 900, fontSize: "22px", color: confidenceColor, lineHeight: 1 }}>{decisionScoreText}</div>
             </div>
 
             {/* Reward/Risk */}

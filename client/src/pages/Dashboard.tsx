@@ -13,7 +13,6 @@ import { getRiskColor } from "@/components/RiskBadge";
 import DataIntegrity from "@/components/DataIntegrity";
 import HomeCryptoSection from "@/components/HomeCryptoSection";
 import WaitlistSection from "@/components/WaitlistSection";
-import HomeStockIntelSection from "@/components/HomeStockIntelSection";
 import { CryptoPorchPanel, StockPorchPanel } from "@/components/DashboardSearchPanels";
 import { OpportunityDiscoveryPanel } from "@/components/OpportunityDiscoveryPanel";
 import Onboarding from "@/components/Onboarding";
@@ -1394,8 +1393,8 @@ export default function Dashboard() {
         {/* Opportunity Discovery Engine — proactive security-specific opportunities */}
         <OpportunityDiscoveryPanel />
 
-        {/* Real-Time Market & Stock Intelligence */}
-        <HomeStockIntelSection />
+        {/* QA r13 B13: the static "LIVE SIGNAL PREVIEW" demo rows (hard-coded prices,
+            actions and confidence) are not mounted in the app. */}
 
         {/* Digital Asset & Crypto Intelligence */}
         <HomeCryptoSection />

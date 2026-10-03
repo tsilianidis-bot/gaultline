@@ -17,7 +17,6 @@ import { LineChart, Line, ResponsiveContainer } from "recharts";
 import DataIntegrity from "@/components/DataIntegrity";
 import HomeCryptoSection from "@/components/HomeCryptoSection";
 import WaitlistSection from "@/components/WaitlistSection";
-import HomeStockIntelSection from "@/components/HomeStockIntelSection";
 import { CryptoPorchPanel, StockPorchPanel } from "@/components/DashboardSearchPanels";
 import { OpportunityDiscoveryPanel } from "@/components/OpportunityDiscoveryPanel";
 import Onboarding from "@/components/Onboarding";
@@ -1224,9 +1223,7 @@ export default function SeismographicDash() {
         <SectionErrorBoundary label="Opportunity Discovery">
           <OpportunityDiscoveryPanel />
         </SectionErrorBoundary>
-        <SectionErrorBoundary label="Home Stock Intel">
-          <HomeStockIntelSection />
-        </SectionErrorBoundary>
+        {/* QA r13 B13: static "LIVE SIGNAL PREVIEW" demo rows are not mounted in the app. */}
         <SectionErrorBoundary label="Home Crypto">
           <HomeCryptoSection />
         </SectionErrorBoundary>

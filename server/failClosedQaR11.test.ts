@@ -104,7 +104,7 @@ describe("B7 DecisionConfidencePanel: no probability range, no fabricated freshn
   for (const expanded of [false, true]) {
     it(`Situation Room data (${expanded ? "expanded" : "collapsed"}) renders none of them`, () => {
       const html = renderPanel(SITUATION_ROOM_CONF, expanded);
-      expect(html).toContain("DECISION CONFIDENCE");
+      expect(html).toContain("DECISION SCORE · HEURISTIC"); // QA r13 B15 label (was DECISION CONFIDENCE)
       expect(html).not.toMatch(/PROB RANGE|\d+–\d+%/);
       expect(html).not.toMatch(/\d+m ago|\d+h ago|\bLIVE\b|DATA FRESHNESS/);
       expect(html).not.toMatch(/HISTORICAL SIMILARITY\s+\d|INSTITUTIONAL AGREE|AGREEMENT/);

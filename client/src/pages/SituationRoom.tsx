@@ -1133,8 +1133,9 @@ export default function SituationRoom() {
                       {/* Confidence */}
                       <div>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.7)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Confidence</span>
-                          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: vc.color }}>{result.verdict.confidence}%</span>
+                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.7)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Decision score · heuristic</span>
+                          {/* QA r13 B15: verdict heuristic /100, not a calibrated confidence — no %. */}
+                          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: vc.color }}>{Math.round(result.verdict.confidence)}/100</span>
                         </div>
                         <div style={{ height: "3px", background: "rgba(255,255,255,0.11)", borderRadius: "2px" }}>
                           <div style={{ height: "100%", width: `${result.verdict.confidence}%`, background: vc.color, borderRadius: "2px", transition: "width 1.2s cubic-bezier(0.23,1,0.32,1)" }} />

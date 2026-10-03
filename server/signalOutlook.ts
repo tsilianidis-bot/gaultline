@@ -111,7 +111,7 @@ export interface DiagnosticAI2Integration {
   sensitiveTrigger: string;
   macroPath: string;
   historicalAnalog: string;
-  confidence: number;
+  confidence: number | null;
 }
 
 export interface PreflightImpact {
@@ -1281,7 +1281,8 @@ Respond with JSON matching this exact schema:
         sensitiveTrigger: parsed.sensitiveTrigger,
         macroPath: parsed.macroPath,
         historicalAnalog: parsed.historicalAnalog,
-        confidence: clamp(parsed.diagnosticConfidence ?? 60),
+        // QA r13 B12: no "?? 60" default; an absent model value stays absent.
+        confidence: typeof parsed.diagnosticConfidence === "number" ? clamp(parsed.diagnosticConfidence) : null,
       },
     };
   } catch {
@@ -1307,7 +1308,7 @@ Respond with JSON matching this exact schema:
         sensitiveTrigger: "Significant change in FAULTLINE Pressure Index",
         macroPath: `Pressure trend: ${pressure.regime}`,
         historicalAnalog: "No clear analog available",
-        confidence: 55,
+        confidence: null, // QA r13 B12: no hard-coded 55
       },
     };
   }

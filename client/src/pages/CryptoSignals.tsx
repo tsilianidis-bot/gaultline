@@ -8,6 +8,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { score100Value } from "@/lib/displayFallbacks";
 import { trpc } from "@/lib/trpc";
+import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
 import { useEngine } from "@/contexts/EngineContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Link } from "wouter";
@@ -324,7 +325,8 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
         {[
           { label: "TREND", value: sig.technicals.trend.toUpperCase(), color: TREND_COLORS[sig.technicals.trend] },
           { label: "MOMENTUM", value: `${sig.technicals.momentumScore}`, color: sig.technicals.momentumScore >= 60 ? "#00D4FF" : sig.technicals.momentumScore <= 40 ? "#FF2D55" : "#FFD700" },
-          { label: "CONFIDENCE", value: `${sig.confidence}%`, color: sig.confidence >= 70 ? "#00D4FF" : sig.confidence >= 50 ? "#FFD700" : "#94A3B8" },
+          // QA r13 B14: signal "confidence" is min(95, 55 + |score| × 5) — a formula, not calibrated.
+          { label: "CONFIDENCE", value: CONFIDENCE_NOT_ESTABLISHED, color: "#94A3B8" },
         ].map(({ label, value, color }) => (
           <div key={label} style={{ background: "rgba(255,255,255,0.02)", borderRadius: "2px", padding: "4px 6px" }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "6px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em", marginBottom: "2px" }}>{label}</div>
@@ -623,7 +625,6 @@ function SignalsSummaryBar({ signals }: { signals: CryptoSignalResult[] }) {
 
   const strongBuys  = signals.filter(s => s.action === "BUY"  && s.strength === "Strong").length;
   const strongSells = signals.filter(s => s.action === "SELL" && s.strength === "Strong").length;
-  const avgConf = Math.round(signals.reduce((s, v) => s + v.confidence, 0) / signals.length);
 
   const sentiment = counts.BUY > counts.SELL + counts.HOLD
     ? { label: "BULLISH BIAS", color: "#00D4FF" }
@@ -642,7 +643,7 @@ function SignalsSummaryBar({ signals }: { signals: CryptoSignalResult[] }) {
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.2em", color: "rgba(100,116,139,0.5)" }}>CRYPTO SIGNALS</span>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", fontWeight: 700, color: sentiment.color, letterSpacing: "0.1em" }}>{sentiment.label}</span>
         </div>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>AVG CONFIDENCE: <span style={{ color: "#94A3B8" }}>{avgConf}%</span></span>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>CONFIDENCE: <span style={{ color: "#94A3B8" }}>{CONFIDENCE_NOT_ESTABLISHED}</span></span>
       </div>
       <div style={{ display: "flex", gap: "8px", marginBottom: "10px", flexWrap: "wrap" }}>
         {(["BUY","SELL","HOLD","WATCH"] as TradingAction[]).map(action => {
@@ -865,13 +866,13 @@ function CryptoSignalsInner() {
                   regime: regimeCtx.headline,
                   btcDominance: screenerData.btcDominance,
                   totalMarketCap: screenerData.totalMarketCap,
-                  signals: screenerData.signals?.slice(0, 15).map((s: { symbol: string; action: string; actionLabel?: string; cryptoRegime?: string; regimeConflict?: boolean; confidence?: number }) => ({
+                  signals: screenerData.signals?.slice(0, 15).map((s: { symbol: string; action: string; actionLabel?: string; cryptoRegime?: string; regimeConflict?: boolean }) => ({
                     symbol: s.symbol,
                     action: s.action,
                     actionLabel: s.actionLabel,
                     cryptoRegime: s.cryptoRegime,
                     regimeConflict: s.regimeConflict,
-                    confidence: s.confidence,
+                    // QA r13 B14: no signal confidence in new share snapshots.
                   }))
                 }}
                 size="sm"
