@@ -1,4 +1,5 @@
 import SEOLandingPage from '@/pages/SEOLandingPage';
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const StockMarketRiskToday = () => {
   const currentDate = new Date().toISOString().split('T')[0];
@@ -21,25 +22,25 @@ const StockMarketRiskToday = () => {
         { icon: "◈", title: "Regime Analysis", desc: "Identify current market regimes and their implications for risk." },
         { icon: "◈", title: "Risk Vectors", desc: "Pinpoint specific factors driving market volatility and uncertainty." },
         { icon: "◈", title: "Historical Context", desc: "Compare current risk levels to past market cycles and events." },
-        { icon: "◈", title: "Forward-Looking Outlook", desc: "Anticipate potential shifts in market risk based on key indicators." },
+        { icon: "◈", title: "What Could Change", desc: "Conditions that would move systemic pressure up or down." },
         { icon: "◈", title: "Actionable Insights", desc: "Translate complex risk data into clear, understandable implications for investors." },
       ]}
       contentSections={[
         {
           heading: "What is the Stock Market Risk Today?",
-          body: `Today, the stock market exhibits a **moderate to elevated risk profile**, as indicated by FAULTLINE's Pressure Index. This proprietary metric, which aggregates various systemic risk vectors, currently stands at a level suggesting increased caution is warranted. While not signaling an immediate crash, the elevated reading reflects underlying vulnerabilities such as persistent inflation concerns, tightening monetary policy, and geopolitical tensions. Investors should interpret this as a period requiring heightened vigilance and strategic portfolio adjustments. The Pressure Index provides a nuanced view beyond simple volatility, focusing on the structural integrity and resilience of the market ecosystem. This regularly refreshed assessment is crucial for navigating complex market conditions and making informed decisions.`,
+          body: `This page does not carry a fixed reading. The current FAULTLINE Pressure Index reading and regime are on the public Pressure Index page at /pressure-index, recalculated as new FRED data is published. The Pressure Index provides a nuanced view beyond simple volatility, focusing on the structural integrity and resilience of the market ecosystem. This regularly refreshed assessment is crucial for navigating complex market conditions and making informed decisions.`,
         },
         {
-          heading: "Historical Context and Recent Changes",
-          body: `Historically, the current risk levels, as measured by the FAULTLINE Pressure Index, are comparable to periods observed in late 2021 and early 2022, preceding significant market corrections. What has changed recently is a confluence of factors: a hawkish shift in central bank rhetoric, leading to higher interest rate expectations, and a deceleration in global economic growth forecasts. These shifts have tightened financial conditions and reduced risk appetite among institutional investors. Unlike previous cycles driven by isolated events, the current environment is characterized by a broader, more interconnected set of challenges. Understanding these changes is vital for recognizing the evolving nature of market risk and its potential impact on asset valuations.`, 
+          heading: "Historical Context and What Moves Pressure",
+          body: `The Pressure Index has a retrospective archive on the Track Record page, which shows how an archived reconstruction scored past stress episodes. That archive is context, not a forecast and not a live warning record. Systemic pressure tends to change when central-bank policy, interest-rate expectations, credit spreads, or growth conditions shift, and those changes can tighten or ease financial conditions across the market.`, 
         },
         {
           heading: "Why Current Risk Matters and What Could Change the Outlook",
-          body: `Elevated stock market risk matters because it directly impacts investment returns, capital preservation, and strategic asset allocation. Ignoring these signals can lead to significant drawdowns and missed opportunities. For investors, it means re-evaluating exposure to growth-sensitive assets, increasing diversification, and potentially hedging against downside risks. What would change this outlook? A clear and sustained deceleration in inflation, leading to a more dovish stance from central banks, would significantly alleviate pressure. Additionally, a resolution of major geopolitical conflicts or a robust rebound in global manufacturing data could shift sentiment. Conversely, any escalation of current headwinds could push the Pressure Index into a high-risk zone. FAULTLINE provides the tools to monitor these developments as new data is published, helping you adapt your strategy proactively.`, 
+          body: `Systemic market risk matters because it affects investment returns, capital preservation, and strategic asset allocation. When pressure is elevated, investors often re-examine exposure to growth-sensitive assets, diversification, and downside protection. Pressure tends to ease when inflation decelerates and central banks turn more accommodative, and to rise when credit spreads widen, funding tightens, or policy tightens into slowing growth. FAULTLINE shows these developments as new FRED data is published.`, 
         },
         {
           heading: "Important Disclaimer",
-          body: `FAULTLINE is a market intelligence platform designed to provide educational insights and data analysis. The information presented, including the Pressure Index and market assessments, is for informational purposes only and does not constitute personalized financial advice, investment recommendations, or an offer to buy or sell any securities. Investors should conduct their own due diligence and consult with a qualified financial advisor before making any investment decisions. Past performance is not indicative of future results.`, 
+          body: `${PUBLIC_DISCLAIMER} The Pressure Index and market assessments are not personalized recommendations or an offer to buy or sell any security. Past performance is not indicative of future results.`, 
         },
       ]}
       faqs={[
@@ -47,11 +48,11 @@ const StockMarketRiskToday = () => {
         { question: "How often is the Stock Market Risk Today updated?", answer: "FAULTLINE's Pressure Index and associated risk assessments are refreshed regularly as new data is published, and each reading shows its as-of time." },
         { question: "Does a high Pressure Index mean a market crash is imminent?", answer: "Not necessarily. A high Pressure Index indicates elevated systemic risk and warrants caution, but it does not predict the exact timing or severity of market downturns. It's a tool for proactive risk management." },
         { question: "How can I use FAULTLINE to manage my portfolio risk?", answer: "FAULTLINE provides data and insights to help you understand market conditions, identify potential risks, and inform your investment strategy. It's a tool for intelligence, not direct advice." },
-        { question: "What are 'systemic risk vectors'?", answer: "Systemic risk vectors are broad factors that can impact the entire financial system, such as interest rate changes, inflation, geopolitical events, and credit market conditions, all of which are monitored by FAULTLINE." },
-        { question: "Is FAULTLINE suitable for individual investors?", answer: "FAULTLINE is designed for both institutional and sophisticated individual investors seeking deep market intelligence and analytical tools to enhance their understanding of market dynamics and risk." },
+        { question: "What are 'systemic risk vectors'?", answer: `Systemic risk vectors are the six weighted components of the Pressure Index: liquidity stress, credit contagion, the yield curve and 10-year level, macro sensitivity, labor and rates, and AI/speculation. They are built from eight FRED series plus a static AI baseline.` },
+        { question: "Is FAULTLINE suitable for individual investors?", answer: "FAULTLINE is designed for self-directed investors seeking structural market intelligence and analytical tools to enhance their understanding of market dynamics and risk." },
       ]}
       internalLinks={[
-        { label: "Pressure Index", href: "/pressure-index", desc: "View Pressure Index on FAULTLINE" },
+        { label: "Pressure Index", href: "/pressure-index", desc: "The current Pressure Index reading and regime" },
         { label: "Market Regime Tracker", href: "/market-regime-tracker", desc: "View Market Regime Tracker on FAULTLINE" },
         { label: "Daily Brief", href: "/daily-brief", desc: "View Daily Brief on FAULTLINE" },
         { label: "Volatility Analysis", href: "/volatility-analysis", desc: "View Volatility Analysis on FAULTLINE" },

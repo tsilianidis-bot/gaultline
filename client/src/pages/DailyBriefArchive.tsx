@@ -9,6 +9,7 @@ import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useSEO } from "@/hooks/useSEO";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,9 +41,9 @@ function getPressureLabel(score: number | null): string {
 
 export default function DailyBriefArchive() {
   useSEO({
-    title: "Daily Intelligence Briefs | FAULTLINE — Institutional Market Analysis",
+    title: "Daily Intelligence Briefs | FAULTLINE — Structural Market Intelligence",
     description:
-      "FAULTLINE's automated Daily Intelligence Briefs — institutional-grade macro analysis generated from live engine data every market day. Regime, pressure, opportunities, and risks.",
+      "FAULTLINE's automated Daily Intelligence Briefs — macro analysis generated from the latest published FAULTLINE engine data. No briefs have been published yet. Regime, pressure, opportunities, and risks.",
     canonical: "https://getfaultline.live/daily-brief",
   });
 
@@ -107,14 +108,15 @@ export default function DailyBriefArchive() {
             Daily Intelligence Briefs
           </h1>
           <p style={{ color: '#94A3B8', maxWidth: 600, lineHeight: 1.7, fontSize: '0.95rem' }}>
-            Every market day, FAULTLINE's autonomous engine collects live macro, liquidity, credit, and volatility data
-            and generates an institutional-grade intelligence brief — validated for accuracy before publishing.
+            FAULTLINE's automated pipeline builds each brief from the latest published macro, liquidity, credit, and volatility
+            data. Each draft is checked against the engine snapshot it was built from before it is published, and every brief
+            shows its as-of date.
           </p>
 
           <div className="flex flex-wrap items-center gap-4 mt-6">
             <div className="flex items-center gap-2 text-sm" style={{ color: '#6B7280' }}>
               <Clock style={{ width: 14, height: 14 }} />
-              <span>Published daily at market open</span>
+              <span>{(data?.total ?? 0) > 0 ? "Each brief shows its as-of date" : "No briefs published yet"}</span>
             </div>
             <span style={{ color: '#374151' }}>·</span>
             <a
@@ -141,7 +143,7 @@ export default function DailyBriefArchive() {
           <div className="flex flex-wrap gap-6">
             {[
               { icon: FileText, label: "Total Briefs", value: data?.total?.toLocaleString() ?? "—" },
-              { icon: TrendingUp, label: "Coverage", value: "Every Market Day" },
+              { icon: TrendingUp, label: "Status", value: (data?.total ?? 0) > 0 ? "Publishing" : "None published yet" },
               { icon: Shield, label: "Validation", value: "AI + Confidence Score" },
               { icon: AlertTriangle, label: "Data Guard", value: "No Fabrication Policy" },
             ].map(({ icon: Icon, label, value }) => (
@@ -184,7 +186,7 @@ export default function DailyBriefArchive() {
             <FileText style={{ width: 40, height: 40, margin: '0 auto 1rem', opacity: 0.3 }} />
             <p className="text-sm">No briefs published yet. The first brief will appear here after the automated pipeline runs.</p>
             <p className="text-xs mt-2" style={{ color: '#4B5563' }}>
-              Briefs are generated automatically every market day at open.
+              When briefs are published, each one will show its as-of date.
             </p>
           </div>
         ) : (
@@ -321,10 +323,10 @@ export default function DailyBriefArchive() {
       <div style={{ borderTop: '1px solid rgba(0,212,255,0.1)', background: 'rgba(0,212,255,0.03)', marginTop: '2rem' }}>
         <div className="max-w-5xl mx-auto px-4 py-12 text-center">
           <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#F1F5F9', marginBottom: '0.75rem' }}>
-            Get Daily Briefs Delivered
+            Follow the Daily Brief
           </h2>
           <p style={{ color: '#94A3B8', maxWidth: 480, margin: '0 auto 1.5rem', lineHeight: 1.7 }}>
-            Pro and Founding members receive the Daily Intelligence Brief by email every market morning before open.
+            Published briefs appear on this page. Start with a free account to follow FAULTLINE; paid plans are not on sale.
           </p>
           <Link href="/">
             <button style={{
@@ -340,9 +342,12 @@ export default function DailyBriefArchive() {
               textTransform: 'uppercase',
               transition: 'all 0.15s ease',
             }}>
-              View Plans →
+              Start Free →
             </button>
           </Link>
+          <p style={{ color: '#6B7280', fontSize: 12, marginTop: '2rem' }}>
+            {PUBLIC_DISCLAIMER}
+          </p>
         </div>
       </div>
     </div>

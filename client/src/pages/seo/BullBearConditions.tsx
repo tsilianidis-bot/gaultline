@@ -21,26 +21,26 @@ const BullBearConditions = () => {
         { icon: "◈", title: "Bull vs Bear Conditions", desc: "Understand the fundamental characteristics of bull and bear market conditions and what drives transitions." },
         { icon: "◎", title: "FAULTLINE Regime Engine", desc: "Access FAULTLINE's regularly refreshed regime classification — bull, bear, risk-on, risk-off, late-cycle." },
         { icon: "⬡", title: "Historical Turning Points", desc: "Compare current conditions with significant turning points in market history." },
-        { icon: "◈", title: "Pressure Index Score", desc: "The 0-100 systemic risk score that rises before bear markets and falls before recoveries." },
-        { icon: "◎", title: "Sentiment Shift Indicators", desc: "Identify key indicators that signal shifts in market sentiment before price confirms them." },
+        { icon: "◈", title: "Pressure Index Score", desc: "The 0-100 systemic risk score that shows where systemic pressure is building." },
+        { icon: "◎", title: "Sentiment Shift Indicators", desc: "Context on the conditions that tend to accompany shifts in market sentiment." },
         { icon: "⬡", title: "Credit and Liquidity Signals", desc: "Credit spreads and liquidity conditions are the earliest signals of regime transitions." },
       ]}
       contentSections={[
         {
           heading: "Understanding Bull vs. Bear Market Regimes",
-          body: "A bull market is characterized by rising stock prices, investor optimism, and economic growth. It's a period where demand outweighs supply, leading to upward price momentum. Conversely, a bear market sees declining stock prices, widespread pessimism, and often coincides with economic contraction. Supply tends to exceed demand, driving prices down. FAULTLINE employs a sophisticated multi-factor model to identify and categorize these regimes, moving beyond simple price action to incorporate underlying economic health, corporate earnings trends, and investor sentiment indicators. Recognizing which regime we are in is crucial for aligning investment strategies with prevailing market forces.",
+          body: "A bull market is characterized by rising stock prices, investor optimism, and economic growth. It's a period where demand outweighs supply, leading to upward price momentum. Conversely, a bear market sees declining stock prices, widespread pessimism, and often coincides with economic contraction. Supply tends to exceed demand, driving prices down. FAULTLINE classifies the regime from the Pressure Index bands (LOW RISK, MODERATE RISK, ELEVATED RISK, HIGH STRESS, SYSTEMIC CRISIS); a separate systemic-regime model reads FRED credit, financial-conditions, curve, and VIX series. Recognizing which regime we are in is crucial for aligning investment strategies with prevailing market forces.",
         },
         {
-          heading: "FAULTLINE's Current Regime Reading and Historical Context",
-          body: "Currently, FAULTLINE's proprietary indicators suggest a \"Neutral-to-Cautious\" stance, reflecting a market grappling with persistent inflation and rising interest rates, yet supported by resilient corporate earnings in certain sectors. This contrasts sharply with the unambiguous \"Bullish\" signals observed during the post-pandemic recovery of 2020-2021, and the \"Bearish\" signals of early 2022. Historically, such transitional phases are common, often preceding significant shifts. For instance, the late 1990s dot-com bubble burst was preceded by a prolonged period of speculative \"Bullish\" excess, while the 2008 financial crisis emerged from a \"Neutral-to-Cautious\" environment that rapidly deteriorated. Understanding these historical parallels helps contextualize current volatility.",
+          heading: "Regime Readings and Historical Context",
+          body: `This page does not carry a fixed regime reading. The current Pressure Index reading and regime band are on the public Pressure Index page at /pressure-index. Historically, transitional phases between clearly bullish and clearly bearish conditions are common. The 2000–2002 dot-com bust followed the speculative excess of the late 1990s, while the 2008 financial crisis emerged from conditions that deteriorated quickly once credit stress spread. Understanding these historical parallels helps put current volatility in context.`,
         },
         {
           heading: "What Changed and Why It Matters for Investors",
-          body: "The primary shift has been the aggressive monetary tightening by central banks globally, moving from an era of ultra-low interest rates and quantitative easing to one focused on combating inflation. This fundamental change alters the cost of capital, impacts corporate profitability, and revalues assets across the board. For investors, this means a higher discount rate for future earnings, making growth stocks less attractive relative to value stocks. It also implies increased volatility and a greater need for selective stock picking rather than broad market participation. FAULTLINE's analysis highlights these shifts, providing actionable intelligence on sectors and asset classes best positioned to navigate the new economic reality. Ignoring these changes can lead to significant portfolio underperformance.",
+          body: `Shifts in monetary policy are among the most important regime drivers. Moving from ultra-low interest rates and quantitative easing to tightening aimed at inflation changes the cost of capital, affects corporate profitability, and revalues assets across the board. Higher discount rates make long-duration growth earnings less attractive relative to value, and tightening periods tend to bring more volatility and dispersion. FAULTLINE reads this through policy rates, Treasury yields, inflation, credit spreads, and funding conditions in the Pressure Index.`,
         },
         {
           heading: "What Would Change the Outlook?",
-          body: "A definitive shift towards a more optimistic 'Bullish' outlook would likely require several key developments. Firstly, clear and sustained evidence of inflation returning to target levels without triggering a deep recession. Secondly, a pivot by central banks towards more accommodative monetary policy, or at least a pause in rate hikes, signaling confidence in economic stability. Thirdly, a resurgence in corporate earnings growth driven by genuine productivity gains, not just cost-cutting. Conversely, a slide into a 'Bearish' regime would be marked by a significant economic downturn, widespread corporate defaults, and a loss of consumer and business confidence. FAULTLINE continuously monitors these critical macroeconomic and microeconomic factors, providing timely updates on potential inflection points.",
+          body: `A shift toward more supportive conditions would usually involve inflation returning toward target without a deep recession, a move by central banks toward easier policy or at least a pause in hikes, and narrowing credit spreads. A slide into a stressed regime would usually show up as widening credit spreads, funding stress, rising unemployment, and tightening policy into slowing growth. FAULTLINE reads these conditions through the Pressure Index as new FRED data is published.`,
         },
       ]}
       faqs={[
@@ -50,7 +50,7 @@ const BullBearConditions = () => {
         },
         {
           question: "How does FAULTLINE determine current market conditions?",
-          answer: "FAULTLINE uses a proprietary multi-factor model that analyzes economic indicators, corporate earnings, investor sentiment, and technical analysis to provide a comprehensive regime reading.",
+          answer: `FAULTLINE classifies the regime from the Pressure Index bands (LOW RISK, MODERATE RISK, ELEVATED RISK, HIGH STRESS, SYSTEMIC CRISIS); a separate systemic-regime model reads FRED credit, financial-conditions, curve, and VIX series.`,
         },
         {
           question: "Can I use FAULTLINE's insights for personal investment decisions?",
@@ -62,7 +62,7 @@ const BullBearConditions = () => {
         },
         {
           question: "Are there any early warning signs of a market regime change?",
-          answer: "Key indicators include shifts in monetary policy, significant changes in corporate earnings forecasts, sustained increases in market volatility, and changes in leading economic indicators. FAULTLINE tracks these for you.",
+          answer: "Key indicators include shifts in monetary policy, significant changes in corporate earnings forecasts, sustained increases in market volatility, and changes in leading economic indicators. FAULTLINE reads the policy, rates, credit, inflation, and labor side of this through the Pressure Index; it does not ingest earnings forecasts.",
         },
       ]}
       internalLinks={[

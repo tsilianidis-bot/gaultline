@@ -5,18 +5,18 @@ export default function LearnCreditSpreads() {
     <SEOLandingPage
       seo={{
         title: 'Credit Spreads Explained | FAULTLINE Market Intelligence',
-        description: 'Understand credit spreads as a leading indicator of market stress. Learn how FAULTLINE\'s Pressure Index uses them to predict economic downturns.',
+        description: 'Understand credit spreads as a leading indicator of market stress. Learn how FAULTLINE\'s Pressure Index uses them to show systemic pressure building.',
         canonical: '/learn/credit-spreads-explained',
       }}
       badge="EDUCATIONAL GUIDE"
       headline="Credit Spreads Explained: A Leading Indicator of Market Stress"
-      subheadline="Uncover how credit spreads signal economic downturns and how FAULTLINE's Pressure Index leverages them for predictive market intelligence."
+      subheadline="Uncover how credit spreads signal building economic stress and how FAULTLINE's Pressure Index reads them as structural market intelligence."
       ctaLabel="Explore FAULTLINE's Pressure Index"
       ctaHref="/pressure-index"
       accentColor="#FFD700"
       features={[
         { icon: "◈", title: "Understand the fundamental mechanics of", desc: "Understand the fundamental mechanics of credit spreads" },
-        { icon: "◎", title: "Learn why credit spreads are", desc: "Learn why credit spreads are crucial for market prediction" },
+        { icon: "◎", title: "Learn why credit spreads are", desc: "Learn why credit spreads are crucial for reading market stress" },
         { icon: "⬡", title: "Discover how widening spreads signal", desc: "Discover how widening spreads signal economic stress" },
         { icon: "◈", title: "See how FAULTLINE integrates credit", desc: "See how FAULTLINE integrates credit spreads into its Pressure Index" },
         { icon: "◎", title: "Gain insights into historical market", desc: "Gain insights into historical market cycles and credit spreads" },
@@ -25,7 +25,7 @@ export default function LearnCreditSpreads() {
       contentSections={[
         {
           heading: 'What Are Credit Spreads?',
-          body: `Credit spreads represent the difference in yield between a risky debt instrument (like a corporate bond) and a risk-free benchmark (like a U.S. Treasury bond) of similar maturity. This differential compensates investors for taking on additional credit risk, which includes the possibility of default. When economic conditions are stable and investor confidence is high, credit spreads tend to be narrow, indicating a lower perceived risk. Conversely, during periods of economic uncertainty or distress, investors demand higher compensation for risk, causing credit spreads to widen significantly. Understanding these dynamics is fundamental to assessing the health of financial markets and the broader economy. FAULTLINE continuously monitors various credit spread metrics to provide a nuanced view of market sentiment and potential vulnerabilities. This foundational understanding is key to interpreting the signals that often precede major market shifts.`, 
+          body: `Credit spreads represent the difference in yield between a risky debt instrument (like a corporate bond) and a risk-free benchmark (like a U.S. Treasury bond) of similar maturity. This differential compensates investors for taking on additional credit risk, which includes the possibility of default. When economic conditions are stable and investor confidence is high, credit spreads tend to be narrow, indicating a lower perceived risk. Conversely, during periods of economic uncertainty or distress, investors demand higher compensation for risk, causing credit spreads to widen significantly. Understanding these dynamics is fundamental to assessing the health of financial markets and the broader economy. FAULTLINE monitors various credit spread metrics to provide a nuanced view of market sentiment and potential vulnerabilities. This foundational understanding is key to interpreting the signals that often precede major market shifts.`, 
         },
         {
           heading: 'Why Credit Spreads Matter as a Leading Indicator',
@@ -37,7 +37,7 @@ export default function LearnCreditSpreads() {
         },
         {
           heading: 'FAULTLINE\'s Approach: Credit Spreads in the Pressure Index',
-          body: `FAULTLINE's proprietary Pressure Index leverages a sophisticated methodology to incorporate credit spreads as a core component, transforming raw market data into actionable market intelligence. We don't just observe credit spreads; we analyze their rate of change, absolute levels, and historical context across various sectors and maturities. This multi-dimensional analysis allows us to identify subtle shifts in market sentiment and liquidity that might otherwise go unnoticed. The Pressure Index then synthesizes these credit spread signals with other key indicators to provide a comprehensive, forward-looking assessment of market stress. For example, a rapid widening of credit spreads, particularly in conjunction with other deteriorating metrics, would contribute to a higher Pressure Index reading, signaling increased risk. This integration provides a clear, current FAULTLINE rating, offering investors a powerful tool to anticipate market turning points and make more informed decisions, moving beyond simple observation to predictive analysis.`, 
+          body: `FAULTLINE's Pressure Index uses the ICE BofA U.S. high-yield option-adjusted spread (FRED: BAMLH0A0HYM2) as a core input. It feeds two of the six weighted vectors: Liquidity Stress (with SOFR) and Credit Contagion (with the 10-year Treasury yield and unemployment), which together carry 40% of the score. FAULTLINE's separate systemic-regime model also reads the investment-grade corporate spread (BAMLC0A0CM). A rapid widening of high-yield spreads, particularly alongside rising funding costs or unemployment, pushes the Pressure Index higher — showing pressure building in the system. It is a reading of current structural conditions, not a forecast of a turning point or its date.`, 
         },
       ]}
       faqs={[
@@ -50,7 +50,7 @@ export default function LearnCreditSpreads() {
           answer: 'Credit spreads are a leading indicator of market sentiment and economic health. Widening spreads often signal increasing risk aversion and potential economic downturns, providing early warnings for investors.',
         },
         {
-          question: 'How do credit spreads predict market stress?',
+          question: 'How do credit spreads signal market stress?',
           answer: 'When credit spreads widen, it indicates that investors are demanding higher compensation for risk, suggesting concerns about future defaults or economic stability. This often precedes broader market corrections.',
         },
         {
@@ -70,7 +70,7 @@ export default function LearnCreditSpreads() {
         { label: "Pressure Index", href: "/pressure-index", desc: "View Pressure Index on FAULTLINE" },
         { label: "Market Regime Tracker", href: "/market-regime-tracker", desc: "View Market Regime Tracker on FAULTLINE" },
         { label: "Daily Brief", href: "/daily-brief", desc: "View Daily Brief on FAULTLINE" },
-        { label: "Recession Probability", href: "/recession-probability", desc: "View Recession Probability on FAULTLINE" },
+        { label: "Recession Risk Context", href: "/recession-probability", desc: "View recession-risk context on FAULTLINE" },
         { label: "Credit Market Stress", href: "/credit-market-stress", desc: "View Credit Market Stress on FAULTLINE" },
         { label: "Signals", href: "/signals", desc: "View Signals on FAULTLINE" },
       ]}

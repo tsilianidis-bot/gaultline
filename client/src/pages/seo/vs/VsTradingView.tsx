@@ -19,8 +19,8 @@ export default function VsTradingView() {
       features={[
         { icon: "◈", title: "Systemic Risk Intelligence", desc: "FAULTLINE provides deep insights into systemic risks and macro regime shifts, going beyond price action." },
         { icon: "◈",
-          title: "Forward-Looking Analysis",
-          desc: "Unlike backward-looking technical analysis, FAULTLINE focuses on what's building beneath the surface to anticipate future trends.",
+          title: "Structural Analysis",
+          desc: "Where technical analysis reads price, FAULTLINE focuses on the pressure building beneath the surface. It is not a forecast of future trends.",
         },
         { icon: "◎",
           title: "Macro Regime Tracking",
@@ -28,7 +28,7 @@ export default function VsTradingView() {
         },
         { icon: "◈", title: "Educational & Contextual", desc: "Gain a comprehensive understanding of market dynamics with educational content and actionable context, not just signals." },
         { icon: "◈", title: "Data-Driven Insights", desc: "Leverage unique data sets and analytical models to uncover hidden risks and opportunities as new data is published." },
-        { icon: "◈", title: "Strategic Investment Focus", desc: "Designed for macro investors, hedge funds, and institutional allocators seeking strategic advantage." },
+        { icon: "◈", title: "Strategic Investment Focus", desc: "Designed for macro-minded investors who want to understand the systemic environment behind the chart." },
       ]}
       contentSections={[
         {
@@ -37,11 +37,11 @@ export default function VsTradingView() {
         },
         {
           heading: "Key Differences in Approach and Focus",
-          body: `The fundamental difference between FAULTLINE and TradingView lies in their core methodologies and target audiences. TradingView is a technical analysis powerhouse, providing granular data on individual assets and enabling users to dissect price action. Its strength is in micro-level market observation and short-to-medium term trading strategies. FAULTLINE, however, operates at a macro level. It synthesizes vast amounts of economic, financial, and geopolitical data to construct a holistic view of systemic risk. It's not about predicting the next candlestick but about understanding the broader economic and market environment that influences all assets. FAULTLINE's insights are designed for long-term strategic allocation and risk management, offering a framework to navigate complex market cycles and anticipate significant shifts in the investment landscape. This distinction is crucial for investors seeking different types of market intelligence.`,
+          body: `The fundamental difference between FAULTLINE and TradingView lies in their core methodologies and target audiences. TradingView is a technical analysis powerhouse, providing granular data on individual assets and enabling users to dissect price action. Its strength is in micro-level market observation and short-to-medium term trading strategies. FAULTLINE, however, operates at a macro level. It synthesizes vast amounts of economic, financial, and geopolitical data to construct a holistic view of systemic risk. It's not about predicting the next candlestick but about understanding the broader economic and market environment that influences all assets. FAULTLINE's insights are designed for long-term strategic allocation and risk management, offering a framework to navigate complex market cycles and see where systemic pressure is building. This distinction is crucial for investors seeking different types of market intelligence.`,
         },
         {
           heading: "Who FAULTLINE Is For",
-          body: `FAULTLINE is built for sophisticated macro investors, hedge fund managers, institutional allocators, and serious individual investors who understand that market outcomes are often driven by forces far greater than individual stock charts. If your investment strategy involves understanding global liquidity, credit cycles, inflation regimes, or geopolitical risks, FAULTLINE provides the specialized intelligence you need. It's not for day traders looking for quick signals, nor is it a stock screener for identifying undervalued companies. Instead, FAULTLINE empowers users to make informed decisions based on a deep comprehension of systemic vulnerabilities and macro trends. It serves as an essential tool for those who aim to position their portfolios proactively against unseen risks and capitalize on emerging opportunities driven by fundamental shifts.`,
+          body: `FAULTLINE is built for macro-minded investors and serious self-directed investors who understand that market outcomes are often driven by forces far greater than individual stock charts. If your investment strategy involves understanding global liquidity, credit cycles, inflation regimes, or geopolitical risks, FAULTLINE provides the specialized intelligence you need. It's not for day traders looking for quick signals, nor is it a stock screener for identifying undervalued companies. Instead, FAULTLINE empowers users to make informed decisions based on a deep comprehension of systemic vulnerabilities and macro trends. It serves as an essential tool for those who aim to position their portfolios proactively against unseen risks and capitalize on emerging opportunities driven by fundamental shifts.`,
         },
         {
           heading: "FAULTLINE's Unique Approach to Market Intelligence",
@@ -59,7 +59,7 @@ export default function VsTradingView() {
         },
         {
           question: "How does FAULTLINE help with risk management compared to TradingView?",
-          answer: "TradingView's risk management tools often focus on position sizing and stop-loss levels based on price action. FAULTLINE, conversely, helps with macro risk management by identifying systemic risks and potential regime shifts that could impact entire portfolios. It provides a framework to understand and anticipate large-scale market dislocations.",
+          answer: "TradingView's risk management tools often focus on position sizing and stop-loss levels based on price action. FAULTLINE, conversely, helps with macro risk management by identifying systemic risks and potential regime shifts that could impact entire portfolios. It provides a framework to understand the conditions behind large-scale market dislocations.",
         },
         {
           question: "Is FAULTLINE suitable for day trading?",

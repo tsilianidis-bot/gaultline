@@ -15,10 +15,10 @@ export default function LearnWhatIsLiquidity() {
       ctaHref="/liquidity-monitor"
       accentColor="#00FF88"
       features={[
-        { icon: "◈", title: "Liquidity Monitor", desc: "FAULTLINE tracks Fed QT, bank lending conditions, and global liquidity flows as new data is published." },
-        { icon: "◎", title: "Pressure Index Integration", desc: "Liquidity conditions are one of seven risk vectors in the FAULTLINE Pressure Index." },
-        { icon: "⬡", title: "Historical Context", desc: "Every major market dislocation since 2000 was preceded by liquidity withdrawal. FAULTLINE tracks the same signals." },
-        { icon: "◈", title: "Fed Policy Tracking", desc: "Quantitative tightening and rate hikes reduce market liquidity. FAULTLINE monitors Fed policy signals continuously." },
+        { icon: "◈", title: "Liquidity Monitor", desc: "FAULTLINE reads funding conditions through high-yield credit spreads and SOFR as new FRED data is published." },
+        { icon: "◎", title: "Pressure Index Integration", desc: "Liquidity Stress is one of six weighted vectors in the FAULTLINE Pressure Index, carrying a 20% weight." },
+        { icon: "⬡", title: "Historical Context", desc: "Liquidity withdrawal featured in many of the major market dislocations since 2000. FAULTLINE tracks the funding and credit side of those signals." },
+        { icon: "◈", title: "Fed Policy Tracking", desc: "Quantitative tightening and rate hikes reduce market liquidity. FAULTLINE reads the federal funds rate and Treasury yields as new data is published." },
         { icon: "◎", title: "Credit Spread Connection", desc: "Liquidity stress shows up in credit spreads before it shows up in equity prices." },
         { icon: "⬡", title: "Regime Impact", desc: "Liquidity conditions determine whether the current regime is sustainable or vulnerable to a rapid reversal." },
       ]}
@@ -37,7 +37,7 @@ The most important driver of market-level liquidity is the Federal Reserve. When
 
 The most dangerous market environments are those where liquidity appears abundant but is actually fragile. This was the case in 2007-2008, when credit markets appeared liquid until they suddenly were not. It was also the case in early 2020, when the COVID shock triggered a liquidity crisis that required unprecedented Fed intervention.
 
-For investors, liquidity conditions determine the risk of sudden, sharp drawdowns that are not driven by fundamentals. A portfolio that is well-positioned for the fundamental environment can still suffer severe losses if liquidity withdraws rapidly. This is why FAULTLINE tracks liquidity conditions as one of its seven core risk vectors.`,
+For investors, liquidity conditions determine the risk of sudden, sharp drawdowns that are not driven by fundamentals. A portfolio that is well-positioned for the fundamental environment can still suffer severe losses if liquidity withdraws rapidly. This is why FAULTLINE tracks liquidity stress as one of the six weighted vectors of the Pressure Index.`,
         },
         {
           heading: "How Investors Misunderstand Liquidity",
@@ -49,11 +49,11 @@ A third misunderstanding is treating liquidity as a background condition rather 
         },
         {
           heading: "How FAULTLINE Monitors Liquidity",
-          body: `FAULTLINE's Liquidity Monitor tracks several key indicators of market liquidity conditions: Federal Reserve balance sheet changes (QT vs QE), bank lending standards (from the Fed's Senior Loan Officer Survey), high-yield credit spreads (which widen when liquidity is scarce), and global central bank policy (which affects cross-border capital flows).
+          body: `FAULTLINE's Liquidity Stress vector reads two FRED series: the ICE BofA U.S. high-yield spread (which widens when liquidity is scarce) and SOFR, the secured overnight funding rate (which shows the cost of short-term funding). FAULTLINE does not currently ingest Federal Reserve balance sheet changes or the Senior Loan Officer Survey.
 
-These indicators are integrated into the FAULTLINE Pressure Index as one of seven risk vectors. When liquidity conditions are deteriorating — Fed tightening, bank lending tightening, credit spreads widening — the Pressure Index rises, reflecting the increased structural vulnerability of the market.
+This vector carries a 20% weight in the FAULTLINE Pressure Index. When liquidity conditions are deteriorating — funding costs rising, credit spreads widening — the Pressure Index rises, reflecting the increased structural vulnerability of the market.
 
-FAULTLINE also provides historical context for current liquidity conditions, comparing today's readings against historical periods with similar liquidity dynamics. This allows users to understand not just the current level of liquidity stress, but how it compares to past environments and what typically happened next. This is market intelligence, not financial advice.`,
+FAULTLINE also provides historical context for current liquidity conditions, comparing today's vector profile with reference profiles of past stress episodes. This allows users to understand not just the current level of liquidity stress, but how it compares to past environments — as context, not a forecast. This is market intelligence, not financial advice.`,
         },
       ]}
       faqs={[
@@ -71,7 +71,7 @@ FAULTLINE also provides historical context for current liquidity conditions, com
         },
         {
           question: "How does FAULTLINE track liquidity conditions?",
-          answer: "FAULTLINE tracks Fed balance sheet changes, bank lending standards, high-yield credit spreads, and global central bank policy. These are integrated into the Pressure Index as one of seven risk vectors. The Liquidity Monitor page provides a dedicated view of current liquidity conditions with historical context.",
+          answer: "FAULTLINE tracks liquidity through high-yield credit spreads and SOFR from FRED. Together they form the Liquidity Stress vector — one of six weighted Pressure Index vectors, at 20%. The Liquidity Monitor page explains the current liquidity reading with historical context.",
         },
         {
           question: "Is FAULTLINE financial advice?",
@@ -80,7 +80,7 @@ FAULTLINE also provides historical context for current liquidity conditions, com
       ]}
       internalLinks={[
         { label: "LIQUIDITY MONITOR", href: "/liquidity-monitor", desc: "Regularly refreshed tracking of market liquidity conditions and Fed policy signals." },
-        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "The core systemic risk score — liquidity is one of 7 risk vectors." },
+        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "The core systemic risk score — liquidity is one of 6 weighted vectors." },
         { label: "DAILY BRIEF", href: "/daily-brief", desc: "Today's market conditions, including liquidity assessment." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Track Fed policy signals and their impact on market liquidity." },
         { label: "CREDIT MARKET STRESS", href: "/credit-market-stress", desc: "Credit spreads widen when liquidity is scarce — track them as new data is published." },

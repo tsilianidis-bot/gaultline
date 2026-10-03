@@ -4,6 +4,7 @@ import { UnifiedIntelligenceChart, type IntelligenceBar, type IntelligenceMarker
 import SystemicRegimeChart from "@/components/SystemicRegimeChart";
 import { trpc } from "@/lib/trpc";
 import { CANONICAL_HOME } from "@shared/routeRegistry";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const ranges = [30, 90] as const;
 const pressure = (n: number | null | undefined) => n == null ? "unavailable" : `${Math.round(n)} / 100`;
@@ -79,5 +80,6 @@ export default function PressureHistory() {
         warningDates={(archive?.events ?? []).map((e: { eventAt: Date | string }) => new Date(e.eventAt).toISOString().slice(0, 10))}
       />
     </section>
+    <p style={{ margin: "24px 0 8px", color: "#64748B", fontSize: 12, textAlign: "center" }}>{PUBLIC_DISCLAIMER}</p>
   </main>;
 }

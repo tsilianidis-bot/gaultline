@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { useSEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 // ── Regime color helpers ─────────────────────────────────────────────────────
 const REGIME_COLORS: Record<string, { bg: string; border: string; text: string; bar: string }> = {
@@ -183,7 +184,7 @@ const CRISIS_CALLOUTS = [
     label: "Global Financial Crisis",
     peak: 82,
     regime: "CRITICAL",
-    description: "Retrospective analysis shows CRITICAL (82/100) in October 2008 — the month Lehman Brothers collapsed. Baa credit spreads hit 5.53% (HY proxy ~11.45%), with CRITICAL readings sustained for 8 consecutive months through May 2009.",
+    description: "Retrospective analysis shows CRITICAL (82/100) in October 2008 — the month after Lehman Brothers' September 15, 2008 bankruptcy filing. The Moody's Baa–10-year Treasury spread stood at 5.53% on October 31, 2008 (FRED BAA10Y), with CRITICAL readings sustained for 8 consecutive months through May 2009.",
     outcome: "S&P 500 fell ~57% from peak (Oct 2007) to trough (Mar 2009). Unemployment peaked at 10%.",
   },
   {
@@ -191,7 +192,7 @@ const CRISIS_CALLOUTS = [
     label: "European Debt Crisis",
     peak: 72,
     regime: "HIGH RISK",
-    description: "Elevated unemployment (9–10%) and persistent credit stress kept the model in HIGH RISK territory through much of 2010–2012, capturing the eurozone sovereign debt contagion that threatened global financial stability.",
+    description: "Elevated unemployment (7.7–9.9% over 2010–2012) and persistent credit stress kept the model in HIGH RISK territory through much of 2010–2012, capturing the eurozone sovereign debt contagion that threatened global financial stability.",
     outcome: "Multiple EU sovereign downgrades, ECB emergency interventions, Greek restructuring.",
   },
   {
@@ -299,9 +300,9 @@ export default function TrackRecord() {
 	  />
 	  <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
 	    <section className="mb-10">
-	      <div className="text-xs font-mono tracking-[0.18em] text-cyan-400 uppercase mb-3">Live Verified Early Warning Intelligence</div>
+	      <div className="text-xs font-mono tracking-[0.18em] text-cyan-400 uppercase mb-3">Current Early Warning Presentation</div>
 	      <EarlyWarningPresentationPanel mode="compact" />
-	      <p className="mt-3 text-xs text-zinc-500 leading-relaxed">The governed live presentation above is separate from the retrospective historical analysis below. Historical reconstruction is not a live verified warning record.</p>
+	      <p className="mt-3 text-xs text-zinc-500 leading-relaxed">The governed presentation above is separate from the retrospective historical analysis below. Historical reconstruction is not a live verified warning record.</p>
 	    </section>
 	    {/* Hero */}
         <div className="mb-10">
@@ -553,11 +554,11 @@ export default function TrackRecord() {
         <div className="border border-zinc-800 rounded-xl p-8 bg-zinc-900/40 text-center">
           <h2 className="text-2xl font-bold text-white mb-3">See Today's Reading</h2>
           <p className="text-zinc-400 mb-6 max-w-lg mx-auto">
-            The live Pressure Index updates daily with the latest published data. Access the full platform to see current risk vectors, scenario analysis, and the Aftershock Engine.
+            The current Pressure Index is recalculated as new FRED data is published. Access the full platform to see current risk vectors, scenario analysis, and the Aftershock Engine.
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <Link href="/pressure-index" className="px-6 py-3 bg-white text-black font-semibold rounded-lg hover:bg-zinc-200 transition-colors text-sm">
-              View Live Pressure Index
+              View the Pressure Index
             </Link>
             <Link href="/app" className="px-6 py-3 border border-zinc-700 text-white font-semibold rounded-lg hover:border-zinc-500 transition-colors text-sm">
               Explore Free Platform
@@ -569,7 +570,7 @@ export default function TrackRecord() {
       {/* Footer */}
       <footer className="border-t border-zinc-800/50 mt-16 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-zinc-400">
-          <span>© 2025 FAULTLINE. All rights reserved.</span>
+          <span>© {new Date().getFullYear()} FAULTLINE. All rights reserved. {PUBLIC_DISCLAIMER}</span>
           <div className="flex items-center gap-4">
             <Link href="/legal" className="hover:text-zinc-400 transition-colors">Privacy Policy</Link>
             <Link href="/legal" className="hover:text-zinc-400 transition-colors">Terms of Use</Link>

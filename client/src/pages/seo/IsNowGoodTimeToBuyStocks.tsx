@@ -15,19 +15,19 @@ export default function IsNowGoodTimeToBuyStocks() {
       ctaHref="/pressure-index"
       accentColor="#00FF88"
       features={[
-        { icon: "◈", title: "Pressure Index Score", desc: "A 0-100 systemic risk score aggregating credit spreads, VIX regime, yield curve, liquidity, AI concentration, and breadth." },
-        { icon: "◎", title: "Market Regime Classification", desc: "Regularly refreshed classification of the current regime — bull, bear, risk-on, risk-off, late-cycle — updated continuously." },
+        { icon: "◈", title: "Pressure Index Score", desc: "A 0-100 systemic risk score combining credit spreads, funding rates, the yield curve, inflation, labor, and a static AI-concentration baseline." },
+        { icon: "◎", title: "Market Regime Classification", desc: "Classification of the current regime from the Pressure Index bands — Low Risk, Moderate Risk, Elevated Risk, High Stress, Systemic Crisis — refreshed as new data is published." },
         { icon: "⬡", title: "Historical Analog Matching", desc: "Compare current conditions against historical periods to understand which past environment today most resembles." },
-        { icon: "◈", title: "Recession Probability", desc: "Leading economic indicators of recession risk — the single biggest driver of sustained bear markets." },
-        { icon: "◎", title: "Liquidity Conditions", desc: "Fed QT, bank lending tightening, and global liquidity withdrawal are the mechanism behind most major market dislocations." },
-        { icon: "⬡", title: "Credit Spread Monitor", desc: "High-yield credit spreads are the earliest institutional signal of systemic stress — they move before price does." },
+        { icon: "◈", title: "Recession Risk", desc: "Leading economic indicators of recession risk — the single biggest driver of sustained bear markets." },
+        { icon: "◎", title: "Liquidity Conditions", desc: "Funding stress — read through high-yield credit spreads and SOFR — is a common mechanism behind major market dislocations." },
+        { icon: "⬡", title: "Credit Spread Monitor", desc: "High-yield credit spreads are one of the clearest public signals of systemic stress, and they often widen before equity prices fully reflect it." },
       ]}
       contentSections={[
         {
           heading: "How to Evaluate Whether Now Is a Good Time to Buy Stocks",
           body: `The question of whether now is a good time to buy stocks does not have a single answer. It depends on the current market regime, the level of systemic risk, and how today's conditions compare to historical environments. FAULTLINE's approach is to provide a structured, data-driven framework for evaluating these conditions rather than offering a simple yes or no.
 
-The FAULTLINE Pressure Index aggregates seven independent risk vectors into a single 0-100 score. When the Pressure Index is low (below 30), conditions are structurally sound and the historical record shows favorable forward returns. When it is elevated (above 60), the historical record shows that major dislocations become significantly more probable.
+The FAULTLINE Pressure Index combines six weighted vectors — liquidity stress (high-yield spreads and SOFR), credit contagion, yield curve and 10-year level, macro sensitivity (CPI, PPI, federal funds), labor and rates, and a static AI-concentration baseline — built from eight FRED series into a single 0-100 score. Below 25 the measured inputs show little structural stress; from 45 the reading is Elevated Risk, and from 65 High Stress. It describes the pressure in the system today — it does not predict forward returns or the timing of a dislocation.
 
 This is not a timing tool — it is a risk assessment framework. A low Pressure Index does not guarantee positive returns. An elevated Pressure Index does not guarantee a crash. It reflects the structural environment in which you are making decisions.`,
         },
@@ -35,17 +35,17 @@ This is not a timing tool — it is a risk assessment framework. A low Pressure 
           heading: "Market Regime and What It Means for Stock Buying",
           body: `Market regime matters as much as valuation. Buying stocks in a confirmed bull market regime with low systemic pressure is structurally different from buying in a late-cycle environment with elevated credit stress and deteriorating breadth — even if valuations look similar on the surface.
 
-FAULTLINE's regime engine classifies the current market environment as new data is published. Early-cycle bull regimes historically produce the strongest forward returns. Late-cycle regimes with elevated Pressure Index readings have historically produced the weakest risk-adjusted returns and the highest probability of drawdowns exceeding 20%.
+FAULTLINE's regime engine classifies the current market environment as new data is published. In market history broadly, early-cycle recoveries have tended to reward buyers most, while late-cycle environments with elevated credit stress have tended to carry the greatest drawdown risk. An elevated Pressure Index shows that kind of structural pressure building; it is not calibrated to forward returns.
 
 The regime classification also determines how other signals should be interpreted. A rising VIX in a bull regime is often a buying opportunity. The same VIX move in a late-cycle regime with deteriorating credit conditions is a warning signal. Context is everything.`,
         },
         {
           heading: "Historical Context: What Has Happened After Similar Conditions?",
-          body: `FAULTLINE's historical analog engine compares current conditions against every market environment since 2000 to identify the closest historical matches. For each analog, it shows what happened over the following 1 week, 1 month, 3 months, and 6 months — not as a prediction, but as a probability distribution based on historical precedent.
+          body: `FAULTLINE's historical analog engine compares the current pressure-vector profile with hand-set reference profiles of past stress episodes to identify the closest resemblances. It shows how closely today resembles each episode — resemblance, not a prediction and not a distribution of forward returns.
 
-When today's conditions most closely resemble early-cycle recoveries (2003, 2009, 2020 post-crash), the historical record shows strong forward returns with low drawdown risk. When today's conditions most closely resemble late-cycle expansions with elevated AI concentration and tightening credit (1999-2000, 2021-2022), the historical record shows elevated drawdown risk over the following 3-6 months.
+The library holds ten fixed reference profiles: six core stress episodes (1973, 1998, 2000, 2008, 2020, and 2022) plus 2011, 2015, 2019, and 2023 in the extended library. A close resemblance to 2000 points to concentration and valuation stress; a close resemblance to 2008 or 2020 points to credit and liquidity stress; a close resemblance to 1973 or 2022 points to inflation and rate stress. Which kind of pressure is building matters as much as how much.
 
-Understanding which historical environment today most resembles is one of the most powerful inputs available for evaluating market entry conditions.`,
+Understanding which historical environment today most resembles is useful context for evaluating market conditions — not a signal on its own.`,
         },
         {
           heading: "Disclaimer",
@@ -55,7 +55,7 @@ Understanding which historical environment today most resembles is one of the mo
       faqs={[
         {
           question: "How does FAULTLINE assess whether now is a good time to buy stocks?",
-          answer: "FAULTLINE uses the Pressure Index (a 0-100 systemic risk score), regime classification (bull/bear/risk-on/risk-off), and historical analog matching to provide a structured framework for evaluating market entry conditions. Low Pressure Index readings with favorable regime conditions have historically produced stronger forward returns.",
+          answer: "FAULTLINE uses the Pressure Index (a 0-100 systemic risk score), regime classification (five bands from Low Risk to Systemic Crisis), and historical analog matching to provide a structured framework for evaluating market entry conditions. The framework describes current structural conditions; it does not predict forward returns.",
         },
         {
           question: "Is FAULTLINE's analysis personalized financial advice?",
@@ -63,27 +63,27 @@ Understanding which historical environment today most resembles is one of the mo
         },
         {
           question: "What is the Pressure Index and how does it relate to stock buying?",
-          answer: "The FAULTLINE Pressure Index aggregates seven systemic risk vectors into a single 0-100 score. Low readings (below 30) indicate structurally sound conditions with historically favorable forward returns. High readings (above 60) indicate elevated systemic risk with historically higher probability of major dislocations.",
+          answer: "The FAULTLINE Pressure Index combines six weighted systemic risk vectors into a single 0-100 score. Readings below 25 (Low Risk) mean the measured inputs show little structural stress. Readings of 45 and above (Elevated Risk) and 65 and above (High Stress) mean systemic pressure is building. The score is not calibrated to forward returns or crash odds.",
         },
         {
           question: "What market conditions historically favor buying stocks?",
-          answer: "Historically, the most favorable conditions for buying stocks combine: low systemic pressure (Pressure Index below 30), early-cycle or mid-cycle bull regime, low credit spreads, accommodative Fed policy, and strong market breadth. FAULTLINE tracks all of these as new data is published.",
+          answer: "Historically, the most favorable conditions for buying stocks combine: low systemic pressure (Pressure Index below 25), early-cycle or mid-cycle bull regime, low credit spreads, accommodative Fed policy, and strong market breadth. The Pressure Index and regime classification cover the first four as new data is published; market breadth is context, not a Pressure Index input.",
         },
         {
           question: "What conditions historically suggest caution about buying stocks?",
-          answer: "Conditions that historically precede major drawdowns include: elevated Pressure Index (above 60), late-cycle regime with deteriorating breadth, widening high-yield credit spreads, yield curve inversion, and Fed tightening into slowing growth. FAULTLINE monitors all of these continuously.",
+          answer: "Conditions that have often accompanied major drawdowns include widening high-yield credit spreads, funding stress, yield curve inversion, and Fed tightening into slowing growth. FAULTLINE reads these through the Pressure Index as new data is published; an elevated reading shows pressure building, not a drawdown date.",
         },
         {
           question: "How often is FAULTLINE's market assessment updated?",
-          answer: "FAULTLINE's Pressure Index and regime classification are recalculated as new data is published by FRED, Polygon.io, and market data feeds. Economic data from FRED updates on its standard release schedule.",
+          answer: "FAULTLINE's Pressure Index and regime classification are recalculated as new FRED data is published. Economic data from FRED updates on its standard release schedule.",
         },
       ]}
       internalLinks={[
-        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "The core systemic risk score — 7 vectors aggregated into a single 0-100 reading." },
+        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "The core systemic risk score — 6 weighted vectors combined into a single 0-100 reading." },
         { label: "MARKET REGIME TRACKER", href: "/market-regime-tracker", desc: "Regularly refreshed classification of the current market regime." },
         { label: "DAILY BRIEF", href: "/daily-brief", desc: "Today's market conditions, key drivers, and risk assessment." },
-        { label: "RECESSION PROBABILITY", href: "/recession-probability", desc: "Leading economic indicators of recession risk — the biggest driver of sustained bear markets." },
-        { label: "HISTORICAL ANALOGS", href: "/analogs", desc: "Compare current conditions against historical environments to understand what happened next." },
+        { label: "RECESSION RISK CONTEXT", href: "/recession-probability", desc: "Leading economic indicators of recession risk — the biggest driver of sustained bear markets." },
+        { label: "HISTORICAL ANALOGS", href: "/analogs", desc: "Compare today's vector profile with reference profiles of past stress episodes." },
         { label: "BULL OR BEAR MARKET?", href: "/bull-or-bear-market", desc: "Is the stock market currently in a bull or bear market? FAULTLINE's regime classification." },
       ]}
       schemaType="Article"

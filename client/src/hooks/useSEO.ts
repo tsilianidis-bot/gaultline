@@ -70,7 +70,7 @@ export const PAGE_SEO = {
   pressure: {
     title: "FAULTLINE Pressure Index™ — Systemic Risk Monitor",
     description:
-      "Track the FAULTLINE Pressure Index™ live. Monitor systemic market stress, credit spreads, liquidity conditions, and volatility regimes across equity, bond, and credit markets.",
+      "Track the FAULTLINE Pressure Index™ as new FRED data is published. Monitor systemic market stress through credit spreads, funding conditions, rates, inflation, and labor data.",
     canonical: "/app/pressure",
   },
   // 46 chars ✓
@@ -98,14 +98,14 @@ export const PAGE_SEO = {
   aiWatch: {
     title: "AI Watch — AI Bubble & Concentration Monitor",
     description:
-      "Monitor AI sector concentration risk, bubble exposure, and systemic fragility in AI-driven equities. Track $214B+ in AI capex commitments and mega-cap concentration.",
+      "Monitor AI sector concentration risk, bubble exposure, and systemic fragility in AI-driven equities. FAULTLINE uses a static AI-concentration baseline and does not ingest AI capex data.",
     canonical: "/app/ai-watch",
   },
   // 47 chars ✓
   scenarios: {
     title: "Scenario Analysis — Macro Stress Simulations",
     description:
-      "Simulate macro stress scenarios: market crash probability, recession pathways, credit contagion cascades, and systemic risk events with the FAULTLINE Scenario Engine.",
+      "Simulate macro stress scenarios: market crash risk, recession pathways, credit contagion cascades, and systemic risk events with the FAULTLINE Scenario Engine.",
     canonical: "/app/scenarios",
   },
   // 44 chars ✓
@@ -175,7 +175,7 @@ export const PAGE_SEO = {
   report: {
     title: "Daily Intelligence Report — Macro Market Briefing",
     description:
-      "FAULTLINE Daily Intelligence Report: institutional macro briefing covering market regime, systemic pressure readings, key risk events, and forward-looking analytics.",
+      "FAULTLINE Daily Intelligence Report: institutional macro briefing covering market regime, systemic pressure readings, key risk events, and historical context.",
     canonical: "/app/report",
   },
   // 48 chars ✓
@@ -231,13 +231,13 @@ export const PAGE_SEO = {
   trackRecord: {
     title: "Track Record — FAULTLINE Signal Performance",
     description:
-      "FAULTLINE historical signal performance and track record. Transparent documentation of macro calls, regime predictions, and signal accuracy.",
+      "FAULTLINE archived retrospective Pressure Index reconstruction. Retrospective only — not live predictions and not an independently validated backtest.",
     canonical: "/track-record",
   },
   preFlight: {
     title: "FAULTLINE Pre-Flight — Market Awareness Command Center",
     description:
-      "Understand current market conditions before risking capital. Awareness Score, Pressure Index, Bull/Bear Probability, Threat Board, Credit, Liquidity, AI Risk, and Daily Intelligence Brief.",
+      "Understand current market conditions before risking capital. Awareness Score, Pressure Index, Bull/Bear Balance, Threat Board, Credit, Liquidity, AI Risk, and Daily Intelligence Brief.",
     canonical: "/app/pre-flight",
   },
   // 52 chars ✓
@@ -250,7 +250,7 @@ export const PAGE_SEO = {
   insiderIntelligence: {
     title: "FAULTLINE Insider Intelligence™ — Smart Money Tracker",
     description:
-      "Track where corporate insiders show conviction before the market notices. Conviction Score, Smart Money Radar, Cluster Buy Alerts, and AI-powered insider analysis.",
+      "Track where corporate insiders are buying and selling, from reported filings. Conviction Score, Smart Money Radar, Cluster Buy Alerts, and AI-powered insider analysis.",
     canonical: "/app/insider-intelligence",
   },
   // 31 chars ✓
@@ -273,9 +273,9 @@ export const PAGE_SEO = {
     canonical: "/app/seo-optimizer",
   },
   pressureIndex: {
-    title: "FAULTLINE Pressure Index™ — Live Market Stress",
+    title: "FAULTLINE Pressure Index™ — Systemic Market Stress",
     description:
-      "Track the FAULTLINE Pressure Index™: a regularly refreshed systemic market stress score aggregating volatility, credit spreads, liquidity, and breadth deterioration.",
+      "Track the FAULTLINE Pressure Index™: a systemic market stress score built from credit spreads, funding, rates, inflation, and labor data, recalculated as new FRED data is published.",
     canonical: "/pressure-index",
   },
   // ── Public SEO landing pages ──────────────────────────────────
@@ -288,19 +288,19 @@ export const PAGE_SEO = {
   publicCryptoSignals: {
     title: "Crypto Signals — Macro-Aligned Digital Asset Intel",
     description:
-      "FAULTLINE Crypto Signals: momentum, liquidity, and macro-regime-aligned trading signals for digital assets. Know which crypto assets fit the current macro environment before the move.",
+      "FAULTLINE Crypto Signals: momentum, liquidity, and macro-regime-aligned trading signals for digital assets. See which crypto assets fit the current macro environment.",
     canonical: "/crypto-signals",
   },
   publicStockMarketRisk: {
     title: "Stock Market Risk Today | FAULTLINE",
     description:
-      "Stock market risk intelligence for understanding systemic pressure, market regimes, credit conditions, volatility, and equity breadth.",
+      "Stock market risk intelligence for understanding systemic pressure, market regimes, credit conditions, rates, and volatility context.",
     canonical: "/stock-market-risk-dashboard",
   },
   publicCryptoMarketRisk: {
     title: "Crypto Market Risk Dashboard — Digital Asset Risk",
     description:
-      "Live crypto market risk dashboard: BTC dominance, altcoin risk, systemic crypto pressure, contagion risk, and digital asset macro alignment. Monitor crypto systemic risk as new data is published.",
+      "Crypto market risk dashboard: BTC dominance, altcoin risk, systemic crypto pressure, contagion risk, and digital asset macro alignment. Monitor crypto systemic risk as new data is published.",
     canonical: "/crypto-market-risk-dashboard",
   },
   publicSituationRoom: {
@@ -312,7 +312,7 @@ export const PAGE_SEO = {
   publicAnalogs: {
     title: "Historical Market Analogs — Crash Pattern Matching",
     description:
-      "Pattern-match today's macro conditions against 2000, 2008, 2020, and 2022. See which historical fracture your regime most resembles, the timeline of what followed, and how top funds were positioned.",
+      "Compare today's pressure-vector profile with ten fixed reference profiles: 1973, 1998, 2000, 2008, 2020, and 2022, plus 2011, 2015, 2019, and 2023 in the extended library. Resemblance, not a forecast.",
     canonical: "/analogs",
   },
   publicAIBubble: {

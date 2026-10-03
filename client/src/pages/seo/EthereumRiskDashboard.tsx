@@ -4,23 +4,23 @@ export default function EthereumRiskDashboard() {
   return (
     <SEOLandingPage
       seo={{
-        title: "Ethereum Risk Dashboard — ETH Risk Score, Key Levels & Macro Analysis | FAULTLINE",
-        description: "Ethereum risk dashboard: ETH macro alignment score, ETH/BTC ratio tracking, key support and resistance levels, DeFi ecosystem risk, and regime-based bull/bear case analysis.",
+        title: "Ethereum Risk Dashboard — ETH Risk Score & Macro Analysis | FAULTLINE",
+        description: "Ethereum risk dashboard: ETH macro alignment score, ETH/BTC ratio tracking, and regime-based bull/bear case analysis built on the FAULTLINE Pressure Index.",
         canonical: "/ethereum-risk-dashboard",
       }}
       badge="ETHEREUM RISK INTELLIGENCE"
       headline={"Ethereum Risk Dashboard\nETH Macro Analysis"}
-      subheadline="FAULTLINE's Ethereum Risk Dashboard provides a comprehensive macro-aligned risk assessment for ETH — covering ETH/BTC ratio dynamics, DeFi ecosystem exposure, key price levels, macro regime alignment, and bull and bear case scenarios."
+      subheadline="FAULTLINE's Ethereum Risk Dashboard provides a comprehensive macro-aligned risk assessment for ETH — covering ETH/BTC ratio dynamics, DeFi ecosystem exposure, macro regime alignment, and bull and bear case scenarios."
       ctaLabel="VIEW ETH RISK DATA"
       ctaHref="/app/crypto"
       accentColor="#627EEA"
       features={[
         { icon: "◈", title: "ETH/BTC Ratio Tracking", desc: "The ETH/BTC ratio is the primary indicator of Ethereum's relative strength vs. Bitcoin. FAULTLINE tracks this ratio and its trend as new data is published." },
-        { icon: "◎", title: "DeFi Ecosystem Risk Score", desc: "Ethereum hosts the majority of DeFi protocols. FAULTLINE tracks DeFi TVL trends, protocol risk, and contagion exposure." },
+        { icon: "◎", title: "DeFi Ecosystem Context", desc: "Ethereum hosts the majority of DeFi protocols. DeFi protocol risk and contagion exposure are covered as qualitative context; FAULTLINE does not ingest TVL data." },
         { icon: "⬡", title: "Macro Regime Alignment", desc: "ETH is more sensitive to macro conditions than BTC due to its higher beta. FAULTLINE scores ETH's alignment with the current macro regime." },
-        { icon: "◈", title: "Key Support & Resistance Levels", desc: "Critical ETH price levels updated continuously: major support zones, resistance clusters, and key psychological levels." },
-        { icon: "◎", title: "Staking Yield vs. Risk-Free Rate", desc: "ETH staking yield relative to U.S. Treasury yields affects institutional demand. FAULTLINE tracks this spread as a valuation input." },
-        { icon: "⬡", title: "Layer-2 Ecosystem Momentum", desc: "Arbitrum, Optimism, Base, and other L2s drive ETH demand through gas fees. FAULTLINE tracks L2 activity as an ETH demand indicator." },
+        { icon: "◈", title: "Price Levels", desc: "FAULTLINE does not publish price targets or support/resistance levels on this page." },
+        { icon: "◎", title: "Staking Yield vs. Risk-Free Rate", desc: "Educational context: ETH staking yield relative to U.S. Treasury yields affects demand. FAULTLINE tracks Treasury yields; staking yield is not a data input." },
+        { icon: "⬡", title: "Layer-2 Ecosystem Context", desc: "Arbitrum, Optimism, Base, and other L2s drive ETH demand through fees. L2 activity is qualitative context, not a FAULTLINE data input." },
       ]}
       contentSections={[
         {
@@ -31,7 +31,7 @@ Bitcoin is primarily a store of value and monetary asset. Its price is driven by
 
 This dual nature means Ethereum has higher beta than Bitcoin — it tends to outperform BTC in bull markets and underperform in bear markets. The ETH/BTC ratio is the primary measure of this relative performance, and FAULTLINE tracks it as a core indicator of the crypto rotation cycle.
 
-The introduction of ETH staking (through Ethereum's transition to Proof of Stake in September 2022) added a new dimension to ETH's risk/reward profile. Staked ETH earns yield — currently approximately 3-4% annually — which can be compared to risk-free rates (U.S. Treasury yields) as a valuation input. When ETH staking yield exceeds risk-free rates, it provides a fundamental support for ETH demand from institutional investors.`,
+The introduction of ETH staking (through Ethereum's transition to Proof of Stake in September 2022) added a new dimension to ETH's risk/reward profile. Staked ETH earns a yield, which can be compared to risk-free rates (U.S. Treasury yields) as a valuation input. When ETH staking yield exceeds risk-free rates, it provides a fundamental support for ETH demand from institutional investors.`,
         },
         {
           heading: "Ethereum's Key Risk Factors in 2026",
@@ -43,21 +43,21 @@ The introduction of ETH staking (through Ethereum's transition to Proof of Stake
 
 3. DeFi Total Value Locked (TVL) — The total value locked in Ethereum-based DeFi protocols reflects the ecosystem's health and ETH demand. TVL declines signal reduced DeFi activity and reduced ETH demand from protocol collateral requirements.
 
-4. Staking Dynamics — ETH staking participation (currently approximately 28% of total ETH supply) reduces circulating supply and creates yield-based demand. Changes in staking yield relative to risk-free rates affect institutional demand for ETH.
+4. Staking Dynamics — ETH staking participation (roughly a quarter or more of total ETH supply in recent years) reduces circulating supply and creates yield-based demand. Changes in staking yield relative to risk-free rates affect institutional demand for ETH.
 
-5. Regulatory Treatment of ETH — The SEC's treatment of ETH as a commodity (following the approval of ETH spot ETFs in May 2024) has significant implications for institutional adoption. FAULTLINE monitors regulatory developments as a qualitative risk factor.`,
+5. Regulatory Treatment of ETH — The regulatory treatment of ETH, following the SEC's approval of spot ETH ETFs in May 2024, has significant implications for institutional adoption. Regulatory developments are qualitative context; FAULTLINE does not ingest them as data.`,
         },
         {
           heading: "ETH Bull Case and Bear Case Scenarios",
           body: `FAULTLINE's structured scenario analysis for Ethereum in 2026:
 
-Bull Case Conditions: Expanding global liquidity (Fed rate cuts, QE restart), rising ETH/BTC ratio, strong L2 ecosystem growth, ETH staking yield above risk-free rates, continued institutional ETF inflows, and a LOW STRESS macro regime. In this scenario, ETH has historically outperformed BTC by 2-5x.
+Bull Case Conditions: Expanding global liquidity (Fed rate cuts, QE restart), rising ETH/BTC ratio, strong L2 ecosystem growth, ETH staking yield above risk-free rates, continued institutional ETF inflows, and a LOW RISK macro regime. In this scenario, ETH has historically outperformed BTC.
 
-Bear Case Conditions: Fed QT acceleration or rate hikes, falling ETH/BTC ratio (capital concentration in BTC), DeFi TVL decline, major protocol exploit or stablecoin de-peg, regulatory action against ETH or DeFi, and HIGH STRESS macro regime. In this scenario, ETH has historically fallen 60-80% from cycle highs.
+Bear Case Conditions: Fed QT acceleration or rate hikes, falling ETH/BTC ratio (capital concentration in BTC), DeFi TVL decline, major protocol exploit or stablecoin de-peg, regulatory action against ETH or DeFi, and HIGH STRESS macro regime. In this scenario, ETH has historically fallen sharply from cycle highs.
 
 Base Case: Moderate macro conditions with ETH tracking BTC performance, L2 ecosystem growing steadily, staking yield providing fundamental support, and ETH/BTC ratio consolidating in a range. This scenario is associated with ETH delivering positive but not exceptional returns relative to BTC.
 
-FAULTLINE's regularly refreshed risk score reflects which scenario conditions are currently most prevalent, updating continuously as macro data and market conditions change.`,
+FAULTLINE's regularly refreshed risk score reflects which scenario conditions are currently most prevalent, updating as macro data and market conditions change.`,
         },
       ]}
       faqs={[
@@ -67,7 +67,7 @@ FAULTLINE's regularly refreshed risk score reflects which scenario conditions ar
         },
         {
           question: "How does Ethereum staking affect ETH's risk profile?",
-          answer: "ETH staking (Proof of Stake) allows ETH holders to earn yield by validating transactions. Currently approximately 28% of total ETH supply is staked, earning approximately 3-4% annually. This staking yield can be compared to risk-free rates (U.S. Treasury yields) as a valuation input. When ETH staking yield exceeds risk-free rates, it provides fundamental support for institutional ETH demand. When risk-free rates are significantly higher than staking yield, the relative attractiveness of ETH decreases.",
+          answer: "ETH staking (Proof of Stake) allows ETH holders to earn yield by validating transactions. A substantial share of total ETH supply is staked, earning a yield. This staking yield can be compared to risk-free rates (U.S. Treasury yields) as a valuation input. When ETH staking yield exceeds risk-free rates, it provides fundamental support for institutional ETH demand. When risk-free rates are significantly higher than staking yield, the relative attractiveness of ETH decreases.",
         },
         {
           question: "What is the biggest risk to Ethereum in 2026?",
@@ -75,18 +75,18 @@ FAULTLINE's regularly refreshed risk score reflects which scenario conditions ar
         },
         {
           question: "How does FAULTLINE calculate the Ethereum risk score?",
-          answer: "FAULTLINE's ETH risk score is a composite of macro regime alignment (FAULTLINE Pressure Index), ETH/BTC ratio trend, DeFi TVL momentum, L2 activity growth, staking yield vs. risk-free rate spread, and technical structure (proximity to key support/resistance levels). Each factor is weighted and combined into a single 0-100 risk score.",
+          answer: "FAULTLINE's ETH risk reading is anchored on macro regime alignment (the FAULTLINE Pressure Index), with the ETH/BTC ratio trend from CoinGecko as context. DeFi TVL, Layer-2 activity, and staking yield are discussed as qualitative context but are not data inputs to the score.",
         },
         {
           question: "Is Ethereum a good investment in 2026?",
-          answer: "FAULTLINE does not provide investment advice. The Ethereum Risk Dashboard provides a data-driven risk assessment based on macro conditions, technical structure, and on-chain dynamics. Whether ETH is appropriate for a specific investor depends on their risk tolerance, time horizon, portfolio composition, and financial situation. Always conduct your own research and consult a qualified financial advisor.",
+          answer: "FAULTLINE does not provide investment advice. The Ethereum Risk Dashboard provides a data-driven risk assessment based on macro conditions and technical structure. Whether ETH is appropriate for a specific investor depends on their risk tolerance, time horizon, portfolio composition, and financial situation. Always conduct your own research and consult a qualified financial advisor.",
         },
       ]}
       internalLinks={[
         { label: "BITCOIN RISK DASHBOARD", href: "/bitcoin-risk-dashboard", desc: "Comprehensive BTC risk analysis and macro alignment." },
         { label: "ALT SEASON INDICATOR", href: "/alt-season-indicator", desc: "Track ETH/BTC ratio and altcoin rotation signals." },
         { label: "CRYPTO SIGNALS", href: "/crypto-signals", desc: "Macro-aligned signals for all tracked digital assets." },
-        { label: "CRYPTO MARKET RISK", href: "/crypto-market-risk-dashboard", desc: "Live crypto systemic risk dashboard." },
+        { label: "CRYPTO MARKET RISK", href: "/crypto-market-risk-dashboard", desc: "Crypto systemic risk dashboard." },
         { label: "TAO SIGNAL", href: "/crypto/tao", desc: "Bittensor (TAO) macro-aligned signal analysis." },
         { label: "LIQUIDITY MONITOR", href: "/liquidity-monitor", desc: "Global liquidity conditions that drive ETH cycles." },
       ]}

@@ -9,7 +9,7 @@ export default function MarketCrashIndicator() {
         canonical: "/market-crash-indicator",
       }}
       badge="CRASH RISK INTELLIGENCE"
-      headline={"Market Crash Indicator\nKnow Before the Break"}
+      headline={"Market Crash Indicator\nSee the Pressure Before the Break"}
       subheadline="FAULTLINE's market crash indicator is built on the Pressure Index, which combines credit spreads, funding rates, the Treasury yield curve, inflation, unemployment, and a static AI-concentration baseline into a single systemic stress score."
       ctaLabel="VIEW CRASH RISK"
       ctaHref="/pressure-index"
@@ -17,7 +17,7 @@ export default function MarketCrashIndicator() {
       features={[
         { icon: "◈", title: "Credit Spread Monitoring", desc: "High-yield credit spreads are the earliest warning system for systemic stress. FAULTLINE tracks them as new data is published." },
         { icon: "◎", title: "Yield Curve Monitoring", desc: "The 10Y–2Y Treasury spread in inversion and flatness bands, blended with the 10Y yield level. The Pressure Index does not read VIX." },
-        { icon: "⬡", title: "Liquidity Withdrawal Signals", desc: "Identify when institutional liquidity is being pulled from markets — the precursor to every major crash." },
+        { icon: "⬡", title: "Liquidity Withdrawal Signals", desc: "See when funding conditions tighten — high-yield spreads and SOFR — a common thread in many major crashes." },
         { icon: "◈", title: "Labor & Rates Vector", desc: "The unemployment rate blended with the 10Y Treasury yield. It is not an advance/decline or market-breadth measure." },
         { icon: "◎", title: "Historical Analog Matching", desc: "Pattern-match current conditions against 2000, 2008, 2020, and 2022 to see which historical fracture today most resembles." },
         { icon: "⬡", title: "Historical Context", desc: "Reference profiles for past stress episodes and an archived retrospective reconstruction from 2000. Neither is an independently validated backtest." },
@@ -29,7 +29,7 @@ export default function MarketCrashIndicator() {
 
 FAULTLINE's crash indicator is built on the FAULTLINE Pressure Index™, which combines six weighted vectors: liquidity stress, credit contagion, the 10Y–2Y yield curve and 10Y level, macro sensitivity, labor and rates, and AI / speculation (a static concentration baseline). Each vector is scored and weighted to produce a single 0-100 systemic pressure score.
 
-The live index labels scores of 65-79 HIGH STRESS and 80+ SYSTEMIC CRISIS. Those labels describe modeled stress, not a calibrated crash probability. No independently validated backtest shows that market crashes since 2000 were preceded by any particular Pressure Index reading.`,
+The current index labels scores of 65-79 HIGH STRESS and 80+ SYSTEMIC CRISIS. Those labels describe modeled stress, not a calibrated crash probability. No independently validated backtest shows that market crashes since 2000 were preceded by any particular Pressure Index reading.`,
         },
         {
           heading: "The 6 Vectors Behind the Pressure Index",
@@ -43,13 +43,13 @@ The live index labels scores of 65-79 HIGH STRESS and 80+ SYSTEMIC CRISIS. Those
 
 5. Labor & Rates (10%) — The unemployment rate blended with the 10-year yield. This vector was previously labelled "Market Breadth"; it is not an advance/decline or market-participation measure.
 
-6. AI / Speculation (15%) — A static reference value for AI mega-cap concentration (~32.4% of the S&P 500), adjusted by the live 10-year yield and high-yield spread. The concentration baseline is not a live measurement.`,
+6. AI / Speculation (15%) — A static reference value for AI mega-cap concentration (~32.4% of the S&P 500), adjusted by the latest 10-year yield and high-yield spread. The concentration baseline is not a live measurement.`,
         },
         {
           heading: "What the Historical Evidence Shows",
           body: `FAULTLINE has not published an independently validated predictive backtest. The historical evidence that exists is limited:
 
-Historical analogs: The analog library compares current vector scores with fixed reference profiles for past stress episodes (1973, 1998, 2000, 2008, 2020, and 2022). Similarity is not an outcome forecast.
+Historical analogs: The analog library compares current vector scores with fixed reference profiles for past stress episodes (1973, 1998, 2000, 2008, 2020, and 2022); the extended library adds 2011, 2015, 2019, and 2023. Similarity is not an outcome forecast.
 
 Track Record archive: The Track Record page shows an archived retrospective reconstruction from 2000 onward. It was calibrated against known historical stress episodes, uses revised rather than point-in-time data, and its formula was not versioned; the current live formula does not reproduce it.
 
@@ -65,7 +65,7 @@ Note: Past readings do not guarantee future results. The Pressure Index is a ris
         },
         {
           question: "What is the difference between HIGH STRESS and SYSTEMIC CRISIS?",
-          answer: "HIGH STRESS (score 65-79) indicates that multiple Pressure Index vectors are elevated at once — for example, credit spreads widening while funding rates and the yield curve signal tightening. SYSTEMIC CRISIS (score 80+) is the model's highest classification, with severe readings across most vectors. Neither label is a calibrated crash probability.",
+          answer: "HIGH STRESS (score 65-79) indicates that multiple Pressure Index vectors are elevated at once — for example, credit spreads widening while funding rates and the yield curve signal tightening. SYSTEMIC CRISIS (score 80+) is the model's highest classification, with severe readings across most vectors. These labels are not a calibrated crash probability.",
         },
         {
           question: "How is the FAULTLINE crash indicator different from the VIX?",
@@ -73,7 +73,7 @@ Note: Past readings do not guarantee future results. The Pressure Index is a ris
         },
         {
           question: "Is the crash indicator available for free?",
-          answer: "Yes. The FAULTLINE Pressure Index — the core of the crash indicator — is available for free at /pressure-index. No login required. Full access to all six risk vectors, historical data, and regime analysis requires a Trader or Power subscription.",
+          answer: "Yes. The FAULTLINE Pressure Index — the core of the crash indicator — is available for free at /pressure-index. No login required. The full vector breakdown, historical data, and regime analysis are signed-in tools. Signed-in tools start with a free account; paid plans are not on sale.",
         },
         {
           question: "How often does the crash indicator update?",
@@ -83,7 +83,7 @@ Note: Past readings do not guarantee future results. The Pressure Index is a ris
       internalLinks={[
         { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Systemic market stress score — the core crash indicator." },
         { label: "HISTORICAL ANALOGS", href: "/analogs", desc: "Pattern-match today's conditions against 2000, 2008, 2020, and 2022." },
-        { label: "RECESSION PROBABILITY", href: "/recession-probability", desc: "Leading indicators of recession risk and economic contraction." },
+        { label: "RECESSION RISK CONTEXT", href: "/recession-probability", desc: "Leading indicators of recession risk and economic contraction." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy signals and their impact on market stress." },
         { label: "VOLATILITY DASHBOARD", href: "/volatility-dashboard", desc: "Regularly refreshed volatility regime monitoring and VIX analysis." },
         { label: "MARKET RISK DASHBOARD", href: "/stock-market-risk-dashboard", desc: "Comprehensive equity risk monitoring dashboard." },

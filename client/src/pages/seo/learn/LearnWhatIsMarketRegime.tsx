@@ -37,7 +37,7 @@ const LearnWhatIsMarketRegime = () => {
         },
         {
           heading: "How FAULTLINE Classifies and Measures the Current Market Regime",
-          body: `FAULTLINE employs a sophisticated, multi-factor methodology to classify and measure the current market regime, moving beyond simplistic definitions to provide a comprehensive and actionable perspective. Our system integrates a wide array of macroeconomic data, market sentiment indicators, liquidity metrics, and technical analysis signals. We analyze patterns in volatility, correlations between asset classes, and the behavior of key economic leading indicators to identify the characteristics of bull, bear, risk-on, risk-off, and various stages of the economic cycle. Unlike traditional approaches that often rely on lagging indicators, FAULTLINE's proprietary algorithms are designed to detect subtle shifts and emerging trends, offering a forward-looking context. This allows our users to understand not just 'what' the current regime is, but 'why' it is, 'what changed' to bring it about, and 'what would change the outlook' for the future. Our goal is to provide a clear, objective assessment that empowers investors to make more informed decisions, grounded in robust market intelligence.`, 
+          body: `FAULTLINE classifies the current market regime from the Pressure Index, moving beyond simplistic price-based definitions. The index combines six weighted vectors — liquidity stress, credit contagion, yield curve and 10-year level, macro sensitivity, labor and rates, and a static AI-concentration baseline — built from eight FRED series, and classifies the result into five bands: Low Risk, Moderate Risk, Elevated Risk, High Stress, and Systemic Crisis. Because credit and funding conditions often deteriorate before prices fully reflect it, this structural read shows pressure building rather than confirming a regime only after the fact. This allows our users to understand not just 'what' the current regime is, but 'why' it is, 'what changed' to bring it about, and 'what would change the outlook' for the future. Our goal is to provide a clear, objective assessment that empowers investors to make more informed decisions, grounded in robust market intelligence.`, 
         },
       ]}
       faqs={[
@@ -55,7 +55,7 @@ const LearnWhatIsMarketRegime = () => {
         },
         {
           question: "How does FAULTLINE determine the current market regime?",
-          answer: "FAULTLINE uses a proprietary, multi-factor model that analyzes macroeconomic data, market sentiment, liquidity, and technical indicators to provide a regularly refreshed classification of the prevailing market regime.",
+          answer: "FAULTLINE classifies the regime from the Pressure Index — six weighted vectors built from eight FRED series covering credit spreads, funding rates, Treasury yields, inflation, policy rates, and unemployment, plus a static AI-concentration baseline — into five bands from Low Risk to Systemic Crisis, refreshed as new data is published.",
         },
         {
           question: "Is understanding market regimes a form of market timing?",
@@ -66,7 +66,7 @@ const LearnWhatIsMarketRegime = () => {
         { label: "Pressure Index", href: "/pressure-index", desc: "View Pressure Index on FAULTLINE" },
         { label: "Market Regime Tracker", href: "/market-regime-tracker", desc: "View Market Regime Tracker on FAULTLINE" },
         { label: "Daily Brief", href: "/daily-brief", desc: "View Daily Brief on FAULTLINE" },
-        { label: "Recession Probability", href: "/recession-probability", desc: "View Recession Probability on FAULTLINE" },
+        { label: "Recession Risk Context", href: "/recession-probability", desc: "View recession-risk context on FAULTLINE" },
         { label: "Federal Reserve Tracker", href: "/federal-reserve-tracker", desc: "View Federal Reserve Tracker on FAULTLINE" },
         { label: "Stock Market Risk Today", href: "/stock-market-risk-today", desc: "View Stock Market Risk Today on FAULTLINE" },
       ]}

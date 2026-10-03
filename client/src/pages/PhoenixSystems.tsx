@@ -1,5 +1,6 @@
 import { useSEO } from "@/hooks/useSEO";
 import { Link } from "wouter";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 export default function PhoenixSystems() {
   useSEO({
@@ -310,9 +311,9 @@ export default function PhoenixSystems() {
               >
                 FAULTLINE is Phoenix Systems' flagship platform and the first in
                 a growing portfolio of decision-intelligence systems. It
-                continuously monitors the economic, financial, and market fault
-                lines where stress builds beneath the surface — detecting regime
-                shifts before they become obvious.
+                monitors the economic, financial, and market fault lines where
+                stress builds beneath the surface — showing where systemic
+                pressure and regime change are building.
               </p>
               <p
                 style={{
@@ -524,6 +525,17 @@ export default function PhoenixSystems() {
           >
             Privacy &amp; Terms
           </a>
+        </p>
+        <p
+          style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: "10px",
+            color: "#4B5563",
+            letterSpacing: "0.1em",
+            marginTop: "8px",
+          }}
+        >
+          {PUBLIC_DISCLAIMER}
         </p>
       </footer>
     </div>

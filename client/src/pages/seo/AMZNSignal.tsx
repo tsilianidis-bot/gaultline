@@ -43,19 +43,19 @@ const AMZNSignal = () => {
       contentSections={[
         {
           heading: "Understanding Amazon (AMZN) Stock: A FAULTLINE Perspective",
-          body: `Amazon.com Inc. (AMZN) stands as a titan in both e-commerce and cloud computing, with its stock performance often reflecting broader trends in consumer spending, technological innovation, and global economic health. FAULTLINE provides a nuanced, regularly refreshed outlook for AMZN, moving beyond conventional analysis to integrate macro-economic factors, sector-specific dynamics, and proprietary signals. Our approach helps investors understand not just what AMZN is doing now, but why, and what conditions could alter its trajectory. This includes evaluating its resilience in various market regimes and its sensitivity to shifts in consumer discretionary spending, a critical component of its retail segment. The goal is to offer a comprehensive view that anticipates market movements rather than merely reacting to them.`
+          body: `Amazon.com Inc. (AMZN) stands as a titan in both e-commerce and cloud computing, with its stock performance often reflecting broader trends in consumer spending, technological innovation, and global economic health. FAULTLINE's AMZN signal combines daily price data with the current Pressure Index reading and regime band. It helps investors understand how the current macro regime bears on AMZN. Consumer discretionary spending, a critical driver of its retail segment, is context; FAULTLINE does not ingest retail-sales or consumer-confidence data.`
         },
         {
-          heading: "FAULTLINE's Current Signal for AMZN: What Changed and Why it Matters",
-          body: `FAULTLINE's current signal for AMZN is derived from a multi-factor model that assesses its fundamental strength, technical momentum, and sensitivity to prevailing market conditions. For instance, a recent shift in our signal might reflect evolving consumer spending patterns, perhaps due to inflationary pressures or changes in discretionary income. It could also be influenced by competitive dynamics in the cloud computing space (AWS) or new regulatory considerations. Understanding 'what changed' involves dissecting these inputs to pinpoint the exact drivers behind FAULTLINE's updated outlook. This granular insight is crucial because it allows investors to contextualize AMZN's performance within the broader economic landscape, highlighting potential risks and opportunities that might be overlooked by traditional analysis. It matters because these shifts can precede significant price movements.`
+          heading: "How FAULTLINE's AMZN Signal Works",
+          body: `FAULTLINE's AMZN signal is computed from daily price data together with the current Pressure Index reading, its vectors, and the regime band. It does not ingest earnings, analyst estimates, fundamentals, or company news. When the signal changes, the cause is a change in AMZN's price setup or in the macro regime, and the app shows the current classification. That change is context for AMZN's performance within the broader economic landscape, not a forecast of price moves.`
         },
         {
           heading: "AWS, AI, and Consumer Spending: Key Drivers for Amazon's Future",
-          body: `Amazon's future outlook is inextricably linked to the performance of Amazon Web Services (AWS) and its strategic investments in artificial intelligence (AI), alongside the resilience of its core e-commerce business. AWS continues to be a primary profit engine, and its growth trajectory is a significant determinant of AMZN's overall valuation. FAULTLINE analyzes AWS's market share, innovation pipeline, and competitive landscape to gauge its sustained contribution. Simultaneously, Amazon's aggressive push into AI, both within AWS and across its consumer products, positions it for long-term growth. However, the consumer discretionary segment remains sensitive to economic cycles. FAULTLINE assesses consumer spending risk by monitoring macro indicators, employment data, and retail trends, providing a holistic view of the forces shaping AMZN's revenue streams and profitability.`
+          body: `Amazon's outlook is closely linked to the performance of Amazon Web Services (AWS) and its investments in artificial intelligence (AI), alongside the resilience of its core e-commerce business. AWS is a primary profit engine, and its growth trajectory is a significant determinant of AMZN's overall valuation. Amazon's push into AI, both within AWS and across its consumer products, is a long-term growth theme. The consumer discretionary segment remains sensitive to economic cycles. These are context for the stock; FAULTLINE does not ingest AWS, market-share, or retail-sales data, and it reads the macro side of consumer risk through the unemployment rate and CPI in the Pressure Index.`
         },
         {
           heading: "What Would Change the Outlook for AMZN?",
-          body: `The outlook for Amazon (AMZN) stock, as determined by FAULTLINE, is dynamic and responsive to a confluence of factors. A significant shift could be triggered by a sustained acceleration or deceleration in global cloud spending, directly impacting AWS's revenue and profitability. Similarly, a material change in consumer confidence or discretionary income, perhaps due to a deeper economic downturn or a robust recovery, would directly influence Amazon's retail segment. Regulatory interventions, particularly those targeting big tech or specific business practices, could also introduce new risks or opportunities. Furthermore, breakthroughs or setbacks in Amazon's AI initiatives, or a significant competitive move from rivals in either e-commerce or cloud, could prompt a re-evaluation of our signal. FAULTLINE continuously monitors these variables to provide timely updates on AMZN's evolving market position.`
+          body: `The outlook for Amazon (AMZN) stock, as determined by FAULTLINE, is dynamic and responsive to a confluence of factors. A significant shift could be triggered by a sustained acceleration or deceleration in global cloud spending, directly impacting AWS's revenue and profitability. Similarly, a material change in consumer confidence or discretionary income, perhaps due to a deeper economic downturn or a robust recovery, would directly influence Amazon's retail segment. Regulatory interventions, particularly those targeting big tech or specific business practices, could also introduce new risks or opportunities. Furthermore, breakthroughs or setbacks in Amazon's AI initiatives, or a significant competitive move from rivals in either e-commerce or cloud, could prompt a re-evaluation of our signal. FAULTLINE monitors these variables to provide timely updates on AMZN's evolving market position.`
         },
       ]}
       faqs={[
@@ -65,7 +65,7 @@ const AMZNSignal = () => {
         },
         {
           question: "How does FAULTLINE analyze AMZN's macro sensitivity?",
-          answer: "We assess AMZN's sensitivity to macro-economic factors by analyzing its historical performance against key indicators like GDP growth, inflation, interest rates, and consumer spending trends. This helps us understand how AMZN is likely to perform under various economic conditions."
+          answer: `FAULTLINE reads macro conditions (credit spreads, funding, Treasury yields, inflation, and unemployment) through the Pressure Index and shows how the current regime bears on AMZN's signal. It does not ingest GDP, retail-sales, or consumer-spending data, and it does not forecast how AMZN will perform.`
         },
         {
           question: "What role does AWS play in FAULTLINE's AMZN analysis?",
@@ -73,11 +73,11 @@ const AMZNSignal = () => {
         },
         {
           question: "Does FAULTLINE consider consumer spending risk for AMZN?",
-          answer: "Absolutely. Given Amazon's significant e-commerce presence, consumer spending risk is a key factor. We monitor various consumer-related metrics, including retail sales, consumer confidence, and employment data, to assess the potential impact on Amazon's retail segment."
+          answer: "Consumer spending risk is relevant context for Amazon's retail segment. FAULTLINE does not ingest retail sales or consumer-confidence data; the macro inputs it reads that bear on the consumer are the unemployment rate and CPI from FRED."
         },
         {
           question: "How often is FAULTLINE's AMZN outlook updated?",
-          answer: "FAULTLINE's outlooks and signals are updated regularly as new data becomes available and market conditions evolve. Our proprietary algorithms continuously process information to provide the most current insights."
+          answer: "FAULTLINE's outlooks and signals are updated regularly as new data becomes available and market conditions evolve. Our models process new data as it is published."
         },
         {
           question: "Is FAULTLINE's analysis personalized financial advice?",

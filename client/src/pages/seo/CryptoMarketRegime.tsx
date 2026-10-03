@@ -5,22 +5,22 @@ export default function CryptoMarketRegime() {
     <SEOLandingPage
       seo={{
         title: 'Crypto Market Regime Tracker | FAULTLINE',
-        description: 'Track crypto market regimes: bull, bear, accumulation, distribution. FAULTLINE uses on-chain data, Bitcoin dominance, and macro conditions.',
+        description: 'Track crypto market regimes: bull, bear, accumulation, distribution. FAULTLINE maps macro pressure — liquidity, credit, rates — onto crypto cycle phases, with CoinGecko market data for context.',
         canonical: '/crypto-market-regime',
       }}
       badge="CRYPTO"
       headline="Crypto Market Regime Tracker"
-      subheadline="Regularly refreshed insights into crypto market phases: bull, bear, accumulation, and distribution. Understand how FAULTLINE classifies regimes using on-chain data, Bitcoin dominance, and macro conditions to inform your strategy."
+      subheadline="Regularly refreshed insights into crypto market phases: bull, bear, accumulation, and distribution. Understand how FAULTLINE classifies regimes from macro pressure conditions, with CoinGecko price, market-cap, and Bitcoin dominance data for context."
       ctaLabel="Explore FAULTLINE Crypto Insights"
       ctaHref="/app"
       accentColor="#9945FF"
       features={[
-        { icon: "◈", title: "Regularly refreshed Regime Classification", desc: "Regularly refreshed Regime Classification" },
-        { icon: "◎", title: "On-Chain Data Integration", desc: "On-Chain Data Integration" },
-        { icon: "⬡", title: "Bitcoin Dominance Analysis", desc: "Bitcoin Dominance Analysis" },
-        { icon: "◈", title: "Macro Condition Impact", desc: "Macro Condition Impact" },
-        { icon: "◎", title: "Actionable Market Insights", desc: "Actionable Market Insights" },
-        { icon: "⬡", title: "Historical Regime Comparison", desc: "Historical Regime Comparison" }
+        { icon: "◈", title: "Regime Classification", desc: "Rule-based crypto cycle phases, refreshed as new macro data is published." },
+        { icon: "◎", title: "Macro Pressure Overlay", desc: "Liquidity, credit, and rate vectors from the Pressure Index drive the classification." },
+        { icon: "⬡", title: "Bitcoin Dominance Context", desc: "BTC dominance and market-cap data from CoinGecko, shown alongside the regime." },
+        { icon: "◈", title: "Macro Condition Impact", desc: "How credit spreads, funding rates, and Treasury yields feed crypto risk appetite." },
+        { icon: "◎", title: "Plain-Language Interpretation", desc: "What the current phase means and what would change it." },
+        { icon: "⬡", title: "Historical Regime Context", desc: "Reference context from past crypto cycles — context, not a forecast." }
       ]}
       contentSections={[
         {
@@ -33,29 +33,29 @@ export default function CryptoMarketRegime() {
         },
         {
           heading: 'Common Misconceptions and How Investors Misunderstand Regimes',
-          body: `Many investors misunderstand crypto market regimes by oversimplifying them into just 'up' or 'down' trends, often relying solely on price charts. This narrow view overlooks critical underlying signals that precede major market shifts. For example, a period of sideways price action might be dismissed as 'boring,' when in reality, it could be a crucial accumulation phase where large entities are quietly building positions. Conversely, a brief price rally might be mistaken for a new bull market, even if on-chain data suggests significant distribution is occurring. Another common mistake is ignoring the broader macro environment and its impact on crypto, treating digital assets as entirely decoupled from traditional finance. FAULTLINE addresses these misunderstandings by integrating a holistic set of indicators, including on-chain metrics, Bitcoin dominance, and macro conditions. This multi-faceted approach provides a more accurate and robust classification of market regimes, helping investors see beyond superficial price movements and understand the true state of the market. This comprehensive perspective is vital for avoiding costly errors and capitalizing on genuine opportunities.`,
+          body: `Many investors misunderstand crypto market regimes by oversimplifying them into just 'up' or 'down' trends, often relying solely on price charts. This narrow view overlooks critical underlying signals that precede major market shifts. For example, a period of sideways price action might be dismissed as 'boring,' when in reality, it could be a crucial accumulation phase where large entities are quietly building positions. Conversely, a brief price rally might be mistaken for a new bull market, even while tightening liquidity and credit conditions argue against it. Another common mistake is ignoring the broader macro environment and its impact on crypto, treating digital assets as entirely decoupled from traditional finance. FAULTLINE addresses these misunderstandings by reading crypto through the macro conditions that drive it — liquidity, credit, and rates from the Pressure Index — with CoinGecko market data for context. This approach provides a structural classification of market regimes, helping investors see beyond superficial price movements and understand the true state of the market. This comprehensive perspective is vital for avoiding costly errors and capitalizing on genuine opportunities.`,
         },
         {
           heading: 'How FAULTLINE Measures Crypto Market Regimes',
-          body: `FAULTLINE employs a sophisticated, multi-factor model to classify crypto market regimes, moving beyond simplistic technical analysis. Our methodology integrates three key pillars: on-chain data, Bitcoin dominance, and macro conditions. On-chain data provides unparalleled transparency into network activity, transaction volumes, and whale movements, revealing accumulation or distribution patterns that precede price changes. Bitcoin dominance, the ratio of Bitcoin's market capitalization to the total crypto market, offers insights into market leadership and risk appetite; a rising dominance often signals a flight to safety, while a falling dominance can indicate a broader altcoin rally. Finally, we incorporate macro conditions, such as interest rates, inflation, and global economic sentiment, recognizing that crypto markets are increasingly influenced by traditional financial forces. By continuously analyzing these diverse data points, FAULTLINE's algorithm identifies the current market regime – be it bull, bear, accumulation, or distribution – with high accuracy. This rigorous, data-driven approach provides our users with a robust framework for understanding market dynamics and making more informed investment decisions, ensuring they are always aligned with the prevailing market structure.`,
+          body: `FAULTLINE classifies crypto market regimes with rule-based logic built on macro conditions, recognizing that crypto markets are increasingly driven by traditional financial forces. The classification reads the Pressure Index's liquidity, credit, rates, and labor vectors — built from FRED data such as high-yield spreads, SOFR, Treasury yields, and inflation — and maps them onto crypto cycle phases: bull, bear, accumulation, distribution, and the transitions between them. Market context comes from CoinGecko: prices, market capitalization, and Bitcoin dominance, the ratio of Bitcoin's market capitalization to the total crypto market. A rising dominance often signals a flight to safety, while a falling dominance can indicate a broader altcoin rally. FAULTLINE does not ingest on-chain data, exchange flows, or ETF flow data, and the classification is not a validated prediction. It provides a structural framework for understanding where pressure is building in crypto — educational and informational, not investment advice.`,
         },
       ]}
       faqs={[
         {
           question: 'What are the different crypto market regimes?',
-          answer: 'Crypto market regimes typically include Bull (rising prices, strong sentiment), Bear (falling prices, negative sentiment), Accumulation (sideways movement, smart money buying), and Distribution (sideways movement, smart money selling). FAULTLINE identifies these phases using a blend of on-chain, dominance, and macro data.',
+          answer: 'Crypto market regimes typically include Bull (rising prices, strong sentiment), Bear (falling prices, negative sentiment), Accumulation (sideways movement, smart money buying), and Distribution (sideways movement, smart money selling). FAULTLINE classifies these phases from macro pressure conditions, with CoinGecko market data for context.',
         },
         {
-          question: 'How does FAULTLINE use on-chain data for regime tracking?',
-          answer: 'FAULTLINE analyzes various on-chain metrics such as transaction volumes, active addresses, exchange flows, and whale activity to detect underlying buying or selling pressure, which are key indicators for accumulation and distribution phases.',
+          question: 'Does FAULTLINE use on-chain data for regime tracking?',
+          answer: 'No. FAULTLINE does not currently ingest on-chain metrics such as transaction volumes, active addresses, exchange flows, or whale activity. The crypto regime is a rule-based read of macro pressure — liquidity, credit, and rates — with CoinGecko market data for context.',
         },
         {
           question: 'Why is Bitcoin dominance important for market regimes?',
-          answer: 'Bitcoin dominance often acts as a barometer for market sentiment. A rising dominance can indicate risk aversion and a flight to Bitcoin, while a falling dominance often suggests increased risk appetite and a broader altcoin rally. FAULTLINE incorporates this to refine regime classifications.',
+          answer: 'Bitcoin dominance often acts as a barometer for market sentiment. A rising dominance can indicate risk aversion and a flight to Bitcoin, while a falling dominance often suggests increased risk appetite and a broader altcoin rally. FAULTLINE shows dominance from CoinGecko alongside the regime classification.',
         },
         {
           question: 'How do macro conditions affect crypto market regimes?',
-          answer: 'Macroeconomic factors like inflation, interest rates, and global liquidity significantly influence investor behavior across all asset classes, including crypto. FAULTLINE integrates these conditions to provide a more holistic and accurate market regime assessment.',
+          answer: 'Macroeconomic factors like inflation, interest rates, and global liquidity significantly influence investor behavior across all asset classes, including crypto. FAULTLINE builds its crypto regime assessment on these conditions through the Pressure Index.',
         },
         {
           question: 'Is the Crypto Market Regime Tracker suitable for all investors?',

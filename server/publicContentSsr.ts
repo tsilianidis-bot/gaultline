@@ -494,7 +494,7 @@ function parseInternalLinks(json: string | null | undefined): Array<{ text: stri
 export function renderDailyBriefPage(template: string, item: PublicDailyBrief): string {
   const path = `/daily-brief/${encodeSlugSegment(item.slug)}`;
   const description = nonEmpty(item.metaDescription)
-    ?? "FAULTLINE Daily Intelligence Brief — institutional-grade macro analysis with explicit evidence and freshness context.";
+    ?? "FAULTLINE Daily Intelligence Brief — structural macro analysis with explicit evidence and freshness context.";
   const snap = item.briefSnapshot;
   const facts: string[] = [];
   facts.push(`Published ${timeTag(item.publishedAt) || "date unavailable"}`);

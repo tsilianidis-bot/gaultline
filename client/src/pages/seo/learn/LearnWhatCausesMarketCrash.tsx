@@ -37,7 +37,7 @@ const LearnWhatCausesMarketCrash = () => {
         },
         {
           heading: "How FAULTLINE Measures and Monitors Crash Risks",
-          body: `FAULTLINE provides a comprehensive suite of tools designed to monitor the key factors that contribute to stock market crashes. Our platform tracks credit contraction through indicators like corporate bond spreads and lending standards, identifying periods where credit availability tightens. We monitor liquidity withdrawal by analyzing market depth, bid-ask spreads, and central bank balance sheet changes, which reveal shifts in market plumbing. Leverage unwinds are detected by observing margin debt levels, derivatives positioning, and proprietary leverage ratios across various asset classes. Finally, sentiment shifts are quantified using advanced natural language processing on news, social media, and investor surveys, alongside technical indicators of market breadth and momentum. By integrating these diverse data streams, FAULTLINE offers a holistic view of market fragility, helping users understand the current risk landscape and anticipate potential turning points. This is for market intelligence and education, not personalized financial advice.`,
+          body: `FAULTLINE is built to monitor several of the structural factors that contribute to stock market crashes. The Pressure Index tracks credit contraction through the high-yield corporate bond spread, funding stress through SOFR, rate pressure through the 2-year and 10-year Treasury yields and the federal funds rate, inflation through CPI and PPI, and labor deterioration through unemployment — all from FRED — plus a static AI-concentration baseline. Equity trend context comes from daily index data, and sentiment context from public StockTwits and Reddit posts. FAULTLINE does not currently ingest margin debt, derivatives positioning, market depth, or central bank balance sheet data. Together these inputs show where systemic pressure is building — see the pressure before the break — without claiming to predict a specific crash or date. This is for market intelligence and education, not personalized financial advice.`,
         },
       ]}
       faqs={[
@@ -59,7 +59,7 @@ const LearnWhatCausesMarketCrash = () => {
         },
         {
           question: "How can FAULTLINE help me understand crash risks?",
-          answer: "FAULTLINE offers specialized dashboards and analytics that track key indicators related to credit, liquidity, leverage, and sentiment. This provides users with data-driven insights into the current state of market fragility and potential risks.",
+          answer: "FAULTLINE offers specialized dashboards and analytics that track credit spreads, funding conditions, rates, inflation, and labor data. This provides users with data-driven insights into the current state of market fragility and potential risks.",
         },
         {
           question: "Is FAULTLINE's analysis financial advice?",
@@ -70,7 +70,7 @@ const LearnWhatCausesMarketCrash = () => {
         { label: "Pressure Index", href: "/pressure-index", desc: "View Pressure Index on FAULTLINE" },
         { label: "Market Regime Tracker", href: "/market-regime-tracker", desc: "View Market Regime Tracker on FAULTLINE" },
         { label: "Daily Brief", href: "/daily-brief", desc: "View Daily Brief on FAULTLINE" },
-        { label: "Recession Probability", href: "/recession-probability", desc: "View Recession Probability on FAULTLINE" },
+        { label: "Recession Risk Context", href: "/recession-probability", desc: "View recession-risk context on FAULTLINE" },
         { label: "Liquidity Monitor", href: "/liquidity-monitor", desc: "View Liquidity Monitor on FAULTLINE" },
         { label: "Stock Market Risk Today", href: "/stock-market-risk-today", desc: "View Stock Market Risk Today on FAULTLINE" },
       ]}
