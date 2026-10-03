@@ -6,6 +6,9 @@
  * - Ordinary size statements ("A drawdown of 10% is typical") survive.
  * - The evidence packet the model sees (ALLOWED EVIDENCE CLAIMS, incl. "Scenario component … is N")
  *   is byte-identical to edb36648 for the same inputs (post-launch item, unchanged this round).
+ * QA r13 B8a: every string the model wrote is stripped at any depth (citation name/observedAt,
+ * missionRecommendationStructured.timeHorizon, invented keys), and integrity.validation.normalizedOutput
+ * carries only the known answer fields, from the final stripped and normalized answer.
  * Mocked provider only (fetch stub); prod 2026-10-01 fixtures.
  */
 import { readFileSync } from "node:fs";
@@ -38,7 +41,15 @@ vi.mock("./systemicRegime/reader", async importOriginal => ({
   getLatestSignalConvergence: async () => null,
 }));
 
-import { askAsha, generateAshaDailyGreeting, stripPlatoProbabilityClaims, withoutPlatoProbabilityClaims } from "./ashaEngine";
+import {
+  askAsha,
+  deepStripPlatoProbabilityClaims,
+  generateAshaDailyGreeting,
+  PLATO_ANSWER_KNOWN_FIELDS,
+  platoKnownAnswerFields,
+  stripPlatoProbabilityClaims,
+  withoutPlatoProbabilityClaims,
+} from "./ashaEngine";
 
 const CLAIM_A = "There is a 23% probability of recession.";
 const CLAIM_B = "The likelihood: 40% for a bear market.";
@@ -211,5 +222,94 @@ describe("QA r10 B8: prompt and evidence", () => {
     expect(evidence).toHaveLength(EVIDENCE_AT_EDB3664.length);
     expect(evidence).toEqual(EVIDENCE_AT_EDB3664);
     expect(evidence[0]).toContain("Scenario component bull is 43.");
+  });
+});
+
+// ── QA r13 B8a ────────────────────────────────────────────────
+const INVENTED = {
+  headline: both("Headline: credit calm."),
+  sections: [{ title: both("Section."), body: [both("Body one."), CLAIM_B] }],
+  suggestedQuestions: [both("What next?"), CLAIM_A],
+  followUps: { first: both("Follow up."), nested: [{ text: CLAIM_B }] },
+};
+const B8A_ANSWER = {
+  ...ANSWER,
+  marketBias: "VERY BULLISH (70% likely)",
+  threatLevel: "HIGH",
+  missionRecommendationStructured: { ...ANSWER.missionRecommendationStructured, timeHorizon: `3-6 months. ${CLAIM_A}` },
+  sourceCitations: [
+    { name: `FAULTLINE Pressure Index. ${CLAIM_A}`, claim: both("Pressure Index is 33."), observedAt: `2026-10-01. ${CLAIM_B}`, freshness: "RECENT" },
+    { name: CLAIM_B, claim: "Credit spreads are tight.", observedAt: "2026-10-01", freshness: "RECENT" },
+  ],
+  ...INVENTED,
+};
+/** Strings a strip would still change: any left is a probability-% sentence that got through. */
+const unstripped = (value: unknown) => strings(value).filter(([, text]) => stripPlatoProbabilityClaims(text) !== text);
+
+describe("QA r13 B8a: recursive stripping", () => {
+  it("deepStripPlatoProbabilityClaims strips every string at any depth: citation name/observedAt, timeHorizon, unknown keys", () => {
+    const out = deepStripPlatoProbabilityClaims(structuredClone(B8A_ANSWER)) as Record<string, any>;
+    expect(unstripped(out)).toEqual([]);
+    expect(JSON.stringify(out)).not.toMatch(CLAIMS);
+    expect(out.sourceCitations[0]).toEqual({ name: "FAULTLINE Pressure Index.", claim: `Pressure Index is 33. ${KEEP}`, observedAt: "2026-10-01.", freshness: "RECENT" });
+    expect(out.sourceCitations[1].name).toBe("");
+    expect(out.missionRecommendationStructured.timeHorizon).toBe("3-6 months.");
+    expect(out.marketBias).toBe("");
+    expect(out.headline).toBe(`Headline: credit calm. ${KEEP}`);
+    expect(out.sections).toEqual([{ title: `Section. ${KEEP}`, body: [`Body one. ${KEEP}`] }]);
+    expect(out.suggestedQuestions).toEqual([`What next? ${KEEP}`]);
+    expect(out.followUps).toEqual({ first: `Follow up. ${KEEP}`, nested: [{ text: "" }] });
+    // Non-strings untouched; clean text byte-identical.
+    expect(out.pressureIndex).toBe(33);
+    expect(out.bullProbability).toBeNull();
+    expect(out.disclaimer).toBe(ANSWER.disclaimer);
+    expect(withoutPlatoProbabilityClaims(structuredClone(B8A_ANSWER))).toEqual(out);
+  });
+
+  it("askAsha: citation labels, observedAt, timeHorizon and every other answer string carry no probability %", async () => {
+    state.answer = JSON.stringify(B8A_ANSWER);
+    const response = await ask();
+    expect(unstripped(response)).toEqual([]);
+    expect(JSON.stringify(response)).not.toMatch(CLAIMS);
+    expect(JSON.stringify(response)).not.toContain("70% likely");
+    // Citation [1] lost its whole name: dropped, not rendered with an empty label.
+    expect(response.sourceCitations).toEqual([{ name: "FAULTLINE Pressure Index.", claim: `Pressure Index is 33. ${KEEP}`, observedAt: "2026-10-01.", freshness: "RECENT" }]);
+    expect(response.missionRecommendationStructured?.timeHorizon).toBe("3-6 months.");
+  });
+});
+
+describe("QA r13 B8a: normalizedOutput", () => {
+  it("normalizedOutput holds only known, stripped, normalized fields: no invented keys, no raw enums", async () => {
+    state.answer = JSON.stringify(B8A_ANSWER);
+    const response = await ask();
+    const normalized = response.integrity.validation.normalizedOutput as Record<string, unknown>;
+    expect(Object.keys(normalized).every(key => (PLATO_ANSWER_KNOWN_FIELDS as readonly string[]).includes(key))).toBe(true);
+    for (const key of ["headline", "sections", "suggestedQuestions", "followUps"]) {
+      expect(normalized, key).not.toHaveProperty(key);
+      expect(response, key).not.toHaveProperty(key);
+    }
+    // Raw "VERY BULLISH (70% likely)" is not a valid bias: absent, as in the response. Valid enums pass.
+    expect(response.marketBias).toBeUndefined();
+    expect(normalized).not.toHaveProperty("marketBias");
+    expect(normalized.threatLevel).toBe("HIGH");
+    expect(unstripped(normalized)).toEqual([]);
+    expect(normalized).toEqual(platoKnownAnswerFields(response as unknown as Record<string, unknown>));
+    for (const [key, value] of Object.entries(normalized)) expect(value, key).toEqual((response as unknown as Record<string, unknown>)[key]);
+    expect(normalized.sourceCitations).toEqual(response.sourceCitations);
+    expect(normalized.reply).toBe(response.reply);
+  });
+
+  it("an all-claims reply is still a typed failure when invented keys are present", async () => {
+    // Distinct lead texts elsewhere, as in the r10 case: the validator's duplicate-text check would
+    // otherwise replace the reply with its safe reply before the strip runs.
+    state.answer = JSON.stringify({
+      ...B8A_ANSWER,
+      reply: `${CLAIM_A} ${CLAIM_B}`,
+      directAnswer: "No, stress is not building beneath today's readings.",
+      executiveSummary: "Summary: volatility subdued while liquidity stays ample overall.",
+      coreThesis: "Thesis: monetary conditions neutral, earnings steady, breadth healthy.",
+      missionRecommendation: "Recommendation: maintain allocations, rebalance quarterly, watch yields.",
+    });
+    await expect(ask()).rejects.toMatchObject({ message: expect.stringMatching(/empty_response|unusable|PLATO/i) });
   });
 });

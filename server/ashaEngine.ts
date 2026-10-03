@@ -23,7 +23,7 @@ import {
 } from "../shared/ashaQuestionAnalysis";
 import { evidenceNarrativePromptContract } from "../shared/evidenceContract";
 import { buildCanonicalEvidencePacket } from "./evidencePacket";
-import { isProbabilityPercentClaim, stripProbabilityPercentClaims } from "./stripProbabilityClaims";
+import { deepStripPlatoProbabilityClaims, stripPlatoProbabilityClaims } from "./platoProbabilityStrip";
 import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 import { buildInterpretationPromptContract, createInterpretationTransaction, validateInterpretationOutput, type InterpretationTransaction, type InterpretationValidationResult } from "../shared/interpretationIntegrity";
 import { buildCrossEngineSynthesis, buildCrossEngineSynthesisPromptContract } from "./crossEngineSynthesis";
@@ -264,78 +264,30 @@ const oracleAnswerProblem: PlatoResponseValidator = response => {
   }
 };
 
-// ── QA r10 B8: no probability % in PLATO answer text ───────────
-// The same answer prose fields as #60's withoutModelProbabilities (smartDiscovery), plus PLATO's
-// own answer fields. Display text only: the evidence packet and every scoring input are untouched.
-export const PLATO_ANSWER_PROSE_FIELDS = [
-  "reply", "directAnswer", "coreThesis", "missionRecommendation", "riskLevel", "marketRegime", "disclaimer",
-  "executiveSummary", "whyThisVerdict", "primaryDriver", "currentRegime", "bullCase", "bearCase",
-  "finalVerdictRationale", "suggestedAction", "suggestedBias", "suggestedBiasCondition", "whatChangesThesis",
-  "historicalAnalog", "historicalAnalogOutcome", "riskSummary", "actionVerdictReason",
-] as const;
-export const PLATO_ANSWER_PROSE_LIST_FIELDS = [
-  "bullKeyDrivers", "bearKeyDrivers", "catalysts", "threats", "confidenceReasons", "keyDrivers", "risks",
-  "watchCatalysts", "whyNotBuy", "whyNotSell", "riskFactors", "keyFindings", "supportingEvidence", "limitations",
-  "confirmationConditions", "invalidationConditions", "followUpChips",
-] as const;
+// ── QA r10 B8 / r13 B8a: no probability % anywhere in a PLATO answer ──
+// Every string the model wrote is stripped, at any depth (citations, timeHorizon, invented keys).
+// The response and integrity.validation.normalizedOutput carry only the known answer fields.
+// Display text only: the evidence packet and every scoring input are untouched.
+export { deepStripPlatoProbabilityClaims, stripPlatoProbabilityClaims };
 
-const SENTENCE_BREAK = /(?<=[.!?])\s+/;
-const lineHasProbabilityClaim = (line: string) => line.split(SENTENCE_BREAK).some(isProbabilityPercentClaim);
-
-/**
- * Removes every sentence that states a probability % (stripProbabilityPercentClaims, #60's shared
- * helper), line by line so the answer keeps its paragraphs. Text without such a claim is returned
- * unchanged, byte for byte.
- */
-export function stripPlatoProbabilityClaims(text: unknown): unknown {
-  if (typeof text !== "string") return text;
-  const lines = text.split("\n");
-  if (!lines.some(lineHasProbabilityClaim)) return text;
-  return lines
-    .flatMap(line => {
-      if (!lineHasProbabilityClaim(line)) return [line];
-      const kept = stripProbabilityPercentClaims(line) as string;
-      return kept ? [kept] : [];
-    })
-    .join("\n")
-    .trim();
+/** Strips probability-% sentences from every string of a PLATO answer, at any depth. */
+export function withoutPlatoProbabilityClaims(answer: Record<string, unknown>): Record<string, unknown> {
+  return deepStripPlatoProbabilityClaims(answer) as Record<string, unknown>;
 }
 
-/** Strips probability-% sentences from every model-written text field of a PLATO answer. */
-export function withoutPlatoProbabilityClaims(answer: Record<string, unknown>): Record<string, unknown> {
-  const out: Record<string, unknown> = { ...answer };
-  for (const key of PLATO_ANSWER_PROSE_FIELDS) if (typeof out[key] === "string") out[key] = stripPlatoProbabilityClaims(out[key]);
-  for (const key of PLATO_ANSWER_PROSE_LIST_FIELDS) {
-    if (Array.isArray(out[key])) {
-      out[key] = (out[key] as unknown[]).map(item => stripPlatoProbabilityClaims(item)).filter(item => item !== "");
-    }
-  }
-  const stripRows = (value: unknown, keys: string[]) => Array.isArray(value)
-    ? value.map(row => {
-        if (!row || typeof row !== "object") return row;
-        const copy = { ...(row as Record<string, unknown>) };
-        for (const key of keys) if (typeof copy[key] === "string") copy[key] = stripPlatoProbabilityClaims(copy[key]);
-        return copy;
-      })
-    : value;
-  out.crossEngineSynthesis = stripRows(out.crossEngineSynthesis, ["engine", "currentSignal", "relevance"]);
-  out.sourceCitations = stripRows(out.sourceCitations, ["claim"]);
-  const structured = out.missionRecommendationStructured;
-  if (structured && typeof structured === "object" && !Array.isArray(structured)) {
-    const m = { ...(structured as Record<string, unknown>) };
-    for (const key of ["verdict", "rationale"]) if (typeof m[key] === "string") m[key] = stripPlatoProbabilityClaims(m[key]);
-    m.decisionPaths = stripRows(m.decisionPaths, ["scenario", "response"]);
-    out.missionRecommendationStructured = m;
-  }
-  const collective = out.collectiveReading;
-  if (collective && typeof collective === "object" && !Array.isArray(collective)) {
-    const c = { ...(collective as Record<string, unknown>) };
-    for (const key of ["summary", "strongestReason", "practicalAction", "invalidation"]) {
-      if (typeof c[key] === "string") c[key] = stripPlatoProbabilityClaims(c[key]);
-    }
-    out.collectiveReading = c;
-  }
-  for (const key of ["crossEngineSynthesis", "sourceCitations"]) if (out[key] === undefined && !(key in answer)) delete out[key];
+/** The PLATO answer fields the client may receive (the oracle response schema). Anything else is dropped. */
+export const PLATO_ANSWER_KNOWN_FIELDS = [
+  "reply", "directAnswer", "executiveSummary", "coreThesis", "marketBias", "marketRegime", "threatLevel",
+  "pressureIndex", "riskLevel", "suggestedBias", "bullProbability", "bearProbability", "keyFindings",
+  "supportingEvidence", "crossEngineSynthesis", "historicalAnalog", "riskFactors", "confirmationConditions",
+  "invalidationConditions", "missionRecommendation", "missionRecommendationStructured", "sourceCitations",
+  "limitations", "disclaimer", "finalVerdictAction", "expectedTimeframe", "followUpChips",
+] as const;
+
+/** Only the known answer fields, taken from the final (stripped, normalized) answer. */
+export function platoKnownAnswerFields(answer: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const key of PLATO_ANSWER_KNOWN_FIELDS) if (answer[key] !== undefined) out[key] = answer[key];
   return out;
 }
 
@@ -765,7 +717,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
   }
 
   const integrityValidation = validateInterpretationOutput(parsed, transaction);
-  // QA r10 B8: no answer text field may state a probability %.
+  // QA r10 B8 / r13 B8a: no string the model wrote, at any depth, may state a probability %.
   parsed = withoutPlatoProbabilityClaims(integrityValidation.normalizedOutput);
 
   const reply = readString(parsed.reply);
@@ -825,7 +777,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
   const llmLimitations = readStringArray(parsed.limitations);
   const allLimitations = Array.from(new Set([...packetLimitations, ...llmLimitations]));
 
-  return {
+  const response = {
     reply,
     // No response confidence is established: it is never guessed from keywords or defaulted.
     confidence: undefined,
@@ -865,10 +817,14 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     questionAnalysis,
     provenance: getAshaContextProvenance(gatewayContext),
     modelTrace,
+  };
+  return {
+    ...response,
     integrity: {
       transaction: { ...transaction, modelVersion: modelTrace.selectedModel },
-      // The validated output as sent: probability-% sentences already stripped.
-      validation: { ...integrityValidation, normalizedOutput: parsed },
+      // QA r13 B8a: the validated output as sent. Only the known answer fields, from the final
+      // stripped and normalized answer: no raw enums, no invented model keys.
+      validation: { ...integrityValidation, normalizedOutput: platoKnownAnswerFields(response) },
       generationAttempts: modelTrace.attemptedModels.length,
       synthesis: governedCrossEngineSynthesis ? {
         synthesisId: governedCrossEngineSynthesis.synthesisId,

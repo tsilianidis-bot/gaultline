@@ -189,3 +189,35 @@ export function buildDailyGreetingContext(
   }
   return context;
 }
+
+// ── QA r13 B10: PLATO Intelligence Center (/app/asha) market state ──
+export type IntelligenceCenterOrbState = "critical" | "rising" | "calm";
+export const INTELLIGENCE_CENTER_UNAVAILABLE_COLOR = "#64748B";
+
+export interface IntelligenceCenterMarketState {
+  /** Canonical pressure on the 0-100 scale; null when there is no canonical reading. */
+  pressure100: number | null;
+  /** Canonical regime label; null when there is no canonical reading. */
+  regime: string | null;
+  color: string;
+  orbState: IntelligenceCenterOrbState;
+}
+
+/**
+ * The market state the Intelligence Center shows and sends to PLATO. Only a canonical reading binds
+ * (the demo baseline never does). Pressure is canonical 0-100 with bands at 70 and 45; a missing
+ * reading is null and renders in the neutral colour.
+ */
+export function buildIntelligenceCenterMarketState(
+  output: EngineOutput,
+  mode: BrowserMarketMode | undefined | null,
+): IntelligenceCenterMarketState {
+  const canonical = isCanonicalMarketMode(mode);
+  const score10 = canonical && output?.overall?.source === CANONICAL_SOURCE ? finite(output.overall.score) : undefined;
+  const pressure100 = score10 != null ? Math.min(100, Math.max(0, Math.round(score10 * 1000) / 100)) : null;
+  const regime = canonical ? nonEmpty(output?.regime?.label) ?? null : null;
+  if (pressure100 == null) return { pressure100, regime, color: INTELLIGENCE_CENTER_UNAVAILABLE_COLOR, orbState: "calm" };
+  if (pressure100 >= 70) return { pressure100, regime, color: "#FF2D55", orbState: "critical" };
+  if (pressure100 >= 45) return { pressure100, regime, color: "#FF9500", orbState: "rising" };
+  return { pressure100, regime, color: "#00E5FF", orbState: "calm" };
+}
