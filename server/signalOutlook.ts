@@ -413,7 +413,7 @@ function scoreStockFactors(
   // Signal 12: Volatility Compression (very low vol = coil before breakout)
   const volCompressionScore = clamp(getVec("volatility_regime") < 35 ? 85 : getVec("volatility_regime") < 50 ? 65 : 40);
 
-  // Signal 13: News Catalyst Probability (macro sensitivity + AI bubble = catalyst-rich environment)
+  // Signal 13: News Catalyst score, a 0–100 heuristic (macro sensitivity + AI bubble = catalyst-rich environment); not a probability
   const newsCatalystScore = clamp(100 - (getVec("macro_sensitivity") * 0.4 + getVec("ai_bubble") * 0.3 + p * 0.3));
 
   // Signal 14: Technical Breakout (trend + breadth + low vol = breakout conditions)
@@ -432,7 +432,7 @@ function scoreStockFactors(
     { name: "Momentum Beginning",         score: clamp(momentumBeginScore * tfMultiplier),  weight: 0.06, label: scoreToLabel(momentumBeginScore),  note: `${momentumBeginScore > 65 ? "Early momentum inflection — trend change underway" : momentumBeginScore > 40 ? "Momentum building" : "No momentum signal"}` },
     { name: "Institutional Accumulation", score: clamp(instAccumScore * tfMultiplier),      weight: 0.06, label: scoreToLabel(instAccumScore),      note: `${instAccumScore > 65 ? "Institutional window open — low stress environment" : instAccumScore > 40 ? "Moderate institutional activity" : "Institutional caution — stress elevated"}` },
     { name: "Volatility Compression",     score: clamp(volCompressionScore * tfMultiplier), weight: 0.04, label: scoreToLabel(volCompressionScore), note: `${volCompressionScore > 70 ? "Volatility coil — breakout imminent" : volCompressionScore > 50 ? "Moderate compression" : "No compression signal"}` },
-    { name: "News Catalyst Probability",  score: clamp(newsCatalystScore * tfMultiplier),   weight: 0.04, label: scoreToLabel(newsCatalystScore),   note: `${newsCatalystScore > 65 ? "High catalyst probability — macro + AI events converging" : newsCatalystScore > 40 ? "Moderate catalyst environment" : "Low catalyst probability"}` },
+    { name: "News Catalyst score (0–100 heuristic, not a probability)",  score: clamp(newsCatalystScore * tfMultiplier),   weight: 0.04, label: scoreToLabel(newsCatalystScore),   note: `${newsCatalystScore > 65 ? "High catalyst activity — macro + AI events converging" : newsCatalystScore > 40 ? "Moderate catalyst environment" : "Low catalyst activity"}` },
     { name: "Technical Breakout",         score: clamp(technicalBreakoutScore),             weight: 0.02, label: scoreToLabel(technicalBreakoutScore), note: `${technicalBreakoutScore > 70 ? "Breakout conditions present — trend + breadth + vol aligned" : technicalBreakoutScore > 50 ? "Partial breakout setup" : "No breakout signal"}` },
   ];
 

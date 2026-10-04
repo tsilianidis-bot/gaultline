@@ -662,17 +662,17 @@ DISCLAIMER: All output is for informational and educational purposes only. Nothi
 Current Market Regime: ${regimeLabel} (Pressure Index: ${pressureIndex === null ? "unavailable" : `${pressureIndex}/100`})
 ${crossMarket ? `
 ── MARKET REGIME INTELLIGENCE ──
-Stock Market Regime: ${crossMarket.stockRegime.regime} | Risk: ${crossMarket.stockRegime.riskLevel} | Confidence: ${crossMarket.stockRegime.confidence}% | Trend: ${crossMarket.stockRegime.trend}
-Crypto Market Regime: ${crossMarket.cryptoRegime.regime} | Risk: ${crossMarket.cryptoRegime.riskLevel} | Confidence: ${crossMarket.cryptoRegime.confidence}% | Trend: ${crossMarket.cryptoRegime.trend}
+Stock Market Regime: ${crossMarket.stockRegime.regime} | Risk: ${crossMarket.stockRegime.riskLevel} | confidence not established | Trend: ${crossMarket.stockRegime.trend}
+Crypto Market Regime: ${crossMarket.cryptoRegime.regime} | Risk: ${crossMarket.cryptoRegime.riskLevel} | confidence not established | Trend: ${crossMarket.cryptoRegime.trend}
 Cross-Market Alignment: ${crossMarket.alignmentStatus} (Score: ${crossMarket.alignmentScore}/100)
 Forward Bias: ${crossMarket.forwardBias}
 Market Summary: ${crossMarket.plainEnglishSummary}
 Key Insights: ${crossMarket.keyInsights.slice(0, 3).join(" | ")}
 ${crossMarket.regimeChangeAlerts.length > 0 ? `ACTIVE REGIME ALERTS: ${crossMarket.regimeChangeAlerts.map(a => `${a.asset} regime changed from ${a.previous} to ${a.current}`).join("; ")}` : ""}` : ""}
-${fmos ? `Action Bias: ${fmos.decision.actionBias}\nFMOS Decision: ${fmos.decision.verdict} (conviction: ${fmos.decision.conviction}%)\nScenario weights: uncalibrated (not offered as probabilities)\nConfidence: ${fmos.confidence.label} (${fmos.confidence.score}/100)\nTransition Risk: not offered as a probability\nPrimary Driver: ${fmos.probability.primaryDriver}` : ""}
+${fmos ? `Action Bias: ${fmos.decision.actionBias}\nFMOS Decision: ${fmos.decision.verdict} (conviction not established)\nScenario weights: uncalibrated (not offered as probabilities)\nConfidence: ${fmos.confidence.label}\nTransition Risk: not offered as a probability\nPrimary Driver: ${fmos.probability.primaryDriver}` : ""}
 ${seismographOutput ? `\n${seismographOutput.forASHA.systemPromptBlock}` : seismographState ? `\n── SEISMOGRAPH INTELLIGENCE (PERSISTENT MARKET MEMORY) ──\nCurrent Pressure Score: ${seismographState.today.pressureScore} | Regime: ${seismographState.today.regime} | Stress Level: ${seismographState.today.stressLevel}\nDirection: ${seismographState.today.direction} for ${seismographState.today.streakDays} consecutive days | Historical Percentile: ${formatOrdinal(seismographState.today.historicalPercentile)}\n7-Day Trend: ${seismographState.evolution.sevenDayTrend} | 30-Day Trend: ${seismographState.evolution.thirtyDayTrend}${seismographState.evolution.accelerating ? " | ACCELERATING" : ""}\nRegime Transition Probabilities: Remain=${seismographState.transitionProbabilities.remainInRegime}% | Elevated=${seismographState.transitionProbabilities.transitionToElevated}% | Low=${seismographState.transitionProbabilities.transitionToLow}% | Crisis=${seismographState.transitionProbabilities.transitionToCrisis}%\nActive Patterns: ${seismographState.activePatterns.length > 0 ? seismographState.activePatterns.map((p: { patternName: string }) => p.patternName).join(", ") : "None detected"}\nMarket Memory: ${seismographState.marketMemorySummary.observationCount} observations | ${seismographState.marketMemorySummary.currentStreakDescription}\nNote: Seismograph probabilities are historical base rates, not predictions.` : ""}
 	${evidenceContext}
-${outlookSummary}${livePriceContext}${historicalIntelligence ? historicalIntelligence.promptBlock : ""}`;  // ← Historical Intelligence injected here
+${outlookSummary}${livePriceContext}${historicalIntelligence ? historicalPromptBlockForModel(historicalIntelligence.promptBlock) : ""}`;  // ← Historical Intelligence injected here
 
   const systemPrompt = `You are PLATO, FAULTLINE's evidence-bound market interpretation layer.
 ${forecastHorizonPromptContract()}
@@ -1008,6 +1008,17 @@ JSON schema:
       } : null,
     },
   }) as FaultlineAnswer;
+}
+
+/**
+ * Ask prompt: the historical outcome split ("Bullish continuation / Sideways / Correction N%") is an
+ * uncalibrated scenario frequency that #58's strip does not catch, so it is withheld before the model
+ * (the sample-size line keeps N and drops its "Confidence: LABEL", which could read as statistical confidence).
+ * Prompt text only: the engine's outcomeDistribution (and the answer's historicalIntelligence) is unchanged.
+ */
+const HISTORICAL_OUTCOME_SPLIT = /^ {2}Bullish continuation: [^\n]*\n {2}Sideways: [^\n]*\n {2}Correction: [^\n]*\n {2}Sample size: N=(\d+)[^\n]*$/m;
+export function historicalPromptBlockForModel(block: string): string {
+  return block.replace(HISTORICAL_OUTCOME_SPLIT, "  Outcome distribution: frequency withheld (uncalibrated)\n  Sample size: N=$1 similar setups");
 }
 
 /** Model-written prose fields of an ASHA answer (top level and collectiveReading). */

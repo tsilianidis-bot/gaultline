@@ -11,6 +11,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
+import { formatFactorScore } from "@/lib/factorScoreDisplay";
 import { useAuth } from "@/_core/hooks/useAuth";
 import PageHeader from "@/components/PageHeader";
 import { TickerChip } from "@/components/TickerActionMenu";
@@ -209,7 +210,7 @@ function ScoreBar({ score, label, weight, note }: { score: number; label: string
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563" }}>
               ×{(weight * 100).toFixed(0)}%
             </span>
-            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: "13px", fontWeight: 700, color }}>{score}</span>
+            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: "13px", fontWeight: 700, color }}>{formatFactorScore(score)}</span>
           </div>
         </div>
         <div style={{ height: "3px", background: "rgba(255,255,255,0.06)", borderRadius: "2px", overflow: "hidden" }}>

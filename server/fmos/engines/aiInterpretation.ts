@@ -45,7 +45,7 @@ function buildFallbackInterpretation(
   );
 
   return {
-    headline: `${regime.currentRegime} — ${probability.bull > probability.bear ? "Bullish" : "Bearish"} bias with ${decision.conviction}% conviction`,
+    headline: `${regime.currentRegime} — ${probability.bull > probability.bear ? "Bullish" : "Bearish"} bias`,
     whyNow: `Systemic pressure at ${p}/100 with ${topVector.label} as the primary driver. ${regime.description}`,
     supportingEvidence: probability.bullEvidence.slice(0, 2).join(". "),
     contradictingEvidence: probability.bearEvidence.slice(0, 2).join(". "),

@@ -416,3 +416,60 @@ describe("Signal Outlook Center — scoring engine", () => {
     expect(result.buckets[0].category).toBe("top_opportunity_today");
   });
 });
+
+// ── Fix-up 6: News Catalyst is a 0–100 heuristic, never labelled a probability ──
+describe("Signal Outlook factor labels — no probability claims (fix-up 6)", () => {
+  vi.setConfig({ testTimeout: 15000 });
+  beforeEach(() => { clearOutlookCaches(); });
+  // The only permitted occurrences are explicit negations ("not a probability", "not offered as a probability").
+  const claimsProbability = (s: string) => /probabilit/i.test(s.replace(/not (offered as )?a probability/gi, ""));
+  const NEWS = "News Catalyst score (0–100 heuristic, not a probability)";
+  const cases: Array<[string, "stock" | "crypto"]> = [["NVDA", "stock"], ["SPY", "stock"], ["BTC", "crypto"], ["SOL", "crypto"]];
+  const tfs = ["day", "short", "swing", "long"] as const;
+
+  it("no factor name, label or note (UI breakdown + bull/bear case text) claims a probability", async () => {
+    for (const [sym, type] of cases) for (const tf of tfs) {
+      clearOutlookCaches();
+      const r = await getFullOutlook(sym, type, tf);
+      for (const f of r.scoreBreakdown.factors) {
+        expect(claimsProbability(f.name), `${sym}/${tf} name ${f.name}`).toBe(false);
+        expect(claimsProbability(String(f.label)), `${sym}/${tf} label ${f.label}`).toBe(false);
+        expect(claimsProbability(String(f.note)), `${sym}/${tf} note ${f.note}`).toBe(false);
+      }
+      expect(claimsProbability(r.tradeFramework.bullCaseForTrade)).toBe(false);
+      expect(claimsProbability(r.tradeFramework.bearCaseForTrade)).toBe(false);
+      if (type === "stock") {
+        const news = r.scoreBreakdown.factors.find(f => f.name.startsWith("News Catalyst"));
+        expect(news?.name).toBe(NEWS);
+        expect(["High catalyst activity — macro + AI events converging", "Moderate catalyst environment", "Low catalyst activity"]).toContain(news?.note);
+      }
+    }
+  });
+
+  it("the Signal Outlook AI prompt's top/bottom factor lines never call a factor a probability", async () => {
+    const { invokeLLM } = await import("./_core/llm");
+    const mock = vi.mocked(invokeLLM);
+    for (const [sym, type] of cases) {
+      clearOutlookCaches(); mock.mockClear();
+      await getFullOutlook(sym, type, "swing");
+      const prompts = mock.mock.calls.map(c => JSON.stringify((c[0] as any).messages));
+      expect(prompts.length).toBeGreaterThan(0);
+      for (const p of prompts) {
+        expect(p).not.toContain("News Catalyst Probability");
+        for (const line of p.split("\\n").filter(l => /Top (Bullish|Bearish) Factor:/.test(l))) {
+          expect(claimsProbability(line), line).toBe(false);
+        }
+      }
+    }
+  });
+
+  it("source pin: the News Catalyst factor carries the heuristic label in the one place the UI and the prompt read it from", async () => {
+    const fs = await import("node:fs");
+    const src = fs.readFileSync(new URL("./signalOutlook.ts", import.meta.url), "utf8");
+    expect(src).toContain(`{ name: "${NEWS}"`);
+    expect(src).not.toMatch(/News Catalyst Probability|catalyst probability/i);
+    const names = [...src.matchAll(/\{ name: "([^"]+)",\s*score:/g)].map(m => m[1]);
+    expect(names.length).toBe(22); // 14 stock + 8 crypto factors
+    for (const n of names) expect(claimsProbability(n), n).toBe(false);
+  });
+});
