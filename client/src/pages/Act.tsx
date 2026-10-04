@@ -32,6 +32,7 @@ import { canonicalFreshnessReadout, monthlyRecordBasisNote } from "@shared/dataI
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 import { forecastConfidenceDisplay } from "@shared/confidenceDisplay";
+import { SectorRotationQuestion } from "@/components/sectorRotation/SectorRotationModule";
 
 const ACT_DEEP_PATH = "/app/act/deep";
 
@@ -431,6 +432,8 @@ export default function Act() {
         </section>
 
         {/* ── SECTIONS ─────────────────────────────────────────────────── */}
+
+        <SectorRotationQuestion question="act" />
 
         <Section id="strategy-matrix" index="01" eyebrow="Strategy matrix" title="Favorability of common strategies under each posture" description="The matrix shows which strategies are favorable, conditional, or to avoid under each posture. The current posture is highlighted.">
           <StrategyMatrix posture={posture} scenarios={scenarios} />
