@@ -1,10 +1,11 @@
-# FAULTLINE Sector Rotation Map™ — methodology (`sector-rotation-v1.0.0`)
+# FAULTLINE Sector Rotation Map™ — methodology (`sector-rotation-v1.1.0`)
 
 Display-only layer inside the Pentagonal Thesis™ five questions. It does **not** read into or change the
 Pressure Index, regimes, thresholds, weights, engine output or the probability contract. It references the
 canonical regime / Pressure Index / stateId it was read beside (read-only).
 
-Code: `server/sectorRotation/calc.ts` (pure), `server/sectorRotation/service.ts` (fetch + cache),
+Code: `server/sectorRotation/calc.ts` (pure), `server/sectorRotation/service.ts` (paced fetch),
+`server/sectorRotation/collector.ts` (post-close collector), `server/sectorRotation/snapshotStore.ts` (persisted snapshots),
 `shared/sectorRotation.ts` (contract + fixed parameters), `client/src/components/sectorRotation/SectorRotationModule.tsx` (render only).
 
 ## Principles
@@ -77,12 +78,27 @@ matches the rate link of a LEADING sector. Only the quadrant line (100) and the 
 - Corporate-action guard: a single completed-session move ≥ 50% inside a window withholds the metric spanning it (5D, breadth);
   a stock whose today % is ≥ 50% in magnitude is not ranked (listed as unavailable). FAULTLINE never "adjusts" prices.
 - Catalyst rule (first match wins; news window = (prior session's 4 PM ET close, end of the measured move]):
-  1. **EVENT-DRIVEN** — ticker-tagged item whose title matches a family (earnings/results, guidance, M&A, regulatory, analyst action; priority in that order).
-  2. **COMPANY-SPECIFIC** — ticker-tagged item AND the sector ETF does not explain the move.
+  1. **EVENT-DRIVEN** — a *qualifying* item (below) whose title matches a family (earnings/results, guidance, M&A, regulatory, analyst action; priority in that order; specific phrases only).
+  2. **COMPANY-SPECIFIC** — a qualifying item AND the sector ETF does not explain the move.
   3. **SECTOR-DRIVEN** — sector ETF moved the same way by ≥ 50% of the stock's move AND SPY does not explain the sector's move.
   4. **MACRO-DRIVEN** — SPY moved the same way by ≥ 50% of the stock's move.
-  5. Otherwise exactly **CATALYST UNCLEAR** (always when news is unavailable and no co-move qualifies).
-  For 1–2 the "Why" is the fetched headline verbatim with publisher and time; no LLM summary.
+  5. Otherwise exactly **CATALYST UNCLEAR** (always when no item qualifies and no co-move qualifies).
+  For 1–2 the "Why" is the qualifying headline verbatim with publisher and time; no LLM summary. 3–4 are price classifications
+  and **never carry a headline**.
+- **Qualifying news item (v1.1.0, `qualifyNewsItem`, all must hold; otherwise the item is ignored):**
+  1. published inside the move's window (parseable timestamp);
+  2. publisher on the controlled list `APPROVED_NEWS_PUBLISHERS` (Benzinga, GlobeNewswire, PR Newswire, Business Wire, ACCESSWIRE,
+     Reuters, MarketWatch, CNBC, Investing.com, Barron's, The Wall Street Journal, Bloomberg); missing publisher → rejected;
+  3. tagged with the mover and with ≤ 3 tickers in total (`maxNewsTickerTags`);
+  4. not a movers roundup / market wrap (`ROUNDUP_PATTERN`), even if it names the stock;
+  5. the **title explicitly names the mover**: `$TICKER`, `(TICKER)`, `(NYSE: TICKER)`, an unambiguous bare ticker (≥ 3 letters, not on
+     the common-word list, not in an all-caps title), or a controlled alias. Aliases are deterministic: the SSGA holdings name with legal
+     suffixes removed (e.g. `LOWE S COS INC` → "lowe"), its first word when ≥ 5 letters, not a stopword and unique in the universe, plus
+     the fixed `EXPLICIT_COMPANY_ALIASES` table. Ordinary words, first names and places (`ALIAS_STOPWORDS`, e.g. "state", "wells",
+     "advanced", "delta") are never single-word aliases: those issuers are named only by full name or ticker. Exchange qualifiers such as
+     "(NASDAQ: TER)" are notation, not a mention of the exchange operator. An alias shared by two issuers is ambiguous → rejected;
+  6. the title names **no other** S&P 500 issuer (one company's earnings never explain a peer; sector/market stories never explain a stock
+     they do not name). There is no inference from sector similarity or neighbouring companies.
 - Q3: a winner in a LEADING/IMPROVING sector or a loser in a LAGGING/LOSING MOMENTUM sector REINFORCES; the opposite CONTRADICTS.
 - Q4 early indicator: CONTRADICTS AND (SECTOR-DRIVEN or CATALYST UNCLEAR) AND volume ≥ 1.5× normal.
 
@@ -90,3 +106,19 @@ matches the rate link of a LEADING sector. Only the quadrant line (100) and the 
 Tilt = defensive if ≥ 2 of XLU/XLP/XLV are LEADING/IMPROVING, cyclical/growth if ≥ 2 are LAGGING/LOSING MOMENTUM, else mixed.
 "Consistent with" the regime when (ELEVATED RISK / HIGH STRESS / SYSTEMIC CRISIS and defensive) or (LOW / MODERATE RISK and not defensive);
 "at odds with" otherwise; omitted when mixed or the regime is unavailable. Second sentence: strongest and weakest stock with catalyst class and Q3 alignment.
+
+## Refresh architecture (v1.1.0): post-close collector → persisted snapshot → read-only UI
+- `sectorRotation.current` (used by NOW / WHY / OUTLOOK / WATCH / ACT, sent as its own non-batched request) **only reads the latest
+  saved snapshot**. A page load never fetches market data and never triggers a build.
+- The collector (`SectorRotationCollector`, started at server boot) builds **once per completed session**: after 17:00 ET (4 PM + 60 min)
+  on a weekday, if no snapshot exists for that session for the current `methodVersion`. Checks run every 10 min (first 90 s after boot);
+  holiday sessions are detected from SPY's latest completed bar and never rebuilt.
+- Fan-out discipline: 2 concurrent requests with 250 ms spacing, one 10-minute overall budget, an HTTP 429 from any provider aborts the
+  fan-out immediately and opens a 60-minute circuit; failed attempts back off 30 → 60 → 120 min, max 3 attempts per session, then stop
+  until the next session. No builds 13:45–14:45 ET (the scheduled outcome-collection window that also uses Yahoo).
+- A build is saved only when valid (benchmark available, movers panel not UNAVAILABLE, not aborted). On failure the last valid snapshot
+  is served as **STALE** with the reason and next attempt time; with no snapshot the module shows **UNAVAILABLE**. Nothing is recomputed
+  from traffic.
+- Snapshot content: timestamp, completed session date, methodology version, canonical stateId, rankings/quadrants, breadth, winners/losers,
+  catalyst class + source + time, status and missing-data flags (the full `SectorRotationReading`), with a sha256 integrity hash.
+- Storage: see `STORAGE_PROPOSAL.md` (existing `marketMemory` table, insert-only, no migration).

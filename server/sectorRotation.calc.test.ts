@@ -8,6 +8,7 @@ import {
   alignToBenchmark, buildSectorRotationReading, classifyAction, classifyCatalyst, classifyQuadrant, completedReturn, computeRrg,
   dailyChange, earlyIndicator, etWallToUtc, explains, findDiscontinuity, findUntraceableNumbers, isSessionComplete, latestRrg,
   momentumArrow, rankBy, sectorBreadth, sessionCompletedAt, splitBars, thesisAlignment, volumeRatio,
+  APPROVED_NEWS_PUBLISHERS, EXPLICIT_COMPANY_ALIASES, buildAliasIndex, isApprovedPublisher, normalizeCompanyName, normalizePublisher, qualifyNewsItem,
   type ChartInput, type InputBar, type NewsItemInput, type SectorRotationInputs, type UniverseMember,
 } from "./sectorRotation/calc";
 import { CATALYST_UNCLEAR_TEXT, SECTOR_ETFS, type SectorEtfTicker } from "../shared/sectorRotation";
@@ -390,22 +391,151 @@ describe("top 5 winners / losers", () => {
 });
 
 describe("catalyst classification", () => {
-  const news = (over: Partial<NewsItemInput> = {}): NewsItemInput => ({ id: "n1", title: "Acme beats on third-quarter earnings", publisher: "Wire", url: "https://example.test/a", publishedAt: "2026-10-02T12:00:00Z", tickers: ["ACME"], ...over });
-  const base = { ticker: "ACME", stockPct: 8, sectorEtf: "XLK" as const, sectorPct: 1, spyPct: 0.5, news: [] as NewsItemInput[], newsAvailable: true };
-  it("EVENT_DRIVEN only with a ticker-tagged item; why restates the fetched title verbatim", () => {
+  // Test-only universe (real S&P 500 names as SSGA lists them, plus labelled synthetic entries).
+  const M = (ticker: string, name: string, sectorEtf: SectorEtfTicker = "XLK"): UniverseMember => ({ ticker, name, sectorEtf });
+  const MEMBERS: UniverseMember[] = [
+    M("ACME", "ACME WIDGETS CORP"), M("MU", "MICRON TECHNOLOGY INC"), M("WDC", "WESTERN DIGITAL CORP"), M("STX", "SEAGATE TECHNOLOGY HOLDINGS"),
+    M("TER", "TERADYNE INC"), M("HPE", "HEWLETT PACKARD ENTERPRISE"), M("NKE", "NIKE INC  CL B", "XLY"), M("TSLA", "TESLA INC", "XLY"),
+    M("ON", "ON SEMICONDUCTOR"), M("GOOGL", "ALPHABET INC CL A", "XLC"), M("GOOG", "ALPHABET INC CL C", "XLC"), M("LOW", "LOWE S COS INC", "XLY"),
+    M("ALL", "ALLSTATE CORP", "XLF"), M("KEY", "KEYCORP", "XLF"), M("TGT", "TARGET CORP", "XLP"), M("JPM", "JPMORGAN CHASE + CO", "XLF"),
+    M("GE", "GENERAL ELECTRIC", "XLI"), M("GEV", "GE VERNOVA INC", "XLI"), M("T", "AT+T INC", "XLC"), M("NDAQ", "NASDAQ INC", "XLF"),
+  ];
+  const aliases = buildAliasIndex(MEMBERS);
+  const news = (over: Partial<NewsItemInput> = {}): NewsItemInput => ({ id: "n1", title: "Acme Widgets beats third-quarter earnings estimates", publisher: "Benzinga", url: "https://example.test/a", publishedAt: "2026-10-02T12:00:00Z", tickers: ["ACME"], ...over });
+  const base = { ticker: "ACME", stockPct: 8, sectorEtf: "XLK" as const, sectorPct: 1, spyPct: 0.5, news: [] as NewsItemInput[], newsAvailable: true, aliases };
+  const cls = (ticker: string, items: NewsItemInput[], over: Partial<typeof base> = {}) => classifyCatalyst({ ...base, ticker, news: items, ...over });
+
+  it("EVENT_DRIVEN only from a qualifying item; why restates the fetched title verbatim with source", () => {
     const c = classifyCatalyst({ ...base, news: [news()] });
-    expect(c).toMatchObject({ class: "EVENT_DRIVEN", eventFamily: "EARNINGS", why: "Acme beats on third-quarter earnings" });
-    expect(c.news).toMatchObject({ id: "n1", publisher: "Wire", publishedAt: "2026-10-02T12:00:00Z", source: "polygon-news" });
-    expect(classifyCatalyst({ ...base, news: [news({ title: "Broker upgrades Acme to buy" })] }).eventFamily).toBe("ANALYST_ACTION");
-    expect(classifyCatalyst({ ...base, news: [news({ title: "Acme agrees to acquire Widget Co" })] }).eventFamily).toBe("M_AND_A");
+    expect(c).toMatchObject({ class: "EVENT_DRIVEN", eventFamily: "EARNINGS", why: "Acme Widgets beats third-quarter earnings estimates" });
+    expect(c.news).toMatchObject({ id: "n1", publisher: "Benzinga", publishedAt: "2026-10-02T12:00:00Z", source: "polygon-news" });
+    expect(classifyCatalyst({ ...base, news: [news({ title: "Broker upgrades Acme Widgets to buy" })] }).eventFamily).toBe("ANALYST_ACTION");
+    expect(classifyCatalyst({ ...base, news: [news({ title: "Acme Widgets agrees to acquire Widget Co" })] }).eventFamily).toBe("M_AND_A");
+    expect(cls("MU", [news({ title: "Micron earnings beat as memory prices climb", tickers: ["MU"] })])).toMatchObject({ class: "EVENT_DRIVEN", eventFamily: "EARNINGS" });
   });
-  it("ignores items tagged with other tickers", () => {
+
+  it("a Micron earnings headline is never another semiconductor's catalyst", () => {
+    const peerTagged = news({ id: "mu1", title: "Micron earnings beat as memory prices climb", tickers: ["MU", "WDC", "STX"] });
+    for (const t of ["WDC", "STX"]) {
+      expect(qualifyNewsItem(peerTagged, t, aliases)).toBe("NOT_NAMED");
+      expect(cls(t, [peerTagged], { stockPct: -10 })).toMatchObject({ class: "CATALYST_UNCLEAR", news: null, why: "CATALYST UNCLEAR" });
+    }
+    const namesPeers = news({ id: "mu2", title: "Micron results lift Western Digital and Seagate", tickers: ["MU", "WDC", "STX"] });
+    expect(qualifyNewsItem(namesPeers, "WDC", aliases)).toBe("NAMES_OTHER_ISSUER");
+    expect(qualifyNewsItem(namesPeers, "STX", aliases)).toBe("NAMES_OTHER_ISSUER");
+    expect(cls("WDC", [namesPeers], { stockPct: -10 }).class).toBe("CATALYST_UNCLEAR");
+  });
+
+  it("a movers roundup never explains a stock, named or not", () => {
+    const roundup = news({ id: "r1", title: "Stocks making the biggest moves midday: Nike, Tesla, Teradyne and more", tickers: ["NKE", "TSLA", "TER", "HPE"] });
+    expect(qualifyNewsItem(roundup, "HPE", aliases)).toBe("TOO_MANY_TAGS");
+    expect(cls("HPE", [roundup]).class).toBe("CATALYST_UNCLEAR");
+    expect(cls("TER", [roundup]).class).toBe("CATALYST_UNCLEAR");
+    // Even tagged only with the stock, a roundup is rejected.
+    for (const title of ["Stocks making the biggest moves midday: Teradyne", "Teradyne among top midday movers", "Biggest movers: Teradyne, HPE", "5 stocks to watch: Teradyne"]) {
+      expect(qualifyNewsItem(news({ title, tickers: ["TER"] }), "TER", aliases), title).toBe("ROUNDUP");
+    }
+    // A roundup that does not name the stock cannot explain it.
+    expect(qualifyNewsItem(news({ title: "Here are today's biggest movers", tickers: ["HPE"] }), "HPE", aliases)).toBe("ROUNDUP");
+  });
+
+  it("sector / market stories that do not name the company are rejected", () => {
+    for (const title of ["Chip stocks rally on AI demand", "Semiconductor sector jumps as yields fall", "Stock market today: Dow, S&P 500 rise", "Memory makers gain after industry data"]) {
+      expect(cls("WDC", [news({ title, tickers: ["WDC"] })], { stockPct: 5 }).class, title).toBe("CATALYST_UNCLEAR");
+    }
+  });
+
+  it("only approved publishers count; missing publisher fails closed", () => {
+    for (const publisher of ["", "   ", "The Motley Fool", "Zacks Investment Research", "Seeking Alpha", "Some Blog"]) {
+      const c = classifyCatalyst({ ...base, news: [news({ publisher })] });
+      expect(c.class, publisher).toBe("CATALYST_UNCLEAR");
+      expect(c.news).toBeNull();
+    }
+    expect(qualifyNewsItem(news({ publisher: "" }), "ACME", aliases)).toBe("PUBLISHER_MISSING");
+    expect(qualifyNewsItem(news({ publisher: "The Motley Fool" }), "ACME", aliases)).toBe("PUBLISHER_NOT_APPROVED");
+    expect(qualifyNewsItem(news({ publishedAt: "not a date" }), "ACME", aliases)).toBe("BAD_TIMESTAMP");
+  });
+
+  it("exchange-qualified press-release notation is not a mention of the exchange operator", () => {
+    expect(qualifyNewsItem(news({ title: "Teradyne (NASDAQ: TER) raises full-year outlook", publisher: "GlobeNewswire Inc.", tickers: ["TER"] }), "TER", aliases)).toBeNull();
+    expect(qualifyNewsItem(news({ title: "Nasdaq, Inc. reports third-quarter results", tickers: ["NDAQ"] }), "NDAQ", aliases)).toBeNull();
+    expect(qualifyNewsItem(news({ title: "Nasdaq rises as Teradyne jumps", tickers: ["TER"] }), "TER", aliases)).toBe("NAMES_OTHER_ISSUER"); // fail closed
+    for (const publisher of ["Benzinga", "GlobeNewswire Inc.", "PR Newswire", "Business Wire", "Reuters", "MarketWatch"]) expect(isApprovedPublisher(publisher), publisher).toBe(true);
+    expect(APPROVED_NEWS_PUBLISHERS.every(p => p === normalizePublisher(p))).toBe(true);
+  });
+
+  it("aliases are controlled and deterministic", () => {
+    const shuffled = buildAliasIndex([...MEMBERS].reverse());
+    expect(Array.from(shuffled.issuerAliases.entries()).sort()).toEqual(Array.from(aliases.issuerAliases.entries()).sort());
+    const of = (t: string) => aliases.issuerAliases.get(aliases.issuerOf.get(t)!)?.slice().sort();
+    expect(of("TER")).toEqual(["teradyne"]);
+    expect(of("WDC")).toEqual(["western digital"]); // "western" alone is not distinctive
+    expect(of("STX")).toEqual(["seagate", "seagate technology"]);
+    expect(of("MU")).toEqual(["micron", "micron technology"]);
+    expect(of("JPM")).toEqual(["jpmorgan", "jpmorgan chase"]);
+    expect(of("TGT")).toBeUndefined(); // "target" is an ordinary word: ticker forms only
+    expect(aliases.issuerOf.get("GOOGL")).toBe(aliases.issuerOf.get("GOOG")); // share classes = one issuer
+    // Ordinary-word first names are not aliases: such issuers are named by full name or ticker only.
+    const words = buildAliasIndex([M("STT", "STATE STREET CORP", "XLF"), M("WFC", "WELLS FARGO + CO", "XLF"), M("AMD", "ADVANCED MICRO DEVICES", "XLK")]);
+    expect(Array.from(words.aliasIssuers.keys()).sort()).toEqual(["advanced micro devices", "state street", "wells fargo"]);
+    expect(qualifyNewsItem(news({ title: "Teradyne surges on advanced packaging demand", tickers: ["TER"] }), "TER", buildAliasIndex([...MEMBERS, M("AMD", "ADVANCED MICRO DEVICES")]))).toBeNull();
+    // A first word shared by two issuers is never an alias of either (test-only synthetic names).
+    const shared = buildAliasIndex([M("ZYPX", "ZYLOX PETROLEUM CORP", "XLE"), M("ZYOX", "ZYLOX OIL CORP", "XLE")]);
+    expect(shared.issuerAliases.get("zylox petroleum")).toEqual(["zylox petroleum"]);
+    expect(qualifyNewsItem(news({ title: "Zylox raises full-year outlook", tickers: ["ZYPX"] }), "ZYPX", shared)).toBe("NOT_NAMED");
+    expect(of("GOOGL")).toEqual(["alphabet", "google"]);
+    expect(of("LOW")).toEqual(["lowe"]);
+    expect(normalizeCompanyName("AT+T INC")).toBe("at&t");
+    expect(Object.keys(EXPLICIT_COMPANY_ALIASES).sort()).toEqual(["AAPL", "AMZN", "BRK-B", "FOX", "FOXA", "GOOG", "GOOGL", "LOW", "META", "NWS", "NWSA", "T"]);
+  });
+
+  it("ambiguous ticker / name collisions never attribute", () => {
+    // Ordinary-word tickers only count when exchange-qualified, $-prefixed or parenthesised.
+    expect(qualifyNewsItem(news({ title: "Stocks rally on Fed relief", tickers: ["ON"] }), "ON", aliases)).toBe("NOT_NAMED");
+    expect(qualifyNewsItem(news({ title: "All eyes on bank earnings", tickers: ["ALL"] }), "ALL", aliases)).toBe("NOT_NAMED");
+    expect(qualifyNewsItem(news({ title: "Key takeaways from earnings season", tickers: ["KEY"] }), "KEY", aliases)).toBe("NOT_NAMED");
+    expect(qualifyNewsItem(news({ title: "Analysts lift price target on retailers", tickers: ["TGT"] }), "TGT", aliases)).toBe("NOT_NAMED");
+    expect(qualifyNewsItem(news({ title: "GE shares climb", tickers: ["GE"] }), "GE", aliases)).toBe("NOT_NAMED");
+    expect(qualifyNewsItem(news({ title: "ON Semiconductor (NASDAQ: ON) raises guidance", tickers: ["ON"] }), "ON", aliases)).toBeNull();
+    expect(qualifyNewsItem(news({ title: "Shares of $ON jump after guidance raise", tickers: ["ON"] }), "ON", aliases)).toBeNull();
+    expect(qualifyNewsItem(news({ title: "Target Corp (NYSE:TGT) cuts full-year outlook", tickers: ["TGT"] }), "TGT", aliases)).toBeNull();
+    // Shared alias across two issuers → ambiguous (synthetic second issuer, test-only).
+    const amb = buildAliasIndex([...MEMBERS, M("GOOGX", "GOOGLE ANALYTICS HOLDINGS")]);
+    expect(qualifyNewsItem(news({ title: "Google unveils new chip", tickers: ["GOOGL"] }), "GOOGL", amb)).toBe("AMBIGUOUS_NAME");
+    // All-caps headlines do not count bare tickers.
+    expect(qualifyNewsItem(news({ title: "TERADYNE TER SHARES SURGE", tickers: ["TER"] }), "TER", aliases)).toBeNull(); // alias "teradyne" still names it
+    expect(qualifyNewsItem(news({ title: "HPE SHARES SURGE", tickers: ["HPE"] }), "HPE", aliases)).toBe("NOT_NAMED");
+  });
+
+  it("keyword families use specific phrases only", () => {
+    const fam = (title: string) => classifyCatalyst({ ...base, ticker: "TER", news: [news({ title, tickers: ["TER"] })] }).eventFamily;
+    expect(fam("Teradyne slips on profit-taking")).toBeNull();
+    expect(fam("Teradyne revenue mix shifts")).toBeNull();
+    expect(fam("Teradyne files SEC form 8-K")).toBeNull();
+    expect(fam("Teradyne shares extend rally; analysts see results")).toBeNull();
+    expect(fam("Teradyne outlook for robotics unit")).toBeNull();
+    expect(fam("Teradyne Q3 earnings top estimates")).toBe("EARNINGS");
+    expect(fam("Teradyne raises full-year guidance")).toBe("GUIDANCE");
+    expect(fam("Teradyne faces SEC probe")).toBe("REGULATORY");
+    expect(fam("Teradyne downgraded to neutral at broker")).toBe("ANALYST_ACTION");
+  });
+
+  it("ignores items not tagged with the mover or tagging more than 3 tickers", () => {
     expect(classifyCatalyst({ ...base, news: [news({ tickers: ["OTHER"] })] }).class).toBe("CATALYST_UNCLEAR");
+    expect(classifyCatalyst({ ...base, news: [news({ tickers: ["ACME", "A1", "A2", "A3"] })] }).class).toBe("CATALYST_UNCLEAR");
+    expect(classifyCatalyst({ ...base, news: [news({ tickers: ["ACME", "A1", "A2"] })] }).class).toBe("EVENT_DRIVEN");
   });
-  it("COMPANY_SPECIFIC needs a tagged item and a move the sector does not explain", () => {
-    expect(classifyCatalyst({ ...base, news: [news({ title: "Acme names new CEO" })] }).class).toBe("COMPANY_SPECIFIC");
-    expect(classifyCatalyst({ ...base, sectorPct: 5, spyPct: 0.5, news: [news({ title: "Acme names new CEO" })] }).class).toBe("SECTOR_DRIVEN");
+
+  it("COMPANY_SPECIFIC needs a qualifying item and a move the sector does not explain; co-moves never carry a headline", () => {
+    expect(classifyCatalyst({ ...base, news: [news({ title: "Acme Widgets names new CEO" })] }).class).toBe("COMPANY_SPECIFIC");
+    const sec = classifyCatalyst({ ...base, sectorPct: 5, spyPct: 0.5, news: [news({ title: "Acme Widgets names new CEO" })] });
+    expect(sec).toMatchObject({ class: "SECTOR_DRIVEN", news: null });
+    expect(sec.why).not.toContain("CEO");
+    const mac = classifyCatalyst({ ...base, stockPct: -3, sectorPct: -2, spyPct: -1.8, news: [news({ id: "x", title: "Chip stocks slide", tickers: ["ACME"] })] });
+    expect(mac).toMatchObject({ class: "MACRO_DRIVEN", news: null });
+    expect(mac.why).not.toContain("Chip");
   });
+
   it("SECTOR / MACRO co-moves and exactly 'CATALYST UNCLEAR' otherwise", () => {
     expect(classifyCatalyst({ ...base, sectorPct: 4.5, spyPct: 0.5 })).toMatchObject({ class: "SECTOR_DRIVEN", coMove: { benchmark: "XLK", benchmarkPct: 4.5, stockPct: 8 }, news: null });
     expect(classifyCatalyst({ ...base, stockPct: -3, sectorPct: -2, spyPct: -1.8 })).toMatchObject({ class: "MACRO_DRIVEN", coMove: { benchmark: "SPY" } });
@@ -414,26 +544,36 @@ describe("catalyst classification", () => {
     expect(CATALYST_UNCLEAR_TEXT).toBe("CATALYST UNCLEAR");
     expect(explains(4, 8)).toBe(true); expect(explains(3.99, 8)).toBe(false); expect(explains(-4, 8)).toBe(false); expect(explains(null, 8)).toBe(false);
   });
-  it("never assigns a company/event catalyst when news is unavailable", () => {
-    const c = classifyCatalyst({ ...base, news: [news()], newsAvailable: false });
-    expect(c.class).toBe("CATALYST_UNCLEAR");
-    expect(c.news).toBeNull();
+
+  it("missing valid news fails closed to CATALYST UNCLEAR", () => {
+    expect(classifyCatalyst({ ...base, news: [news()], newsAvailable: false })).toMatchObject({ class: "CATALYST_UNCLEAR", news: null });
+    const rejected = [news({ publisher: "" }), news({ id: "2", tickers: ["ZZZ"] }), news({ id: "3", title: "Tech stocks climb" }), news({ id: "4", publisher: "Seeking Alpha" })];
+    expect(classifyCatalyst({ ...base, news: rejected })).toMatchObject({ class: "CATALYST_UNCLEAR", news: null, why: "CATALYST UNCLEAR" });
   });
-  it("no catalyst without a source item (randomised invariant)", () => {
+
+  it("no catalyst without a qualifying source item (randomised invariant)", () => {
     let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-    for (let i = 0; i < 500; i++) {
-      const items = rnd() < 0.5 ? [news({ title: rnd() < 0.5 ? "Acme quarterly results" : "Acme opens office", tickers: rnd() < 0.7 ? ["ACME"] : ["ZZZ"] })] : [];
-      const c = classifyCatalyst({ ...base, stockPct: (rnd() - 0.5) * 20 || 1, sectorPct: rnd() < 0.1 ? null : (rnd() - 0.5) * 10, spyPct: (rnd() - 0.5) * 6, news: items, newsAvailable: rnd() < 0.8 });
-      if (c.class === "EVENT_DRIVEN" || c.class === "COMPANY_SPECIFIC") { expect(c.news).not.toBeNull(); expect(c.why).toBe(c.news!.title); expect(items.some(n => n.id === c.news!.id && n.tickers.includes("ACME"))).toBe(true); }
-      else expect(c.news).toBeNull();
+    const titles = ["Acme Widgets quarterly results beat estimates", "Acme Widgets opens office", "Biggest movers: Acme Widgets", "Chip stocks rally", "Micron earnings beat", "Acme Widgets and Micron sign deal"];
+    const pubs = ["Benzinga", "", "The Motley Fool", "Reuters"];
+    for (let i = 0; i < 800; i++) {
+      const items = rnd() < 0.6 ? [news({ id: `r${i}`, title: titles[Math.floor(rnd() * titles.length)], publisher: pubs[Math.floor(rnd() * pubs.length)], tickers: rnd() < 0.7 ? ["ACME"] : rnd() < 0.5 ? ["ZZZ"] : ["ACME", "MU", "WDC", "STX"] })] : [];
+      const newsAvailable = rnd() < 0.8;
+      const c = classifyCatalyst({ ...base, stockPct: (rnd() - 0.5) * 20 || 1, sectorPct: rnd() < 0.1 ? null : (rnd() - 0.5) * 10, spyPct: (rnd() - 0.5) * 6, news: items, newsAvailable });
+      if (c.class === "EVENT_DRIVEN" || c.class === "COMPANY_SPECIFIC") {
+        expect(newsAvailable).toBe(true);
+        const src = items.find(n => n.id === c.news!.id)!;
+        expect(qualifyNewsItem(src, "ACME", aliases)).toBeNull();
+        expect(c.why).toBe(src.title);
+      } else expect(c.news).toBeNull();
       if (c.class === "SECTOR_DRIVEN" || c.class === "MACRO_DRIVEN") expect(c.coMove).not.toBeNull();
       if (c.class === "CATALYST_UNCLEAR") expect(c.why).toBe("CATALYST UNCLEAR");
     }
   });
+
   it("only news inside the move's window is used by the builder", () => {
     const inputs = baseInputs();
     const winner = buildSectorRotationReading(inputs).movers.winners[0].ticker;
-    const inWindow = news({ id: "in", tickers: [winner], title: `${winner} quarterly results beat`, publishedAt: "2026-10-02T13:00:00Z" });
+    const inWindow = news({ id: "in", tickers: [winner], title: `${winner} quarterly results beat estimates`, publishedAt: "2026-10-02T13:00:00Z" });
     const tooEarly = news({ id: "early", tickers: [winner], title: `${winner} earnings preview`, publishedAt: "2026-10-01T19:00:00Z" }); // before 4 PM ET Oct 1 close
     const r1 = buildSectorRotationReading({ ...inputs, news: { status: "OK", reason: null, items: [tooEarly] } });
     expect(r1.movers.winners[0].catalyst.class).not.toBe("EVENT_DRIVEN");

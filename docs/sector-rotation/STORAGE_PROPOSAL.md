@@ -1,55 +1,51 @@
-# Sector Rotation — storage proposal (design only; NOT implemented)
+# Sector Rotation — snapshot storage
 
-Status: **proposal**. This branch ships no migration, no table, no writer and performs no writes. Reads of
-`sectorRotation.current` are cache-only and read-only.
+Status: **implemented without a migration.** Snapshots are persisted append-only in the **existing** `marketMemory` table
+(`drizzle/schema.ts`: `id`, `memoryKey VARCHAR(128) UNIQUE`, `memoryValue TEXT`, `description`, `writtenBy`, `updatedAt`) — a
+generic key → JSON store already used for cross-session market state. No table, column or index is added.
 
-## What would be stored
-One `SectorRotationReading` (see `shared/sectorRotation.ts`, `schemaVersion` 1, `methodVersion` `sector-rotation-v1.0.0`)
-per scheduled FAULTLINE run, produced by the pure function `buildSectorRotationReading(inputs)` at capture time. It already
-contains: methodVersion, generatedAt, canonical link (stateId, stateHash, stateGeneratedAt, runId, regime, Pressure Index),
-benchmark, the 11 sector rows (returns, RS-Ratio, RS-Momentum, quadrant, arrow, rank, prior rank, rank change, breadth,
-action class with evidence), leadership changes, macro drivers each with its own `asOf` and status, driver links, watch
-indicators, top 5 winners / losers (today %, basis/as-of, 5D, volume ratio, catalyst class, verbatim headline + publisher + URL +
-publishedAt, co-move evidence, Q3 alignment, early-indicator flag), summary counts, narrative and `missingData` flags.
+## Why `marketMemory`
+- Railway's filesystem is ephemeral across deploys and an in-process cache is not persistence; the database is the only durable store.
+- `marketMemory` is a generic key/JSON table already used for comparable cross-session market data, so a versioned JSON snapshot fits
+  its purpose without a schema change.
+- Its unique `memoryKey` gives one row per (method version, session) and makes concurrent builds from several instances safe: the second
+  insert fails with a duplicate-key error and is reported as `DUPLICATE`; nothing is overwritten.
 
-## Proposed table (MySQL, drizzle style — not created)
-```sql
-CREATE TABLE sector_rotation_readings (
-  id               BIGINT AUTO_INCREMENT PRIMARY KEY,
-  reading_id       VARCHAR(96)  NOT NULL UNIQUE,   -- "sr:<generatedAt>:<sha256(readingJson) first 16>"
-  schema_version   INT          NOT NULL,
-  method_version   VARCHAR(64)  NOT NULL,
-  generated_at     TIMESTAMP(3) NOT NULL,
-  run_id           VARCHAR(128) NULL,              -- scheduled run that captured it
-  state_id         VARCHAR(160) NULL,              -- intelligenceStateManifests.stateId read beside it
-  regime           VARCHAR(64)  NULL,
-  pressure_index   DECIMAL(6,2) NULL,
-  status           VARCHAR(16)  NOT NULL,          -- OK | STALE | UNAVAILABLE
-  benchmark_session DATE        NULL,              -- latest completed SPY session
-  reading_hash     CHAR(64)     NOT NULL,          -- sha256 of reading_json
-  reading_json     LONGTEXT     NOT NULL,          -- full SectorRotationReading
-  created_at       TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-  INDEX idx_generated (generated_at),
-  INDEX idx_state (state_id),
-  INDEX idx_method_session (method_version, benchmark_session)
-);
-```
-Optional denormalised child table for querying movers across time (also append-only):
-`sector_rotation_movers(reading_id, side ENUM('winner','loser'), position TINYINT, ticker, sector_etf, today_pct, basis_kind,
-basis_as_of, return_5d_pct, volume_ratio, catalyst_class, event_family, news_id, news_publisher, news_published_at, news_url,
-thesis_alignment, early_indicator)`.
+## Row format
+- `memoryKey` = `sector-rotation:<methodVersion>:<YYYY-MM-DD completed session>` (≤ 50 chars), `writtenBy` = `sectorRotationCollector`.
+- `memoryValue` = JSON envelope `{ kind, envelopeVersion: 1, methodVersion, sessionDate, generatedAt, stateId, readingHash, reading }`,
+  `reading` = the full `SectorRotationReading`; `readingHash` = sha256 of the reading JSON, verified on every load (a mismatch, a foreign
+  method version or a key/session mismatch is ignored).
 
 ## Rules
-- **Append-only.** No UPDATE / DELETE paths. Corrections are new rows with `correction_of` (reading_id) and a reason, mirroring
-  `intelligenceStateManifests`.
-- **Versioned.** `schema_version` and `method_version` on every row; a method change never rewrites old rows. Comparisons across
-  readings are only made within the same `method_version`.
-- **Captured, not recomputed.** Rows store the inputs-as-seen result at capture time (including catalyst classification and its
-  source item). Historical validation must not re-tune parameters after seeing outcomes.
-- **Linked.** `run_id` / `state_id` tie each reading to the FAULTLINE run/state it was captured beside; the writer would run inside the
-  scheduled job after the canonical manifest is committed, never on a user read.
-- **Fail closed.** UNAVAILABLE readings are stored as such (with `missingData`), never skipped or back-filled.
+- **Append-only.** The only write is `INSERT`. No UPDATE, DELETE, upsert or `onDuplicateKeyUpdate` exists in the sector code (enforced by
+  `server/sectorRotation.source.test.ts`). Corrections would be a new method version, never an edit.
+- **Versioned.** A method change writes new keys; old rows are untouched and never compared across versions.
+- **Captured, not recomputed.** Each row is the result as seen at capture time, including the catalyst source item.
+- **Written by the collector only**, never on a user read.
 
-## Out of scope for this branch
-Migration file, schema change in `drizzle/`, writer, scheduler hook, backfill. Each needs its own approval (DB migration is not
-allowed on this branch).
+## Caveats (accepted for launch)
+- `memoryValue` is `TEXT` (64 KB). Snapshots are ~32 KB; anything over 60 000 bytes is refused (not truncated) and the build is marked
+  failed, so the last valid snapshot stays in service.
+- Growth: one ~32 KB row per completed session (~8 MB/year). No pruning job ships (pruning would be a delete).
+- The existing public `seismograph.getMarketMemory` listing now excludes `sector-rotation:%` keys so its output is unchanged.
+- No pre-production writes have been made; the first row is written by the deployed collector after the first post-close session.
+
+## Future (not in this branch; needs its own approval)
+A dedicated table remains the long-term option if snapshots need querying by column:
+
+```sql
+CREATE TABLE sector_rotation_snapshots (
+  id                BIGINT AUTO_INCREMENT PRIMARY KEY,
+  snapshot_key      VARCHAR(96)  NOT NULL UNIQUE,   -- method_version + session
+  method_version    VARCHAR(64)  NOT NULL,
+  session_date      DATE         NOT NULL,
+  generated_at      TIMESTAMP(3) NOT NULL,
+  state_id          VARCHAR(160) NULL,
+  status            VARCHAR(16)  NOT NULL,
+  reading_hash      CHAR(64)     NOT NULL,
+  reading_json      MEDIUMTEXT   NOT NULL,
+  created_at        TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  INDEX idx_method_session (method_version, session_date)
+);
+```
