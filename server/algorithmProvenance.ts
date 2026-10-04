@@ -351,7 +351,7 @@ export function targetDayRecord(ascending: ProvenanceRecord[], targetEtDate: str
   return ascending.find(candidate => etDateOf(candidate.observedAt) >= targetEtDate) ?? null;
 }
 
-function isDuplicateKeyError(error: unknown): boolean {
+export function isDuplicateKeyError(error: unknown): boolean {
   const e = error as { code?: string; errno?: number; cause?: { code?: string; errno?: number } } | null;
   return e?.code === "ER_DUP_ENTRY" || e?.errno === 1062 || e?.cause?.code === "ER_DUP_ENTRY" || e?.cause?.errno === 1062;
 }

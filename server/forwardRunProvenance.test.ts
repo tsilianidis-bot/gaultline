@@ -36,23 +36,30 @@ describe("scheduled vs ad-hoc on the same day (A5)", () => {
   it("only the scheduled run records Champion provenance and collects outcomes", async () => {
     const record = vi.fn(async () => ({ id: 21, created: true }));
     const collect = vi.fn(async () => ({ appended: 0, deferred: 0, reasons: {} }));
+    const collectBroad = vi.fn(async () => ({ appended: 0, deferred: 0 }));
     const scheduled = resolveRunContext("cron-endpoint", new Date("2026-10-05T18:00:02Z"));
     const adhoc = resolveRunContext("admin-seedNow", new Date("2026-10-05T15:00:00Z"));
     const deploy = resolveRunContext("cron-endpoint", new Date("2026-10-05T17:06:00Z"));
 
     for (const ctx of [adhoc, deploy, resolveRunContext("unspecified", new Date("2026-10-05T18:05:00Z"))]) {
       expect(await captureChampionProvenanceForRun(ctx, pressure, "2026-10-05T18:05:00.000Z", record)).toMatchObject({ status: "NOT_CAPTURED_NON_SCHEDULED_RUN", championProvenanceId: null });
-      expect(await collectForwardOutcomesForRun(ctx, collect)).toEqual({ collected: false });
+      expect(await collectForwardOutcomesForRun(ctx, collect, collectBroad)).toEqual({ collected: false });
     }
     expect(record).not.toHaveBeenCalled();
     expect(collect).not.toHaveBeenCalled();
+    expect(collectBroad).not.toHaveBeenCalled();
 
     const link = await captureChampionProvenanceForRun(scheduled, pressure, "2026-10-05T18:00:09.000Z", record);
     expect(link).toEqual({ status: "CAPTURED", championProvenanceKey: "champion-forward:2026-10-05:v1-forward-provenance-2026-08-19", championProvenanceId: 21, championProvenanceCreatedByThisRun: true, outcomeKeyVersion: "v2" });
     expect(record).toHaveBeenCalledTimes(1);
     expect(record.mock.calls[0][1]).toEqual(new Date("2026-10-05T18:00:09.000Z"));
-    expect(await collectForwardOutcomesForRun(scheduled, collect)).toEqual({ collected: true });
+    expect(await collectForwardOutcomesForRun(scheduled, collect, collectBroad)).toEqual({ collected: true });
     expect(collect).toHaveBeenCalledTimes(1);
+    expect(collectBroad).toHaveBeenCalledTimes(1);
+    // a broad-collector failure does not stop the Champion v2 collector
+    const failing = vi.fn(async () => { throw new Error("broad down"); });
+    expect(await collectForwardOutcomesForRun(scheduled, collect, failing)).toEqual({ collected: true });
+    expect(collect).toHaveBeenCalledTimes(2);
   });
 
   it("provenance failures are non-blocking and recorded on the link", async () => {
@@ -98,6 +105,9 @@ describe("trigger wiring at the call sites (A1)", () => {
     expect(ss).toMatch(/const runContext = resolveRunContext\("cron-endpoint", new Date\(\)\);\s*try \{\s*const seismographOutput = await runSeismographPipeline\(\{ runContext \}\);/);
     expect(router).toMatch(/seedNow:\s*adminProcedure\.mutation\(async \(\) => \{[\s\S]{0,200}runSeismographPipeline\(\{ runContext: resolveRunContext\("admin-seedNow"\) \}\)/);
     expect(ss).not.toMatch(/collectForwardChampionOutcomes\(/);
+    // F2: the broad institutional collector runs only through the scheduled-only gate
+    expect(ss).not.toMatch(/collectBroadInstitutionalEventOutcomes\(/);
+    expect(ss).toMatch(/collectBroad: typeof collectBroadInstitutionalEventOutcomes = collectBroadInstitutionalEventOutcomes/);
     expect(ss).toMatch(/const runContext = options\.runContext \?\? resolveRunContext\("unspecified"\);/);
   });
 });

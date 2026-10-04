@@ -101,14 +101,24 @@ export async function captureChampionProvenanceForRun(
   }
 }
 
-/** A5: v2 completed-bar outcomes are appended on the scheduled cycle only. Non-blocking. */
+/**
+ * A5: completed-bar outcomes (broad institutional-event outcomes, then Champion v2) are
+ * appended on the scheduled cycle only. Non-blocking.
+ */
 export async function collectForwardOutcomesForRun(
   runContext: RunContext,
   collect: typeof collectForwardChampionOutcomesV2 = collectForwardChampionOutcomesV2,
+  collectBroad: typeof collectBroadInstitutionalEventOutcomes = collectBroadInstitutionalEventOutcomes,
 ): Promise<{ collected: boolean }> {
   if (!capturesForwardEvidence(runContext)) {
     console.log(`[Seismograph] ${runContext.trigger} run: Champion provenance and outcomes not captured (scheduled run only).`);
     return { collected: false };
+  }
+  try {
+    const broad = await collectBroad();
+    console.log(`[Seismograph] Broad event outcomes: ${broad.appended} appended, ${broad.deferred} deferred`);
+  } catch (error) {
+    console.warn("[Seismograph] Broad event outcome collection deferred:", error);
   }
   try {
     const outcomes = await collect();
@@ -264,7 +274,6 @@ export async function runSeismographPipeline(options: { runContext?: RunContext 
   } catch (error) {
     console.warn("[Seismograph] Governance manifest capture deferred:", error);
   }
-  await collectBroadInstitutionalEventOutcomes();
   // Forward-only research evidence (scheduled run only). Failures are non-blocking because
   // they must never interrupt the canonical production Seismograph score. v1 outcome
   // collection (intraday target bars) is retired; v2 appends completed-bar outcomes.

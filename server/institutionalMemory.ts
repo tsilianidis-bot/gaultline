@@ -1,8 +1,8 @@
 import { and, desc, eq, lte, or } from "drizzle-orm";
 import { institutionalEventOutcomes, institutionalEvents } from "../drizzle/schema";
 import { getDb } from "./db";
-import { fetchFredSeries } from "./fredClient";
 import { getDailyBars } from "./yahooProxy";
+import { completedSessionBars, computeOutcomeWindowV2, fetchRecentFredObservationsAscending, fredYieldAt, isDuplicateKeyError, OUTCOME_BAR_SOURCE, OUTCOME_CLOSE_BUFFER_MINUTES } from "./algorithmProvenance";
 
 export type InstitutionalSeverity = "info" | "low" | "moderate" | "high" | "critical";
 export type InstitutionalDirection = "improving" | "deteriorating" | "stable" | "neutral";
@@ -298,16 +298,7 @@ export async function recordDailyMarketEvidence(current: MarketEvidenceState) {
 
 const BROAD_OUTCOME_HORIZONS = [1, 5, 20, 60] as const;
 
-function isoDay(timestamp: number | Date) {
-  return new Date(timestamp).toISOString().slice(0, 10);
-}
-
-function fredValueOnOrBefore(observations: Array<{ date: string; value: string }>, day: string) {
-  const eligible = observations.filter((observation) => observation.date <= day && observation.value !== ".");
-  const latest = eligible[eligible.length - 1];
-  const value = latest ? Number(latest.value) : NaN;
-  return Number.isFinite(value) ? { date: latest.date, value } : null;
-}
+export const BROAD_OUTCOME_COLLECTOR_VERSION = "broad-event-outcome-collector-v2-2026-10-04";
 
 /**
  * Appends completed trading-day outcomes for broad, market-level institutional
@@ -315,8 +306,14 @@ function fredValueOnOrBefore(observations: Array<{ date: string; value: string }
  * regime are intentionally stored as separate observations—not a synthetic
  * performance score. Missing source observations defer a horizon rather than
  * inserting a partial or inferred result.
+ *
+ * v2 (2026-10-04): completed regular-session bars only (shared with the Champion v2
+ * ledger: 16:00 ET close + buffer, exchange calendar, base = first completed close
+ * strictly after the event), the latest DGS10 observations (not the 1962 ones), and
+ * scheduled runs only (the caller gates on SCHEDULED_CRON). Insert-if-absent under the
+ * same outcome keys; rows already written are never updated or deleted.
  */
-export async function collectBroadInstitutionalEventOutcomes() {
+export async function collectBroadInstitutionalEventOutcomes(collectedAt: Date = new Date()) {
   const db = await getDb();
   if (!db) return { appended: 0, deferred: 0 };
 
@@ -330,7 +327,7 @@ export async function collectBroadInstitutionalEventOutcomes() {
       .orderBy(desc(institutionalEvents.eventAt))
       .limit(250),
     getDailyBars("SPY", "6mo"),
-    fetchFredSeries("DGS10", 180, "asc"),
+    fetchRecentFredObservationsAscending("DGS10", 180),
   ]);
   if (!spyBars.length || dgs10.error) return { appended: 0, deferred: events.length * BROAD_OUTCOME_HORIZONS.length };
 
@@ -339,39 +336,47 @@ export async function collectBroadInstitutionalEventOutcomes() {
     .where(eq(institutionalEvents.eventType, "daily_market_snapshot"))
     .orderBy(desc(institutionalEvents.eventAt))
     .limit(400);
+  const completed = completedSessionBars(spyBars, collectedAt);
 
   let appended = 0;
   let deferred = 0;
   for (const event of events) {
-    const baseIndex = spyBars.map((bar) => bar.timestamp).filter((timestamp) => timestamp <= event.eventAt.getTime()).length - 1;
-    if (baseIndex < 0) { deferred += BROAD_OUTCOME_HORIZONS.length; continue; }
     for (const horizonTradingDays of BROAD_OUTCOME_HORIZONS) {
       const outcomeKey = `institutional-event:${event.id}:broad-benchmark:${horizonTradingDays}td`;
       const existing = await db.select({ id: institutionalEventOutcomes.id }).from(institutionalEventOutcomes).where(eq(institutionalEventOutcomes.outcomeKey, outcomeKey)).limit(1);
       if (existing[0]) continue;
-      const target = spyBars[baseIndex + horizonTradingDays];
-      const base = spyBars[baseIndex];
-      if (!target || !base) { deferred++; continue; }
-      const baseYield = fredValueOnOrBefore(dgs10.observations, isoDay(base.timestamp));
-      const targetYield = fredValueOnOrBefore(dgs10.observations, isoDay(target.timestamp));
-      const laterState = dailyStates.find((state) => state.eventAt.getTime() <= target.timestamp);
+      const window = computeOutcomeWindowV2(event.eventAt, horizonTradingDays, completed, collectedAt);
+      if (window.status !== "READY") { deferred++; continue; }
+      const { base, target } = window;
+      const baseYield = fredYieldAt(dgs10.observations, base.etDate);
+      const targetYield = fredYieldAt(dgs10.observations, target.etDate);
+      // Pressure/regime at the target: the latest daily snapshot at or before the target session close.
+      const laterState = dailyStates.find((state) => state.eventAt.getTime() <= target.sessionCloseMs);
       if (!baseYield || !targetYield || !laterState) { deferred++; continue; }
       let state: MarketEvidenceState;
       try { state = JSON.parse(laterState.newStateJson) as MarketEvidenceState; } catch { deferred++; continue; }
-      await db.insert(institutionalEventOutcomes).values({
-        outcomeKey,
-        eventId: event.id,
-        horizonTradingDays,
-        observedAt: new Date(target.timestamp),
-        outcomeJson: JSON.stringify({
-          historyClass: "live_verified",
-          spy: { baseClose: base.close, targetClose: target.close, returnPercent: ((target.close - base.close) / base.close) * 100, observedAt: isoDay(target.timestamp) },
-          tenYearTreasury: { baseYieldPercent: baseYield.value, targetYieldPercent: targetYield.value, changeBasisPoints: (targetYield.value - baseYield.value) * 100, sourceSeries: "DGS10", baseObservedAt: baseYield.date, targetObservedAt: targetYield.date },
-          pressureIndex: { base: event.pressureIndex, target: state.pressureIndex, change: event.pressureIndex == null ? null : state.pressureIndex - event.pressureIndex },
-          regime: { base: event.marketRegime, target: state.regime },
-        }),
-        provenanceJson: JSON.stringify({ spy: "Yahoo completed daily bars", tenYearTreasury: "FRED DGS10", pressureAndRegime: "FAUL TLINE canonical daily Seismograph snapshots", tradingDayHorizon: horizonTradingDays }),
-      });
+      try {
+        await db.insert(institutionalEventOutcomes).values({
+          outcomeKey,
+          eventId: event.id,
+          horizonTradingDays,
+          observedAt: new Date(target.sessionCloseMs),
+          outcomeJson: JSON.stringify({
+            historyClass: "live_verified",
+            outcomeVersion: "v2-completed-bar",
+            collectorVersion: BROAD_OUTCOME_COLLECTOR_VERSION,
+            collectedAt: collectedAt.toISOString(),
+            spy: { baseClose: base.close, targetClose: target.close, returnPercent: ((target.close - base.close) / base.close) * 100, observedAt: target.etDate, baseObservedAt: base.etDate, baseSessionCloseAt: base.sessionCloseAt, targetSessionCloseAt: target.sessionCloseAt, baseBarComplete: window.baseBarComplete, targetBarComplete: window.targetBarComplete },
+            tenYearTreasury: { baseYieldPercent: baseYield.value, targetYieldPercent: targetYield.value, changeBasisPoints: (targetYield.value - baseYield.value) * 100, sourceSeries: "DGS10", baseObservedAt: baseYield.date, targetObservedAt: targetYield.date },
+            pressureIndex: { base: event.pressureIndex, target: state.pressureIndex, change: event.pressureIndex == null ? null : state.pressureIndex - event.pressureIndex },
+            regime: { base: event.marketRegime, target: state.regime },
+          }),
+          provenanceJson: JSON.stringify({ spy: OUTCOME_BAR_SOURCE, completenessRule: `bar session closed: collectedAt ≥ 16:00 ET close + ${OUTCOME_CLOSE_BUFFER_MINUTES} min, trading days only`, baseConvention: "first completed regular-session close strictly after eventAt", tenYearTreasury: "FRED DGS10 (latest 180 observations; value on/before the bar date, only once FRED has published that date)", pressureAndRegime: "FAUL TLINE canonical daily Seismograph snapshots (latest at or before the target session close)", tradingDayHorizon: horizonTradingDays, collectorVersion: BROAD_OUTCOME_COLLECTOR_VERSION, writePolicy: "APPEND_ONLY_INSERT_IF_ABSENT" }),
+        });
+      } catch (error) {
+        if (isDuplicateKeyError(error)) continue; // a concurrent collector appended it; never overwrite
+        throw error;
+      }
       appended++;
     }
   }
