@@ -1,0 +1,313 @@
+{
+  "firstBar": "1997-01-02",
+  "lastBar": "2026-10-02",
+  "nBars": 7485,
+  "nberRecessions": [
+    {
+      "peak": "2001-03",
+      "trough": "2001-11"
+    },
+    {
+      "peak": "2007-12",
+      "trough": "2009-06"
+    },
+    {
+      "peak": "2020-02",
+      "trough": "2020-04"
+    }
+  ],
+  "note": "Computed mechanically from market data only; contains no FAULTLINE information.",
+  "rawSha256": "7a4a15bf25a46c0d1b2343f77be43fd69efcaca34d69023cc263e0b38e856633",
+  "retrievedAtUtc": "2026-10-04T18:38:51Z",
+  "ruleA_episodes": [
+    {
+      "class": "CORRECTION_GE_10",
+      "maxDrawdownPct": -10.8,
+      "onset10Date": "1997-10-27",
+      "onset20Date": null,
+      "peakClose": 983.12,
+      "peakDate": "1997-10-07",
+      "recoveryDate": "1997-12-05",
+      "troughClose": 876.99,
+      "troughDate": "1997-10-27"
+    },
+    {
+      "class": "CORRECTION_GE_10",
+      "maxDrawdownPct": -19.34,
+      "onset10Date": "1998-08-14",
+      "onset20Date": null,
+      "peakClose": 1186.75,
+      "peakDate": "1998-07-17",
+      "recoveryDate": "1998-11-23",
+      "troughClose": 957.28,
+      "troughDate": "1998-08-31"
+    },
+    {
+      "class": "CORRECTION_GE_10",
+      "maxDrawdownPct": -12.08,
+      "onset10Date": "1999-09-29",
+      "onset20Date": null,
+      "peakClose": 1418.78,
+      "peakDate": "1999-07-16",
+      "recoveryDate": "1999-11-16",
+      "troughClose": 1247.41,
+      "troughDate": "1999-10-15"
+    },
+    {
+      "class": "BEAR_GE_20",
+      "maxDrawdownPct": -49.15,
+      "onset10Date": "2000-04-14",
+      "onset20Date": "2001-03-12",
+      "peakClose": 1527.46,
+      "peakDate": "2000-03-24",
+      "recoveryDate": "2007-05-30",
+      "troughClose": 776.76,
+      "troughDate": "2002-10-09"
+    },
+    {
+      "class": "BEAR_GE_20",
+      "maxDrawdownPct": -56.78,
+      "onset10Date": "2007-11-26",
+      "onset20Date": "2008-07-09",
+      "peakClose": 1565.15,
+      "peakDate": "2007-10-09",
+      "recoveryDate": "2013-03-28",
+      "troughClose": 676.53,
+      "troughDate": "2009-03-09"
+    },
+    {
+      "class": "CORRECTION_GE_10",
+      "maxDrawdownPct": -14.16,
+      "onset10Date": "2015-08-24",
+      "onset20Date": null,
+      "peakClose": 2130.82,
+      "peakDate": "2015-05-21",
+      "recoveryDate": "2016-07-11",
+      "troughClose": 1829.08,
+      "troughDate": "2016-02-11"
+    },
+    {
+      "class": "CORRECTION_GE_10",
+      "maxDrawdownPct": -10.16,
+      "onset10Date": "2018-02-08",
+      "onset20Date": null,
+      "peakClose": 2872.87,
+      "peakDate": "2018-01-26",
+      "recoveryDate": "2018-08-24",
+      "troughClose": 2581.0,
+      "troughDate": "2018-02-08"
+    },
+    {
+      "class": "CORRECTION_GE_10",
+      "maxDrawdownPct": -19.78,
+      "onset10Date": "2018-11-23",
+      "onset20Date": null,
+      "peakClose": 2930.75,
+      "peakDate": "2018-09-20",
+      "recoveryDate": "2019-04-23",
+      "troughClose": 2351.1,
+      "troughDate": "2018-12-24"
+    },
+    {
+      "class": "BEAR_GE_20",
+      "maxDrawdownPct": -33.92,
+      "onset10Date": "2020-02-27",
+      "onset20Date": "2020-03-12",
+      "peakClose": 3386.15,
+      "peakDate": "2020-02-19",
+      "recoveryDate": "2020-08-18",
+      "troughClose": 2237.4,
+      "troughDate": "2020-03-23"
+    },
+    {
+      "class": "BEAR_GE_20",
+      "maxDrawdownPct": -25.43,
+      "onset10Date": "2022-02-22",
+      "onset20Date": "2022-06-13",
+      "peakClose": 4796.56,
+      "peakDate": "2022-01-03",
+      "recoveryDate": "2024-01-19",
+      "troughClose": 3577.03,
+      "troughDate": "2022-10-12"
+    },
+    {
+      "class": "CORRECTION_GE_10",
+      "maxDrawdownPct": -18.9,
+      "onset10Date": "2025-03-13",
+      "onset20Date": null,
+      "peakClose": 6144.15,
+      "peakDate": "2025-02-19",
+      "recoveryDate": "2025-06-27",
+      "troughClose": 4982.77,
+      "troughDate": "2025-04-08"
+    }
+  ],
+  "ruleB_episodes": [
+    {
+      "class": "CORRECTION_GE_10",
+      "endDate": "1998-11-20",
+      "maxDrawdownPct": -19.34,
+      "onset10Date": "1998-08-14",
+      "onset20Date": null,
+      "refPeakClose": 1186.75,
+      "refPeakDate": "1998-07-17",
+      "troughClose": 957.28,
+      "troughDate": "1998-08-31"
+    },
+    {
+      "class": "CORRECTION_GE_10",
+      "endDate": "1999-11-12",
+      "maxDrawdownPct": -12.08,
+      "onset10Date": "1999-09-29",
+      "onset20Date": null,
+      "refPeakClose": 1418.78,
+      "refPeakDate": "1999-07-16",
+      "troughClose": 1247.41,
+      "troughDate": "1999-10-15"
+    },
+    {
+      "class": "CORRECTION_GE_10",
+      "endDate": "2000-07-14",
+      "maxDrawdownPct": -11.19,
+      "onset10Date": "2000-04-14",
+      "onset20Date": null,
+      "refPeakClose": 1527.46,
+      "refPeakDate": "2000-03-24",
+      "troughClose": 1356.56,
+      "troughDate": "2000-04-14"
+    },
+    {
+      "class": "BEAR_GE_20",
+      "endDate": "2003-06-18",
+      "maxDrawdownPct": -49.15,
+      "onset10Date": "2000-10-11",
+      "onset20Date": "2001-03-12",
+      "refPeakClose": 1527.46,
+      "refPeakDate": "2000-03-24",
+      "troughClose": 776.76,
+      "troughDate": "2002-10-09"
+    },
+    {
+      "class": "BEAR_GE_20",
+      "endDate": "2009-10-06",
+      "maxDrawdownPct": -56.78,
+      "onset10Date": "2007-11-26",
+      "onset20Date": "2008-07-09",
+      "refPeakClose": 1565.15,
+      "refPeakDate": "2007-10-09",
+      "troughClose": 676.53,
+      "troughDate": "2009-03-09"
+    },
+    {
+      "class": "CORRECTION_GE_10",
+      "endDate": "2010-11-02",
+      "maxDrawdownPct": -15.99,
+      "onset10Date": "2010-05-20",
+      "onset20Date": null,
+      "refPeakClose": 1217.28,
+      "refPeakDate": "2010-04-23",
+      "troughClose": 1022.58,
+      "troughDate": "2010-07-02"
+    },
+    {
+      "class": "CORRECTION_GE_10",
+      "endDate": "2012-02-03",
+      "maxDrawdownPct": -19.39,
+      "onset10Date": "2011-08-04",
+      "onset20Date": null,
+      "refPeakClose": 1363.61,
+      "refPeakDate": "2011-04-29",
+      "troughClose": 1099.23,
+      "troughDate": "2011-10-03"
+    },
+    {
+      "class": "CORRECTION_GE_10",
+      "endDate": "2015-10-28",
+      "maxDrawdownPct": -12.35,
+      "onset10Date": "2015-08-24",
+      "onset20Date": null,
+      "refPeakClose": 2130.82,
+      "refPeakDate": "2015-05-21",
+      "troughClose": 1867.61,
+      "troughDate": "2015-08-25"
+    },
+    {
+      "class": "CORRECTION_GE_10",
+      "endDate": "2016-04-18",
+      "maxDrawdownPct": -14.16,
+      "onset10Date": "2016-01-13",
+      "onset20Date": null,
+      "refPeakClose": 2130.82,
+      "refPeakDate": "2015-05-21",
+      "troughClose": 1829.08,
+      "troughDate": "2016-02-11"
+    },
+    {
+      "class": "CORRECTION_GE_10",
+      "endDate": "2018-07-18",
+      "maxDrawdownPct": -10.16,
+      "onset10Date": "2018-02-08",
+      "onset20Date": null,
+      "refPeakClose": 2872.87,
+      "refPeakDate": "2018-01-26",
+      "troughClose": 2581.0,
+      "troughDate": "2018-02-08"
+    },
+    {
+      "class": "CORRECTION_GE_10",
+      "endDate": "2019-04-03",
+      "maxDrawdownPct": -19.78,
+      "onset10Date": "2018-11-23",
+      "onset20Date": null,
+      "refPeakClose": 2930.75,
+      "refPeakDate": "2018-09-20",
+      "troughClose": 2351.1,
+      "troughDate": "2018-12-24"
+    },
+    {
+      "class": "BEAR_GE_20",
+      "endDate": "2020-08-05",
+      "maxDrawdownPct": -33.92,
+      "onset10Date": "2020-02-27",
+      "onset20Date": "2020-03-12",
+      "refPeakClose": 3386.15,
+      "refPeakDate": "2020-02-19",
+      "troughClose": 2237.4,
+      "troughDate": "2020-03-23"
+    },
+    {
+      "class": "BEAR_GE_20",
+      "endDate": "2023-06-01",
+      "maxDrawdownPct": -25.43,
+      "onset10Date": "2022-02-22",
+      "onset20Date": "2022-06-13",
+      "refPeakClose": 4796.56,
+      "refPeakDate": "2022-01-03",
+      "troughClose": 3577.03,
+      "troughDate": "2022-10-12"
+    },
+    {
+      "class": "CORRECTION_GE_10",
+      "endDate": "2023-11-15",
+      "maxDrawdownPct": -10.28,
+      "onset10Date": "2023-10-27",
+      "onset20Date": null,
+      "refPeakClose": 4588.96,
+      "refPeakDate": "2023-07-31",
+      "troughClose": 4117.37,
+      "troughDate": "2023-10-27"
+    },
+    {
+      "class": "CORRECTION_GE_10",
+      "endDate": "2025-06-10",
+      "maxDrawdownPct": -18.9,
+      "onset10Date": "2025-03-13",
+      "onset20Date": null,
+      "refPeakClose": 6144.15,
+      "refPeakDate": "2025-02-19",
+      "troughClose": 4982.77,
+      "troughDate": "2025-04-08"
+    }
+  ],
+  "source": "Yahoo ^GSPC daily closes"
+}

@@ -1,0 +1,48 @@
+{
+  "asset": {
+    "primary": "^SP500TR closes (total return)",
+    "sensitivity": [
+      "^GSPC closes (price return)",
+      "SPY total return (adjusted)"
+    ]
+  },
+  "completedBarRule": {
+    "base": "the first completed close NOT known at the state evaluation time (i.e. first bar with completedAt >= evalTime); for a normal 18:00 UTC state this is the same-day close",
+    "completedAt": "scheduled close + 60 min (adopted from PR #61 v2 design; PR #61 is OPEN and not part of 1cfa129, so the rule is enforced by the evaluation harness, not by prod code)",
+    "completionBufferMinutes": 60,
+    "knownAtState": "a bar is usable as an input iff completedAt < state evaluation time",
+    "sessionClose": "scheduled XNYS close (16:00 ET; 13:00 ET on early-close days)"
+  },
+  "definitions": {
+    "downsideEvent": "E_h = 1 if MDD_h <= -0.10 (a drawdown of 10% or more within the horizon, measured on ^SP500TR closes from the base); secondary threshold -0.20 for h>=63",
+    "forwardReturn": "R_h = P[b+h]/P[b] - 1, b = base session index, P = ^SP500TR close",
+    "maxDrawdown": "MDD_h = min_{k=0..h} (P[b+k]/max_{j=0..k} P[b+j] - 1); close-to-close, includes base; reported as a negative fraction",
+    "realizedVol": "RV_h = sqrt(252) * sd(ln(P[b+k]/P[b+k-1]), k=1..h, ddof=1); defined for h>=5 only (h=1 omitted)",
+    "regimeTransition": "T_h = 1 if the frozen PI regime band at the designated state h sessions later differs from the band at the state; U_h = 1 if it is higher. Computable only where the PI path is reconstructed (C1) or recorded (C2); reported per horizon as frequency with CI. Exploratory."
+  },
+  "eventList": {
+    "file": "event-list.json",
+    "primaryForH4": "ruleB onset10 dates; bear = onset20 present",
+    "ruleA": "all-time-high drawdown episodes on ^GSPC: onset10 = first close >= 10% below running max; ends at a new running max",
+    "ruleB": "rolling 252-session-high drawdown episodes on ^GSPC: onset10 = first close >= 10% below max of the last 252 closes; ends when drawdown recovers above -2%"
+  },
+  "horizonNotes": "Horizons count XNYS trading sessions after the base close, never calendar days. Horizons 126 and 252 are descriptive in set C1 (N_eff < 30 by construction).",
+  "horizonsTradingSessions": [
+    1,
+    5,
+    10,
+    21,
+    63,
+    126,
+    252
+  ],
+  "missingData": {
+    "earlyCloseDays": "complete sessions with 13:00 ET close; completedAt 14:00 ET.",
+    "incompleteTradingDay": "a bar whose completedAt is after the time of use is treated as non-existent for that use (never used as base, target or input).",
+    "marketHolidaysAndUnscheduledClosures": "not sessions (e.g. 2012-10-29/30, 2018-12-05, 2025-01-09); no state, no bar, horizons skip them.",
+    "missingBaseOrTargetBar": "outcome is DEFERRED; it is never shifted to an adjacent bar. Re-fetch daily for 10 sessions; then status MISSING_BAR with reason; excluded and counted.",
+    "notYetMatured": "PENDING; excluded from that horizon only."
+  },
+  "primaryHorizon": 21,
+  "secondaryConfirmatoryHorizon": 63
+}

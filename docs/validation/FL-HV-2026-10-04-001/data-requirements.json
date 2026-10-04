@@ -1,0 +1,171 @@
+{
+  "benchmarkAndOutcomeInputs": [
+    {
+      "coverageRetrieved": "1997-01-02..2026-10-02 (7485 bars)",
+      "pitStatus": "MARKET_DATA_NOT_REVISED (assumed; Yahoo restatement risk UNVERIFIED)",
+      "rawSha256": "7637c004fe7269839c74366ed2743ffd70ada71957426c43d82dfd91794ead1c",
+      "seriesId": "^SP500TR",
+      "source": "Yahoo Finance chart API v8, interval 1d",
+      "use": "primary outcome (S&P 500 total return index)"
+    },
+    {
+      "coverageRetrieved": "1997-01-02..2026-10-02 (7485 bars)",
+      "rawSha256": "7a4a15bf25a46c0d1b2343f77be43fd69efcaca34d69023cc263e0b38e856633",
+      "retrievedAtUtc": "2026-10-04T18:38:51Z",
+      "seriesId": "^GSPC",
+      "source": "Yahoo Finance chart API v8, interval 1d",
+      "use": "event list, trend/MACD/trailing-vol benchmarks, price-return sensitivity"
+    },
+    {
+      "pitStatus": "NOT YET RETRIEVED",
+      "seriesId": "SPY",
+      "source": "Yahoo adjusted close",
+      "use": "fallback outcome / buy-and-hold benchmark"
+    },
+    {
+      "alfredVintageStart": "2010-11-22 (VERIFIED)",
+      "notes": "Pre-2010-11-22 values from CBOE history (VIX is not revised; assumption UNVERIFIED).",
+      "observationStart": "1990-01-02 (UNVERIFIED)",
+      "seriesId": "VIXCLS",
+      "use": "VIX level / VIX percentile benchmarks"
+    },
+    {
+      "alfredVintageStart": "2014-01-27 (VERIFIED)",
+      "notes": "Series discontinued 2016-10-07..2017-03-21 in ALFRED vintages; Treasury source change 2019-06-21 (VERIFIED from ALFRED notes).",
+      "seriesId": "BAA10Y",
+      "use": "credit-spread benchmark (proxy windows); HY OAS used where available"
+    },
+    {
+      "notes": "Computed from the same DGS10/DGS2 vintages the engine uses.",
+      "seriesId": "T10Y2Y or DGS10-DGS2",
+      "use": "curve benchmark"
+    },
+    {
+      "notes": "Primary: computed per vintage (3-mo avg UNRATE minus min 3-mo avg of prior 12 months). Sensitivity: SAHMREALTIME (vintage coverage UNVERIFIED).",
+      "seriesId": "UNRATE vintages -> Sahm rule",
+      "use": "Sahm benchmark"
+    },
+    {
+      "notes": "pandas_market_calendars XNYS; version pinned in the harness addendum (UNVERIFIED now).",
+      "seriesId": "XNYS exchange calendar",
+      "use": "sessions, holidays, early closes"
+    },
+    {
+      "notes": "VERIFIED 2026-10-04 from nber.org (last updated 2023-03-14): 2001-03..2001-11, 2007-12..2009-06, 2020-02..2020-04.",
+      "seriesId": "NBER business-cycle dates",
+      "use": "descriptive event labels only (never inputs; announced with long lags)"
+    }
+  ],
+  "engineInputs": [
+    {
+      "alfredVintageStart": "2023-10-03 (VERIFIED, ALFRED)",
+      "engineUse": "HY OAS: liquidity 0.65, credit 0.50, AI 0.20 of vector scores; ~26% of composite weight",
+      "notes": "ICE BofA licensed data. FRED keeps a rolling 3-year window, so the earliest available date moves forward daily; older history must be licensed from ICE. Whether ICE restates history is UNVERIFIED.",
+      "observationStart": "2023-10-03 (VERIFIED, fred.stlouisfed.org/data/BAMLH0A0HYM2.txt: \"Starting in April 2026, this series will only include 3 years of observations\")",
+      "pitStatus": "BINDING_CONSTRAINT",
+      "role": "core",
+      "seriesId": "BAMLH0A0HYM2"
+    },
+    {
+      "alfredVintageStart": "2019-03-29 (VERIFIED, ALFRED)",
+      "engineUse": "liquidity 0.35 weight",
+      "notes": "No SOFR before April 2018 exists at all; pre-2019-03-29 values have no vintage.",
+      "observationStart": "2018-04-02 expected (UNVERIFIED on FRED)",
+      "pitStatus": "LIMITED",
+      "role": "core",
+      "seriesId": "SOFR"
+    },
+    {
+      "alfredVintageStart": "2005-06-28 (VERIFIED, ALFRED)",
+      "engineUse": "credit, volatility-regime (curve), breadth, AI",
+      "notes": "H.15 CMT; before 2005-06-28 only current-vintage values (no PIT).",
+      "observationStart": "1962 (UNVERIFIED)",
+      "pitStatus": "AVAILABLE_FROM_2005_06_28",
+      "role": "core",
+      "seriesId": "DGS10"
+    },
+    {
+      "alfredVintageStart": "2005-06-28 (VERIFIED, ALFRED)",
+      "engineUse": "volatility-regime curve",
+      "notes": "as DGS10",
+      "observationStart": "1976 (UNVERIFIED)",
+      "pitStatus": "AVAILABLE_FROM_2005_06_28",
+      "role": "core",
+      "seriesId": "DGS2"
+    },
+    {
+      "alfredVintageStart": "1972-07-21 (VERIFIED, ALFRED)",
+      "engineUse": "macro (YoY vs obs[12])",
+      "notes": "Seasonal factors revised; must use vintages.",
+      "observationStart": "1947 (UNVERIFIED)",
+      "pitStatus": "AVAILABLE",
+      "role": "core",
+      "seriesId": "CPIAUCSL"
+    },
+    {
+      "alfredVintageStart": "1996-12-11 (VERIFIED, ALFRED)",
+      "engineUse": "macro (YoY vs obs[12])",
+      "notes": "NSA but revised for 4 months after release; vintages required.",
+      "observationStart": "1913 (UNVERIFIED)",
+      "pitStatus": "AVAILABLE",
+      "role": "core",
+      "seriesId": "PPIACO"
+    },
+    {
+      "alfredVintageStart": "1996-12-03 (VERIFIED, ALFRED)",
+      "engineUse": "macro",
+      "notes": "Monthly average.",
+      "observationStart": "1954 (UNVERIFIED)",
+      "pitStatus": "AVAILABLE",
+      "role": "core",
+      "seriesId": "FEDFUNDS"
+    },
+    {
+      "alfredVintageStart": "1960-03-15 (VERIFIED, ALFRED)",
+      "engineUse": "credit, breadth",
+      "notes": "Revised annually (seasonal factors).",
+      "observationStart": "1948 (UNVERIFIED)",
+      "pitStatus": "AVAILABLE",
+      "role": "core",
+      "seriesId": "UNRATE"
+    },
+    {
+      "engineUse": "AI vector concentrationScore = 65 (engine.ts:339-363; dataStatus static)",
+      "notes": "Not a data series. Reproduced exactly as the engine does and labelled DOCUMENTED_CONSTANT; never presented as a historical measurement. Adds a constant 4.875 points to every PI (0.15*0.5*65).",
+      "pitStatus": "DOCUMENTED_CONSTANT",
+      "role": "documented static constant",
+      "seriesId": "AI_CONCENTRATION_BASELINE"
+    }
+  ],
+  "fetchPolicy": {
+    "boxAccessAtPreregistration": "BLOCKED: box egress to api.stlouisfed.org and fred.stlouisfed.org returns HTTP 403 (Akamai); env FRED_API_KEY present but malformed (not printed). Metadata below came from alfred.stlouisfed.org pages via WebFetch.",
+    "snapshotRule": "Every fetched vintage is stored raw with sha256, retrieval timestamp (UTC) and request URL minus api key, before any FAULTLINE score is computed; snapshot set hash is recorded in an addendum before scoring.",
+    "source": "FRED/ALFRED API fred/series/observations with realtime_start=realtime_end=R (R = calendar day before the state date) so values are exactly those published before the state; output_type=1; sort_order=desc; limit identical to engine.ts FRED_SERIES"
+  },
+  "notReconstructable": [
+    {
+      "component": "systemic-regime HMM (sre-hmm2-v1.0.0)",
+      "reason": "Fitted on 2016-10-25..2026-09-25 (prod) / 2016-10-18..2026-09-17 (repo); any historical path is in-sample. FRED SP500 is limited to ~10 years. Excluded from historical confirmatory tests; forward-only, exploratory."
+    },
+    {
+      "component": "signal convergence",
+      "reason": "Depends on seismograph evidence packets, cross-engine synthesis and early-warning engines (LLM/FMOS inputs). Not reconstructable; forward-only, exploratory."
+    },
+    {
+      "component": "scenario bull/neutral/bear",
+      "reason": "Evidence-vote shares, not probabilities; eventDefinition null, resolvable false, timeHorizon NOT_ESTABLISHED (shared/probabilityContract.ts:178-200; intelligenceGovernance.ts:195-260). Not testable as forecasts."
+    },
+    {
+      "component": "transition probabilities 70/15/10/5",
+      "reason": "Static defaults (scheduledSeismograph.ts:297-301). Not testable."
+    },
+    {
+      "component": "trading signals BUY/SELL/HOLD/WATCH",
+      "reason": "Per-ticker, not a market-level state; signalsClassifier/signalOutlook use invokeLLM. Out of scope."
+    },
+    {
+      "component": "historical observedAt",
+      "reason": "observedAt is hard-coded null (intelligenceGovernance.ts:157,176); prod rows have null observedAt; FRED vintages not captured by prod. Historical availability must come from ALFRED realtime_start."
+    }
+  ]
+}

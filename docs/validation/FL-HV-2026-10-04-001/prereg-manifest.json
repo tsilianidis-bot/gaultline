@@ -1,0 +1,31 @@
+{
+  "blindness": "No historical FAULTLINE scores/reconstructions/metrics examined before freezing (see PREREGISTRATION.md section 10).",
+  "branch": "validation/prereg-FL-HV-001",
+  "engineCommitSha": "1cfa1299f6644a7eb9a60246330c7b9a13ccc433",
+  "files": {
+    "PREREGISTRATION.md": "466a95761cd7065e0bfcd80ba68412ec4543eeb503ae938f744cfc9407c3534b",
+    "benchmarks.json": "fbbc60961e01fbaa7cdb820d0521a7f9d76fcab1712e36095ca7975d817813ce",
+    "data-requirements.json": "d3fca69373a2669e9d9b1cd516cf99e60844751a0e09686235b73f4131ab7207",
+    "evaluation-config.json": "195447bb5395eb6bc6e807ad97ce6da5667d96b71322b18812c9ac04f3fa65a9",
+    "event-list.json": "d841c201487127150579a92a4c8acbd0cd71844fc0c7eb5d4af54a3ebf91b69b",
+    "exclusions.json": "a1806eb7c154be04ffeec77a827efa81954445a02920263d176991185f774953",
+    "methodology.json": "37134ec3e9076bc503b055a9b51483def7494cd19bf03f5e9ebef62f81e5e124",
+    "outcomes.json": "f83b4d1d91269a0cffb755e719dcaf0bb63f576d1a5cb5707f7b53acbf3f9b2d",
+    "pass-fail-criteria.json": "37b78e09bcdd2906869cda4fcb1803955ed60a59611b30312f9634bfb38bd7d1",
+    "probe/ro-probe-prereg.cjs": "dc21a784f4a03ace9dce07a3eb2060e1758bbaaf297a2a77946ce21c07dd6788",
+    "probe/ro-probe-prereg2.cjs": "90440b9aaaf03fc4f5af5e7ca0093383428319535af85d33a023688ec9846c12",
+    "version-ids.json": "b774d25a37168d7a838f6dfbd6c4931bafed5141893591da6c553106167cf89f"
+  },
+  "formulaHash": "3cb3d49af3ee69247c55cc316b39064d9283b1361248ef8108d8b9838b4e8186",
+  "frozenAtUtc": "2026-10-04T18:59:18Z",
+  "methodologyHash": "36228310b78fc177016f666836184f3c9d3e73f6e465cd27dc4c38f8334aefeb",
+  "methodologyHashRule": "sha256 of methodology.json canonicalized as JSON with sorted keys, separators (\",\",\":\"), UTF-8",
+  "path": "docs/validation/FL-HV-2026-10-04-001/",
+  "preregVersion": "1.0.0",
+  "priorRecords": "None overwritten. New directory; exclusions and amendments are appended as new versioned files.",
+  "railwayDeploymentId": "e180e966-26a2-4064-81b1-66998b25cdf5",
+  "recommendation": "BLOCKED for multi-decade faithful historical validation: HY OAS (~26% of PI weight) has no point-in-time history before 2023-10-03 on FRED/ALFRED.",
+  "status": "PROPOSED - awaiting James approval; no historical result has been computed",
+  "tag": "prereg/FL-HV-2026-10-04-001",
+  "testId": "FL-HV-2026-10-04-001"
+}

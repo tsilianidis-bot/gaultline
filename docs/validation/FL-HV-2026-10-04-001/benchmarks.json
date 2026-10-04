@@ -1,0 +1,110 @@
+{
+  "commonRules": "All benchmark inputs as known at the state evaluation time (latest completed close = previous session close; FRED vintages with realtime_start before the state date). Same states, same outcomes, same inference. Thresholds below are fixed now from conventional levels, not fitted.",
+  "faultlineAlarm": "PI >= 45 (ELEVATED band, frozen engine threshold; scoreToLevel engine.ts:143-149)",
+  "list": [
+    {
+      "alarm": "none",
+      "data": "^SP500TR",
+      "id": "B00",
+      "name": "Unconditional market history",
+      "notes": "Defines the baseline for economic margins and Brier/rank skill = 0.",
+      "score": "constant (no information); outcome distribution over the same states"
+    },
+    {
+      "alarm": "never",
+      "data": "SPY",
+      "id": "B01",
+      "name": "Buy-and-hold SPY",
+      "notes": "Strategy comparison only (exploratory).",
+      "score": "n/a"
+    },
+    {
+      "alarm": "C < SMA200",
+      "data": "^GSPC closes",
+      "id": "B02",
+      "name": "200-day SMA trend",
+      "notes": "",
+      "score": "-(C/SMA200 - 1)"
+    },
+    {
+      "alarm": "M < SMA10m",
+      "data": "^GSPC month-end closes",
+      "id": "B03",
+      "name": "10-month MA trend",
+      "notes": "",
+      "score": "-(M/SMA10m - 1) on completed month-end closes"
+    },
+    {
+      "alarm": "VIX >= 25",
+      "data": "VIXCLS / CBOE",
+      "id": "B04",
+      "name": "VIX level",
+      "notes": "",
+      "score": "VIX close"
+    },
+    {
+      "alarm": ">= 80th percentile",
+      "data": "VIXCLS / CBOE",
+      "id": "B05",
+      "name": "VIX percentile",
+      "notes": "",
+      "score": "expanding-window percentile of VIX since 1990-01-02"
+    },
+    {
+      "alarm": "HY >= 500 bps (BAA10Y >= 3.0% in proxy windows)",
+      "data": "BAMLH0A0HYM2 / BAA10Y",
+      "id": "B06",
+      "name": "Simple credit-spread regime",
+      "notes": "HY OAS is also an engine input, so this is the most direct test of whether the composite adds anything.",
+      "score": "HY OAS bps where available (C1, C2); BAA10Y in proxy windows"
+    },
+    {
+      "alarm": "curve < 0",
+      "data": "DGS10, DGS2 vintages",
+      "id": "B07",
+      "name": "10Y-2Y curve",
+      "notes": "",
+      "score": "-(DGS10 - DGS2)"
+    },
+    {
+      "alarm": ">= 0.50",
+      "data": "UNRATE vintages",
+      "id": "B08",
+      "name": "Sahm rule",
+      "notes": "",
+      "score": "real-time Sahm value from UNRATE vintages"
+    },
+    {
+      "alarm": ">= 20% annualized",
+      "data": "^GSPC",
+      "id": "B09",
+      "name": "Trailing realized vol",
+      "notes": "",
+      "score": "21-session realized vol of ^GSPC log returns"
+    },
+    {
+      "alarm": "MACD < signal",
+      "data": "^GSPC closes; EMA seeded as server/tradingSignals.ts:158-166",
+      "id": "B10",
+      "name": "MACD 12/26/9",
+      "notes": "",
+      "score": "-(MACD - signal) / C"
+    },
+    {
+      "alarm": ">= +1.0",
+      "data": "same vintages as engine",
+      "id": "B11",
+      "name": "Equal-weight z-score composite of FAULTLINE raw inputs",
+      "notes": "Minimum 126 prior observations per input, otherwise UNAVAILABLE for that state. Tests whether FAULTLINE weights/maps add value over naive aggregation.",
+      "score": "mean of expanding-window z-scores of HY, SOFR, DGS10, -(DGS10-DGS2), CPI YoY, PPI YoY, FEDFUNDS, UNRATE (stress-oriented)"
+    },
+    {
+      "alarm": "same as FAULTLINE",
+      "data": "labels only",
+      "id": "B12",
+      "name": "Randomized classification null",
+      "notes": "10,000 draws, seed 20261004; p-value = share of null statistics >= observed.",
+      "score": "FAULTLINE regime labels re-assigned with identical class frequencies: (a) random circular shift of the label series relative to outcomes, (b) stationary block shuffle (mean block = 2h, min 21)"
+    }
+  ]
+}

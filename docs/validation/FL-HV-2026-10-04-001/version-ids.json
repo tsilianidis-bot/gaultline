@@ -1,0 +1,76 @@
+{
+  "baselineLiveStateAsReportedByJames": {
+    "note": "Reported by James in the spec update; not re-read from prod by this pre-registration.",
+    "percentile": 83,
+    "postDeployQa": "PASS",
+    "pressureIndex": 34,
+    "regime": "MODERATE RISK"
+  },
+  "componentVersions": {
+    "championVersion": "champion-v1-frozen",
+    "claimModelVersion": "seismograph-core-v1",
+    "configurationVersion": "phase1b-governance-v1",
+    "forwardProvenanceVersion": "v1-forward-provenance-2026-08-19",
+    "manifestModelVersion": "2.0",
+    "pressureEngine": "faultline_pressure_v1 (server/pressure/engine.ts)",
+    "scenarioModel": "seismograph-evidence-vote-v1 (NOT a probability model; excluded)",
+    "scoringVersion": "faultline-pressure-v1-frozen",
+    "shadowEngine": "v3h-1.0.0 (excluded)",
+    "systemicRegimeModel": {
+      "featureSchema": "sre-features-v1",
+      "modelVersion": "sre-hmm2-v1.0.0",
+      "note": "Prod bundle differs from the repo artifact; prod bundle bytes/hash not captured (UNVERIFIED).",
+      "prodRegistryTrainingWindow": "2016-10-25..2026-09-25, createdAt 2026-09-28 06:18:30 UTC (systemicRegimeModels id 1, read-only probe)",
+      "repoRegistryTrainingWindow": "2016-10-18..2026-09-17 (quant/systemic-regime/artifacts/approved/registry.json at 1cfa129)"
+    },
+    "transitionModel": "seismograph-transition-v1 (static defaults; excluded)"
+  },
+  "cronSchedulesVerifiedReadOnly": {
+    "seismograph-cron": "0 18 * * * (Railway cron; UTC assumed per Railway docs, UNVERIFIED)",
+    "systemic-regime-infer-once": "0 19 * * *",
+    "systemic-regime-train-once": "0 0 29 2 * (Feb 29 only, i.e. weekly retrain is effectively off; contradicts docs/RC_CRON_HEARTBEAT_REGISTRY.md:46-47 which says Monday 06:15 UTC)"
+  },
+  "engineCommitSha": "1cfa1299f6644a7eb9a60246330c7b9a13ccc433",
+  "engineCommitSubject": "launch fix-up 7: Signal Outlook regime from canonical state",
+  "formulaHash": {
+    "computedFrom": "server/algorithmProvenance.ts:22-24,46-50 at 1cfa129",
+    "prodPrefixMatch": "3cb3d49af3ee on all 21 algorithmScoreProvenance rows (read-only probe)",
+    "value": "3cb3d49af3ee69247c55cc316b39064d9283b1361248ef8108d8b9838b4e8186"
+  },
+  "gitBlobShasAt1cfa129": {
+    "quant/systemic-regime/artifacts/approved/approved.joblib": "d7c5702f6d2da865da5bb253244a01e40fceceeb",
+    "quant/systemic-regime/artifacts/approved/registry.json": "7f2f7eaaa34f6fa14da36dd9aeefb2a7677e3302",
+    "quant/systemic-regime/config.py": "39d325bb700805704410ecff84940723411561cb",
+    "quant/systemic-regime/feature_engineering.py": "03115ac4db42aee70c9710df9072359fca3b6992",
+    "quant/systemic-regime/fred_pipeline.py": "d26e38d41dbec45a91f8223e57e8d6fb5148c690",
+    "quant/systemic-regime/inference.py": "ce00e3ab34700bfbf027d1286d086e01a046abe6",
+    "quant/systemic-regime/model_registry.py": "412917a0004e2d3332e210cc64591fdf43f99a13",
+    "quant/systemic-regime/regime_hmm.py": "fff8699f616b546d13c287ef761c2f6f137521a2",
+    "quant/systemic-regime/systemic_pca.py": "0a1f5410a3635351817e437eb3f640b490dc13d0",
+    "quant/systemic-regime/train.py": "58b3a4a9a01b7e7fb05640c2288eacac246a0ec6",
+    "server/algorithmProvenance.ts": "3e8828c69833d4be5320d7c41680a85e48e396ca",
+    "server/fredClient.ts": "354129c3261db6d6c44e811ecd63dfac664ad904",
+    "server/intelligenceGovernance.ts": "5cbb17c1f48cbdcb5ca34d8c43b4b2463dbe5de0",
+    "server/pressure/engine.ts": "a358fb187e4c758a827ab92b4bc8e4cd2cf11ad6",
+    "server/pressure/shadowEngine.ts": "6f5a14721bba4554176dd59cda2732298b49f1d3",
+    "server/scheduledSeismograph.ts": "ce94fe4099c26496c740b5ceebbc789c7b2a04b6",
+    "server/seismographAdapters.ts": "a1b75b2d631250408c285aa1250e36650b08774b",
+    "server/seismographCore.ts": "353e90d43204c224744945ac278f4fa62bdc2e5c",
+    "server/signalVisualDetail.ts": "d9206c82c244a39497b3ec1e14b85bb2bec8a738",
+    "server/systemicRegime/hooks.ts": "326babfeaa4d0c8da36e0716b46c65eeef4953d7",
+    "server/systemicRegime/identity.ts": "36df28290f867fb4c716f6096bb122c0133ef4c5",
+    "server/systemicRegime/scheduled.ts": "2fb530d6cc25ad1f7c85f406f4b1ec350cbd5d49",
+    "server/systemicRegime/seriesRegistry.ts": "70bb3a3c726280fff108ec8674865da120ab5031",
+    "server/systemicRegime/signalConvergence.ts": "8d5868c7a11d9cbc468f1596127192bf52983f22",
+    "server/systemicRegime/stressPeriods.ts": "2be3b045d6777c16658bde8b40ec0304d885e2dc",
+    "server/tradingSignals.ts": "59da813a2815a3323b4f6adf1cd0da6eddf46261",
+    "server/yahooProxy.ts": "5a195938eef633ae5b4cde19559a5b7a100112fb",
+    "shared/probabilityContract.ts": "3458c84e000646b79a62f373f79fea5bfcdef5b1"
+  },
+  "numericScoringUnchangedSince": "6dc9e4b (2026-08-09); later commits b77c623, 0948961 (2026-09-30) and 7deb1c8 change labels/descriptions/comments only (verified by diff of server/pressure/engine.ts)",
+  "preregVersion": "1.0.0",
+  "railwayDeploymentCommit": "1cfa129 (verified via Railway list-deployments, read-only)",
+  "railwayDeploymentCreatedUtc": "2026-10-04T17:06:18.363Z",
+  "railwayDeploymentId": "e180e966-26a2-4064-81b1-66998b25cdf5",
+  "testId": "FL-HV-2026-10-04-001"
+}

@@ -1,0 +1,55 @@
+{
+  "exclusionRules": {
+    "evaluationDatasetAdmits": "only designated scheduled states (C1 harness states; C2 QLS states)",
+    "excludedButPreserved": [
+      "page-read writes",
+      "QA writes",
+      "manual/ad-hoc runs",
+      "redeploy-triggered runs",
+      "cache-miss recomputations",
+      "scheduled runs on non-sessions",
+      "v1 outcome rows (intraday target, base before/at state, day-keyed)",
+      "V3-H shadow engine rows (separate experimental engine)"
+    ],
+    "preservation": "Rows are never deleted or modified; exclusions.json lists ids, timestamps, provenance and reason; later exclusions are appended in a new versioned file, never overwriting this one."
+  },
+  "sets": [
+    {
+      "contamination": "Engine was designed in 2026 with knowledge of this period; diagnostic, cannot alone support PASS.",
+      "eventsInWindow": "ruleB onset10: 2023-10-27, 2025-03-13; no >=20% bear",
+      "expectedN": "738 XNYS sessions (counted from the ^GSPC bar calendar, no FAULTLINE data); N_eff = N/h: 1d 738, 5d 147, 10d 73, 21d 35, 63d 11, 126d 5, 252d 2",
+      "id": "C1",
+      "label": "RETROSPECTIVE_RECONSTRUCTION (not a validated backtest)",
+      "name": "Faithful-input historical reconstruction",
+      "rule": "All 8 engine inputs from ALFRED vintages; no proxies, no fallback constants (state INPUT_UNAVAILABLE if any series missing). Engine code executed unchanged at 1cfa129 with an injected fetch layer replaying vintages in engine.ts FRED_SERIES order/limits.",
+      "window": "first XNYS session after 2023-10-03 (2023-10-04) .. 2026-09-14"
+    },
+    {
+      "checkpoints": "Descriptive interim reports allowed monthly without verdict. Verdict computed once, when >= 630 QLS states have matured 21d outcomes (approx. 2029); earlier verdict only MIXED-INCONCLUSIVE by rule.",
+      "id": "C2",
+      "label": "FORWARD_LIVE",
+      "name": "Live forward record (only untouched holdout)",
+      "rule": "QLS vf-qls-v1: scheduled 18:00 UTC cron, manifest generatedAt in [18:00,18:30) UTC, NYSE trading day, earliest qualifying row per ET market date, hash integrity. Primary sensitivity: only states with runProvenance.codeVersion = 1cfa129 (first possible: 2026-10-05).",
+      "window": "2026-09-15 onward"
+    },
+    {
+      "expectedN": "5724 XNYS sessions",
+      "id": "E1",
+      "label": "EXPLORATORY_PROXY (separate test id FL-HV-2026-10-04-002 must be pre-registered before it is run)",
+      "name": "Proxy reconstruction 2001-01-02 .. 2023-10-03",
+      "rule": "HY OAS proxy = OLS map of BAA10Y onto HY OAS fitted on 2023-10-03..2026-09-14 input data only; SOFR proxy = DFF before 2018-04-02; DGS10/DGS2 before 2005-06-28 = earliest-vintage values (label EARLIEST_VINTAGE_BACKFILL). No verdict weight in this test id."
+    }
+  ],
+  "timing": {
+    "engineQuirksReproduced": "latestValid with limit 2 returns fallback if both obs are \".\" (holiday); CPI/PPI YoY use obs[12] positionally; HY conversion x100 if <=20. In C1 a fallback is not allowed (INPUT_UNAVAILABLE); sensitivity FALLBACK_AS_PRODUCTION uses engine constants.",
+    "inputAvailability": {
+      "market": "latest completed close = previous session (and early-close same session only if completedAt < evalTime)",
+      "primary": "FRED/ALFRED value usable at D iff its vintage realtime_start < D (calendar), i.e. next day after release; conservative because the state precedes most afternoon FRED updates",
+      "sensitivity": "SAME_DAY_RELEASE: for HY OAS, SOFR and VIXCLS (morning publication) allow realtime_start = D"
+    },
+    "observedAtTreatment": "Prod observedAt is null; historical observedAt := evalTime of the designated state; per-input availability recorded as the ALFRED realtime_start of the vintage used. Never back-filled into prod.",
+    "stateGeneration": "One designated state per XNYS session D at 18:00:00 UTC (= 14:00 ET under EDT, 13:00 ET under EST; mirrors prod cron 0 18 * * *). No state on non-sessions. Reruns never replace a designated state.",
+    "stateRecord": "Each evaluated state stores stateId, runId, evalTime (UTC ISO), engine SHA, formulaHash, methodology hash, input snapshot id (sha256 of the vintage set), per-series realtime_start, and set label (C1/C2/E1).",
+    "unavailableHistoricalInputs": "UNAVAILABLE for that period; no proxy without separate documentation and sensitivity label; counted and reported."
+  }
+}

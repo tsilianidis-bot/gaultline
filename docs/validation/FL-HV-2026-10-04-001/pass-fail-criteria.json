@@ -1,0 +1,84 @@
+{
+  "hypotheses": [
+    {
+      "id": "H1",
+      "test": "Spearman rho(PI, MDD_21) < 0 (primary) and rho(PI, RV_21) > 0 (secondary); one-sided",
+      "text": "Higher PI precedes deeper forward drawdowns and higher realized vol."
+    },
+    {
+      "id": "H2",
+      "test": "Jonckheere-Terpstra trend test of MDD_21 across occupied bands LOW<MODERATE<ELEVATED<HIGH<CRISIS; bands with <60 states merged toward MODERATE; untestable if <2 bands remain",
+      "text": "Regime bands are ordered: higher bands precede worse outcomes."
+    },
+    {
+      "id": "H3",
+      "test": "OLS MDD_21 ~ PI_z + UpTrans5 + ret_21 + ret_63 + RV_trailing_21; HAC Wald test on {PI_z, UpTrans5}; beta_PI < 0 required",
+      "text": "PI level and upward regime transitions add information beyond trailing return/vol."
+    },
+    {
+      "id": "H4",
+      "test": "For each ruleB onset10 event: flagged if any state in [onset-63, trough] has PI >= 45; lead = onset - first flag (sessions); recall, precision (flag followed by onset within 63 sessions), false-alarm rate. Descriptive if <5 events.",
+      "text": "Stress is flagged before or during deterioration."
+    }
+  ],
+  "inference": {
+    "ci": "95% percentile bootstrap CIs for every reported statistic",
+    "dependence": "overlapping horizons: stationary block bootstrap (Politis-Romano), mean block length max(2h,21) sessions, 10,000 resamples, seed 20261004; regressions use Newey-West HAC with lag = ceil(1.5h)",
+    "multipleTesting": "Holm-Bonferroni across PM1-PM4 within each set, family alpha 0.05 one-sided; secondary/exploratory reported unadjusted and labelled",
+    "sampleSize": "report N states, N matured outcomes per horizon, N_eff = N/h (and Bartlett-adjusted), events count; any metric with N_eff < 30 is reported but cannot support PASS or FAIL"
+  },
+  "metrics": {
+    "exploratory": [
+      "regime transition frequency T_h/U_h",
+      "HMM and signal convergence (forward only)",
+      "proxy-window reconstruction (separate test id)",
+      "buy-and-hold / alarm-based exposure strategy"
+    ],
+    "primary": [
+      {
+        "hypothesis": "H1",
+        "id": "PM1",
+        "metric": "Spearman rho(PI, MDD_21)"
+      },
+      {
+        "hypothesis": "H2",
+        "id": "PM2",
+        "metric": "Jonckheere-Terpstra z for MDD_21 across bands"
+      },
+      {
+        "hypothesis": "H3",
+        "id": "PM3",
+        "metric": "HAC Wald p-value and incremental R^2 of {PI_z, UpTrans5}"
+      },
+      {
+        "hypothesis": "benchmark",
+        "id": "PM4",
+        "metric": "delta-rho = rho_FAULTLINE - rho_benchmark on MDD_21 vs (a) B11 equal-weight composite and (b) best single benchmark among B02-B10 (best chosen on the same data, which penalizes FAULTLINE)"
+      }
+    ],
+    "secondary": [
+      "rho and JT on RV_21, R_21, MDD_63, RV_63",
+      "E_h frequency by band with Wilson CIs",
+      "H4 recall/lead/precision vs each benchmark",
+      "all horizons 1..252 descriptive"
+    ]
+  },
+  "verdict": {
+    "FAIL": "In any set with N_eff >= 30: (a) PM1 or PM2 significant in the wrong direction; or (b) the 95% CI for rho(PI, MDD_21) lies entirely above -0.10 (effect economically negligible) and FAULTLINE does not beat B12 at p < 0.05; or (c) delta-rho vs B11 or vs the best single benchmark has a 95% CI entirely below 0.",
+    "MIXED-INCONCLUSIVE": "Anything else, including: N_eff < 30; H2 untestable (fewer than 2 occupied bands); significant but below economic thresholds; passes C1 but not C2; beats null but not benchmarks.",
+    "PASS": "In set C2 (live forward holdout) at its final checkpoint AND in set C1: PM1, PM2, PM3 significant after Holm in the predicted direction, each meeting its economic threshold, and PM4 delta-rho >= 0.05 against both B11 and the best single benchmark with 95% CI excluding 0, and FAULTLINE beats the B12 null at p < 0.05. N_eff >= 30 in each set. C1 alone can never yield PASS (in-sample-contaminated).",
+    "economicThresholds": {
+      "beatBenchmarkDeltaRho": 0.05,
+      "incrementalR2": 0.01,
+      "mdd21GapHighVsLow": "mean MDD_21 of states with PI>=45 at least 2.0 pp deeper than states with PI<45",
+      "rhoMin": 0.1,
+      "rv21Gap": ">= 3 vol points"
+    },
+    "reporting": "Every verdict lists N, N_eff, events, point estimates, CIs, raw and Holm p-values for PM1-PM4 per set.",
+    "scale": [
+      "PASS",
+      "MIXED-INCONCLUSIVE",
+      "FAIL"
+    ]
+  }
+}
