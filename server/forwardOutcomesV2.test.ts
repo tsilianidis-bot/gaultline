@@ -4,7 +4,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const h = vi.hoisted(() => ({ db: null as any, bars: [] as Array<{ close: number; timestamp: number }>, fred: [] as Array<{ date: string; value: string }> }));
 vi.mock("./db", () => ({ getDb: async () => h.db }));
 vi.mock("./yahooProxy", () => ({ getDailyBars: async () => h.bars }));
-vi.mock("./fredClient", () => ({ fetchFredSeries: async () => ({ observations: h.fred, cached: false }) }));
+// Behaves like the FRED API without observation_start: `limit` applies after `sort_order`
+// (asc → the series' FIRST observations, desc → the latest, newest first).
+vi.mock("./fredClient", () => ({
+  fetchFredSeries: async (_id: string, limit: number, sortOrder = "desc") => {
+    const asc = [...h.fred].sort((a, b) => a.date.localeCompare(b.date));
+    const observations = sortOrder === "asc" ? asc.slice(0, limit) : asc.reverse().slice(0, limit);
+    return { observations, cached: false };
+  },
+}));
 
 import { algorithmOutcomeObservations, algorithmScoreProvenance, intelligenceStateManifests } from "../drizzle/schema";
 import {
@@ -190,6 +198,25 @@ describe("append-only v2 collector (A2): select + insert-if-absent only", () => 
     const result = await collectForwardChampionOutcomesV2(at("2026-09-23T18:00:40Z"));
     expect(result.appended).toBe(0);
     expect(rec.inserted).toHaveLength(0);
+  });
+
+  it("realistic FRED (full DGS10 history since 1962): appends with the latest yields, never 1962", async () => {
+    const full: Array<{ date: string; value: string }> = [];
+    for (let d = new Date("1962-01-02T12:00:00Z"); d <= new Date("2026-09-25T12:00:00Z"); d.setUTCDate(d.getUTCDate() + 1)) {
+      if (d.getUTCDay() === 0 || d.getUTCDay() === 6) continue;
+      const date = d.toISOString().slice(0, 10);
+      full.push({ date, value: date < "2000-01-01" ? "4.06" : (4 + (d.getUTCDate() % 7) / 100).toFixed(2) });
+    }
+    h.fred = full;
+    const rec = recordingDb(tables);
+    h.db = rec.db;
+    const result = await collectForwardChampionOutcomesV2(at("2026-09-25T21:30:00Z"));
+    expect(result.appended).toBe(1);
+    expect(result.reasons.DGS10_NOT_PUBLISHED).toBeUndefined();
+    const ty = JSON.parse(rec.inserted[0].outcomeJson).tenYearTreasury;
+    expect([ty.baseObservedAt, ty.targetObservedAt]).toEqual(["2026-09-22", "2026-09-23"]);
+    expect([ty.baseYieldPercent, ty.targetYieldPercent]).toEqual([4.01, 4.02]);
+    expect(ty.changeBasisPoints).toBeCloseTo(1, 6);
   });
 
   it("defers when FRED has not published the target date", async () => {

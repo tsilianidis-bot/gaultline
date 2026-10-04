@@ -257,7 +257,17 @@ export function resolveProvenanceStateLink(record: ProvenanceRecord, states: Led
   return finish(null, "UNRESOLVED", ["no state generated within 5 min before the provenance row"]);
 }
 
-function fredYieldAt(observations: Array<{ date: string; value: string }>, day: string) {
+/**
+ * The most recent `limit` FRED observations, returned in ascending date order.
+ * fredClient sends no observation_start, so `sort_order=asc` + `limit` returns the FIRST
+ * `limit` observations of the series (DGS10: Jan–Sep 1962). Always request `desc` and sort.
+ */
+export async function fetchRecentFredObservationsAscending(seriesId: string, limit: number) {
+  const result = await fetchFredSeries(seriesId, limit, "desc");
+  return { ...result, observations: [...result.observations].sort((a, b) => a.date.localeCompare(b.date)) };
+}
+
+export function fredYieldAt(observations: Array<{ date: string; value: string }>, day: string) {
   const value = fredValueOnOrBefore(observations, day);
   // Final only once FRED has published a row dated on/after the day (incl. "." holiday rows).
   const published = observations.some(observation => observation.date >= day);
@@ -373,7 +383,7 @@ export async function collectForwardChampionOutcomesV2(collectedAt: Date = new D
     db.select({ stateId: intelligenceStateManifests.stateId, originatingRunId: intelligenceStateManifests.originatingRunId, generatedAt: intelligenceStateManifests.generatedAt, createdAt: intelligenceStateManifests.createdAt, manifestJson: intelligenceStateManifests.manifestJson })
       .from(intelligenceStateManifests).orderBy(desc(intelligenceStateManifests.generatedAt)).limit(1000),
     getDailyBars("SPY", "6mo"),
-    fetchFredSeries("DGS10", 180, "asc"),
+    fetchRecentFredObservationsAscending("DGS10", 180),
   ]);
   const reasons: Record<string, number> = {};
   const defer = (reason: string, n = 1) => { reasons[reason] = (reasons[reason] ?? 0) + n; };
