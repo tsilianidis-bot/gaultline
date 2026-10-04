@@ -2,6 +2,7 @@ import { and, desc, eq, lte, or } from "drizzle-orm";
 import { institutionalEventOutcomes, institutionalEvents } from "../drizzle/schema";
 import { getDb } from "./db";
 import { getDailyBars } from "./yahooProxy";
+import { INSTITUTIONAL_OUTCOME_V2_VERSION, institutionalOutcomeKeyV2 } from "../shared/institutionalOutcomeDisplay";
 import { completedSessionBars, computeOutcomeWindowV2, fetchRecentFredObservationsAscending, fredYieldAt, isDuplicateKeyError, OUTCOME_BAR_SOURCE, OUTCOME_CLOSE_BUFFER_MINUTES } from "./algorithmProvenance";
 
 export type InstitutionalSeverity = "info" | "low" | "moderate" | "high" | "critical";
@@ -310,8 +311,9 @@ export const BROAD_OUTCOME_COLLECTOR_VERSION = "broad-event-outcome-collector-v2
  * v2 (2026-10-04): completed regular-session bars only (shared with the Champion v2
  * ledger: 16:00 ET close + buffer, exchange calendar, base = first completed close
  * strictly after the event), the latest DGS10 observations (not the 1962 ones), and
- * scheduled runs only (the caller gates on SCHEDULED_CRON). Insert-if-absent under the
- * same outcome keys; rows already written are never updated or deleted.
+ * scheduled runs only (the caller gates on SCHEDULED_CRON). Insert-if-absent under v2 keys
+ * (`…:<h>td:v2`); legacy rows are never updated or deleted and are not shown (see
+ * shared/institutionalOutcomeDisplay.ts).
  */
 export async function collectBroadInstitutionalEventOutcomes(collectedAt: Date = new Date()) {
   const db = await getDb();
@@ -342,7 +344,9 @@ export async function collectBroadInstitutionalEventOutcomes(collectedAt: Date =
   let deferred = 0;
   for (const event of events) {
     for (const horizonTradingDays of BROAD_OUTCOME_HORIZONS) {
-      const outcomeKey = `institutional-event:${event.id}:broad-benchmark:${horizonTradingDays}td`;
+      // v2 key: corrected rows are appended alongside legacy rows (which stay untouched and are
+      // classified superseded at read time), so legacy keys no longer block a corrected outcome.
+      const outcomeKey = institutionalOutcomeKeyV2(event.id, horizonTradingDays);
       const existing = await db.select({ id: institutionalEventOutcomes.id }).from(institutionalEventOutcomes).where(eq(institutionalEventOutcomes.outcomeKey, outcomeKey)).limit(1);
       if (existing[0]) continue;
       const window = computeOutcomeWindowV2(event.eventAt, horizonTradingDays, completed, collectedAt);
@@ -363,7 +367,7 @@ export async function collectBroadInstitutionalEventOutcomes(collectedAt: Date =
           observedAt: new Date(target.sessionCloseMs),
           outcomeJson: JSON.stringify({
             historyClass: "live_verified",
-            outcomeVersion: "v2-completed-bar",
+            outcomeVersion: INSTITUTIONAL_OUTCOME_V2_VERSION,
             collectorVersion: BROAD_OUTCOME_COLLECTOR_VERSION,
             collectedAt: collectedAt.toISOString(),
             spy: { baseClose: base.close, targetClose: target.close, returnPercent: ((target.close - base.close) / base.close) * 100, observedAt: target.etDate, baseObservedAt: base.etDate, baseSessionCloseAt: base.sessionCloseAt, targetSessionCloseAt: target.sessionCloseAt, baseBarComplete: window.baseBarComplete, targetBarComplete: window.targetBarComplete },

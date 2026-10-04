@@ -95,7 +95,7 @@ describe("broad institutional-event outcomes v2 (F2)", () => {
     const rec = recordingDb(state);
     h.db = rec.db;
     const result = await collectBroadInstitutionalEventOutcomes(at("2026-09-23T18:00:40Z"));
-    expect(rec.inserted.map(r => r.outcomeKey)).toEqual(["institutional-event:12:broad-benchmark:1td"]); // Sat event: Mon 09-21 → Tue 09-22, both closed
+    expect(rec.inserted.map(r => r.outcomeKey)).toEqual(["institutional-event:12:broad-benchmark:1td:v2"]); // Sat event: Mon 09-21 → Tue 09-22, both closed
     expect(result.appended).toBe(1);
   });
 
@@ -105,11 +105,12 @@ describe("broad institutional-event outcomes v2 (F2)", () => {
     const result = await collectBroadInstitutionalEventOutcomes(at("2026-09-25T21:30:00Z"));
     expect(rec.calls.every(c => c === "select" || c === "insert")).toBe(true);
     expect(rec.inserted.map(r => r.outcomeKey).sort()).toEqual([
-      "institutional-event:10:broad-benchmark:1td",
-      "institutional-event:12:broad-benchmark:1td",
+      "institutional-event:10:broad-benchmark:1td:v2",
+      "institutional-event:12:broad-benchmark:1td:v2",
+      "institutional-event:9:broad-benchmark:1td:v2", // the legacy 1td row no longer blocks a corrected row
     ]);
-    expect(result).toEqual({ appended: 2, deferred: 9 }); // 1 slot already written (legacy, skipped)
-    const row = rec.inserted.find(r => r.outcomeKey === "institutional-event:10:broad-benchmark:1td")!;
+    expect(result).toEqual({ appended: 3, deferred: 9 });
+    const row = rec.inserted.find(r => r.outcomeKey === "institutional-event:10:broad-benchmark:1td:v2")!;
     expect(row.observedAt.toISOString()).toBe("2026-09-23T20:00:00.000Z");
     const json = JSON.parse(row.outcomeJson);
     expect(json.spy).toMatchObject({ baseClose: 101, targetClose: 102, baseObservedAt: "2026-09-22", observedAt: "2026-09-23", baseBarComplete: true, targetBarComplete: true });
@@ -117,7 +118,7 @@ describe("broad institutional-event outcomes v2 (F2)", () => {
     expect(json.tenYearTreasury.changeBasisPoints).toBeCloseTo(1, 6);
     expect(json.pressureIndex).toEqual({ base: 30, target: 33, change: 3 });
     expect(json.outcomeVersion).toBe("v2-completed-bar");
-    const weekend = JSON.parse(rec.inserted.find(r => r.outcomeKey === "institutional-event:12:broad-benchmark:1td")!.outcomeJson);
+    const weekend = JSON.parse(rec.inserted.find(r => r.outcomeKey === "institutional-event:12:broad-benchmark:1td:v2")!.outcomeJson);
     expect([weekend.spy.baseObservedAt, weekend.spy.observedAt]).toEqual(["2026-09-21", "2026-09-22"]);
     expect(JSON.stringify(legacyRow)).toBe(legacySnapshot);
     expect(rec.inserted.some(r => r.outcomeKey === legacyRow.outcomeKey)).toBe(false);
@@ -141,7 +142,7 @@ describe("broad institutional-event outcomes v2 (F2)", () => {
     const rec = recordingDb(state);
     h.db = rec.db;
     const result = await collectBroadInstitutionalEventOutcomes(at("2026-09-25T21:30:00Z"));
-    expect(rec.inserted.map(r => r.outcomeKey)).toEqual(["institutional-event:12:broad-benchmark:1td"]);
+    expect(rec.inserted.map(r => r.outcomeKey)).toEqual(["institutional-event:12:broad-benchmark:1td:v2"]);
     expect(result.appended).toBe(1);
   });
 });
