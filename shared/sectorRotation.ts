@@ -13,7 +13,7 @@
  * references the canonical regime / Pressure Index / stateId it was read beside.
  */
 
-export const SECTOR_ROTATION_METHOD_VERSION = "sector-rotation-v1.0.0" as const;
+export const SECTOR_ROTATION_METHOD_VERSION = "sector-rotation-v1.1.0" as const;
 export const SECTOR_ROTATION_SCHEMA_VERSION = 1 as const;
 
 /** The 11 Select Sector SPDR ETFs (GICS sectors of the S&P 500) and the benchmark. */
@@ -62,6 +62,8 @@ export const SECTOR_ROTATION_PARAMS = {
   moversMinCoverage: 0.95,
   /** Movers shown per side. */
   moversPerSide: 5,
+  /** A news item tagging more tickers than this is not company-specific. */
+  maxNewsTickerTags: 3,
   /** Catalyst co-move rule: a benchmark "explains" a move when it moved the same way by at least this share of it. */
   coMoveShare: 0.5,
   /** Early-indicator rule: minimum volume vs normal. */
@@ -309,4 +311,66 @@ export interface SectorRotationReading {
   };
   missingData: Array<{ id: string; status: Exclude<DataStatus, "OK">; reason: string; asOf: string | null }>;
   params: typeof SECTOR_ROTATION_PARAMS;
+}
+
+// ── Persisted snapshot + served view (B1: post-close collector → saved snapshot → read-only UI) ──
+
+export const SECTOR_ROTATION_SNAPSHOT_ENVELOPE_VERSION = 1 as const;
+/** Fixed collector policy. Page traffic never triggers a build; only the in-process post-close collector does. */
+export const SECTOR_ROTATION_COLLECTOR_POLICY = {
+  /** How often the in-process collector checks whether a completed session lacks a snapshot. */
+  tickIntervalMinutes: 10,
+  /** Delay before the single boot-time check (lets the server finish starting). */
+  bootDelaySeconds: 90,
+  /** Finite retries per completed session. */
+  maxAttemptsPerSession: 3,
+  /** Exponential backoff after a failed build: 30, 60, 120 minutes (capped). */
+  backoffBaseMinutes: 30,
+  backoffCapMinutes: 120,
+  /** Circuit breaker: any HTTP 429 aborts the build at once and blocks new builds for this long. */
+  circuitOpenMinutes: 60,
+  /** Overall build timeout; requests not yet issued are skipped once it passes. */
+  buildTimeoutMinutes: 10,
+  /** Bounded, paced fan-out (≈ 4 requests/s at most). */
+  fanoutConcurrency: 2,
+  fanoutDelayMs: 250,
+  /** No builds 1:45–2:45 PM ET on weekdays (scheduled FAULTLINE run and outcome collection use Yahoo then). */
+  quietWindowEt: { start: "13:45", end: "14:45" },
+  /** Served view re-reads the store at most this often (DB select only, never a fan-out). */
+  storeReloadMinutes: 10,
+  /** marketMemory.memoryValue is TEXT (64 KiB); snapshots larger than this are not saved. */
+  maxSnapshotBytes: 60_000,
+} as const;
+
+export interface SectorRotationSnapshotMeta {
+  key: string;
+  envelopeVersion: typeof SECTOR_ROTATION_SNAPSHOT_ENVELOPE_VERSION;
+  methodVersion: typeof SECTOR_ROTATION_METHOD_VERSION;
+  /** Completed session the snapshot describes (SPY's latest completed session). */
+  sessionDate: string;
+  /** When the reading was computed (ISO). */
+  generatedAt: string;
+  /** When the row was written (ISO), from the store. */
+  persistedAt: string | null;
+  /** Canonical FAULTLINE state read beside it. */
+  stateId: string | null;
+  /** sha256 of the reading JSON; verified on every load. */
+  readingHash: string;
+}
+
+export type SnapshotFreshness = "CURRENT" | "STALE" | "UNAVAILABLE";
+export interface SectorRotationServed {
+  freshness: SnapshotFreshness;
+  /** Why the view is STALE or UNAVAILABLE (null when CURRENT). */
+  freshnessReason: string | null;
+  /** Latest completed session by the 4 PM ET + 60 min rule (weekdays). */
+  expectedSession: string | null;
+  snapshot: SectorRotationSnapshotMeta | null;
+  reading: SectorRotationReading | null;
+  lastRefresh: {
+    attemptedAt: string | null;
+    outcome: "SUCCEEDED" | "FAILED" | "SKIPPED" | null;
+    detail: string | null;
+    nextAttemptAfter: string | null;
+  };
 }

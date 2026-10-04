@@ -11,18 +11,23 @@
  *  - Company news: Polygon /v2/reference/news (existing provider, existing POLYGON_API_KEY), one bulk request per window.
  *  - Canonical regime / Pressure Index / stateId: getAuthoritativeCanonicalIntelligenceState() (read-only select).
  *
- * Reads perform no DB writes, no shadow writes and send no email. Nothing here
- * feeds the Pressure Index, engines or the probability contract.
+ * Only the post-close collector (./collector.ts) calls collectSectorRotationInputs; the
+ * public query serves the saved snapshot (./snapshotStore.ts, append-only rows in the
+ * existing marketMemory table) and never triggers a fan-out. No shadow writes, no email.
+ * Nothing here feeds the Pressure Index, engines or the probability contract.
  */
 import XLSX from "xlsx";
 import { LRUCache } from "../lruCache";
 import { log } from "../logger";
 import { getDailyChart, type YahooDailyChart } from "../yahooProxy";
 import { fetchFredSeries } from "../fredClient";
-import { BENCHMARK_TICKER, SECTOR_ETFS, type CanonicalLink, type SectorRotationReading } from "../../shared/sectorRotation";
+import { BENCHMARK_TICKER, SECTOR_ETFS, type CanonicalLink } from "../../shared/sectorRotation";
 import { parseSsgaHoldings } from "./universe";
+import { SECTOR_ROTATION_COLLECTOR_POLICY as POLICY, type SectorRotationServed } from "../../shared/sectorRotation";
+import { SectorRotationCollector, abortBudget, newBudget, type FanoutBudget } from "./collector";
+import { createMarketMemorySnapshotStore } from "./snapshotStore";
 import {
-  buildSectorRotationReading, dailyChange, newsWindow, splitBars,
+  dailyChange, newsWindow, splitBars,
   type ChartInput, type FredInput, type NewsInput, type SectorRotationInputs, type UniverseInput,
 } from "./calc";
 
@@ -32,39 +37,57 @@ export const ROTATION_FRED_SERIES = [
 ] as const;
 export const SSGA_HOLDINGS_URL = (etf: string) => `https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-${etf.toLowerCase()}.xlsx`;
 const POLYGON_NEWS_URL = "https://api.polygon.io/v2/reference/news";
-const STOCK_CONCURRENCY = 8;
 
 function toChartInput(chart: YahooDailyChart): ChartInput {
   return { ticker: chart.ticker, bars: chart.bars, regularMarketTime: chart.regularMarketTime, companyName: chart.longName, error: chart.error };
 }
 
-async function mapLimit<T, R>(items: readonly T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+const isRateLimit = (error: string | null | undefined) => !!error && /\b429\b/.test(error);
+
+/**
+ * Bounded, paced fan-out: POLICY.fanoutConcurrency workers, POLICY.fanoutDelayMs between a
+ * worker's requests. Once the budget is aborted (HTTP 429, timeout) no new request is issued;
+ * the remaining items get `skipped(...)` so the build is invalid and is not saved.
+ */
+async function pacedMap<T, R>(items: readonly T[], budget: FanoutBudget, fn: (item: T) => Promise<R>, skipped: (item: T, reason: string) => R, check: (r: R) => void): Promise<R[]> {
   const out = new Array<R>(items.length);
   let next = 0;
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (next < items.length) { const i = next++; out[i] = await fn(items[i]); }
+  await Promise.all(Array.from({ length: Math.min(POLICY.fanoutConcurrency, items.length) }, async (_, w) => {
+    if (w > 0) await sleep(POLICY.fanoutDelayMs * w / POLICY.fanoutConcurrency);
+    while (next < items.length) {
+      const i = next++;
+      if (!budget.aborted && Date.now() > budget.deadline) abortBudget(budget, `overall build timeout (${POLICY.buildTimeoutMinutes} min)`);
+      if (budget.aborted) { out[i] = skipped(items[i], budget.abortReason ?? "build aborted"); continue; }
+      budget.requests += 1;
+      out[i] = await fn(items[i]);
+      check(out[i]);
+      if (next < items.length && !budget.aborted) await sleep(POLICY.fanoutDelayMs);
+    }
   }));
   return out;
 }
+const skippedChart = (ticker: string, reason: string): YahooDailyChart => ({ ticker: ticker.toUpperCase(), bars: [], regularMarketTime: null, longName: null, fetchedAt: 0, error: `Skipped: ${reason}` });
+const checkChart = (budget: FanoutBudget) => (c: YahooDailyChart) => { if (isRateLimit(c.error)) abortBudget(budget, `Yahoo ${c.ticker}: ${c.error}`, true); };
 
 // ── Universe (SSGA Select Sector SPDR holdings) ──────────────────────────────
 
 const universeCache = new LRUCache<string, UniverseInput>(2, 12 * 60 * 60_000);
-const universeFailureCache = new LRUCache<string, UniverseInput>(2, 5 * 60_000);
-async function fetchUniverse(): Promise<UniverseInput> {
-  const cached = universeCache.get("sp500") ?? universeFailureCache.get("sp500");
+async function fetchUniverse(budget: FanoutBudget): Promise<UniverseInput> {
+  const cached = universeCache.get("sp500");
   if (cached) return cached;
   const base = { name: "S&P 500 (union of the 11 Select Sector SPDR holdings)", source: "State Street SPDR daily holdings files (ssga.com)" };
   try {
-    const parts = await Promise.all(SECTOR_ETFS.map(async ({ ticker }) => {
+    const parts = await pacedMap(SECTOR_ETFS, budget, async ({ ticker }) => {
       const res = await fetch(SSGA_HOLDINGS_URL(ticker), { headers: { "User-Agent": "Mozilla/5.0" }, redirect: "follow", signal: AbortSignal.timeout(15_000) });
+      if (res.status === 429) { abortBudget(budget, `SSGA ${ticker} holdings HTTP 429`, true); throw new Error(`${ticker} holdings HTTP 429`); }
       if (!res.ok) throw new Error(`${ticker} holdings HTTP ${res.status}`);
       const wb = XLSX.read(new Uint8Array(await res.arrayBuffer()), { type: "array" });
       const rows = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: null });
       const parsed = parseSsgaHoldings(rows, ticker);
       if (parsed.members.length === 0) throw new Error(`${ticker} holdings file had no equity rows`);
       return parsed;
-    }));
+    }, (_etf, reason) => { throw new Error(`skipped: ${reason}`); }, () => {});
     const seen = new Set<string>();
     const members = parts.flatMap(p => p.members).filter(m => (seen.has(m.ticker) ? false : (seen.add(m.ticker), true)));
     const asOfs = parts.map(p => p.asOf).filter((d): d is string => !!d).sort();
@@ -74,30 +97,31 @@ async function fetchUniverse(): Promise<UniverseInput> {
   } catch (error) {
     const reason = `Constituent list unavailable: ${error instanceof Error ? error.message : String(error)}`;
     log.warn(`[SectorRotation] ${reason}`);
-    const failed: UniverseInput = { ...base, status: "UNAVAILABLE", asOf: null, members: [], reason };
-    universeFailureCache.set("sp500", failed);
-    return failed;
+    return { ...base, status: "UNAVAILABLE", asOf: null, members: [], reason };
   }
 }
 
 // ── News (Polygon, one bulk request per window) ──────────────────────────────
 
 const newsCache = new LRUCache<string, NewsInput>(8, 10 * 60_000);
-async function fetchNews(window: { start: number; end: number } | null): Promise<NewsInput> {
+async function fetchNews(window: { start: number; end: number } | null, budget: FanoutBudget): Promise<NewsInput> {
   if (!window) return { status: "UNAVAILABLE", reason: "No session window for news matching.", items: [] };
   const apiKey = process.env.POLYGON_API_KEY;
   if (!apiKey) return { status: "UNAVAILABLE", reason: "News source not configured (POLYGON_API_KEY absent).", items: [] };
   const key = `${window.start}_${window.end}`;
   const cached = newsCache.get(key);
   if (cached) return cached;
+  if (budget.aborted) return { status: "UNAVAILABLE", reason: `News not fetched: ${budget.abortReason}`, items: [] };
   const params = new URLSearchParams({ "published_utc.gt": new Date(window.start).toISOString(), "published_utc.lte": new Date(window.end).toISOString(), order: "desc", sort: "published_utc", limit: "1000" });
   try {
+    budget.requests += 1;
     const res = await fetch(`${POLYGON_NEWS_URL}?${params}&apiKey=${apiKey}`, { signal: AbortSignal.timeout(12_000) });
+    if (res.status === 429) abortBudget(budget, "Polygon news HTTP 429", true);
     if (!res.ok) throw new Error(`Polygon news HTTP ${res.status}`);
     const data = await res.json() as { results?: Array<{ id?: string; title?: string; publisher?: { name?: string }; article_url?: string; published_utc?: string; tickers?: string[] }> };
     const items = (data.results ?? [])
       .filter(r => r.id && r.title && r.article_url && r.published_utc && Array.isArray(r.tickers))
-      .map(r => ({ id: r.id!, title: r.title!.trim(), publisher: r.publisher?.name?.trim() || "Unknown publisher", url: r.article_url!, publishedAt: r.published_utc!, tickers: r.tickers!.map(t => t.toUpperCase().replace(".", "-")) }));
+      .map(r => ({ id: r.id!, title: r.title!.trim(), publisher: r.publisher?.name?.trim() ?? "", url: r.article_url!, publishedAt: r.published_utc!, tickers: r.tickers!.map(t => t.toUpperCase().replace(".", "-")) }));
     const news: NewsInput = { status: "OK", reason: null, items };
     newsCache.set(key, news);
     return news;
@@ -125,14 +149,14 @@ async function readCanonicalLink(): Promise<CanonicalLink> {
 
 // ── Assemble inputs + cached reading ─────────────────────────────────────────
 
-export async function collectSectorRotationInputs(now: () => number = Date.now): Promise<SectorRotationInputs> {
-  const [charts, fred, universe, canonical] = await Promise.all([
-    mapLimit(ROTATION_CHART_SYMBOLS, STOCK_CONCURRENCY, s => getDailyChart(s, "6mo")),
+export async function collectSectorRotationInputs(budget: FanoutBudget = newBudget(Date.now()), now: () => number = Date.now): Promise<SectorRotationInputs> {
+  const charts = await pacedMap(ROTATION_CHART_SYMBOLS, budget, s => getDailyChart(s, "6mo"), skippedChart, checkChart(budget));
+  const [fred, universe, canonical] = await Promise.all([
     Promise.all(ROTATION_FRED_SERIES.map(async s => { const r = await fetchFredSeries(s.id, s.limit, "desc"); return { id: s.id, observations: r.observations, error: r.error ?? null } as FredInput; })),
-    fetchUniverse(),
+    budget.aborted ? Promise.resolve<UniverseInput>({ name: "S&P 500", source: "ssga.com", status: "UNAVAILABLE", asOf: null, members: [], reason: `Not fetched: ${budget.abortReason}` }) : fetchUniverse(budget),
     readCanonicalLink(),
   ]);
-  const stockCharts = universe.status === "OK" ? await mapLimit(universe.members, STOCK_CONCURRENCY, m => getDailyChart(m.ticker, "3mo")) : [];
+  const stockCharts = universe.status === "OK" && !budget.aborted ? await pacedMap(universe.members.map(m => m.ticker), budget, t => getDailyChart(t, "3mo"), skippedChart, checkChart(budget)) : [];
   const at = now();
   const chartMap = Object.fromEntries(charts.map((c, i) => [ROTATION_CHART_SYMBOLS[i], toChartInput(c)]));
   // News window follows SPY's daily-change basis (same basis the movers are ranked on).
@@ -140,7 +164,7 @@ export async function collectSectorRotationInputs(now: () => number = Date.now):
   const spySplit = splitBars(spy?.error ? [] : spy?.bars ?? [], at);
   const spyDaily = dailyChange(spySplit, spy?.regularMarketTime ?? null);
   const prior = spyDaily ? (spyDaily.basis.kind === "SESSION_CLOSE" ? spySplit.completed.at(-2)?.session : spySplit.completed.at(-1)?.session) ?? null : null;
-  const news = await fetchNews(spyDaily ? newsWindow(spyDaily.basis, prior, at) : null);
+  const news = await fetchNews(spyDaily ? newsWindow(spyDaily.basis, prior, at) : null, budget);
   return {
     now: at, canonical, charts: chartMap,
     fred: Object.fromEntries(fred.map(f => [f.id, f])),
@@ -150,23 +174,20 @@ export async function collectSectorRotationInputs(now: () => number = Date.now):
   };
 }
 
-const READING_TTL_MS = 5 * 60_000;
-const readingCache = new LRUCache<string, SectorRotationReading>(1, READING_TTL_MS);
-let inFlight: Promise<SectorRotationReading> | null = null;
+/** The single in-process collector (started from server boot). */
+export const sectorRotationCollector = new SectorRotationCollector({
+  now: () => Date.now(),
+  store: createMarketMemorySnapshotStore(),
+  collect: budget => collectSectorRotationInputs(budget),
+  log: { info: m => log.info(m), warn: m => log.warn(m) },
+});
 
-/** Cached (5 min), de-duplicated, never throws. */
-export async function getSectorRotationReading(): Promise<SectorRotationReading> {
-  const cached = readingCache.get("current");
-  if (cached) return cached;
-  if (inFlight) return inFlight;
-  inFlight = (async () => {
-    try {
-      const reading = buildSectorRotationReading(await collectSectorRotationInputs());
-      readingCache.set("current", reading);
-      return reading;
-    } finally {
-      inFlight = null;
-    }
-  })();
-  return inFlight;
+/** Public read path: the saved snapshot only (memory / store read). Never builds, never fans out. */
+export function getServedSectorRotation(): Promise<SectorRotationServed> {
+  return sectorRotationCollector.served();
+}
+
+/** Called once from server boot (server/_core/index.ts). */
+export function startSectorRotationCollector() {
+  sectorRotationCollector.start();
 }

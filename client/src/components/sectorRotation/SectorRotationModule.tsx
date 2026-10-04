@@ -15,7 +15,7 @@ import { CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 import { formatEt } from "@shared/credibilityLabels";
 import {
   ACTION_LABEL, ARROW_GLYPH, CATALYST_LABEL, LEADERSHIP_GROUP_LABEL, QUADRANT_LABEL,
-  type DailyChangeBasis, type LeadershipGroup, type MoverRow, type Quadrant, type SectorActionClass, type SectorRotationReading, type SectorRow,
+  type DailyChangeBasis, type LeadershipGroup, type MoverRow, type Quadrant, type SectorActionClass, type SectorRotationReading, type SectorRotationServed, type SectorRow,
 } from "@shared/sectorRotation";
 
 export type ThesisQuestion = "now" | "why" | "outlook" | "watch" | "act";
@@ -33,7 +33,8 @@ const ACTION_COLOR: Record<SectorActionClass, string> = {
 const MAP_ORDER: Quadrant[] = ["IMPROVING", "LEADING", "LAGGING", "LOSING_MOMENTUM"];
 
 export function useSectorRotation() {
-  return trpc.sectorRotation.current.useQuery(undefined, { staleTime: 5 * 60_000, refetchOnWindowFocus: false, retry: 1 });
+  // Own HTTP request (skipBatch → splitLink in main.tsx): never batched with marketState.current.
+  return trpc.sectorRotation.current.useQuery(undefined, { staleTime: 5 * 60_000, refetchOnWindowFocus: false, retry: 1, trpc: { context: { skipBatch: true } } });
 }
 
 const signed = (x: number | null | undefined, unit = "%") =>
@@ -60,12 +61,20 @@ function Shell({ question, children, title, subtitle }: { question: ThesisQuesti
   );
 }
 
-function StateLine({ reading }: { reading: SectorRotationReading }) {
+function StateLine({ reading, served }: { reading: SectorRotationReading; served: SectorRotationServed }) {
   return (
-    <p className="mt-2 font-mono text-[9px] uppercase leading-5 tracking-[0.12em] text-slate-500" data-sector-rotation-asof>
-      Completed session {reading.benchmark.latestCompletedSession ?? "unavailable"} · Daily %: {basisLabel(reading.benchmark.dailyBasis)} · Computed {formatEt(reading.generatedAt) ?? "—"} · {reading.methodVersion}
-      {reading.status !== "OK" && <span className="ml-2 rounded border border-amber-300/40 px-1.5 py-0.5 text-amber-300">{reading.status}</span>}
-    </p>
+    <>
+      <p className="mt-2 font-mono text-[9px] uppercase leading-5 tracking-[0.12em] text-slate-500" data-sector-rotation-asof>
+        Snapshot · completed session {reading.benchmark.latestCompletedSession ?? "unavailable"} · Daily %: {basisLabel(reading.benchmark.dailyBasis)} · Computed {formatEt(reading.generatedAt) ?? "—"} · {reading.methodVersion}
+        {reading.status !== "OK" && <span className="ml-2 rounded border border-amber-300/40 px-1.5 py-0.5 text-amber-300">{reading.status}</span>}
+        {served.freshness === "STALE" && <span className="ml-2 rounded border border-amber-300/40 px-1.5 py-0.5 text-amber-300" data-sector-rotation-stale>STALE</span>}
+      </p>
+      {served.freshness === "STALE" && served.freshnessReason && (
+        <p className="mt-1 text-xs leading-5 text-amber-200/80" data-sector-rotation-stale-reason>
+          {served.freshnessReason}{served.lastRefresh.nextAttemptAfter ? ` Next attempt after ${formatEt(served.lastRefresh.nextAttemptAfter) ?? served.lastRefresh.nextAttemptAfter}.` : ""}
+        </p>
+      )}
+    </>
   );
 }
 
@@ -82,14 +91,18 @@ function Unavailable({ question, title, subtitle, detail }: { question: ThesisQu
 
 function useReadingOrState(question: ThesisQuestion, title: string, subtitle: string) {
   const query = useSectorRotation();
-  if (query.isLoading) return { node: <Shell question={question} title={title} subtitle={subtitle}><p className="mt-4 text-sm text-slate-500">Computing sector rotation from market data…</p></Shell>, reading: null };
-  if (query.error || !query.data) return { node: <Unavailable question={question} title={title} subtitle={subtitle} detail="Sector rotation data could not be loaded. No values are shown in its place." />, reading: null };
-  const reading = query.data as SectorRotationReading;
+  if (query.isLoading) return { node: <Shell question={question} title={title} subtitle={subtitle}><p className="mt-4 text-sm text-slate-500">Loading the latest saved sector rotation snapshot…</p></Shell>, reading: null, served: null };
+  if (query.error || !query.data) return { node: <Unavailable question={question} title={title} subtitle={subtitle} detail="Sector rotation data could not be loaded. No values are shown in its place." />, reading: null, served: null };
+  const served = query.data as SectorRotationServed;
+  if (served.freshness === "UNAVAILABLE" || !served.reading) {
+    return { node: <Unavailable question={question} title={title} subtitle={subtitle} detail={served.freshnessReason ?? "No saved sector rotation snapshot is available. No values are shown in its place."} />, reading: null, served: null };
+  }
+  const reading = served.reading;
   if (reading.status === "UNAVAILABLE") {
     const reasons = reading.missingData.filter(m => m.id === "SPY" || m.status === "UNAVAILABLE").slice(0, 3).map(m => m.reason).join(" ");
-    return { node: <Unavailable question={question} title={title} subtitle={subtitle} detail={`Sector rankings are withheld until benchmark and sector bars are available. ${reasons}`} />, reading: null };
+    return { node: <Unavailable question={question} title={title} subtitle={subtitle} detail={`Sector rankings are withheld until benchmark and sector bars are available. ${reasons}`} />, reading: null, served: null };
   }
-  return { node: null, reading };
+  return { node: null, reading, served };
 }
 
 // ── NOW: the Map ─────────────────────────────────────────────────────────────
@@ -237,11 +250,11 @@ const QUESTION_LINKS: Array<{ id: ThesisQuestion; label: string; key: keyof Sect
 export function SectorRotationMap() {
   const title = "FAULTLINE Sector Rotation Map™";
   const subtitle = "Market leadership · 11 S&P 500 sectors vs SPY";
-  const { node, reading } = useReadingOrState("now", title, subtitle);
+  const { node, reading, served } = useReadingOrState("now", title, subtitle);
   if (!reading) return node;
   return (
     <Shell question="now" title={title} subtitle={subtitle}>
-      <StateLine reading={reading} />
+      <StateLine reading={reading} served={served!} />
       <RotationMap reading={reading} />
       <p className="mt-4 border-l-2 border-cyan-300/60 bg-cyan-300/[0.04] px-4 py-3 text-sm leading-6 text-slate-200" data-why-it-matters>
         <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300">Why it matters: </span>
@@ -394,12 +407,12 @@ const SLICE_META: Record<Exclude<ThesisQuestion, "now">, { subtitle: string; tit
 
 export function SectorRotationQuestion({ question }: { question: Exclude<ThesisQuestion, "now"> }) {
   const meta = SLICE_META[question];
-  const { node, reading } = useReadingOrState(question, meta.title, meta.subtitle);
+  const { node, reading, served } = useReadingOrState(question, meta.title, meta.subtitle);
   if (!reading) return node;
   const key = question === "outlook" ? "next" : question;
   return (
     <Shell question={question} title={meta.title} subtitle={meta.subtitle}>
-      <StateLine reading={reading} />
+      <StateLine reading={reading} served={served!} />
       {reading.narrative[key] && <p className="mt-3 text-sm leading-6 text-slate-300">{reading.narrative[key]}</p>}
       <meta.Body reading={reading} />
       <Link href={`${CANONICAL_DESTINATION_BY_ID.now.path}#${SECTOR_ROTATION_ANCHOR}`} className="mt-4 inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.13em] text-cyan-300 hover:text-cyan-200">Open the Sector Rotation Map <ArrowRight size={11} /></Link>

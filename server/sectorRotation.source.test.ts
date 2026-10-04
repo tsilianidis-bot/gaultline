@@ -7,7 +7,7 @@ import { CANONICAL_DESTINATIONS } from "../shared/routeRegistry";
 const root = resolve(import.meta.dirname, "..");
 const src = (p: string) => readFileSync(resolve(root, p), "utf8");
 const MODULE = "client/src/components/sectorRotation/SectorRotationModule.tsx";
-const SERVER_FILES = ["server/sectorRotation/calc.ts", "server/sectorRotation/service.ts", "server/sectorRotation/universe.ts", "server/routers/sectorRotation.ts", "shared/sectorRotation.ts"];
+const SERVER_FILES = ["server/sectorRotation/calc.ts", "server/sectorRotation/service.ts", "server/sectorRotation/collector.ts", "server/sectorRotation/snapshotStore.ts", "server/sectorRotation/universe.ts", "server/routers/sectorRotation.ts", "shared/sectorRotation.ts"];
 
 describe("Sector Rotation renders inside the Pentagonal Thesis (no sixth question)", () => {
   it("keeps exactly the five canonical questions", () => {
@@ -52,12 +52,37 @@ describe("Sector Rotation is data-first and has no demo / fallback / LLM path", 
     expect(imports.sort()).toEqual(["@/lib/trpc", "@shared/credibilityLabels", "@shared/routeRegistry", "@shared/sectorRotation", "lucide-react", "react", "wouter"].sort());
     expect(m).not.toMatch(/Math\.random|DEFAULT_INDICATORS|useDemo|\.probabilities|scenarioOutputs|probabilityContract/);
   });
-  it("server code imports no LLM, demo universe, email, shadow or DB-write module", () => {
+  it("server code imports no LLM, demo universe, email, shadow or ledger module; the only DB write is the snapshot INSERT", () => {
     for (const f of SERVER_FILES) {
       const s = src(f);
-      expect(s, f).not.toMatch(/_core\/llm|invokeLLM|signalOutlook|tradePreflight|altRotationEngine|signalsProxy|DemoContext|client\/src\/lib|\.\/email|scheduledShadowModel|recordShadow/);
-      expect(s, f).not.toMatch(/\.insert\(|\.update\(|\.delete\(|Math\.random/);
+      expect(s, f).not.toMatch(/_core\/llm|invokeLLM|signalOutlook|tradePreflight|altRotationEngine|signalsProxy|DemoContext|client\/src\/lib|\.\/email|scheduledShadowModel|recordShadow|shadowModel|decisionLedger|governedIntelligence/);
+      expect(s.replace('createHash("sha256").update(', ""), f).not.toMatch(/\.update\(|\.delete\(|onDuplicateKeyUpdate|\.replace\(marketMemory|Math\.random/);
+      if (f !== "server/sectorRotation/snapshotStore.ts") expect(s, f).not.toMatch(/(?<!store)\.insert\(|getDb|from "\.\.\/db"|drizzle/);
     }
+    const store = src("server/sectorRotation/snapshotStore.ts");
+    expect(Array.from(store.matchAll(/\.insert\(/g))).toHaveLength(1);
+    expect(store).toContain(".insert(marketMemory)");
+  });
+  it("B1: the query reads only the saved snapshot; page loads cannot reach the collector or providers", () => {
+    const r = src("server/routers/sectorRotation.ts");
+    expect(r).toMatch(/import \{ getServedSectorRotation \} from "\.\.\/sectorRotation\/service"/);
+    const code = r.replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(code).not.toMatch(/collect|buildSectorRotationReading|tick\(|fetch\(|getDailyChart/);
+    expect(code).toContain("current: publicProcedure.query(() => getServedSectorRotation())");
+    const svc = src("server/sectorRotation/service.ts");
+    const served = svc.slice(svc.indexOf("export function getServedSectorRotation"));
+    expect(served.slice(0, served.indexOf("}") + 1)).toMatch(/sectorRotationCollector\.served\(\)/);
+    const col = src("server/sectorRotation/collector.ts");
+    const servedFn = col.slice(col.indexOf("async served("), col.indexOf("\n  }\n", col.indexOf("async served(")));
+    expect(servedFn).not.toMatch(/tick\(|collect\(|build\(|runBuild|insert\(/);
+    expect(src("server/_core/index.ts")).toMatch(/startSectorRotationCollector\(\)/);
+  });
+  it("B1: the sector query is its own (non-batched) request so it can never stall the page's other queries", () => {
+    const main = src("client/src/main.tsx");
+    expect(main).toMatch(/splitLink\(/);
+    expect(main).toMatch(/op\.context\.skipBatch === true/);
+    expect(main).toMatch(/true: httpLink\(/);
+    expect(src(MODULE)).toMatch(/context: \{ skipBatch: true \}/);
   });
   it("calc is pure: no fetch, no clock reads", () => {
     const calc = src("server/sectorRotation/calc.ts");
@@ -75,9 +100,10 @@ describe("Sector Rotation is data-first and has no demo / fallback / LLM path", 
     expect(fn).not.toMatch(/polygon|getQuote|fetchQuoteWithFallback/i);
     expect(fn).toContain("error: message");
   });
-  it("ships no migration for sector rotation (storage is a proposal doc only)", () => {
+  it("ships no migration for sector rotation (snapshots use the existing marketMemory table)", () => {
     const files = readdirSync(resolve(root, "drizzle"), { recursive: true }).map(String);
     for (const f of files.filter(f => /\.(sql|ts|json)$/.test(f))) expect(src(`drizzle/${f}`), f).not.toMatch(/sector_rotation|sectorRotation/i);
     expect(src("docs/sector-rotation/STORAGE_PROPOSAL.md")).toMatch(/append-only/i);
+    expect(src("server/routers/seismograph.ts")).toMatch(/notLike\(marketMemory\.memoryKey, "sector-rotation:%"\)/);
   });
 });

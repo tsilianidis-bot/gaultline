@@ -429,15 +429,145 @@ export function computeDriverLinks(sectors: SectorRow[], drivers: MacroDriverRea
 }
 
 // ── Catalysts (top movers) ───────────────────────────────────────────────────
+//
+// A news item can explain a move (EVENT-DRIVEN / COMPANY-SPECIFIC) only when ALL hold
+// (`qualifyNewsItem`, every check deterministic and fixed in code):
+//  1. inside the move's window (filtered by the builder) with a parseable publishedAt;
+//  2. a publisher on APPROVED_NEWS_PUBLISHERS (missing publisher → rejected);
+//  3. tagged with the mover and with ≤ maxNewsTickerTags tickers;
+//  4. not a movers roundup / market-wrap headline (ROUNDUP_PATTERN);
+//  5. the TITLE explicitly names the mover — an exchange-qualified or $/parenthesised
+//     ticker, a bare ticker that is unambiguous (≥ 3 letters, not a common word), or a
+//     controlled alias (see buildAliasIndex) — and the alias is not shared by another issuer;
+//  6. the title names no other S&P 500 issuer (one company's results never explain a peer).
+// SECTOR-DRIVEN / MACRO-DRIVEN are price co-move classifications and never carry a headline.
 
-/** Title keyword families, checked in this priority order. */
+/** Title keyword families, checked in this priority order. Specific phrases only (no bare "profit", "results", "revenue", "EPS", "SEC", "outlook"). */
 export const EVENT_FAMILY_PATTERNS: Array<{ family: EventFamily; label: string; pattern: RegExp }> = [
-  { family: "EARNINGS", label: "Earnings / results", pattern: /\b(earnings|quarterly results|q[1-4] results|results|eps|revenue|profit)\b/i },
-  { family: "GUIDANCE", label: "Guidance", pattern: /\b(guidance|outlook|forecasts?|reaffirms?)\b/i },
-  { family: "M_AND_A", label: "M&A", pattern: /\b(acquires?|acquired|acquisition|merger|merge|buyout|takeover)\b/i },
-  { family: "REGULATORY", label: "Regulatory", pattern: /\b(fda|sec|ftc|doj|antitrust|regulators?|regulatory|approval|approves|recall|probe|investigation)\b/i },
-  { family: "ANALYST_ACTION", label: "Analyst action", pattern: /\b(upgrades?|upgraded|downgrades?|downgraded|price target|initiates? coverage|reiterates?|outperform|underperform)\b/i },
+  { family: "EARNINGS", label: "Earnings / results", pattern: /\b(earnings|quarterly (?:results|profit|revenue|sales)|(?:first|second|third|fourth)[- ]quarter (?:results|earnings|profit|revenue|sales|loss)|q[1-4] (?:results|earnings|revenue|sales|profit|loss)|(?:beats?|miss(?:es)?|tops?) (?:\w+ )?(?:estimates|expectations|forecasts|consensus))\b/i },
+  { family: "GUIDANCE", label: "Guidance", pattern: /\b(guidance|(?:raises|lifts|boosts|cuts|lowers|trims|reaffirms|reiterates|withdraws) (?:its |full-year |annual |\w+ )?(?:outlook|forecast|guidance)|(?:full-year|annual|fy ?\d{0,4}) (?:outlook|forecast))\b/i },
+  { family: "M_AND_A", label: "M&A", pattern: /\b(acquires?|acquired|acquisition|merger|merge|buyout|takeover|to be acquired|agrees? to buy|tender offer)\b/i },
+  { family: "REGULATORY", label: "Regulatory", pattern: /\b(fda|ftc|doj|antitrust|regulators?|regulatory|recall|sec (?:probe|investigation|charges|settlement|subpoena|lawsuit)|(?:fda|regulatory) approval|approves? (?:its|the) (?:drug|device|merger|deal))\b/i },
+  { family: "ANALYST_ACTION", label: "Analyst action", pattern: /\b(upgrades?|upgraded|downgrades?|downgraded|price target|initiates? coverage|(?:reiterates?|maintains?) (?:buy|sell|hold|outperform|underperform|overweight|underweight|neutral)|outperform|underperform)\b/i },
 ];
+
+/** Controlled publisher allowlist (normalised: lowercase, letters/digits only, trailing "inc" removed). Newswires carry the company's own statement; the rest are news desks. Opinion / promotional outlets are not on it. */
+export const APPROVED_NEWS_PUBLISHERS: readonly string[] = ["benzinga", "globenewswire", "prnewswire", "businesswire", "accesswire", "reuters", "marketwatch", "cnbc", "investingcom", "barrons", "thewallstreetjournal", "bloomberg"];
+export const normalizePublisher = (name: string | null | undefined) => (name ?? "").toLowerCase().replace(/[^a-z0-9]/g, "").replace(/inc$/, "");
+export const isApprovedPublisher = (name: string | null | undefined) => { const n = normalizePublisher(name); return n.length > 0 && APPROVED_NEWS_PUBLISHERS.includes(n); };
+
+/** Movers roundups and market wraps never explain a single stock, even when they name it. */
+export const ROUNDUP_PATTERN = /\b(biggest (?:movers|moves|gainers|losers)|stocks? making (?:the )?(?:biggest )?moves|(?:top|midday|premarket|pre-market|after-hours|afternoon|morning) (?:movers|gainers|losers)|movers (?:and shakers|to watch)|stocks? (?:to watch|on the move|moving|that moved)|stock market (?:today|news)|market (?:wrap|recap)|trending stocks|(?:gainers|losers) (?:and|&) (?:gainers|losers)|\d+ stocks)\b/i;
+
+/** Bare tickers that are ordinary words; they only count when exchange-qualified, $-prefixed or parenthesised. */
+const AMBIGUOUS_BARE_TICKERS = new Set(["A", "ALL", "ARE", "BALL", "BIG", "BK", "C", "CAT", "D", "DAY", "DD", "DE", "DOW", "ED", "EL", "F", "FAST", "GE", "GO", "HAS", "HD", "HE", "IT", "J", "K", "KEY", "KO", "L", "LOW", "MA", "MO", "MS", "NOW", "O", "ON", "PEG", "PH", "PM", "RE", "SO", "T", "TT", "V", "WM", "WELL", "WAT", "ZION"]);
+/** Single words that may not act as a company alias on their own. */
+const ALIAS_STOPWORDS = new Set(["american", "general", "international", "national", "united", "first", "western", "eastern", "southern", "northern", "global", "public", "digital", "technology", "technologies", "energy", "financial", "capital", "health", "healthcare", "medical", "systems", "services", "industries", "group", "holdings", "realty", "trust", "power", "electric", "motors", "insurance", "bank", "devices", "solutions", "partners", "resources", "brands", "foods", "products", "communications", "entertainment", "semiconductor", "pharmaceuticals", "therapeutics", "labs", "laboratories", "materials", "chemical", "water", "royal", "pacific", "atlantic", "texas", "southwest", "target", "match", "visa", "apple", "ball", "news", "fox", "progressive", "steel", "best", "dollar", "home", "booking",
+  // Ordinary words / first names / places that start S&P 500 issuer names: such an issuer is named only by its full name or ticker.
+  "advanced", "align", "analog", "applied", "arthur", "automatic", "baker", "block", "bloom", "boston", "camden", "cardinal", "carnival", "carrier", "charles",
+  "church", "cincinnati", "citizens", "coherent", "comfort", "consolidated", "cooper", "crown", "delta", "devon", "dominion", "dover", "edison", "everest",
+  "expand", "extra", "federal", "fidelity", "fifth", "flex", "franklin", "genuine", "globe", "hartford", "henry", "illinois", "interactive", "invitation",
+  "kinder", "marathon", "martin", "monolithic", "monster", "morgan", "mosaic", "norfolk", "packaging", "parker", "philip", "phillips", "pinnacle", "principal",
+  "quest", "ralph", "raymond", "regions", "republic", "simon", "smith", "state", "super", "tractor", "travelers", "union", "universal", "vertex", "waste",
+  "waters", "wells", "williams", "willis", "zebra"]);
+/** Controlled extra aliases (exact phrases, case-insensitive). Changing this list is a methodology change. */
+export const EXPLICIT_COMPANY_ALIASES: Readonly<Record<string, readonly string[]>> = {
+  GOOGL: ["Alphabet", "Google"], GOOG: ["Alphabet", "Google"], META: ["Meta Platforms", "Facebook"], "BRK-B": ["Berkshire Hathaway", "Berkshire"],
+  AAPL: ["Apple Inc"], AMZN: ["Amazon.com", "Amazon"], T: ["AT&T"], NWS: ["News Corp"], NWSA: ["News Corp"], FOX: ["Fox Corp"], FOXA: ["Fox Corp"], LOW: ["Lowe's"],
+};
+const LEGAL_SUFFIXES = new Set(["&", "inc", "corp", "corporation", "co", "cos", "company", "companies", "ltd", "plc", "holdings", "holding", "group", "sa", "nv", "ag", "lp", "the", "incorporated", "class", "cl", "a", "b", "c", "reit", "new", "de"]);
+
+export interface AliasIndex {
+  /** issuer key per ticker (share classes of one issuer share a key). */
+  issuerOf: Map<string, string>;
+  /** alias phrase (lowercase) → issuer keys using it. */
+  aliasIssuers: Map<string, Set<string>>;
+  /** issuer key → its alias phrases. */
+  issuerAliases: Map<string, string[]>;
+  tickersOfIssuer: Map<string, string[]>;
+  /** Precompiled matchers (built once per reading). */
+  aliasMatchers: Array<{ alias: string; re: RegExp; keys: Set<string> }>;
+  tickerMatchers: Array<{ ticker: string; key: string; qualified: RegExp; bare: RegExp | null }>;
+}
+
+const tickerForms = (t: string) => [t, t.replace("-", "."), t.replace("-", "/")];
+
+/** Deterministic company-name normalisation of the SSGA holdings name. */
+export function normalizeCompanyName(name: string): string {
+  // SSGA writes possessives as "LOWE S"; a lone "s" token is dropped.
+  const tokens = name.toLowerCase().replace(/\+/g, "&").replace(/[’']s\b/g, "").replace(/[^a-z0-9& ]/g, " ").split(/\s+/).filter(t => t && t !== "s");
+  while (tokens.length > 1 && LEGAL_SUFFIXES.has(tokens[tokens.length - 1])) tokens.pop();
+  while (tokens.length > 1 && tokens[0] === "the") tokens.shift();
+  return tokens.join(" ");
+}
+
+/** Controlled, deterministic aliases from the universe list + EXPLICIT_COMPANY_ALIASES. */
+export function buildAliasIndex(members: readonly UniverseMember[]): AliasIndex {
+  const issuerOf = new Map<string, string>(); const tickersOfIssuer = new Map<string, string[]>();
+  for (const m of [...members].sort((a, b) => a.ticker.localeCompare(b.ticker))) {
+    const key = normalizeCompanyName(m.name) || m.ticker.toLowerCase();
+    issuerOf.set(m.ticker, key); tickersOfIssuer.set(key, [...(tickersOfIssuer.get(key) ?? []), m.ticker]);
+  }
+  const firstTokenIssuers = new Map<string, Set<string>>();
+  for (const key of Array.from(tickersOfIssuer.keys())) { const first = key.split(" ")[0]; (firstTokenIssuers.get(first) ?? firstTokenIssuers.set(first, new Set()).get(first)!).add(key); }
+  const issuerAliases = new Map<string, string[]>(); const aliasIssuers = new Map<string, Set<string>>();
+  const add = (key: string, alias: string) => {
+    const a = alias.toLowerCase().replace(/[’']s\b/g, "").trim(); if (!a) return;
+    if (!a.includes(" ") && (a.length < 4 || ALIAS_STOPWORDS.has(a))) return; // single-word aliases must be distinctive
+    issuerAliases.set(key, Array.from(new Set([...(issuerAliases.get(key) ?? []), a])));
+    (aliasIssuers.get(a) ?? aliasIssuers.set(a, new Set()).get(a)!).add(key);
+  };
+  for (const [key, tickers] of Array.from(tickersOfIssuer)) {
+    add(key, key);
+    const first = key.split(" ")[0];
+    if (first.length >= 5 && !ALIAS_STOPWORDS.has(first) && firstTokenIssuers.get(first)!.size === 1) add(key, first);
+    for (const t of tickers) for (const extra of EXPLICIT_COMPANY_ALIASES[t] ?? []) add(key, extra);
+  }
+  const aliasMatchers = Array.from(aliasIssuers).sort(([a], [b]) => a.localeCompare(b)).map(([alias, keys]) => ({ alias, keys, re: new RegExp(`(^|[^a-z0-9&])${escapeRe(alias)}([^a-z0-9&]|$)`) }));
+  const tickerMatchers = Array.from(issuerOf).map(([ticker, key]) => {
+    const forms = tickerForms(ticker).map(escapeRe).join("|");
+    return {
+      ticker, key,
+      qualified: new RegExp(`(?:\\$(?:${forms})\\b|\\((?:(?:nyse|nasdaq|nysearca|cboe|bats)\\s*:\\s*)?(?:${forms})\\)|\\b(?:nyse|nasdaq)\\s*:\\s*(?:${forms})\\b)`, "i"),
+      bare: ticker.length >= 3 && !AMBIGUOUS_BARE_TICKERS.has(ticker) ? new RegExp(`(^|[^A-Za-z0-9$])(?:${forms})([^A-Za-z0-9]|$)`) : null,
+    };
+  });
+  return { issuerOf, aliasIssuers, issuerAliases, tickersOfIssuer, aliasMatchers, tickerMatchers };
+}
+
+/** Issuers the title names explicitly (qualified tickers, unambiguous bare tickers, controlled aliases), and whether an alias in it is shared by several issuers. */
+export function issuersNamedInTitle(title: string, idx: AliasIndex): { issuers: Set<string>; ambiguousAliases: string[] } {
+  const issuers = new Set<string>(); const ambiguousAliases: string[] = [];
+  // Exchange qualifiers ("(NASDAQ: TER)", "NYSE: X") are notation, not a mention of the exchange operator as an issuer.
+  const lower = ` ${title.toLowerCase().replace(/[’']s\b/g, "").replace(/\b(?:nyse|nasdaq|nysearca|cboe|bats)\s*:\s*/g, " ")} `;
+  for (const m of idx.aliasMatchers) {
+    if (!m.re.test(lower)) continue;
+    if (m.keys.size > 1) { ambiguousAliases.push(m.alias); continue; }
+    issuers.add(Array.from(m.keys)[0]);
+  }
+  const allCaps = title === title.toUpperCase();
+  for (const m of idx.tickerMatchers) {
+    if (m.qualified.test(title) || (!allCaps && m.bare && m.bare.test(title))) issuers.add(m.key);
+  }
+  return { issuers, ambiguousAliases };
+}
+
+export type NewsRejection = "PUBLISHER_MISSING" | "PUBLISHER_NOT_APPROVED" | "NOT_TAGGED" | "TOO_MANY_TAGS" | "BAD_TIMESTAMP" | "ROUNDUP" | "NOT_NAMED" | "AMBIGUOUS_NAME" | "NAMES_OTHER_ISSUER";
+/** Applies rules 2–6 to one item for one mover. Returns null when the item qualifies. */
+export function qualifyNewsItem(item: NewsItemInput, ticker: string, idx: AliasIndex): NewsRejection | null {
+  if (!item.publisher || !item.publisher.trim()) return "PUBLISHER_MISSING";
+  if (!isApprovedPublisher(item.publisher)) return "PUBLISHER_NOT_APPROVED";
+  if (!Number.isFinite(Date.parse(item.publishedAt))) return "BAD_TIMESTAMP";
+  if (!item.tickers.includes(ticker)) return "NOT_TAGGED";
+  if (item.tickers.length > P.maxNewsTickerTags) return "TOO_MANY_TAGS";
+  if (ROUNDUP_PATTERN.test(item.title)) return "ROUNDUP";
+  const own = idx.issuerOf.get(ticker);
+  if (!own) return "NOT_NAMED";
+  const { issuers, ambiguousAliases } = issuersNamedInTitle(item.title, idx);
+  if (!issuers.has(own)) return ambiguousAliases.length ? "AMBIGUOUS_NAME" : "NOT_NAMED";
+  if (Array.from(issuers).some(k => k !== own)) return "NAMES_OTHER_ISSUER";
+  return null;
+}
 
 export interface CatalystInput {
   ticker: string;
@@ -445,9 +575,11 @@ export interface CatalystInput {
   sectorEtf: SectorEtfTicker;
   sectorPct: number | null;
   spyPct: number | null;
-  /** Ticker-tagged news items inside the move's window (already filtered). */
+  /** News items inside the move's window (the builder filters by time). */
   news: NewsItemInput[];
   newsAvailable: boolean;
+  /** Controlled alias index for the universe (buildAliasIndex). */
+  aliases: AliasIndex;
 }
 
 const sameSign = (a: number, b: number) => (a > 0 && b > 0) || (a < 0 && b < 0);
@@ -455,15 +587,17 @@ const sameSign = (a: number, b: number) => (a > 0 && b > 0) || (a < 0 && b < 0);
 export const explains = (benchmarkPct: number | null, stockPct: number) => benchmarkPct != null && sameSign(benchmarkPct, stockPct) && Math.abs(benchmarkPct) >= P.coMoveShare * Math.abs(stockPct);
 
 /**
- * Mechanical catalyst rule, first match wins:
- *  1 EVENT_DRIVEN     — a ticker-tagged news item in the window whose title matches an event family.
- *  2 COMPANY_SPECIFIC — a ticker-tagged news item in the window AND the sector ETF does NOT explain the move.
- *  3 SECTOR_DRIVEN    — the sector ETF explains the move AND SPY does not explain the sector's move.
- *  4 MACRO_DRIVEN     — SPY explains the move.
- *  5 CATALYST_UNCLEAR — otherwise (including when news is unavailable and no co-move qualifies).
+ * Mechanical catalyst rule, first match wins (news items must pass qualifyNewsItem):
+ *  1 EVENT_DRIVEN     — a qualifying item whose title matches an event family.
+ *  2 COMPANY_SPECIFIC — a qualifying item AND the sector ETF does NOT explain the move.
+ *  3 SECTOR_DRIVEN    — the sector ETF explains the move AND SPY does not explain the sector's move (price only, no headline).
+ *  4 MACRO_DRIVEN     — SPY explains the move (price only, no headline).
+ *  5 CATALYST_UNCLEAR — otherwise (including when news is unavailable or no item qualifies).
  */
 export function classifyCatalyst(input: CatalystInput): MoverRow["catalyst"] {
-  const items = input.newsAvailable ? [...input.news].filter(n => n.tickers.includes(input.ticker)).sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)) : [];
+  const items = input.newsAvailable
+    ? [...input.news].filter(n => qualifyNewsItem(n, input.ticker, input.aliases) === null).sort((a, b) => b.publishedAt.localeCompare(a.publishedAt) || a.id.localeCompare(b.id))
+    : [];
   const toEvidence = (n: NewsItemInput): NewsEvidence => ({ id: n.id, title: n.title, publisher: n.publisher, url: n.url, publishedAt: n.publishedAt, source: "polygon-news" });
   for (const fam of EVENT_FAMILY_PATTERNS) {
     const hit = items.find(n => fam.pattern.test(n.title));
@@ -738,11 +872,12 @@ function buildMovers(inputs: SectorRotationInputs, stockSplits: Map<string, Spli
   const newsOk = inputs.news.status === "OK";
   const priorSession = spyDaily.basis.kind === "SESSION_CLOSE" ? spySplit.completed.at(-2)?.session ?? null : spySplit.completed.at(-1)?.session ?? null;
   const window = newsWindow(spyDaily.basis, priorSession, inputs.now);
+  const aliases = buildAliasIndex(u.members);
   const toRow = (side: "winner" | "loser") => (r: (typeof rows)[number]): MoverRow => {
     const sector = sectorByTicker.get(r.m.sectorEtf);
     const vr = volumeRatio(r.split);
     const news = newsOk && window ? inputs.news.items.filter(n => { const t = Date.parse(n.publishedAt); return Number.isFinite(t) && t > window.start && t <= window.end; }) : [];
-    const catalyst = classifyCatalyst({ ticker: r.m.ticker, stockPct: r.daily.pct, sectorEtf: r.m.sectorEtf, sectorPct: sector?.dailyChangePct ?? null, spyPct: spyDaily.pct, news, newsAvailable: newsOk && window != null });
+    const catalyst = classifyCatalyst({ ticker: r.m.ticker, stockPct: r.daily.pct, sectorEtf: r.m.sectorEtf, sectorPct: sector?.dailyChangePct ?? null, spyPct: spyDaily.pct, news, newsAvailable: newsOk && window != null, aliases });
     const alignment = thesisAlignment(side, sector?.quadrant ?? null);
     const jump = findDiscontinuity(r.split.completed, P.shortLookback);
     const ret5 = jump ? null : completedReturn(r.split.completed, P.shortLookback);

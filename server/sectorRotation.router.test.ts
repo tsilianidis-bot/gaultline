@@ -1,20 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { reading, getSectorRotationReading } = vi.hoisted(() => {
-  const reading = { schemaVersion: 1, methodVersion: "sector-rotation-v1.0.0", status: "OK", sectors: [] };
-  return { reading, getSectorRotationReading: vi.fn(async () => reading) };
+const { served, getServedSectorRotation } = vi.hoisted(() => {
+  const served = { freshness: "CURRENT", freshnessReason: null, expectedSession: "2026-10-02", snapshot: null, reading: { schemaVersion: 1, methodVersion: "sector-rotation-v1.1.0", status: "OK", sectors: [] }, lastRefresh: { attemptedAt: null, outcome: null, detail: null, nextAttemptAfter: null } };
+  return { served, getServedSectorRotation: vi.fn(async () => served) };
 });
-vi.mock("./sectorRotation/service", () => ({ getSectorRotationReading }));
+vi.mock("./sectorRotation/service", () => ({ getServedSectorRotation, startSectorRotationCollector: vi.fn() }));
 
 import { sectorRotationRouter } from "./routers/sectorRotation";
 import { parseSsgaHoldings } from "./sectorRotation/universe";
 
 describe("sectorRotation router", () => {
-  beforeEach(() => getSectorRotationReading.mockClear());
-  it("current returns the service reading for anonymous callers (read-only query)", async () => {
+  beforeEach(() => getServedSectorRotation.mockClear());
+  it("current returns the served snapshot view for anonymous callers (read-only query)", async () => {
     const caller = sectorRotationRouter.createCaller({ req: {} as never, res: {} as never, user: null } as never);
-    await expect(caller.current()).resolves.toBe(reading);
-    expect(getSectorRotationReading).toHaveBeenCalledTimes(1);
+    await expect(caller.current()).resolves.toBe(served);
+    expect(getServedSectorRotation).toHaveBeenCalledTimes(1);
   });
   it("exposes only a query (no mutations)", () => {
     const procs = (sectorRotationRouter as any)._def.procedures;

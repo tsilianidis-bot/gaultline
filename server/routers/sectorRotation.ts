@@ -1,10 +1,11 @@
 import { publicProcedure, router } from "../_core/trpc";
-import { getSectorRotationReading } from "../sectorRotation/service";
+import { getServedSectorRotation } from "../sectorRotation/service";
 
 /**
- * FAULTLINE Sector Rotation Map™ — read-only. Computed server-side from market
- * data (see server/sectorRotation/calc.ts); no DB writes, no LLM, no probabilities.
+ * FAULTLINE Sector Rotation Map™ — read-only. Serves the latest saved snapshot built by
+ * the post-close collector (server/sectorRotation/collector.ts). This query never
+ * computes or fetches market data; no LLM, no probabilities.
  */
 export const sectorRotationRouter = router({
-  current: publicProcedure.query(() => getSectorRotationReading()),
+  current: publicProcedure.query(() => getServedSectorRotation()),
 });
