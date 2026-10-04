@@ -33,6 +33,7 @@ import { formatEt } from "@shared/credibilityLabels";
 import SystemicRegimeModule from "@/components/SystemicRegimeModule";
 import { trpc } from "@/lib/trpc";
 import { deltaDirection, deltaTrend, knownDelta } from "@/lib/deltaAvailability";
+import { SectorRotationMap } from "@/components/sectorRotation/SectorRotationModule";
 
 const NOW_DEEP_PATH = "/app/now/deep";
 
@@ -1107,6 +1108,9 @@ export default function Now() {
             <SystemicRegimeModule reading={systemicRegime} convergence={signalConvergence ?? null} />
           </div>
         </section>
+
+        {/* ── FAULTLINE SECTOR ROTATION MAP™ (Pentagonal Thesis · NOW) ──── */}
+        <SectorRotationMap />
 
         {/* ── WHAT CHANGED + SCENARIO DISTRIBUTION ─────────────────────── */}
         <div className="mt-6 grid gap-5 lg:grid-cols-2">

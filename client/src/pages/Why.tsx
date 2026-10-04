@@ -31,6 +31,7 @@ import type { CanonicalMarketState } from "@shared/marketState";
 import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
+import { SectorRotationQuestion } from "@/components/sectorRotation/SectorRotationModule";
 
 type EvidenceFamily = CanonicalMarketState["why"]["evidenceFamilies"][number];
 
@@ -374,6 +375,8 @@ export default function Why() {
         </section>
 
         {/* ── SECTIONS ─────────────────────────────────────────────────── */}
+
+        <SectorRotationQuestion question="why" />
 
         <Section id="drivers" index="01" eyebrow="Primary drivers" title="The forces carrying the most explanatory weight" description="These drivers come from the same canonical state as NOW. They are ranked evidence, not post-hoc headlines.">
           {/* Driver contribution bars */}
