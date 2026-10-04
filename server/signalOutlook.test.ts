@@ -473,3 +473,38 @@ describe("Signal Outlook factor labels — no probability claims (fix-up 6)", ()
     for (const n of names) expect(claimsProbability(n), n).toBe(false);
   });
 });
+
+// ── Fix-up 7: one regime vocabulary (canonical "MODERATE RISK", never the legacy "Normal Risk") ──
+describe("Signal Outlook regime label uses the canonical vocabulary (fix-up 7)", () => {
+  vi.setConfig({ testTimeout: 15000 });
+  it("environment.regimeLabel, the AI prompt and the LLM-failure fallback text all read MODERATE RISK at P=34", async () => {
+    const { calculateFaultlinePressure } = await import("./pressure/engine");
+    const { invokeLLM } = await import("./_core/llm");
+    const pressureMock = vi.mocked(calculateFaultlinePressure);
+    const llm = vi.mocked(invokeLLM);
+    const basePressure = await pressureMock();
+    const llmImpl = llm.getMockImplementation();
+    pressureMock.mockResolvedValue({ ...basePressure, overallPressure: 34, regime: "MODERATE RISK" } as any);
+    try {
+      clearOutlookCaches(); llm.mockClear();
+      const r = await getFullOutlook("NVDA", "stock", "swing");
+      expect(r.environment.pressureIndex).toBe(34);
+      expect(r.environment.regimeLabel).toBe("MODERATE RISK");
+      const prompt = llm.mock.calls.map(c => JSON.stringify((c[0] as any).messages)).find(p => p.includes("Signal Outlook AI")) ?? "";
+      expect(prompt).toContain("FAULTLINE Pressure Index: 34/100 (MODERATE RISK)");
+      expect(prompt).not.toMatch(/Normal Risk|Watch Zone|Calm\b/);
+
+      clearOutlookCaches();
+      llm.mockRejectedValue(new Error("llm down"));
+      const f = await getFullOutlook("SPY", "stock", "swing");
+      expect(f.environment.regimeLabel).toBe("MODERATE RISK");
+      expect(f.macroCondition).toBe("FAULTLINE Pressure Index at 34/100 — MODERATE RISK");
+      expect(f.environment.environmentImpact).toContain("Current MODERATE RISK environment");
+      expect(JSON.stringify(f)).not.toContain("Normal Risk");
+    } finally {
+      pressureMock.mockResolvedValue(basePressure);
+      if (llmImpl) llm.mockImplementation(llmImpl);
+      clearOutlookCaches();
+    }
+  });
+});

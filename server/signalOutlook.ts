@@ -18,7 +18,7 @@
 
 import { invokeLLM } from "./_core/llm";
 import { calculateFaultlinePressure, type FaultlinePressureOutput } from "./pressure/engine";
-import { getDiagnosticReport, pressureToActionBias, classifyRegimeLabel } from "./diagnosticAI";
+import { getDiagnosticReport, pressureToActionBias } from "./diagnosticAI";
 import { getPreFlightData } from "./preFlight";
 import { LRUCache } from "./lruCache";
 import { getDb } from "./db";
@@ -1175,7 +1175,7 @@ async function generateOutlookInterpretation(
   environmentImpact: string;
 }> {
   const p = pressure.overallPressure;
-  const regimeLabel = classifyRegimeLabel(p);
+  const regimeLabel = pressure.regime; // canonical regime vocabulary ("MODERATE RISK"), not the legacy diagnostic scale
   const topFactors = [...scoreBreakdown.factors].sort((a, b) => b.score - a.score);
   const bottomFactors = [...scoreBreakdown.factors].sort((a, b) => a.score - b.score);
 
@@ -1435,7 +1435,7 @@ export async function getFullOutlook(
   const environment: FaultlineEnvironmentContext = {
     pressureIndex: p,
     pressureTrend: pressure.vectors.find(v => v.trend === "rising") ? "Rising" : pressure.vectors.find(v => v.trend === "falling") ? "Falling" : "Stable",
-    regimeLabel: classifyRegimeLabel(p),
+    regimeLabel: pressure.regime,
     bullProbability: retiredPressureProbability(),
     bearProbability: retiredPressureProbability(),
     environmentImpact: "", // filled by AI

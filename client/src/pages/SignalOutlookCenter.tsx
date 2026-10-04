@@ -12,6 +12,7 @@ import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
 import { formatFactorScore } from "@/lib/factorScoreDisplay";
+import { outlookEnvironmentDisplay } from "@/lib/outlookEnvironmentDisplay";
 import { useAuth } from "@/_core/hooks/useAuth";
 import PageHeader from "@/components/PageHeader";
 import { TickerChip } from "@/components/TickerActionMenu";
@@ -441,6 +442,7 @@ function FullOutlookView({
   }
 
   const d = data;
+  const env = outlookEnvironmentDisplay(d.canonicalState);
   const dirColor = directionColor(d.direction);
   const rkColor = riskColor(d.riskLevel);
   const rdColor = readinessColor(d.tradeReadiness);
@@ -848,14 +850,14 @@ function FullOutlookView({
       <Section
         title="FAULTLINE Environment"
         icon={<Activity size={14} color="#00D4FF" />}
-        badge={`PRESSURE ${d.environment.pressureIndex}`}
-        badgeColor={d.environment.pressureIndex > 65 ? "#FF2D55" : d.environment.pressureIndex > 45 ? "#FFD700" : "#00FF88"}
+        badge={env.badge}
+        badgeColor={env.pressureIndex === null ? "#94A3B8" : env.pressureIndex > 65 ? "#FF2D55" : env.pressureIndex > 45 ? "#FFD700" : "#00FF88"}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "8px", marginBottom: "12px" }}>
           {[
-            { label: "Pressure Index", value: `${d.environment.pressureIndex}/100`, color: scoreColor(100 - d.environment.pressureIndex), tip: "FAULTLINE composite macro stress score. Higher = more systemic risk." },
+            { label: "Pressure Index", value: env.pressureText, color: env.pressureIndex === null ? "#94A3B8" : scoreColor(100 - env.pressureIndex), tip: "FAULTLINE composite macro stress score. Higher = more systemic risk." },
             { label: "Trend", value: d.environment.pressureTrend, color: d.environment.pressureTrend === "Rising" ? "#FF2D55" : d.environment.pressureTrend === "Falling" ? "#00FF88" : "#64B5F6", tip: "Direction of recent pressure change." },
-            { label: "Regime", value: d.environment.regimeLabel, color: "#94A3B8", tip: "Current FAULTLINE regime classification." },
+            { label: "Regime", value: env.regimeText, color: "#94A3B8", tip: "Current FAULTLINE regime classification." },
             // Probability contract: no governed bull/bear probability model exists.
             { label: "Bull Probability", value: "Not offered", color: "#94A3B8", tip: "FAULTLINE does not offer a bull probability: no governed or calibrated model produces one. Read the Pressure Index instead." },
             { label: "Bear Probability", value: "Not offered", color: "#94A3B8", tip: "FAULTLINE does not offer a bear probability: no governed or calibrated model produces one. Read the Pressure Index instead." },
