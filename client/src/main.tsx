@@ -1,7 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { UNAUTHED_ERR_MSG } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { httpBatchLink, TRPCClientError } from "@trpc/client";
+import { httpBatchLink, httpLink, splitLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
@@ -158,10 +158,20 @@ queryClient.getMutationCache().subscribe(event => {
 
 const trpcClient = trpc.createClient({
   links: [
-    httpBatchLink({
-      url: "/api/trpc",
-      transformer: superjson,
-      fetch: safeFetch,
+    // Queries that opt out with context.skipBatch (e.g. sectorRotation.current) go in their own
+    // request so they can never hold a batch that carries core queries such as marketState.current.
+    splitLink({
+      condition: op => op.context.skipBatch === true,
+      true: httpLink({
+        url: "/api/trpc",
+        transformer: superjson,
+        fetch: safeFetch,
+      }),
+      false: httpBatchLink({
+        url: "/api/trpc",
+        transformer: superjson,
+        fetch: safeFetch,
+      }),
     }),
   ],
 });
