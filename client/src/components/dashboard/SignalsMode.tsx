@@ -7,7 +7,8 @@
  *   4. Is data current enough?
  *   5. What to watch next? — not shown per row: no engine-backed, signal-specific
  *      prompt exists here, so none is invented (see DEEP SCAN / Signal Outlook).
- * Signal content first; Pre-Flight / integrity are compact secondary.
+ * Signal content first; compact Data Integrity is secondary.
+ * Pre-Flight / Market Awareness are not part of the customer Signals experience (#67).
  * Display-only — does not change signal calculations or methodology.
  */
 import { useState, useMemo } from "react";
@@ -20,7 +21,6 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
 import { formatEt } from "@shared/credibilityLabels";
 import { deltaDirection, vsBaselineText } from "@/lib/deltaAvailability";
-import { AwarenessDashboardCard, MarketPreflightModal } from "@/components/MarketPreflight";
 import DataIntegrity from "@/components/DataIntegrity";
 
 type FilterTab = "crypto" | "stocks" | "rotation";
@@ -551,23 +551,6 @@ function RotationTracker({ regime }: { regime: string | null | undefined }) {
   );
 }
 
-/** Compact Pre-Flight secondary — never dominates signal movers. */
-function SignalsPreflightSecondary() {
-  const [open, setOpen] = useState(false);
-  const { output } = useEngine();
-  const regimeLabel = output?.regime?.label ?? "Unknown";
-  return (
-    <div data-signals-hierarchy="preflight">
-      <AwarenessDashboardCard variant="compact" onOpen={() => setOpen(true)} />
-      <MarketPreflightModal
-        open={open}
-        onClose={() => setOpen(false)}
-        currentPage="signals"
-        regimeLabel={regimeLabel}
-      />
-    </div>
-  );
-}
 
 // ── SIGNALS MODE ROOT ──────────────────────────────────────────────────────────
 export default function SignalsMode() {
@@ -593,8 +576,6 @@ export default function SignalsMode() {
         <DataIntegrity variant="signals" />
       </div>
 
-      {/* Pre-Flight: compact secondary, never Pressure Index */}
-      <SignalsPreflightSecondary />
     </div>
   );
 }

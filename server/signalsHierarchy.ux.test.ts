@@ -1,6 +1,6 @@
 /**
  * SIGNALS information-hierarchy / evidence-state UX (display only).
- * Guards: movers above preflight; explicit preflight score labeling;
+ * Guards: movers above integrity; no customer-facing Pre-Flight;
  * DELAYED integrity detail; signal engines untouched.
  */
 import { readFileSync } from "node:fs";
@@ -12,19 +12,20 @@ const root = process.cwd();
 const read = (rel: string) => readFileSync(resolve(root, rel), "utf8");
 
 const signalsMode = read("client/src/components/dashboard/SignalsMode.tsx");
-const marketPreflight = read("client/src/components/MarketPreflight.tsx");
 const dataIntegrity = read("client/src/components/DataIntegrity.tsx");
 const dashboard = read("client/src/pages/Dashboard.tsx");
 
 describe("SIGNALS information hierarchy (Crypto / Stocks / Rotation)", () => {
-  it("root JSX orders movers → integrity → preflight secondary", () => {
+  it("root JSX orders movers → integrity, with no Pre-Flight secondary", () => {
     const rootJsx = signalsMode.slice(signalsMode.indexOf("export default function SignalsMode"));
     const movers = rootJsx.indexOf("<CryptoSignalGrid");
     const integrity = rootJsx.indexOf('data-signals-hierarchy="integrity"');
-    const preflight = rootJsx.indexOf("<SignalsPreflightSecondary");
     expect(movers).toBeGreaterThan(0);
     expect(integrity).toBeGreaterThan(movers);
-    expect(preflight).toBeGreaterThan(integrity);
+    expect(rootJsx).not.toContain("SignalsPreflightSecondary");
+    expect(rootJsx).not.toContain("AwarenessDashboardCard");
+    expect(rootJsx).not.toContain("MarketPreflightModal");
+    expect(signalsMode).not.toMatch(/from ["']@\/components\/MarketPreflight["']/);
   });
 
   it("covers Crypto, Stocks, and Rotation tabs with hierarchy markers", () => {
@@ -47,34 +48,21 @@ describe("SIGNALS information hierarchy (Crypto / Stocks / Rotation)", () => {
   });
 
   it("does not blank the entire SignalsMode on missing canonical state", () => {
-    // Regression: early `if (!canonicalState) return null` hid movers and let Pre-Flight dominate.
     expect(signalsMode).not.toMatch(/if\s*\(\s*!canonicalState\s*\)\s*return\s+null/);
   });
 
-  it("keeps Pre-Flight as compact secondary inside SignalsMode", () => {
-    expect(signalsMode).toContain('variant="compact"');
-    expect(signalsMode).toContain("SignalsPreflightSecondary");
-    expect(signalsMode).toContain('variant="signals"'); // DataIntegrity compact signals variant
+  it("keeps compact Data Integrity inside SignalsMode and never mounts Pre-Flight", () => {
+    expect(signalsMode).toContain('variant="signals"');
+    expect(signalsMode).not.toContain("SignalsPreflightSecondary");
+    expect(signalsMode).not.toContain('variant="compact"'); // was Pre-Flight AwarenessDashboardCard
   });
 
-  it("Dashboard does not re-mount large awareness / preflight entry in signals mode", () => {
+  it("Dashboard does not re-mount awareness / Pre-Flight entry cards (removed in #67)", () => {
     expect(dashboard).toContain('dashMode !== "signals"');
-    expect(dashboard).toContain("Signals mode owns compact integrity");
-  });
-});
-
-describe("Pre-Flight score labeling (never Pressure Index)", () => {
-  it("labels the gauge as PRE-FLIGHT COMPLETION / MARKET AWARENESS CHECK", () => {
-    expect(marketPreflight).toContain("PRE-FLIGHT COMPLETION ·");
-    expect(marketPreflight).toContain("MARKET AWARENESS CHECK ·");
-    expect(marketPreflight).toContain("PRE-FLIGHT /100");
-    expect(marketPreflight).toContain("not Pressure Index");
-    expect(marketPreflight).toContain('data-preflight-score-label={completionLabel}');
-  });
-
-  it("ScoreRing aria-label identifies Pre-Flight Completion, not market intelligence", () => {
-    expect(marketPreflight).toContain("Pre-Flight Completion ${score} of 100");
-    expect(marketPreflight).toContain('data-preflight-score-ring="true"');
+    expect(dashboard).not.toContain("DashboardAwarenessSection");
+    expect(dashboard).not.toContain("PreflightGate");
+    expect(dashboard).not.toContain("/app/pre-flight");
+    expect(dashboard).not.toMatch(/OPEN PRE-FLIGHT|label: 'Pre-Flight'/);
   });
 });
 

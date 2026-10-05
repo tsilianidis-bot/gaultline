@@ -1,7 +1,7 @@
 /**
  * SIGNALS hierarchy — rendered DOM order (static render, mocked data).
- * Movers (signal content) must render before Data Integrity and Pre-Flight.
- * The Pre-Flight score must be labelled PRE-FLIGHT COMPLETION, never as a bare 0/100.
+ * Movers (signal content) must render before Data Integrity.
+ * Pre-Flight / Market Awareness must NOT render in the customer Signals experience.
  */
 import React, { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -89,13 +89,14 @@ describe("SignalsMode rendered hierarchy (Crypto default tab)", () => {
   const html = renderToStaticMarkup(createElement(SignalsMode));
   const t = text(html);
 
-  it("renders movers → integrity → preflight in DOM order", () => {
+  it("renders movers → integrity in DOM order, with no Pre-Flight", () => {
     const movers = html.indexOf('data-signals-hierarchy="movers"');
     const integrity = html.indexOf('data-signals-hierarchy="integrity"');
-    const preflight = html.indexOf('data-signals-hierarchy="preflight"');
     expect(movers).toBeGreaterThan(-1);
     expect(integrity).toBeGreaterThan(movers);
-    expect(preflight).toBeGreaterThan(integrity);
+    expect(html).not.toContain('data-signals-hierarchy="preflight"');
+    expect(html).not.toContain('data-preflight-card');
+    expect(t).not.toMatch(/PRE-FLIGHT|Market Awareness|MARKET AWARENESS CHECK|Run Preflight/i);
   });
 
   it("answers what / how strong / why / current / watch for each mover", () => {
@@ -112,13 +113,10 @@ describe("SignalsMode rendered hierarchy (Crypto default tab)", () => {
     expect(html).not.toContain('data-signals-field="watch-next"');
   });
 
-  it("labels the preflight score explicitly, never as a bare Pressure-style 0/100", () => {
-    expect(t).toContain("PRE-FLIGHT COMPLETION · 0/100");
-    expect(t).toContain("MARKET AWARENESS CHECK · 0/13 COMPLETED");
-    expect(t).toContain("not Pressure Index");
-    expect(html).toContain('data-preflight-card="compact"');
-    expect(html).not.toContain('data-preflight-card="full"');
-    expect(t).not.toContain("Complete Market Awareness™");
+  it("does not render any Pre-Flight / Market Awareness UI", () => {
+    expect(html).not.toContain('data-preflight-card');
+    expect(html).not.toContain('data-preflight-score-ring');
+    expect(t).not.toMatch(/PRE-FLIGHT|Market Awareness|MARKET AWARENESS CHECK|Complete Market Awareness|Run Preflight/i);
   });
 
   it("DELAYED integrity shows affected feeds, last observation, age, usability, withheld", () => {
