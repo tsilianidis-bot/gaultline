@@ -146,7 +146,10 @@ export class SectorRotationCollector {
     if (this.latest && this.latest.meta.sessionDate >= target) return "NOT_DUE";
 
     // Cross-process lock: insert-only claim for this session+bucket. No infra / no migration.
-    const claim = await this.deps.store.tryClaim(target, now);
+    // Non-duplicate DB errors must not escape (B-1): they would become unhandled rejections from start() timers.
+    let claim: "CLAIMED" | "HELD";
+    try { claim = await this.deps.store.tryClaim(target, now); }
+    catch (error) { return this.fail(target, attempt, `Build claim failed: ${error instanceof Error ? error.message : String(error)}`, false); }
     if (claim === "HELD") {
       this.record("SKIPPED", `Another instance holds the build claim for session ${target}.`, now + POLICY.claimBucketMinutes * MIN);
       return "CLAIMED_BY_OTHER";
@@ -218,8 +221,8 @@ export class SectorRotationCollector {
   /** Boot: one delayed check, then a check every tickIntervalMinutes. Timers are unref'd. */
   start() {
     if (this.timers.length) return;
-    const boot = setTimeout(() => { void this.tick(); }, POLICY.bootDelaySeconds * 1000);
-    const every = setInterval(() => { void this.tick(); }, POLICY.tickIntervalMinutes * MIN);
+    const boot = setTimeout(() => { this.tick().catch(e => this.log("warn", `tick failed: ${e instanceof Error ? e.message : String(e)}`)); }, POLICY.bootDelaySeconds * 1000);
+    const every = setInterval(() => { this.tick().catch(e => this.log("warn", `tick failed: ${e instanceof Error ? e.message : String(e)}`)); }, POLICY.tickIntervalMinutes * MIN);
     (boot as { unref?: () => void }).unref?.(); (every as { unref?: () => void }).unref?.();
     this.timers.push(boot, every);
   }

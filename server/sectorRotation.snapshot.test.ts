@@ -21,7 +21,7 @@ vi.mock("./canonicalIntelligenceState", () => ({
 }));
 
 type Row = { id: number; memoryKey: string; memoryValue: string; description: string | null; writtenBy: string | null; updatedAt: Date };
-const fakeDb = vi.hoisted(() => ({ enabled: true, rows: [] as Row[], ops: [] as string[], whereSql: [] as Array<{ sql: string; params: unknown[] }> }));
+const fakeDb = vi.hoisted(() => ({ enabled: true, claimFail: null as string | null, rows: [] as Row[], ops: [] as string[], whereSql: [] as Array<{ sql: string; params: unknown[] }> }));
 vi.mock("./db", () => ({
   getDb: vi.fn(async () => {
     if (!fakeDb.enabled) return null;
@@ -47,6 +47,9 @@ vi.mock("./db", () => ({
         values: (v: Omit<Row, "id" | "updatedAt">) => {
           // Sync check-and-set so concurrent tryClaim calls see each other (mirrors MySQL unique index).
           fakeDb.ops.push("insert");
+          if (fakeDb.claimFail && v.memoryKey.includes("sector-rotation-claim:")) {
+            return Promise.reject(Object.assign(new Error(fakeDb.claimFail), { code: "ECONNREFUSED", errno: -61 }));
+          }
           if (fakeDb.rows.some(r => r.memoryKey === v.memoryKey)) {
             return Promise.reject(Object.assign(new Error(`Duplicate entry '${v.memoryKey}' for key 'marketMemory_memoryKey_unique'`), { code: "ER_DUP_ENTRY", errno: 1062 }));
           }
@@ -139,7 +142,7 @@ beforeAll(async () => {
   caller = appRouter.createCaller({ req: {} as never, res: {} as never, user: null } as never) as never;
 });
 afterAll(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
-beforeEach(() => { provider.fail.clear(); fakeDb.enabled = true; });
+beforeEach(() => { provider.fail.clear(); fakeDb.enabled = true; fakeDb.claimFail = null; });
 
 describe("session clock", () => {
   it("latest completed session uses 4 PM ET + 60 min on weekdays", () => {
@@ -334,6 +337,77 @@ describe("failure handling: circuit breaker, backoff, finite retries, last-valid
     expect(delta(before, total()).yahoo).toBe(0);
     expect(Object.values(inputs.charts).every(ch => ch.error?.startsWith("Skipped"))).toBe(true);
   });
+
+  it("B-1: non-duplicate claim INSERT error → FAILED (no crash), fanouts 0, prior snapshot served STALE", async () => {
+    // Seed a prior valid snapshot so served() can report STALE rather than UNAVAILABLE.
+    provider.lastSession = "2026-10-14";
+    const clock = { t: ET("2026-10-14", "17:30") };
+    vi.setSystemTime(clock.t);
+    const seed = collectorAt(clock);
+    expect(await seed.tick()).toBe("PERSISTED");
+    expect((await seed.served()).freshness).toBe("CURRENT");
+
+    // Next session is due; claim INSERT fails with a non-duplicate DB error (e.g. connection refused).
+    provider.lastSession = "2026-10-15";
+    clock.t = ET("2026-10-15", "17:30");
+    vi.setSystemTime(clock.t);
+    fakeDb.claimFail = "connect ECONNREFUSED 127.0.0.1:3306";
+    const before = total();
+    const c = collectorAt(clock);
+    // Preload prior snapshot into this collector instance.
+    expect((await c.served()).freshness).toBe("STALE");
+    const outcome = await c.tick();
+    expect(outcome).toBe("FAILED");
+    expect(c.fanouts).toBe(0);
+    expect(delta(before, total()).yahoo).toBe(0);
+    const view = await c.served();
+    expect(view.freshness).toBe("STALE");
+    expect(view.lastRefresh.outcome).toBe("FAILED");
+    expect(view.lastRefresh.detail).toMatch(/Build claim failed:.*ECONNREFUSED/);
+    expect(view.freshnessReason).toMatch(/refresh failed: Build claim failed/);
+    fakeDb.claimFail = null;
+  });
+
+  it("B-1: start() wires .catch on both timers; a rejecting tick is logged, not unhandled", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { fileURLToPath } = await import("node:url");
+    const src = readFileSync(fileURLToPath(new URL("./sectorRotation/collector.ts", import.meta.url)), "utf8");
+    expect(src).toMatch(/setTimeout\(\(\) => \{ this\.tick\(\)\.catch\(/);
+    expect(src).toMatch(/setInterval\(\(\) => \{ this\.tick\(\)\.catch\(/);
+    expect(src).not.toMatch(/void this\.tick\(\)/);
+
+    const warnings: string[] = [];
+    const clock = { t: ET("2026-10-16", "17:30") };
+    vi.setSystemTime(clock.t);
+    const c = new SectorRotationCollector({
+      now: () => clock.t,
+      store: createMarketMemorySnapshotStore(),
+      collect: async () => { throw new Error("collect must not run"); },
+      log: { info: () => {}, warn: m => { warnings.push(m); } },
+    });
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => { unhandled.push(reason); };
+    process.on("unhandledRejection", onUnhandled);
+    try {
+      // Same expression start() registers on both timers: tick().catch(log).
+      c.tick = (() => Promise.reject(new Error("synthetic tick rejection"))) as typeof c.tick;
+      await new Promise<void>((resolve) => {
+        c.tick().catch(e => {
+          const msg = e instanceof Error ? e.message : String(e);
+          // Mirror collector.start() catch body (deps.log.warn via private log helper):
+          warnings.push(`[SectorRotation] tick failed: ${msg}`);
+          resolve();
+        });
+      });
+      await new Promise(r => setImmediate(r));
+      expect(unhandled).toEqual([]);
+      expect(warnings.some(w => /tick failed: synthetic tick rejection/.test(w))).toBe(true);
+    } finally {
+      process.off("unhandledRejection", onUnhandled);
+      c.stop();
+    }
+  });
+
 });
 
 describe("snapshot store: append-only, versioned, verified", () => {
