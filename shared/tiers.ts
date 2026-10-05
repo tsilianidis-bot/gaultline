@@ -124,7 +124,7 @@ export const TIER_META: Record<AccessTier, TierMeta> = {
       { label: 'Advanced Alerts', available: true },
       { label: 'Trade Journal', available: true },
       { label: 'Full Daily Intelligence Report', available: true },
-      { label: 'Situation Room & Market Preflight', available: false },
+      { label: 'Situation Room', available: false },
       { label: 'Institutional dashboards', available: false },
     ],
   },
@@ -140,7 +140,6 @@ export const TIER_META: Record<AccessTier, TierMeta> = {
     features: [
       { label: 'Everything in Trader', available: true },
       { label: 'Situation Room', available: true },
-      { label: 'Market Preflight', available: true },
       { label: 'Institutional dashboards', available: true },
       { label: 'Historical analog engine', available: true },
       { label: 'Deep macro intelligence', available: true },
@@ -368,7 +367,6 @@ export const MARKETING_TIER_CARDS: MarketingTierCard[] = [
     features: [
       'Everything in Trader',
       'Situation Room',
-      'Market Preflight',
       'Institutional dashboards',
       'Historical analog engine',
       'Deep macro intelligence',
