@@ -19,6 +19,7 @@ import Onboarding from "@/components/Onboarding";
 import ShareCard from "@/components/ShareCard";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import { trpc } from "@/lib/trpc";
+import { CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ViewModeSelector } from "@/components/ViewModeSelector";
 import PulseMode from "@/components/dashboard/PulseMode";
@@ -843,7 +844,7 @@ export default function Dashboard() {
             value: overall.riskLevel === 'low' ? 'RISK ON' : overall.riskLevel === 'moderate' ? 'STAY SELECTIVE' : overall.riskLevel === 'elevated' ? 'REDUCE EXPOSURE' : 'STEP ASIDE',
             sub: overall.riskLevel === 'low' ? 'Conditions favor risk-on positioning' : overall.riskLevel === 'moderate' ? 'High-conviction setups only' : overall.riskLevel === 'elevated' ? 'Trim and protect' : 'Capital preservation mode',
             color: overall.riskLevel === 'low' ? '#00FF88' : overall.riskLevel === 'moderate' ? '#FFD700' : overall.riskLevel === 'elevated' ? '#FF9500' : '#FF2D55',
-            href: '/app/act',
+            href: CANONICAL_DESTINATION_BY_ID.act.path,
           },
           {
             label: 'HIGHEST CONVICTION OPP',
@@ -906,7 +907,7 @@ export default function Dashboard() {
             value: topAnalog?.era?.split(' ').slice(0, 2).join(' ') ?? 'FED POLICY',
             sub: topAnalog ? `${similarityText(topAnalog.similarity)} analog match · ${topAnalog.year?.slice(0, 4) ?? ''}` : 'Watch FOMC + CPI',
             color: '#C084FC',
-            href: '/app/watch',
+            href: CANONICAL_DESTINATION_BY_ID.watch.path,
           },
         ];
 

@@ -357,7 +357,9 @@ function Skeleton({ h = "20px", w = "100%", mb = "0" }: { h?: string; w?: string
 // ── Main page ─────────────────────────────────────────────────
 
 function PreFlightInner() {
-  useSEO(PAGE_SEO.preFlight);
+  // Route /app/pre-flight redirects to /app/now/deep (#67). Keep SEO pointed at the destination
+  // without restoring a customer-facing Pre-Flight PAGE_SEO entry.
+  useSEO({ title: "FAULTLINE — Now (Deep)", description: "Current market conditions and pressure reading.", canonical: "/app/now/deep" });
 
   const { data, isLoading, error, refetch, isFetching } = trpc.preFlight.getAwarenessData.useQuery(undefined, {
     staleTime: 5 * 60 * 1000,

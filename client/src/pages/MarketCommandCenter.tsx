@@ -16,6 +16,7 @@ import {
 import { useEngine } from "@/contexts/EngineContext";
 import { getRiskColor } from "@/components/RiskBadge";
 import { trpc } from "@/lib/trpc";
+import { CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 import { useAuth } from "@/_core/hooks/useAuth";
 import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
 import { useTickerStore } from "@/contexts/TickerStore";
@@ -334,7 +335,7 @@ function MarketCommandCenterInner() {
       value: verdict,
       color: verdictColor,
       sub: riskLevel === "low" ? "Risk-on window open" : riskLevel === "moderate" ? "High-conviction only" : riskLevel === "elevated" ? "Trim & protect" : "Capital preservation",
-      href: "/app/act",
+      href: CANONICAL_DESTINATION_BY_ID.act.path,
     },
     {
       label: "RISK REGIME",
@@ -465,7 +466,7 @@ function MarketCommandCenterInner() {
         value: topAnalog?.era?.split(" ").slice(0, 2).join(" ") ?? "FED POLICY",
         sub: topAnalog ? `${topAnalog.similarity}% analog match · ${topAnalog.year?.slice(0, 4) ?? ""}` : "Watch FOMC + CPI",
         color: "#C084FC",
-        href: "/app/watch",
+        href: CANONICAL_DESTINATION_BY_ID.watch.path,
         icon: Zap,
       },
     ];

@@ -1,3 +1,4 @@
+import { CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 /* ============================================================
    SeismographNarrativeBanner — The cohesion thread
    Answers the 7 understanding questions on every major page:
@@ -137,7 +138,7 @@ const NEXT_STEPS: Record<string, { label: string; path: string }> = {
   dashboard:    { label: "Explore the Pressure Index →", path: "/app/pressure" },
   pressure:     { label: "See the Regime Analysis →", path: "/app/market-intelligence" },
   regime:       { label: "Check the Situation Room →", path: "/app/situation-room" },
-  signals:      { label: "Review what to watch next →", path: "/app/watch" },
+  signals:      { label: "Review what to watch next →", path: CANONICAL_DESTINATION_BY_ID.watch.path },
   situation:    { label: "Ask PLATO about this environment →", path: "/app/discover" },
   "daily-brief":{ label: "See what signals are active →", path: "/app/signals" },
   seismograph:  { label: "Ask PLATO about this reading →", path: "/app/discover" },
