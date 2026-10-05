@@ -25,6 +25,7 @@ const METHOD_HREF = "/methodology";
 const TRUST_HREF = "/trust";
 const DAILY_BRIEF_HREF = "/daily-brief";
 const BLOG_HREF = "/blog";
+const PRICING_HREF = "/pricing";
 
 const PAGE_TITLE = "FAULTLINE | Structural Market Intelligence";
 const PAGE_DESCRIPTION =
@@ -38,6 +39,7 @@ const navItems = [
   { label: "Methodology", href: METHOD_HREF },
   { label: "Brief", href: DAILY_BRIEF_HREF },
   { label: "Blog", href: BLOG_HREF },
+  { label: "Pricing", href: PRICING_HREF },
 ];
 
 
@@ -468,6 +470,7 @@ function Footer() {
             <a href={TRUST_HREF} className={`hover:text-[#65D6E5] ${focusRing}`}>TRUST CENTER</a>
             <a href={DAILY_BRIEF_HREF} className={`hover:text-[#65D6E5] ${focusRing}`}>DAILY BRIEF</a>
             <a href={BLOG_HREF} className={`hover:text-[#65D6E5] ${focusRing}`}>BLOG</a>
+            <a href={PRICING_HREF} className={`hover:text-[#65D6E5] ${focusRing}`}>PRICING</a>
             <a href="/about" className={`hover:text-[#65D6E5] ${focusRing}`}>ABOUT</a>
             <a href="/contact" className={`hover:text-[#65D6E5] ${focusRing}`}>CONTACT</a>
           </nav>
