@@ -8,10 +8,10 @@ import { finiteOrNull, score100Value } from "@/lib/displayFallbacks";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
-import { engineProbabilityText } from "@/lib/marketStateProjection";
 import { getRiskColor } from "@/components/RiskBadge";
 import { ArrowRight, Shield, Zap, TrendingDown } from "lucide-react";
 import { FaultlineInterpretation } from "./FaultlineInterpretation";
+import { DemotedScenarioChips, IntelligenceTransparency } from "./IntelligenceTransparency";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 // ── Macro Regime Panel ─────────────────────────────────────────────────────────
@@ -90,31 +90,8 @@ function MacroRegimePanel() {
         })}
       </div>
 
-      {/* Probability row */}
-      <div className="px-3 pb-3 grid grid-cols-2 gap-2">
-        <div
-          className="rounded-xl p-2.5 text-center"
-          style={{ background: "rgba(0,255,136,0.06)", border: "1px solid rgba(0,255,136,0.15)" }}
-        >
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, letterSpacing: "0.2em", color: "rgba(100,116,139,0.5)", marginBottom: 3 }}>
-            BULL SCENARIO
-          </div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 18, fontWeight: 700, color: "#00FF88" }}>
-            {engineProbabilityText(output, "bullProbability")}
-          </div>
-        </div>
-        <div
-          className="rounded-xl p-2.5 text-center"
-          style={{ background: "rgba(255,45,85,0.06)", border: "1px solid rgba(255,45,85,0.15)" }}
-        >
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, letterSpacing: "0.2em", color: "rgba(100,116,139,0.5)", marginBottom: 3 }}>
-            CRASH PROBABILITY
-          </div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 18, fontWeight: 700, color: "#94A3B8" }}>
-            {engineProbabilityText(output, "crashProbability")}
-          </div>
-        </div>
-      </div>
+      {/* Demoted scenario chips — Uncalibrated / Not offered are not implied probabilities */}
+      <DemotedScenarioChips />
 
       <div className="px-3 pb-3">
         <button
@@ -390,6 +367,7 @@ export default function IntelligenceMode() {
   return (
     <div className="flex flex-col gap-4 pb-8">
       <MacroRegimePanel />
+      <IntelligenceTransparency />
       <AftershockSnapshot />
       <StructuralRiskSummary />
       <FaultlineInterpretation />
