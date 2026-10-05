@@ -7,6 +7,7 @@
  * withhold (UNAVAILABLE / GRAY) instead of recalculating.
  */
 
+import { pressureLevelWord } from "../shared/pressureBands";
 import type { CanonicalIntelligenceState } from "../shared/canonicalIntelligenceState";
 import type { FaultlinePressureOutput, PressureLevel, RiskVector } from "./pressure/engine";
 
@@ -38,11 +39,7 @@ export const CANONICAL_CRYPTO_VECTOR_IDS = [
 ] as const;
 
 function scoreToLevel(score: number): PressureLevel {
-  if (score >= 80) return "Critical";
-  if (score >= 65) return "High";
-  if (score >= 45) return "Elevated";
-  if (score >= 25) return "Moderate";
-  return "Low";
+  return pressureLevelWord(score);
 }
 
 export function isCanonicalCurrentUsable(

@@ -17,6 +17,7 @@
  *   - Numbers come from live served values — never hard-coded demo fallbacks.
  */
 import { describeHistoricalPercentile, formatOrdinal } from "./historicalPercentile";
+import { pressureLevelWord } from "./pressureBands";
 import { pressureVectorLabel } from "./pressureVectorLabels";
 
 export const LABOR_RATES_DISPLAY_NAME = pressureVectorLabel("market-breadth");
@@ -70,11 +71,13 @@ export function capitalize(word: string): string {
   return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
+/** Display stress word from the canonical pressureBand mapping (#70). */
 export function stressLevelWord(score: number): "crisis" | "high" | "elevated" | "moderate" | "low" {
-  if (score >= 80) return "crisis";
-  if (score >= 65) return "high";
-  if (score >= 45) return "elevated";
-  if (score >= 30) return "moderate";
+  const level = pressureLevelWord(score);
+  if (level === "Critical") return "crisis";
+  if (level === "High") return "high";
+  if (level === "Elevated") return "elevated";
+  if (level === "Moderate") return "moderate";
   return "low";
 }
 
@@ -198,15 +201,16 @@ export function buildWhatIsHappeningCopy(input: NowInterpretationInput): string 
   const elevatedHistorically = isHistoricallyElevatedPercentile(percentile);
 
   if (score >= 65) {
+    // Percentile phrase once: "<desc> at the <ordinal> percentile" (#70), never "ordinal historically (desc)".
     const pctClause = hasPercentile
-      ? `, placing current conditions in the ${ordinal} percentile (${pctDesc}) of all observations since 2000`
+      ? `, ${pctDesc} at the ${ordinal} percentile of all observations since 2000`
       : "";
     return `The market is operating under ${stress} systemic pressure (${score}/100)${pctClause}. ${stressed} of ${total} intelligence engines are signaling stress, with ${formatDisplayRegime(input.regimeLabel)} as the prevailing regime classification.`;
   }
 
   if (score >= 45) {
     const pctClause = hasPercentile
-      ? `, in the ${ordinal} percentile historically (${pctDesc})`
+      ? `, ${pctDesc} at the ${ordinal} percentile`
       : "";
     return `The market is operating under ${stress} systemic pressure (${score}/100)${pctClause}. Conditions are mixed — ${stressed} engines signal stress while ${bullish} signal strength, producing a divergent environment that requires careful monitoring.`;
   }

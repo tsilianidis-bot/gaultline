@@ -1490,7 +1490,8 @@ function buildTodayStory(
       ? ` Current conditions most closely resemble ${analogs[0].label} (${analogs[0].similarity}% similarity).`
       : "";
 
-  const todayStory = `FAULTLINE's Seismograph is reading ${score}/100 — ${stressDesc} — ${directionDesc}. The market is in a ${regimeLabel(regime)} regime, placing current conditions in the ${formatOrdinal(percentile)} historical percentile (${describeHistoricalPercentile(percentile)}) across ${evidenceFamilies.length > 0 ? `${evidenceFamilies.length} intelligence domains` : "all tracked domains"}.${topFamily ? ` The primary verified pressure driver among available evidence is ${topFamily.name}, which is signaling ${topFamily.signal} conditions.` : " No single verified evidence family is currently available to cite as the primary driver."}${analogRef}`;
+  // Percentile phrase once (#70); verified-driver / empty wording from #64.
+  const todayStory = `FAULTLINE's Seismograph is reading ${score}/100 — ${stressDesc} — ${directionDesc}. The market is in a ${regimeLabel(regime)} regime, ${describeHistoricalPercentile(percentile)} at the ${formatOrdinal(percentile)} historical percentile across ${evidenceFamilies.length > 0 ? `${evidenceFamilies.length} intelligence domains` : "all tracked domains"}.${topFamily ? ` The primary verified pressure driver among available evidence is ${topFamily.name}, which is signaling ${topFamily.signal} conditions.` : " No single verified evidence family is currently available to cite as the primary driver."}${analogRef}`;
 
   return {
     todayStory,
@@ -1522,7 +1523,7 @@ function buildWhyThisScore(
 ): string {
   const stressed = evidenceFamilies.filter((f) => f.signal === "stressed" || f.signal === "bearish");
   const constructive = evidenceFamilies.filter((f) => f.signal === "bullish" || f.signal === "recovering");
-  return `The ${score}/100 reading reflects ${stressed.length} of ${evidenceFamilies.length} intelligence engines signaling elevated stress, with ${constructive.length} signaling constructive conditions. This places current pressure in the ${formatOrdinal(percentile)} historical percentile (${describeHistoricalPercentile(percentile)}) — meaning ${percentile}% of all historical months recorded lower pressure than today.`;
+  return `The ${score}/100 reading reflects ${stressed.length} of ${evidenceFamilies.length} intelligence engines signaling elevated stress, with ${constructive.length} signaling constructive conditions. This places current pressure ${describeHistoricalPercentile(percentile)} at the ${formatOrdinal(percentile)} historical percentile — meaning ${percentile}% of all historical months recorded lower pressure than today.`;
 }
 
 function toCopyFamilies(evidenceFamilies: EvidenceFamily[]): EvidenceFamilyCopyInput[] {
@@ -1755,9 +1756,8 @@ function buildMarketNarrative(
   const deteriorating = evidenceFamilies.filter((f) => f.trend === "deteriorating");
   const improving = evidenceFamilies.filter((f) => f.trend === "improving");
 
-  // 1. What is happening? — hierarchy: pressure → percentile → direction → confirmation.
-  // Improving engines never imply a low-risk / constructive environment when absolute
-  // pressure or historical percentile remains elevated.
+  // 1. What is happening? — #64 hierarchy (pressure → percentile → direction → confirmation)
+  // via buildWhatIsHappeningCopy; bands come from canonical pressureBand (#70).
   const whatIsHappening = buildWhatIsHappeningCopy({
     pressureScore: currentScore,
     regimeLabel: currentRegime,

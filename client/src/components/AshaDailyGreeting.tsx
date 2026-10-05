@@ -4,6 +4,7 @@
    Professional market briefing tone. Live engine data.
    Dismissible per session.
    ============================================================ */
+import { pressureBandColor, pressureShortLabel } from "@shared/pressureBands";
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { platoGreetingLimitMessage } from "@shared/ashaPanelMachine";
@@ -62,15 +63,9 @@ export default function AshaDailyGreeting() {
     pressureScore >= 70 ? "critical" : pressureScore >= 45 ? "rising" : "calm";
 
   const regimeLabel = canonicalState?.regime ?? "Canonical state unavailable";
-  const pressureLabel = !pressureKnown ? "NOT AVAILABLE" :
-    pressureScore >= 70 ? "CRITICAL" :
-    pressureScore >= 55 ? "ELEVATED" :
-    pressureScore >= 40 ? "MODERATE" : "STABLE";
+  const pressureLabel = !pressureKnown ? "NOT AVAILABLE" : pressureShortLabel(pressureScore);
 
-  const pressureColor = !pressureKnown ? "#94A3B8" :
-    pressureScore >= 70 ? "#FF3B5C" :
-    pressureScore >= 55 ? "#FFAA00" :
-    pressureScore >= 40 ? "#FFD700" : "#00FF99";
+  const pressureColor = !pressureKnown ? "#94A3B8" : pressureBandColor(pressureScore);
 
   return (
     <div style={{

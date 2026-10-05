@@ -10,18 +10,22 @@
    explicit "loading" or "unavailable" view.
    ============================================================ */
 import type { PublicCanonicalIntelligenceState } from "@shared/canonicalIntelligenceState";
-import { CHAMPION_REGIME_THRESHOLDS } from "../../../server/pressure/championBaseline";
+import {
+  PRESSURE_BANDS as CANONICAL_PRESSURE_BANDS,
+  pressureBand as canonicalPressureBand,
+  type PressureBandRegime,
+} from "@shared/pressureBands";
 
-export type PressureBandRegime = (typeof CHAMPION_REGIME_THRESHOLDS)[number]["regime"];
+export type { PressureBandRegime };
 
 export interface PressureBand {
-  /** Engine regime label for this band, e.g. "MODERATE RISK". */
+  /** Canonical regime label for this band, e.g. "MODERATE RISK". */
   regime: PressureBandRegime;
   /** Short legend label, e.g. "MODERATE" or "HIGH STRESS". */
   label: string;
-  /** Engine level for this band, e.g. "Moderate" (CHAMPION_REGIME_THRESHOLDS). */
-  level: (typeof CHAMPION_REGIME_THRESHOLDS)[number]["level"];
-  /** Inclusive lower bound, from the engine thresholds. */
+  /** Title-case level word, e.g. "Moderate". */
+  level: "Low" | "Moderate" | "Elevated" | "High" | "Critical";
+  /** Inclusive lower bound. */
   min: number;
   /** Exclusive upper bound (null for the top band). */
   maxExclusive: number | null;
@@ -58,27 +62,26 @@ const BAND_PRESENTATION: Record<PressureBandRegime, { color: string; interpretat
   },
 };
 
-/** Legend bands in ascending order, derived from the engine thresholds. */
-export const PRESSURE_BANDS: readonly PressureBand[] = [...CHAMPION_REGIME_THRESHOLDS]
-  .sort((a, b) => a.minimum - b.minimum)
-  .map((threshold, index, ascending) => {
-    const next = ascending[index + 1];
-    const maxExclusive = next ? next.minimum : null;
-    const range = index === 0 && maxExclusive != null
-      ? `<${maxExclusive}`
-      : maxExclusive == null
-      ? `${threshold.minimum}+`
-      : `${threshold.minimum}–${maxExclusive - 1}`;
-    return {
-      regime: threshold.regime,
-      label: threshold.regime.replace(/ RISK$/, ""),
-      level: threshold.level,
-      min: threshold.minimum,
-      maxExclusive,
-      range,
-      ...BAND_PRESENTATION[threshold.regime],
-    };
-  });
+/** Legend bands in ascending order — canonical shared/pressureBands only. */
+export const PRESSURE_BANDS: readonly PressureBand[] = CANONICAL_PRESSURE_BANDS.map((band, index, ascending) => {
+  const next = ascending[index + 1];
+  const maxExclusive = next ? next.min : null;
+  const range = index === 0 && maxExclusive != null
+    ? `<${maxExclusive}`
+    : maxExclusive == null
+    ? `${band.min}+`
+    : `${band.min}–${maxExclusive - 1}`;
+  return {
+    regime: band.regime,
+    label: band.shortLabel,
+    level: band.level,
+    min: band.min,
+    maxExclusive,
+    range,
+    color: band.color,
+    interpretation: BAND_PRESENTATION[band.regime].interpretation,
+  };
+});
 
 export const PRESSURE_UNAVAILABLE_COLOR = "#64748B";
 
@@ -86,11 +89,10 @@ export function isValidPressureScore(score: unknown): score is number {
   return typeof score === "number" && Number.isFinite(score) && score >= 0 && score <= 100;
 }
 
-/** Band for a valid 0–100 score, using the engine's inclusive lower bounds. */
+/** Band for a valid 0–100 score — delegates to canonical shared/pressureBands. */
 export function pressureBandFor(score: number): PressureBand {
-  let band = PRESSURE_BANDS[0];
-  for (const candidate of PRESSURE_BANDS) if (score >= candidate.min) band = candidate;
-  return band;
+  const canonical = canonicalPressureBand(score);
+  return PRESSURE_BANDS.find((b) => b.min === canonical.min) ?? PRESSURE_BANDS[0];
 }
 
 export type PressureUnavailableReason = "NO_STATE" | "QUERY_ERROR" | "WITHHELD" | "INVALID_SCORE";
