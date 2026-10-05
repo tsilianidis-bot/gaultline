@@ -282,7 +282,7 @@ TARGET CUSTOMERS
 • Media and research organisations covering financial markets
 
 CURRENT PLATFORM CAPABILITIES
-Seismograph™ · Pressure Index™ · PLATO Daily Intelligence Brief · Historical Analog Engine · Signal Intelligence · Decision Engine · Day Trade Intelligence · Pre-Flight Briefing · Symbol Intelligence · Crypto Hub · Portfolio Intelligence · Aftershock Engine · Market Scenarios
+Seismograph™ · Pressure Index™ · PLATO Daily Intelligence Brief · Historical Analog Engine · Signal Intelligence · Decision Engine · Day Trade Intelligence · Symbol Intelligence · Crypto Hub · Portfolio Intelligence · Aftershock Engine · Market Scenarios
 
 LONG-TERM VISION
 To become the world's most trusted AI Market Intelligence Operating System — the platform that serious investors, traders, advisers, and institutions rely on to understand what markets are communicating before they move.
