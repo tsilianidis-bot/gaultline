@@ -138,7 +138,7 @@ const US_MARKET_HOLIDAYS = new Set([
 ]);
 
 /** Returns true if the given YYYY-MM-DD date is a US market holiday or weekend */
-function isNonTradingDay(dateStr: string): boolean {
+export function isNonTradingDay(dateStr: string): boolean {
   const d = new Date(dateStr + 'T12:00:00Z');
   const dow = d.getUTCDay();
   return dow === 0 || dow === 6 || US_MARKET_HOLIDAYS.has(dateStr);
