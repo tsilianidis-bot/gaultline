@@ -70,7 +70,7 @@ Intelligence areas PLATO interprets from one shared market state:
 
 Data sources: FRED (Federal Reserve Economic Data) for credit spreads, rates, inflation, labor and financial-stress series; Polygon daily equity aggregates; Yahoo Finance quotes; CoinGecko crypto market statistics. No on-chain or institutional-flow feed is ingested.
 
-Platform capabilities: PLATO AI Intelligence, Seismograph™, Pressure Index™, Regime Detection, Signal Intelligence, Historical Analog Engine, Decision Engine, Day Trade Intelligence, Pre-Flight Briefing, Symbol Intelligence, Crypto Hub, Portfolio Intelligence, Market Scenarios, Aftershock Engine
+Platform capabilities: PLATO AI Intelligence, Seismograph™, Pressure Index™, Regime Detection, Signal Intelligence, Historical Analog Engine, Decision Engine, Day Trade Intelligence, Symbol Intelligence, Crypto Hub, Portfolio Intelligence, Market Scenarios, Aftershock Engine
 
 Availability: Web (getfaultline.live) + Progressive Web App (iOS/Android)
 
@@ -93,7 +93,7 @@ Unlike AI assistants that answer questions in isolation, PLATO answers from the 
 
 "Most investors see price action. PLATO sees the structural conditions beneath it," said JT, Founder of Phoenix Systems. "FAULTLINE synthesizes multiple market-risk engines into one decision framework. That is not a chatbot. That is an intelligence layer."
 
-FAULTLINE's Seismograph™ records Pressure Index readings over time and gives PLATO the path behind today's level. The platform also includes a Historical Analog Engine, Decision Engine, Day Trade Intelligence, Pre-Flight Briefing, Symbol Intelligence, Crypto Hub, Aftershock Engine, and Portfolio Intelligence tools.
+FAULTLINE's Seismograph™ records Pressure Index readings over time and gives PLATO the path behind today's level. The platform also includes a Historical Analog Engine, Decision Engine, Day Trade Intelligence, Symbol Intelligence, Crypto Hub, Aftershock Engine, and Portfolio Intelligence tools.
 
 FAULTLINE is available at getfaultline.live. The public Pressure Index and methodology are free to read, and signed-in access starts with a free account. Paid plans are not on sale.
 
@@ -182,8 +182,6 @@ CORE CAPABILITIES
 7. Day Trade Intelligence
    Intraday intelligence layer for active traders. Regime-aware setups, pre-market context, and regularly refreshed PLATO synthesis.
 
-8. Pre-Flight Briefing
-   A structured pre-session intelligence briefing covering macro conditions, key risk factors, and PLATO's read on the current environment before each trading session.
 
 9. Symbol Intelligence
    Deep-dive analysis for individual stocks and crypto assets. Includes pressure context, regime overlay, and PLATO interpretation. Prices come from Polygon daily aggregates and Yahoo quotes.
@@ -602,7 +600,6 @@ export default function Press() {
             { name: "Signal Intelligence", role: "Directional labels across equities and crypto. Always contextualised against the current regime." },
             { name: "Decision Engine", role: "Evaluates trade ideas against the current macro regime, pressure environment, and signal consensus." },
             { name: "Day Trade Intelligence", role: "Intraday intelligence layer for active traders. Regime-aware setups and regularly refreshed PLATO synthesis." },
-            { name: "Pre-Flight Briefing", role: "Structured pre-session intelligence briefing. PLATO's read on the current environment before each trading session." },
             { name: "Symbol Intelligence", role: "Deep-dive analysis for individual stocks and crypto assets. Pressure context, regime overlay, and PLATO synthesis." },
             { name: "Crypto Hub", role: "Dedicated crypto intelligence layer. CoinGecko market statistics, crypto regime classification, and PLATO crypto interpretation." },
             { name: "Portfolio Intelligence", role: "Portfolio-level regime awareness. Surfaces concentration risk, regime misalignment, and hedging considerations." },
