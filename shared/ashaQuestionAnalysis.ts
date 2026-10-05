@@ -1,3 +1,4 @@
+import { pressureLevelWord } from "./pressureBands";
 import type { AshaPageContext } from "./ashaContext";
 import type { CanonicalMarketState } from "./marketState";
 
@@ -88,10 +89,7 @@ function requestedHorizon(question: string): string | null {
 }
 
 function riskLevel(score: number): string {
-  if (score >= 75) return "Critical";
-  if (score >= 60) return "High";
-  if (score >= 40) return "Moderate";
-  return "Low";
+  return pressureLevelWord(score);
 }
 
 export function buildAshaQuestionAnalysis(
