@@ -60,7 +60,7 @@ describe("Sector Rotation is data-first and has no demo / fallback / LLM path", 
       if (f !== "server/sectorRotation/snapshotStore.ts") expect(s, f).not.toMatch(/(?<!store)\.insert\(|getDb|from "\.\.\/db"|drizzle/);
     }
     const store = src("server/sectorRotation/snapshotStore.ts");
-    expect(Array.from(store.matchAll(/\.insert\(/g))).toHaveLength(1);
+    expect(Array.from(store.matchAll(/\.insert\(/g)).length).toBeGreaterThanOrEqual(2); // snapshot + claim
     expect(store).toContain(".insert(marketMemory)");
   });
   it("B1: the query reads only the saved snapshot; page loads cannot reach the collector or providers", () => {
@@ -88,6 +88,14 @@ describe("Sector Rotation is data-first and has no demo / fallback / LLM path", 
     const calc = src("server/sectorRotation/calc.ts");
     expect(calc).not.toMatch(/\bfetch\(|Date\.now\(|new Date\(\)/);
   });
+  it("band labels come from shared/pressureBands.pressureBand (no local score cascade)", () => {
+    const calc = src("server/sectorRotation/calc.ts");
+    expect(calc).toMatch(/from "\.\.\/\.\.\/shared\/pressureBands"/);
+    expect(calc).toMatch(/pressureBand\(/);
+    expect(calc).not.toMatch(/pressure\s*>=\s*(?:20|24|25|45|65|80)\s*\)/);
+    const mod = src(MODULE);
+    expect(mod).not.toMatch(/MODERATE RISK|SYSTEMIC CRISIS|pressure\s*>=\s*\d+/);
+  });
   it("adds no env var or secret (only the existing POLYGON_API_KEY is read)", () => {
     for (const f of SERVER_FILES) {
       const envs = Array.from(src(f).matchAll(/process\.env\.([A-Z_]+)/g)).map(x => x[1]);
@@ -105,5 +113,6 @@ describe("Sector Rotation is data-first and has no demo / fallback / LLM path", 
     for (const f of files.filter(f => /\.(sql|ts|json)$/.test(f))) expect(src(`drizzle/${f}`), f).not.toMatch(/sector_rotation|sectorRotation/i);
     expect(src("docs/sector-rotation/STORAGE_PROPOSAL.md")).toMatch(/append-only/i);
     expect(src("server/routers/seismograph.ts")).toMatch(/notLike\(marketMemory\.memoryKey, "sector-rotation:%"\)/);
+    expect(src("server/routers/seismograph.ts")).toMatch(/notLike\(marketMemory\.memoryKey, "sector-rotation-claim:%"\)/);
   });
 });

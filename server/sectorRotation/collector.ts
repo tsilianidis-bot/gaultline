@@ -14,7 +14,7 @@ import {
   SECTOR_ROTATION_COLLECTOR_POLICY as POLICY,
   type SectorRotationReading, type SectorRotationServed,
 } from "../../shared/sectorRotation";
-import { buildSectorRotationReading, etDate, etWallToUtc, sessionCompletedAt, type SectorRotationInputs } from "./calc";
+import { buildSectorRotationReading, etDate, sessionCompletedAt, type SectorRotationInputs } from "./calc";
 import { SnapshotTooLargeError, encodeSnapshot, type SnapshotStore, type StoredSnapshot } from "./snapshotStore";
 
 const MIN = 60_000;
@@ -42,15 +42,18 @@ export function latestCompletedSession(now: number): string {
   return d;
 }
 const hm = (s: string) => s.split(":").map(Number) as [number, number];
+/** Weekday quiet window in UTC (POLICY.quietWindowUtc). Independent of America/New_York DST. */
 export function inQuietWindow(now: number): boolean {
-  const d = etDate(now);
-  if (!isWeekday(d)) return false;
-  const [sh, sm] = hm(POLICY.quietWindowEt.start); const [eh, em] = hm(POLICY.quietWindowEt.end);
-  return now >= etWallToUtc(d, sh, sm) && now < etWallToUtc(d, eh, em);
+  const d = new Date(now);
+  const day = d.getUTCDay();
+  if (day === 0 || day === 6) return false;
+  const [sh, sm] = hm(POLICY.quietWindowUtc.start); const [eh, em] = hm(POLICY.quietWindowUtc.end);
+  const mins = d.getUTCHours() * 60 + d.getUTCMinutes();
+  return mins >= sh * 60 + sm && mins < eh * 60 + em;
 }
 export const backoffMs = (attempt: number) => Math.min(POLICY.backoffBaseMinutes * 2 ** Math.max(0, attempt - 1), POLICY.backoffCapMinutes) * MIN;
 
-export type TickOutcome = "RUNNING" | "NOT_DUE" | "CIRCUIT_OPEN" | "BACKOFF" | "GAVE_UP" | "QUIET_WINDOW" | "STORE_UNAVAILABLE" | "PERSISTED" | "ALREADY_PERSISTED" | "NO_NEW_SESSION" | "FAILED";
+export type TickOutcome = "RUNNING" | "NOT_DUE" | "CIRCUIT_OPEN" | "BACKOFF" | "GAVE_UP" | "QUIET_WINDOW" | "STORE_UNAVAILABLE" | "CLAIMED_BY_OTHER" | "PERSISTED" | "ALREADY_PERSISTED" | "NO_NEW_SESSION" | "FAILED";
 
 export interface CollectorDeps {
   now: () => number;
@@ -141,6 +144,13 @@ export class SectorRotationCollector {
     // Another instance may have saved it already.
     await this.loadLatest(true);
     if (this.latest && this.latest.meta.sessionDate >= target) return "NOT_DUE";
+
+    // Cross-process lock: insert-only claim for this session+bucket. No infra / no migration.
+    const claim = await this.deps.store.tryClaim(target, now);
+    if (claim === "HELD") {
+      this.record("SKIPPED", `Another instance holds the build claim for session ${target}.`, now + POLICY.claimBucketMinutes * MIN);
+      return "CLAIMED_BY_OTHER";
+    }
 
     this.attempts.set(target, attempt);
     const budget = newBudget(now);

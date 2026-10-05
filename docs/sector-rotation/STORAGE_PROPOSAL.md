@@ -28,7 +28,8 @@ generic key → JSON store already used for cross-session market state. No table
 - `memoryValue` is `TEXT` (64 KB). Snapshots are ~32 KB; anything over 60 000 bytes is refused (not truncated) and the build is marked
   failed, so the last valid snapshot stays in service.
 - Growth: one ~32 KB row per completed session (~8 MB/year). No pruning job ships (pruning would be a delete).
-- The existing public `seismograph.getMarketMemory` listing now excludes `sector-rotation:%` keys so its output is unchanged.
+- The existing public `seismograph.getMarketMemory` listing now excludes `sector-rotation:%` and `sector-rotation-claim:%` keys so its output is unchanged.
+- Build claims: `sector-rotation-claim:<methodVersion>:<session>:<bucket>` — insert-only 10-minute leases so two Railway instances do not fan out together. No UPDATE/DELETE; the next bucket supersedes a crashed holder. The snapshot unique key remains the once-per-session write gate.
 - No pre-production writes have been made; the first row is written by the deployed collector after the first post-close session.
 
 ## Future (not in this branch; needs its own approval)

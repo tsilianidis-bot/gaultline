@@ -9,6 +9,11 @@
  *  - memoryValue holds a versioned envelope {kind, envelopeVersion, methodVersion,
  *    sessionDate, generatedAt, stateId, readingHash, reading}; the hash is verified on load.
  *  - Reads select the newest key under the current method version's prefix only.
+ *  - Cross-process build claim (insert-only): memoryKey
+ *    `sector-rotation-claim:<methodVersion>:<session>:<bucket>` — first INSERT wins;
+ *    a duplicate means another instance already claimed this 10-minute bucket. No UPDATE
+ *    / DELETE: a crashed holder is superseded when the next bucket opens. The snapshot
+ *    row itself remains the once-per-session gate.
  */
 import { createHash } from "node:crypto";
 import { desc, like } from "drizzle-orm";
@@ -20,14 +25,22 @@ import {
 } from "../../shared/sectorRotation";
 
 export const SNAPSHOT_KEY_PREFIX = `sector-rotation:${SECTOR_ROTATION_METHOD_VERSION}:` as const;
+export const CLAIM_KEY_PREFIX = `sector-rotation-claim:${SECTOR_ROTATION_METHOD_VERSION}:` as const;
 export const SNAPSHOT_WRITER = "sectorRotationCollector" as const;
 export const snapshotKey = (sessionDate: string) => `${SNAPSHOT_KEY_PREFIX}${sessionDate}`;
+/** Insert-only lease key for one claim bucket (no UPDATE/DELETE; next bucket supersedes a crashed holder). */
+export const claimKey = (sessionDate: string, nowMs: number) => {
+  const bucket = Math.floor(nowMs / (POLICY.claimBucketMinutes * 60_000));
+  return `${CLAIM_KEY_PREFIX}${sessionDate}:${bucket}`;
+};
 
 export interface StoredSnapshot { meta: SectorRotationSnapshotMeta; reading: SectorRotationReading }
 export interface SnapshotStore {
   isAvailable(): Promise<boolean>;
   loadLatest(): Promise<StoredSnapshot | null>;
   insert(snapshot: StoredSnapshot): Promise<"INSERTED" | "DUPLICATE">;
+  /** First INSERT for this session+bucket wins. DUPLICATE → another instance holds the lease. */
+  tryClaim(sessionDate: string, nowMs: number): Promise<"CLAIMED" | "HELD">;
 }
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
@@ -92,6 +105,19 @@ export function createMarketMemorySnapshotStore(dbProvider: () => Promise<Db | n
         return "INSERTED";
       } catch (error) {
         if (isDuplicateKey(error)) return "DUPLICATE";
+        throw error;
+      }
+    },
+    async tryClaim(sessionDate, nowMs) {
+      const db = await dbProvider();
+      if (!db) throw new Error("Snapshot store unavailable (no database connection).");
+      const key = claimKey(sessionDate, nowMs);
+      const value = JSON.stringify({ kind: "sector-rotation-claim", methodVersion: SECTOR_ROTATION_METHOD_VERSION, sessionDate, claimedAt: new Date(nowMs).toISOString(), bucketMinutes: POLICY.claimBucketMinutes });
+      try {
+        await db.insert(marketMemory).values({ memoryKey: key, memoryValue: value, description: `Sector Rotation build claim ${sessionDate} (insert-only lease)`, writtenBy: SNAPSHOT_WRITER });
+        return "CLAIMED";
+      } catch (error) {
+        if (isDuplicateKey(error)) return "HELD";
         throw error;
       }
     },

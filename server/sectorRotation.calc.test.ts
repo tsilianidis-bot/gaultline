@@ -257,6 +257,13 @@ describe("builder: missing / stale handling and no fabrication", () => {
     expect(r.narrative.whyItMatters).toBeNull();
     expect(r.narrative.happening).not.toBeNull();
   });
+  it("pressureBand labels the WHY IT MATTERS regime from the displayed score (33 → MODERATE RISK)", () => {
+    const r = buildSectorRotationReading(baseInputs({ canonical: { stateId: "state:test", stateHash: "h", stateGeneratedAt: "2026-10-02T18:00:00.000Z", runId: null, regime: "ELEVATED RISK", pressureIndex: 33 } }));
+    // Score wins over a mismatched stored regime string — single source is pressureBand().
+    expect(r.narrative.whyItMatters).toMatch(/Under FAULTLINE's MODERATE RISK regime \(Pressure Index 33\)/);
+    expect(r.narrative.whyItMatters).not.toMatch(/ELEVATED RISK/);
+  });
+
   it("states the regime as unavailable rather than inventing one", () => {
     const r = buildSectorRotationReading(baseInputs({ canonical: { stateId: null, stateHash: null, stateGeneratedAt: null, runId: null, regime: null, pressureIndex: null } }));
     expect(r.narrative.whyItMatters).toMatch(/^With the FAULTLINE regime unavailable/);

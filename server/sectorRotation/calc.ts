@@ -30,6 +30,7 @@ import {
   type Quadrant, type SectorActionClass, type SectorBreadth, type SectorDriverLink, type SectorEtfTicker, type SectorRotationReading,
   type SectorRow, type ThesisAlignment, type TopMovers, type WatchIndicator,
 } from "../../shared/sectorRotation";
+import { PRESSURE_BANDS, pressureBand, type PressureBandRegime } from "../../shared/pressureBands";
 
 const P = SECTOR_ROTATION_PARAMS;
 
@@ -685,8 +686,15 @@ function chartSplit(chart: ChartInput | undefined, now: number): SplitBars {
   return chart && !chart.error ? splitBars(chart.bars, now) : { completed: [], inProgress: null };
 }
 
-const RISK_REGIMES = new Set(["ELEVATED RISK", "HIGH STRESS", "SYSTEMIC CRISIS"]);
-const CALM_REGIMES = new Set(["LOW RISK", "MODERATE RISK"]);
+/** Risk vs calm bands — derived from the canonical pressureBand table, not a local mapping. */
+const RISK_REGIMES = new Set<PressureBandRegime>(PRESSURE_BANDS.filter(b => b.min >= 45).map(b => b.regime));
+const CALM_REGIMES = new Set<PressureBandRegime>(PRESSURE_BANDS.filter(b => b.max <= 44).map(b => b.regime));
+/** Prefer the score→label from pressureBand(); fall back to the stored regime string when no score is available. */
+export function canonicalRegimeLabel(pressureIndex: number | null | undefined, regime: string | null | undefined): string | null {
+  if (pressureIndex != null && Number.isFinite(pressureIndex)) return pressureBand(pressureIndex).regime;
+  if (regime && (RISK_REGIMES.has(regime as PressureBandRegime) || CALM_REGIMES.has(regime as PressureBandRegime))) return regime;
+  return regime ?? null;
+}
 
 /**
  * Pure function: inputs → versioned SectorRotationReading. Deterministic for a
@@ -940,11 +948,12 @@ export function composeNarrative(r: SectorRotationReading): SectorRotationReadin
   const defensiveStrong = DEFENSIVE_SECTORS.filter(t => { const q = s.find(x => x.ticker === t)?.quadrant; return q === "LEADING" || q === "IMPROVING"; }).length;
   const defensiveWeak = DEFENSIVE_SECTORS.filter(t => { const q = s.find(x => x.ticker === t)?.quadrant; return q === "LAGGING" || q === "LOSING_MOMENTUM"; }).length;
   const tilt = defensiveStrong >= 2 ? "defensive" : defensiveWeak >= 2 ? "cyclical / growth" : "mixed";
-  const regime = r.canonical.regime;
+  // Band label from pressureBand(score) when a score is present — never a local score→label cascade.
+  const regime = canonicalRegimeLabel(r.canonical.pressureIndex, r.canonical.regime);
   let alignment = "";
   if (regime && tilt !== "mixed") {
-    const fits = (RISK_REGIMES.has(regime) && tilt === "defensive") || (CALM_REGIMES.has(regime) && tilt !== "defensive");
-    alignment = RISK_REGIMES.has(regime) || CALM_REGIMES.has(regime) ? `, ${fits ? "consistent with" : "at odds with"} that regime` : "";
+    const fits = (RISK_REGIMES.has(regime as PressureBandRegime) && tilt === "defensive") || (CALM_REGIMES.has(regime as PressureBandRegime) && tilt !== "defensive");
+    alignment = RISK_REGIMES.has(regime as PressureBandRegime) || CALM_REGIMES.has(regime as PressureBandRegime) ? `, ${fits ? "consistent with" : "at odds with"} that regime` : "";
   }
   const regimeLead = regime ? `Under FAULTLINE's ${regime} regime${r.canonical.pressureIndex != null ? ` (Pressure Index ${r.canonical.pressureIndex})` : ""}` : "With the FAULTLINE regime unavailable";
   const s1 = `${regimeLead}, leadership is ${tilt}${leading.length ? ` (${leading.join(", ")} leading` : " (no sector leading"}${lagging.length ? `; ${lagging.join(", ")} lagging)` : ")"}${alignment}.`;

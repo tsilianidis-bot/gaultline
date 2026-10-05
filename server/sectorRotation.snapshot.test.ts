@@ -44,10 +44,14 @@ vi.mock("./db", () => ({
         }),
       }),
       insert: () => ({
-        values: async (v: Omit<Row, "id" | "updatedAt">) => {
+        values: (v: Omit<Row, "id" | "updatedAt">) => {
+          // Sync check-and-set so concurrent tryClaim calls see each other (mirrors MySQL unique index).
           fakeDb.ops.push("insert");
-          if (fakeDb.rows.some(r => r.memoryKey === v.memoryKey)) throw Object.assign(new Error(`Duplicate entry '${v.memoryKey}' for key 'marketMemory_memoryKey_unique'`), { code: "ER_DUP_ENTRY", errno: 1062 });
+          if (fakeDb.rows.some(r => r.memoryKey === v.memoryKey)) {
+            return Promise.reject(Object.assign(new Error(`Duplicate entry '${v.memoryKey}' for key 'marketMemory_memoryKey_unique'`), { code: "ER_DUP_ENTRY", errno: 1062 }));
+          }
           fakeDb.rows.push({ id: fakeDb.rows.length + 1, ...v, updatedAt: new Date() });
+          return Promise.resolve();
         },
       }),
       update: () => { fakeDb.ops.push("update"); throw new Error("update is not allowed"); },
@@ -111,6 +115,9 @@ import { SECTOR_ROTATION_METHOD_VERSION } from "../shared/sectorRotation";
 
 const ET = (date: string, hhmm: string) => new Date(`${date}T${hhmm}:00-04:00`).getTime(); // EDT dates only
 const total = () => ({ ...provider.counts });
+const snapRows = () => fakeDb.rows.filter(r => r.memoryKey.startsWith(`sector-rotation:${SECTOR_ROTATION_METHOD_VERSION}:`) && !r.memoryKey.includes("claim"));
+// Snapshot keys are sector-rotation:<ver>:<date>; claims use sector-rotation-claim:…
+const snapshotRows = () => fakeDb.rows.filter(r => /^sector-rotation:sector-rotation-v[\d.]+:\d{4}-\d{2}-\d{2}$/.test(r.memoryKey));
 const delta = (a: ReturnType<typeof total>, b: ReturnType<typeof total>) => Object.fromEntries(Object.keys(a).map(k => [k, (b as Record<string, number>)[k] - (a as Record<string, number>)[k]]));
 const PAGES = ["now", "why", "outlook", "watch", "act"] as const;
 const FULL_FANOUT = { yahoo: 18 + members.length, ssga: SECTORS.length };
@@ -140,8 +147,12 @@ describe("session clock", () => {
     expect(latestCompletedSession(ET("2026-10-02", "17:00"))).toBe("2026-10-02");
     expect(latestCompletedSession(ET("2026-10-04", "12:00"))).toBe("2026-10-02"); // Sunday
     expect(latestCompletedSession(ET("2026-10-05", "09:00"))).toBe("2026-10-02"); // Monday before close
-    expect(inQuietWindow(ET("2026-10-05", "14:00"))).toBe(true);
+    // Quiet window is UTC-anchored (17:45–18:45Z weekdays), so it stays aligned with a UTC cron across the Nov 1 DST change.
+    expect(inQuietWindow(ET("2026-10-05", "14:00"))).toBe(true);  // 18:00Z under EDT
     expect(inQuietWindow(ET("2026-10-05", "17:30"))).toBe(false);
+    expect(inQuietWindow(Date.parse("2026-11-02T18:00:00Z"))).toBe(true);   // post-DST Monday, still 18:00Z
+    expect(inQuietWindow(Date.parse("2026-11-02T19:00:00Z"))).toBe(false);  // 14:00 ET under EST is 19:00Z — outside the UTC window
+    expect(inQuietWindow(Date.parse("2026-11-01T18:00:00Z"))).toBe(false);  // Sunday
     expect([1, 2, 3, 4].map(a => backoffMs(a) / 60_000)).toEqual([30, 60, 120, 120]);
   });
 });
@@ -165,7 +176,7 @@ describe("page loads never trigger a fan-out (instrumented)", () => {
     expect(delta(before, afterBuild)).toMatchObject({ yahoo: FULL_FANOUT.yahoo, ssga: FULL_FANOUT.ssga, polygon: 0, other: 0 });
     expect(sectorRotationCollector.fanouts).toBe(1);
     expect(provider.maxInFlight).toBeLessThanOrEqual(2); // bounded concurrency (fanoutConcurrency = 2)
-    expect(fakeDb.rows.map(r => r.memoryKey)).toEqual([`sector-rotation:${SECTOR_ROTATION_METHOD_VERSION}:2026-10-02`]);
+    expect(snapshotRows().map(r => r.memoryKey)).toEqual([`sector-rotation:${SECTOR_ROTATION_METHOD_VERSION}:2026-10-02`]);
     expect(fakeDb.whereSql.at(-1)!.sql).toMatch(/like/i);
     expect(fakeDb.whereSql.at(-1)!.params).toEqual([`${SNAPSHOT_KEY_PREFIX}%`]);
 
@@ -198,7 +209,7 @@ describe("page loads never trigger a fan-out (instrumented)", () => {
     expect(delta(before, mid)).toMatchObject({ yahoo: FULL_FANOUT.yahoo, ssga: FULL_FANOUT.ssga }); // 12 h universe cache expired over the weekend
     await loadAllPages(20);
     expect(delta(mid, total()).yahoo).toBe(0);
-    expect(fakeDb.rows).toHaveLength(2);
+    expect(snapshotRows()).toHaveLength(2);
     expect(fakeDb.ops.filter(o => o === "update" || o === "delete")).toEqual([]);
   });
 });
@@ -215,7 +226,7 @@ describe("failure handling: circuit breaker, backoff, finite retries, last-valid
     const used = delta(before, total());
     expect(used.yahoo).toBeLessThan(10); // stopped right after the 429 (bounded concurrency)
     expect(used.ssga).toBe(0);
-    expect(fakeDb.rows).toHaveLength(2); // nothing saved
+    expect(snapshotRows()).toHaveLength(2); // nothing saved
     const view = await c.served();
     expect(view).toMatchObject({ freshness: "STALE", snapshot: { sessionDate: "2026-10-05" }, lastRefresh: { outcome: "FAILED" } });
     expect(view.freshnessReason).toMatch(/last valid snapshot \(session 2026-10-05\).*429/);
@@ -238,7 +249,7 @@ describe("failure handling: circuit breaker, backoff, finite retries, last-valid
     vi.setSystemTime(clock.t);
     const c = collectorAt(clock);
     expect(await c.tick()).toBe("FAILED");
-    expect(fakeDb.rows).toHaveLength(2);
+    expect(snapshotRows()).toHaveLength(2);
     expect((await c.served()).lastRefresh.detail).toMatch(/Top movers unavailable/);
     // Not rate-limited → no circuit, but exponential backoff 30 → 60 min, max 3 attempts.
     const before = total();
@@ -292,11 +303,27 @@ describe("failure handling: circuit breaker, backoff, finite retries, last-valid
   });
 
   it("invalidReason: a rate-limited or aborted fan-out is never a valid snapshot, even if a reading was built", () => {
-    const reading = JSON.parse(fakeDb.rows.at(-1)!.memoryValue).reading;
+    const reading = JSON.parse(snapshotRows().at(-1)!.memoryValue).reading;
     expect(invalidReason(reading, newBudget(0))).toBeNull();
     expect(invalidReason(reading, { ...newBudget(0), rateLimited: true, aborted: true, abortReason: "Yahoo XLE: HTTP 429" })).toMatch(/^Provider rate limit \(HTTP 429\)/);
     expect(invalidReason(reading, { ...newBudget(0), aborted: true, abortReason: "overall build timeout (10 min)" })).toMatch(/aborted.*timeout/);
     expect(invalidReason({ ...reading, movers: { ...reading.movers, status: "UNAVAILABLE", reason: "x" } }, newBudget(0))).toMatch(/Top movers unavailable/);
+  });
+
+  it("cross-process claim: second collector in the same bucket does not fan out", async () => {
+    // Fresh session not claimed by earlier cases in this file (fakeDb accumulates).
+    provider.lastSession = "2026-10-13";
+    const clock = { t: ET("2026-10-13", "17:30") };
+    vi.setSystemTime(clock.t);
+    const beforeSnaps = snapshotRows().length;
+    const a = collectorAt(clock);
+    const b = collectorAt(clock);
+    const before = total();
+    const [oa, ob] = await Promise.all([a.tick(), b.tick()]);
+    expect([oa, ob].sort()).toEqual(["CLAIMED_BY_OTHER", "PERSISTED"]);
+    expect(a.fanouts + b.fanouts).toBe(1);
+    expect(delta(before, total()).yahoo).toBe(FULL_FANOUT.yahoo); // exactly one fan-out
+    expect(snapshotRows()).toHaveLength(beforeSnaps + 1);
   });
 
   it("an expired budget (overall timeout) issues no further requests", async () => {
@@ -318,7 +345,7 @@ describe("snapshot store: append-only, versioned, verified", () => {
     expect(fakeDb.rows.map(r => r.memoryValue)).toEqual(before);
   });
   it("tampered, foreign-version or mis-keyed rows are ignored on load", () => {
-    const row = fakeDb.rows[1];
+    const row = snapshotRows()[1];
     expect(decodeSnapshot(row.memoryKey, row.memoryValue, row.updatedAt)).not.toBeNull();
     const env = JSON.parse(row.memoryValue);
     expect(decodeSnapshot(row.memoryKey, JSON.stringify({ ...env, reading: { ...env.reading, sectors: [] } }), null)).toBeNull(); // hash mismatch
@@ -327,17 +354,17 @@ describe("snapshot store: append-only, versioned, verified", () => {
     expect(decodeSnapshot(row.memoryKey, "{not json", null)).toBeNull();
   });
   it("holds timestamp, session, method version, stateId, rankings, breadth, movers, catalyst source/time and status", () => {
-    const env = JSON.parse(fakeDb.rows[1].memoryValue);
+    const env = JSON.parse(snapshotRows()[1].memoryValue);
     expect(Object.keys(env).sort()).toEqual(["envelopeVersion", "generatedAt", "kind", "methodVersion", "reading", "readingHash", "sessionDate", "stateId"]);
     expect(env.reading.sectors[0]).toHaveProperty("rank");
     expect(env.reading.sectors[0]).toHaveProperty("quadrant");
     expect(env.reading.sectors[0]).toHaveProperty("breadth");
     expect(env.reading.movers.winners[0].catalyst).toHaveProperty("news");
     expect(env.reading).toHaveProperty("status");
-    expect(Buffer.byteLength(fakeDb.rows[1].memoryValue)).toBeLessThan(60_000);
+    expect(Buffer.byteLength(snapshotRows()[1].memoryValue)).toBeLessThan(60_000);
   });
   it("oversized snapshots are refused, not truncated", () => {
-    const env = JSON.parse(fakeDb.rows[1].memoryValue);
+    const env = JSON.parse(snapshotRows()[1].memoryValue);
     const big = { ...env.reading, missingData: Array.from({ length: 2000 }, (_, i) => ({ id: `x${i}`, status: "UNAVAILABLE", reason: "y".repeat(30), asOf: null })) };
     expect(() => encodeSnapshot(big)).toThrow(/not saved/);
   });

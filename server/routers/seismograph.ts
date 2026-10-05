@@ -147,7 +147,7 @@ export const seismographRouter = router({
       .select()
       .from(marketMemory)
       // Sector Rotation snapshots (append-only, served by sectorRotation.current) are not Market Memory entries.
-      .where(notLike(marketMemory.memoryKey, "sector-rotation:%"))
+      .where(and(notLike(marketMemory.memoryKey, "sector-rotation:%"), notLike(marketMemory.memoryKey, "sector-rotation-claim:%")))
       .orderBy(desc(marketMemory.updatedAt));
   }),
 

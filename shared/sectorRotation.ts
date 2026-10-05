@@ -334,8 +334,15 @@ export const SECTOR_ROTATION_COLLECTOR_POLICY = {
   /** Bounded, paced fan-out (≈ 4 requests/s at most). */
   fanoutConcurrency: 2,
   fanoutDelayMs: 250,
-  /** No builds 1:45–2:45 PM ET on weekdays (scheduled FAULTLINE run and outcome collection use Yahoo then). */
-  quietWindowEt: { start: "13:45", end: "14:45" },
+  /**
+   * Quiet window in UTC (weekdays). Anchored to the observed Yahoo-heavy scheduled
+   * shadow/outcome collection (~18:03Z). Fixed UTC avoids the Nov 1 DST shift that
+   * would move an ET wall-clock window relative to a UTC-anchored Railway cron.
+   * 17:45–18:45 UTC ≡ 13:45–14:45 ET under EDT and 12:45–13:45 ET under EST.
+   */
+  quietWindowUtc: { start: "17:45", end: "18:45" },
+  /** Cross-process build claim bucket (insert-only lease via marketMemory unique key). */
+  claimBucketMinutes: 10,
   /** Served view re-reads the store at most this often (DB select only, never a fan-out). */
   storeReloadMinutes: 10,
   /** marketMemory.memoryValue is TEXT (64 KiB); snapshots larger than this are not saved. */

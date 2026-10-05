@@ -115,10 +115,10 @@ Tilt = defensive if ≥ 2 of XLU/XLP/XLV are LEADING/IMPROVING, cyclical/growth 
   holiday sessions are detected from SPY's latest completed bar and never rebuilt.
 - Fan-out discipline: 2 concurrent requests with 250 ms spacing, one 10-minute overall budget, an HTTP 429 from any provider aborts the
   fan-out immediately and opens a 60-minute circuit; failed attempts back off 30 → 60 → 120 min, max 3 attempts per session, then stop
-  until the next session. No builds 13:45–14:45 ET (the scheduled outcome-collection window that also uses Yahoo).
+  until the next session. No builds 17:45–18:45 UTC on weekdays (UTC-anchored quiet window covering the Yahoo-heavy scheduled shadow/outcome collection ~18:03Z; DST-robust across the Nov 1 fall-back). Cross-process build claims use insert-only `sector-rotation-claim:…` keys in marketMemory (10-minute buckets; no migration).
 - A build is saved only when valid (benchmark available, movers panel not UNAVAILABLE, not aborted). On failure the last valid snapshot
   is served as **STALE** with the reason and next attempt time; with no snapshot the module shows **UNAVAILABLE**. Nothing is recomputed
   from traffic.
-- Snapshot content: timestamp, completed session date, methodology version, canonical stateId, rankings/quadrants, breadth, winners/losers,
+- Snapshot content: timestamp, completed session date, methodology version, canonical stateId (regime label via `pressureBand(pressureIndex)` when a score is present), rankings/quadrants, breadth, winners/losers,
   catalyst class + source + time, status and missing-data flags (the full `SectorRotationReading`), with a sha256 integrity hash.
 - Storage: see `STORAGE_PROPOSAL.md` (existing `marketMemory` table, insert-only, no migration).
