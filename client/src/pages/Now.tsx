@@ -24,6 +24,7 @@ import {
 } from "@shared/routeRegistry";
 import { formatCanonicalPercent, formatCanonicalScore } from "@shared/marketMetrics";
 import { formatOrdinal } from "@shared/historicalPercentile";
+import { pressureBandColor, pressureShortLabel } from "@shared/pressureBands";
 import { formatScenarioPercent } from "@shared/canonicalReadout";
 import { customerIntegrityChipLevel, customerIntegrityColor, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
@@ -38,18 +39,12 @@ const NOW_DEEP_PATH = "/app/now/deep";
 
 // ── Color helpers ────────────────────────────────────────────────────────────
 function pressureColor(score: number) {
-  if (score >= 75) return "#ff4d6d";
-  if (score >= 50) return "#ffaa00";
-  if (score >= 30) return "#00e5ff";
-  return "#00e599";
+  return pressureBandColor(score);
 }
 
+/** Gauge short label — always from the same displayed score via canonical bands. */
 function pressureLabel(score: number) {
-  if (score >= 75) return "CRITICAL";
-  if (score >= 60) return "ELEVATED";
-  if (score >= 40) return "MODERATE";
-  if (score >= 20) return "LOW";
-  return "MINIMAL";
+  return pressureShortLabel(score);
 }
 
 // ── Staged load hook ─────────────────────────────────────────────────────────
@@ -204,7 +199,7 @@ function SeismicBackground({ pressure, accent }: { pressure: number; accent: str
 }
 
 // ── Dominant pressure instrument ─────────────────────────────────────────────
-function PressureInstrument({
+export function PressureInstrument({
   score, accent, regime, direction, historicalPercentile, confidence, lastUpdated, phase, scoreChange,
 }: {
   score: number; accent: string; regime: string; direction: string;

@@ -1,3 +1,4 @@
+import { pressureBandColor } from "@shared/pressureBands";
 import { useMemo } from "react";
 import { Link } from "wouter";
 import {
@@ -43,10 +44,7 @@ function signalTone(signal: EvidenceFamily["signal"]): string {
 }
 
 function pressureColor(score: number) {
-  if (score >= 75) return "#ff4d6d";
-  if (score >= 50) return "#ffaa00";
-  if (score >= 30) return "#00e5ff";
-  return "#00e599";
+  return pressureBandColor(score);
 }
 
 function trendArrow(trend: EvidenceFamily["trend"]) {

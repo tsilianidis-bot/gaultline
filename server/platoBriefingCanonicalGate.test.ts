@@ -133,7 +133,7 @@ describe("AshaLiveBriefing in canonical mode", () => {
     const display = buildBriefingDisplay(canonical().output, canonical().mode);
     expect(display.available).toBe(true);
     expect(display.badgeRegime).toBe("Moderate Risk");
-    expect(display.badgeLabel).toBe("STABLE"); // canonical 33/100
+    expect(display.badgeLabel).toBe("MODERATE RISK"); // canonical 33/100 → 25–44 band
     expect(tileValue(html, "PRESSURE")).toBe("33/100");
     expect(tileValue(html, "STATE")).toBe("Moderate");
     expect(html).toContain("Moderate Risk");

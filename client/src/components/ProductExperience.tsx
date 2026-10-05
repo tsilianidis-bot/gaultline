@@ -17,6 +17,7 @@
    10. Final CTA — "Enter FAULTLINE"
    ============================================================ */
 
+import { pressureShortLabel } from "@shared/pressureBands";
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { navigateToLogin } from '../const';
 import { trackGa4Event } from '../lib/ga4';
@@ -133,7 +134,7 @@ function PressureGauge({ value = 62 }: { value?: number }) {
         </text>
       </svg>
       <div style={{ fontFamily: MONO, fontSize: '11px', color, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-        {displayed < 30 ? 'LOW STRESS' : displayed < 60 ? 'MODERATE STRESS' : displayed < 80 ? 'ELEVATED STRESS' : 'CRITICAL STRESS'}
+        {pressureShortLabel(displayed)}
       </div>
     </div>
   );

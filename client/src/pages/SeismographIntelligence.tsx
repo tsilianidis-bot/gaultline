@@ -21,6 +21,7 @@
  * 14. ASHA + footer
  */
 
+import { pressureBandColor, pressureShortLabel } from "@shared/pressureBands";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { RefreshCw } from "lucide-react";
@@ -47,11 +48,7 @@ function pressureColor(score: number): string {
 }
 
 function pressureLabel(score: number): string {
-  if (score >= 80) return "CRITICAL";
-  if (score >= 65) return "HIGH";
-  if (score >= 45) return "ELEVATED";
-  if (score >= 25) return "MODERATE";
-  return "LOW";
+  return pressureShortLabel(score);
 }
 
 function stressColor(level: string): string {

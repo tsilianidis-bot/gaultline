@@ -1,3 +1,4 @@
+import { pressureBand } from "@shared/pressureBands";
 import type { ProbabilityDisplay } from "@shared/probabilityContract";
 // ============================================================
 // FAULTLINE — Reactive Intelligence Engine
@@ -355,7 +356,7 @@ function classifyRegime(overall: number, domains: DomainScore[]): RegimeOutput {
   const recessionScore = domains.find(d => d.id === 'recession')?.score ?? 0;
   const inflationScore = domains.find(d => d.id === 'inflation-fed')?.score ?? 0;
 
-  if (overall >= 8.5) {
+  if (pressureBand(overall * 10).id === "crisis") {
     return {
       code: 'CRITICAL_SYSTEMIC', label: 'CRITICAL SYSTEMIC STRESS',
       sublabel: 'Imminent Systemic Event Risk',
@@ -363,7 +364,7 @@ function classifyRegime(overall: number, domains: DomainScore[]): RegimeOutput {
       description: 'Multiple fault lines simultaneously critical. Systemic event probability very high.',
     };
   }
-  if (overall >= 7.0) {
+  if (pressureBand(overall * 10).id === "high") {
     // Differentiate sub-regime by dominant driver
     if (aiScore >= 8.5 && creditScore < 7.0) {
       return {
@@ -396,7 +397,7 @@ function classifyRegime(overall: number, domains: DomainScore[]): RegimeOutput {
       description: 'Multiple fault lines converging. Credit, AI speculation, sovereign debt, and liquidity deterioration.',
     };
   }
-  if (overall >= 5.0) {
+  if (pressureBand(overall * 10).id === "elevated") {
     return {
       code: 'ELEVATED_STRESS', label: 'ELEVATED STRESS',
       sublabel: 'Watchful — Risk Rising',
@@ -404,7 +405,7 @@ function classifyRegime(overall: number, domains: DomainScore[]): RegimeOutput {
       description: 'Risk indicators elevated but not critical. Monitor for acceleration.',
     };
   }
-  if (overall >= 3.0) {
+  if (pressureBand(overall * 10).id === "moderate") {
     return {
       code: 'MODERATE_RISK', label: 'MODERATE RISK',
       sublabel: 'Contained — Vigilance Required',
