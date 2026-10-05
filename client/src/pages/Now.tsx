@@ -27,6 +27,9 @@ import { formatOrdinal } from "@shared/historicalPercentile";
 import {
   buildWhatIsHappeningCopy,
   topThreatEvidenceCopy,
+  topThreatHeadline,
+  topAnalogHeadline,
+  topAnalogDetail,
 } from "@shared/nowInterpretationCopy";
 import { pressureBandColor, pressureShortLabel } from "@shared/pressureBands";
 import { formatScenarioPercent } from "@shared/canonicalReadout";
@@ -1025,13 +1028,13 @@ export default function Now() {
                 <div className="mt-5 grid gap-2 sm:grid-cols-2">
                   <div className="rounded border border-rose-300/20 bg-rose-300/[0.045] p-3">
                     <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-rose-200/65">Top threat</p>
-                    <p className="mt-1 text-sm font-medium text-slate-100">{threats[0] ?? "No dominant verified threat"}</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-400">{topThreatEvidenceCopy(Boolean(threats[0]))}</p>
+                    <p className="mt-1 text-sm font-medium text-slate-100" data-now-threat-headline>{topThreatHeadline(threats[0], false)}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-400" data-now-threat-detail>{topThreatEvidenceCopy(Boolean(threats[0]), false)}</p>
                   </div>
                   <div className="rounded border border-violet-300/20 bg-violet-300/[0.045] p-3">
                     <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-violet-200/65">Closest historical analog</p>
-                    <p className="mt-1 text-sm font-medium text-slate-100">{topAnalog ? `${topAnalog.label} · ${topAnalog.period}` : "No verified analog available"}</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-400">{topAnalog ? `${formatCanonicalPercent(topAnalog.similarity)} similarity · context, not a forecast.` : "Historical comparison remains unavailable."}</p>
+                    <p className="mt-1 text-sm font-medium text-slate-100" data-now-analog-headline>{topAnalogHeadline(topAnalog, false)}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-400" data-now-analog-detail>{topAnalogDetail(topAnalog, false, formatCanonicalPercent)}</p>
                   </div>
                 </div>
 
@@ -1183,7 +1186,7 @@ export default function Now() {
             {marketState?.why.story ?? output.narrative.summary}
           </p>
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {[`Regime: ${regime}`, `Top risk: ${threats[0] ?? "No verified threat"}`, `Rising domains: ${building}`].map(item => (
+            {[`Regime: ${regime}`, `Top risk: ${topThreatHeadline(threats[0], false)}`, `Rising domains: ${building}`].map(item => (
               <div key={item} className="border-l-2 border-cyan-300/50 bg-white/[0.025] px-4 py-3 font-mono text-[10px] uppercase tracking-[0.1em] text-slate-300">{item}</div>
             ))}
           </div>
@@ -1281,7 +1284,7 @@ export default function Now() {
           <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded border border-white/10 bg-white/[0.025] p-5"><Database size={16} className="text-cyan-300" /><p className="mt-4 font-['Rajdhani'] text-2xl text-white">{marketState?.history.observationCount.toLocaleString() ?? "—"}</p><p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-500">Observations</p></div>
             <div className="rounded border border-white/10 bg-white/[0.025] p-5"><History size={16} className="text-violet-300" /><p className="mt-4 text-sm font-semibold text-white">{marketState?.history.datasetSpan ?? "Canonical history unavailable"}</p><p className="mt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-500">Dataset span</p></div>
-            <div className="rounded border border-white/10 bg-white/[0.025] p-5"><Telescope size={16} className="text-amber-300" /><p className="mt-4 text-sm font-semibold text-white">{topAnalog ? `${topAnalog.label} · ${formatCanonicalPercent(topAnalog.similarity)}` : "No verified analog"}</p><p className="mt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-500">Closest analog</p></div>
+            <div className="rounded border border-white/10 bg-white/[0.025] p-5"><Telescope size={16} className="text-amber-300" /><p className="mt-4 text-sm font-semibold text-white">{topAnalog ? `${topAnalog.label} · ${formatCanonicalPercent(topAnalog.similarity)}` : topAnalogHeadline(null, false)}</p><p className="mt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-500">Closest analog</p></div>
           </div>
           {topAnalog && <p className="mt-5 text-sm leading-7 text-slate-400">{topAnalog.period}: {topAnalog.resolution}</p>}
         </Section>

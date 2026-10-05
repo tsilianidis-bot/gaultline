@@ -121,10 +121,47 @@ export function laborRatesUnavailableMessage(): string {
   return `${LABOR_RATES_DISPLAY_NAME} data is currently unavailable, so its contribution to the latest regime assessment cannot be independently confirmed.`;
 }
 
-export function topThreatEvidenceCopy(hasThreat: boolean): string {
+/**
+ * Threat / analog empty-vs-failure copy (James 2026-10-05):
+ *  - analysis succeeded, nothing qualifies → specific "no …" wording
+ *  - data/engine failure → "unavailable"
+ * Never use "unavailable" for an empty successful result.
+ */
+export const NO_DOMINANT_THREAT_TEXT = "No single threat currently dominates" as const;
+export const NO_HIGH_CONFIDENCE_ANALOG_TEXT = "No high-confidence historical analog identified" as const;
+export const THREAT_ANALYSIS_UNAVAILABLE_TEXT = "Threat assessment unavailable" as const;
+export const ANALOG_ANALYSIS_UNAVAILABLE_TEXT = "Historical analog unavailable" as const;
+
+export function topThreatHeadline(threat: string | null | undefined, analysisFailed: boolean): string {
+  if (analysisFailed) return THREAT_ANALYSIS_UNAVAILABLE_TEXT;
+  const t = (threat ?? "").trim();
+  return t || NO_DOMINANT_THREAT_TEXT;
+}
+
+export function topThreatEvidenceCopy(hasThreat: boolean, analysisFailed = false): string {
+  if (analysisFailed) return "Threat analysis is unavailable for this reading.";
   return hasThreat
     ? "Strongest evidence family currently signaling stress."
-    : "No single verified evidence family is currently dominating the risk signal.";
+    : NO_DOMINANT_THREAT_TEXT;
+}
+
+export function topAnalogHeadline(
+  analog: { label: string; period: string } | null | undefined,
+  analysisFailed: boolean,
+): string {
+  if (analysisFailed) return ANALOG_ANALYSIS_UNAVAILABLE_TEXT;
+  if (!analog) return NO_HIGH_CONFIDENCE_ANALOG_TEXT;
+  return `${analog.label} · ${analog.period}`;
+}
+
+export function topAnalogDetail(
+  analog: { similarity: number } | null | undefined,
+  analysisFailed: boolean,
+  formatSimilarity: (n: number) => string,
+): string {
+  if (analysisFailed) return "Historical comparison is unavailable due to a data or engine failure.";
+  if (!analog) return "Analysis completed; no analog met the confidence threshold.";
+  return `${formatSimilarity(analog.similarity)} similarity · context, not a forecast.`;
 }
 
 function familyLooksLike(family: EvidenceFamilyCopyInput, match: RegExp): boolean {

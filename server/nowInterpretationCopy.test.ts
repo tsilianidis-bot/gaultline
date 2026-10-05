@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   buildWhatIsHappeningCopy,
@@ -52,13 +54,45 @@ describe("NOW interpretation hierarchy copy", () => {
     })).toEqual([]);
   });
 
-  it("replaces the empty-threat copy with verified-family language", () => {
-    expect(topThreatEvidenceCopy(false)).toBe(
-      "No single verified evidence family is currently dominating the risk signal.",
-    );
-    expect(topThreatEvidenceCopy(true)).toBe(
-      "Strongest evidence family currently signaling stress.",
-    );
+  it("empty successful threat analysis does not say unavailable", () => {
+    expect(topThreatEvidenceCopy(false)).toBe("No single threat currently dominates");
+    expect(topThreatEvidenceCopy(true)).toBe("Strongest evidence family currently signaling stress.");
+    expect(topThreatEvidenceCopy(false, true)).toMatch(/unavailable/i);
+  });
+});
+
+describe("threat / analog empty-success vs unavailable", () => {
+  it("uses 'No single threat currently dominates' when analysis succeeds with no dominant threat", async () => {
+    const { topThreatHeadline, NO_DOMINANT_THREAT_TEXT } = await import("../shared/nowInterpretationCopy");
+    expect(topThreatHeadline(null, false)).toBe(NO_DOMINANT_THREAT_TEXT);
+    expect(topThreatHeadline("", false)).toBe(NO_DOMINANT_THREAT_TEXT);
+    expect(topThreatHeadline("Credit stress", false)).toBe("Credit stress");
+  });
+  it("uses 'No high-confidence historical analog identified' when analysis succeeds with no analog", async () => {
+    const { topAnalogHeadline, topAnalogDetail, NO_HIGH_CONFIDENCE_ANALOG_TEXT } = await import("../shared/nowInterpretationCopy");
+    expect(topAnalogHeadline(null, false)).toBe(NO_HIGH_CONFIDENCE_ANALOG_TEXT);
+    expect(topAnalogDetail(null, false, n => `${n}%`)).not.toMatch(/unavailable/i);
+    expect(topAnalogHeadline({ label: "GFC", period: "2008" }, false)).toBe("GFC · 2008");
+  });
+  it("reserves 'unavailable' for actual data/engine failure on both surfaces", async () => {
+    const {
+      topThreatHeadline, topThreatEvidenceCopy, topAnalogHeadline, topAnalogDetail,
+      THREAT_ANALYSIS_UNAVAILABLE_TEXT, ANALOG_ANALYSIS_UNAVAILABLE_TEXT,
+    } = await import("../shared/nowInterpretationCopy");
+    expect(topThreatHeadline(null, true)).toBe(THREAT_ANALYSIS_UNAVAILABLE_TEXT);
+    expect(topThreatEvidenceCopy(false, true)).toMatch(/unavailable/i);
+    expect(topAnalogHeadline(null, true)).toBe(ANALOG_ANALYSIS_UNAVAILABLE_TEXT);
+    expect(topAnalogDetail(null, true, n => `${n}%`)).toMatch(/unavailable/i);
+    expect(topThreatHeadline(null, false)).not.toMatch(/unavailable/i);
+    expect(topAnalogHeadline(null, false)).not.toMatch(/unavailable/i);
+  });
+  it("NOW page wires the three-state helpers into the verdict cards", () => {
+    const now = readFileSync(resolve(process.cwd(), "client/src/pages/Now.tsx"), "utf8");
+    expect(now).toContain("topThreatHeadline(threats[0], false)");
+    expect(now).toContain("topAnalogHeadline(topAnalog, false)");
+    expect(now).toContain("topAnalogDetail(topAnalog, false, formatCanonicalPercent)");
+    expect(now).not.toContain("No dominant verified threat");
+    expect(now).not.toContain("Historical comparison remains unavailable.");
   });
 });
 
