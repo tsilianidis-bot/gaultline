@@ -37,7 +37,7 @@ import { customerIntegrityChipLevel, customerIntegrityColor, type CustomerIntegr
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 import { monthlyRecordBasisNote } from "@shared/dataIntegrityReadout";
-import { formatEt } from "@shared/credibilityLabels";
+import { formatEt, SCENARIO_PROBABILITY_WITHHELD_TEXT } from "@shared/credibilityLabels";
 import SystemicRegimeModule from "@/components/SystemicRegimeModule";
 import { trpc } from "@/lib/trpc";
 import { deltaDirection, deltaTrend, knownDelta } from "@/lib/deltaAvailability";
@@ -861,6 +861,8 @@ export default function Now() {
     neutral: marketState?.outlook.probabilities.neutral ?? Number.NaN,
     bear: marketState?.outlook.probabilities.bear ?? Number.NaN,
   };
+  // #60 probability contract: only AVAILABLE scenario weights may render as bars/%.
+  const scenariosCalibrated = marketState?.outlook.probabilityContract?.scenarioSet.display.state === "AVAILABLE";
   const scenarioWidth = (value: number) => (Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0);
   // Threat classification comes from the evidence family's own signal (shared classifier),
   // never from strength order alone.
@@ -1076,22 +1078,30 @@ export default function Now() {
                 }}
               >
                 <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">Bull vs Bear</p>
-                <BullBearCard
-                  label="Bull scenario"
-                  value={probabilities.bull}
-                  accent="#00e599"
-                  description="Canonical snapshot scenario weight for the bull path. Context, not a calibrated forecast."
-                  phase={phase}
-                  phaseTarget={4}
-                />
-                <BullBearCard
-                  label="Bear scenario"
-                  value={probabilities.bear}
-                  accent="#ff4d6d"
-                  description="Canonical snapshot scenario weight for the bear path. Context, not a calibrated forecast."
-                  phase={phase}
-                  phaseTarget={4}
-                />
+                {scenariosCalibrated ? (
+                  <>
+                    <BullBearCard
+                      label="Bull scenario"
+                      value={probabilities.bull}
+                      accent="#00e599"
+                      description="Canonical snapshot scenario weight for the bull path. Context, not a calibrated forecast."
+                      phase={phase}
+                      phaseTarget={4}
+                    />
+                    <BullBearCard
+                      label="Bear scenario"
+                      value={probabilities.bear}
+                      accent="#ff4d6d"
+                      description="Canonical snapshot scenario weight for the bear path. Context, not a calibrated forecast."
+                      phase={phase}
+                      phaseTarget={4}
+                    />
+                  </>
+                ) : (
+                  <div className="rounded border border-amber-300/20 bg-amber-300/[0.04] p-4" data-scenario-probabilities-withheld data-testid="scenario-probabilities-withheld">
+                    <p className="font-mono text-[10px] leading-4 text-amber-100/90">{SCENARIO_PROBABILITY_WITHHELD_TEXT}</p>
+                  </div>
+                )}
 
                 {/* Seismograph strip */}
                 <SeismographStrip pressure={pressure} accent={accent} phase={phase} />
@@ -1147,6 +1157,7 @@ export default function Now() {
             style={{ opacity: phase >= 7 ? 1 : 0, transition: "opacity 0.6s ease" }}
           >
             <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">Scenario Distribution</p>
+            {scenariosCalibrated ? (
             <div className="space-y-3">
               {[
                 { label: "Bull", value: probabilities.bull, color: "#00e599" },
@@ -1172,6 +1183,9 @@ export default function Now() {
                 </div>
               ))}
             </div>
+            ) : (
+              <p className="font-mono text-[10px] leading-4 text-amber-100/90" data-scenario-probabilities-withheld>{SCENARIO_PROBABILITY_WITHHELD_TEXT}</p>
+            )}
             {marketState?.outlook.highestProbabilityPath && (
               <p className="mt-4 border-l-2 border-violet-300/50 bg-violet-300/[0.04] px-3 py-2 text-xs leading-5 text-slate-300">
                 {marketState.outlook.highestProbabilityPath}
@@ -1239,6 +1253,7 @@ export default function Now() {
         </Section>
 
         <Section id="probabilities" index="04" eyebrow="Probabilities" title="What the current state implies" description="Scenario probabilities are distributions, not certainty. They update from the same canonical market state used across FAULTLINE.">
+          {scenariosCalibrated ? (
           <div className="grid gap-3 sm:grid-cols-3">
             {[
               { label: "Bull", value: probabilities.bull, accent: "#00e599" },
@@ -1254,6 +1269,9 @@ export default function Now() {
               </div>
             ))}
           </div>
+          ) : (
+            <p className="rounded border border-amber-300/20 bg-amber-300/[0.04] px-4 py-3 font-mono text-[10px] leading-4 text-amber-100/90" data-scenario-probabilities-withheld>{SCENARIO_PROBABILITY_WITHHELD_TEXT}</p>
+          )}
           {marketState?.outlook.highestProbabilityPath && (
             <p className="mt-5 border-l-2 border-violet-300/50 bg-violet-300/[0.04] px-4 py-3 text-sm leading-6 text-slate-300">
               Highest-probability path: {marketState.outlook.highestProbabilityPath}
