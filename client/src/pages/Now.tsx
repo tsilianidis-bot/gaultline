@@ -24,6 +24,10 @@ import {
 } from "@shared/routeRegistry";
 import { formatCanonicalPercent, formatCanonicalScore } from "@shared/marketMetrics";
 import { formatOrdinal } from "@shared/historicalPercentile";
+import {
+  buildWhatIsHappeningCopy,
+  topThreatEvidenceCopy,
+} from "@shared/nowInterpretationCopy";
 import { formatScenarioPercent } from "@shared/canonicalReadout";
 import { customerIntegrityChipLevel, customerIntegrityColor, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
@@ -862,6 +866,21 @@ export default function Now() {
   // Threat classification comes from the evidence family's own signal (shared classifier),
   // never from strength order alone.
   const threats = marketState?.now.threats ?? [];
+  // Recompute NOW interpretation from live served evidence so stale stored
+  // narratives cannot claim "constructive" / cite unavailable drivers.
+  const whatIsHappeningCopy = buildWhatIsHappeningCopy({
+    pressureScore: pressure,
+    regimeLabel: String(regime),
+    historicalPercentile,
+    evidenceFamilies: evidenceFamilies.map(f => ({
+      name: f.name,
+      signal: String(f.signal),
+      strength: Number(f.strength),
+      currentValue: "currentValue" in f ? String((f as { currentValue?: string }).currentValue ?? "") : undefined,
+      trend: "trend" in f ? String((f as { trend?: string }).trend ?? "") : undefined,
+    })),
+  });
+
   const topAnalog = marketState?.outlook.topAnalog ?? (output.analogs[0]
     ? { period: output.analogs[0].year, label: output.analogs[0].era, similarity: output.analogs[0].similarity, resolution: "Deterministic fallback analog; canonical resolution unavailable." }
     : null);
@@ -987,7 +1006,7 @@ export default function Now() {
                   {headline}
                 </h1>
                 <p className="mt-4 text-sm leading-6 text-slate-300">
-                  {marketState?.why.narrative.whatIsHappening ?? output.narrative.regimeAssessment}
+                  {whatIsHappeningCopy || marketState?.why.narrative.whatIsHappening || output.narrative.regimeAssessment}
                 </p>
 
                 {/* Regime badges */}
@@ -1011,7 +1030,7 @@ export default function Now() {
                   <div className="rounded border border-rose-300/20 bg-rose-300/[0.045] p-3">
                     <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-rose-200/65">Top threat</p>
                     <p className="mt-1 text-sm font-medium text-slate-100">{threats[0] ?? "No dominant verified threat"}</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-400">{threats[0] ? "Strongest evidence family currently signaling stress." : "No evidence family is currently signaling stress."}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-400">{topThreatEvidenceCopy(Boolean(threats[0]))}</p>
                   </div>
                   <div className="rounded border border-violet-300/20 bg-violet-300/[0.045] p-3">
                     <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-violet-200/65">Closest historical analog</p>
