@@ -992,6 +992,8 @@ export default function Dashboard() {
         <ViewModeSelector mode={dashMode} onChange={handleModeChange} />
 
         {/* ── Mode-conditional rendering ───────────────────────── */}
+        {/* SIGNALS hierarchy: movers first inside SignalsMode; compact integrity + preflight secondary there.
+            Do not render the large awareness / preflight entry cards again in signals mode. */}
         {canonicalState ? (
           <>
             {dashMode === "pulse" && <PulseMode />}
@@ -1002,8 +1004,8 @@ export default function Dashboard() {
           <PageDegradedBanner message="Current canonical state is unavailable." detail="Dashboard intelligence modes withhold current interpretation until one authoritative state is available." />
         )}
 
-        {/* ── Quick Actions bar ──────────────────────────────────── */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 100ms both' }}>
+        {/* ── Quick Actions bar (tertiary links; not the primary signals hierarchy) ── */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 100ms both' }} data-dashboard-quick-actions="true">
           {([
             { label: 'Pre-Flight',      path: '/app/pre-flight',              color: '#00E5FF' },
             { label: 'Decision Engine', path: '/app/decision-engine',          color: '#FF9500' },
@@ -1019,13 +1021,17 @@ export default function Dashboard() {
             </a>
           ))}
         </div>
-        {/* Legacy content — always visible below modes ───────── */}
-        {/* Data Integrity panel */}
-        <DataIntegrity />
+        {/* Pulse / Intelligence keep legacy integrity + full awareness cards.
+            Signals mode owns compact integrity + compact preflight inside SignalsMode. */}
+        {dashMode !== "signals" && (
+          <>
+            <DataIntegrity />
+            <DashboardAwarenessSection />
+          </>
+        )}
 
-        {/* ── Complete Market Awareness™ Dashboard Card ──────────────── */}
-        <DashboardAwarenessSection />
-
+        {dashMode !== "signals" && (
+          <>
         {/* ── PRE-FLIGHT ENTRY CARD ──────────────────────────────────────── */}
         <div style={{ background: 'linear-gradient(135deg, rgba(0,212,255,0.07) 0%, rgba(12,15,22,0.98) 60%)', border: '1px solid rgba(0,212,255,0.22)', borderLeft: '3px solid #00E5FF', borderRadius: '6px', padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 38ms both' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
@@ -1048,6 +1054,9 @@ export default function Dashboard() {
             </a>
           </div>
         </div>
+          </>
+        )}
+
         {/* ── SITUATION ROOM ENTRY CARD ──────────────────────────────────── */}
         <div style={{ background: 'linear-gradient(135deg, rgba(255,170,0,0.07) 0%, rgba(12,15,22,0.98) 60%)', border: '1px solid rgba(255,170,0,0.22)', borderLeft: '3px solid #FFAA00', borderRadius: '6px', padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 42ms both' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
