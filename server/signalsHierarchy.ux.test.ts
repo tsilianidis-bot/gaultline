@@ -34,10 +34,16 @@ describe("SIGNALS information hierarchy (Crypto / Stocks / Rotation)", () => {
     expect(signalsMode).toContain("CATALYST UNCLEAR");
     expect(signalsMode).toContain("data-signals-field=\"direction\"");
     expect(signalsMode).toContain("data-signals-field=\"pct-move\"");
-    expect(signalsMode).toContain("data-signals-field=\"relative-volume\"");
+    expect(signalsMode).toContain("data-signals-field=\"turnover\"");
+    expect(signalsMode).toContain("TURNOVER {turnover");
+    expect(signalsMode).toContain("(VOL/MCAP)");
     expect(signalsMode).toContain("data-signals-field=\"momentum\"");
     expect(signalsMode).toContain("data-signals-field=\"freshness\"");
-    expect(signalsMode).toContain("data-signals-field=\"watch-next\"");
+  });
+
+  it("never calls Vol/MCap 'relative volume' and has no per-row 'Watch next' prompt", () => {
+    expect(signalsMode).not.toMatch(/REL VOL|RVOL|relative-volume|relativeVolume/);
+    expect(signalsMode).not.toMatch(/Watch next:|watch-next/);
   });
 
   it("does not blank the entire SignalsMode on missing canonical state", () => {
@@ -84,6 +90,13 @@ describe("Data integrity DELAYED / STALE / UNAVAILABLE detail", () => {
     // Age must not be gated on isLive only
     expect(dataIntegrity).not.toMatch(/freshness !== null && isLive &&/);
   });
+
+  it("does not count feeds from the always-empty client rawFred map (false 0/10)", () => {
+    expect(dataIntegrity).not.toMatch(/rawFred\[/);
+    expect(dataIntegrity).not.toContain("FRED_FEEDS");
+    expect(dataIntegrity).toContain("canonicalInputRows");
+    expect(dataIntegrity).toContain("not reported to this view");
+  });
 });
 
 describe("Signal calculation / methodology untouched", () => {
@@ -105,5 +118,29 @@ describe("Signal calculation / methodology untouched", () => {
     // Also confirm vs explicit base (uncommitted + committed)
     const named = execSync(`git diff ${base} -- ${engineFiles.join(" ")}`, { cwd: root, encoding: "utf8" });
     expect(named.trim()).toBe("");
+  });
+});
+
+describe("canonicalInputRows reads fields already in the canonical payload", async () => {
+  const { canonicalInputRows } = await import("../client/src/components/DataIntegrity");
+  const prod = JSON.parse(read("server/__fixtures__/prod-2026-10-01/canonical-current.json"));
+
+  it("prod fixture: 9 inputs from engines[].sourceInputIds, 5 delayed, 1 static, 3 current", () => {
+    const rows = canonicalInputRows(prod)!;
+    expect(rows).not.toBeNull();
+    expect(rows.length).toBe(9);
+    expect(rows.filter(r => r.state === "DELAYED").map(r => r.id).sort()).toEqual([...prod.delayedInputs].sort());
+    expect(rows.filter(r => r.state === "STATIC").map(r => r.id)).toEqual(["ai_concentration_static_baseline"]);
+    expect(rows.filter(r => r.state === "CURRENT").length).toBe(3);
+  });
+
+  it("returns null (not reported) when the snapshot lists no inputs", () => {
+    expect(canonicalInputRows(null)).toBeNull();
+    expect(canonicalInputRows({ engines: [], delayedInputs: [], staleInputs: [], unavailableInputs: [], fallbackInputs: [] })).toBeNull();
+  });
+
+  it("precedence UNAVAILABLE > STALE > FALLBACK > DELAYED", () => {
+    const rows = canonicalInputRows({ engines: [{ sourceInputIds: ["a", "b", "c", "d"] }], unavailableInputs: ["a"], staleInputs: ["a", "b"], fallbackInputs: ["b", "c"], delayedInputs: ["c", "d"] })!;
+    expect(Object.fromEntries(rows.map(r => [r.id, r.state]))).toEqual({ a: "UNAVAILABLE", b: "STALE", c: "FALLBACK", d: "DELAYED" });
   });
 });

@@ -12,7 +12,16 @@ import { describe, expect, it, vi } from "vitest";
 const NOW_ISO = new Date(Date.now() - 5 * 60_000).toISOString();
 const env: { integrityLabel: string; canonical: any } = {
   integrityLabel: "DELAYED",
-  canonical: { regime: "MODERATE RISK", pressureIndex: 34, delayedInputs: ["CPIAUCSL", "UNRATE"], staleInputs: [], unavailableInputs: [], fallbackInputs: [] },
+  canonical: {
+    regime: "MODERATE RISK", pressureIndex: 34,
+    engines: [
+      { engineId: "liquidity-stress", sourceInputIds: ["hy_credit_spread", "secured_overnight_financing_rate"] },
+      { engineId: "labor-rates", sourceInputIds: ["unemployment_rate", "ten_year_treasury_yield"] },
+      { engineId: "inflation", sourceInputIds: ["consumer_price_index_yoy"] },
+      { engineId: "ai-bubble", sourceInputIds: ["ai_concentration_static_baseline"] },
+    ],
+    delayedInputs: ["consumer_price_index_yoy", "unemployment_rate"], staleInputs: [], unavailableInputs: [], fallbackInputs: [],
+  },
 };
 
 vi.mock("@/_core/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: 1, name: "QA" }, loading: false }) }));
@@ -40,7 +49,7 @@ vi.mock("@/contexts/EngineContext", () => ({
     dataError: null,
     forceRefresh: () => undefined,
     canonicalState: env.canonical,
-    sourceHealth: [{ id: "FRED", status: "degraded", required: true }],
+    sourceHealth: [{ id: "fred", status: "healthy", required: true, asOf: new Date(Date.now() - 1286 * 60_000).toISOString(), detail: "", label: "Macro and Credit Evidence" }],
   }),
 }));
 vi.mock("@/lib/trpc", () => {
@@ -93,12 +102,14 @@ describe("SignalsMode rendered hierarchy (Crypto default tab)", () => {
     expect(t).toContain("TOP CRYPTO BY VOLUME");
     expect(t).toMatch(/BTC.*UP.*\+2\.40%/);
     expect(t).toMatch(/ETH.*DOWN.*-3\.60%/);
-    expect(t).toContain("REL VOL 2.6% (VOL/MCAP)");
+    expect(t).toContain("TURNOVER 2.6% (VOL/MCAP)");
+    expect(t).not.toMatch(/REL VOL|relative volume/i);
     expect(t).toContain("7D -6.00%");
     expect(t).toContain("CATALYST UNCLEAR");
     expect(t).toMatch(/AS OF .* ET/);
     expect(t).toContain("REGIME · MODERATE RISK");
-    expect(t).toContain("Watch next:");
+    expect(t).not.toMatch(/watch next/i);
+    expect(html).not.toContain('data-signals-field="watch-next"');
   });
 
   it("labels the preflight score explicitly, never as a bare Pressure-style 0/100", () => {
@@ -115,19 +126,26 @@ describe("SignalsMode rendered hierarchy (Crypto default tab)", () => {
     expect(t).toContain("DELAYED · CONFIDENCE REDUCED");
     expect(t).toContain("usable at reduced confidence");
     expect(t).toMatch(/Last successful observation: .* ET · age 21h 26m ago/);
-    expect(t).toContain("CPIAUCSL·delayed");
+    expect(t).toContain("CPI YoY·delayed");
+    expect(t).toContain("Unemployment·delayed");
+    // Count comes from canonical inputs, not the always-empty client rawFred map.
+    expect(t).toContain("6 INPUTS · 2 DELAYED");
+    expect(t).not.toMatch(/\b0\/10\b/);
+    expect(html).toContain('data-integrity-feeds-reported="canonical"');
     expect(t).toContain("Metrics withheld / not current:");
   });
 
   it("STALE integrity withholds and never presents readings as current", () => {
     env.integrityLabel = "STALE";
-    env.canonical = { ...env.canonical, staleInputs: ["BAMLH0A0HYM2"] };
+    env.canonical = { ...env.canonical, staleInputs: ["hy_credit_spread"] };
     const h = renderToStaticMarkup(createElement(SignalsMode));
     const s = text(h);
     expect(h).toContain('data-integrity-state="STALE"');
     expect(s).toContain("stale observations are not shown as current");
-    expect(s).toContain("BAMLH0A0HYM2 (stale)");
+    expect(s).toContain("HY Spread (stale)");
+    expect(s).toContain("1 STALE");
     env.integrityLabel = "DELAYED";
+    env.canonical = { ...env.canonical, staleInputs: [] };
   });
 
   it("UNAVAILABLE integrity marks signals withheld", () => {
@@ -135,6 +153,18 @@ describe("SignalsMode rendered hierarchy (Crypto default tab)", () => {
     const s = text(renderToStaticMarkup(createElement(SignalsMode)));
     expect(s).toContain("Signals withheld or non-authoritative until feeds recover");
     env.integrityLabel = "DELAYED";
+  });
+
+  it("no canonical inputs → feed status UNAVAILABLE / not reported (never a false 0/10)", () => {
+    const saved = env.canonical;
+    env.canonical = { regime: "MODERATE RISK", pressureIndex: 34, engines: [], delayedInputs: [], staleInputs: [], unavailableInputs: [], fallbackInputs: [] };
+    const h = renderToStaticMarkup(createElement(SignalsMode));
+    const s = text(h);
+    expect(s).toContain("FEED STATUS UNAVAILABLE · not reported to this view");
+    expect(s).toContain("Affected inputs: feed status not reported to this view");
+    expect(h).toContain('data-integrity-feeds-reported="not-reported"');
+    expect(s).not.toMatch(/\b0\/10\b/);
+    env.canonical = saved;
   });
 
   it("still renders movers when canonical state is missing (no blank SignalsMode)", () => {

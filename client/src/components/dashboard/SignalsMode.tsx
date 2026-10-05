@@ -5,7 +5,8 @@
  *   2. How strong?
  *   3. Why?
  *   4. Is data current enough?
- *   5. What to watch next?
+ *   5. What to watch next? — not shown per row: no engine-backed, signal-specific
+ *      prompt exists here, so none is invented (see DEEP SCAN / Signal Outlook).
  * Signal content first; Pre-Flight / integrity are compact secondary.
  * Display-only — does not change signal calculations or methodology.
  */
@@ -50,7 +51,8 @@ function directionLabel(change24h: number | null): { text: string; color: string
   return { text: "FLAT", color: "#94A3B8" };
 }
 
-function relativeVolumePct(totalVolume: number | null | undefined, marketCap: number | null | undefined): number | null {
+/** Turnover = 24h volume / market cap (%). Not relative volume (no trailing-average baseline). */
+function turnoverPct(totalVolume: number | null | undefined, marketCap: number | null | undefined): number | null {
   if (typeof totalVolume !== "number" || typeof marketCap !== "number") return null;
   if (!Number.isFinite(totalVolume) || !Number.isFinite(marketCap) || marketCap <= 0) return null;
   return (totalVolume / marketCap) * 100;
@@ -205,12 +207,9 @@ function CryptoSignalGrid({ regime }: { regime: string | null | undefined }) {
           const changeColor = change24hColor(change);
           const dir = directionLabel(change);
           const changeIcon = change === null ? <Minus size={10} /> : change >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />;
-          const rvol = relativeVolumePct(coin.totalVolume, coin.marketCap);
+          const turnover = turnoverPct(coin.totalVolume, coin.marketCap);
           const mom = momentumText(coin.priceChangePercent7d);
           const asOf = formatEt(coin.lastUpdated) ?? ageLabel(coin.lastUpdated);
-          const watch = dir.text === "UNKNOWN"
-            ? "24h change unavailable — wait for a fresh provider print"
-            : `Whether the ${dir.text.toLowerCase()} move holds with volume into the next session`;
 
           return (
             <div
@@ -268,10 +267,10 @@ function CryptoSignalGrid({ regime }: { regime: string | null | undefined }) {
                 </div>
               </div>
 
-              {/* 2–5: strength detail, why, freshness, watch next */}
+              {/* 2–4: strength detail, why, freshness */}
               <div style={{ display: "flex", flexWrap: "wrap", columnGap: 12, rowGap: 4, marginTop: 8, fontFamily: MONO, fontSize: 8, letterSpacing: "0.06em", color: "rgba(148,163,184,0.65)" }}>
-                <span data-signals-field="relative-volume">
-                  REL VOL {rvol === null ? "—" : `${rvol.toFixed(1)}%`} (VOL/MCAP)
+                <span data-signals-field="turnover">
+                  TURNOVER {turnover === null ? "—" : `${turnover.toFixed(1)}%`} (VOL/MCAP)
                 </span>
                 <span data-signals-field="momentum" style={{ color: change24hColor(coin.priceChangePercent7d ?? null) }}>
                   {mom}
@@ -282,9 +281,6 @@ function CryptoSignalGrid({ regime }: { regime: string | null | undefined }) {
                 <span data-signals-field="freshness">
                   {asOf ? `AS OF ${asOf}` : "AS OF UNAVAILABLE"}
                 </span>
-              </div>
-              <div style={{ fontFamily: SANS, fontSize: 11, color: "rgba(148,163,184,0.55)", marginTop: 4, lineHeight: 1.4 }} data-signals-field="watch-next">
-                Watch next: {watch}
               </div>
             </div>
           );
@@ -384,16 +380,13 @@ function StocksSection({ regime }: { regime: string | null | undefined }) {
                 />
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", columnGap: 12, rowGap: 4, marginTop: 8, fontFamily: MONO, fontSize: 8, letterSpacing: "0.06em", color: "rgba(148,163,184,0.65)" }}>
-                <span data-signals-field="relative-volume">{move.toUpperCase()} · REL VOL N/A (DOMAIN SCORE)</span>
+                <span data-signals-field="baseline-move">{move.toUpperCase()}</span>
                 <span data-signals-field="catalyst" style={{ color: "rgba(250,204,21,0.75)" }}>
                   {why ? `WHY · ${why}` : "CATALYST UNCLEAR"}
                 </span>
                 <span data-signals-field="freshness">
                   {asOf ? `AS OF ${asOf}` : "AS OF UNAVAILABLE"} · {domainState && domainState !== "LIVE" ? domainState : integrityLabel}
                 </span>
-              </div>
-              <div style={{ fontFamily: SANS, fontSize: 11, color: "rgba(148,163,184,0.55)", marginTop: 4 }} data-signals-field="watch-next">
-                Watch next: Domain trajectory vs peers and next FRED print for related series
               </div>
             </div>
           );
@@ -486,12 +479,8 @@ function RotationTracker({ regime }: { regime: string | null | undefined }) {
                 {(btcDom?.trend ?? "unknown").toUpperCase()}
               </span>
               <span data-signals-field="momentum">{(btcDom?.pressure ?? "—").toUpperCase()} PRESSURE</span>
-              <span data-signals-field="relative-volume">REL VOL N/A (DOMINANCE)</span>
               <span data-signals-field="catalyst" style={{ color: "rgba(250,204,21,0.75)" }}>CATALYST UNCLEAR</span>
               <span data-signals-field="freshness">{asOf ? `AS OF ${asOf}` : "AS OF UNAVAILABLE"}</span>
-            </div>
-            <div style={{ fontFamily: SANS, fontSize: 11, color: "rgba(148,163,184,0.55)", marginTop: 6 }} data-signals-field="watch-next">
-              Watch next: BTC.D inflection and whether sector momentum breadth expands
             </div>
           </div>
 

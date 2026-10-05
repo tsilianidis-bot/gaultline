@@ -1,7 +1,12 @@
 /* ============================================================
-   FAULTLINE — DataIntegrity Panel
-   Live feed health indicators, freshness labels, and fallback
-   status for FRED / canonical inputs. Display only.
+   FAULTLINE — DataIntegrity Panel (display only)
+   Per-input freshness comes from the canonical snapshot the client
+   already loads (marketState.canonicalCurrent): engines[].sourceInputIds
+   plus staleInputs / delayedInputs / unavailableInputs / fallbackInputs,
+   and the FRED source entry in marketState.sourceHealth (status, asOf).
+   No new fetch, no engine or server logic. The legacy client `rawFred`
+   map is always empty, so it is no longer used to count feeds (that
+   produced a false "0/10").
    Explicit states: LIVE / DELAYED / STALE / UNAVAILABLE (etc).
    Never presents stale as current.
    ============================================================ */
@@ -11,42 +16,75 @@ import { ChevronDown, ChevronUp, RefreshCw, Wifi, WifiOff, AlertCircle } from "l
 import { formatEt } from "@shared/credibilityLabels";
 import { customerIntegrityColor, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
 
-interface FeedRow {
-  series: string;
+export type CanonicalInputState = "CURRENT" | "DELAYED" | "STALE" | "FALLBACK" | "UNAVAILABLE" | "STATIC";
+
+export interface CanonicalInputRow {
+  id: string;
   label: string;
-  description: string;
-  apiSource: string;
+  state: CanonicalInputState;
 }
 
-const FRED_FEEDS: FeedRow[] = [
-  { series: "DGS10",         label: "10Y Treasury",       description: "10-Year Constant Maturity Rate",       apiSource: "FRED/DGS10" },
-  { series: "DGS30",         label: "30Y Treasury",       description: "30-Year Constant Maturity Rate",       apiSource: "FRED/DGS30" },
-  { series: "T10Y2Y",        label: "Yield Curve",        description: "10Y-2Y Spread (Inversion Signal)",     apiSource: "FRED/T10Y2Y" },
-  { series: "CPIAUCSL",      label: "CPI Inflation",      description: "Consumer Price Index YoY%",            apiSource: "FRED/CPIAUCSL" },
-  { series: "PPIACO",        label: "PPI",                description: "Producer Price Index YoY%",            apiSource: "FRED/PPIACO" },
-  { series: "UNRATE",        label: "Unemployment",       description: "Civilian Unemployment Rate",           apiSource: "FRED/UNRATE" },
-  { series: "M2SL",          label: "M2 Money Supply",    description: "M2 Monetary Aggregate ($T)",           apiSource: "FRED/M2SL" },
-  { series: "BAMLH0A0HYM2",  label: "HY Spread",          description: "ICE BofA US HY Option-Adj Spread",     apiSource: "FRED/BAMLH0A0HYM2" },
-  { series: "NFCI",          label: "NFCI",               description: "Chicago Fed National Financial Cond.", apiSource: "FRED/NFCI" },
-  { series: "SOFR",          label: "SOFR Rate",          description: "Secured Overnight Financing Rate",     apiSource: "FRED/SOFR" },
-];
+const INPUT_LABELS: Record<string, string> = {
+  ten_year_treasury_yield: "10Y Treasury",
+  two_year_treasury_yield: "2Y Treasury",
+  consumer_price_index_yoy: "CPI YoY",
+  producer_price_index_yoy: "PPI YoY",
+  federal_funds_rate: "Fed Funds",
+  unemployment_rate: "Unemployment",
+  hy_credit_spread: "HY Spread",
+  secured_overnight_financing_rate: "SOFR",
+  ai_concentration_static_baseline: "AI Concentration (static baseline)",
+};
 
-function FeedStatusDot({ live, loading }: { live: boolean; loading: boolean }) {
-  if (loading) return (
-    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4B5563', flexShrink: 0 }} />
-  );
-  if (live) return (
-    <div style={{
-      width: 8, height: 8, borderRadius: '50%', background: '#00FF88',
-      boxShadow: '0 0 6px rgba(0,255,136,0.8)',
-      animation: 'feed-pulse 2s ease-in-out infinite',
-      flexShrink: 0,
-    }} />
-  );
-  return (
-    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#FF9500', boxShadow: '0 0 6px rgba(255,149,0,0.6)', flexShrink: 0 }} />
-  );
+export function inputLabel(id: string): string {
+  if (INPUT_LABELS[id]) return INPUT_LABELS[id];
+  const words = id.replace(/[_-]+/g, " ").trim();
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : id;
 }
+
+type CanonicalInputsLike = {
+  engines?: ReadonlyArray<{ sourceInputIds?: readonly string[] | null }> | null;
+  staleInputs?: readonly string[] | null;
+  delayedInputs?: readonly string[] | null;
+  unavailableInputs?: readonly string[] | null;
+  fallbackInputs?: readonly string[] | null;
+} | null | undefined;
+
+/**
+ * Per-input status from fields already present in the canonical payload.
+ * Returns null when the snapshot reports no inputs (status not reported to this view).
+ * Precedence: UNAVAILABLE > STALE > FALLBACK > DELAYED > STATIC > CURRENT.
+ */
+export function canonicalInputRows(state: CanonicalInputsLike): CanonicalInputRow[] | null {
+  if (!state) return null;
+  const listed = (xs: readonly string[] | null | undefined) => new Set(Array.isArray(xs) ? xs : []);
+  const stale = listed(state.staleInputs);
+  const delayed = listed(state.delayedInputs);
+  const unavailable = listed(state.unavailableInputs);
+  const fallback = listed(state.fallbackInputs);
+  const ids = new Set<string>();
+  for (const e of state.engines ?? []) for (const id of e?.sourceInputIds ?? []) if (id) ids.add(id);
+  for (const s of [stale, delayed, unavailable, fallback]) s.forEach((id) => ids.add(id));
+  if (ids.size === 0) return null;
+  return Array.from(ids).sort().map((id) => {
+    const state: CanonicalInputState = unavailable.has(id) ? "UNAVAILABLE"
+      : stale.has(id) ? "STALE"
+      : fallback.has(id) ? "FALLBACK"
+      : delayed.has(id) ? "DELAYED"
+      : /static/i.test(id) ? "STATIC"
+      : "CURRENT";
+    return { id, label: inputLabel(id), state };
+  });
+}
+
+const STATE_COLOR: Record<CanonicalInputState, string> = {
+  CURRENT: "#00FF88",
+  DELAYED: "#7DD3FC",
+  STALE: "#FBBF24",
+  FALLBACK: "#FF9500",
+  UNAVAILABLE: "#94A3B8",
+  STATIC: "#94A3B8",
+};
 
 function formatAgeMinutes(mins: number | null): string {
   if (mins === null) return "age unknown";
@@ -57,34 +95,50 @@ function formatAgeMinutes(mins: number | null): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-function listPreview(items: string[] | null | undefined, empty: string): string {
-  if (!items || items.length === 0) return empty;
+function listPreview(items: string[], empty: string): string {
+  if (items.length === 0) return empty;
   if (items.length <= 4) return items.join(", ");
   return `${items.slice(0, 4).join(", ")} +${items.length - 4} more`;
 }
 
+function StatusDot({ color, pulse }: { color: string; pulse?: boolean }) {
+  return (
+    <div style={{
+      width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0,
+      boxShadow: `0 0 6px ${color}99`, animation: pulse ? 'feed-pulse 2s ease-in-out infinite' : undefined,
+    }} />
+  );
+}
+
 export default function DataIntegrity({ variant = "default" }: { variant?: "default" | "signals" }) {
   const {
-    rawFred, isLoading, isLive, integrityLabel, lastUpdated, dataError, forceRefresh, canonicalState, sourceHealth,
+    isLoading, isLive, integrityLabel, lastUpdated, dataError, forceRefresh, canonicalState, sourceHealth,
   } = useEngine();
   const [expanded, setExpanded] = useState(false);
 
-  const liveCount = FRED_FEEDS.filter(f => rawFred[f.series] != null).length;
-  const totalCount = FRED_FEEDS.length;
-  const freshnessMins = lastUpdated
-    ? Math.round((Date.now() - lastUpdated.getTime()) / 60000)
-    : null;
-  const lastObsEt = lastUpdated ? formatEt(lastUpdated.getTime()) : null;
+  const rows = useMemo(() => canonicalInputRows(canonicalState as CanonicalInputsLike), [canonicalState]);
+  const fredSource = (sourceHealth ?? []).find((s) => s.id === "fred") ?? null;
+  const reported = rows !== null;
 
-  const delayedInputs = (canonicalState?.delayedInputs ?? []) as string[];
-  const staleInputs = (canonicalState?.staleInputs ?? []) as string[];
-  const unavailableInputs = (canonicalState?.unavailableInputs ?? []) as string[];
-  const fallbackInputs = (canonicalState?.fallbackInputs ?? []) as string[];
+  const count = (s: CanonicalInputState) => (rows ?? []).filter((r) => r.state === s).length;
+  const nDelayed = count("DELAYED");
+  const nStale = count("STALE");
+  const nUnavailable = count("UNAVAILABLE");
+  const nFallback = count("FALLBACK");
+  const total = rows?.length ?? 0;
+  const countParts = [
+    `${total} INPUTS`,
+    nDelayed ? `${nDelayed} DELAYED` : null,
+    nStale ? `${nStale} STALE` : null,
+    nFallback ? `${nFallback} FALLBACK` : null,
+    nUnavailable ? `${nUnavailable} UNAVAILABLE` : null,
+  ].filter(Boolean).join(" · ");
 
-  const unhealthySources = useMemo(
-    () => (sourceHealth ?? []).filter((s) => s.status !== "healthy").map((s) => s.id || "unknown"),
-    [sourceHealth],
-  );
+  // Last successful observation: the FRED source's own asOf when reported, else the market-state update time.
+  const fredAsOfMs = fredSource?.asOf ? new Date(fredSource.asOf).getTime() : NaN;
+  const lastObsMs = Number.isFinite(fredAsOfMs) ? fredAsOfMs : lastUpdated ? lastUpdated.getTime() : null;
+  const lastObsEt = lastObsMs !== null ? formatEt(lastObsMs) : null;
+  const ageMins = lastObsMs !== null ? Math.max(0, Math.round((Date.now() - lastObsMs) / 60000)) : null;
 
   const statusColor = isLoading
     ? "#4B5563"
@@ -98,19 +152,17 @@ export default function DataIntegrity({ variant = "default" }: { variant?: "defa
     : integrityLabel === "LIVE"
       ? "Signals remain fully usable with live evidence."
       : integrityLabel === "DELAYED"
-        ? "Signals remain usable at reduced confidence (publication lag / delayed feeds)."
+        ? "Signals remain usable at reduced confidence (publication lag / delayed inputs)."
         : integrityLabel === "STALE"
           ? "Signal confidence reduced — stale observations are not shown as current."
           : integrityLabel === "UNAVAILABLE"
             ? "Signals withheld or non-authoritative until feeds recover."
             : "Signal confidence reduced — do not treat readings as live current.";
 
-  const withheld = [
-    ...staleInputs.map((i) => `${i} (stale)`),
-    ...unavailableInputs.map((i) => `${i} (unavailable)`),
-  ];
+  const affected = (rows ?? []).filter((r) => r.state !== "CURRENT" && r.state !== "STATIC").map((r) => `${r.label}·${r.state.toLowerCase()}`);
+  const withheld = (rows ?? []).filter((r) => r.state === "STALE" || r.state === "UNAVAILABLE").map((r) => `${r.label} (${r.state.toLowerCase()})`);
 
-  const compactPad = variant === "signals" ? "8px 12px" : "12px 14px";
+  const pad = variant === "signals" ? "8px 12px" : "12px 14px";
 
   return (
     <div
@@ -124,21 +176,11 @@ export default function DataIntegrity({ variant = "default" }: { variant?: "defa
       }}
       data-integrity-panel={variant}
       data-integrity-state={statusLabel}
+      data-integrity-feeds-reported={reported ? "canonical" : "not-reported"}
     >
-      {/* Header row — always visible */}
       <button
         onClick={() => setExpanded(!expanded)}
-        style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          padding: compactPad,
-          background: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          minHeight: '44px',
-        }}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: pad, background: 'transparent', border: 'none', cursor: 'pointer', minHeight: '44px', flexWrap: 'wrap' }}
       >
         {isLive ? (
           <Wifi size={14} style={{ color: '#00FF88', flexShrink: 0 }} />
@@ -152,32 +194,31 @@ export default function DataIntegrity({ variant = "default" }: { variant?: "defa
           Data Integrity
         </span>
 
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '5px',
-          padding: '2px 8px',
-          background: `${statusColor}12`,
-          border: `1px solid ${statusColor}30`,
-          borderRadius: '3px',
-        }} data-integrity-badge={statusLabel}>
-          <FeedStatusDot live={isLive} loading={isLoading} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '2px 8px', background: `${statusColor}12`, border: `1px solid ${statusColor}30`, borderRadius: '3px' }} data-integrity-badge={statusLabel}>
+          <StatusDot color={statusColor} pulse={isLive} />
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: statusColor, letterSpacing: '0.1em' }}>
             {statusLabel}
           </span>
         </div>
 
         {!isLoading && (
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563' }} data-integrity-feed-count={`${liveCount}/${totalCount}`}>
-            {liveCount}/{totalCount}
-          </span>
+          reported ? (
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#94A3B8', letterSpacing: '0.06em' }} data-integrity-feed-count={countParts}>
+              {countParts}
+            </span>
+          ) : (
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#94A3B8', letterSpacing: '0.06em' }} data-integrity-feed-count="not-reported">
+              FEED STATUS UNAVAILABLE · not reported to this view
+            </span>
+          )
         )}
 
-        {/* Age always shown when known — including DELAYED / STALE / UNAVAILABLE */}
-        {freshnessMins !== null && !isLoading && (
+        {ageMins !== null && !isLoading && (
           <span
-            style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: freshnessMins < 5 && isLive ? '#00FF88' : freshnessMins < 30 ? '#FFD700' : '#FF9500' }}
-            data-integrity-age={formatAgeMinutes(freshnessMins)}
+            style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: ageMins < 5 && isLive ? '#00FF88' : ageMins < 30 ? '#FFD700' : '#FF9500' }}
+            data-integrity-age={formatAgeMinutes(ageMins)}
           >
-            {formatAgeMinutes(freshnessMins)}
+            {formatAgeMinutes(ageMins)}
           </span>
         )}
 
@@ -187,16 +228,8 @@ export default function DataIntegrity({ variant = "default" }: { variant?: "defa
         }
       </button>
 
-      {/* Degraded integrity detail — answer: feeds, age, usability, withheld */}
       {degraded && (
-        <div
-          style={{
-            padding: '8px 12px 10px',
-            borderTop: '1px solid rgba(255,149,0,0.12)',
-            background: 'rgba(255,149,0,0.04)',
-          }}
-          data-integrity-detail="degraded"
-        >
+        <div style={{ padding: '8px 12px 10px', borderTop: '1px solid rgba(255,149,0,0.12)', background: 'rgba(255,149,0,0.04)' }} data-integrity-detail="degraded">
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: statusColor, letterSpacing: '0.08em', marginBottom: 4 }}>
             {statusLabel} · CONFIDENCE REDUCED
           </div>
@@ -205,36 +238,22 @@ export default function DataIntegrity({ variant = "default" }: { variant?: "defa
           </div>
           <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 3, fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(148,163,184,0.75)', letterSpacing: '0.04em' }}>
             <span data-integrity-last-obs>
-              Last successful observation: {lastObsEt ?? "unavailable"}{freshnessMins !== null ? ` · age ${formatAgeMinutes(freshnessMins)}` : ""}
+              Last successful observation: {lastObsEt ?? "unavailable"}{ageMins !== null ? ` · age ${formatAgeMinutes(ageMins)}` : ""}
             </span>
             <span data-integrity-affected-feeds>
-              Affected feeds: {listPreview(
-                delayedInputs.length || staleInputs.length || unavailableInputs.length || fallbackInputs.length || unhealthySources.length
-                  ? [
-                      ...delayedInputs.map((i) => `${i}·delayed`),
-                      ...staleInputs.map((i) => `${i}·stale`),
-                      ...unavailableInputs.map((i) => `${i}·unavailable`),
-                      ...fallbackInputs.map((i) => `${i}·fallback`),
-                      ...unhealthySources.filter((id) => !delayedInputs.includes(id) && !staleInputs.includes(id) && !unavailableInputs.includes(id)),
-                    ]
-                  : [],
-                liveCount < totalCount ? `${totalCount - liveCount} FRED series missing in panel` : "none listed on canonical snapshot",
-              )}
+              Affected inputs: {reported ? listPreview(affected, "none listed on canonical snapshot") : "feed status not reported to this view"}
             </span>
             <span data-integrity-withheld>
-              Metrics withheld / not current: {listPreview(withheld, integrityLabel === "STALE" || integrityLabel === "UNAVAILABLE" ? "treat panel readings as non-current" : "none explicitly withheld")}
+              Metrics withheld / not current: {reported
+                ? listPreview(withheld, integrityLabel === "STALE" || integrityLabel === "UNAVAILABLE" ? "treat panel readings as non-current" : "none explicitly withheld")
+                : "feed status not reported to this view"}
             </span>
           </div>
         </div>
       )}
 
       {dataError && !isLive && !isLoading && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '8px',
-          padding: '8px 14px',
-          background: 'rgba(255,149,0,0.06)',
-          borderTop: '1px solid rgba(255,149,0,0.1)',
-        }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: 'rgba(255,149,0,0.06)', borderTop: '1px solid rgba(255,149,0,0.1)' }}>
           <AlertCircle size={12} style={{ color: '#FF9500', flexShrink: 0 }} />
           <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.4 }}>
             {dataError} — Last available observation only. Not presented as live current.
@@ -244,81 +263,48 @@ export default function DataIntegrity({ variant = "default" }: { variant?: "defa
 
       {expanded && (
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '10px 14px 14px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              St. Louis Federal Reserve · FRED API
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', gap: 8 }}>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.1em' }} data-integrity-fred-source={fredSource?.status ?? "not-reported"}>
+              Canonical snapshot inputs · FRED source {fredSource ? `${fredSource.status.toUpperCase()}${lastObsEt ? ` · as of ${lastObsEt}` : ""}` : "not reported to this view"}
             </span>
             <button
               onClick={(e) => { e.stopPropagation(); forceRefresh(); }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '5px',
-                padding: '4px 10px',
-                background: 'rgba(0,212,255,0.06)',
-                border: '1px solid rgba(0,212,255,0.2)',
-                borderRadius: '3px',
-                color: '#00D4FF',
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '8px',
-                letterSpacing: '0.08em',
-                cursor: 'pointer',
-                minHeight: '28px',
-              }}
+              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 10px', background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.2)', borderRadius: '3px', color: '#00D4FF', fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', letterSpacing: '0.08em', cursor: 'pointer', minHeight: '28px' }}
             >
               <RefreshCw size={9} />
               REFRESH
             </button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {FRED_FEEDS.map((feed) => {
-              const value = rawFred[feed.series];
-              const hasData = value != null;
-              const feedState = !hasData ? "UNAVAILABLE" : integrityLabel === "LIVE" ? "LIVE" : integrityLabel;
-              return (
+          {reported ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {rows!.map((row) => (
                 <div
-                  key={feed.series}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '7px 10px',
-                    background: hasData ? 'rgba(0,255,136,0.03)' : 'rgba(255,255,255,0.02)',
-                    borderRadius: '3px',
-                    border: `1px solid ${hasData ? 'rgba(0,255,136,0.08)' : 'rgba(255,255,255,0.04)'}`,
-                  }}
-                  data-integrity-feed={feed.series}
-                  data-integrity-feed-state={feedState}
+                  key={row.id}
+                  style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '7px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.05)' }}
+                  data-integrity-feed={row.id}
+                  data-integrity-feed-state={row.state}
                 >
-                  <FeedStatusDot live={hasData && integrityLabel === "LIVE"} loading={isLoading} />
+                  <StatusDot color={STATE_COLOR[row.state]} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#D1D5DB', letterSpacing: '0.06em' }}>
-                        {feed.label}
-                      </span>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#374151' }}>
-                        {feed.apiSource}
-                      </span>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: statusColor }}>
-                        {feedState}
-                      </span>
-                    </div>
-                    <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: '#4B5563', marginTop: '1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {feed.description}
-                    </div>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#D1D5DB', letterSpacing: '0.06em' }}>{row.label}</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', marginLeft: 6 }}>{row.id}</span>
                   </div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: hasData ? (integrityLabel === "LIVE" ? '#00FF88' : '#FFD700') : '#4B5563', flexShrink: 0 }}>
-                    {isLoading ? '—' : hasData ? value!.toFixed(2) : 'N/A'}
-                  </div>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: STATE_COLOR[row.state], letterSpacing: '0.08em' }}>{row.state}</span>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#94A3B8' }}>
+              UNAVAILABLE · feed status not reported to this view.
+            </div>
+          )}
 
           <div style={{ marginTop: '10px', padding: '8px', background: 'rgba(255,255,255,0.02)', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.04)' }}>
-            <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: '#374151', lineHeight: 1.5, margin: 0 }}>
-              Data sourced from the St. Louis Federal Reserve (FRED). Explicit states: LIVE / DELAYED / STALE / UNAVAILABLE.
-              Delayed or unavailable feeds reduce confidence. Stale values are never shown as current.
-              <strong style={{ color: '#4B5563' }}> Not financial advice.</strong>
+            <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: '#4B5563', lineHeight: 1.5, margin: 0 }}>
+              Per-input status is read from the current canonical snapshot (delayed / stale / fallback / unavailable lists).
+              Explicit states: LIVE / DELAYED / STALE / UNAVAILABLE. Delayed or unavailable inputs reduce confidence.
+              Stale values are never shown as current. <strong style={{ color: '#6B7280' }}>Not financial advice.</strong>
             </p>
           </div>
         </div>
