@@ -7,6 +7,7 @@
    ============================================================ */
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
+import { CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 import {
   Zap, TrendingUp, TrendingDown, AlertTriangle, Shield,
   BarChart2, ChevronRight, RefreshCw, Clock, Activity,
@@ -442,7 +443,7 @@ Updated: ${updatedAgo}`;
 
             {/* Stat grid */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "8px", marginBottom: "16px" }}>
-              <StatCard label="Market Verdict" value={verdictLabel} color={color} onClick={() => navigate("/app/pre-flight")} />
+              <StatCard label="Market Verdict" value={verdictLabel} color={color} onClick={() => navigate(CANONICAL_DESTINATION_BY_ID.act.path)} />
               <StatCard label="Pressure Index" value={`${overall.score.toFixed(1)}/10`} color={color} onClick={() => navigate("/app/pressure")} />
               <StatCard label="Confidence" value={`${fmosData?.confidence?.score ?? "—"}/100`} color={fmosData?.confidence?.score != null && fmosData.confidence.score >= 60 ? ACCENT.green : ACCENT.amber} />
               <StatCard label="Evidence Diversity" value={`${fmosData?.evidence?.diversityScore ?? "—"}`} sub="0=single source · 4=all families" color={fmosData?.evidence?.diversityScore != null && fmosData.evidence.diversityScore >= 3 ? ACCENT.green : ACCENT.amber} />

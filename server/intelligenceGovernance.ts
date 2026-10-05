@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { EVALUATION_PLAN, LEDGER_SCHEMA_VERSION, STATE_HASH_RECIPE, type RunContext, type RunSource, type RunTrigger } from "./forwardRunProvenance";
 import { asc, eq } from "drizzle-orm";
 import {
   governedIntelligenceClaims,
@@ -314,6 +315,18 @@ export interface ManifestRunProvenance {
   inputObservationDatesCaptured: false;
   writePolicy: "APPEND_ONLY_INSERT_IF_ABSENT";
   correctionOf: { stateId: string; reason: string } | null;
+  // ── Forward-ledger additions (A1–A4). Outside the stateHash core; the hash recipe is unchanged. ──
+  /** What started this run. Absent on rows written before this field existed. */
+  trigger?: RunTrigger;
+  triggerSource?: RunSource;
+  runStartedAt?: string;
+  /** true when runStartedAt is inside [18:00, 18:30) UTC */
+  scheduledWindow?: boolean;
+  ledgerSchemaVersion?: typeof LEDGER_SCHEMA_VERSION;
+  hashRecipe?: typeof STATE_HASH_RECIPE;
+  evaluationPlan?: typeof EVALUATION_PLAN;
+  /** Exact link to the Champion provenance row (and v2 outcomes) this run created, if any. */
+  outcomeLink?: Record<string, unknown>;
 }
 
 function regimeHookField(hook: unknown, key: "modelVersion" | "modelType" | "dataAsOf"): string | null {
@@ -322,7 +335,7 @@ function regimeHookField(hook: unknown, key: "modelVersion" | "modelType" | "dat
   return typeof value === "string" && value.trim() ? value : null;
 }
 
-export function buildAtomicIntelligenceStateManifest({ pressure, seismograph, originatingRunId, generatedAt = new Date().toISOString(), persistedHooks, codeVersion = null, correctionOf = null }: { pressure: FaultlinePressureOutput; seismograph: SeismographOutput | null; originatingRunId: string; generatedAt?: string; persistedHooks?: { systemicRegime?: unknown; signalConvergence?: unknown }; codeVersion?: string | null; correctionOf?: { stateId: string; reason: string } | null }): { manifest: AtomicIntelligenceStateManifest; claims: GovernedClaimRecord[]; inputQuality: LiveInputQualityManifestEntry[]; runProvenance: ManifestRunProvenance } {
+export function buildAtomicIntelligenceStateManifest({ pressure, seismograph, originatingRunId, generatedAt = new Date().toISOString(), persistedHooks, codeVersion = null, correctionOf = null, runContext, outcomeLink }: { pressure: FaultlinePressureOutput; seismograph: SeismographOutput | null; originatingRunId: string; generatedAt?: string; persistedHooks?: { systemicRegime?: unknown; signalConvergence?: unknown }; codeVersion?: string | null; correctionOf?: { stateId: string; reason: string } | null; runContext?: RunContext; outcomeLink?: Record<string, unknown> }): { manifest: AtomicIntelligenceStateManifest; claims: GovernedClaimRecord[]; inputQuality: LiveInputQualityManifestEntry[]; runProvenance: ManifestRunProvenance } {
   if (!originatingRunId.trim()) {
     throw new Error("Canonical intelligence manifests require an originatingRunId");
   }
@@ -406,6 +419,16 @@ export function buildAtomicIntelligenceStateManifest({ pressure, seismograph, or
     inputObservationDatesCaptured: false,
     writePolicy: "APPEND_ONLY_INSERT_IF_ABSENT",
     correctionOf: correctionOf ?? null,
+    ...(runContext ? {
+      trigger: runContext.trigger,
+      triggerSource: runContext.triggerSource,
+      runStartedAt: runContext.runStartedAt,
+      scheduledWindow: runContext.scheduledWindow,
+      ledgerSchemaVersion: LEDGER_SCHEMA_VERSION,
+      hashRecipe: STATE_HASH_RECIPE,
+      evaluationPlan: EVALUATION_PLAN,
+      outcomeLink: outcomeLink ?? { status: "NOT_RECORDED" },
+    } : {}),
   };
   return { manifest, claims, inputQuality, runProvenance };
 }
