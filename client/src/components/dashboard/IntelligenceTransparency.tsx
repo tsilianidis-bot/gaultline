@@ -22,6 +22,8 @@ const FRESHNESS_STYLE: Record<string, { bg: string; border: string; text: string
   DELAYED: { bg: "rgba(251,191,36,0.08)", border: "rgba(251,191,36,0.28)", text: "rgba(251,191,36,0.95)" },
   STALE: { bg: "rgba(255,107,53,0.10)", border: "rgba(255,107,53,0.30)", text: "rgba(255,107,53,0.95)" },
   UNAVAILABLE: { bg: "rgba(100,116,139,0.10)", border: "rgba(100,116,139,0.25)", text: "rgba(148,163,184,0.75)" },
+  "PARTLY FIXED BASELINE": { bg: "rgba(168,85,247,0.10)", border: "rgba(168,85,247,0.30)", text: "rgba(196,181,253,0.95)" },
+  "FIXED INPUT": { bg: "rgba(168,85,247,0.10)", border: "rgba(168,85,247,0.30)", text: "rgba(196,181,253,0.95)" },
 };
 
 function scoreColor(score: number | null): string {
@@ -81,6 +83,11 @@ function ContributionRow({ row, maxPoints }: { row: ComponentTransparency; maxPo
       <div style={{ minWidth: 0 }}>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "#E2E8F0", letterSpacing: "0.04em" }}>
           {row.rank != null ? String(row.rank).padStart(2, "0") : "—"} · {row.label}
+          {row.staticBaseline && row.fixedConcentrationScore != null && (
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: "rgba(196,181,253,0.85)", marginTop: 3, letterSpacing: "0.04em" }}>
+              FIXED BASELINE {row.fixedConcentrationScore} × 0.5 → {row.fixedPointsInVector} of AI / {row.fixedPointsInPi} PI pts (not live)
+            </div>
+          )}
         </div>
         <div style={{ marginTop: 5, height: 3, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
           <div style={{ width: `${width}%`, height: "100%", background: color, boxShadow: `0 0 8px ${color}55` }} />
@@ -135,7 +142,12 @@ function ComponentCard({ row }: { row: ComponentTransparency }) {
         <MonoBadge label={row.posture} tone="gray" />
         <MonoBadge label={`WT ${row.weightPct}%`} tone="cyan" />
         {row.contributionPoints != null && <MonoBadge label={`${row.contributionPoints} pts`} tone="purple" />}
-        {row.staticBaseline && <MonoBadge label="Static baseline" tone="gray" />}
+        {row.staticBaseline && row.fixedConcentrationScore != null && (
+          <MonoBadge label={`Fixed constant ${row.fixedConcentrationScore}`} tone="purple" />
+        )}
+        {row.staticBaseline && row.fixedPointsInVector != null && (
+          <MonoBadge label={`${row.fixedPointsInVector} of AI from fixed`} tone="gray" />
+        )}
       </div>
 
       <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "rgba(148,163,184,0.85)", lineHeight: 1.65, margin: "0 0 10px" }}>
@@ -189,9 +201,14 @@ function HowBuiltBlock({ model }: { model: IntelligenceTransparencyModel }) {
       <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "rgba(148,163,184,0.85)", lineHeight: 1.65, margin: "0 0 12px" }}>
         {model.howBuilt.explanation}
       </p>
-      <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "rgba(100,116,139,0.85)", lineHeight: 1.6, margin: "0 0 16px" }}>
+      <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "rgba(100,116,139,0.85)", lineHeight: 1.6, margin: "0 0 10px" }}>
         {model.howBuilt.methodNote}
       </p>
+      {model.howBuilt.aiFixedBaselineNote && (
+        <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "rgba(196,181,253,0.9)", lineHeight: 1.65, margin: "0 0 16px", borderLeft: "2px solid rgba(168,85,247,0.45)", paddingLeft: 10 }}>
+          {model.howBuilt.aiFixedBaselineNote}
+        </p>
+      )}
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
         <MonoBadge label={`PI ${model.pressureIndex}`} tone="cyan" />

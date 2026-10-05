@@ -16,7 +16,7 @@ import {
   PRESSURE_VECTOR_DISPLAY,
   pressureVectorLabel,
 } from "./pressureVectorLabels";
-import type { CanonicalDirection, CanonicalEngineState, CanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import type { CanonicalDirection, CanonicalEngineState, CanonicalIntelligenceState, PublicCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 import { PROBABILITY_DISPLAY_TEXT, type ProbabilityDisplay } from "./probabilityContract";
 
 /** Champion V1 weight keys ↔ engine ids (mirrors server/pressure/championBaseline). */
@@ -57,7 +57,34 @@ export const INPUT_INDICATOR_LABELS: Readonly<Record<string, string>> = {
   [AI_CONCENTRATION_STATIC_BASELINE_INPUT_ID]: "AI mega-cap concentration static baseline (~32.4% of S&P 500)",
 };
 
-export type FreshnessBadge = "LIVE" | "DELAYED" | "STALE" | "UNAVAILABLE";
+export type FreshnessBadge = "LIVE" | "DELAYED" | "STALE" | "UNAVAILABLE" | "PARTLY FIXED BASELINE" | "FIXED INPUT";
+
+
+/**
+ * Read-only disclosure of server/pressure/engine.ts scoreAIBubble fixed terms.
+ * Display only -- must stay identical to the engine source (tested).
+ * Formula: round(concentrationScore * 0.5 + rateScore * 0.3 + spreadScore * 0.2)
+ */
+export const AI_BUBBLE_FIXED_DISCLOSURE = {
+  /** engine.ts: const concentrationScore = 65 */
+  concentrationScore: 65,
+  /** engine.ts: concentrationScore * 0.5 */
+  concentrationWeightInVector: 0.5,
+  rateWeightInVector: 0.3,
+  spreadWeightInVector: 0.2,
+  sourcePath: "server/pressure/engine.ts",
+} as const;
+
+/** Fixed concentration term inside the 0-100 AI vector (65 * 0.5 = 32.5). */
+export function aiFixedBaselinePointsInVector(): number {
+  return AI_BUBBLE_FIXED_DISCLOSURE.concentrationScore * AI_BUBBLE_FIXED_DISCLOSURE.concentrationWeightInVector;
+}
+
+/** Fixed concentration term in Pressure Index points (vectorPts * AI Champion weight). */
+export function aiFixedBaselinePointsInPi(aiChampionWeight: number): number {
+  return Math.round(aiFixedBaselinePointsInVector() * aiChampionWeight * 10) / 10;
+}
+
 
 export type DirectionPosture =
   | "high-but-improving"
@@ -69,6 +96,17 @@ export type DirectionPosture =
   | "unavailable";
 
 export type ComponentAvailability = "available" | "unavailable";
+
+/** Canonical fields required for transparency (public or full state). */
+export type IntelligenceCanonicalLike = Pick<
+  CanonicalIntelligenceState,
+  | "stateId"
+  | "effectiveAt"
+  | "pressureIndex"
+  | "regime"
+  | "pressureDirection"
+  | "engines"
+>;
 
 export interface TransparencyWeightTable {
   "liquidity-stress": number;
@@ -100,7 +138,22 @@ export interface ComponentTransparency {
   delayedAgeLabel: string | null;
   availability: ComponentAvailability;
   staticBaseline: boolean;
+  /**
+   * Whether the component as a whole may be listed as carrying the composite.
+   * The fixed concentration constant itself is never cited as a live driver --
+   * see fixedConstantCitedAsLive / fixedBaselineDisclosure.
+   */
   citedAsDriver: boolean;
+  /** True when any code path would treat the fixed constant as live evidence (must stay false). */
+  fixedConstantCitedAsLive: boolean;
+  /** Plain disclosure of the engine fixed concentration term; null when not applicable. */
+  fixedBaselineDisclosure: string | null;
+  /** Engine concentrationScore (65) when static baseline applies. */
+  fixedConcentrationScore: number | null;
+  /** Points of the 0-100 AI vector from the fixed term (65*0.5=32.5). */
+  fixedPointsInVector: number | null;
+  /** PI index points attributable to the fixed term (32.5*AI weight). */
+  fixedPointsInPi: number | null;
 }
 
 export interface HowBuiltSummary {
@@ -111,6 +164,8 @@ export interface HowBuiltSummary {
   reconciles: boolean;
   explanation: string;
   methodNote: string;
+  /** Always-present AI fixed-baseline sentence when AI contributes; null otherwise. */
+  aiFixedBaselineNote: string | null;
 }
 
 export interface DemotedProbabilityView {
@@ -156,7 +211,25 @@ export function championWeightsFromBaseline(weights: {
   };
 }
 
-export function mapFreshnessBadge(raw: string | null | undefined, qualityStatus?: string | null): FreshnessBadge {
+/**
+ * Map engine freshness to a customer badge.
+ * Static-baseline / fixed-constant components NEVER map to LIVE -- even when the
+ * engine stamps CURRENT on the vector as a whole.
+ */
+export function mapFreshnessBadge(
+  raw: string | null | undefined,
+  qualityStatus?: string | null,
+  options?: { staticBaseline?: boolean },
+): FreshnessBadge {
+  if (options?.staticBaseline) {
+    const q = String(qualityStatus ?? "").toUpperCase();
+    if (q === "UNAVAILABLE") return "UNAVAILABLE";
+    const f = String(raw ?? "").toUpperCase();
+    if (f === "UNAVAILABLE" || f === "MISSING") return "UNAVAILABLE";
+    if (f === "STALE") return "STALE";
+    // Partly fixed: concentration is a fixed engine constant; rates/spreads may still move.
+    return "PARTLY FIXED BASELINE";
+  }
   const q = String(qualityStatus ?? "").toUpperCase();
   if (q === "UNAVAILABLE") return "UNAVAILABLE";
   const f = String(raw ?? "").toUpperCase();
@@ -164,7 +237,7 @@ export function mapFreshnessBadge(raw: string | null | undefined, qualityStatus?
   if (f === "STALE") return "STALE";
   if (f === "DELAYED") return "DELAYED";
   if (f === "CURRENT" || f === "LIVE" || f === "FRESH") return "LIVE";
-  if (f === "STATIC" || f === "FALLBACK" || f === "CACHED") return "DELAYED";
+  if (f === "STATIC" || f === "FALLBACK" || f === "CACHED") return "FIXED INPUT";
   return "UNAVAILABLE";
 }
 
@@ -216,6 +289,7 @@ function plainEnglishReason(args: {
   staticBaseline: boolean;
   availability: ComponentAvailability;
   description: string;
+  fixedBaselineDisclosure: string | null;
 }): string {
   if (args.availability === "unavailable" || args.score == null) {
     return `${args.label} is unavailable on the current canonical state and is not cited as a driver of the Pressure Index.`;
@@ -225,18 +299,34 @@ function plainEnglishReason(args: {
     args.direction === "Unknown"
       ? "Direction versus the prior verified reading is unavailable."
       : `Direction versus the prior verified reading: ${args.direction} (${args.posture}).`;
-  const freshnessNote =
-    args.freshness === "LIVE"
-      ? "Inputs are LIVE on the verified as-of."
-      : args.freshness === "DELAYED"
-        ? "Inputs carry publication lag (DELAYED)."
-        : args.freshness === "STALE"
-          ? "Inputs are STALE relative to the refresh window."
-          : "Inputs are UNAVAILABLE.";
-  const staticNote = args.staticBaseline
-    ? " The AI concentration baseline is a disclosed static reference, not a live market-cap feed."
-    : "";
-  return `${args.label} scores ${args.score}/100 and carries a fixed ${args.weightPct}% Champion weight (${pts}). ${dir} ${freshnessNote}${staticNote} ${args.description}`;
+  let freshnessNote: string;
+  if (args.freshness === "PARTLY FIXED BASELINE" || args.freshness === "FIXED INPUT") {
+    freshnessNote =
+      "Freshness is PARTLY FIXED BASELINE -- the concentration term is a fixed engine constant, not live market-cap data; live rate/spread inputs only adjust the remainder.";
+  } else if (args.freshness === "LIVE") {
+    freshnessNote = "Inputs are LIVE on the verified as-of.";
+  } else if (args.freshness === "DELAYED") {
+    freshnessNote = "Inputs carry publication lag (DELAYED).";
+  } else if (args.freshness === "STALE") {
+    freshnessNote = "Inputs are STALE relative to the refresh window.";
+  } else {
+    freshnessNote = "Inputs are UNAVAILABLE.";
+  }
+  const fixedNote = args.fixedBaselineDisclosure ? ` ${args.fixedBaselineDisclosure}` : "";
+  return `${args.label} scores ${args.score}/100 and carries a fixed ${args.weightPct}% Champion weight (${pts}). ${dir} ${freshnessNote}${fixedNote} ${args.description}`;
+}
+
+export function buildAiFixedBaselineDisclosure(aiChampionWeight: number): string {
+  const vectorPts = aiFixedBaselinePointsInVector();
+  const piPts = aiFixedBaselinePointsInPi(aiChampionWeight);
+  const c = AI_BUBBLE_FIXED_DISCLOSURE.concentrationScore;
+  const w = AI_BUBBLE_FIXED_DISCLOSURE.concentrationWeightInVector;
+  return (
+    `Half of the AI / Speculation vector is a fixed engine baseline value of ${c} ` +
+    `(weight ${w} inside the vector → ${vectorPts} of the 0–100 AI score; ` +
+    `${piPts} Pressure Index points at the ${(aiChampionWeight * 100).toFixed(0)}% Champion weight). ` +
+    `That fixed constant is not live evidence and is not cited as a live driver.`
+  );
 }
 
 /**
@@ -244,7 +334,7 @@ function plainEnglishReason(args: {
  * Weights must be the live Champion table (read-only); this function never invents them.
  */
 export function buildIntelligenceTransparency(
-  state: CanonicalIntelligenceState | null | undefined,
+  state: IntelligenceCanonicalLike | PublicCanonicalIntelligenceState | CanonicalIntelligenceState | null | undefined,
   weights: TransparencyWeightTable,
   options?: { nowMs?: number; bullDisplay?: ProbabilityDisplay | null; crashDisplay?: ProbabilityDisplay | null },
 ): IntelligenceTransparencyModel {
@@ -284,12 +374,24 @@ export function buildIntelligenceTransparency(
         ? engine.value
         : null;
     const availability: ComponentAvailability = score == null ? "unavailable" : "available";
-    const freshness = mapFreshnessBadge(engine?.freshnessStatus, engine?.qualityStatus);
+    const freshnessRaw = mapFreshnessBadge(engine?.freshnessStatus, engine?.qualityStatus, { staticBaseline });
+    const freshness: FreshnessBadge =
+      availability === "unavailable" ? "UNAVAILABLE" : freshnessRaw;
+    // Hard rule: staticBaseline never LIVE
+    if (staticBaseline && freshness === "LIVE") {
+      throw new Error("staticBaseline component must never map to LIVE freshness");
+    }
     const direction: CanonicalDirection = engine?.direction ?? "Unknown";
     const posture = directionPosture(score, direction);
     const asOf = formatAsOf(engine?.observedAt ?? engine?.calculatedAt ?? state.effectiveAt);
     const contributionPoints = score == null ? null : round1(score * weight);
+    // Overall vector may contribute to the composite; the fixed constant is never live evidence.
     const citedAsDriver = availability === "available" && freshness !== "UNAVAILABLE";
+    const fixedConcentrationScore = staticBaseline ? AI_BUBBLE_FIXED_DISCLOSURE.concentrationScore : null;
+    const fixedPointsInVector = staticBaseline ? aiFixedBaselinePointsInVector() : null;
+    const fixedPointsInPi = staticBaseline ? aiFixedBaselinePointsInPi(weight) : null;
+    const fixedBaselineDisclosure = staticBaseline ? buildAiFixedBaselineDisclosure(weight) : null;
+    const fixedConstantCitedAsLive = false;
 
     return {
       engineId,
@@ -306,11 +408,16 @@ export function buildIntelligenceTransparency(
       plainEnglishReason: "",
       primaryIndicators: indicatorLabels(engine?.sourceInputIds ?? []),
       asOf,
-      freshness: availability === "unavailable" ? ("UNAVAILABLE" as FreshnessBadge) : freshness,
+      freshness,
       delayedAgeLabel: delayedAgeLabel(engine?.observedAt ?? engine?.calculatedAt ?? state.effectiveAt, freshness, nowMs),
       availability,
       staticBaseline,
       citedAsDriver,
+      fixedConstantCitedAsLive,
+      fixedBaselineDisclosure,
+      fixedConcentrationScore,
+      fixedPointsInVector,
+      fixedPointsInPi,
       description,
     };
   });
@@ -337,6 +444,7 @@ export function buildIntelligenceTransparency(
       staticBaseline: row.staticBaseline,
       availability: row.availability,
       description: row.description,
+      fixedBaselineDisclosure: row.fixedBaselineDisclosure,
     });
     const { description: _d, ...rest } = row;
     return {
@@ -345,6 +453,7 @@ export function buildIntelligenceTransparency(
       rank: rankById.get(row.engineId) ?? null,
       plainEnglishReason: reason,
       citedAsDriver: row.citedAsDriver,
+      fixedConstantCitedAsLive: false,
     };
   });
 
@@ -352,15 +461,18 @@ export function buildIntelligenceTransparency(
   const roundedScore = Math.round(availablePoints);
   const reconciles = Math.abs(roundedScore - state.pressureIndex) <= 1;
 
+  const aiRow = components.find((c) => c.engineId === "ai-bubble" && c.staticBaseline && c.availability === "available");
+  const aiFixedBaselineNote = aiRow ? buildAiFixedBaselineDisclosure(aiRow.weight) : null;
   const howBuilt: HowBuiltSummary = {
     pressureIndex: state.pressureIndex,
     regime: state.regime,
     weightedSum,
     roundedScore,
     reconciles,
-    explanation: buildHowExplanation(state.pressureIndex, components, weightedSum, roundedScore, reconciles),
+    explanation: buildHowExplanation(state.pressureIndex, components, weightedSum, roundedScore, reconciles, aiFixedBaselineNote),
     methodNote:
-      "Pressure Index = round(Σ (vector score × fixed Champion V1 weight)). It is not a simple average of the five evidence-family cards. The AI / Speculation vector also contributes when present. No caps or transforms are applied beyond per-vector 0–100 scoring and the final round.",
+      "Pressure Index = round(Σ (vector score × fixed Champion V1 weight)). It is not a simple average of the five evidence-family cards. The AI / Speculation vector also contributes when present; half of that vector is a fixed engine baseline (concentrationScore=65), not live market-cap data. No caps or transforms are applied beyond per-vector 0–100 scoring and the final round.",
+    aiFixedBaselineNote,
   };
 
   return {
@@ -383,11 +495,18 @@ function buildHowExplanation(
   weightedSum: number,
   roundedScore: number,
   reconciles: boolean,
+  aiFixedBaselineNote: string | null,
 ): string {
   const parts = components
     .filter((c) => c.citedAsDriver && c.score != null && c.contributionPoints != null)
     .sort((a, b) => (b.contributionPoints as number) - (a.contributionPoints as number))
-    .map((c) => `${c.label} ${c.score}×${c.weightPct}%→${c.contributionPoints}`);
+    .map((c) => {
+      const base = `${c.label} ${c.score}×${c.weightPct}%→${c.contributionPoints}`;
+      if (c.staticBaseline && c.fixedConcentrationScore != null && c.fixedPointsInVector != null && c.fixedPointsInPi != null) {
+        return `${base} [fixed baseline ${c.fixedConcentrationScore} × ${AI_BUBBLE_FIXED_DISCLOSURE.concentrationWeightInVector} → ${c.fixedPointsInVector} of AI score / ${c.fixedPointsInPi} PI pts; not live evidence]`;
+      }
+      return base;
+    });
   const unavailable = components.filter((c) => !c.citedAsDriver).map((c) => c.label);
   const unavailNote =
     unavailable.length > 0
@@ -396,7 +515,8 @@ function buildHowExplanation(
   const reconcileNote = reconciles
     ? `Weighted sum ${weightedSum} rounds to ${roundedScore}, matching the published Pressure Index ${pressureIndex}.`
     : `Weighted sum ${weightedSum} rounds to ${roundedScore}; published Pressure Index is ${pressureIndex} (within display tolerance check: ${reconciles ? "pass" : "review"}).`;
-  return `HOW ${pressureIndex} IS BUILT: ${parts.join("; ")}. ${reconcileNote} This is a weighted composite, not an average of the on-screen component cards.${unavailNote}`;
+  const fixedNote = aiFixedBaselineNote ? ` ${aiFixedBaselineNote}` : "";
+  return `HOW ${pressureIndex} IS BUILT: ${parts.join("; ")}. ${reconcileNote} This is a weighted composite, not an average of the on-screen component cards.${fixedNote}${unavailNote}`;
 }
 
 /** Demote Bull Uncalibrated / Crash Not offered — never convert to implied probabilities. */
@@ -410,7 +530,11 @@ export function demoteProbabilityPair(
     display: ProbabilityDisplay | null,
   ): DemotedProbabilityView => {
     const state = display?.state ?? "UNAVAILABLE";
-    const text = display?.text ?? PROBABILITY_DISPLAY_TEXT[state] ?? PROBABILITY_DISPLAY_TEXT.UNAVAILABLE;
+    const fallback =
+      state === "AVAILABLE"
+        ? PROBABILITY_DISPLAY_TEXT.UNAVAILABLE
+        : (PROBABILITY_DISPLAY_TEXT[state] ?? PROBABILITY_DISPLAY_TEXT.UNAVAILABLE);
+    const text = display?.text ?? fallback;
     return { key, label, text, state, demoted: true, impliedProbability: null };
   };
   return [
@@ -467,4 +591,26 @@ export function contributionMathMatchesWeights(
     }
   }
   return true;
+}
+
+
+/** Guard: static-baseline components must never show LIVE freshness. */
+export function staticBaselineShownAsLive(model: IntelligenceTransparencyModel): string[] {
+  return model.components.filter((c) => c.staticBaseline && c.freshness === "LIVE").map((c) => c.engineId);
+}
+
+/** Guard: fixed constant must never be flagged as live evidence. */
+export function fixedConstantCitedAsLiveEvidence(model: IntelligenceTransparencyModel): string[] {
+  return model.components.filter((c) => c.fixedConstantCitedAsLive).map((c) => c.engineId);
+}
+
+/** Guard: AI static baseline must disclose engine concentrationScore=65. */
+export function staticBaselineMissingSixtyFiveDisclosure(model: IntelligenceTransparencyModel): string[] {
+  return model.components
+    .filter((c) => c.staticBaseline && c.availability === "available")
+    .filter((c) => {
+      const blob = `${c.plainEnglishReason}\n${c.fixedBaselineDisclosure ?? ""}\n${model.howBuilt?.explanation ?? ""}\n${model.howBuilt?.aiFixedBaselineNote ?? ""}`;
+      return !blob.includes(String(AI_BUBBLE_FIXED_DISCLOSURE.concentrationScore));
+    })
+    .map((c) => c.engineId);
 }

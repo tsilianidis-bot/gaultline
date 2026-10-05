@@ -19,6 +19,13 @@ import {
   unavailableCitedAsDriver,
   unavailableNamedAsContributor,
   INTELLIGENCE_VECTOR_IDS,
+  AI_BUBBLE_FIXED_DISCLOSURE,
+  aiFixedBaselinePointsInVector,
+  aiFixedBaselinePointsInPi,
+  staticBaselineShownAsLive,
+  staticBaselineMissingSixtyFiveDisclosure,
+  fixedConstantCitedAsLiveEvidence,
+  buildAiFixedBaselineDisclosure,
 } from "../shared/intelligenceTransparency";
 import { PROBABILITY_DISPLAY_TEXT } from "../shared/probabilityContract";
 
@@ -240,6 +247,12 @@ describe("direction posture + freshness mapping", () => {
     expect(mapFreshnessBadge("STALE")).toBe("STALE");
     expect(mapFreshnessBadge("UNAVAILABLE")).toBe("UNAVAILABLE");
   });
+
+  it("never maps staticBaseline CURRENT to LIVE", () => {
+    expect(mapFreshnessBadge("CURRENT", "PARTIAL", { staticBaseline: true })).toBe("PARTLY FIXED BASELINE");
+    expect(mapFreshnessBadge("LIVE", null, { staticBaseline: true })).toBe("PARTLY FIXED BASELINE");
+    expect(mapFreshnessBadge("STATIC", null, { staticBaseline: true })).toBe("PARTLY FIXED BASELINE");
+  });
 });
 
 describe("presentation wiring (source contract)", () => {
@@ -260,5 +273,40 @@ describe("presentation wiring (source contract)", () => {
       "market-breadth",
       "ai-bubble",
     ]);
+  });
+});
+
+
+describe("AI static baseline disclosure", () => {
+  it("matches engine.ts concentrationScore=65 and 0.5 vector weight (read-only)", () => {
+    const engineSrc = readFileSync(join(here, "pressure/engine.ts"), "utf8");
+    expect(engineSrc).toMatch(/const concentrationScore = 65/);
+    expect(engineSrc).toMatch(/concentrationScore \* 0\.5/);
+    expect(AI_BUBBLE_FIXED_DISCLOSURE.concentrationScore).toBe(65);
+    expect(AI_BUBBLE_FIXED_DISCLOSURE.concentrationWeightInVector).toBe(0.5);
+    expect(aiFixedBaselinePointsInVector()).toBe(32.5);
+    expect(aiFixedBaselinePointsInPi(WEIGHTS["ai-bubble"])).toBe(4.9);
+  });
+
+  it("AI row is PARTLY FIXED BASELINE, discloses 65, and never cites the fixed constant as live", () => {
+    const model = buildIntelligenceTransparency(liveLikeState(), WEIGHTS);
+    const ai = model.components.find((c) => c.engineId === "ai-bubble");
+    expect(ai).toBeTruthy();
+    expect(ai!.staticBaseline).toBe(true);
+    expect(ai!.freshness).toBe("PARTLY FIXED BASELINE");
+    expect(ai!.freshness).not.toBe("LIVE");
+    expect(ai!.fixedConcentrationScore).toBe(65);
+    expect(ai!.fixedPointsInVector).toBe(32.5);
+    expect(ai!.fixedPointsInPi).toBe(4.9);
+    expect(ai!.fixedConstantCitedAsLive).toBe(false);
+    expect(ai!.plainEnglishReason).toMatch(/fixed engine baseline value of 65/);
+    expect(ai!.plainEnglishReason).not.toMatch(/Inputs are LIVE/);
+    expect(ai!.fixedBaselineDisclosure).toMatch(/fixed engine baseline value of 65/);
+    expect(model.howBuilt?.explanation).toMatch(/fixed baseline 65/);
+    expect(model.howBuilt?.aiFixedBaselineNote).toBe(buildAiFixedBaselineDisclosure(WEIGHTS["ai-bubble"]));
+    expect(model.howBuilt?.methodNote).toMatch(/concentrationScore=65/);
+    expect(staticBaselineShownAsLive(model)).toEqual([]);
+    expect(staticBaselineMissingSixtyFiveDisclosure(model)).toEqual([]);
+    expect(fixedConstantCitedAsLiveEvidence(model)).toEqual([]);
   });
 });
