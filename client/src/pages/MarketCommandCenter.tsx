@@ -334,7 +334,7 @@ function MarketCommandCenterInner() {
       value: verdict,
       color: verdictColor,
       sub: riskLevel === "low" ? "Risk-on window open" : riskLevel === "moderate" ? "High-conviction only" : riskLevel === "elevated" ? "Trim & protect" : "Capital preservation",
-      href: "/app/pre-flight",
+      href: "/app/act",
     },
     {
       label: "RISK REGIME",
@@ -465,7 +465,7 @@ function MarketCommandCenterInner() {
         value: topAnalog?.era?.split(" ").slice(0, 2).join(" ") ?? "FED POLICY",
         sub: topAnalog ? `${topAnalog.similarity}% analog match · ${topAnalog.year?.slice(0, 4) ?? ""}` : "Watch FOMC + CPI",
         color: "#C084FC",
-        href: "/app/pre-flight",
+        href: "/app/watch",
         icon: Zap,
       },
     ];
@@ -639,7 +639,6 @@ function MarketCommandCenterInner() {
         }}>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.2em", color: "rgba(100,116,139,0.6)", textTransform: "uppercase", marginBottom: "4px" }}>QUICK ACTIONS</span>
           {[
-            { label: "Run Pre-Flight Check", icon: Shield, href: "/app/pre-flight", color: "#00D4FF" },
             { label: "Open Decision Engine", icon: Crosshair, href: "/app/decision-engine", color: "#00D4FF" },
             { label: "View Opportunities", icon: Sparkles, href: "/app/opportunities", color: "#00FF88" },
             { label: "Analyze a Symbol", icon: Eye, href: "/app/symbol-intelligence", color: "#C084FC" },
