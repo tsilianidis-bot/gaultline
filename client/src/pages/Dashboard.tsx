@@ -970,6 +970,8 @@ export default function Dashboard() {
         <ViewModeSelector mode={dashMode} onChange={handleModeChange} />
 
         {/* ── Mode-conditional rendering ───────────────────────── */}
+        {/* SIGNALS hierarchy: movers first inside SignalsMode; compact integrity secondary there (#66).
+            Pre-Flight / awareness entry cards removed from the customer experience (#67). */}
         {canonicalState ? (
           <>
             {dashMode === "pulse" && <PulseMode />}
@@ -980,8 +982,8 @@ export default function Dashboard() {
           <PageDegradedBanner message="Current canonical state is unavailable." detail="Dashboard intelligence modes withhold current interpretation until one authoritative state is available." />
         )}
 
-        {/* ── Quick Actions bar ──────────────────────────────────── */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 100ms both' }}>
+        {/* ── Quick Actions bar (tertiary links; not the primary signals hierarchy) ── */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 100ms both' }} data-dashboard-quick-actions="true">
           {([
             { label: 'Decision Engine', path: '/app/decision-engine',          color: '#FF9500' },
             { label: 'Day Trade',       path: '/app/day-trade-intelligence',  color: '#00FF88' },
@@ -996,9 +998,11 @@ export default function Dashboard() {
             </a>
           ))}
         </div>
-        {/* Legacy content — always visible below modes ───────── */}
-        {/* Data Integrity panel */}
-        <DataIntegrity />
+        {/* Pulse / Intelligence: full Data Integrity here.
+            Signals mode owns compact integrity inside SignalsMode (#66).
+            Pre-Flight / awareness cards removed (#67). */}
+        {dashMode !== "signals" && <DataIntegrity />}
+
         {/* ── SITUATION ROOM ENTRY CARD ──────────────────────────────────── */}
         <div style={{ background: 'linear-gradient(135deg, rgba(255,170,0,0.07) 0%, rgba(12,15,22,0.98) 60%)', border: '1px solid rgba(255,170,0,0.22)', borderLeft: '3px solid #FFAA00', borderRadius: '6px', padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 42ms both' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
