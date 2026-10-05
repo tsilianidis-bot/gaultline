@@ -21,7 +21,7 @@ import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 const REPORT_TYPE_LABELS: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   stock_intelligence: { label: "Stock Intelligence", icon: <TrendingUp className="w-4 h-4" />, color: "text-emerald-400" },
   crypto_intelligence: { label: "Crypto Intelligence", icon: <Zap className="w-4 h-4" />, color: "text-purple-400" },
-  market_preflight: { label: "Market Preflight", icon: <Shield className="w-4 h-4" />, color: "text-amber-400" },
+  market_preflight: { label: "Shared report", icon: <Shield className="w-4 h-4" />, color: "text-amber-400" },
   diagnostic_ai: { label: "Diagnostic AI", icon: <Activity className="w-4 h-4" />, color: "text-cyan-400" },
   daily_report: { label: "Daily Report", icon: <BarChart3 className="w-4 h-4" />, color: "text-blue-400" },
 };
@@ -301,7 +301,7 @@ export default function PublicSharedReport() {
                 "Regularly refreshed FAULTLINE Pressure Index",
                 "Stock & Crypto Signal Intelligence",
                 "AI Diagnostic Reports",
-                "Market Preflight Checklist",
+                "Shared checklist",
                 "Asymmetric Opportunity Scanner",
                 "Shareable Report Links",
               ].map(f => (

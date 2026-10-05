@@ -18,7 +18,6 @@ import { getRiskColor } from '@/components/RiskBadge';
 import { Zap, RotateCcw, AlertTriangle, TrendingUp, TrendingDown,
   ChevronDown, ChevronUp, Info,
 } from 'lucide-react';
-import { PreflightTrigger } from '@/components/MarketPreflight';
 import { useSEO } from '@/hooks/useSEO';
 import { canonicalSummary, probabilityCellText, sandboxScoreOn100, SANDBOX_BASIS } from '@/lib/simulatePressureView';
 
@@ -336,11 +335,6 @@ export default function SimulatePressure() {
             </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <PreflightTrigger
-              currentPage="simulate"
-              actionKey="viewed_pressure_simulator"
-              regimeLabel={regime.label}
-            />
             {isSimulating && (
               <button
                 onClick={resetSimulation}

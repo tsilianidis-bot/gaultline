@@ -34,7 +34,6 @@ import { PRESSURE_BANDS, PRESSURE_UNAVAILABLE_COLOR } from "@/lib/pressureSnapsh
 import { formatEt } from "@shared/credibilityLabels";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
-import { PreflightTrigger } from "@/components/MarketPreflight";
 
 // ── Shared tooltip style ──────────────────────────────────────
 const TT: React.CSSProperties = {
@@ -570,7 +569,6 @@ export default function Charts() {
         subtitle="Canonical Pressure Index and market readings with source and as-of — Unavailable where no feed is connected."
         badge={integrityLabel === 'LIVE' ? 'FRED LIVE' : `FRED ${integrityLabel}`}
         badgeColor={integrityLabel === 'LIVE' ? 'green' : integrityLabel === 'UNAVAILABLE' ? 'gray' : 'amber'}
-        rightSlot={<PreflightTrigger currentPage="charts" actionKey="viewed_charts" />}
       />
       <div style={{ padding: '20px 16px 32px' }}>
 

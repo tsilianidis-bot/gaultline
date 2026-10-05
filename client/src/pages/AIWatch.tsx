@@ -8,7 +8,6 @@ import { aiWatchItems, AIWatchItem } from "@/lib/data";
 import { Brain, TrendingUp, TrendingDown, AlertTriangle, Minus } from "lucide-react";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
-import { PreflightTrigger } from "@/components/MarketPreflight";
 import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
 import { trpc } from "@/lib/trpc";
 import { formatEt } from "@shared/credibilityLabels";
@@ -153,7 +152,6 @@ export default function AIWatch() {
         subtitle="AI sector exposure in the FAULTLINE Pressure Index: the AI / Speculation vector and its static AI-concentration baseline."
         badge="STATIC BASELINE"
         badgeColor="blue"
-        rightSlot={<PreflightTrigger currentPage="ai-watch" actionKey="viewed_ai_watch" />}
 	  />
 	  <div style={{ padding: '20px 16px 24px' }}>
 	    <EarlyWarningPresentationPanel mode="watch" />

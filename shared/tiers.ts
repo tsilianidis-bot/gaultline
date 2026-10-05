@@ -80,7 +80,7 @@ export const TIER_META: Record<AccessTier, TierMeta> = {
     id: 'free',
     label: 'FREE',
     displayName: 'Free',
-    sublabel: 'Free Market Awareness',
+    sublabel: 'Free access',
     description: 'Open FAULTLINE every morning and immediately understand the state of the market. No credit card required.',
     color: '#6B7280',
     glow: 'rgba(107,114,128,0.2)',

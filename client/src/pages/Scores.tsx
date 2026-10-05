@@ -10,7 +10,6 @@ import RiskBadge, { getRiskColor } from "@/components/RiskBadge";
 import ScoreRing from "@/components/ScoreRing";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
-import { PreflightTrigger } from "@/components/MarketPreflight";
 import { PageDegradedBanner } from "@/components/PageStateViews";
 import { customerIntegrityBadgeColor } from "@shared/customerIntegrityLabels";
 import { availableDelta } from "@/lib/displayFallbacks";
@@ -222,7 +221,6 @@ export default function Scores() {
         subtitle="Composite scoring across all major stress dimensions — pressure-reactive and computed live from FRED, market, and macro data."
         badge={integrityLabel}
         badgeColor={customerIntegrityBadgeColor(integrityLabel)}
-        rightSlot={<PreflightTrigger currentPage="scores" regimeLabel={regime.label} actionKey="viewed_scores" />}
       />
       <div style={{ padding: '20px 16px 32px' }}>
       {/* Alert badges */}
