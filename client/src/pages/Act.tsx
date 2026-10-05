@@ -615,7 +615,7 @@ export default function Act() {
               <Crosshair className="h-4 w-4 text-emerald-300" />
               <div className="mt-5 font-mono text-[9px] uppercase tracking-[0.16em] text-slate-600">Decision workspace</div>
               <div className="mt-2 text-sm font-semibold text-slate-100">Decision Engine</div>
-              <p className="mt-2 text-xs leading-5 text-slate-500">Run the preserved pre-flight and scenario decision workflow.</p>
+              <p className="mt-2 text-xs leading-5 text-slate-500">Run the preserved scenario and decision-support workflow.</p>
             </Link>
             <Link href={EXPERT_WORKSPACE_BY_ID["symbol-intelligence"].path} className="group rounded-sm border border-white/10 bg-white/[0.025] p-5 transition hover:border-emerald-300/30">
               <Gauge className="h-4 w-4 text-emerald-300" />
