@@ -30,6 +30,11 @@ import { desc, asc, sql } from "drizzle-orm";
 import { getLatestSeismographOutput } from "./scheduledSeismograph";
 import type { SeismographProviderProvenance } from "./seismographCore";
 import { describeHistoricalPercentile, formatOrdinal } from "../shared/historicalPercentile";
+import {
+  buildWhatIsHappeningCopy,
+  buildWhyThisRegimeCopy,
+  type EvidenceFamilyCopyInput,
+} from "../shared/nowInterpretationCopy";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1454,7 +1459,7 @@ function buildTodayStory(
         todayStory: brief.narrative,
         keyDevelopments: Array.isArray(brief.keyDevelopments) ? brief.keyDevelopments as string[] : buildKeyDevelopments(score, regime, evidenceFamilies, evolution),
         whyThisScore: buildWhyThisScore(score, percentile, evidenceFamilies),
-        whyThisRegime: buildWhyThisRegime(regime, evidenceFamilies, analogs),
+        whyThisRegime: buildWhyThisRegime(score, regime, percentile, evidenceFamilies, analogs),
       };
     }
   }
@@ -1468,7 +1473,7 @@ function buildTodayStory(
       ? "elevated pressure"
       : score >= 30
       ? "moderate conditions"
-      : "low-stress environment";
+      : "low absolute pressure (confirmation still required)";
 
   const directionDesc =
     direction === "Deteriorating" || direction === "Accelerating"
@@ -1477,19 +1482,21 @@ function buildTodayStory(
       ? "and conditions are improving"
       : "with conditions broadly stable";
 
-  const topFamily = evidenceFamilies.sort((a, b) => b.strength - a.strength)[0];
+  const topFamily = [...evidenceFamilies]
+    .filter((f) => f.currentValue && !/unavailable/i.test(f.currentValue))
+    .sort((a, b) => b.strength - a.strength)[0];
   const analogRef =
     analogs[0]
       ? ` Current conditions most closely resemble ${analogs[0].label} (${analogs[0].similarity}% similarity).`
       : "";
 
-  const todayStory = `FAULTLINE's Seismograph is reading ${score}/100 — ${stressDesc} — ${directionDesc}. The market is in a ${regimeLabel(regime)} regime, placing current conditions in the ${formatOrdinal(percentile)} historical percentile (${describeHistoricalPercentile(percentile)}) across ${evidenceFamilies.length > 0 ? `${evidenceFamilies.length} intelligence domains` : "all tracked domains"}.${topFamily ? ` The primary pressure driver is ${topFamily.name}, which is signaling ${topFamily.signal} conditions.` : ""}${analogRef}`;
+  const todayStory = `FAULTLINE's Seismograph is reading ${score}/100 — ${stressDesc} — ${directionDesc}. The market is in a ${regimeLabel(regime)} regime, placing current conditions in the ${formatOrdinal(percentile)} historical percentile (${describeHistoricalPercentile(percentile)}) across ${evidenceFamilies.length > 0 ? `${evidenceFamilies.length} intelligence domains` : "all tracked domains"}.${topFamily ? ` The primary verified pressure driver among available evidence is ${topFamily.name}, which is signaling ${topFamily.signal} conditions.` : " No single verified evidence family is currently available to cite as the primary driver."}${analogRef}`;
 
   return {
     todayStory,
     keyDevelopments: buildKeyDevelopments(score, regime, evidenceFamilies, evolution),
     whyThisScore: buildWhyThisScore(score, percentile, evidenceFamilies),
-    whyThisRegime: buildWhyThisRegime(regime, evidenceFamilies, analogs),
+    whyThisRegime: buildWhyThisRegime(score, regime, percentile, evidenceFamilies, analogs),
   };
 }
 
@@ -1518,27 +1525,31 @@ function buildWhyThisScore(
   return `The ${score}/100 reading reflects ${stressed.length} of ${evidenceFamilies.length} intelligence engines signaling elevated stress, with ${constructive.length} signaling constructive conditions. This places current pressure in the ${formatOrdinal(percentile)} historical percentile (${describeHistoricalPercentile(percentile)}) — meaning ${percentile}% of all historical months recorded lower pressure than today.`;
 }
 
+function toCopyFamilies(evidenceFamilies: EvidenceFamily[]): EvidenceFamilyCopyInput[] {
+  return evidenceFamilies.map((f) => ({
+    name: f.name,
+    signal: f.signal,
+    strength: f.strength,
+    currentValue: f.currentValue,
+    trend: f.trend,
+  }));
+}
+
 function buildWhyThisRegime(
+  score: number,
   regime: string,
+  percentile: number,
   evidenceFamilies: EvidenceFamily[],
-  analogs: HistoricalAnalog[]
+  _analogs: HistoricalAnalog[]
 ): string {
-  const topFamilies = evidenceFamilies
-    .sort((a, b) => b.strength - a.strength)
-    .slice(0, 3)
-    // Display names as labelled (e.g. "Labor & Rates (Unemployment, 10Y)").
-    .map((f) => f.name);
-  const analogRef =
-    analogs.length > 0
-      ? ` This regime classification is consistent with historical analogs including ${analogs[0].label}.`
-      : "";
-  return `The ${regimeLabel(regime)} regime classification is driven primarily by ${topFamilies.join(", ")}. These factors collectively indicate that the market environment is ${
-    regime.toUpperCase().includes("CRITICAL") || regime.toUpperCase().includes("HIGH")
-      ? "not conducive to risk-taking — defensive positioning is historically appropriate"
-      : regime.toUpperCase().includes("ELEVATED")
-      ? "requiring elevated caution — selective exposure with tight risk management"
-      : "broadly supportive of measured risk-taking with standard risk management"
-  }.${analogRef}`;
+  // Analogs remain available to callers for other surfaces; regime copy cites
+  // only verified available evidence families (never unavailable drivers).
+  return buildWhyThisRegimeCopy({
+    pressureScore: score,
+    regimeLabel: regimeLabel(regime),
+    historicalPercentile: percentile,
+    evidenceFamilies: toCopyFamilies(evidenceFamilies),
+  });
 }
 
 // ─── Historical timeline ──────────────────────────────────────────────────────
@@ -1739,18 +1750,20 @@ function buildMarketNarrative(
   analogs: HistoricalAnalog[],
   transitionProbabilities: UnifiedSeismographIntelligence["transitionProbabilities"]
 ): UnifiedSeismographIntelligence["marketNarrative"] {
-  const stressLevel = currentScore >= 80 ? "crisis" : currentScore >= 65 ? "high" : currentScore >= 45 ? "elevated" : "moderate";
   const stressed = evidenceFamilies.filter((f) => f.signal === "stressed" || f.signal === "bearish");
   const bullish = evidenceFamilies.filter((f) => f.signal === "bullish" || f.signal === "recovering");
   const deteriorating = evidenceFamilies.filter((f) => f.trend === "deteriorating");
   const improving = evidenceFamilies.filter((f) => f.trend === "improving");
 
-  // 1. What is happening?
-  const whatIsHappening = currentScore >= 65
-    ? `The market is operating under ${stressLevel} systemic pressure (${currentScore}/100), placing current conditions in the ${formatOrdinal(currentPercentile)} percentile (${describeHistoricalPercentile(currentPercentile)}) of all observations since 2000. ${stressed.length} of ${evidenceFamilies.length} intelligence engines are signaling stress, with ${currentRegime} as the prevailing regime classification.`
-    : currentScore >= 45
-    ? `The market is operating under ${stressLevel} systemic pressure (${currentScore}/100), in the ${formatOrdinal(currentPercentile)} percentile historically (${describeHistoricalPercentile(currentPercentile)}). Conditions are mixed — ${stressed.length} engines signal stress while ${bullish.length} signal strength, producing a divergent environment that requires careful monitoring.`
-    : `The market is operating under ${stressLevel} systemic pressure (${currentScore}/100), in the ${formatOrdinal(currentPercentile)} percentile historically (${describeHistoricalPercentile(currentPercentile)}). ${bullish.length} of ${evidenceFamilies.length} intelligence engines are signaling strength or recovery, consistent with a constructive risk environment.`;
+  // 1. What is happening? — hierarchy: pressure → percentile → direction → confirmation.
+  // Improving engines never imply a low-risk / constructive environment when absolute
+  // pressure or historical percentile remains elevated.
+  const whatIsHappening = buildWhatIsHappeningCopy({
+    pressureScore: currentScore,
+    regimeLabel: currentRegime,
+    historicalPercentile: currentPercentile,
+    evidenceFamilies: toCopyFamilies(evidenceFamilies),
+  });
 
   // 2. Why is it happening?
   const topStressed = stressed.slice(0, 3).map((f) => `${f.name} (${f.currentValue})`).join(", ");
