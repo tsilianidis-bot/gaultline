@@ -847,11 +847,12 @@ export default function SeismographicDash() {
         <HomepageBriefingPanel />
         <MarketSynthesisPanel context="dashboard" />
         <ViewModeSelector mode={dashMode} onChange={handleModeChange} />
+        {/* SIGNALS: movers-first hierarchy lives in SignalsMode (compact integrity + preflight secondary). */}
         {dashMode === "pulse" && <PulseMode />}
         {dashMode === "signals" && <SignalsMode />}
         {dashMode === "intelligence" && <IntelligenceMode />}
         {/* Quick Actions bar */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 100ms both' }}>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 100ms both' }} data-dashboard-quick-actions="true">
           {([
             { label: 'Pre-Flight',      path: '/app/pre-flight',              color: '#00E5FF' },
             { label: 'Decision Engine', path: '/app/decision-engine',          color: '#FF9500' },
@@ -867,8 +868,12 @@ export default function SeismographicDash() {
             </a>
           ))}
         </div>
-        <DataIntegrity />
-        <DashboardAwarenessSection />
+        {dashMode !== "signals" && (
+          <>
+            <DataIntegrity />
+            <DashboardAwarenessSection />
+          </>
+        )}
       </div>
 
 

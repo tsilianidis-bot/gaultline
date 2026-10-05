@@ -39,7 +39,8 @@ import type { FaultlinePressureOutput } from "./pressure/engine";
 import type { FMOSUniversalOutput } from "./fmos/types";
 import { invalidateCanonicalMarketStateCache } from "./marketStateCache";
 import { collectBroadInstitutionalEventOutcomes, recordDailyMarketEvidence } from "./institutionalMemory";
-import { collectForwardChampionOutcomes, recordForwardChampionProvenance } from "./algorithmProvenance";
+import { collectForwardChampionOutcomesV2, recordForwardChampionProvenance } from "./algorithmProvenance";
+import { capturesForwardEvidence, championProvenanceKey, resolveRunContext, type RunContext } from "./forwardRunProvenance";
 import { buildAtomicIntelligenceStateManifest, persistAtomicIntelligenceStateManifest } from "./intelligenceGovernance";
 
 function mapPressureLevelToSeismographStress(level: string | null | undefined): SeismographOutput["stressLevel"] {
@@ -68,11 +69,73 @@ export async function getLatestSeismographOutput(): Promise<SeismographOutput | 
   return memoryGetJson<SeismographOutput | null>(SEISMOGRAPH_OUTPUT_KEY, null);
 }
 
+export type ForwardOutcomeLink = {
+  status: "CAPTURED" | "DAY_ALREADY_CAPTURED" | "PROVENANCE_UNAVAILABLE" | "PROVENANCE_CAPTURE_FAILED" | "NOT_CAPTURED_NON_SCHEDULED_RUN";
+  championProvenanceKey: string | null;
+  championProvenanceId: number | null;
+  championProvenanceCreatedByThisRun: boolean;
+  outcomeKeyVersion: "v2";
+};
+
+/**
+ * A4/A5: the scheduled run (only) records the day's Champion provenance BEFORE its manifest,
+ * so the manifest names the exact provenance row it created. Non-blocking.
+ */
+export async function captureChampionProvenanceForRun(
+  runContext: RunContext,
+  pressure: FaultlinePressureOutput,
+  generatedAt: string,
+  record: typeof recordForwardChampionProvenance = recordForwardChampionProvenance,
+): Promise<ForwardOutcomeLink> {
+  if (!capturesForwardEvidence(runContext)) {
+    return { status: "NOT_CAPTURED_NON_SCHEDULED_RUN", championProvenanceKey: null, championProvenanceId: null, championProvenanceCreatedByThisRun: false, outcomeKeyVersion: "v2" };
+  }
+  const key = championProvenanceKey(new Date(generatedAt));
+  try {
+    const provenance = await record(pressure, new Date(generatedAt));
+    const status = provenance.id === null ? "PROVENANCE_UNAVAILABLE" : provenance.created ? "CAPTURED" : "DAY_ALREADY_CAPTURED";
+    return { status, championProvenanceKey: key, championProvenanceId: provenance.id, championProvenanceCreatedByThisRun: provenance.created, outcomeKeyVersion: "v2" };
+  } catch (error) {
+    console.warn("[Seismograph] Champion provenance capture deferred:", error);
+    return { status: "PROVENANCE_CAPTURE_FAILED", championProvenanceKey: key, championProvenanceId: null, championProvenanceCreatedByThisRun: false, outcomeKeyVersion: "v2" };
+  }
+}
+
+/**
+ * A5: completed-bar outcomes (broad institutional-event outcomes, then Champion v2) are
+ * appended on the scheduled cycle only. Non-blocking.
+ */
+export async function collectForwardOutcomesForRun(
+  runContext: RunContext,
+  collect: typeof collectForwardChampionOutcomesV2 = collectForwardChampionOutcomesV2,
+  collectBroad: typeof collectBroadInstitutionalEventOutcomes = collectBroadInstitutionalEventOutcomes,
+): Promise<{ collected: boolean }> {
+  if (!capturesForwardEvidence(runContext)) {
+    console.log(`[Seismograph] ${runContext.trigger} run: Champion provenance and outcomes not captured (scheduled run only).`);
+    return { collected: false };
+  }
+  try {
+    const broad = await collectBroad();
+    console.log(`[Seismograph] Broad event outcomes: ${broad.appended} appended, ${broad.deferred} deferred`);
+  } catch (error) {
+    console.warn("[Seismograph] Broad event outcome collection deferred:", error);
+  }
+  try {
+    const outcomes = await collect();
+    console.log(`[Seismograph] Forward outcomes v2: ${outcomes.appended} appended, ${outcomes.deferred} deferred ${JSON.stringify(outcomes.reasons)}`);
+  } catch (error) {
+    console.warn("[Seismograph] Champion outcome collection deferred:", error);
+  }
+  return { collected: true };
+}
+
 /**
  * Core pipeline — runs the full Seismograph evidence collection and assembly.
  * Can be called from the scheduled handler OR from an on-demand tRPC mutation.
  */
-export async function runSeismographPipeline(): Promise<SeismographOutput> {
+export async function runSeismographPipeline(options: { runContext?: RunContext } = {}): Promise<SeismographOutput> {
+  // Unattributed callers (scripts, tests) are AD_HOC: they never capture forward evidence.
+  const runContext = options.runContext ?? resolveRunContext("unspecified");
   const today = new Date().toISOString().split("T")[0];
   const originatingRunId = `seismograph:${randomUUID()}`;
   console.log(`[Seismograph] Pipeline starting for ${today}`);
@@ -178,11 +241,17 @@ export async function runSeismographPipeline(): Promise<SeismographOutput> {
   // It records this exact run's source quality, governed claim references, and
   // score/regime coherence without changing the canonical output.
   try {
+    const generatedAt = new Date().toISOString();
+    // A5: Champion provenance is captured only by the scheduled daily run, BEFORE the
+    // manifest, so the manifest names the exact provenance row this run created (A4).
+    const outcomeLink = await captureChampionProvenanceForRun(runContext, pressureOutput, generatedAt);
     const governanceState = buildAtomicIntelligenceStateManifest({
       pressure: pressureOutput,
       seismograph: seismographOutput,
       originatingRunId,
-      generatedAt: new Date().toISOString(),
+      generatedAt,
+      runContext,
+      outcomeLink,
       persistedHooks: await import("./systemicRegime/hooks").then(mod => mod.getPersistedRegimeHooks(seismographOutput)).catch(() => undefined),
       // Code version of the build that produced this forward record (provenance only).
       codeVersion: (() => { try { return resolveBuildIdentity().commit; } catch { return null; } })(),
@@ -205,15 +274,10 @@ export async function runSeismographPipeline(): Promise<SeismographOutput> {
   } catch (error) {
     console.warn("[Seismograph] Governance manifest capture deferred:", error);
   }
-  await collectBroadInstitutionalEventOutcomes();
-  // Forward-only research evidence. Failures are non-blocking because they must
-  // never interrupt the canonical production Seismograph score.
-  const [provenanceResult, forwardOutcomeResult] = await Promise.allSettled([
-    recordForwardChampionProvenance(pressureOutput),
-    collectForwardChampionOutcomes(),
-  ]);
-  if (provenanceResult.status === "rejected") console.warn("[Seismograph] Champion provenance capture deferred:", provenanceResult.reason);
-  if (forwardOutcomeResult.status === "rejected") console.warn("[Seismograph] Champion outcome collection deferred:", forwardOutcomeResult.reason);
+  // Forward-only research evidence (scheduled run only). Failures are non-blocking because
+  // they must never interrupt the canonical production Seismograph score. v1 outcome
+  // collection (intraday target bars) is retired; v2 appends completed-bar outcomes.
+  await collectForwardOutcomesForRun(runContext);
   invalidateCanonicalMarketStateCache();
   console.log("[Seismograph] Output persisted to Market Memory");
 
@@ -224,8 +288,11 @@ export async function handleScheduledSeismograph(
   _req: Request,
   res: Response
 ): Promise<void> {
+  // The cron schedule and a cron-service redeploy hit this same endpoint; the start time
+  // decides SCHEDULED_CRON ([18:00, 18:30) UTC) vs CRON_DEPLOY.
+  const runContext = resolveRunContext("cron-endpoint", new Date());
   try {
-    const seismographOutput = await runSeismographPipeline();
+    const seismographOutput = await runSeismographPipeline({ runContext });
     res.json({
       ok: true,
       date: new Date().toISOString().split("T")[0],
