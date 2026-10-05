@@ -214,24 +214,32 @@ function MoversPanel({ reading }: { reading: SectorRotationReading }) {
       </div>
     );
   }
-  const col = (title: string, rows: MoverRow[], accent: string, side: string) => (
-    <div className="rounded border border-white/10 bg-[#070b12] p-4" data-movers-side={side}>
-      <p className="font-mono text-[9px] uppercase tracking-[0.18em]" style={{ color: accent }}>{title}</p>
+  const sideTitle = (side: "winners" | "losers", rows: MoverRow[]) => {
+    const n = rows.length;
+    if (n === 0) return side === "winners" ? "Winners · none on this basis" : "Losers · none on this basis";
+    if (n < 5) return `Top ${n} ${side} · incomplete (fewer than 5 qualified)`;
+    return `Top 5 ${side}`;
+  };
+  const col = (side: "winners" | "losers", rows: MoverRow[], accent: string) => (
+    <div className="rounded border border-white/10 bg-[#070b12] p-4" data-movers-side={side} data-movers-count={rows.length} data-movers-incomplete={rows.length > 0 && rows.length < 5 ? "true" : "false"}>
+      <p className="font-mono text-[9px] uppercase tracking-[0.18em]" style={{ color: accent }}>{sideTitle(side, rows)}</p>
+      {rows.length < 5 && rows.length > 0 ? <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-amber-300/90" data-movers-incomplete-label>Showing {rows.length} of 5 — not a complete Top 5.</p> : null}
       {rows.length ? <ul className="mt-2">{rows.map(m => <MoverCard key={m.ticker} m={m} />)}</ul> : <p className="mt-3 text-xs text-slate-500">No constituent moved {side === "winners" ? "up" : "down"} on this basis.</p>}
     </div>
   );
+  const incomplete = (mv.winners.length > 0 && mv.winners.length < 5) || (mv.losers.length > 0 && mv.losers.length < 5);
   return (
-    <div className="mt-5" data-sector-movers>
+    <div className="mt-5" data-sector-movers data-movers-panel-incomplete={incomplete ? "true" : "false"}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="font-['Rajdhani'] text-lg font-semibold text-white">Today's Top 5 Winners / Top 5 Losers</p>
+        <p className="font-['Rajdhani'] text-lg font-semibold text-white">Today&apos;s Top 5 Winners / Top 5 Losers{incomplete ? " · Incomplete" : ""}</p>
         <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-slate-500">{basisLabel(mv.basis)} · {mv.universe.ranked} of {mv.universe.total} S&amp;P 500 constituents ranked · list as of {mv.universe.asOf ?? "—"}{mv.universe.status === "STALE" ? " (stale)" : ""}</p>
       </div>
       <div className="mt-3 grid gap-3 lg:grid-cols-2">
-        {col("Top 5 winners", mv.winners, "#00e599", "winners")}
-        {col("Top 5 losers", mv.losers, "#ff4d6d", "losers")}
+        {col("winners", mv.winners, "#00e599")}
+        {col("losers", mv.losers, "#ff4d6d")}
       </div>
       <p className="mt-2 text-[10px] leading-4 text-slate-600">
-        Why = mechanical catalyst rule: dated, ticker-tagged news item (event keywords → EVENT-DRIVEN; otherwise COMPANY-SPECIFIC when the sector ETF does not explain the move), else sector or SPY co-move, else CATALYST UNCLEAR.
+        Why = mechanical catalyst rule: EVENT-DRIVEN / COMPANY-SPECIFIC only from an approved-publisher item that names the company (or controlled alias) inside the window; else sector or SPY co-move (no headline); else CATALYST UNCLEAR.
         {mv.newsStatus !== "OK" && <span className="text-amber-300/80"> News source unavailable ({mv.newsReason}); company/event catalysts cannot be assigned.</span>}
         {mv.reason && <span> {mv.reason}</span>}
       </p>

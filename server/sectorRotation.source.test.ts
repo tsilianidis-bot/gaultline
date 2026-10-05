@@ -41,7 +41,48 @@ describe("Sector Rotation renders inside the Pentagonal Thesis (no sixth questio
     expect(mapFn.indexOf("<RotationMap")).toBeLessThan(mapFn.indexOf("data-why-it-matters"));
     expect(mapFn.indexOf("data-why-it-matters")).toBeLessThan(mapFn.indexOf("<MoversPanel"));
     expect(m).toContain("lg:grid-cols-2"); // two-column movers on desktop, stacked on mobile
-    expect(m).toContain("Today's Top 5 Winners / Top 5 Losers");
+    expect(m).toMatch(/Top 5 Winners|Top 5 winners/i);
+    expect(m).toContain("data-movers-incomplete");
+    expect(m).toContain("Showing {rows.length} of 5 — not a complete Top 5.");
+    expect(m).toContain("data-why-it-matters");
+    expect(m).toContain("data-mover-why");
+    expect(m).toContain("Vol vs normal");
+    expect(m).toContain("CATALYST_LABEL");
+  });
+});
+
+describe("five-page Pentagonal Thesis wiring (Map + Top 5 on NOW; slices on WHY/OUTLOOK/WATCH/ACT)", () => {
+  it("NOW mounts SectorRotationMap directly beneath the market-pressure verdict section", () => {
+    const now = src("client/src/pages/Now.tsx");
+    const map = now.indexOf("<SectorRotationMap />");
+    expect(map).toBeGreaterThan(now.indexOf('data-now-section="verdict"'));
+    expect(map).toBeGreaterThan(now.indexOf("PressureInstrument"));
+    expect(map).toBeGreaterThan(now.indexOf("Active Pressure Channels"));
+    expect(map).toBeLessThan(now.indexOf("<WhatChangedPanel"));
+  });
+  it("NOW module renders Map, Why it matters, Top 5 Winners/Losers and incomplete-count labels", () => {
+    const m = src(MODULE);
+    const mapFn = m.slice(m.indexOf("export function SectorRotationMap"));
+    expect(mapFn.indexOf("<RotationMap")).toBeLessThan(mapFn.indexOf("data-why-it-matters"));
+    expect(mapFn.indexOf("data-why-it-matters")).toBeLessThan(mapFn.indexOf("<MoversPanel"));
+    expect(m).toContain("data-movers-incomplete");
+    expect(m).toContain("not a complete Top 5");
+    for (const field of ["m.ticker", "m.company", "m.sector", "m.todayPct", "m.return5dPct", "m.volumeRatio", "m.catalyst.class", "data-mover-why"]) {
+      expect(m, field).toContain(field);
+    }
+  });
+  it.each([
+    ["Why", "why", "WhySlice", "driverLinks"],
+    ["Outlook", "outlook", "OutlookSlice", "LEADERSHIP_GROUP"],
+    ["Watch", "watch", "WatchSlice", "earlyIndicator"],
+    ["Act", "act", "ActSlice", "ACTION_LABEL"],
+  ] as const)("%s.tsx mounts SectorRotationQuestion(%s) and %s uses %s", (page, q, slice, token) => {
+    const srcPage = src(`client/src/pages/${page}.tsx`);
+    expect(srcPage).toContain(`<SectorRotationQuestion question="${q}" />`);
+    expect(srcPage.indexOf(`<SectorRotationQuestion question="${q}" />`)).toBeLessThan(srcPage.indexOf('index="01"'));
+    const m = src(MODULE);
+    expect(m).toContain(`function ${slice}`);
+    expect(m.slice(m.indexOf(`function ${slice}`), m.indexOf(`function ${slice}`) + 1200)).toContain(token);
   });
 });
 
