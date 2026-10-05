@@ -183,19 +183,19 @@ CORE CAPABILITIES
    Intraday intelligence layer for active traders. Regime-aware setups, pre-market context, and regularly refreshed PLATO synthesis.
 
 
-9. Symbol Intelligence
+8. Symbol Intelligence
    Deep-dive analysis for individual stocks and crypto assets. Includes pressure context, regime overlay, and PLATO interpretation. Prices come from Polygon daily aggregates and Yahoo quotes.
 
-10. Crypto Hub & Crypto Intelligence
+9. Crypto Hub & Crypto Intelligence
     Dedicated crypto intelligence layer covering CoinGecko market statistics, Bitcoin dominance, crypto regime classification, digital asset stress indicators, and PLATO crypto interpretation.
 
-11. Portfolio Intelligence
+10. Portfolio Intelligence
     Portfolio-level regime awareness. Evaluates holdings against current macro conditions and surfaces concentration risk, regime misalignment, and hedging considerations.
 
-12. Aftershock Engine
+11. Aftershock Engine
     Detects secondary market stress events and systemic contagion risk following initial regime shifts.
 
-13. Market Scenarios
+12. Market Scenarios
     Probabilistic scenario analysis for key macro events. Assigns likelihood scores and potential market impact to multiple outcomes.
 
 AVAILABILITY
