@@ -4,7 +4,7 @@
    - Warm ivory/stone edge tab — always visible
    - Slides in from left on tap/click
    - Dark charcoal text on light stone surface
-   - 4-group hierarchy: THE FIVE QUESTIONS / INTELLIGENCE / RESEARCH / TOOLS
+   - 4-group hierarchy: THE FIVE QUESTIONS / INTELLIGENCE / MARKET TOOLS / RESEARCH LAB
    - Active state: amber left indicator + stronger weight
    - Global search at top
    - Keyboard: Cmd+B toggles
@@ -63,46 +63,38 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "INTELLIGENCE",
     items: [
-      { id: "global-markets",       label: "Global Markets",          icon: BarChart3,    path: "/app/markets" },
-      { id: "seismograph",        label: "Seismograph Intelligence", icon: Activity,     path: "/app/seismograph-command-center" },
-      { id: "daily-brief",        label: "Daily Brief",             icon: Newspaper,    path: "/daily-brief" },
-      { id: "intel-archive",      label: "Historical Briefings",    icon: History,      path: "/intel-archive" },
-      { id: "reading-history",    label: "Reading History",         icon: BookMarked,   path: "/app/reading-history" },
-      { id: "crypto-hub",         label: "Crypto Hub",              icon: Layers,       path: "/app/crypto" },
-      { id: "signal-outlook",     label: "Signal Outlook Center",   icon: Telescope,    path: "/app/signal-outlook" },
-      { id: "intel-library",      label: "Intelligence Library",    icon: Library,      path: "/intelligence-library" },
+      { id: "global-markets",        label: "Global Markets",            icon: BarChart3,      path: "/app/markets" },
+      { id: "seismograph",           label: "Seismograph Intelligence",  icon: Activity,       path: "/app/seismograph-command-center" },
+      { id: "daily-brief",           label: "Daily Brief",               icon: Newspaper,      path: "/daily-brief" },
+      { id: "intel-library",         label: "Intelligence Library",      icon: Library,        path: "/intelligence-library" },
+      { id: "social-intelligence",   label: "Social Intelligence",       icon: MessageSquare,  path: "/app/social-intelligence" },
+      { id: "insider-intelligence",  label: "Insider Intelligence",      icon: Eye,            path: "/app/insider-intelligence" },
     ],
   },
   {
-    label: "RESEARCH",
+    label: "MARKET TOOLS",
     items: [
-      { id: "time-machine",       label: "TIME MACHINE™",           icon: Clock,        path: "/app/time-machine" },
-      { id: "historical-analogs", label: "Historical Analogs",      icon: History,      path: "/app/historical-analogs" },
-      { id: "simulate-pressure",  label: "Simulate Pressure",       icon: Gauge,        path: "/app/simulate-pressure" },
-      { id: "track-record",       label: "Track Record",            icon: Trophy,       path: "/app/track-record" },
-      { id: "validation-lab",     label: "Validation Lab",          icon: FlaskConical, path: "/app/validation-lab" },
-      { id: "decision-ledger",    label: "Decision Ledger",         icon: BookOpen,     path: "/app/decision-ledger" },
-      { id: "methodology",        label: "Methodology",             icon: Scale,        path: "/methodology" },
+      { id: "watchlist",             label: "Watchlist",                 icon: BookMarked,     path: "/app/watchlist" },
+      { id: "alerts",                label: "Alerts",                    icon: BellRing,       path: "/app/alerts" },
+      { id: "symbol-intelligence",   label: "Symbol Intelligence",       icon: SearchIcon,     path: "/app/symbol-intelligence" },
+      { id: "day-trade",             label: "Day Trade Intelligence",    icon: Target,         path: "/app/day-trade-intelligence" },
+      { id: "rising-stars",          label: "Rising Stars",              icon: TrendingUp,     path: "/app/rising-stars" },
+      { id: "signals",               label: "Signals",                   icon: Radio,          path: "/app/signals" },
+      { id: "crypto-hub",            label: "Crypto Hub",                icon: Layers,         path: "/app/crypto" },
+      { id: "crypto-signals",        label: "Crypto Signals",            icon: Bitcoin,        path: "/app/crypto-signals" },
+      { id: "trade-journal",         label: "Trade Journal",             icon: JournalIcon,    path: "/app/trade-journal" },
     ],
   },
   {
-    label: "TOOLS",
+    label: "RESEARCH LAB",
     items: [
-      { id: "social-intelligence",  label: "Social Intelligence",        icon: MessageSquare, path: "/app/social-intelligence" },
-      { id: "insider-intelligence", label: "Insider Intelligence",       icon: Eye,           path: "/app/insider-intelligence" },
-      { id: "watchlist",            label: "Watchlist",                  icon: BookMarked,    path: "/app/watchlist" },
-      { id: "alerts",               label: "Alerts",                     icon: BellRing,      path: "/app/alerts" },
-      { id: "symbol-intelligence",  label: "Symbol Intelligence",        icon: SearchIcon,    path: "/app/symbol-intelligence" },
-      { id: "day-trade",            label: "Day Trade Intelligence",     icon: Target,        path: "/app/day-trade-intelligence" },
-      { id: "decision-engine",      label: "Decision Engine",            icon: Crosshair,     path: "/app/decision-engine" },
-      { id: "smart-discovery",      label: "Smart Discovery",            icon: Sparkles,      path: "/app/discover" },
-      { id: "rising-stars",         label: "Rising Stars",               icon: TrendingUp,    path: "/app/rising-stars" },
-      { id: "signals",              label: "Signals",                    icon: Radio,         path: "/app/signals" },
-      { id: "crypto-signals",       label: "Crypto Signals",             icon: Bitcoin,       path: "/app/crypto-signals" },
-      { id: "pressure-engine",      label: "Pressure Engine",            icon: Gauge,         path: "/app/pressure" },
-      { id: "trade-journal",        label: "Trade Journal",              icon: JournalIcon,   path: "/app/trade-journal" },
-      { id: "glossary",             label: "Glossary",                   icon: GraduationCap, path: "/app/glossary" },
-      { id: "roadmap",              label: "Roadmap",                    icon: Map,           path: "/app/roadmap" },
+      { id: "time-machine",          label: "TIME MACHINE™",             icon: Clock,          path: "/app/time-machine" },
+      { id: "historical-analogs",    label: "Historical Analogs",        icon: History,        path: "/app/historical-analogs" },
+      { id: "simulate-pressure",     label: "Simulate Pressure",         icon: Gauge,          path: "/app/simulate-pressure" },
+      { id: "track-record",          label: "Track Record",              icon: Trophy,         path: "/app/track-record" },
+      { id: "validation-lab",        label: "Validation Lab",            icon: FlaskConical,   path: "/app/validation-lab" },
+      { id: "decision-ledger",       label: "Decision Ledger",           icon: BookOpen,       path: "/app/decision-ledger" },
+      { id: "methodology",           label: "Methodology",               icon: Scale,          path: "/methodology" },
     ],
   },
 ];
@@ -420,8 +412,8 @@ export default function LeftNavDrawer({ breachCount = 0 }: LeftNavDrawerProps) {
               const subtitleMap: Record<string, string> = {
                 "THE FIVE QUESTIONS": "Market Decision Framework",
                 "INTELLIGENCE": "Understand it more deeply",
-                "RESEARCH": "Investigate the evidence",
-                "TOOLS": "Explore, monitor and analyze",
+                "MARKET TOOLS": "Explore, monitor and analyze",
+                "RESEARCH LAB": "Investigate the evidence",
               };
               const subtitle = subtitleMap[group.label];
               return (
