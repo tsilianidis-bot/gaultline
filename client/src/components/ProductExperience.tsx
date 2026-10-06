@@ -804,20 +804,22 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                   fontStyle: 'normal',
                 }}>
                   <p style={{ margin: '0 0 22px', color: '#F0F4FF', fontFamily: MONO, fontSize: 'clamp(19px,2.4vw,25px)', lineHeight: 1.35, fontWeight: 700 }}>
-                    <span style={{ display: 'block' }}>Finding the right assets isn’t always the hardest part of investing.</span>
-                    <span style={{ display: 'block', color: CYAN, marginTop: '5px' }}>Knowing what to do after you’ve found them can be.</span>
+                    <span style={{ display: 'block' }}>Markets don’t usually break all at once.</span>
+                    <span style={{ display: 'block', color: CYAN, marginTop: '5px' }}>They change underneath you first.</span>
                   </p>
-                  <p style={{ margin: '0 0 18px' }}>I built FAULTLINE because I wish I had a tool like this the first time I made life-changing gains.</p>
-                  <p style={{ margin: '0 0 18px' }}>I had found the right assets. What I didn’t have was a system that could clearly show me what was happening around them — when market conditions were changing, when risk was building, when momentum was weakening, or when it might be time to protect what I had made.</p>
-                  <p style={{ margin: '0 0 18px' }}>That experience stayed with me.</p>
-                  <p style={{ margin: '0 0 18px' }}>Because making money in the market is only part of the challenge. <strong style={{ color: '#F0F4FF' }}>Knowing what to do once you’ve made it can be even harder.</strong></p>
-                  <p style={{ margin: '0 0 18px' }}>Markets give us endless charts, headlines, indicators, opinions, and predictions. More information does not automatically create better decisions.</p>
-                  <p style={{ margin: '0 0 18px', color: '#F0F4FF', fontWeight: 600 }}>What investors need is clarity.</p>
-                  <p style={{ margin: '0 0 18px' }}>Those five questions became the foundation of FAULTLINE.</p>
-                  <p style={{ margin: '0 0 18px' }}>I wanted to build the tool I wish had been sitting in front of me during those moments — something that could cut through the noise, explain the environment around my investments, and help me recognize when the odds were beginning to change.</p>
-                  <p style={{ margin: '0 0 18px' }}>FAULTLINE isn’t about predicting every market move.</p>
-                  <p style={{ margin: '0 0 22px' }}>It’s about seeing the market more clearly when the decisions matter most.</p>
-                  <p style={{ margin: 0, color: '#F0F4FF', fontWeight: 700, fontSize: 'clamp(18px,2.2vw,23px)', lineHeight: 1.45 }}>Finding the opportunity can change your portfolio. <span style={{ color: CYAN }}>Knowing when to move can change your life.</span></p>
+                  <p style={{ margin: '0 0 18px' }}>Rates move. Credit tightens. Liquidity shifts. Leadership changes. Volatility wakes up. Headlines catch up later.</p>
+                  <p style={{ margin: '0 0 18px' }}>For the self-directed investor, the problem isn’t access to information. It’s figuring out what matters before the market makes it obvious.</p>
+                  <p style={{ margin: '0 0 18px' }}>From 2018 through 2022, I was fortunate enough to identify several major winners across the financial markets and make significant gains. Some were life-changing.</p>
+                  <p style={{ margin: '0 0 18px' }}>But making money wasn’t the hardest part. <strong style={{ color: '#F0F4FF' }}>Knowing when to protect it was.</strong></p>
+                  <p style={{ margin: '0 0 18px' }}>I watched a large portion of those gains disappear because I didn’t have a clear way to recognize when the environment had changed.</p>
+                  <p style={{ margin: '0 0 18px' }}>That became the reason for FAULTLINE.</p>
+                  <p style={{ margin: '0 0 18px' }}>I didn’t want to build another dashboard full of flashing signals and leave you to decode it yourself. Markets already have enough dashboards.</p>
+                  <p style={{ margin: '0 0 18px' }}>I wanted to build something that actually explained what was happening.</p>
+                  <p style={{ margin: '0 0 18px' }}>So I created the <strong style={{ color: '#F0F4FF' }}>Pentagonal Thesis™</strong> around five questions:</p>
+                  <p style={{ margin: '0 0 18px' }}>What’s happening? Why is it happening? What’s next? What should I watch? What should I do?</p>
+                  <p style={{ margin: '0 0 18px' }}>That framework became the foundation of FAULTLINE.</p>
+                  <p style={{ margin: '0 0 22px' }}>FAULTLINE is built for self-directed investors and traders who want institutional-grade intelligence without needing an institutional research desk.</p>
+                  <p style={{ margin: 0, color: '#F0F4FF', fontWeight: 700, fontSize: 'clamp(18px,2.2vw,23px)', lineHeight: 1.45 }}>Less noise. More context. <span style={{ color: CYAN }}>Better decisions.</span></p>
                 </blockquote>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <div style={{
@@ -836,8 +838,8 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                   {[
                     { label: 'What’s happening?', desc: 'Observe the market environment' },
                     { label: 'Why is it happening?', desc: 'Understand the drivers' },
-                    { label: 'What’s likely to happen next?', desc: 'Assess the evidence' },
-                    { label: 'What should I be watching?', desc: 'Track what could change' },
+                    { label: 'What’s next?', desc: 'Assess the evidence' },
+                    { label: 'What should I watch?', desc: 'Track what could change' },
                     { label: 'What should I do?', desc: 'Act with greater clarity' },
                   ].map((item) => (
                     <div key={item.label} style={{ flex: '1 1 180px' }}>
