@@ -816,6 +816,110 @@ function DestinationLink({ href, label, detail }: { href: string; label: string;
   );
 }
 
+// ── FAULTLINE Case File ─────────────────────────────────────────────────────
+function CaseFilePanel({
+  headline,
+  why,
+  outlook,
+  watch,
+  act,
+  invalidation,
+  phase,
+}: {
+  headline: string;
+  why: string;
+  outlook: string;
+  watch: string;
+  act: string;
+  invalidation: string;
+  phase: number;
+}) {
+  const items = [
+    {
+      id: "now",
+      destination: CANONICAL_DESTINATION_BY_ID.now,
+      answer: headline,
+    },
+    {
+      id: "why",
+      destination: CANONICAL_DESTINATION_BY_ID.why,
+      answer: why,
+    },
+    {
+      id: "outlook",
+      destination: CANONICAL_DESTINATION_BY_ID.outlook,
+      answer: outlook,
+    },
+    {
+      id: "watch",
+      destination: CANONICAL_DESTINATION_BY_ID.watch,
+      answer: watch,
+    },
+    {
+      id: "act",
+      destination: CANONICAL_DESTINATION_BY_ID.act,
+      answer: act,
+    },
+  ] as const;
+
+  return (
+    <section
+      data-now-section="case-file"
+      aria-labelledby="faultline-case-file-title"
+      className="mt-5 overflow-hidden rounded border border-cyan-300/15 bg-cyan-300/[0.025]"
+      style={{
+        opacity: phase >= 3 ? 1 : 0,
+        transform: phase >= 3 ? "translateY(0)" : "translateY(8px)",
+        transition: "opacity 0.55s ease, transform 0.55s ease",
+      }}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 px-4 py-3 md:px-5">
+        <div>
+          <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-cyan-300">FAULTLINE Case File</p>
+          <h2 id="faultline-case-file-title" className="mt-1 font-['Rajdhani'] text-lg font-semibold text-white">
+            One market state. Five questions.
+          </h2>
+        </div>
+        <p className="max-w-xl text-xs leading-5 text-slate-500">
+          Current governed evidence summarized through the Five Questions. Open any question for the full evidence trail.
+        </p>
+      </div>
+
+      <div className="grid divide-y divide-white/10 md:grid-cols-5 md:divide-x md:divide-y-0">
+        {items.map((item, index) => (
+          <Link
+            key={item.id}
+            href={item.destination.path}
+            className="group block min-h-36 p-4 transition hover:bg-cyan-300/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-300"
+            data-case-file-question={item.id}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-mono text-[8px] uppercase tracking-[0.16em] text-slate-600">
+                {String(index + 1).padStart(2, "0")} / 05
+              </span>
+              <ArrowRight size={12} className="text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-cyan-300" />
+            </div>
+            <p className="mt-3 font-mono text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: item.destination.accent }}>
+              {item.destination.label}
+            </p>
+            <p className="mt-1 min-h-8 text-[11px] leading-4 text-slate-500">
+              {item.destination.question}
+            </p>
+            <p className="mt-3 text-xs leading-5 text-slate-200">
+              {item.answer}
+            </p>
+          </Link>
+        ))}
+      </div>
+
+      <div className="border-t border-white/10 px-4 py-3 md:px-5">
+        <p className="font-mono text-[8px] uppercase tracking-[0.16em] text-slate-600">Invalidation / change condition</p>
+        <p className="mt-1 text-xs leading-5 text-slate-400">{invalidation}</p>
+      </div>
+    </section>
+  );
+}
+
 // ── Main component ───────────────────────────────────────────────────────────
 export default function Now() {
   const {
@@ -991,6 +1095,16 @@ export default function Now() {
                 phase={phase}
               />
             </div>
+
+            <CaseFilePanel
+              headline={headline}
+              why={marketState.why.narrative.whyIsItHappening || marketState.why.whyThisScore}
+              outlook={marketState.outlook.highestProbabilityPath || "No governed forward path is currently established."}
+              watch={watchItems[0] || "No material watch condition is currently identified."}
+              act={marketState.act.decisionSummary}
+              invalidation={marketState.act.whatWouldInvalidate || marketState.outlook.invalidationConditions[0] || "No governed invalidation condition is currently active."}
+              phase={phase}
+            />
 
             {dataError && (
               <div className="mt-4">
