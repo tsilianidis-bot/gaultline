@@ -5,14 +5,16 @@ import { describe, expect, it } from "vitest";
 const source = readFileSync(resolve(process.cwd(), "client/src/components/ProductExperience.tsx"), "utf8");
 
 describe("Founder Statement copy refresh", () => {
-  it("replaces the prior founder statement with the supplied opening, question set, and closing", () => {
-    expect(source).toContain("Finding the right assets isn’t always the hardest part of investing.");
-    expect(source).toContain("Knowing what to do after you’ve found them can be.");
-    expect(source).toContain("What’s likely to happen next?");
-    expect(source).toContain("What should I do?");
-    expect(source).toContain("Finding the opportunity can change your portfolio.");
-    expect(source).toContain("Knowing when to move can change your life.");
-    expect(source).not.toContain("I built FAULTLINE because I kept watching the same pattern repeat");
+  it("uses the founder-approved market-change narrative and Pentagonal Thesis framing", () => {
+    expect(source).toContain("Markets don’t usually break all at once.");
+    expect(source).toContain("They change underneath you first.");
+    expect(source).toContain("across the financial markets");
+    expect(source).toContain("Pentagonal Thesis™");
+    expect(source).toContain("self-directed investors and traders");
+    expect(source).toContain("institutional-grade intelligence");
+    expect(source).toContain("Less noise. More context.");
+    expect(source).toContain("Better decisions.");
+    expect(source).not.toContain("Finding the right assets isn’t always the hardest part of investing.");
   });
 
   it("preserves the existing Founder Statement structure instead of adding a new visual system", () => {
