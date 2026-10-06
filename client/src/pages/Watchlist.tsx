@@ -23,7 +23,6 @@ import {
 } from '@/lib/watchlist';
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
-import { PreflightTrigger } from "@/components/MarketPreflight";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { WatchlistEditModal } from '@/components/watchlist/WatchlistEditModal';
@@ -459,11 +458,6 @@ export default function Watchlist() {
         badgeColor={pageBadge === 'LIVE' ? 'green' : pageBadge === 'UNAVAILABLE' ? 'gray' : 'amber'}
         rightSlot={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <PreflightTrigger
-              currentPage="watchlist"
-              actionKey="viewed_watchlist"
-              regimeLabel={output?.regime?.label}
-            />
             <button
               onClick={() => setEditingItem(null)}
               style={{

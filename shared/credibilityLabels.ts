@@ -24,7 +24,28 @@
  *    Neither has a horizon or a validation record, so the % is suppressed.
  */
 
-import { PROBABILITY_DISPLAY_TEXT, SYSTEMIC_REGIME_CALIBRATION } from "./probabilityContract";
+import { PROBABILITY_DISPLAY_TEXT, SYSTEMIC_REGIME_CALIBRATION, type CalibrationRecord } from "./probabilityContract";
+
+/** Exact customer-facing disclosure when Systemic Regime probability fields are uncalibrated (#60 contract). */
+export const SYSTEMIC_REGIME_PROBABILITY_WITHHELD_TEXT =
+  "Probability outputs withheld until calibration is validated." as const;
+
+/** Exact customer-facing disclosure when Bull/Neutral/Bear scenario weights are not AVAILABLE. */
+export const SCENARIO_PROBABILITY_WITHHELD_TEXT =
+  "Quantitative scenario probabilities are withheld pending calibration." as const;
+
+/**
+ * Short caption under the Systemic Regime label: independent statistical model,
+ * not the Pressure Index, and not a claim that overall market risk is low.
+ */
+export const SYSTEMIC_REGIME_INDEPENDENT_CAPTION =
+  "Independent statistical regime model (PCA + HMM). Not the Pressure Index and not a reading that overall market risk is low." as const;
+
+/** True when Stress / Crisis p / Model score must be withheld (existing #60 calibration record). */
+export function systemicRegimeProbabilityOutputsWithheld(calibration: Pick<CalibrationRecord, "status"> = SYSTEMIC_REGIME_CALIBRATION): boolean {
+  return calibration.status !== "CALIBRATED";
+}
+
 
 export const REGIME_MODEL_SCORE_LABEL = "Model score (uncalibrated)";
 

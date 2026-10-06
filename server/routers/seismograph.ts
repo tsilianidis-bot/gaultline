@@ -22,6 +22,7 @@ import {
 } from "../../drizzle/schema";
 import { desc, eq, and, notLike } from "drizzle-orm";
 import { getLatestSeismographOutput, runSeismographPipeline } from "../scheduledSeismograph";
+import { resolveRunContext } from "../forwardRunProvenance";
 import { runSeismographBackfill, RECONSTRUCTED_RECORD_CLASS } from "../seismographBackfill";
 import { getUnifiedSeismographIntelligence } from "../seismographUnified";
 import { overlayAssembledSeismographOutput, overlayUnifiedSeismographIntelligence } from "../probabilityContract";
@@ -145,6 +146,8 @@ export const seismographRouter = router({
     return db
       .select()
       .from(marketMemory)
+      // Sector Rotation snapshots (append-only, served by sectorRotation.current) are not Market Memory entries.
+      .where(and(notLike(marketMemory.memoryKey, "sector-rotation:%"), notLike(marketMemory.memoryKey, "sector-rotation-claim:%")))
       .orderBy(desc(marketMemory.updatedAt));
   }),
 
@@ -182,7 +185,8 @@ export const seismographRouter = router({
    * This is the same pipeline the Heartbeat job runs daily at market close.
    */
   seedNow: adminProcedure.mutation(async () => {
-    const output = await runSeismographPipeline();
+    // MANUAL run: recorded as its own state; never captures Champion provenance/outcomes.
+    const output = await runSeismographPipeline({ runContext: resolveRunContext("admin-seedNow") });
     return {
       success: true,
       pressureScore: output.pressureScore,

@@ -1,6 +1,10 @@
 import type { FactorArrow, SignalConvergenceSnapshot, SystemicRegimeReading } from "@shared/systemicRegime";
-import { regimeModelScoreDisplay } from "@shared/credibilityLabels";
-import { probabilityText, systemicRegimeProbabilityClaims } from "@shared/probabilityContract";
+import {
+  SYSTEMIC_REGIME_INDEPENDENT_CAPTION,
+  SYSTEMIC_REGIME_PROBABILITY_WITHHELD_TEXT,
+  systemicRegimeProbabilityOutputsWithheld,
+} from "@shared/credibilityLabels";
+import { SYSTEMIC_REGIME_CALIBRATION, probabilityText, systemicRegimeProbabilityClaims } from "@shared/probabilityContract";
 
 function regimeColor(regime: string | null | undefined) {
   if (!regime) return "#64748b";
@@ -24,38 +28,47 @@ export default function SystemicRegimeModule({
 }) {
   const unavailable = !reading || reading.freshnessStatus === "UNAVAILABLE" || !reading.currentRegime;
   const accent = unavailable ? "#64748b" : regimeColor(reading.currentRegime);
-  // HMM state posterior: shown as an uncalibrated model score (not "confidence").
-  const score = regimeModelScoreDisplay(reading, unavailable);
-  // Probability contract: Stress and Crisis p are HMM posteriors (0–1 fractions,
-  // converted once in the contract) with no calibration record → text only.
-  const claims = systemicRegimeProbabilityClaims(reading);
+  const withholdProbabilities = systemicRegimeProbabilityOutputsWithheld(SYSTEMIC_REGIME_CALIBRATION);
+  // Only used when calibration is validated; otherwise the three fields are not rendered.
+  const claims = withholdProbabilities ? null : systemicRegimeProbabilityClaims(reading);
+  const regimeLabel = unavailable ? "UNAVAILABLE" : reading.currentRegime;
+
   return (
     <div className="mt-5 rounded border border-white/10 bg-white/[0.03] p-4" data-testid="systemic-regime-module">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">Systemic Regime · statistical PCA + HMM</p>
-          <p className="mt-2 font-['Rajdhani'] text-2xl font-semibold tracking-wide" style={{ color: accent }}>
-            {unavailable ? "UNAVAILABLE" : reading.currentRegime}
+          <p className="mt-2 font-['Rajdhani'] text-2xl font-semibold tracking-wide" style={{ color: accent }} data-systemic-regime-label>
+            {regimeLabel}
           </p>
-          <p className="mt-1 font-mono text-[10px] text-slate-400">
-            Independent of Pressure Index · not a Pressure weight · not AI
+          <p className="mt-1 max-w-xl text-[11px] leading-4 text-slate-400" data-systemic-regime-caption>
+            {SYSTEMIC_REGIME_INDEPENDENT_CAPTION}
           </p>
         </div>
-        <div className="grid grid-cols-3 gap-3 text-center">
-          <div>
-            <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-slate-500">Stress</p>
-            <p className="mt-1 font-['Rajdhani'] text-xl font-semibold text-white">{unavailable ? "—" : probabilityText(claims?.stressScore)}</p>
+        {withholdProbabilities ? (
+          <div
+            className="max-w-sm rounded border border-amber-300/20 bg-amber-300/[0.04] px-3 py-2 text-left"
+            data-testid="systemic-regime-probability-withheld"
+            data-systemic-regime-prob-withheld="true"
+          >
+            <p className="font-mono text-[10px] leading-4 text-amber-100/90">{SYSTEMIC_REGIME_PROBABILITY_WITHHELD_TEXT}</p>
           </div>
-          <div>
-            <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-slate-500">Crisis p</p>
-            <p className="mt-1 font-['Rajdhani'] text-xl font-semibold text-white">{unavailable ? "—" : probabilityText(claims?.crisis)}</p>
+        ) : (
+          <div className="grid grid-cols-3 gap-3 text-center" data-testid="systemic-regime-probability-fields" data-systemic-regime-prob-withheld="false">
+            <div>
+              <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-slate-500">Stress</p>
+              <p className="mt-1 font-['Rajdhani'] text-xl font-semibold text-white">{unavailable ? "—" : probabilityText(claims?.stressScore)}</p>
+            </div>
+            <div>
+              <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-slate-500">Crisis p</p>
+              <p className="mt-1 font-['Rajdhani'] text-xl font-semibold text-white">{unavailable ? "—" : probabilityText(claims?.crisis)}</p>
+            </div>
+            <div data-testid="systemic-regime-model-score">
+              <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-slate-500">Model score</p>
+              <p className="mt-1 font-['Rajdhani'] text-xl font-semibold text-white">{unavailable ? "—" : probabilityText(claims?.regimeConfidence)}</p>
+            </div>
           </div>
-          <div data-testid="systemic-regime-model-score" title={`${score.explanation} ${score.asOf}.`}>
-            <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-slate-500">Model score</p>
-            <p className="mt-1 font-['Rajdhani'] text-xl font-semibold text-white">{score.value}</p>
-            <p className="font-mono text-[7px] uppercase tracking-[0.1em] text-slate-500">uncalibrated</p>
-          </div>
-        </div>
+        )}
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2 font-mono text-[9px] uppercase tracking-[0.12em] text-slate-400">
         {(["credit", "vol", "rates"] as const).map(factor => (
@@ -68,9 +81,6 @@ export default function SystemicRegimeModule({
         </span>
         <span className="rounded border border-white/10 bg-black/20 px-2 py-1">{unavailable ? "no live inference" : reading.freshnessStatus}</span>
       </div>
-      <p className="mt-3 font-mono text-[9px] leading-4 text-slate-500" data-testid="systemic-regime-model-score-note">
-        {score.label}: {score.explanation} {unavailable ? "" : `(${score.asOf})`}
-      </p>
       {convergence && (
         <p className="mt-3 border-l-2 border-cyan-300/40 bg-cyan-300/[0.04] px-3 py-2 font-mono text-[10px] leading-5 text-slate-300">
           Signal Convergence {convergence.level}: {convergence.summary}

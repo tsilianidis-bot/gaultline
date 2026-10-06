@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import SystemicRegimeModule from "../client/src/components/SystemicRegimeModule";
 import AppMarketHeader from "../client/src/components/AppMarketHeader";
 import { signalsFeedLabel, signalsSubtitle, signalsFooter } from "../client/src/lib/signalQuoteView";
-import { formatModelScorePct, headerRegimeChip, regimeModelScoreDisplay, REGIME_MODEL_SCORE_LABEL } from "../shared/credibilityLabels";
+import { formatModelScorePct, headerRegimeChip, regimeModelScoreDisplay, REGIME_MODEL_SCORE_LABEL, systemicRegimeProbabilityOutputsWithheld, SYSTEMIC_REGIME_PROBABILITY_WITHHELD_TEXT, SYSTEMIC_REGIME_INDEPENDENT_CAPTION, SCENARIO_PROBABILITY_WITHHELD_TEXT } from "../shared/credibilityLabels";
 import { deriveProviderProvenance } from "./seismographCore";
 import { buildAtomicIntelligenceStateManifest } from "./intelligenceGovernance";
 import { buildSubScores, RECONSTRUCTED_RECORD_CLASS } from "./seismographBackfill";
@@ -57,23 +57,44 @@ describe("1a NOW systemic regime score label", () => {
     expect(regimeModelScoreDisplay(null, true).value).toBe("—");
   });
 
-  it("renders the Model score as Uncalibrated (probability contract, ECE 0.5152) instead of CONFIDENCE 100%", () => {
+  it("uncalibrated: preserves NORMAL label, withholds Stress/Crisis p/Model score, shows exact disclosure + independent caption", () => {
     const html = renderToStaticMarkup(createElement(SystemicRegimeModule, { reading, convergence: null }));
-    expect(html).toContain("Model score");
-    expect(html).toContain("uncalibrated");
-    expect(html).toContain("Uncalibrated");
+    expect(html).toContain("NORMAL");
+    expect(html).toContain("Probability outputs withheld until calibration is validated.");
+    expect(html).toContain("Independent statistical regime model");
+    expect(html).toContain("Not the Pressure Index");
+    expect(html).toContain('data-systemic-regime-prob-withheld="true"');
+    expect(html).not.toContain(">Stress<");
+    expect(html).not.toContain("Crisis p");
+    expect(html).not.toContain("Model score");
     expect(html).not.toContain("99.6%");
     expect(html).not.toMatch(/>\d+(\.\d+)?%</);
-    expect(html).toContain(REGIME_MODEL_SCORE_LABEL);
-    expect(html).toContain("computed Oct 1, 3:00 PM ET");
-    expect(html).not.toContain(">100%<");
     expect(html).not.toMatch(/>Confidence</);
   });
 
-  it("shows an unavailable state without a score", () => {
+  it("calibrated override would show the three fields (helper gate)", () => {
+    expect(systemicRegimeProbabilityOutputsWithheld({ status: "UNCALIBRATED" })).toBe(true);
+    expect(systemicRegimeProbabilityOutputsWithheld({ status: "CALIBRATED" })).toBe(false);
+    expect(SYSTEMIC_REGIME_PROBABILITY_WITHHELD_TEXT).toBe("Probability outputs withheld until calibration is validated.");
+    expect(SCENARIO_PROBABILITY_WITHHELD_TEXT).toBe("Quantitative scenario probabilities are withheld pending calibration.");
+    expect(SYSTEMIC_REGIME_INDEPENDENT_CAPTION).toMatch(/Not the Pressure Index/);
+  });
+
+  it("shows an unavailable state without raw HMM posteriors as percentages", () => {
     const html = renderToStaticMarkup(createElement(SystemicRegimeModule, { reading: { ...reading, freshnessStatus: "UNAVAILABLE" }, convergence: null }));
     expect(html).toContain("UNAVAILABLE");
     expect(html).not.toContain("99.6%");
+    expect(html).toContain("Probability outputs withheld until calibration is validated.");
+  });
+});
+
+describe("NOW scenario bars withhold when probability contract is uncalibrated", () => {
+  it("Now.tsx gates Bull/Neutral/Bear bars on scenarioSet.display.state === AVAILABLE", () => {
+    const now = src("../client/src/pages/Now.tsx");
+    expect(now).toContain('probabilityContract?.scenarioSet.display.state === "AVAILABLE"');
+    expect(now).toContain("SCENARIO_PROBABILITY_WITHHELD_TEXT");
+    expect(now).toContain("data-scenario-probabilities-withheld");
+    expect(now).toContain("scenariosCalibrated ?");
   });
 });
 
@@ -216,5 +237,17 @@ describe("2 backfill reconstructions are never presented as readings made at the
     expect(backfill).toContain("Reconstructed from monthly pressure history (not detected at the time)");
     const router = src("./routers/seismograph.ts");
     expect(router).toMatch(/notLike\(seismographReadings\.subScoresJson, `%\$\{RECONSTRUCTED_RECORD_CLASS\}%`\)/);
+  });
+});
+
+describe("no customer-facing raw HMM posterior as probability/confidence", () => {
+  it("SystemicRegimeModule withholds numeric fields when uncalibrated and never imports formatModelScorePct", () => {
+    const mod = src("../client/src/components/SystemicRegimeModule.tsx");
+    expect(mod).not.toContain("formatModelScorePct");
+    expect(mod).toContain("SYSTEMIC_REGIME_PROBABILITY_WITHHELD_TEXT");
+    expect(mod).toContain("systemicRegimeProbabilityOutputsWithheld");
+    const html = renderToStaticMarkup(createElement(SystemicRegimeModule, { reading, convergence: null }));
+    expect(html).not.toMatch(/\d+(\.\d+)?%/);
+    expect(html).toContain("Probability outputs withheld until calibration is validated.");
   });
 });

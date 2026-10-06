@@ -73,4 +73,17 @@ describe("Phase 1B intelligence governance", () => {
     expect(mismatched.manifest.coherenceStatus).toBe("EXPLICIT_MISMATCH");
     expect(mismatched.manifest.coherenceNotes.join(" ")).toContain("pressure-score-mismatch");
   });
+  it("records run trigger provenance outside the stateHash core (A1)", () => {
+    const base = { pressure, seismograph, originatingRunId: "seismograph:trigger-run", generatedAt: "2026-08-20T18:00:05.000Z" };
+    const plain = buildAtomicIntelligenceStateManifest(base);
+    const runContext = { trigger: "SCHEDULED_CRON" as const, triggerSource: "cron-endpoint" as const, runStartedAt: "2026-08-20T18:00:01.000Z", scheduledWindow: true };
+    const outcomeLink = { status: "CAPTURED", championProvenanceKey: "champion-forward:2026-08-20:v1-forward-provenance-2026-08-19", championProvenanceId: 5, championProvenanceCreatedByThisRun: true, outcomeKeyVersion: "v2" };
+    const withCtx = buildAtomicIntelligenceStateManifest({ ...base, runContext, outcomeLink });
+    expect(withCtx.manifest.stateHash).toBe(plain.manifest.stateHash);
+    expect(withCtx.manifest.stateId).toBe(plain.manifest.stateId);
+    expect(withCtx.runProvenance).toMatchObject({ trigger: "SCHEDULED_CRON", triggerSource: "cron-endpoint", runStartedAt: "2026-08-20T18:00:01.000Z", scheduledWindow: true, ledgerSchemaVersion: "vf-ledger-v1", hashRecipe: "core-with-runId-v2", outcomeLink });
+    expect(withCtx.runProvenance.evaluationPlan).toMatchObject({ horizonsTradingDays: [1, 5, 20, 60], outcomeKeyVersion: "v2" });
+    expect(plain.runProvenance).not.toHaveProperty("trigger");
+    expect(plain.runProvenance).not.toHaveProperty("outcomeLink");
+  });
 });

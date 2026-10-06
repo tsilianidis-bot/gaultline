@@ -5,6 +5,7 @@
  * Filters organicContent to daily_market_brief content type.
  * Full SEO: Article schema, Open Graph, canonical URL.
  */
+import { pressureBandColor, pressureShortLabel } from "@shared/pressureBands";
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -27,16 +28,15 @@ function formatDateShort(d: Date | string | null | undefined): string {
 
 function getPressureColor(score: number | null): string {
   if (score == null) return "#6B7280";
-  if (score >= 7) return "#FF4444";
-  if (score >= 5) return "#FF9500";
-  return "#00FF88";
+  // Archive rows historically stored a 0–10 pressure; normalize to 0–100.
+  const score100 = score <= 10 ? score * 10 : score;
+  return pressureBandColor(score100);
 }
 
 function getPressureLabel(score: number | null): string {
   if (score == null) return "—";
-  if (score >= 7) return "HIGH";
-  if (score >= 5) return "ELEVATED";
-  return "LOW";
+  const score100 = score <= 10 ? score * 10 : score;
+  return pressureShortLabel(score100);
 }
 
 export default function DailyBriefArchive() {

@@ -24,32 +24,35 @@ import {
 } from "@shared/routeRegistry";
 import { formatCanonicalPercent, formatCanonicalScore } from "@shared/marketMetrics";
 import { formatOrdinal } from "@shared/historicalPercentile";
+import {
+  buildWhatIsHappeningCopy,
+  topThreatEvidenceCopy,
+  topThreatHeadline,
+  topAnalogHeadline,
+  topAnalogDetail,
+} from "@shared/nowInterpretationCopy";
+import { pressureBandColor, pressureShortLabel } from "@shared/pressureBands";
 import { formatScenarioPercent } from "@shared/canonicalReadout";
 import { customerIntegrityChipLevel, customerIntegrityColor, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 import { monthlyRecordBasisNote } from "@shared/dataIntegrityReadout";
-import { formatEt } from "@shared/credibilityLabels";
+import { formatEt, SCENARIO_PROBABILITY_WITHHELD_TEXT } from "@shared/credibilityLabels";
 import SystemicRegimeModule from "@/components/SystemicRegimeModule";
 import { trpc } from "@/lib/trpc";
 import { deltaDirection, deltaTrend, knownDelta } from "@/lib/deltaAvailability";
+import { SectorRotationMap } from "@/components/sectorRotation/SectorRotationModule";
 
 const NOW_DEEP_PATH = "/app/now/deep";
 
 // ── Color helpers ────────────────────────────────────────────────────────────
 function pressureColor(score: number) {
-  if (score >= 75) return "#ff4d6d";
-  if (score >= 50) return "#ffaa00";
-  if (score >= 30) return "#00e5ff";
-  return "#00e599";
+  return pressureBandColor(score);
 }
 
+/** Gauge short label — always from the same displayed score via canonical bands. */
 function pressureLabel(score: number) {
-  if (score >= 75) return "CRITICAL";
-  if (score >= 60) return "ELEVATED";
-  if (score >= 40) return "MODERATE";
-  if (score >= 20) return "LOW";
-  return "MINIMAL";
+  return pressureShortLabel(score);
 }
 
 // ── Staged load hook ─────────────────────────────────────────────────────────
@@ -204,7 +207,7 @@ function SeismicBackground({ pressure, accent }: { pressure: number; accent: str
 }
 
 // ── Dominant pressure instrument ─────────────────────────────────────────────
-function PressureInstrument({
+export function PressureInstrument({
   score, accent, regime, direction, historicalPercentile, confidence, lastUpdated, phase, scoreChange,
 }: {
   score: number; accent: string; regime: string; direction: string;
@@ -858,10 +861,27 @@ export default function Now() {
     neutral: marketState?.outlook.probabilities.neutral ?? Number.NaN,
     bear: marketState?.outlook.probabilities.bear ?? Number.NaN,
   };
+  // #60 probability contract: only AVAILABLE scenario weights may render as bars/%.
+  const scenariosCalibrated = marketState?.outlook.probabilityContract?.scenarioSet.display.state === "AVAILABLE";
   const scenarioWidth = (value: number) => (Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0);
   // Threat classification comes from the evidence family's own signal (shared classifier),
   // never from strength order alone.
   const threats = marketState?.now.threats ?? [];
+  // Recompute NOW interpretation from live served evidence so stale stored
+  // narratives cannot claim "constructive" / cite unavailable drivers.
+  const whatIsHappeningCopy = buildWhatIsHappeningCopy({
+    pressureScore: pressure,
+    regimeLabel: String(regime),
+    historicalPercentile,
+    evidenceFamilies: evidenceFamilies.map(f => ({
+      name: f.name,
+      signal: String(f.signal),
+      strength: Number(f.strength),
+      currentValue: "currentValue" in f ? String((f as { currentValue?: string }).currentValue ?? "") : undefined,
+      trend: "trend" in f ? String((f as { trend?: string }).trend ?? "") : undefined,
+    })),
+  });
+
   const topAnalog = marketState?.outlook.topAnalog ?? (output.analogs[0]
     ? { period: output.analogs[0].year, label: output.analogs[0].era, similarity: output.analogs[0].similarity, resolution: "Deterministic fallback analog; canonical resolution unavailable." }
     : null);
@@ -987,7 +1007,7 @@ export default function Now() {
                   {headline}
                 </h1>
                 <p className="mt-4 text-sm leading-6 text-slate-300">
-                  {marketState?.why.narrative.whatIsHappening ?? output.narrative.regimeAssessment}
+                  {whatIsHappeningCopy || marketState?.why.narrative.whatIsHappening || output.narrative.regimeAssessment}
                 </p>
 
                 {/* Regime badges */}
@@ -1010,13 +1030,13 @@ export default function Now() {
                 <div className="mt-5 grid gap-2 sm:grid-cols-2">
                   <div className="rounded border border-rose-300/20 bg-rose-300/[0.045] p-3">
                     <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-rose-200/65">Top threat</p>
-                    <p className="mt-1 text-sm font-medium text-slate-100">{threats[0] ?? "No dominant verified threat"}</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-400">{threats[0] ? "Strongest evidence family currently signaling stress." : "No evidence family is currently signaling stress."}</p>
+                    <p className="mt-1 text-sm font-medium text-slate-100" data-now-threat-headline>{topThreatHeadline(threats[0], false)}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-400" data-now-threat-detail>{topThreatEvidenceCopy(Boolean(threats[0]), false)}</p>
                   </div>
                   <div className="rounded border border-violet-300/20 bg-violet-300/[0.045] p-3">
                     <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-violet-200/65">Closest historical analog</p>
-                    <p className="mt-1 text-sm font-medium text-slate-100">{topAnalog ? `${topAnalog.label} · ${topAnalog.period}` : "No verified analog available"}</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-400">{topAnalog ? `${formatCanonicalPercent(topAnalog.similarity)} similarity · context, not a forecast.` : "Historical comparison remains unavailable."}</p>
+                    <p className="mt-1 text-sm font-medium text-slate-100" data-now-analog-headline>{topAnalogHeadline(topAnalog, false)}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-400" data-now-analog-detail>{topAnalogDetail(topAnalog, false, formatCanonicalPercent)}</p>
                   </div>
                 </div>
 
@@ -1058,22 +1078,30 @@ export default function Now() {
                 }}
               >
                 <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">Bull vs Bear</p>
-                <BullBearCard
-                  label="Bull scenario"
-                  value={probabilities.bull}
-                  accent="#00e599"
-                  description="Canonical snapshot scenario weight for the bull path. Context, not a calibrated forecast."
-                  phase={phase}
-                  phaseTarget={4}
-                />
-                <BullBearCard
-                  label="Bear scenario"
-                  value={probabilities.bear}
-                  accent="#ff4d6d"
-                  description="Canonical snapshot scenario weight for the bear path. Context, not a calibrated forecast."
-                  phase={phase}
-                  phaseTarget={4}
-                />
+                {scenariosCalibrated ? (
+                  <>
+                    <BullBearCard
+                      label="Bull scenario"
+                      value={probabilities.bull}
+                      accent="#00e599"
+                      description="Canonical snapshot scenario weight for the bull path. Context, not a calibrated forecast."
+                      phase={phase}
+                      phaseTarget={4}
+                    />
+                    <BullBearCard
+                      label="Bear scenario"
+                      value={probabilities.bear}
+                      accent="#ff4d6d"
+                      description="Canonical snapshot scenario weight for the bear path. Context, not a calibrated forecast."
+                      phase={phase}
+                      phaseTarget={4}
+                    />
+                  </>
+                ) : (
+                  <div className="rounded border border-amber-300/20 bg-amber-300/[0.04] p-4" data-scenario-probabilities-withheld data-testid="scenario-probabilities-withheld">
+                    <p className="font-mono text-[10px] leading-4 text-amber-100/90">{SCENARIO_PROBABILITY_WITHHELD_TEXT}</p>
+                  </div>
+                )}
 
                 {/* Seismograph strip */}
                 <SeismographStrip pressure={pressure} accent={accent} phase={phase} />
@@ -1108,6 +1136,9 @@ export default function Now() {
           </div>
         </section>
 
+        {/* ── FAULTLINE SECTOR ROTATION MAP™ (Pentagonal Thesis · NOW) ──── */}
+        <SectorRotationMap />
+
         {/* ── WHAT CHANGED + SCENARIO DISTRIBUTION ─────────────────────── */}
         <div className="mt-6 grid gap-5 lg:grid-cols-2">
           <WhatChangedPanel
@@ -1126,6 +1157,7 @@ export default function Now() {
             style={{ opacity: phase >= 7 ? 1 : 0, transition: "opacity 0.6s ease" }}
           >
             <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">Scenario Distribution</p>
+            {scenariosCalibrated ? (
             <div className="space-y-3">
               {[
                 { label: "Bull", value: probabilities.bull, color: "#00e599" },
@@ -1151,6 +1183,9 @@ export default function Now() {
                 </div>
               ))}
             </div>
+            ) : (
+              <p className="font-mono text-[10px] leading-4 text-amber-100/90" data-scenario-probabilities-withheld>{SCENARIO_PROBABILITY_WITHHELD_TEXT}</p>
+            )}
             {marketState?.outlook.highestProbabilityPath && (
               <p className="mt-4 border-l-2 border-violet-300/50 bg-violet-300/[0.04] px-3 py-2 text-xs leading-5 text-slate-300">
                 {marketState.outlook.highestProbabilityPath}
@@ -1165,7 +1200,7 @@ export default function Now() {
             {marketState?.why.story ?? output.narrative.summary}
           </p>
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {[`Regime: ${regime}`, `Top risk: ${threats[0] ?? "No verified threat"}`, `Rising domains: ${building}`].map(item => (
+            {[`Regime: ${regime}`, `Top risk: ${topThreatHeadline(threats[0], false)}`, `Rising domains: ${building}`].map(item => (
               <div key={item} className="border-l-2 border-cyan-300/50 bg-white/[0.025] px-4 py-3 font-mono text-[10px] uppercase tracking-[0.1em] text-slate-300">{item}</div>
             ))}
           </div>
@@ -1218,6 +1253,7 @@ export default function Now() {
         </Section>
 
         <Section id="probabilities" index="04" eyebrow="Probabilities" title="What the current state implies" description="Scenario probabilities are distributions, not certainty. They update from the same canonical market state used across FAULTLINE.">
+          {scenariosCalibrated ? (
           <div className="grid gap-3 sm:grid-cols-3">
             {[
               { label: "Bull", value: probabilities.bull, accent: "#00e599" },
@@ -1233,6 +1269,9 @@ export default function Now() {
               </div>
             ))}
           </div>
+          ) : (
+            <p className="rounded border border-amber-300/20 bg-amber-300/[0.04] px-4 py-3 font-mono text-[10px] leading-4 text-amber-100/90" data-scenario-probabilities-withheld>{SCENARIO_PROBABILITY_WITHHELD_TEXT}</p>
+          )}
           {marketState?.outlook.highestProbabilityPath && (
             <p className="mt-5 border-l-2 border-violet-300/50 bg-violet-300/[0.04] px-4 py-3 text-sm leading-6 text-slate-300">
               Highest-probability path: {marketState.outlook.highestProbabilityPath}
@@ -1263,7 +1302,7 @@ export default function Now() {
           <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded border border-white/10 bg-white/[0.025] p-5"><Database size={16} className="text-cyan-300" /><p className="mt-4 font-['Rajdhani'] text-2xl text-white">{marketState?.history.observationCount.toLocaleString() ?? "—"}</p><p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-500">Observations</p></div>
             <div className="rounded border border-white/10 bg-white/[0.025] p-5"><History size={16} className="text-violet-300" /><p className="mt-4 text-sm font-semibold text-white">{marketState?.history.datasetSpan ?? "Canonical history unavailable"}</p><p className="mt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-500">Dataset span</p></div>
-            <div className="rounded border border-white/10 bg-white/[0.025] p-5"><Telescope size={16} className="text-amber-300" /><p className="mt-4 text-sm font-semibold text-white">{topAnalog ? `${topAnalog.label} · ${formatCanonicalPercent(topAnalog.similarity)}` : "No verified analog"}</p><p className="mt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-500">Closest analog</p></div>
+            <div className="rounded border border-white/10 bg-white/[0.025] p-5"><Telescope size={16} className="text-amber-300" /><p className="mt-4 text-sm font-semibold text-white">{topAnalog ? `${topAnalog.label} · ${formatCanonicalPercent(topAnalog.similarity)}` : topAnalogHeadline(null, false)}</p><p className="mt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-500">Closest analog</p></div>
           </div>
           {topAnalog && <p className="mt-5 text-sm leading-7 text-slate-400">{topAnalog.period}: {topAnalog.resolution}</p>}
         </Section>

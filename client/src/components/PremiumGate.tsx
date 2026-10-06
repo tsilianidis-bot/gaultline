@@ -377,7 +377,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     requiredTier: 'premium',
   },
   preFlight: {
-    title: "Market Preflight Locked",
+    title: "Feature Locked",
     subtitle: "INSTITUTIONAL MARKET PREFLIGHT",
     description:
       "Run a full institutional-grade market preflight check before every trading session. Regime, liquidity, volatility, and risk conditions in one view.",

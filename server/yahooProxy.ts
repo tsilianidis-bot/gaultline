@@ -165,6 +165,72 @@ export async function getDailyBarsForPeriod(ticker: string, startDate: string, e
   }
 }
 
+/**
+ * Daily chart with the provider's observation time, for the Sector Rotation
+ * layer. Same Yahoo v8 chart endpoint as getDailyBars; bars keep any finite
+ * close (index/futures volume may be absent → NaN, never 0-filled). Includes
+ * the in-progress session's bar when Yahoo reports one; callers apply the
+ * completed-bar rule. Successful charts cache 10 min; failures cache 60 s so a
+ * provider outage is not hammered. Never throws.
+ */
+export interface YahooDailyChartBar { timestamp: number; close: number; volume: number }
+export interface YahooDailyChart {
+  ticker: string;
+  bars: YahooDailyChartBar[];
+  regularMarketTime: number | null;
+  longName: string | null;
+  fetchedAt: number;
+  error: string | null;
+}
+const dailyChartCache = new LRUCache<string, YahooDailyChart>(1200, 10 * 60_000);
+const dailyChartErrorCache = new LRUCache<string, YahooDailyChart>(1200, 60_000);
+const dailyChartInFlight = new Map<string, Promise<YahooDailyChart>>();
+
+export async function getDailyChart(ticker: string, range: "3mo" | "6mo"): Promise<YahooDailyChart> {
+  const key = `${ticker.toUpperCase()}_${range}`;
+  const cached = dailyChartCache.get(key) ?? dailyChartErrorCache.get(key);
+  if (cached) return cached;
+  const existing = dailyChartInFlight.get(key);
+  if (existing) return existing;
+  const promise = (async (): Promise<YahooDailyChart> => {
+    try {
+      const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=${range}&includePrePost=false`, {
+        headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json", "Referer": "https://finance.yahoo.com/" },
+        signal: AbortSignal.timeout(8_000),
+      });
+      if (!response.ok) throw new Error(`Yahoo daily chart HTTP ${response.status}`);
+      const payload = await response.json() as { chart?: { result?: Array<{ meta?: { regularMarketTime?: number; longName?: string; shortName?: string }; timestamp?: number[]; indicators?: { quote?: Array<{ close?: Array<number | null>; volume?: Array<number | null> }> } }> } };
+      const result = payload.chart?.result?.[0];
+      const quote = result?.indicators?.quote?.[0];
+      const timestamps = result?.timestamp ?? [];
+      if (!quote || timestamps.length === 0) throw new Error("Yahoo daily chart returned no bars");
+      const bars = timestamps.map((timestamp, index) => ({
+        timestamp: timestamp * 1000,
+        close: quote.close?.[index] ?? Number.NaN,
+        volume: quote.volume?.[index] ?? Number.NaN,
+      })).filter(bar => typeof bar.close === "number" && Number.isFinite(bar.close) && bar.close > 0) as YahooDailyChartBar[];
+      const meta = result?.meta;
+      const chart: YahooDailyChart = {
+        ticker: ticker.toUpperCase(), bars,
+        regularMarketTime: typeof meta?.regularMarketTime === "number" ? meta.regularMarketTime * 1000 : null,
+        longName: meta?.longName ?? meta?.shortName ?? null,
+        fetchedAt: Date.now(), error: null,
+      };
+      dailyChartCache.set(key, chart);
+      return chart;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const failed: YahooDailyChart = { ticker: ticker.toUpperCase(), bars: [], regularMarketTime: null, longName: null, fetchedAt: Date.now(), error: message };
+      dailyChartErrorCache.set(key, failed);
+      return failed;
+    } finally {
+      dailyChartInFlight.delete(key);
+    }
+  })();
+  dailyChartInFlight.set(key, promise);
+  return promise;
+}
+
 // ── Yahoo fetcher ─────────────────────────────────────────────
 
 /** Derive market state from Yahoo's currentTradingPeriod timestamps when marketState is missing */

@@ -5,6 +5,7 @@
  * domains, scores or colours may reach a mounted customer page.
  */
 import React, { createElement } from "react";
+import { pressureBandColor } from "../shared/pressureBands";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router } from "wouter";
@@ -157,7 +158,7 @@ describe("degraded MarketContextStrip colours", () => {
     engine.canonicalState = canonical(72, "HIGH STRESS");
     const html = render(createElement(MarketContextStrip), "/app/why");
     const c = attrs(html);
-    expect(c.regime).toBe("#ff6b35");
+    expect(c.regime).toBe(pressureBandColor(72));
     expect(c.pressure).toBe(getRiskColor("high"));
     expect(c.regime).not.toBe(demoOutput.regime.color);
     expect(c.pressure).not.toBe(getRiskColor(demoOutput.overall.riskLevel));
@@ -173,7 +174,7 @@ describe("degraded MarketContextStrip colours", () => {
     engine.canonicalState = canonical(null, "ELEVATED RISK");
     const c = attrs(render(createElement(MarketContextStrip)));
     expect(c.regime).toBe(canonicalRegimeDisplayColor(null, "ELEVATED RISK"));
-    expect(c.regime).toBe("#ffb020");
+    expect(c.regime).toBe(pressureBandColor(50));
     expect(c.pressure).toBe(getRiskColor("elevated"));
   });
 
@@ -239,12 +240,12 @@ describe("degraded expert tabs (Pressure ?tab=scores, Decision Engine trade-pref
 
 describe("shared canonical display helpers and projection", () => {
   it("colour/risk mapping mirrors healthy mode; nothing canonical → neutral/null", () => {
-    expect(canonicalRegimeDisplayColor(90, null)).toBe("#ff2d55");
-    expect(canonicalRegimeDisplayColor(72, "LOW RISK")).toBe("#ff6b35"); // pressure wins, as in healthy mode
-    expect(canonicalRegimeDisplayColor(10, null)).toBe("#00e599");
-    expect(canonicalRegimeDisplayColor(null, "SYSTEMIC CRISIS")).toBe("#ff2d55");
-    expect(canonicalRegimeDisplayColor(null, "HIGH STRESS")).toBe("#ff6b35");
-    expect(canonicalRegimeDisplayColor(null, "MODERATE RISK")).toBe("#00d4ff");
+    expect(canonicalRegimeDisplayColor(90, null)).toBe(pressureBandColor(90));
+    expect(canonicalRegimeDisplayColor(72, "LOW RISK")).toBe(pressureBandColor(72)); // pressure wins, as in healthy mode
+    expect(canonicalRegimeDisplayColor(10, null)).toBe(pressureBandColor(10));
+    expect(canonicalRegimeDisplayColor(null, "SYSTEMIC CRISIS")).toBe(pressureBandColor(90));
+    expect(canonicalRegimeDisplayColor(null, "HIGH STRESS")).toBe(pressureBandColor(70));
+    expect(canonicalRegimeDisplayColor(null, "MODERATE RISK")).toBe(pressureBandColor(30));
     expect(canonicalRegimeDisplayColor(Number.NaN, null)).toBe(UNAVAILABLE_DISPLAY_COLOR);
     expect(canonicalRegimeDisplayColor(null, "SOMETHING ELSE")).toBe("#64748B");
     expect(canonicalDisplayRiskLevel(72, null)).toBe("high");
