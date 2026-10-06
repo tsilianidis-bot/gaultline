@@ -132,7 +132,7 @@ export const NO_HIGH_CONFIDENCE_ANALOG_TEXT = "No high-confidence historical ana
 export const THREAT_ANALYSIS_UNAVAILABLE_TEXT = "Threat assessment unavailable" as const;
 export const ANALOG_ANALYSIS_UNAVAILABLE_TEXT = "Historical analog unavailable" as const;
 
-export function topThreatHeadline(threat: string | null | undefined, analysisFailed: boolean): string {
+export function topThreatHeadline(threat: string | null | undefined, analysisFailed = false): string {
   if (analysisFailed) return THREAT_ANALYSIS_UNAVAILABLE_TEXT;
   const t = (threat ?? "").trim();
   return t || NO_DOMINANT_THREAT_TEXT;
@@ -140,14 +140,31 @@ export function topThreatHeadline(threat: string | null | undefined, analysisFai
 
 export function topThreatEvidenceCopy(hasThreat: boolean, analysisFailed = false): string {
   if (analysisFailed) return "Threat analysis is unavailable for this reading.";
+  // The empty case must not repeat the headline (NO_DOMINANT_THREAT_TEXT) —
+  // it says what the completed analysis found instead.
   return hasThreat
     ? "Strongest evidence family currently signaling stress."
-    : NO_DOMINANT_THREAT_TEXT;
+    : NO_THREAT_EVIDENCE_DETAIL_TEXT;
+}
+
+/** Detail line under NO_DOMINANT_THREAT_TEXT: classifier result, not a restatement. */
+export const NO_THREAT_EVIDENCE_DETAIL_TEXT =
+  "Analysis completed; no evidence family is currently signaling bearish or stressed conditions." as const;
+
+/**
+ * Threat analysis is only "unavailable" when there is no served evidence to
+ * classify. (Missing canonical state never reaches this — NOW fails closed
+ * with a degraded banner first.)
+ */
+export function threatAnalysisUnavailable(
+  evidenceFamilies: readonly unknown[] | null | undefined,
+): boolean {
+  return !Array.isArray(evidenceFamilies) || evidenceFamilies.length === 0;
 }
 
 export function topAnalogHeadline(
   analog: { label: string; period: string } | null | undefined,
-  analysisFailed: boolean,
+  analysisFailed = false,
 ): string {
   if (analysisFailed) return ANALOG_ANALYSIS_UNAVAILABLE_TEXT;
   if (!analog) return NO_HIGH_CONFIDENCE_ANALOG_TEXT;

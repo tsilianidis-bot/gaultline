@@ -55,7 +55,8 @@ describe("NOW interpretation hierarchy copy", () => {
   });
 
   it("empty successful threat analysis does not say unavailable", () => {
-    expect(topThreatEvidenceCopy(false)).toBe("No single threat currently dominates");
+    expect(topThreatEvidenceCopy(false)).toBe("Analysis completed; no evidence family is currently signaling bearish or stressed conditions.");
+    expect(topThreatEvidenceCopy(false)).not.toContain("No single threat currently dominates"); // headline not repeated
     expect(topThreatEvidenceCopy(true)).toBe("Strongest evidence family currently signaling stress.");
     expect(topThreatEvidenceCopy(false, true)).toMatch(/unavailable/i);
   });
@@ -88,9 +89,12 @@ describe("threat / analog empty-success vs unavailable", () => {
   });
   it("NOW page wires the three-state helpers into the verdict cards", () => {
     const now = readFileSync(resolve(process.cwd(), "client/src/pages/Now.tsx"), "utf8");
-    expect(now).toContain("topThreatHeadline(threats[0], false)");
-    expect(now).toContain("topAnalogHeadline(topAnalog, false)");
-    expect(now).toContain("topAnalogDetail(topAnalog, false, formatCanonicalPercent)");
+    expect(now).toContain("topThreatHeadline(threats[0], threatAnalysisFailed)");
+    expect(now).toContain("topThreatEvidenceCopy(Boolean(threats[0]), threatAnalysisFailed)");
+    expect(now).toContain("threatAnalysisUnavailable(marketState?.why.evidenceFamilies)");
+    expect(now).toContain("topAnalogHeadline(topAnalog)");
+    expect(now).toContain("topAnalogDetail(topAnalog, ANALOG_ANALYSIS_FAILED, formatCanonicalPercent)");
+    expect(now).not.toMatch(/topThreat\w+\([^)]*,\s*false\)/);
     expect(now).not.toContain("No dominant verified threat");
     expect(now).not.toContain("Historical comparison remains unavailable.");
   });

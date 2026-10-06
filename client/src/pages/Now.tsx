@@ -28,6 +28,7 @@ import {
   buildWhatIsHappeningCopy,
   topThreatEvidenceCopy,
   topThreatHeadline,
+  threatAnalysisUnavailable,
   topAnalogHeadline,
   topAnalogDetail,
 } from "@shared/nowInterpretationCopy";
@@ -867,6 +868,13 @@ export default function Now() {
   // Threat classification comes from the evidence family's own signal (shared classifier),
   // never from strength order alone.
   const threats = marketState?.now.threats ?? [];
+  // Real failure signal for the threat card: no served evidence families to
+  // classify (an empty threat list from a classified set is a successful "none").
+  // The served market state carries no analog-failure flag: a null topAnalog is a
+  // completed search with no qualifying match (canonical-state failure is handled
+  // by the fail-closed banner above), so the analog card never claims "unavailable".
+  const ANALOG_ANALYSIS_FAILED = false;
+  const threatAnalysisFailed = threatAnalysisUnavailable(marketState?.why.evidenceFamilies);
   // Recompute NOW interpretation from live served evidence so stale stored
   // narratives cannot claim "constructive" / cite unavailable drivers.
   const whatIsHappeningCopy = buildWhatIsHappeningCopy({
@@ -1030,13 +1038,13 @@ export default function Now() {
                 <div className="mt-5 grid gap-2 sm:grid-cols-2">
                   <div className="rounded border border-rose-300/20 bg-rose-300/[0.045] p-3">
                     <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-rose-200/65">Top threat</p>
-                    <p className="mt-1 text-sm font-medium text-slate-100" data-now-threat-headline>{topThreatHeadline(threats[0], false)}</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-400" data-now-threat-detail>{topThreatEvidenceCopy(Boolean(threats[0]), false)}</p>
+                    <p className="mt-1 text-sm font-medium text-slate-100" data-now-threat-headline>{topThreatHeadline(threats[0], threatAnalysisFailed)}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-400" data-now-threat-detail>{topThreatEvidenceCopy(Boolean(threats[0]), threatAnalysisFailed)}</p>
                   </div>
                   <div className="rounded border border-violet-300/20 bg-violet-300/[0.045] p-3">
                     <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-violet-200/65">Closest historical analog</p>
-                    <p className="mt-1 text-sm font-medium text-slate-100" data-now-analog-headline>{topAnalogHeadline(topAnalog, false)}</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-400" data-now-analog-detail>{topAnalogDetail(topAnalog, false, formatCanonicalPercent)}</p>
+                    <p className="mt-1 text-sm font-medium text-slate-100" data-now-analog-headline>{topAnalogHeadline(topAnalog)}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-400" data-now-analog-detail>{topAnalogDetail(topAnalog, ANALOG_ANALYSIS_FAILED, formatCanonicalPercent)}</p>
                   </div>
                 </div>
 
@@ -1200,7 +1208,7 @@ export default function Now() {
             {marketState?.why.story ?? output.narrative.summary}
           </p>
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {[`Regime: ${regime}`, `Top risk: ${topThreatHeadline(threats[0], false)}`, `Rising domains: ${building}`].map(item => (
+            {[`Regime: ${regime}`, `Top risk: ${topThreatHeadline(threats[0], threatAnalysisFailed)}`, `Rising domains: ${building}`].map(item => (
               <div key={item} className="border-l-2 border-cyan-300/50 bg-white/[0.025] px-4 py-3 font-mono text-[10px] uppercase tracking-[0.1em] text-slate-300">{item}</div>
             ))}
           </div>
@@ -1302,7 +1310,7 @@ export default function Now() {
           <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded border border-white/10 bg-white/[0.025] p-5"><Database size={16} className="text-cyan-300" /><p className="mt-4 font-['Rajdhani'] text-2xl text-white">{marketState?.history.observationCount.toLocaleString() ?? "—"}</p><p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-500">Observations</p></div>
             <div className="rounded border border-white/10 bg-white/[0.025] p-5"><History size={16} className="text-violet-300" /><p className="mt-4 text-sm font-semibold text-white">{marketState?.history.datasetSpan ?? "Canonical history unavailable"}</p><p className="mt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-500">Dataset span</p></div>
-            <div className="rounded border border-white/10 bg-white/[0.025] p-5"><Telescope size={16} className="text-amber-300" /><p className="mt-4 text-sm font-semibold text-white">{topAnalog ? `${topAnalog.label} · ${formatCanonicalPercent(topAnalog.similarity)}` : topAnalogHeadline(null, false)}</p><p className="mt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-500">Closest analog</p></div>
+            <div className="rounded border border-white/10 bg-white/[0.025] p-5"><Telescope size={16} className="text-amber-300" /><p className="mt-4 text-sm font-semibold text-white">{topAnalog ? `${topAnalog.label} · ${formatCanonicalPercent(topAnalog.similarity)} similarity` : topAnalogHeadline(null)}</p><p className="mt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-500">Closest analog</p></div>
           </div>
           {topAnalog && <p className="mt-5 text-sm leading-7 text-slate-400">{topAnalog.period}: {topAnalog.resolution}</p>}
         </Section>
