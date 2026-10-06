@@ -84,4 +84,31 @@ describe("NOW destination composition", () => {
     expect(synthesis).not.toContain("{overall.score.toFixed(1)}/10");
     expect(narrativeBanner).not.toContain("{output.pressureScore.toFixed(1)}/10");
   });
+  it("renders the Case File as a five-question synthesis without changing the canonical framework", () => {
+    expect(nowSource).toContain('data-now-section="case-file"');
+    expect(nowSource).toContain("FAULTLINE Case File");
+    expect(nowSource).toContain("One market state. Five questions.");
+
+    for (const id of ["now", "why", "outlook", "watch", "act"]) {
+      expect(nowSource).toContain(`data-case-file-question={item.id}`);
+      expect(nowSource).toContain(`id: "${id}"`);
+    }
+
+    expect(nowSource).toContain("CANONICAL_DESTINATION_BY_ID.now");
+    expect(nowSource).toContain("CANONICAL_DESTINATION_BY_ID.why");
+    expect(nowSource).toContain("CANONICAL_DESTINATION_BY_ID.outlook");
+    expect(nowSource).toContain("CANONICAL_DESTINATION_BY_ID.watch");
+    expect(nowSource).toContain("CANONICAL_DESTINATION_BY_ID.act");
+  });
+
+  it("builds Case File answers from the existing governed MarketState instead of a new scoring path", () => {
+    expect(nowSource).toContain("marketState.why.narrative.whyIsItHappening");
+    expect(nowSource).toContain("marketState.outlook.highestProbabilityPath");
+    expect(nowSource).toContain("watchItems[0]");
+    expect(nowSource).toContain("marketState.act.decisionSummary");
+    expect(nowSource).toContain("marketState.act.whatWouldInvalidate");
+    expect(nowSource).not.toContain("caseFileScore");
+    expect(nowSource).not.toContain("caseFileProbability");
+  });
+
 });
