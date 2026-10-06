@@ -29,9 +29,10 @@ const PRICING_HREF = "/pricing";
 
 const PAGE_TITLE = "FAULTLINE | Structural Market Intelligence";
 const PAGE_DESCRIPTION =
-  "FAULTLINE reads high-yield credit, SOFR, the Treasury curve, macro conditions, equities, and crypto to show where systemic pressure is building.";
+  "FAULTLINE connects macro pressure, market drivers, historical context, and invalidation into one governed market Case File.";
 
 const navItems = [
+  { label: "Case File", href: "#case-file" },
   { label: "Thesis", href: "#thesis" },
   { label: "Pressure Index", href: "#pressure" },
   { label: "History", href: "#analogs" },
@@ -197,10 +198,10 @@ function Hero() {
             </span>
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-[1.75] text-[#E3E5E8] sm:text-xl lg:mt-5 lg:text-lg xl:text-xl">
-            FAULTLINE monitors credit, liquidity, rates, macro conditions, equities and crypto together to show where systemic pressure is building.
+            FAULTLINE turns macro pressure, market drivers, historical context, and changing evidence into one coherent market read.
           </p>
           <p className="mt-4 max-w-2xl text-base leading-[1.75] text-[#B7C1CD]">
-            Built on the <a href="#thesis" className={`font-semibold text-white underline decoration-[#65D6E5]/60 underline-offset-4 hover:decoration-[#65D6E5] ${focusRing}`}>Pentagonal Thesis™</a>: what is happening, why, what could come next, what to watch, and how to frame a decision. It does not claim to know that a crash will happen.
+            The <a href="#case-file" className={`font-semibold text-white underline decoration-[#65D6E5]/60 underline-offset-4 hover:decoration-[#65D6E5] ${focusRing}`}>FAULTLINE Case File</a> organizes that read around five questions: what is happening, why, what could come next, what to watch, and how to frame a decision. It does not claim to know that a crash will happen.
           </p>
           <div className="mt-7 sm:mt-9 lg:mt-7 xl:mt-9">
             <Ctas primaryTrack />
@@ -211,6 +212,50 @@ function Hero() {
         </div>
         <div className="w-full max-w-md lg:justify-self-end">
           <HeroProof />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CaseFilePositioning() {
+  const questions = [
+    ["NOW", "What is happening right now?"],
+    ["WHY", "What is driving it?"],
+    ["OUTLOOK", "What could come next?"],
+    ["WATCH", "What evidence could confirm or weaken the view?"],
+    ["ACT", "How should the current evidence frame a decision?"],
+  ] as const;
+
+  return (
+    <section id="case-file" className="scroll-mt-24 border-b border-white/[0.06] bg-[#070A0F] py-20 sm:py-24">
+      <div className="mx-auto max-w-7xl px-5 sm:px-8">
+        <SectionLabel>FAULTLINE CASE FILE</SectionLabel>
+        <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
+          <div>
+            <h2 className="text-3xl font-semibold leading-tight tracking-[-0.035em] text-white sm:text-5xl">
+              One market state. Five questions. One evidence trail.
+            </h2>
+            <p className="mt-6 text-lg leading-[1.75] text-[#E3E5E8]">
+              The Case File is the primary FAULTLINE experience. It brings the current regime, pressure, drivers, historical context, watch conditions, and invalidation into one governed synthesis before you open deeper tools.
+            </p>
+            <p className="mt-4 text-base leading-[1.75] text-[#B7C1CD]">
+              The goal is not more dashboards. It is a faster path from a market move to an evidence-based understanding of what changed, why it matters, and what evidence would change the view.
+            </p>
+          </div>
+          <div className="overflow-hidden rounded-2xl border border-[#00D4FF]/20 bg-[#071018]">
+            {questions.map(([label, question], index) => (
+              <a
+                key={label}
+                href="#thesis"
+                className={`grid grid-cols-[3rem_5rem_1fr] items-start gap-3 border-b border-white/[0.08] px-5 py-4 last:border-b-0 transition hover:bg-[#65D6E5]/[0.04] ${focusRing}`}
+              >
+                <span className="font-[inherit] text-[11px] tracking-[0.08em] text-[#657180]">{String(index + 1).padStart(2, "0")}</span>
+                <span className="font-[inherit] text-[11px] font-semibold tracking-[0.08em] text-[#65D6E5]">{label}</span>
+                <span className="text-sm leading-6 text-[#E3E5E8]">{question}</span>
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -337,19 +382,19 @@ function Plato() {
 
 const capabilityModules = [
   {
-    title: "Systemic pressure and regimes",
-    body: "The Pressure Index, its six vectors and bands, plus a separate two-state systemic-regime model that never feeds the index.",
-    links: [["Open the Pressure Index", EXPLORE_HREF], ["Vector inventory", "/methodology#weights"]],
+    title: "Case File and core intelligence",
+    body: "The Five Questions, Pressure Index, regimes, source health, historical context, and PLATO interpretation combine into one evidence-led market read.",
+    links: [["Open the Pressure Index", EXPLORE_HREF], ["How the framework works", "#thesis"]],
   },
   {
-    title: "Cross-market and crypto",
-    body: "Equity regime against crypto regime, read as aligned or diverging. The crypto stress score includes the Pressure Index.",
-    links: [["How alignment works", "/methodology#cross-market"], ["Data sources", "/methodology#sources"]],
+    title: "Market Tools",
+    body: "Signals, Symbol Intelligence, Day Trade Intelligence, Rising Stars, crypto tools, watchlists, alerts, and trade-journal workflows extend the core macro read into practical market monitoring.",
+    links: [["See methodology", "/methodology#stack"], ["Data sources", "/methodology#sources"]],
   },
   {
-    title: "Daily intelligence",
-    body: "A written brief generated from the engine snapshot, a public archive, and long-form research on the blog.",
-    links: [["Daily brief", DAILY_BRIEF_HREF], ["Blog", BLOG_HREF]],
+    title: "Research and validation",
+    body: "TIME MACHINE™, historical analogs, Track Record, Validation Lab, Decision Ledger, and methodology let users inspect the evidence and compare current conditions with history.",
+    links: [["Historical context", "#analogs"], ["Methodology", METHOD_HREF]],
   },
 ] as const;
 
@@ -358,7 +403,7 @@ function Capabilities() {
     <section id="stack" className="scroll-mt-24 border-y border-white/[0.06] bg-[#070A0F] py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <SectionLabel>CAPABILITIES</SectionLabel>
-        <h2 className="max-w-3xl text-3xl font-semibold tracking-[-0.035em] text-white sm:text-5xl">Three things FAULTLINE does every day.</h2>
+        <h2 className="max-w-4xl text-3xl font-semibold tracking-[-0.035em] text-white sm:text-5xl">A simple core experience with deeper tools underneath it.</h2>
         <div className="mt-12 grid gap-4 lg:grid-cols-3">
           {capabilityModules.map((module) => (
             <article key={module.title} className="flex flex-col rounded-2xl border border-white/[0.08] bg-[#0A1018] p-6">
@@ -514,6 +559,7 @@ export default function MarketingSite({ initialSection }: { initialSection?: Mar
       <Header />
       <main id="main">
         <Hero />
+        <CaseFilePositioning />
         <PentagonalThesis />
         <Pressure />
         <HistoricalContext />
