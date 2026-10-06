@@ -15,13 +15,8 @@ describe("NOW destination composition", () => {
   it("presents the required conclusion-first information sequence", () => {
     const orderedSections = [
       ["verdict", 'data-now-section="verdict"'],
-      ["summary", '<Section id="summary"'],
-      ["changed", '<Section id="changed"'],
       ["breadth", '<Section id="breadth"'],
-      ["probabilities", '<Section id="probabilities"'],
-      ["why", '<Section id="why"'],
       ["history", '<Section id="history"'],
-      ["watch-next", '<Section id="watch-next"'],
       ["asha", '<Section id="asha"'],
       ["expert-tools", '<Section id="expert-tools"'],
       ["confidence", '<Section id="confidence"'],
@@ -109,6 +104,19 @@ describe("NOW destination composition", () => {
     expect(nowSource).toContain("marketState.act.whatWouldInvalidate");
     expect(nowSource).not.toContain("caseFileScore");
     expect(nowSource).not.toContain("caseFileProbability");
+  });
+
+  it("removes long-form duplicate NOW sections once the Case File owns synthesis", () => {
+    for (const id of ["summary", "changed", "probabilities", "why", "watch-next"]) {
+      expect(nowSource).not.toContain(`<Section id="${id}"`);
+    }
+
+    expect(nowSource).toContain("Evidence beneath the Case File");
+    expect(nowSource).toContain('<Section id="breadth" index="01"');
+    expect(nowSource).toContain('<Section id="history" index="02"');
+    expect(nowSource).toContain('<Section id="asha" index="03"');
+    expect(nowSource).toContain('<Section id="expert-tools" index="04"');
+    expect(nowSource).toContain('<Section id="confidence" index="05"');
   });
 
 });
