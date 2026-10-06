@@ -1,0 +1,286 @@
+{
+  "_note": "Synthetic served-answer fixture reproducing the values reported on the live Macro Answer page (2026-10-05). The live answer requires an authenticated smartDiscovery.ask mutation, which was not run.",
+  "verdict": "MACRO ANSWER",
+  "verdictColor": "blue",
+  "opportunityScore": 33,
+  "confidence": null,
+  "confidenceLabel": "LOW",
+  "confidenceReasons": [
+    "Insufficient cross-engine evidence.",
+    "Four engines are delayed.",
+    "No qualified material warning."
+  ],
+  "ticker": null,
+  "assetType": null,
+  "queryType": "macro",
+  "currentRegime": "Moderate risk with transition signals",
+  "regimeColor": "yellow",
+  "dataFreshness": "Live \u2014 updated just now",
+  "questionIntent": "general_analysis",
+  "primaryDriver": "Macro Sensitivity at 44/100 is the strongest current engine reading.",
+  "executiveSummary": "The Pressure Index is 33/100, a MODERATE RISK reading. Macro Sensitivity at 44/100 leads the engines while four engines remain delayed.",
+  "whyThisVerdict": "Insufficient cross-engine evidence supports a directional call. Bull scenario component is 33. Neutral scenario score is 50. Liquidity Stress at 22/100 remains contained.",
+  "bullCase": "Liquidity Stress at 22/100 and Credit Contagion at 22/100 are contained. The Fed Pivot Rally analog shows 90% similarity.",
+  "bearCase": "Macro Sensitivity at 44/100 and Volatility Regime at 40/100 lead the composite. Four engines are delayed, so confirmation is incomplete.",
+  "bullKeyDrivers": [
+    "Liquidity Stress 22/100",
+    "Credit Contagion 22/100",
+    "Bull scenario component 33"
+  ],
+  "bearKeyDrivers": [
+    "Macro Sensitivity 44/100",
+    "Volatility Regime 40/100",
+    "Delayed rate inputs"
+  ],
+  "catalysts": [
+    "Liquidity Stress stays below 25",
+    "Rate inputs refresh",
+    "Credit Contagion stays contained"
+  ],
+  "threats": [
+    "Macro Sensitivity rises above 45",
+    "Volatility Regime rises",
+    "Delayed inputs revise higher"
+  ],
+  "evidenceScores": [
+    {
+      "category": "Macro Environment",
+      "score": 58,
+      "signal": "bullish",
+      "explanation": "Macro Sensitivity engine at 44/100; growth inputs steady."
+    },
+    {
+      "category": "Liquidity",
+      "score": 62,
+      "signal": "bullish",
+      "explanation": "Liquidity Stress engine at 22/100."
+    },
+    {
+      "category": "Momentum",
+      "score": 50,
+      "signal": "neutral",
+      "explanation": "No decisive trend signal in the governed inputs."
+    },
+    {
+      "category": "Volatility",
+      "score": 42,
+      "signal": "bearish",
+      "explanation": "Volatility Regime engine at 40/100 and DELAYED."
+    },
+    {
+      "category": "Market Breadth",
+      "score": 50,
+      "signal": "neutral",
+      "explanation": "Labor & Rates input delayed; contribution not independently confirmed."
+    },
+    {
+      "category": "Institutional Positioning",
+      "score": 50,
+      "signal": "neutral",
+      "explanation": "No governed positioning input."
+    },
+    {
+      "category": "Historical Analog",
+      "score": 50,
+      "signal": "neutral",
+      "explanation": "Fed Pivot Rally shows 90% similarity to current vectors."
+    },
+    {
+      "category": "Sentiment",
+      "score": 50,
+      "signal": "neutral",
+      "explanation": "No governed sentiment input."
+    },
+    {
+      "category": "ETF Flows",
+      "score": 50,
+      "signal": "neutral",
+      "explanation": "No governed flow input."
+    },
+    {
+      "category": "Dollar Index",
+      "score": 50,
+      "signal": "neutral",
+      "explanation": "No governed dollar input."
+    },
+    {
+      "category": "Treasury Yields",
+      "score": 40,
+      "signal": "bearish",
+      "explanation": "10Y yield input DELAYED (monthly publication lag)."
+    },
+    {
+      "category": "Credit Markets",
+      "score": 50,
+      "signal": "neutral",
+      "explanation": "Credit Contagion engine at 22/100 and DELAYED."
+    },
+    {
+      "category": "Stablecoin Growth",
+      "score": 50,
+      "signal": "neutral",
+      "explanation": "Not applicable for this asset class."
+    },
+    {
+      "category": "On-chain Activity",
+      "score": 50,
+      "signal": "neutral",
+      "explanation": "Not applicable for this asset class."
+    }
+  ],
+  "whyNotBuy": null,
+  "whyNotSell": null,
+  "watchCatalysts": [
+    "If Macro Sensitivity rises above 45, then the composite moves toward ELEVATED.",
+    "If delayed rate inputs refresh, then confirmation strength can be re-assessed.",
+    "If Liquidity Stress rises above 30, then the contained-liquidity reading no longer holds.",
+    "If a governed cross-engine warning qualifies, then the answer changes."
+  ],
+  "support": null,
+  "resistance": null,
+  "entryZone": null,
+  "profitTargets": [],
+  "stopLevel": null,
+  "invalidation": "No governed invalidation condition is currently defined.",
+  "expectedTimeframe": null,
+  "suggestedAction": "Maintain current allocation and monitor delayed engine inputs.",
+  "positionSizeGuidance": null,
+  "whatChangesThesis": "A qualified material early warning or a Pressure Index move out of the 25\u201344 band.",
+  "deepDiveLinks": [
+    {
+      "label": "Pressure Index",
+      "path": "/app/now/deep",
+      "description": "Engine-level detail"
+    }
+  ],
+  "followUpChips": [
+    "What would move the Pressure Index into ELEVATED?",
+    "Which engines are delayed?"
+  ],
+  "keyDrivers": [
+    "Macro Sensitivity at 44/100 is the highest engine reading.",
+    "Volatility Regime at 40/100 (delayed).",
+    "Liquidity Stress at 22/100 is contained."
+  ],
+  "risks": [
+    "Delayed rate inputs could revise Macro Sensitivity higher.",
+    "Pressure Index 33 sits in MODERATE RISK.",
+    "Volatility Regime could rise from 40/100."
+  ],
+  "historicalAnalog": "Closest analog: Fed Pivot Rally (90% similarity).",
+  "historicalAnalogOutcome": "Equities rallied after the pivot.",
+  "finalVerdictAction": "WATCH",
+  "finalVerdictConfidence": null,
+  "finalVerdictRiskLevel": "MODERATE",
+  "finalVerdictTimeHorizon": null,
+  "finalVerdictRationale": "Pressure Index 33 in MODERATE RISK with no qualified material warning. Hold the current stance until delayed inputs refresh.",
+  "suggestedBias": "NEUTRAL / WATCH while the Pressure Index stays in the 25\u201344 band",
+  "suggestedBiasCondition": "The Pressure Index stays in the 25\u201344 band and no governed warning qualifies.",
+  "collectiveReading": {
+    "riskRegime": "mixed",
+    "beneficiaries": [],
+    "strongestReason": "Contained liquidity",
+    "invalidation": "",
+    "practicalAction": "Hold allocation; recheck when delayed inputs refresh.",
+    "summary": "Collective Reading: Pressure Index 33 sits in MODERATE RISK. Contained liquidity offsets a delayed macro picture."
+  },
+  "historicalIntelligence": {
+    "currentPressure": 33,
+    "currentRegime": "MODERATE RISK",
+    "historicalPercentile": 83,
+    "historicalN": 6,
+    "dataRange": "2026-04 to 2026-09",
+    "rarityStatement": "This is a very elevated reading \u2014 higher than 83% of all historical months.",
+    "analogs": [
+      {
+        "rank": 1,
+        "year": 2019,
+        "label": "Fed Pivot Rally",
+        "period": "2019",
+        "similarity": 90,
+        "description": "",
+        "outcome": "Equities rallied after the pivot.",
+        "whySimilar": "Contained credit with easing policy expectations.",
+        "typicalDuration": "6\u201312 months",
+        "estimatedDrawdown": null,
+        "estimatedRecovery": null
+      },
+      {
+        "rank": 2,
+        "year": 1995,
+        "label": "Soft Landing Rally",
+        "period": "1995",
+        "similarity": 82,
+        "description": "",
+        "outcome": "Expansion continued.",
+        "whySimilar": "Moderate pressure with stable credit.",
+        "typicalDuration": "12+ months",
+        "estimatedDrawdown": null,
+        "estimatedRecovery": null
+      },
+      {
+        "rank": 3,
+        "year": 1999,
+        "label": "Dot-Com Bubble",
+        "period": "1999\u20132000",
+        "similarity": 78,
+        "description": "",
+        "outcome": "Sharp drawdown followed.",
+        "whySimilar": "Concentrated equity leadership.",
+        "typicalDuration": "12\u201324 months",
+        "estimatedDrawdown": "-49%",
+        "estimatedRecovery": null
+      }
+    ],
+    "timeline": [
+      {
+        "label": "30d ago",
+        "pressure": 35,
+        "regime": "MODERATE RISK",
+        "delta": null,
+        "highlight": ""
+      },
+      {
+        "label": "Today",
+        "pressure": 33,
+        "regime": "MODERATE RISK",
+        "delta": -2,
+        "highlight": ""
+      }
+    ],
+    "frequency": {
+      "label": "Typical",
+      "historicalPct": 50,
+      "description": "Moderate pressure conditions have occurred in 50% of historical months \u2014 a typical historical frequency.",
+      "monthsInRegime": 3,
+      "totalMonths": 6
+    },
+    "outcomeDistribution": {
+      "bullishContinuation": 61,
+      "sideways": 24,
+      "correction": 15,
+      "sampleSize": 3,
+      "confidence": "low",
+      "disclaimer": "Based on 3 historical analog periods. Past outcomes do not predict future results."
+    },
+    "regimeComparison": {
+      "resembles": [
+        "Mid-cycle"
+      ],
+      "doesNotResemble": [
+        "Crisis"
+      ],
+      "regimeLabel": "MODERATE RISK",
+      "regimeDescription": "Moderate measured pressure."
+    },
+    "marketEvolution": {
+      "whatIsBuilding": "Macro sensitivity drift.",
+      "howLong": "2 months",
+      "whyItMatters": "Leads the composite.",
+      "whatAccelerated": "Rate inputs.",
+      "whatWouldInvalidate": "Pressure falls below 25."
+    },
+    "computedAt": "2026-10-05T22:00:00.000Z",
+    "dataSource": "live"
+  }
+}

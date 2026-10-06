@@ -1,0 +1,81 @@
+{
+  "stateId": "state:2026-10-05T18:01:59.015Z:1ff0807329b2beb4",
+  "effectiveAt": "2026-10-05T18:01:59.015Z",
+  "pressureIndex": 33,
+  "regime": "MODERATE RISK",
+  "pressureLevel": "MODERATE RISK",
+  "pressureDirection": "Stable",
+  "confidenceOrEvidenceQuality": "PARTIAL",
+  "staleInputs": [],
+  "delayedInputs": [
+    "ten_year_treasury_yield",
+    "consumer_price_index_yoy",
+    "producer_price_index_yoy",
+    "federal_funds_rate",
+    "unemployment_rate"
+  ],
+  "unavailableInputs": [],
+  "fallbackInputs": [],
+  "dataQualitySummary": {
+    "status": "PARTIAL",
+    "staleInputCount": 0,
+    "delayedInputCount": 5,
+    "unavailableInputCount": 0,
+    "fallbackInputCount": 0
+  },
+  "historicalDatasetVersion": "legacy-317-unreconciled",
+  "provenance": {
+    "coherenceStatus": "COHERENT"
+  },
+  "engines": [
+    {
+      "engineId": "liquidity-stress",
+      "engineName": "liquidity-stress",
+      "value": 22,
+      "freshnessStatus": "CURRENT",
+      "qualityStatus": "PARTIAL",
+      "direction": "Stable"
+    },
+    {
+      "engineId": "credit-contagion",
+      "engineName": "credit-contagion",
+      "value": 22,
+      "freshnessStatus": "DELAYED",
+      "qualityStatus": "PARTIAL",
+      "direction": "Stable"
+    },
+    {
+      "engineId": "volatility-regime",
+      "engineName": "volatility-regime",
+      "value": 40,
+      "freshnessStatus": "DELAYED",
+      "qualityStatus": "PARTIAL",
+      "direction": "Stable"
+    },
+    {
+      "engineId": "macro-sensitivity",
+      "engineName": "macro-sensitivity",
+      "value": 44,
+      "freshnessStatus": "DELAYED",
+      "qualityStatus": "PARTIAL",
+      "direction": "Stable"
+    },
+    {
+      "engineId": "market-breadth",
+      "engineName": "market-breadth",
+      "value": 29,
+      "freshnessStatus": "DELAYED",
+      "qualityStatus": "PARTIAL",
+      "direction": "Stable"
+    },
+    {
+      "engineId": "ai-bubble",
+      "engineName": "ai-bubble",
+      "value": 44,
+      "freshnessStatus": "CURRENT",
+      "qualityStatus": "PARTIAL",
+      "direction": "Unknown"
+    }
+  ],
+  "_source": "GET https://getfaultline.live/api/trpc/marketState.canonicalCurrent (guest, read-only) 2026-10-05 23:22 ET; subset"
+}

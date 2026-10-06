@@ -1,0 +1,22 @@
+{
+  "_source": "GET https://getfaultline.live/api/trpc/marketState.current (guest, read-only) 2026-10-05 23:22 ET; subset",
+  "outlook": {
+    "topAnalog": null
+  },
+  "now": {
+    "historicalPercentile": 83
+  },
+  "history": {
+    "observationCount": 6,
+    "datasetSpan": "Apr 2026 to Sep 2026 (6 months)",
+    "currentStreakDescription": "Current Moderate Risk regime entered 2 months ago.",
+    "lastMajorShift": "Elevated Risk \u2192 Moderate Risk (Aug 2026)",
+    "analogSummary": "No close historical analogs identified."
+  },
+  "freshness": "live",
+  "cache": {
+    "status": "fresh-cache",
+    "ageMs": 110638,
+    "staleReason": null
+  }
+}

@@ -223,7 +223,7 @@ function MoversPanel({ reading }: { reading: SectorRotationReading }) {
   const col = (side: "winners" | "losers", rows: MoverRow[], accent: string) => (
     <div className="rounded border border-white/10 bg-[#070b12] p-4" data-movers-side={side} data-movers-count={rows.length} data-movers-incomplete={rows.length > 0 && rows.length < 5 ? "true" : "false"}>
       <p className="font-mono text-[9px] uppercase tracking-[0.18em]" style={{ color: accent }}>{sideTitle(side, rows)}</p>
-      {rows.length < 5 && rows.length > 0 ? <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-amber-300/90" data-movers-incomplete-label>Showing {rows.length} of 5 — not a complete Top 5.</p> : null}
+      {rows.length < 5 && rows.length > 0 ? <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-amber-300/90" data-movers-incomplete-label>Showing {rows.length} of 5 — not a complete Top 5</p> : null}
       {rows.length ? <ul className="mt-2">{rows.map(m => <MoverCard key={m.ticker} m={m} />)}</ul> : <p className="mt-3 text-xs text-slate-500">No constituent moved {side === "winners" ? "up" : "down"} on this basis.</p>}
     </div>
   );
