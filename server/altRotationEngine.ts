@@ -17,7 +17,7 @@
 import { log } from "./logger";
 
 const CG_BASE = "https://api.coingecko.com/api/v3";
-const CG_CACHE_TTL = 3 * 60 * 1000; // 3 minutes
+const CG_CACHE_TTL = 15 * 60 * 1000; // 15 minutes — avoid exhausting CoinGecko rate limits\nconst CG_STALE_MAX_AGE = 6 * 60 * 60 * 1000; // last-good snapshot may bridge short upstream outages
 
 // ── Types ─────────────────────────────────────────────────────
 
