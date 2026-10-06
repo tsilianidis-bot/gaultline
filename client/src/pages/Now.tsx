@@ -4,15 +4,11 @@ import {
   ArrowRight,
   BrainCircuit,
   CheckCircle2,
-  Clock3,
   Database,
   History,
   RefreshCw,
   ShieldCheck,
   Telescope,
-  TrendingDown,
-  TrendingUp,
-  Activity,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
@@ -33,7 +29,6 @@ import {
   topAnalogDetail,
 } from "@shared/nowInterpretationCopy";
 import { pressureBandColor, pressureShortLabel } from "@shared/pressureBands";
-import { formatScenarioPercent } from "@shared/canonicalReadout";
 import { customerIntegrityChipLevel, customerIntegrityColor, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
@@ -710,51 +705,6 @@ function BullBearCard({
   );
 }
 
-// ── What Changed panel ───────────────────────────────────────────────────────
-function WhatChangedPanel({
-  pressure, building, easing, direction, changedItems, regime, phase,
-}: {
-  pressure: number; building: number; easing: number; direction: string;
-  changedItems: string[]; regime: string; phase: number;
-}) {
-  const accent = pressureColor(pressure);
-  return (
-    <div
-      className="rounded border border-white/10 bg-[#060a10] p-5"
-      style={{
-        opacity: phase >= 7 ? 1 : 0,
-        transition: "opacity 0.6s ease",
-      }}
-    >
-      <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">What Changed</p>
-      <div className="mb-4 grid grid-cols-3 gap-3">
-        <div className="rounded border border-white/10 bg-white/[0.025] p-3 text-center">
-          <TrendingUp size={14} className="mx-auto text-rose-300" />
-          <p className="mt-2 font-['Rajdhani'] text-2xl text-white">{building}</p>
-          <p className="font-mono text-[8px] uppercase tracking-[0.1em] text-rose-300/70">Building</p>
-        </div>
-        <div className="rounded border border-white/10 bg-white/[0.025] p-3 text-center">
-          <TrendingDown size={14} className="mx-auto text-emerald-300" />
-          <p className="mt-2 font-['Rajdhani'] text-2xl text-white">{easing}</p>
-          <p className="font-mono text-[8px] uppercase tracking-[0.1em] text-emerald-300/70">Easing</p>
-        </div>
-        <div className="rounded border border-white/10 bg-white/[0.025] p-3 text-center">
-          <div className="mx-auto h-3.5 w-3.5 rounded-full" style={{ background: accent }} />
-          <p className="mt-2 font-mono text-[9px] font-semibold text-white">{direction}</p>
-          <p className="font-mono text-[8px] uppercase tracking-[0.1em] text-slate-500">Direction</p>
-        </div>
-      </div>
-      <div className="space-y-2">
-        {(changedItems.length ? changedItems : ["No verified directional change in current window."]).slice(0, 3).map(item => (
-          <div key={item} className="flex gap-2 border-l-2 border-white/15 pl-3">
-            <p className="text-xs leading-5 text-slate-400">{item}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ── Status rail ──────────────────────────────────────────────────────────────
 function StatusRail({
   pressure, accent, integrityLabel, lastUpdated, marketMode, phase,
@@ -816,6 +766,110 @@ function DestinationLink({ href, label, detail }: { href: string; label: string;
   );
 }
 
+// ── FAULTLINE Case File ─────────────────────────────────────────────────────
+function CaseFilePanel({
+  headline,
+  why,
+  outlook,
+  watch,
+  act,
+  invalidation,
+  phase,
+}: {
+  headline: string;
+  why: string;
+  outlook: string;
+  watch: string;
+  act: string;
+  invalidation: string;
+  phase: number;
+}) {
+  const items = [
+    {
+      id: "now",
+      destination: CANONICAL_DESTINATION_BY_ID.now,
+      answer: headline,
+    },
+    {
+      id: "why",
+      destination: CANONICAL_DESTINATION_BY_ID.why,
+      answer: why,
+    },
+    {
+      id: "outlook",
+      destination: CANONICAL_DESTINATION_BY_ID.outlook,
+      answer: outlook,
+    },
+    {
+      id: "watch",
+      destination: CANONICAL_DESTINATION_BY_ID.watch,
+      answer: watch,
+    },
+    {
+      id: "act",
+      destination: CANONICAL_DESTINATION_BY_ID.act,
+      answer: act,
+    },
+  ] as const;
+
+  return (
+    <section
+      data-now-section="case-file"
+      aria-labelledby="faultline-case-file-title"
+      className="mt-5 overflow-hidden rounded border border-cyan-300/15 bg-cyan-300/[0.025]"
+      style={{
+        opacity: phase >= 3 ? 1 : 0,
+        transform: phase >= 3 ? "translateY(0)" : "translateY(8px)",
+        transition: "opacity 0.55s ease, transform 0.55s ease",
+      }}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 px-4 py-3 md:px-5">
+        <div>
+          <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-cyan-300">FAULTLINE Case File</p>
+          <h2 id="faultline-case-file-title" className="mt-1 font-['Rajdhani'] text-lg font-semibold text-white">
+            One market state. Five questions.
+          </h2>
+        </div>
+        <p className="max-w-xl text-xs leading-5 text-slate-500">
+          Current governed evidence summarized through the Five Questions. Open any question for the full evidence trail.
+        </p>
+      </div>
+
+      <div className="grid divide-y divide-white/10 md:grid-cols-5 md:divide-x md:divide-y-0">
+        {items.map((item, index) => (
+          <Link
+            key={item.id}
+            href={item.destination.path}
+            className="group block min-h-36 p-4 transition hover:bg-cyan-300/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-300"
+            data-case-file-question={item.id}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-mono text-[8px] uppercase tracking-[0.16em] text-slate-600">
+                {String(index + 1).padStart(2, "0")} / 05
+              </span>
+              <ArrowRight size={12} className="text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-cyan-300" />
+            </div>
+            <p className="mt-3 font-mono text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: item.destination.accent }}>
+              {item.destination.label}
+            </p>
+            <p className="mt-1 min-h-8 text-[11px] leading-4 text-slate-500">
+              {item.destination.question}
+            </p>
+            <p className="mt-3 text-xs leading-5 text-slate-200">
+              {item.answer}
+            </p>
+          </Link>
+        ))}
+      </div>
+
+      <div className="border-t border-white/10 px-4 py-3 md:px-5">
+        <p className="font-mono text-[8px] uppercase tracking-[0.16em] text-slate-600">Invalidation / change condition</p>
+        <p className="mt-1 text-xs leading-5 text-slate-400">{invalidation}</p>
+      </div>
+    </section>
+  );
+}
+
 // ── Main component ───────────────────────────────────────────────────────────
 export default function Now() {
   const {
@@ -851,10 +905,6 @@ export default function Now() {
     ?? deltaDirection(output.overall);
   const headline = marketState?.now.headline ?? output.narrative.summary;
   const historicalPercentile = marketState?.now.historicalPercentile ?? null;
-  const topDrivers = marketState?.now.topDrivers
-    ?? [...output.domains].sort((a, b) => b.score - a.score).slice(0, 3).map(domain => domain.label);
-  const building = evidenceFamilies.filter(item => item.trend === "deteriorating").length;
-  const easing = evidenceFamilies.filter(item => item.trend === "improving").length;
   // One canonical scenario set (governed snapshot scenarioOutputs via EngineContext);
   // withheld (NaN → "—") when unavailable. The seismograph's 5-way split is not shown.
   const probabilities = {
@@ -864,7 +914,6 @@ export default function Now() {
   };
   // #60 probability contract: only AVAILABLE scenario weights may render as bars/%.
   const scenariosCalibrated = marketState?.outlook.probabilityContract?.scenarioSet.display.state === "AVAILABLE";
-  const scenarioWidth = (value: number) => (Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0);
   // Threat classification comes from the evidence family's own signal (shared classifier),
   // never from strength order alone.
   const threats = marketState?.now.threats ?? [];
@@ -894,11 +943,6 @@ export default function Now() {
     ? { period: output.analogs[0].year, label: output.analogs[0].era, similarity: output.analogs[0].similarity, resolution: "Deterministic fallback analog; canonical resolution unavailable." }
     : null);
   const watchItems = marketState?.watch.whatToWatch ?? output.narrative.keyRisks;
-  const changedItems = marketState?.watch.whatChanged
-    ?? output.domains.flatMap(domain => {
-      const d = knownDelta(domain);
-      return d !== null && Math.abs(d) > 0.1 ? [`${domain.label}: ${d > 0 ? "pressure increased" : "pressure eased"}.`] : [];
-    });
   const accent = pressureColor(pressure);
 
   const topDriversWithStrength = useMemo(() => {
@@ -991,6 +1035,16 @@ export default function Now() {
                 phase={phase}
               />
             </div>
+
+            <CaseFilePanel
+              headline={headline}
+              why={marketState.why.narrative.whyIsItHappening || marketState.why.whyThisScore}
+              outlook={marketState.outlook.highestProbabilityPath || "No governed forward path is currently established."}
+              watch={watchItems[0] || "No material watch condition is currently identified."}
+              act={marketState.act.decisionSummary}
+              invalidation={marketState.act.whatWouldInvalidate || marketState.outlook.invalidationConditions[0] || "No governed invalidation condition is currently active."}
+              phase={phase}
+            />
 
             {dataError && (
               <div className="mt-4">
@@ -1147,99 +1201,10 @@ export default function Now() {
         {/* ── FAULTLINE SECTOR ROTATION MAP™ (Pentagonal Thesis · NOW) ──── */}
         <SectorRotationMap />
 
-        {/* ── WHAT CHANGED + SCENARIO DISTRIBUTION ─────────────────────── */}
-        <div className="mt-6 grid gap-5 lg:grid-cols-2">
-          <WhatChangedPanel
-            pressure={pressure}
-            building={building}
-            easing={easing}
-            direction={direction}
-            changedItems={changedItems}
-            regime={regime}
-            phase={phase}
-          />
+        {/* ── EVIDENCE & DEPTH ─────────────────────────────────────────── */}
 
-          {/* Scenario distribution */}
-          <div
-            className="rounded border border-white/10 bg-[#060a10] p-5"
-            style={{ opacity: phase >= 7 ? 1 : 0, transition: "opacity 0.6s ease" }}
-          >
-            <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">Scenario Distribution</p>
-            {scenariosCalibrated ? (
-            <div className="space-y-3">
-              {[
-                { label: "Bull", value: probabilities.bull, color: "#00e599" },
-                { label: "Neutral", value: probabilities.neutral, color: "#00e5ff" },
-                { label: "Bear", value: probabilities.bear, color: "#ff4d6d" },
-              ].map((seg, i) => (
-                <div key={seg.label} style={{ animationDelay: `${i * 60}ms` }}>
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-slate-400">{seg.label}</span>
-                    <span className="font-mono text-[10px] font-semibold" style={{ color: seg.color }}>{formatScenarioPercent(seg.value)}</span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${scenarioWidth(seg.value)}%`,
-                        background: seg.color,
-                        transition: "width 1.2s cubic-bezier(0.23,1,0.32,1)",
-                        boxShadow: `0 0 6px ${seg.color}50`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-            ) : (
-              <p className="font-mono text-[10px] leading-4 text-amber-100/90" data-scenario-probabilities-withheld>{SCENARIO_PROBABILITY_WITHHELD_TEXT}</p>
-            )}
-            {marketState?.outlook.highestProbabilityPath && (
-              <p className="mt-4 border-l-2 border-violet-300/50 bg-violet-300/[0.04] px-3 py-2 text-xs leading-5 text-slate-300">
-                {marketState.outlook.highestProbabilityPath}
-              </p>
-            )}
-          </div>
-        </div>
 
-        {/* ── STANDARD SECTIONS ─────────────────────────────────────────── */}
-        <Section id="summary" index="01" eyebrow="Summary" title="The market in plain English" description="A direct synthesis before charts, modules, or specialist tools.">
-          <p className="max-w-4xl text-lg leading-8 text-slate-200">
-            {marketState?.why.story ?? output.narrative.summary}
-          </p>
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {[`Regime: ${regime}`, `Top risk: ${topThreatHeadline(threats[0], threatAnalysisFailed)}`, `Rising domains: ${building}`].map(item => (
-              <div key={item} className="border-l-2 border-cyan-300/50 bg-white/[0.025] px-4 py-3 font-mono text-[10px] uppercase tracking-[0.1em] text-slate-300">{item}</div>
-            ))}
-          </div>
-        </Section>
-
-        <Section id="changed" index="02" eyebrow="Change" title="What changed—and how long it has been developing" description="Direction matters more than a single reading. FAULTLINE separates rising pressure from easing conditions without inventing a false start date.">
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded border border-rose-400/15 bg-rose-400/[0.04] p-5">
-              <TrendingUp size={17} className="text-rose-300" />
-              <p className="mt-4 font-['Rajdhani'] text-3xl text-white">{building}</p>
-              <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-rose-200/70">Building domains</p>
-            </div>
-            <div className="rounded border border-emerald-400/15 bg-emerald-400/[0.04] p-5">
-              <TrendingDown size={17} className="text-emerald-300" />
-              <p className="mt-4 font-['Rajdhani'] text-3xl text-white">{easing}</p>
-              <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-emerald-200/70">Easing domains</p>
-            </div>
-            <div className="rounded border border-white/10 bg-white/[0.025] p-5">
-              <Clock3 size={17} className="text-cyan-300" />
-              <p className="mt-4 text-sm font-semibold text-white">{marketState?.history.currentStreakDescription ?? "Duration unavailable in fallback state"}</p>
-              <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.15em] text-slate-500">Development window</p>
-            </div>
-          </div>
-          <div className="mt-5 space-y-2">
-            {(changedItems.length ? changedItems : ["No verified directional change is available in the current comparison window."]).slice(0, 4).map(item => (
-              <p key={item} className="border-l border-white/15 pl-4 text-sm leading-6 text-slate-400">{item}</p>
-            ))}
-          </div>
-        </Section>
-
-        <Section id="breadth" index="03" eyebrow="Domains" title="Where pressure is concentrated" description={`Every domain is normalized to the same 0–100 scale so concentration across domains can be compared directly. ${monthlyRecordBasisNote(marketState.why.evidenceAsOfMonth)}`}>
+        <Section id="breadth" index="01" eyebrow="Domains" title="Evidence beneath the Case File" description={`The Case File is the synthesis. These domain readings are the supporting evidence, normalized to the same 0–100 scale. ${monthlyRecordBasisNote(marketState.why.evidenceAsOfMonth)}`}>
           <div className="grid gap-3 md:grid-cols-2">
             {evidenceFamilies.map(family => (
               <div key={family.name} className="rounded border border-white/10 bg-white/[0.025] p-4">
@@ -1260,53 +1225,9 @@ export default function Now() {
           </div>
         </Section>
 
-        <Section id="probabilities" index="04" eyebrow="Probabilities" title="What the current state implies" description="Scenario probabilities are distributions, not certainty. They update from the same canonical market state used across FAULTLINE.">
-          {scenariosCalibrated ? (
-          <div className="grid gap-3 sm:grid-cols-3">
-            {[
-              { label: "Bull", value: probabilities.bull, accent: "#00e599" },
-              { label: "Neutral", value: probabilities.neutral, accent: "#00e5ff" },
-              { label: "Bear", value: probabilities.bear, accent: "#ff4d6d" },
-            ].map(card => (
-              <div key={card.label} className="rounded border border-white/10 bg-[#090d14] p-4">
-                <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-500">{card.label}</p>
-                <p className="mt-3 font-['Rajdhani'] text-3xl font-semibold" style={{ color: card.accent }}>{formatScenarioPercent(card.value)}</p>
-                <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full" style={{ width: `${scenarioWidth(card.value)}%`, background: card.accent, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
-                </div>
-              </div>
-            ))}
-          </div>
-          ) : (
-            <p className="rounded border border-amber-300/20 bg-amber-300/[0.04] px-4 py-3 font-mono text-[10px] leading-4 text-amber-100/90" data-scenario-probabilities-withheld>{SCENARIO_PROBABILITY_WITHHELD_TEXT}</p>
-          )}
-          {marketState?.outlook.highestProbabilityPath && (
-            <p className="mt-5 border-l-2 border-violet-300/50 bg-violet-300/[0.04] px-4 py-3 text-sm leading-6 text-slate-300">
-              Highest-probability path: {marketState.outlook.highestProbabilityPath}
-            </p>
-          )}
-        </Section>
 
-        <Section id="why" index="05" eyebrow="Why" title="The primary drivers beneath the reading" description="NOW provides the causal headline; WHY carries the full transmission map, positioning evidence, and historical explanation.">
-          <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
-            <div className="rounded border border-white/10 bg-white/[0.025] p-5">
-              <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-amber-300">Why this score</p>
-              <p className="mt-4 text-sm leading-7 text-slate-300">{marketState?.why.whyThisScore ?? output.narrative.regimeAssessment}</p>
-              <p className="mt-4 text-sm leading-7 text-slate-400">{marketState?.why.narrative.whatIsBuildingBeneathSurface ?? output.narrative.keyRisks.join(" ")}</p>
-            </div>
-            <div className="rounded border border-white/10 bg-white/[0.025] p-5">
-              <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-500">Dominant drivers</p>
-              <ol className="mt-4 space-y-3">
-                {topDrivers.slice(0, 4).map((driver, index) => (
-                  <li key={driver} className="flex gap-3 text-sm text-slate-300"><span className="font-mono text-cyan-300">0{index + 1}</span>{driver}</li>
-                ))}
-              </ol>
-            </div>
-          </div>
-          <div className="mt-5"><DestinationLink href={CANONICAL_DESTINATION_BY_ID.why.path} label="Open WHY" detail="Trace drivers, transmission, positioning, and history." /></div>
-        </Section>
 
-        <Section id="history" index="06" eyebrow="History" title="How current conditions compare with the past" description="Historical context is shown with sample size, dataset span, analog similarity, and resolution—not as a prediction.">
+        <Section id="history" index="02" eyebrow="History" title="How current conditions compare with the past" description="Historical context is shown with sample size, dataset span, analog similarity, and resolution—not as a prediction.">
           <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded border border-white/10 bg-white/[0.025] p-5"><Database size={16} className="text-cyan-300" /><p className="mt-4 font-['Rajdhani'] text-2xl text-white">{marketState?.history.observationCount.toLocaleString() ?? "—"}</p><p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-500">Observations</p></div>
             <div className="rounded border border-white/10 bg-white/[0.025] p-5"><History size={16} className="text-violet-300" /><p className="mt-4 text-sm font-semibold text-white">{marketState?.history.datasetSpan ?? "Canonical history unavailable"}</p><p className="mt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-500">Dataset span</p></div>
@@ -1315,19 +1236,8 @@ export default function Now() {
           {topAnalog && <p className="mt-5 text-sm leading-7 text-slate-400">{topAnalog.period}: {topAnalog.resolution}</p>}
         </Section>
 
-        <Section id="watch-next" index="07" eyebrow="Watch next" title="What could confirm—or invalidate—the current state" description="A focused monitoring list keeps NOW actionable without turning it into the WATCH workspace.">
-          <div className="grid gap-3 md:grid-cols-2">
-            {watchItems.slice(0, 6).map(item => (
-              <div key={item} className="flex gap-3 rounded border border-white/10 bg-white/[0.025] p-4">
-                <Activity size={15} className="mt-0.5 shrink-0 text-orange-300" />
-                <p className="text-sm leading-6 text-slate-300">{item}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-5"><DestinationLink href={CANONICAL_DESTINATION_BY_ID.watch.path} label="Open WATCH" detail="Set thresholds, monitor signals, and follow developing conditions." /></div>
-        </Section>
 
-        <Section id="asha" index="08" eyebrow="PLATO" title="Continue the interpretation with PLATO" description="Carry today's canonical market state into a focused conversation without changing the evidence source.">
+        <Section id="asha" index="03" eyebrow="PLATO" title="Continue the interpretation with PLATO" description="Carry today's canonical market state into a focused conversation without changing the evidence source.">
           <div className="rounded border border-cyan-300/20 bg-cyan-300/[0.035] p-6 md:flex md:items-center md:justify-between md:gap-8">
             <div className="flex gap-4">
               <BrainCircuit className="mt-1 shrink-0 text-cyan-300" size={22} />
@@ -1337,7 +1247,7 @@ export default function Now() {
           </div>
         </Section>
 
-        <Section id="expert-tools" index="09" eyebrow="Expert tools" title="Go deeper without crowding the primary answer" description="Specialist workspaces remain available for expert analysis while NOW stays conclusion-first.">
+        <Section id="expert-tools" index="04" eyebrow="Expert tools" title="Go deeper without crowding the primary answer" description="Specialist workspaces remain available for expert analysis while NOW stays conclusion-first.">
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
             <DestinationLink href={EXPERT_WORKSPACE_BY_ID.pressure.path} label="Pressure Engine" detail="Inspect pressure domains and scoring detail." />
             <DestinationLink href={EXPERT_WORKSPACE_BY_ID["signal-outlook"].path} label="Signal Outlook" detail="Open scenario and transition analysis." />
@@ -1347,7 +1257,7 @@ export default function Now() {
           </div>
         </Section>
 
-        <Section id="confidence" index="10" eyebrow="Confidence" title="What this conclusion rests on" description="Freshness, source health, fallback status, and warnings remain visible so users can distinguish evidence from certainty.">
+        <Section id="confidence" index="05" eyebrow="Confidence" title="What this conclusion rests on" description="Freshness, source health, fallback status, and warnings remain visible so users can distinguish evidence from certainty.">
           <div className="grid gap-3 md:grid-cols-2">
             {(sourceHealth.length ? sourceHealth : [{ id: "fallback", label: "Deterministic fallback", status: "degraded", required: true, asOf: lastUpdated?.toISOString() ?? "Unavailable", detail: "Canonical source health is not currently available." }]).map(source => (
               <div key={source.id} className="flex gap-3 rounded border border-white/10 bg-white/[0.025] p-4">
