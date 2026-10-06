@@ -1,6 +1,6 @@
 # FAULTLINE Product Bible
 
-> **Product purpose:** FAULTLINE is an AI-powered macro and systemic-risk intelligence platform designed to make market conditions understandable: what is happening, why it is happening, how long it has been building, and how conditions compare with history.
+> **Product purpose:** FAULTLINE is an evidence-led macro and systemic-risk intelligence platform designed to make market conditions understandable through one governed Case File: what is happening, why it is happening, what is most likely next, what to watch, and how to respond.
 
 ## Mission and positioning
 
@@ -11,31 +11,31 @@ FAULTLINE is positioned as an evidence-led decision-support environment rather t
 | User | Core need | FAULTLINE use |
 |---|---|---|
 | Serious self-directed investor | Understand macro risk before acting | Five Questions, Pressure, Outlook, historical context, watch conditions. |
-| Active trader | Frame a setup inside market conditions | Signals, Symbol Intelligence, Global Markets, Pre-Flight, levels/invalidations. |
+| Active trader | Frame a setup inside market conditions | Signals, Symbol Intelligence, Day Trade Intelligence, Global Markets, rotation, levels, and invalidations. |
 | Crypto market participant | Understand crypto in broader risk appetite | Crypto Intelligence, Rotation, crypto signals, macro context. |
 | Research-oriented user | Inspect evidence and methodology | Seismograph, Historical Analogs, Track Record, Methodology, Intelligence Library. |
 | FAULTLINE operator | Maintain platform quality | Admin/diagnostic views, content, pipeline health, approved scheduled workflows. |
 
 ## Product architecture
 
-The experience is organized around the **Five Questions** as the primary cognitive framework. Deep tools comprise the Intelligence Lab: evidence surfaces and focused workspaces that explain or test the Five Questions without displacing them.
+The experience is organized around the **Five Questions** as the primary cognitive framework. The **FAULTLINE Case File** is the synthesis layer that answers those five questions from the governed market state. Intelligence, Market Tools, and the Research Lab sit beneath that synthesis as evidence and specialist workspaces; they do not displace it.
 
 | Layer | Components | User value |
 |---|---|---|
-| Five Questions | Home/NOW, What, Why, Outlook, Watch, Act | A consistent path from current condition to decision framing. |
-| Core intelligence | Pressure Index, Seismograph, Canonical MarketState, ASHA | Evidence-led system-level understanding. |
+| Case File / Five Questions | NOW, WHY, OUTLOOK, WATCH, ACT | One governed synthesis of the current market state and the evidence that could change it. |
+| Core intelligence | Pressure Index, Seismograph, Canonical MarketState, PLATO | Evidence-led system-level understanding. |
 | Market evidence | Global Markets, cross-asset context, rates, credit/liquidity signals | See whether the environment is broadly aligned or diverging. |
-| Asset workspaces | Signals, Symbol Intelligence, Crypto, portfolio/simulation | Apply context to a specific security, digital asset, or simulated process. |
-| Research and history | TIME MACHINE™, analogs, Track Record, methodology | Compare current evidence with historical patterns honestly. |
-| Decision support | Pre-Flight, outlook, scenarios, Watch/Act | Make conditional, risk-aware decisions. |
+| Market Tools | Signals, Symbol Intelligence, Day Trade Intelligence, Rising Stars, Crypto, Watchlist, Alerts, Trade Journal | Apply macro context to securities, digital assets, monitoring, and trader workflows. |
+| Research Lab | TIME MACHINE™, Historical Analogs, Track Record, Validation Lab, Decision Ledger, methodology, pressure simulation | Compare, test, and inspect the evidence without crowding the primary answer. |
+| Decision support | Outlook, scenarios, Watch/Act, invalidation conditions | Make conditional, risk-aware decisions. |
 
 ## Five Questions philosophy
 
-FAULTLINE should lead with plain-English explanation, not a score alone. A current reading should clarify what changed, its drivers, how long the pattern has developed, the historical frame, plausible scenarios, and what would invalidate the working conclusion. “Home” is the user-facing route to the deep NOW dashboard (`/app/now`); there should not be duplicate Home/NOW destinations in primary navigation.
+FAULTLINE should lead with plain-English explanation, not a score alone. The Case File should make the Five Questions visible as one coherent answer before the user enters deeper workspaces. A current reading should clarify what changed, its drivers, the forward path where governed evidence supports one, what to watch, how to respond conditionally, the historical frame, and what would invalidate the working conclusion. “Home” is the user-facing route to NOW (`/app/now`); there should not be duplicate Home/NOW destinations in primary navigation.
 
-## ASHA
+## PLATO
 
-ASHA is the platform's intelligence guide. Her job is to synthesize canonical evidence, point out agreement and divergence, name uncertainty, and explain decision-relevant implications. ASHA is neither a generic chatbot nor a predictive authority. See `ASHA_MASTER_SYSTEM_PROMPT.md` for the full reconstruction specification.
+PLATO is the platform's intelligence guide. PLATO's job is to synthesize canonical evidence, point out agreement and divergence, name uncertainty, and explain decision-relevant implications. PLATO is neither a generic chatbot nor a predictive authority. Internal legacy identifiers may still use ASHA naming while customer-visible product language uses PLATO.
 
 ## Differentiation
 
@@ -48,7 +48,7 @@ Users should enter the full intelligence experience without repeating cinematic 
 ## UX principles
 
 1. **Explain before expanding.** Make the current market condition clear before adding dashboards or tool depth.
-2. **Preserve hierarchy.** The Five Questions are Layer 1; Markets and the Intelligence Lab are Layer 2 evidence.
+2. **Preserve hierarchy.** The Case File and Five Questions are Layer 1; Intelligence, Market Tools, and the Research Lab are Layer 2.
 3. **Expose provenance.** Show source health, delayed/static/fallback data, and last-update context.
 4. **Separate horizons.** Macro regimes, market probabilities, and ticker-specific setups are related but not interchangeable.
 5. **Use conditional language.** Present what evidence favors, the counter-case, and invalidation conditions.
@@ -56,11 +56,15 @@ Users should enter the full intelligence experience without repeating cinematic 
 
 ## Brand voice and terminology
 
-The brand voice is calm, precise, direct, risk-aware, and professional. Core terms include **Pressure Index**, **Regime**, **Seismograph**, **Five Questions**, **MarketState**, **Evidence**, **Freshness**, **Source Health**, **Historical Analog**, **Risk-on/Risk-off**, **Pre-Flight**, and **Faultline Market Read**. Avoid language that treats models as omniscient or historical reconstruction as a live forecast.
+The brand voice is calm, precise, direct, risk-aware, and professional. Core terms include **Case File**, **Pressure Index**, **Regime**, **Seismograph**, **Five Questions**, **MarketState**, **Evidence**, **Freshness**, **Source Health**, **Historical Analog**, **Risk-on/Risk-off**, and **FAULTLINE Market Read**. Avoid language that treats models as omniscient or historical reconstruction as a live forecast.
 
 ## Commercial model and trust
 
-The source includes free, core, premium, and founding/lifetime access concepts with Stripe-managed price IDs and entitlement gates. Actual price configuration must be verified in the current Stripe account and product definitions before public representation. Any founding-membership count must be database-backed after successful purchase; never simulate scarcity, testimonials, reviews, or ratings.
+FAULTLINE should keep entitlement and membership logic **payment-provider-agnostic**. Stripe, Paddle, or another approved provider may supply checkout and subscription billing without changing the product's access model. Do not hard-wire customer entitlements to one processor.
+
+The commercial structure may include free, core, premium/app, and founding access concepts. The **Market Tools** layer is intentionally preserved as future subscription value: Signals, Symbol Intelligence, Day Trade Intelligence, Rising Stars, Crypto tools, Watchlist, Alerts, Trade Journal, and future regime-aware technical tools can increase paid-app utility without becoming FAULTLINE's primary public positioning.
+
+Actual price configuration, processor fees, tax treatment, and entitlement mappings must be verified against the active payment provider before public representation. Any founding-member count must be database-backed after successful purchase; never simulate scarcity, testimonials, reviews, or ratings.
 
 ## Current roadmap themes
 
