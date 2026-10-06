@@ -67,6 +67,17 @@ describe("Marketing page positioning guardrails", () => {
     expect(landing).not.toContain("ASHA");
   });
 
+  it("leads with the Case File while keeping Market Tools as a secondary capability layer", () => {
+    expect(page).toContain("FAULTLINE CASE FILE");
+    expect(page).toContain("One market state. Five questions. One evidence trail.");
+    expect(page).toContain("The Case File is the primary FAULTLINE experience.");
+    expect(page).toContain('title: "Market Tools"');
+    expect(page).toContain("Symbol Intelligence");
+    expect(page).toContain("Day Trade Intelligence");
+    expect(page).toContain("Rising Stars");
+    expect(page).toContain("watchlists, alerts, and trade-journal workflows");
+  });
+
   it("keeps the founder note verbatim and points both CTAs at public destinations", () => {
     expect(page).toContain("A NOTE FROM THE FOUNDER");
     expect(page).toContain("— JT");
@@ -78,7 +89,7 @@ describe("Marketing page positioning guardrails", () => {
 describe("Landing page structure", () => {
   it("renders the sections in the agreed order", () => {
     const main = page.slice(page.indexOf('<main id="main">'), page.indexOf("</main>"));
-    const order = ["<Hero />", "<PentagonalThesis />", "<Pressure />", "<HistoricalContext />", "<Plato />", "<Capabilities />", "<TrustTeaser />", "<FinalCta />"];
+    const order = ["<Hero />", "<CaseFilePositioning />", "<PentagonalThesis />", "<Pressure />", "<HistoricalContext />", "<Plato />", "<Capabilities />", "<TrustTeaser />", "<FinalCta />"];
     const positions = order.map((tag) => main.indexOf(tag));
     expect(positions.every((pos) => pos >= 0)).toBe(true);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
@@ -86,7 +97,7 @@ describe("Landing page structure", () => {
   });
 
   it("keeps the landing-section ids used by App.tsx placements", () => {
-    for (const id of ["methodology", "pressure", "plato", "analogs", "stack", "access", "thesis"]) {
+    for (const id of ["case-file", "methodology", "pressure", "plato", "analogs", "stack", "access", "thesis"]) {
       expect(landing, id).toContain(`id="${id}"`);
     }
   });
