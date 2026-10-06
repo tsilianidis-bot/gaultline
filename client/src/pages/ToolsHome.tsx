@@ -1,23 +1,17 @@
 /**
- * ToolsHome — Tools & Features Hub
+ * ToolsHome — secondary FAULTLINE tool hub
  *
- * The canonical landing page for the Tools & Features experience.
- * Provides:
- *  - Search across all tools
- *  - 12-category navigation grid
- *  - Recently used tools (localStorage)
- *  - ASHA-recommended tools
- *  - Quick-access favorites
- *  - Cross-experience link back to Guided Intelligence
+ * The Case File / Five Questions remain the primary experience.
+ * This page exposes deeper Intelligence, Market Tools, and Research Lab workspaces
+ * without making users reconstruct the core market answer themselves.
  */
 
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import {
-  Search, Activity, Brain, BarChart3, TrendingUp, TrendingDown,
-  Shield, Bitcoin, FileText, Telescope, Crosshair, BookOpen,
-  Newspaper, Target, Radio, Gauge, Eye, History, Briefcase,
-  Sparkles, ChevronRight, ArrowLeft, RotateCcw, Users,
+  Search, Activity, BarChart3, TrendingUp, Shield, Bitcoin, FileText,
+  Target, Radio, Eye, History, Sparkles, ChevronRight, ArrowLeft, RotateCcw,
+  Users, BookOpen, Newspaper, Crosshair,
 } from "lucide-react";
 import { useExperience } from "@/contexts/ExperienceContext";
 import { CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
@@ -47,80 +41,47 @@ interface Tool {
 }
 
 const ALL_TOOLS: Tool[] = [
-  // Market Intelligence
-  { id: "now", label: "NOW — What Is Happening", description: "Regularly refreshed market regime and pressure synthesis", path: CANONICAL_DESTINATION_BY_ID.now.path, category: "Market Intelligence", icon: Activity },
-  { id: "why", label: "WHY — Why It Is Happening", description: "Macro driver analysis and causal intelligence", path: CANONICAL_DESTINATION_BY_ID.why.path, category: "Market Intelligence", icon: Brain },
-  { id: "outlook", label: "OUTLOOK — What Is Likely Next", description: "Probabilistic scenario and regime forecasting", path: CANONICAL_DESTINATION_BY_ID.outlook.path, category: "Market Intelligence", icon: Telescope },
-  { id: "watch", label: "WATCH — What To Monitor", description: "Key indicators and threshold alerts", path: CANONICAL_DESTINATION_BY_ID.watch.path, category: "Market Intelligence", icon: Eye },
-  { id: "act", label: "ACT — Decision Framework", description: "Actionable intelligence for your decisions", path: CANONICAL_DESTINATION_BY_ID.act.path, category: "Market Intelligence", icon: Target },
-  { id: "seismograph", label: "Seismograph Command Center", description: "Systemic pressure building over time — the signature FAULTLINE visualization", path: "/app/seismograph-command-center", category: "Market Intelligence", icon: Activity },
-  { id: "todays-story", label: "Today's Story", description: "Narrative synthesis of today's market conditions", path: "/app/todays-story", category: "Market Intelligence", icon: Newspaper },
-  // Pressure & Risk
-  { id: "pressure", label: "Pressure Engine", description: "Full systemic pressure index with component breakdown", path: "/app/pressure", category: "Pressure & Risk", icon: Gauge },
-  { id: "pressure-index", label: "Pressure Index", description: "Historical pressure index visualization", path: "/app/pressure-index", category: "Pressure & Risk", icon: BarChart3 },
-  { id: "simulate", label: "Stress Test Simulator", description: "Simulate macro shocks and their systemic impact", path: "/app/simulate", category: "Pressure & Risk", icon: RotateCcw },
-  { id: "intelligence-validation", label: "Intelligence Validation", description: "Validate signals and intelligence quality", path: "/app/intelligence-validation", category: "Pressure & Risk", icon: Shield },
-  { id: "validation-lab", label: "Validation Lab", description: "Advanced signal validation and backtesting", path: "/app/validation-lab", category: "Pressure & Risk", icon: Shield },
-  // Signals & Outlook
-  { id: "signals", label: "Signal Outlook Center", description: "Multi-asset signal dashboard and trend analysis", path: "/app/signal-outlook", category: "Signals & Outlook", icon: Radio },
-  { id: "day-trade", label: "Day Trade Intelligence", description: "Intraday signals and short-term regime analysis", path: "/app/day-trade", category: "Signals & Outlook", icon: TrendingUp },
-  { id: "market-movers", label: "Market Movers", description: "Top movers, volume surges, and momentum leaders", path: "/app/market-movers", category: "Signals & Outlook", icon: TrendingUp },
-  { id: "decision-engine", label: "Decision Engine", description: "Structured decision support with risk-adjusted scoring", path: "/app/decision-engine", category: "Signals & Outlook", icon: Crosshair },
-  // Historical & Analogs
-  { id: "analogs", label: "Historical Analog Engine", description: "Find the closest historical market analogs to today", path: "/app/analogs", category: "Historical & Analogs", icon: History },
-  { id: "track-record", label: "Track Record", description: "FAULTLINE signal performance and accuracy history", path: "/app/track-record", category: "Historical & Analogs", icon: FileText },
-  { id: "archive", label: "Intelligence Archive", description: "Full archive of past intelligence reports", path: "/app/archive", category: "Historical & Analogs", icon: BookOpen },
-  // Watchlist & Monitoring
-  { id: "watchlist", label: "Watchlist Intelligence", description: "AI-powered monitoring for your tracked symbols", path: "/app/watchlist", category: "Watchlist & Monitoring", icon: Eye },
-  { id: "alerts", label: "Alerts & Thresholds", description: "Custom threshold alerts and notification rules", path: "/app/alerts", category: "Watchlist & Monitoring", icon: Radio },
-  { id: "ai-watch", label: "AI Watch", description: "AI-generated market monitoring and anomaly detection", path: "/app/ai-watch", category: "Watchlist & Monitoring", icon: Sparkles },
-  // Social Intelligence
-  { id: "smart-discovery", label: "Smart Discovery", description: "AI-curated market narratives and social signals", path: "/app/discover", category: "Social Intelligence", icon: Users },
-  { id: "phoenix", label: "Phoenix Systems", description: "Sentiment and social intelligence aggregation", path: "/app/phoenix", category: "Social Intelligence", icon: Sparkles },
-  // Symbol Intelligence
-  { id: "symbol", label: "Symbol Intelligence", description: "Deep-dive analysis for any stock, ETF, or crypto", path: "/app/analysis", category: "Symbol Intelligence", icon: Crosshair },
-  { id: "signals-page", label: "Signals Dashboard", description: "Multi-symbol signal and momentum dashboard", path: "/app/signals", category: "Symbol Intelligence", icon: BarChart3 },
-  // Portfolio & Risk
-  { id: "portfolio", label: "Portfolio Risk Review", description: "Portfolio-level risk analysis and regime exposure", path: "/app/portfolio", category: "Portfolio & Risk", icon: Briefcase },
-  { id: "sim-portfolio", label: "Simulated Portfolio", description: "Simulate portfolio performance under different regimes", path: "/app/sim-portfolio", category: "Portfolio & Risk", icon: RotateCcw },
-  { id: "decision-ledger", label: "Decision Ledger", description: "Track and review your investment decisions", path: "/app/decision-ledger", category: "Portfolio & Risk", icon: FileText },
-  { id: "trade-journal", label: "Trade Journal", description: "Structured trade logging and performance review", path: "/app/trade-journal", category: "Portfolio & Risk", icon: BookOpen },
-  // Crypto Intelligence
-  { id: "crypto-hub", label: "Crypto Intelligence Hub", description: "Full crypto market intelligence dashboard", path: "/app/crypto", category: "Crypto Intelligence", icon: Bitcoin },
-  { id: "crypto-search", label: "Crypto Search", description: "Search and analyze any cryptocurrency", path: "/app/crypto/search", category: "Crypto Intelligence", icon: Search },
-  { id: "crypto-watchlist", label: "Crypto Watchlist", description: "Monitor your crypto positions with AI intelligence", path: "/app/crypto/watchlist", category: "Crypto Intelligence", icon: Eye },
-  { id: "crypto-signals", label: "Crypto Signals", description: "Crypto-specific signal and momentum analysis", path: "/app/crypto/signals", category: "Crypto Intelligence", icon: Radio },
-  // Reports & Research
-  { id: "daily-brief-archive", label: "Daily Brief Archive", description: "Full archive of PLATO's daily market briefings", path: "/app/daily-brief", category: "Reports & Research", icon: Newspaper },
-  { id: "intelligence-library", label: "Intelligence Library", description: "Curated research and intelligence reports", path: "/app/intelligence-library", category: "Reports & Research", icon: BookOpen },
-  { id: "methodology", label: "Methodology", description: "How FAULTLINE's intelligence is built and scored", path: "/app/methodology", category: "Reports & Research", icon: FileText },
-  { id: "guide", label: "Platform Guide", description: "How to use FAULTLINE effectively", path: "/app/guide", category: "Reports & Research", icon: BookOpen },
-  // ASHA Intelligence
-  { id: "asha-center", label: "PLATO Intelligence Center", description: "Full conversational intelligence with PLATO", path: "/app/asha", category: "PLATO Intelligence", icon: Sparkles },
-  { id: "fmos", label: "FMOS Health Dashboard", description: "FAULTLINE Market Operating System diagnostics", path: "/app/fmos", category: "PLATO Intelligence", icon: Activity, isNew: true },
-  { id: "situation-room", label: "Situation Room", description: "Regularly refreshed crisis monitoring and systemic risk alerts", path: CANONICAL_DESTINATION_BY_ID.now.path, category: "PLATO Intelligence", icon: Shield },
+  // Intelligence
+  { id: "global-markets", label: "Global Markets", description: "Cross-asset market context around the current FAULTLINE state", path: "/app/markets", category: "Intelligence", icon: BarChart3 },
+  { id: "seismograph", label: "Seismograph Intelligence", description: "Inspect systemic pressure engines and their historical context", path: "/app/seismograph-command-center", category: "Intelligence", icon: Activity },
+  { id: "daily-brief", label: "Daily Brief", description: "The current written market briefing from the FAULTLINE intelligence stack", path: "/daily-brief", category: "Intelligence", icon: Newspaper },
+  { id: "intelligence-library", label: "Intelligence Library", description: "Curated FAULTLINE research and published intelligence", path: "/intelligence-library", category: "Intelligence", icon: BookOpen },
+  { id: "social-intelligence", label: "Social Intelligence", description: "Inspect market narratives and social evidence as a supporting input", path: "/app/social-intelligence", category: "Intelligence", icon: Users },
+  { id: "insider-intelligence", label: "Insider Intelligence", description: "Inspect insider activity as a supporting evidence surface", path: "/app/insider-intelligence", category: "Intelligence", icon: Eye },
+  { id: "plato", label: "PLATO Intelligence", description: "Continue the current market interpretation in the conversational intelligence layer", path: "/app/asha", category: "Intelligence", icon: Sparkles },
+
+  // Market Tools — intentionally preserved as subscription-value utilities.
+  { id: "watchlist", label: "Watchlist", description: "Monitor selected assets and conditions in the context of the current regime", path: "/app/watchlist", category: "Market Tools", icon: Eye },
+  { id: "alerts", label: "Alerts", description: "Track thresholds and conditions that deserve attention", path: "/app/alerts", category: "Market Tools", icon: Radio },
+  { id: "symbol-intelligence", label: "Symbol Intelligence", description: "Deep-dive analysis for a specific stock, ETF, or crypto asset", path: "/app/symbol-intelligence", category: "Market Tools", icon: Crosshair },
+  { id: "day-trade", label: "Day Trade Intelligence", description: "Short-horizon market intelligence and intraday setup context", path: "/app/day-trade-intelligence", category: "Market Tools", icon: Target },
+  { id: "rising-stars", label: "Rising Stars", description: "Surface strengthening assets and emerging relative leaders", path: "/app/rising-stars", category: "Market Tools", icon: TrendingUp },
+  { id: "signals", label: "Signals", description: "Review multi-asset signal and momentum conditions", path: "/app/signals", category: "Market Tools", icon: BarChart3 },
+  { id: "crypto-hub", label: "Crypto Hub", description: "Crypto market intelligence in the broader FAULTLINE regime context", path: "/app/crypto", category: "Market Tools", icon: Bitcoin },
+  { id: "crypto-signals", label: "Crypto Signals", description: "Crypto-specific signal, momentum, and regime context", path: "/app/crypto-signals", category: "Market Tools", icon: Bitcoin },
+  { id: "trade-journal", label: "Trade Journal", description: "Record and review trading decisions against the market state", path: "/app/trade-journal", category: "Market Tools", icon: BookOpen },
+
+  // Research Lab
+  { id: "time-machine", label: "TIME MACHINE™", description: "Inspect earlier market states and historical context", path: "/app/time-machine", category: "Research Lab", icon: History },
+  { id: "historical-analogs", label: "Historical Analogs", description: "Compare the current evidence profile with prior reference periods", path: "/app/historical-analogs", category: "Research Lab", icon: History },
+  { id: "simulate-pressure", label: "Simulate Pressure", description: "Explore how hypothetical input changes affect pressure", path: "/app/simulate-pressure", category: "Research Lab", icon: RotateCcw },
+  { id: "track-record", label: "Track Record", description: "Review recorded FAULTLINE outcomes and historical evidence", path: "/app/track-record", category: "Research Lab", icon: FileText },
+  { id: "validation-lab", label: "Validation Lab", description: "Inspect validation work and signal-quality research", path: "/app/validation-lab", category: "Research Lab", icon: Shield },
+  { id: "decision-ledger", label: "Decision Ledger", description: "Review recorded decisions and the evidence present at the time", path: "/app/decision-ledger", category: "Research Lab", icon: FileText },
+  { id: "methodology", label: "Methodology", description: "Inspect how FAULTLINE data, models, scoring, and limitations are defined", path: "/methodology", category: "Research Lab", icon: BookOpen },
 ];
 
 const CATEGORIES = [
-  { label: "Market Intelligence", icon: Activity, color: "#00D4FF" },
-  { label: "Pressure & Risk", icon: Gauge, color: "#FF6B6B" },
-  { label: "Signals & Outlook", icon: Radio, color: "#4ECDC4" },
-  { label: "Historical & Analogs", icon: History, color: "#FFD93D" },
-  { label: "Watchlist & Monitoring", icon: Eye, color: "#A8E6CF" },
-  { label: "Social Intelligence", icon: Users, color: "#C3B1E1" },
-  { label: "Symbol Intelligence", icon: Crosshair, color: "#FF8B94" },
-  { label: "Portfolio & Risk", icon: Briefcase, color: "#F7DC6F" },
-  { label: "Crypto Intelligence", icon: Bitcoin, color: "#F7931A" },
-  { label: "Reports & Research", icon: FileText, color: "#85C1E9" },
-  { label: "PLATO Intelligence", icon: Sparkles, color: "#D7BDE2" },
+  { label: "Intelligence", icon: Activity, color: "#00D4FF" },
+  { label: "Market Tools", icon: Target, color: "#4ECDC4" },
+  { label: "Research Lab", icon: History, color: "#FFD93D" },
 ];
 
-const ASHA_RECOMMENDATIONS = [
-  { id: "seismograph", reason: "Visualizes systemic pressure building over time" },
-  { id: "now", reason: "Start here for today's market regime" },
-  { id: "analogs", reason: "Find historical parallels to current conditions" },
-  { id: "pressure", reason: "Full breakdown of what is driving pressure today" },
-  { id: "smart-discovery", reason: "AI-curated narratives shaping market sentiment" },
+const PLATO_RECOMMENDATIONS = [
+  { id: "seismograph", reason: "Inspect the pressure evidence beneath the current Case File" },
+  { id: "symbol-intelligence", reason: "Apply the market context to a specific asset" },
+  { id: "signals", reason: "Check whether market signals confirm or diverge from the macro read" },
+  { id: "historical-analogs", reason: "Compare the current evidence profile with prior periods" },
 ];
 
 function ToolCard({ tool }: { tool: Tool }) {
@@ -185,8 +146,8 @@ export default function ToolsHome() {
     return tools;
   }, [search, activeCategory]);
 
-  const ashaTools = useMemo(() =>
-    ASHA_RECOMMENDATIONS.map(r => ({ ...ALL_TOOLS.find(t => t.id === r.id)!, reason: r.reason })).filter(Boolean),
+  const platoTools = useMemo(() =>
+    PLATO_RECOMMENDATIONS.map(r => ({ ...ALL_TOOLS.find(t => t.id === r.id)!, reason: r.reason })).filter(Boolean),
     []
   );
 
@@ -207,10 +168,10 @@ export default function ToolsHome() {
             }}
           >
             <ArrowLeft size={12} />
-            RETURN TO GUIDED INTELLIGENCE
+            RETURN TO CASE FILE
           </button>
           <div style={{ ...MONO, fontSize: "9px", color: TEXT_MUTED, letterSpacing: "0.12em" }}>
-            TOOLS & FEATURES
+            MARKET & RESEARCH TOOLS
           </div>
         </div>
 
@@ -220,7 +181,7 @@ export default function ToolsHome() {
             TOOLS & FEATURES
           </h1>
           <p style={{ ...SANS, fontSize: "13px", color: TEXT_SECONDARY, margin: 0, lineHeight: 1.6 }}>
-            Direct access to FAULTLINE's complete analytical platform. {ALL_TOOLS.length} tools across {CATEGORIES.length} categories.
+            The Case File stays primary. These {ALL_TOOLS.length} deeper workspaces are organized into {CATEGORIES.length} clear layers for market analysis, trading utility, and research.
           </p>
         </div>
 
@@ -249,7 +210,7 @@ export default function ToolsHome() {
       </div>
 
       <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 24px" }}>
-        {/* ASHA Recommendations (shown when no search/filter active) */}
+        {/* PLATO recommendations (shown when no search/filter active) */}
         {!search && !activeCategory && (
           <div style={{ marginBottom: "36px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
@@ -259,7 +220,7 @@ export default function ToolsHome() {
               </span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "10px" }}>
-              {ashaTools.map(tool => (
+              {platoTools.map(tool => (
                 <Link key={tool.id} href={tool.path}>
                   <div style={{
                     background: "rgba(0,212,255,0.04)", border: `1px solid rgba(0,212,255,0.15)`,
@@ -392,7 +353,7 @@ export default function ToolsHome() {
             GUIDED INTELLIGENCE
           </div>
           <p style={{ ...SANS, fontSize: "12px", color: TEXT_SECONDARY, margin: "0 0 14px", lineHeight: 1.6 }}>
-            Prefer conclusion-first answers? Switch to Guided Intelligence for PLATO-guided analysis organized around five essential market questions.
+            Return to the FAULTLINE Case File for the conclusion-first market read organized around the Five Questions.
           </p>
           <button
             onClick={() => setExperience("guided")}
@@ -403,7 +364,7 @@ export default function ToolsHome() {
               color: ACCENT, transition: "all 0.15s ease",
             }}
           >
-            SWITCH TO GUIDED INTELLIGENCE →
+            RETURN TO CASE FILE →
           </button>
         </div>
       </div>
