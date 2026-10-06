@@ -9,8 +9,6 @@ import {
   RefreshCw,
   ShieldCheck,
   Telescope,
-  TrendingDown,
-  TrendingUp,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
@@ -31,7 +29,6 @@ import {
   topAnalogDetail,
 } from "@shared/nowInterpretationCopy";
 import { pressureBandColor, pressureShortLabel } from "@shared/pressureBands";
-import { formatScenarioPercent } from "@shared/canonicalReadout";
 import { customerIntegrityChipLevel, customerIntegrityColor, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
@@ -708,51 +705,6 @@ function BullBearCard({
   );
 }
 
-// ── What Changed panel ───────────────────────────────────────────────────────
-function WhatChangedPanel({
-  pressure, building, easing, direction, changedItems, regime, phase,
-}: {
-  pressure: number; building: number; easing: number; direction: string;
-  changedItems: string[]; regime: string; phase: number;
-}) {
-  const accent = pressureColor(pressure);
-  return (
-    <div
-      className="rounded border border-white/10 bg-[#060a10] p-5"
-      style={{
-        opacity: phase >= 7 ? 1 : 0,
-        transition: "opacity 0.6s ease",
-      }}
-    >
-      <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">What Changed</p>
-      <div className="mb-4 grid grid-cols-3 gap-3">
-        <div className="rounded border border-white/10 bg-white/[0.025] p-3 text-center">
-          <TrendingUp size={14} className="mx-auto text-rose-300" />
-          <p className="mt-2 font-['Rajdhani'] text-2xl text-white">{building}</p>
-          <p className="font-mono text-[8px] uppercase tracking-[0.1em] text-rose-300/70">Building</p>
-        </div>
-        <div className="rounded border border-white/10 bg-white/[0.025] p-3 text-center">
-          <TrendingDown size={14} className="mx-auto text-emerald-300" />
-          <p className="mt-2 font-['Rajdhani'] text-2xl text-white">{easing}</p>
-          <p className="font-mono text-[8px] uppercase tracking-[0.1em] text-emerald-300/70">Easing</p>
-        </div>
-        <div className="rounded border border-white/10 bg-white/[0.025] p-3 text-center">
-          <div className="mx-auto h-3.5 w-3.5 rounded-full" style={{ background: accent }} />
-          <p className="mt-2 font-mono text-[9px] font-semibold text-white">{direction}</p>
-          <p className="font-mono text-[8px] uppercase tracking-[0.1em] text-slate-500">Direction</p>
-        </div>
-      </div>
-      <div className="space-y-2">
-        {(changedItems.length ? changedItems : ["No verified directional change in current window."]).slice(0, 3).map(item => (
-          <div key={item} className="flex gap-2 border-l-2 border-white/15 pl-3">
-            <p className="text-xs leading-5 text-slate-400">{item}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ── Status rail ──────────────────────────────────────────────────────────────
 function StatusRail({
   pressure, accent, integrityLabel, lastUpdated, marketMode, phase,
@@ -953,8 +905,6 @@ export default function Now() {
     ?? deltaDirection(output.overall);
   const headline = marketState?.now.headline ?? output.narrative.summary;
   const historicalPercentile = marketState?.now.historicalPercentile ?? null;
-  const building = evidenceFamilies.filter(item => item.trend === "deteriorating").length;
-  const easing = evidenceFamilies.filter(item => item.trend === "improving").length;
   // One canonical scenario set (governed snapshot scenarioOutputs via EngineContext);
   // withheld (NaN → "—") when unavailable. The seismograph's 5-way split is not shown.
   const probabilities = {
@@ -964,7 +914,6 @@ export default function Now() {
   };
   // #60 probability contract: only AVAILABLE scenario weights may render as bars/%.
   const scenariosCalibrated = marketState?.outlook.probabilityContract?.scenarioSet.display.state === "AVAILABLE";
-  const scenarioWidth = (value: number) => (Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0);
   // Threat classification comes from the evidence family's own signal (shared classifier),
   // never from strength order alone.
   const threats = marketState?.now.threats ?? [];
@@ -994,11 +943,6 @@ export default function Now() {
     ? { period: output.analogs[0].year, label: output.analogs[0].era, similarity: output.analogs[0].similarity, resolution: "Deterministic fallback analog; canonical resolution unavailable." }
     : null);
   const watchItems = marketState?.watch.whatToWatch ?? output.narrative.keyRisks;
-  const changedItems = marketState?.watch.whatChanged
-    ?? output.domains.flatMap(domain => {
-      const d = knownDelta(domain);
-      return d !== null && Math.abs(d) > 0.1 ? [`${domain.label}: ${d > 0 ? "pressure increased" : "pressure eased"}.`] : [];
-    });
   const accent = pressureColor(pressure);
 
   const topDriversWithStrength = useMemo(() => {
@@ -1256,61 +1200,6 @@ export default function Now() {
 
         {/* ── FAULTLINE SECTOR ROTATION MAP™ (Pentagonal Thesis · NOW) ──── */}
         <SectorRotationMap />
-
-        {/* ── WHAT CHANGED + SCENARIO DISTRIBUTION ─────────────────────── */}
-        <div className="mt-6 grid gap-5 lg:grid-cols-2">
-          <WhatChangedPanel
-            pressure={pressure}
-            building={building}
-            easing={easing}
-            direction={direction}
-            changedItems={changedItems}
-            regime={regime}
-            phase={phase}
-          />
-
-          {/* Scenario distribution */}
-          <div
-            className="rounded border border-white/10 bg-[#060a10] p-5"
-            style={{ opacity: phase >= 7 ? 1 : 0, transition: "opacity 0.6s ease" }}
-          >
-            <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">Scenario Distribution</p>
-            {scenariosCalibrated ? (
-            <div className="space-y-3">
-              {[
-                { label: "Bull", value: probabilities.bull, color: "#00e599" },
-                { label: "Neutral", value: probabilities.neutral, color: "#00e5ff" },
-                { label: "Bear", value: probabilities.bear, color: "#ff4d6d" },
-              ].map((seg, i) => (
-                <div key={seg.label} style={{ animationDelay: `${i * 60}ms` }}>
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-slate-400">{seg.label}</span>
-                    <span className="font-mono text-[10px] font-semibold" style={{ color: seg.color }}>{formatScenarioPercent(seg.value)}</span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${scenarioWidth(seg.value)}%`,
-                        background: seg.color,
-                        transition: "width 1.2s cubic-bezier(0.23,1,0.32,1)",
-                        boxShadow: `0 0 6px ${seg.color}50`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-            ) : (
-              <p className="font-mono text-[10px] leading-4 text-amber-100/90" data-scenario-probabilities-withheld>{SCENARIO_PROBABILITY_WITHHELD_TEXT}</p>
-            )}
-            {marketState?.outlook.highestProbabilityPath && (
-              <p className="mt-4 border-l-2 border-violet-300/50 bg-violet-300/[0.04] px-3 py-2 text-xs leading-5 text-slate-300">
-                {marketState.outlook.highestProbabilityPath}
-              </p>
-            )}
-          </div>
-        </div>
 
         {/* ── EVIDENCE & DEPTH ─────────────────────────────────────────── */}
 
