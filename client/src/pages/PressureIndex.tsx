@@ -380,19 +380,18 @@ export default function PressureIndex() {
           >
             <div className="absolute top-0 left-0 right-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${color}40, transparent)` }} />
             <div className="text-[9px] font-mono tracking-[0.3em] mb-4" style={{ color: `${color}80` }}>
-              FREE ACCOUNT · NO PAYMENT DETAILS
+              LIMITED PUBLIC PREVIEW
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
-              Open the full reading
+              Explore the full intelligence service
             </h2>
             <p className="text-white/40 text-sm max-w-md mx-auto mb-8 leading-relaxed">
-              Sign in or create a free account to see NOW, WHY, OUTLOOK, WATCH and ACT for this reading.
-              The Pressure Index and methodology stay free to read without an account. Paid plans are not on sale.
+              Explore FAULTLINE Intelligence membership for NOW, WHY, OUTLOOK, WATCH and ACT.
+              The limited public preview requires no account. FAULTLINE Intelligence is $99/month; checkout is not open yet.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href={getLoginUrl() || undefined}
-                onClick={handleLoginCtaClick}
+                href="/pricing"
                 data-cta="pressure-index-sign-in"
                 className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-bold text-sm tracking-widest transition-all active:scale-[0.97] cursor-pointer"
                 style={{
@@ -401,7 +400,7 @@ export default function PressureIndex() {
                   boxShadow: `0 0 30px ${color}40`,
                 }}
               >
-                SIGN IN / CREATE FREE ACCOUNT
+                VIEW MEMBERSHIP
               </a>
               <Link href="/methodology">
                 <span

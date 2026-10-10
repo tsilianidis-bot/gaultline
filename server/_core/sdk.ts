@@ -1,3 +1,4 @@
+import { PAID_PLANS_ON_SALE } from "@shared/tiers";
 import { AXIOS_TIMEOUT_MS, COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { ForbiddenError } from "@shared/_core/errors";
 import axios, { type AxiosInstance } from "axios";
@@ -328,6 +329,10 @@ export class SDKServer {
     const signedInAt = new Date();
     let user = await db.getUserByOpenId(sessionUserId);
 
+    // New accounts are created only during authorized membership onboarding.
+    if (!user && !PAID_PLANS_ON_SALE) {
+      throw ForbiddenError("Membership registration is not open yet");
+    }
     // If user not in DB, sync from OAuth server automatically
     if (!user) {
       if (!isOAuthConfigured()) {

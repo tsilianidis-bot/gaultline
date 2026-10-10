@@ -326,7 +326,7 @@ export default function DynamicStockPage() {
             <Link href="/signals" className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-[#00D4FF] transition-colors hidden sm:block">
               ALL SIGNALS
             </Link>
-            <a href={getLoginUrl()} onClick={() => handleCtaClick("start_free")} className="text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-4 py-2 rounded font-bold transition-colors">
+            <a href="/pricing" onClick={() => handleCtaClick("start_free")} className="text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-4 py-2 rounded font-bold transition-colors">
               GET ACCESS →
             </a>
           </div>
@@ -379,7 +379,7 @@ export default function DynamicStockPage() {
               <a href="/pricing" onClick={() => handleCtaClick("pricing")} className="text-[11px] font-mono tracking-widest text-[#A8B8CC] border border-white/20 hover:border-[#00D4FF]/40 px-4 py-2.5 rounded transition-colors">
                 SEE PRICING
               </a>
-              <a href={getLoginUrl()} onClick={() => handleCtaClick("start_free")} className="shrink-0 text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-5 py-3 rounded font-bold transition-colors whitespace-nowrap">
+              <a href="/pricing" onClick={() => handleCtaClick("start_free")} className="shrink-0 text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-5 py-3 rounded font-bold transition-colors whitespace-nowrap">
                 GET SIGNAL →
               </a>
             </div>
@@ -484,7 +484,7 @@ export default function DynamicStockPage() {
               <div className="text-[10px] font-mono tracking-[0.3em] text-[#A8B8CC]/60 mb-1">FAULTLINE DEMO</div>
               <p className="text-white font-semibold text-sm">See how FAULTLINE tracks {upper} as new data is published</p>
             </div>
-            <a href={getLoginUrl()} onClick={() => handleCtaClick("demo")} className="text-[11px] font-mono tracking-widest text-[#00D4FF] border border-[#00D4FF]/30 hover:bg-[#00D4FF]/10 px-5 py-2.5 rounded font-bold transition-colors whitespace-nowrap">
+            <a href="/pricing" onClick={() => handleCtaClick("demo")} className="text-[11px] font-mono tracking-widest text-[#00D4FF] border border-[#00D4FF]/30 hover:bg-[#00D4FF]/10 px-5 py-2.5 rounded font-bold transition-colors whitespace-nowrap">
               VIEW DEMO →
             </a>
           </div>
@@ -534,8 +534,8 @@ export default function DynamicStockPage() {
             See FAULTLINE's {upper} signal classification, macro regime, and systemic risk scores, refreshed as new data is published.
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
-            <a href={getLoginUrl()} onClick={() => handleCtaClick("start_free")} className="inline-flex items-center gap-2 text-[12px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-8 py-4 rounded font-bold transition-colors">
-              START FREE ACCESS →
+            <a href="/pricing" onClick={() => handleCtaClick("start_free")} className="inline-flex items-center gap-2 text-[12px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-8 py-4 rounded font-bold transition-colors">
+              VIEW MEMBERSHIP →
             </a>
             <a href="/pricing" onClick={() => handleCtaClick("pricing")} className="inline-flex items-center gap-2 text-[12px] font-mono tracking-widest text-[#A8B8CC] border border-white/20 hover:border-[#00D4FF]/40 px-6 py-4 rounded transition-colors">
               SEE PRICING

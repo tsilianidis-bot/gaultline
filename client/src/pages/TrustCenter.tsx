@@ -323,7 +323,7 @@ function FAQTab() {
     },
     {
       q: "What does access cost?",
-      a: "The public Pressure Index and methodology are free to read without an account. Signing in with a free account opens the signed-in app. Paid plans are not on sale, and no payment details are requested.",
+      a: "FAULTLINE Intelligence is $99/month. The limited public preview requires no account. Membership checkout is not open yet, and there is no free registration.",
     },
     {
       q: "Is my data secure?",
@@ -331,7 +331,7 @@ function FAQTab() {
     },
     {
       q: "Do I need a paid subscription?",
-      a: "No. Paid plans are not on sale yet, so there is no subscription to buy or cancel. The public Pressure Index is free to read, and signed-in access starts with a free account.",
+      a: "Full intelligence is offered through one $99/month membership. You can read the limited public preview without subscribing. Membership checkout is not open yet.",
     },
     {
       q: "Who built FAULTLINE?",
@@ -407,7 +407,7 @@ function TermsTab() {
       <P>You may use FAULTLINE for personal, non-commercial investment research and education. You may not redistribute, resell, or republish FAULTLINE content without written permission. You may not use automated tools to scrape or extract data from the platform.</P>
 
       <H3>Subscriptions and Payments</H3>
-      <P>Paid plans are not on sale yet. FAULTLINE does not currently charge for access.</P>
+      <P>FAULTLINE Intelligence is offered at $99/month. Membership checkout is not open yet. Existing subscriptions and entitlements remain unchanged.</P>
 
       <H3>Limitation of Liability</H3>
       <P>FAULTLINE and Phoenix Systems are not liable for any investment losses, trading decisions, or financial outcomes resulting from use of the platform. The platform is for educational purposes only.</P>

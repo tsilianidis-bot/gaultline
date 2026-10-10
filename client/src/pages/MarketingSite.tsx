@@ -13,6 +13,8 @@ import { PRESSURE_BANDS, PRESSURE_VECTOR_ORDER, useLandingPressure } from "@/com
 import { PRESSURE_VECTOR_DISPLAY } from "@shared/pressureVectorLabels";
 import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
+import MembershipOffer from "@/components/MembershipOffer";
+
 const HERO_BACKGROUND = "/faultline_hero_bg_7d6aaf14.jpg";
 const HERO_BACKGROUND_WIDTHS = [640, 1280, 1920, 2560] as const;
 const HERO_BACKGROUND_SRCSET = {
@@ -441,11 +443,9 @@ function FinalCta() {
         <h2 className="text-3xl font-semibold leading-tight tracking-[-0.04em] text-white sm:text-5xl">
           THE MARKET IS A SYSTEM. UNDERSTAND THE PRESSURE BUILDING BENEATH IT.
         </h2>
-        <div className="mt-10 flex justify-center">
-          <Ctas />
-        </div>
+        <div className="mt-10"><MembershipOffer /></div>
         <p className="mx-auto mt-6 max-w-2xl text-sm leading-[1.75] text-[#C9D4E0]">
-          Checkout is not offered on this page. The public Pressure Index and the methodology do not require an account. Paid checkout stays unavailable from the landing page.
+          Explore the limited public preview without an account. Full intelligence is offered through one $99/month membership.
         </p>
         <p className="mt-3 text-sm text-[#B7C1CD]">
           Already a member? <SignInCta className={`font-semibold text-[#65D6E5] underline-offset-4 hover:underline ${focusRing}`} />
@@ -488,9 +488,9 @@ type MarketingSitePlacement = "methodology" | "pressure" | "plato" | "analogs" |
 
 export default function MarketingSite({ initialSection }: { initialSection?: MarketingSitePlacement } = {}) {
   useSEO({
-    title: PAGE_TITLE,
-    description: PAGE_DESCRIPTION,
-    canonical: "/",
+    title: initialSection === "pricing" ? "FAULTLINE Intelligence — $99/month" : PAGE_TITLE,
+    description: initialSection === "pricing" ? "Premium financial intelligence through one $99/month membership. Explore the limited public preview without registering." : PAGE_DESCRIPTION,
+    canonical: initialSection === "pricing" ? "/pricing" : "/",
   });
 
   useEffect(() => {

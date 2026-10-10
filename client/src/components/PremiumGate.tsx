@@ -38,16 +38,8 @@ interface PremiumGateConfig {
   requiredTier: GateTier;    // minimum tier to unlock
 }
 
-function publicPlanCopy(value: string, slot: "primary" | "secondary" = "primary") {
-  // Paid plans are not on sale: signed-out CTAs lead to a free account, never to a purchase.
-  if (!PAID_PLANS_ON_SALE) return slot === "primary" ? "Sign in / create free account" : PLAN_NOT_ON_SALE_LABEL;
-  return value
-    .replace(/^Unlock Core/, "Get Trader")
-    .replace(/^Unlock Pro/, "Get Power")
-    .replace(/^Pro Access/, "Power Access")
-    .replace(/^Founding Access/, "Founding Member")
-    .replace(/\bCore at /g, "Trader at ")
-    .replace(/\bPro membership/g, "Power membership");
+function publicPlanCopy(_value: string, slot: "primary" | "secondary" = "primary") {
+  return slot === "primary" ? `FAULTLINE Intelligence — ${PRICING_PLANS.premium.priceLabel}` : 'View public preview';
 }
 
 const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
@@ -55,7 +47,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Pro Intelligence Required",
     subtitle: "INSTITUTIONAL INTELLIGENCE PLATFORM",
     description:
-      "This module requires FAULTLINE Pro or Founding Access. Unlock the full institutional intelligence suite — macro, signals, crypto, systemic risk, and AI diagnostics.",
+      "This module requires FAULTLINE Intelligence. Unlock the full institutional intelligence suite — macro, signals, crypto, systemic risk, and AI diagnostics.",
     icon: <Shield className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#00D4FF",
@@ -74,7 +66,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Signals Engine Locked",
     subtitle: "CORE SIGNAL ENGINE",
     description:
-      `FAULTLINE's proprietary signal engine — RSI, MACD, SMA crossover, regime-weighted scoring, and AI classification. Included with Core. Paid plans are not on sale yet.`,
+      `FAULTLINE's proprietary signal engine — RSI, MACD, SMA crossover, regime-weighted scoring, and AI classification. Included with FAULTLINE Intelligence. Membership checkout is not open yet.`,
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -93,7 +85,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Portfolio Monitor Locked",
     subtitle: "LIVE PORTFOLIO INTELLIGENCE",
     description:
-      `Track your positions with live P&L and regime-aware risk scoring. Included with Core. Paid plans are not on sale yet. AI guidance requires Pro.`,
+      `Track your positions with live P&L and regime-aware risk scoring. Included with FAULTLINE Intelligence. Membership checkout is not open yet. AI guidance requires Pro.`,
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -112,7 +104,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Alt Rotation Engine Locked",
     subtitle: "ALTERNATIVE ASSET ROTATION",
     description:
-      `Monitor rotation signals across crypto, commodities, and alternative assets. Included with Core. Paid plans are not on sale yet.`,
+      `Monitor rotation signals across crypto, commodities, and alternative assets. Included with FAULTLINE Intelligence. Membership checkout is not open yet.`,
     icon: <BarChart2 className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -207,7 +199,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Unlimited Watchlist Locked",
     subtitle: "PROFESSIONAL WATCHLIST",
     description:
-      `Unlimited symbol watchlists with live signal labels, breach alerts, and side-by-side comparison. Included with Trader. Paid plans are not on sale yet.`,
+      `Unlimited symbol watchlists with live signal labels, breach alerts, and side-by-side comparison. Included with FAULTLINE Intelligence. Membership checkout is not open yet.`,
     icon: <Shield className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -227,7 +219,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Symbol Intelligence Locked",
     subtitle: "DEEP SYMBOL ANALYSIS",
     description:
-      `Full AI-powered symbol intelligence — regime fit, momentum score, signal classification, and factor breakdown. Included with Core. Paid plans are not on sale yet.`,
+      `Full AI-powered symbol intelligence — regime fit, momentum score, signal classification, and factor breakdown. Included with FAULTLINE Intelligence. Membership checkout is not open yet.`,
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -246,7 +238,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Opportunity Radar Locked",
     subtitle: "COMPLETE OPPORTUNITY RADAR",
     description:
-      `Full access to FAULTLINE's Opportunity Radar — ranked opportunities, entry zones, and regime-weighted conviction scores. Included with Core. Paid plans are not on sale yet.`,
+      `Full access to FAULTLINE's Opportunity Radar — ranked opportunities, entry zones, and regime-weighted conviction scores. Included with FAULTLINE Intelligence. Membership checkout is not open yet.`,
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -265,7 +257,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Trade Journal Locked",
     subtitle: "PROFESSIONAL TRADE JOURNAL",
     description:
-      `Log trades, track performance, and identify patterns in your decision-making. Included with Trader. Paid plans are not on sale yet.`,
+      `Log trades, track performance, and identify patterns in your decision-making. Included with FAULTLINE Intelligence. Membership checkout is not open yet.`,
     icon: <BarChart2 className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -284,7 +276,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Social Intelligence Locked",
     subtitle: "SOCIAL SIGNAL INTELLIGENCE",
     description:
-      `Monitor social sentiment, narrative shifts, and crowd positioning across markets. Included with Trader. Paid plans are not on sale yet.`,
+      `Monitor social sentiment, narrative shifts, and crowd positioning across markets. Included with FAULTLINE Intelligence. Membership checkout is not open yet.`,
     icon: <Shield className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -303,7 +295,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Insider Intelligence Locked",
     subtitle: "INSTITUTIONAL FLOW INTELLIGENCE",
     description:
-      `Track institutional positioning, options flow, and insider activity signals. Included with Trader. Paid plans are not on sale yet.`,
+      `Track institutional positioning, options flow, and insider activity signals. Included with FAULTLINE Intelligence. Membership checkout is not open yet.`,
     icon: <Shield className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -322,7 +314,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Advanced Alerts Locked",
     subtitle: "PROFESSIONAL ALERT SYSTEM",
     description:
-      `Set unlimited price, signal, and regime-change alerts. Get notified the moment market conditions shift. Included with Trader. Paid plans are not on sale yet.`,
+      `Set unlimited price, signal, and regime-change alerts. Get notified the moment market conditions shift. Included with FAULTLINE Intelligence. Membership checkout is not open yet.`,
     icon: <Zap className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -622,58 +614,15 @@ export function PremiumGateFull({
             ))}
           </div>
 
-          {/* Founding urgency banner (only for premium/founding gates) */}
-          {PAID_PLANS_ON_SALE && (GATE_REQUIRED_TIER[variant] === 'premium') && (
-            <>
-              <div
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg mb-2 text-center"
-                style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.2)' }}
-              >
-                <div className="relative flex items-center justify-center">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#FFD700]" />
-                  <div className="absolute w-3 h-3 rounded-full bg-[#FFD700]/20 animate-ping" />
-                </div>
-                <span className="text-[10px] font-mono tracking-[0.25em] text-[#FFD700]/80">
-                  FOUNDING ACCESS OPEN — LIMITED AVAILABILITY
-                </span>
-              </div>
-              <p className="text-[9px] font-mono text-[#FFD700]/50 text-center mb-6 tracking-widest">
-                FOUNDING COHORT IS LIMITED. SPOTS CLOSE WITHOUT NOTICE.
-              </p>
-            </>
-          )}
-
-          {/* Tier separator */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, transparent, ${cfg.accentHex}20)` }} />
-            <span className="text-[9px] font-mono tracking-[0.3em] text-white/20">{PAID_PLANS_ON_SALE ? "UPGRADE TO UNLOCK" : "PAID PLANS NOT ON SALE YET"}</span>
-            <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, ${cfg.accentHex}20, transparent)` }} />
-          </div>
-
           {/* CTA buttons */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             {isLoggedIn && !PAID_PLANS_ON_SALE ? (
               <p data-paid-plans-not-on-sale className="text-white/40 text-xs font-mono tracking-widest">
-                {PAID_PLANS_NOT_ON_SALE_COPY} Your free account stays active.
+                {PAID_PLANS_NOT_ON_SALE_COPY} Existing account access is preserved.
               </p>
             ) : isLoggedIn ? (
               // Logged-in users: show Stripe upgrade buttons based on context
               <>
-                {GATE_REQUIRED_TIER[variant] === 'core' && !isCoreTier && (
-                  <button
-                    onClick={() => checkoutMutation.mutate({ planId: 'core', origin: window.location.origin })}
-                    disabled={checkoutMutation.isPending}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-widest transition-all duration-200 hover:scale-[1.02] active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed"
-                    style={{
-                      background: "#22D3EE",
-                      color: "#050608",
-                      boxShadow: "0 0 24px rgba(34,211,238,0.45)",
-                    }}
-                  >
-                    <Zap className="w-4 h-4" />
-                    {checkoutMutation.isPending ? 'Loading...' : `Get Trader — ${PRICING_PLANS.core.priceLabel}`}
-                  </button>
-                )}
                 <button
                   onClick={() => checkoutMutation.mutate({ planId: 'premium', origin: window.location.origin })}
                   disabled={checkoutMutation.isPending}
@@ -683,27 +632,14 @@ export function PremiumGateFull({
                     : { background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.25)", color: "#00D4FF" }}
                 >
                   <Crown className="w-4 h-4" />
-                  {checkoutMutation.isPending ? 'Loading...' : `Get Power — ${PRICING_PLANS.premium.priceLabel}`}
-                </button>
-                <button
-                  onClick={() => checkoutMutation.mutate({ planId: 'founding', origin: window.location.origin })}
-                  disabled={checkoutMutation.isPending}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-widest transition-all duration-200 hover:scale-[1.02] active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed"
-                  style={{
-                    background: "rgba(255,215,0,0.08)",
-                    border: "1px solid rgba(255,215,0,0.25)",
-                    color: "#FFD700",
-                  }}
-                >
-                  <Shield className="w-4 h-4" />
-                  {checkoutMutation.isPending ? 'Loading...' : `Founding Member — ${PRICING_PLANS.founding.priceLabel}`}
+                  {checkoutMutation.isPending ? 'Loading...' : `FAULTLINE Intelligence — ${PRICING_PLANS.premium.priceLabel}`}
                 </button>
               </>
             ) : (
               // Unauthenticated: show login / sign up
               <>
                 <a
-                  href={loginUrl}
+                  href="/pricing"
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-widest transition-all duration-200 hover:scale-[1.02] active:scale-[0.97]"
                   style={{
                     background: cfg.accentHex,
@@ -715,7 +651,7 @@ export function PremiumGateFull({
                   {publicPlanCopy(cfg.ctaPrimary)}
                 </a>
                 <a
-                  href={loginUrl}
+                  href="/pricing"
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-widest text-white/50 hover:text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.97]"
                   style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
                 >
@@ -773,7 +709,7 @@ export function PremiumGateCard({
           <span data-paid-plans-not-on-sale className="text-xs font-mono px-3 py-1.5 whitespace-nowrap text-white/40">{PLAN_NOT_ON_SALE_LABEL}</span>
         ) : (
         <a
-          href={loginUrl}
+          href="/pricing"
           className="text-xs font-bold px-3 py-1.5 rounded-lg transition-all hover:scale-[1.02] whitespace-nowrap"
           style={{
             background: `${cfg.accentHex}15`,
@@ -830,7 +766,7 @@ export function PremiumGateCard({
           <p data-paid-plans-not-on-sale className="text-white/40 text-xs font-mono tracking-widest">{PAID_PLANS_NOT_ON_SALE_COPY}</p>
         ) : (
         <a
-          href={loginUrl}
+          href="/pricing"
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm tracking-widest transition-all hover:scale-[1.02] active:scale-[0.97]"
           style={{
             background: cfg.accentHex,
@@ -926,7 +862,7 @@ export function PremiumBlurOverlay({
         ) : (
           // Not logged in — show login CTA
           <a
-            href={loginUrl}
+            href="/pricing"
             className="text-xs font-bold px-4 py-2 rounded-lg transition-all hover:scale-[1.02]"
             style={{
               background: cfg.accentHex,

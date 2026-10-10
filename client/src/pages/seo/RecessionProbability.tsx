@@ -77,7 +77,7 @@ FAULTLINE does not offer a recession probability or a recession score, and it do
         },
         {
           question: "Is FAULTLINE's recession-risk context free?",
-          answer: "Yes. FAULTLINE's Pressure Index — six weighted vectors built from eight FRED series — is free to read at /pressure-index. FAULTLINE does not offer a recession probability. Signed-in access starts with a free account; paid plans are not on sale.",
+          answer: "Yes. FAULTLINE's Pressure Index — six weighted vectors built from eight FRED series — is free to read at /pressure-index. FAULTLINE does not offer a recession probability. Full intelligence is offered through one $99/month membership; checkout is not open yet.",
         },
       ]}
       internalLinks={[

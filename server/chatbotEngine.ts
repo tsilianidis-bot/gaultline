@@ -41,34 +41,16 @@ export interface IntentAnalysis {
  * Never hardcode prices in the system prompt or anywhere else.
  */
 export const CANONICAL_PRICING = {
-  core: {
-    name: "Trader",
-    price: `$${(PRICING_PLANS.core.amountCents / 100).toFixed(2)}`,
-    priceLabel: PRICING_PLANS.core.priceLabel,
-    interval: "month",
-    description: "Core market intelligence, monitoring, signals, watch tools, market interpretation, and decision support.",
-  },
   premium: {
-    name: "Power",
+    name: PRICING_PLANS.premium.name,
     price: `$${(PRICING_PLANS.premium.amountCents / 100).toFixed(2)}`,
     priceLabel: PRICING_PLANS.premium.priceLabel,
-    interval: "month",
-    description: "The deepest FAULTLINE intelligence experience, advanced analysis, expanded research capabilities, and the full professional toolset.",
-  },
-  founding: {
-    name: "Founding Member",
-    price: `$${(PRICING_PLANS.founding.amountCents / 100).toFixed(2)}`,
-    priceLabel: PRICING_PLANS.founding.priceLabel,
-    interval: "month",
-    description: "Founding-member access to FAULTLINE. Not on sale yet.",
+    interval: 'month',
+    description: PRICING_PLANS.premium.description,
   },
 } as const;
 
-/**
- * The one answer to any question about plan prices while paid plans are not
- * on sale. `price` above is the configured Stripe amount and is never shown.
- */
-export const PRICE_NOT_ON_SALE_ANSWER = `${PAID_PLANS_NOT_ON_SALE_COPY} There is no price to quote right now. You can create a free account at https://getfaultline.live, and the public Pressure Index and methodology are free to read without an account.`;
+export const PRICE_NOT_ON_SALE_ANSWER = `${PRICING_PLANS.premium.name} is ${PRICING_PLANS.premium.priceLabel}. ${PAID_PLANS_NOT_ON_SALE_COPY} Explore the limited public preview without an account, or request membership at https://getfaultline.live/contact. There is no free registration, Founders discount, annual offer, or lifetime offer.`;
 
 /** Narrow check for a question about what FAULTLINE costs or how to buy it. */
 const PRICE_QUESTION_PATTERN = /\b(price|prices|pricing|cost|costs|how much|subscribe|subscription|pay for|paid plans?|upgrade|upgrading|buy|purchase|checkout|founding (member|membership|rate|price|plan))\b/i;
@@ -81,13 +63,9 @@ export function isPlanPriceQuestion(message: string): boolean {
  * This ensures the LLM is always given the correct, current prices.
  */
 function buildPricingBlock(): string {
-  const p = CANONICAL_PRICING;
-  return `## Pricing and plans (READ CAREFULLY)
-
-Paid plans (${p.founding.name}, ${p.core.name}, ${p.premium.name}) are NOT on sale yet. There is no checkout.
-- NEVER quote a price, monthly rate, discount, "founding rate", spot count, or any dollar amount for a FAULTLINE plan.
-- When asked about price, cost, plans, subscribing, or upgrading, answer: "${PRICE_NOT_ON_SALE_ANSWER}"
-- Do not create urgency or scarcity, and do not promise a future price or launch date.`;
+  return `## Pricing and plans
+${PRICE_NOT_ON_SALE_ANSWER}
+Only quote the approved monthly price. Do not invent discounts, scarcity, launch dates, or additional tiers.`;
 }
 
 // ── FAULTLINE System Prompt ───────────────────────────────────────────────────
@@ -96,7 +74,7 @@ Paid plans (${p.founding.name}, ${p.core.name}, ${p.premium.name}) are NOT on sa
  * the canonical source — never cached or hardcoded.
  */
 function buildSystemPrompt(): string {
-  return `You are the FAULTLINE AI Market Intelligence Concierge — a knowledgeable, professional, and helpful assistant for the FAULTLINE platform. Your role is to help visitors understand FAULTLINE, answer their questions, and point them to the free account.
+  return `You are the FAULTLINE AI Market Intelligence Concierge — a knowledgeable, professional, and helpful assistant for the FAULTLINE platform. Your role is to help visitors understand FAULTLINE, answer their questions, and point them to the public preview and membership page.
 
 ## About FAULTLINE
 FAULTLINE is a Market Navigation System — not a trading platform. It helps investors understand macro market conditions, detect systemic pressure, and make better-informed decisions. It does NOT give buy/sell orders or personalized financial advice.
@@ -123,16 +101,16 @@ ${buildPricingBlock()}
 
 ## Your Behavior Rules
 1. Be concise, professional, and helpful. Use plain English — avoid jargon overload.
-2. When a user asks about pricing, plans, or upgrading, say that paid plans are not on sale yet and point them to the free account. Never quote a price.
+2. When a user asks about pricing, plans, or upgrading, say that paid plans are not on sale yet and point them to the public preview and membership page. Only quote the approved monthly price.
 3. When a user asks about a specific stock or crypto (e.g., NVDA, BTC, ETH), explain how FAULTLINE's Signals and Symbol Intelligence can help them analyze it — do NOT give price predictions or trading advice.
 4. When a user expresses interest in signing up, provide the signup URL: https://getfaultline.live and encourage them.
 5. When a user asks about a feature, explain it clearly and link it to a benefit.
 6. Always end responses that involve financial topics with: "Remember: FAULTLINE provides market intelligence and risk analysis, not personalized financial advice."
-7. If a user seems ready to sign up, point them to the free account at https://getfaultline.live.
+7. If a user seems ready to sign up, point them to the public preview and membership page at https://getfaultline.live.
 8. Keep responses under 200 words unless the user asks for a detailed explanation.
 9. Never make promises about returns, profits, or market outcomes.
 10. If asked about competitors (Bloomberg Terminal, TradingView, etc.), acknowledge them respectfully and explain what makes FAULTLINE different: macro-first, regime-aware, built for navigation not prediction.
-11. NEVER quote a price or dollar amount for any FAULTLINE plan. Paid plans are not on sale yet.
+11. Only quote the approved monthly price for FAULTLINE Intelligence. Checkout is not open yet.
 
 ## Tone
 Professional but approachable. Think: knowledgeable analyst who genuinely wants to help, not a sales bot.`;
@@ -144,7 +122,7 @@ Professional but approachable. Think: knowledgeable analyst who genuinely wants 
  * Paid plans are not on sale, so the configured plan amounts ($49/$59/$99) are
  * forbidden too, alongside legacy/wrong prices.
  */
-const FORBIDDEN_PRICE_PATTERN = /\$9\.99|\$299|\$1,199|\$1,200|\$1200|\$29\.99|\$29\/mo|\$39|\$79|\$199|\$29\b|\$(?:49|59|99)(?![\d.,])/g;
+const FORBIDDEN_PRICE_PATTERN = /\$9\.99|\$299|\$1,500|\$1,199|\$1,200|\$1200|\$29\.99|\$29\/mo|\$39|\$79|\$199|\$29\b|\$(?:49|59|89|1500)(?![\d.,])/g;
 
 /**
  * Validate a bot response to ensure it doesn't contain forbidden pricing.
@@ -372,7 +350,7 @@ export async function generateBotResponse(
           ...messages.slice(1),
           {
             role: "system",
-            content: `CORRECTION REQUIRED: Your previous response quoted a price. Paid plans are not on sale yet. Restate your answer without any price or dollar amount for FAULTLINE plans; if pricing comes up, say: "${PRICE_NOT_ON_SALE_ANSWER}"`,
+            content: `CORRECTION REQUIRED: Your previous response used retired pricing. Restate your answer using only the approved monthly price; if pricing comes up, say: "${PRICE_NOT_ON_SALE_ANSWER}"`,
           },
         ];
 

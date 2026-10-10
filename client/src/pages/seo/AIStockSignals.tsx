@@ -86,7 +86,7 @@ Each category is designed to surface different types of opportunities across dif
         },
         {
           question: "Do I need to be a paid subscriber to see AI stock signals?",
-          answer: "FAULTLINE offers free access to a limited set of signals. The full tracked-equity list, asymmetry analysis, and regime-aligned signals are signed-in tools. Signed-in tools start with a free account; paid plans are not on sale.",
+          answer: "FAULTLINE offers free access to a limited set of signals. The full tracked-equity list, asymmetry analysis, and regime-aligned signals are signed-in tools. Full intelligence is offered through one $99/month membership; checkout is not open yet.",
         },
         {
           question: "How does FAULTLINE handle AI bubble risk in stock signals?",

@@ -9,19 +9,19 @@ import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { stripe } from "../stripe/client";
 import { PLANS, verifyStripePlanConfiguration } from "../stripe/products";
 import { getLifetimeMemberCount } from "../db";
-import { PRICING_PLANS, type StripePlanId } from "../../shared/tiers";
+import { PRICING_PLANS, PAID_PLANS_ON_SALE, type StripePlanId } from "../../shared/tiers";
 
 /** Maximum founding lifetime spots available at the $299 promotional price. */
 const LIFETIME_FOUNDING_LIMIT = 100;
 
 /** Public/checkout availability: product lock AND a configured Stripe price. */
 export function isPlanAvailableForPurchase(planId: StripePlanId, priceId: string | null | undefined): boolean {
-  return PRICING_PLANS[planId].available && !!priceId;
+  return PAID_PLANS_ON_SALE && PRICING_PLANS[planId].available && !!priceId;
 }
 
 export const billingRouter = router({
   getPlans: publicProcedure.query(() => {
-    return Object.values(PLANS).map(p => ({
+    return Object.values(PLANS).filter(p => PRICING_PLANS[p.id].available).map(p => ({
       id: p.id,
       name: p.name,
       description: p.description,

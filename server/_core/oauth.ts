@@ -1,3 +1,4 @@
+import { PAID_PLANS_ON_SALE } from "@shared/tiers";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import type { Express, Request, Response } from "express";
 import * as db from "../db";
@@ -125,6 +126,12 @@ export function registerOAuthRoutes(app: Express) {
 
       if (!userInfo.openId) {
         res.status(400).json({ error: "openId missing from user info" });
+        return;
+      }
+
+      const existingUser = await runOAuthStep("db_failed", () => db.getUserByOpenId(userInfo.openId));
+      if (!existingUser && !PAID_PLANS_ON_SALE) {
+        res.redirect(302, "/pricing");
         return;
       }
 

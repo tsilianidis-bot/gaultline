@@ -176,9 +176,9 @@ export default function MobileAccount() {
         {/* Plan name */}
         <div className="text-[10px] font-mono text-[#64748B]">
           {tier === "founding" && "FAULTLINE Founding Member"}
-          {tier === "premium"  && "FAULTLINE Power"}
+          {tier === "premium"  && "FAULTLINE Intelligence"}
           {tier === "core"     && "FAULTLINE Trader"}
-          {tier === "free"     && "Observer — Free access"}
+          {tier === "free"     && "Existing account"}
         </div>
       </div>
 
@@ -249,7 +249,7 @@ export default function MobileAccount() {
           </div>
           <div className="text-[11px] font-mono text-[#00D4FF]">
             {isPaid
-              ? "Full intelligence suite (Power)"
+              ? "Full intelligence suite"
               : "Signals, Crypto, Watchlist"}
           </div>
           <div className="flex items-center justify-center gap-1 mt-2 text-[10px] font-mono text-[#00D4FF]/60">

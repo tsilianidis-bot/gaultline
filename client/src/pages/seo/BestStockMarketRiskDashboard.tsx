@@ -55,7 +55,7 @@ Every reading is contextualized against history. When the Pressure Index enters 
       faqs={[
         {
           question: "What is the best free stock market risk dashboard?",
-          answer: "FAULTLINE's Pressure Index is one of the most comprehensive free stock market risk dashboards available. The core systemic risk score, regime classification, and historical context are publicly accessible without a login or credit card. Signed-in tools such as the full vector breakdown and history start with a free account; paid plans are not on sale.",
+          answer: "FAULTLINE's Pressure Index is one of the most comprehensive free stock market risk dashboards available. The core systemic risk score, regime classification, and historical context are publicly accessible without a login or credit card. Full intelligence is offered through one $99/month membership; checkout is not open yet.",
         },
         {
           question: "What should a stock market risk dashboard track?",
