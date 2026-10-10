@@ -36,7 +36,7 @@ FAULTLINE, in contrast, is a specialized market intelligence platform built from
           heading: 'Key Differences: Accessibility, Focus, and Cost',
           body: `The primary distinction between FAULTLINE and Bloomberg lies in their target audience, analytical focus, and cost structure. Bloomberg is designed for institutional professionals who require deep, granular data across a vast array of financial instruments and markets. Its interface is powerful but demands significant expertise to navigate effectively. The cost of a Bloomberg Terminal subscription is prohibitive for most retail investors, reflecting its institutional-grade capabilities and support.
 
-FAULTLINE, conversely, prioritizes accessibility and a focused approach to macro risk. It distills complex quantitative models into clear, actionable indicators relevant to retail investors. The platform's design emphasizes ease of use, ensuring that insights into systemic risk and market regimes are readily understandable. It is built for individual investors: the public Pressure Index is free to read, signed-in access starts with a free account, and paid plans are not on sale yet.`,
+FAULTLINE, conversely, prioritizes accessibility and a focused approach to macro risk. It distills complex quantitative models into clear, actionable indicators relevant to retail investors. The platform's design emphasizes ease of use, ensuring that insights into systemic risk and market regimes are readily understandable. It is built for individual investors: the public Pressure Index is free to read, full intelligence is offered through one $99/month membership; checkout is not open yet.`,
         },
         {
           heading: 'Who FAULTLINE Is For: The Informed Retail Investor',
@@ -70,7 +70,7 @@ Bloomberg provides the raw materials for such analysis, but the synthesis and in
         },
         {
           question: 'What is the cost difference between FAULTLINE and Bloomberg?',
-          answer: 'Bloomberg Terminal subscriptions typically cost tens of thousands of dollars annually, making it inaccessible for most retail investors. FAULTLINE’s public Pressure Index and methodology are free to read, and signed-in access starts with a free account. It is a focused macro-pressure tool, not a replacement for a terminal’s breadth of data.',
+          answer: 'Bloomberg Terminal subscriptions typically cost tens of thousands of dollars annually, making it inaccessible for most retail investors. FAULTLINE’s public Pressure Index and methodology are free to read, and full intelligence is offered through one $99/month membership. It is a focused macro-pressure tool, not a replacement for a terminal’s breadth of data.',
         },
         {
           question: 'Does FAULTLINE offer personalized financial advice?',

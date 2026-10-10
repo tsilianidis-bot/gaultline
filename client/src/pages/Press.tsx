@@ -19,7 +19,7 @@ Its flagship product, FAULTLINE, is a structural market intelligence platform. I
 
 FAULTLINE is designed for investors, traders, and analysts who want to understand the risk environment they are operating in. The platform provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice.
 
-FAULTLINE is available at getfaultline.live. The public Pressure Index and methodology are free to read; signed-in access starts with a free account. Paid plans are not on sale.
+FAULTLINE is available at getfaultline.live. The public Pressure Index and methodology are free to read; full intelligence is offered through one $99/month membership; checkout is not open yet.
 
 Press contact: press@getfaultline.live`;
 
@@ -39,7 +39,7 @@ The platform's primary metric is the Faultline Pressure Index™ — a 0–100 c
 
 All FAULTLINE outputs are probabilistic rather than deterministic. The platform does not generate buy or sell signals. It generates probability-weighted assessments of current conditions, historical analog distributions, and scenario likelihoods — designed to support informed judgment, not to replace it.
 
-FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The public Pressure Index and methodology are free to read; signed-in access starts with a free account. Paid plans are not on sale.
+FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The public Pressure Index and methodology are free to read; full intelligence is offered through one $99/month membership; checkout is not open yet.
 
 Press contact: press@getfaultline.live
 Website: getfaultline.live`;
@@ -76,8 +76,8 @@ Availability: Web (getfaultline.live) + Progressive Web App (iOS/Android)
 
 Access:
   Public — Pressure Index and methodology, no account required
-  Free account — sign in to open the signed-in app
-  Paid plans — not on sale
+  FAULTLINE Intelligence — $99/month
+  Membership checkout — not open yet
 
 Press contact: press@getfaultline.live`;
 
@@ -95,7 +95,7 @@ Unlike AI assistants that answer questions in isolation, PLATO answers from the 
 
 FAULTLINE's Seismograph™ records Pressure Index readings over time and gives PLATO the path behind today's level. The platform also includes a Historical Analog Engine, Decision Engine, Day Trade Intelligence, Symbol Intelligence, Crypto Hub, Aftershock Engine, and Portfolio Intelligence tools.
 
-FAULTLINE is available at getfaultline.live. The public Pressure Index and methodology are free to read, and signed-in access starts with a free account. Paid plans are not on sale.
+FAULTLINE is available at getfaultline.live. The public Pressure Index and methodology are free to read, and full intelligence is offered through one $99/month membership; checkout is not open yet.
 
 About Phoenix Systems
 Phoenix Systems is an AI-first technology company building intelligent platforms that transform complex information into actionable understanding. FAULTLINE is its flagship product.
@@ -201,7 +201,7 @@ CORE CAPABILITIES
 AVAILABILITY
 Web: getfaultline.live
 PWA: Available on iOS and Android
-Access: public Pressure Index (no account) · free account for the signed-in app · paid plans not on sale
+Access: public Pressure Index (no account) · FAULTLINE Intelligence $99/month · checkout not open yet
 
 DISCLAIMER
 ${PUBLIC_DISCLAIMER} FAULTLINE is not a financial adviser.
@@ -670,7 +670,7 @@ export default function Press() {
             { label: "AVAILABILITY", value: "Web + PWA (iOS / Android)" },
             { label: "PRIMARY METRIC", value: "Pressure Index™ (0–100)" },
             { label: "AI LAYER", value: "PLATO" },
-            { label: "ACCESS", value: "Free account · paid plans not on sale" },
+            { label: "ACCESS", value: "FAULTLINE Intelligence $99/month · checkout not open yet" },
             { label: "PRESS CONTACT", value: "press@getfaultline.live" },
           ].map((fact) => (
             <div key={fact.label} style={{ padding: "20px 24px", background: "#050608" }}>
@@ -706,7 +706,7 @@ export default function Press() {
             <div style={{ fontStyle: "normal", fontSize: "11px", color: "#64748B", marginTop: "8px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em" }}>JT · FOUNDER · PHOENIX SYSTEMS</div>
           </blockquote>
           <p style={prose}>
-            FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The public Pressure Index and methodology are free to read; signed-in access starts with a free account. Paid plans are not on sale.
+            FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The public Pressure Index and methodology are free to read; full intelligence is offered through one $99/month membership; checkout is not open yet.
           </p>
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", lineHeight: 1.7, margin: 0, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "16px" }}>
             FAULTLINE is a macroeconomic risk intelligence platform. {PUBLIC_DISCLAIMER} It is not a financial adviser. Past performance of any indicator or signal does not guarantee future results.

@@ -8,17 +8,9 @@
  * marketing copy MUST derive from this file. Do NOT hardcode tier names,
  * prices, or plan IDs anywhere else.
  *
- * TIER NAMES (as of July 2026):
- * - free     → "Free"           — existing free daily market awareness
- * - core     → "Trader"         — core market intelligence
- * - premium  → "Power"          — deepest professional toolset
- * - founding → "Founding"       — founding membership
- *
- * PRICING NOTE:
- * - Paid plans are NOT on sale. Every user-facing price string (`priceLabel`)
- *   reads PLAN_NOT_ON_SALE_LABEL and upgrade-to-buy CTAs are hidden while
- *   PAID_PLANS_ON_SALE is false. This is display-only: `amountCents`, plan IDs,
- *   `available`, tier gating and the Stripe verification path are unchanged.
+ * Public offer: FAULTLINE Intelligence — $99/month.
+ * Legacy tier and plan IDs remain for existing entitlements and billing history.
+ * Displaying the price does not authorize checkout or live billing.
  */
 
 /** Display-only switch: paid plans are not on sale. Does not affect checkout logic. */
@@ -26,7 +18,7 @@ export const PAID_PLANS_ON_SALE: boolean = false;
 /** Short label shown wherever a plan price used to be displayed. */
 export const PLAN_NOT_ON_SALE_LABEL = 'Not on sale yet';
 /** Sentence used in app/email/chat copy while paid plans are not on sale. */
-export const PAID_PLANS_NOT_ON_SALE_COPY = 'Paid plans are not on sale yet.';
+export const PAID_PLANS_NOT_ON_SALE_COPY = 'Membership checkout is not open yet.';
 
 // ─── Canonical Access Tier IDs ────────────────────────────────────────────────
 // These match the `accessTier` enum in drizzle/schema.ts and server/db.ts.
@@ -79,9 +71,9 @@ export const TIER_META: Record<AccessTier, TierMeta> = {
   free: {
     id: 'free',
     label: 'FREE',
-    displayName: 'Free',
-    sublabel: 'Free access',
-    description: 'Open FAULTLINE every morning and immediately understand the state of the market. No credit card required.',
+    displayName: 'Existing account',
+    sublabel: 'Existing account',
+    description: 'Existing account access is preserved. New visitors can read the limited public preview without registering.',
     color: '#6B7280',
     glow: 'rgba(107,114,128,0.2)',
     border: 'rgba(107,114,128,0.3)',
@@ -130,9 +122,9 @@ export const TIER_META: Record<AccessTier, TierMeta> = {
   },
   premium: {
     id: 'premium',
-    label: 'POWER',
-    displayName: 'Power',
-    sublabel: 'Professional Intelligence Toolset',
+    label: 'MEMBER',
+    displayName: 'Intelligence',
+    sublabel: 'Premium Financial Intelligence',
     description: 'The deepest FAULTLINE intelligence experience, with advanced analysis, expanded research, and the full professional toolset.',
     color: '#00D4FF',
     glow: 'rgba(0,212,255,0.2)',
@@ -201,7 +193,7 @@ export const PRICING_PLANS: Record<StripePlanId, PricingPlan> = {
     priceLabel: PLAN_NOT_ON_SALE_LABEL,
     interval: 'month',
     description: 'Core market intelligence, monitoring, signals, watch tools, interpretation, and decision support.',
-    available: true,
+    available: false,
   },
   core_annual: {
     planId: 'core_annual',
@@ -216,9 +208,9 @@ export const PRICING_PLANS: Record<StripePlanId, PricingPlan> = {
   premium: {
     planId: 'premium',
     tier: 'premium',
-    name: 'FAULTLINE Power',
+    name: 'FAULTLINE Intelligence',
     amountCents: 9900,
-    priceLabel: PLAN_NOT_ON_SALE_LABEL,
+    priceLabel: '$99/month',
     interval: 'month',
     description: 'Advanced analysis, expanded research capabilities, and the full professional FAULTLINE toolset.',
     available: true,
@@ -241,7 +233,7 @@ export const PRICING_PLANS: Record<StripePlanId, PricingPlan> = {
     priceLabel: PLAN_NOT_ON_SALE_LABEL,
     interval: 'month',
     description: 'Founding membership. Not on sale yet.',
-    available: true,
+    available: false,
   },
   lifetime: {
     planId: 'lifetime',
@@ -309,15 +301,12 @@ export const GATE_REQUIRED_TIER: Record<GateVariant, AccessTier> = {
 
 // ─── CTA Label Helpers ────────────────────────────────────────────────────────
 /** Returns the primary upgrade CTA label for a given gate */
-export function getGatePrimaryCtaLabel(variant: GateVariant): string {
-  const tier = GATE_REQUIRED_TIER[variant];
-  if (tier === 'core') return `Get Trader — ${PRICING_PLANS.core.priceLabel}`;
-  return `Get Power — ${PRICING_PLANS.premium.priceLabel}`;
+export function getGatePrimaryCtaLabel(_variant: GateVariant): string {
+  return `FAULTLINE Intelligence — ${PRICING_PLANS.premium.priceLabel}`;
 }
 
-/** Returns the secondary upgrade CTA label (founding upsell) */
 export function getGateSecondaryCtaLabel(): string {
-  return `Founding Access — ${PRICING_PLANS.founding.priceLabel}`;
+  return 'View public preview';
 }
 
 // ─── Marketing Tier Cards ─────────────────────────────────────────────────────
@@ -336,60 +325,19 @@ export interface MarketingTierCard {
 
 export const MARKETING_TIER_CARDS: MarketingTierCard[] = [
   {
-    tier: 'core',
-    planId: 'core',
-    marketingName: 'Trader',
-    price: PRICING_PLANS.core.priceLabel,
-    tagline: 'The primary full investor experience',
-    color: '#22D3EE',
-    badge: 'NOT ON SALE YET',
-    features: [
-      'Unlimited Ask Intelligence',
-      'Complete Symbol Intelligence',
-      'Full Signal Outlook',
-      'Unlimited Watchlists',
-      'Portfolio Intelligence',
-      'Complete Opportunity Radar',
-      'Entry/Exit analysis',
-      'Advanced Alerts & Trade Journal',
-      'Full Daily Intelligence Report',
-    ],
-    ctaLabel: 'NOT ON SALE YET',
-  },
-  {
     tier: 'premium',
     planId: 'premium',
-    marketingName: 'Power',
+    marketingName: 'FAULTLINE Intelligence',
     price: PRICING_PLANS.premium.priceLabel,
-    tagline: 'The deepest advanced intelligence experience',
-    color: '#00D4FF',
-    badge: 'NOT ON SALE YET',
+    tagline: 'Premium financial intelligence. One membership.',
+    color: '#65D6E5',
     features: [
-      'Everything in Trader',
-      'Situation Room',
-      'Institutional dashboards',
-      'Historical analog engine',
-      'Deep macro intelligence',
-      'Scenario modeling',
-      'Advanced probability models',
-      'Full Crypto Intelligence suite',
+      'Pressure Index and market regime context',
+      'Macro interpretation and scenario analysis',
+      'Stock and crypto signals',
+      'Sector rotation and watch tools',
+      'Research and decision-support tools',
     ],
-    ctaLabel: 'NOT ON SALE YET',
-  },
-  {
-    tier: 'founding',
-    planId: 'founding',
-    marketingName: 'Founding Member',
-    price: PRICING_PLANS.founding.priceLabel,
-    tagline: 'Founding membership',
-    color: '#FFD700',
-    badge: 'NOT ON SALE YET',
-    features: [
-      'Everything in Power',
-      'Founding member badge',
-      'Future feature grandfathering',
-      'Early beta access',
-    ],
-    ctaLabel: 'NOT ON SALE YET',
+    ctaLabel: PAID_PLANS_ON_SALE ? 'Join FAULTLINE' : 'Request membership',
   },
 ];

@@ -69,7 +69,7 @@ Each asset is scored for momentum, macro alignment, liquidity sensitivity, and s
         },
         {
           question: "Are crypto signals available on the free tier?",
-          answer: "FAULTLINE offers limited crypto signal previews on the free tier. All tracked assets, altcoin rotation intelligence, and macro-aligned signals are signed-in tools. Signed-in tools start with a free account; paid plans are not on sale.",
+          answer: "FAULTLINE offers limited crypto signal previews on the free tier. All tracked assets, altcoin rotation intelligence, and macro-aligned signals are signed-in tools. Full intelligence is offered through one $99/month membership; checkout is not open yet.",
         },
         {
           question: "How does FAULTLINE handle crypto market volatility?",

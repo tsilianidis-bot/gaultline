@@ -211,8 +211,8 @@ const PAGE_META: Record<string, PageMeta> = {
     description: "FAULTLINE press resources, media kit, and coverage. Contact the FAULTLINE team for media inquiries, interviews, and partnership opportunities.",
   },
   "/pricing": {
-    title: "FAULTLINE Access — Free Account; Paid Plans Not on Sale",
-    description: "The public Pressure Index and methodology are free to read without an account. Signed-in access starts with a free account. Paid plans are not on sale.",
+    title: "FAULTLINE Intelligence — $99/month",
+    description: "The public Pressure Index and methodology are free to read without an account. Full intelligence is offered through one $99/month membership; checkout is not open yet.",
   },
   "/intelligence-library": {
     title: "Intelligence Library — FAULTLINE Research & Analysis",

@@ -37,9 +37,9 @@ describe("billing plan availability lock", () => {
     expect(isPlanAvailableForPurchase("lifetime", PLANS.lifetime.priceId)).toBe(false);
     expect(isPlanAvailableForPurchase("core_annual", "price_test_annual")).toBe(false);
     expect(isPlanAvailableForPurchase("premium_annual", "price_test_annual")).toBe(false);
-    expect(isPlanAvailableForPurchase("core", "price_test_core")).toBe(true);
+    expect(isPlanAvailableForPurchase("core", "price_test_core")).toBe(false);
     expect(isPlanAvailableForPurchase("core", null)).toBe(false);
-    expect(isPlanAvailableForPurchase("founding", "price_test_founding")).toBe(true);
+    expect(isPlanAvailableForPurchase("founding", "price_test_founding")).toBe(false);
   });
 
   it("getPlans publishes available only when the product lock and price ID both allow it", async () => {
@@ -47,7 +47,14 @@ describe("billing plan availability lock", () => {
     for (const plan of plans) {
       expect(plan.available).toBe(isPlanAvailableForPurchase(plan.id, PLANS[plan.id].priceId));
     }
-    expect(plans.find((plan) => plan.id === "lifetime")?.available).toBe(false);
+    expect(plans.map(plan => plan.id)).toEqual(["premium"]);
+    expect(plans[0].amount).toBe(9900);
+    expect(plans[0].available).toBe(false);
+  });
+
+  it("rejects checkout for the membership until sales are authorized", async () => {
+    expect(isPlanAvailableForPurchase("premium", "price_test_99")).toBe(false);
+    await expect(billingRouter.createCaller(authCtx()).createCheckout({ planId: "premium", origin: "https://faultline.app" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
   it("rejects createCheckout for plans with available:false", async () => {

@@ -1,3 +1,4 @@
+import MembershipOffer from '@/components/MembershipOffer';
 /* ============================================================
    FAULTLINE — Product Experience Gate
    Preserved product-experience source. Not mounted on first-run
@@ -36,33 +37,6 @@ const SANS   = "'IBM Plex Sans', system-ui, sans-serif";
 // ── Public Pricing Configuration ───────────────────────────────────────────
 // Public presentation only. Checkout stays unavailable until its matching
 // Stripe Price ID has been independently verified server-side.
-const PUBLIC_PRICING = [
-  {
-    id: 'free', name: 'FREE', price: '$0', period: '', color: GREEN,
-    badge: 'START HERE', cta: 'SEE TODAY’S MARKET ENVIRONMENT',
-    tagline: 'Explore the current market environment, Pressure Index™, core regime context, and daily intelligence summary.',
-    features: ['Live FAULTLINE Pressure Index™', 'Current market regime context', 'Daily intelligence summary'],
-  },
-  {
-    id: 'trader', name: 'TRADER', price: 'Not on sale yet', period: '', color: CYAN,
-    badge: 'PRIMARY EXPERIENCE', cta: 'GET TRADER',
-    tagline: 'For serious investors who want FAULTLINE’s core market intelligence, monitoring, signals, watch tools, interpretation, and decision support.',
-    features: ['Core market intelligence and monitoring', 'Signals, watch tools, and market interpretation', 'Decision support for active investors'],
-  },
-  {
-    id: 'power', name: 'POWER', price: 'Not on sale yet', period: '', color: PURPLE,
-    badge: 'FULL PROFESSIONAL TOOLSET', cta: 'GET POWER',
-    tagline: 'For users who want the deepest FAULTLINE intelligence experience, advanced analysis, expanded research capabilities, and the full professional toolset.',
-    features: ['Everything in Trader', 'Advanced analysis and expanded research', 'Full professional intelligence toolset'],
-  },
-  {
-    id: 'founding', name: 'FOUNDING MEMBER', price: 'Not on sale yet', period: '', color: GOLD,
-    badge: 'FOUNDING RATE — LOCKED', cta: 'LOCK IN FOUNDER RATE',
-    tagline: 'Founding membership. Paid plans are not on sale yet.',
-    features: ['Everything in Power', 'Founding member recognition'],
-  },
-] as const;
-
 // ── Analytics helper ──────────────────────────────────────────
 function track(eventName: string, params?: Record<string, string | number>) {
   trackGa4Event(eventName, params);
@@ -531,7 +505,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                 boxShadow: `0 0 24px ${CYAN}40`,
                 transition: 'all 0.15s ease-out',
               }}
-              aria-label="Enter FAULTLINE platform for free"
+              aria-label="View the FAULTLINE public preview"
             >Enter FAULTLINE →</button>
             <button
               onClick={handleSeeProof}
@@ -864,33 +838,14 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
           <div style={{ textAlign: 'center', marginBottom: '48px' }}>
             <SectionLabel text="Membership" color={CYAN} />
             <h2 style={{ fontFamily: MONO, fontSize: 'clamp(24px,4vw,44px)', color: '#F0F4FF', lineHeight: 1.2, margin: '0 0 16px' }}>
-              Choose the level of intelligence you need.
+              One membership. Premium financial intelligence.
             </h2>
             <p style={{ fontFamily: SANS, fontSize: 'clamp(14px,1.8vw,17px)', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: '620px', margin: '0 auto' }}>
-              Three monthly memberships. Clear capabilities. No annual pricing or unverified discounts.
+              FAULTLINE Intelligence — $99/month.
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '18px', alignItems: 'stretch' }}>
-            {PUBLIC_PRICING.map((plan) => {
-              const isFounding = plan.id === 'founding';
-              return (
-                <div key={plan.id} style={{ display: 'flex', flexDirection: 'column', padding: '30px 26px', background: isFounding ? 'linear-gradient(145deg, rgba(255,170,0,0.11), rgba(255,170,0,0.025))' : 'rgba(255,255,255,0.025)', border: `1px solid ${isFounding ? 'rgba(255,170,0,0.45)' : `${plan.color}32`}`, borderRadius: '16px', boxShadow: isFounding ? '0 0 46px rgba(255,170,0,0.09)' : 'none' }}>
-                  <div style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.16em', color: plan.color, marginBottom: '14px' }}>{plan.badge}</div>
-                  <div style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.18em', color: '#F0F4FF', marginBottom: '14px' }}>{plan.name}</div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '12px' }}>
-                    <span style={{ fontFamily: MONO, fontSize: 'clamp(42px,6vw,56px)', color: plan.color, fontWeight: 700, lineHeight: 1 }}>{plan.price}</span>
-                    <span style={{ fontFamily: SANS, fontSize: '14px', color: 'rgba(255,255,255,0.45)' }}>{plan.period}</span>
-                  </div>
-                  <p style={{ fontFamily: SANS, fontSize: '14px', color: 'rgba(255,255,255,0.58)', lineHeight: 1.6, margin: '0 0 22px' }}>{plan.tagline}</p>
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '26px' }}>
-                    {plan.features.map((feature) => <div key={feature} style={{ display: 'flex', gap: '9px', fontFamily: SANS, fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45 }}><span style={{ color: plan.color }}>✓</span><span>{feature}</span></div>)}
-                  </div>
-                  <button onClick={() => handlePricingInterest(plan.name)} style={{ width: '100%', padding: '14px', background: isFounding ? 'rgba(255,170,0,0.16)' : 'transparent', border: `1px solid ${plan.color}70`, borderRadius: '8px', color: plan.color, fontFamily: MONO, fontSize: '11px', letterSpacing: '0.1em', fontWeight: 700, cursor: 'pointer' }}>{plan.cta}</button>
-                </div>
-              );
-            })}
-          </div>
+          <MembershipOffer />
 
           {pricingNotice && <p role="status" style={{ margin: '24px auto 0', maxWidth: '760px', textAlign: 'center', fontFamily: SANS, fontSize: '13px', color: 'rgba(255,255,255,0.48)', lineHeight: 1.6 }}>{pricingNotice}</p>}
         </div>
@@ -939,11 +894,11 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                     padding: '18px 48px', borderRadius: '8px', fontWeight: 700,
                     boxShadow: `0 0 32px ${GOLD}28`, transition: 'all 0.15s ease-out',
                   }}
-                  aria-label="View Founding Member, Trader, and Power pricing"
+                  aria-label="View FAULTLINE Intelligence pricing"
                 >View Memberships →</button>
               </div>
               <div style={{ marginTop: '32px', fontFamily: MONO, fontSize: '10px', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.15em' }}>
-                FREE TO START · NO CREDIT CARD REQUIRED · NOT FINANCIAL ADVICE
+                PUBLIC PREVIEW · NOT FINANCIAL ADVICE
               </div>
             </div>
           );

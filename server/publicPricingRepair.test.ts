@@ -1,26 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { PRICING_PLANS } from '../shared/tiers';
+import { PRICING_PLANS, MARKETING_TIER_CARDS } from '../shared/tiers';
 
 const root = resolve(import.meta.dirname, '..');
 const read = (relativePath: string) => readFileSync(resolve(root, relativePath), 'utf8');
 
 describe('surgical public FAULTLINE brand and pricing repair', () => {
   it('uses the requested monthly public plan amounts while preserving internal tier IDs', () => {
-    expect(PRICING_PLANS.founding.amountCents).toBe(4900);
+    expect(PRICING_PLANS.founding.available).toBe(false);
+    expect(MARKETING_TIER_CARDS.map(card => card.planId)).toEqual(['premium']);
+    expect(PRICING_PLANS.premium.priceLabel).toBe('$99/month');
     expect(PRICING_PLANS.core.amountCents).toBe(5900);
     expect(PRICING_PLANS.premium.amountCents).toBe(9900);
     expect(PRICING_PLANS.core.planId).toBe('core');
     expect(PRICING_PLANS.premium.planId).toBe('premium');
-  });
-
-  it('initializes Product Experience color constants before public pricing configuration', () => {
-    const productExperience = read('client/src/components/ProductExperience.tsx');
-    const goldConstant = productExperience.indexOf('const GOLD');
-    const publicPricing = productExperience.indexOf('const PUBLIC_PRICING');
-    expect(goldConstant).toBeGreaterThanOrEqual(0);
-    expect(publicPricing).toBeGreaterThan(goldConstant);
   });
 
   it('keeps landing JSON-LD free of offers and prices while checkout is off', () => {
@@ -52,9 +46,10 @@ describe('surgical public FAULTLINE brand and pricing repair', () => {
     expect(productExperience).not.toContain('LIMITED TIME LIFETIME ACCESS');
     expect(productExperience).not.toContain('GET LIFETIME ACCESS — $299');
     expect(productExperience).not.toContain("handlePricingInterest('Lifetime Access — $299')");
-    expect(productExperience).toContain('LOCK IN FOUNDER RATE');
-    expect(productExperience).toContain("gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))'");
-    expect(marketing).toContain("Checkout is not offered on this page.");
+    expect(productExperience).not.toContain('LOCK IN FOUNDER RATE');
+    expect(productExperience).toContain('<MembershipOffer />');
+
+    expect(marketing).toContain("<MembershipOffer />");
     expect(marketing).not.toContain("MARKETING_TIER_CARDS");
     expect(marketing).not.toContain("trader.marketingName");
     expect(marketing).not.toContain("founding.marketingName");
