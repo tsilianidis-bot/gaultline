@@ -86,7 +86,7 @@ export function generateSystemicAlerts(output: ReturnType<typeof useEngine>['out
       severity: sev,
       title: `Liquidity Conditions Deteriorating — Score ${score100Value(liquidityScore)}/100`,
       what: `The FAULTLINE Liquidity vector has reached ${score100Value(liquidityScore)}/100. Indicators include elevated repo stress, widening bid-ask spreads, and declining market depth across risk assets.`,
-      why: `Liquidity deterioration is the most dangerous early-warning signal in financial markets. When liquidity dries up, forced selling cascades can compress prices far beyond fundamental values. Illiquidity amplifies every other risk vector — credit, volatility, and recession — simultaneously.`,
+      why: `Liquidity deterioration is a widely watched stress channel; FAULTLINE has not validated it as an early-warning signal. When liquidity dries up, forced selling cascades can compress prices far beyond fundamental values. Illiquidity amplifies every other risk vector — credit, volatility, and recession — simultaneously.`,
       historical: `In March 2020, liquidity froze within 72 hours, triggering a 34% drawdown in 23 trading days. In September 2008, repo market liquidity collapse preceded Lehman's failure by 6 days. In 1998 (LTCM), liquidity deterioration at similar levels required Fed emergency intervention.`,
       color: '#FF2D55',
       score: liquidityScore,

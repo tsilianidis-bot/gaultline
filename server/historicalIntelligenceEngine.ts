@@ -355,7 +355,7 @@ export function buildMarketEvolution(
     : "Current conditions are relatively recent.";
 
   const whyItMatters = currentPressure >= 65
-    ? "Elevated pressure historically precedes increased volatility and potential drawdowns. Risk management is more critical than usual."
+    ? "Pressure is elevated. FAULTLINE has not validated what follows this level; treat it as a description of current conditions and manage risk accordingly."
     : currentPressure >= 45
     ? "Moderate pressure suggests mixed conditions. Selective positioning and risk awareness are appropriate."
     : "Low pressure historically supports risk-on positioning, though complacency risk increases at extremes.";

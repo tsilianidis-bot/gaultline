@@ -39,6 +39,7 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 import { pressureRegimeLabel } from "../shared/pressureBands";
+import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 import { classifyCondition, isBroadRecoveryVerified, DIRECTION_MIN_CHANGE, type ConditionState } from "../shared/conditionDirection";
 export interface HistoricalMonth {
   month: string;
@@ -478,7 +479,14 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
         breadth:   (rawLatest.marketBreadth    === 0 || rawLatest.marketBreadth    === null) ? prev.breadth   : latest.breadth,
       }
     : latest;
-  const evidenceFamilies = buildEvidenceFamilies(latestForFamilies, history);
+  const canonicalForDirection = await getAuthoritativeCanonicalIntelligenceState().catch(() => null);
+  const evidenceFamilies = buildEvidenceFamilies(
+    latestForFamilies,
+    history,
+    currentEnginesFromCanonical(
+      canonicalForDirection ? Object.fromEntries(canonicalForDirection.engines.map(e => [e.engineId, e.value])) : undefined,
+    ),
+  );
   const enginesAgreeing = evidenceFamilies
     .filter((f) => f.signal === "bearish" || f.signal === "stressed")
     .map((f) => f.name);
@@ -721,16 +729,26 @@ export function normalizeLaborRatesScore(raw: number | null | undefined): number
   return typeof raw === "number" && Number.isFinite(raw) && raw !== 0 ? raw : null;
 }
 
+/** Current canonical engine values (0–100), keyed by family field. */
+export type CurrentEngineValues = Partial<Record<"liquidity" | "credit" | "volatility" | "macro" | "breadth", number | null>>;
+
+/** Map canonical engine ids → family fields. */
+export function currentEnginesFromCanonical(engineValues: Record<string, unknown> | null | undefined): CurrentEngineValues {
+  const v = (id: string) => { const x = engineValues?.[id]; return typeof x === "number" && Number.isFinite(x) ? x : null; };
+  return { liquidity: v("liquidity-stress"), credit: v("credit-contagion"), volatility: v("volatility-regime"), macro: v("macro-sensitivity"), breadth: v("market-breadth") };
+}
+
 export function buildEvidenceFamilies(
   latest: HistoricalMonth,
-  history: HistoricalMonth[]
+  history: HistoricalMonth[],
+  currentEngines: CurrentEngineValues = {},
 ): EvidenceFamily[] {
   const last6 = history.slice(-6);
-  // Prior observation for directional change: `latest` corresponds to the last
-  // history row, so the prior observation is the row before it.
-  const prevRow = history.length >= 2 ? history[history.length - 2] : null;
-  const directional = (cur: number | null | undefined, prv: number | null | undefined) => {
-    const c = classifyCondition(cur, prv);
+  // Direction (QA B-1): CURRENT canonical engine value vs the LAST STORED value of
+  // the same series. No current value → "Insufficient evidence". Never inferred
+  // from two stored monthly rows or from a low level.
+  const directional = (cur: number | null | undefined, lastStored: number | null | undefined) => {
+    const c = classifyCondition(cur ?? null, lastStored ?? null);
     return { trend: c.trend, conditionState: c.state, conditionChange: c.change };
   };
   const avgLiquidity = last6.reduce((s, h) => s + h.liquidity, 0) / last6.length;
@@ -753,7 +771,7 @@ export function buildEvidenceFamilies(
           ? "Liquidity conditions are improving relative to recent trend."
           : "Liquidity conditions are consistent with recent trend."
       }`,
-      ...directional(latest.liquidity, prevRow?.liquidity),
+      ...directional(currentEngines.liquidity, latest.liquidity),
       whyItMatters:
         "Liquidity stress drives credit tightening and forced selling. Elevated readings have accompanied past market dislocations; lead time has not been validated in FAULTLINE's own record.",
     },
@@ -773,7 +791,7 @@ export function buildEvidenceFamilies(
             }.`
           : "Credit contagion index based on composite spread signals."
       }`,
-      ...directional(latest.credit, prevRow?.credit),
+      ...directional(currentEngines.credit, latest.credit),
       whyItMatters:
         "Credit spreads are a widely watched gauge of financial stress. Widening spreads signal that institutional investors are pricing in elevated default risk.",
     },
@@ -789,7 +807,7 @@ export function buildEvidenceFamilies(
           ? "Curve shape and the 10Y level are adding elevated rate-structure pressure (an inverted 10Y–2Y curve, raised further by a high 10Y yield)."
           : "Curve shape and the 10Y level are adding limited rate-structure pressure (a flat-to-positive 10Y–2Y curve scores low)."
       }`,
-      ...directional(latest.volatility, prevRow?.volatility),
+      ...directional(currentEngines.volatility, latest.volatility),
       whyItMatters:
         "The 10Y–2Y curve and the 10Y level summarize the rate structure facing borrowers and risk assets. This vector does not read VIX or realized volatility.",
     },
@@ -811,7 +829,7 @@ export function buildEvidenceFamilies(
             }.`
           : "Macro sensitivity composite reflects inflation, employment, and monetary policy dynamics."
       }`,
-      ...directional(latest.macro, prevRow?.macro),
+      ...directional(currentEngines.macro, latest.macro),
       whyItMatters:
         "Macro sensitivity captures how exposed markets are to economic deterioration. High readings mean that negative economic surprises will have outsized market impact.",
     },
@@ -834,14 +852,7 @@ export function buildEvidenceFamilies(
           ? "Labor-market and rate conditions are adding little pressure."
           : "Labor-and-rates pressure is moderate."
       }`,
-      trend:
-        avgLaborRates == null
-          ? "stable"
-          : laborRates > avgLaborRates + 5
-          ? "deteriorating"
-          : laborRates < avgLaborRates - 5
-          ? "improving"
-          : "stable",
+      ...directional(currentEngines.breadth, laborRates),
       whyItMatters:
         "This vector blends the unemployment rate with the 10Y Treasury yield. It is not an advance/decline or market-participation breadth measure.",
     });
@@ -881,6 +892,10 @@ export function buildEvidenceFamilies(
     });
   }
 
+  // QA B-1: "recovering"/"bullish" wording only when direction is verified Improving.
+  for (const f of families) {
+    if ((f.signal === "recovering" || f.signal === "bullish") && f.conditionState !== "Improving") f.signal = "neutral";
+  }
   return families;
 }
 
@@ -1399,7 +1414,7 @@ function detectActivePatterns(
   if (creditHigh && liquidityLow) {
     patterns.push({
       name: "Credit-Liquidity Divergence",
-      description: `Credit stress is elevated while liquidity conditions remain relatively contained. This divergence historically precedes either credit contagion spreading to liquidity markets or credit stress resolving.`,
+      description: `Credit stress is elevated while liquidity conditions remain relatively contained. How this divergence resolves has not been validated in FAULTLINE's record.`,
       confidence: 72,
       daysActive: 4 * 30,
       historicalFrequency: "Observed in approximately 15% of historical months",
@@ -1776,7 +1791,7 @@ function buildMarketNarrative(
   // 4. What is building beneath the surface?
   const buildingSignals = evidenceFamilies.filter((f) => f.trend === "deteriorating" && (f.signal === "neutral" || f.signal === "recovering"));
   const whatIsBuildingBeneathSurface = buildingSignals.length > 0
-    ? `Beneath the headline score, ${buildingSignals.map((f) => f.name).join(" and ")} ${buildingSignals.length === 1 ? "is" : "are"} showing early deterioration while still registering as neutral or recovering. This leading indicator pattern — where trend precedes signal — has historically preceded composite score increases by 4–8 weeks. ${evolution.buildingPressure ? "The overall pressure trend is accelerating, suggesting the headline score may understate developing risk." : ""}`
+    ? `Beneath the headline score, ${buildingSignals.map((f) => f.name).join(" and ")} ${buildingSignals.length === 1 ? "is" : "are"} showing deterioration versus their last stored reading while their level still registers as neutral. FAULTLINE has not validated whether this pattern leads the composite score, or by how long. ${evolution.buildingPressure ? "The overall pressure trend is accelerating, suggesting the headline score may understate developing risk." : ""}`
     : evolution.buildingPressure
     ? `The composite pressure score is accelerating to the upside, suggesting that conditions are building faster than the headline number reflects. Watch for additional engines to shift from neutral to stressed in the coming weeks.`
     : `No clear sub-surface pressure is building at this time. The current reading appears to reflect conditions accurately across all monitored engines.`;

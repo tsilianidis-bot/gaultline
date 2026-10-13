@@ -3,7 +3,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { classifyCondition, isBroadRecoveryVerified } from "../shared/conditionDirection";
-import { buildEvidenceFamilies, type HistoricalMonth } from "./seismographUnified";
+import { buildEvidenceFamilies, currentEnginesFromCanonical, type HistoricalMonth } from "./seismographUnified";
 import { toPublicMarketStateWire, fromPublicMarketStateWire } from "../shared/publicProbabilityWire";
 import { redactSystemicRegimeReading, redactSystemicRegimeHistoryPoint } from "../shared/systemicRegimePublic";
 import { EMPTY_SYSTEMIC_REGIME_READING } from "../shared/systemicRegime";
@@ -12,11 +12,6 @@ import superjson from "superjson";
 const src = (p: string) => readFileSync(p, "utf8");
 
 describe("directional condition states (#6)", () => {
-  it("uses actual changes: Sep 9 → Oct 9 2026 recomputed engines", () => {
-    expect(classifyCondition(22, 16).state).toBe("Deteriorating"); // liquidity
-    expect(classifyCondition(22, 18).state).toBe("Deteriorating"); // credit
-    expect(classifyCondition(44, 42).state).toBe("Insufficient evidence"); // macro: +2, moderate, no verified direction
-  });
   it("distinguishes the five states", () => {
     expect(classifyCondition(20, 21).state).toBe("Low current stress");
     expect(classifyCondition(30, 36).state).toBe("Improving");
@@ -32,18 +27,35 @@ describe("directional condition states (#6)", () => {
     expect(isBroadRecoveryVerified(improving, 30)).toBe(true);
     expect(isBroadRecoveryVerified([...improving.slice(0, 2), { name: "Macro Sensitivity", conditionState: "Deteriorating" as const }, { name: "Y", conditionState: "Improving" as const }], 30)).toBe(false);
   });
-  it("buildEvidenceFamilies: low but rising engines are Deteriorating, not recovering", () => {
-    const row = (month: string, liq: number, cr: number, mac: number): HistoricalMonth => ({
-      month, score: 30, regime: "MODERATE RISK", liquidity: liq, credit: cr, volatility: 40, macro: mac, breadth: 29, aiBubble: 44,
-      baaSpread: null, hySpread: null, tsy10y: null, tsy2y: null, cpiYoy: null, fedfunds: null,
-    } as unknown as HistoricalMonth);
-    const hist = [row("2026-08", 16, 18, 42), row("2026-09", 22, 22, 44)];
-    const fams = buildEvidenceFamilies(hist[1], hist);
+  // Stored-shape fixtures: prod pressureHistory rows (QA gate cfdf28e, prod-trackRecord-history.json)
+  // and the canonical engine values of state 2026-10-11 (22/22/40/44/29).
+  const stored = (r: any): HistoricalMonth => ({
+    month: r.month, score: r.overallPressure, regime: "MODERATE RISK",
+    liquidity: r.liquidityStress, credit: r.creditContagion, volatility: r.volatilityRegime, macro: r.macroSensitivity,
+    breadth: r.marketBreadth, aiBubble: r.aiBubble, baaSpread: null, hySpread: null, tsy10y: null, tsy2y: null, fedfunds: null, cpiYoy: null,
+  } as unknown as HistoricalMonth);
+  const AUG = stored({ month: "2026-08", overallPressure: 31, liquidityStress: 20, creditContagion: 32, volatilityRegime: 42, macroSensitivity: 36, marketBreadth: 44, aiBubble: 28 });
+  const SEP = stored({ month: "2026-09", overallPressure: 28, liquidityStress: 17, creditContagion: 30, volatilityRegime: 40, macroSensitivity: 35, marketBreadth: 45, aiBubble: 25 });
+  const CANONICAL = currentEnginesFromCanonical({ "liquidity-stress": 22, "credit-contagion": 22, "volatility-regime": 40, "macro-sensitivity": 44, "market-breadth": 29, "ai-bubble": 44 });
+
+  it("direction = current canonical value vs last stored value of the same series", () => {
+    const fams = buildEvidenceFamilies(SEP, [AUG, SEP], CANONICAL);
     const by = Object.fromEntries(fams.map(f => [f.name, f]));
-    expect(by["Liquidity Conditions"].conditionState).toBe("Deteriorating");
-    expect(by["Credit Markets"].conditionState).toBe("Deteriorating");
-    expect(by["Liquidity Conditions"].trend).toBe("deteriorating");
+    expect(by["Liquidity Conditions"]).toMatchObject({ conditionState: "Deteriorating", conditionChange: 5, trend: "deteriorating" });
+    expect(by["Liquidity Conditions"].signal).not.toBe("recovering"); // was "recovering · improving (−3)" at cfdf28e
+    expect(by["Macro Sensitivity"]).toMatchObject({ conditionState: "Deteriorating", conditionChange: 9 });
+    expect(by["Credit Markets"]).toMatchObject({ conditionState: "Improving", conditionChange: -8 });
     expect(isBroadRecoveryVerified(fams, 33)).toBe(false);
+  });
+  it("no current canonical value → Insufficient evidence and no recovering/bullish wording", () => {
+    const fams = buildEvidenceFamilies(SEP, [AUG, SEP]);
+    for (const f of fams.filter(f => f.conditionState !== undefined)) expect(f.conditionState).toBe("Insufficient evidence");
+    for (const f of fams) expect(["recovering", "bullish"]).not.toContain(f.signal);
+  });
+  it("recovering/bullish signal appears only for Improving families", () => {
+    for (const f of buildEvidenceFamilies(SEP, [AUG, SEP], CANONICAL)) {
+      if (f.signal === "recovering" || f.signal === "bullish") expect(f.conditionState).toBe("Improving");
+    }
   });
 });
 
@@ -56,10 +68,16 @@ describe("unsupported claims removed (#3)", () => {
     "historically precede broader market dislocations by 2–4 months",
     "typically produces a 5–15% directional move",
     "most reliable recession predictor",
+    "has historically preceded composite score increases by 4–8 weeks",
+    "This divergence historically precedes",
   ]) it(`seismographUnified no longer says "${phrase}"`, () => expect(unified).not.toContain(phrase));
   it("client copy no longer asserts crisis detection under the current framework", () => {
     expect(src("client/src/components/ProductExperience.tsx")).not.toMatch(/under the current framework/);
     expect(src("client/src/components/SystemicAlerts.tsx")).not.toContain("crossed 65/100 before Lehman");
+    expect(src("client/src/components/SystemicAlerts.tsx")).not.toContain("most dangerous early-warning signal");
+    expect(src("server/historicalIntelligenceEngine.ts")).not.toContain("Elevated pressure historically precedes");
+    expect(src("server/seismographEngine.ts")).not.toContain("Sustained elevated pressure historically precedes");
+    expect(src("server/routers/timeMachine.ts")).not.toContain("What did the pressure engine see in the months before the crash?");
   });
 });
 
@@ -80,10 +98,10 @@ describe("public probabilities withheld (#4)", () => {
   });
   it("systemicRegime public reading carries no model probabilities", () => {
     const r = redactSystemicRegimeReading({ ...EMPTY_SYSTEMIC_REGIME_READING, crisisProbability: 0.00348, transitionProbability: 0.03, regimeConfidence: 0.99652, stressBuildingProbability: 0.1 });
-    expect([r.crisisProbability, r.transitionProbability, r.regimeConfidence, r.stressBuildingProbability]).toEqual([null, null, null, null]);
+    expect([r.crisisProbability, r.transitionProbability, r.regimeConfidence, r.stressBuildingProbability, r.systemicRiskScore]).toEqual([null, null, null, null, null]);
     expect(r.probabilitiesWithheld).toBe(true);
     const h = redactSystemicRegimeHistoryPoint({ date: "2026-10-09", currentRegime: "NORMAL", crisisProbability: 0.2, stressBuildingProbability: 0.3, transitionProbability: 0.1, regimeConfidence: 0.9, systemicRiskScore: 10, pc1: 0, spx: 1 });
-    expect([h.crisisProbability, h.stressBuildingProbability, h.transitionProbability, h.regimeConfidence]).toEqual([null, null, null, null]);
+    expect([h.crisisProbability, h.stressBuildingProbability, h.transitionProbability, h.regimeConfidence, h.systemicRiskScore]).toEqual([null, null, null, null, null]);
   });
   it("public router uses the redaction; unredacted access is admin-only", () => {
     const r = src("server/routers/systemicRegime.ts");

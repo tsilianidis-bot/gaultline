@@ -10,6 +10,8 @@ export const SYSTEMIC_REGIME_PROBABILITIES_WITHHELD_REASON =
 export function redactSystemicRegimeReading(reading: SystemicRegimeReading): SystemicRegimeReading & { probabilitiesWithheld: true; withheldReason: string } {
   return {
     ...reading,
+    // systemicRiskScore = round(100×(crisis_p + 0.5·stress_p)) — a probability-derived score; withheld too (QA B-2).
+    systemicRiskScore: null,
     crisisProbability: null,
     stressBuildingProbability: null,
     transitionProbability: null,
@@ -22,6 +24,7 @@ export function redactSystemicRegimeReading(reading: SystemicRegimeReading): Sys
 export function redactSystemicRegimeHistoryPoint(point: SystemicRegimeHistoryPoint): SystemicRegimeHistoryPoint {
   return {
     ...point,
+    systemicRiskScore: null,
     crisisProbability: null,
     stressBuildingProbability: null,
     ...("transitionProbability" in point ? { transitionProbability: null } : {}),
