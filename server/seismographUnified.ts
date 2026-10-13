@@ -40,7 +40,7 @@ import {
 
 import { pressureRegimeLabel } from "../shared/pressureBands";
 import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
-import { getPriorV1Components } from "./pressure/priorComponents";
+import { readCachedPriorComponents } from "./pressure/priorComponents";
 import { classifyCondition, isBroadRecoveryVerified, DIRECTION_MIN_CHANGE, type ConditionState } from "../shared/conditionDirection";
 export interface HistoricalMonth {
   month: string;
@@ -480,10 +480,9 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
         breadth:   (rawLatest.marketBreadth    === 0 || rawLatest.marketBreadth    === null) ? prev.breadth   : latest.breadth,
       }
     : latest;
-  const [canonicalForDirection, priorForDirection] = await Promise.all([
-    getAuthoritativeCanonicalIntelligenceState().catch(() => null),
-    getPriorV1Components().catch(() => null),
-  ]);
+  // Request path: cached priors only (computed by the scheduled pipeline); never fetches FRED.
+  const canonicalForDirection = await getAuthoritativeCanonicalIntelligenceState().catch(() => null);
+  const priorForDirection = await readCachedPriorComponents(canonicalForDirection?.generatedAt ?? null).catch(() => null);
   const evidenceFamilies = buildEvidenceFamilies(
     latestForFamilies,
     history,
@@ -1799,7 +1798,7 @@ function buildMarketNarrative(
   // 4. What is building beneath the surface?
   const buildingSignals = evidenceFamilies.filter((f) => f.trend === "deteriorating" && (f.signal === "neutral" || f.signal === "recovering"));
   const whatIsBuildingBeneathSurface = buildingSignals.length > 0
-    ? `Beneath the headline score, ${buildingSignals.map((f) => f.name).join(" and ")} ${buildingSignals.length === 1 ? "is" : "are"} showing deterioration versus their last stored reading while their level still registers as neutral. FAULTLINE has not validated whether this pattern leads the composite score, or by how long. ${evolution.buildingPressure ? "The overall pressure trend is accelerating, suggesting the headline score may understate developing risk." : ""}`
+    ? `Beneath the headline score, ${buildingSignals.map((f) => f.name).join(" and ")} ${buildingSignals.length === 1 ? "is" : "are"} up at least 3 points versus the same component recomputed from FRED observations one month earlier, while their level still registers as neutral. FAULTLINE has not validated whether this pattern leads the composite score, or by how long. ${evolution.buildingPressure ? "The overall pressure trend is accelerating, suggesting the headline score may understate developing risk." : ""}`
     : evolution.buildingPressure
     ? `The composite pressure score is accelerating to the upside, suggesting that conditions are building faster than the headline number reflects. Watch for additional engines to shift from neutral to stressed in the coming weeks.`
     : `No clear sub-surface pressure is building at this time. The current reading appears to reflect conditions accurately across all monitored engines.`;

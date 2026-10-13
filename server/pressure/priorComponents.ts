@@ -59,12 +59,54 @@ export function computePriorComponents(results: FredResultsLike, now: Date): Pri
   };
 }
 
-/** Read-only fetch + compute. Never throws; null = prior not established. */
-export async function getPriorV1Components(now: Date = new Date()): Promise<PriorComponents | null> {
+// ── Cache (QA B-3) ──────────────────────────────────────────────
+// Priors are computed ONLY by the scheduled/admin Seismograph pipeline after a
+// verified run, then kept in process memory and in the existing Market Memory
+// key-value store (same store as "seismograph:latest_output"; no migration).
+// The request path reads the cache only and never fetches upstream.
+export const PRIOR_COMPONENTS_MEMORY_KEY = "pressure:v1_prior_components";
+/** A cached prior is usable only if its current anchor is this recent vs the canonical state. */
+export const PRIOR_MAX_ANCHOR_LAG_DAYS = 10;
+
+export interface CachedPriorComponents extends PriorComponents { computedAt: string; runTrigger: string }
+let _cached: CachedPriorComponents | null = null;
+
+/** Scheduled/admin pipeline only. FRED read + memory write; never called from a request. */
+export async function refreshPriorComponentsAfterVerifiedRun(runTrigger: string, now: Date = new Date()): Promise<CachedPriorComponents | null> {
+  let prior: PriorComponents | null = null;
   try {
     const bulk = await fetchFredBulk(PRIOR_FRED_SERIES);
-    return computePriorComponents(bulk.results, now);
-  } catch {
-    return null;
-  }
+    prior = computePriorComponents(bulk.results, now);
+  } catch { prior = null; }
+  if (!prior) return null; // keep the previous cache rather than overwrite with nothing
+  const entry: CachedPriorComponents = { ...prior, computedAt: now.toISOString(), runTrigger };
+  _cached = entry;
+  try {
+    const { memorySetJson } = await import("../seismographEngine");
+    await memorySetJson(PRIOR_COMPONENTS_MEMORY_KEY, entry, "v1 components recomputed from FRED obs one month earlier (direction only)");
+  } catch { /* in-memory copy still serves this process */ }
+  return entry;
 }
+
+/**
+ * Request path: cache only (process memory, then Market Memory). Never fetches FRED.
+ * Returns null (→ "Insufficient evidence") when absent or not aligned with `canonicalGeneratedAt`.
+ */
+export async function readCachedPriorComponents(canonicalGeneratedAt?: string | null): Promise<CachedPriorComponents | null> {
+  let entry = _cached;
+  if (!entry) {
+    try {
+      const { memoryGetJson } = await import("../seismographEngine");
+      entry = await memoryGetJson<CachedPriorComponents | null>(PRIOR_COMPONENTS_MEMORY_KEY, null);
+      if (entry) _cached = entry;
+    } catch { entry = null; }
+  }
+  if (!entry || !entry.components || !entry.currentAsOf) return null;
+  if (canonicalGeneratedAt) {
+    const lagDays = (Date.parse(canonicalGeneratedAt) - Date.parse(`${entry.currentAsOf}T00:00:00Z`)) / 86400000;
+    if (!Number.isFinite(lagDays) || lagDays < -1 || lagDays > PRIOR_MAX_ANCHOR_LAG_DAYS) return null;
+  }
+  return entry;
+}
+
+export function __resetPriorCacheForTests(): void { _cached = null; }

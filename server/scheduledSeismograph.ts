@@ -17,6 +17,7 @@ import { randomUUID } from "node:crypto";
 import type { Request, Response } from "express";
 import { calculateFaultlinePressure, type PressureAlert } from "./pressure/engine";
 import { persistPressureRunAndShadows } from "./pressure/scheduledPersistence";
+import { refreshPriorComponentsAfterVerifiedRun } from "./pressure/priorComponents";
 import { runFMOSPipeline } from "./fmos/pipeline";
 import { computeCrossMarketIntelligence } from "./crossMarketEngine";
 import { computeSOB } from "./sobEngine";
@@ -199,6 +200,8 @@ export async function runSeismographPipeline(options: { runContext?: RunContext 
   // scheduled/admin-authorized workflow, never by a public read.
   if (runContext.trigger !== "AD_HOC") {
     await persistPressureRunAndShadows(pressureOutput, runContext.trigger);
+    // Direction priors (QA B-3): computed here after a verified run, cached for the request path.
+    await refreshPriorComponentsAfterVerifiedRun(runContext.trigger).catch(() => null);
   }
 
   // Step 3: Run pattern analysis
