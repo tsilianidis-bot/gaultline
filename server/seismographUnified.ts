@@ -40,6 +40,7 @@ import {
 
 import { pressureRegimeLabel } from "../shared/pressureBands";
 import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import { getPriorV1Components } from "./pressure/priorComponents";
 import { classifyCondition, isBroadRecoveryVerified, DIRECTION_MIN_CHANGE, type ConditionState } from "../shared/conditionDirection";
 export interface HistoricalMonth {
   month: string;
@@ -479,13 +480,17 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
         breadth:   (rawLatest.marketBreadth    === 0 || rawLatest.marketBreadth    === null) ? prev.breadth   : latest.breadth,
       }
     : latest;
-  const canonicalForDirection = await getAuthoritativeCanonicalIntelligenceState().catch(() => null);
+  const [canonicalForDirection, priorForDirection] = await Promise.all([
+    getAuthoritativeCanonicalIntelligenceState().catch(() => null),
+    getPriorV1Components().catch(() => null),
+  ]);
   const evidenceFamilies = buildEvidenceFamilies(
     latestForFamilies,
     history,
     currentEnginesFromCanonical(
       canonicalForDirection ? Object.fromEntries(canonicalForDirection.engines.map(e => [e.engineId, e.value])) : undefined,
     ),
+    currentEnginesFromCanonical(priorForDirection?.components),
   );
   const enginesAgreeing = evidenceFamilies
     .filter((f) => f.signal === "bearish" || f.signal === "stressed")
@@ -742,13 +747,16 @@ export function buildEvidenceFamilies(
   latest: HistoricalMonth,
   history: HistoricalMonth[],
   currentEngines: CurrentEngineValues = {},
+  priorEngines: CurrentEngineValues = {},
 ): EvidenceFamily[] {
   const last6 = history.slice(-6);
-  // Direction (QA B-1): CURRENT canonical engine value vs the LAST STORED value of
-  // the same series. No current value → "Insufficient evidence". Never inferred
-  // from two stored monthly rows or from a low level.
-  const directional = (cur: number | null | undefined, lastStored: number | null | undefined) => {
-    const c = classifyCondition(cur ?? null, lastStored ?? null);
+  // Direction (QA r3): CURRENT canonical engine value vs the SAME v1 component
+  // recomputed from FRED observations dated one month earlier
+  // (server/pressure/priorComponents.ts). Never the stored monthly history rows
+  // (a different series) and never a low level. No prior → "Insufficient evidence".
+  const directional = (cur: number | null | undefined, prior: number | null | undefined) => {
+    const c = classifyCondition(cur ?? null, prior ?? null);
+    if (prior == null || cur == null) return { trend: "stable" as const, conditionState: "Insufficient evidence" as const, conditionChange: null };
     return { trend: c.trend, conditionState: c.state, conditionChange: c.change };
   };
   const avgLiquidity = last6.reduce((s, h) => s + h.liquidity, 0) / last6.length;
@@ -771,7 +779,7 @@ export function buildEvidenceFamilies(
           ? "Liquidity conditions are improving relative to recent trend."
           : "Liquidity conditions are consistent with recent trend."
       }`,
-      ...directional(currentEngines.liquidity, latest.liquidity),
+      ...directional(currentEngines.liquidity, priorEngines.liquidity),
       whyItMatters:
         "Liquidity stress drives credit tightening and forced selling. Elevated readings have accompanied past market dislocations; lead time has not been validated in FAULTLINE's own record.",
     },
@@ -791,7 +799,7 @@ export function buildEvidenceFamilies(
             }.`
           : "Credit contagion index based on composite spread signals."
       }`,
-      ...directional(currentEngines.credit, latest.credit),
+      ...directional(currentEngines.credit, priorEngines.credit),
       whyItMatters:
         "Credit spreads are a widely watched gauge of financial stress. Widening spreads signal that institutional investors are pricing in elevated default risk.",
     },
@@ -807,7 +815,7 @@ export function buildEvidenceFamilies(
           ? "Curve shape and the 10Y level are adding elevated rate-structure pressure (an inverted 10Y–2Y curve, raised further by a high 10Y yield)."
           : "Curve shape and the 10Y level are adding limited rate-structure pressure (a flat-to-positive 10Y–2Y curve scores low)."
       }`,
-      ...directional(currentEngines.volatility, latest.volatility),
+      ...directional(currentEngines.volatility, priorEngines.volatility),
       whyItMatters:
         "The 10Y–2Y curve and the 10Y level summarize the rate structure facing borrowers and risk assets. This vector does not read VIX or realized volatility.",
     },
@@ -829,7 +837,7 @@ export function buildEvidenceFamilies(
             }.`
           : "Macro sensitivity composite reflects inflation, employment, and monetary policy dynamics."
       }`,
-      ...directional(currentEngines.macro, latest.macro),
+      ...directional(currentEngines.macro, priorEngines.macro),
       whyItMatters:
         "Macro sensitivity captures how exposed markets are to economic deterioration. High readings mean that negative economic surprises will have outsized market impact.",
     },
@@ -852,7 +860,7 @@ export function buildEvidenceFamilies(
           ? "Labor-market and rate conditions are adding little pressure."
           : "Labor-and-rates pressure is moderate."
       }`,
-      ...directional(currentEngines.breadth, laborRates),
+      ...directional(currentEngines.breadth, priorEngines.breadth),
       whyItMatters:
         "This vector blends the unemployment rate with the 10Y Treasury yield. It is not an advance/decline or market-participation breadth measure.",
     });

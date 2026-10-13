@@ -3,6 +3,8 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { classifyCondition, isBroadRecoveryVerified } from "../shared/conditionDirection";
+import deepFixture from "./pressure/__fixtures__/fred-2026-10-12-deep.json";
+import { computePriorComponents } from "./pressure/priorComponents";
 import { buildEvidenceFamilies, currentEnginesFromCanonical, type HistoricalMonth } from "./seismographUnified";
 import { toPublicMarketStateWire, fromPublicMarketStateWire } from "../shared/publicProbabilityWire";
 import { redactSystemicRegimeReading, redactSystemicRegimeHistoryPoint } from "../shared/systemicRegimePublic";
@@ -38,14 +40,29 @@ describe("directional condition states (#6)", () => {
   const SEP = stored({ month: "2026-09", overallPressure: 28, liquidityStress: 17, creditContagion: 30, volatilityRegime: 40, macroSensitivity: 35, marketBreadth: 45, aiBubble: 25 });
   const CANONICAL = currentEnginesFromCanonical({ "liquidity-stress": 22, "credit-contagion": 22, "volatility-regime": 40, "macro-sensitivity": 44, "market-breadth": 29, "ai-bubble": 44 });
 
-  it("direction = current canonical value vs last stored value of the same series", () => {
-    const fams = buildEvidenceFamilies(SEP, [AUG, SEP], CANONICAL);
+  // Prior = same v1 components recomputed from FRED obs dated one month before each current input
+  // (real fixture fred-2026-10-12-deep.json). Stored monthly rows (SEP) are NOT used for direction.
+  const PRIOR = computePriorComponents(deepFixture.results as any, new Date("2026-10-12T16:00:00Z"))!;
+  it("prior components recomputed from date-matched FRED observations", () => {
+    expect(PRIOR.asOf).toBe("2026-09-08");
+    expect(PRIOR.inputDates).toMatchObject({ hySpread: "2026-09-08", cpi: "2026-07-01", fedFunds: "2026-08-01", unemployment: "2026-08-01" });
+    expect(PRIOR.components).toMatchObject({ "liquidity-stress": 16, "credit-contagion": 17, "macro-sensitivity": 41 });
+  });
+  it("direction = current canonical value vs recomputed prior of the same component", () => {
+    const fams = buildEvidenceFamilies(SEP, [AUG, SEP], CANONICAL, currentEnginesFromCanonical(PRIOR.components));
     const by = Object.fromEntries(fams.map(f => [f.name, f]));
-    expect(by["Liquidity Conditions"]).toMatchObject({ conditionState: "Deteriorating", conditionChange: 5, trend: "deteriorating" });
-    expect(by["Liquidity Conditions"].signal).not.toBe("recovering"); // was "recovering · improving (−3)" at cfdf28e
-    expect(by["Macro Sensitivity"]).toMatchObject({ conditionState: "Deteriorating", conditionChange: 9 });
-    expect(by["Credit Markets"]).toMatchObject({ conditionState: "Improving", conditionChange: -8 });
+    expect(by["Liquidity Conditions"]).toMatchObject({ conditionState: "Deteriorating", conditionChange: 6 });
+    expect(by["Credit Markets"]).toMatchObject({ conditionState: "Deteriorating", conditionChange: 5 });
+    expect(by["Macro Sensitivity"]).toMatchObject({ conditionState: "Deteriorating", conditionChange: 3 });
+    for (const f of [by["Liquidity Conditions"], by["Credit Markets"]]) expect(["recovering", "bullish"]).not.toContain(f.signal);
     expect(isBroadRecoveryVerified(fams, 33)).toBe(false);
+  });
+  it("missing prior observations → Insufficient evidence", () => {
+    const thin = JSON.parse(JSON.stringify(deepFixture.results));
+    thin.BAMLH0A0HYM2.observations = thin.BAMLH0A0HYM2.observations.slice(0, 5);
+    expect(computePriorComponents(thin, new Date("2026-10-12T16:00:00Z"))).toBeNull();
+    const fams = buildEvidenceFamilies(SEP, [AUG, SEP], CANONICAL, {});
+    expect(fams.find(f => f.name === "Credit Markets")!.conditionState).toBe("Insufficient evidence");
   });
   it("no current canonical value → Insufficient evidence and no recovering/bullish wording", () => {
     const fams = buildEvidenceFamilies(SEP, [AUG, SEP]);
@@ -53,7 +70,7 @@ describe("directional condition states (#6)", () => {
     for (const f of fams) expect(["recovering", "bullish"]).not.toContain(f.signal);
   });
   it("recovering/bullish signal appears only for Improving families", () => {
-    for (const f of buildEvidenceFamilies(SEP, [AUG, SEP], CANONICAL)) {
+    for (const f of buildEvidenceFamilies(SEP, [AUG, SEP], CANONICAL, currentEnginesFromCanonical(PRIOR.components))) {
       if (f.signal === "recovering" || f.signal === "bullish") expect(f.conditionState).toBe("Improving");
     }
   });
@@ -127,5 +144,11 @@ describe("Today label (#5) and read-only public pressure (#7)", () => {
     expect(proc).not.toMatch(/insertPressureRun\(|runV3HShadow\(|db\.insert/);
     expect(src("server/pressure/engine.ts")).not.toMatch(/runV3HShadow\(/);
     expect(src("server/scheduledSeismograph.ts")).toContain("persistPressureRunAndShadows(pressureOutput");
+  });
+});
+
+describe("prior-component recompute is read-only", () => {
+  it("priorComponents.ts has no DB access", () => {
+    expect(src("server/pressure/priorComponents.ts")).not.toMatch(/getDb|drizzle|insert|\.\.\/db"/);
   });
 });
