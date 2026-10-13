@@ -12,6 +12,7 @@
 //   - isRefreshing: true during cinematic refresh transition
 //   - isSimulating: true when user has active pressure overrides
 // ============================================================
+import { fromPublicMarketStateWire } from "@shared/publicProbabilityWire";
 import {
   createContext, useContext, useState, useMemo,
   useCallback, useEffect, ReactNode,
@@ -84,6 +85,7 @@ export function EngineProvider({ children }: { children: ReactNode }) {
     refetchOnWindowFocus: false,
   });
   const legacyProjectionQuery = trpc.marketState.current.useQuery(undefined, {
+    select: fromPublicMarketStateWire,
     staleTime: 60_000,
     refetchOnWindowFocus: false,
     enabled: Boolean(canonicalStateQuery.data),

@@ -19,6 +19,7 @@
  */
 
 import { getPressureHistory, getRecentPressureRuns } from "./db";
+import { pressureRegimeLabel } from "../shared/pressureBands";
 import { computeHistoricalContext } from "./historicalContextEngine";
 import type { FaultlinePressureOutput } from "./pressure/engine";
 
@@ -286,10 +287,10 @@ export function buildTimeline(
   const p7Pressure = p7?.overallPressure ?? currentPressure;
   const p1Pressure = p1?.overallPressure ?? currentPressure;
 
-  addPoint("30 days ago", p30Pressure, p30?.regime ?? currentRegime, null);
-  addPoint("14 days ago", p14Pressure, p14?.regime ?? currentRegime, p30Pressure);
-  addPoint("7 days ago", p7Pressure, p7?.regime ?? currentRegime, p14Pressure);
-  addPoint("Yesterday", p1Pressure, p1?.regime ?? currentRegime, p7Pressure);
+  addPoint("30 days ago", p30Pressure, (p30 ? pressureRegimeLabel(p30Pressure) : currentRegime), null);
+  addPoint("14 days ago", p14Pressure, (p14 ? pressureRegimeLabel(p14Pressure) : currentRegime), p30Pressure);
+  addPoint("7 days ago", p7Pressure, (p7 ? pressureRegimeLabel(p7Pressure) : currentRegime), p14Pressure);
+  addPoint("Yesterday", p1Pressure, (p1 ? pressureRegimeLabel(p1Pressure) : currentRegime), p7Pressure);
   addPoint("Today", currentPressure, currentRegime, p1Pressure);
 
   return points;

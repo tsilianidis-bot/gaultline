@@ -38,6 +38,8 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+import { pressureRegimeLabel } from "../shared/pressureBands";
+import { classifyCondition, isBroadRecoveryVerified, DIRECTION_MIN_CHANGE, type ConditionState } from "../shared/conditionDirection";
 export interface HistoricalMonth {
   month: string;
   score: number;
@@ -99,6 +101,10 @@ export interface EvidenceFamily {
   historicalContext: string;
   trend: "improving" | "deteriorating" | "stable";
   whyItMatters: string;
+  /** Directional state from the actual change vs the prior observation (shared/conditionDirection.ts) */
+  conditionState?: ConditionState;
+  /** Engine-score change vs prior observation; null when no comparable prior exists */
+  conditionChange?: number | null;
 }
 
 export interface EvolutionAnalysis {
@@ -417,7 +423,8 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
   const history: HistoricalMonth[] = allHistory.map((r) => ({
     month: r.month,
     score: r.overallPressure,
-    regime: r.regime,
+    // Canonical band from the stored score (stored legacy regime labels are not rewritten).
+    regime: pressureRegimeLabel(r.overallPressure),
     liquidity: r.liquidityStress || 50,
     credit: r.creditContagion || 50,
     volatility: r.volatilityRegime || 50,
@@ -719,6 +726,13 @@ export function buildEvidenceFamilies(
   history: HistoricalMonth[]
 ): EvidenceFamily[] {
   const last6 = history.slice(-6);
+  // Prior observation for directional change: `latest` corresponds to the last
+  // history row, so the prior observation is the row before it.
+  const prevRow = history.length >= 2 ? history[history.length - 2] : null;
+  const directional = (cur: number | null | undefined, prv: number | null | undefined) => {
+    const c = classifyCondition(cur, prv);
+    return { trend: c.trend, conditionState: c.state, conditionChange: c.change };
+  };
   const avgLiquidity = last6.reduce((s, h) => s + h.liquidity, 0) / last6.length;
   const avgCredit = last6.reduce((s, h) => s + h.credit, 0) / last6.length;
   const avgVol = last6.reduce((s, h) => s + h.volatility, 0) / last6.length;
@@ -739,14 +753,9 @@ export function buildEvidenceFamilies(
           ? "Liquidity conditions are improving relative to recent trend."
           : "Liquidity conditions are consistent with recent trend."
       }`,
-      trend:
-        latest.liquidity > avgLiquidity + 5
-          ? "deteriorating"
-          : latest.liquidity < avgLiquidity - 5
-          ? "improving"
-          : "stable",
+      ...directional(latest.liquidity, prevRow?.liquidity),
       whyItMatters:
-        "Liquidity stress drives credit tightening and forced selling. Elevated readings historically precede broader market dislocations by 2–4 months.",
+        "Liquidity stress drives credit tightening and forced selling. Elevated readings have accompanied past market dislocations; lead time has not been validated in FAULTLINE's own record.",
     },
     {
       name: "Credit Markets",
@@ -764,14 +773,9 @@ export function buildEvidenceFamilies(
             }.`
           : "Credit contagion index based on composite spread signals."
       }`,
-      trend:
-        latest.credit > avgCredit + 5
-          ? "deteriorating"
-          : latest.credit < avgCredit - 5
-          ? "improving"
-          : "stable",
+      ...directional(latest.credit, prevRow?.credit),
       whyItMatters:
-        "Credit spreads are the most reliable leading indicator of systemic stress. Widening spreads signal that institutional investors are pricing in elevated default risk.",
+        "Credit spreads are a widely watched gauge of financial stress. Widening spreads signal that institutional investors are pricing in elevated default risk.",
     },
     {
       name: YIELD_CURVE_FAMILY_NAME,
@@ -785,12 +789,7 @@ export function buildEvidenceFamilies(
           ? "Curve shape and the 10Y level are adding elevated rate-structure pressure (an inverted 10Y–2Y curve, raised further by a high 10Y yield)."
           : "Curve shape and the 10Y level are adding limited rate-structure pressure (a flat-to-positive 10Y–2Y curve scores low)."
       }`,
-      trend:
-        latest.volatility > avgVol + 5
-          ? "deteriorating"
-          : latest.volatility < avgVol - 5
-          ? "improving"
-          : "stable",
+      ...directional(latest.volatility, prevRow?.volatility),
       whyItMatters:
         "The 10Y–2Y curve and the 10Y level summarize the rate structure facing borrowers and risk assets. This vector does not read VIX or realized volatility.",
     },
@@ -812,12 +811,7 @@ export function buildEvidenceFamilies(
             }.`
           : "Macro sensitivity composite reflects inflation, employment, and monetary policy dynamics."
       }`,
-      trend:
-        latest.macro > avgMacro + 5
-          ? "deteriorating"
-          : latest.macro < avgMacro - 5
-          ? "improving"
-          : "stable",
+      ...directional(latest.macro, prevRow?.macro),
       whyItMatters:
         "Macro sensitivity captures how exposed markets are to economic deterioration. High readings mean that negative economic surprises will have outsized market impact.",
     },
@@ -871,7 +865,7 @@ export function buildEvidenceFamilies(
       currentValue: `10Y: ${latest.tsy10y}% | 2Y: ${latest.tsy2y}% | Spread: ${spread.toFixed(2)}%`,
       historicalContext: `6-month average spread: ${avgSpread.toFixed(2)}%. ${
         spread < 0
-          ? "Inverted yield curve — historically the most reliable recession predictor with a 12–18 month lead time."
+          ? "Inverted yield curve — has preceded many past U.S. recessions with long and variable lead times; not a recession probability."
           : spread < 0.5
           ? "Flattening yield curve — historically associated with late-cycle economic conditions."
           : "Positively sloped yield curve — consistent with normal economic expansion."
@@ -1624,14 +1618,14 @@ function buildDevelopingConditions(
       : "stable";
     conditions.push({
       title: "Systemic Stress Accumulation",
-      description: `${stressed.length} of ${evidenceFamilies.length} intelligence engines are signaling stress or deterioration simultaneously. Multi-engine agreement of this magnitude historically precedes regime transitions.`,
+      description: `${stressed.length} of ${evidenceFamilies.length} intelligence engines are signaling stress or deterioration simultaneously. Multi-engine agreement describes current conditions; it has not been validated as a predictor of regime transitions.`,
       engines: stressed.map((f) => f.name),
       evidence: stressed.map((f) => `${f.name}: ${f.currentValue}`).join("; "),
       severity,
       durationDescription: evolution.buildingPressure ? "Pressure has been building over the past 30 days" : "Current stress level has been stable for several weeks",
       trend,
       expectedImpact: severity === "Critical"
-        ? "Elevated probability of regime deterioration within 30–60 days if conditions persist"
+        ? "Broad stress across engines; no validated forecast horizon — monitor for further deterioration"
         : severity === "High"
         ? "Moderate risk of continued pressure; monitor for additional engine deterioration"
         : "Manageable stress level; watch for confirmation from additional engines",
@@ -1642,13 +1636,13 @@ function buildDevelopingConditions(
   if (deteriorating.length >= 2) {
     conditions.push({
       title: "Deteriorating Trend Momentum",
-      description: `${deteriorating.length} engines are showing worsening conditions on a trend basis. Trend deterioration often leads score deterioration by 4–8 weeks, making this an early-warning signal.`,
+      description: `${deteriorating.length} engines are showing worsening conditions on a trend basis. This is a description of recent direction, not a validated early-warning signal.`,
       engines: deteriorating.map((f) => f.name),
       evidence: deteriorating.map((f) => `${f.name} trending ${f.trend}: ${f.currentValue}`).join("; "),
       severity: deteriorating.length >= 4 ? "High" : deteriorating.length >= 3 ? "Moderate" : "Low",
       durationDescription: "Trend deterioration detected over the past 30-day window",
       trend: "building",
-      expectedImpact: "If trend deterioration continues, expect the composite pressure score to follow higher within 4–8 weeks",
+      expectedImpact: "If deterioration continues, the composite score would be expected to rise; no lead time has been validated",
     });
   }
 
@@ -1659,13 +1653,13 @@ function buildDevelopingConditions(
   if (stressed.length >= 2 && bullEngines.length >= 2) {
     conditions.push({
       title: "Cross-Engine Signal Divergence",
-      description: `The intelligence engines are sending contradictory signals — ${stressed.length} engines indicate stress while ${bullEngines.length} engines indicate strength. Divergence of this type often resolves with a sharp directional move as one set of signals proves dominant.`,
+      description: `The intelligence engines are sending contradictory signals — ${stressed.length} engines indicate stress while ${bullEngines.length} engines indicate strength. How such divergence resolves has not been validated in FAULTLINE's record.`,
       engines: [...stressed.map((f) => f.name), ...bullEngines.map((f) => f.name)],
       evidence: `Bearish: ${stressed.map((f) => f.name).join(", ")}. Bullish: ${bullEngines.map((f) => f.name).join(", ")}`,
       severity: "Moderate",
       durationDescription: "Divergence has been present across the current measurement window",
       trend: "stable",
-      expectedImpact: "Resolution of divergence typically produces a 5–15% directional move in the dominant direction within 60 days",
+      expectedImpact: "Watch which set of engines moves next; no move size or horizon is implied",
     });
   }
 
@@ -1679,30 +1673,32 @@ function buildDevelopingConditions(
     conditions.push({
       title: rising ? "Rapid Pressure Escalation" : "Rapid Pressure Decompression",
       description: rising
-        ? `The composite pressure score has risen ${scoreDelta.toFixed(1)} points over the past 6 months — a pace that historically signals a regime transition is underway rather than a temporary fluctuation.`
-        : `The composite pressure score has fallen ${Math.abs(scoreDelta).toFixed(1)} points over the past 6 months — a decompression rate that historically precedes a sustained regime improvement.`,
+        ? `The composite pressure score has risen ${scoreDelta.toFixed(1)} points over the past 6 months — a large move for this index; whether it persists is not established.`
+        : `The composite pressure score has fallen ${Math.abs(scoreDelta).toFixed(1)} points over the past 6 months — a large move for this index; whether it persists is not established.`,
       engines: evidenceFamilies.map((f) => f.name),
       evidence: `Score moved from ${avgPrev6.toFixed(1)} to ${currentScore} over the past 6 months (${rising ? "+" : ""}${scoreDelta.toFixed(1)} pts)`,
       severity: Math.abs(scoreDelta) >= 15 ? "High" : "Moderate",
       durationDescription: "Velocity of change observed over the past 6-month window",
       trend: rising ? "building" : "easing",
       expectedImpact: rising
-        ? "Rapid escalation increases the probability of a regime shift to a higher stress classification"
-        : "Rapid decompression increases the probability of a regime improvement within 60–90 days",
+        ? "A continued rise would move the index toward a higher band; no probability is implied"
+        : "A continued decline would move the index toward a lower band; no probability is implied",
     });
   }
 
-  // Condition 5: Recovery signal
-  if (recovering.length >= 3 && currentScore <= 45) {
+  // Condition 5: Recovery signal — requires VERIFIED directional improvement
+  // (Phase 2 #6): actual change vs the prior observation, not a low level.
+  const improvingFamilies = evidenceFamilies.filter((f) => f.conditionState === "Improving");
+  if (isBroadRecoveryVerified(evidenceFamilies, currentScore)) {
     conditions.push({
       title: "Broad Recovery Signal",
-      description: `${recovering.length} engines are signaling recovery or bullish conditions. Broad multi-engine recovery at this pressure level has historically been a reliable early indicator of a sustained risk-on environment.`,
-      engines: recovering.map((f) => f.name),
-      evidence: recovering.map((f) => `${f.name}: ${f.currentValue}`).join("; "),
+      description: `${improvingFamilies.length} engines improved by at least ${DIRECTION_MIN_CHANGE} points versus their prior observation, including Credit, Liquidity or Macro Sensitivity. This describes the current direction of measured conditions; it has not been validated as a predictor of a sustained risk-on environment.`,
+      engines: improvingFamilies.map((f) => f.name),
+      evidence: improvingFamilies.map((f) => `${f.name}: ${f.currentValue} (${f.conditionChange != null ? (f.conditionChange > 0 ? "+" : "") + f.conditionChange : "n/a"} pts)`).join("; "),
       severity: "Low",
       durationDescription: "Recovery signals detected across the current measurement window",
       trend: "easing",
-      expectedImpact: "If recovery signals persist, expect continued pressure decompression and improving risk-adjusted return environment",
+      expectedImpact: "Watch whether the improvement persists at the next observation; one interval of improvement is not confirmation",
     });
   }
 

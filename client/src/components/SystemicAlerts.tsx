@@ -70,8 +70,8 @@ export function generateSystemicAlerts(output: ReturnType<typeof useEngine>['out
       severity: sev,
       title: `Macro Regime: ${regime.label}`,
       what: `Overall FAULTLINE Pressure Score has reached ${score100Value(overall.score)}/100. Current regime is classified as "${regime.label}" — ${regime.sublabel}.`,
-      why: `Regime transitions at this pressure level historically precede significant volatility compression or expansion events. The ${regime.label} regime indicates that multiple macro stress vectors are simultaneously elevated, reducing the margin for error in risk positioning.`,
-      historical: `In 2007 (GFC onset), the pressure composite crossed 65/100 before Lehman by 14 months. In 2000 (Dot-Com peak), the AI/speculation vector reached this level 8 months before the NASDAQ peaked. Regime shifts of this type have historically been followed by 15–57% drawdowns within 6–24 months.`,
+      why: `The ${regime.label} regime indicates that multiple macro stress vectors are simultaneously elevated, reducing the margin for error in risk positioning.`,
+      historical: `FAULTLINE has not validated a lead time between this regime and later market declines. Its reconstruction of 2000–2026 (revised data) never exceeded 56/100 and missed 16 of 26 S&P 500 declines of 10% or more, so this reading describes current conditions rather than predicting a drawdown.`,
       color: regime.color,
       score: overall.score,
     });
@@ -103,7 +103,7 @@ export function generateSystemicAlerts(output: ReturnType<typeof useEngine>['out
       title: `Credit Stress Elevated — Score ${score100Value(creditScore)}/100`,
       what: `The FAULTLINE Credit Stress vector has reached ${score100Value(creditScore)}/100. This reflects widening high-yield spreads, rising corporate default probabilities, and deteriorating credit conditions in the leveraged loan market.`,
       why: `Credit stress is the transmission mechanism through which financial stress becomes economic stress. When credit conditions tighten, businesses face higher borrowing costs, investment declines, and employment contracts. The credit cycle leads the business cycle by 6–18 months.`,
-      historical: `HY spreads above 500bps have preceded recessions in 1990, 2001, 2008, and 2020. In 2007, credit stress reached this level 9 months before the official recession start. In 2022, credit stress at 50+/100 coincided with the worst bond market performance since 1788.`,
+      historical: `HY spreads above 500bps have preceded recessions in 1990, 2001, 2008, and 2020. Lead times varied widely, and FAULTLINE has not validated a lead time for this vector.`,
       color: '#FF6B35',
       score: creditScore,
     });

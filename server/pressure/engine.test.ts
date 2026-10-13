@@ -1,172 +1,170 @@
 // ============================================================
 // FAULTLINE — Pressure Engine Tests
+// Phase 1 (2026-10-13): the engine FAILS CLOSED. The former
+// "fallback mode" suite (hard-coded constants labelled live/fallback)
+// is replaced by fail-closed + verified-input tests.
 // ============================================================
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { calculateFaultlinePressure } from "./engine";
+import fixture from "./__fixtures__/fred-2026-10-12.json";
+import {
+  calculateFaultlinePressure,
+  computePressureFromVerifiedInputs,
+  resolveVerifiedInputs,
+  dateMatchedYoY,
+  parseFredValue,
+  markPreservedReadingStale,
+  PressureInputsUnavailableError,
+  __resetPressureSnapshotForTests,
+  type FredResultsLike,
+} from "./engine";
 
-// Mock fetch so tests don't hit the real FRED API
+const NOW = new Date("2026-10-12T16:00:00Z");
+const base = (): FredResultsLike => JSON.parse(JSON.stringify(fixture.results));
+
+function verifiedOutput(results = base(), now = NOW) {
+  const r = resolveVerifiedInputs(results, now);
+  expect(r.problems).toEqual([]);
+  return computePressureFromVerifiedInputs(r.inputs, r.provenance, now);
+}
+
 beforeEach(() => {
+  __resetPressureSnapshotForTests();
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network unavailable")));
 });
 
-describe("calculateFaultlinePressure (fallback mode)", () => {
-  it("returns a valid output structure", async () => {
-    const result = await calculateFaultlinePressure();
-
-    expect(result).toHaveProperty("overallPressure");
-    expect(result).toHaveProperty("regime");
-    expect(result).toHaveProperty("level");
-    expect(result).toHaveProperty("vectors");
-    expect(result).toHaveProperty("alerts");
-    expect(result).toHaveProperty("topAnalog");
-    expect(result).toHaveProperty("analogs");
-    expect(result).toHaveProperty("timestamp");
-    expect(result).toHaveProperty("dataSource");
+describe("v1 reproducibility (Oct 12 2026 inputs)", () => {
+  it("reproduces vectors 22/22/40/44/29/44, composite 33.1 → 33", () => {
+    const out = verifiedOutput();
+    expect(out.vectors.map(v => v.score)).toEqual([22, 22, 40, 44, 29, 44]);
+    const raw = out.vectors.reduce((s, v) => s + v.score * v.weight, 0);
+    expect(raw).toBeCloseTo(33.1, 6);
+    expect(out.overallPressure).toBe(33);
+    expect(out.level).toBe("Moderate");
+    expect(out.dataSource).toBe("live");
+    expect(out.verification?.status).toBe("verified");
   });
-
-  it("overallPressure is between 0 and 100", async () => {
-    const result = await calculateFaultlinePressure();
-    expect(result.overallPressure).toBeGreaterThanOrEqual(0);
-    expect(result.overallPressure).toBeLessThanOrEqual(100);
+  it("records per-input observation dates", () => {
+    const out = verifiedOutput();
+    const by = Object.fromEntries(out.verification!.inputs.map(i => [i.inputId, i]));
+    expect(by.hySpread.observationDate).toBe("2026-10-08");
+    expect(by.hySpread.value).toBe(315);
+    expect(by.cpi).toMatchObject({ value: 3.35, observationDate: "2026-08-01", baseObservationDate: "2025-08-01" });
+    expect(by.ppi).toMatchObject({ value: 9.85, observationDate: "2026-08-01" });
+    const liq = out.vectors.find(v => v.id === "liquidity-stress")!;
+    expect(liq.observationDates).toEqual({ hySpread: "2026-10-08", sofr: "2026-10-08" });
   });
-
-  it("returns exactly 6 risk vectors", async () => {
-    const result = await calculateFaultlinePressure();
-    expect(result.vectors).toHaveLength(6);
+  it("weights sum to 1 and 6 unique vectors", () => {
+    const out = verifiedOutput();
+    expect(out.vectors.reduce((s, v) => s + v.weight, 0)).toBeCloseTo(1, 9);
+    expect(new Set(out.vectors.map(v => v.id)).size).toBe(6);
   });
+});
 
-  it("each vector has required fields", async () => {
-    const result = await calculateFaultlinePressure();
-    for (const v of result.vectors) {
-      expect(v).toHaveProperty("id");
-      expect(v).toHaveProperty("label");
-      expect(v).toHaveProperty("score");
-      expect(v).toHaveProperty("level");
-      expect(v).toHaveProperty("driver");
-      expect(v).toHaveProperty("trend");
-      expect(v).toHaveProperty("weight");
-      expect(v.score).toBeGreaterThanOrEqual(0);
-      expect(v.score).toBeLessThanOrEqual(100);
-    }
+describe("CPI date-matched YoY", () => {
+  it("matches the old positional result when no month is missing", () => {
+    const cpi = base().CPIAUCSL!.observations;
+    expect(dateMatchedYoY(cpi)).toEqual({ value: 3.35, observationDate: "2026-08-01", baseObservationDate: "2025-08-01" });
   });
-
-  it("vector weights sum to approximately 1.0", async () => {
-    const result = await calculateFaultlinePressure();
-    const totalWeight = result.vectors.reduce((sum, v) => sum + v.weight, 0);
-    expect(totalWeight).toBeCloseTo(1.0, 2);
+  it("Oct 2026 CPI release with missing Oct 2025 base: no NaN; uses latest month with a valid base", () => {
+    const obs = [{ date: "2026-10-01", value: "336.500" }, { date: "2026-09-01", value: "335.200" }, ...base().CPIAUCSL!.observations];
+    // Old positional code: obs[12] would be 2025-10-01 '.' → parseFloat('.') = NaN.
+    expect(obs[12]).toEqual({ date: "2025-10-01", value: "." });
+    expect(Number.isNaN(parseFloat(obs[12].value))).toBe(true);
+    const y = dateMatchedYoY(obs)!;
+    expect(y.observationDate).toBe("2026-09-01");
+    expect(y.baseObservationDate).toBe("2025-09-01");
+    expect(y.value).toBe(parseFloat(((335.2 / 324.245 - 1) * 100).toFixed(2)));
+    expect(Number.isFinite(y.value)).toBe(true);
   });
-
-  it("level matches overallPressure range", async () => {
-    const result = await calculateFaultlinePressure();
-    const { overallPressure, level } = result;
-    if (overallPressure >= 80) expect(level).toBe("Critical");
-    else if (overallPressure >= 65) expect(level).toBe("High");
-    else if (overallPressure >= 45) expect(level).toBe("Elevated");
-    else if (overallPressure >= 25) expect(level).toBe("Moderate");
-    else expect(level).toBe("Low");
+  it("full pipeline with the Oct 2026 release yields a finite score (no NaN reaches the index)", () => {
+    const r = base();
+    r.CPIAUCSL!.observations = [{ date: "2026-10-01", value: "336.5" }, { date: "2026-09-01", value: "335.2" }, ...r.CPIAUCSL!.observations].slice(0, 15);
+    const out = verifiedOutput(r, new Date("2026-10-15T16:00:00Z")); // daily fixture rows stay fresh; CPI rows are the hypothetical Oct-2026 release
+    expect(Number.isFinite(out.overallPressure)).toBe(true);
+    const cpi = out.verification!.inputs.find(i => i.inputId === "cpi")!;
+    expect(cpi.observationDate).toBe("2026-09-01");
   });
-
-  it("returns historical analogs sorted by similarity descending", async () => {
-    const result = await calculateFaultlinePressure();
-    expect(result.analogs.length).toBeGreaterThan(0);
-    for (let i = 1; i < result.analogs.length; i++) {
-      expect(result.analogs[i - 1]!.similarity).toBeGreaterThanOrEqual(result.analogs[i]!.similarity);
-    }
+  it("irregular order and duplicates are handled by date, not position", () => {
+    const obs = [...base().CPIAUCSL!.observations].reverse();
+    expect(dateMatchedYoY(obs)?.observationDate).toBe("2026-08-01");
   });
-
-  it("topAnalog matches the first analog in the sorted list", async () => {
-    const result = await calculateFaultlinePressure();
-    expect(result.topAnalog.year).toBe(result.analogs[0]!.year);
-    expect(result.topAnalog.similarity).toBe(result.analogs[0]!.similarity);
+  it("returns null when no month has a valid year-earlier base", () => {
+    expect(dateMatchedYoY([{ date: "2026-08-01", value: "334" }, { date: "2025-08-01", value: "." }])).toBeNull();
+    expect(dateMatchedYoY([])).toBeNull();
   });
-
-  it("dataSource is 'fallback' when FRED is unavailable", async () => {
-    const result = await calculateFaultlinePressure();
-    expect(result.dataSource).toBe("fallback");
+  it("parseFredValue rejects '.', '', NaN, Infinity", () => {
+    for (const v of [".", "", "NaN", "Infinity", "-Infinity", "abc", undefined, null]) expect(parseFredValue(v as any)).toBeNull();
+    expect(parseFredValue("3.15")).toBe(3.15);
   });
+});
 
-  it("timestamp is a valid ISO string", async () => {
-    const result = await calculateFaultlinePressure();
-    expect(() => new Date(result.timestamp)).not.toThrow();
-    expect(new Date(result.timestamp).getFullYear()).toBeGreaterThan(2020);
+describe("FRED fail-closed", () => {
+  it("rejects a set with one series missing (no constants substituted)", () => {
+    const r = base();
+    r.DGS2 = { observations: [], error: "HTTP 500" };
+    const res = resolveVerifiedInputs(r, NOW);
+    expect(res.ok).toBe(false);
+    expect(res.problems.join()).toMatch(/tsy2y \(DGS2\) missing/);
+    expect(res.inputs.tsy2y).toBeNull();
   });
-
-  it("all vector IDs are unique", async () => {
-    const result = await calculateFaultlinePressure();
-    const ids = result.vectors.map(v => v.id);
-    const uniqueIds = new Set(ids);
-    expect(uniqueIds.size).toBe(ids.length);
+  it("rejects invalid values ('.', Infinity, out of range)", () => {
+    const r = base();
+    r.SOFR!.observations = r.SOFR!.observations.map(o => ({ ...o, value: "." }));
+    r.UNRATE!.observations = [{ date: "2026-09-01", value: "Infinity" }];
+    r.DGS10!.observations = [{ date: "2026-10-08", value: "99" }];
+    const res = resolveVerifiedInputs(r, NOW);
+    expect(res.ok).toBe(false);
+    expect(res.problems.length).toBe(3);
   });
-
-  it("expected vector IDs are present", async () => {
-    const result = await calculateFaultlinePressure();
-    const ids = result.vectors.map(v => v.id);
-    expect(ids).toContain("liquidity-stress");
-    expect(ids).toContain("credit-contagion");
-    expect(ids).toContain("volatility-regime");
-    expect(ids).toContain("macro-sensitivity");
-    expect(ids).toContain("market-breadth");
-    expect(ids).toContain("ai-bubble");
+  it("rejects stale observations", () => {
+    const res = resolveVerifiedInputs(base(), new Date("2026-11-30T00:00:00Z"));
+    expect(res.ok).toBe(false);
+    expect(res.provenance.find(p => p.inputId === "hySpread")!.status).toBe("stale");
   });
-
-  // ── Data truth labeling regression tests ──────────────────────
-
-  it("output includes lastUpdated as a valid ISO string", async () => {
-    const result = await calculateFaultlinePressure();
-    expect(result).toHaveProperty("lastUpdated");
-    expect(() => new Date(result.lastUpdated)).not.toThrow();
-    expect(new Date(result.lastUpdated).getFullYear()).toBeGreaterThan(2020);
+  it("skips holiday '.' rows for daily series", () => {
+    const r = base();
+    r.DGS10!.observations = [{ date: "2026-10-09", value: "." }, ...r.DGS10!.observations];
+    expect(resolveVerifiedInputs(r, NOW).ok).toBe(true);
   });
-
-  it("each vector has dataStatus and source fields", async () => {
-    const result = await calculateFaultlinePressure();
-    const validStatuses = ["live", "delayed", "cached", "stale", "fallback", "static", "unavailable"];
-    for (const v of result.vectors) {
-      expect(v).toHaveProperty("dataStatus");
-      expect(v).toHaveProperty("source");
-      expect(validStatuses).toContain(v.dataStatus);
-      expect(typeof v.source).toBe("string");
-      expect(v.source.length).toBeGreaterThan(0);
-    }
+  it("computePressureFromVerifiedInputs refuses an incomplete set", () => {
+    const r = resolveVerifiedInputs(base(), NOW);
+    expect(() => computePressureFromVerifiedInputs({ ...r.inputs, cpi: null }, r.provenance, NOW)).toThrow(PressureInputsUnavailableError);
+    expect(() => computePressureFromVerifiedInputs({ ...r.inputs, cpi: NaN }, r.provenance, NOW)).toThrow(PressureInputsUnavailableError);
   });
-
-  it("ai-bubble vector is labeled static with a fallbackReason", async () => {
-    const result = await calculateFaultlinePressure();
-    const aiBubble = result.vectors.find(v => v.id === "ai-bubble");
-    expect(aiBubble).toBeDefined();
-    expect(aiBubble!.dataStatus).toBe("static");
-    expect(aiBubble!.fallbackReason).toBeDefined();
-    expect(aiBubble!.fallbackReason!.length).toBeGreaterThan(10);
-    // Source must mention it is a static model estimate — not a live feed
-    expect(aiBubble!.source.toLowerCase()).toContain("static");
+  it("throws (never fabricates) when FRED is down and no verified reading exists", async () => {
+    await expect(calculateFaultlinePressure()).rejects.toBeInstanceOf(PressureInputsUnavailableError);
   });
-
-  it("ai-bubble vector score is still within valid range despite static concentration baseline", async () => {
-    const result = await calculateFaultlinePressure();
-    const aiBubble = result.vectors.find(v => v.id === "ai-bubble");
-    expect(aiBubble).toBeDefined();
-    expect(aiBubble!.score).toBeGreaterThanOrEqual(0);
-    expect(aiBubble!.score).toBeLessThanOrEqual(100);
+  it("preserved reading keeps its ORIGINAL timestamps and is labelled stale", () => {
+    const out = verifiedOutput();
+    const stale = markPreservedReadingStale(out, [], ["DGS2 missing"]);
+    expect(stale.timestamp).toBe(out.timestamp);
+    expect(stale.lastUpdated).toBe(out.lastUpdated);
+    expect(stale.overallPressure).toBe(33);
+    expect(stale.dataSource).toBe("fallback");
+    expect(stale.verification?.status).toBe("stale");
+    expect(stale.vectors.filter(v => v.id !== "ai-bubble").every(v => v.dataStatus === "stale")).toBe(true);
+    expect(stale.vectors.find(v => v.id === "ai-bubble")!.dataStatus).toBe("static");
   });
-
-  it("live FRED vectors are labeled fallback when FRED is unavailable", async () => {
-    const result = await calculateFaultlinePressure();
-    // In test mode, FRED is mocked to fail, so all live vectors should be fallback
-    const liveVectors = result.vectors.filter(v => v.id !== "ai-bubble");
-    for (const v of liveVectors) {
-      expect(["fallback", "delayed", "live"]).toContain(v.dataStatus);
-    }
+  it("end-to-end: a complete live FRED fetch (mocked HTTP) yields a verified 33", async () => {
+    const results = base();
+    const fetchMock = vi.fn(async (url: string) => {
+      const id = new URL(url).searchParams.get("series_id")!;
+      return { ok: true, status: 200, json: async () => ({ observations: results[id]!.observations }) } as any;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    vi.useFakeTimers({ now: NOW, toFake: ["Date"] });
+    try {
+      const first = await calculateFaultlinePressure();
+      expect(first.verification?.status).toBe("verified");
+      expect(first.overallPressure).toBe(33);
+    } finally { vi.useRealTimers(); }
   });
+});
 
-  it("no vector uses dataStatus 'live' when dataSource is fallback", async () => {
-    const result = await calculateFaultlinePressure();
-    if (result.dataSource === "fallback") {
-      for (const v of result.vectors) {
-        // Static is allowed; live is not when the overall source is fallback
-        if (v.dataStatus === "live") {
-          throw new Error(`Vector '${v.id}' claims live status but overall dataSource is fallback`);
-        }
-      }
-    }
+describe("static / labelling invariants", () => {
+  it("ai-bubble is labelled static with a reason", () => {
+    const ai = verifiedOutput().vectors.find(v => v.id === "ai-bubble")!;
+    expect(ai.dataStatus).toBe("static");
+    expect(ai.fallbackReason).toBeTruthy();
   });
 });

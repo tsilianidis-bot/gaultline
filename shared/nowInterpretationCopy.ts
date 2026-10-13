@@ -262,7 +262,7 @@ export function buildWhatIsHappeningCopy(input: NowInterpretationInput): string 
 
   const engineClause =
     bullish > 0
-      ? `${capitalize(cardinalWord(bullish))} of ${cardinalWord(total)} intelligence engines are showing improvement or recovery, indicating easing pressure, but not yet confirming a low-risk environment.`
+      ? `${capitalize(cardinalWord(bullish))} of ${cardinalWord(total)} intelligence engines are reading below their stress thresholds; that is a level, not a verified improvement, and it does not confirm a low-risk environment.`
       : stressed > 0
         ? `${capitalize(cardinalWord(stressed))} of ${cardinalWord(total)} intelligence engines are still signaling stress, so confirmation of a low-risk environment is not established.`
         : `Available intelligence engines are not confirming a low-risk environment.`;

@@ -30,8 +30,10 @@ describe("NOW interpretation hierarchy copy", () => {
     expect(text).toContain("Systemic pressure is moderate at 34/100");
     expect(text).toContain("historically elevated");
     expect(text).toContain("83rd percentile");
-    expect(text).toMatch(/showing improvement or recovery/i);
-    expect(text).toMatch(/not yet confirming a low-risk environment/i);
+    // Phase 2 #6: a low level is not described as improvement/recovery.
+    expect(text).toMatch(/below their stress thresholds; that is a level, not a verified improvement/i);
+    expect(text).not.toMatch(/showing improvement or recovery/i);
+    expect(text).toMatch(/does not confirm a low-risk environment/i);
     expect(text).not.toMatch(/constructive risk environment/i);
     expect(text).not.toMatch(/signaling strength or recovery,\s*consistent with/i);
     expect(nowInterpretationIssues(text, moderateElevatedImproving)).toEqual([]);
