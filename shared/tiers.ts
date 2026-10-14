@@ -20,6 +20,25 @@ export const PAID_PLANS_ON_SALE: boolean = true;
  * Independent of PAID_PLANS_ON_SALE so opening checkout never reopens free sign-up.
  */
 export const OPEN_REGISTRATION: boolean = false;
+/**
+ * Checkout switch. Default OFF until Stripe prices are configured and verified.
+ * While false, prices are displayed but no Stripe call is made and buy buttons show "Coming soon".
+ */
+export const CHECKOUT_ENABLED: boolean = false;
+/** Label on disabled buy buttons while CHECKOUT_ENABLED is false. */
+export const CHECKOUT_COMING_SOON_LABEL = 'Checkout coming soon';
+
+/** Shown prominently next to the Lifetime price and in the Terms. */
+export const LIFETIME_FINAL_SALE_NOTICE = 'All Lifetime purchases are final and non-refundable.';
+/** Plain-English Lifetime terms (shown on /pricing and in the Terms of Service). */
+export const LIFETIME_TERMS: readonly string[] = [
+  '"Lifetime" means for as long as FAULTLINE operates the service, for one individual account. It is non-transferable.',
+  'Lifetime includes all current and future FAULTLINE Standard features.',
+  'The PLATO AI assistant is subject to the fair-use limits that apply to all members.',
+  LIFETIME_FINAL_SALE_NOTICE,
+  'FAULTLINE is not investment advice and makes no guarantee of returns or of any prediction. We may change features over time, but we will not convert Lifetime members to a paid subscription.',
+];
+
 /** Short label shown wherever a plan price used to be displayed. */
 export const PLAN_NOT_ON_SALE_LABEL = 'Not on sale yet';
 /** Sentence used in app/email/chat copy while paid plans are not on sale. */

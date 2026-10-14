@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { PRICING_PLANS } from "../../shared/tiers";
+import { PRICING_PLANS, CHECKOUT_ENABLED, LIFETIME_TERMS, LIFETIME_FINAL_SALE_NOTICE } from "../../shared/tiers";
+import { readFileSync } from "node:fs";
 import { PLANS } from "../stripe/products";
 import { billingRouter, isPlanAvailableForPurchase } from "./billing";
 import type { TrpcContext } from "../_core/context";
@@ -31,11 +32,12 @@ function authCtx(): TrpcContext {
 }
 
 describe("billing plan availability lock", () => {
-  it("opens only Standard and Lifetime, and only when a Stripe price ID is configured", () => {
+  it("keeps checkout OFF (CHECKOUT_ENABLED=false) even with a Stripe price ID configured", () => {
+    expect(CHECKOUT_ENABLED).toBe(false);
     expect(PRICING_PLANS.lifetime.available).toBe(true);
-    expect(isPlanAvailableForPurchase("lifetime", "price_test_lifetime_1500")).toBe(true);
+    expect(isPlanAvailableForPurchase("lifetime", "price_test_lifetime_1500")).toBe(false);
     expect(isPlanAvailableForPurchase("lifetime", null)).toBe(false);
-    expect(isPlanAvailableForPurchase("premium", "price_test_99")).toBe(true);
+    expect(isPlanAvailableForPurchase("premium", "price_test_99")).toBe(false);
     expect(isPlanAvailableForPurchase("premium", null)).toBe(false);
     expect(isPlanAvailableForPurchase("core_annual", "price_test_annual")).toBe(false);
     expect(isPlanAvailableForPurchase("premium_annual", "price_test_annual")).toBe(false);
@@ -70,5 +72,16 @@ describe("billing plan availability lock", () => {
     await expect(caller.createCheckout({ planId: "premium_annual", origin: "https://faultline.app" })).rejects.toMatchObject({
       code: "BAD_REQUEST",
     });
+  });
+
+  it("Lifetime terms: final sale, no refund window, shown on /pricing card and Terms", () => {
+    expect(LIFETIME_FINAL_SALE_NOTICE).toBe("All Lifetime purchases are final and non-refundable.");
+    expect(LIFETIME_TERMS).toContain(LIFETIME_FINAL_SALE_NOTICE);
+    expect(LIFETIME_TERMS.join(" ")).not.toMatch(/14-day|refund window|full refund/i);
+    const offer = readFileSync("client/src/components/MembershipOffer.tsx", "utf8");
+    expect(offer).toContain("data-lifetime-final-sale");
+    expect(offer).toContain("data-lifetime-terms");
+    expect(offer).toContain("data-checkout-coming-soon");
+    expect(readFileSync("client/src/pages/Legal.tsx", "utf8")).toContain("LIFETIME_TERMS");
   });
 });
