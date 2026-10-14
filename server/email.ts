@@ -512,7 +512,7 @@ td.yes{color:#FFA500;font-family:'IBM Plex Mono',monospace;}
 <tr><td class="feat">Ask FAULTLINE (daily)</td><td class="no">10 questions</td><td class="yes">Unlimited</td></tr>
 </table>
 <div class="price">
-<div class="pperiod">Paid plans are not on sale yet.</div>
+<div class="pperiod">FAULTLINE Standard $99/month · FAULTLINE Lifetime $1,500 one-time.</div>
 <div class="pnote">Your free account stays active, and nothing will charge you..</div>
 </div>
 <a href="${siteUrl}/app/pressure" class="cta1">Open the Pressure Index &#x2192;</a>
@@ -567,7 +567,7 @@ p{font-size:14px;color:#94A3B8;line-height:1.65;margin:0 0 14px;}
 <div class="badge">&#x25C6; Day 3 &mdash; Founding Brief</div>
 <h1>Where FAULTLINE goes from here.</h1>
 <p>Hey ${displayName} &mdash; three days in. You've seen the Pressure Index, the regime engine, and the daily briefing.</p>
-<p>Paid plans, including Founding membership, are not on sale yet. Your free account stays active, and nothing will charge you..</p>
+<p>Membership is FAULTLINE Standard at $99/month or FAULTLINE Lifetime at $1,500 one-time. Nothing is charged unless you choose a membership.</p>
 <h2>What to use in the meantime</h2>
 <p>The Pressure Index shows where systemic pressure is building across credit, funding, the Treasury curve and macro conditions. The methodology page explains every input and its as-of time.</p>
 <a href="${siteUrl}/app/pressure" class="cta1">Open the Pressure Index &#x2192;</a>

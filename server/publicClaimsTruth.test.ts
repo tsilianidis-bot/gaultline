@@ -106,11 +106,12 @@ describe("public claims truth: validation and superlatives", () => {
     expect(offenders([...seoPages, ...publicPages], /as a probability distribution based on historical precedent|show what typically happened next|how top funds were positioned|See what happened next in each analog/)).toEqual([]);
   });
 
-  it("does not advertise paid plans that are not on sale", () => {
-    expect(offenders(seoPages, /requires a Trader or Power subscription/)).toEqual([]);
+  it("advertises only Standard $99/month and Lifetime $1,500 one-time", () => {
+    expect(offenders(seoPages, /requires a Trader or Power subscription|free tier|free account/i)).toEqual([]);
     const pricing = getPageMeta("/pricing");
-    expect(pricing.description).not.toMatch(/\$\d/);
-    expect(pricing.description).toContain("Paid plans are not on sale");
+    expect(pricing.description).toContain("$99/month");
+    expect(pricing.description).toContain("$1,500 one-time");
+    expect(pricing.description).not.toMatch(/\$(9\.99|29|39|49|59|79|199|299)(?![\d,])/);
   });
 });
 

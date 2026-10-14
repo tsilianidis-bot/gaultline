@@ -192,7 +192,7 @@ export default function CinematicAuthGate({ onAuthenticated }: CinematicAuthGate
             (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.5)";
           }}
         >
-          {offline ? "RETRY" : signingIn ? "REDIRECTING…" : loading ? "CHECKING…" : "SIGN IN / SIGN UP"}
+          {offline ? "RETRY" : signingIn ? "REDIRECTING…" : loading ? "CHECKING…" : "MEMBER SIGN IN"}
         </button>
 
         {signInError && (

@@ -34,7 +34,7 @@ describe("X handle points at @GetFAULTline", () => {
   });
 });
 
-describe("public marketing pages carry no prices or unverifiable social proof", () => {
+describe("public marketing pages quote only approved prices and no unverifiable social proof", () => {
   const pages = [
     "client/src/pages/PressureIndex.tsx",
     "client/src/pages/Press.tsx",
@@ -42,8 +42,8 @@ describe("public marketing pages carry no prices or unverifiable social proof", 
     "client/src/pages/seo/vs/VsBloomberg.tsx",
   ];
   for (const p of pages) {
-    it(`${p} has no $ plan prices`, () => {
-      expect(read(p)).not.toMatch(/\$(49|59|99)\b/);
+    it(`${p} has no retired plan prices`, () => {
+      expect(read(p)).not.toMatch(/\$(9\.99|29|39|49|59|79|199|299|1,?199|1,?200)\b/);
     });
   }
   it("/pressure-index has no social-proof, pricing or checkout CTA", () => {
@@ -51,8 +51,8 @@ describe("public marketing pages carry no prices or unverifiable social proof", 
     expect(s).not.toMatch(/Join thousands/i);
     expect(s).not.toMatch(/Updated every 60 seconds/i);
     expect(s).not.toContain("PRICING_PLANS");
-    expect(s).not.toMatch(/priceLabel|checkout|VIEW ALL PLANS/i);
-    expect(s).toContain("SIGN IN / CREATE FREE ACCOUNT");
+    expect(s).not.toMatch(/priceLabel|VIEW ALL PLANS/i);
+    expect(s).not.toContain("CREATE FREE ACCOUNT");
   });
 });
 
@@ -88,17 +88,17 @@ describe("static asset paths never fall through to the SPA shell", () => {
   });
 });
 
-describe("public landing CTAs do not imply a purchasable upgrade", () => {
+describe("public landing CTAs show only the approved offers", () => {
   for (const f of ["client/src/pages/PublicLandingPage.tsx", "client/src/pages/SEOLandingPage.tsx"]) {
     it(`${f} has no 'Upgrade when you need more'`, () => {
       const s = read(f);
       expect(s).not.toMatch(/Upgrade when you need more/i);
-      expect(s).toContain("Paid plans are not on sale.");
+      expect(s).not.toMatch(/Paid plans are not on sale|Free account/i);
     });
   }
 });
 
-describe("paid plans are not on sale: no prices in app, email or chat copy", () => {
+describe("app, email and chat copy carry no retired prices", () => {
   const appFiles = [
     "client/src/pages/Watchlist.tsx",
     "client/src/pages/UserAccount.tsx",
@@ -110,27 +110,30 @@ describe("paid plans are not on sale: no prices in app, email or chat copy", () 
     "server/email.ts",
   ];
   for (const f of appFiles) {
-    it(`${f} shows no $9.99/$49/$59/$99/$299 plan prices`, () => {
+    it(`${f} shows no retired $9.99/$49/$59/$299 plan prices`, () => {
       const s = read(f).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-      expect(s).not.toMatch(/\$(9\.99|49|59|99|299)(?![\d])/);
+      expect(s).not.toMatch(/\$(9\.99|49|59|299)(?![\d])/);
     });
   }
-  it("shared tiers display labels are neutral while amounts stay configured", async () => {
+  it("only Standard $99/month and Lifetime $1,500 one-time are on sale; no open registration", async () => {
     const t = await import("../shared/tiers");
-    expect(t.PAID_PLANS_ON_SALE).toBe(false);
-    for (const id of ["core", "premium", "founding", "lifetime"] as const) {
-      expect(t.PRICING_PLANS[id].priceLabel).toBe(t.PLAN_NOT_ON_SALE_LABEL);
+    expect(t.PAID_PLANS_ON_SALE).toBe(true);
+    expect(t.OPEN_REGISTRATION).toBe(false);
+    expect(t.PRICING_PLANS.premium).toMatchObject({ available: true, amountCents: 9900, priceLabel: "$99/month", interval: "month" });
+    expect(t.PRICING_PLANS.lifetime).toMatchObject({ available: true, amountCents: 150000, priceLabel: "$1,500 one-time", interval: "one_time" });
+    for (const id of ["core", "core_annual", "premium_annual", "founding"] as const) {
+      expect(t.PRICING_PLANS[id].available).toBe(false);
     }
     expect(t.PRICING_PLANS.core.amountCents).toBe(5900);
     expect(t.PRICING_PLANS.premium.amountCents).toBe(9900);
     expect(t.PRICING_PLANS.founding.amountCents).toBe(4900);
   });
-  it("drip emails carry no prices, scarcity counts or buy CTAs", async () => {
+  it("drip emails carry no retired prices, scarcity counts or buy CTAs", async () => {
     const e = await import("./email");
     for (const m of [e.buildDay2UpgradeEmail({ name: "A B", email: "a@b.c" }), e.buildDay3FoundingEmail({ name: "A B", email: "a@b.c" })]) {
-      expect(m.html + m.subject).not.toMatch(/\$\d/);
+      expect(m.html + m.subject).not.toMatch(/\$(9\.99|29|39|49|59|79|199|299)(?![\d,])/);
       expect(m.html + m.subject).not.toMatch(/spots|rate goes up|Lock In|Upgrade to Core/i);
-      expect(m.html).toContain("Paid plans");
+      expect(m.html).not.toMatch(/not on sale/i);
     }
   });
 });
@@ -191,12 +194,8 @@ describe("no 'real-time' / 'Live' freshness claims in visible copy", () => {
 
 describe("founding access request form", () => {
   const acct = read("client/src/pages/UserAccount.tsx");
-  it("is rendered outside the PAID_PLANS_ON_SALE-gated upgrade section", () => {
-    const i = acct.indexOf("data-founding-request");
-    expect(i).toBeGreaterThan(-1);
-    const block = acct.slice(acct.lastIndexOf("{!PAID_PLANS_ON_SALE", i), acct.indexOf(")}", acct.indexOf("<FoundingAccessForm", i)));
-    expect(block).toContain("<FoundingAccessForm");
-    expect(block).not.toMatch(/checkout|priceLabel|\$\d/i);
+  it("is no longer rendered (Founding is a retired offer)", () => {
+    expect(acct).not.toContain("data-founding-request");
   });
   it("the form itself only submits a request (no checkout, no prices)", () => {
     const start = acct.indexOf("function FoundingAccessForm");

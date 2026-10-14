@@ -1,3 +1,4 @@
+import { fromPublicMarketStateWire } from "@shared/publicProbabilityWire";
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { ChevronDown, ChevronUp, Database, RefreshCw, ShieldAlert } from "lucide-react";
@@ -29,7 +30,8 @@ export default function HistoricalAnalogs() {
   const { data, isLoading, isFetching, error, refetch } = trpc.pressure.getHistoricalContext.useQuery(undefined, { staleTime: 5 * 60 * 1000, refetchOnWindowFocus: false });
   // The reference-library ranking is shown only when the canonical outlook has
   // a top analog (fail closed while MarketState is loading or unavailable).
-  const { data: marketState } = trpc.marketState.current.useQuery(undefined, { staleTime: 60_000, refetchOnWindowFocus: false });
+  const { data: marketState } = trpc.marketState.current.useQuery(undefined, {
+    select: fromPublicMarketStateWire, staleTime: 60_000, refetchOnWindowFocus: false });
   const governedAnalog = marketState?.outlook.topAnalog != null;
   const analogMatches = governedAnalog ? data?.analogMatches ?? [] : [];
   const top = analogMatches[0] ?? null;

@@ -7,27 +7,12 @@ import { detectIntent, aggregateLeadScore, validatePricing, CANONICAL_PRICING, P
 
 // ── CANONICAL_PRICING tests ───────────────────────────────────────────────────
 describe("CANONICAL_PRICING (single source of truth)", () => {
-  it("Trader plan keeps its configured $59 amount but displays as not on sale", () => {
-    expect(CANONICAL_PRICING.core.priceLabel).toBe("Not on sale yet");
-    expect(CANONICAL_PRICING.core.price).toBe("$59.00");
-    expect(CANONICAL_PRICING.core.interval).toBe("month");
-  });
-
-  it("Power plan keeps its configured $99 amount but displays as not on sale", () => {
-    expect(CANONICAL_PRICING.premium.priceLabel).toBe("Not on sale yet");
+  it("publishes one canonical $99/month Intelligence membership", () => {
+    expect(Object.keys(CANONICAL_PRICING)).toEqual(["premium"]);
+    expect(CANONICAL_PRICING.premium.name).toBe("FAULTLINE Intelligence");
+    expect(CANONICAL_PRICING.premium.priceLabel).toBe("$99/month");
     expect(CANONICAL_PRICING.premium.price).toBe("$99.00");
     expect(CANONICAL_PRICING.premium.interval).toBe("month");
-  });
-
-  it("Founding Member plan keeps its configured $49 amount but displays as not on sale", () => {
-    expect(CANONICAL_PRICING.founding.priceLabel).toBe("Not on sale yet");
-    expect(CANONICAL_PRICING.founding.description).not.toMatch(/\$/);
-    expect(CANONICAL_PRICING.founding.price).toBe("$49.00");
-    expect(CANONICAL_PRICING.founding.interval).toBe("month");
-  });
-
-  it("Public chatbot pricing exposes exactly Founding Member, Trader, and Power", () => {
-    expect(Object.keys(CANONICAL_PRICING).sort()).toEqual(["core", "founding", "premium"]);
   });
 
   it("No plan costs $29.99 (legacy price must not exist)", () => {
@@ -52,17 +37,19 @@ describe("validatePricing", () => {
     expect(validatePricing("The Trader plan is $59/mo.")).toBe(false);
   });
 
-  it("rejects a quoted Power price while paid plans are not on sale", () => {
-    expect(validatePricing("The Power plan is $99/mo.")).toBe(false);
+  it("accepts the approved Intelligence price while checkout stays closed", () => {
+    expect(validatePricing("FAULTLINE Intelligence is $99/month.")).toBe(true);
   });
 
   it("rejects a quoted Founding price while paid plans are not on sale", () => {
     expect(validatePricing("Founding Member is $49/mo locked while active.")).toBe(false);
   });
 
-  it("accepts the not-on-sale answer", () => {
+  it("accepts the approved-pricing answer ($99/month and $1,500 one-time)", () => {
     expect(validatePricing(PRICE_NOT_ON_SALE_ANSWER)).toBe(true);
-    expect(PRICE_NOT_ON_SALE_ANSWER).toContain("Paid plans are not on sale yet.");
+    expect(PRICE_NOT_ON_SALE_ANSWER).toContain("$99/month");
+    expect(PRICE_NOT_ON_SALE_ANSWER).toContain("$1,500 one-time");
+    expect(validatePricing("FAULTLINE Lifetime is $1,500 one-time.")).toBe(true);
   });
 
   it("rejects a response containing retired public lifetime pricing", () => {

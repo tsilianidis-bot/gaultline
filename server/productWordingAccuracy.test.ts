@@ -4,7 +4,14 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { calculateFaultlinePressure } from "./pressure/engine";
+import { computePressureFromVerifiedInputs, resolveVerifiedInputs } from "./pressure/engine";
+import fredFixture from "./pressure/__fixtures__/fred-2026-10-12.json";
+// Phase 1 (2026-10-13): the engine fails closed, so labels are asserted on a verified
+// computation from the Oct 12 2026 FRED fixture instead of the removed constant fallback.
+const calculateFaultlinePressure = async () => {
+  const r = resolveVerifiedInputs(JSON.parse(JSON.stringify(fredFixture.results)), new Date("2026-10-12T16:00:00Z"));
+  return computePressureFromVerifiedInputs(r.inputs, r.provenance, new Date("2026-10-12T16:00:00Z"));
+};
 import { buildCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 import { projectPressureFromCanonical } from "./canonicalPressureProjection";
 import { PRESSURE_VECTOR_DISPLAY, pressureVectorLabel } from "../shared/pressureVectorLabels";

@@ -124,13 +124,14 @@ describe("pressure engine — no localhost HTTP self-call", () => {
 
   it("includes server-level snapshot cache for stale-snapshot recovery", () => {
     expect(engineSource).toContain("_lastLiveSnapshot");
-    expect(engineSource).toContain("SNAPSHOT_STALE_MS");
+    expect(engineSource).toContain("MAX_PRESERVED_READING_MS");
   });
 
   it("preserves live snapshot and serves it during FRED outages", () => {
     expect(engineSource).toContain("dataSource === \"live\"");
     expect(engineSource).toContain("_lastLiveSnapshot = result");
-    expect(engineSource).toContain("serving preserved snapshot");
+    // Phase 1 (2026-10-13): preserved reading is labelled stale with its ORIGINAL timestamps.
+    expect(engineSource).toContain("markPreservedReadingStale(_lastLiveSnapshot");
   });
 
   it("includes priorPressure field in FaultlinePressureOutput type", () => {
