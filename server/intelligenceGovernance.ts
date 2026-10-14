@@ -153,9 +153,11 @@ export function buildLiveInputQualityManifest(pressure: FaultlinePressureOutput)
     const value = vectors.map(vector => vector.rawInputs[rawKey]).find((candidate): candidate is number => typeof candidate === "number") ?? null;
     const quality = translateQuality(sourceStatus, value !== null);
     const fallbackReason = vectors.find(vector => vector.fallbackReason)?.fallbackReason ?? null;
+    // Phase 1 (2026-10-13): the FRED observation date behind the value (fail-closed loader provenance).
+    const observedDate = vectors.map(vector => vector.observationDates?.[rawKey]).find((d): d is string => typeof d === "string") ?? null;
     return {
       ...spec,
-      observedAt: null,
+      observedAt: observedDate ? `${observedDate}T00:00:00.000Z` : null,
       fetchedAt,
       value,
       contributesTo: vectors.map(vector => vector.id),

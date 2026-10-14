@@ -254,7 +254,7 @@ const PATTERN_SPECS: PatternSpec[] = [
     detect: (r) => r.slice(0, 10).filter((x) => x.pressureScore >= 60).length >= 8,
     describe: (r) => {
       const days = r.filter((x) => x.pressureScore >= 60).length;
-      return `Pressure has remained at or above 60 for ${days} of the last ${r.length} recorded days. Sustained elevated pressure historically precedes either a resolution rally or an acceleration into higher-stress territory.`;
+      return `Pressure has remained at or above 60 for ${days} of the last ${r.length} recorded days. What follows sustained elevated pressure has not been validated in FAULTLINE's record.`;
     },
     frequency: "uncommon",
     invalidation: "Pressure drops below 50 for 5 or more consecutive days.",

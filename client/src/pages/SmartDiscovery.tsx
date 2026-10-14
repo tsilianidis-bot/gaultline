@@ -2601,6 +2601,7 @@ export default function SmartDiscovery() {
   const { data: marketIntelData } = trpc.marketIntelligence.getAll.useQuery(undefined, {
     staleTime: 10 * 60 * 1000, // 10 min cache — same as engine TTL
     retry: false,
+    trpc: { context: { skipBatch: true } }, // never batched with marketState (head-of-line block)
   });
   const recordVisitMutation = trpc.dailyBrief.recordVisit.useMutation();
   const generateBriefMutation = trpc.dailyBrief.generateBrief.useMutation();

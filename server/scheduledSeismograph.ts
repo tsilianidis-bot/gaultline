@@ -16,6 +16,8 @@
 import { randomUUID } from "node:crypto";
 import type { Request, Response } from "express";
 import { calculateFaultlinePressure, type PressureAlert } from "./pressure/engine";
+import { persistPressureRunAndShadows } from "./pressure/scheduledPersistence";
+import { refreshPriorComponentsAfterVerifiedRun } from "./pressure/priorComponents";
 import { runFMOSPipeline } from "./fmos/pipeline";
 import { computeCrossMarketIntelligence } from "./crossMarketEngine";
 import { computeSOB } from "./sobEngine";
@@ -156,6 +158,12 @@ export async function runSeismographPipeline(options: { runContext?: RunContext 
   if (!pressureOutput) {
     throw new Error("Pressure engine failed — cannot proceed without core data");
   }
+  // FAIL CLOSED (Phase 1, 2026-10-13): a new canonical reading is recorded only
+  // from a fully verified input set. A stale preserved reading must never be
+  // re-recorded as today's observation; the last canonical state stays in force.
+  if (pressureOutput.verification?.status !== "verified") {
+    throw new Error(`Pressure inputs not verified (${pressureOutput.verification?.problems?.join("; ") ?? "unknown"}) — preserving last canonical state`);
+  }
   const sobResult = await Promise.allSettled([
     computeSOB({
       regime: pressureOutput.regime,
@@ -187,6 +195,14 @@ export async function runSeismographPipeline(options: { runContext?: RunContext 
       .filter(Boolean),
   });
   console.log(`[Seismograph] Reading recorded: score=${pressureOutput.overallPressure}, regime=${pressureOutput.regime}`);
+  // Persistence moved here from the public pressure.getCurrentPressure query
+  // (Phase 2 #7): audit run + shadow readings are written only by this
+  // scheduled/admin-authorized workflow, never by a public read.
+  if (runContext.trigger !== "AD_HOC") {
+    await persistPressureRunAndShadows(pressureOutput, runContext.trigger);
+    // Direction priors (QA B-3): computed here after a verified run, cached for the request path.
+    await refreshPriorComponentsAfterVerifiedRun(runContext.trigger).catch(() => null);
+  }
 
   // Step 3: Run pattern analysis
   await runPatternAnalysis();

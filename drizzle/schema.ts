@@ -3033,3 +3033,34 @@ export const signalConvergenceReadings = mysqlTable("signalConvergenceReadings",
 }));
 export type SignalConvergenceReadingRow = typeof signalConvergenceReadings.$inferSelect;
 export type InsertSignalConvergenceReading = typeof signalConvergenceReadings.$inferInsert;
+
+// ── Pressure Index v2 SHADOW (FL-PI-v2-research-0) — Phase 3, 2026-10-13 ──
+// Append-only, NON-PUBLIC forward record. Separate from v1 tables. Every scheduled
+// observation is recorded, including UNAVAILABLE ones. Rows are never updated or
+// deleted by application code. Historical backtests are NOT stored here.
+export const pressureV2ShadowObservations = mysqlTable("pressureV2ShadowObservations", {
+  id:                    int("id").autoincrement().primaryKey(),
+  recordedAt:            timestamp("recordedAt").defaultNow().notNull(),
+  asOfDate:              varchar("asOfDate", { length: 10 }).notNull(),
+  onSpecGrid:            boolean("onSpecGrid").notNull().default(false),
+  recordClass:           mysqlEnum("recordClass", ["FORWARD_LIVE"]).notNull().default("FORWARD_LIVE"),
+  specId:                varchar("specId", { length: 64 }).notNull(),
+  specSha256:            varchar("specSha256", { length: 64 }).notNull(),
+  implementationVersion: varchar("implementationVersion", { length: 40 }).notNull(),
+  referenceSha256:       varchar("referenceSha256", { length: 64 }).notNull(),
+  runTrigger:            varchar("runTrigger", { length: 30 }).notNull(),
+  status:                mysqlEnum("status", ["computed", "unavailable"]).notNull(),
+  v2Score:               decimal("v2Score", { precision: 6, scale: 2 }),
+  band:                  varchar("band", { length: 40 }),
+  nPillars:              int("nPillars").notNull(),
+  pillarsJson:           text("pillarsJson").notNull(),
+  benchmarksJson:        text("benchmarksJson").notNull(),
+  inputProvenanceJson:   text("inputProvenanceJson").notNull(),
+  unavailableReason:     text("unavailableReason"),
+  v1Pressure:            int("v1Pressure"),
+  v1MethodologyVersion:  varchar("v1MethodologyVersion", { length: 60 }),
+}, (t) => ({
+  asOfIdx: index("pressureV2Shadow_asOf_idx").on(t.asOfDate),
+}));
+export type PressureV2ShadowObservation = typeof pressureV2ShadowObservations.$inferSelect;
+export type InsertPressureV2ShadowObservation = typeof pressureV2ShadowObservations.$inferInsert;
