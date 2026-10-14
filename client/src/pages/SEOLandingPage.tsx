@@ -170,7 +170,7 @@ export default function SEOLandingPage({
           </a>
           <div className="flex items-center gap-3">
             <a
-              href={getLoginUrl()}
+              href="/pricing"
               className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-white transition-colors px-4 py-2 border border-[rgba(168,184,204,0.25)] hover:border-[rgba(168,184,204,0.55)] rounded"
             >
               MEMBER LOGIN
@@ -181,7 +181,7 @@ export default function SEOLandingPage({
               className="text-[11px] font-mono tracking-widest text-[#050608] font-bold px-4 py-2 rounded"
               style={{ background: accentColor }}
             >
-              ENTER FREE
+              VIEW MEMBERSHIP
             </a>
           </div>
         </div>
@@ -317,7 +317,7 @@ export default function SEOLandingPage({
             See the pressure before the break.
           </h2>
           <p className="text-[#A8B8CC] mb-8">
-            Free account. No credit card required. Paid plans are not on sale.
+            FAULTLINE Standard $99/month · FAULTLINE Lifetime $1,500 one-time.
           </p>
           <a
             href={ctaHref}
@@ -325,7 +325,7 @@ export default function SEOLandingPage({
             className="inline-flex items-center justify-center gap-2 text-[13px] font-mono tracking-widest text-[#050608] font-bold px-10 py-4 rounded"
             style={{ background: accentColor }}
           >
-            START FREE →
+            VIEW MEMBERSHIP →
           </a>
         </div>
       </section>

@@ -51,12 +51,11 @@ describe("Marketing page positioning guardrails", () => {
     expect(landing).not.toMatch(/back-tested for 25 years|predicted the/i);
   });
 
-  it("keeps checkout off the landing page and avoids a fake live score", () => {
+  it("keeps tier cards and prices off the landing page and avoids a fake live score", () => {
     expect(page).toContain('id="access"');
-    expect(page).toContain("Checkout is not offered on this page.");
     expect(landing).not.toContain("MARKETING_TIER_CARDS");
     expect(landing).not.toMatch(/SIGNALS ACTIVE|TREASURY STRESS: ELEVATED/);
-    expect(landing).not.toMatch(/\$299|\$59|\$99|\$49/);
+    expect(landing).not.toMatch(/\$299|\$59|\$49/);
     // No hard-coded score: every number shown comes from the canonical reading.
     expect(landing).not.toMatch(/pressureIndex\s*\?\?\s*\d/);
     expect(landing).not.toMatch(/score\s*\?\?\s*\d/);

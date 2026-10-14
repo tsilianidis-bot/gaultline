@@ -259,7 +259,7 @@ export default function ContactUs() {
             <div className="bg-[#0A1520] border border-white/5 rounded-xl p-6">
               <h3 className="text-sm font-semibold text-slate-200 mb-3">Common Topics</h3>
               <div className="space-y-2">
-                {["Founding Access", "Platform Features", "Data Sources", "Pricing & Plans", "Technical Issues"].map((t) => (
+                {["Membership", "Platform Features", "Data Sources", "Pricing & Plans", "Technical Issues"].map((t) => (
                   <div key={t} className="text-xs text-slate-400 flex items-center gap-2">
                     <span className="w-1 h-1 rounded-full bg-cyan-400/60 flex-shrink-0" />
                     {t}
