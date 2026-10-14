@@ -319,6 +319,7 @@ function MarketCommandCenterInner() {
   const { data: miData } = trpc.marketIntelligence.getAll.useQuery(undefined, {
     staleTime: 10 * 60 * 1000,
     retry: false,
+    trpc: { context: { skipBatch: true } }, // never batched with marketState (head-of-line block)
   });
 
   // Map riskLevel → regime attribute for ambient lighting
