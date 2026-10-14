@@ -382,8 +382,9 @@ export function assembleCanonicalMarketState(
     },
     act: {
       marketPosture: posture,
-      decisionSummary: `Maintain a ${posture} posture while ${narrative.highestProbabilityPath}`,
+      decisionSummary: actDecisionSummary(posture),
       whatWouldInvalidate: narrative.whatWouldInvalidate,
+      whatWouldInvalidateList: splitInvalidationList(narrative.whatWouldInvalidate),
       riskControls: source.evolution.invalidationConditions,
     },
     history: {
@@ -394,6 +395,20 @@ export function assembleCanonicalMarketState(
       analogSummary: source.analogSummary,
     },
   };
+}
+
+/** ACT headline: a short clause of its own (never glued to the OUTLOOK narrative). */
+export function actDecisionSummary(posture: string): string {
+  const p = (posture || "balanced").toLowerCase();
+  return `Maintain a ${p} posture until the invalidation conditions below are met.`;
+}
+
+/** Split the invalidation narrative into one item per sentence for list display. */
+export function splitInvalidationList(text: string): string[] {
+  return (text || "")
+    .split(/(?<=[.!?])\s+(?=[A-Z(])/)
+    .map(s => s.trim())
+    .filter(Boolean);
 }
 
 function errorMessage(error: unknown): string {

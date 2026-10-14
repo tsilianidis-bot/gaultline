@@ -1,3 +1,4 @@
+import type { SystemicRegimeReadingView } from "@shared/systemicRegimePublic";
 import type { FactorArrow, SignalConvergenceSnapshot, SystemicRegimeReading } from "@shared/systemicRegime";
 import {
   SYSTEMIC_REGIME_INDEPENDENT_CAPTION,
@@ -23,7 +24,7 @@ export default function SystemicRegimeModule({
   reading,
   convergence,
 }: {
-  reading: SystemicRegimeReading | null | undefined;
+  reading: SystemicRegimeReadingView | null | undefined;
   convergence: SignalConvergenceSnapshot | null | undefined;
 }) {
   const unavailable = !reading || reading.freshnessStatus === "UNAVAILABLE" || !reading.currentRegime;

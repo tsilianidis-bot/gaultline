@@ -55,7 +55,7 @@ describe("WHY destination composition", () => {
     expect(whySource).toContain("marketState?.why.evidenceFamilies ?? []");
     expect(whySource).toContain("marketState?.now.topDrivers ?? []");
     expect(whySource).toContain("marketState?.why.keyDevelopments ?? []");
-    expect(whySource).toContain("marketState?.why.story ?? SYNTHESIS_UNAVAILABLE");
+    expect(whySource).toContain("marketState?.why.story ? alignPrimaryDriver(marketState.why.story, evidenceFamilies) : SYNTHESIS_UNAVAILABLE");
     expect(whySource).toContain("marketState?.why.whyThisRegime ?? SYNTHESIS_UNAVAILABLE");
     expect(whySource).not.toContain("output.domains");
     expect(whySource).not.toContain("output.narrative");

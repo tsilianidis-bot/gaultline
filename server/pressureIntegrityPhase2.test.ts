@@ -115,7 +115,7 @@ describe("public probabilities withheld (#4)", () => {
   });
   it("systemicRegime public reading carries no model probabilities", () => {
     const r = redactSystemicRegimeReading({ ...EMPTY_SYSTEMIC_REGIME_READING, crisisProbability: 0.00348, transitionProbability: 0.03, regimeConfidence: 0.99652, stressBuildingProbability: 0.1 });
-    expect([r.crisisProbability, r.transitionProbability, r.regimeConfidence, r.stressBuildingProbability, r.systemicRiskScore]).toEqual([null, null, null, null, null]);
+    for (const k of ["crisisProbability", "transitionProbability", "regimeConfidence", "stressBuildingProbability", "systemicRiskScore"]) expect(k in r).toBe(false);
     expect(r.probabilitiesWithheld).toBe(true);
     const h = redactSystemicRegimeHistoryPoint({ date: "2026-10-09", currentRegime: "NORMAL", crisisProbability: 0.2, stressBuildingProbability: 0.3, transitionProbability: 0.1, regimeConfidence: 0.9, systemicRiskScore: 10, pc1: 0, spx: 1 });
     expect([h.crisisProbability, h.stressBuildingProbability, h.transitionProbability, h.regimeConfidence, h.systemicRiskScore]).toEqual([null, null, null, null, null]);

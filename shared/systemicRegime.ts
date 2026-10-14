@@ -37,6 +37,10 @@ export interface SystemicRegimeReading {
   contributesToPressureIndex: false;
 }
 
+/** Internal reading or public reading (probability-derived fields removed). */
+export type SystemicRegimeReadingView = Omit<SystemicRegimeReading, "systemicRiskScore" | "crisisProbability" | "stressBuildingProbability" | "transitionProbability" | "regimeConfidence">
+  & Partial<Pick<SystemicRegimeReading, "systemicRiskScore" | "crisisProbability" | "stressBuildingProbability" | "transitionProbability" | "regimeConfidence">>;
+
 export interface SystemicRegimeHistoryPoint {
   date: string;
   currentRegime: SystemicRegimeLabel | string;
