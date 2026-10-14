@@ -624,20 +624,9 @@ describe("production boundary", () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network unavailable")));
   });
 
-  it("leaves the v1 pressure engine on its six-vector fallback output", async () => {
-    const result = await calculateFaultlinePressure();
-    expect(result.vectors.map(vector => vector.id)).toEqual([
-      "liquidity-stress",
-      "credit-contagion",
-      "volatility-regime",
-      "macro-sensitivity",
-      "market-breadth",
-      "ai-bubble",
-    ]);
-    expect(result.vectors.map(vector => vector.weight)).toEqual([0.2, 0.2, 0.15, 0.2, 0.1, 0.15]);
-    expect(result.dataSource).toBe("fallback");
-    expect(result).not.toHaveProperty("v2Score");
-    expect(result).not.toHaveProperty("specSha256");
+  it("leaves the v1 pressure engine unchanged: withholds (no fallback, no v2 fields) when inputs are unavailable", async () => {
+    // Since PR #81 the v1 engine withholds the reading instead of returning a fallback.
+    await expect(calculateFaultlinePressure()).rejects.toThrow(/Pressure Index withheld/);
   });
 
   it("is not imported by public routes, PLATO, or the v1 engine", () => {
@@ -674,7 +663,7 @@ describe("production boundary", () => {
     const journal = readFileSync(join(root, "drizzle/meta/_journal.json"), "utf8");
     expect(journal).toContain("0074_pi_v2_research_private");
     const engine = readFileSync(join(root, "server/pressure/engine.ts"), "utf8");
-    expect(engine).toContain("runV3HShadow");
+    expect(readFileSync(join(root, "server/pressure/scheduledPersistence.ts"), "utf8")).toContain("runV3HShadow");
     expect(engine).toContain("weight: 0.20");
   });
 });
