@@ -14,7 +14,6 @@
 
 import { log } from "../logger";
 import { fetchFredBulk } from "../fredClient";
-import { runV3HShadow } from "./shadowEngine";
 
 // ── Server-level snapshot cache ───────────────────────────────
 //
@@ -27,8 +26,6 @@ import { runV3HShadow } from "./shadowEngine";
 let _lastLiveSnapshot: FaultlinePressureOutput | null = null;
 let _lastLiveSnapshotAt: number | null = null;
 
-/** Maximum age before a snapshot is considered stale (30 minutes) */
-const SNAPSHOT_STALE_MS = 30 * 60 * 1000;
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -71,6 +68,8 @@ export interface RiskVector {
   source: string;
   /** If dataStatus is static/fallback/stale, explains why */
   fallbackReason?: string;
+  /** FRED observation date behind each raw input (Phase 1 provenance) */
+  observationDates?: Record<string, string | null>;
 }
 
 export interface HistoricalAnalog {
@@ -113,20 +112,11 @@ export interface FaultlinePressureOutput {
    * Both values are on the canonical 0–100 scale.
    */
   priorPressure: number | null;
+  /** Input verification / provenance (fail-closed loader). */
+  verification?: PressureVerification;
 }
 
 // ── Helpers ──────────────────────────────────────────────────
-
-/** Extract the most recent valid (non-"." ) numeric observation */
-function latestValid(observations: { date: string; value: string }[]): number | null {
-  for (const obs of observations) {
-    if (obs.value !== "." && obs.value !== "") {
-      const n = parseFloat(obs.value);
-      if (!isNaN(n)) return n;
-    }
-  }
-  return null;
-}
 
 /** Clamp a value between min and max */
 function clamp(v: number, min: number, max: number): number {
@@ -484,80 +474,212 @@ function generateAlerts(vectors: RiskVector[], overallPressure: number): Pressur
 
 // ── Main export ───────────────────────────────────────────────
 
-/**
- * Fetch live FRED data and compute the FAULTLINE Pressure Index.
- * Falls back to baseline values if FRED is unavailable.
- *
- * The engine calls fetchFredBulk() from the shared fredClient module
- * directly — no HTTP self-call to localhost.
- */
-export async function calculateFaultlinePressure(): Promise<FaultlinePressureOutput> {
-  // ── 1. Fetch FRED data via shared client (no localhost HTTP) ──
-  const FRED_SERIES = [
-    { id: "BAMLH0A0HYM2", limit: 2 },  // HY credit spread
-    { id: "DGS10", limit: 2 },          // 10Y Treasury
-    { id: "DGS2", limit: 2 },           // 2Y Treasury
-    { id: "SOFR", limit: 2 },           // SOFR rate
-    { id: "CPIAUCSL", limit: 14 },      // CPI (need 12 months for YoY)
-    { id: "PPIACO", limit: 14 },        // PPI
-    { id: "FEDFUNDS", limit: 2 },       // Fed Funds
-    { id: "UNRATE", limit: 2 },         // Unemployment
-  ];
+// ── Phase 1 remediation (2026-10-13, founder-authorized) ────────
+// Two narrowly scoped correctness repairs to the frozen v1 engine:
+//   1. CPI/PPI YoY is computed from DATE-MATCHED observations
+//      (month M vs the same month one year earlier), never by row
+//      position, and invalid values (".", NaN, Infinity) can never
+//      reach a vector score.
+//   2. FRED loading FAILS CLOSED: every one of the 8 required inputs
+//      must be present, finite, plausible and fresh before a new
+//      reading is computed. Otherwise the last verified reading is
+//      returned, labelled stale with its ORIGINAL timestamps, or the
+//      engine throws PressureInputsUnavailableError. Hard-coded
+//      constants are never substituted for missing data.
+// The six vector formulas, weights, rounding and band cut-points
+// above are unchanged (v1 methodology: docs/pressure/V1_METHODOLOGY.md).
 
-  let rawFred: Record<string, number | null> = {};
-  let dataSource: "live" | "fallback" = "fallback";
+export const PRESSURE_V1_METHODOLOGY_VERSION = "faultline-pressure-v1.0.1-integrity";
 
-  try {
-    const bulk = await fetchFredBulk(FRED_SERIES);
-    const r = bulk.results;
-
-    // Count series that returned actual data
-    const liveCount = Object.values(r).filter(v => !v.error && v.observations.length > 0).length;
-
-    if (liveCount > 0) {
-      // HY spread: FRED returns as a decimal (e.g. 2.83 = 283bps) — convert to bps
-      const hyRaw = latestValid(r["BAMLH0A0HYM2"]?.observations ?? []);
-      rawFred["hySpread"] = hyRaw !== null ? (hyRaw > 20 ? hyRaw : hyRaw * 100) : null;
-      rawFred["tsy10y"] = latestValid(r["DGS10"]?.observations ?? []);
-      rawFred["tsy2y"] = latestValid(r["DGS2"]?.observations ?? []);
-      rawFred["sofr"] = latestValid(r["SOFR"]?.observations ?? []);
-      rawFred["fedFunds"] = latestValid(r["FEDFUNDS"]?.observations ?? []);
-      rawFred["unemployment"] = latestValid(r["UNRATE"]?.observations ?? []);
-
-      // CPI YoY: compare latest vs 12 months ago
-      const cpiObs = r["CPIAUCSL"]?.observations ?? [];
-      const cpiLatest = latestValid(cpiObs);
-      const cpiYear = cpiObs.length >= 13 ? parseFloat(cpiObs[12]?.value ?? ".") : null;
-      rawFred["cpi"] = cpiLatest !== null && cpiYear !== null && cpiYear !== 0
-        ? parseFloat(((cpiLatest / cpiYear - 1) * 100).toFixed(2))
-        : null;
-
-      // PPI YoY
-      const ppiObs = r["PPIACO"]?.observations ?? [];
-      const ppiLatest = latestValid(ppiObs);
-      const ppiYear = ppiObs.length >= 13 ? parseFloat(ppiObs[12]?.value ?? ".") : null;
-      rawFred["ppi"] = ppiLatest !== null && ppiYear !== null && ppiYear !== 0
-        ? parseFloat(((ppiLatest / ppiYear - 1) * 100).toFixed(2))
-        : null;
-
-      dataSource = "live";
-      log.info(`[Pressure Engine] FRED data loaded: ${liveCount}/${FRED_SERIES.length} series live`);
-    } else {
-      log.warn("[Pressure Engine] All FRED series returned errors — using fallback values");
-    }
-  } catch (err) {
-    log.warn("[Pressure Engine] FRED fetch failed, using fallback values", { err: err as Error });
+export class PressureInputsUnavailableError extends Error {
+  readonly problems: string[];
+  constructor(problems: string[]) {
+    super(`Pressure Index withheld: required FRED inputs not verified (${problems.join("; ")})`);
+    this.name = "PressureInputsUnavailableError";
+    this.problems = problems;
   }
+}
 
-  // ── 2. Apply fallback values if FRED unavailable ───────────
-  const hy = rawFred["hySpread"] ?? 283;       // bps — recent actual
-  const tsy10 = rawFred["tsy10y"] ?? 4.61;
-  const tsy2 = rawFred["tsy2y"] ?? 4.07;
-  const sofr = rawFred["sofr"] ?? 3.53;
-  const cpi = rawFred["cpi"] ?? 3.4;
-  const ppi = rawFred["ppi"] ?? 2.8;
-  const fedFunds = rawFred["fedFunds"] ?? 5.25;
-  const unemployment = rawFred["unemployment"] ?? 4.1;
+export type PressureInputId =
+  | "hySpread" | "tsy10y" | "tsy2y" | "sofr" | "cpi" | "ppi" | "fedFunds" | "unemployment";
+
+export interface PressureInputProvenance {
+  inputId: PressureInputId;
+  seriesId: string;
+  value: number | null;
+  /** FRED observation date of the value used (for YoY: the later month) */
+  observationDate: string | null;
+  /** For YoY inputs: the year-earlier observation date used as base */
+  baseObservationDate?: string | null;
+  status: "verified" | "missing" | "invalid" | "stale";
+  detail?: string;
+}
+
+export interface PressureVerification {
+  status: "verified" | "stale" | "unavailable";
+  methodologyVersion: string;
+  /** When the reported reading was actually computed */
+  computedAt: string;
+  inputs: PressureInputProvenance[];
+  /** Why fresh data was rejected (empty when verified) */
+  problems: string[];
+}
+
+type FredObs = { date: string; value: string };
+
+/** Parse a FRED value string; returns null for ".", "", NaN, ±Infinity. */
+export function parseFredValue(raw: string | null | undefined): number | null {
+  if (raw === null || raw === undefined) return null;
+  const t = String(raw).trim();
+  if (t === "" || t === ".") return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Latest valid observation with its date (observations may be in any order). */
+export function latestValidObservation(observations: FredObs[]): { value: number; date: string } | null {
+  let best: { value: number; date: string } | null = null;
+  for (const o of observations) {
+    const v = parseFredValue(o?.value);
+    if (v === null || typeof o.date !== "string") continue;
+    if (!best || o.date > best.date) best = { value: v, date: o.date };
+  }
+  return best;
+}
+
+function minusOneYear(isoDate: string): string {
+  const y = Number(isoDate.slice(0, 4));
+  return `${String(y - 1).padStart(4, "0")}${isoDate.slice(4)}`;
+}
+
+/**
+ * Date-matched year-over-year % change for a monthly index (CPIAUCSL, PPIACO).
+ * Uses the most recent month M whose value AND the value for M minus one year
+ * are both valid. Rounded to 2 dp exactly as v1 did. Returns null if none.
+ */
+export function dateMatchedYoY(observations: FredObs[]):
+  { value: number; observationDate: string; baseObservationDate: string } | null {
+  const byDate = new Map<string, number>();
+  for (const o of observations ?? []) {
+    const v = parseFredValue(o?.value);
+    if (v !== null && v > 0 && typeof o.date === "string") byDate.set(o.date, v);
+  }
+  const dates = Array.from(byDate.keys()).sort().reverse();
+  for (const d of dates) {
+    const base = byDate.get(minusOneYear(d));
+    if (base === undefined) continue;
+    const latest = byDate.get(d)!;
+    const value = parseFloat(((latest / base - 1) * 100).toFixed(2));
+    if (!Number.isFinite(value)) continue;
+    return { value, observationDate: d, baseObservationDate: minusOneYear(d) };
+  }
+  return null;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Required inputs, plausibility ranges and maximum observation age (calendar days). */
+const INPUT_RULES: Record<PressureInputId, { seriesId: string; min: number; max: number; maxAgeDays: number }> = {
+  hySpread:     { seriesId: "BAMLH0A0HYM2", min: 50,  max: 3000, maxAgeDays: 10 },
+  tsy10y:       { seriesId: "DGS10",        min: -2,  max: 25,   maxAgeDays: 10 },
+  tsy2y:        { seriesId: "DGS2",         min: -2,  max: 25,   maxAgeDays: 10 },
+  sofr:         { seriesId: "SOFR",         min: -2,  max: 25,   maxAgeDays: 10 },
+  fedFunds:     { seriesId: "FEDFUNDS",     min: -2,  max: 25,   maxAgeDays: 100 },
+  unemployment: { seriesId: "UNRATE",       min: 0,   max: 30,   maxAgeDays: 100 },
+  cpi:          { seriesId: "CPIAUCSL",     min: -30, max: 50,   maxAgeDays: 130 },
+  ppi:          { seriesId: "PPIACO",       min: -50, max: 80,   maxAgeDays: 130 },
+};
+
+export const PRESSURE_FRED_SERIES = [
+  { id: "BAMLH0A0HYM2", limit: 10 },  // HY credit spread (daily; 10 rows absorbs holiday gaps)
+  { id: "DGS10", limit: 10 },         // 10Y Treasury
+  { id: "DGS2", limit: 10 },          // 2Y Treasury
+  { id: "SOFR", limit: 10 },          // SOFR rate
+  { id: "CPIAUCSL", limit: 15 },      // CPI (date-matched YoY needs M and M-12)
+  { id: "PPIACO", limit: 15 },        // PPI
+  { id: "FEDFUNDS", limit: 3 },       // Fed Funds
+  { id: "UNRATE", limit: 3 },         // Unemployment
+];
+
+export type FredResultsLike = Record<string, { observations: FredObs[]; error?: string } | undefined>;
+
+/**
+ * Validate every required input. Pure: no I/O, `now` injected.
+ * ok=true only when all 8 inputs are verified.
+ */
+export function resolveVerifiedInputs(results: FredResultsLike, now: Date = new Date()):
+  { ok: boolean; inputs: Record<PressureInputId, number | null>; provenance: PressureInputProvenance[]; problems: string[] } {
+  const provenance: PressureInputProvenance[] = [];
+  const inputs = {} as Record<PressureInputId, number | null>;
+  const problems: string[] = [];
+  for (const [inputId, rule] of Object.entries(INPUT_RULES) as [PressureInputId, typeof INPUT_RULES[PressureInputId]][]) {
+    const series = results?.[rule.seriesId];
+    const obs = series && !series.error ? series.observations ?? [] : [];
+    let value: number | null = null;
+    let observationDate: string | null = null;
+    let baseObservationDate: string | null | undefined;
+    if (inputId === "cpi" || inputId === "ppi") {
+      const yoy = dateMatchedYoY(obs);
+      if (yoy) { value = yoy.value; observationDate = yoy.observationDate; baseObservationDate = yoy.baseObservationDate; }
+      else baseObservationDate = null;
+    } else {
+      const latest = latestValidObservation(obs);
+      if (latest) {
+        // HY spread: FRED returns percent (e.g. 2.83 = 283bps) — convert to bps (unchanged v1 rule)
+        value = inputId === "hySpread" ? (latest.value > 20 ? latest.value : latest.value * 100) : latest.value;
+        observationDate = latest.date;
+      }
+    }
+    let status: PressureInputProvenance["status"] = "verified";
+    let detail: string | undefined;
+    if (value === null || observationDate === null) {
+      status = "missing";
+      detail = series?.error ? `FRED error: ${series.error}` : "no valid observation";
+    } else if (!Number.isFinite(value) || value < rule.min || value > rule.max) {
+      status = "invalid";
+      detail = `value ${value} outside plausible range [${rule.min}, ${rule.max}]`;
+    } else {
+      const ageDays = (now.getTime() - Date.parse(`${observationDate}T00:00:00Z`)) / DAY_MS;
+      if (!Number.isFinite(ageDays) || ageDays > rule.maxAgeDays) {
+        status = "stale";
+        detail = `observation ${observationDate} older than ${rule.maxAgeDays} days`;
+      }
+    }
+    if (status !== "verified") problems.push(`${inputId} (${rule.seriesId}) ${status}: ${detail}`);
+    inputs[inputId] = status === "verified" ? value : null;
+    provenance.push({
+      inputId, seriesId: rule.seriesId, value, observationDate,
+      ...(baseObservationDate !== undefined ? { baseObservationDate } : {}),
+      status, ...(detail ? { detail } : {}),
+    });
+  }
+  return { ok: problems.length === 0, inputs, provenance, problems };
+}
+
+/** Max age at which a preserved verified reading may still be served (labelled stale). */
+const MAX_PRESERVED_READING_MS = 7 * DAY_MS;
+
+/**
+ * Compute the v1 Pressure Index from a fully VERIFIED input set.
+ * Pure (apart from `now`). The scoring below is the frozen v1 formula, unchanged.
+ */
+export function computePressureFromVerifiedInputs(
+  verified: Record<PressureInputId, number | null>,
+  provenance: PressureInputProvenance[],
+  nowDate: Date = new Date(),
+): FaultlinePressureOutput {
+  for (const [k, v] of Object.entries(verified)) {
+    if (v === null || !Number.isFinite(v)) throw new PressureInputsUnavailableError([`${k} not verified`]);
+  }
+  const dataSource = "live" as "live" | "fallback";
+  const hy = verified.hySpread as number;
+  const tsy10 = verified.tsy10y as number;
+  const tsy2 = verified.tsy2y as number;
+  const sofr = verified.sofr as number;
+  const cpi = verified.cpi as number;
+  const ppi = verified.ppi as number;
+  const fedFunds = verified.fedFunds as number;
+  const unemployment = verified.unemployment as number;
 
   // ── 3. Score each vector ───────────────────────────────────
   const liquidityResult = scoreLiquidityStress(hy, sofr);
@@ -673,8 +795,17 @@ export async function calculateFaultlinePressure(): Promise<FaultlinePressureOut
   // ── 8. Generate alerts ─────────────────────────────────────
   const alerts = generateAlerts(vectors, overallPressure);
 
-  const now = new Date().toISOString();
-  const result: FaultlinePressureOutput = {
+  if (!Number.isFinite(overallPressure)) {
+    throw new PressureInputsUnavailableError([`composite not finite (${overallPressure})`]);
+  }
+  const obsDates: Record<string, string | null> = Object.fromEntries(provenance.map(p => [p.inputId, p.observationDate]));
+  for (const v of vectors) {
+    if (!Number.isFinite(v.score)) throw new PressureInputsUnavailableError([`${v.id} score not finite`]);
+    v.observationDates = Object.fromEntries(Object.keys(v.rawInputs).map(k => [k, obsDates[k] ?? null]));
+  }
+
+  const now = nowDate.toISOString();
+  return {
     overallPressure,
     regime,
     level,
@@ -686,28 +817,77 @@ export async function calculateFaultlinePressure(): Promise<FaultlinePressureOut
     lastUpdated: now,
     dataSource,
     priorPressure: null, // set by caller after DB lookup
+    verification: {
+      status: "verified",
+      methodologyVersion: PRESSURE_V1_METHODOLOGY_VERSION,
+      computedAt: now,
+      inputs: provenance,
+      problems: [],
+    },
   };
+}
 
-  // Persist the most recent live snapshot so we can serve it during outages
-  if (dataSource === "live") {
-    _lastLiveSnapshot = result;
-    _lastLiveSnapshotAt = Date.now();
-  } else if (_lastLiveSnapshot && _lastLiveSnapshotAt) {
-    // FRED is unavailable — return the preserved snapshot with a stale label
-    const ageMs = Date.now() - _lastLiveSnapshotAt;
-    if (ageMs < SNAPSHOT_STALE_MS) {
-      log.warn(`[Pressure Engine] FRED unavailable — serving preserved snapshot (age ${Math.round(ageMs / 60000)}m)`);
-      return {
-        ..._lastLiveSnapshot,
-        dataSource: "fallback",
-        timestamp: now,
-        lastUpdated: _lastLiveSnapshot.lastUpdated,
-      };
-    }
-    log.warn(`[Pressure Engine] Preserved snapshot is too old (${Math.round(ageMs / 60000)}m) — using hardcoded fallback`);
+/** Label a preserved verified reading as stale WITHOUT re-dating it. */
+export function markPreservedReadingStale(
+  snapshot: FaultlinePressureOutput,
+  freshProvenance: PressureInputProvenance[],
+  problems: string[],
+): FaultlinePressureOutput {
+  const computedAt = snapshot.verification?.computedAt ?? snapshot.lastUpdated;
+  const reason = `Fresh FRED inputs could not be verified (${problems.join("; ")}). Showing the last verified reading computed at ${computedAt}.`;
+  return {
+    ...snapshot,
+    dataSource: "fallback",
+    timestamp: snapshot.timestamp,
+    lastUpdated: snapshot.lastUpdated,
+    vectors: snapshot.vectors.map(v => v.dataStatus === "static"
+      ? { ...v }
+      : { ...v, dataStatus: "stale" as DataStatus, fallbackReason: reason }),
+    verification: {
+      status: "stale",
+      methodologyVersion: PRESSURE_V1_METHODOLOGY_VERSION,
+      computedAt,
+      inputs: snapshot.verification?.inputs ?? [],
+      problems: [...problems, ...freshProvenance.filter(p => p.status !== "verified").map(p => `fresh:${p.inputId}:${p.status}`)].filter((x, i, a) => a.indexOf(x) === i),
+    },
+  };
+}
+
+/**
+ * Fetch live FRED data and compute the FAULTLINE Pressure Index (v1).
+ * FAILS CLOSED: if any required input cannot be verified, returns the last
+ * verified reading (stale-labelled, original timestamps, ≤7 days old) or throws
+ * PressureInputsUnavailableError. Never substitutes constants.
+ */
+export async function calculateFaultlinePressure(): Promise<FaultlinePressureOutput> {
+  let resolved: ReturnType<typeof resolveVerifiedInputs>;
+  try {
+    const bulk = await fetchFredBulk(PRESSURE_FRED_SERIES);
+    resolved = resolveVerifiedInputs(bulk.results, new Date());
+  } catch (err) {
+    log.warn("[Pressure Engine] FRED fetch failed", { err: err as Error });
+    resolved = { ok: false, inputs: {} as any, provenance: [], problems: [`FRED fetch failed: ${(err as Error)?.message ?? String(err)}`] };
   }
 
-  // V3-H shadow model — fire-and-forget, never blocks V1 response
-  runV3HShadow(result).catch(() => {});
-  return result;
+  if (resolved.ok) {
+    const result = computePressureFromVerifiedInputs(resolved.inputs, resolved.provenance, new Date());
+    log.info(`[Pressure Engine] All ${PRESSURE_FRED_SERIES.length} FRED inputs verified`);
+    _lastLiveSnapshot = result;
+    _lastLiveSnapshotAt = Date.now();
+    // V3-H shadow persistence moved to the scheduled pipeline (Phase 2 #7):
+    // computing a reading for a public request must not write to the DB.
+    return result;
+  }
+
+  log.warn(`[Pressure Engine] Fail-closed: ${resolved.problems.join("; ")}`);
+  if (_lastLiveSnapshot && _lastLiveSnapshotAt && Date.now() - _lastLiveSnapshotAt <= MAX_PRESERVED_READING_MS) {
+    return markPreservedReadingStale(_lastLiveSnapshot, resolved.provenance, resolved.problems);
+  }
+  throw new PressureInputsUnavailableError(resolved.problems);
+}
+
+/** Test hook: reset the in-process verified snapshot. */
+export function __resetPressureSnapshotForTests(): void {
+  _lastLiveSnapshot = null;
+  _lastLiveSnapshotAt = null;
 }

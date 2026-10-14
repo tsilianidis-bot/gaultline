@@ -58,7 +58,8 @@ describe("final reconstruction controls", () => {
   it("records the one canonical final recovery migration", () => {
     const journal = JSON.parse(source("drizzle/meta/_journal.json")) as { entries: Array<{ idx: number; tag: string }> };
     expect(journal.entries.filter(entry => entry.tag === "0072_final_recovery_controls")).toHaveLength(1);
-    expect(journal.entries.at(-1)).toMatchObject({ idx: 72, tag: "0072_final_recovery_controls" });
+    // 0073_pressure_v2_shadow (2026-10-13) follows it; 0072 stays at idx 72.
+    expect(journal.entries.find(entry => entry.tag === "0072_final_recovery_controls")).toMatchObject({ idx: 72, tag: "0072_final_recovery_controls" });
     expect(source("drizzle/0072_final_recovery_controls.sql")).toContain("originatingRunId");
   });
 });
