@@ -1,0 +1,191 @@
+{
+  "specId": "FL-PI-v2-research-0",
+  "status": "FROZEN",
+  "frozenOn": "2026-10-14",
+  "authorization": "CONDITIONAL_GO_PRIVATE_RESEARCH",
+  "owner": "James",
+  "publicDisplay": false,
+  "probabilitiesEmitted": false,
+  "platoReceivesV2": false,
+  "platoMayInventCausalExplanations": false,
+  "weightPolicy": "equal_mean_of_available",
+  "nominalWeightEach": 0.2,
+  "weightOptimization": "forbidden",
+  "noImputation": true,
+  "failClosed": true,
+  "minAvailablePillars": 3,
+  "minHistoryDays": 1825,
+  "minHistoryObservations": 60,
+  "dailyStaleCalendarDays": 10,
+  "unemploymentStaleCalendarDays": 70,
+  "equityWindowSessions": 252,
+  "percentileMethod": "midrank",
+  "percentileFormula": "(100 * (count(history < raw) + 0.5 * count(history == raw))) / n",
+  "scoreTransform": "100 * clip((percentile - 50) / 50, 0, 1)",
+  "persistedScoreDecimals": 4,
+  "percentileDecimals": 6,
+  "benchmarkZDecimals": 6,
+  "benchmarkZStdev": "sample_n_minus_1",
+  "firstOfficialFriday": "2026-10-16",
+  "hindsightCutoff": "2026-09-14",
+  "decisionClock": {
+    "timeZone": "America/New_York",
+    "localTime": "14:00",
+    "weekday": "Friday",
+    "utcNote": "14:00 America/New_York is 18:00 UTC while EDT is in effect and 19:00 UTC while EST is in effect. The civil clock is authoritative."
+  },
+  "officialSnapshot": {
+    "recordClass": "FORWARD_LIVE",
+    "appendOnly": true,
+    "onePerSpecDate": true,
+    "backfillAllowed": false
+  },
+  "historicalArtifact": {
+    "recordClass": "RETROSPECTIVE",
+    "origin": "BACKFILL",
+    "artifactKind": "HISTORICAL_BACKTEST",
+    "storage": "file",
+    "eligibleForForwardLedger": false
+  },
+  "runTriggers": ["SCHEDULED_CRON", "ADMIN_SEED"],
+  "schedule": {
+    "default": "disabled",
+    "envFlag": "PI_V2_RESEARCH_SCHEDULE_ENABLED",
+    "ackEnv": "PI_V2_RESEARCH_ISOLATED_ACK",
+    "ackValue": "research-only-not-production",
+    "production": "forbidden",
+    "railway": "forbidden",
+    "registeredInPublicServer": false
+  },
+  "bands": [
+    { "id": "LOW", "minInclusive": 0, "maxExclusive": 25 },
+    { "id": "MODERATE", "minInclusive": 25, "maxExclusive": 45 },
+    { "id": "ELEVATED", "minInclusive": 45, "maxExclusive": 65 },
+    { "id": "HIGH", "minInclusive": 65, "maxExclusive": 80 },
+    { "id": "SYSTEMIC_CRISIS", "minInclusive": 80, "maxExclusive": null }
+  ],
+  "pillars": [
+    {
+      "id": "credit_stress",
+      "seriesId": "BAA10Y",
+      "provider": "FRED",
+      "transform": "level_expanding_midrank_percentile",
+      "direction": "higher_is_stress",
+      "frequency": "daily",
+      "revised": false,
+      "proxyLabel": "IG_SPREAD_PROXY",
+      "staleCalendarDays": 10,
+      "provenance": "market",
+      "notes": "Moody's Baa corporate yield minus the 10-year Treasury. This is an investment-grade spread proxy. ICE BofA high-yield OAS is not an input to this spec."
+    },
+    {
+      "id": "funding_stress",
+      "seriesId": "TEDRATE",
+      "provider": "FRED",
+      "transform": "level_expanding_midrank_percentile",
+      "direction": "higher_is_stress",
+      "frequency": "daily",
+      "revised": false,
+      "seriesEnd": "2022-01-21",
+      "afterSeriesEnd": "UNAVAILABLE",
+      "unavailableReason": "FUNDING_SUCCESSOR_NOT_APPROVED",
+      "substitution": "forbidden",
+      "staleCalendarDays": 10,
+      "provenance": "market",
+      "notes": "Historical TED spread only. After the series ends, the pillar stays UNAVAILABLE. CP minus T-bill, SOFR, and FRA-OIS are not successors under this spec id."
+    },
+    {
+      "id": "market_volatility",
+      "seriesId": "VIXCLS",
+      "provider": "FRED",
+      "transform": "level_expanding_midrank_percentile",
+      "direction": "higher_is_stress",
+      "frequency": "daily",
+      "revised": false,
+      "staleCalendarDays": 10,
+      "provenance": "market",
+      "notes": "CBOE VIX close as redistributed by FRED. Unrevised level, then expanding midrank percentile."
+    },
+    {
+      "id": "equity_drawdown",
+      "seriesId": "SP500",
+      "provider": "FRED",
+      "alternateReferenceProvider": "YAHOO_REFERENCE_HIST_ONLY",
+      "transform": "drawdown_from_window_high_then_expanding_midrank_percentile",
+      "direction": "higher_is_stress",
+      "frequency": "daily",
+      "revised": false,
+      "windowSessions": 252,
+      "rawUnit": "percent_decline_from_window_high",
+      "staleCalendarDays": 10,
+      "provenance": "market",
+      "notes": "Raw input is the percent decline from the highest close in the last 252 sessions, including the session itself. The pillar score is the expanding midrank percentile of that raw drawdown. Yahoo history is a reference source only and must be labeled on the row."
+    },
+    {
+      "id": "unemployment_deterioration",
+      "seriesId": "UNRATE",
+      "provider": "ALFRED",
+      "liveProvider": "FRED_CURRENT_VINTAGE",
+      "transform": "sahm_gap_expanding_midrank_percentile",
+      "direction": "higher_is_stress",
+      "frequency": "monthly",
+      "revised": true,
+      "historyMode": "realtime_vintage_path",
+      "trailingAverageMonths": 3,
+      "minimumWindowMonths": 12,
+      "percentileClock": "vintage_realtime_start",
+      "liveVintageClass": "CURRENT_VINTAGE_FORWARD_ONLY",
+      "historicalVintageClass": "ALFRED",
+      "staleCalendarDays": 70,
+      "provenance": "monthly",
+      "notes": "Sahm-type gap: three-month average unemployment minus the minimum of that average over the prior 12 months, including the current month. Percentile history uses the real-time vintage path. A single revised current vintage does not qualify as five years of history. The gap is a coincident labor measure, not a lead-time claim."
+    }
+  ],
+  "documentedNonComposite": [
+    {
+      "seriesId": "BAMLH0A0HYM2",
+      "label": "ICE_BOFA_HY_OAS_FRED_WINDOW",
+      "fredCoverageStart": "2023-10-16",
+      "coverageProbeDate": "2026-10-14",
+      "role": "label_only",
+      "inComposite": false,
+      "licenseForFullHistory": "ICE_BofA",
+      "notes": "FRED redistributes a short ICE BofA high-yield OAS window. Rows may be stored with this coverage label. They do not enter FL-PI-v2-research-0."
+    }
+  ],
+  "forbiddenFundingSubstitutes": [
+    "DCPF3M",
+    "DTB3",
+    "CP_TBILL",
+    "SOFR",
+    "FRA_OIS",
+    "RIFSPPFAAD90NB"
+  ],
+  "benchmarks": [
+    "vix_level",
+    "spx_252_session_drawdown",
+    "equal_weight_expanding_z_of_the_same_raw_inputs"
+  ],
+  "evaluation": {
+    "targets": ["T-EQ10", "T-EQ20", "T-REC", "T-BANK", "T-LIQ"],
+    "calendarDayHorizons": [30, 90, 180],
+    "sessionHorizons": [21, 63, 126],
+    "recessionExtraHorizonDays": [365],
+    "primaryEquityHorizonSessions": 63,
+    "primaryRecessionHorizonDays": 180,
+    "tliqHorizonDays": 30,
+    "tliqConsecutiveSessions": 5,
+    "tliqUnderThisSpec": "NOT_EVALUABLE",
+    "blockLengthWeeks": 26,
+    "bootstrapDraws": 1000,
+    "bootstrapSeed": 20261014,
+    "weightEstimation": "forbidden_on_this_spec",
+    "promotionMinForwardYears": 2,
+    "promotionMinForwardTeq10Events": 3,
+    "reportingRegimes": ["pre-GFC", "GFC", "2010-2019", "2020-2021", "2022-2026", "pre-2013", "post-2013"]
+  },
+  "contagion": {
+    "inSpec": false,
+    "reason": "Out of scope for FL-PI-v2-research-0"
+  }
+}

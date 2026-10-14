@@ -3033,3 +3033,104 @@ export const signalConvergenceReadings = mysqlTable("signalConvergenceReadings",
 }));
 export type SignalConvergenceReadingRow = typeof signalConvergenceReadings.$inferSelect;
 export type InsertSignalConvergenceReading = typeof signalConvergenceReadings.$inferInsert;
+
+// ── Private PI v2 research ledger (not the public Pressure Index) ────────────
+// Tables are unused by calculateFaultlinePressure(). Migration is not applied
+// by this research branch. Snapshots and ledger rows are append-only.
+export const piV2ResearchRawInputs = mysqlTable("piV2ResearchRawInputs", {
+  id: int("id").autoincrement().primaryKey(),
+  seriesId: varchar("seriesId", { length: 64 }).notNull(),
+  observationDate: varchar("observationDate", { length: 10 }).notNull(),
+  valueText: varchar("valueText", { length: 64 }).notNull(),
+  releaseTime: varchar("releaseTime", { length: 40 }),
+  realtimeStart: varchar("realtimeStart", { length: 10 }),
+  vintageId: varchar("vintageId", { length: 128 }).notNull(),
+  ingestionTime: varchar("ingestionTime", { length: 40 }).notNull(),
+  provider: varchar("provider", { length: 64 }).notNull(),
+  coverageLabel: varchar("coverageLabel", { length: 64 }).notNull(),
+  inComposite: boolean("inComposite").notNull(),
+  specId: varchar("specId", { length: 64 }).notNull(),
+  inputHash: varchar("inputHash", { length: 64 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  dedupeIdx: uniqueIndex("piV2Raw_dedupe_uq").on(table.seriesId, table.observationDate, table.vintageId, table.valueText),
+  seriesDateIdx: index("piV2Raw_series_date_idx").on(table.seriesId, table.observationDate),
+}));
+export type PiV2ResearchRawInput = typeof piV2ResearchRawInputs.$inferSelect;
+export type InsertPiV2ResearchRawInput = typeof piV2ResearchRawInputs.$inferInsert;
+
+export const piV2ResearchSnapshots = mysqlTable("piV2ResearchSnapshots", {
+  id: int("id").autoincrement().primaryKey(),
+  asOfDate: varchar("asOfDate", { length: 10 }).notNull(),
+  onSpecGrid: boolean("onSpecGrid").notNull(),
+  recordClass: mysqlEnum("recordClass", ["FORWARD_LIVE"]).notNull(),
+  specId: varchar("specId", { length: 64 }).notNull(),
+  specSha256: varchar("specSha256", { length: 64 }).notNull(),
+  implementationVersion: varchar("implementationVersion", { length: 64 }).notNull(),
+  referenceSha256: varchar("referenceSha256", { length: 64 }).notNull(),
+  runTrigger: mysqlEnum("runTrigger", ["SCHEDULED_CRON", "ADMIN_SEED"]).notNull(),
+  status: mysqlEnum("status", ["ok", "unavailable"]).notNull(),
+  v2Score: decimal("v2Score", { precision: 8, scale: 4 }),
+  band: varchar("band", { length: 32 }),
+  nPillars: int("nPillars").notNull(),
+  missingDataStatus: mysqlEnum("missingDataStatus", ["complete", "partial", "unavailable"]).notNull(),
+  pillarsJson: text("pillarsJson").notNull(),
+  benchmarksJson: text("benchmarksJson").notNull(),
+  inputsProvenanceJson: text("inputsProvenanceJson").notNull(),
+  inputSnapshotHash: varchar("inputSnapshotHash", { length: 64 }).notNull(),
+  decisionTimeUtc: varchar("decisionTimeUtc", { length: 40 }).notNull(),
+  v1Reading: int("v1Reading"),
+  v1MethodologyVersion: varchar("v1MethodologyVersion", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  specDateIdx: uniqueIndex("piV2Snap_spec_date_uq").on(table.specId, table.asOfDate),
+}));
+export type PiV2ResearchSnapshot = typeof piV2ResearchSnapshots.$inferSelect;
+export type InsertPiV2ResearchSnapshot = typeof piV2ResearchSnapshots.$inferInsert;
+
+export const piV2ResearchLedger = mysqlTable("piV2ResearchLedger", {
+  id: int("id").autoincrement().primaryKey(),
+  recordClass: mysqlEnum("recordClass", ["RETROSPECTIVE", "FORWARD_LIVE"]).notNull(),
+  origin: mysqlEnum("origin", ["BACKFILL", "OBSERVED_AT_DECISION"]).notNull(),
+  rowKind: mysqlEnum("rowKind", ["SCORE", "OUTCOME"]).notNull(),
+  asOfDate: varchar("asOfDate", { length: 10 }).notNull(),
+  specId: varchar("specId", { length: 64 }).notNull(),
+  specSha256: varchar("specSha256", { length: 64 }).notNull(),
+  implementationVersion: varchar("implementationVersion", { length: 64 }).notNull(),
+  targetId: varchar("targetId", { length: 32 }).notNull(),
+  horizon: varchar("horizon", { length: 32 }).notNull(),
+  snapshotId: int("snapshotId"),
+  parentLedgerId: int("parentLedgerId"),
+  score: decimal("score", { precision: 8, scale: 4 }),
+  outcome: tinyint("outcome"),
+  artifactKind: varchar("artifactKind", { length: 64 }).notNull(),
+  notes: varchar("notes", { length: 500 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  classIdx: index("piV2Ledger_class_idx").on(table.recordClass, table.asOfDate),
+  snapshotIdx: index("piV2Ledger_snapshot_idx").on(table.snapshotId),
+}));
+export type PiV2ResearchLedgerRow = typeof piV2ResearchLedger.$inferSelect;
+export type InsertPiV2ResearchLedgerRow = typeof piV2ResearchLedger.$inferInsert;
+
+export const piV2ResearchMonitorEvents = mysqlTable("piV2ResearchMonitorEvents", {
+  id: int("id").autoincrement().primaryKey(),
+  detectedAt: varchar("detectedAt", { length: 40 }).notNull(),
+  kind: mysqlEnum("kind", [
+    "MISSING_FRIDAY_SNAPSHOT",
+    "STALE_DATA",
+    "CALCULATION_FAILURE",
+    "SPEC_HASH_DRIFT",
+    "EXPECTED_UNAVAILABLE",
+  ]).notNull(),
+  severity: mysqlEnum("severity", ["info", "alert"]).notNull(),
+  specId: varchar("specId", { length: 64 }).notNull(),
+  specSha256: varchar("specSha256", { length: 64 }),
+  asOfDate: varchar("asOfDate", { length: 10 }),
+  detailJson: text("detailJson").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  kindIdx: index("piV2Monitor_kind_idx").on(table.kind, table.detectedAt),
+}));
+export type PiV2ResearchMonitorEvent = typeof piV2ResearchMonitorEvents.$inferSelect;
+export type InsertPiV2ResearchMonitorEvent = typeof piV2ResearchMonitorEvents.$inferInsert;
