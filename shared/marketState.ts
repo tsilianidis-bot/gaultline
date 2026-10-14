@@ -138,6 +138,8 @@ export interface CanonicalMarketState {
     marketPosture: "defensive" | "balanced" | "opportunistic";
     decisionSummary: string;
     whatWouldInvalidate: string;
+    /** Same conditions as whatWouldInvalidate, one item per condition (for list display). */
+    whatWouldInvalidateList?: string[];
     riskControls: string[];
   };
   history: {

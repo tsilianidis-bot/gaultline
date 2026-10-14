@@ -283,6 +283,7 @@ export default function Act() {
   const riskControls = marketState?.act.riskControls ?? [];
   const invalidation = marketState?.act.whatWouldInvalidate
     ?? "Canonical decision invalidation is unavailable. ACT will not manufacture a threshold from deterministic fallback data.";
+  const invalidationList = marketState?.act.whatWouldInvalidateList ?? [];
   const evidence = marketState?.now.topDrivers ?? [];
   const monitoredTriggers = marketState?.watch.whatToWatch ?? [];
   const developingConditions = marketState?.watch.developingConditions ?? [];
@@ -510,7 +511,13 @@ export default function Act() {
             <ShieldAlert className="mt-1 h-5 w-5 shrink-0 text-rose-300" />
             <div>
               <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-rose-300">Canonical invalidation</div>
-              <p className="mt-3">{invalidation}</p>
+              {invalidationList.length > 1 ? (
+                <ul className="mt-3 list-disc space-y-1 pl-5" data-testid="act-invalidation-list">
+                  {invalidationList.map(item => <li key={item}>{item}</li>)}
+                </ul>
+              ) : (
+                <p className="mt-3">{invalidation}</p>
+              )}
             </div>
           </div>
         </Section>

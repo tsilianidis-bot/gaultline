@@ -1,4 +1,5 @@
 import { pressureBandColor } from "@shared/pressureBands";
+import { alignPrimaryDriver, buildWhyHeadline } from "@shared/whyConsistency";
 import { useMemo } from "react";
 import { Link } from "wouter";
 import {
@@ -271,7 +272,7 @@ export default function Why() {
   const invalidationConditions = marketState?.outlook.invalidationConditions ?? [];
   const rawPressure = canonicalState?.pressureIndex ?? marketState?.now.pressureScore ?? null;
   const pressure = typeof rawPressure === "number" && Number.isFinite(rawPressure) ? normalizeCanonicalMetric(rawPressure) : null;
-  const story = marketState?.why.story ?? SYNTHESIS_UNAVAILABLE;
+  const story = marketState?.why.story ? alignPrimaryDriver(marketState.why.story, evidenceFamilies) : SYNTHESIS_UNAVAILABLE;
   const whyThisRegime = marketState?.why.whyThisRegime ?? SYNTHESIS_UNAVAILABLE;
   const whyThisScore = marketState?.why.whyThisScore ?? null;
   const ashaPath = PERSISTENT_UTILITY_BY_ID.asha.path ?? "/app/asha";
@@ -328,7 +329,7 @@ export default function Why() {
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">Causal explanation</p>
                 <h1 className="mt-4 max-w-4xl font-['Rajdhani'] text-4xl font-semibold leading-[1.02] text-white md:text-5xl">
-                  {marketState?.why.narrative.whyIsItHappening ?? whyThisRegime}
+                  {buildWhyHeadline(evidenceFamilies) ?? marketState?.why.narrative.whyIsItHappening ?? whyThisRegime}
                 </h1>
                 <p className="mt-5 max-w-4xl text-base leading-7 text-slate-300">{story}</p>
                 {whyThisScore && <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-500">{whyThisScore}</p>}
