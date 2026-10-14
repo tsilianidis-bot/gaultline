@@ -11,7 +11,7 @@ import { PLANS, verifyStripePlanConfiguration } from "../stripe/products";
 import { getLifetimeMemberCount } from "../db";
 import { PRICING_PLANS, PAID_PLANS_ON_SALE, type StripePlanId } from "../../shared/tiers";
 
-/** Maximum founding lifetime spots available at the $299 promotional price. */
+/** Legacy founding-lifetime counter (retained for existing entitlements; not a public offer). */
 const LIFETIME_FOUNDING_LIMIT = 100;
 
 /** Public/checkout availability: product lock AND a configured Stripe price. */

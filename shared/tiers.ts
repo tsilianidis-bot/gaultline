@@ -8,17 +8,17 @@
  * marketing copy MUST derive from this file. Do NOT hardcode tier names,
  * prices, or plan IDs anywhere else.
  *
- * Public offer: FAULTLINE Intelligence — $99/month.
+ * Public offers: FAULTLINE Standard — $99/month; FAULTLINE Lifetime — $1,500 one-time.
  * Legacy tier and plan IDs remain for existing entitlements and billing history.
  * Displaying the price does not authorize checkout or live billing.
  */
 
-/** Display-only switch: paid plans are not on sale. Does not affect checkout logic. */
-export const PAID_PLANS_ON_SALE: boolean = false;
+/** Public offers (Standard $99/month, Lifetime $1,500 one-time) are on sale. Checkout still requires a verified Stripe price per plan. */
+export const PAID_PLANS_ON_SALE: boolean = true;
 /** Short label shown wherever a plan price used to be displayed. */
 export const PLAN_NOT_ON_SALE_LABEL = 'Not on sale yet';
 /** Sentence used in app/email/chat copy while paid plans are not on sale. */
-export const PAID_PLANS_NOT_ON_SALE_COPY = 'Membership checkout is not open yet.';
+export const PAID_PLANS_NOT_ON_SALE_COPY = 'Lifetime access is also available for $1,500 one-time.';
 
 // ─── Canonical Access Tier IDs ────────────────────────────────────────────────
 // These match the `accessTier` enum in drizzle/schema.ts and server/db.ts.
@@ -238,12 +238,12 @@ export const PRICING_PLANS: Record<StripePlanId, PricingPlan> = {
   lifetime: {
     planId: 'lifetime',
     tier: 'founding',
-    name: 'FAULTLINE Founding Lifetime (Legacy)',
-    amountCents: 29900,
-    priceLabel: PLAN_NOT_ON_SALE_LABEL,
+    name: 'FAULTLINE Lifetime',
+    amountCents: 150000,
+    priceLabel: '$1,500 one-time',
     interval: 'one_time',
-    description: 'One-time payment — full founding access forever. No monthly charges, no renewals.',
-    available: false,
+    description: 'One-time payment of $1,500 for lifetime FAULTLINE access. No monthly charges, no renewals.',
+    available: true,
   },
 };
 

@@ -212,7 +212,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/pricing": {
     title: "FAULTLINE Intelligence — $99/month",
-    description: "The public Pressure Index and methodology are free to read without an account. Full intelligence is offered through one $99/month membership; checkout is not open yet.",
+    description: "The public Pressure Index and methodology are free to read without an account. Full intelligence is offered through FAULTLINE Standard at $99/month or FAULTLINE Lifetime at $1,500 one-time.",
   },
   "/intelligence-library": {
     title: "Intelligence Library — FAULTLINE Research & Analysis",

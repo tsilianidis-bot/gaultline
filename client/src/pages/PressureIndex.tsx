@@ -387,7 +387,7 @@ export default function PressureIndex() {
             </h2>
             <p className="text-white/40 text-sm max-w-md mx-auto mb-8 leading-relaxed">
               Explore FAULTLINE Intelligence membership for NOW, WHY, OUTLOOK, WATCH and ACT.
-              The limited public preview requires no account. FAULTLINE Intelligence is $99/month; checkout is not open yet.
+              The limited public preview requires no account. FAULTLINE Standard is $99/month; FAULTLINE Lifetime is $1,500 one-time.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a

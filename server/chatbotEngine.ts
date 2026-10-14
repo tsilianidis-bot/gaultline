@@ -50,7 +50,7 @@ export const CANONICAL_PRICING = {
   },
 } as const;
 
-export const PRICE_NOT_ON_SALE_ANSWER = `${PRICING_PLANS.premium.name} is ${PRICING_PLANS.premium.priceLabel}. ${PAID_PLANS_NOT_ON_SALE_COPY} Explore the limited public preview without an account, or request membership at https://getfaultline.live/contact. There is no free registration, Founders discount, annual offer, or lifetime offer.`;
+export const PRICE_NOT_ON_SALE_ANSWER = `FAULTLINE has two memberships: ${PRICING_PLANS.premium.name} at ${PRICING_PLANS.premium.priceLabel}, and ${PRICING_PLANS.lifetime.name} at ${PRICING_PLANS.lifetime.priceLabel}. Membership is available at https://getfaultline.live/pricing. There is no free membership, Founders discount, or annual offer.`;
 
 /** Narrow check for a question about what FAULTLINE costs or how to buy it. */
 const PRICE_QUESTION_PATTERN = /\b(price|prices|pricing|cost|costs|how much|subscribe|subscription|pay for|paid plans?|upgrade|upgrading|buy|purchase|checkout|founding (member|membership|rate|price|plan))\b/i;
@@ -101,7 +101,7 @@ ${buildPricingBlock()}
 
 ## Your Behavior Rules
 1. Be concise, professional, and helpful. Use plain English — avoid jargon overload.
-2. When a user asks about pricing, plans, or upgrading, say that paid plans are not on sale yet and point them to the public preview and membership page. Only quote the approved monthly price.
+2. When a user asks about pricing, plans, or upgrading, quote only FAULTLINE Standard at $99/month and FAULTLINE Lifetime at $1,500 one-time, and point them to the membership page. Only quote the approved monthly price.
 3. When a user asks about a specific stock or crypto (e.g., NVDA, BTC, ETH), explain how FAULTLINE's Signals and Symbol Intelligence can help them analyze it — do NOT give price predictions or trading advice.
 4. When a user expresses interest in signing up, provide the signup URL: https://getfaultline.live and encourage them.
 5. When a user asks about a feature, explain it clearly and link it to a benefit.
@@ -110,7 +110,7 @@ ${buildPricingBlock()}
 8. Keep responses under 200 words unless the user asks for a detailed explanation.
 9. Never make promises about returns, profits, or market outcomes.
 10. If asked about competitors (Bloomberg Terminal, TradingView, etc.), acknowledge them respectfully and explain what makes FAULTLINE different: macro-first, regime-aware, built for navigation not prediction.
-11. Only quote the approved monthly price for FAULTLINE Intelligence. Checkout is not open yet.
+11. Only quote the approved prices: $99/month (Standard) and $1,500 one-time (Lifetime).
 
 ## Tone
 Professional but approachable. Think: knowledgeable analyst who genuinely wants to help, not a sales bot.`;
@@ -119,10 +119,10 @@ Professional but approachable. Think: knowledgeable analyst who genuinely wants 
 // ── Price Validation ──────────────────────────────────────────────────────────
 /**
  * Forbidden price patterns — if any of these appear in a response, it is invalid.
- * Paid plans are not on sale, so the configured plan amounts ($49/$59/$99) are
- * forbidden too, alongside legacy/wrong prices.
+ * Retired/legacy prices. The approved public prices ($99/month, $1,500 one-time)
+ * are allowed.
  */
-const FORBIDDEN_PRICE_PATTERN = /\$9\.99|\$299|\$1,500|\$1,199|\$1,200|\$1200|\$29\.99|\$29\/mo|\$39|\$79|\$199|\$29\b|\$(?:49|59|89|1500)(?![\d.,])/g;
+const FORBIDDEN_PRICE_PATTERN = /\$9\.99|\$299|\$1,199|\$1,200|\$1200|\$29\.99|\$29\/mo|\$39|\$79|\$199|\$29\b|\$(?:49|59|89)(?![\d.,])/g;
 
 /**
  * Validate a bot response to ensure it doesn't contain forbidden pricing.
@@ -350,7 +350,7 @@ export async function generateBotResponse(
           ...messages.slice(1),
           {
             role: "system",
-            content: `CORRECTION REQUIRED: Your previous response used retired pricing. Restate your answer using only the approved monthly price; if pricing comes up, say: "${PRICE_NOT_ON_SALE_ANSWER}"`,
+            content: `CORRECTION REQUIRED: Your previous response used retired pricing. Restate your answer using only the approved prices ($99/month or $1,500 one-time); if pricing comes up, say: "${PRICE_NOT_ON_SALE_ANSWER}"`,
           },
         ];
 

@@ -181,7 +181,7 @@ export default function SEOLandingPage({
               className="text-[11px] font-mono tracking-widest text-[#050608] font-bold px-4 py-2 rounded"
               style={{ background: accentColor }}
             >
-              ENTER FREE
+              VIEW MEMBERSHIP
             </a>
           </div>
         </div>
@@ -317,7 +317,7 @@ export default function SEOLandingPage({
             See the pressure before the break.
           </h2>
           <p className="text-[#A8B8CC] mb-8">
-            Free account. No credit card required. Paid plans are not on sale.
+            FAULTLINE Standard $99/month · FAULTLINE Lifetime $1,500 one-time.
           </p>
           <a
             href={ctaHref}

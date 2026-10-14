@@ -66,7 +66,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Signals Engine Locked",
     subtitle: "CORE SIGNAL ENGINE",
     description:
-      `FAULTLINE's proprietary signal engine — RSI, MACD, SMA crossover, regime-weighted scoring, and AI classification. Included with FAULTLINE Intelligence. Membership checkout is not open yet.`,
+      `FAULTLINE's proprietary signal engine — RSI, MACD, SMA crossover, regime-weighted scoring, and AI classification. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -85,7 +85,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Portfolio Monitor Locked",
     subtitle: "LIVE PORTFOLIO INTELLIGENCE",
     description:
-      `Track your positions with live P&L and regime-aware risk scoring. Included with FAULTLINE Intelligence. Membership checkout is not open yet. AI guidance requires Pro.`,
+      `Track your positions with live P&L and regime-aware risk scoring. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time. AI guidance requires Pro.`,
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -104,7 +104,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Alt Rotation Engine Locked",
     subtitle: "ALTERNATIVE ASSET ROTATION",
     description:
-      `Monitor rotation signals across crypto, commodities, and alternative assets. Included with FAULTLINE Intelligence. Membership checkout is not open yet.`,
+      `Monitor rotation signals across crypto, commodities, and alternative assets. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
     icon: <BarChart2 className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -199,7 +199,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Unlimited Watchlist Locked",
     subtitle: "PROFESSIONAL WATCHLIST",
     description:
-      `Unlimited symbol watchlists with live signal labels, breach alerts, and side-by-side comparison. Included with FAULTLINE Intelligence. Membership checkout is not open yet.`,
+      `Unlimited symbol watchlists with live signal labels, breach alerts, and side-by-side comparison. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
     icon: <Shield className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -219,7 +219,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Symbol Intelligence Locked",
     subtitle: "DEEP SYMBOL ANALYSIS",
     description:
-      `Full AI-powered symbol intelligence — regime fit, momentum score, signal classification, and factor breakdown. Included with FAULTLINE Intelligence. Membership checkout is not open yet.`,
+      `Full AI-powered symbol intelligence — regime fit, momentum score, signal classification, and factor breakdown. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -238,7 +238,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Opportunity Radar Locked",
     subtitle: "COMPLETE OPPORTUNITY RADAR",
     description:
-      `Full access to FAULTLINE's Opportunity Radar — ranked opportunities, entry zones, and regime-weighted conviction scores. Included with FAULTLINE Intelligence. Membership checkout is not open yet.`,
+      `Full access to FAULTLINE's Opportunity Radar — ranked opportunities, entry zones, and regime-weighted conviction scores. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -257,7 +257,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Trade Journal Locked",
     subtitle: "PROFESSIONAL TRADE JOURNAL",
     description:
-      `Log trades, track performance, and identify patterns in your decision-making. Included with FAULTLINE Intelligence. Membership checkout is not open yet.`,
+      `Log trades, track performance, and identify patterns in your decision-making. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
     icon: <BarChart2 className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -276,7 +276,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Social Intelligence Locked",
     subtitle: "SOCIAL SIGNAL INTELLIGENCE",
     description:
-      `Monitor social sentiment, narrative shifts, and crowd positioning across markets. Included with FAULTLINE Intelligence. Membership checkout is not open yet.`,
+      `Monitor social sentiment, narrative shifts, and crowd positioning across markets. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
     icon: <Shield className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -295,7 +295,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Insider Intelligence Locked",
     subtitle: "INSTITUTIONAL FLOW INTELLIGENCE",
     description:
-      `Track institutional positioning, options flow, and insider activity signals. Included with FAULTLINE Intelligence. Membership checkout is not open yet.`,
+      `Track institutional positioning, options flow, and insider activity signals. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
     icon: <Shield className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -314,7 +314,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Advanced Alerts Locked",
     subtitle: "PROFESSIONAL ALERT SYSTEM",
     description:
-      `Set unlimited price, signal, and regime-change alerts. Get notified the moment market conditions shift. Included with FAULTLINE Intelligence. Membership checkout is not open yet.`,
+      `Set unlimited price, signal, and regime-change alerts. Get notified the moment market conditions shift. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
     icon: <Zap className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
