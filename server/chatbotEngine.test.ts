@@ -45,9 +45,11 @@ describe("validatePricing", () => {
     expect(validatePricing("Founding Member is $49/mo locked while active.")).toBe(false);
   });
 
-  it("accepts the not-on-sale answer", () => {
+  it("accepts the approved-pricing answer ($99/month and $1,500 one-time)", () => {
     expect(validatePricing(PRICE_NOT_ON_SALE_ANSWER)).toBe(true);
-    expect(PRICE_NOT_ON_SALE_ANSWER).toContain("Membership checkout is not open yet.");
+    expect(PRICE_NOT_ON_SALE_ANSWER).toContain("$99/month");
+    expect(PRICE_NOT_ON_SALE_ANSWER).toContain("$1,500 one-time");
+    expect(validatePricing("FAULTLINE Lifetime is $1,500 one-time.")).toBe(true);
   });
 
   it("rejects a response containing retired public lifetime pricing", () => {

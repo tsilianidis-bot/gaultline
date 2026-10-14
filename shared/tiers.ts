@@ -15,6 +15,11 @@
 
 /** Public offers (Standard $99/month, Lifetime $1,500 one-time) are on sale. Checkout still requires a verified Stripe price per plan. */
 export const PAID_PLANS_ON_SALE: boolean = true;
+/**
+ * Open self-serve account registration. Kept false: there is no free membership.
+ * Independent of PAID_PLANS_ON_SALE so opening checkout never reopens free sign-up.
+ */
+export const OPEN_REGISTRATION: boolean = false;
 /** Short label shown wherever a plan price used to be displayed. */
 export const PLAN_NOT_ON_SALE_LABEL = 'Not on sale yet';
 /** Sentence used in app/email/chat copy while paid plans are not on sale. */
@@ -327,7 +332,7 @@ export const MARKETING_TIER_CARDS: MarketingTierCard[] = [
   {
     tier: 'premium',
     planId: 'premium',
-    marketingName: 'FAULTLINE Intelligence',
+    marketingName: 'FAULTLINE Standard',
     price: PRICING_PLANS.premium.priceLabel,
     tagline: 'Premium financial intelligence. One membership.',
     color: '#65D6E5',
@@ -339,5 +344,19 @@ export const MARKETING_TIER_CARDS: MarketingTierCard[] = [
       'Research and decision-support tools',
     ],
     ctaLabel: PAID_PLANS_ON_SALE ? 'Join FAULTLINE' : 'Request membership',
+  },
+  {
+    tier: 'founding',
+    planId: 'lifetime',
+    marketingName: 'FAULTLINE Lifetime',
+    price: PRICING_PLANS.lifetime.priceLabel,
+    tagline: 'Everything in Standard. One payment, lifetime access.',
+    color: '#65D6E5',
+    features: [
+      'Everything in FAULTLINE Standard',
+      'One-time payment, no renewals',
+      'Lifetime access to FAULTLINE intelligence',
+    ],
+    ctaLabel: PAID_PLANS_ON_SALE ? 'Get Lifetime access' : 'Request membership',
   },
 ];

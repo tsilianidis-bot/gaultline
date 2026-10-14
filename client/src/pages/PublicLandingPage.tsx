@@ -68,7 +68,7 @@ export default function PublicLandingPage({
               onClick={() => trackStartFreeClicked("public_landing")}
               className="text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 transition-colors px-4 py-2 rounded font-bold"
             >
-              ENTER FREE
+              VIEW MEMBERSHIP
             </a>
           </div>
         </div>
@@ -138,7 +138,7 @@ export default function PublicLandingPage({
             See the pressure before the break.
           </h2>
           <p className="text-[#A8B8CC] mb-8">
-            Free account. No credit card required. Paid plans are not on sale.
+            FAULTLINE Standard $99/month · FAULTLINE Lifetime $1,500 one-time.
           </p>
           <a
             href={ctaHref}

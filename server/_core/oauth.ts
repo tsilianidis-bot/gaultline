@@ -1,4 +1,4 @@
-import { PAID_PLANS_ON_SALE } from "@shared/tiers";
+import { OPEN_REGISTRATION } from "@shared/tiers";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import type { Express, Request, Response } from "express";
 import * as db from "../db";
@@ -130,7 +130,7 @@ export function registerOAuthRoutes(app: Express) {
       }
 
       const existingUser = await runOAuthStep("db_failed", () => db.getUserByOpenId(userInfo.openId));
-      if (!existingUser && !PAID_PLANS_ON_SALE) {
+      if (!existingUser && !OPEN_REGISTRATION) {
         res.redirect(302, "/pricing");
         return;
       }

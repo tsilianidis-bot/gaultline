@@ -31,10 +31,12 @@ function authCtx(): TrpcContext {
 }
 
 describe("billing plan availability lock", () => {
-  it("keeps Lifetime unavailable even when a Stripe price ID is present", () => {
-    expect(PRICING_PLANS.lifetime.available).toBe(false);
-    expect(isPlanAvailableForPurchase("lifetime", "price_test_lifetime_299")).toBe(false);
-    expect(isPlanAvailableForPurchase("lifetime", PLANS.lifetime.priceId)).toBe(false);
+  it("opens only Standard and Lifetime, and only when a Stripe price ID is configured", () => {
+    expect(PRICING_PLANS.lifetime.available).toBe(true);
+    expect(isPlanAvailableForPurchase("lifetime", "price_test_lifetime_1500")).toBe(true);
+    expect(isPlanAvailableForPurchase("lifetime", null)).toBe(false);
+    expect(isPlanAvailableForPurchase("premium", "price_test_99")).toBe(true);
+    expect(isPlanAvailableForPurchase("premium", null)).toBe(false);
     expect(isPlanAvailableForPurchase("core_annual", "price_test_annual")).toBe(false);
     expect(isPlanAvailableForPurchase("premium_annual", "price_test_annual")).toBe(false);
     expect(isPlanAvailableForPurchase("core", "price_test_core")).toBe(false);
@@ -47,19 +49,18 @@ describe("billing plan availability lock", () => {
     for (const plan of plans) {
       expect(plan.available).toBe(isPlanAvailableForPurchase(plan.id, PLANS[plan.id].priceId));
     }
-    expect(plans.map(plan => plan.id)).toEqual(["premium"]);
-    expect(plans[0].amount).toBe(9900);
-    expect(plans[0].available).toBe(false);
+    expect(plans.map(plan => plan.id)).toEqual(["premium", "lifetime"]);
+    expect(plans.map(plan => plan.amount)).toEqual([9900, 150000]);
   });
 
-  it("rejects checkout for the membership until sales are authorized", async () => {
-    expect(isPlanAvailableForPurchase("premium", "price_test_99")).toBe(false);
+  it("rejects checkout when the plan's Stripe price is not configured or verified", async () => {
     await expect(billingRouter.createCaller(authCtx()).createCheckout({ planId: "premium", origin: "https://faultline.app" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(billingRouter.createCaller(authCtx()).createCheckout({ planId: "lifetime", origin: "https://faultline.app" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
   it("rejects createCheckout for plans with available:false", async () => {
     const caller = billingRouter.createCaller(authCtx());
-    await expect(caller.createCheckout({ planId: "lifetime", origin: "https://faultline.app" })).rejects.toMatchObject({
+    await expect(caller.createCheckout({ planId: "founding", origin: "https://faultline.app" })).rejects.toMatchObject({
       code: "BAD_REQUEST",
       message: "This plan is not yet available for purchase. Please contact us.",
     });

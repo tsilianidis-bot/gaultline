@@ -211,7 +211,7 @@ const PAGE_META: Record<string, PageMeta> = {
     description: "FAULTLINE press resources, media kit, and coverage. Contact the FAULTLINE team for media inquiries, interviews, and partnership opportunities.",
   },
   "/pricing": {
-    title: "FAULTLINE Intelligence — $99/month",
+    title: "FAULTLINE Membership — $99/month or $1,500 Lifetime",
     description: "The public Pressure Index and methodology are free to read without an account. Full intelligence is offered through FAULTLINE Standard at $99/month or FAULTLINE Lifetime at $1,500 one-time.",
   },
   "/intelligence-library": {

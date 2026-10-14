@@ -445,7 +445,7 @@ function FinalCta() {
         </h2>
         <div className="mt-10"><MembershipOffer /></div>
         <p className="mx-auto mt-6 max-w-2xl text-sm leading-[1.75] text-[#C9D4E0]">
-          Explore the limited public preview without an account. Full intelligence is offered through one $99/month membership.
+          Explore the limited public preview without an account. Full intelligence is offered through FAULTLINE Standard at $99/month or FAULTLINE Lifetime at $1,500 one-time.
         </p>
         <p className="mt-3 text-sm text-[#B7C1CD]">
           Already a member? <SignInCta className={`font-semibold text-[#65D6E5] underline-offset-4 hover:underline ${focusRing}`} />
@@ -488,8 +488,8 @@ type MarketingSitePlacement = "methodology" | "pressure" | "plato" | "analogs" |
 
 export default function MarketingSite({ initialSection }: { initialSection?: MarketingSitePlacement } = {}) {
   useSEO({
-    title: initialSection === "pricing" ? "FAULTLINE Intelligence — $99/month" : PAGE_TITLE,
-    description: initialSection === "pricing" ? "Premium financial intelligence through one $99/month membership. Explore the limited public preview without registering." : PAGE_DESCRIPTION,
+    title: initialSection === "pricing" ? "FAULTLINE Membership — $99/month or $1,500 Lifetime" : PAGE_TITLE,
+    description: initialSection === "pricing" ? "FAULTLINE Standard at $99/month or FAULTLINE Lifetime at $1,500 one-time. Explore the limited public preview without registering." : PAGE_DESCRIPTION,
     canonical: initialSection === "pricing" ? "/pricing" : "/",
   });
 

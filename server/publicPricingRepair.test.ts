@@ -9,7 +9,7 @@ const read = (relativePath: string) => readFileSync(resolve(root, relativePath),
 describe('surgical public FAULTLINE brand and pricing repair', () => {
   it('uses the requested monthly public plan amounts while preserving internal tier IDs', () => {
     expect(PRICING_PLANS.founding.available).toBe(false);
-    expect(MARKETING_TIER_CARDS.map(card => card.planId)).toEqual(['premium']);
+    expect(MARKETING_TIER_CARDS.map(card => card.planId)).toEqual(['premium', 'lifetime']);
     expect(PRICING_PLANS.premium.priceLabel).toBe('$99/month');
     expect(PRICING_PLANS.core.amountCents).toBe(5900);
     expect(PRICING_PLANS.premium.amountCents).toBe(9900);
@@ -35,10 +35,10 @@ describe('surgical public FAULTLINE brand and pricing repair', () => {
     expect(homepage).not.toContain('"49.00"');
   });
 
-  it('keeps annual checkout unavailable and does not advertise Lifetime publicly', () => {
+  it('keeps annual checkout unavailable and offers Lifetime only at $1,500 one-time', () => {
     expect(PRICING_PLANS.core_annual.available).toBe(false);
     expect(PRICING_PLANS.premium_annual.available).toBe(false);
-    expect(PRICING_PLANS.lifetime.available).toBe(false);
+    expect(PRICING_PLANS.lifetime).toMatchObject({ available: true, amountCents: 150000, interval: 'one_time' });
 
     const productExperience = read('client/src/components/ProductExperience.tsx');
     const marketing = read('client/src/pages/MarketingSite.tsx');
