@@ -322,10 +322,13 @@ describe('handleStripeWebhook', () => {
       const req = makeReq(session);
       const res = makeRes();
 
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       await handleStripeWebhook(req, res);
 
       expect(updateUserStripe).not.toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith({ received: true });
+      expect(errSpy.mock.calls.flat().join(' ')).toContain('BILLING-ALERT');
+      errSpy.mockRestore();
     });
   });
 
@@ -570,7 +573,7 @@ describe('handleStripeWebhook', () => {
       expect(updateUserStripe).not.toHaveBeenCalled();
     });
 
-    it('does not change the tier (logs an alert, 200) when the renewal price is unknown (D3)', async () => {
+    it('leaves the tier unchanged, logs an alert and answers 500 (retryable, claim released) when the renewal price is unknown (D3)', async () => {
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('invoice.paid', { id: 'in_u', customer: 'cus_u', parent: { subscription_details: { subscription: 'sub_u' } } }) as any
       );
@@ -581,6 +584,8 @@ describe('handleStripeWebhook', () => {
       const res = makeRes();
       await handleStripeWebhook(makeReq({}), res);
       expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(releaseStripeWebhookEvent).toHaveBeenCalled();
       expect(errSpy.mock.calls.flat().join(' ')).toContain('BILLING-ALERT');
       errSpy.mockRestore();
     });

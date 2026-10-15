@@ -47,8 +47,8 @@ async function resolveTierFromSession(sessionId: string): Promise<Exclude<Access
 /**
  * Resolve the access tier for a subscription (used on invoice.paid renewals).
  * Looks up the price on the first subscription item.
- * Returns null (no grant) when the price is unknown. API errors propagate so
- * the webhook answers 500 and Stripe retries.
+ * Returns null (no change) when the price is unknown — the caller treats that as a
+ * retryable failure. API errors propagate so the webhook answers 500 and Stripe retries.
  */
 async function resolveTierFromSubscription(subscriptionId: string): Promise<Exclude<AccessTier, 'free'> | null> {
   if (!stripe) {
@@ -130,7 +130,9 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         const subscriptionId = session.subscription as string | null;
 
         if (!userId) {
-          console.warn('[Stripe Webhook] checkout.session.completed missing user_id in metadata');
+          // A retry cannot fix this (the session carries no owner), so acknowledge with 200 — but make it
+          // loud: a paid session with no owner needs a manual grant/refund decision.
+          console.error(`[Stripe Webhook][BILLING-ALERT] checkout.session.completed ${session.id} (event ${event.id}) has no metadata.user_id — no access granted; resolve manually (customer ${customerId ?? 'none'})`);
           break;
         }
 
@@ -196,8 +198,9 @@ export async function handleStripeWebhook(req: Request, res: Response) {
 
         const tier = await resolveTierFromSubscription(subscriptionId);
         if (!tier) {
-          console.error(`[Stripe Webhook][BILLING-ALERT] invoice.paid — unknown price for subscription ${subscriptionId} (event ${event.id}); tier left unchanged, investigate`);
-          break;
+          // Existing access is left untouched; answer 500 (claim released) so Stripe retries and the
+          // endpoint alerts until the price/plan configuration is fixed.
+          throw new UnresolvedPlanError(`invoice.paid ${invoice.id} subscription ${subscriptionId} (user ${user.id}) has an unknown/missing price — existing access left unchanged`);
         }
 
         const prevTier = user.accessTier;
@@ -317,7 +320,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     }
   } catch (err) {
     if (err instanceof UnresolvedPlanError) {
-      console.error(`[Stripe Webhook][BILLING-ALERT] ${event.type} ${event.id}: ${err.message}. No access granted; answering 500 so Stripe retries and alerts.`);
+      console.error(`[Stripe Webhook][BILLING-ALERT] ${event.type} ${event.id}: ${err.message}. Entitlement not changed; answering 500 so Stripe retries and alerts.`);
     } else {
       console.error('[Stripe Webhook] Error processing event:', err);
     }
@@ -328,7 +331,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       console.error(`[Stripe Webhook][BILLING-ALERT] Failed to release idempotency claim for ${event.id} — retries will be skipped as duplicates; replay manually:`, releaseErr);
     }
     return res.status(500).json({
-      error: err instanceof UnresolvedPlanError ? 'Unrecognized plan — entitlement not granted' : 'Webhook processing failed',
+      error: err instanceof UnresolvedPlanError ? 'Unrecognized plan — entitlement not changed' : 'Webhook processing failed',
     });
   }
 
