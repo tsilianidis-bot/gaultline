@@ -48,6 +48,7 @@ vi.mock('../db', () => ({
   getUserByStripeCustomerId: vi.fn(),
   getUserTier: vi.fn().mockResolvedValue('free'),
   recordStripeWebhookEvent: vi.fn().mockResolvedValue(true), // default: new event
+  releaseStripeWebhookEvent: vi.fn().mockResolvedValue(undefined),
   writeEntitlementAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -64,7 +65,7 @@ vi.mock('./products', () => ({
 }));
 
 import { stripe } from './client';
-import { updateUserStripe, getUserByStripeCustomerId, recordStripeWebhookEvent, writeEntitlementAudit, getUserTier } from '../db';
+import { updateUserStripe, getUserByStripeCustomerId, recordStripeWebhookEvent, releaseStripeWebhookEvent, writeEntitlementAudit, getUserTier } from '../db';
 import { getPlanByPriceId } from './products';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -241,7 +242,48 @@ describe('handleStripeWebhook', () => {
       }));
     });
 
-    it('falls back to premium tier when line items cannot be fetched', async () => {
+    it('FAILS CLOSED (no grant, 500, claim released) when the price is unknown — no legacy core fallback (D3)', async () => {
+      const session = {
+        id: 'cs_test_unknown_price',
+        metadata: { user_id: '5', plan_id: 'premium' },
+        customer: 'cus_unknown',
+        subscription: 'sub_unknown',
+      };
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('checkout.session.completed', session, 'evt_unknown_price') as any
+      );
+      vi.mocked(stripe.checkout.sessions.listLineItems).mockResolvedValue({
+        data: [{ price: { id: 'price_not_configured' } }],
+      } as any);
+      vi.mocked(getPlanByPriceId).mockReturnValue(undefined);
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(session), res);
+
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(writeEntitlementAudit).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).not.toHaveBeenCalledWith({ received: true });
+      expect(releaseStripeWebhookEvent).toHaveBeenCalledWith('evt_unknown_price');
+      expect(errSpy.mock.calls.flat().join(' ')).toContain('BILLING-ALERT');
+      errSpy.mockRestore();
+    });
+
+    it('FAILS CLOSED when the line item has no price (D3)', async () => {
+      const session = { id: 'cs_no_price', metadata: { user_id: '5' }, customer: 'cus_x', subscription: null };
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(makeEvent('checkout.session.completed', session) as any);
+      vi.mocked(stripe.checkout.sessions.listLineItems).mockResolvedValue({ data: [] } as any);
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(session), res);
+
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it('does not grant a tier and answers 500 for retry when line items cannot be fetched (D3)', async () => {
       const session = {
         id: 'cs_test_fallback',
         metadata: { user_id: '5' },
@@ -250,22 +292,19 @@ describe('handleStripeWebhook', () => {
       };
 
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
-        makeEvent('checkout.session.completed', session) as any
+        makeEvent('checkout.session.completed', session, 'evt_lineitems_down') as any
       );
       vi.mocked(stripe.checkout.sessions.listLineItems).mockRejectedValue(
         new Error('Stripe API unavailable')
       );
-      vi.mocked(updateUserStripe).mockResolvedValue(undefined as any);
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-      const req = makeReq(session);
       const res = makeRes();
+      await handleStripeWebhook(makeReq(session), res);
 
-      await handleStripeWebhook(req, res);
-
-      // Falls back to core — safe minimum so we never accidentally grant premium access
-      expect(updateUserStripe).toHaveBeenCalledWith(5, expect.objectContaining({
-        accessTier: 'core',
-      }));
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(releaseStripeWebhookEvent).toHaveBeenCalledWith('evt_lineitems_down');
     });
 
     it('does NOT call updateUserStripe when user_id is missing from metadata', async () => {
@@ -481,6 +520,154 @@ describe('handleStripeWebhook', () => {
         accessTier: 'free',
         stripeSubscriptionId: null,
       });
+    });
+  });
+
+
+  // ── D1: invoice.paid across Stripe API versions ───────────────────────────
+  describe('invoice.paid subscription field shapes (D1)', () => {
+    const premiumPlan = {
+      id: 'premium', tier: 'premium', name: 'FAULTLINE Intelligence', amount: 9900,
+      interval: 'month', description: '', priceId: 'price_premium_monthly',
+    } as any;
+
+    async function run(invoice: object) {
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(makeEvent('invoice.paid', invoice) as any);
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue({ id: 31, accessTier: 'free' } as any);
+      vi.mocked(stripe.subscriptions.retrieve).mockResolvedValue({ items: { data: [{ price: { id: 'price_premium_monthly' } }] } } as any);
+      vi.mocked(getPlanByPriceId).mockReturnValue(premiumPlan);
+      vi.mocked(updateUserStripe).mockResolvedValue(undefined as any);
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(invoice), res);
+      return res;
+    }
+
+    it('handles the CURRENT shape (invoice.parent.subscription_details.subscription, no invoice.subscription)', async () => {
+      const res = await run({
+        id: 'in_new', customer: 'cus_new',
+        parent: { type: 'subscription_details', subscription_details: { subscription: 'sub_new' } },
+      });
+      expect(stripe.subscriptions.retrieve).toHaveBeenCalledWith('sub_new');
+      expect(updateUserStripe).toHaveBeenCalledWith(31, { accessTier: 'premium', stripeSubscriptionId: 'sub_new' });
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+    });
+
+    it('handles the current line-item shape', async () => {
+      await run({
+        id: 'in_line', customer: 'cus_line',
+        lines: { data: [{ parent: { type: 'subscription_item_details', subscription_item_details: { subscription: 'sub_line' } } }] },
+      });
+      expect(updateUserStripe).toHaveBeenCalledWith(31, { accessTier: 'premium', stripeSubscriptionId: 'sub_line' });
+    });
+
+    it('still handles the LEGACY shape (invoice.subscription)', async () => {
+      await run({ id: 'in_old', customer: 'cus_old', subscription: 'sub_old' });
+      expect(updateUserStripe).toHaveBeenCalledWith(31, { accessTier: 'premium', stripeSubscriptionId: 'sub_old' });
+    });
+
+    it('ignores invoices that are not tied to a subscription', async () => {
+      await run({ id: 'in_oneoff', customer: 'cus_oneoff', parent: null });
+      expect(updateUserStripe).not.toHaveBeenCalled();
+    });
+
+    it('does not change the tier (logs an alert, 200) when the renewal price is unknown (D3)', async () => {
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('invoice.paid', { id: 'in_u', customer: 'cus_u', parent: { subscription_details: { subscription: 'sub_u' } } }) as any
+      );
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue({ id: 32, accessTier: 'premium' } as any);
+      vi.mocked(stripe.subscriptions.retrieve).mockResolvedValue({ items: { data: [{ price: { id: 'price_mystery' } }] } } as any);
+      vi.mocked(getPlanByPriceId).mockReturnValue(undefined);
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const res = makeRes();
+      await handleStripeWebhook(makeReq({}), res);
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(errSpy.mock.calls.flat().join(' ')).toContain('BILLING-ALERT');
+      errSpy.mockRestore();
+    });
+
+    it('answers 500 and releases the claim when the subscription lookup fails transiently', async () => {
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('invoice.paid', { id: 'in_t', customer: 'cus_t', subscription: 'sub_t' }, 'evt_transient') as any
+      );
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue({ id: 33, accessTier: 'free' } as any);
+      vi.mocked(stripe.subscriptions.retrieve).mockRejectedValue(new Error('network'));
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const res = makeRes();
+      await handleStripeWebhook(makeReq({}), res);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(releaseStripeWebhookEvent).toHaveBeenCalledWith('evt_transient');
+    });
+  });
+
+  // ── D2: idempotency record must not swallow failed grants ──────────────────
+  describe('idempotency vs retries (D2)', () => {
+    const session = { id: 'cs_idem', metadata: { user_id: '60', plan_id: 'premium' }, customer: 'cus_idem', subscription: 'sub_idem' };
+    const premiumPlan = {
+      id: 'premium', tier: 'premium', name: 'FAULTLINE Intelligence', amount: 9900,
+      interval: 'month', description: '', priceId: 'price_premium_monthly',
+    } as any;
+
+    function arrange() {
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(makeEvent('checkout.session.completed', session, 'evt_idem') as any);
+      vi.mocked(stripe.checkout.sessions.listLineItems).mockResolvedValue({ data: [{ price: { id: 'price_premium_monthly' } }] } as any);
+      vi.mocked(getPlanByPriceId).mockReturnValue(premiumPlan);
+    }
+
+    it('releases the claim and returns 500 when the grant throws, so the Stripe retry is processed', async () => {
+      arrange();
+      vi.mocked(updateUserStripe).mockRejectedValueOnce(new Error('DB blip'));
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      const res1 = makeRes();
+      await handleStripeWebhook(makeReq(session), res1);
+      expect(res1.status).toHaveBeenCalledWith(500);
+      expect(releaseStripeWebhookEvent).toHaveBeenCalledWith('evt_idem');
+
+      // Stripe retry: claim is new again (released) and the grant now succeeds.
+      vi.mocked(recordStripeWebhookEvent).mockResolvedValueOnce(true);
+      vi.mocked(updateUserStripe).mockResolvedValueOnce(undefined as any);
+      const res2 = makeRes();
+      await handleStripeWebhook(makeReq(session), res2);
+      expect(res2.json).toHaveBeenCalledWith({ received: true });
+      expect(updateUserStripe).toHaveBeenCalledTimes(2);
+      expect(updateUserStripe).toHaveBeenLastCalledWith(60, expect.objectContaining({ accessTier: 'premium' }));
+    });
+
+    it('does NOT release the claim after a successful grant', async () => {
+      arrange();
+      vi.mocked(updateUserStripe).mockResolvedValue(undefined as any);
+      await handleStripeWebhook(makeReq(session), makeRes());
+      expect(releaseStripeWebhookEvent).not.toHaveBeenCalled();
+    });
+
+    it('still skips true duplicates (idempotency preserved) without processing or releasing', async () => {
+      arrange();
+      vi.mocked(recordStripeWebhookEvent).mockResolvedValueOnce(false);
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(session), res);
+      expect(res.json).toHaveBeenCalledWith({ received: true, duplicate: true });
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(releaseStripeWebhookEvent).not.toHaveBeenCalled();
+    });
+
+    it('answers 500 (not "duplicate") when recording the event fails with a non-duplicate DB error', async () => {
+      arrange();
+      vi.mocked(recordStripeWebhookEvent).mockRejectedValueOnce(new Error('ECONNRESET'));
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(session), res);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(updateUserStripe).not.toHaveBeenCalled();
+    });
+
+    it('still answers 500 if releasing the claim itself fails', async () => {
+      arrange();
+      vi.mocked(updateUserStripe).mockRejectedValueOnce(new Error('DB blip'));
+      vi.mocked(releaseStripeWebhookEvent).mockRejectedValueOnce(new Error('release failed'));
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(session), res);
+      expect(res.status).toHaveBeenCalledWith(500);
     });
   });
 

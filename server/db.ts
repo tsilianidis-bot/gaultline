@@ -1507,22 +1507,35 @@ export async function getUsersPendingDripStep(step: number, minAgeMs: number): P
 
 // ── Stripe webhook idempotency ────────────────────────────────────────────────
 import { stripeWebhookEvents, entitlementAuditLog } from '../drizzle/schema';
+import { isDuplicateKeyError } from './stripe/dupKey';
 
 /**
- * Attempt to record a Stripe event ID for idempotency.
- * Returns true if the event is new (should be processed).
- * Returns false if the event was already processed (skip it).
+ * Attempt to claim a Stripe event ID for idempotency.
+ * Returns true if the event is new (caller should process it).
+ * Returns false ONLY if the event ID already exists (unique-key violation) — skip it.
+ * Any other DB error is re-thrown so the webhook answers 5xx and Stripe retries
+ * (previously every error was treated as "duplicate", silently dropping the event).
+ *
+ * The caller MUST call `releaseStripeWebhookEvent` if processing fails, so that
+ * Stripe's retry is not skipped as a duplicate.
  */
 export async function recordStripeWebhookEvent(eventId: string, eventType: string): Promise<boolean> {
   const db = await getDb();
-  if (!db) return true; // If DB is unavailable, allow processing (fail open)
+  if (!db) return true; // If DB is unavailable, allow processing (fail open; grants will fail loudly without a DB)
   try {
     await db.insert(stripeWebhookEvents).values({ eventId, eventType });
     return true; // Insert succeeded — event is new
-  } catch {
-    // Unique constraint violation — event already processed
-    return false;
+  } catch (err) {
+    if (isDuplicateKeyError(err)) return false; // Unique constraint violation — already claimed/processed
+    throw err;
   }
+}
+
+/** Roll back an idempotency claim after a failed processing attempt so Stripe's retry is processed. */
+export async function releaseStripeWebhookEvent(eventId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(stripeWebhookEvents).where(eq(stripeWebhookEvents.eventId, eventId));
 }
 
 // ── Entitlement audit log ─────────────────────────────────────────────────────

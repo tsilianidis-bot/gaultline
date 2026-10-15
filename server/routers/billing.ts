@@ -75,9 +75,14 @@ export const billingRouter = router({
       return { url: session.url };
     }),
 
-  verifyCheckoutSession: publicProcedure
+  /**
+   * Confirms a checkout session for the signed-in user who started it.
+   * Requires auth and ownership (session.client_reference_id / metadata.user_id must
+   * match ctx.user.id); any other session returns null. Never returns customer email.
+   */
+  verifyCheckoutSession: protectedProcedure
     .input(z.object({ sessionId: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       if (!stripe) {
         return null;
       }
@@ -85,13 +90,16 @@ export const billingRouter = router({
         const session = await stripe.checkout.sessions.retrieve(input.sessionId, {
           expand: ['line_items'],
         });
+        const ownerId = session.client_reference_id ?? session.metadata?.user_id ?? null;
+        if (!ownerId || String(ownerId) !== String(ctx.user.id)) {
+          return null;
+        }
         return {
           status: session.status,
           paymentStatus: session.payment_status,
           amountTotal: session.amount_total,
           currency: session.currency,
           planId: session.metadata?.plan_id ?? null,
-          customerEmail: session.customer_email ?? session.metadata?.customer_email ?? null,
         };
       } catch {
         return null;

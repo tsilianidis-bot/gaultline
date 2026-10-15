@@ -125,11 +125,6 @@ export default function CheckoutSuccess() {
               <p className="text-[#A8B8CC] text-sm leading-relaxed">
                 Your access has been activated. You'll be redirected to your account in a moment.
               </p>
-              {data.customerEmail && (
-                <p className="text-[#A8B8CC]/60 text-xs mt-2 font-mono">
-                  Receipt sent to {data.customerEmail}
-                </p>
-              )}
             </div>
 
             {/* CTA */}

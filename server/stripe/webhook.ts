@@ -2,54 +2,63 @@ import type { Request, Response } from 'express';
 import { stripe } from './client';
 import { ENV } from '../_core/env';
 import { getPlanByPriceId } from './products';
-import { updateUserStripe, getUserByStripeCustomerId, getUserTier, recordStripeWebhookEvent, writeEntitlementAudit } from '../db';
+import { updateUserStripe, getUserByStripeCustomerId, getUserTier, recordStripeWebhookEvent, releaseStripeWebhookEvent, writeEntitlementAudit } from '../db';
+import { getInvoiceSubscriptionId } from './invoiceSubscription';
 import type { AccessTier } from '../../shared/tiers';
 import { sendEmail, buildSubscriptionConfirmationEmail } from '../email';
+
+/**
+ * Thrown when a paid checkout cannot be mapped to a known plan/price.
+ * FAIL CLOSED: we never guess a tier. The webhook answers 500 so Stripe retries
+ * (and surfaces the failing endpoint) while the failure is investigated; the
+ * idempotency claim is released so a retry after a config fix can still grant.
+ */
+export class UnresolvedPlanError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'UnresolvedPlanError';
+  }
+}
 
 /**
  * Resolve the access tier for a completed checkout session.
  * Always fetches line items from the Stripe API — they are NOT included
  * in the webhook payload by default, so we must call listLineItems().
+ *
+ * Fails closed: throws if the tier cannot be determined (no `core` fallback).
+ * API/network errors propagate as-is (transient → 500 → Stripe retries).
  */
 async function resolveTierFromSession(sessionId: string): Promise<Exclude<AccessTier, 'free'>> {
   if (!stripe) {
-    console.warn('[Stripe Webhook] Stripe is not configured — defaulting checkout tier to core');
-    return 'core';
+    throw new Error('Stripe is not configured — cannot resolve checkout tier');
   }
-  try {
-    const lineItems = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 1 });
-    const priceId = lineItems.data[0]?.price?.id;
-    if (priceId) {
-      const plan = getPlanByPriceId(priceId);
-      if (plan && plan.tier !== 'free') return plan.tier;
-    }
-  } catch (err: any) {
-    console.warn('[Stripe Webhook] Could not fetch line items for session', sessionId, '—', err.message);
+  const lineItems = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 1 });
+  const priceId = lineItems.data[0]?.price?.id;
+  if (!priceId) {
+    throw new UnresolvedPlanError(`Session ${sessionId} has no line-item price — no entitlement granted`);
   }
-  // Safe fallback — default to 'core' (lowest paid tier) so we never accidentally
-  // grant premium access to a user who paid for core.
-  console.warn('[Stripe Webhook] Could not determine tier from line items — defaulting to core (safe minimum)');
-  return 'core';
+  const plan = getPlanByPriceId(priceId);
+  if (!plan || plan.tier === 'free') {
+    throw new UnresolvedPlanError(`Session ${sessionId} price ${priceId} does not match any configured plan — no entitlement granted`);
+  }
+  return plan.tier;
 }
 
 /**
  * Resolve the access tier for a subscription (used on invoice.paid renewals).
  * Looks up the price on the first subscription item.
+ * Returns null (no grant) when the price is unknown. API errors propagate so
+ * the webhook answers 500 and Stripe retries.
  */
 async function resolveTierFromSubscription(subscriptionId: string): Promise<Exclude<AccessTier, 'free'> | null> {
   if (!stripe) {
-    console.warn('[Stripe Webhook] Stripe is not configured — cannot resolve subscription tier');
-    return null;
+    throw new Error('Stripe is not configured — cannot resolve subscription tier');
   }
-  try {
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    const priceId = subscription.items.data[0]?.price?.id;
-    if (priceId) {
-      const plan = getPlanByPriceId(priceId);
-      if (plan && plan.tier !== 'free') return plan.tier;
-    }
-  } catch (err: any) {
-    console.warn('[Stripe Webhook] Could not fetch subscription', subscriptionId, '—', err.message);
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const priceId = subscription.items.data[0]?.price?.id;
+  if (priceId) {
+    const plan = getPlanByPriceId(priceId);
+    if (plan && plan.tier !== 'free') return plan.tier;
   }
   return null;
 }
@@ -97,8 +106,16 @@ export async function handleStripeWebhook(req: Request, res: Response) {
   console.log(`[Stripe Webhook] Event: ${event.type} | ID: ${event.id}`);
 
   // ── Idempotency guard ──────────────────────────────────────────────────────
-  // Record the event ID before processing. Duplicate key = already processed.
-  const isNew = await recordStripeWebhookEvent(event.id, event.type);
+  // Claim the event ID before processing so concurrent duplicate deliveries do not
+  // double-process. Duplicate key = already claimed/processed. If processing fails
+  // below, the claim is RELEASED so Stripe's retry is processed rather than skipped.
+  let isNew: boolean;
+  try {
+    isNew = await recordStripeWebhookEvent(event.id, event.type);
+  } catch (err) {
+    console.error(`[Stripe Webhook] Could not record event ${event.id} — answering 500 so Stripe retries:`, err);
+    return res.status(500).json({ error: 'Webhook processing failed' });
+  }
   if (!isNew) {
     console.log(`[Stripe Webhook] Duplicate event ${event.id} (${event.type}) — skipping`);
     return res.json({ received: true, duplicate: true });
@@ -165,7 +182,9 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       case 'invoice.paid': {
         const invoice = event.data.object as any;
         const customerId = invoice.customer as string;
-        const subscriptionId = invoice.subscription as string | null;
+        // Supports both the legacy `invoice.subscription` and the current
+        // `invoice.parent.subscription_details.subscription` shapes.
+        const subscriptionId = getInvoiceSubscriptionId(invoice);
 
         if (!subscriptionId) break;
 
@@ -177,7 +196,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
 
         const tier = await resolveTierFromSubscription(subscriptionId);
         if (!tier) {
-          console.warn(`[Stripe Webhook] invoice.paid — could not resolve tier for subscription ${subscriptionId}`);
+          console.error(`[Stripe Webhook][BILLING-ALERT] invoice.paid — unknown price for subscription ${subscriptionId} (event ${event.id}); tier left unchanged, investigate`);
           break;
         }
 
@@ -259,7 +278,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
 
               console.log(`[Stripe Webhook] User ${user.id} tier updated to ${plan.tier} via subscription update (${subscriptionId})`);
             } else {
-              console.warn(`[Stripe Webhook] customer.subscription.updated — unknown price ${priceId} for subscription ${subscriptionId}`);
+              console.error(`[Stripe Webhook][BILLING-ALERT] customer.subscription.updated — unknown price ${priceId} for subscription ${subscriptionId} (event ${event.id}); tier left unchanged, investigate`);
             }
           }
         } else if (status === 'canceled' || status === 'unpaid' || status === 'past_due') {
@@ -297,8 +316,20 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
     }
   } catch (err) {
-    console.error('[Stripe Webhook] Error processing event:', err);
-    return res.status(500).json({ error: 'Webhook processing failed' });
+    if (err instanceof UnresolvedPlanError) {
+      console.error(`[Stripe Webhook][BILLING-ALERT] ${event.type} ${event.id}: ${err.message}. No access granted; answering 500 so Stripe retries and alerts.`);
+    } else {
+      console.error('[Stripe Webhook] Error processing event:', err);
+    }
+    // Roll back the idempotency claim so Stripe's retry is not skipped as a duplicate.
+    try {
+      await releaseStripeWebhookEvent(event.id);
+    } catch (releaseErr) {
+      console.error(`[Stripe Webhook][BILLING-ALERT] Failed to release idempotency claim for ${event.id} — retries will be skipped as duplicates; replay manually:`, releaseErr);
+    }
+    return res.status(500).json({
+      error: err instanceof UnresolvedPlanError ? 'Unrecognized plan — entitlement not granted' : 'Webhook processing failed',
+    });
   }
 
   res.json({ received: true });
