@@ -43,7 +43,7 @@ describe("Sector Rotation renders inside the Pentagonal Thesis (no sixth questio
     expect(m).toContain("lg:grid-cols-2"); // two-column movers on desktop, stacked on mobile
     expect(m).toMatch(/Top 5 Winners|Top 5 winners/i);
     expect(m).toContain("data-movers-incomplete");
-    expect(m).toContain("Showing {rows.length} of 5 — not a complete Top 5.");
+    expect(m).toContain("Showing {rows.length} of 5 — not a complete Top 5</p>"); // no trailing period
     expect(m).toContain("data-why-it-matters");
     expect(m).toContain("data-mover-why");
     expect(m).toContain("Vol vs normal");

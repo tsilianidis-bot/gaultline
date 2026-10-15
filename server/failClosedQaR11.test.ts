@@ -185,10 +185,11 @@ describe("B9 SmartDiscovery: a withheld confidence is 'Not established', never 0
     const src = read("client/src/pages/SmartDiscovery.tsx");
     expect(src).not.toMatch(/finalVerdictConfidence \?\? 0/);
     expect(src).not.toMatch(/\$\{answer\.(confidence|finalVerdictConfidence)\}%/);
-    expect(src).toContain("value={confidenceDisplayText(answer.confidence)}");
-    expect(src).toContain('{ label: "CONFIDENCE", value: confidenceDisplayText(answer.finalVerdictConfidence),');
-    expect(src).toContain("{value == null ? CONFIDENCE_NOT_ESTABLISHED : value}");
-    expect(src).toContain("{value != null && <div style={scoreBar(value, color)} />}");
+    // Macro Answer credibility pass: confidence is stated once, in TOP ANSWER, through the
+    // same null-safe path; the duplicate Final Verdict / bottom-line confidence cells are gone.
+    expect(src).toContain("confidenceText={confidenceDisplayText(answer.confidence)}");
+    expect(src).not.toMatch(/\{answer\.finalVerdictConfidence\}/);
+    expect(src).not.toMatch(/value: answer\.(confidence|finalVerdictConfidence)\b/);
   });
 });
 

@@ -16,7 +16,11 @@
  */
 
 import React, { useState } from "react";
-import { formatOrdinal } from "@shared/historicalPercentile";
+import {
+  historicalPositionCopy, HISTORICAL_POSITION_UNAVAILABLE, HISTORICAL_PERCENTILE_TOOLTIP,
+  analogSimilarityLabel, ANALOG_SIMILARITY_DESCRIPTOR, NO_HIGH_CONFIDENCE_ANALOG_TEXT,
+  ANALOG_NOT_QUALIFIED_DETAIL, OUTCOME_SPLIT_WITHHELD_TEXT,
+} from "@/lib/macroAnswerPresentation";
 import {
   Clock,
   TrendingUp,
@@ -158,13 +162,13 @@ function SectionHeader({ icon, title, subtitle }: { icon: React.ReactNode; title
   );
 }
 
-function PercentileGauge({ percentile, pressure, regime, N, dataRange, rarityStatement }: {
+function PercentileGauge({ percentile, pressure, regime, N, dataRange, positionLine }: {
   percentile: number;
   pressure: number;
   regime: string;
   N: number;
   dataRange: string;
-  rarityStatement: string;
+  positionLine: string;
 }) {
   const gaugeWidth = Math.min(100, Math.max(0, percentile));
   const pressureColor = getPressureColor(pressure);
@@ -177,21 +181,18 @@ function PercentileGauge({ percentile, pressure, regime, N, dataRange, raritySta
           <div className={`text-2xl font-bold tabular-nums ${pressureColor}`}>
             {percentile}<span className="text-sm font-normal text-slate-400">th</span>
           </div>
-          <div className="text-xs text-slate-400 mt-0.5">Historical Percentile</div>
+          <div className="text-xs text-slate-400 mt-0.5" title={HISTORICAL_PERCENTILE_TOOLTIP}>Historical position (percentile)</div>
         </div>
-        <div className="text-right">
-          <div className={`text-lg font-semibold tabular-nums ${pressureColor}`}>{pressure}/100</div>
-          <div className="text-xs text-slate-400">Pressure Index</div>
-        </div>
+        {/* The Pressure Index and its band are stated once, in TOP ANSWER; this card is rarity only. */}
       </div>
 
       {/* Gauge bar */}
       <div className="relative h-2 bg-slate-700/60 rounded-full overflow-hidden mb-3">
         {/* Gradient track */}
-        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/40 via-yellow-500/40 to-red-500/40" />
+        <div className="absolute inset-0 bg-slate-600/40" />
         {/* Filled portion */}
         <div
-          className="absolute left-0 top-0 h-full bg-gradient-to-r from-emerald-400 via-yellow-400 to-red-400 rounded-full transition-all duration-700"
+          className="absolute left-0 top-0 h-full bg-cyan-400/70 rounded-full transition-all duration-700"
           style={{ width: `${gaugeWidth}%` }}
         />
         {/* Needle */}
@@ -202,20 +203,19 @@ function PercentileGauge({ percentile, pressure, regime, N, dataRange, raritySta
       </div>
 
       <div className="flex justify-between text-xs text-slate-500 mb-3">
-        <span>0th — Low Risk</span>
-        <span>50th — Median</span>
-        <span>100th — Critical</span>
+        <span>0th</span>
+        <span>50th — median</span>
+        <span>100th</span>
       </div>
 
-      <div className="text-xs text-slate-300 leading-relaxed">{rarityStatement}</div>
+      <div className="text-xs text-slate-300 leading-relaxed">{positionLine}</div>
+      <div className="text-xs text-slate-500 leading-relaxed mt-1">Historical percentile measures relative rarity, not the 0–100 Pressure Index severity level.</div>
 
       <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
         <span className="inline-flex items-center gap-1">
           <Info size={10} />
-          N={N} months | {dataRange}
+          N={N} monthly readings | {dataRange}
         </span>
-        <span className="text-slate-600">·</span>
-        <span className={`font-medium ${pressureColor}`}>{regime}</span>
       </div>
     </div>
   );
@@ -273,8 +273,8 @@ function AnalogCard({ analog, isExpanded, onToggle }: {
               <span className="text-xs text-slate-500">{analog.period}</span>
             </div>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className={`text-xs font-bold tabular-nums ${simColor}`}>{analog.similarity}%</span>
-              <span className="text-xs text-slate-500">similarity</span>
+              <span className={`text-xs font-bold tabular-nums ${simColor}`}>{analogSimilarityLabel(analog.similarity)}</span>
+              <span className="text-xs text-slate-500">{ANALOG_SIMILARITY_DESCRIPTOR}</span>
               {analog.estimatedDrawdown && (
                 <span className="text-xs text-red-400/80">{analog.estimatedDrawdown} est. drawdown</span>
               )}
@@ -371,37 +371,15 @@ function OutcomeDistributionBar({ dist }: { dist: OutcomeDistribution }) {
     );
   }
 
-  const bars = [
-    { label: "Bullish", pct: dist.bullishContinuation, color: "bg-emerald-400" },
-    { label: "Sideways", pct: dist.sideways, color: "bg-yellow-400" },
-    { label: "Correction", pct: dist.correction, color: "bg-red-400" },
-  ];
-
+  // The bullish / sideways / correction split is an uncalibrated frequency (already withheld
+  // from the model prompt); its percentages are not displayed as if they were probabilities.
   return (
     <div className="rounded-lg border border-slate-700/50 bg-slate-800/30 p-3">
-      <div className="space-y-2 mb-3">
-        {bars.map(bar => (
-          <div key={bar.label}>
-            <div className="flex justify-between text-xs mb-1">
-              <span className="text-slate-400">{bar.label} Continuation</span>
-              <span className="font-semibold tabular-nums text-slate-200">{bar.pct}%</span>
-            </div>
-            <div className="h-1.5 bg-slate-700/60 rounded-full overflow-hidden">
-              <div
-                className={`h-full ${bar.color} rounded-full transition-all duration-700`}
-                style={{ width: `${bar.pct}%` }}
-              />
-            </div>
-          </div>
-        ))}
+      <div className="flex items-center gap-2 text-slate-400 text-xs">
+        <AlertCircle size={12} />
+        <span>{OUTCOME_SPLIT_WITHHELD_TEXT}</span>
       </div>
-      <div className="flex items-center justify-between text-xs text-slate-500">
-        <span>N={dist.sampleSize} analogs</span>
-        <span className={`font-medium ${getConfidenceColor(dist.confidence)}`}>
-          {dist.confidence.toUpperCase()} confidence
-        </span>
-      </div>
-      <p className="text-xs text-slate-600 mt-2 leading-relaxed">{dist.disclaimer}</p>
+      <div className="mt-2 text-xs text-slate-500">N={dist.sampleSize} similar setups</div>
     </div>
   );
 }
@@ -440,7 +418,7 @@ function MarketEvolutionBlock({ evolution }: { evolution: MarketEvolution }) {
     { label: "Duration", value: evolution.howLong, color: "text-blue-400/80" },
     { label: "Why It Matters", value: evolution.whyItMatters, color: "text-slate-300" },
     { label: "What Accelerated", value: evolution.whatAccelerated, color: "text-orange-400/80" },
-    { label: "What Would Invalidate", value: evolution.whatWouldInvalidate, color: "text-emerald-400/80" },
+    { label: "What Would Change This Reading", value: evolution.whatWouldInvalidate, color: "text-emerald-400/80" },
   ];
 
   return (
@@ -460,9 +438,14 @@ function MarketEvolutionBlock({ evolution }: { evolution: MarketEvolution }) {
 interface HistoricalContextPanelProps {
   data: HistoricalIntelligenceData;
   defaultExpanded?: boolean;
+  /**
+   * Canonical analog gate (marketState.outlook.topAnalog != null) — the same gate NOW
+   * uses. Fail closed: without it, similarity scores are not shown.
+   */
+  analogsQualified?: boolean;
 }
 
-export function HistoricalContextPanel({ data, defaultExpanded = false }: HistoricalContextPanelProps) {
+export function HistoricalContextPanel({ data, defaultExpanded = false, analogsQualified = false }: HistoricalContextPanelProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [expandedAnalogs, setExpandedAnalogs] = useState<Set<number>>(new Set([0]));
 
@@ -474,6 +457,9 @@ export function HistoricalContextPanel({ data, defaultExpanded = false }: Histor
       return next;
     });
   };
+
+  const position = historicalPositionCopy({ percentile: data.historicalPercentile, n: data.historicalN, dataRange: data.dataRange });
+  const shownAnalogs = analogsQualified ? data.analogs : [];
 
   const refreshTime = data.computedAt
     ? new Date(data.computedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -492,13 +478,11 @@ export function HistoricalContextPanel({ data, defaultExpanded = false }: Histor
             <span className="text-xs font-semibold text-amber-400 uppercase tracking-widest">Historical Intelligence</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-slate-500">
-            <span className={`font-medium ${getPressureColor(data.currentPressure)}`}>
-              {formatOrdinal(data.historicalPercentile)} percentile
+            <span className="font-medium text-slate-300" title={HISTORICAL_PERCENTILE_TOOLTIP}>
+              {position ? position.label : HISTORICAL_POSITION_UNAVAILABLE}
             </span>
             <span>·</span>
-            <span>{data.frequency.label}</span>
-            <span>·</span>
-            <span>{data.analogs.length} analogs</span>
+            <span>{shownAnalogs.length > 0 ? `${shownAnalogs.length} qualified analogs` : NO_HIGH_CONFIDENCE_ANALOG_TEXT}</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -519,12 +503,12 @@ export function HistoricalContextPanel({ data, defaultExpanded = false }: Histor
       {/* Collapsed preview */}
       {!isExpanded && (
         <div className="px-4 pb-3 border-t border-slate-700/30">
-          <p className="text-xs text-slate-400 leading-relaxed mt-2">{data.rarityStatement}</p>
-          {data.analogs.length > 0 && (
+          {position && <p className="text-xs text-slate-400 leading-relaxed mt-2" title={position.tooltip}>{position.line}</p>}
+          {shownAnalogs.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {data.analogs.slice(0, 3).map(a => (
-                <span key={a.rank} className="text-xs px-2 py-0.5 rounded bg-slate-800/60 border border-slate-700/40 text-slate-400">
-                  {a.label} <span className={getSimilarityColor(a.similarity)}>{a.similarity}%</span>
+              {shownAnalogs.slice(0, 3).map(a => (
+                <span key={a.rank} title={ANALOG_SIMILARITY_DESCRIPTOR} className="text-xs px-2 py-0.5 rounded bg-slate-800/60 border border-slate-700/40 text-slate-400">
+                  {a.label} <span className={getSimilarityColor(a.similarity)}>{analogSimilarityLabel(a.similarity)}</span>
                 </span>
               ))}
             </div>
@@ -539,32 +523,47 @@ export function HistoricalContextPanel({ data, defaultExpanded = false }: Histor
           <div>
             <SectionHeader
               icon={<BarChart2 size={14} />}
-              title="Historical Percentile"
-              subtitle={`N=${data.historicalN} months | ${data.dataRange}`}
+              title="Historical Position"
+              subtitle={`N=${data.historicalN} monthly readings | ${data.dataRange}`}
             />
-            <PercentileGauge
-              percentile={data.historicalPercentile}
-              pressure={data.currentPressure}
-              regime={data.currentRegime}
-              N={data.historicalN}
-              dataRange={data.dataRange}
-              rarityStatement={data.rarityStatement}
-            />
+            {position ? (
+              <PercentileGauge
+                percentile={Math.round(data.historicalPercentile)}
+                pressure={data.currentPressure}
+                regime={data.currentRegime}
+                N={data.historicalN}
+                dataRange={data.dataRange}
+                positionLine={position.line}
+              />
+            ) : (
+              <div className="rounded-lg border border-slate-700/50 bg-slate-800/30 p-3 text-xs text-slate-400">
+                {HISTORICAL_POSITION_UNAVAILABLE} — no monthly Pressure Index record is available.
+              </div>
+            )}
             <div className="mt-2">
               <FrequencyBadge frequency={data.frequency} />
             </div>
           </div>
 
-          {/* Section 2: Historical Analogs */}
-          {data.analogs.length > 0 && (
+          {/* Section 2: Historical Analogs (canonical analog gate) */}
+          {shownAnalogs.length === 0 && (
+            <div>
+              <SectionHeader icon={<GitCompare size={14} />} title="Historical Analogs" />
+              <div className="rounded-lg border border-slate-700/50 bg-slate-800/30 p-3">
+                <div className="text-xs text-slate-300">{NO_HIGH_CONFIDENCE_ANALOG_TEXT}</div>
+                <div className="text-xs text-slate-500 mt-1">{ANALOG_NOT_QUALIFIED_DETAIL}</div>
+              </div>
+            </div>
+          )}
+          {shownAnalogs.length > 0 && (
             <div>
               <SectionHeader
                 icon={<GitCompare size={14} />}
                 title="Historical Analogs"
-                subtitle={`${data.analogs.length} closest matches from historical database`}
+                subtitle={`${shownAnalogs.length} qualified matches · ${ANALOG_SIMILARITY_DESCRIPTOR}`}
               />
               <div className="space-y-2">
-                {data.analogs.map(analog => (
+                {shownAnalogs.map(analog => (
                   <AnalogCard
                     key={analog.rank}
                     analog={analog}
@@ -588,22 +587,21 @@ export function HistoricalContextPanel({ data, defaultExpanded = false }: Histor
             </div>
           )}
 
-          {/* Section 4: Outcome Distribution */}
-          <div>
+          {/* Section 4: Outcome Distribution (derived from the analogs; only with qualified analogs) */}
+          {shownAnalogs.length > 0 && <div>
             <SectionHeader
               icon={<BarChart2 size={14} />}
               title="Historical Outcome Distribution"
               subtitle="What happened after similar setups"
             />
             <OutcomeDistributionBar dist={data.outcomeDistribution} />
-          </div>
+          </div>}
 
           {/* Section 5: Regime Comparison */}
           <div>
             <SectionHeader
               icon={<GitCompare size={14} />}
               title="Regime Comparison"
-              subtitle={data.regimeComparison.regimeLabel}
             />
             <RegimeComparisonBlock comparison={data.regimeComparison} />
           </div>
@@ -622,7 +620,7 @@ export function HistoricalContextPanel({ data, defaultExpanded = false }: Histor
           <div className="flex items-center justify-between pt-2 border-t border-slate-700/30">
             <div className="flex items-center gap-1.5 text-xs text-slate-600">
               <CheckCircle2 size={10} className="text-emerald-500/60" />
-              <span>All data computed from pressureHistory DB (2000–present)</span>
+              <span>Computed from {data.historicalN} monthly pressureHistory readings ({data.dataRange})</span>
             </div>
             <div className="text-xs text-slate-600">
               Refreshed {refreshTime}

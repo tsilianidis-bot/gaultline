@@ -35,7 +35,15 @@ import { HistoricalContextPanel } from "@/components/HistoricalContextPanel";
 import type { HistoricalIntelligenceData } from "@/components/HistoricalContextPanel";
 import { engineProbabilityText } from "@/lib/marketStateProjection";
 import { PROBABILITY_DISPLAY_TEXT } from "@shared/probabilityContract";
-import { CONFIDENCE_NOT_ESTABLISHED, confidenceDisplayText, hasConfidenceValue } from "@/lib/confidenceDisplay";
+import { confidenceDisplayText } from "@/lib/confidenceDisplay";
+import type { GovernedEarlyWarningPresentation } from "@shared/earlyWarningPresentation";
+import {
+  TOP_ANSWER_LABELS, pressureIndexText, riskRegimeText, riskRegimeColor, regimeDirectionText,
+  engineCoverage, engineCoverageText, engineCoverageDetail, canonicalStateText,
+  materialEarlyWarningText, invalidationLines, biasStanceText,
+  sanitizeMacroAnswerForDisplay, evidenceSignalCounts, EVIDENCE_ENGINE_DESCRIPTOR,
+  NO_HIGH_CONFIDENCE_ANALOG_TEXT, ANALOG_NOT_QUALIFIED_DETAIL,
+} from "@/lib/macroAnswerPresentation";
 
 // ── Design tokens ─────────────────────────────────────────────
 const BG = "#050608";
@@ -351,47 +359,16 @@ function ExecutionSequence({ currentStep }: { currentStep: number }) {
   );
 }
 
-// ── FMOS Engine Status Mini-Card ──────────────────────────────
-
-function EngineCard({ icon, label, value, color, sub, subColor }: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  color: string;
-  sub?: string;
-  subColor?: string;
-}) {
-  return (
-    <div style={{
-      padding: "10px 12px",
-      background: "rgba(255,255,255,0.02)",
-      border: "1px solid rgba(255,255,255,0.06)",
-      borderRadius: "6px",
-      display: "flex",
-      flexDirection: "column",
-      gap: "5px",
-      minWidth: 0,
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-        <span style={{ color: "rgba(255,255,255,0.25)", flexShrink: 0 }}>{icon}</span>
-        <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
-      </div>
-      <div style={{ ...MONO, fontSize: "11px", fontWeight: 700, color, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value}</div>
-      {sub && <div style={{ ...MONO_SM, color: subColor ?? "rgba(255,255,255,0.2)", fontSize: "9px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</div>}
-    </div>
-  );
-}
-
 // ── Evidence Engine Grid (V2.0) ───────────────────────────────
 
-function EvidenceEngineGrid({ scores }: { scores: EvidenceScore[] }) {
+export function EvidenceEngineGrid({ scores }: { scores: EvidenceScore[] }) {
   const [expanded, setExpanded] = useState(false);
 
   if (!scores || scores.length === 0) return null;
 
-  const bullish = scores.filter(s => s.signal === "bullish").length;
-  const bearish = scores.filter(s => s.signal === "bearish").length;
-  const neutral = scores.filter(s => s.signal === "neutral").length;
+  // Counts of the answer model's category signals. These 0–100 category scores are
+  // model-written (not canonical engine values), so no per-category number is shown.
+  const { bullish, bearish, neutral, notApplicable } = evidenceSignalCounts(scores);
 
   return (
     <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px", overflow: "hidden" }}>
@@ -413,7 +390,7 @@ function EvidenceEngineGrid({ scores }: { scores: EvidenceScore[] }) {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", fontSize: "10px" }}>
-            {scores.length} categories
+            {scores.length} categories{notApplicable > 0 ? ` · ${notApplicable} not applicable` : ""}
           </span>
           {expanded
             ? <ChevronUp size={12} style={{ color: "rgba(255,255,255,0.3)" }} />
@@ -422,12 +399,16 @@ function EvidenceEngineGrid({ scores }: { scores: EvidenceScore[] }) {
         </div>
       </button>
 
+      <div data-testid="evidence-engine-descriptor" style={{ padding: "0 16px 8px", fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "rgba(255,255,255,0.4)" }}>
+        {EVIDENCE_ENGINE_DESCRIPTOR}
+      </div>
+
       {/* Compact summary bar — always visible */}
       <div style={{ padding: "0 16px 12px", display: "flex", gap: "4px", flexWrap: "wrap" }}>
         {scores.map((s, i) => (
           <div
             key={i}
-            title={`${s.category}: ${s.signal} (${s.score}/100) — ${s.explanation}`}
+            title={`${s.category}: ${s.signal} — ${s.explanation}`}
             style={{
               width: "24px",
               height: "24px",
@@ -445,7 +426,7 @@ function EvidenceEngineGrid({ scores }: { scores: EvidenceScore[] }) {
               height: "8px",
               borderRadius: "50%",
               background: signalColor(s.signal),
-              opacity: 0.7 + (s.score / 333),
+              opacity: 0.85,
             }} />
           </div>
         ))}
@@ -472,13 +453,7 @@ function EvidenceEngineGrid({ scores }: { scores: EvidenceScore[] }) {
                 {s.explanation}
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "5px", justifyContent: "flex-end" }}>
-                <div style={{
-                  width: "32px",
-                  height: "3px",
-                  background: `linear-gradient(90deg, ${signalColor(s.signal)} ${s.score}%, rgba(255,255,255,0.08) ${s.score}%)`,
-                  borderRadius: "2px",
-                }} />
-                <span style={{ ...MONO_SM, color: signalColor(s.signal), fontSize: "10px", fontWeight: 700 }}>{s.score}</span>
+                <span style={{ ...MONO_SM, color: signalColor(s.signal), fontSize: "9px", fontWeight: 700, textTransform: "uppercase" }}>{s.signal}</span>
               </div>
             </div>
           ))}
@@ -564,10 +539,10 @@ export function ContractScenarioStrip({ compact = false }: { compact?: boolean }
   );
 }
 
-function BullBearSection({ answer }: { answer: FaultlineAnswer }) {
+function BullBearSection({ answer, showContract = true }: { answer: FaultlineAnswer; showContract?: boolean }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      <ContractScenarioStrip />
+      {showContract && <ContractScenarioStrip />}
 
       {/* Bull / Bear cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "8px" }}>
@@ -1110,31 +1085,99 @@ function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
   return null;
 }
 
+// ── Top Answer (canonical market state, stated once) ─────────
+
+export interface MacroTopAnswerProps {
+  pressureIndex: number | null;
+  pressureDirection: string | null;
+  integrityLabel: string | null;
+  engines: ReadonlyArray<{ engineId: string; engineName?: string | null; freshnessStatus?: string | null }>;
+  earlyWarning: GovernedEarlyWarningPresentation | null | undefined;
+  confidenceText: string;
+  suggestedBias?: string | null;
+  finalVerdictAction?: string | null;
+}
+
+/**
+ * The page's single statement of the conclusion. Every value is read from the
+ * canonical state / governed presentation contracts; nothing is defaulted.
+ */
+export function MacroTopAnswerBlock(props: MacroTopAnswerProps) {
+  const coverage = engineCoverage(props.engines);
+  const stateText = canonicalStateText(props.integrityLabel);
+  const isLive = String(props.integrityLabel ?? "").toUpperCase() === "LIVE";
+  const regime = riskRegimeText(props.pressureIndex);
+  const regimeColor = riskRegimeColor(props.pressureIndex);
+  const cells: Array<{ label: string; value: string; color: string; title?: string }> = [
+    { label: TOP_ANSWER_LABELS.pressureIndex, value: pressureIndexText(props.pressureIndex), color: "#F0F4FF", title: "Canonical 0–100 Pressure Index (severity)." },
+    { label: TOP_ANSWER_LABELS.riskRegime, value: regime, color: regimeColor, title: "Canonical risk classification from the Pressure Index band." },
+    { label: TOP_ANSWER_LABELS.regimeDirection, value: regimeDirectionText(props.pressureDirection), color: "#C8D0DC", title: "Canonical direction of change. It never replaces the risk regime." },
+    { label: TOP_ANSWER_LABELS.materialEarlyWarning, value: materialEarlyWarningText(props.earlyWarning), color: "#C8D0DC", title: "Governed Early Warning presentation (Phase 10)." },
+    { label: TOP_ANSWER_LABELS.confidence, value: props.confidenceText.toUpperCase(), color: "#94A3B8", title: "Shown only when governed evidence supports it." },
+    { label: TOP_ANSWER_LABELS.bias, value: biasStanceText(props.suggestedBias, props.finalVerdictAction), color: ACCENT, title: "Stance stated in this answer." },
+  ];
+  return (
+    <div data-testid="macro-top-answer" style={{ padding: "14px 16px", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", flexWrap: "wrap", marginBottom: "10px" }}>
+        <span style={{ ...MONO_SM, color: ACCENT, letterSpacing: "0.14em", fontSize: "10px" }}>TOP ANSWER</span>
+        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+          <span data-testid="canonical-state-status" style={{ ...MONO_SM, fontSize: "9px", padding: "2px 7px", borderRadius: "3px", border: "1px solid rgba(255,255,255,0.1)", color: isLive ? "#00FF88" : "#7DD3FC" }}>{stateText}</span>
+          <span data-testid="engine-coverage-status" title={engineCoverageDetail(coverage, props.engines)} style={{ ...MONO_SM, fontSize: "9px", padding: "2px 7px", borderRadius: "3px", border: "1px solid rgba(255,255,255,0.1)", color: coverage.notCurrent > 0 ? "#FBBF24" : "#00FF88" }}>{engineCoverageText(coverage)}</span>
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "8px" }}>
+        {cells.map(cell => (
+          <div key={cell.label} title={cell.title} style={{ padding: "8px 10px", background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "6px" }}>
+            <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", fontSize: "8px", letterSpacing: "0.12em", marginBottom: "4px" }}>{cell.label}</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "13px", fontWeight: 700, color: cell.color }}>{cell.value}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** INVALIDATION CONDITIONS — governed conditions only (model text is withheld upstream). */
+export function MacroInvalidation({ lines }: { lines: string[] }) {
+  return (
+    <div data-testid="macro-invalidation" style={{
+      padding: "12px 16px",
+      background: "rgba(255,165,0,0.04)",
+      border: "1px solid rgba(255,165,0,0.12)",
+      borderRadius: "8px",
+      display: "flex",
+      gap: "10px",
+      alignItems: "flex-start",
+    }}>
+      <AlertTriangle size={12} style={{ color: "#FFA500", marginTop: "2px", flexShrink: 0 }} />
+      <div>
+        <div style={{ ...MONO_SM, color: "#FFA500", marginBottom: "3px", fontSize: "9px" }}>INVALIDATION CONDITIONS</div>
+        {lines.map((line, i) => (
+          <div key={i} style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC" }}>{line}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Full Institutional Answer ─────────────────────────────────
 
-function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: FaultlineAnswer; onDeepDive: (path: string) => void; onAskFollowUp: (prompt: string) => void }) {
+export function InstitutionalAnswer({ answer: servedAnswer, onDeepDive, onAskFollowUp }: { answer: FaultlineAnswer; onDeepDive: (path: string) => void; onAskFollowUp: (prompt: string) => void }) {
   const [showExpanded, setShowExpanded] = useState(false);
   const [showDeepDive, setShowDeepDive] = useState(false);
+  // Canonical state + governed contracts for the TOP ANSWER block (never the answer's colour bucket).
+  const { canonicalState, marketState, integrityLabel } = useEngine();
+  const earlyWarningQuery = trpc.marketState.earlyWarningPresentationCurrent.useQuery(undefined, { staleTime: 30_000, refetchOnWindowFocus: false });
+  const earlyWarning = (earlyWarningQuery.data ?? null) as GovernedEarlyWarningPresentation | null;
+  const pressureIndex = canonicalState?.pressureIndex ?? null;
+  // Same analog gate NOW uses: similarity is shown only when the canonical outlook qualifies an analog.
+  const analogQualified = marketState?.outlook?.topAnalog != null;
+  const answer = useMemo(() => sanitizeMacroAnswerForDisplay(servedAnswer, {
+    pressureIndex,
+    riskRegime: pressureIndex == null ? null : riskRegimeText(pressureIndex),
+    analogQualified,
+  }), [servedAnswer, pressureIndex, analogQualified]);
   const vs = verdictStyle(answer.verdictColor);
-
-  // Derive FMOS engine status values from answer fields
-  const regimeStatus = answer.regimeColor === "green" ? "STABLE" : answer.regimeColor === "red" ? "STRESSED" : "TRANSITIONING";
-  const regimeColor = answer.regimeColor === "green" ? "#00FF88" : answer.regimeColor === "red" ? "#FF4444" : "#FFD700";
-  // Confidence color — driven by confidenceLabel (HIGH/MODERATE/LOW) from ASHA, falling back to numeric score
-  const confidenceLabelNorm = (answer.confidenceLabel ?? "").toUpperCase().trim();
-  const confidenceColor = confidenceLabelNorm === "HIGH" ? "#00FF88"
-    : confidenceLabelNorm === "MODERATE" ? "#FFD700"
-    : confidenceLabelNorm === "LOW" ? "#FF4444"
-    : !hasConfidenceValue(answer.confidence) ? "#94A3B8"
-    : answer.confidence >= 70 ? "#00FF88" : answer.confidence >= 45 ? "#FFD700" : "#FF4444";
-  const confidenceBg = confidenceLabelNorm === "HIGH" ? "rgba(0,255,136,0.08)"
-    : confidenceLabelNorm === "MODERATE" ? "rgba(255,215,0,0.08)"
-    : "rgba(255,68,68,0.08)";
-  const confidenceBorder = confidenceLabelNorm === "HIGH" ? "rgba(0,255,136,0.2)"
-    : confidenceLabelNorm === "MODERATE" ? "rgba(255,215,0,0.2)"
-    : "rgba(255,68,68,0.2)";
-  const opportunityColor = answer.opportunityScore >= 65 ? "#00FF88" : answer.opportunityScore >= 40 ? "#FFD700" : "#FF4444";
-
   // Determine if this is a WAIT/HOLD verdict
   const isWaitHold = ["WAIT", "HOLD", "LOW CONVICTION"].includes(answer.verdict);
   // For general_analysis the DirectAnswerPanel already shows the executive summary — skip it in the body
@@ -1143,7 +1186,19 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
 
-      {/* ── DIRECT ANSWER PANEL (renders first for ALL question types) ── */}
+      {/* ── TOP ANSWER: the conclusion, stated once, from canonical state ── */}
+      <MacroTopAnswerBlock
+        pressureIndex={pressureIndex}
+        pressureDirection={canonicalState?.pressureDirection ?? null}
+        integrityLabel={integrityLabel}
+        engines={canonicalState?.engines ?? []}
+        earlyWarning={earlyWarning}
+        confidenceText={confidenceDisplayText(answer.confidence)}
+        suggestedBias={answer.suggestedBias}
+        finalVerdictAction={answer.finalVerdictAction}
+      />
+
+      {/* ── DIRECT ANSWER PANEL ── */}
       <DirectAnswerPanel answer={answer} />
 
       {/* ── Bull / Bear balance (contract text, no model numbers) — always visible, immediately after direct answer ── */}
@@ -1156,8 +1211,8 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
         border: `1px solid ${vs.borderColor}`,
         borderRadius: "8px",
       }}>
-        {/* Row 1: ticker + verdict + timeframe badge */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "10px" }}>
+        {/* Row 1: ticker + verdict + timeframe badge (general analysis states the verdict in the Direct Answer) */}
+        {!isGeneralAnalysis && <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "10px" }}>
           {answer.ticker && (
             <div style={{
               ...MONO, fontSize: "11px", fontWeight: 700,
@@ -1184,23 +1239,10 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
               {answer.expectedTimeframe}
             </div>
           )}
-        </div>
+        </div>}
 
-        {/* Row 2: opportunity + confidence bars */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
-          {[
-            { label: "OPPORTUNITY", value: answer.opportunityScore as number | null, color: answer.verdictColor },
-            { label: "CONFIDENCE", value: hasConfidenceValue(answer.confidence) ? answer.confidence : null, color: confidenceLabelNorm === "HIGH" ? "green" : confidenceLabelNorm === "MODERATE" ? "yellow" : "red" },
-          ].map(({ label, value, color }) => (
-            <div key={label}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.4)" }}>{label}</span>
-                <span style={{ ...MONO_SM, color: value == null ? "#94A3B8" : verdictStyle(color).color, fontWeight: 700 }}>{value == null ? CONFIDENCE_NOT_ESTABLISHED : value}</span>
-              </div>
-              {value != null && <div style={scoreBar(value, color)} />}
-            </div>
-          ))}
-        </div>
+        {/* Opportunity (model-written 0–100, not a governed index) and the duplicate
+            confidence bar are not displayed; confidence is stated once in TOP ANSWER. */}
 
         {/* Row 3: suggested action */}
         <div style={{
@@ -1221,44 +1263,6 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
         </div>
       </div>
 
-      {/* ── FMOS Engine Cards row ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "6px" }}>
-        <EngineCard
-          icon={<Activity size={9} />}
-          label="Regime"
-          value={regimeStatus}
-          color={regimeColor}
-          sub={answer.currentRegime.slice(0, 22)}
-        />
-        <EngineCard
-          icon={<BarChart2 size={9} />}
-          label="Confidence"
-          value={confidenceDisplayText(answer.confidence)}
-          color={confidenceColor}
-          sub={answer.confidenceLabel}
-          subColor={confidenceColor}
-        />
-        <EngineCard
-          icon={<Target size={9} />}
-          label="Opportunity"
-          value={`${answer.opportunityScore}/100`}
-          color={opportunityColor}
-        />
-        <EngineCard
-          icon={<GitBranch size={9} />}
-          label="Asset"
-          value={(answer.assetType ?? answer.queryType ?? "MACRO").toUpperCase()}
-          color="rgba(255,255,255,0.55)"
-        />
-        <EngineCard
-          icon={<Shield size={9} />}
-          label="Data"
-          value="LIVE"
-          color="#00FF88"
-          sub={answer.dataFreshness.slice(0, 18)}
-        />
-      </div>
-
       {/* ── Executive Summary (only for non-general_analysis, since general_analysis shows it in DirectAnswerPanel) ── */}
       {!isGeneralAnalysis && (
         <div style={{ padding: "16px 18px", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px" }}>
@@ -1275,37 +1279,23 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
       )}
 
       {/* ── Bull / Bear (shown here for general_analysis since ContractScenarioStrip is already in DirectAnswerPanel) ── */}
-      {isGeneralAnalysis && <BullBearSection answer={answer} />}
+      {isGeneralAnalysis && <BullBearSection answer={answer} showContract={false} />}
 
       {/* ── Why Not Buy/Sell (only for WAIT/HOLD) ── */}
       {isWaitHold && (
         <WhyNotSection whyNotBuy={answer.whyNotBuy} whyNotSell={answer.whyNotSell} />
       )}
 
-      {/* ── Invalidation (always visible) ── */}
-      <div style={{
-        padding: "12px 16px",
-        background: "rgba(255,165,0,0.04)",
-        border: "1px solid rgba(255,165,0,0.12)",
-        borderRadius: "8px",
-        display: "flex",
-        gap: "10px",
-        alignItems: "flex-start",
-      }}>
-        <AlertTriangle size={12} style={{ color: "#FFA500", marginTop: "2px", flexShrink: 0 }} />
-        <div>
-          <div style={{ ...MONO_SM, color: "#FFA500", marginBottom: "3px", fontSize: "9px" }}>INVALIDATION CONDITIONS</div>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC" }}>{answer.invalidation}</span>
-        </div>
-      </div>
+      {/* ── Invalidation (always visible; governed conditions only) ── */}
+      <MacroInvalidation lines={invalidationLines(earlyWarning)} />
 
       {/* ── What Changes Our View ── */}
       {answer.watchCatalysts && answer.watchCatalysts.length > 0 && (
         <WatchCatalysts catalysts={answer.watchCatalysts} />
       )}
 
-      {/* ── SUGGESTED BIAS ── */}
-      {answer.suggestedBias && (
+      {/* ── BIAS CONDITION (the stance itself is stated once in TOP ANSWER) ── */}
+      {answer.suggestedBiasCondition && (
         <div style={{
           padding: "12px 16px",
           background: "rgba(0,212,255,0.04)",
@@ -1317,15 +1307,10 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
         }}>
           <TrendingUp size={12} style={{ color: "#00D4FF", marginTop: "2px", flexShrink: 0 }} />
           <div style={{ flex: 1 }}>
-            <div style={{ ...MONO_SM, color: "#00D4FF", marginBottom: "4px", fontSize: "9px", letterSpacing: "0.12em" }}>RECOMMENDED BIAS</div>
-            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#E8EDF5", fontWeight: 600, marginBottom: answer.suggestedBiasCondition ? "4px" : 0 }}>
-              {answer.suggestedBias}
+            <div style={{ ...MONO_SM, color: "#00D4FF", marginBottom: "4px", fontSize: "9px", letterSpacing: "0.12em" }}>BIAS HOLDS WHILE</div>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "rgba(255,255,255,0.65)", lineHeight: 1.5 }}>
+              {answer.suggestedBiasCondition}
             </div>
-            {answer.suggestedBiasCondition && (
-              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "rgba(255,255,255,0.45)", lineHeight: 1.5 }}>
-                Condition: {answer.suggestedBiasCondition}
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -1366,7 +1351,17 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
         </div>
       )}
 
-      {/* ── HISTORICAL ANALOG ── */}
+      {/* ── HISTORICAL ANALOG (model text only when the canonical analog gate qualifies one) ── */}
+      {!analogQualified && servedAnswer.historicalAnalog && !answer.historicalIntelligence && (
+        <div data-testid="analog-not-qualified" style={{ padding: "12px 16px", background: "rgba(255,215,0,0.03)", border: "1px solid rgba(255,215,0,0.12)", borderRadius: "8px", display: "flex", gap: "10px", alignItems: "flex-start" }}>
+          <BookOpen size={12} style={{ color: "#FFD700", marginTop: "2px", flexShrink: 0 }} />
+          <div>
+            <div style={{ ...MONO_SM, color: "#FFD700", marginBottom: "4px", fontSize: "9px", letterSpacing: "0.12em" }}>HISTORICAL ANALOG</div>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#E8EDF5" }}>{NO_HIGH_CONFIDENCE_ANALOG_TEXT}</div>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "rgba(255,255,255,0.5)", lineHeight: 1.5 }}>{ANALOG_NOT_QUALIFIED_DETAIL}</div>
+          </div>
+        </div>
+      )}
       {answer.historicalAnalog && (
         <div style={{
           padding: "12px 16px",
@@ -1407,10 +1402,6 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
           : ["SELL", "AVOID"].includes(fvAction) ? "rgba(255,68,68,0.25)"
           : ["REDUCE"].includes(fvAction) ? "rgba(255,107,53,0.25)"
           : "rgba(255,215,0,0.25)";
-        const rlColor = answer.finalVerdictRiskLevel === "LOW" ? "#00FF88"
-          : answer.finalVerdictRiskLevel === "MODERATE" ? "#FFD700"
-          : answer.finalVerdictRiskLevel === "EXTREME" ? "#FF1744"
-          : "#FF4444";
         return (
           <div style={{
             padding: "18px 20px",
@@ -1447,11 +1438,11 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
             </div>
 
             {/* Probability + Confidence + Risk grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginBottom: "12px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 220px)", gap: "10px", marginBottom: "12px" }}>
+              {/* Confidence is stated once in TOP ANSWER; the model's own risk level is not shown
+                  beside the canonical RISK REGIME. */}
               {[
                 { label: "PROBABILITY", value: PROBABILITY_DISPLAY_TEXT.NOT_OFFERED, color: "#94A3B8" },
-                { label: "CONFIDENCE", value: confidenceDisplayText(answer.finalVerdictConfidence), color: hasConfidenceValue(answer.finalVerdictConfidence) ? confidenceColor : "#94A3B8" },
-                { label: "RISK LEVEL", value: answer.finalVerdictRiskLevel ?? "—", color: rlColor },
               ].map(({ label, value, color }) => (
                 <div key={label} style={{
                   padding: "8px 10px",
@@ -1692,7 +1683,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
                 : "#FFD700",
               textTransform: "uppercase",
             }}>
-              {answer.collectiveReading.riskRegime}
+              RISK APPETITE · {answer.collectiveReading.riskRegime}
             </div>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "rgba(0,212,255,0.9)", textTransform: "uppercase" }}>
               Collective Reading
@@ -1735,6 +1726,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
         <HistoricalContextPanel
           data={answer.historicalIntelligence}
           defaultExpanded={false}
+          analogsQualified={analogQualified}
         />
       )}
 

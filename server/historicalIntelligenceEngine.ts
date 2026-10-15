@@ -484,15 +484,12 @@ export async function computeHistoricalIntelligence(
     ? `${allHistory[0]?.month ?? "N/A"} to ${allHistory[historicalN - 1]?.month ?? "N/A"}`
     : "N/A";
 
-  const rarityStatement = historicalPercentile >= 90
-    ? `This is an extreme reading — higher than ${historicalPercentile}% of all historical months since ${allHistory[0]?.month?.slice(0, 4) ?? "2000"}.`
-    : historicalPercentile >= 75
-    ? `This is a very elevated reading — higher than ${historicalPercentile}% of all historical months.`
-    : historicalPercentile >= 60
-    ? `This is an elevated reading — above ${historicalPercentile}% of all historical months.`
-    : historicalPercentile >= 40
-    ? `This is a moderate reading — near the historical median.`
-    : `This is a low reading — below ${100 - historicalPercentile}% of all historical months.`;
+  // Copy only (no value changes): relative rarity over the stated monthly record. Severity
+  // words ("very elevated", "extreme") are not used — they read as Pressure Index severity
+  // and can contradict the canonical band (e.g. 83rd percentile while MODERATE RISK).
+  const rarityStatement = historicalN > 0
+    ? `The current reading is higher than ${historicalPercentile}% of the ${historicalN} monthly Pressure Index readings on record (${dataRange}). Historical percentile measures relative rarity, not Pressure Index severity.`
+    : "No monthly Pressure Index record is available; historical position is not established.";
 
   // ── Section 2: Historical Analogs ─────────────────────────────────────────
   const rawAnalogs = historicalContext?.analogMatches ?? [];

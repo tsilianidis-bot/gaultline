@@ -1,0 +1,15 @@
+{
+  "contractVersion": "phase10-early-warning-presentation-v1",
+  "kind": "NO_MATERIAL_EARLY_WARNING",
+  "presentationId": "p10:none:d71a562639f1d9dc7570fd8d",
+  "stateId": "state:2026-10-05T18:01:59.015Z:1ff0807329b2beb4",
+  "synthesisId": "ed0e32f659412a7c7a2caa4f",
+  "message": "Current governed cross-engine evidence does not meet FAULTLINE\u2019s qualification requirements for a material developing warning.",
+  "limitations": [
+    "This does not mean markets are safe, bullish, or without downside risk."
+  ],
+  "freshness": "CURRENT",
+  "generatedAt": "2026-10-06T03:22:58.311Z",
+  "presentationContractVersion": "phase10-early-warning-presentation-v1",
+  "_source": "GET https://getfaultline.live/api/trpc/marketState.earlyWarningPresentationCurrent (guest, read-only) 2026-10-05 23:22 ET"
+}
