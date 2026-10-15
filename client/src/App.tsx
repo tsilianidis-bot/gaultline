@@ -22,6 +22,7 @@ import AshaLiveBriefing from './components/AshaLiveBriefing';
 import CinematicAuthGate from './components/CinematicAuthGate';
 import { useAuth } from './_core/hooks/useAuth';
 import { useLocation } from 'wouter';
+import { POST_LOGIN_RETURN_KEY, decodeReturnPath } from '@shared/checkoutReturn';
 import { ANALYTICAL_LEGACY_ALIASES, CANONICAL_DESTINATIONS, CANONICAL_DESTINATION_BY_ID, EXPERT_WORKSPACE_BY_ID, preserveRouteContext, type CanonicalDestinationId, CANONICAL_HOME } from '@shared/routeRegistry';
 
 // ── Lazy-loaded pages — each page is a separate chunk ─────────
@@ -987,6 +988,20 @@ function App() {
       }
     } catch {}
   }, [authLoading, user?.id]);
+  // After sign-in the OAuth callback lands on /app. If the visitor was sent to sign in from the checkout
+  // success page, return them there once (allowlisted, same-origin, expiring path — see shared/checkoutReturn). /app itself redirects to /app/now,
+  // so this keys off "anywhere in the signed-in app", not the exact /app path.
+  useEffect(() => {
+    if (authLoading || !user) return;
+    if (!isProductPath) return;
+    try {
+      const stored = localStorage.getItem(POST_LOGIN_RETURN_KEY);
+      if (stored === null) return;
+      localStorage.removeItem(POST_LOGIN_RETURN_KEY);
+      const target = decodeReturnPath(stored);
+      if (target) navigate(target, { replace: true });
+    } catch {}
+  }, [authLoading, user?.id, isProductPath, navigate]);
   // Re-check ashaBriefingDone when user resolves (user id needed for per-user key).
   useEffect(() => {
     if (!user) return;
