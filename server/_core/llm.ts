@@ -185,6 +185,69 @@ const normalizeMessage = (message: Message) => {
   };
 };
 
+/**
+ * In-process protection for an explicit daily/free-tier quota. The circuit is
+ * keyed by model so a confirmed exhaustion does not cause repeated calls to
+ * the same model, while a separately configured PLATO fallback can still run.
+ */
+const quotaCircuitByModel = new Map<string, number>();
+
+function nextPacificMidnight(now = new Date()): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const value = (type: string) => parts.find(part => part.type === type)?.value ?? "";
+  const nextDate = new Date(Date.UTC(Number(value("year")), Number(value("month")) - 1, Number(value("day")) + 1));
+  const base = Date.UTC(nextDate.getUTCFullYear(), nextDate.getUTCMonth(), nextDate.getUTCDate());
+  const offsetAt = (utcMs: number) => {
+    const offset = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "shortOffset" })
+      .formatToParts(new Date(utcMs))
+      .find(part => part.type === "timeZoneName")?.value ?? "GMT";
+    const match = /^GMT([+-])(\d{1,2})(?::(\d{2}))?$/.exec(offset);
+    if (!match) return 0;
+    const minutes = Number(match[2]) * 60 + Number(match[3] ?? 0);
+    return (match[1] === "+" ? 1 : -1) * minutes * 60_000;
+  };
+  // Resolve midnight in the named timezone rather than assuming a fixed PST/PDT offset.
+  let midnightUtc = base;
+  for (let i = 0; i < 2; i++) midnightUtc = base - offsetAt(midnightUtc);
+  // A short post-reset buffer prevents a boundary race with the provider.
+  return midnightUtc + 60_000;
+}
+
+function retryAfterMs(response: Response, errorText: string): number | null {
+  const header = response.headers.get("retry-after")?.trim() ?? "";
+  const seconds = Number(header);
+  if (Number.isFinite(seconds) && seconds > 0) return Math.min(Math.round(seconds * 1_000), 60 * 60_000);
+  const providerDelay = errorText.match(/retry(?:[_ -]?delay|[_ -]?after)[^0-9]{0,80}(\d+(?:\.\d+)?)\s*s(?:ec(?:onds?)?)?/i);
+  if (!providerDelay) return null;
+  const parsed = Number(providerDelay[1]);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.min(Math.round(parsed * 1_000), 60 * 60_000) : null;
+}
+
+function isDailyQuotaExhaustion(errorText: string): boolean {
+  return /free[ -]?tier|requests?\s+per\s+day|per[- ]day|quota\s+limit\s*[:=]?\s*20\b|daily\s+quota/i.test(errorText);
+}
+
+function assertQuotaCircuitOpen(model: string): void {
+  const until = quotaCircuitByModel.get(model);
+  if (!until) return;
+  if (until <= Date.now()) {
+    quotaCircuitByModel.delete(model);
+    return;
+  }
+  const retrySeconds = Math.max(1, Math.ceil((until - Date.now()) / 1_000));
+  throw new Error(`LLM provider quota circuit is open for model ${model}; retry-after-ms=${retrySeconds * 1_000}`);
+}
+
+/** Test seam only; production code never clears an active provider quota circuit. */
+export function resetLlmQuotaCircuitForTests(): void {
+  quotaCircuitByModel.clear();
+}
+
 const normalizeToolChoice = (
   toolChoice: ToolChoice | undefined,
   tools: Tool[] | undefined
@@ -326,8 +389,11 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     signal,
   } = params;
 
+  const selectedModel = model ?? "gemini-3-flash-preview";
+  assertQuotaCircuitOpen(selectedModel);
+
   const payload: Record<string, unknown> = {
-    model: model ?? "gemini-3-flash-preview",
+    model: selectedModel,
     messages: messages.map(normalizeMessage),
   };
 
@@ -368,8 +434,12 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
 
   if (!response.ok) {
     const errorText = await response.text();
+    const waitMs = retryAfterMs(response, errorText);
+    if (response.status === 429 && isDailyQuotaExhaustion(errorText)) {
+      quotaCircuitByModel.set(selectedModel, nextPacificMidnight());
+    }
     throw new Error(
-      `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
+      `LLM invoke failed: ${response.status} ${response.statusText}${waitMs ? ` retry-after-ms=${waitMs}` : ""} – ${errorText}`
     );
   }
 

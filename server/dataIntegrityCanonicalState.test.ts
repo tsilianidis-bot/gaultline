@@ -133,7 +133,9 @@ describe("source guards — production surfaces", () => {
   });
 
   it("NOW fails closed when the canonical state is unavailable", () => {
-    expect(src("client/src/pages/Now.tsx")).toMatch(/if \(!marketState \|\| !canonicalState\) \{?\s*return <PageDegradedBanner/);
+    const now = src("client/src/pages/Now.tsx");
+    expect(now).toMatch(/if \(!marketState \|\| !canonicalState\) \{?\s*return <main[^>]*><div[^>]*><PageDegradedBanner/);
+    expect(now).toMatch(/<MarketActionReadout lens="now" \/>/);
   });
 
   it("Watchlist, Alerts and the deep dashboard never show EngineContext.indicators as readings", () => {

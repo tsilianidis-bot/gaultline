@@ -34,6 +34,7 @@ import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateView
 import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
 import { forecastConfidenceDisplay } from "@shared/confidenceDisplay";
 import { SectorRotationQuestion } from "@/components/sectorRotation/SectorRotationModule";
+import { MarketActionReadout } from "@/components/marketAction/MarketActionReadout";
 
 const WATCH_DEEP_PATH = "/app/watch/deep";
 
@@ -220,8 +221,8 @@ export default function Watch() {
     document.title = "WATCH — FAULTLINE";
   }, []);
 
-  if (isLoading && !canonicalState) return <PageLoadingState eyebrow="WATCH · Monitoring state" message="Loading authoritative canonical state…" />;
-  if (!canonicalState) return <PageDegradedBanner message="Current canonical state is unavailable." detail="WATCH withholds current monitoring interpretation until one authoritative state is available." />;
+  if (isLoading && !canonicalState) return <main className="min-h-screen bg-[#090c11] px-5 py-8 text-slate-100 md:px-10 md:py-12"><div className="mx-auto max-w-7xl space-y-5"><PageLoadingState eyebrow="WATCH · Monitoring state" message="Loading authoritative canonical state…" /><MarketActionReadout lens="watch" /></div></main>;
+  if (!canonicalState) return <main className="min-h-screen bg-[#090c11] px-5 py-8 text-slate-100 md:px-10 md:py-12"><div className="mx-auto max-w-7xl space-y-5"><PageDegradedBanner message="Current canonical state is unavailable." detail="WATCH withholds current monitoring interpretation until one authoritative state is available." /><MarketActionReadout lens="watch" /></div></main>;
 
   // Without MarketState the browser engine runs on demo inputs: no conditions,
   // indicators or monitor items come from its domains ("Unavailable" instead).
@@ -367,6 +368,8 @@ export default function Watch() {
         {/* ── SECTIONS ─────────────────────────────────────────────────── */}
 
         <SectorRotationQuestion question="watch" />
+
+        <MarketActionReadout lens="watch" />
 
         <Section id="threshold-meters" index="01" eyebrow="Threshold proximity" title="How close each domain is to its alert threshold" description="Each meter shows the current pressure reading against a normalized 0–100 scale. The closer to 100, the closer the domain is to a critical threshold.">
           {developingConditions.length === 0 && <WatchUnavailable id="threshold-meters" />}

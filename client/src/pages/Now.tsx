@@ -42,6 +42,7 @@ import SystemicRegimeModule from "@/components/SystemicRegimeModule";
 import { trpc } from "@/lib/trpc";
 import { deltaDirection, deltaTrend, knownDelta } from "@/lib/deltaAvailability";
 import { SectorRotationMap } from "@/components/sectorRotation/SectorRotationModule";
+import { MarketActionReadout } from "@/components/marketAction/MarketActionReadout";
 
 const NOW_DEEP_PATH = "/app/now/deep";
 
@@ -903,13 +904,13 @@ export default function Now() {
   }, [refresh]);
 
   if (isLoading && !marketState) {
-    return <PageLoadingState eyebrow="NOW · Current market state" message="Loading canonical market state…" />;
+    return <main className="min-h-screen bg-[#05080d] px-5 py-8 text-white md:px-10 md:py-12"><div className="mx-auto max-w-7xl space-y-5"><PageLoadingState eyebrow="NOW · Current market state" message="Loading canonical market state…" /><MarketActionReadout lens="now" /></div></main>;
   }
   // Fail closed: without the canonical state NOW shows nothing current. The
   // browser's deterministic engine runs on fixed DEFAULT_INDICATORS (demo
   // inputs), so it must never stand in for the market state.
   if (!marketState || !canonicalState) {
-    return <PageDegradedBanner message="Current canonical state is unavailable." detail="NOW withholds the current market reading until one authoritative state is available." />;
+    return <main className="min-h-screen bg-[#05080d] px-5 py-8 text-white md:px-10 md:py-12"><div className="mx-auto max-w-7xl space-y-5"><PageDegradedBanner message="Current canonical state is unavailable." detail="NOW withholds the current market reading until one authoritative state is available." /><MarketActionReadout lens="now" /></div></main>;
   }
 
   return (
@@ -1230,6 +1231,8 @@ export default function Now() {
             ))}
           </div>
         </Section>
+
+        <MarketActionReadout lens="now" />
 
         <Section id="breadth" index="03" eyebrow="Domains" title="Where pressure is concentrated" description={`Every domain is normalized to the same 0–100 scale so concentration across domains can be compared directly. ${monthlyRecordBasisNote(marketState.why.evidenceAsOfMonth)}`}>
           <div className="grid gap-3 md:grid-cols-2">

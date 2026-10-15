@@ -84,9 +84,9 @@ async function expectTypedUnavailable(promise: Promise<unknown>, errorClass: str
 
 describe("PLATO never fabricates an answer from an answerless 200", () => {
   it("no choices on every model: typed unavailable after trying each model once", async () => {
-    const models = script([result(null, "stop", false), result(null, "stop", false), result(null, "stop", false)]);
+    const models = script([result(null, "stop", false), result(null, "stop", false)]);
     await expectTypedUnavailable(ask(), "empty_response");
-    expect(models).toEqual(["gemini-3-flash-preview", "gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]);
+    expect(models).toEqual(["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]);
   });
 
   it("empty content with a safety / content_filter stop: typed unavailable", async () => {
@@ -118,8 +118,8 @@ describe("PLATO never fabricates an answer from an answerless 200", () => {
   it("an answerless primary falls back to the next model and returns only what the model said", async () => {
     const models = script([result(null, "stop", false), result(fullBriefing("Credit is calm and stable."))]);
     const response = await ask();
-    expect(models).toEqual(["gemini-3-flash-preview", "gemini-3.1-flash-lite"]);
-    expect(response.modelTrace.selectedModel).toBe("gemini-3.1-flash-lite");
+    expect(models).toEqual(["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]);
+    expect(response.modelTrace.selectedModel).toBe("gemini-3.5-flash-lite");
     expect(response.reply).not.toContain("I was unable to generate a response");
     // Fields the model did not supply stay undefined: no invented ELEVATED / Moderate / NEUTRAL / WATCH.
     expect(response.threatLevel).toBeUndefined();
@@ -141,19 +141,19 @@ describe("one question, one budget", () => {
     expect(response.reply).not.toContain("never reached");
   });
 
-  it("an answer that used 3 calls leaves exactly 1 for the correction", async () => {
-    const models = script([result(null, "stop", false), result("prose"), result(replyOnly("Credit is calm.")), http(503, "UNAVAILABLE"), result(fullBriefing("never reached"))]);
+  it("an answer on the primary model preserves a bounded correction attempt", async () => {
+    const models = script([result(replyOnly("Credit is calm.")), result(fullBriefing("Credit risk remains conditional."))]);
     const response = await ask();
-    expect(models).toHaveLength(4);
-    expect(response.reply).not.toContain("never reached");
+    expect(models).toEqual(["gemini-3.1-flash-lite", "gemini-3.1-flash-lite"]);
+    expect(response.reply).not.toContain("PLATO is temporarily unavailable");
   });
 
-  it("skips the correction entirely when the answer used the whole budget", async () => {
-    const models = script([http(503, "UNAVAILABLE"), http(503, "UNAVAILABLE"), result(null, "stop", false), result(replyOnly("Credit is calm.")), result(fullBriefing("never reached"))]);
+  it("keeps the validated first answer when the correction capacity is exhausted", async () => {
+    const models = script([result(replyOnly("Credit is calm.")), http(503, "UNAVAILABLE"), http(503, "UNAVAILABLE"), http(503, "UNAVAILABLE"), result(fullBriefing("never reached"))]);
     const response = await ask();
-    expect(models).toEqual(["gemini-3-flash-preview", "gemini-3-flash-preview", "gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]);
+    expect(models).toEqual(["gemini-3.1-flash-lite", "gemini-3.1-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]);
     expect(response.reply).not.toContain("never reached");
-    expect(JSON.stringify((console.warn as any).mock.calls)).toContain("Correction skipped");
+    expect(JSON.stringify((console.warn as any).mock.calls)).toContain("Correction failed");
   });
 
   it("a failed correction logs only class and status, never the upstream body", async () => {

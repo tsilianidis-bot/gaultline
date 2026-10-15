@@ -32,7 +32,7 @@ const withContract = {
 const q: { data: unknown } = { data: null };
 vi.mock("@/lib/trpc", () => {
   const query = () => ({ data: q.data, isLoading: false, isFetching: false, fetchStatus: "idle", refetch: () => undefined });
-  return { trpc: { marketState: { canonicalCurrent: { useQuery: query } }, altRotation: { getData: { useQuery: () => ({ data: undefined }) } } } };
+  return { trpc: { marketState: { canonicalCurrent: { useQuery: query } }, marketAction: { current: { useQuery: () => ({ data: null }) } }, altRotation: { getData: { useQuery: () => ({ data: undefined }) } } } };
 });
 const MobilePulse = (await import("../client/src/pages/mobile/MobilePulse")).default;
 const MobileBrief = (await import("../client/src/pages/mobile/MobileBrief")).default;

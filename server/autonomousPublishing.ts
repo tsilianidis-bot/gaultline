@@ -28,7 +28,9 @@ import {
   users,
 } from "../drizzle/schema";
 import { invokeLLM } from "./_core/llm";
+import { editorialModel } from "./editorialModel";
 import { sdk } from "./_core/sdk";
+import { hasVerifiedCronRequest } from "./_core/cronGuard";
 import { notifyOwner } from "./_core/notification";
 import { sendEmail } from "./email";
 import { calculateFaultlinePressure, type FaultlinePressureOutput } from "./pressure/engine";
@@ -62,6 +64,18 @@ interface PublishResult {
   reason?: string;
   wordCount?: number;
   qualityScore?: number;
+}
+
+/**
+ * Scheduled routes are protected by the exact CRON_SECRET bearer guard before
+ * they reach these handlers. A Railway/GitHub scheduler does not have a Manus
+ * session, so it must be accepted here after that verified bearer check.
+ * Interactive admin calls remain supported for the existing manual workflow.
+ */
+async function isAuthorizedPublishingRequest(req: Request): Promise<boolean> {
+  if (hasVerifiedCronRequest(req)) return true;
+  const user = await sdk.authenticateRequest(req).catch(() => null);
+  return Boolean(user && (user.isCron || user.role === "admin"));
 }
 
 // ── Internal link map ─────────────────────────────────────────────────────────
@@ -611,36 +625,43 @@ CRITICAL: Base all analysis on the provided data. Do not invent statistics. Mini
   let title = `${config.label} — ${dateStr}`;
   let metaDescription = `FAULTLINE ${config.label} for ${dateStr}. Institutional market intelligence powered by live FAULTLINE engine data.`;
 
-  try {
-    const metaResponse = await invokeLLM({
-      messages: [
-        { role: "system", content: "Generate SEO-optimized titles and meta descriptions for market intelligence articles. Return JSON only." },
-        { role: "user", content: `Generate a title (max 65 chars) and meta description (max 155 chars) for a FAULTLINE ${config.label} dated ${dateStr}. Context: ${ctx}. Return JSON: {"title": "...", "metaDescription": "..."}` }
-      ],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "meta",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: {
-              title: { type: "string" },
-              metaDescription: { type: "string" }
-            },
-            required: ["title", "metaDescription"],
-            additionalProperties: false
+  // One scheduled brief gets one content-generation request by default. The
+  // deterministic metadata is sufficient for a verified snapshot and avoids a
+  // second quota-consuming call; editorial metadata generation remains opt-in.
+  if (process.env.FAULTLINE_EDITORIAL_METADATA_AI === "true") {
+    try {
+      const metaResponse = await invokeLLM({
+        model: editorialModel(),
+        messages: [
+          { role: "system", content: "Generate SEO-optimized titles and meta descriptions for market intelligence articles. Return JSON only." },
+          { role: "user", content: `Generate a title (max 65 chars) and meta description (max 155 chars) for a FAULTLINE ${config.label} dated ${dateStr}. Context: ${ctx}. Return JSON: {"title": "...", "metaDescription": "..."}` }
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "meta",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                metaDescription: { type: "string" }
+              },
+              required: ["title", "metaDescription"],
+              additionalProperties: false
+            }
           }
         }
-      }
-    });
-    const metaParsed = JSON.parse(metaResponse.choices[0].message.content as string);
-    title = metaParsed.title || title;
-    metaDescription = metaParsed.metaDescription || metaDescription;
-  } catch { /* use defaults */ }
+      });
+      const metaParsed = JSON.parse(metaResponse.choices[0].message.content as string);
+      title = metaParsed.title || title;
+      metaDescription = metaParsed.metaDescription || metaDescription;
+    } catch { /* retain deterministic verified-snapshot metadata */ }
+  }
 
   // ── Step 5: Generate full content ─────────────────────────────────────────
   const contentResponse = await invokeLLM({
+    model: editorialModel(),
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: contentPrompts[publishType] }
@@ -721,8 +742,7 @@ CRITICAL: Base all analysis on the provided data. Do not invent statistics. Mini
  */
 export async function handleDailyBrief(req: Request, res: Response) {
   try {
-    const user = await sdk.authenticateRequest(req);
-    if (!user.isCron && user.role !== "admin") {
+    if (!(await isAuthorizedPublishingRequest(req))) {
       return res.status(403).json({ error: "cron or admin only" });
     }
 
@@ -785,8 +805,7 @@ export async function handleDailyBrief(req: Request, res: Response) {
  */
 export async function handleWeeklyReview(req: Request, res: Response) {
   try {
-    const user = await sdk.authenticateRequest(req);
-    if (!user.isCron && user.role !== "admin") {
+    if (!(await isAuthorizedPublishingRequest(req))) {
       return res.status(403).json({ error: "cron or admin only" });
     }
 
@@ -826,8 +845,7 @@ export async function handleWeeklyReview(req: Request, res: Response) {
  */
 export async function handleMonthlyReport(req: Request, res: Response) {
   try {
-    const user = await sdk.authenticateRequest(req);
-    if (!user.isCron && user.role !== "admin") {
+    if (!(await isAuthorizedPublishingRequest(req))) {
       return res.status(403).json({ error: "cron or admin only" });
     }
 

@@ -24,26 +24,23 @@ import { getQuote as getYahooQuote, getQuotes as getYahooQuotes } from "./yahooP
 
 const POLYGON_BASE = "https://api.polygon.io";
 
-// Priority tickers for FAULTLINE Signals tab
-// Must include ALL tickers shown in SIGNAL_STOCKS (signalsData.ts) so every card gets live prices.
+// Priority tickers for FAULTLINE Signals and shared market-instrument consumers.
+// This must include every symbol shown by SIGNAL_STOCKS (signalsData.ts); unlisted
+// symbols render as unavailable even when the data provider is healthy.
 const PRIORITY_TICKERS = [
-  // ── Core AI/Tech ──────────────────────────────────────────────
-  "NVDA", "MSFT", "META", "AMZN", "GOOGL",
-  "TSLA", "PLTR", "AMD", "SMCI", "ARM",
-  "CRWD", "ARKK",
-  // ── Financials ───────────────────────────────────────────────
-  "JPM", "BAC", "KRE", "XLF", "SOFI", "COIN",
-  // ── Broad market / sector ETFs ───────────────────────────────
-  "SPY", "QQQ", "IWM", "XLK", "XLP",
-  // ── Real estate / defensives ─────────────────────────────────
-  "VNQ", "JNJ", "PG", "KO",
-  // ── Energy / commodities ─────────────────────────────────────
-  "XOM", "CVX", "GLD",
-  // ── Short squeeze / speculative ──────────────────────────────
-  "GME", "UPST", "RIVN", "BYND",
-  "HOOD", "MSTR", "IBIT",
-  // ── Quantum / space speculative ───────────────────────────────
-  "QUBT", "IONQ", "RGTI", "FRMI", "SPCE",
+  // ── Signals catalog: core technology and AI ───────────────────
+  "NVDA", "MSFT", "AAPL", "META", "AMZN", "GOOGL", "TSLA", "PLTR", "AMD", "SMCI", "ARM",
+  "CRWD", "DDOG", "AVGO", "INTC", "BABA", "ANET", "IONQ", "SOUN", "ASTS", "RKLB",
+  // ── Financials and market infrastructure ──────────────────────
+  "JPM", "BAC", "KRE", "XLF", "SOFI", "COIN", "V", "SQ", "HOOD",
+  // ── Broad market and sector ETFs ──────────────────────────────
+  "SPY", "QQQ", "IWM", "XLK", "XLP", "ARKK",
+  // ── Real estate, defensives, energy, and rates ────────────────
+  "VNQ", "JNJ", "PG", "KO", "AMT", "DHI", "XOM", "CVX", "GLD", "CCJ", "TLT",
+  // ── Speculative, crypto-linked, and special situations ────────
+  "GME", "UPST", "RIVN", "BYND", "AMC", "MSTR", "IBIT", "QUBT", "RGTI", "FRMI", "SPCE",
+  // ── Healthcare, defense, and consumer catalog coverage ────────
+  "MRNA", "RXRX", "LMT", "AXON", "ABNB", "WBD", "PARA", "CELH",
 ];
 
 // ── Types ─────────────────────────────────────────────────────

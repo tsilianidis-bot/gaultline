@@ -35,6 +35,7 @@ import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/cus
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 import { SectorRotationQuestion } from "@/components/sectorRotation/SectorRotationModule";
+import { MarketActionReadout } from "@/components/marketAction/MarketActionReadout";
 
 type EvidenceFamily = CanonicalMarketState["why"]["evidenceFamilies"][number];
 type ScenarioKey = keyof CanonicalMarketState["outlook"]["regimeProbabilities"];
@@ -359,6 +360,8 @@ export default function Outlook() {
         {/* ── SECTIONS ─────────────────────────────────────────────────── */}
 
         <SectorRotationQuestion question="outlook" />
+
+        <MarketActionReadout lens="outlook" />
 
         <Section id="ranked-scenarios" index="01" eyebrow="Scenario pathways" title="How the probability stack branches from the current state" description="Scenarios are ranked by probability, not dramatized by label. The branching structure shows which paths are live and which are tail risks.">
           <ScenarioPathways rankedScenarios={rankedScenarios} />

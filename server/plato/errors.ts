@@ -50,10 +50,12 @@ export class PlatoRouteError extends Error {
   readonly errorClass: PlatoErrorClass;
   readonly provider: string;
   readonly model: string;
+  /** Parsed from a provider Retry-After/retryDelay directive when available. */
+  readonly retryAfterMs: number | null;
 
   constructor(
     message: string,
-    details: { httpStatus: number | null; errorClass: PlatoErrorClass; provider: string; model: string },
+    details: { httpStatus: number | null; errorClass: PlatoErrorClass; provider: string; model: string; retryAfterMs?: number | null },
   ) {
     super(message);
     this.name = "PlatoRouteError";
@@ -61,6 +63,7 @@ export class PlatoRouteError extends Error {
     this.errorClass = details.errorClass;
     this.provider = details.provider;
     this.model = details.model;
+    this.retryAfterMs = details.retryAfterMs ?? null;
   }
 
   get rateLimited(): boolean {
@@ -153,11 +156,14 @@ export function classifyTransportError(error: unknown, provider: string, model: 
   const cause = error instanceof Error && error.cause instanceof Error ? ` ${error.cause.message}` : "";
   const statusMatch = message.match(STATUS_PATTERN);
   const status = statusMatch ? Number(statusMatch[1]) : null;
+  const retryMatch = message.match(/retry-after-ms=(\d+)/i);
+  const retryAfterMs = retryMatch && Number(retryMatch[1]) > 0 ? Math.min(Number(retryMatch[1]), 60 * 60_000) : null;
   return new PlatoRouteError(message, {
     httpStatus: status,
     errorClass: classifyStatus(status, message + cause),
     provider,
     model,
+    retryAfterMs,
   });
 }
 

@@ -13,7 +13,13 @@
  */
 import { canonicalChatModelId, isKnownNonChatModel } from "../ashaModelPolicy";
 
-export const PLATO_DEFAULT_FAST_MODEL = "gemini-3-flash-preview";
+/**
+ * Keep interactive PLATO off the generic default model used by background
+ * generation. Gemini quotas vary by model, so this gives an authenticated
+ * customer request an independent configured model bucket without adding a
+ * provider or credential.
+ */
+export const PLATO_DEFAULT_FAST_MODEL = "gemini-3.1-flash-lite";
 
 /**
  * Ordered fallback models on the same provider. Verified live against the
@@ -21,7 +27,7 @@ export const PLATO_DEFAULT_FAST_MODEL = "gemini-3-flash-preview";
  * gemini-2.5-flash / gemini-2.5-flash-lite return 404 "no longer available to
  * new users" on this key and are deliberately not listed.
  */
-export const PLATO_DEFAULT_FALLBACK_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"] as const;
+export const PLATO_DEFAULT_FALLBACK_MODELS = ["gemini-3.5-flash-lite"] as const;
 
 /** Per-attempt deadline. A single PLATO briefing on gemini-3-flash-preview completes well inside this. */
 export const PLATO_DEFAULT_ATTEMPT_TIMEOUT_MS = 45_000;

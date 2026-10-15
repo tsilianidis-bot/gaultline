@@ -16,6 +16,7 @@ import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { dailyBriefSnapshots, userPreferences } from "../../drizzle/schema";
 import { invokeLLM } from "../_core/llm";
+import { editorialModel } from "../editorialModel";
 
 // ── Zod schemas ──────────────────────────────────────────────────────────────
 
@@ -390,6 +391,7 @@ export const dailyBriefRouter = router({
       let institutionalInsight = "";
       try {
         const llmResp = await invokeLLM({
+          model: editorialModel(),
           messages: [
             {
               role: "system",

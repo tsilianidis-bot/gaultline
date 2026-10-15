@@ -8,7 +8,7 @@ vi.mock("./env", () => ({
 }));
 
 import { ENV } from "./env";
-import { invokeLLM, listLLMModels } from "./llm";
+import { invokeLLM, listLLMModels, resetLlmQuotaCircuitForTests } from "./llm";
 
 const successfulResponse = () =>
   new Response(
@@ -29,6 +29,7 @@ const successfulResponse = () =>
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  resetLlmQuotaCircuitForTests();
   ENV.forgeApiKey = "test-forge-key";
   ENV.forgeApiUrl = "https://forge.example";
 });
@@ -65,6 +66,31 @@ describe("invokeLLM transport", () => {
 
     expect(payload.model).toBe("gpt-5-mini");
     expect(payload.max_tokens).toBe(4096);
+  });
+
+  it("opens a model-specific circuit after an explicit free-tier daily quota and avoids repeat calls", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(
+      JSON.stringify({ error: { message: "Free tier requests per day exceeded. Quota limit: 20", status: "RESOURCE_EXHAUSTED" } }),
+      { status: 429, headers: { "content-type": "application/json" } },
+    ));
+    vi.stubGlobal("fetch", fetchMock);
+    const params = { model: "gemini-3.1-flash-lite", messages: [{ role: "user" as const, content: "Answer only from evidence." }] };
+
+    await expect(invokeLLM(params)).rejects.toThrow("429");
+    await expect(invokeLLM(params)).rejects.toThrow("quota circuit is open");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("preserves a provider-directed short retry window without opening a daily-quota circuit", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: { message: "RESOURCE_EXHAUSTED" } }), { status: 429, headers: { "retry-after": "5" } }))
+      .mockResolvedValueOnce(successfulResponse());
+    vi.stubGlobal("fetch", fetchMock);
+    const params = { model: "gemini-3.5-flash-lite", messages: [{ role: "user" as const, content: "Answer only from evidence." }] };
+
+    await expect(invokeLLM(params)).rejects.toThrow("retry-after-ms=5000");
+    await expect(invokeLLM(params)).resolves.toMatchObject({ choices: [{ message: { content: "ok" } }] });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
 

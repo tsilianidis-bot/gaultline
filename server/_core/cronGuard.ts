@@ -21,8 +21,17 @@ export function hasExactCronAuthorization(
     && timingSafeEqual(actualBuffer, expectedBuffer);
 }
 
+/**
+ * Re-check the request against the same exact-bearer contract used by the
+ * Express guard. Scheduled handlers use this to distinguish an authorized
+ * Railway/GitHub scheduler request from an interactive session request.
+ */
+export function hasVerifiedCronRequest(req: Pick<Request, "headers">): boolean {
+  return hasExactCronAuthorization(req.headers.authorization);
+}
+
 export function requireCron(req: Request, res: Response, next: NextFunction): void {
-  if (!hasExactCronAuthorization(req.headers.authorization)) {
+  if (!hasVerifiedCronRequest(req)) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }

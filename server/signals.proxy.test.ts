@@ -23,23 +23,13 @@ const describeIf = isIntegrationEnv ? describe : describe.skip;
 const BASE_URL = "http://localhost:3000";
 
 const EXPECTED_TICKERS = [
-  // Core AI/Tech
-  "NVDA", "MSFT", "META", "AMZN", "GOOGL",
-  "TSLA", "PLTR", "AMD", "SMCI", "ARM",
-  "CRWD", "ARKK",
-  // Financials
-  "JPM", "BAC", "KRE", "XLF", "SOFI", "COIN",
-  // Broad market / sector ETFs
-  "SPY", "QQQ", "IWM", "XLK", "XLP",
-  // Real estate / defensives
-  "VNQ", "JNJ", "PG", "KO",
-  // Energy / commodities
-  "XOM", "CVX", "GLD",
-  // Short squeeze / speculative
-  "GME", "UPST", "RIVN", "BYND",
-  "MPW", "NYCB", "DISH",
-  // Quantum / space speculative
-  "QUBT", "IONQ", "RGTI", "FRMI", "SPCE",
+  "NVDA", "MSFT", "AAPL", "META", "AMZN", "GOOGL", "TSLA", "PLTR", "AMD", "SMCI", "ARM",
+  "CRWD", "DDOG", "AVGO", "INTC", "BABA", "ANET", "IONQ", "SOUN", "ASTS", "RKLB",
+  "JPM", "BAC", "KRE", "XLF", "SOFI", "COIN", "V", "SQ", "HOOD",
+  "SPY", "QQQ", "IWM", "XLK", "XLP", "ARKK",
+  "VNQ", "JNJ", "PG", "KO", "AMT", "DHI", "XOM", "CVX", "GLD", "CCJ", "TLT",
+  "GME", "UPST", "RIVN", "BYND", "AMC", "MSTR", "IBIT", "QUBT", "RGTI", "FRMI", "SPCE",
+  "MRNA", "RXRX", "LMT", "AXON", "ABNB", "WBD", "PARA", "CELH",
 ];
 
 interface QuoteResult {
@@ -90,8 +80,8 @@ describeIf("GET /api/signals/quotes — response structure", () => {
     expect(["live", "stale", "fallback"]).toContain(response.source);
   });
 
-  it("returns exactly 42 priority tickers", () => {
-    expect(response.quotes).toHaveLength(42);
+  it("returns every configured priority ticker", () => {
+    expect(response.quotes).toHaveLength(EXPECTED_TICKERS.length);
   });
 
   it("includes all expected tickers", () => {
@@ -112,8 +102,8 @@ describeIf("GET /api/signals/quotes — quote data quality", () => {
   it("returns non-zero prices for live data", () => {
     if (response.source === "live") {
       const liveQuotes = response.quotes.filter(q => q.price > 0);
-      // At least 32 of 42 tickers should have live prices
-      expect(liveQuotes.length).toBeGreaterThanOrEqual(32);
+      // The Yahoo primary source should cover the full catalog, allowing a small upstream tolerance.
+      expect(liveQuotes.length).toBeGreaterThanOrEqual(EXPECTED_TICKERS.length - 4);
     }
   });
 
@@ -203,7 +193,7 @@ describeIf("GET /api/signals/health — health endpoint", () => {
       sparklinesCached: number;
     };
     expect(health.configured).toBe(true);
-    expect(health.tickers).toBe(42);
+    expect(health.tickers).toBe(EXPECTED_TICKERS.length);
     expect(typeof health.sparklinesCached).toBe("number");
   });
 });

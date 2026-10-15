@@ -2,6 +2,7 @@ import { eq, desc, and, gte, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import { organicContent, signalPages } from "../drizzle/schema";
 import { invokeLLM } from "./_core/llm";
+import { editorialModel } from "./editorialModel";
 import type { Request, Response } from "express";
 import { sdk } from "./_core/sdk";
 
@@ -232,41 +233,44 @@ export async function generateOrganicContent(
     historical_analog_report: `Write a Historical Analog Report for ${todayStr}. ${ctx} Include: (1) Current Market Analog Overview, (2) Historical Comparison Period, (3) Similarities and Differences, (4) What Happened Next in History, (5) Key Divergence Risks, (6) Lessons for Today, (7) FAQ section with 4 questions. Include these internal links: ${linkSuggestions}. Minimum 1200 words.`,
   };
 
-  // Generate title and meta description
-  const metaResponse = await invokeLLM({
-    messages: [
-      { role: "system", content: "You generate SEO-optimized titles and meta descriptions for market intelligence articles. Return JSON only." },
-      { role: "user", content: `Generate a title (max 65 chars) and meta description (max 155 chars) for a ${config.label} dated ${todayStr}. ${ctx} Return JSON: {"title": "...", "metaDescription": "..."}` }
-    ],
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: "meta",
-        strict: true,
-        schema: {
-          type: "object",
-          properties: {
-            title: { type: "string" },
-            metaDescription: { type: "string" }
-          },
-          required: ["title", "metaDescription"],
-          additionalProperties: false
-        }
-      }
-    }
-  });
-
+  // Deterministic metadata keeps the scheduled path to one provider call per
+  // article. Optional AI metadata remains explicitly enabled by environment.
   let title = `${config.label} — ${todayStr}`;
   let metaDescription = `FAULTLINE ${config.label} for ${todayStr}. Market intelligence powered by real-time risk data.`;
-
-  try {
-    const metaParsed = JSON.parse(metaResponse.choices[0].message.content as string);
-    title = metaParsed.title || title;
-    metaDescription = metaParsed.metaDescription || metaDescription;
-  } catch { /* use defaults */ }
+  if (process.env.FAULTLINE_EDITORIAL_METADATA_AI === "true") {
+    try {
+      const metaResponse = await invokeLLM({
+        model: editorialModel(),
+        messages: [
+          { role: "system", content: "You generate SEO-optimized titles and meta descriptions for market intelligence articles. Return JSON only." },
+          { role: "user", content: `Generate a title (max 65 chars) and meta description (max 155 chars) for a ${config.label} dated ${todayStr}. ${ctx} Return JSON: {"title": "...", "metaDescription": "..."}` }
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "meta",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                metaDescription: { type: "string" }
+              },
+              required: ["title", "metaDescription"],
+              additionalProperties: false
+            }
+          }
+        }
+      });
+      const metaParsed = JSON.parse(metaResponse.choices[0].message.content as string);
+      title = metaParsed.title || title;
+      metaDescription = metaParsed.metaDescription || metaDescription;
+    } catch { /* retain deterministic metadata */ }
+  }
 
   // Generate full content
   const contentResponse = await invokeLLM({
+    model: editorialModel(),
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: contentPrompts[contentType] }
@@ -348,6 +352,7 @@ export async function generateSignalPage(
   const assetLabel = assetType === "stock" ? "stock" : "cryptocurrency";
 
   const response = await invokeLLM({
+    model: editorialModel(),
     messages: [
       { role: "system", content: "You are FAULTLINE Intelligence, a professional market analysis engine. Generate structured signal analysis for a financial asset. Return JSON only." },
       { role: "user", content: `Generate signal page content for ${name} (${symbol}), a ${assetLabel}. ${ctx}
@@ -505,6 +510,17 @@ export async function handleRefreshSignalPages(req: Request, res: Response) {
     const user = await sdk.authenticateRequest(req);
     if (!user.isCron && user.role !== "admin") {
       return res.status(403).json({ error: "cron or admin only" });
+    }
+
+    // This fan-out can issue one generation request for every tracked asset.
+    // It stays disabled until the owner deliberately enables it after provider
+    // capacity is confirmed; it must not deplete interactive PLATO capacity.
+    if (process.env.FAULTLINE_SIGNAL_PAGE_REFRESH_ENABLED !== "true") {
+      return res.status(202).json({
+        ok: true,
+        skipped: true,
+        reason: "signal-page-refresh-disabled-pending-provider-capacity",
+      });
     }
 
     const { pressureScore, regime } = req.body as { pressureScore?: number; regime?: string };

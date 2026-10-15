@@ -33,6 +33,7 @@ import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 import { forecastConfidenceDisplay } from "@shared/confidenceDisplay";
 import { SectorRotationQuestion } from "@/components/sectorRotation/SectorRotationModule";
+import { MarketActionReadout } from "@/components/marketAction/MarketActionReadout";
 
 const ACT_DEEP_PATH = "/app/act/deep";
 
@@ -264,8 +265,8 @@ export default function Act() {
     document.title = "ACT — FAULTLINE";
   }, []);
 
-  if (isLoading && !canonicalState) return <PageLoadingState eyebrow="ACT · Decision state" message="Loading authoritative canonical decision state…" />;
-  if (!canonicalState) return <PageDegradedBanner message="Current canonical state is unavailable." detail="ACT withholds current decision interpretation until one authoritative state is available." />;
+  if (isLoading && !canonicalState) return <main className="min-h-screen bg-[#050906] px-5 py-8 text-slate-100 md:px-10 md:py-12"><div className="mx-auto max-w-7xl space-y-5"><PageLoadingState eyebrow="ACT · Decision state" message="Loading authoritative canonical decision state…" /><MarketActionReadout lens="act" /></div></main>;
+  if (!canonicalState) return <main className="min-h-screen bg-[#050906] px-5 py-8 text-slate-100 md:px-10 md:py-12"><div className="mx-auto max-w-7xl space-y-5"><PageDegradedBanner message="Current canonical state is unavailable." detail="ACT withholds current decision interpretation until one authoritative state is available." /><MarketActionReadout lens="act" /></div></main>;
 
   // Missing pressure stays null and renders "—" (never 0, no band or action from 0).
   const pressure = finiteOrNull(canonicalState.pressureIndex);
@@ -434,6 +435,8 @@ export default function Act() {
         {/* ── SECTIONS ─────────────────────────────────────────────────── */}
 
         <SectorRotationQuestion question="act" />
+
+        <MarketActionReadout lens="act" />
 
         <Section id="strategy-matrix" index="01" eyebrow="Strategy matrix" title="Favorability of common strategies under each posture" description="The matrix shows which strategies are favorable, conditional, or to avoid under each posture. The current posture is highlighted.">
           <StrategyMatrix posture={posture} scenarios={scenarios} />

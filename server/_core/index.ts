@@ -37,6 +37,7 @@ import { handleShadowForwardOutcomes, handleShadowDailySummary } from "../schedu
 import { handleScheduledRisingStarsContinuity } from "../scheduledRisingStarsHistory";
 import { handleScheduledSystemicRegimeInfer } from "../systemicRegime/scheduled";
 import { startSectorRotationCollector } from "../sectorRotation/service";
+import { startMarketActionCollector } from "../marketAction/collector";
 import { appRouter } from "../routers.ts";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -291,6 +292,9 @@ async function startServer() {
     process.stdout.write(`Server running on http://${LISTEN_HOST}:${port}/\n`);
     // Sector Rotation post-close collector: in-process timer (no cron, no env var). Page loads never build.
     startSectorRotationCollector();
+    // Market Action monitor: persisted source observations on a five-minute cadence.
+    // Pages only read the saved snapshot and never trigger provider polling.
+    startMarketActionCollector();
   });
 }
 

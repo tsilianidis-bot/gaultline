@@ -33,6 +33,7 @@ import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/cus
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 import { SectorRotationQuestion } from "@/components/sectorRotation/SectorRotationModule";
+import { MarketActionReadout } from "@/components/marketAction/MarketActionReadout";
 
 type EvidenceFamily = CanonicalMarketState["why"]["evidenceFamilies"][number];
 
@@ -255,8 +256,8 @@ export default function Why() {
     refetchOnWindowFocus: false,
   });
 
-  if (isLoading && !canonicalState) return <PageLoadingState eyebrow="WHY · Causal analysis" message="Loading authoritative canonical state…" />;
-  if (!canonicalState) return <PageDegradedBanner message="Current canonical state is unavailable." detail="WHY withholds current-state interpretation until one authoritative state is available." />;
+  if (isLoading && !canonicalState) return <main className="min-h-screen bg-[#08070b] px-5 py-8 text-white md:px-10 md:py-12"><div className="mx-auto max-w-7xl space-y-5"><PageLoadingState eyebrow="WHY · Causal analysis" message="Loading authoritative canonical state…" /><MarketActionReadout lens="why" /></div></main>;
+  if (!canonicalState) return <main className="min-h-screen bg-[#08070b] px-5 py-8 text-white md:px-10 md:py-12"><div className="mx-auto max-w-7xl space-y-5"><PageDegradedBanner message="Current canonical state is unavailable." detail="WHY withholds current-state interpretation until one authoritative state is available." /><MarketActionReadout lens="why" /></div></main>;
 
   // Without MarketState the browser engine runs on demo inputs: no evidence,
   // drivers, developments or explanation text come from it ("Unavailable").
@@ -375,6 +376,8 @@ export default function Why() {
         {/* ── SECTIONS ─────────────────────────────────────────────────── */}
 
         <SectorRotationQuestion question="why" />
+
+        <MarketActionReadout lens="why" />
 
         <Section id="drivers" index="01" eyebrow="Primary drivers" title="The forces carrying the most explanatory weight" description="These drivers come from the same canonical state as NOW. They are ranked evidence, not post-hoc headlines.">
           {/* Driver contribution bars */}

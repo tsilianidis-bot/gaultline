@@ -5362,3 +5362,29 @@
 - [x] Create the approved FAULTLINE-branded responsive maintenance screen with no navigation, login prompt, technical detail, countdown, or ETA
 - [x] Validate healthy HTTP delivery and no application/database side effects in local domains
 - [ ] Save the temporary maintenance checkpoint and report apex/www status
+
+## 2026-10-15 — Market Action & Data Integrity Repair
+
+### Scope guardrails
+- [x] Preserve pricing / billing PR #87 and exclude it from this repair branch.
+- [x] Keep the Pressure Index methodology and canonical score calculation unchanged.
+- [x] Use existing Yahoo, CoinGecko, FRED, market-memory, cron-guard, and application route infrastructure only.
+- [ ] Do not enable Stripe checkout, modify membership pricing, execute migrations, or add a new primary navigation section.
+
+### Phase 1 — Correctness and provenance
+- [ ] Add an evidence-bound Market Action collector: delayed intraday index/sector/volatility observations, continuous crypto observations, and daily Treasury/credit observations.
+- [ ] Persist only verified observations and material-event records using existing market memory; retain prior valid readings when a provider is unavailable.
+- [ ] Detect broad equity moves, sector-specific moves, volatility spikes, crypto stress, and cross-market stress with explicit thresholds and coverage requirements.
+- [ ] Ensure no timestamp advances without a successful source observation; show unavailable / delayed / daily / stale states explicitly.
+- [ ] Present an AI-generated but constrained summary only after a verified material event; label it as an inference and do not claim an unsourced catalyst.
+
+### Phase 2 — Existing five-question integration
+- [ ] Add the Market Action evidence panel to NOW, WHY, OUTLOOK, WATCH, and ACT without adding navigation.
+- [ ] Label current observations, source/provider coverage, observation time, and calculation/generation time distinctly from the daily Pressure Index.
+- [ ] Remove remaining misleading live/current language on daily canonical state surfaces where source evidence is older than its intraday label implies.
+
+### Phase 3 — Continuous operation and validation
+- [ ] Wire collector startup through existing application scheduling lifecycle with multi-instance deduplication.
+- [ ] Add historical-move, missing-provider, duplicate-event, source-freshness, and API contract tests.
+- [ ] Run TypeScript, focused regressions, full suite, production build, and mobile/desktop public/member validation.
+- [ ] Commit narrowly scoped source changes only; do not publish or deploy without passing validation and confirmed authorized release access.

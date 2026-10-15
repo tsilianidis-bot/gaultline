@@ -3,6 +3,18 @@ import { eq, and, lte, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import { blogPosts } from "../drizzle/schema";
 import { sdk } from "./_core/sdk";
+import { hasVerifiedCronRequest } from "./_core/cronGuard";
+
+/**
+ * The HTTP mount has already required the exact CRON_SECRET bearer. Do not
+ * require a Manus-specific cron identity a second time: Railway/GitHub jobs do
+ * not carry one. The fallback keeps internal Manus cron calls compatible.
+ */
+async function isAuthorizedScheduledBlogRequest(req: Request): Promise<boolean> {
+  if (hasVerifiedCronRequest(req)) return true;
+  const user = await sdk.authenticateRequest(req).catch(() => null);
+  return Boolean(user?.isCron);
+}
 
 /**
  * POST /api/scheduled/publish-blog
@@ -20,8 +32,7 @@ import { sdk } from "./_core/sdk";
  */
 export async function handleScheduledPublishBlog(req: Request, res: Response) {
   try {
-    const user = await sdk.authenticateRequest(req);
-    if (!user.isCron) {
+    if (!(await isAuthorizedScheduledBlogRequest(req))) {
       return res.status(403).json({ error: "cron-only endpoint" });
     }
 
@@ -145,8 +156,7 @@ export async function handleScheduledPublishBlog(req: Request, res: Response) {
  */
 export async function handleScheduledAutoPublishDrafts(req: Request, res: Response) {
   try {
-    const user = await sdk.authenticateRequest(req);
-    if (!user.isCron) {
+    if (!(await isAuthorizedScheduledBlogRequest(req))) {
       return res.status(403).json({ error: "cron-only endpoint" });
     }
 

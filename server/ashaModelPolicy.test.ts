@@ -34,7 +34,7 @@ describe("PLATO chat-model guard (TTS path removed)", () => {
       PLATO_FAST_MODEL: "models/gemini-2.5-flash-preview-tts",
       PLATO_FALLBACK_MODELS: "gemini-3.8-flash-tts, models/gemini-3.1-flash-lite",
     });
-    expect(chain.models).toEqual(["gemini-3-flash-preview", "gemini-3.1-flash-lite"]);
+    expect(chain.models).toEqual(["gemini-3.1-flash-lite"]);
     expect(chain.models.some(isKnownNonChatModel)).toBe(false);
     expect(chain.primaryConfigured).toBe(false);
   });
@@ -49,7 +49,7 @@ describe("PLATO chat-model guard (TTS path removed)", () => {
   it("defaults to the approved primary plus same-provider fallbacks", () => {
     const chain = resolvePlatoModelChain({});
     expect(chain.models[0]).toBe(PLATO_DEFAULT_FAST_MODEL);
-    expect(chain.models).toEqual(["gemini-3-flash-preview", "gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]);
+    expect(chain.models).toEqual(["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]);
   });
 
   it("honours explicit overrides in order and de-duplicates", () => {

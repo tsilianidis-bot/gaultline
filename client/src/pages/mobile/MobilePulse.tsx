@@ -7,6 +7,7 @@ import { useMemo } from "react";
 import { RefreshCw, TrendingUp, TrendingDown, AlertTriangle, Zap, ArrowRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { CRASH_RISK_DISPLAY_TEXT, contractScenarioText } from "@/lib/contractProbabilityText";
+import { MarketActionReadout } from "@/components/marketAction/MarketActionReadout";
 
 // ── Helpers ───────────────────────────────────────────────────
 function getRegimeColor(regime: string): string {
@@ -63,10 +64,11 @@ export default function MobilePulse() {
 
   if (!canonicalState) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
+      <div className="flex flex-col h-full gap-3 overflow-y-auto px-6 py-8 text-center">
         <span data-mobile-pulse-unavailable={offlinePaused ? "offline" : "unavailable"} className="text-[10px] font-mono tracking-widest text-[#64748B]">{offlinePaused ? "OFFLINE · " : ""}CANONICAL STATE UNAVAILABLE</span>
         <p className="text-xs text-[#A8B8CC]">{offlinePaused ? "No network connection. " : ""}Current mobile pulse is withheld. No default, fixture, or live pressure recalculation is shown as current intelligence.</p>
         <button type="button" onClick={() => { void refetch(); }} className="mt-2 text-[10px] font-mono tracking-widest text-[#00D4FF] border border-[#00D4FF]/30 rounded px-3 py-1.5">RETRY</button>
+        <div className="mt-4 text-left"><MarketActionReadout lens="now" /></div>
       </div>
     );
   }
@@ -238,6 +240,8 @@ export default function MobilePulse() {
           <div className="text-[9px] font-mono tracking-widest text-[#00D4FF]/60 mb-2">WHAT CHANGED TODAY</div>
           <p className="text-[12px] text-[#A8B8CC] leading-relaxed">{whatChanged}</p>
         </div>
+
+        <MarketActionReadout lens="now" />
 
         {/* CTA — go to full platform */}
         <a

@@ -247,12 +247,17 @@ export async function routePlatoCompletion(
         if (!shouldFallback(failure)) {
           throw new PlatoUnavailableError(failure, attempts);
         }
-        if (isRetryableOnSameModel(failure) && sameModelRetry < config.sameModelRetries) {
+        const retryableQuotaWindow = failure.errorClass === "quota"
+          && failure.retryAfterMs !== null
+          && failure.retryAfterMs <= PLATO_MAX_RETRY_DELAY_MS;
+        if ((isRetryableOnSameModel(failure) || retryableQuotaWindow) && sameModelRetry < config.sameModelRetries) {
           sameModelRetry++;
-          const delay = Math.min(
-            PLATO_MAX_RETRY_DELAY_MS,
-            config.retryBaseDelayMs * 2 ** (sameModelRetry - 1) * (0.5 + random()),
-          );
+          const delay = retryableQuotaWindow
+            ? failure.retryAfterMs!
+            : Math.min(
+              PLATO_MAX_RETRY_DELAY_MS,
+              config.retryBaseDelayMs * 2 ** (sameModelRetry - 1) * (0.5 + random()),
+            );
           if (now() + delay >= deadline) {
             fallbackReason = failure.errorClass;
             break;

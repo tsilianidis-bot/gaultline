@@ -10,6 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { useAshaContext } from "@/contexts/AshaContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Copy, Check, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { reduceAshaAskFailure } from "@shared/ashaPanelMachine";
 
 // ── Types ─────────────────────────────────────────────────────
 export interface AshaIntelligenceBriefProps {
@@ -259,7 +260,9 @@ export function AshaIntelligenceBrief({
   variant,
   seedQuestion,
   contextSummary,
-  autoFetch = true,
+  // A page mount is not an explicit member request. Keeping this opt-in avoids
+  // consuming the same provider quota as PLATO conversations on every route.
+  autoFetch = false,
   className,
 }: AshaIntelligenceBriefProps) {
   const meta = VARIANT_META[variant];
@@ -308,8 +311,10 @@ export function AshaIntelligenceBrief({
       setBrief(parsed);
       setLastFetched(Date.now());
       fetchedRef.current = true;
-    } catch {
-      setError("Interpretation temporarily unavailable. Please refresh.");
+    } catch (cause) {
+      // Never expose an upstream provider body (including quota diagnostics) to
+      // members. The mutation input remains intact for the next explicit retry.
+      setError(reduceAshaAskFailure(cause).detail);
     } finally {
       setLoading(false);
     }
@@ -474,7 +479,7 @@ export function AshaIntelligenceBrief({
             }}
           >
             <RefreshCw size={9} style={{ animation: loading ? "spin 1s linear infinite" : undefined }} />
-            {loading ? "ANALYZING" : "REFRESH"}
+            {loading ? "ANALYZING" : brief ? "REFRESH" : "GENERATE"}
           </button>
         </div>
       </div>
