@@ -3,7 +3,7 @@
 **Branch:** `feature/intelligence-core-phase1-evidence-clean`
 **Phase 1 evidence baseline:** `e34407c` (clean main-based implementation commit)
 **Feature implementation commit:** `e34407c`
-**Pull request:** pending clean-branch publication
+**Pull request:** [#90](https://github.com/tsilianidis-bot/gaultline/pull/90)
 
 ## Confirmed complete
 
