@@ -1,6 +1,6 @@
 # Intelligence Core Phase 1 — Verification Record
 
-**Branch:** `feature/intelligence-core-phase1-data`
+**Branch:** `feature/intelligence-core-phase1-evidence-clean`
 **Scope:** server-side verified evidence only; the feature flag remains disabled by default.
 
 ## Local adapter check — 2026-10-16
@@ -15,18 +15,18 @@ The provider diagnostic was run using the existing adapter modules. It did not u
 | Canonical MarketState | **Unavailable in the local diagnostic** because no `DATABASE_URL` was provided to the local process. | The collector reports the canonical provider as unavailable. This is a local validation state, not a claim about production. |
 | Persistence | **In-memory only in the local diagnostic** because no database was attached. | The implementation reuses existing append-only `marketMemory` snapshots and claims when a production database is available; it adds no migration. |
 
-The resulting local snapshot status was **DEGRADED**, driven by the verified Yahoo observations and explicit unavailable states for canonical, FRED, and CoinGecko. No unavailable source was represented as a calm or neutral market conclusion.
+The most recent local after-hours snapshot status was **UNAVAILABLE**: the delayed Yahoo observations had exceeded the 20-minute current-use window, while canonical, FRED, and CoinGecko remained explicitly unavailable. No unavailable source was represented as a calm or neutral market conclusion.
 
 ## Test record
 
 - `pnpm exec tsc --noEmit`: passed.
-- Focused evidence, Integrity Gate, feature-gate, and canonical-regression tests: **4 files / 34 tests passed**.
-- Full regression suite: **273 files passed, 7 skipped; 3,515 tests passed, 44 skipped**.
-- Production build: passed. Existing bundle-size warnings remain pre-existing build guidance only; Phase 1 adds no browser bundle or visual dependency.
+- Focused evidence, Integrity Gate, feature-gate, and canonical-regression tests: **3 files / 15 tests passed** on the clean main-based branch.
+- Full regression suite: **192 files passed, 7 skipped; 2,073 tests passed, 44 skipped**.
+- Production build: passed. Existing bundle-size warnings remain build guidance only; Phase 1 adds no browser bundle or visual dependency.
 
 ## Required production actions before enabling
 
-1. Provide `FRED_API_KEY` through the existing Railway environment-variable mechanism; do not add it to the repository or logs.
+1. Verify the existing Railway production environment contains a valid `FRED_API_KEY`; if it does not, the owner must add it through the existing Railway environment-variable mechanism. Do not add it to the repository or logs.
 2. Verify `marketMemory` read/write access in the existing production database with this flag still disabled.
 3. Decide whether to enhance the CoinGecko adapter with a provider observation timestamp; until then, keep its aggregate evidence unavailable for current claims.
 4. Run the source-provider diagnostic in the production runtime and review source-health output.
