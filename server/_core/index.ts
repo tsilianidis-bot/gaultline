@@ -34,6 +34,8 @@ import { handleScheduledSeismograph } from "../scheduledSeismograph";
 import { handleShadowForwardOutcomes, handleShadowDailySummary } from "../scheduledShadowModel";
 import { handleScheduledRisingStarsContinuity } from "../scheduledRisingStarsHistory";
 import { handleScheduledSystemicRegimeInfer, handleScheduledSystemicRegimeTrain } from "../systemicRegime/scheduled";
+import { startIntelligenceEvidenceCollector } from "../intelligenceEvidence/collector";
+import { isIntelligenceEvidenceEnabled } from "../intelligenceEvidence/config";
 import { appRouter } from "../routers.ts";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -295,6 +297,8 @@ async function startServer() {
 
   server.listen(port, LISTEN_HOST, () => {
     process.stdout.write(`Server running on http://${LISTEN_HOST}:${port}/\n`);
+    // Explicit opt-in: production behavior remains unchanged until enabled.
+    if (isIntelligenceEvidenceEnabled()) startIntelligenceEvidenceCollector();
   });
 }
 
