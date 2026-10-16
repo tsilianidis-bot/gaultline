@@ -37,6 +37,8 @@ import { handleShadowForwardOutcomes, handleShadowDailySummary } from "../schedu
 import { handleScheduledRisingStarsContinuity } from "../scheduledRisingStarsHistory";
 import { handleScheduledSystemicRegimeInfer } from "../systemicRegime/scheduled";
 import { startSectorRotationCollector } from "../sectorRotation/service";
+import { startIntelligenceEvidenceCollector } from "../intelligenceEvidence/collector";
+import { isIntelligenceEvidenceEnabled } from "../intelligenceEvidence/config";
 import { appRouter } from "../routers.ts";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -291,6 +293,9 @@ async function startServer() {
     process.stdout.write(`Server running on http://${LISTEN_HOST}:${port}/\n`);
     // Sector Rotation post-close collector: in-process timer (no cron, no env var). Page loads never build.
     startSectorRotationCollector();
+    // Explicit opt-in: production remains unchanged until an operator enables
+    // Phase 1 verified-evidence collection through the environment flag.
+    if (isIntelligenceEvidenceEnabled()) startIntelligenceEvidenceCollector();
   });
 }
 

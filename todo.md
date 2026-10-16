@@ -5362,3 +5362,14 @@
 - [x] Create the approved FAULTLINE-branded responsive maintenance screen with no navigation, login prompt, technical detail, countdown, or ETA
 - [x] Validate healthy HTTP delivery and no application/database side effects in local domains
 - [ ] Save the temporary maintenance checkpoint and report apex/www status
+
+## 2026-10-16 — Intelligence Core Phase 1: Verified Data Integration
+
+- [x] Build a server-side, read-only evidence pipeline from the existing canonical MarketState and current Yahoo/Polygon, FRED, and CoinGecko adapters. Reuse their caches, in-flight deduplication, request timeouts, and configured fallbacks; do not create a duplicate market-state pipeline or alter Pressure Index, MarketState calculations, trading tools, Daily Briefs, pricing, or Stripe.
+- [x] Map every returned input to `IntelligenceEvidence`, preserving provider identity, provider observation time, ingestion time, observed-versus-modeled classification, freshness policy, validation status, and model version for modeled outputs. Never use ingestion time as the observation time.
+- [x] Apply the Phase 0 Integrity Gate at the canonical evidence boundary. Reject NaN/infinite values, missing timestamps, unidentified sources, invalid timestamps, unhealthy providers, stale current-use claims, and modeled outputs without model version. Retain last verified observations only as explicitly historical.
+- [x] Add bounded collection, rate-limit handling, source-specific unavailable/degraded states, and last-verified history using existing persistence conventions. Do not create migrations or uncontrolled retries.
+- [x] Expose the feature-gated evidence interface through existing authenticated tRPC conventions. Keep it disabled by default and server-side only; do not activate the animated Core, visual nodes, UI activity stream, or live-event claims in this phase.
+- [x] Add deterministic tests for valid, stale, failed, rate-limited, timestamp-missing, invalid-number, unknown-source, historical, and modeled-without-version cases, plus a regression proving no modification of existing canonical/Pressure behavior.
+- [x] Run diagnostics, focused tests, the full regression suite, and a production build. Record genuine provider-response checks, unavailable sources, credential/rate-limit state, and remaining blockers without exposing secrets.
+- [ ] Commit, publish the dedicated feature branch, and open a focused pull request. Do not merge, deploy, enable the feature flag, change provider credentials, or alter production data without explicit approval.

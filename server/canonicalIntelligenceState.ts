@@ -12,6 +12,7 @@ import {
 import { getDb } from "./db";
 import { buildCanonicalProbabilityContract, withholdUndisplayedClaimValues } from "./probabilityContract";
 import { compositePressureDirection, engineEvidenceStatus, stressTrendDirection } from "../shared/snapshotEvidence";
+import type { IntelligenceEvidence } from "../shared/intelligenceIntegrity";
 
 type StoredManifest = Record<string, any>;
 
@@ -138,6 +139,25 @@ export function buildCanonicalIntelligenceState(manifest: StoredManifest, option
     unavailableInputs, fallbackInputs, warnings: [...notes, ...staleInputs.map((id: string) => `${id}: stale`), ...unavailableInputs.map((id: string) => `${id}: unavailable`)],
     conflicts, historicalDatasetVersion: manifest.historicalDatasetVersion, researchDatasetVersion: manifest.researchDatasetVersion,
     provenance: { manifestSource: "intelligenceStateManifests", governanceVersion: manifest.configurationVersion, coherenceStatus: coherence(manifest) },
+  };
+}
+
+/**
+ * Phase 1 boundary adapter. It does not mutate the canonical state or feed a
+ * new score; it simply makes the modelled engine output pass through the same
+ * provenance contract as direct provider observations.
+ */
+export function canonicalEngineIntegrityEvidence(state: CanonicalIntelligenceState, engine: CanonicalEngineState): IntelligenceEvidence {
+  return {
+    id: `canonical:${engine.engineId}`,
+    source: "FAULTLINE canonical MarketState",
+    origin: "modeled",
+    value: typeof engine.value === "number" && Number.isFinite(engine.value) ? engine.value : null,
+    observedAt: engine.calculatedAt ?? state.generatedAt ?? null,
+    receivedAt: state.generatedAt ?? null,
+    maxAgeMs: 30 * 60 * 60_000,
+    sourceHealthy: state.confidenceOrEvidenceQuality !== "UNAVAILABLE" && engine.qualityStatus !== "UNAVAILABLE",
+    modelVersion: engine.modelVersion || state.modelVersion || undefined,
   };
 }
 
