@@ -1,7 +1,7 @@
 # Intelligence Core Phase 1 — Production-Readiness Report
 
 **Branch:** `feature/intelligence-core-phase1-data`
-**Current branch commit:** `65eb247c30fa5ea9b09d53c828c6c213e65ddd4f`
+**Phase 1 evidence baseline:** `65eb247c30fa5ea9b09d53c828c6c213e65ddd4f`
 **Feature implementation commit:** `6b2d6ee063c64f4c37227470d7fd250ce193ab3b`
 **Pull request:** [#89](https://github.com/tsilianidis-bot/gaultline/pull/89)
 
