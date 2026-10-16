@@ -5372,7 +5372,7 @@
 - [x] Expose the feature-gated evidence interface through existing authenticated tRPC conventions. Keep it disabled by default and server-side only; do not activate the animated Core, visual nodes, UI activity stream, or live-event claims in this phase.
 - [x] Add deterministic tests for valid, stale, failed, rate-limited, timestamp-missing, invalid-number, unknown-source, historical, and modeled-without-version cases, plus a regression proving no modification of existing canonical/Pressure behavior.
 - [x] Run diagnostics, focused tests, the full regression suite, and a production build. Record genuine provider-response checks, unavailable sources, credential/rate-limit state, and remaining blockers without exposing secrets.
-- [ ] Commit, publish the dedicated feature branch, and open a focused pull request. Do not merge, deploy, enable the feature flag, change provider credentials, or alter production data without explicit approval.
+- [x] Commit, publish the dedicated feature branch, and open a focused pull request. Do not merge, deploy, enable the feature flag, change provider credentials, or alter production data without explicit approval. Clean PR: #90.
 
 ## 2026-10-16 — Intelligence Core Phase 1 Readiness & Phase 2 Preparation
 - [x] Verify the Phase 0 Integrity Gate, Phase 1 evidence contract, canonical boundary adapter, authenticated `intelligenceEvidence.current` endpoint, feature flag, append-only `marketMemory` store, branch, commit, and regression status without rebuilding working components.
