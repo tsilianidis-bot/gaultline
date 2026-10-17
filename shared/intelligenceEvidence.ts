@@ -10,6 +10,8 @@ export const INTELLIGENCE_EVIDENCE_METHOD_VERSION = "intelligence-evidence-v1-20
 export type EvidenceProviderStatus = "healthy" | "degraded" | "unavailable";
 export type EvidenceInterfaceStatus = "CURRENT" | "DEGRADED" | "UNAVAILABLE" | "DISABLED";
 export type EvidenceKind = "market_quote" | "macro_release" | "canonical_model" | "crypto_aggregate";
+export type EvidenceTemporalStatus = "live" | "delayed" | "completed_session" | "released" | "modeled" | "stale" | "unavailable";
+export type IntelligenceEvidenceDomain = "equities" | "bonds_rates" | "credit" | "liquidity" | "volatility" | "crypto";
 
 export interface LastVerifiedEvidence {
   value: number | string;
@@ -36,6 +38,9 @@ export interface ValidatedIntelligenceEvidence {
   validationReason: string;
   modelVersion: string | null;
   sourceIdentifier: string;
+  /** Source timing is explicit and does not alter the Integrity Gate result. */
+  temporalStatus: EvidenceTemporalStatus;
+  temporalDetail: string;
   /** A stale or rejected current reading can only be displayed as history. */
   historicalValue: LastVerifiedEvidence | null;
   /** Previously verified reading, retained without changing its source timestamp. */
@@ -52,6 +57,21 @@ export interface EvidenceProviderHealth {
   detail: string;
 }
 
+/**
+ * A domain projection groups existing validated observations. It does not
+ * calculate a new score, infer a relationship, or turn unavailable inputs into
+ * a neutral market condition.
+ */
+export interface IntelligenceEvidenceDomainProjection {
+  id: IntelligenceEvidenceDomain;
+  label: string;
+  status: EvidenceProviderStatus;
+  observationIds: string[];
+  currentObservationIds: string[];
+  historicalObservationIds: string[];
+  limitation: string | null;
+}
+
 export interface IntelligenceEvidenceSnapshot {
   kind: "intelligence-evidence-snapshot";
   methodVersion: typeof INTELLIGENCE_EVIDENCE_METHOD_VERSION;
@@ -59,6 +79,8 @@ export interface IntelligenceEvidenceSnapshot {
   canonicalStateId: string | null;
   observations: ValidatedIntelligenceEvidence[];
   providerHealth: EvidenceProviderHealth[];
+  /** Fixed six-domain projection for the future Intelligence Core. */
+  domains: IntelligenceEvidenceDomainProjection[];
   limitations: string[];
   persistence: "recorded" | "in_memory_only";
 }
