@@ -10,25 +10,77 @@ import { stripe } from "../stripe/client";
 import { PLANS, verifyStripePlanConfiguration } from "../stripe/products";
 import { getLifetimeMemberCount } from "../db";
 import { PRICING_PLANS, PAID_PLANS_ON_SALE, CHECKOUT_ENABLED, type StripePlanId } from "../../shared/tiers";
+import {
+  CHECKOUT_ALLOWLIST_COPY,
+  CHECKOUT_TEMPORARILY_UNAVAILABLE_COPY,
+  isCheckoutBuyerAllowed,
+  isCheckoutRuntimeEnabled,
+  type CheckoutBlockReason,
+  type CheckoutBuyer,
+  type CheckoutEnv,
+} from "../../shared/checkoutAccess";
 
 /** Legacy founding-lifetime counter (retained for existing entitlements; not a public offer). */
 const LIFETIME_FOUNDING_LIMIT = 100;
 
-/** Public/checkout availability: product lock AND a configured Stripe price. */
-export function isPlanAvailableForPurchase(planId: StripePlanId, priceId: string | null | undefined): boolean {
-  return CHECKOUT_ENABLED && PAID_PLANS_ON_SALE && PRICING_PLANS[planId].available && !!priceId;
+/**
+ * Why a plan cannot be purchased right now. Null means the product lock, price id,
+ * request-time runtime flag, and allowlist all pass. Stripe price verification is separate.
+ */
+export function explainCheckoutBlock(
+  planId: StripePlanId,
+  priceId: string | null | undefined,
+  buyer: CheckoutBuyer | null = null,
+  env: CheckoutEnv = process.env,
+): CheckoutBlockReason | null {
+  if (!(PAID_PLANS_ON_SALE && PRICING_PLANS[planId].available && !!priceId)) {
+    return PRICING_PLANS[planId].available && PAID_PLANS_ON_SALE ? "unconfigured" : "not_for_sale";
+  }
+  if (!isCheckoutRuntimeEnabled(env, CHECKOUT_ENABLED)) return "runtime_off";
+  if (!isCheckoutBuyerAllowed(env, buyer)) return "allowlist";
+  return null;
+}
+
+/** Public/checkout availability: product lock, configured price, runtime flag, and allowlist. */
+export function isPlanAvailableForPurchase(
+  planId: StripePlanId,
+  priceId: string | null | undefined,
+  buyer: CheckoutBuyer | null = null,
+  env: CheckoutEnv = process.env,
+): boolean {
+  return explainCheckoutBlock(planId, priceId, buyer, env) === null;
+}
+
+function buyerFromUser(user: { id: number | string; email?: string | null } | null): CheckoutBuyer | null {
+  if (!user) return null;
+  return { id: user.id, email: user.email ?? null };
+}
+
+function rejectCheckoutBlock(block: CheckoutBlockReason): never {
+  if (block === "allowlist") {
+    throw new TRPCError({ code: "FORBIDDEN", message: CHECKOUT_ALLOWLIST_COPY });
+  }
+  if (block === "runtime_off") {
+    throw new TRPCError({ code: "BAD_REQUEST", message: CHECKOUT_TEMPORARILY_UNAVAILABLE_COPY });
+  }
+  throw new TRPCError({ code: "BAD_REQUEST", message: "This plan is not yet available for purchase. Please contact us." });
 }
 
 export const billingRouter = router({
-  getPlans: publicProcedure.query(() => {
-    return Object.values(PLANS).filter(p => PRICING_PLANS[p.id].available).map(p => ({
-      id: p.id,
-      name: p.name,
-      description: p.description,
-      amount: p.amount,
-      interval: p.interval,
-      available: isPlanAvailableForPurchase(p.id, p.priceId),
-    }));
+  getPlans: publicProcedure.query(({ ctx }) => {
+    const buyer = buyerFromUser(ctx.user);
+    return Object.values(PLANS).filter(p => PRICING_PLANS[p.id].available).map(p => {
+      const blockedReason = explainCheckoutBlock(p.id, p.priceId, buyer);
+      return {
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        amount: p.amount,
+        interval: p.interval,
+        available: blockedReason === null,
+        blockedReason,
+      };
+    });
   }),
 
   createCheckout: protectedProcedure
@@ -38,9 +90,8 @@ export const billingRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const plan = PLANS[input.planId];
-      if (!isPlanAvailableForPurchase(input.planId, plan.priceId)) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "This plan is not yet available for purchase. Please contact us." });
-      }
+      const block = explainCheckoutBlock(input.planId, plan.priceId, buyerFromUser(ctx.user));
+      if (block) rejectCheckoutBlock(block);
       const verification = await verifyStripePlanConfiguration(plan);
       if (!verification.verified) {
         throw new TRPCError({

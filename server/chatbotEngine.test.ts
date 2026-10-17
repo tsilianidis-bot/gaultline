@@ -49,6 +49,8 @@ describe("validatePricing", () => {
     expect(validatePricing(PRICE_NOT_ON_SALE_ANSWER)).toBe(true);
     expect(PRICE_NOT_ON_SALE_ANSWER).toContain("$99/month");
     expect(PRICE_NOT_ON_SALE_ANSWER).toContain("$1,500 one-time");
+    expect(PRICE_NOT_ON_SALE_ANSWER).not.toMatch(/opens soon/i);
+    expect(PRICE_NOT_ON_SALE_ANSWER).toContain("New account registration is closed.");
     expect(validatePricing("FAULTLINE Lifetime is $1,500 one-time.")).toBe(true);
   });
 
