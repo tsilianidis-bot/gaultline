@@ -29,6 +29,7 @@ import {
 import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
+import { IntelligenceEvidenceContext } from "@/components/intelligenceCore/IntelligenceEvidenceContext";
 
 const ACT_DEEP_PATH = "/app/act/deep";
 
@@ -404,6 +405,8 @@ export default function Act() {
             </div>
           </div>
         </section>
+
+        <IntelligenceEvidenceContext mode="act" />
 
         {/* ── SECTIONS ─────────────────────────────────────────────────── */}
 

@@ -28,6 +28,7 @@ import type { CanonicalMarketState } from "@shared/marketState";
 import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
+import { IntelligenceEvidenceContext } from "@/components/intelligenceCore/IntelligenceEvidenceContext";
 
 type EvidenceFamily = CanonicalMarketState["why"]["evidenceFamilies"][number];
 type ScenarioKey = keyof CanonicalMarketState["outlook"]["regimeProbabilities"];
@@ -341,6 +342,8 @@ export default function Outlook() {
             </div>
           </div>
         </section>
+
+        <IntelligenceEvidenceContext mode="outlook" />
 
         {/* ── SECTIONS ─────────────────────────────────────────────────── */}
 
