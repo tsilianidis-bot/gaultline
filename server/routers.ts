@@ -1648,33 +1648,20 @@ export const appRouter = router({
     }),
   }),
 
-  // ── Insider Intelligence ──────────────────────────────────
+  // ── Insider Intelligence — containment until SEC verification ──
   insider: router({
-    radar: protectedProcedure
-      .query(async () => {
-        try {
-          return await getInsiderRadar();
-        } catch (err) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Insider radar failed", cause: err });
-        }
-      }),
+    radar: protectedProcedure.query(() => {
+      throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Insider Intelligence unavailable: source verification required." });
+    }),
     company: protectedProcedure
       .input(z.object({ ticker: z.string().min(1).max(10) }))
-      .query(async ({ input }) => {
-        try {
-          return await getInsiderCompany(input.ticker);
-        } catch (err) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Insider company profile failed", cause: err });
-        }
+      .query(() => {
+        throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Insider Intelligence unavailable: source verification required." });
       }),
     tickerAlert: protectedProcedure
       .input(z.object({ ticker: z.string().min(1).max(10) }))
-      .query(async ({ input }) => {
-        try {
-          return await getInsiderAlertsForTicker(input.ticker);
-        } catch (err) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Insider ticker alert failed", cause: err });
-        }
+      .query(() => {
+        throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Insider Intelligence unavailable: source verification required." });
       }),
   }),
 
