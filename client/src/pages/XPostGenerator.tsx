@@ -10,7 +10,7 @@ const POST_TYPES: { id: PostType; label: string; time: string; icon: string }[] 
   { id: "premarket", label: "PREMARKET DROP", time: "8:10–8:35 AM ET", icon: "◈" },
   { id: "midday", label: "MIDDAY UPDATE", time: "12:00–1:00 PM ET", icon: "◉" },
   { id: "closing", label: "CLOSING SUMMARY", time: "3:45–4:10 PM ET", icon: "◎" },
-  { id: "breaking", label: "BREAKING ALERT", time: "Real-time trigger", icon: "⬥" },
+  { id: "breaking", label: "BREAKING ALERT", time: "Event trigger", icon: "⬥" },
 ];
 
 const VARIANTS: { key: VariantKey; label: string; desc: string }[] = [

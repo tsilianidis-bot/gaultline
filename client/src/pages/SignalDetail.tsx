@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useLocation, useRoute } from "wouter";
 import { AlertTriangle, ArrowLeft, BrainCircuit, RefreshCw } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
 import { UnifiedIntelligenceChart, type IntelligenceLevel } from "@/components/UnifiedIntelligenceChart";
 
 const CYAN = "#00D4FF";
@@ -62,7 +63,7 @@ export default function SignalDetail() {
 
   const askAsha = () => {
     const current = signal
-      ? `${symbol} is currently ${signal.action} at ${signal.confidence}% confidence. Its calculated entry is ${money(signal.priceLevels.entryZone)}, stop is ${money(signal.priceLevels.stopLoss)}, and target is ${money(signal.priceLevels.targetPrice)}.`
+      ? `${symbol} is currently ${signal.action} (${signal.strength}). Its calculated entry is ${money(signal.priceLevels.entryZone)}, stop is ${money(signal.priceLevels.stopLoss)}, and target is ${money(signal.priceLevels.targetPrice)}.`
       : `${symbol} has incomplete source inputs, so FAULTLINE is withholding a current trading signal.`;
     navigate(`/app/asha?prompt=${encodeURIComponent(`Explain the current ${symbol} Signals visual analysis using only the displayed observed daily bars, current technicals, calculated levels, regime context, and explicit source availability. ${current} Do not imply historical FAULTLINE signals or outcomes.`)}`);
   };
@@ -87,7 +88,7 @@ export default function SignalDetail() {
     </header>
 
     <section style={statusStrip}>
-      <Metric label="CURRENT SIGNAL" value={signal ? `${signal.action} · ${signal.actionLabel}` : "WITHHELD"} color={actionColor(signal?.action)} detail={signal ? `${signal.confidence}% confidence · ${signal.strength.toUpperCase()}` : "Required inputs are incomplete"} />
+      <Metric label="CURRENT SIGNAL" value={signal ? `${signal.action} · ${signal.actionLabel}` : "WITHHELD"} color={actionColor(signal?.action)} detail={signal ? `${signal.strength.toUpperCase()} · confidence not established` : "Required inputs are incomplete"} />
       <Metric label="REGIME" value={detail.regime?.label ?? "UNAVAILABLE"} color={detail.regime ? CYAN : AMBER} detail={detail.regime ? `${detail.regime.pressureIndex}/100 · ${detail.regime.direction}` : "Signal calculation withheld"} />
       <Metric label="DAILY HISTORY" value={`${detail.bars.length} COMPLETED BARS`} detail={detail.providerHealth.dailyBars.status.toUpperCase()} />
       <Metric label="OBSERVED QUOTE" value={detail.providerHealth.quote.status.toUpperCase()} color={detail.providerHealth.quote.status === "available" ? GREEN : AMBER} detail={detail.providerHealth.quote.source.toUpperCase()} />
@@ -101,7 +102,7 @@ export default function SignalDetail() {
 
     {signal ? <>
       <section style={grid}>
-        <Panel title="WHY FAULTLINE IS SHOWING THIS"><div style={{ ...actionBadge, color: actionColor(signal.action), borderColor: `${actionColor(signal.action)}66` }}>{signal.action} · {signal.actionLabel}</div><p style={copy}>{signal.rationale}</p><div style={metricGrid}><Metric label="CONFIDENCE" value={`${signal.confidence}%`} color={actionColor(signal.action)} /><Metric label="TIMEFRAME" value={signal.timeframe.toUpperCase()} /><Metric label="REGIME ALIGNMENT" value={signal.regimeAlignment.toUpperCase()} color={signal.regimeAlignment === "Counter-Trend" ? RED : signal.regimeAlignment === "Aligned" ? GREEN : AMBER} detail={`${signal.regimeAlignmentScore}/10`} /></div></Panel>
+        <Panel title="WHY FAULTLINE IS SHOWING THIS"><div style={{ ...actionBadge, color: actionColor(signal.action), borderColor: `${actionColor(signal.action)}66` }}>{signal.action} · {signal.actionLabel}</div><p style={copy}>{signal.rationale}</p><div style={metricGrid}><Metric label="CONFIDENCE" value={CONFIDENCE_NOT_ESTABLISHED} /><Metric label="TIMEFRAME" value={signal.timeframe.toUpperCase()} /><Metric label="REGIME ALIGNMENT" value={signal.regimeAlignment.toUpperCase()} color={signal.regimeAlignment === "Counter-Trend" ? RED : signal.regimeAlignment === "Aligned" ? GREEN : AMBER} detail={`${signal.regimeAlignmentScore}/10`} /></div></Panel>
         <Panel title="CALCULATED PRICE LEVELS"><div style={metricGrid}><Metric label="SUPPORT" value={money(signal.priceLevels.support)} color={GREEN} /><Metric label="RESISTANCE" value={money(signal.priceLevels.resistance)} color={AMBER} /><Metric label="ENTRY" value={money(signal.priceLevels.entryZone)} color={CYAN} /><Metric label="STOP" value={money(signal.priceLevels.stopLoss)} color={RED} /><Metric label="TARGET" value={money(signal.priceLevels.targetPrice)} color={GREEN} /><Metric label="RISK / REWARD" value={`${signal.priceLevels.riskReward}:1`} /></div></Panel>
       </section>
       <section style={grid}>

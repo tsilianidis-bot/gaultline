@@ -174,7 +174,6 @@ RECOMMENDATION TO EVALUATE:
 - Verdict: ${entry.verdict}
 - Primary driver: ${entry.primaryDriver}
 - Expected timeframe: ${entry.expectedTimeframe}
-- Confidence at time of recommendation: ${entry.confidence}%
 - Days elapsed since recommendation: ${elapsed} days
 - ${priceContext}
 

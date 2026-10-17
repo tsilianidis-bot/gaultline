@@ -6,7 +6,6 @@
 import { useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import PageHeader from "@/components/PageHeader";
-import { PreflightTrigger } from "@/components/MarketPreflight";
 import { useSEO } from "@/hooks/useSEO";
 import { ShareReportButton } from "@/components/ShareReportButton";
 import { PremiumBlurOverlay } from "@/components/PremiumGate";
@@ -250,7 +249,6 @@ export default function DiagnosticAI() {
                 }}
               />
             )}
-            <PreflightTrigger currentPage="diagnostic" actionKey="viewed_diagnostic_ai" />
           </div>
         }
       />

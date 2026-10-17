@@ -22,9 +22,9 @@ const TOUCHED = {
 } as const;
 
 describe("cinematic + marketing preservation plan", () => {
-  it("keeps Lifetime internally available:false and does not advertise it publicly", () => {
-    expect(PRICING_PLANS.lifetime.available).toBe(false);
-    expect(PRICING_PLANS.lifetime.amountCents).toBe(29900);
+  it("offers Lifetime only at $1,500 one-time and never the retired $299 founding lifetime", () => {
+    expect(PRICING_PLANS.lifetime.available).toBe(true);
+    expect(PRICING_PLANS.lifetime.amountCents).toBe(150000);
 
     for (const [name, source] of Object.entries({
       marketing: TOUCHED.marketing,
@@ -48,28 +48,21 @@ describe("cinematic + marketing preservation plan", () => {
     expect(TOUCHED.app).not.toContain("createCheckout");
   });
 
-  it("presents Free / Trader $59 / Power $99 / Founding $49/mo from shared cards", () => {
-    const trader = MARKETING_TIER_CARDS.find((card) => card.tier === "core");
-    const power = MARKETING_TIER_CARDS.find((card) => card.tier === "premium");
-    const founding = MARKETING_TIER_CARDS.find((card) => card.tier === "founding");
-    expect(trader?.price).toBe("$59/mo");
-    expect(power?.price).toBe("$99/mo");
-    expect(founding?.price).toContain("$49/mo");
+  it("shared plan cards show only Standard $99/month and Lifetime $1,500 one-time", () => {
+    expect(MARKETING_TIER_CARDS.map((card) => [card.planId, card.price])).toEqual([
+      ["premium", "$99/month"],
+      ["lifetime", "$1,500 one-time"],
+    ]);
+    expect(MARKETING_TIER_CARDS.find((card) => card.tier === "core")).toBeUndefined();
 
-    expect(TOUCHED.marketing).toContain("MARKETING_TIER_CARDS");
-    expect(TOUCHED.marketing).toContain("TIER_META.free");
-    expect(TOUCHED.marketing).toContain("trader.marketingName");
-    expect(TOUCHED.marketing).toContain("power.marketingName");
-    expect(TOUCHED.marketing).toContain("founding.marketingName");
+    expect(TOUCHED.marketing).not.toContain("MARKETING_TIER_CARDS");
+    expect(TOUCHED.marketing).not.toContain("TIER_META.free");
+    expect(TOUCHED.marketing).not.toContain("trader.marketingName");
+    expect(TOUCHED.marketing).not.toContain("power.marketingName");
+    expect(TOUCHED.marketing).not.toContain("founding.marketingName");
     expect(TOUCHED.marketing).not.toContain("Observer");
     expect(TOUCHED.marketing).not.toContain("Everything in Pro");
-    expect(TOUCHED.productExperience).toContain("id: 'free'");
-    expect(TOUCHED.productExperience).toContain("id: 'trader'");
-    expect(TOUCHED.productExperience).toContain("id: 'power'");
-    expect(TOUCHED.productExperience).toContain("id: 'founding'");
-    expect(TOUCHED.productExperience).toContain("price: '$59'");
-    expect(TOUCHED.productExperience).toContain("price: '$99'");
-    expect(TOUCHED.productExperience).toContain("price: '$49'");
+    expect(TOUCHED.productExperience).not.toMatch(/price: '\$(49|59|299)'/);
   });
 
   it("does not mount ProductExperience on first-run and preserves the source module", () => {
@@ -99,7 +92,8 @@ describe("cinematic + marketing preservation plan", () => {
     expect(TOUCHED.cinematic).not.toContain(">\n                ASHA\n");
     expect(TOUCHED.authGate).toContain("PLATO will greet you once your identity is confirmed.");
     expect(TOUCHED.authGate).toContain("PLATO · FAULTLINE INTELLIGENCE LAYER");
-    expect(TOUCHED.briefing).toContain("PLATO \\u00b7 FAULTLINE INTELLIGENCE LAYER");
+    // #58 r9: the middle dot is a JS string expression, so it renders as "·" and not as a literal "\\u00b7".
+    expect(TOUCHED.briefing).toContain('PLATO {"\\u00b7"} FAULTLINE INTELLIGENCE LAYER');
     expect(TOUCHED.guide).toContain("Ask PLATO");
     expect(TOUCHED.guide).not.toContain("Ask ASHA");
     expect(TOUCHED.productExperience).toContain("PLATO synthesizes");

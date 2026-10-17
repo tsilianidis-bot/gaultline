@@ -7,6 +7,7 @@
  * withhold (UNAVAILABLE / GRAY) instead of recalculating.
  */
 
+import { pressureLevelWord } from "../shared/pressureBands";
 import type { CanonicalIntelligenceState } from "../shared/canonicalIntelligenceState";
 import type { FaultlinePressureOutput, PressureLevel, RiskVector } from "./pressure/engine";
 
@@ -19,13 +20,15 @@ const ENGINE_WEIGHTS: Record<string, number> = {
   "ai-bubble": 0.15,
 };
 
+// Display labels only — keep in sync with shared/pressureVectorLabels.ts.
+// Engine ids (keys) are internal and must not change.
 const ENGINE_LABELS: Record<string, string> = {
   "liquidity-stress": "Liquidity Stress",
   "credit-contagion": "Credit Contagion Risk",
-  "volatility-regime": "Volatility Regime",
+  "volatility-regime": "Yield Curve (10Y–2Y) & 10Y Level",
   "macro-sensitivity": "Macro Sensitivity",
-  "market-breadth": "Market Breadth",
-  "ai-bubble": "AI / Speculative Bubble",
+  "market-breadth": "Labor & Rates (Unemployment, 10Y)",
+  "ai-bubble": "AI / Speculation (Static Baseline)",
 };
 
 export const CANONICAL_CRYPTO_VECTOR_IDS = [
@@ -36,11 +39,7 @@ export const CANONICAL_CRYPTO_VECTOR_IDS = [
 ] as const;
 
 function scoreToLevel(score: number): PressureLevel {
-  if (score >= 80) return "Critical";
-  if (score >= 65) return "High";
-  if (score >= 45) return "Elevated";
-  if (score >= 25) return "Moderate";
-  return "Low";
+  return pressureLevelWord(score);
 }
 
 export function isCanonicalCurrentUsable(
@@ -86,7 +85,9 @@ export function projectPressureFromCanonical(
             ? "stale"
             : engine.fallbackStatus === "ACTIVE"
               ? "fallback"
-              : "cached",
+              : engine.freshnessStatus === "DELAYED"
+                ? "delayed"
+                : "cached",
         source: "canonical-intelligence-state",
       } satisfies RiskVector;
     });

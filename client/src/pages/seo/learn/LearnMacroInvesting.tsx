@@ -28,7 +28,7 @@ const LearnMacroInvesting = () => {
         },
         { icon: "⬡",
           title: "Actionable Outlooks",
-          desc: "Understand 'what would change the outlook' for key macro themes, helping you anticipate market shifts.",
+          desc: "Understand 'what would change the outlook' for key macro themes, as context rather than a forecast.",
         },
       ]}
       contentSections={[
@@ -46,7 +46,7 @@ const LearnMacroInvesting = () => {
         },
         {
           heading: "How FAULTLINE Measures Macro Conditions",
-          body: `FAULTLINE makes sophisticated macro analysis accessible by aggregating and interpreting a vast array of economic data points through proprietary models and indicators. We don't just present raw data; we provide context, historical comparisons, and actionable insights. For instance, our Market Regime Tracker helps identify prevailing economic environments, while the Pressure Index quantifies systemic stress. We analyze key indicators like inflation expectations, liquidity flows, and central bank policy shifts, translating complex relationships into clear, digestible narratives. This allows users to quickly understand the current 'FAULTLINE rating context' for various macro themes, see 'what changed' from previous periods, and assess 'what would change the outlook' for future market direction. Our platform empowers you to integrate top-down macro perspectives into your investment process with confidence.`, 
+          body: `FAULTLINE makes sophisticated macro analysis accessible by aggregating and interpreting a vast array of economic data points through proprietary models and indicators. We don't just present raw data; we provide context, historical comparisons, and actionable insights. For instance, our Market Regime Tracker helps identify prevailing economic environments, while the Pressure Index quantifies systemic stress. We analyze key indicators like CPI and PPI inflation, credit spreads, funding rates, Treasury yields, the federal funds rate, and unemployment from FRED, translating complex relationships into clear, digestible narratives. This allows users to quickly understand the current 'FAULTLINE rating context' for various macro themes, see 'what changed' from previous periods, and assess 'what would change the outlook'. Our platform empowers you to integrate top-down macro perspectives into your investment process with confidence.`, 
         },
         {
           heading: "Important Disclaimer",
@@ -83,7 +83,7 @@ const LearnMacroInvesting = () => {
         { label: "Pressure Index", href: "/pressure-index", desc: "View Pressure Index on FAULTLINE" },
         { label: "Market Regime Tracker", href: "/market-regime-tracker", desc: "View Market Regime Tracker on FAULTLINE" },
         { label: "Daily Brief", href: "/daily-brief", desc: "View Daily Brief on FAULTLINE" },
-        { label: "Recession Probability", href: "/recession-probability", desc: "View Recession Probability on FAULTLINE" },
+        { label: "Recession Risk Context", href: "/recession-probability", desc: "View recession-risk context on FAULTLINE" },
         { label: "Federal Reserve Tracker", href: "/federal-reserve-tracker", desc: "View Federal Reserve Tracker on FAULTLINE" },
         { label: "Liquidity Monitor", href: "/liquidity-monitor", desc: "View Liquidity Monitor on FAULTLINE" },
       ]}

@@ -4,19 +4,21 @@
  * Analytical · Deep · Structural · Institutional
  */
 import { useMemo } from "react";
+import { finiteOrNull, score100Value } from "@/lib/displayFallbacks";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
 import { getRiskColor } from "@/components/RiskBadge";
 import { ArrowRight, Shield, Zap, TrendingDown } from "lucide-react";
 import { FaultlineInterpretation } from "./FaultlineInterpretation";
+import { DemotedScenarioChips, IntelligenceTransparency } from "./IntelligenceTransparency";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 // ── Macro Regime Panel ─────────────────────────────────────────────────────────
 function MacroRegimePanel() {
   const [, navigate] = useLocation();
   const { output } = useEngine();
-  const { regime, overall, domains, probability } = output;
+  const { regime, overall, domains } = output;
   const color = regime.color;
 
   const topDomains = useMemo(
@@ -44,10 +46,11 @@ function MacroRegimePanel() {
         </div>
         <div className="text-right">
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 28, fontWeight: 700, color, lineHeight: 1 }}>
-            {overall.score.toFixed(1)}
+            {/* Pressure Index on its canonical 0–100 scale (engine score is 0–10 internally). */}
+            {score100Value(overall.score)}
           </div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "rgba(100,116,139,0.5)" }}>
-            / 10.0
+            / 100
           </div>
         </div>
       </div>
@@ -56,7 +59,7 @@ function MacroRegimePanel() {
       <div className="p-3 grid grid-cols-2 gap-1.5">
         {topDomains.map((d) => {
           const dc = getRiskColor(d.riskLevel);
-          const pct = Math.min(100, d.score * 10);
+          const pct = Math.min(100, (finiteOrNull(d.score) ?? 0) * 10);
           return (
             <div
               key={d.id}
@@ -68,7 +71,7 @@ function MacroRegimePanel() {
                   {d.label}
                 </span>
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: dc, fontWeight: 700, flexShrink: 0, marginLeft: 4 }}>
-                  {d.score.toFixed(1)}
+                  {score100Value(d.score)}
                 </span>
               </div>
               <div className="h-0.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.11)" }}>
@@ -87,31 +90,8 @@ function MacroRegimePanel() {
         })}
       </div>
 
-      {/* Probability row */}
-      <div className="px-3 pb-3 grid grid-cols-2 gap-2">
-        <div
-          className="rounded-xl p-2.5 text-center"
-          style={{ background: "rgba(0,255,136,0.06)", border: "1px solid rgba(0,255,136,0.15)" }}
-        >
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, letterSpacing: "0.2em", color: "rgba(100,116,139,0.5)", marginBottom: 3 }}>
-            BULL PROBABILITY
-          </div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 18, fontWeight: 700, color: "#00FF88" }}>
-            {probability.bullProbability}%
-          </div>
-        </div>
-        <div
-          className="rounded-xl p-2.5 text-center"
-          style={{ background: "rgba(255,45,85,0.06)", border: "1px solid rgba(255,45,85,0.15)" }}
-        >
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, letterSpacing: "0.2em", color: "rgba(100,116,139,0.5)", marginBottom: 3 }}>
-            CRASH PROBABILITY
-          </div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 18, fontWeight: 700, color: "#FF2D55" }}>
-            {probability.crashProbability}%
-          </div>
-        </div>
-      </div>
+      {/* Demoted scenario chips — Uncalibrated / Not offered are not implied probabilities */}
+      <DemotedScenarioChips />
 
       <div className="px-3 pb-3">
         <button
@@ -249,7 +229,7 @@ function TrackRecordSnippet() {
         <div className="flex items-center gap-2">
           <Shield size={12} style={{ color: "#00FF88" }} />
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: "0.3em", color: "rgba(100,116,139,0.6)" }}>
-            METHODOLOGY VALIDATED
+            RETROSPECTIVE RECONSTRUCTION
           </span>
         </div>
         <button
@@ -295,7 +275,7 @@ function TrackRecordSnippet() {
           style={{ background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.12)" }}
         >
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "rgba(0,255,136,0.6)", letterSpacing: "0.15em" }}>
-            25 YEARS · 300+ READINGS · SAME ENGINE
+            ARCHIVED 2000–2026 · NOT LIVE · NOT INDEPENDENTLY VALIDATED
           </span>
         </div>
       </div>
@@ -387,6 +367,7 @@ export default function IntelligenceMode() {
   return (
     <div className="flex flex-col gap-4 pb-8">
       <MacroRegimePanel />
+      <IntelligenceTransparency />
       <AftershockSnapshot />
       <StructuralRiskSummary />
       <FaultlineInterpretation />

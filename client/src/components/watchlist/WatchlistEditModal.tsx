@@ -3,6 +3,7 @@ import { Bell, Check, TrendingDown, TrendingUp, X } from 'lucide-react';
 import {
   INDICATOR_CATALOG,
   INDICATOR_MAP,
+  thresholdSlider,
   type AlertCondition,
   type AlertSeverity,
   type WatchlistItem,
@@ -20,12 +21,14 @@ export interface WatchlistEditModalProps {
 export function WatchlistEditModal({ item, onSave, onClose, liveValues }: WatchlistEditModalProps) {
   const [indicatorKey, setIndicatorKey] = useState(item?.indicatorKey ?? 'score_overall');
   const [condition, setCondition] = useState<AlertCondition>(item?.condition ?? 'above');
-  const [threshold, setThreshold] = useState(item?.thresholdValue ?? 7.0);
+  const [threshold, setThreshold] = useState(item?.thresholdValue ?? INDICATOR_MAP[item?.indicatorKey ?? 'score_overall']?.defaultThreshold ?? 70);
   const [severity, setSeverity] = useState<AlertSeverity>(item?.severity ?? 'high');
   const [note, setNote] = useState(item?.note ?? '');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   const def = INDICATOR_MAP[indicatorKey];
+  // Slider on the display scale (domain scores 0–100, step 5); saves the stored value.
+  const slider = thresholdSlider(def);
 
   useEffect(() => {
     if (!item) {
@@ -169,11 +172,12 @@ export function WatchlistEditModal({ item, onSave, onClose, liveValues }: Watchl
               <div style={{ flex: 1 }}>
                 <input
                   type="range"
-                  min={def?.min ?? 0}
-                  max={def?.max ?? 10}
-                  step={def?.step ?? 0.1}
-                  value={threshold}
-                  onChange={event => setThreshold(parseFloat(event.target.value))}
+                  data-watchlist-threshold-slider={indicatorKey}
+                  min={slider.min}
+                  max={slider.max}
+                  step={slider.step}
+                  value={slider.toDisplay(threshold)}
+                  onChange={event => setThreshold(slider.toStored(parseFloat(event.target.value)))}
                   style={{ width: '100%', accentColor: '#00D4FF', cursor: 'pointer' }}
                 />
               </div>

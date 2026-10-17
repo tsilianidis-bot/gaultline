@@ -3,6 +3,7 @@
    Institutional-grade digital asset risk, liquidity,
    momentum, and macro correlation intelligence.
    ============================================================ */
+import { pressureBand, pressureShortLabel } from "@shared/pressureBands";
 import { useMemo, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
@@ -473,11 +474,14 @@ function CryptoIntelligenceInner() {
   const pressureLabel = useMemo(() => {
     const p = data?.pressureIndex;
     if (p == null || data?.availability === "UNAVAILABLE") return { label: "UNAVAILABLE", color: "text-slate-400" };
-    if (p >= 80) return { label: "CRITICAL", color: "text-red-400" };
-    if (p >= 65) return { label: "HIGH STRESS", color: "text-orange-400" };
-    if (p >= 45) return { label: "ELEVATED", color: "text-amber-400" };
-    if (p >= 25) return { label: "MODERATE", color: "text-yellow-400" };
-    return { label: "LOW", color: "text-emerald-400" };
+    const band = pressureBand(p);
+    const color =
+      band.id === "crisis" ? "text-red-400" :
+      band.id === "high" ? "text-orange-400" :
+      band.id === "elevated" ? "text-amber-400" :
+      band.id === "moderate" ? "text-yellow-400" :
+      "text-emerald-400";
+    return { label: pressureShortLabel(p), color };
   }, [data?.pressureIndex, data?.availability]);
 
   return (
@@ -513,7 +517,7 @@ function CryptoIntelligenceInner() {
           <p className="text-sm text-slate-400 max-w-2xl mb-6">
             Track digital asset risk, liquidity, momentum, and macro correlation before the crowd reacts.
             FAULTLINE connects crypto signals to Federal Reserve policy, interest rates, dollar strength,
-            and liquidity cycles — in real time.
+            and liquidity cycles — as new data is published.
           </p>
 
           {/* Tagline strip */}

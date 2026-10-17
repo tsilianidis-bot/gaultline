@@ -10,6 +10,7 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Search, TrendingUp, TrendingDown, Minus, Activity, Star, ChevronRight, Zap } from "lucide-react";
+import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
 
 // ── Color helpers ─────────────────────────────────────────────
 function changeColor(pct: number): string {
@@ -314,10 +315,10 @@ function MoverRow({ ticker, name, price, changePct, volume, marketCap, rank }: {
 
 // ── Crypto row ────────────────────────────────────────────────
 function CryptoRow({ rank, symbol, name, price, changePct24h, volume, marketCap }: {
-  rank: number; symbol: string; name: string; price: number; changePct24h: number;
+  rank: number; symbol: string; name: string; price: number; changePct24h: number | null;
   volume: number; marketCap: number;
 }) {
-  const color = changeColor(changePct24h);
+  const color = change24hColor(changePct24h, "#00FF88", "#FF2D55");
   return (
     <a
       href={`/app/crypto?coin=${symbol.toLowerCase()}`}
@@ -347,13 +348,13 @@ function CryptoRow({ rank, symbol, name, price, changePct24h, volume, marketCap 
         <span style={{
           display: "inline-block",
           padding: "2px 5px",
-          background: changeBg(changePct24h),
+          background: changePct24h === null ? "transparent" : changeBg(changePct24h),
           borderRadius: "3px",
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: "9px",
           color,
           fontWeight: 700,
-        }}>{fmtPct(changePct24h)}</span>
+        }}>{change24hText(changePct24h)}</span>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.4)", marginTop: "2px" }}>{fmtMktCap(marketCap)}</div>
       </div>
     </a>
@@ -615,7 +616,7 @@ export default function MarketOverview() {
                 symbol={c.symbol}
                 name={c.name}
                 price={c.currentPrice}
-                changePct24h={c.priceChangePercent24h}
+                changePct24h={displayChange24h(c)}
                 volume={c.totalVolume}
                 marketCap={c.marketCap}
               />

@@ -7,6 +7,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
+import { engineProbabilityPercent, engineProbabilityText } from "@/lib/marketStateProjection";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import { SectionErrorBoundary } from "@/components/ErrorBoundary";
@@ -474,7 +475,7 @@ function CollapsiblePanel({
 // ── Main component ────────────────────────────────────────────
 export default function SituationRoom() {
   useSEO(PAGE_SEO.situationRoom);
-  const { marketState, canonicalState, marketMode, sourceHealth } = useEngine();
+  const { marketState, canonicalState, marketMode, sourceHealth, output } = useEngine();
   const evidenceAvailable =
     Boolean(canonicalState) &&
     canonicalState?.confidenceOrEvidenceQuality !== "UNAVAILABLE" &&
@@ -636,12 +637,11 @@ export default function SituationRoom() {
     ? (canonicalState?.pressureIndex ?? marketState?.now.pressureScore ?? null)
     : null;
   const pColor = pressureScore == null ? "#64748B" : pressureColor(pressureScore);
-  const bullProbability = evidenceAvailable
-    ? (marketState?.outlook.regimeProbabilities.bull ?? null)
-    : null;
-  const crashProbability = evidenceAvailable
-    ? (marketState?.outlook.regimeProbabilities.crash ?? null)
-    : null;
+  // Probability contract: the payload numbers are withheld (NaN), so render the
+  // contract display text ("Uncalibrated" / "Not offered"), never `${NaN}%`.
+  const bullProbabilityText = evidenceAvailable ? engineProbabilityText(output, "bullProbability") : "UNAVAILABLE";
+  const crashProbabilityText = evidenceAvailable ? engineProbabilityText(output, "crashProbability") : "UNAVAILABLE";
+  const bullProbability = evidenceAvailable ? engineProbabilityPercent(output, "bullProbability") : null;
   const regimeLabel = evidenceAvailable
     ? (canonicalState?.regime ?? marketState?.now.regime ?? "UNAVAILABLE")
     : "UNAVAILABLE";
@@ -712,12 +712,12 @@ export default function SituationRoom() {
             <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
               <TrendingUp size={13} color="#00FF88" />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)" }}>Bull</span>
-              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#00FF88" }}>{bullProbability == null ? "UNAVAILABLE" : `${bullProbability}%`}</span>
+              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#00FF88" }}>{bullProbabilityText}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
               <TrendingDown size={13} color="#FF2D55" />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)" }}>Drawdown</span>
-              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#FF2D55" }}>{crashProbability == null ? "UNAVAILABLE" : `${crashProbability}%`}</span>
+              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#FF2D55" }}>{crashProbabilityText}</span>
             </div>
           </div>
 
@@ -728,8 +728,7 @@ export default function SituationRoom() {
             ) : (
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#64748B" }}>Pressure Index UNAVAILABLE — withheld</div>
             )}
-            {bullProbability != null ? <ScoreExplainer scoreKey="bullProbability" value={bullProbability} trend="stable" compact /> : null}
-            {crashProbability != null ? <ScoreExplainer scoreKey="crashRisk" value={crashProbability} trend="stable" compact /> : null}
+            {bullProbability != null && Number.isFinite(bullProbability) ? <ScoreExplainer scoreKey="bullProbability" value={bullProbability} trend="stable" compact /> : null}
           </div>
           {/* Condition chips — canonical evidence families only; never browser-computed current truth */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
@@ -1134,8 +1133,9 @@ export default function SituationRoom() {
                       {/* Confidence */}
                       <div>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.7)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Confidence</span>
-                          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: vc.color }}>{result.verdict.confidence}%</span>
+                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.7)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Decision score · heuristic</span>
+                          {/* QA r13 B15: verdict heuristic /100, not a calibrated confidence — no %. */}
+                          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: vc.color }}>{Math.round(result.verdict.confidence)}/100</span>
                         </div>
                         <div style={{ height: "3px", background: "rgba(255,255,255,0.11)", borderRadius: "2px" }}>
                           <div style={{ height: "100%", width: `${result.verdict.confidence}%`, background: vc.color, borderRadius: "2px", transition: "width 1.2s cubic-bezier(0.23,1,0.32,1)" }} />
@@ -1210,15 +1210,11 @@ export default function SituationRoom() {
               };
               const confData: ConfidenceData = {
                 confidenceScore: Math.round(result.verdict.confidence),
-                probabilityRange: [
-                  Math.max(0, Math.round(result.moveFavorabilityScore - 15)),
-                  Math.min(100, Math.round(result.moveFavorabilityScore + 10)),
-                ],
                 supportingSignals: ((result.outcomeSimulator?.scenarios?.find((s: any) => s.label === "Bull Case") as any)?.keyDrivers ?? []).slice(0, 4),
                 conflictingSignals: ((result.outcomeSimulator?.scenarios?.find((s: any) => s.label === "Bear Case") as any)?.keyRisks ?? []).slice(0, 4),
-                dataFreshnessMinutes: 3,
-                institutionalAgreement: Math.min(100, Math.round(result.moveFavorabilityScore * 0.85)),
-                historicalSimilarity: 72,
+                // QA r11 B7: no fabricated freshness / similarity / agreement figures.
+                // trade.simulate carries no data-as-of timestamp, so freshness is not shown.
+                dataFreshnessMinutes: null,
                 historicalWinRate: undefined,
                 expectedVolatility: result.riskLevel === "High" ? "HIGH" : result.riskLevel === "Extreme" ? "EXTREME" : result.riskLevel === "Low" ? "LOW" : "MODERATE",
                 rewardRisk: result.outcomeSimulator?.scenarios
@@ -1226,9 +1222,9 @@ export default function SituationRoom() {
                       const bull = result.outcomeSimulator.scenarios.find((s: any) => s.label === "Bull Case");
                       const bear = result.outcomeSimulator.scenarios.find((s: any) => s.label === "Bear Case");
                       if (bull?.expectedReturn && bear?.expectedReturn) return Math.abs(bull.expectedReturn) / Math.max(0.1, Math.abs(bear.expectedReturn));
-                      return 2.0;
+                      return null; // QA r12: no hard-coded 2.0 fallback — shown as "—"
                     })()
-                  : 2.0,
+                  : null,
                 verdict: institutionalLabel[vt] as ConfidenceData["verdict"],
               };
               return (
@@ -1256,10 +1252,7 @@ export default function SituationRoom() {
                     {bull && (
                       <>
                         <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "28px", color: "#00FF88", marginBottom: "4px" }}>{returnSign(bull.expectedReturn)}</div>
-                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(0,255,136,0.7)", marginBottom: "10px" }}>Probability: {bull.probability}%</div>
-                        <div style={{ height: "3px", background: "rgba(255,255,255,0.11)", borderRadius: "2px", marginBottom: "12px" }}>
-                          <div style={{ height: "100%", width: `${bull.probability}%`, background: "#00FF88", borderRadius: "2px" }} />
-                        </div>
+                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(0,255,136,0.7)", marginBottom: "12px" }}>Scenario return · uncalibrated · no probability assigned</div>
                       </>
                     )}
                     {result.marketInterpretation?.watchFor && result.marketInterpretation.watchFor.length > 0 && (
@@ -1276,7 +1269,8 @@ export default function SituationRoom() {
                     {base && (
                       <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid rgba(255,255,255,0.09)" }}>
                         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)", textTransform: "uppercase", letterSpacing: "0.1em" }}>BASE CASE: </span>
-                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: "#94A3B8" }}>{returnSign(base.expectedReturn)} ({base.probability}%)</span>
+                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: "#94A3B8" }}>{returnSign(base.expectedReturn)}</span>
+                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)" }}> · uncalibrated</span>
                       </div>
                     )}
                   </div>
@@ -1290,10 +1284,7 @@ export default function SituationRoom() {
                     {bear && (
                       <>
                         <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "28px", color: "#FF2D55", marginBottom: "4px" }}>{returnSign(bear.expectedReturn)}</div>
-                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(255,45,85,0.7)", marginBottom: "10px" }}>Probability: {bear.probability}%</div>
-                        <div style={{ height: "3px", background: "rgba(255,255,255,0.11)", borderRadius: "2px", marginBottom: "12px" }}>
-                          <div style={{ height: "100%", width: `${bear.probability}%`, background: "#FF2D55", borderRadius: "2px" }} />
-                        </div>
+                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(255,45,85,0.7)", marginBottom: "12px" }}>Scenario return · uncalibrated · no probability assigned</div>
                       </>
                     )}
                     {result.marketInterpretation?.invalidationConditions && result.marketInterpretation.invalidationConditions.length > 0 && (
@@ -1527,7 +1518,7 @@ export default function SituationRoom() {
             <div style={{ padding: "12px 16px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: "4px", marginTop: "4px" }}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", lineHeight: 1.6, textAlign: "center", letterSpacing: "0.04em" }}>
                 FAULTLINE simulations are market-regime guidance, not personalized financial advice or guaranteed predictions.
-                All readings are probability-weighted estimates derived from macroeconomic data and should not be the sole basis for any investment decision.
+                Scenario returns are uncalibrated illustrations derived from macroeconomic data, carry no assigned probability, and should not be the sole basis for any investment decision.
                 Position sizing, scenario projections, and verdict outputs are model-generated estimates only.
               </div>
             </div>

@@ -1,4 +1,4 @@
-import { desc } from "drizzle-orm";
+import { and, desc, gte, lte } from "drizzle-orm";
 import { intelligenceStateManifests } from "../drizzle/schema";
 import {
   CANONICAL_STATE_SCHEMA_VERSION,
@@ -10,16 +10,23 @@ import {
   type PublicCanonicalIntelligenceState,
 } from "../shared/canonicalIntelligenceState";
 import { getDb } from "./db";
+import { buildCanonicalProbabilityContract, withholdUndisplayedClaimValues } from "./probabilityContract";
+import { compositePressureDirection, engineEvidenceStatus, stressTrendDirection } from "../shared/snapshotEvidence";
 import type { IntelligenceEvidence } from "../shared/intelligenceIntegrity";
 
 type StoredManifest = Record<string, any>;
 
-function direction(value: unknown): CanonicalDirection {
-  const normalized = String(value ?? "").toLowerCase();
-  if (normalized === "improving" || normalized === "rising") return "Improving";
-  if (normalized === "deteriorating" || normalized === "falling") return "Deteriorating";
-  if (normalized === "stable") return "Stable";
-  return "Unknown";
+/**
+ * Vectors whose engine trend is a fixed constant rather than an observation
+ * (server/pressure/engine.ts: ai-bubble trend is a hard-coded "secular" value).
+ * Their direction cannot be derived truthfully, so it is reported as Unknown.
+ */
+const STATIC_TREND_ENGINES = new Set(["ai-bubble"]);
+
+/** Engine vector trends describe stress: rising stress = Deteriorating (shared/snapshotEvidence.ts). */
+function direction(value: unknown, engineId?: string): CanonicalDirection {
+  if (engineId && STATIC_TREND_ENGINES.has(engineId)) return "Unknown";
+  return stressTrendDirection(value);
 }
 
 function quality(manifest: StoredManifest): CanonicalQualityStatus {
@@ -48,7 +55,12 @@ function coherence(manifest: StoredManifest): CanonicalIntelligenceState["proven
   return "UNAVAILABLE";
 }
 
-export function buildCanonicalIntelligenceState(manifest: StoredManifest): CanonicalIntelligenceState {
+export interface CanonicalStateBuildOptions {
+  /** Composite Pressure Index of the prior comparable manifest (about a day earlier), if any. */
+  priorPressureIndex?: number | null;
+}
+
+export function buildCanonicalIntelligenceState(manifest: StoredManifest, options: CanonicalStateBuildOptions = {}): CanonicalIntelligenceState {
   const inputQuality = Array.isArray(manifest.inputQuality) ? manifest.inputQuality : [];
   const stateQuality = quality(manifest);
   const staleInputs = Array.isArray(manifest.staleInputs) ? manifest.staleInputs : [];
@@ -84,16 +96,25 @@ export function buildCanonicalIntelligenceState(manifest: StoredManifest): Canon
   const engines: CanonicalEngineState[] = Object.entries(manifest.engineValues ?? {}).map(([engineId, value]) => {
     const engineInputs = inputQuality.filter((input: any) => input.contributesTo?.includes(engineId));
     const sourceInputIds = engineInputs.map((input: any) => input.inputId);
-    const engineUnavailable = engineInputs.some((input: any) => unavailableInputs.includes(input.inputId) || input.freshnessStatus === "UNAVAILABLE");
-    const engineStale = engineInputs.some((input: any) => staleInputs.includes(input.inputId) || delayedInputs.includes(input.inputId) || /STALE|DELAYED/i.test(String(input.freshnessStatus)));
-    const engineFallback = engineInputs.some((input: any) => fallbackInputs.includes(input.inputId) || input.freshnessStatus === "FALLBACK");
+    const byStatus = (status: string) => engineInputs.filter((input: any) => String(input.freshnessStatus).toUpperCase() === status).map((input: any) => input.inputId);
+    // One definition of stale / delayed / fallback / unavailable (shared/snapshotEvidence.ts).
+    // Delayed (publication lag within the allowed age) is reported as DELAYED, not STALE.
+    const evidence = engineEvidenceStatus(sourceInputIds, {
+      unavailable: [...unavailableInputs, ...byStatus("UNAVAILABLE")],
+      stale: [...staleInputs, ...byStatus("STALE")],
+      fallback: [...fallbackInputs, ...byStatus("FALLBACK")],
+      delayed: [...delayedInputs, ...byStatus("DELAYED")],
+    });
+    const engineUnavailable = evidence === "UNAVAILABLE";
+    const engineStale = evidence === "STALE" || evidence === "DELAYED";
+    const engineFallback = evidence === "FALLBACK" || engineInputs.some((input: any) => fallbackInputs.includes(input.inputId) || input.freshnessStatus === "FALLBACK");
     const engineQuality: CanonicalQualityStatus = engineUnavailable ? "UNAVAILABLE" : engineStale ? "PARTIAL" : engineFallback ? "DEGRADED" : stateQuality;
     return {
       engineId, engineName: engineId, value: typeof value === "number" ? value : null, unit: "score_0_to_100",
-      classification: null, direction: direction(manifest.engineDirections?.[engineId]), acceleration: null, persistence: null,
+      classification: null, direction: direction(manifest.engineDirections?.[engineId], engineId), acceleration: null, persistence: null,
       observedAt: null, calculatedAt: manifest.generatedAt ?? null,
       sourceInputIds,
-      qualityStatus: engineQuality, freshnessStatus: engineUnavailable ? "UNAVAILABLE" : engineStale ? "STALE" : engineFallback ? "FALLBACK" : engineQuality === "HEALTHY" ? "CURRENT" : engineQuality,
+      qualityStatus: engineQuality, freshnessStatus: evidence,
       fallbackStatus: engineFallback ? "ACTIVE" : "NONE", modelVersion: manifest.championVersion,
       calculationVersion: manifest.scoringVersion, contributionToComposite: true,
     };
@@ -104,9 +125,11 @@ export function buildCanonicalIntelligenceState(manifest: StoredManifest): Canon
     championVersion: manifest.championVersion, modelVersion: manifest.modelVersion, scoringVersion: manifest.scoringVersion,
     configurationVersion: manifest.configurationVersion, inputSnapshotId: manifest.inputSnapshotId, stateHash: manifest.stateHash,
     regime: manifest.regime ?? null, pressureIndex: manifest.pressureIndex ?? null, pressureLevel: manifest.regime ?? null,
-    pressureDirection: direction(manifest.engineDirections?.["liquidity-stress"]), pressureAcceleration: null, pressurePersistence: null,
+    // Direction of the composite index versus the prior comparable reading, not of any single vector.
+    pressureDirection: compositePressureDirection(manifest.pressureIndex, options.priorPressureIndex), pressureAcceleration: null, pressurePersistence: null,
     engines, domains: manifest.domainValues ?? {}, scenarioOutputs: manifest.scenarioOutputs ?? {},
     probabilityClaimIds: manifest.probabilityClaimIds ?? [], analogClaimIds: manifest.analogClaimIds ?? [],
+    probabilityContract: buildCanonicalProbabilityContract(manifest),
     historicalContext: {
       canonicalLiveHistory: "intelligenceStateManifests append-only operational snapshots only",
       reconstructedResearch: "reconstructed-champion-v1-2000-2026-research-only",
@@ -145,7 +168,37 @@ export async function getAuthoritativeCanonicalIntelligenceState(): Promise<Cano
   if (!db) return null;
   const row = (await db.select().from(intelligenceStateManifests).orderBy(desc(intelligenceStateManifests.generatedAt)).limit(1))[0];
   if (!row) return null;
-  return buildCanonicalIntelligenceState(JSON.parse(row.manifestJson));
+  const manifest = JSON.parse(row.manifestJson);
+  const priorPressureIndex = await readPriorPressureIndex(db, row, manifest).catch(() => null);
+  return buildCanonicalIntelligenceState(manifest, { priorPressureIndex });
+}
+
+/** Composite direction compares against the latest manifest at least this old. */
+export const PRIOR_READING_MIN_AGE_MS = 20 * 60 * 60 * 1000;
+/** A prior older than this is too far back to call a direction. */
+export const PRIOR_READING_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Read-only lookup of the prior comparable Pressure Index (same scoring version,
+ * 20 h – 7 days earlier) from the append-only manifest table. Null when none exists,
+ * in which case direction is Unknown and surfaces show it as unavailable.
+ */
+export function selectPriorPressureIndex(currentManifest: StoredManifest, prior: StoredManifest | null | undefined): number | null {
+  if (!prior) return null;
+  if (prior.scoringVersion !== currentManifest.scoringVersion) return null;
+  return typeof prior.pressureIndex === "number" && Number.isFinite(prior.pressureIndex) ? prior.pressureIndex : null;
+}
+
+async function readPriorPressureIndex(db: NonNullable<Awaited<ReturnType<typeof getDb>>>, row: { generatedAt: Date }, manifest: StoredManifest): Promise<number | null> {
+  const current = new Date(row.generatedAt).getTime();
+  if (!Number.isFinite(current)) return null;
+  const prior = (await db.select().from(intelligenceStateManifests)
+    .where(and(
+      lte(intelligenceStateManifests.generatedAt, new Date(current - PRIOR_READING_MIN_AGE_MS)),
+      gte(intelligenceStateManifests.generatedAt, new Date(current - PRIOR_READING_MAX_AGE_MS)),
+    ))
+    .orderBy(desc(intelligenceStateManifests.generatedAt)).limit(1))[0];
+  return selectPriorPressureIndex(manifest, prior ? JSON.parse(prior.manifestJson) : null);
 }
 
 export function toPublicCanonicalIntelligenceState(state: CanonicalIntelligenceState): PublicCanonicalIntelligenceState {
@@ -158,3 +211,24 @@ export function toPublicCanonicalIntelligenceState(state: CanonicalIntelligenceS
     },
   };
 }
+
+/**
+ * Browser-facing projection (tRPC responses only). The probability contract
+ * withholds the scenario set as uncalibrated, so the raw scenario arithmetic
+ * (e.g. bull 43 / neutral 43 / bear 14) is not shipped to the client, where
+ * it could be rendered as a percentage. Display boundary only: the manifest,
+ * every engine / scoring input, and the server-side public state used by
+ * evidence packets, synthesis and prompts are unchanged.
+ */
+export function toClientCanonicalIntelligenceState(state: CanonicalIntelligenceState): PublicCanonicalIntelligenceState {
+  const publicState = toPublicCanonicalIntelligenceState(state);
+  return {
+    ...publicState,
+    scenarioOutputs: {},
+    probabilityContract: withholdUndisplayedClaimValues(publicState.probabilityContract),
+  };
+}
+
+// withholdUndisplayedClaimValues lives in ./probabilityContract (no import cycle);
+// re-exported here for existing callers.
+export { withholdUndisplayedClaimValues };

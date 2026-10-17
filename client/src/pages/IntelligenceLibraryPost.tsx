@@ -14,6 +14,7 @@ import {
   Calendar, Clock, ChevronLeft, ChevronRight, BookOpen,
   ExternalLink, Share2, TrendingUp,
 } from "lucide-react";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const CATEGORY_COLORS: Record<string, string> = {
   "macro-analysis": "#00D4FF",
@@ -366,7 +367,7 @@ export default function IntelligenceLibraryPost() {
             Ask PLATO About {catLabel}
           </h3>
           <p style={{ color: '#94A3B8', fontSize: '0.875rem', lineHeight: 1.6, marginBottom: '1.25rem', maxWidth: 400, margin: '0 auto 1.25rem' }}>
-            Get real-time analysis grounded in live engine data and this research library.
+            Get regularly refreshed analysis grounded in live engine data and this research library.
           </p>
           <Link href="/app/discover">
             <button style={{
@@ -400,6 +401,7 @@ export default function IntelligenceLibraryPost() {
           </Link>
         </div>
       </div>
+      <p className="mx-auto max-w-5xl px-4 pb-8 pt-6 text-center text-xs text-slate-500">{PUBLIC_DISCLAIMER}</p>
     </div>
   );
 }

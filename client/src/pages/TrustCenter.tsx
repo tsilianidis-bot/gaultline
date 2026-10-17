@@ -1,3 +1,4 @@
+import { PRESSURE_SCALE } from "@shared/pressureScale";
 /* ============================================================
    FAULTLINE — Trust Center
    Unified transparency page: Methodology, Data Sources, Privacy,
@@ -6,6 +7,7 @@
 import { useState } from "react";
 import { useSEO } from "../hooks/useSEO";
 import { Link } from "wouter";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const MONO = "'IBM Plex Mono', 'Courier New', monospace";
 const SANS = "'IBM Plex Sans', 'Inter', sans-serif";
@@ -80,37 +82,29 @@ function P({ children }: { children: React.ReactNode }) {
 
 function MethodologyTab() {
   const VECTORS = [
-    { name: "Credit Stress", weight: "18%", desc: "Corporate credit spreads (Moody's Baa–Treasury), high-yield spreads, and financial conditions indices. Credit markets historically lead equity markets by 2–6 weeks." },
-    { name: "Liquidity Conditions", weight: "16%", desc: "Federal Reserve balance sheet, M2 money supply growth, and bank lending standards. Liquidity is the fuel that drives asset prices." },
-    { name: "Yield Curve", weight: "14%", desc: "10Y–2Y Treasury spread, 10Y–3M spread. Inversions have preceded every U.S. recession since 1955 with a median lead time of 12–18 months." },
-    { name: "Inflation Regime", weight: "12%", desc: "CPI, PCE, and core inflation trends. Elevated inflation constrains Fed policy and compresses equity multiples." },
-    { name: "Labor Market", weight: "10%", desc: "Unemployment rate, initial jobless claims, and JOLTS data. Labor market deterioration is a lagging but confirming recession signal." },
-    { name: "Volatility & Sentiment", weight: "10%", desc: "VIX levels and trend, put/call ratios, and AAII sentiment surveys. Extreme readings identify turning points." },
-    { name: "Earnings Momentum", weight: "10%", desc: "Forward earnings revisions, earnings surprise rates, and profit margin trends. Earnings drive long-term equity returns." },
-    { name: "Macro Momentum", weight: "10%", desc: "Leading Economic Index (LEI), ISM Manufacturing PMI, and industrial production. These composite indicators capture broad economic direction." },
+    { name: "Liquidity Stress", weight: "20%", desc: "High-yield credit spread (ICE BofA HY OAS, FRED BAMLH0A0HYM2) and SOFR." },
+    { name: "Credit Contagion Risk", weight: "20%", desc: "High-yield spread, the 10-year Treasury yield (DGS10), and the unemployment rate (UNRATE)." },
+    { name: "Yield Curve (10Y–2Y) & 10Y Level", weight: "15%", desc: "The 10-year minus 2-year Treasury spread (DGS10 − DGS2) in inversion and flatness bands, blended with the 10-year yield level. Previously labelled “Volatility Regime”; it does not read VIX or realized volatility." },
+    { name: "Macro Sensitivity", weight: "20%", desc: "CPI and PPI year-over-year and the effective federal funds rate. Monthly series with publication lag." },
+    { name: "Labor & Rates (Unemployment, 10Y)", weight: "10%", desc: "The unemployment rate blended with the 10-year Treasury yield. Previously labelled “Market Breadth”; it is not an advance/decline or market-participation measure." },
+    { name: "AI / Speculation (Static Baseline)", weight: "15%", desc: "A static reference value for AI mega-cap concentration (~32.4% of the S&P 500) — not a live measurement — adjusted by the live 10-year yield and high-yield spread." },
   ];
 
-  const SCORE_SCALE = [
-    { range: "0–20",  label: "Calm",           color: "#22C55E", desc: "Systemic risk is minimal. Credit markets stable, liquidity ample, no recession signals." },
-    { range: "20–40", label: "Normal",          color: "#84CC16", desc: "Routine market conditions. Some indicators elevated but no systemic concern." },
-    { range: "40–60", label: "Elevated",        color: "#EAB308", desc: "Multiple stress indicators building. Increased caution warranted. Historical median." },
-    { range: "60–80", label: "High Risk",       color: "#F97316", desc: "Significant systemic pressure. Conditions consistent with pre-recession or pre-correction environments." },
-    { range: "80–100",label: "Systemic Stress", color: "#EF4444", desc: "Crisis-level conditions. Consistent with 2008 GFC peak, COVID crash, or dot-com bust." },
-  ];
+  const SCORE_SCALE = PRESSURE_SCALE;
 
   return (
     <div>
       <SectionLabel>How it works</SectionLabel>
       <H2>Pressure Index Methodology</H2>
       <P>
-        The FAULTLINE Pressure Index is a composite risk score that synthesizes eight independent categories of macroeconomic and market stress into a single 0–100 reading. Higher scores indicate greater systemic pressure. The engine is designed to identify building risk <em>before</em> it becomes obvious in price action.
+        The FAULTLINE Pressure Index is a composite risk score that combines six weighted vectors, built from FRED macroeconomic series and one static reference value, into a single 0–100 reading. Higher scores indicate greater systemic pressure. The score shows where pressure is building across those inputs; it is not a crash forecast and does not name a date.
       </P>
       <P>
-        All inputs are sourced from publicly available, time-stamped economic releases. The engine uses only data that was available at the time of each reading — no hindsight, no curve-fitting.
+        Live inputs are publicly available FRED series; the AI-concentration input is a static reference value, not a live measurement. Each live reading uses the latest observations available when it is calculated. Historical figures elsewhere on the site are retrospective reconstructions, not readings recorded at the time.
       </P>
 
       <H3>Score Scale</H3>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "12px", marginBottom: "32px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: "12px", marginBottom: "32px" }}>
         {SCORE_SCALE.map(s => (
           <div key={s.range} style={{ padding: "16px 20px", background: "rgba(255,255,255,0.02)", border: `1px solid ${s.color}30`, borderRadius: "6px", display: "flex", gap: "16px", alignItems: "flex-start" }}>
             <div style={{ textAlign: "center", flexShrink: 0 }}>
@@ -122,20 +116,20 @@ function MethodologyTab() {
         ))}
       </div>
 
-      <H3>Eight Measurement Vectors</H3>
-      <P>The Pressure Index weights eight independent measurement categories. No single indicator dominates the score — this multi-factor approach reduces false signals and improves robustness across different market regimes.</P>
+      <H3>Six Measurement Vectors</H3>
+      <P>The Pressure Index is a fixed-weight sum of six vectors. Several vectors share inputs — the 10-year yield feeds four of them — so they are not fully independent. Vectors are named by what they compute; internal identifiers are unchanged.</P>
       <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "32px" }}>
         {VECTORS.map(v => (
-          <div key={v.name} style={{ padding: "16px 20px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "6px", display: "grid", gridTemplateColumns: "180px 60px 1fr", gap: "16px", alignItems: "start" }}>
+          <div key={v.name} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-2 sm:grid-cols-[180px_60px_minmax(0,1fr)] sm:gap-4" style={{ padding: "16px 20px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "6px", alignItems: "start" }}>
             <div style={{ fontFamily: MONO, fontSize: "12px", color: "#00D4FF", letterSpacing: "0.06em" }}>{v.name}</div>
             <div style={{ fontFamily: MONO, fontSize: "13px", fontWeight: 700, color: "#F0F4FF" }}>{v.weight}</div>
-            <p style={{ fontFamily: SANS, fontSize: "0.85rem", color: "#94A3B8", lineHeight: 1.6, margin: 0 }}>{v.desc}</p>
+            <p className="col-span-2 sm:col-span-1" style={{ fontFamily: SANS, fontSize: "0.85rem", color: "#94A3B8", lineHeight: 1.6, margin: 0, overflowWrap: "anywhere" }}>{v.desc}</p>
           </div>
         ))}
       </div>
 
       <H3>Regime Classification</H3>
-      <P>In addition to the numeric score, the engine classifies the current environment into one of five macro regimes: <strong style={{ color: "#F0F4FF" }}>Expansion, Moderate Pressure, Elevated Risk, High Risk,</strong> and <strong style={{ color: "#F0F4FF" }}>Systemic Stress</strong>. Regime classification drives the signal weighting applied to individual asset analysis.</P>
+      <P>In addition to the numeric score, the engine classifies the current reading into one of five regimes, using the thresholds shown above: <strong style={{ color: "#F0F4FF" }}>Low Risk, Moderate Risk, Elevated Risk, High Stress,</strong> and <strong style={{ color: "#F0F4FF" }}>Systemic Crisis</strong>. The equity regime, the crypto macro link, and the interpretation layer read this score as their starting context.</P>
 
       <H3>Known Limitations</H3>
       <Card>
@@ -144,7 +138,8 @@ function MethodologyTab() {
           <li>The model was designed for U.S. macro conditions and may be less reliable in non-U.S. contexts.</li>
           <li>Sudden exogenous shocks (pandemics, geopolitical events) may not be captured until data releases confirm them.</li>
           <li>The Pressure Index measures systemic risk, not individual stock performance. A high score does not guarantee a market decline.</li>
-          <li>Back-test results reflect what the model would have produced using data available at the time — not what it would have predicted in advance.</li>
+          <li>The AI / Speculation vector uses a static concentration baseline. It is a reference value, not a live market-cap measurement.</li>
+          <li>Historical figures (Track Record) are retrospective reconstructions that use revised data and a crisis amplifier calibrated against known historical stress episodes. They are not a point-in-time or independently validated predictive backtest.</li>
         </ul>
       </Card>
 
@@ -153,7 +148,7 @@ function MethodologyTab() {
           VIEW TRACK RECORD →
         </a>
         <a href="/pressure-index" style={{ fontFamily: MONO, fontSize: "11px", letterSpacing: "0.15em", color: "#94A3B8", textDecoration: "none", padding: "10px 20px", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "4px" }}>
-          LIVE PRESSURE INDEX →
+          PRESSURE INDEX →
         </a>
       </div>
     </div>
@@ -165,66 +160,50 @@ function DataSourcesTab() {
     {
       name: "Federal Reserve / FRED",
       url: "https://fred.stlouisfed.org",
-      category: "Macroeconomic Data",
-      inputs: ["Federal Funds Rate", "M2 Money Supply", "Bank Lending Standards", "Balance Sheet Data"],
-      updateFreq: "Weekly / Monthly",
-      notes: "Primary macroeconomic data source. All FRED series are publicly available and time-stamped.",
+      category: "Pressure Index macroeconomic inputs",
+      inputs: ["HY spread (BAMLH0A0HYM2)", "10Y yield (DGS10)", "2Y yield (DGS2)", "SOFR", "CPI (CPIAUCSL)", "PPI (PPIACO)", "Federal funds rate (FEDFUNDS)", "Unemployment (UNRATE)"],
+      updateFreq: "Daily / Monthly, by series",
+      notes: "The eight FRED series requested by the current Pressure Index engine. CPI and PPI are converted to year-over-year changes. Published observations may be delayed or revised; unavailable inputs can use fallback values.",
     },
     {
-      name: "U.S. Treasury",
-      url: "https://home.treasury.gov",
-      category: "Fixed Income",
-      inputs: ["Treasury Yield Curve (2Y, 10Y, 30Y)", "Yield Spread Data"],
-      updateFreq: "Daily",
-      notes: "Daily yield curve data used for yield spread calculations and inversion detection.",
-    },
-    {
-      name: "Bureau of Labor Statistics",
-      url: "https://www.bls.gov",
-      category: "Labor Market",
-      inputs: ["Unemployment Rate", "Initial Jobless Claims", "JOLTS Job Openings"],
-      updateFreq: "Weekly / Monthly",
-      notes: "Official U.S. government labor market statistics.",
-    },
-    {
-      name: "Moody's / FRED",
-      url: "https://fred.stlouisfed.org/series/BAA10Y",
-      category: "Credit Markets",
-      inputs: ["Baa Corporate Bond Spread", "High-Yield Spread Proxies"],
-      updateFreq: "Daily",
-      notes: "Credit spread data is the highest-weighted input in the Pressure Index. Moody's Baa spreads are available via FRED.",
-    },
-    {
-      name: "Bureau of Economic Analysis",
-      url: "https://www.bea.gov",
-      category: "Economic Output",
-      inputs: ["GDP Growth Rate", "PCE Inflation", "Personal Income"],
-      updateFreq: "Monthly / Quarterly",
-      notes: "Official U.S. national accounts data.",
+      name: "Static AI concentration baseline",
+      url: "/methodology",
+      category: "Pressure Index reference input",
+      inputs: ["Fixed concentration score: 65"],
+      updateFreq: "Static — not a live feed",
+      notes: "A fixed reference supplies half of the AI / speculation vector; the remaining components use the 10Y yield and HY spread. It is not current market concentration data.",
     },
     {
       name: "Polygon.io",
       url: "https://polygon.io",
-      category: "Market Data",
-      inputs: ["Equity Prices (OHLCV)", "Daily Bar Data", "Ticker Reference Data"],
-      updateFreq: "Real-time / Daily",
-      notes: "Used for stock signal calculations, technical indicators (RSI, MACD, SMA), and sparkline data.",
+      category: "Equity market data — separate from Pressure Index scoring",
+      inputs: ["Equity prices", "Historical bars", "Ticker reference data"],
+      updateFreq: "By endpoint and cache",
+      notes: "Used by equity features; these data are not inputs to the six-vector Pressure Index formula.",
     },
     {
       name: "CoinGecko",
       url: "https://www.coingecko.com",
-      category: "Cryptocurrency",
-      inputs: ["Crypto Prices", "Market Caps", "Global Crypto Market Data"],
-      updateFreq: "Real-time",
-      notes: "Used for cryptocurrency intelligence and crypto market regime analysis.",
+      category: "Crypto market data — separate from Pressure Index scoring",
+      inputs: ["Crypto prices", "Market caps", "Global crypto market data"],
+      updateFreq: "By endpoint and cache",
+      notes: "Used by crypto features; these data are not inputs to the six-vector Pressure Index formula.",
     },
     {
-      name: "Conference Board / FRED",
-      url: "https://fred.stlouisfed.org/series/USSLIND",
-      category: "Leading Indicators",
-      inputs: ["Leading Economic Index (LEI)", "ISM Manufacturing PMI"],
-      updateFreq: "Monthly",
-      notes: "Composite leading indicators used for macro momentum scoring.",
+      name: "Yahoo Finance",
+      url: "https://finance.yahoo.com",
+      category: "Market quote board — separate from Pressure Index scoring",
+      inputs: ["Index quotes", "VIX", "FX", "Commodities", "Bitcoin and Ethereum quotes"],
+      updateFreq: "Snapshot quotes; delayed or last close",
+      notes: "Feeds the markets board and a second quote path for signals. Each quote carries its own delayed or last-close state. These quotes are context, not inputs to the Pressure Index.",
+    },
+    {
+      name: "FRED — systemic-regime panel",
+      url: "https://fred.stlouisfed.org",
+      category: "Separate systemic-regime model — does not feed the Pressure Index",
+      inputs: ["HY OAS (BAMLH0A0HYM2)", "IG OAS (BAMLC0A0CM)", "NFCI", "10Y and 2Y yields", "10Y–2Y spread (T10Y2Y)", "SOFR", "St. Louis Fed Financial Stress Index (STLFSI4)", "VIX close (VIXCLS)", "S&P 500 (SP500)"],
+      updateFreq: "Daily / Weekly, by series",
+      notes: "Read by the two-state systemic-regime model (sre-hmm2). The code forbids adding this model into the Pressure Index weights.",
     },
   ];
 
@@ -233,10 +212,10 @@ function DataSourcesTab() {
       <SectionLabel>Transparency</SectionLabel>
       <H2>Data Sources</H2>
       <P>
-        FAULTLINE synthesizes data from multiple publicly available, institutional-grade sources into a unified risk framework. We do not expose proprietary processing logic, but we are fully transparent about where our data originates.
+        FAULTLINE combines publicly available economic statistics and commercial market-data feeds into a unified risk framework. The sources below are the ones the code actually calls; the formulas that combine them are published on the Methodology tab and the methodology page.
       </P>
       <P>
-        All data sources listed below are publicly accessible. FAULTLINE does not manufacture or estimate data — every input is sourced from a named provider with a documented update frequency.
+        The Pressure Index uses the FRED series listed below plus a static AI concentration baseline. Live observations, delayed releases, static references, and fallback values have different evidence limits; check the reading’s timestamp and data-quality labels.
       </P>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "32px" }}>
@@ -265,8 +244,8 @@ function DataSourcesTab() {
       </div>
 
       <Card>
-        <div style={{ fontFamily: MONO, fontSize: "11px", color: "#22C55E", letterSpacing: "0.15em", marginBottom: "10px" }}>WHAT WE DO NOT EXPOSE</div>
-        <P>FAULTLINE does not disclose proprietary weighting algorithms, signal combination logic, or internal scoring thresholds. The data sources above represent the raw inputs — the synthesis methodology is described in the Methodology tab.</P>
+        <div style={{ fontFamily: MONO, fontSize: "11px", color: "#22C55E", letterSpacing: "0.15em", marginBottom: "10px" }}>WHAT IS PUBLISHED</div>
+        <P>Every Pressure Index input, weight, and band threshold is published, including the static AI-concentration baseline. FAULTLINE does not ingest on-chain, institutional-flow, options-flow, or direct BLS/BEA/Treasury.gov feeds. The full inventory, and its limits, are on the methodology page.</P>
       </Card>
     </div>
   );
@@ -288,7 +267,7 @@ function DisclaimersTab() {
       <P>FAULTLINE is not a registered investment advisor, broker-dealer, or financial planner. No content on this platform should be construed as a recommendation to buy, sell, or hold any security, cryptocurrency, or other financial instrument.</P>
 
       <H3>Investing Involves Risk</H3>
-      <P>All investing involves risk, including the possible loss of principal. Past performance — including historical Pressure Index readings and back-tested results — does not guarantee future results. Market conditions can and do change rapidly in ways that cannot be predicted by any model.</P>
+      <P>All investing involves risk, including the possible loss of principal. Past performance — including historical Pressure Index readings and retrospective reconstructions — does not guarantee future results. Market conditions can and do change rapidly in ways that cannot be predicted by any model.</P>
       <P>The Pressure Index and related signals are probabilistic tools, not certainties. A high Pressure Index reading does not guarantee a market decline. A low reading does not guarantee continued appreciation.</P>
 
       <H3>You Are Responsible for Your Decisions</H3>
@@ -320,7 +299,7 @@ function FAQTab() {
   const FAQS = [
     {
       q: "What is the FAULTLINE Pressure Index?",
-      a: "The Pressure Index is a composite 0–100 score that measures systemic market stress across eight categories: credit markets, liquidity, yield curve, inflation, labor market, volatility, earnings momentum, and macro momentum. Higher scores indicate greater systemic pressure. It is designed to identify building risk before it becomes obvious in price action.",
+      a: "The Pressure Index is a composite 0–100 score that measures systemic market stress across six weighted vectors: liquidity stress, credit contagion, the 10Y–2Y yield curve and 10Y level, macro sensitivity (inflation and policy rates), labor and rates (unemployment and the 10Y yield), and AI / speculation (a static concentration baseline adjusted by rates and credit). Higher scores indicate greater systemic pressure. It shows where pressure is building across those inputs; it is not a crash forecast.",
     },
     {
       q: "Is FAULTLINE investment advice?",
@@ -328,11 +307,11 @@ function FAQTab() {
     },
     {
       q: "How accurate is the Pressure Index?",
-      a: "The Pressure Index was back-tested against 25 years of FRED macroeconomic data. In every major market crisis since 2000 — the dot-com bust, the 2008 financial crisis, the COVID crash, and the 2022 bear market — the Pressure Index was elevated before the peak. However, past performance does not guarantee future results. The index is a probabilistic tool, not a certainty.",
+      a: "The Pressure Index has not been independently validated as a predictive backtest. Its historical analogs compare current vector scores with fixed reference profiles for past stress episodes (1973, 1998, 2000, 2008, 2020, and 2022); the extended library adds 2011, 2015, 2019, and 2023. The Track Record page shows an archived retrospective reconstruction from 2000 onward that was calibrated against known historical stress episodes; its formula was not versioned and the current live formula does not reproduce it. A separate, reproducible research reconstruction of the live formula was rated inconclusive: it reached the Elevated band before 10 of 26 registered 10% S&P 500 drawdowns and never reached High Stress. Past readings do not guarantee future results. The index is a probabilistic tool, not a certainty.",
     },
     {
       q: "Where does FAULTLINE get its data?",
-      a: "FAULTLINE sources data from publicly available, institutional-grade providers including the Federal Reserve (FRED), U.S. Treasury, Bureau of Labor Statistics, Bureau of Economic Analysis, Moody's (via FRED), Polygon.io (market data), and CoinGecko (crypto). See the Data Sources tab for the complete list.",
+      a: "The current Pressure Index requests eight FRED series: HY spread, 10Y and 2Y yields, SOFR, CPI, PPI, federal funds rate, and unemployment. Its AI concentration baseline is static. Equity and crypto features separately use Polygon.io, Yahoo Finance quotes, and CoinGecko, and a separate systemic-regime model reads a broader FRED panel. See the Data Sources tab for the distinction.",
     },
     {
       q: "How often is the Pressure Index updated?",
@@ -343,20 +322,20 @@ function FAQTab() {
       a: "PLATO (Spirit of FAULTLINE) is FAULTLINE's AI intelligence layer. PLATO synthesizes the current Pressure Index reading, regime classification, and market conditions into natural-language briefings and answers questions about market conditions. PLATO does not provide investment advice.",
     },
     {
-      q: "What is the difference between the plans?",
-      a: "The Free plan provides access to the live Pressure Index, a daily intelligence summary, and limited signals. The Trader plan ($59/mo) provides core market intelligence. The Power plan ($99/mo) provides the full professional toolset. The Founding Member plan ($49/mo) locks in a rate while membership remains active.",
+      q: "What does access cost?",
+      a: "FAULTLINE Intelligence is $99/month. The limited public preview requires no account. FAULTLINE Lifetime is $1,500 one-time. There is no free membership.",
     },
     {
       q: "Is my data secure?",
       a: "Yes. FAULTLINE uses industry-standard encryption for all data in transit (TLS 1.3) and at rest. We do not sell user data to third parties. Authentication is handled via OAuth 2.0. See the Security tab for more details.",
     },
     {
-      q: "Can I cancel my subscription?",
-      a: "Yes. You can cancel your subscription at any time from your account settings. Cancellation takes effect at the end of the current billing period.",
+      q: "Do I need a paid subscription?",
+      a: "Full intelligence is offered through FAULTLINE Standard at $99/month or FAULTLINE Lifetime at $1,500 one-time. You can read the limited public preview without subscribing. Lifetime access is also available for $1,500 one-time.",
     },
     {
       q: "Who built FAULTLINE?",
-      a: "FAULTLINE was built by Phoenix Systems, an independent technology company focused on making institutional-quality macro intelligence accessible to self-directed investors. See the About page for more information.",
+      a: "FAULTLINE was built by Phoenix Systems, an independent technology company focused on making structural market intelligence accessible to self-directed investors. See the About page for more information.",
     },
   ];
 
@@ -428,7 +407,7 @@ function TermsTab() {
       <P>You may use FAULTLINE for personal, non-commercial investment research and education. You may not redistribute, resell, or republish FAULTLINE content without written permission. You may not use automated tools to scrape or extract data from the platform.</P>
 
       <H3>Subscriptions and Payments</H3>
-      <P>Subscriptions are billed monthly or as a one-time payment (Lifetime Access). Subscriptions renew automatically unless cancelled. Cancellation takes effect at the end of the current billing period. Lifetime Access purchases are non-refundable.</P>
+      <P>FAULTLINE Intelligence is offered at $99/month. Lifetime access is also available for $1,500 one-time. Existing subscriptions and entitlements remain unchanged.</P>
 
       <H3>Limitation of Liability</H3>
       <P>FAULTLINE and Phoenix Systems are not liable for any investment losses, trading decisions, or financial outcomes resulting from use of the platform. The platform is for educational purposes only.</P>
@@ -456,7 +435,7 @@ function SecurityTab() {
       <H2>Security Practices</H2>
       <P>FAULTLINE takes the security of user data seriously. The following measures are in place to protect your information.</P>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "12px", marginBottom: "28px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: "12px", marginBottom: "28px" }}>
         {MEASURES.map(m => (
           <div key={m.title} style={{ padding: "20px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "8px" }}>
             <div style={{ fontFamily: HEADING, fontWeight: 600, fontSize: "0.95rem", color: "#E2E8F0", marginBottom: "8px" }}>{m.title}</div>
@@ -478,7 +457,7 @@ function ContactTab() {
       <H2>Contact</H2>
       <P>We respond to all inquiries within 1–2 business days.</P>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px", marginBottom: "32px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "16px", marginBottom: "32px" }}>
         {[
           { label: "General Inquiries", email: "hello@getfaultline.live", desc: "Questions about FAULTLINE, the platform, or our methodology." },
           { label: "Support", email: "support@getfaultline.live", desc: "Technical issues, billing questions, or account help." },
@@ -542,11 +521,14 @@ export default function TrustCenter() {
             Transparency about how FAULTLINE works, where data comes from, and how we protect your information.
           </p>
 
-          {/* Tab bar */}
-          <div style={{ display: "flex", gap: "0", overflowX: "auto", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          {/* Tab bar: wraps onto multiple rows on narrow screens, scrolls horizontally from sm up */}
+          <div role="tablist" aria-label="Trust Center sections" className="flex flex-wrap sm:flex-nowrap sm:overflow-x-auto" style={{ maxWidth: "100%", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
             {TABS.map(tab => (
               <button
                 key={tab.id}
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                className="px-3 sm:px-5"
                 onClick={() => setActiveTab(tab.id)}
                 style={{
                   fontFamily: MONO,
@@ -557,7 +539,8 @@ export default function TrustCenter() {
                   background: "none",
                   border: "none",
                   borderBottom: activeTab === tab.id ? "2px solid #00D4FF" : "2px solid transparent",
-                  padding: "12px 20px",
+                  paddingTop: "12px",
+                  paddingBottom: "12px",
                   cursor: "pointer",
                   whiteSpace: "nowrap",
                   transition: "color 0.15s",
@@ -577,8 +560,8 @@ export default function TrustCenter() {
 
       {/* Footer disclaimer */}
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: "24px", textAlign: "center" }}>
-        <p style={{ fontFamily: MONO, fontSize: "10px", color: "#334155", letterSpacing: "0.1em", maxWidth: "700px", margin: "0 auto", lineHeight: 1.8 }}>
-          FAULTLINE IS FOR EDUCATIONAL AND INFORMATIONAL PURPOSES ONLY. NOT INVESTMENT ADVICE. INVESTING INVOLVES RISK. PAST PERFORMANCE DOES NOT GUARANTEE FUTURE RESULTS. © {new Date().getFullYear()} PHOENIX SYSTEMS. ALL RIGHTS RESERVED.
+        <p style={{ fontFamily: MONO, fontSize: "10px", color: "#334155", letterSpacing: "0.1em", maxWidth: "700px", margin: "0 auto", lineHeight: 1.8, textTransform: "uppercase" }}>
+          FAULTLINE · {PUBLIC_DISCLAIMER} Investing involves risk. Past performance does not guarantee future results. © {new Date().getFullYear()} Phoenix Systems. All rights reserved.
         </p>
       </div>
     </div>

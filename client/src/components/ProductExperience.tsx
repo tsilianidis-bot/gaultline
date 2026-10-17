@@ -1,8 +1,9 @@
+import MembershipOffer from '@/components/MembershipOffer';
 /* ============================================================
    FAULTLINE — Product Experience Gate
    Preserved product-experience source. Not mounted on first-run
    (cinematic → MarketingSite). If reached later, pricing and claims
-   must match MarketingSite: Free / Trader $59 / Power $99 / Founding $49.
+   paid plans are not on sale yet, so no prices are shown.
 
    Sections:
    1.  Hero — full-viewport atmospheric opener with "See the Proof" CTA
@@ -17,6 +18,7 @@
    10. Final CTA — "Enter FAULTLINE"
    ============================================================ */
 
+import { pressureShortLabel } from "@shared/pressureBands";
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { navigateToLogin } from '../const';
 import { trackGa4Event } from '../lib/ga4';
@@ -35,33 +37,6 @@ const SANS   = "'IBM Plex Sans', system-ui, sans-serif";
 // ── Public Pricing Configuration ───────────────────────────────────────────
 // Public presentation only. Checkout stays unavailable until its matching
 // Stripe Price ID has been independently verified server-side.
-const PUBLIC_PRICING = [
-  {
-    id: 'free', name: 'FREE', price: '$0', period: '', color: GREEN,
-    badge: 'START HERE', cta: 'SEE TODAY’S MARKET ENVIRONMENT',
-    tagline: 'Explore the current market environment, Pressure Index™, core regime context, and daily intelligence summary.',
-    features: ['Live FAULTLINE Pressure Index™', 'Current market regime context', 'Daily intelligence summary'],
-  },
-  {
-    id: 'trader', name: 'TRADER', price: '$59', period: '/ month', color: CYAN,
-    badge: 'PRIMARY EXPERIENCE', cta: 'GET TRADER',
-    tagline: 'For serious investors who want FAULTLINE’s core market intelligence, monitoring, signals, watch tools, interpretation, and decision support.',
-    features: ['Core market intelligence and monitoring', 'Signals, watch tools, and market interpretation', 'Decision support for active investors'],
-  },
-  {
-    id: 'power', name: 'POWER', price: '$99', period: '/ month', color: PURPLE,
-    badge: 'FULL PROFESSIONAL TOOLSET', cta: 'GET POWER',
-    tagline: 'For users who want the deepest FAULTLINE intelligence experience, advanced analysis, expanded research capabilities, and the full professional toolset.',
-    features: ['Everything in Trader', 'Advanced analysis and expanded research', 'Full professional intelligence toolset'],
-  },
-  {
-    id: 'founding', name: 'FOUNDING MEMBER', price: '$49', period: '/ month', color: GOLD,
-    badge: 'FOUNDING RATE — LOCKED', cta: 'LOCK IN FOUNDER RATE',
-    tagline: 'Join FAULTLINE during the founding period and keep your $49 monthly rate locked as long as your membership remains active.',
-    features: ['Everything in Power', 'Locked $49 monthly rate while membership remains active', 'Founding member recognition'],
-  },
-] as const;
-
 // ── Analytics helper ──────────────────────────────────────────
 function track(eventName: string, params?: Record<string, string | number>) {
   trackGa4Event(eventName, params);
@@ -133,7 +108,7 @@ function PressureGauge({ value = 62 }: { value?: number }) {
         </text>
       </svg>
       <div style={{ fontFamily: MONO, fontSize: '11px', color, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-        {displayed < 30 ? 'LOW STRESS' : displayed < 60 ? 'MODERATE STRESS' : displayed < 80 ? 'ELEVATED STRESS' : 'CRITICAL STRESS'}
+        {pressureShortLabel(displayed)}
       </div>
     </div>
   );
@@ -319,7 +294,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       accent: CYAN,
       bullets: [
         'Understand whether the macro backdrop supports or contradicts your setup',
-        'See real-time pressure readings before entering positions',
+        'See regularly refreshed pressure readings before entering positions',
         'Get AI-synthesized briefings that explain what is driving the market today',
         'Access day trade intelligence with current regime context and source-quality disclosures',
       ],
@@ -356,7 +331,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       event: 'Dot-Com Crash',
       drawdown: '−49%',
       duration: '929 days',
-      signal: 'Retrospective analysis: elevated credit spreads, extreme valuation dispersion, and deteriorating breadth would have registered Critical Stress (80+) under the current framework months before the peak.',
+      signal: 'Credit spreads widened and equity valuations unwound over more than two years. Historical context only. FAULTLINE has not shown that its Pressure Index would have flagged this episode in advance; its own reconstruction of 2000–2026 (revised data) never exceeded 56/100.',
       accent: RED,
       delay: 0,
     },
@@ -365,7 +340,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       event: 'Global Financial Crisis',
       drawdown: '−57%',
       duration: '517 days',
-      signal: 'Retrospective analysis: subprime contagion signals, TED spread explosion, and interbank liquidity collapse would have registered Critical Stress building from mid-2007 under the current framework.',
+      signal: 'Subprime losses spread into interbank funding; the TED spread and credit spreads reached record levels. Historical context only. FAULTLINE has not shown that its Pressure Index would have flagged this episode in advance; its own reconstruction of 2000–2026 (revised data) never exceeded 56/100.',
       accent: RED,
       delay: 80,
     },
@@ -374,7 +349,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       event: 'COVID Crash',
       drawdown: '−34%',
       duration: '33 days',
-      signal: 'Retrospective analysis: volatility regime shift, credit spread spike, and liquidity deterioration compressed into days — the Pressure Index would have crossed 80 within the first week under the current framework.',
+      signal: 'Volatility, credit spreads and funding stress spiked within days. Historical context only. FAULTLINE has not shown that its Pressure Index would have flagged this episode in advance; its own reconstruction of 2000–2026 (revised data) never exceeded 56/100.',
       accent: GOLD,
       delay: 160,
     },
@@ -383,7 +358,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       event: 'Fed Tightening Bear Market',
       drawdown: '−25%',
       duration: '282 days',
-      signal: 'Retrospective analysis: inverted yield curve, real rate shock, and breadth collapse would have flagged Elevated Stress (60+) from January under the current framework — before the S&P peaked.',
+      signal: 'A rapid rise in real rates and an inverted yield curve accompanied a year-long bear market. Historical context only. FAULTLINE has not shown that its Pressure Index would have flagged this episode in advance; its own reconstruction of 2000–2026 (revised data) never exceeded 56/100.',
       accent: GOLD,
       delay: 240,
     },
@@ -392,7 +367,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       event: 'Regional Banking Crisis',
       drawdown: 'KRE −40%',
       duration: '60 days',
-      signal: 'Retrospective analysis: credit spread widening in financials, deposit flight signals, and contagion risk indicators would have shown sector-specific stress weeks before SVB under the current framework.',
+      signal: 'Deposit flight hit regional banks; stress was concentrated in one sector. Historical context only. FAULTLINE has not shown that its Pressure Index would have flagged this episode in advance; its own reconstruction of 2000–2026 (revised data) never exceeded 56/100.',
       accent: CYAN,
       delay: 320,
     },
@@ -401,7 +376,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       event: 'Tariff Shock & AI Bubble Pressure',
       drawdown: '−19%',
       duration: 'Ongoing',
-      signal: 'Live forward tracking (ongoing): AI sector concentration risk, macro regime deterioration, and trade policy uncertainty are currently monitored in real time across all five FAULTLINE engines. This is not a completed forecast.',
+      signal: 'Live forward tracking (ongoing): AI sector concentration risk, macro regime deterioration, and trade policy uncertainty are currently monitored as new data is published across all five FAULTLINE engines. This is not a completed forecast.',
       accent: CYAN,
       delay: 400,
     },
@@ -501,7 +476,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
             maxWidth: '640px', margin: '0 auto 16px',
           }}>
             The systemic pressure that precedes market crashes is measurable.<br />
-            FAULTLINE measures it — in real time.
+            FAULTLINE measures it — as new data is published.
           </p>
           <p style={{
             fontFamily: SANS, fontSize: 'clamp(13px, 1.8vw, 16px)',
@@ -517,7 +492,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
             borderRadius: '8px', padding: '10px 20px', marginBottom: '40px',
           }}>
             <span style={{ fontFamily: MONO, fontSize: '10px', color: GOLD, letterSpacing: '0.15em' }}>
-              ◆ FOUNDING MEMBER · $49 / MONTH · RATE LOCKED
+              ◆ FOUNDING MEMBER · NOT ON SALE YET
             </span>
           </div>
           <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -530,7 +505,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                 boxShadow: `0 0 24px ${CYAN}40`,
                 transition: 'all 0.15s ease-out',
               }}
-              aria-label="Enter FAULTLINE platform for free"
+              aria-label="View the FAULTLINE public preview"
             >Enter FAULTLINE →</button>
             <button
               onClick={handleSeeProof}
@@ -541,7 +516,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                 cursor: 'pointer', padding: '16px 36px', borderRadius: '8px',
                 transition: 'all 0.15s ease-out',
               }}
-              aria-label="See 25-year historical track record"
+              aria-label="See archived retrospective reconstruction"
             >See the Proof ↓</button>
           </div>
         </div>
@@ -657,7 +632,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                   Retrospective testing shows how FAULTLINE's current framework would have interpreted systemic pressure conditions across major historical dislocations from 2000 to 2025.
                 </p>
                 <p style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(255,255,255,0.25)', lineHeight: 1.6, maxWidth: '640px', margin: '0 auto 32px', letterSpacing: '0.05em' }}>
-                  BACKTEST DISCLAIMER: The analysis below is retrospective. It applies FAULTLINE's current methodology to historical data. It does not represent live forward performance or a real-time prediction record. Past indicator behavior does not guarantee future results.
+                  BACKTEST DISCLAIMER: The analysis below is retrospective. It applies FAULTLINE's current methodology to historical data. It does not represent live forward performance or a regularly refreshed prediction record. Past indicator behavior does not guarantee future results.
                 </p>
                 {/* Trust strip */}
                 <div style={{ display: 'flex', justifyContent: 'center', gap: 'clamp(20px,4vw,48px)', flexWrap: 'wrap', marginBottom: '16px' }}>
@@ -863,33 +838,14 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
           <div style={{ textAlign: 'center', marginBottom: '48px' }}>
             <SectionLabel text="Membership" color={CYAN} />
             <h2 style={{ fontFamily: MONO, fontSize: 'clamp(24px,4vw,44px)', color: '#F0F4FF', lineHeight: 1.2, margin: '0 0 16px' }}>
-              Choose the level of intelligence you need.
+              One membership. Premium financial intelligence.
             </h2>
             <p style={{ fontFamily: SANS, fontSize: 'clamp(14px,1.8vw,17px)', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: '620px', margin: '0 auto' }}>
-              Three monthly memberships. Clear capabilities. No annual pricing or unverified discounts.
+              FAULTLINE Intelligence — $99/month.
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '18px', alignItems: 'stretch' }}>
-            {PUBLIC_PRICING.map((plan) => {
-              const isFounding = plan.id === 'founding';
-              return (
-                <div key={plan.id} style={{ display: 'flex', flexDirection: 'column', padding: '30px 26px', background: isFounding ? 'linear-gradient(145deg, rgba(255,170,0,0.11), rgba(255,170,0,0.025))' : 'rgba(255,255,255,0.025)', border: `1px solid ${isFounding ? 'rgba(255,170,0,0.45)' : `${plan.color}32`}`, borderRadius: '16px', boxShadow: isFounding ? '0 0 46px rgba(255,170,0,0.09)' : 'none' }}>
-                  <div style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.16em', color: plan.color, marginBottom: '14px' }}>{plan.badge}</div>
-                  <div style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.18em', color: '#F0F4FF', marginBottom: '14px' }}>{plan.name}</div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '12px' }}>
-                    <span style={{ fontFamily: MONO, fontSize: 'clamp(42px,6vw,56px)', color: plan.color, fontWeight: 700, lineHeight: 1 }}>{plan.price}</span>
-                    <span style={{ fontFamily: SANS, fontSize: '14px', color: 'rgba(255,255,255,0.45)' }}>{plan.period}</span>
-                  </div>
-                  <p style={{ fontFamily: SANS, fontSize: '14px', color: 'rgba(255,255,255,0.58)', lineHeight: 1.6, margin: '0 0 22px' }}>{plan.tagline}</p>
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '26px' }}>
-                    {plan.features.map((feature) => <div key={feature} style={{ display: 'flex', gap: '9px', fontFamily: SANS, fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45 }}><span style={{ color: plan.color }}>✓</span><span>{feature}</span></div>)}
-                  </div>
-                  <button onClick={() => handlePricingInterest(plan.name)} style={{ width: '100%', padding: '14px', background: isFounding ? 'rgba(255,170,0,0.16)' : 'transparent', border: `1px solid ${plan.color}70`, borderRadius: '8px', color: plan.color, fontFamily: MONO, fontSize: '11px', letterSpacing: '0.1em', fontWeight: 700, cursor: 'pointer' }}>{plan.cta}</button>
-                </div>
-              );
-            })}
-          </div>
+          <MembershipOffer />
 
           {pricingNotice && <p role="status" style={{ margin: '24px auto 0', maxWidth: '760px', textAlign: 'center', fontFamily: SANS, fontSize: '13px', color: 'rgba(255,255,255,0.48)', lineHeight: 1.6 }}>{pricingNotice}</p>}
         </div>
@@ -938,11 +894,11 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                     padding: '18px 48px', borderRadius: '8px', fontWeight: 700,
                     boxShadow: `0 0 32px ${GOLD}28`, transition: 'all 0.15s ease-out',
                   }}
-                  aria-label="View Founding Member, Trader, and Power pricing"
+                  aria-label="View FAULTLINE Intelligence pricing"
                 >View Memberships →</button>
               </div>
               <div style={{ marginTop: '32px', fontFamily: MONO, fontSize: '10px', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.15em' }}>
-                FREE TO START · NO CREDIT CARD REQUIRED · NOT FINANCIAL ADVICE
+                PUBLIC PREVIEW · NOT FINANCIAL ADVICE
               </div>
             </div>
           );

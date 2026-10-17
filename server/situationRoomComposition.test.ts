@@ -23,7 +23,10 @@ describe("Situation Room Decision-Light composition", () => {
   it("keeps bull-continuation and crash/drawdown as separate withheld-capable fields", () => {
     expect(source).toContain("bullProbability");
     expect(source).toContain("crashProbability");
-    expect(source).toContain("regimeProbabilities.bull");
-    expect(source).toContain("regimeProbabilities.crash");
+    // QA r9 (#60): both fields route through the probability contract's display
+    // text (withheld / uncalibrated / not offered), never a raw regimeProbabilities %.
+    expect(source).toContain('engineProbabilityText(output, "bullProbability") : "UNAVAILABLE"');
+    expect(source).toContain('engineProbabilityText(output, "crashProbability") : "UNAVAILABLE"');
+    expect(source).not.toMatch(/regimeProbabilities\.(bull|crash)\}%/);
   });
 });

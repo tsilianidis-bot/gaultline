@@ -85,6 +85,7 @@ describe("customerIntegrityLabel", () => {
       quality: "PARTIAL",
       fallbackInputCount: 2,
     })).toBe("FALLBACK");
+    // PARTIAL quality with no fallback input is not a fallback (it is delayed / partial evidence).
     expect(customerIntegrityLabel({
       hasState: true,
       freshness: "live",
@@ -92,7 +93,7 @@ describe("customerIntegrityLabel", () => {
       quality: "PARTIAL",
       fallbackInputCount: 0,
       fredStatus: "healthy",
-    })).toBe("FALLBACK");
+    })).toBe("DELAYED");
     expect(customerIntegrityLabel({
       hasState: true,
       freshness: "live",
@@ -187,7 +188,7 @@ describe("customerIntegrityFromEngine", () => {
       },
       marketState: { freshness: "live", cache: { status: "refreshed" } },
       sourceHealth: [{ id: "fred", status: "healthy", required: true }],
-    })).toBe("FALLBACK");
+    })).toBe("DELAYED");
   });
 });
 
@@ -263,7 +264,7 @@ describe("customer Pressure badge is a single coherent label", () => {
     }
   });
 
-  it("maps PARTIAL quality with fallbackInputCount 0 to FALLBACK, never LIVE PRESSURE", () => {
+  it("maps PARTIAL quality with fallbackInputCount 0 to DELAYED, never FALLBACK or LIVE PRESSURE", () => {
     const label = customerIntegrityLabel({
       hasState: true,
       freshness: "live",
@@ -272,10 +273,10 @@ describe("customer Pressure badge is a single coherent label", () => {
       fallbackInputCount: 0,
       fredStatus: "healthy",
     });
-    expect(label).toBe("FALLBACK");
-    expect(customerPressureBadge(label)).toBe("FALLBACK");
+    expect(label).toBe("DELAYED");
+    expect(customerPressureBadge(label)).toBe("DELAYED");
     expect(allowsLivePressureClaim(label)).toBe(false);
-    expect(customerPressureUnavailableCopy(label)).toBe("DATA UNAVAILABLE — USING FALLBACK");
+    expect(customerPressureUnavailableCopy(label)).not.toMatch(/FALLBACK/);
   });
 
   it("does not claim FALLBACK when vector detail is missing on a live or cached feed", () => {
@@ -380,7 +381,7 @@ describe("customer-facing surfaces do not leak LIVE or debug codes", () => {
 
   it("keeps header / dashboard LIVE badges bound to integrity", () => {
     expect(layout).toContain("integrityLabel");
-    expect(layout).toContain("hideBlankTickerDuplicates");
+    expect(read("client/src/components/AppMarketHeader.tsx")).toContain("hideBlankTickerDuplicates");
     expect(layout).not.toMatch(/isLive \? \(sourceHealth\.some\(s => s\.status === 'degraded'\) \? 'DEGRADED' : 'LIVE'\) : 'SIM'/);
     expect(dashboard).toContain("integrityLabel");
     expect(dashboard).not.toContain("isLive ? 'LIVE FEED' : 'SIMULATED'");

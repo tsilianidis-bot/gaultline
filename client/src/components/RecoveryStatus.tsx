@@ -130,21 +130,9 @@ function ConfidenceGauge({ score, tier }: { score: number; tier: RecoveryAnalysi
         </div>
         <div className="flex items-center gap-2">
           <span className={`text-xs font-medium ${tierColors[tier]}`}>{tier}</span>
-          <span className="text-sm font-bold font-mono text-white">{score}<span className="text-gray-500 text-xs">/100</span></span>
+          {/* Launch fix-up: recoveryConfidence is a weighted heuristic (recoveryEngine.ts), not calibrated: no number, no bar. */}
+          <span data-confidence-status="not-established" className="text-sm font-bold font-mono text-gray-400">Not established</span>
         </div>
-      </div>
-      <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all duration-700 ${CONFIDENCE_BAR_COLOR(score)}`}
-          style={{ width: `${score}%` }}
-        />
-      </div>
-      <div className="flex justify-between text-[10px] font-mono text-gray-600">
-        <span>0 Weak</span>
-        <span>25</span>
-        <span>50</span>
-        <span>75</span>
-        <span>100 Confirmed</span>
       </div>
     </div>
   );
@@ -350,7 +338,7 @@ export function RecoveryStatusBadge({ status, color, confidence }: {
       <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border ${colors.badge}`}>
         {status}
       </span>
-      <span className="text-[10px] font-mono text-gray-600">{confidence}/100</span>
+      {/* Launch fix-up: recoveryConfidence is a formula (passed rule weight share × penalties, recoveryEngine.ts): hidden. */}
     </div>
   );
 }

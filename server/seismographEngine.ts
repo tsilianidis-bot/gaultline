@@ -254,7 +254,7 @@ const PATTERN_SPECS: PatternSpec[] = [
     detect: (r) => r.slice(0, 10).filter((x) => x.pressureScore >= 60).length >= 8,
     describe: (r) => {
       const days = r.filter((x) => x.pressureScore >= 60).length;
-      return `Pressure has remained at or above 60 for ${days} of the last ${r.length} recorded days. Sustained elevated pressure historically precedes either a resolution rally or an acceleration into higher-stress territory.`;
+      return `Pressure has remained at or above 60 for ${days} of the last ${r.length} recorded days. What follows sustained elevated pressure has not been validated in FAULTLINE's record.`;
     },
     frequency: "uncommon",
     invalidation: "Pressure drops below 50 for 5 or more consecutive days.",
@@ -605,8 +605,10 @@ function computeEvolution(readings: SeismographReadingRow[]): SeismographState["
   const sevenDayDelta = avg7 - avgPrior7;
   const thirtyDayDelta = avg7 - avg30;
 
-  const sevenDayTrend =
-    sevenDayDelta >= 5
+  // Fail closed: without a prior-week window there is no comparison to call "Stable".
+  const sevenDayTrend = prior7.length === 0
+    ? "Unavailable (no prior-week reading)"
+    : sevenDayDelta >= 5
       ? `Rising (+${sevenDayDelta.toFixed(1)} pts)`
       : sevenDayDelta <= -5
       ? `Declining (${sevenDayDelta.toFixed(1)} pts)`

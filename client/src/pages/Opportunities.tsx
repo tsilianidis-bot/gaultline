@@ -9,6 +9,9 @@
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { useEngine } from "@/contexts/EngineContext";
+import { canonicalPressureLabel } from "@/lib/canonicalPressureDisplay";
+import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
 import { useSEO } from "@/hooks/useSEO";
 import NarrativeLoader from "@/components/NarrativeLoader";
 import {
@@ -42,7 +45,7 @@ interface DiscoveryItem {
   institutionalConviction?: string;
   macroAlignment?: number;
   riskRewardRatio?: string;
-  confidenceLevel?: number;
+  confidenceLevel?: number | null; // withheld by the server; never rendered
   topCatalyst?: string;
   actionBias?: string;
 }
@@ -249,12 +252,11 @@ function RadarCard({
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", fontWeight: 700, color: item.institutionalConviction === "Very High" || item.institutionalConviction === "High" ? "#22C55E" : item.institutionalConviction === "Moderate" ? "#FFD700" : "#94A3B8" }}>{item.institutionalConviction}</span>
               </div>
             )}
-            {item.confidenceLevel != null && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>CONFIDENCE</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", fontWeight: 700, color: "#B0C4D8" }}>{item.confidenceLevel}%</span>
-              </div>
-            )}
+            {/* QA confidence sweep: no calibrated confidence exists for discovery items. */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>CONFIDENCE</span>
+              <span data-confidence-status="not-established" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", fontWeight: 700, color: "#94A3B8" }}>{CONFIDENCE_NOT_ESTABLISHED}</span>
+            </div>
           </div>
 
           {/* Bull / Bear cases */}
@@ -410,6 +412,10 @@ function OpportunitiesInner() {
     staleTime: 8 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
+  // Shown: the canonical Pressure Index (same source as the header strip); the
+  // discovery payload's pressureIndex stays a scoring input only.
+  const { canonicalState } = useEngine();
+  const displayPressureLabel = canonicalPressureLabel(canonicalState);
 
   const handleAnalyze = (ticker: string, assetType: string) => {
     navigate(`/app/signal-outlook?symbol=${ticker}&type=${assetType}`);
@@ -482,7 +488,7 @@ function OpportunitiesInner() {
             </div>
             {data && (
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(255,255,255,0.25)", letterSpacing: "0.08em" }}>
-                PRESSURE {data.pressureIndex} · {data.regime} · {data.buckets.length} CATEGORIES · {allItems.length} SETUPS
+                PRESSURE {displayPressureLabel} · {data.regime} · {data.buckets.length} CATEGORIES · {allItems.length} SETUPS
               </span>
             )}
           </div>
@@ -630,7 +636,7 @@ function OpportunitiesInner() {
                   <DirectionBadge direction={item.direction} />
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: RISK_COLORS[item.riskLevel] ?? "#94A3B8" }}>{item.riskLevel.toUpperCase()}</span>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, color: "#22C55E" }}>{item.riskRewardRatio ?? "—"}</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#B0C4D8" }}>{item.confidenceLevel != null ? `${item.confidenceLevel}%` : "—"}</span>
+                  <span data-confidence-status="not-established" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8" }}>{CONFIDENCE_NOT_ESTABLISHED}</span>
                   <div style={{ display: "flex", gap: "4px" }}>
                     {item.actionBias && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", fontWeight: 700, color: biasColors.color, background: biasColors.bg, padding: "2px 6px", borderRadius: "2px" }}>{item.actionBias}</span>}
                     <ChevronRight size={10} color={`${accent}60`} />

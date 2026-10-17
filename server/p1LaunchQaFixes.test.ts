@@ -29,18 +29,17 @@ describe("P1 launch QA — public pricing and mobile routes", () => {
     expect(getLegacyAliasTarget("/pricing")).toBe("/#access");
   });
 
-  it("redirects bare /mobile and /mobile/ to NOW so Pulse nav is not a 404", () => {
+  it("redirects bare /mobile and /mobile/ to the canonical PWA Pulse entrypoint", () => {
     expect(app).toContain('path="/mobile"');
     expect(app).toContain('path="/mobile/"');
-    expect(app).toContain("CANONICAL_DESTINATION_BY_ID.now.path");
+    expect(app).toContain('to="/mobile/pulse"');
+    expect(app).toContain('path="/mobile/pulse" component={MobilePulse}');
     const mobileBare = app.indexOf('<Route path="/mobile">');
     const mobileWildcard = app.indexOf('path="/mobile/:tab*"');
     const catchAll404 = app.indexOf('<Route><Redirect to="/404" /></Route>');
     expect(mobileBare).toBeGreaterThanOrEqual(0);
     expect(mobileWildcard).toBeGreaterThan(mobileBare);
     expect(catchAll404).toBeGreaterThan(mobileBare);
-    expect(getLegacyAliasTarget("/mobile")).toBe(CANONICAL_DESTINATION_BY_ID.now.path);
-    expect(getLegacyAliasTarget("/mobile/")).toBe(CANONICAL_DESTINATION_BY_ID.now.path);
   });
 });
 
@@ -74,7 +73,7 @@ describe("P1 launch QA — signals and crypto never infinite-load", () => {
 });
 
 describe("P1 launch QA — no LIVE chrome when integrity is FALLBACK", () => {
-  it("maps PARTIAL + live freshness to FALLBACK chrome, never Canonical/LIVE", () => {
+  it("maps PARTIAL + live freshness (no fallback input) to DELAYED chrome, never FALLBACK/Canonical/LIVE", () => {
     const label = customerIntegrityLabel({
       hasState: true,
       freshness: "live",
@@ -83,9 +82,9 @@ describe("P1 launch QA — no LIVE chrome when integrity is FALLBACK", () => {
       fallbackInputCount: 0,
       fredStatus: "healthy",
     });
-    expect(label).toBe("FALLBACK");
-    expect(customerChromeModeLabel(label)).toBe("FALLBACK");
-    expect(customerIntegrityChipLevel(label)).toBe("fallback");
+    expect(label).toBe("DELAYED");
+    expect(customerChromeModeLabel(label)).toBe("DELAYED");
+    expect(customerIntegrityChipLevel(label)).toBe("delayed");
     expect(customerChromeModeLabel(label)).not.toMatch(/LIVE|Canonical/i);
   });
 });

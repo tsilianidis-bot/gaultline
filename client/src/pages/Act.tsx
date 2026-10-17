@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import { canonicalScoreText, finiteOrNull } from "@/lib/displayFallbacks";
+import { probabilityText } from "@shared/probabilityContract";
 import { Link } from "wouter";
 import {
   ArrowRight,
@@ -23,12 +25,14 @@ import {
 } from "@shared/routeRegistry";
 import {
   formatCanonicalPercent,
-  formatCanonicalScore,
   normalizeCanonicalMetric,
 } from "@shared/marketMetrics";
 import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/customerIntegrityLabels";
+import { canonicalFreshnessReadout, monthlyRecordBasisNote } from "@shared/dataIntegrityReadout";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
+import { forecastConfidenceDisplay } from "@shared/confidenceDisplay";
+import { SectorRotationQuestion } from "@/components/sectorRotation/SectorRotationModule";
 
 const ACT_DEEP_PATH = "/app/act/deep";
 
@@ -37,6 +41,8 @@ type MarketPosture = "defensive" | "balanced" | "opportunistic";
 type DecisionScenario = {
   label: string;
   probability: number;
+  /** Probability-contract text shown when probability is withheld (NaN). */
+  withheldText?: string;
   response: string;
   boundary: string;
 };
@@ -261,10 +267,17 @@ export default function Act() {
   if (isLoading && !canonicalState) return <PageLoadingState eyebrow="ACT · Decision state" message="Loading authoritative canonical decision state…" />;
   if (!canonicalState) return <PageDegradedBanner message="Current canonical state is unavailable." detail="ACT withholds current decision interpretation until one authoritative state is available." />;
 
-  const pressure = canonicalState.pressureIndex ?? 0;
+  // Missing pressure stays null and renders "—" (never 0, no band or action from 0).
+  const pressure = finiteOrNull(canonicalState.pressureIndex);
   const posture = marketState?.act.marketPosture ?? null;
   const postureView = posture ? postureConfig[posture] : unavailablePostureView;
-  const confidence = marketState?.outlook.probabilities.confidence ?? 0;
+  // Display gate: a % only with HEALTHY canonical evidence AND a verified analog
+  // (the engine value is a 50 baseline even with zero analogs). Engine unchanged.
+  const confidenceDisplay = forecastConfidenceDisplay({
+    confidence: marketState?.outlook.probabilities.confidence,
+    evidenceQuality: canonicalState?.confidenceOrEvidenceQuality,
+    topAnalog: marketState?.outlook.topAnalog,
+  });
   const decisionSummary = marketState?.act.decisionSummary
     ?? "Canonical decision guidance is unavailable. ACT will not manufacture a colored posture or trade-level instruction from deterministic fallback data.";
   const riskControls = marketState?.act.riskControls ?? [];
@@ -274,26 +287,39 @@ export default function Act() {
   const monitoredTriggers = marketState?.watch.whatToWatch ?? [];
   const developingConditions = marketState?.watch.developingConditions ?? [];
   const modeLabel = customerChromeModeLabel(integrityLabel);
+  // Same integrity label as the header chip + the snapshot's own input lists
+  // (never the legacy marketState.freshness cache-age "live").
+  const freshnessReadout = canonicalFreshnessReadout({ integrityLabel, canonical: canonicalState });
 
-  const greenFlags = evidence;
-  const redFlags: string[] = marketState?.watch.whatChanged ?? [];
+  // Same classifier as NOW (shared/canonicalReadout via EngineContext): only families
+  // whose own signal is bullish/recovering are "supporting"; bearish/stressed are
+  // cautionary. Neutral families are neither. Strength order never decides this.
+  const greenFlags = marketState?.now.supports ?? [];
+  const redFlags: string[] = Array.from(new Set([...(marketState?.now.threats ?? []), ...(marketState?.watch.whatChanged ?? [])]));
 
+  // Probability contract: a withheld scenario shows its claim's state text.
+  const scenarioContract = marketState?.outlook.probabilityContract ?? null;
+  const scenarioText = (id: "bull" | "neutral" | "bear") =>
+    probabilityText(scenarioContract?.scenarioSet.scenarios.find(claim => claim.scenario.scenarioId === id) ?? null);
   const scenarios: DecisionScenario[] = marketState ? [
     {
       label: "Bull path",
       probability: marketState.outlook.probabilities.bull,
+      withheldText: scenarioText("bull"),
       response: "If bullish evidence strengthens, test opportunity through the specialist decision workflow rather than converting the probability directly into exposure.",
       boundary: marketState.outlook.probabilities.evidenceBasis,
     },
     {
       label: "Neutral path",
       probability: marketState.outlook.probabilities.neutral,
+      withheldText: scenarioText("neutral"),
       response: "If the neutral path persists, avoid forcing conviction and keep the review cadence, controls, and invalidation criteria explicit.",
       boundary: marketState.outlook.highestProbabilityPath,
     },
     {
       label: "Bear path",
       probability: marketState.outlook.probabilities.bear,
+      withheldText: scenarioText("bear"),
       response: "If bearish evidence strengthens, prioritize the canonical risk controls and reassess the decision before introducing new risk.",
       boundary: marketState.outlook.probabilities.historicalBasis,
     },
@@ -382,11 +408,11 @@ export default function Act() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-sm border border-white/10 bg-white/[0.025] p-4">
                     <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-slate-600">Pressure</p>
-                    <p className="mt-1 font-mono text-sm text-emerald-200">{formatCanonicalScore(pressure)}</p>
+                    <p className="mt-1 font-mono text-sm text-emerald-200">{canonicalScoreText(pressure)}</p>
                   </div>
                   <div className="rounded-sm border border-white/10 bg-white/[0.025] p-4">
                     <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-slate-600">Confidence</p>
-                    <p className="mt-1 font-mono text-sm text-slate-200">{formatCanonicalPercent(confidence)}</p>
+                    <p className="mt-1 font-mono text-sm text-slate-200"><span data-forecast-confidence={confidenceDisplay.state}>{confidenceDisplay.percent == null ? confidenceDisplay.text : formatCanonicalPercent(confidenceDisplay.percent)}</span></p>
                   </div>
                 </div>
                 <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-slate-600">Updated {lastUpdated?.toLocaleString() ?? "not available"}</p>
@@ -407,23 +433,32 @@ export default function Act() {
 
         {/* ── SECTIONS ─────────────────────────────────────────────────── */}
 
+        <SectorRotationQuestion question="act" />
+
         <Section id="strategy-matrix" index="01" eyebrow="Strategy matrix" title="Favorability of common strategies under each posture" description="The matrix shows which strategies are favorable, conditional, or to avoid under each posture. The current posture is highlighted.">
           <StrategyMatrix posture={posture} scenarios={scenarios} />
         </Section>
 
-        <Section id="flag-balance" index="02" eyebrow="Evidence balance" title="Supporting and cautionary signals in the current state" description="Evidence is split into supporting and cautionary signals. The balance bar shows the proportion without manufacturing a score from it.">
+        <Section id="flag-balance" index="02" eyebrow="Evidence balance" title="Supporting and cautionary signals in the current state" description={`Evidence is split into supporting and cautionary signals. The balance bar shows the proportion without manufacturing a score from it. ${monthlyRecordBasisNote(marketState?.why.evidenceAsOfMonth)}`}>
           <FlagBalance greenFlags={greenFlags} redFlags={redFlags} />
         </Section>
 
-        <Section id="evidence-boundary" index="03" eyebrow="Evidence boundary" title="What the posture can and cannot infer" description="The posture is a system-level response to canonical market conditions. Evidence is separated from any instrument-level decision so confidence cannot outrun provenance.">
+        <Section id="evidence-boundary" index="03" eyebrow="Evidence boundary" title="What the posture can and cannot infer" description={`The posture is a system-level response to canonical market conditions. Evidence is separated from any instrument-level decision so confidence cannot outrun provenance. ${monthlyRecordBasisNote(marketState?.why.evidenceAsOfMonth)}`}>
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
             <div className="grid gap-3 sm:grid-cols-2">
-              {evidence.map(item => (
-                <div key={item} className="flex gap-3 rounded-sm border border-white/10 bg-white/[0.025] p-4 text-sm leading-6 text-slate-300">
-                  <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald-300" />
-                  {item}
-                </div>
-              ))}
+              {evidence.map(item => {
+                const cls = greenFlags.includes(item) ? "support" : (marketState?.now.threats ?? []).includes(item) ? "threat" : "neutral";
+                return (
+                  <div key={item} data-evidence-class={cls} className="flex gap-3 rounded-sm border border-white/10 bg-white/[0.025] p-4 text-sm leading-6 text-slate-300">
+                    {cls === "support"
+                      ? <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald-300" />
+                      : cls === "threat"
+                        ? <XCircle className="mt-1 h-4 w-4 shrink-0 text-rose-300" />
+                        : <Scale className="mt-1 h-4 w-4 shrink-0 text-slate-400" />}
+                    <span>{item}<span className="ml-2 font-mono text-[9px] uppercase tracking-[0.12em] text-slate-500">{cls === "support" ? "supporting" : cls === "threat" ? "cautionary" : "neutral"}</span></span>
+                  </div>
+                );
+              })}
             </div>
             <div className="rounded-sm border border-amber-400/20 bg-amber-400/[0.04] p-5">
               <Scale className="h-5 w-5 text-amber-300" />
@@ -441,10 +476,10 @@ export default function Act() {
               <article key={scenario.label} className="rounded-sm border border-white/10 bg-white/[0.025] p-5">
                 <div className="flex items-center justify-between gap-4">
                   <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">{scenario.label}</div>
-                  <div className="font-['Rajdhani'] text-xl font-semibold text-emerald-200">{Number.isFinite(scenario.probability) ? formatCanonicalPercent(scenario.probability) : "UNAVAILABLE"}</div>
+                  <div className="font-['Rajdhani'] text-xl font-semibold text-emerald-200">{Number.isFinite(scenario.probability) ? formatCanonicalPercent(scenario.probability) : (scenario.withheldText ?? "Unavailable")}</div>
                 </div>
                 <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full bg-emerald-400/60" style={{ width: `${normalizeCanonicalMetric(scenario.probability)}%`, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
+                  <div className="h-full rounded-full bg-emerald-400/60" style={{ width: `${Number.isFinite(scenario.probability) ? normalizeCanonicalMetric(scenario.probability) : 0}%`, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
                 </div>
                 <p className="mt-4 text-sm leading-6 text-slate-300">{scenario.response}</p>
                 <p className="mt-4 border-t border-white/10 pt-4 text-xs leading-5 text-slate-600">{scenario.boundary}</p>
@@ -516,19 +551,17 @@ export default function Act() {
           <div className="grid gap-4 md:grid-cols-3">
             <div className="rounded-sm border border-white/10 bg-white/[0.025] p-5">
               <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-600">Forecast confidence</div>
-              <div className="mt-3 font-['Rajdhani'] text-2xl font-semibold text-slate-100">{formatCanonicalPercent(confidence)}</div>
+              <div className="mt-3 font-['Rajdhani'] text-2xl font-semibold text-slate-100"><span data-forecast-confidence={confidenceDisplay.state}>{confidenceDisplay.percent == null ? confidenceDisplay.text : formatCanonicalPercent(confidenceDisplay.percent)}</span></div>
             </div>
             <div className="rounded-sm border border-white/10 bg-white/[0.025] p-5">
               <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-600">Historical observations</div>
-              <div className="mt-3 font-['Rajdhani'] text-2xl font-semibold text-slate-100">{marketState?.history.observationCount ?? 0}</div>
+              <div className="mt-3 font-['Rajdhani'] text-2xl font-semibold text-slate-100">{marketState?.history.observationCount ?? "Unavailable"}</div>
               <div className="mt-2 text-xs text-slate-500">{marketState?.history.datasetSpan ?? "Canonical history unavailable"}</div>
             </div>
             <div className="rounded-sm border border-white/10 bg-white/[0.025] p-5">
               <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-600">Freshness</div>
-              <div className="mt-3 text-sm font-semibold text-slate-100">{marketState?.freshness ?? "Fallback"}</div>
-              <div className="mt-2 text-xs text-slate-500">
-                {marketState ? `Canonical source state is ${marketState.freshness}.` : "Live canonical freshness unavailable."}
-              </div>
+              <div className="mt-3 text-sm font-semibold text-slate-100" data-canonical-freshness={freshnessReadout.label}>{freshnessReadout.label}</div>
+              <div className="mt-2 text-xs text-slate-500">{freshnessReadout.detail}</div>
             </div>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -585,7 +618,7 @@ export default function Act() {
               <Crosshair className="h-4 w-4 text-emerald-300" />
               <div className="mt-5 font-mono text-[9px] uppercase tracking-[0.16em] text-slate-600">Decision workspace</div>
               <div className="mt-2 text-sm font-semibold text-slate-100">Decision Engine</div>
-              <p className="mt-2 text-xs leading-5 text-slate-500">Run the preserved pre-flight and scenario decision workflow.</p>
+              <p className="mt-2 text-xs leading-5 text-slate-500">Run the preserved scenario and decision-support workflow.</p>
             </Link>
             <Link href={EXPERT_WORKSPACE_BY_ID["symbol-intelligence"].path} className="group rounded-sm border border-white/10 bg-white/[0.025] p-5 transition hover:border-emerald-300/30">
               <Gauge className="h-4 w-4 text-emerald-300" />

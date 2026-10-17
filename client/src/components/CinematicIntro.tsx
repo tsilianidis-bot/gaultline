@@ -310,7 +310,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
   }, [onComplete]);
 
   // Tagline typewriter during FAULTLINE phase
-  const tagline = "DETECTING HIDDEN SYSTEMIC PRESSURE IN REAL TIME";
+  const tagline = "DETECTING HIDDEN SYSTEMIC PRESSURE";
   const { displayed: taglineText, done: taglineDone } = useTypewriter(
     tagline, 30,
     phase === "faultline" || phase === "converge"
@@ -468,7 +468,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
               color: "rgba(0,212,255,0.72)",
               animation: "ci-fade-up 0.8s ease-out 1.1s both",
             }}>
-              MACROECONOMIC RISK INTELLIGENCE
+              STRUCTURAL MARKET INTELLIGENCE
             </div>
           </div>
         )}

@@ -14,10 +14,12 @@ type IntelMetric = {
   id: string;
   label: string;
   description: string;
-  score: number;
+  /** null when the input vector is missing: renders "—", never a default. */
+  score: number | null;
   level: string;
   driver: string;
-  trend: "rising" | "falling" | "stable";
+  /** null when the input is missing: no trend icon is shown. */
+  trend: "rising" | "falling" | "stable" | null;
   color: string;
 };
 
@@ -48,7 +50,7 @@ function TrendIcon({ trend, color }: { trend: "rising" | "falling" | "stable"; c
 // ── Single Metric Card ────────────────────────────────────────
 function MetricCard({ metric }: { metric: IntelMetric }) {
   const [expanded, setExpanded] = useState(false);
-  const isHigh = metric.score >= 60;
+  const isHigh = metric.score !== null && metric.score >= 60;
 
   return (
     <div
@@ -68,7 +70,7 @@ function MetricCard({ metric }: { metric: IntelMetric }) {
       {/* Row 1: label + score + trend */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <TrendIcon trend={metric.trend} color={metric.color} />
+          {metric.score !== null && metric.trend !== null && <TrendIcon trend={metric.trend} color={metric.color} />}
           <span style={{
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: "10px",
@@ -86,7 +88,7 @@ function MetricCard({ metric }: { metric: IntelMetric }) {
             fontSize: "16px",
             color: metric.color,
           }}>
-            {metric.score}
+            {metric.score === null ? "—" : metric.score}
           </span>
           <span style={{
             fontFamily: "'IBM Plex Mono', monospace",
@@ -106,7 +108,9 @@ function MetricCard({ metric }: { metric: IntelMetric }) {
       </div>
 
       {/* Gauge bar */}
-      <GaugeBar score={metric.score} color={metric.color} />
+      {metric.score === null
+        ? <div data-gauge="unavailable" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", lineHeight: "4px", color: "#64748B" }}>—</div>
+        : <GaugeBar score={metric.score} color={metric.color} />}
 
       {/* Expanded: driver + description */}
       {expanded && (
@@ -167,7 +171,7 @@ export default function PortfolioIntelligence() {
   if (!user) return null;
 
   const metrics = (data?.metrics ?? []) as IntelMetric[];
-  const highRiskCount = metrics.filter(m => m.score >= 60).length;
+  const highRiskCount = metrics.filter(m => m.score !== null && m.score >= 60).length;
   const overallColor = highRiskCount >= 5 ? "#FF2D55" : highRiskCount >= 3 ? "#FF6B35" : highRiskCount >= 1 ? "#FFD60A" : "#00FF88";
 
   return (
@@ -210,7 +214,7 @@ export default function PortfolioIntelligence() {
                 color: "#374151",
                 letterSpacing: "0.08em",
               }}>
-                {data.regime} · {data.dataSource === "live" ? "LIVE DATA" : "FALLBACK DATA"}
+                {data.regime ?? "Regime unavailable"} · {data.dataSource === "live" ? "LIVE DATA" : "FALLBACK DATA"}
               </span>
             )}
           </div>

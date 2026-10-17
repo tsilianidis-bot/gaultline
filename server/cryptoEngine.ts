@@ -48,6 +48,8 @@ export interface CryptoAssetIntelligence {
   image:                string;
   currentPrice:         number;
   priceChangePercent24h: number;
+  /** Display only: null when the provider supplied no 24h change. */
+  priceChangePercent24hDisplay?: number | null;
   priceChangePercent7d:  number | null;
   marketCap:            number;
   totalVolume:          number;
@@ -303,7 +305,7 @@ export async function computeAssetIntelligence(
     label: "24h Momentum",
     score: momScore24h,
     direction: c.priceChangePercent24h > 1 ? "positive" : c.priceChangePercent24h < -1 ? "negative" : "neutral",
-    description: `${c.priceChangePercent24h >= 0 ? "+" : ""}${c.priceChangePercent24h.toFixed(2)}% in 24h`,
+    description: c.priceChangePercent24hDisplay === null ? "24h change unavailable" : `${c.priceChangePercent24h >= 0 ? "+" : ""}${c.priceChangePercent24h.toFixed(2)}% in 24h`,
   });
 
   // 2. Weekly momentum — multiplier 2 (was 1.5) for stronger trend signal
@@ -467,6 +469,7 @@ export async function computeAssetIntelligence(
     image:                c.image,
     currentPrice:         c.currentPrice,
     priceChangePercent24h: c.priceChangePercent24h,
+    priceChangePercent24hDisplay: c.priceChangePercent24hDisplay === undefined ? c.priceChangePercent24h : c.priceChangePercent24hDisplay,
     priceChangePercent7d:  c.priceChangePercent7d,
     marketCap:            c.marketCap,
     totalVolume:          c.totalVolume,

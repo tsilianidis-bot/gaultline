@@ -22,6 +22,7 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CONFIDENCE_NOT_ESTABLISHED, withholdConfidenceFigures } from "@/lib/confidenceDisplay";
 import {
   Trophy, Target, TrendingUp, TrendingDown, Shield, Zap, RefreshCw,
   AlertTriangle, ChevronDown, ChevronUp, BookOpen, BarChart3, DollarSign,
@@ -154,7 +155,8 @@ function ManualSearch({ accountValue, onTrade }: { accountValue: number; onTrade
             {[
               { label: "PRICE", value: `$${fmt(result.currentPrice)}`, color: "text-[#F4F8FF]" },
               { label: "24H CHANGE", value: fmtPct(result.changePercent), color: result.changePercent >= 0 ? "text-[#00FF88]" : "text-[#FF2D55]" },
-              { label: "CONFIDENCE", value: `${result.faultlineConfidence}%`, color: result.faultlineConfidence >= 70 ? "text-[#00FF88]" : result.faultlineConfidence >= 50 ? "text-[#FFD700]" : "text-[#FF2D55]" },
+              // QA r13 B14: faultlineConfidence is the signal formula min(95, 55 + |score| × 5).
+              { label: "CONFIDENCE", value: CONFIDENCE_NOT_ESTABLISHED, color: "text-[#94A3B8]" },
               { label: "COMPOSITE SCORE", value: result.compositeScore.toString(), color: result.compositeScore >= 70 ? "text-[#00FF88]" : result.compositeScore >= 50 ? "text-[#FFD700]" : "text-[#FF2D55]" },
             ].map(({ label, value, color }) => (
               <div key={label} className="bg-white/3 rounded-lg p-3">
@@ -185,7 +187,7 @@ function ManualSearch({ accountValue, onTrade }: { accountValue: number; onTrade
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 border-b border-white/8">
             <div className="bg-[#00FF88]/5 border border-[#00FF88]/15 rounded-lg p-3">
               <div className="text-[#00FF88] text-[10px] font-mono tracking-widest mb-2 font-bold">WHY NOW</div>
-              <div className="text-[#A8B8CC] text-xs leading-relaxed">{result.whyNow}</div>
+              <div className="text-[#A8B8CC] text-xs leading-relaxed">{withholdConfidenceFigures(result.whyNow)}</div>
             </div>
             <div className="bg-[#FF2D55]/5 border border-[#FF2D55]/15 rounded-lg p-3">
               <div className="text-[#FF2D55] text-[10px] font-mono tracking-widest mb-2 font-bold">INVALIDATION</div>
@@ -763,13 +765,12 @@ function OpportunityCard({ opp, onTrade, onReject }: {
           </span>
         </div>
 
-        {/* FAULTLINE confidence */}
+        {/* FAULTLINE confidence — QA r13 B14: signal formula, not calibrated: no value, no bar. */}
         <div className="mt-2">
           <div className="flex justify-between text-[10px] text-[#64748B] font-mono mb-1">
             <span>FAULTLINE CONFIDENCE</span>
-            <span>{opp.faultlineConfidence}/100</span>
+            <span>{CONFIDENCE_NOT_ESTABLISHED}</span>
           </div>
-          {scoreBar(opp.faultlineConfidence)}
         </div>
 
         {/* Objective fit */}
@@ -799,7 +800,7 @@ function OpportunityCard({ opp, onTrade, onReject }: {
         <div className="px-4 pb-4 space-y-3 border-t border-white/5">
           <div>
             <div className="text-[10px] text-[#00D4FF] font-mono tracking-widest mb-1">WHY NOW</div>
-            <p className="text-xs text-[#A8B8CC] leading-relaxed">{opp.whyNow}</p>
+            <p className="text-xs text-[#A8B8CC] leading-relaxed">{withholdConfidenceFigures(opp.whyNow)}</p>
           </div>
           <div>
             <div className="text-[10px] text-[#FF9500] font-mono tracking-widest mb-1">INVALIDATION</div>
@@ -1243,8 +1244,9 @@ export default function OwnerSimulation() {
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="text-right">
+                        {/* QA confidence sweep: the optimal-action confidence is the LLM's self-rating, not calibrated. */}
                         <div className="text-xs text-[#64748B] font-mono">CONFIDENCE</div>
-                        <div className="text-sm font-mono font-bold text-[#F4F8FF]">{optimalAction.confidence}%</div>
+                        <div data-confidence-status="not-established" className="text-sm font-mono font-bold text-[#94A3B8]">{CONFIDENCE_NOT_ESTABLISHED}</div>
                       </div>
                       <Button
                         size="sm" variant="outline"
@@ -1256,16 +1258,6 @@ export default function OwnerSimulation() {
                         REFRESH
                       </Button>
                     </div>
-                  </div>
-                  {/* Confidence bar */}
-                  <div className="w-full bg-white/5 rounded-full h-1">
-                    <div
-                      className={`h-1 rounded-full transition-all ${
-                        optimalAction.confidence >= 75 ? "bg-[#00D4FF]" :
-                        optimalAction.confidence >= 50 ? "bg-[#FFD700]" : "bg-[#FF6B35]"
-                      }`}
-                      style={{ width: `${optimalAction.confidence}%` }}
-                    />
                   </div>
                   {/* Headline */}
                   <p className="text-[#F4F8FF] font-mono text-sm font-semibold leading-snug">{optimalAction.headline}</p>
@@ -1388,7 +1380,7 @@ export default function OwnerSimulation() {
             {!objective ? (
               <div className="text-center py-16 text-[#64748B]">
                 <Target className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="font-mono text-sm">Set your objective to unlock real-time opportunities</p>
+                <p className="font-mono text-sm">Set your objective to unlock regularly refreshed opportunities</p>
               </div>
             ) : opportunitiesQuery.isLoading ? (
               <div className="text-center py-16 text-[#00D4FF] font-mono text-sm animate-pulse">

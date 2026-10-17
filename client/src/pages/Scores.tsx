@@ -10,8 +10,9 @@ import RiskBadge, { getRiskColor } from "@/components/RiskBadge";
 import ScoreRing from "@/components/ScoreRing";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
-import { PreflightTrigger } from "@/components/MarketPreflight";
+import { PageDegradedBanner } from "@/components/PageStateViews";
 import { customerIntegrityBadgeColor } from "@shared/customerIntegrityLabels";
+import { availableDelta } from "@/lib/displayFallbacks";
 
 // ── Seeded deterministic sparkline ───────────────────────────
 function seededRand(seed: number) {
@@ -24,8 +25,6 @@ function PressureBar({ score, riskLevel, seed }: { score: number; riskLevel: Dom
   const [width, setWidth] = useState(0);
   const color = getRiskColor(riskLevel);
   const pct = Math.max(0, Math.min(100, score));
-  const confLow = Math.max(0, pct - 5);
-  const confHigh = Math.min(100, pct + 5);
 
   useEffect(() => { const t = setTimeout(() => setWidth(pct), 350); return () => clearTimeout(t); }, [pct]);
 
@@ -42,13 +41,7 @@ function PressureBar({ score, riskLevel, seed }: { score: number; riskLevel: Dom
 
   return (
     <div style={{ position: 'relative', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'visible' }}>
-      {/* Confidence interval band */}
-      <div style={{
-        position: 'absolute', top: '-2px', bottom: '-2px',
-        left: `${confLow}%`, width: `${confHigh - confLow}%`,
-        background: `${color}10`, borderRadius: '4px',
-        transition: 'all 1.4s cubic-bezier(0.23,1,0.32,1)',
-      }} />
+      {/* Launch fix-up: the fixed ±5 band was not a computed confidence interval; removed. */}
       {/* Main bar */}
       <div style={{
         position: 'absolute', left: 0, top: 0, bottom: 0,
@@ -62,7 +55,16 @@ function PressureBar({ score, riskLevel, seed }: { score: number; riskLevel: Dom
 }
 
 // ── Momentum indicator ────────────────────────────────────────
-function MomentumArrow({ delta }: { delta: number }) {
+export function MomentumArrow({ delta }: { delta?: number }) {
+  // Unknown delta (missing, non-finite, or deltaAvailable === false): show "—"
+  // with no direction arrow and no RISING/EASING/STABLE claim.
+  if (delta === undefined || !Number.isFinite(delta)) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }} data-momentum="unavailable">
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#6B7280', letterSpacing: '0.08em' }}>—</span>
+      </div>
+    );
+  }
   const isUp = delta > 0.1;
   const isDown = delta < -0.1;
   const color = isUp ? '#FF9500' : isDown ? '#00FF88' : '#6B7280';
@@ -106,6 +108,7 @@ function DomainCard({ score, index }: { score: DomainScore; index: number }) {
   const [expanded, setExpanded] = useState(false);
   const color = getRiskColor(score.riskLevel);
   const isHighPressure = score.riskLevel === 'critical' || score.riskLevel === 'high';
+  const scoreDelta = availableDelta(score);
 
   const borderClass = score.riskLevel === 'critical' ? 'pressure-border-critical'
     : score.riskLevel === 'high' ? 'pressure-border-high'
@@ -138,7 +141,7 @@ function DomainCard({ score, index }: { score: DomainScore; index: number }) {
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative', zIndex: 1 }}>
-        <ScoreRing score={Math.round(score.score * 10)} maxScore={100} riskLevel={score.riskLevel} label="" delta={score.delta * 10} size={64} showLabel={false} />
+        <ScoreRing score={Math.round(score.score * 10)} maxScore={100} riskLevel={score.riskLevel} label="" delta={scoreDelta === null ? undefined : scoreDelta * 10} size={64} showLabel={false} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
             <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '14px', color: '#E2E8F0' }}>{score.label}</span>
@@ -149,7 +152,7 @@ function DomainCard({ score, index }: { score: DomainScore; index: number }) {
             <PressureBar score={score.score * 10} riskLevel={score.riskLevel} seed={index * 17 + 3} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <MomentumArrow delta={score.delta} />
+            <MomentumArrow delta={scoreDelta ?? undefined} />
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: '20px', color, textShadow: `0 0 16px ${color}60`, lineHeight: 1 }}>
               {Math.round(score.score * 10)}<span style={{ fontSize: '10px', color: '#4B5563' }}>/100</span>
             </span>
@@ -172,10 +175,7 @@ function DomainCard({ score, index }: { score: DomainScore; index: number }) {
               ))}
             </div>
           )}
-          {/* Confidence interval note */}
-          <div style={{ marginTop: '8px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#374151', background: 'rgba(255,255,255,0.02)', borderRadius: '3px', padding: '5px 8px', borderLeft: `2px solid ${color}20` }}>
-            Confidence interval: {Math.round(Math.max(0, score.score - 0.5) * 10)} – {Math.round(Math.min(10, score.score + 0.5) * 10)} /100 · ±5-point band shown on bar
-          </div>
+          {/* Launch fix-up: no confidence interval is computed for this score (the old ±5 note was fixed text). */}
         </div>
       )}
     </div>
@@ -186,13 +186,31 @@ function DomainCard({ score, index }: { score: DomainScore; index: number }) {
 export default function Scores() {
   useSEO(PAGE_SEO.scores);
   const [mounted, setMounted] = useState(false);
-  const { output, integrityLabel } = useEngine();
+  const { output, integrityLabel, marketMode } = useEngine();
   const { overall, domains, regime } = output;
 
   useEffect(() => { setMounted(true); }, []);
   if (!mounted) return null;
 
+  // Without MarketState the engine scores are the demo baseline: withheld, never shown.
+  if (marketMode === 'deterministic-fallback') {
+    return (
+      <div data-scores-canonical="unavailable" style={{ minHeight: '100vh', background: '#050608', maxWidth: '800px', margin: '0 auto' }}>
+        <PageHeader
+          title="Risk Score Breakdown"
+          subtitle="Composite scoring across all major stress dimensions."
+          badge={integrityLabel}
+          badgeColor={customerIntegrityBadgeColor(integrityLabel)}
+        />
+        <div style={{ padding: '20px 16px 32px' }}>
+          <PageDegradedBanner message="Current canonical state is unavailable." detail="Risk scores are withheld until one authoritative state is available." />
+        </div>
+      </div>
+    );
+  }
+
   const color = getRiskColor(overall.riskLevel);
+  const overallDelta = availableDelta(overall);
   const criticalCount = domains.filter(d => d.riskLevel === 'critical').length;
   const highCount = domains.filter(d => d.riskLevel === 'high').length;
 
@@ -203,7 +221,6 @@ export default function Scores() {
         subtitle="Composite scoring across all major stress dimensions — pressure-reactive and computed live from FRED, market, and macro data."
         badge={integrityLabel}
         badgeColor={customerIntegrityBadgeColor(integrityLabel)}
-        rightSlot={<PreflightTrigger currentPage="scores" regimeLabel={regime.label} actionKey="viewed_scores" />}
       />
       <div style={{ padding: '20px 16px 32px' }}>
       {/* Alert badges */}
@@ -235,7 +252,7 @@ export default function Scores() {
         {/* Ambient glow */}
         <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse 50% 60% at 0% 50%, ${color}06 0%, transparent 60%)`, pointerEvents: 'none' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', position: 'relative', zIndex: 1 }}>
-          <ScoreRing score={Math.round(overall.score * 10)} maxScore={100} riskLevel={overall.riskLevel} label={overall.label} delta={overall.delta * 10} size={110} showLabel={false} />
+          <ScoreRing score={Math.round(overall.score * 10)} maxScore={100} riskLevel={overall.riskLevel} label={overall.label} delta={overallDelta === null ? undefined : overallDelta * 10} size={110} showLabel={false} />
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
               <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#F0F4FF' }}>{overall.label}</span>
@@ -249,7 +266,7 @@ export default function Scores() {
             </div>
             <PressureBar score={overall.score * 10} riskLevel={overall.riskLevel} seed={99} />
             <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <MomentumArrow delta={overall.delta} />
+              <MomentumArrow delta={overallDelta ?? undefined} />
               <PressureLevel riskLevel={overall.riskLevel} score={overall.score} />
             </div>
             {overall.drivers.length > 0 && (
@@ -287,7 +304,7 @@ export default function Scores() {
           ))}
         </div>
         <div style={{ marginTop: '8px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#374151', textAlign: 'center' }}>
-          Shaded bands on bars represent ±5% confidence intervals · Tap any card for live drivers
+          Tap any card for live drivers
         </div>
       </div>
 

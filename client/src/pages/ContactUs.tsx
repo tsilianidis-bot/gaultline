@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Mail, MessageSquare, Send, ArrowLeft, MapPin, Phone, RotateCcw, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const CATEGORIES = [
   "General Inquiry",
@@ -248,7 +249,7 @@ export default function ContactUs() {
                 <MapPin className="w-5 h-5 text-emerald-400" />
               </div>
               <h3 className="text-sm font-semibold text-slate-200 mb-1">Platform</h3>
-              <p className="text-xs text-slate-500 mb-2">Live and operational</p>
+              <p className="text-xs text-slate-500 mb-2">Web app</p>
               <a href="https://getfaultline.live" className="text-emerald-400 text-sm font-mono hover:underline">
                 getfaultline.live
               </a>
@@ -258,7 +259,7 @@ export default function ContactUs() {
             <div className="bg-[#0A1520] border border-white/5 rounded-xl p-6">
               <h3 className="text-sm font-semibold text-slate-200 mb-3">Common Topics</h3>
               <div className="space-y-2">
-                {["Founding Access", "Platform Features", "Data Sources", "Pricing & Plans", "Technical Issues"].map((t) => (
+                {["Membership", "Platform Features", "Data Sources", "Pricing & Plans", "Technical Issues"].map((t) => (
                   <div key={t} className="text-xs text-slate-400 flex items-center gap-2">
                     <span className="w-1 h-1 rounded-full bg-cyan-400/60 flex-shrink-0" />
                     {t}
@@ -386,6 +387,7 @@ export default function ContactUs() {
           </div>
         </div>
       </div>
+      <p className="mx-auto max-w-5xl px-4 pb-8 pt-6 text-center text-xs text-slate-500">{PUBLIC_DISCLAIMER}</p>
     </div>
   );
 }

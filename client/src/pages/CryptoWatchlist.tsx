@@ -4,6 +4,7 @@
    side-by-side comparison panel (up to 4 tokens).
    ============================================================ */
 import { useState, useMemo } from "react";
+import { score100Value } from "@/lib/displayFallbacks";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -11,6 +12,7 @@ import { getLoginUrl } from "@/const";
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import { TickerChip } from "@/components/TickerActionMenu";
+import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
 
 // ── Style constants ───────────────────────────────────────────
 const MONO = "'IBM Plex Mono', monospace";
@@ -27,7 +29,7 @@ type CryptoSignalLabel =
 
 interface CryptoAssetIntelligence {
   id: string; symbol: string; name: string; image: string;
-  currentPrice: number; priceChangePercent24h: number;
+  currentPrice: number; priceChangePercent24h: number; priceChangePercent24hDisplay?: number | null;
   marketCap: number; totalVolume: number;
   signalBias: CryptoSignalBias; signalScore: number;
   riskLevel: CryptoRiskLevel; riskScore: number;
@@ -100,7 +102,7 @@ function WatchlistRow({
 
   const biasColor = asset ? BIAS_COLORS[asset.signalBias] : "#64748B";
   const riskColor = asset ? RISK_COLORS[asset.riskLevel] : "#64748B";
-  const priceUp = (asset?.priceChangePercent24h ?? 0) >= 0;
+  const change24h = displayChange24h(asset);
 
   return (
     <div style={{
@@ -132,8 +134,8 @@ function WatchlistRow({
                   ? asset.currentPrice.toFixed(2)
                   : asset.currentPrice.toFixed(4)}
             </div>
-            <div style={{ fontFamily: MONO, fontSize: '9px', color: priceUp ? '#00FF88' : '#FF2D55' }}>
-              {priceUp ? '+' : ''}{asset.priceChangePercent24h.toFixed(2)}%
+            <div style={{ fontFamily: MONO, fontSize: '9px', color: change24hColor(change24h) }}>
+              {change24hText(change24h)}
             </div>
           </>
         ) : null}
@@ -228,13 +230,13 @@ function CompareColumn({ symbol, onRemove }: { symbol: string; onRemove: () => v
   const asset = intelResult?.asset as CryptoAssetIntelligence | undefined;
   const biasColor = asset ? BIAS_COLORS[asset.signalBias] : "#64748B";
   const riskColor = asset ? RISK_COLORS[asset.riskLevel] : "#64748B";
-  const priceUp = (asset?.priceChangePercent24h ?? 0) >= 0;
+  const change24h = displayChange24h(asset);
 
   const ROWS = [
     { label: "Signal Bias",        value: asset?.signalBias,           color: biasColor },
     { label: "Signal Score",       value: asset ? `${asset.signalScore}/100` : undefined, color: biasColor },
     { label: "Risk Level",         value: asset?.riskLevel,            color: riskColor },
-    { label: "Risk Score",         value: asset ? `${asset.riskScore.toFixed(1)}/10` : undefined, color: riskColor },
+    { label: "Risk Score",         value: asset ? `${score100Value(asset.riskScore)}/100` : undefined, color: riskColor },
     { label: "Momentum",           value: asset?.momentum,             color: asset ? MOMENTUM_COLORS[asset.momentum] : "#64748B" },
     { label: "Liquidity Sensitivity", value: asset?.liquiditySensitivity, color: "#00D4FF" },
     { label: "Speculative Intensity", value: asset?.speculativeIntensity, color: "#FF9500" },
@@ -278,8 +280,8 @@ function CompareColumn({ symbol, onRemove }: { symbol: string; onRemove: () => v
                 ? asset.currentPrice.toLocaleString('en-US', { maximumFractionDigits: 0 })
                 : asset.currentPrice >= 1 ? asset.currentPrice.toFixed(2) : asset.currentPrice.toFixed(4)}
             </span>
-            <span style={{ fontFamily: MONO, fontSize: '10px', color: priceUp ? '#00FF88' : '#FF2D55', marginLeft: '6px' }}>
-              {priceUp ? '+' : ''}{asset.priceChangePercent24h.toFixed(2)}%
+            <span style={{ fontFamily: MONO, fontSize: '10px', color: change24hColor(change24h), marginLeft: '6px' }}>
+              {change24hText(change24h)}
             </span>
           </div>
         ) : null}

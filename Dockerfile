@@ -20,6 +20,14 @@ COPY . .
 ARG RAILWAY_GIT_COMMIT_SHA=
 ARG BUILD_COMMIT=
 ARG BUILD_TIME=
+
+# Vite inlines import.meta.env.VITE_* at `vite build` time. Railway only passes
+# service variables into a Docker build when they are declared as ARG in the
+# stage that runs the build; without these, client/src/const.ts getLoginUrl()
+# compiles to "" and SIGN IN never navigates. Values stay in Railway (no defaults).
+# Build-stage ARGs are visible to the RUN below and are not copied to runtime.
+ARG VITE_OAUTH_PORTAL_URL
+ARG VITE_APP_ID
 ENV NODE_ENV=production
 
 RUN COMMIT="${BUILD_COMMIT}"; \

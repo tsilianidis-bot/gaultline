@@ -7,17 +7,17 @@ export default function PublicAnalogs() {
       seo={PAGE_SEO.publicAnalogs}
       badge="HISTORICAL ANALOG ENGINE"
       headline={"Which Crash Does Today\nMost Resemble?"}
-      subheadline="Pattern-match today's macro conditions against 2000, 2008, 2020, and 2022. See which historical fracture your regime most resembles, the timeline of what followed, and how top funds were positioned at each stage."
+      subheadline="Compare today's pressure-vector profile with a library of ten fixed, hand-set reference profiles: six core stress episodes (1973, 1998, 2000, 2008, 2020, and 2022) plus 2011, 2015, 2019, and 2023 in the extended library. See which historical period today most resembles. Resemblance, not a forecast of what follows."
       ctaLabel="VIEW CRASH ANALOGS"
       ctaHref="/app/analogs"
       accentColor="#A855F7"
       features={[
-        { icon: "◈", title: "2000 Dot-Com Analog", desc: "Match today's AI concentration and valuation regime against the 2000 dot-com collapse. See the timeline of what followed and where we are in the cycle." },
-        { icon: "◎", title: "2008 GFC Analog", desc: "Compare current credit spread dynamics and liquidity conditions against the 2008 Global Financial Crisis. Know which stage of the analog you're in." },
-        { icon: "⬡", title: "2020 COVID Analog", desc: "Identify regime similarities with the 2020 COVID shock: velocity of decline, liquidity response, and recovery pathway." },
-        { icon: "◈", title: "2022 Rate Shock Analog", desc: "Pattern-match today's rate sensitivity and duration risk against the 2022 rate shock regime. Know which assets were most vulnerable at each stage." },
-        { icon: "◎", title: "Regime Similarity Score", desc: "A quantified similarity score between current conditions and each historical analog. Know which fracture your regime most resembles." },
-        { icon: "⬡", title: "Outcome Analysis", desc: "See what happened next in each analog: drawdown depth, recovery timeline, and which asset classes led the recovery." },
+        { icon: "◈", title: "2000 Dot-Com Analog", desc: "Compare today's AI-concentration and macro profile with the 2000 dot-com reference profile and see how closely they resemble each other." },
+        { icon: "◎", title: "2008 GFC Analog", desc: "Compare current credit and liquidity stress with the 2008 Global Financial Crisis reference profile." },
+        { icon: "⬡", title: "2020 COVID Analog", desc: "Compare current liquidity and credit stress with the 2020 COVID shock reference profile." },
+        { icon: "◈", title: "2022 Rate Shock Analog", desc: "Compare today's macro-sensitivity profile — inflation and policy rates — with the 2022 rate shock reference profile." },
+        { icon: "◎", title: "Regime Similarity Score", desc: "A similarity score from the distance between today's vector profile and each reference profile. Know which fracture today most resembles." },
+        { icon: "⬡", title: "Episode Context", desc: "A short description of each reference episode — what drove it and how stress built. Reference profiles are fixed and hand-set; they are not forward-return distributions." },
       ]}
     />
   );

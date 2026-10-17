@@ -187,7 +187,7 @@ describe("remaining customer-visible PLATO copy", () => {
     expect(roadmap).toContain("Tailored PLATO responses and briefings");
     expect(roadmap).toContain("Seismograph, PLATO, Signals");
     expect(roadmap).not.toMatch(/\bASHA\b/);
-    expect(history).toContain("Pressure Index, PLATO, and all real-time intelligence features");
+    expect(history).toContain("Pressure Index, PLATO, and all intelligence features");
     expect(history).not.toMatch(/\bASHA\b/);
   });
 

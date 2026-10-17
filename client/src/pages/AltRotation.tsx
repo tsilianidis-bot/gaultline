@@ -674,7 +674,7 @@ function AltRotationInner() {
         {activeTab === "sectors" && (
           <div className="space-y-4">
             <div className="text-xs font-mono text-zinc-500 leading-relaxed">
-              Real-time sector rotation intelligence across 7 crypto verticals. Synchronized breakouts across multiple assets within a sector generate rotation alerts.
+              Regularly refreshed sector rotation intelligence across 7 crypto verticals. Synchronized breakouts across multiple assets within a sector generate rotation alerts.
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {d.sectors.sort((a, b) => b.avgChange24h - a.avgChange24h).map(sector => (

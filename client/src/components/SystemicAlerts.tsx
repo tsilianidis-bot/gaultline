@@ -5,6 +5,7 @@
    Runs alongside the existing threshold alert system.
    ============================================================ */
 import { useMemo, useState } from 'react';
+import { score100Value } from "@/lib/displayFallbacks";
 import { AlertTriangle, Activity, Zap, Brain, TrendingDown, Clock } from 'lucide-react';
 import { useEngine } from '@/contexts/EngineContext';
 
@@ -47,17 +48,18 @@ const CATEGORY_META: Record<SystemicCategory, {
 };
 
 // ── Alert generation from live engine data ─────────────────────
-function generateSystemicAlerts(output: ReturnType<typeof useEngine>['output']): SystemicAlert[] {
+export function generateSystemicAlerts(output: ReturnType<typeof useEngine>['output']): SystemicAlert[] {
   const alerts: SystemicAlert[] = [];
-  const { overall, domains, regime, analogs, alertPressure } = output;
+  const { overall, domains, regime, analogs } = output;
 
-  const domainMap = Object.fromEntries(domains.map(d => [d.id, d.score]));
-  const liquidityScore  = domainMap['liquidity']      ?? alertPressure.liquidity ?? 0;
-  const creditScore     = domainMap['credit-stress']  ?? alertPressure.credit    ?? 0;
-  const aiBubbleScore   = domainMap['ai-bubble']      ?? alertPressure.aiRisk    ?? 0;
-  const treasuryScore   = domainMap['treasury-debt']  ?? alertPressure.treasury  ?? 0;
-  const inflationScore  = domainMap['inflation-fed']  ?? 0;
-  const recessionScore  = domainMap['recession']      ?? 0;
+  // 0–10 domain scores by id only. No fallback to output.alertPressure: it is on
+  // a 0–100 scale (so 56 read as "56.0/10") and, in canonical mode, came from the
+  // browser engine's DEFAULT_INDICATORS demo baseline. A missing domain raises no
+  // alert (never a neutral 0 or a demo value).
+  const domainMap = Object.fromEntries(domains.map(d => [d.id, d.score])) as Record<string, number | undefined>;
+  const liquidityScore  = domainMap['liquidity'] ?? null;
+  const creditScore     = domainMap['credit-stress'] ?? null;
+  const aiBubbleScore   = domainMap['ai-bubble'] ?? null;
 
   // ── 1. Regime Shift ──────────────────────────────────────────
   if (overall.score >= 6.5) {
@@ -67,24 +69,24 @@ function generateSystemicAlerts(output: ReturnType<typeof useEngine>['output']):
       category: 'regime_shift',
       severity: sev,
       title: `Macro Regime: ${regime.label}`,
-      what: `Overall FAULTLINE Pressure Score has reached ${overall.score.toFixed(1)}/10. Current regime is classified as "${regime.label}" — ${regime.sublabel}.`,
-      why: `Regime transitions at this pressure level historically precede significant volatility compression or expansion events. The ${regime.label} regime indicates that multiple macro stress vectors are simultaneously elevated, reducing the margin for error in risk positioning.`,
-      historical: `In 2007 (GFC onset), the pressure composite crossed 6.5 before Lehman by 14 months. In 2000 (Dot-Com peak), the AI/speculation vector reached this level 8 months before the NASDAQ peaked. Regime shifts of this type have historically been followed by 15–57% drawdowns within 6–24 months.`,
+      what: `Overall FAULTLINE Pressure Score has reached ${score100Value(overall.score)}/100. Current regime is classified as "${regime.label}" — ${regime.sublabel}.`,
+      why: `The ${regime.label} regime indicates that multiple macro stress vectors are simultaneously elevated, reducing the margin for error in risk positioning.`,
+      historical: `FAULTLINE has not validated a lead time between this regime and later market declines. Its reconstruction of 2000–2026 (revised data) never exceeded 56/100 and missed 16 of 26 S&P 500 declines of 10% or more, so this reading describes current conditions rather than predicting a drawdown.`,
       color: regime.color,
       score: overall.score,
     });
   }
 
   // ── 2. Liquidity Deterioration ───────────────────────────────
-  if (liquidityScore >= 5.5) {
+  if (liquidityScore != null && liquidityScore >= 5.5) {
     const sev = liquidityScore >= 8 ? 'critical' : liquidityScore >= 6.5 ? 'high' : 'elevated';
     alerts.push({
       id: `liquidity-${Math.round(liquidityScore * 10)}`,
       category: 'liquidity_deterioration',
       severity: sev,
-      title: `Liquidity Conditions Deteriorating — Score ${liquidityScore.toFixed(1)}/10`,
-      what: `The FAULTLINE Liquidity vector has reached ${liquidityScore.toFixed(1)}/10. Indicators include elevated repo stress, widening bid-ask spreads, and declining market depth across risk assets.`,
-      why: `Liquidity deterioration is the most dangerous early-warning signal in financial markets. When liquidity dries up, forced selling cascades can compress prices far beyond fundamental values. Illiquidity amplifies every other risk vector — credit, volatility, and recession — simultaneously.`,
+      title: `Liquidity Conditions Deteriorating — Score ${score100Value(liquidityScore)}/100`,
+      what: `The FAULTLINE Liquidity vector has reached ${score100Value(liquidityScore)}/100. Indicators include elevated repo stress, widening bid-ask spreads, and declining market depth across risk assets.`,
+      why: `Liquidity deterioration is a widely watched stress channel; FAULTLINE has not validated it as an early-warning signal. When liquidity dries up, forced selling cascades can compress prices far beyond fundamental values. Illiquidity amplifies every other risk vector — credit, volatility, and recession — simultaneously.`,
       historical: `In March 2020, liquidity froze within 72 hours, triggering a 34% drawdown in 23 trading days. In September 2008, repo market liquidity collapse preceded Lehman's failure by 6 days. In 1998 (LTCM), liquidity deterioration at similar levels required Fed emergency intervention.`,
       color: '#FF2D55',
       score: liquidityScore,
@@ -92,30 +94,30 @@ function generateSystemicAlerts(output: ReturnType<typeof useEngine>['output']):
   }
 
   // ── 3. Credit Stress ─────────────────────────────────────────
-  if (creditScore >= 5.0) {
+  if (creditScore != null && creditScore >= 5.0) {
     const sev = creditScore >= 8 ? 'critical' : creditScore >= 6.5 ? 'high' : 'elevated';
     alerts.push({
       id: `credit-stress-${Math.round(creditScore * 10)}`,
       category: 'credit_stress',
       severity: sev,
-      title: `Credit Stress Elevated — Score ${creditScore.toFixed(1)}/10`,
-      what: `The FAULTLINE Credit Stress vector has reached ${creditScore.toFixed(1)}/10. This reflects widening high-yield spreads, rising corporate default probabilities, and deteriorating credit conditions in the leveraged loan market.`,
+      title: `Credit Stress Elevated — Score ${score100Value(creditScore)}/100`,
+      what: `The FAULTLINE Credit Stress vector has reached ${score100Value(creditScore)}/100. This reflects widening high-yield spreads, rising corporate default probabilities, and deteriorating credit conditions in the leveraged loan market.`,
       why: `Credit stress is the transmission mechanism through which financial stress becomes economic stress. When credit conditions tighten, businesses face higher borrowing costs, investment declines, and employment contracts. The credit cycle leads the business cycle by 6–18 months.`,
-      historical: `HY spreads above 500bps have preceded recessions in 1990, 2001, 2008, and 2020. In 2007, credit stress reached this level 9 months before the official recession start. In 2022, credit stress at 5.0+ coincided with the worst bond market performance since 1788.`,
+      historical: `HY spreads above 500bps have preceded recessions in 1990, 2001, 2008, and 2020. Lead times varied widely, and FAULTLINE has not validated a lead time for this vector.`,
       color: '#FF6B35',
       score: creditScore,
     });
   }
 
   // ── 4. AI Concentration Risk ──────────────────────────────────
-  if (aiBubbleScore >= 5.0) {
+  if (aiBubbleScore != null && aiBubbleScore >= 5.0) {
     const sev = aiBubbleScore >= 8 ? 'critical' : aiBubbleScore >= 6.5 ? 'high' : 'elevated';
     alerts.push({
       id: `ai-concentration-${Math.round(aiBubbleScore * 10)}`,
       category: 'ai_concentration_risk',
       severity: sev,
-      title: `AI/Mega-Cap Concentration Risk — Score ${aiBubbleScore.toFixed(1)}/10`,
-      what: `The FAULTLINE AI / Speculation vector has reached ${aiBubbleScore.toFixed(1)}/10. Its concentration baseline is a disclosed static model estimate, not a live market-cap series.`,
+      title: `AI/Mega-Cap Concentration Risk — Score ${score100Value(aiBubbleScore)}/100`,
+      what: `The FAULTLINE AI / Speculation vector has reached ${score100Value(aiBubbleScore)}/100. Its concentration baseline is a disclosed static model estimate, not a live market-cap series.`,
       why: `Concentration is a structural context factor in the current model. This alert does not quantify an index-level drawdown or predict a market outcome.`,
       historical: `Historical concentration comparisons require a separately sourced study and are not used here as a forecast or outcome-rate claim.`,
       color: '#C084FC',
@@ -132,7 +134,7 @@ function generateSystemicAlerts(output: ReturnType<typeof useEngine>['output']):
       category: 'systemic_risk_escalation',
       severity: sev,
       title: `Systemic Risk Escalation — ${elevatedDomains.length} Vectors Elevated`,
-      what: `${elevatedDomains.length} of ${domains.length} FAULTLINE risk vectors are simultaneously elevated above 6.0/10: ${elevatedDomains.map(d => d.label).join(', ')}. Multi-vector stress elevation indicates systemic, not idiosyncratic, risk.`,
+      what: `${elevatedDomains.length} of ${domains.length} FAULTLINE risk vectors are simultaneously elevated above 60/100: ${elevatedDomains.map(d => d.label).join(', ')}. Multi-vector stress elevation indicates systemic, not idiosyncratic, risk.`,
       why: `Systemic risk is qualitatively different from isolated sector stress. When multiple independent risk vectors elevate simultaneously, it signals that macro conditions — not company-specific factors — are the primary driver. Systemic risk cannot be diversified away within a single asset class.`,
       historical: `This alert describes the current vector configuration only. It does not claim that FAULTLINE existed or issued historical warnings before prior events.`,
       color: '#FF2D55',

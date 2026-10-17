@@ -1,3 +1,4 @@
+import { LIFETIME_TERMS, LIFETIME_FINAL_SALE_NOTICE } from "@shared/tiers";
 /* ============================================================
    FAULTLINE — Legal Page
    Privacy Policy + Terms of Use
@@ -5,6 +6,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 type Tab = "privacy" | "terms";
 
@@ -100,6 +102,16 @@ export default function Legal() {
             }}
           >
             Last updated: May 24, 2026
+          </p>
+          <p
+            style={{
+              fontFamily: "'IBM Plex Sans', sans-serif",
+              fontSize: "13px",
+              color: "#94A3B8",
+              marginTop: "12px",
+            }}
+          >
+            {PUBLIC_DISCLAIMER}
           </p>
         </div>
 
@@ -342,7 +354,7 @@ function TermsOfUse() {
         purposes only.
       </Para>
 
-      <SectionHeading>2. Not Financial Advice</SectionHeading>
+      <SectionHeading>2. Not Investment Advice</SectionHeading>
       <Para>
         <strong style={{ color: "#FF4444" }}>
           FAULTLINE does not provide financial, investment, legal, or tax advice.
@@ -408,6 +420,12 @@ function TermsOfUse() {
         locked for the duration of the founding member program as described at the time of
         purchase.
       </Para>
+      <Para>
+        <strong>Lifetime terms.</strong> {LIFETIME_FINAL_SALE_NOTICE}
+      </Para>
+      <ol style={{ paddingLeft: "20px", listStyle: "decimal", color: "inherit" }} data-lifetime-terms>
+        {LIFETIME_TERMS.map((t) => <li key={t} style={{ marginBottom: "6px" }}>{t}</li>)}
+      </ol>
 
       <SectionHeading>9. Limitation of Liability</SectionHeading>
       <Para>

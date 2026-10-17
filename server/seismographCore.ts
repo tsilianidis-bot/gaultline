@@ -54,7 +54,7 @@ export function deriveProviderProvenance(
     return {
       fred: {
         status: "live",
-        detail: "Live FRED macro and credit observations contributed through the pressure engine.",
+        detail: "FRED macro and credit observations (latest published releases) contributed through the pressure engine.",
         asOf: pressurePacket?.timestamp ?? computedAt,
       },
     };
@@ -430,7 +430,13 @@ function getDominantSignal(signals: EvidenceSignal[]): EvidenceSignal {
  * Build the ASHA context block from a SeismographOutput.
  * This is the system prompt injection for every ASHA query.
  */
-export function buildASHAContextBlock(output: SeismographOutput): ASHAContextBlock {
+export function buildASHAContextBlock(
+  output: SeismographOutput,
+  context: {
+    /** Real data-quality freshness (e.g. from the canonical state). Defaults to the packet-count freshness. */
+    dataFreshnessText?: string;
+  } = {},
+): ASHAContextBlock {
   const { pressureScore, regime, stressLevel, probabilities, analogMatches, activePatterns, marketMemory } = output;
 
   const topAnalog = analogMatches[0];
@@ -439,13 +445,12 @@ export function buildASHAContextBlock(output: SeismographOutput): ASHAContextBlo
 
   const systemPromptBlock = `
 ## FAULTLINE SEISMOGRAPH™ — Current Market State
-**Pressure Score:** ${pressureScore}/10 | **Regime:** ${regime} | **Stress Level:** ${stressLevel}
+**Pressure Score:** ${pressureScore}/100 | **Regime:** ${regime} | **Stress Level:** ${stressLevel}
 **Direction:** ${output.direction} | **Evidence Consensus:** ${output.evidenceConsensus}
 
-**Probability Distribution:**
-- Bull: ${probabilities.bull}% | Neutral: ${probabilities.neutral}% | Bear: ${probabilities.bear}%
-- Primary Driver: ${probabilities.primaryDriver}
-- Confidence: ${probabilities.confidence}%
+**Scenario Weights (faultline-probability-contract-v1):**
+- Bull / Neutral / Bear: Uncalibrated — evidence-vote shares, not probabilities. Do not state or estimate a probability.
+- Strongest evidence family: ${probabilities.primaryDriver}
 
 **Historical Context:**
 - Percentile: ${formatOrdinal(output.historicalPercentile)} (${describeHistoricalPercentile(output.historicalPercentile)})
@@ -457,12 +462,9 @@ export function buildASHAContextBlock(output: SeismographOutput): ASHAContextBlo
 **Market Memory:**
 ${memoryHighlights.map((h) => `- ${h}`).join("\n")}
 
-**Transition Risk:**
-- Remain in regime: ${output.transitionProbabilities.remainInRegime}%
-- Transition to elevated: ${output.transitionProbabilities.transitionToElevated}%
-- Transition to crisis: ${output.transitionProbabilities.transitionToCrisis}%
+**Transition Risk:** Unavailable — transition components are not calibrated and fall back to static defaults. Do not state a transition probability.
 
-Data freshness: ${output.dataFreshness} | Last updated: ${new Date(output.computedAt).toISOString()}
+Data freshness: ${context.dataFreshnessText ?? output.dataFreshness} | Last updated: ${new Date(output.computedAt).toISOString()}
 `.trim();
 
   return {
@@ -493,16 +495,14 @@ export function buildDailyBriefContext(output: SeismographOutput): DailyBriefCon
     keyDevelopments.push(`Pressure ${output.direction.toLowerCase()} — ${output.regime}`);
   }
   for (const pattern of output.activePatterns.slice(0, 3)) {
-    keyDevelopments.push(`Pattern detected: ${pattern.name} (${pattern.confidence}% confidence)`);
+    // Pattern confidence is not calibrated: the figure stays internal and never enters brief text.
+    keyDevelopments.push(`Pattern detected: ${pattern.name} (confidence not established)`);
   }
-  if (output.transitionProbabilities.transitionToCrisis > 20) {
-    keyDevelopments.push(
-      `Elevated transition risk: ${output.transitionProbabilities.transitionToCrisis}% probability of crisis regime`
-    );
-  }
+  // No crisis-transition % here: transition components are not calibrated (no transition model),
+  // so this brief text (sent to the publishing model) states no transition probability.
 
   const narrativeContext = `
-Current market conditions reflect a ${output.stressLevel.toLowerCase()} stress environment with a Pressure Score of ${output.pressureScore}/10. 
+Current market conditions reflect a ${output.stressLevel.toLowerCase()} stress environment with a Pressure Score of ${output.pressureScore}/100. 
 The regime is classified as ${output.regime} with a ${output.direction.toLowerCase()} trend. 
 Evidence consensus is ${output.evidenceConsensus} across ${output.activeContributors.length} contributing intelligence engines.
 ${output.topAnalog ? `The closest historical analog is ${output.topAnalog.label} (${output.topAnalog.similarity}% similarity).` : ""}
@@ -578,8 +578,9 @@ export function buildMacroContextBlock(output: SeismographOutput): MacroContextB
 export function buildAlertEvaluationContext(output: SeismographOutput): AlertEvaluationContext {
   const significantChanges: string[] = [];
 
-  if (output.pressureScore >= 7) {
-    significantChanges.push(`High pressure: ${output.pressureScore}/10`);
+  // pressureScore is 0–100 (High band starts at 70).
+  if (output.pressureScore >= 70) {
+    significantChanges.push(`High pressure: ${output.pressureScore}/100`);
   }
   if (output.transitionProbabilities.transitionToCrisis > 25) {
     significantChanges.push(
@@ -613,15 +614,16 @@ export function buildReportContext(output: SeismographOutput): ReportContext {
     keyDevelopments.push(`Market pressure is ${output.direction.toLowerCase()}`);
   }
   for (const pattern of output.activePatterns.slice(0, 2)) {
-    keyDevelopments.push(`${pattern.name} pattern active (${pattern.confidence}% confidence)`);
+    // Pattern confidence is not calibrated: the figure stays internal and never enters report text.
+    keyDevelopments.push(`${pattern.name} pattern active (confidence not established)`);
   }
   if (output.evidenceConsensus === "strong" || output.evidenceConsensus === "divergent") {
     keyDevelopments.push(`Evidence consensus: ${output.evidenceConsensus}`);
   }
 
-  const narrativeContext = `${output.regime} regime. Pressure ${output.pressureScore}/10. ` +
-    `${output.probabilities.bull > output.probabilities.bear ? "Bullish" : "Bearish"} bias ` +
-    `(${Math.max(output.probabilities.bull, output.probabilities.bear)}% probability). ` +
+  // Scenario weights are uncalibrated evidence-vote shares, not probabilities.
+  const narrativeContext = `${output.regime} regime. Pressure ${output.pressureScore}/100. ` +
+    `Scenario weights are uncalibrated; no probability is stated. ` +
     `${output.topAnalog ? `Analog: ${output.topAnalog.label}.` : ""}`;
 
   return {

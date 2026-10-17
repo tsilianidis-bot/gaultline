@@ -24,5 +24,5 @@ export { timeMachineRouter } from "./timeMachine";
 export { marketsRouter } from "./markets";
 export { institutionalMemoryRouter } from "./institutionalMemory";
 export { systemicRegimeRouter } from "./systemicRegime";
-
+export { sectorRotationRouter } from "./sectorRotation";
 export { intelligenceEvidenceRouter } from "./intelligenceEvidence";

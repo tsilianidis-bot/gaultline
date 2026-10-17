@@ -12,6 +12,8 @@ import {
   getOpportunityDiscovery,
   clearOutlookCaches,
   type OutlookTimeframe,
+  type FullOutlookResult,
+  type OutlookHistoryPoint,
 } from "../signalOutlook";
 import { calculateFaultlinePressure } from "../pressure/engine";
 import { runFMOSPipelineFast } from "../fmos/pipeline";
@@ -21,7 +23,7 @@ import { getRisingStarVisualDetail } from "../risingStarsVisual";
 import { forecastHorizonPromptContract, insufficientHorizonMetadata } from "../../shared/forecastMetadata";
 import { evidenceNarrativePromptContract } from "../../shared/evidenceContract";
 import { recordForecastObservation } from "../forecastHorizon";
-import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "../canonicalIntelligenceState";
+import { getAuthoritativeCanonicalIntelligenceState, toClientCanonicalIntelligenceState } from "../canonicalIntelligenceState";
 
 const timeframeSchema = z.enum(["day", "short", "swing", "long"]).default("swing");
 const assetTypeSchema = z.enum(["stock", "crypto"]);
@@ -40,6 +42,45 @@ function sanitizeNumbers(v: unknown): unknown {
     );
   }
   return v;
+}
+
+/**
+ * QA r13 B12: no outlook "confidence" leaves the server. Each one is a formula
+ * or a default, not a calibrated value:
+ * - outlook / quick / top-opportunity / history `confidence` is
+ *   |composite − 50| × 2 (distance of a heuristic score from neutral);
+ * - `diagnosticIntegration.confidence` was an LLM self-rating with a `?? 60`
+ *   default or a hard-coded 55;
+ * - `tradeFramework.parameterConfidence` is score − pressure/timeframe penalties.
+ * Scores, directions and risk levels are unchanged. The client shows
+ * "Not established" / "—".
+ */
+export function withoutOutlookConfidence<T extends object>(o: T): Omit<T, "confidence"> & { confidence: null } {
+  return { ...o, confidence: null };
+}
+
+type WithheldPoint = Omit<OutlookHistoryPoint, "confidence"> & { confidence: null };
+export type WithheldFullOutlook = Omit<FullOutlookResult, "confidence" | "diagnosticIntegration" | "tradeFramework" | "history"> & {
+  confidence: null;
+  diagnosticIntegration: Omit<FullOutlookResult["diagnosticIntegration"], "confidence"> & { confidence: null };
+  tradeFramework: Omit<FullOutlookResult["tradeFramework"], "parameterConfidence"> & { parameterConfidence: null };
+  history: (Omit<NonNullable<FullOutlookResult["history"]>, "current" | "h24" | "d7" | "d30"> & {
+    current: WithheldPoint; h24: WithheldPoint | null; d7: WithheldPoint | null; d30: WithheldPoint | null;
+  }) | null;
+};
+
+export function withoutFullOutlookConfidence(r: FullOutlookResult): WithheldFullOutlook {
+  const point = (h: OutlookHistoryPoint | null): WithheldPoint | null => (h ? withoutOutlookConfidence(h) : null);
+  return {
+    ...r,
+    confidence: null,
+    // Guarded at runtime as well (older cached payloads may lack a section).
+    diagnosticIntegration: (r.diagnosticIntegration ? { ...r.diagnosticIntegration, confidence: null } : r.diagnosticIntegration) as WithheldFullOutlook["diagnosticIntegration"],
+    tradeFramework: (r.tradeFramework ? { ...r.tradeFramework, parameterConfidence: null } : r.tradeFramework) as WithheldFullOutlook["tradeFramework"],
+    history: r.history
+      ? { ...r.history, current: withoutOutlookConfidence(r.history.current), h24: point(r.history.h24), d7: point(r.history.d7), d30: point(r.history.d30) }
+      : null,
+  };
 }
 
 function recordHorizonObservation(sourceType: string, sourceKey: string, metadata: ReturnType<typeof insufficientHorizonMetadata>) {
@@ -74,10 +115,10 @@ export const outlookRouter = router({
         const forecastMetadata = insufficientHorizonMetadata(`outlook:${input.symbol}`, new Date().toISOString());
         recordHorizonObservation("outlook", `${input.symbol}:${input.assetType}:${input.timeframe}`, forecastMetadata);
         return {
-          ...(sanitizeNumbers(result) as typeof result),
+          ...withoutFullOutlookConfidence(sanitizeNumbers(result) as typeof result),
           analysisTimeframe: input.timeframe,
           forecastMetadata,
-          canonicalState: canonicalState ? toPublicCanonicalIntelligenceState(canonicalState) : null,
+          canonicalState: canonicalState ? toClientCanonicalIntelligenceState(canonicalState) : null,
         };
       } catch (err) {
         if (err instanceof TRPCError) throw err;
@@ -108,9 +149,9 @@ export const outlookRouter = router({
         const forecastMetadata = insufficientHorizonMetadata(`quick-outlook:${input.symbol}`, new Date().toISOString());
         recordHorizonObservation("quick_outlook", `${input.symbol}:${input.assetType}`, forecastMetadata);
         return {
-          ...(sanitizeNumbers(result) as typeof result),
+          ...withoutOutlookConfidence(sanitizeNumbers(result) as typeof result),
           forecastMetadata,
-          canonicalState: canonicalState ? toPublicCanonicalIntelligenceState(canonicalState) : null,
+          canonicalState: canonicalState ? toClientCanonicalIntelligenceState(canonicalState) : null,
         };
       } catch (err) {
         if (err instanceof TRPCError) throw err;
@@ -130,8 +171,8 @@ export const outlookRouter = router({
   getTopOpportunities: publicProcedure
     .query(async () => {
       try {
-        const result = await getTopOpportunities();
-        return sanitizeNumbers(result) as typeof result;
+        const result = sanitizeNumbers(await getTopOpportunities()) as Awaited<ReturnType<typeof getTopOpportunities>>;
+        return { stocks: result.stocks.map(withoutOutlookConfidence), crypto: result.crypto.map(withoutOutlookConfidence) };
       } catch (err) {
         console.error("[outlook.getTopOpportunities] Error:", err);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Top opportunities unavailable." });
@@ -159,7 +200,7 @@ export const outlookRouter = router({
       return results.map((r, i) => ({
         symbol: input.items[i].symbol.toUpperCase(),
         assetType: input.items[i].assetType,
-        outlook: r.status === "fulfilled" ? sanitizeNumbers(r.value) : null,
+        outlook: r.status === "fulfilled" ? withoutOutlookConfidence(sanitizeNumbers(r.value) as typeof r.value) : null,
         error: r.status === "rejected" ? String(r.reason) : null,
       }));
     }),
@@ -257,7 +298,9 @@ export const outlookRouter = router({
           opportunityScore: o?.outlookScore ?? null,
           direction: o?.direction ?? null,
           riskLevel: o?.riskLevel ?? null,
-          confidence: o?.confidence ?? null,
+          // QA r12: quick-outlook "confidence" is |composite − 50| × 2, not a calibrated
+          // confidence; withheld at the response boundary ("Not established" in the header).
+          confidence: null,
         }) as {
           symbol: string;
           assetType: "stock" | "crypto";
@@ -318,9 +361,7 @@ LIVE FAULTLINE DATA
 - Top Stock Opportunities: ${topStocks || "None identified"}
 - Top Crypto Opportunities: ${topCrypto || "None identified"}
 - Historical Analog: ${fmos?.topAnalog?.label ?? pressure.topAnalog.label} (${fmos?.topAnalog?.similarity ?? pressure.topAnalog.similarity}% similarity)
-	- Derived Bull Scenario Score: ${fmos?.probability?.bull ?? 50}% (not a calibrated forecast)
-	- Derived Bear Scenario Score: ${fmos?.probability?.bear ?? 30}% (not a calibrated forecast)
-	- Derived Transition Scenario Score: ${fmos?.transition?.transitionProbability ?? 0}% (not a calibrated forecast)
+	- Scenario, crash, recession and regime-transition probabilities: not offered (FAULTLINE probability contract). Do not state or estimate any probability percentage.
 	- Top Opportunity: ${topOpportunityTicker} (${topOpportunityName}) — ${topOpportunityDir}, Score: ${topOpportunityScore}/100
 		- Data Source: ${pressure.dataSource}
 		- ${forecastHorizonPromptContract()}

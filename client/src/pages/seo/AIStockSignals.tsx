@@ -5,7 +5,7 @@ export default function AIStockSignals() {
     <SEOLandingPage
       seo={{
         title: "AI Stock Signals — Machine Learning Market Intelligence | FAULTLINE",
-        description: "AI-powered stock signals combining machine learning, macro regime analysis, and systemic risk scoring. Know which equities are positioned for the current environment before the move.",
+        description: "AI-powered stock signals combining machine learning, macro regime analysis, and systemic risk scoring. See how each equity fits the current macro environment.",
         canonical: "/ai-stock-signals",
       }}
       badge="AI STOCK INTELLIGENCE"
@@ -15,19 +15,19 @@ export default function AIStockSignals() {
       ctaHref="/app/signals"
       accentColor="#00D4FF"
       features={[
-        { icon: "◈", title: "Macro Regime Alignment", desc: "Every signal classified against the live macro regime. Know which equities fit the environment before the crowd notices the shift." },
-        { icon: "◎", title: "AI Bubble Exposure Scoring", desc: "Quantify AI-driven valuation risk in each equity. Flag concentration exposure before the crowded trade reverses." },
+        { icon: "◈", title: "Macro Regime Alignment", desc: "Every signal classified against the current macro regime. Know which equities fit the environment as systemic pressure shifts." },
+        { icon: "◎", title: "AI Bubble Exposure Scoring", desc: "Gauge AI-driven valuation risk in each equity and flag concentration exposure in a crowded trade." },
         { icon: "⬡", title: "Momentum Breakout Detection", desc: "Surface pre-move setups using momentum, volume, and macro confirmation. No lagging indicators." },
         { icon: "◈", title: "Liquidity Sensitivity Ranking", desc: "Identify which equities are most vulnerable to liquidity withdrawal — the first to break when conditions tighten." },
         { icon: "◎", title: "Recession-Defensive Classification", desc: "Separate true defensive names from false safety. Regime analysis identifies which equities hold in contraction." },
-        { icon: "⬡", title: "Real-Time Signal Updates", desc: "Signal labels refresh as macro conditions shift. No end-of-day lag. No headline dependency." },
+        { icon: "⬡", title: "Regular Signal Refreshes", desc: "Signal labels refresh as macro conditions shift. Each reading shows its as-of time. No headline dependency." },
       ]}
       contentSections={[
         {
           heading: "What Are AI Stock Signals?",
           body: `AI stock signals are algorithmically generated trading intelligence outputs that combine multiple data streams — price action, volume, macro indicators, credit spreads, liquidity conditions, and sector rotation — into a single, actionable classification for each equity.
 
-Unlike traditional technical analysis signals that rely solely on price patterns, FAULTLINE AI stock signals incorporate the broader macro environment. A momentum breakout in a HIGH STRESS regime carries fundamentally different risk than the same breakout in a LOW STRESS environment. FAULTLINE accounts for this distinction in every signal it generates.
+Unlike traditional technical analysis signals that rely solely on price patterns, FAULTLINE AI stock signals incorporate the broader macro environment. A momentum breakout in a HIGH STRESS regime carries fundamentally different risk than the same breakout in a LOW RISK environment. FAULTLINE accounts for this distinction in every signal it generates.
 
 The FAULTLINE signal engine processes over 40 tracked equities across 20 discovery categories — from mega-cap leaders to small-cap speculative plays — and classifies each one against the current macro regime, credit conditions, liquidity environment, and systemic pressure score.`,
         },
@@ -35,7 +35,7 @@ The FAULTLINE signal engine processes over 40 tracked equities across 20 discove
           heading: "How FAULTLINE AI Signals Work",
           body: `FAULTLINE's signal generation process runs through four layers of analysis:
 
-1. Macro Regime Detection — The FAULTLINE Pressure Index™ aggregates credit spreads, volatility (VIX), treasury yield spreads, liquidity conditions, and breadth deterioration into a single systemic stress score. This score determines the active macro regime: LOW / ELEVATED / HIGH / CRITICAL STRESS.
+1. Macro Regime Detection — The FAULTLINE Pressure Index™ combines six weighted vectors — liquidity stress, credit contagion, the Treasury yield curve, macro sensitivity (inflation and policy rates), labor and rates, and a static AI-concentration baseline — built from eight FRED series into a single systemic stress score. This score determines the active macro regime: LOW RISK / MODERATE RISK / ELEVATED RISK / HIGH STRESS / SYSTEMIC CRISIS.
 
 2. Signal Classification — Each equity is scored against momentum indicators (RSI, MACD, SMA crossovers), volume confirmation, sector relative strength, and macro regime alignment. Signals are classified as BULLISH, BEARISH, NEUTRAL, or WATCH.
 
@@ -49,11 +49,11 @@ The FAULTLINE signal engine processes over 40 tracked equities across 20 discove
 
 FAULTLINE AI signals are different in three key ways:
 
-First, they are regime-aware. The same equity can be a BULLISH signal in a LOW STRESS regime and a BEARISH signal in a HIGH STRESS regime. Traditional screeners don't make this distinction.
+First, they are regime-aware. The same equity can be a BULLISH signal in a LOW RISK regime and a BEARISH signal in a HIGH STRESS regime. Traditional screeners don't make this distinction.
 
 Second, they incorporate systemic risk. Credit spread deterioration, liquidity withdrawal, and AI concentration risk are all factored into each signal. A stock can look technically strong while being fundamentally exposed to the next macro shock.
 
-Third, they update continuously. As macro conditions shift, signal classifications update in real time — not at end of day, not weekly. If the regime changes mid-session, your signals reflect it.`,
+Third, they refresh regularly. As macro conditions shift, signal classifications refresh regularly, and each one shows its as-of time. If the regime changes mid-session, your signals reflect it.`,
         },
         {
           heading: "Which Stocks Does FAULTLINE Track?",
@@ -78,7 +78,7 @@ Each category is designed to surface different types of opportunities across dif
         },
         {
           question: "How often do AI stock signals update?",
-          answer: "Signal classifications update continuously as macro conditions change. The underlying data — live prices, macro indicators, credit spreads — refreshes throughout the trading day. Signal labels reflect the most recent macro regime and market conditions.",
+          answer: "Signal classifications refresh as macro conditions change. The underlying data — delayed price quotes, macro indicators, credit spreads — refreshes on each source's own schedule, and macro series carry official publication lag. Signal labels reflect the most recent macro regime and market conditions.",
         },
         {
           question: "What is the difference between a BULLISH and a WATCH signal?",
@@ -86,7 +86,7 @@ Each category is designed to surface different types of opportunities across dif
         },
         {
           question: "Do I need to be a paid subscriber to see AI stock signals?",
-          answer: "FAULTLINE offers free access to a limited set of signals. Full access to all 100+ tracked equities, asymmetry analysis, and real-time regime-aligned signals requires a Trader or Power subscription.",
+          answer: "The public site shows a limited preview of signals. The full tracked-equity list, asymmetry analysis, and regime-aligned signals are signed-in tools. Full intelligence is offered through FAULTLINE Standard at $99/month or FAULTLINE Lifetime at $1,500 one-time.",
         },
         {
           question: "How does FAULTLINE handle AI bubble risk in stock signals?",
@@ -98,9 +98,9 @@ Each category is designed to surface different types of opportunities across dif
         },
       ]}
       internalLinks={[
-        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Live systemic market stress score — the macro foundation behind every signal." },
+        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Systemic market stress score — the macro foundation behind every signal." },
         { label: "CRYPTO SIGNALS", href: "/crypto-signals", desc: "Macro-aligned signals for digital assets across all market regimes." },
-        { label: "MARKET RISK DASHBOARD", href: "/stock-market-risk-dashboard", desc: "Real-time equity risk monitoring: credit spreads, volatility, liquidity." },
+        { label: "MARKET RISK DASHBOARD", href: "/stock-market-risk-dashboard", desc: "Regularly refreshed equity risk monitoring: credit spreads, volatility, liquidity." },
         { label: "SITUATION ROOM", href: "/situation-room", desc: "Stress-test your next trade against current macro conditions." },
         { label: "HISTORICAL ANALOGS", href: "/analogs", desc: "See which historical market fracture today's regime most resembles." },
         { label: "ANALYSIS HUB", href: "/analysis", desc: "Deep-dive research on AI investing, macro cycles, and market risk." },

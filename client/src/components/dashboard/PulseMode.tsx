@@ -4,13 +4,22 @@
  * Calm · Clean · Fast · Mobile-friendly
  */
 import { useMemo } from "react";
+import { availableDelta, score100Value } from "@/lib/displayFallbacks";
 import { useEngine } from "@/contexts/EngineContext";
+import { engineProbabilityText } from "@/lib/marketStateProjection";
 import { getRiskColor } from "@/components/RiskBadge";
 import { TrendingUp, TrendingDown, Minus, ArrowRight } from "lucide-react";
 import { FaultlineInterpretation } from "./FaultlineInterpretation";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
+import {
+  buildWhyThisRegimeCopy,
+  laborRatesUnavailableMessage,
+  LABOR_RATES_DISPLAY_NAME,
+} from "@shared/nowInterpretationCopy";
+import { PROBABILITY_DISPLAY_TEXT } from "@shared/probabilityContract";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function riskLabel(level: string): string {
@@ -27,6 +36,70 @@ function DeltaIcon({ delta }: { delta: number }) {
   return <Minus size={12} className="inline" style={{ color: "#94A3B8" }} />;
 }
 
+
+// ── Evidence-contracted Pulse regime paragraph ───────────────────────────────
+function PulseRegimeInterpretation() {
+  const { output } = useEngine();
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const pressureScore = useMemo(() => {
+    const fromCanonical = canonicalState && typeof (canonicalState as { pressureIndex?: number }).pressureIndex === "number"
+      ? (canonicalState as { pressureIndex: number }).pressureIndex
+      : null;
+    if (fromCanonical !== null) return Math.round(fromCanonical);
+    return Math.round(output.overall.score * 10);
+  }, [canonicalState, output.overall.score]);
+
+  const regimeLabel = canonicalState?.regime ?? output.regime.label;
+  const families = output.domains.map(d => ({
+    name: d.label,
+    signal: d.riskLevel,
+    strength: Math.round(d.score * 10),
+    currentValue: d.drivers?.[0] ?? undefined,
+    // Delta-unavailable is not the same as evidence-unavailable; treat missing
+    // / empty driver values and explicit unavailable tokens as unavailable.
+    available: Boolean(d.drivers?.[0]) && !/unavailable/i.test(String(d.drivers?.[0] ?? "")),
+  }));
+
+  const volatilityDomain = output.domains.find(d =>
+    d.id === "volatility-vix" || /volatility|yield curve/i.test(d.label),
+  );
+  const liquidityDomain = output.domains.find(d =>
+    d.id === "liquidity" || /liquidity/i.test(d.label),
+  );
+
+  const bullText = engineProbabilityText(output, "bullProbability");
+  const crashText = engineProbabilityText(output, "crashProbability");
+  const scenarioConfidenceAvailable =
+    bullText !== PROBABILITY_DISPLAY_TEXT.UNCALIBRATED &&
+    bullText !== PROBABILITY_DISPLAY_TEXT.NOT_OFFERED &&
+    bullText !== PROBABILITY_DISPLAY_TEXT.UNAVAILABLE &&
+    crashText !== PROBABILITY_DISPLAY_TEXT.NOT_OFFERED &&
+    crashText !== PROBABILITY_DISPLAY_TEXT.UNAVAILABLE &&
+    crashText !== PROBABILITY_DISPLAY_TEXT.UNCALIBRATED;
+
+  const copy = buildWhyThisRegimeCopy({
+    pressureScore,
+    regimeLabel: String(regimeLabel),
+    historicalPercentile: null,
+    evidenceFamilies: families,
+    volatilityAvailable: Boolean(volatilityDomain),
+    liquidityAvailable: Boolean(liquidityDomain),
+    scenarioConfidenceAvailable,
+    missingFamilyNames: families.some(f => /labor|breadth/i.test(f.name))
+      ? []
+      : [LABOR_RATES_DISPLAY_NAME],
+  });
+
+  return (
+    <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "rgba(148,163,184,0.8)", lineHeight: 1.6, textAlign: "center" }}>
+      {copy}
+    </p>
+  );
+}
+
 // ── Pressure Index Hero ────────────────────────────────────────────────────────
 function PressureHero() {
   const { output, isLive, isLoading } = useEngine();
@@ -35,7 +108,7 @@ function PressureHero() {
     refetchOnWindowFocus: false,
   });
   if (!canonicalState) return null;
-  const { overall, regime, probability, domains } = output;
+  const { overall, regime, domains } = output;
   const canonicalRiskLevel = canonicalState.regime === "LOW RISK" ? "low" : canonicalState.regime === "MODERATE RISK" ? "moderate" : canonicalState.regime === "ELEVATED RISK" ? "elevated" : canonicalState.regime === "HIGH STRESS" ? "high" : "critical";
   const color = getRiskColor(canonicalRiskLevel);
 
@@ -103,19 +176,20 @@ function PressureHero() {
                 lineHeight: 1,
               }}
             >
-              {overall.score.toFixed(1)}
+              {/* Pressure Index on its canonical 0–100 scale (engine score is 0–10 internally). */}
+            {score100Value(overall.score)}
             </div>
           )}
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: "0.2em", color: "rgba(100,116,139,0.5)", marginTop: 2 }}>
-            / 10.0
+            / 100
           </div>
         </div>
 
         {/* 4-stat grid: Bull · Crash · Volatility · Liquidity */}
         <div className="grid grid-cols-2 gap-2 mb-4">
           {[
-            { label: "BULL PROB", value: `${probability.bullProbability}%`, color: "#00FF88" },
-            { label: "CRASH PROB", value: `${probability.crashProbability}%`, color: "#FF2D55" },
+            { label: "BULL SCENARIO", value: engineProbabilityText(output, "bullProbability"), color: "#00FF88" },
+            { label: "CRASH PROB", value: engineProbabilityText(output, "crashProbability"), color: "#94A3B8" },
             {
               label: "VOLATILITY",
               value: volatilityDomain ? riskLabel(volatilityDomain.riskLevel) : "—",
@@ -142,10 +216,8 @@ function PressureHero() {
           ))}
         </div>
 
-        {/* Regime description */}
-        <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "rgba(148,163,184,0.8)", lineHeight: 1.6, textAlign: "center" }}>
-          {regime.description}
-        </p>
+        {/* Regime description — evidence-contracted; never cites unavailable drivers */}
+        <PulseRegimeInterpretation />
       </div>
     </div>
   );
@@ -157,13 +229,18 @@ function WhatChangedToday() {
   const { domains, overall } = output;
 
   const updates = useMemo(() => {
-    const sorted = [...domains].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+    const sorted = [...domains].sort((a, b) => Math.abs(availableDelta(b) ?? 0) - Math.abs(availableDelta(a) ?? 0));
     return sorted.slice(0, 5).map((d) => {
       const c = getRiskColor(d.riskLevel);
-      const direction = d.delta > 0.05 ? "rising" : d.delta < -0.05 ? "easing" : "stable";
-      const directionLabel = direction === "rising" ? "↑ Rising" : direction === "easing" ? "↓ Easing" : "→ Stable";
+      const delta = availableDelta(d);
+      const direction = delta === null ? "unavailable" : delta > 0.05 ? "rising" : delta < -0.05 ? "easing" : "stable";
+      const directionLabel = direction === "unavailable" ? "— Unavailable" : direction === "rising" ? "↑ Rising" : direction === "easing" ? "↓ Easing" : "→ Stable";
       const directionColor = direction === "rising" ? "#FF2D55" : direction === "easing" ? "#00FF88" : "#94A3B8";
-      return { label: d.label, riskLevel: d.riskLevel, delta: d.delta, color: c, directionLabel, directionColor, score: d.score };
+      const isLabor = d.label === LABOR_RATES_DISPLAY_NAME || /labor|breadth/i.test(d.label);
+      const laborNote = isLabor && direction === "unavailable"
+        ? laborRatesUnavailableMessage()
+        : null;
+      return { label: d.label, riskLevel: d.riskLevel, delta: d.delta, color: c, directionLabel, directionColor, score: d.score, laborNote };
     });
   }, [domains]);
 
@@ -183,8 +260,8 @@ function WhatChangedToday() {
 
       <div className="px-3 pb-3 flex flex-col gap-1.5">
         {updates.map((u) => (
+          <div key={u.label}>
           <div
-            key={u.label}
             className="flex items-center justify-between rounded-xl px-3 py-2.5"
             style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.14)" }}
           >
@@ -208,6 +285,12 @@ function WhatChangedToday() {
                 {riskLabel(u.riskLevel)}
               </span>
             </div>
+          </div>
+          {u.laborNote ? (
+            <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "rgba(148,163,184,0.75)", lineHeight: 1.5, padding: "0 12px 8px" }}>
+              {u.laborNote}
+            </p>
+          ) : null}
           </div>
         ))}
       </div>
@@ -240,7 +323,7 @@ function TopRiskCard() {
         {topThreat.label}
       </div>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 20, fontWeight: 700, color, marginBottom: 6 }}>
-        {topThreat.score.toFixed(1)}<span style={{ fontSize: 11, color: "rgba(100,116,139,0.5)" }}>/10</span>
+        {score100Value(topThreat.score)}<span style={{ fontSize: 11, color: "rgba(100,116,139,0.5)" }}>/100</span>
       </div>
       <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "rgba(148,163,184,0.8)", lineHeight: 1.6 }}>
         {topThreat.description}
@@ -323,8 +406,8 @@ function CompactSignalFooter() {
       {cryptoData ? (
         <div className="flex flex-col gap-1.5">
           {cryptoData.slice(0, 3).map((coin) => {
-            const change = coin.priceChangePercent24h ?? 0;
-            const changeColor = change >= 0 ? "#00FF88" : "#FF2D55";
+            const change = displayChange24h(coin);
+            const changeColor = change24hColor(change);
             return (
               <div key={coin.id} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -340,7 +423,7 @@ function CompactSignalFooter() {
                     ${coin.currentPrice.toLocaleString()}
                   </span>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: changeColor, fontWeight: 600 }}>
-                    {change >= 0 ? "+" : ""}{change.toFixed(2)}%
+                    {change24hText(change)}
                   </span>
                 </div>
               </div>

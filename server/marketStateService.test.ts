@@ -20,7 +20,7 @@ function source(overrides: Partial<CanonicalMarketStateSource> = {}): CanonicalM
     providerProvenance: {
       fred: {
         status: "live",
-        detail: "Live FRED macro and credit observations contributed through the pressure engine.",
+        detail: "FRED macro and credit observations (latest published releases) contributed through the pressure engine.",
         asOf: Date.parse("2026-07-23T12:00:00.000Z"),
       },
     },
@@ -196,7 +196,11 @@ describe("assembleCanonicalMarketState", () => {
 
     expect(state.now.pressureScore).toBe(100);
     expect(state.now.historicalPercentile).toBe(0);
-    expect(state.outlook.probabilities).toMatchObject({ bull: 100, bear: 0, confidence: 61.3 });
+    // Probability contract: without an AVAILABLE contract claim every
+    // probability is withheld (NaN), never clamped to 100 / 0.
+    expect(state.outlook.probabilities.bull).toBeNaN();
+    expect(state.outlook.probabilities.bear).toBeNaN();
+    expect(state.outlook.probabilities.confidence).toBeNaN();
   });
 });
 

@@ -23,6 +23,7 @@
 // Output: FMOSEvidenceOutput
 // ============================================================
 
+import { pressureVectorLabel } from "../../../shared/pressureVectorLabels";
 import { clamp, scoreToRisk } from "../utils";
 import type { FaultlinePressureOutput } from "../../pressure/engine";
 import type { FMOSMacroData } from "./dataAcquisition";
@@ -241,13 +242,14 @@ function buildTechnicalFamily(
   const p = pressure.overallPressure;
   const items: FMOSEvidenceItem[] = [];
 
-  // Volatility regime
+  // "volatility-regime" vector: reads the 10Y–2Y curve and the 10Y level
+  // (DGS10, DGS2), not VIX — labelled with its canonical display label.
   items.push({
-    name: "Volatility Regime",
+    name: pressureVectorLabel("volatility-regime"),
     family: "technical",
     signal: scoreToSignal(volatilityScore),
     strength: volatilityScore,
-    description: `Volatility regime score ${volatilityScore}/100 — ${volatilityScore > 65 ? "high vol, elevated risk" : volatilityScore < 30 ? "low vol, complacency risk" : "moderate vol"}`,
+    description: `Yield-curve / 10Y-level pressure score ${volatilityScore}/100 — ${volatilityScore > 65 ? "high rate-structure pressure" : volatilityScore < 30 ? "limited rate-structure pressure" : "moderate rate-structure pressure"} (not a VIX reading)`,
     source: "FAULTLINE Engine",
   });
 

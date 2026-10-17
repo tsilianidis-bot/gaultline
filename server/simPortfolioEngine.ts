@@ -263,7 +263,7 @@ TECHNICAL ANALYSIS:
 - SMA: ${signal.technicals.smaSignal}
 - Trend: ${signal.technicals.trend}
 - Volume: ${signal.technicals.volumeSignal}
-- Signal Confidence: ${signal.confidence}/100
+- Signal Confidence: confidence not established
 - Regime Alignment: ${signal.regimeAlignment}
 
 ASYMMETRY:

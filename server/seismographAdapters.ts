@@ -130,7 +130,7 @@ export function fmosToEvidencePackets(
     strength: Math.max(output.probability.bull, output.probability.bear),
     confidence: output.probability.confidence,
     primaryReading: `bull=${output.probability.bull} neutral=${output.probability.neutral} bear=${output.probability.bear}`,
-    humanReadable: `${output.probability.bull}% bull / ${output.probability.neutral}% neutral / ${output.probability.bear}% bear — ${output.probability.primaryDriver}`,
+    humanReadable: `Scenario weights uncalibrated (not offered as probabilities) — ${output.probability.primaryDriver}`,
     subScores: {
       bull: output.probability.bull,
       neutral: output.probability.neutral,
@@ -236,6 +236,11 @@ export function crossMarketToEvidencePacket(
 
 // ── SOB Engine Adapter ────────────────────────────────────────
 
+/** S.O.B. may feed the seismograph only with COMPLETE pillar coverage. */
+export function isSOBEvidenceEligible(output: Pick<SOBResult, "coverage">): boolean {
+  return output.coverage === "COMPLETE";
+}
+
 /**
  * Convert SOBResult → EvidencePacket (breakdown_signals)
  */
@@ -313,7 +318,10 @@ export async function collectAllEvidence(params: {
   }
 
   try {
-    if (params.sobOutput) {
+    // Fail-closed: S.O.B. evidence is only fed when every pillar had valid input.
+    // A PARTIAL/UNAVAILABLE result (e.g. "Insufficient data" from null inputs)
+    // must never enter the seismograph as bullish "Breakdown Signals" evidence.
+    if (params.sobOutput && isSOBEvidenceEligible(params.sobOutput)) {
       packets.push(sobToEvidencePacket(params.sobOutput));
     }
   } catch (e) {

@@ -5,13 +5,15 @@
    ============================================================ */
 import DisclaimerBanner from "@/components/DisclaimerBanner";
 import SOBPanel from "@/components/SOBPanel";
+import { trpc } from "@/lib/trpc";
+import { useAppHeaderFred } from "@/hooks/useAppHeaderFred";
+import { buildSOBSourceInputs } from "@/lib/appHeaderStrip";
 import { useRef, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap, BarChart2, Activity, Waves, Clock, GitBranch, BookOpen } from "lucide-react";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner";
-import { PreflightTrigger } from "@/components/MarketPreflight";
 import { useLocation } from "wouter";
 import Scores from "./Scores";
 import Charts from "./Charts";
@@ -22,6 +24,12 @@ import HistoricalContextEngine from "./HistoricalContextEngine";
 import { useEngine } from "@/contexts/EngineContext";
 import ScoreExplainer from "@/components/ScoreExplainer";
 import { customerIntegrityBadgeColor, customerPressureBadge, customerPressureUnavailableCopy, humanizeConflictType, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
+import { pressureVectorLabel } from "@shared/pressureVectorLabels";
+import { canonicalVectorScore, contagionSummary, pressureVectorLevel, pressureVectorWeight, topScoredVectors, vectorScoreText } from "@/lib/pressureVectorWeights";
+import { canonicalDirectionTrend, canonicalHistoricalPercentile } from "@shared/canonicalReadout";
+import { directionDisplay } from "@shared/snapshotEvidence";
+import { canonicalRunBasisNote } from "@shared/dataIntegrityReadout";
+import { knownDelta, vsBaselineText } from "@/lib/deltaAvailability";
 
 // ── Market Stress sub-nav tabs ──────────────────────────────────
 // All stress-related analysis lives under one roof — in-page state, no navigation
@@ -62,11 +70,15 @@ interface RiskVector {
   id: string;
   label: string;
   description: string;
-  score: number;
-  level: PressureLevel;
+  /** Own 0–100 score; null when the engine published none (rendered "—", never 0). */
+  score: number | null;
+  /** Own level from its own score; null when there is no score (no level shown). */
+  level: PressureLevel | null;
   driver: string;
-  trend: "rising" | "falling" | "stable";
-  weight: number;
+  /** "unavailable" when the engine published no direction (Unknown / missing): no icon, never "stable". */
+  trend: "rising" | "falling" | "stable" | "unavailable";
+  /** Composite weight (0–1); null when the source does not publish one. */
+  weight: number | null;
   rawInputs: Record<string, number | null>;
 }
 
@@ -117,7 +129,11 @@ const SEVERITY_COLORS = {
   moderate: "#00D4FF",
 };
 
-function getLevelColor(level: PressureLevel) {
+const UNAVAILABLE_LEVEL_COLORS = { primary: "#64748B", glow: "rgba(100,116,139,0.25)", bg: "rgba(100,116,139,0.06)", text: "#94A3B8" };
+
+/** Colours for a level; a missing level (no score) is neutral grey, never a band colour. */
+function getLevelColor(level: PressureLevel | null) {
+  if (level == null) return UNAVAILABLE_LEVEL_COLORS;
   return LEVEL_COLORS[level] ?? LEVEL_COLORS.Moderate;
 }
 
@@ -250,8 +266,10 @@ function PressureGaugeArc({ value, level }: { value: number; level: PressureLeve
 }
 
 // ── Mini bar for vector score ─────────────────────────────────
-function ScoreBar({ score, level }: { score: number; level: PressureLevel }) {
+function ScoreBar({ score, level }: { score: number | null; level: PressureLevel | null }) {
   const colors = getLevelColor(level);
+  // No score → empty track (no bar), never a 0-width "zero" reading.
+  if (score == null) return <div data-score-bar="unavailable" style={{ width: "100%", height: "4px", background: "rgba(255,255,255,0.06)", borderRadius: "2px" }} />;
   return (
     <div style={{ width: "100%", height: "4px", background: "rgba(255,255,255,0.06)", borderRadius: "2px", overflow: "hidden" }}>
       <motion.div
@@ -265,10 +283,11 @@ function ScoreBar({ score, level }: { score: number; level: PressureLevel }) {
 }
 
 // ── Trend icon ────────────────────────────────────────────────
-function TrendIcon({ trend }: { trend: "rising" | "falling" | "stable" }) {
+function TrendIcon({ trend }: { trend: "rising" | "falling" | "stable" | "unavailable" }) {
   if (trend === "rising") return <TrendingUp size={12} style={{ color: "#FF6B00" }} />;
   if (trend === "falling") return <TrendingDown size={12} style={{ color: "#00FF88" }} />;
-  return <Minus size={12} style={{ color: "#6B7280" }} />;
+  if (trend === "stable") return <Minus size={12} style={{ color: "#6B7280" }} />;
+  return <span data-trend="unavailable" title="Direction unavailable" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#4B5563" }}>—</span>;
 }
 
 // ── Risk Vector Card ──────────────────────────────────────────
@@ -318,8 +337,8 @@ function VectorCard({ vector, index }: { vector: RiskVector; index: number }) {
             color: colors.primary,
             textShadow: `0 0 12px ${colors.glow}`,
             lineHeight: 1,
-          }}>
-            {vector.score}
+          }} data-vector-score={vector.score ?? "unavailable"}>
+            {vectorScoreText(vector.score)}
           </div>
         </div>
       </div>
@@ -327,7 +346,7 @@ function VectorCard({ vector, index }: { vector: RiskVector; index: number }) {
       <ScoreBar score={vector.score} level={vector.level} />
 
       <div style={{ marginTop: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{
+        {vector.level != null ? <div data-vector-level={vector.level} style={{
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: "9px",
           color: colors.text,
@@ -339,10 +358,12 @@ function VectorCard({ vector, index }: { vector: RiskVector; index: number }) {
           textTransform: "uppercase",
         }}>
           {vector.level}
-        </div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.06em" }}>
-          WT {Math.round(vector.weight * 100)}%
-        </div>
+        </div> : <div data-vector-level="unavailable" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#94A3B8", letterSpacing: "0.08em", textTransform: "uppercase" }}>Unavailable</div>}
+        {vector.weight != null && Number.isFinite(vector.weight) && (
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.06em" }}>
+            WT {Math.round(vector.weight * 100)}%
+          </div>
+        )}
       </div>
 
       <div style={{ marginTop: "10px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#94A3B8", lineHeight: 1.5 }}>
@@ -477,25 +498,25 @@ function LiquidityStressMeter({ vectors, integrityLabel }: { vectors: RiskVector
           fontFamily: "'Rajdhani', sans-serif",
           fontWeight: 900,
           fontSize: "44px",
-          color: getLevelColor(liq?.level ?? "Moderate").primary,
-          textShadow: `0 0 20px ${getLevelColor(liq?.level ?? "Moderate").glow}`,
+          color: getLevelColor(liq?.level ?? null).primary,
+          textShadow: `0 0 20px ${getLevelColor(liq?.level ?? null).glow}`,
           lineHeight: 1,
         }}>
-          {liq?.score ?? "—"}
+          {vectorScoreText(liq?.score)}
         </div>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#4B5563" }}>/100</div>
         <div style={{
           marginLeft: "auto",
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: "10px",
-          color: getLevelColor(liq?.level ?? "Moderate").text,
-          background: getLevelColor(liq?.level ?? "Moderate").bg,
-          border: `1px solid ${getLevelColor(liq?.level ?? "Moderate").primary}33`,
+          color: getLevelColor(liq?.level ?? null).text,
+          background: getLevelColor(liq?.level ?? null).bg,
+          border: `1px solid ${getLevelColor(liq?.level ?? null).primary}33`,
           borderRadius: "3px",
           padding: "2px 8px",
           letterSpacing: "0.1em",
         }}>
-          {(liq?.level ?? "MODERATE").toUpperCase()}
+          {(liq?.level ?? "Unavailable").toUpperCase()}
         </div>
       </div>
 
@@ -555,23 +576,25 @@ function LiquidityStressMeter({ vectors, integrityLabel }: { vectors: RiskVector
 const CONTAGION_ORDER = [
   { id: "liquidity-stress",   label: "LIQUIDITY",    icon: "💧" },
   { id: "credit-contagion",   label: "CREDIT",       icon: "📉" },
-  { id: "volatility-regime", label: "VOLATILITY",   icon: "⚡" },
+  { id: "volatility-regime", label: "YIELD CURVE",  icon: "⚡" },
   { id: "macro-sensitivity", label: "MACRO",         icon: "🏛" },
-  { id: "market-breadth",    label: "BREADTH",       icon: "📊" },
-  { id: "ai-bubble",         label: "SPECULATIVE",   icon: "🤖" },
+  { id: "market-breadth",    label: "LABOR/RATES",   icon: "📊" },
+  { id: "ai-bubble",         label: "AI BASELINE",   icon: "🤖" },
 ];
 
 function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVector[]; overallPressure: number }) {
   // Build ordered nodes from vectors
   const nodes = CONTAGION_ORDER.map(o => {
     const v = vectors.find(v2 => v2.id === o.id);
-    return { ...o, score: v?.score ?? 0, level: v?.level ?? ("Low" as PressureLevel), trend: v?.trend ?? "stable" as const };
+    // A missing vector stays null (shown "—", no level), never 0 / "Low".
+    return { ...o, score: v?.score ?? null, level: v?.level ?? null, trend: v?.trend ?? "unavailable" as const };
   });
 
-  // Contagion threshold: a node "fires" if score > 35
+  // Contagion threshold: a node "fires" if score > 35. Only scored vectors count.
   const THRESHOLD = 35;
-  const fired = nodes.filter(n => n.score > THRESHOLD);
-  const contagionPct = Math.round((fired.length / nodes.length) * 100);
+  const contagion = contagionSummary(nodes, THRESHOLD);
+  const fired = contagion.fired;
+  const contagionPct = contagion.pct ?? 0; // colour only; the text shows "—" when null
 
   return (
     <motion.div
@@ -603,7 +626,7 @@ function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVec
           textShadow: contagionPct >= 67 ? "0 0 20px rgba(255,45,85,0.5)" : contagionPct >= 33 ? "0 0 20px rgba(255,184,0,0.4)" : "0 0 20px rgba(0,255,136,0.4)",
           lineHeight: 1,
         }}>
-          {contagionPct}%
+          {contagion.pct == null ? "—" : `${contagion.pct}%`}
         </div>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#4B5563" }}>SPREAD</div>
         <div style={{
@@ -617,7 +640,7 @@ function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVec
           padding: "2px 8px",
           letterSpacing: "0.1em",
         }}>
-          {fired.length}/{nodes.length} VECTORS
+          {fired.length}/{contagion.scored} SCORED VECTORS{contagion.scored < contagion.total ? ` · ${contagion.total - contagion.scored} UNAVAILABLE` : ""}
         </div>
       </div>
 
@@ -635,7 +658,7 @@ function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVec
 
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {nodes.map((node, i) => {
-            const active = node.score > THRESHOLD;
+            const active = node.score != null && node.score > THRESHOLD;
             const nodeColor = active ? getLevelColor(node.level).primary : "#1F2937";
             const glowColor = active ? getLevelColor(node.level).glow : "transparent";
             return (
@@ -675,7 +698,7 @@ function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVec
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     {/* Mini score bar */}
                     <div style={{ width: "60px", height: "3px", background: "rgba(255,255,255,0.05)", borderRadius: "2px", overflow: "hidden" }}>
-                      <motion.div
+                      {node.score != null && <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${node.score}%` }}
                         transition={{ duration: 1, ease: [0.23, 1, 0.32, 1], delay: 0.8 + i * 0.08 }}
@@ -685,7 +708,7 @@ function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVec
                           borderRadius: "2px",
                           boxShadow: active ? `0 0 4px ${glowColor}` : "none",
                         }}
-                      />
+                      />}
                     </div>
                     <div style={{
                       fontFamily: "'IBM Plex Mono', monospace",
@@ -695,7 +718,7 @@ function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVec
                       minWidth: "24px",
                       textAlign: "right",
                     }}>
-                      {node.score}
+                      {vectorScoreText(node.score)}
                     </div>
                     <TrendIcon trend={node.trend} />
                   </div>
@@ -708,7 +731,9 @@ function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVec
 
       <div style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
         <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "10px", color: "#4B5563", lineHeight: 1.5 }}>
-          {fired.length === 0
+          {contagion.scored === 0
+            ? "Vector scores unavailable — contagion cannot be assessed."
+            : fired.length === 0
             ? "No active contagion vectors — systemic linkages contained."
             : `${fired.length} vector${fired.length > 1 ? "s" : ""} above stress threshold (35/100). Contagion risk is ${contagionPct >= 67 ? "elevated" : contagionPct >= 33 ? "moderate" : "low"}.`}
         </div>
@@ -739,9 +764,8 @@ function SnapshotPeriodView({ data }: { data: { overallPressure: number; level: 
   };
   const contextSentence = contextSentences[period];
 
-  const topVectors = [...data.vectors]
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3);
+  // Vectors without a score are not ranked (never treated as 0).
+  const topVectors = topScoredVectors(data.vectors, 3);
 
   const topAlert = data.alerts[0];
 
@@ -831,7 +855,7 @@ function SnapshotPeriodView({ data }: { data: { overallPressure: number; level: 
               const vc = getLevelColor(v.level);
               return (
                 <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: vc.primary, fontWeight: 700, minWidth: '28px' }}>{v.score}</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: vc.primary, fontWeight: 700, minWidth: '28px' }}>{vectorScoreText(v.score)}</div>
                   <div style={{ flex: 1, height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${v.score}%`, background: vc.primary, borderRadius: '2px' }} />
                   </div>
@@ -890,8 +914,9 @@ function PressureSkeleton() {
 }
 // ── Domain Analysis Tab ─────────────────────────────────────
 function DomainAnalysisTab() {
-  const { output, isLoading: engineLoading } = useEngine();
-  const domains = output?.domains ?? [];
+  const { output, isLoading: engineLoading, marketMode } = useEngine();
+  // Without MarketState the engine domains are the demo baseline: none are shown.
+  const domains = marketMode === 'deterministic-fallback' ? [] : (output?.domains ?? []);
 
   if (engineLoading) {
     return (
@@ -929,24 +954,31 @@ function DomainAnalysisTab() {
                   <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '14px', color: '#E2E8F0', letterSpacing: '0.06em' }}>{domain.label.toUpperCase()}</div>
                 </div>
                 <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 900, fontSize: '28px', color: colors.primary, textShadow: `0 0 12px ${colors.glow}`, lineHeight: 1 }}>
-                  {domain.score.toFixed(1)}
+                  {/* Display only: the 0–10 domain score on the canonical 0–100 scale. */}
+                  <span data-domain-score100={Number.isFinite(domain.score) ? Math.round(domain.score * 10) : 'unavailable'}>{Number.isFinite(domain.score) ? Math.round(domain.score * 10) : '—'}</span>
+                  <span style={{ fontSize: '11px', color: '#4B5563', marginLeft: '2px' }}>/100</span>
                 </div>
               </div>
               <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden', marginBottom: '10px' }}>
                 <motion.div
                   initial={{ width: 0 }}
-                  animate={{ width: `${(domain.score / 10) * 100}%` }}
+                  animate={{ width: `${Number.isFinite(domain.score) ? Math.max(0, Math.min(100, domain.score * 10)) : 0}%` }}
                   transition={{ duration: 1.1, ease: [0.23, 1, 0.32, 1], delay: 0.2 + i * 0.06 }}
                   style={{ height: '100%', background: colors.primary, borderRadius: '2px', boxShadow: `0 0 6px ${colors.glow}` }}
                 />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: colors.text, background: colors.bg, border: `1px solid ${colors.primary}33`, borderRadius: '3px', padding: '2px 6px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{domain.riskLevel}</div>
-                {domain.delta !== 0 && (
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: domain.delta > 0 ? '#FF6B00' : '#00FF88', letterSpacing: '0.06em' }}>
-                    {domain.delta > 0 ? '+' : ''}{domain.delta.toFixed(2)} vs baseline
-                  </div>
-                )}
+                {(() => {
+                  // Unknown delta (#60 deltaAvailable: false, or non-finite) → "Δ unavailable", never "0 vs baseline";
+                  // a known zero reads "Stable".
+                  const d = knownDelta(domain);
+                  return (
+                    <div data-domain-delta={d === null ? 'unavailable' : d} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: d === null || vsBaselineText(domain) === 'Stable' ? '#6B7280' : d > 0 ? '#FF6B00' : '#00FF88', letterSpacing: '0.06em' }}>
+                      {vsBaselineText(domain)}
+                    </div>
+                  );
+                })()}
               </div>
               {domain.description && (
                 <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#6B7280', lineHeight: 1.5, marginBottom: '8px' }}>{domain.description}</div>
@@ -981,7 +1013,15 @@ export default function Pressure() {
     const requested = new URLSearchParams(window.location.search).get('tab');
     return STRESS_TABS.some(tab => tab.id === requested) ? requested as StressTabId : 'pressure';
   });
-  const { canonicalState, canonicalEnvelope, isLoading, isRefreshing, dataError, refresh, integrityLabel } = useEngine();
+  const { canonicalState, canonicalEnvelope, marketState, isLoading, isRefreshing, dataError, refresh, integrityLabel } = useEngine();
+  // S.O.B. inputs come from the same real sources as the /app header strip
+  // (FRED HY spread + Fed funds, snapshot 2Y10Y + VIX). Missing → null → UNAVAILABLE pillar.
+  const { data: marketSnapshot } = trpc.markets.getGlobalSnapshot.useQuery(undefined, { refetchInterval: 90_000, staleTime: 60_000, retry: 2 });
+  const headerFred = useAppHeaderFred();
+  const sobInputs = useMemo(
+    () => buildSOBSourceInputs({ quotes: marketSnapshot?.items ?? null, fred: headerFred, now: Date.now() }),
+    [marketSnapshot?.items, headerFred],
+  );
   const data = useMemo(() => {
     if (!canonicalState || canonicalState.pressureIndex === null || Number.isNaN(canonicalState.pressureIndex)) return null;
     const pressureLevel = resolvePressureLevel(canonicalState.pressureLevel, canonicalState.pressureIndex);
@@ -995,13 +1035,17 @@ export default function Pressure() {
     ];
     const vectors: RiskVector[] = canonicalState.engines.map(engine => ({
       id: engine.engineId,
-      label: engine.engineName,
+      label: pressureVectorLabel(engine.engineId, engine.engineName),
       description: `Canonical engine ${engine.engineId}.`,
-      score: engine.value ?? 0,
-      level: pressureLevel,
+      // A missing engine value stays null to render ("—" / Unavailable), never 0.
+      score: canonicalVectorScore(engine.value),
+      // The vector's own level from its own score (engine thresholds), not the composite's; null when no score.
+      level: pressureVectorLevel(engine.value),
       driver: engine.sourceInputIds.length ? `Inputs: ${engine.sourceInputIds.join(", ")}` : "Canonical input detail unavailable.",
-      trend: engine.direction === "Improving" ? "falling" : engine.direction === "Deteriorating" ? "rising" : "stable",
-      weight: 0,
+      trend: engine.direction === "Improving" ? "falling" : engine.direction === "Deteriorating" ? "rising" : engine.direction === "Stable" ? "stable" : "unavailable",
+      // The canonical contract publishes only whether a vector contributes; the
+      // weight is the engine's own composite weight for that vector id (never "WT 0%").
+      weight: pressureVectorWeight(engine.engineId, engine.contributionToComposite),
       rawInputs: {},
     }));
     return {
@@ -1078,10 +1122,9 @@ export default function Pressure() {
       <div style={{ position: "relative", zIndex: 2, maxWidth: "1400px", margin: "0 auto" }}>
         <PageHeader
           title="Market Stress"
-          subtitle="Real-time systemic risk pressure across credit, rates, liquidity, and macro domains. A higher score means more stress in the system."
+          subtitle="Systemic risk pressure across credit, rates, liquidity, and macro domains, built from published FRED data. Each reading shows its as-of time; a higher score means more stress in the system."
           badge={customerPressureBadge(integrityLabel)}
           badgeColor={customerIntegrityBadgeColor(integrityLabel)}
-          rightSlot={<PreflightTrigger currentPage="pressure" regimeLabel={data.regime} actionKey="viewed_pressure" />}
         />
         <div style={{ padding: '0 16px' }}>
           <SeismographNarrativeBanner context="pressure" defaultExpanded={false} />
@@ -1212,8 +1255,8 @@ export default function Pressure() {
               <ScoreExplainer
                 scoreKey="pressureIndex"
                 value={data.overallPressure}
-                trend={data.overallPressure > 60 ? 'rising' : data.overallPressure < 40 ? 'falling' : 'stable'}
-                historicalPercentile={data.overallPressure}
+                trend={canonicalDirectionTrend(directionDisplay(canonicalState?.pressureDirection))}
+                historicalPercentile={canonicalHistoricalPercentile(marketState?.now.historicalPercentile)}
                 defaultExpanded={false}
               />
             </div>
@@ -1318,6 +1361,9 @@ export default function Pressure() {
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.15em", marginBottom: "14px" }}>
             RISK VECTORS — {data.vectors.length} ACTIVE
           </div>
+          <div data-evidence-basis="canonical-run" style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#64748B", lineHeight: 1.5, marginTop: "-8px", marginBottom: "14px" }}>
+            {canonicalRunBasisNote(canonicalState?.generatedAt)}
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "12px" }}>
             {data.vectors.map((vector, i) => (
               <VectorCard key={vector.id} vector={vector} index={i} />
@@ -1395,6 +1441,10 @@ export default function Pressure() {
             canonicalEnvelope={canonicalEnvelope ?? undefined}
             regime={data.regime}
             pressureIndex={data.overallPressure}
+            creditSpread={sobInputs.creditSpread}
+            yieldSpread={sobInputs.yieldSpread}
+            fedFundsRate={sobInputs.fedFundsRate}
+            vix={sobInputs.vix}
           />
         </div>
 

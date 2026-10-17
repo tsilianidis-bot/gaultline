@@ -60,19 +60,23 @@ describe("NOW destination composition", () => {
 
   it("renders every identified NOW pressure surface on the canonical 0–100 scale", () => {
     const hero = source("client/src/components/AshaHeroSection.tsx");
-    const briefing = source("client/src/components/AshaLiveBriefing.tsx");
+    // The briefing tiles are built by the canonical-gated helper (PR #58 r3).
+    const briefing = source("client/src/components/AshaLiveBriefing.tsx") + source("client/src/lib/ashaBriefingContext.ts");
     const contextStrip = source("client/src/components/MarketContextStrip.tsx");
     const synthesis = source("client/src/components/MarketSynthesisPanel.tsx");
     const narrativeBanner = source("client/src/components/SeismographNarrativeBanner.tsx");
-    const appLayout = source("client/src/components/AppLayout.tsx");
+    const appHeaderStrip = source("client/src/lib/appHeaderStrip.ts");
 
     expect(nowSource).toContain("formatCanonicalScore(pressure)");
     expect(hero).toContain("formatCanonicalScore(score * 10)");
-    expect(briefing).toContain("formatCanonicalScore(overall.score * 10)");
-    expect(contextStrip).toContain("formatCanonicalScore(canonicalPressure ?? overall.score * 10)");
-    expect(synthesis).toContain("formatCanonicalScore(canonicalState.pressureIndex ?? 0)");
+    expect(briefing).toContain("formatCanonicalScore(score10 * 10)");
+    expect(contextStrip).toContain("? formatCanonicalScore(canonicalPressure)");
+    expect(contextStrip).not.toContain("overall.score * 10"); // no demo-input fallback number
+    expect(synthesis).toContain("? formatCanonicalScore(canonicalState.pressureIndex) : \"UNAVAILABLE\"");
+    expect(synthesis).not.toContain("pressureIndex ?? 0"); // no 0/100 fallback
     expect(narrativeBanner).toContain("formatCanonicalScore(output.pressureScore)");
-    expect(appLayout).toContain("value: formatCanonicalScore(overall.score * 10)");
+    // Header strip Pressure Index reads the canonical snapshot score (0–100), not the legacy 0–10 engine.
+    expect(appHeaderStrip).toContain("value: formatCanonicalScore(score as number)");
 
     expect(hero).not.toContain("/10</span>");
     expect(briefing).not.toContain("`${overall.score.toFixed(1)}/10`");

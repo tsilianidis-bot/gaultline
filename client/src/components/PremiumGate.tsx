@@ -9,6 +9,9 @@ import {
   tierMeetsRequirement,
   GATE_REQUIRED_TIER,
   PRICING_PLANS,
+  PAID_PLANS_ON_SALE,
+  PLAN_NOT_ON_SALE_LABEL,
+  PAID_PLANS_NOT_ON_SALE_COPY,
   type GateVariant,
   type AccessTier,
 } from '../../../shared/tiers';
@@ -35,14 +38,8 @@ interface PremiumGateConfig {
   requiredTier: GateTier;    // minimum tier to unlock
 }
 
-function publicPlanCopy(value: string) {
-  return value
-    .replace(/^Unlock Core/, "Get Trader")
-    .replace(/^Unlock Pro/, "Get Power")
-    .replace(/^Pro Access/, "Power Access")
-    .replace(/^Founding Access/, "Founding Member")
-    .replace(/\bCore at /g, "Trader at ")
-    .replace(/\bPro membership/g, "Power membership");
+function publicPlanCopy(_value: string, slot: "primary" | "secondary" = "primary") {
+  return slot === "primary" ? `FAULTLINE Intelligence — ${PRICING_PLANS.premium.priceLabel}` : 'View public preview';
 }
 
 const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
@@ -50,13 +47,13 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Pro Intelligence Required",
     subtitle: "INSTITUTIONAL INTELLIGENCE PLATFORM",
     description:
-      "This module requires FAULTLINE Pro or Founding Access. Unlock the full institutional intelligence suite — macro, signals, crypto, systemic risk, and AI diagnostics.",
+      "This module requires FAULTLINE Intelligence. Unlock the full institutional intelligence suite — macro, signals, crypto, systemic risk, and AI diagnostics.",
     icon: <Shield className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#00D4FF",
     glowColor: "rgba(0,212,255,0.15)",
-    ctaPrimary: `Unlock Pro — ${PRICING_PLANS.premium.priceLabel}`,
-    ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
+    ctaPrimary: "Unlock Pro",
+    ctaSecondary: "Founding Access",
     features: [
       "Full macro regime intelligence",
       "Advanced trading signals",
@@ -69,13 +66,13 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Signals Engine Locked",
     subtitle: "CORE SIGNAL ENGINE",
     description:
-      `FAULTLINE's proprietary signal engine — RSI, MACD, SMA crossover, regime-weighted scoring, and AI classification. Unlock with Core at ${PRICING_PLANS.core.priceLabel}.`,
+      `FAULTLINE's proprietary signal engine — RSI, MACD, SMA crossover, regime-weighted scoring, and AI classification. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: `Unlock Core — ${PRICING_PLANS.core.priceLabel}`,
-    ctaSecondary: `Pro Access — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaPrimary: "Unlock Core",
+    ctaSecondary: "Pro Access",
     features: [
       "True RSI / MACD / SMA signals",
       "AI signal classification",
@@ -88,16 +85,16 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Portfolio Monitor Locked",
     subtitle: "LIVE PORTFOLIO INTELLIGENCE",
     description:
-      `Track your positions with live P&L and regime-aware risk scoring. Available from Core at ${PRICING_PLANS.core.priceLabel}. AI guidance requires Pro.`,
+      `Track your positions with live P&L and regime-aware risk scoring. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time. AI guidance requires Pro.`,
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: `Unlock Core — ${PRICING_PLANS.core.priceLabel}`,
-    ctaSecondary: `Pro Access — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaPrimary: "Unlock Core",
+    ctaSecondary: "Pro Access",
     features: [
       "Live P&L tracking",
-      "Real-time price quotes",
+      "Delayed price quotes (up to 15 minutes)",
       "Regime-aware risk scoring",
       "AI guidance (Pro tier)",
     ],
@@ -107,13 +104,13 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Alt Rotation Engine Locked",
     subtitle: "ALTERNATIVE ASSET ROTATION",
     description:
-      `Monitor rotation signals across crypto, commodities, and alternative assets. Available from Core at ${PRICING_PLANS.core.priceLabel}.`,
+      `Monitor rotation signals across crypto, commodities, and alternative assets. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
     icon: <BarChart2 className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: `Unlock Core — ${PRICING_PLANS.core.priceLabel}`,
-    ctaSecondary: `Pro Access — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaPrimary: "Unlock Core",
+    ctaSecondary: "Pro Access",
     features: [
       "Crypto rotation signals",
       "Commodity momentum tracking",
@@ -123,16 +120,16 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     requiredTier: 'core',
   },
   risk: {
-    title: "Real-Time Risk Engine Locked",
+    title: "Risk Engine Locked",
     subtitle: "SYSTEMIC RISK INTELLIGENCE",
     description:
-      "The FAULTLINE Pressure Index™ and systemic risk engine analyze macro conditions, liquidity, Treasury stress, and volatility regimes in real time.",
+      "The FAULTLINE Pressure Index™ and systemic risk engine analyze macro conditions, liquidity, Treasury stress, and volatility regimes as new data is published.",
     icon: <Zap className="w-8 h-8" />,
     accentColor: "text-orange-400",
     accentHex: "#FB923C",
     glowColor: "rgba(251,146,60,0.15)",
-    ctaPrimary: `Unlock Pro — ${PRICING_PLANS.premium.priceLabel}`,
-    ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
+    ctaPrimary: "Unlock Pro",
+    ctaSecondary: "Founding Access",
     features: [
       "FAULTLINE Pressure Index™",
       "Liquidity stress monitoring",
@@ -150,8 +147,8 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentColor: "text-cyan-400",
     accentHex: "#00D4FF",
     glowColor: "rgba(0,212,255,0.15)",
-    ctaPrimary: `Unlock Pro — ${PRICING_PLANS.premium.priceLabel}`,
-    ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
+    ctaPrimary: "Unlock Pro",
+    ctaSecondary: "Founding Access",
     features: [
       "Diagnostic AI™ analysis",
       "Position Guidance™",
@@ -169,8 +166,8 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentColor: "text-blue-400",
     accentHex: "#60A5FA",
     glowColor: "rgba(96,165,250,0.15)",
-    ctaPrimary: `Unlock Pro — ${PRICING_PLANS.premium.priceLabel}`,
-    ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
+    ctaPrimary: "Unlock Pro",
+    ctaSecondary: "Founding Access",
     features: [
       "Crypto systemic risk score",
       "BTC macro correlation tracking",
@@ -188,8 +185,8 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentColor: "text-orange-400",
     accentHex: "#FB923C",
     glowColor: "rgba(251,146,60,0.15)",
-    ctaPrimary: `Unlock Pro — ${PRICING_PLANS.premium.priceLabel}`,
-    ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
+    ctaPrimary: "Unlock Pro",
+    ctaSecondary: "Founding Access",
     features: [
       "Primary rupture detection",
       "Contagion chain mapping",
@@ -202,13 +199,13 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Unlimited Watchlist Locked",
     subtitle: "PROFESSIONAL WATCHLIST",
     description:
-      `Unlimited symbol watchlists with live signal labels, breach alerts, and side-by-side comparison. Upgrade to Trader at ${PRICING_PLANS.core.priceLabel} to unlock.`,
+      `Unlimited symbol watchlists with live signal labels, breach alerts, and side-by-side comparison. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
     icon: <Shield className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: `Unlock Core — ${PRICING_PLANS.core.priceLabel}`,
-    ctaSecondary: `Pro Access — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaPrimary: "Unlock Core",
+    ctaSecondary: "Pro Access",
     features: [
       "Unlimited symbol tracking",
       "Live signal label monitoring",
@@ -222,13 +219,13 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Symbol Intelligence Locked",
     subtitle: "DEEP SYMBOL ANALYSIS",
     description:
-      `Full AI-powered symbol intelligence — regime fit, momentum score, signal classification, and factor breakdown. Unlock with Core at ${PRICING_PLANS.core.priceLabel}.`,
+      `Full AI-powered symbol intelligence — regime fit, momentum score, signal classification, and factor breakdown. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: `Unlock Core — ${PRICING_PLANS.core.priceLabel}`,
-    ctaSecondary: `Pro Access — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaPrimary: "Unlock Core",
+    ctaSecondary: "Pro Access",
     features: [
       "AI signal classification",
       "Regime fit scoring",
@@ -241,13 +238,13 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Opportunity Radar Locked",
     subtitle: "COMPLETE OPPORTUNITY RADAR",
     description:
-      `Full access to FAULTLINE's Opportunity Radar — ranked opportunities, entry zones, and regime-weighted conviction scores. Unlock with Core at ${PRICING_PLANS.core.priceLabel}.`,
+      `Full access to FAULTLINE's Opportunity Radar — ranked opportunities, entry zones, and regime-weighted conviction scores. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: `Unlock Core — ${PRICING_PLANS.core.priceLabel}`,
-    ctaSecondary: `Pro Access — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaPrimary: "Unlock Core",
+    ctaSecondary: "Pro Access",
     features: [
       "Ranked opportunity list",
       "Entry zone identification",
@@ -260,13 +257,13 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Trade Journal Locked",
     subtitle: "PROFESSIONAL TRADE JOURNAL",
     description:
-      `Log trades, track performance, and identify patterns in your decision-making. Available with Trader at ${PRICING_PLANS.core.priceLabel}.`,
+      `Log trades, track performance, and identify patterns in your decision-making. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
     icon: <BarChart2 className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: `Unlock Core — ${PRICING_PLANS.core.priceLabel}`,
-    ctaSecondary: `Pro Access — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaPrimary: "Unlock Core",
+    ctaSecondary: "Pro Access",
     features: [
       "Trade logging with context",
       "Win rate & P&L tracking",
@@ -279,13 +276,13 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Social Intelligence Locked",
     subtitle: "SOCIAL SIGNAL INTELLIGENCE",
     description:
-      `Monitor social sentiment, narrative shifts, and crowd positioning across markets. Available with Trader at ${PRICING_PLANS.core.priceLabel}.`,
+      `Monitor social sentiment, narrative shifts, and crowd positioning across markets. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
     icon: <Shield className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: `Unlock Core — ${PRICING_PLANS.core.priceLabel}`,
-    ctaSecondary: `Pro Access — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaPrimary: "Unlock Core",
+    ctaSecondary: "Pro Access",
     features: [
       "Social sentiment tracking",
       "Narrative shift detection",
@@ -298,13 +295,13 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Insider Intelligence Locked",
     subtitle: "INSTITUTIONAL FLOW INTELLIGENCE",
     description:
-      `Track institutional positioning, options flow, and insider activity signals. Available with Trader at ${PRICING_PLANS.core.priceLabel}.`,
+      `Track institutional positioning, options flow, and insider activity signals. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
     icon: <Shield className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: `Unlock Core — ${PRICING_PLANS.core.priceLabel}`,
-    ctaSecondary: `Pro Access — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaPrimary: "Unlock Core",
+    ctaSecondary: "Pro Access",
     features: [
       "Institutional flow tracking",
       "Options activity signals",
@@ -317,13 +314,13 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Advanced Alerts Locked",
     subtitle: "PROFESSIONAL ALERT SYSTEM",
     description:
-      `Set unlimited price, signal, and regime-change alerts. Get notified the moment market conditions shift. Available with Trader at ${PRICING_PLANS.core.priceLabel}.`,
+      `Set unlimited price, signal, and regime-change alerts. Get notified the moment market conditions shift. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
     icon: <Zap className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: `Unlock Core — ${PRICING_PLANS.core.priceLabel}`,
-    ctaSecondary: `Pro Access — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaPrimary: "Unlock Core",
+    ctaSecondary: "Pro Access",
     features: [
       "Unlimited price alerts",
       "Signal change notifications",
@@ -342,8 +339,8 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentColor: "text-cyan-400",
     accentHex: "#00D4FF",
     glowColor: "rgba(0,212,255,0.15)",
-    ctaPrimary: `Unlock Pro — ${PRICING_PLANS.premium.priceLabel}`,
-    ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
+    ctaPrimary: "Unlock Pro",
+    ctaSecondary: "Founding Access",
     features: [
       "Regime-aware recommendations",
       "Conviction scoring",
@@ -361,8 +358,8 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentColor: "text-cyan-400",
     accentHex: "#00D4FF",
     glowColor: "rgba(0,212,255,0.15)",
-    ctaPrimary: `Unlock Pro — ${PRICING_PLANS.premium.priceLabel}`,
-    ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
+    ctaPrimary: "Unlock Pro",
+    ctaSecondary: "Founding Access",
     features: [
       "Forward probability models",
       "Scenario analysis",
@@ -372,7 +369,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     requiredTier: 'premium',
   },
   preFlight: {
-    title: "Market Preflight Locked",
+    title: "Feature Locked",
     subtitle: "INSTITUTIONAL MARKET PREFLIGHT",
     description:
       "Run a full institutional-grade market preflight check before every trading session. Regime, liquidity, volatility, and risk conditions in one view.",
@@ -380,8 +377,8 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentColor: "text-cyan-400",
     accentHex: "#00D4FF",
     glowColor: "rgba(0,212,255,0.15)",
-    ctaPrimary: `Unlock Pro — ${PRICING_PLANS.premium.priceLabel}`,
-    ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
+    ctaPrimary: "Unlock Pro",
+    ctaSecondary: "Founding Access",
     features: [
       "Pre-session risk assessment",
       "Regime & liquidity check",
@@ -394,18 +391,18 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Day Trade Intelligence Locked",
     subtitle: "INTRADAY INTELLIGENCE",
     description:
-      "Institutional intraday intelligence — session bias, opening range analysis, key levels, and real-time regime shifts for active traders.",
+      "Institutional intraday intelligence — session bias, opening range analysis, key levels, and regularly refreshed regime shifts for active traders.",
     icon: <BarChart2 className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#00D4FF",
     glowColor: "rgba(0,212,255,0.15)",
-    ctaPrimary: `Unlock Pro — ${PRICING_PLANS.premium.priceLabel}`,
-    ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
+    ctaPrimary: "Unlock Pro",
+    ctaSecondary: "Founding Access",
     features: [
       "Session bias analysis",
       "Opening range intelligence",
       "Key intraday levels",
-      "Real-time regime shifts",
+      "Regularly refreshed regime shifts",
     ],
     requiredTier: 'premium',
   },
@@ -418,8 +415,8 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentColor: "text-cyan-400",
     accentHex: "#00D4FF",
     glowColor: "rgba(0,212,255,0.15)",
-    ctaPrimary: `Unlock Pro — ${PRICING_PLANS.premium.priceLabel}`,
-    ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
+    ctaPrimary: "Unlock Pro",
+    ctaSecondary: "Founding Access",
     features: [
       "Unified regime dashboard",
       "Cross-market intelligence",
@@ -617,54 +614,15 @@ export function PremiumGateFull({
             ))}
           </div>
 
-          {/* Founding urgency banner (only for premium/founding gates) */}
-          {(GATE_REQUIRED_TIER[variant] === 'premium') && (
-            <>
-              <div
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg mb-2 text-center"
-                style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.2)' }}
-              >
-                <div className="relative flex items-center justify-center">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#FFD700]" />
-                  <div className="absolute w-3 h-3 rounded-full bg-[#FFD700]/20 animate-ping" />
-                </div>
-                <span className="text-[10px] font-mono tracking-[0.25em] text-[#FFD700]/80">
-                  FOUNDING ACCESS OPEN — LIMITED AVAILABILITY
-                </span>
-              </div>
-              <p className="text-[9px] font-mono text-[#FFD700]/50 text-center mb-6 tracking-widest">
-                FOUNDING COHORT IS LIMITED. SPOTS CLOSE WITHOUT NOTICE.
-              </p>
-            </>
-          )}
-
-          {/* Tier separator */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, transparent, ${cfg.accentHex}20)` }} />
-            <span className="text-[9px] font-mono tracking-[0.3em] text-white/20">UPGRADE TO UNLOCK</span>
-            <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, ${cfg.accentHex}20, transparent)` }} />
-          </div>
-
           {/* CTA buttons */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            {isLoggedIn ? (
+            {isLoggedIn && !PAID_PLANS_ON_SALE ? (
+              <p data-paid-plans-not-on-sale className="text-white/40 text-xs font-mono tracking-widest">
+                {PAID_PLANS_NOT_ON_SALE_COPY} Existing account access is preserved.
+              </p>
+            ) : isLoggedIn ? (
               // Logged-in users: show Stripe upgrade buttons based on context
               <>
-                {GATE_REQUIRED_TIER[variant] === 'core' && !isCoreTier && (
-                  <button
-                    onClick={() => checkoutMutation.mutate({ planId: 'core', origin: window.location.origin })}
-                    disabled={checkoutMutation.isPending}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-widest transition-all duration-200 hover:scale-[1.02] active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed"
-                    style={{
-                      background: "#22D3EE",
-                      color: "#050608",
-                      boxShadow: "0 0 24px rgba(34,211,238,0.45)",
-                    }}
-                  >
-                    <Zap className="w-4 h-4" />
-                    {checkoutMutation.isPending ? 'Loading...' : `Get Trader — ${PRICING_PLANS.core.priceLabel}`}
-                  </button>
-                )}
                 <button
                   onClick={() => checkoutMutation.mutate({ planId: 'premium', origin: window.location.origin })}
                   disabled={checkoutMutation.isPending}
@@ -674,27 +632,14 @@ export function PremiumGateFull({
                     : { background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.25)", color: "#00D4FF" }}
                 >
                   <Crown className="w-4 h-4" />
-                  {checkoutMutation.isPending ? 'Loading...' : `Get Power — ${PRICING_PLANS.premium.priceLabel}`}
-                </button>
-                <button
-                  onClick={() => checkoutMutation.mutate({ planId: 'founding', origin: window.location.origin })}
-                  disabled={checkoutMutation.isPending}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-widest transition-all duration-200 hover:scale-[1.02] active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed"
-                  style={{
-                    background: "rgba(255,215,0,0.08)",
-                    border: "1px solid rgba(255,215,0,0.25)",
-                    color: "#FFD700",
-                  }}
-                >
-                  <Shield className="w-4 h-4" />
-                  {checkoutMutation.isPending ? 'Loading...' : `Founding Member — ${PRICING_PLANS.founding.priceLabel}`}
+                  {checkoutMutation.isPending ? 'Loading...' : `FAULTLINE Intelligence — ${PRICING_PLANS.premium.priceLabel}`}
                 </button>
               </>
             ) : (
               // Unauthenticated: show login / sign up
               <>
                 <a
-                  href={loginUrl}
+                  href="/pricing"
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-widest transition-all duration-200 hover:scale-[1.02] active:scale-[0.97]"
                   style={{
                     background: cfg.accentHex,
@@ -706,11 +651,11 @@ export function PremiumGateFull({
                   {publicPlanCopy(cfg.ctaPrimary)}
                 </a>
                 <a
-                  href={loginUrl}
+                  href="/pricing"
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-widest text-white/50 hover:text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.97]"
                   style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
                 >
-                  {publicPlanCopy(cfg.ctaSecondary)}
+                  {publicPlanCopy(cfg.ctaSecondary, "secondary")}
                 </a>
               </>
             )}
@@ -741,6 +686,8 @@ export function PremiumGateCard({
 }: PremiumGateCardProps) {
   const cfg = GATE_CONFIGS[variant];
   const loginUrl = getLoginUrl();
+  const { isAuthenticated } = useAuth();
+  const showNotOnSale = !PAID_PLANS_ON_SALE && isAuthenticated;
 
   if (compact) {
     return (
@@ -758,8 +705,11 @@ export function PremiumGateCard({
             {label ?? cfg.title}
           </span>
         </div>
+        {showNotOnSale ? (
+          <span data-paid-plans-not-on-sale className="text-xs font-mono px-3 py-1.5 whitespace-nowrap text-white/40">{PLAN_NOT_ON_SALE_LABEL}</span>
+        ) : (
         <a
-          href={loginUrl}
+          href="/pricing"
           className="text-xs font-bold px-3 py-1.5 rounded-lg transition-all hover:scale-[1.02] whitespace-nowrap"
           style={{
             background: `${cfg.accentHex}15`,
@@ -769,6 +719,7 @@ export function PremiumGateCard({
         >
           {publicPlanCopy(cfg.ctaPrimary)}
         </a>
+        )}
       </div>
     );
   }
@@ -811,8 +762,11 @@ export function PremiumGateCard({
           {cfg.description}
         </p>
 
+        {showNotOnSale ? (
+          <p data-paid-plans-not-on-sale className="text-white/40 text-xs font-mono tracking-widest">{PAID_PLANS_NOT_ON_SALE_COPY}</p>
+        ) : (
         <a
-          href={loginUrl}
+          href="/pricing"
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm tracking-widest transition-all hover:scale-[1.02] active:scale-[0.97]"
           style={{
             background: cfg.accentHex,
@@ -823,6 +777,7 @@ export function PremiumGateCard({
           <Zap className="w-4 h-4" />
           {publicPlanCopy(cfg.ctaPrimary)}
         </a>
+        )}
       </div>
     </div>
   );
@@ -899,13 +854,15 @@ export function PremiumBlurOverlay({
         <p className="text-white/60 text-sm font-semibold text-center">
           {label ?? cfg.title}
         </p>
-        {isLoggedIn ? (
+        {isLoggedIn && !PAID_PLANS_ON_SALE ? (
+          <span data-paid-plans-not-on-sale className="text-xs font-mono text-white/40">{PAID_PLANS_NOT_ON_SALE_COPY}</span>
+        ) : isLoggedIn ? (
           // Logged in but wrong tier — show upgrade CTA
           <BlurUpgradeCTA variant={variant} cfg={cfg} />
         ) : (
           // Not logged in — show login CTA
           <a
-            href={loginUrl}
+            href="/pricing"
             className="text-xs font-bold px-4 py-2 rounded-lg transition-all hover:scale-[1.02]"
             style={{
               background: cfg.accentHex,

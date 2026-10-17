@@ -8,17 +8,18 @@ import { useEffect, useMemo } from "react";
 import { useSEO } from "@/hooks/useSEO";
 import { getLoginUrl } from "@/const";
 import { trackStartFreeClicked } from "@/hooks/useAnalytics";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const PLATFORM_URL = "/app";
 
 const SEARCH_INTENT_OVERRIDES: Record<string, Pick<SEOLandingPageProps["seo"], "title" | "description">> = {
   "/market-crash-probability-2026": {
-    title: "Market Crash Probability | FAULTLINE",
-    description: "Market crash probability context using systemic market stress, credit conditions, volatility, liquidity, and market-regime evidence.",
+    title: "Market Crash Risk 2026 | FAULTLINE",
+    description: "Market Crash Risk 2026: systemic-pressure context from credit spreads, funding rates, the Treasury curve, inflation, and labor data. FAULTLINE does not offer a crash probability.",
   },
   "/recession-probability": {
-    title: "Recession Probability | FAULTLINE",
-    description: "Recession probability intelligence using yield curves, credit conditions, leading indicators, policy context, and market-regime evidence.",
+    title: "Recession Risk Context | FAULTLINE",
+    description: "Recession-risk context from yield curves, credit spreads, labor data, inflation, and policy rates. FAULTLINE does not offer a recession probability.",
   },
   "/bitcoin-risk-dashboard": {
     title: "Bitcoin Risk Indicator | FAULTLINE",
@@ -169,7 +170,7 @@ export default function SEOLandingPage({
           </a>
           <div className="flex items-center gap-3">
             <a
-              href={getLoginUrl()}
+              href="/pricing"
               className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-white transition-colors px-4 py-2 border border-[rgba(168,184,204,0.25)] hover:border-[rgba(168,184,204,0.55)] rounded"
             >
               MEMBER LOGIN
@@ -180,7 +181,7 @@ export default function SEOLandingPage({
               className="text-[11px] font-mono tracking-widest text-[#050608] font-bold px-4 py-2 rounded"
               style={{ background: accentColor }}
             >
-              ENTER FREE
+              VIEW MEMBERSHIP
             </a>
           </div>
         </div>
@@ -313,10 +314,10 @@ export default function SEOLandingPage({
       <section className="py-20 px-6 bg-[#0C0F16]">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-white mb-4">
-            Move before the market does.
+            See the pressure before the break.
           </h2>
           <p className="text-[#A8B8CC] mb-8">
-            Free access. No credit card required. Upgrade when you need more.
+            FAULTLINE Standard $99/month · FAULTLINE Lifetime $1,500 one-time.
           </p>
           <a
             href={ctaHref}
@@ -324,7 +325,7 @@ export default function SEOLandingPage({
             className="inline-flex items-center justify-center gap-2 text-[13px] font-mono tracking-widest text-[#050608] font-bold px-10 py-4 rounded"
             style={{ background: accentColor }}
           >
-            START FREE →
+            VIEW MEMBERSHIP →
           </a>
         </div>
       </section>
@@ -346,7 +347,7 @@ export default function SEOLandingPage({
             <a href="/legal" className="hover:text-[#00D4FF] transition-colors">LEGAL</a>
           </div>
           <div className="text-[10px] font-mono text-[#374151]">
-            © {new Date().getFullYear()} FAULTLINE. Not financial advice.
+            © {new Date().getFullYear()} FAULTLINE. {PUBLIC_DISCLAIMER}
           </div>
         </div>
       </footer>

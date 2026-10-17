@@ -375,10 +375,9 @@ function Router() {
           </Suspense>
         </ErrorBoundary>
       </Route>
-      {/* Bare /mobile and /mobile/ 404'd because /mobile/:tab* requires a tab.
-          Redirect to NOW so Pulse nav and typed URLs never dead-end. */}
-      <Route path="/mobile"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
-      <Route path="/mobile/"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
+      {/* Bare mobile entrypoints redirect to the canonical standalone PWA Pulse route. */}
+      <Route path="/mobile"><Redirect to="/mobile/pulse" /></Route>
+      <Route path="/mobile/"><Redirect to="/mobile/pulse" /></Route>
       {/* Mobile PWA routes — standalone, no AppLayout */}
       <Route path="/mobile/:tab*">
         <ErrorBoundary>
@@ -386,6 +385,7 @@ function Router() {
             <MobileLayout>
               <Suspense fallback={<PageLoader />}>
                 <Switch>
+                  <Route path="/mobile/pulse" component={MobilePulse} />
                   <Route path="/mobile/signals" component={MobileSignals} />
                   <Route path="/mobile/watchlist" component={MobileWatchlist} />
                   <Route path="/mobile/rotation" component={MobileRotation} />
@@ -538,6 +538,12 @@ function Router() {
       <Route path="/crypto/tao">
         <ErrorBoundary><Suspense fallback={<PageLoader />}><TAOSignal /></Suspense></ErrorBoundary>
       </Route>
+      <Route path="/stock/amzn">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><AMZNSignal /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/stock/spy">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><SPYSignal /></Suspense></ErrorBoundary>
+      </Route>
       {/* Dynamic stock/crypto pages — auto-generate for any symbol */}
       <Route path="/stock/:symbol">
         <ErrorBoundary><Suspense fallback={<PageLoader />}><DynamicStockPage /></Suspense></ErrorBoundary>
@@ -605,14 +611,8 @@ function Router() {
       <Route path="/stock/aapl">
         <ErrorBoundary><Suspense fallback={<PageLoader />}><AAPLSignal /></Suspense></ErrorBoundary>
       </Route>
-      <Route path="/stock/amzn">
-        <ErrorBoundary><Suspense fallback={<PageLoader />}><AMZNSignal /></Suspense></ErrorBoundary>
-      </Route>
       <Route path="/stock/msft">
         <ErrorBoundary><Suspense fallback={<PageLoader />}><MSFTSignal /></Suspense></ErrorBoundary>
-      </Route>
-      <Route path="/stock/spy">
-        <ErrorBoundary><Suspense fallback={<PageLoader />}><SPYSignal /></Suspense></ErrorBoundary>
       </Route>
       <Route path="/stock/qqq">
         <ErrorBoundary><Suspense fallback={<PageLoader />}><QQQSignal /></Suspense></ErrorBoundary>

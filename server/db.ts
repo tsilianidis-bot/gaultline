@@ -1487,12 +1487,22 @@ export async function getUsersPendingDripStep(step: number, minAgeMs: number): P
       sql`${users.email} IS NOT NULL`,
     ));
   if (allUsers.length === 0) return [];
+  const acceptedRows = await db.select({ email: foundingAccessRequests.email })
+    .from(foundingAccessRequests)
+    .where(eq(foundingAccessRequests.status, "approved"));
+  const acceptedEmails = new Set(
+    acceptedRows.map(row => row.email.toLowerCase().trim()),
+  );
   // Get user IDs that already received this step
   const sentRows = await db.select({ userId: onboardingEmailSequence.userId })
     .from(onboardingEmailSequence)
     .where(eq(onboardingEmailSequence.step, step));
   const sentSet = new Set(sentRows.map(r => r.userId));
-  return allUsers.filter(u => !sentSet.has(u.id));
+  return allUsers.filter(user => (
+    !sentSet.has(user.id)
+    && Boolean(user.email)
+    && acceptedEmails.has(user.email!.toLowerCase().trim())
+  ));
 }
 
 // ── Stripe webhook idempotency ────────────────────────────────────────────────

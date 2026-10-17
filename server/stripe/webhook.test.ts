@@ -8,7 +8,7 @@
  *   4. invoice.payment_failed      → log warning (no tier change)
  *
  * Also tests:
- *   - Test event passthrough (evt_test_ prefix)
+ *   - No evt_test_ signature bypass
  *   - Signature verification failure
  *   - Missing user_id metadata guard
  *   - Unknown customer guard
@@ -106,9 +106,12 @@ describe('handleStripeWebhook', () => {
     vi.clearAllMocks();
   });
 
-  // ── Test event passthrough ──────────────────────────────────────────────────
-  describe('test event passthrough', () => {
-    it('returns verified:true for evt_test_ events without signature check', async () => {
+  // ── No evt_test_ bypass ────────────────────────────────────────────────────
+  describe('evt_test_ events', () => {
+    it('does not bypass signature verification for evt_test_ events', async () => {
+      vi.mocked(stripe.webhooks.constructEvent).mockImplementation(() => {
+        throw new Error('No signatures found matching the expected signature for payload');
+      });
       const body = JSON.stringify({ id: 'evt_test_abc123', type: 'checkout.session.completed' });
       const req = {
         headers: { 'stripe-signature': 'invalid-sig' },
@@ -118,14 +121,15 @@ describe('handleStripeWebhook', () => {
 
       await handleStripeWebhook(req, res);
 
-      expect(res.json).toHaveBeenCalledWith({ verified: true });
-      expect(stripe.webhooks.constructEvent).not.toHaveBeenCalled();
+      expect(stripe.webhooks.constructEvent).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).not.toHaveBeenCalledWith({ verified: true });
     });
   });
 
   // ── Signature verification failure ─────────────────────────────────────────
   describe('signature verification', () => {
-    it('returns 200 with verified:false when signature is invalid', async () => {
+    it('returns 400 with verified:false when signature is invalid', async () => {
       vi.mocked(stripe.webhooks.constructEvent).mockImplementation(() => {
         throw new Error('No signatures found matching the expected signature for payload');
       });
@@ -135,6 +139,7 @@ describe('handleStripeWebhook', () => {
 
       await handleStripeWebhook(req, res);
 
+      expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({ verified: false })
       );

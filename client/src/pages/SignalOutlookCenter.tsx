@@ -10,6 +10,9 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { useIsMobile } from "@/hooks/useMobile";
 import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
+import { formatFactorScore } from "@/lib/factorScoreDisplay";
+import { outlookEnvironmentDisplay } from "@/lib/outlookEnvironmentDisplay";
 import { useAuth } from "@/_core/hooks/useAuth";
 import PageHeader from "@/components/PageHeader";
 import { TickerChip } from "@/components/TickerActionMenu";
@@ -208,7 +211,7 @@ function ScoreBar({ score, label, weight, note }: { score: number; label: string
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563" }}>
               ×{(weight * 100).toFixed(0)}%
             </span>
-            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: "13px", fontWeight: 700, color }}>{score}</span>
+            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: "13px", fontWeight: 700, color }}>{formatFactorScore(score)}</span>
           </div>
         </div>
         <div style={{ height: "3px", background: "rgba(255,255,255,0.06)", borderRadius: "2px", overflow: "hidden" }}>
@@ -269,7 +272,7 @@ function TopOpportunityCard({
     assetType: "stock" | "crypto";
     outlookScore: number;
     direction: OutlookDirection;
-    confidence: number;
+    confidence?: number | null; // QA r13 B12: withheld by the server; never rendered
     riskLevel: OutlookRiskLevel;
     regimeAlignment: string;
     topReason: string;
@@ -350,7 +353,7 @@ function TopOpportunityCard({
           fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px",
           color: "#4B5563",
         }}>
-          {opp.confidence}% conf
+          conf: {CONFIDENCE_NOT_ESTABLISHED}
         </span>
       </div>
 
@@ -439,6 +442,7 @@ function FullOutlookView({
   }
 
   const d = data;
+  const env = outlookEnvironmentDisplay(d.canonicalState);
   const dirColor = directionColor(d.direction);
   const rkColor = riskColor(d.riskLevel);
   const rdColor = readinessColor(d.tradeReadiness);
@@ -510,7 +514,7 @@ function FullOutlookView({
           </div>
           <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(255,255,255,0.3)" }}>Confidence:</span>
-            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: scoreColor(d.confidence) }}>{d.confidence}%</span>
+            <span data-confidence-status="not-established" style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#94A3B8" }}>{CONFIDENCE_NOT_ESTABLISHED}</span>
           </div>
         </div>
         <div style={{ padding: "9px 12px", background: "rgba(0,0,0,0.3)", borderRadius: "5px", borderLeft: `3px solid ${dirColor}`, marginBottom: "8px" }}>
@@ -598,7 +602,7 @@ function FullOutlookView({
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: "8px" }}>
             {[
-              { label: "Confidence", value: `${d.confidence}%`, tip: "How strongly the 8-factor model agrees on the direction. Higher = more conviction." },
+              { label: "Confidence", value: CONFIDENCE_NOT_ESTABLISHED, tip: "No calibrated confidence exists for this outlook. The outlook score is a heuristic 8-factor composite." },
               { label: "Time Horizon", value: d.timeHorizon, tip: "The timeframe this outlook is calibrated for." },
               { label: "Regime", value: d.regimeAlignment, tip: "Whether the current FAULTLINE regime supports or opposes this outlook." },
               { label: "Generated", value: new Date(d.generatedAt).toLocaleTimeString(), tip: "When this outlook was computed." },
@@ -846,16 +850,17 @@ function FullOutlookView({
       <Section
         title="FAULTLINE Environment"
         icon={<Activity size={14} color="#00D4FF" />}
-        badge={`PRESSURE ${d.environment.pressureIndex}`}
-        badgeColor={d.environment.pressureIndex > 65 ? "#FF2D55" : d.environment.pressureIndex > 45 ? "#FFD700" : "#00FF88"}
+        badge={env.badge}
+        badgeColor={env.pressureIndex === null ? "#94A3B8" : env.pressureIndex > 65 ? "#FF2D55" : env.pressureIndex > 45 ? "#FFD700" : "#00FF88"}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "8px", marginBottom: "12px" }}>
           {[
-            { label: "Pressure Index", value: `${d.environment.pressureIndex}/100`, color: scoreColor(100 - d.environment.pressureIndex), tip: "FAULTLINE composite macro stress score. Higher = more systemic risk." },
+            { label: "Pressure Index", value: env.pressureText, color: env.pressureIndex === null ? "#94A3B8" : scoreColor(100 - env.pressureIndex), tip: "FAULTLINE composite macro stress score. Higher = more systemic risk." },
             { label: "Trend", value: d.environment.pressureTrend, color: d.environment.pressureTrend === "Rising" ? "#FF2D55" : d.environment.pressureTrend === "Falling" ? "#00FF88" : "#64B5F6", tip: "Direction of recent pressure change." },
-            { label: "Regime", value: d.environment.regimeLabel, color: "#94A3B8", tip: "Current FAULTLINE regime classification." },
-            { label: "Bull Probability", value: `${d.environment.bullProbability}%`, color: "#00FF88", tip: "Estimated probability of bullish conditions based on current pressure." },
-            { label: "Bear Probability", value: `${d.environment.bearProbability}%`, color: "#FF2D55", tip: "Estimated probability of bearish conditions based on current pressure." },
+            { label: "Regime", value: env.regimeText, color: "#94A3B8", tip: "Current FAULTLINE regime classification." },
+            // Probability contract: no governed bull/bear probability model exists.
+            { label: "Bull Probability", value: "Not offered", color: "#94A3B8", tip: "FAULTLINE does not offer a bull probability: no governed or calibrated model produces one. Read the Pressure Index instead." },
+            { label: "Bear Probability", value: "Not offered", color: "#94A3B8", tip: "FAULTLINE does not offer a bear probability: no governed or calibrated model produces one. Read the Pressure Index instead." },
           ].map(item => (
             <div key={item.label} style={{
               background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
@@ -1149,17 +1154,15 @@ function FullOutlookView({
           </div>
         ))}
         <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
+          {/* QA r13 B12: the AI confidence was an LLM self-rating (default 60, fallback 55): no bar, no %. */}
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563" }}>AI CONFIDENCE</span>
-          <div style={{ flex: 1, height: "3px", background: "rgba(255,255,255,0.06)", borderRadius: "2px" }}>
-            <div style={{ height: "100%", width: `${d.diagnosticIntegration.confidence}%`, background: "#A78BFA", borderRadius: "2px" }} />
-          </div>
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#A78BFA" }}>{d.diagnosticIntegration.confidence}%</span>
+          <span data-ai-confidence="withheld" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#A78BFA" }}>—</span>
         </div>
       </Section>
 
       {/* ── MARKET PREFLIGHT IMPACT ── */}
       <Section
-        title="Market Preflight Impact"
+        title="Impact on this reading"
         icon={<Shield size={14} color="#00D4FF" />}
         collapsible
       >
@@ -1222,7 +1225,8 @@ function FullOutlookView({
             {/* Confidence + Risk + Max Hold row */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
               {[
-                { label: "PARAMETER CONFIDENCE", value: `${d.tradeFramework.parameterConfidence}/100`, color: d.tradeFramework.parameterConfidence >= 60 ? "#00FF88" : d.tradeFramework.parameterConfidence >= 40 ? "#FF9500" : "#FF2D55" },
+                // QA r13 B12: parameter "confidence" is score − penalties (heuristic), withheld by the server.
+                { label: "PARAMETER CONFIDENCE", value: CONFIDENCE_NOT_ESTABLISHED, color: "#94A3B8" },
                 { label: "RISK RATING", value: d.tradeFramework.riskRating, color: d.tradeFramework.riskRating === "Low" ? "#00FF88" : d.tradeFramework.riskRating === "Moderate" ? "#64B5F6" : d.tradeFramework.riskRating === "High" ? "#FF9500" : "#FF2D55" },
                 { label: "MAX HOLD TIME", value: d.tradeFramework.maxHoldTime, color: "#94A3B8" },
               ].map(item => (

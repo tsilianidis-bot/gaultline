@@ -6,8 +6,11 @@
 // ============================================================
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { score100Value } from "@/lib/displayFallbacks";
 import { trpc } from "@/lib/trpc";
+import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
 import { useEngine } from "@/contexts/EngineContext";
+import { canonicalRegimeDisplayColor } from "@/lib/marketStateProjection";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Link } from "wouter";
 import { RecoveryStatusBadge, AftershockRiskInline } from "@/components/RecoveryStatus";
@@ -34,7 +37,10 @@ interface CryptoSignalResult {
   cryptoRegime?: "Bullish" | "Neutral" | "Defensive" | "Risk-Off";
   regimeConflict?: boolean;
   regimeConflictExplanation?: string | null;
-  confidence: number;
+  // Launch fix-up: the server withholds the formula confidence (always null).
+  confidence: number | null;
+  // Ordinal ordering position from the screener (1 = first). Never displayed.
+  strengthRank?: number;
   strength: "Strong" | "Moderate" | "Weak";
   timeframe: "Short-Term" | "Swing" | "Watch";
   rationale: string;
@@ -97,6 +103,8 @@ const TREND_COLORS: Record<string, string> = {
   Sideways:  "#FFD700",
 };
 
+const UNAVAILABLE_CRYPTO_CONTEXT = { headline: "REGIME UNAVAILABLE", description: "The canonical market state is unavailable, so crypto regime context is withheld.", bullish: "Unavailable", bearish: "Unavailable" };
+
 const REGIME_CRYPTO_CONTEXT: Record<string, { headline: string; description: string; bullish: string; bearish: string }> = {
   "LOW RISK":      { headline: "RISK-ON CONDITIONS", description: "Liquidity expanding, volatility compressed. Conditions favour momentum and altcoin exposure.", bullish: "BTC, ETH, high-beta alts, DeFi", bearish: "Stablecoins, cash" },
   "MODERATE RISK": { headline: "MIXED CONDITIONS", description: "Macro pressure moderate. BTC dominance and liquidity signals are key. Selective exposure warranted.", bullish: "BTC, large-cap alts", bearish: "High-risk micro-caps, leverage" },
@@ -108,6 +116,12 @@ const CRYPTO_CATEGORIES = ["All", "Large Cap", "Mid Cap", "DeFi", "Layer-1", "La
 type CryptoCategory = typeof CRYPTO_CATEGORIES[number];
 
 // ── Helpers ───────────────────────────────────────────────────
+
+// Launch fix-up: screener rows are ordered by the server's ordinal
+// strengthRank (1 = first); rows without a rank keep their server order.
+function byStrengthRank(a: CryptoSignalResult, b: CryptoSignalResult): number {
+  return (a.strengthRank ?? Number.MAX_SAFE_INTEGER) - (b.strengthRank ?? Number.MAX_SAFE_INTEGER);
+}
 
 function fmt(n: number, decimals = 2): string {
   if (n === 0) return "0.00";
@@ -323,7 +337,8 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
         {[
           { label: "TREND", value: sig.technicals.trend.toUpperCase(), color: TREND_COLORS[sig.technicals.trend] },
           { label: "MOMENTUM", value: `${sig.technicals.momentumScore}`, color: sig.technicals.momentumScore >= 60 ? "#00D4FF" : sig.technicals.momentumScore <= 40 ? "#FF2D55" : "#FFD700" },
-          { label: "CONFIDENCE", value: `${sig.confidence}%`, color: sig.confidence >= 70 ? "#00D4FF" : sig.confidence >= 50 ? "#FFD700" : "#94A3B8" },
+          // QA r13 B14: signal "confidence" is min(95, 55 + |score| × 5) — a formula, not calibrated.
+          { label: "CONFIDENCE", value: CONFIDENCE_NOT_ESTABLISHED, color: "#94A3B8" },
         ].map(({ label, value, color }) => (
           <div key={label} style={{ background: "rgba(255,255,255,0.02)", borderRadius: "2px", padding: "4px 6px" }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "6px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em", marginBottom: "2px" }}>{label}</div>
@@ -334,7 +349,7 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
 
       {/* Regime alignment */}
       <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.08em" }}>REGIME:</span>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.08em" }}>REGIME ALIGNMENT:</span>
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", fontWeight: 700, color: regimeAlignColor }}>{sig.regimeAlignment.toUpperCase()}</span>
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.4)" }}>({sig.regimeAlignmentScore}/10)</span>
       </div>
@@ -429,7 +444,7 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
                 { label: "BTC DOMINANCE", value: sig.cryptoFactors.btcDominanceEffect, color: sig.cryptoFactors.btcDominanceEffect === "Tailwind" ? "#00D4FF" : sig.cryptoFactors.btcDominanceEffect === "Headwind" ? "#FF2D55" : "#94A3B8" },
                 { label: "VOLATILITY", value: sig.cryptoFactors.volatilityRegime, color: sig.cryptoFactors.volatilityRegime === "High" ? "#FF9500" : sig.cryptoFactors.volatilityRegime === "Low" ? "#00D4FF" : "#94A3B8" },
                 { label: "ATH PROXIMITY", value: sig.cryptoFactors.athProximity, color: sig.cryptoFactors.athProximity === "Near ATH" ? "#FF9500" : sig.cryptoFactors.athProximity === "Deep Discount" ? "#00D4FF" : "#94A3B8" },
-                { label: "LIQUIDITY SCORE", value: `${sig.cryptoFactors.liquidityScore.toFixed(1)}/10`, color: sig.cryptoFactors.liquidityScore >= 7 ? "#00D4FF" : sig.cryptoFactors.liquidityScore >= 4 ? "#FFD700" : "#FF2D55" },
+                { label: "ASSET VOLUME LIQUIDITY", value: `${sig.cryptoFactors.liquidityScore.toFixed(1)}/10`, color: sig.cryptoFactors.liquidityScore >= 7 ? "#00D4FF" : sig.cryptoFactors.liquidityScore >= 4 ? "#FFD700" : "#FF2D55" },
               ].map(({ label, value, color }) => (
                 <div key={label}>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>{label}</div>
@@ -622,7 +637,6 @@ function SignalsSummaryBar({ signals }: { signals: CryptoSignalResult[] }) {
 
   const strongBuys  = signals.filter(s => s.action === "BUY"  && s.strength === "Strong").length;
   const strongSells = signals.filter(s => s.action === "SELL" && s.strength === "Strong").length;
-  const avgConf = Math.round(signals.reduce((s, v) => s + v.confidence, 0) / signals.length);
 
   const sentiment = counts.BUY > counts.SELL + counts.HOLD
     ? { label: "BULLISH BIAS", color: "#00D4FF" }
@@ -641,7 +655,7 @@ function SignalsSummaryBar({ signals }: { signals: CryptoSignalResult[] }) {
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.2em", color: "rgba(100,116,139,0.5)" }}>CRYPTO SIGNALS</span>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", fontWeight: 700, color: sentiment.color, letterSpacing: "0.1em" }}>{sentiment.label}</span>
         </div>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>AVG CONFIDENCE: <span style={{ color: "#94A3B8" }}>{avgConf}%</span></span>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>CONFIDENCE: <span style={{ color: "#94A3B8" }}>{CONFIDENCE_NOT_ESTABLISHED}</span></span>
       </div>
       <div style={{ display: "flex", gap: "8px", marginBottom: "10px", flexWrap: "wrap" }}>
         {(["BUY","SELL","HOLD","WATCH"] as TradingAction[]).map(action => {
@@ -779,9 +793,21 @@ function CryptoSignalsInner() {
   const engine = useEngine();
   const { user } = useAuth();
 
-  const regimeKey = useMemo(() => mapRegimeToKey(engine?.output?.regime?.label ?? "MODERATE RISK"), [engine?.output?.regime?.label]);
-  const regimeCtx = REGIME_CRYPTO_CONTEXT[regimeKey];
-  const regimeColor = engine?.output?.regime?.color ?? "#00D4FF";
+  // Without MarketState the engine regime/score are the demo baseline: the canonical
+  // regime and pressure are used instead, or the context reads "Unavailable".
+  const degraded = engine?.marketMode === "deterministic-fallback";
+  const canonicalPressure = engine?.canonicalState?.pressureIndex;
+  const canonicalPressure100 = typeof canonicalPressure === "number" && Number.isFinite(canonicalPressure) ? canonicalPressure : null;
+  const regimeSourceLabel = degraded ? (engine?.canonicalState?.regime ?? null) : (engine?.output?.regime?.label ?? "MODERATE RISK");
+  const regimeKey = useMemo(() => (regimeSourceLabel ? mapRegimeToKey(regimeSourceLabel) : null), [regimeSourceLabel]);
+  const regimeCtx = regimeKey ? REGIME_CRYPTO_CONTEXT[regimeKey] : UNAVAILABLE_CRYPTO_CONTEXT;
+  const regimeColor = degraded
+    ? canonicalRegimeDisplayColor(canonicalPressure100, engine?.canonicalState?.regime)
+    : (engine?.output?.regime?.color ?? "#00D4FF");
+  // REGIME SCORE on 0–100: the canonical Pressure Index when degraded, else the engine composite.
+  const regimeScoreText = degraded
+    ? (canonicalPressure100 === null ? score100Value(null) : String(Math.round(canonicalPressure100)))
+    : score100Value(engine?.output?.overall?.score);
 
   const [activeCategory, setActiveCategory] = useState<CryptoCategory>("All");
   const [filterAction, setFilterAction] = useState<TradingAction | "All">("All");
@@ -807,6 +833,8 @@ function CryptoSignalsInner() {
   }, [screenerData]);
 
   // ── Filter and sort ────────────────────────────────────────
+  // Launch fix-up: rows keep the screener's ordinal strengthRank order (the
+  // confidence number itself is no longer sent).
   const displayedSignals = useMemo(() => {
     if (!screenerData?.signals) return [];
     return screenerData.signals
@@ -815,15 +843,15 @@ function CryptoSignalsInner() {
         if (filterAction !== "All" && sig.action !== filterAction) return false;
         return true;
       })
-      .sort((a, b) => b.confidence - a.confidence);
+      .sort(byStrengthRank);
   }, [screenerData, activeCategory, filterAction]);
 
   // ── Top signals ────────────────────────────────────────────
   const topSignals = useMemo(() => {
     if (!screenerData?.signals || screenerData.signals.length === 0) return null;
     const sigs = screenerData.signals;
-    const buys  = sigs.filter(s => s.action === "BUY").sort((a, b) => b.confidence - a.confidence);
-    const sells = sigs.filter(s => s.action === "SELL").sort((a, b) => b.confidence - a.confidence);
+    const buys  = sigs.filter(s => s.action === "BUY").sort(byStrengthRank);
+    const sells = sigs.filter(s => s.action === "SELL").sort(byStrengthRank);
     const momentum = [...sigs].sort((a, b) => b.technicals.momentumScore - a.technicals.momentumScore);
     const volatile = [...sigs].sort((a, b) => b.technicals.volatility24h - a.technicals.volatility24h);
     return {
@@ -864,13 +892,13 @@ function CryptoSignalsInner() {
                   regime: regimeCtx.headline,
                   btcDominance: screenerData.btcDominance,
                   totalMarketCap: screenerData.totalMarketCap,
-                  signals: screenerData.signals?.slice(0, 15).map((s: { symbol: string; action: string; actionLabel?: string; cryptoRegime?: string; regimeConflict?: boolean; confidence?: number }) => ({
+                  signals: screenerData.signals?.slice(0, 15).map((s: { symbol: string; action: string; actionLabel?: string; cryptoRegime?: string; regimeConflict?: boolean }) => ({
                     symbol: s.symbol,
                     action: s.action,
                     actionLabel: s.actionLabel,
                     cryptoRegime: s.cryptoRegime,
                     regimeConflict: s.regimeConflict,
-                    confidence: s.confidence,
+                    // QA r13 B14: no signal confidence in new share snapshots.
                   }))
                 }}
                 size="sm"
@@ -880,7 +908,7 @@ function CryptoSignalsInner() {
             <div>
               <div style={{ fontSize: "8px", color: "rgba(100,116,139,0.5)", marginBottom: "2px" }}>REGIME SCORE</div>
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color: regimeColor }}>
-                {engine?.output?.overall?.score?.toFixed(1) ?? "—"}<span style={{ fontSize: "12px", color: "rgba(100,116,139,0.5)" }}>/10</span>
+                {regimeScoreText}<span style={{ fontSize: "12px", color: "rgba(100,116,139,0.5)" }}>/100</span>
               </div>
             </div>
           </div>
