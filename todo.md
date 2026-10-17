@@ -5384,3 +5384,10 @@
 - [x] Apply the Integrity Gate at the canonical evidence boundary. Reject NaN/infinite values, missing/invalid timestamps, unidentified sources, unhealthy providers, stale current-use claims, and modeled outputs without model version. Retain last verified observations only as explicitly historical.
 - [x] Keep the authenticated evidence interface and collector disabled by default and server-side only. Do not activate visual nodes, an activity stream, feature flags, provider credentials, production data, migrations, or a deployment.
 - [ ] Re-run complete validation and publish the dedicated rebased Phase 1 review branch and pull request without merging or deploying.
+
+## 2026-10-17 — Disposable Track Record integration onto #97 and #98
+
+- [x] Keep #97 as the owner of MarketState freshness, source provenance, and `shared/nyseSession.ts`.
+- [x] Keep #98 as the owner of the verified evidence pipeline. Do not add a second collector or store.
+- [x] Add only the Track Record surface from #95: append-only assessments, capture guards, outcome resolution, and read-only publication.
+- [ ] Owner approval before any push, pull request, merge, flag change, or production operation.

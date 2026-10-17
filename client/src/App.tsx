@@ -66,6 +66,7 @@ const AdminBlog        = lazy(() => import("./pages/AdminBlog"));
 const XPostGenerator   = lazy(() => import("./pages/XPostGenerator"));
 const XPostQueue       = lazy(() => import("./pages/XPostQueue"));
 const TrackRecord      = lazy(() => import("./pages/TrackRecord"));
+const IntelligenceTrackRecord = lazy(() => import("./pages/IntelligenceTrackRecord"));
 const TimeMachine      = lazy(() => import("./pages/TimeMachine"));
 const DayTradeIntelligence = lazy(() => import("./pages/DayTradeIntelligence"));
 const DayTradeDetail       = lazy(() => import("./pages/DayTradeDetail"));
@@ -417,6 +418,14 @@ function Router() {
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <TrackRecord />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+      {/* Intelligence accountability record. Publication is flag-gated inside the page. */}
+      <Route path="/intelligence-track-record">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <IntelligenceTrackRecord />
           </Suspense>
         </ErrorBoundary>
       </Route>
@@ -807,6 +816,7 @@ function Router() {
               <Route path="/app/blog/:slug" component={BlogPost} />
               <Route path="/app/blog" component={Blog} />
               <Route path="/app/track-record" component={TrackRecord} />
+              <Route path="/app/intelligence-track-record" component={IntelligenceTrackRecord} />
               <Route path="/app/time-machine" component={TimeMachine} />
               <Route path="/app/reading-history" component={ReadingHistory} />
               <Route path="/app/seo-optimizer" component={SeoOptimizer} />

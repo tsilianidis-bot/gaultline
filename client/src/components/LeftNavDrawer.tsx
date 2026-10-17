@@ -25,6 +25,7 @@ import {
   LineChart, Cpu, MessageSquare, Send, PieChart,
   Library, GraduationCap, Scale, Globe,
 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 import { useDrawer } from "@/contexts/DrawerContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -80,6 +81,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "historical-analogs", label: "Historical Analogs",      icon: History,      path: "/app/historical-analogs" },
       { id: "simulate-pressure",  label: "Simulate Pressure",       icon: Gauge,        path: "/app/simulate-pressure" },
       { id: "track-record",       label: "Track Record",            icon: Trophy,       path: "/app/track-record" },
+      { id: "intelligence-track-record", label: "Intelligence Track Record", icon: Scale, path: "/app/intelligence-track-record" },
       { id: "validation-lab",     label: "Validation Lab",          icon: FlaskConical, path: "/app/validation-lab" },
       { id: "decision-ledger",    label: "Decision Ledger",         icon: BookOpen,     path: "/app/decision-ledger" },
       { id: "methodology",        label: "Methodology",             icon: Scale,        path: "/methodology" },
@@ -149,6 +151,8 @@ export default function LeftNavDrawer({ breachCount = 0 }: LeftNavDrawerProps) {
   const { leftOpen, toggleLeft, closeLeft } = useDrawer();
   const { user: authUser } = useAuth();
   const isAdmin = authUser?.role === "admin";
+  const accountability = trpc.intelligenceAccountability.publicRecord.useQuery(undefined, { retry: false, staleTime: 60_000 });
+  const showAccountability = accountability.data?.enabled === true;
   const [search, setSearch] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -201,14 +205,19 @@ export default function LeftNavDrawer({ breachCount = 0 }: LeftNavDrawerProps) {
   // Filter items by search
   const filteredItems = search.trim()
     ? ALL_ITEMS.filter(item =>
-        item.label.toLowerCase().includes(search.toLowerCase()) ||
-        item.path.toLowerCase().includes(search.toLowerCase())
+        (item.id !== "intelligence-track-record" || showAccountability) &&
+        (item.label.toLowerCase().includes(search.toLowerCase()) ||
+        item.path.toLowerCase().includes(search.toLowerCase()))
       )
     : null;
 
-  // Groups to render (with admin if applicable)
+  // Groups to render (with admin if applicable). The accountability link stays
+  // in Research and is hidden until the publication flag is on.
   const groups: NavGroup[] = [
-    ...NAV_GROUPS,
+    ...NAV_GROUPS.map(group => ({
+      ...group,
+      items: group.items.filter(item => item.id !== "intelligence-track-record" || showAccountability),
+    })),
     ...(isAdmin ? [{ label: "OWNER PORTAL", items: ADMIN_ITEMS }] : []),
   ];
 

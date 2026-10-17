@@ -13,6 +13,9 @@
  * Registered at: POST /api/scheduled/seismograph-daily
  * Host schedule: 4:15 PM America/New_York on valid NYSE sessions. The handler
  * independently skips callbacks outside that post-close schedule window.
+ * Track Record capture sits inside the pipeline and no-ops unless its own
+ * gates pass: SCHEDULED_CRON, TRACK_RECORD_CRON_WRITES exactly "true", the
+ * intelligence_track_record flag, and fresh verified evidence.
  */
 import { randomUUID } from "node:crypto";
 import type { Request, Response } from "express";
@@ -45,6 +48,7 @@ import { invalidateCanonicalMarketStateCache } from "./marketStateCache";
 import { collectBroadInstitutionalEventOutcomes, recordDailyMarketEvidence } from "./institutionalMemory";
 import { collectForwardChampionOutcomesV2, recordForwardChampionProvenance } from "./algorithmProvenance";
 import { capturesForwardEvidence, championProvenanceKey, etDateOf, resolveRunContext, type RunContext } from "./forwardRunProvenance";
+import { captureTrackRecordFromScheduledRun } from "./trackRecordCapture";
 import { buildAtomicIntelligenceStateManifest, persistAtomicIntelligenceStateManifest } from "./intelligenceGovernance";
 
 function mapPressureLevelToSeismographStress(level: string | null | undefined): SeismographOutput["stressLevel"] {
@@ -347,6 +351,25 @@ export async function runSeismographPipeline(options: { runContext?: RunContext 
   await collectForwardOutcomesForRun(runContext);
   invalidateCanonicalMarketStateCache();
   console.log("[Seismograph] Output persisted to Market Memory");
+
+  // Track record is read-only against the #98 evidence store. It no-ops unless
+  // the run is SCHEDULED_CRON, TRACK_RECORD_CRON_WRITES is exactly "true", the
+  // intelligence_track_record flag is on, and the evidence gate admits fresh
+  // verified inputs. A duplicate Eastern session returns already_recorded.
+  // Failures never change the Seismograph score.
+  try {
+    const capture = await captureTrackRecordFromScheduledRun({
+      run: runContext,
+      pressureIndex: seismographOutput.pressureScore,
+      regime: seismographOutput.regime,
+      generatedAt: runContext.runStartedAt,
+    });
+    if (capture.reason !== "not_scheduled" && capture.reason !== "cron_writes_disabled" && capture.reason !== "flag_disabled") {
+      console.log(`[Seismograph] Track record capture: ${capture.reason}`);
+    }
+  } catch (error) {
+    console.warn("[Seismograph] Track record capture skipped:", error instanceof Error ? error.message : "unavailable");
+  }
 
   return seismographOutput;
 }
