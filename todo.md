@@ -5362,3 +5362,31 @@
 - [x] Create the approved FAULTLINE-branded responsive maintenance screen with no navigation, login prompt, technical detail, countdown, or ETA
 - [x] Validate healthy HTTP delivery and no application/database side effects in local domains
 - [ ] Save the temporary maintenance checkpoint and report apex/www status
+
+## 2026-10-16 — Intelligence Core Phase 1: Verified Data Integration
+
+- [x] Build a server-side, read-only evidence pipeline from the existing canonical MarketState and current Yahoo/Polygon, FRED, and CoinGecko adapters. Reuse their caches, in-flight deduplication, request timeouts, and configured fallbacks; do not create a duplicate market-state pipeline or alter Pressure Index, MarketState calculations, trading tools, Daily Briefs, pricing, or Stripe.
+- [x] Map every returned input to `IntelligenceEvidence`, preserving provider identity, provider observation time, ingestion time, observed-versus-modeled classification, freshness policy, validation status, and model version for modeled outputs. Never use ingestion time as the observation time.
+- [x] Apply the Phase 0 Integrity Gate at the canonical evidence boundary. Reject NaN/infinite values, missing timestamps, unidentified sources, invalid timestamps, unhealthy providers, stale current-use claims, and modeled outputs without model version. Retain last verified observations only as explicitly historical.
+- [x] Add bounded collection, rate-limit handling, source-specific unavailable/degraded states, and last-verified history using existing persistence conventions. Do not create migrations or uncontrolled retries.
+- [x] Expose the feature-gated evidence interface through existing authenticated tRPC conventions. Keep it disabled by default and server-side only; do not activate the animated Core, visual nodes, UI activity stream, or live-event claims in this phase.
+- [x] Add deterministic tests for valid, stale, failed, rate-limited, timestamp-missing, invalid-number, unknown-source, historical, and modeled-without-version cases, plus a regression proving no modification of existing canonical/Pressure behavior.
+- [x] Run diagnostics, focused tests, the full regression suite, and a production build. Record genuine provider-response checks, unavailable sources, credential/rate-limit state, and remaining blockers without exposing secrets.
+- [x] Commit, publish the dedicated feature branch, and open a focused pull request. Do not merge, deploy, enable the feature flag, change provider credentials, or alter production data without explicit approval. Clean PR: #90.
+
+## 2026-10-16 — Intelligence Core Phase 1 Readiness & Phase 2 Preparation
+- [x] Verify the Phase 0 Integrity Gate, Phase 1 evidence contract, canonical boundary adapter, authenticated `intelligenceEvidence.current` endpoint, feature flag, append-only `marketMemory` store, branch, commit, and regression status without rebuilding working components.
+- [x] Perform read-only/safely isolated provider, feature-flag, persistence, deployed-commit, and source-timestamp checks. Explicitly distinguish local adapter evidence from production runtime evidence and retain unavailable/stale source states without synthetic values.
+- [x] Document the exact production-access blocker: the existing Railway API connector has an encrypted project token but is disabled, so Railway runtime, database readback, provider environment presence, and deployment logs remain inaccessible.
+- [x] Prepare Phase 2 NOW-page visual architecture: a feature-gated, accessible constellation and evidence drawer that consumes only validated server evidence and has no automatic event claims or AI-generated market conclusions.
+- [x] Enable the existing Railway API connector only with owner authorization, then run read-only production service, deployment, variable-name, database connectivity, and append-only `marketMemory` read/write verification. **Outcome:** connector is enabled, but its encrypted project token remains empty at runtime; direct Railway and production database reads are blocked without a secure token re-save. No production write was attempted.
+- [x] Implement Phase 1.1 CoinGecko `updated_at` propagation and a reviewed session-aware Yahoo freshness policy before any Phase 2 visual activation.
+
+## 2026-10-16 — Intelligence Core Phase 1.1: Final Evidence Readiness
+- [x] Verify Railway production connectivity, the existing production service/deployment identity, presence-only FRED configuration, authoritative canonical MarketState availability, and existing database access through read-only diagnostics. **Outcome:** production canonical MarketState is reachable and reports FRED healthy; Railway direct diagnostics are blocked because the enabled encrypted project token is not injected into the Sandbox runtime. No credential value was read or printed.
+- [x] Validate `marketMemory` persistence and readback without altering production financial history, creating migrations, enabling flags, or writing production data without separate approval. **Outcome:** local append-only claim, duplicate, insert, and readback regression passes; production readback remains blocked on read-only Railway access and no production row was written.
+- [x] Propagate CoinGecko `/global` `data.updated_at` as the provider observation timestamp; preserve unavailable state whenever that source timestamp is missing, invalid, or stale.
+- [x] Add a session-aware Yahoo quote classification that distinguishes live-capable, delayed, completed-session historical, stale, and unavailable observations without relabeling delayed Yahoo data as live.
+- [x] Project validated evidence into explicit equities, bonds/rates, credit, liquidity, volatility, and crypto domain states while preserving fail-closed handling for stale, missing, invalid, or unavailable data.
+- [x] Preserve Pressure Index, trading tools, Daily Briefs, blogs, pricing, Stripe, authentication, and the existing NOW layout unchanged; add no migrations or production mutations.
+- [x] Run TypeScript, focused and full regression suites, and a production build. Publish a concise evidence-readiness report and keep the feature flag disabled.
