@@ -11,7 +11,10 @@
  * 7. Persist the assembled SeismographOutput to Market Memory
  *
  * Registered at: POST /api/scheduled/seismograph-daily
- * Cron: "0 0 18 * * *" (18:00 UTC / 2pm ET daily, after market close)
+ * Host schedule: 16:15 America/New_York, the NYSE post-close window in
+ * shared/nyseSession.ts (same helper as PR #97 @ d119512). Callbacks outside
+ * that window are skipped. This file does not implement a second calendar,
+ * and it does not retarget the pipeline's UTC date or Pressure Index math.
  */
 import { randomUUID } from "node:crypto";
 import type { Request, Response } from "express";
@@ -42,6 +45,7 @@ import type { FMOSUniversalOutput } from "./fmos/types";
 import { invalidateCanonicalMarketStateCache } from "./marketStateCache";
 import { collectBroadInstitutionalEventOutcomes, recordDailyMarketEvidence } from "./institutionalMemory";
 import { collectForwardChampionOutcomesV2, recordForwardChampionProvenance } from "./algorithmProvenance";
+import { nyseSeismographRunWindow } from "../shared/nyseSession";
 import { capturesForwardEvidence, championProvenanceKey, resolveRunContext, type RunContext } from "./forwardRunProvenance";
 import { captureTrackRecordFromScheduledRun } from "./trackRecordCapture";
 import { buildAtomicIntelligenceStateManifest, persistAtomicIntelligenceStateManifest } from "./intelligenceGovernance";
@@ -321,9 +325,26 @@ export async function handleScheduledSeismograph(
   _req: Request,
   res: Response
 ): Promise<void> {
-  // The cron schedule and a cron-service redeploy hit this same endpoint; the start time
-  // decides SCHEDULED_CRON ([18:00, 18:30) UTC) vs CRON_DEPLOY.
-  const runContext = resolveRunContext("cron-endpoint", new Date());
+  const now = new Date();
+  const runWindow = nyseSeismographRunWindow(now);
+  // The host scheduler and a cron-service redeploy hit the same endpoint. A callback
+  // outside the NYSE post-close window must not record a pre-close observation or a
+  // forward track-record row. PR #97 also coalesces repeats inside one process; this
+  // handler does not copy that map. A second authorized run on the same Eastern
+  // session date is refused by the track-record assessment key.
+  if (!runWindow.isScheduledWindow) {
+    console.warn(`[Seismograph] Scheduled callback skipped: ${runWindow.reason}`);
+    res.json({
+      ok: true,
+      skipped: "outside_nyse_post_close_window",
+      session: runWindow.session,
+      etDate: runWindow.etDate,
+      expectedRunAtEt: runWindow.scheduledRunAtEt,
+      reason: runWindow.reason,
+    });
+    return;
+  }
+  const runContext = resolveRunContext("cron-endpoint", now);
   try {
     const seismographOutput = await runSeismographPipeline({ runContext });
     res.json({

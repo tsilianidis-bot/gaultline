@@ -212,6 +212,19 @@ describe("provenance separation", () => {
     expect(captureScheduledAssessment({ enabled: true, ledger, snapshot }).reason).toBe("appended");
     expect(captureScheduledAssessment({ enabled: true, ledger, snapshot }).reason).toBe("already_recorded");
     expect(ledger.list()).toHaveLength(1);
+    const laterSameSession = { ...snapshot, generatedAt: "2026-04-01T20:30:00.000Z", stateId: "state-other", pressureIndex: 90 };
+    expect(buildScheduledAssessment(laterSameSession).assessmentKey).toBe("scheduled:nyse:2026-04-01");
+    expect(buildScheduledAssessment(snapshot).assessmentKey).toBe("scheduled:nyse:2026-04-01");
+    expect(buildScheduledAssessment(snapshot).assessedAt).toBe("2026-04-01T18:05:00.000Z");
+    expect(() => captureScheduledAssessment({ enabled: true, ledger, snapshot: laterSameSession })).toThrow(AccountabilityImmutabilityError);
+    expect(ledger.list()).toHaveLength(1);
+    expect(ledger.list()[0]?.pressureIndex).toBe(34);
+    const nextSession = { ...snapshot, generatedAt: "2026-04-02T20:15:00.000Z" };
+    expect(buildScheduledAssessment(nextSession).assessmentKey).toBe("scheduled:nyse:2026-04-02");
+    expect(captureScheduledAssessment({ enabled: true, ledger, snapshot: nextSession }).reason).toBe("appended");
+    expect(ledger.list()).toHaveLength(2);
+    expect(buildScheduledAssessment({ ...snapshot, generatedAt: "2026-11-02T21:15:00.000Z" }).assessmentKey).toBe("scheduled:nyse:2026-11-02");
+    expect(buildScheduledAssessment({ ...snapshot, generatedAt: "2026-11-27T21:15:00.000Z" }).assessmentKey).toBe("scheduled:nyse:2026-11-27");
   });
 
   it("maps forward rows to live_verified research records and refuses example writes", () => {

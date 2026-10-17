@@ -10,6 +10,7 @@
  * (see server/intelligenceAccountability.ts). No new table is required.
  */
 import { PUBLIC_DISCLAIMER } from "./publicDisclaimer";
+import { nyseSeismographRunWindow } from "./nyseSession";
 import { activeStressBenchmarkRegistry, type StressBenchmarkRegistry } from "./stressBenchmarkRegistry";
 
 /** Matches server/forwardRunProvenance capturesForwardEvidence: only SCHEDULED_CRON. */
@@ -905,11 +906,16 @@ export function buildScheduledAssessment(snapshot: ScheduledAssessmentSnapshot):
   if (snapshot.reconstructed || (snapshot.historyClass != null && snapshot.historyClass !== "live_verified")) {
     throw new AccountabilityValidationError("Forward-recorded assessments cannot be created from reconstructed or historical data.");
   }
+  const assessedAt = requireIso(snapshot.generatedAt, "generatedAt");
+  const session = nyseSeismographRunWindow(assessedAt);
+  if (!session.etDate) {
+    throw new AccountabilityValidationError("Scheduled assessment requires an Eastern session date.");
+  }
   return {
-    assessmentKey: `scheduled:${snapshot.stateId ?? "no-state"}:${requireIso(snapshot.generatedAt, "generatedAt")}`,
+    assessmentKey: `scheduled:nyse:${session.etDate}`,
     provenance: PROVENANCE_FORWARD,
     exampleData: false,
-    assessedAt: snapshot.generatedAt,
+    assessedAt,
     summary: requireText(snapshot.summary, "summary"),
     canonicalStateId: snapshot.stateId,
     pressureIndex: snapshot.pressureIndex,

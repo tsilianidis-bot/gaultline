@@ -333,6 +333,14 @@ describe("evidence pipeline on an isolated database", () => {
       ...base, run: scheduled, env: on, pressureIndex: 7,
     });
     expect(duplicate).toEqual({ recorded: false, reason: "already_recorded" });
+    const sameSession = await captureTrackRecordFromScheduledRun({
+      ...base,
+      run: scheduled,
+      env: on,
+      generatedAt: new Date(Date.parse(generatedAt) + 60_000).toISOString(),
+      pressureIndex: 8,
+    });
+    expect(sameSession).toEqual({ recorded: false, reason: "already_recorded" });
     const [counts] = await admin!.query("SELECT historyClass, COUNT(*) AS n FROM governedResearchObservations GROUP BY historyClass") as unknown as [Array<{ historyClass: string; n: number }>];
     expect(counts).toEqual([{ historyClass: "live_verified", n: 1 }]);
 
@@ -413,29 +421,37 @@ describe("evidence pipeline on an isolated database", () => {
       { historyClass: "reconstructed_research", n: 1 },
     ]);
 
+    const appendOnly = readFileSync("scripts/governed-research-append-only.sql", "utf8")
+      .split("\n")
+      .filter(line => !line.trim().startsWith("--"))
+      .join("\n")
+      .split(";")
+      .map(statement => statement.trim())
+      .filter(Boolean);
+    for (const statement of appendOnly) await admin!.query(statement);
     await admin!.beginTransaction();
     let parentDeleteBlocked = false;
     try {
       await admin!.query("DELETE FROM governedResearchObservations WHERE id = ?", [observationId]);
-    } catch {
-      parentDeleteBlocked = true;
+    } catch (error) {
+      parentDeleteBlocked = (error as { sqlState?: string }).sqlState === "45000";
     }
     let directUpdateBlocked = false;
     try {
       await admin!.query("UPDATE governedResearchObservations SET originalInterpretation = 'mutated' WHERE id = ?", [observationId]);
-    } catch {
-      directUpdateBlocked = true;
+    } catch (error) {
+      directUpdateBlocked = (error as { sqlState?: string }).sqlState === "45000";
     }
     let childlessDeleteBlocked = false;
     try {
       await admin!.query("DELETE FROM governedResearchObservations WHERE historyClass = 'reconstructed_research'");
-    } catch {
-      childlessDeleteBlocked = true;
+    } catch (error) {
+      childlessDeleteBlocked = (error as { sqlState?: string }).sqlState === "45000";
     }
     await admin!.rollback();
     expect(parentDeleteBlocked).toBe(true);
-    expect(directUpdateBlocked).toBe(false);
-    expect(childlessDeleteBlocked).toBe(false);
+    expect(directUpdateBlocked).toBe(true);
+    expect(childlessDeleteBlocked).toBe(true);
     const [remaining] = await admin!.query("SELECT COUNT(*) AS n FROM governedResearchObservations") as unknown as [Array<{ n: number }>];
     expect(Number(remaining[0]?.n)).toBe(2);
     const [unchanged] = await admin!.query("SELECT originalInterpretation FROM governedResearchObservations WHERE id = ?", [observationId]) as unknown as [Array<{ originalInterpretation: string }>];
