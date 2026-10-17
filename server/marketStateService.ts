@@ -16,7 +16,7 @@ import {
   YIELD_CURVE_FAMILY_NAME,
   type UnifiedSeismographIntelligence,
 } from "./seismographUnified";
-import type { CanonicalDirection } from "../shared/canonicalIntelligenceState";
+import type { CanonicalDirection, CanonicalQualityStatus } from "../shared/canonicalIntelligenceState";
 import {
   canonicalMarketStateCache,
   type MarketStateCacheOptions,
@@ -57,6 +57,10 @@ interface AssembleMarketStateOptions {
   cacheStatus: MarketStateCacheStatus;
   cacheAgeMs: number;
   staleReason?: string | null;
+  /** Quality from the state that supplied the current canonical engine projection. */
+  canonicalQuality?: CanonicalQualityStatus | null;
+  /** CoinGecko's own documented observation time; local receipt time is deliberately excluded. */
+  cryptoOverlay?: CryptoOverlayObservation | null;
   /**
    * The stateId-bound probability contract from the authoritative canonical
    * state. Every probability number below renders only when its contract claim
@@ -80,6 +84,15 @@ export interface CanonicalEngineDisplayValue {
   value: number | null;
   direction: CanonicalDirection;
 }
+
+export interface CryptoOverlayObservation {
+  observedAt: number | null;
+}
+
+/** Source-output freshness policy. Cache age is intentionally not an input. */
+export const MARKET_STATE_LIVE_MAX_AGE_MS = 20 * 60 * 1000;
+export const MARKET_STATE_RECENT_MAX_AGE_MS = 18 * 60 * 60 * 1000;
+export const CRYPTO_OVERLAY_CURRENT_MAX_AGE_MS = 15 * 60 * 1000;
 
 type SourceEvidenceFamily = CanonicalMarketStateSource["evidenceFamilies"][number];
 
@@ -174,32 +187,58 @@ export const canonicalMarketStateProvider: CanonicalMarketStateProvider<UnifiedS
   load: getUnifiedSeismographIntelligence,
 };
 
+/**
+ * The timestamp on the persisted Seismograph output and the authoritative canonical
+ * quality decide freshness. A successful read-cache refresh can never relabel an old
+ * snapshot as live.
+ */
+export function deriveMarketStateFreshness(
+  source: CanonicalMarketStateSource,
+  options: Pick<AssembleMarketStateOptions, "generatedAt" | "cacheStatus" | "canonicalQuality">,
+): CanonicalMarketState["freshness"] {
+  if (options.cacheStatus === "stale-if-error" || source.dataFreshness === "stale") return "stale";
+  const sourceUpdatedAt = Date.parse(source.lastUpdated);
+  const generatedAt = Date.parse(options.generatedAt);
+  if (!Number.isFinite(sourceUpdatedAt) || !Number.isFinite(generatedAt)) return "stale";
+  const ageMs = Math.max(0, generatedAt - sourceUpdatedAt);
+  if (ageMs > MARKET_STATE_RECENT_MAX_AGE_MS || options.canonicalQuality === "UNAVAILABLE") return "stale";
+  if (
+    source.dataFreshness !== "live"
+    || ageMs > MARKET_STATE_LIVE_MAX_AGE_MS
+    || (options.canonicalQuality !== null && options.canonicalQuality !== undefined && options.canonicalQuality !== "HEALTHY")
+  ) return "recent";
+  return "live";
+}
+
 function buildSourceHealth(
   source: CanonicalMarketStateSource,
-  cacheStatus: MarketStateCacheStatus,
+  freshness: CanonicalMarketState["freshness"],
+  cryptoOverlay: CryptoOverlayObservation | null | undefined,
+  generatedAt: string,
 ): MarketStateSourceHealth[] {
-  const stale = cacheStatus === "stale-if-error" || source.dataFreshness === "stale";
+  const stale = freshness === "stale";
   const historicalAvailable = source.memory.observationCount > 0;
   const fred = source.providerProvenance.fred;
-  const fredStatus = fred.status === "live"
-    ? "healthy"
-    : fred.status === "fallback"
-      ? "degraded"
-      : "unavailable";
+  const fredStatus = fred.status === "live" ? "healthy" : fred.status === "unavailable" ? "unavailable" : "degraded";
   const fredAsOf = Number.isFinite(fred.asOf)
     ? new Date(fred.asOf).toISOString()
     : source.lastUpdated;
 
+  const cryptoObservedAt = cryptoOverlay?.observedAt ?? null;
+  const cryptoAgeMs = Number.isFinite(cryptoObservedAt) ? Math.max(0, Date.parse(generatedAt) - Number(cryptoObservedAt)) : null;
+  const cryptoCurrent = cryptoAgeMs !== null && cryptoAgeMs <= CRYPTO_OVERLAY_CURRENT_MAX_AGE_MS;
   return [
     {
       id: "seismograph",
       label: "Canonical Seismograph",
-      status: stale ? "degraded" : "healthy",
+      status: freshness === "live" ? "healthy" : "degraded",
       required: true,
       asOf: source.lastUpdated,
       detail: stale
         ? "Serving the last known-good Seismograph state while the current refresh is unavailable."
-        : "Unified Seismograph synthesis is current and available.",
+        : freshness === "recent"
+          ? "The latest verified Seismograph output is recent, not live; cache refresh time does not change its source observation time."
+          : "Unified Seismograph synthesis is current and available.",
     },
     {
       id: "historical-memory",
@@ -222,10 +261,14 @@ function buildSourceHealth(
     {
       id: "coingecko",
       label: "Crypto Market Overlay",
-      status: "unavailable",
+      status: cryptoCurrent ? "healthy" : cryptoObservedAt === null ? "unavailable" : "degraded",
       required: false,
-      asOf: source.lastUpdated,
-      detail: "Optional live crypto overlay is not required for the canonical Seismograph state.",
+      asOf: cryptoObservedAt === null ? source.lastUpdated : new Date(cryptoObservedAt).toISOString(),
+      detail: cryptoCurrent
+        ? "Optional crypto overlay uses a verified CoinGecko provider observation timestamp."
+        : cryptoObservedAt === null
+          ? "Optional crypto overlay is unavailable because CoinGecko supplied no valid provider observation timestamp."
+          : "Optional crypto overlay is older than its current-observation window and is not used as current canonical evidence.",
     },
   ];
 }
@@ -243,7 +286,8 @@ export function assembleCanonicalMarketState(
   source: CanonicalMarketStateSource,
   options: AssembleMarketStateOptions,
 ): CanonicalMarketState {
-  const sourceHealth = buildSourceHealth(source, options.cacheStatus);
+  const freshness = deriveMarketStateFreshness(source, options);
+  const sourceHealth = buildSourceHealth(source, freshness, options.cryptoOverlay, options.generatedAt);
   // QA r12 response boundary: narrative copy carries no probability / historical-frequency %.
   const narrative = withoutNarrativeProbabilityClaims(source.marketNarrative);
   const warnings = sourceHealth
@@ -290,7 +334,7 @@ export function assembleCanonicalMarketState(
     version: "1.0",
     generatedAt: options.generatedAt,
     sourceUpdatedAt: source.lastUpdated,
-    freshness: options.cacheStatus === "stale-if-error" ? "stale" : source.dataFreshness,
+    freshness,
     cache: {
       status: options.cacheStatus,
       ageMs: options.cacheAgeMs,
@@ -433,7 +477,10 @@ export function createCanonicalMarketStateReader<T extends CanonicalMarketStateS
     probabilityContract: CanonicalProbabilityContract | null;
     engines: CanonicalEngineDisplayValue[];
     generatedAt: string | null;
+    quality: CanonicalQualityStatus;
   } | null>;
+  /** Optional provider overlay with its own observation timestamp. Failure is unavailable, never current. */
+  loadCryptoOverlay?: () => Promise<CryptoOverlayObservation | null>;
 }) {
   return async function readCanonicalMarketState(
     options: { forceRefresh?: boolean } = {},
@@ -446,9 +493,11 @@ export function createCanonicalMarketStateReader<T extends CanonicalMarketStateS
       ? `Refresh failed; serving the last known-good MarketState. ${errorMessage(result.error)}`
       : null;
 
-    const canonical = dependencies.loadCanonicalState
-      ? await dependencies.loadCanonicalState().catch(() => null)
-      : null;
+    const generatedAt = (dependencies.now ?? (() => new Date()))().toISOString();
+    const [canonical, cryptoOverlay] = await Promise.all([
+      dependencies.loadCanonicalState ? dependencies.loadCanonicalState().catch(() => null) : Promise.resolve(null),
+      dependencies.loadCryptoOverlay ? dependencies.loadCryptoOverlay().catch(() => null) : Promise.resolve(null),
+    ]);
     const probabilityContract = dependencies.loadCanonicalState
       ? canonical?.probabilityContract ?? null
       : dependencies.loadProbabilityContract
@@ -459,7 +508,9 @@ export function createCanonicalMarketStateReader<T extends CanonicalMarketStateS
       probabilityContract,
       canonicalEngines: canonical?.engines ?? null,
       canonicalAsOf: canonical?.generatedAt ?? null,
-      generatedAt: (dependencies.now ?? (() => new Date()))().toISOString(),
+      canonicalQuality: canonical?.quality ?? null,
+      cryptoOverlay,
+      generatedAt,
       cacheStatus: result.status,
       cacheAgeMs: result.ageMs,
       staleReason,
@@ -478,6 +529,12 @@ export const getCanonicalMarketState = createCanonicalMarketStateReader({
       probabilityContract: state.probabilityContract ?? null,
       engines: state.engines.map(engine => ({ engineId: engine.engineId, value: engine.value, direction: engine.direction })),
       generatedAt: state.generatedAt ?? null,
+      quality: state.confidenceOrEvidenceQuality,
     };
+  },
+  loadCryptoOverlay: async () => {
+    const { getGlobalStats } = await import("./coingeckoProxy");
+    const stats = await getGlobalStats();
+    return stats ? { observedAt: stats.observedAt } : null;
   },
 });

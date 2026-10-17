@@ -5362,3 +5362,15 @@
 - [x] Create the approved FAULTLINE-branded responsive maintenance screen with no navigation, login prompt, technical detail, countdown, or ETA
 - [x] Validate healthy HTTP delivery and no application/database side effects in local domains
 - [ ] Save the temporary maintenance checkpoint and report apex/www status
+
+
+## 2026-10-17 — Controlled Production-Readiness Remediation
+
+- [ ] Reconcile the Intelligence Core Phase 1.1 and Phase 2 work against `release/2026-10-05-ux-r3`, the deployed production lineage; do not treat `main` as production or modify the existing pricing work.
+- [ ] Guard scheduled Seismograph execution for valid NYSE sessions at 4:15 PM America/New_York, accounting for DST, full-day NYSE holidays, and early closes without changing the live host schedule.
+- [ ] Derive MarketState freshness from persisted source observation time and authoritative canonical quality, not the presentation-cache refresh timestamp; represent latest-published macro data as delayed rather than a provider outage.
+- [ ] Isolate each cross-engine domain's quality to its actual inputs; keep delayed evidence out of current confirmation, keep static AI Bubble evidence degraded, and retain all Integrity Gate restrictions.
+- [ ] Propagate CoinGecko's documented provider timestamp only; never use local receipt time as an observation timestamp, and preserve unavailable behavior for missing or invalid timestamps.
+- [ ] Add focused regression coverage for stale persisted output, source outage, delayed macro publication, cross-engine isolation, DST transitions, NYSE holiday/early-close gates, and CoinGecko timestamp absence.
+- [ ] Preserve the Pressure Index methodology, billing and pricing, existing product flows, append-only ledgers, Scenario C restrictions, feature flags, production data, and live schedule; make no production deployment.
+- [ ] Publish reviewable draft PRs from release-based branches, attach a verification report, and identify the sole owner-only Railway connector action required for the final production-readiness check.
