@@ -17,6 +17,7 @@ import { getGlobalStats, type GlobalStats } from "../coingeckoProxy";
 import { fetchFredBulk, type FredBulkResult } from "../fredClient";
 import { getQuotes, type YahooQuote } from "../yahooProxy";
 import { classifyYahooObservation } from "../yahooProxy";
+import { recordMaterialIntelligenceAssessment } from "./decisionLedger";
 import { IntelligenceEvidenceStore } from "./store";
 
 const COLLECTION_INTERVAL_MS = 5 * 60_000;
@@ -316,6 +317,15 @@ export function buildEvidenceSnapshot(inputs: EvidenceInputs, now: Date = new Da
     methodVersion: INTELLIGENCE_EVIDENCE_METHOD_VERSION,
     capturedAt: now.toISOString(),
     canonicalStateId: inputs.canonical?.stateId ?? null,
+    canonicalState: inputs.canonical ? {
+      stateId: inputs.canonical.stateId,
+      generatedAt: inputs.canonical.generatedAt,
+      effectiveAt: inputs.canonical.effectiveAt,
+      modelVersion: inputs.canonical.modelVersion,
+      regime: inputs.canonical.regime,
+      pressureIndex: inputs.canonical.pressureIndex,
+      pressureDirection: inputs.canonical.pressureDirection,
+    } : null,
     observations,
     providerHealth: health,
     domains: buildSixDomainProjection(observations),
@@ -382,6 +392,9 @@ export class IntelligenceEvidenceCollector {
     } else {
       this.latest = snapshot;
     }
+    // This is independently disabled by default. A ledger failure must never
+    // replace or invalidate the read-only evidence snapshot returned to users.
+    await recordMaterialIntelligenceAssessment(this.latest, previous).catch(() => {});
     return this.latest;
   }
 

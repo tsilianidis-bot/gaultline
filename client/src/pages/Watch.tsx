@@ -34,6 +34,7 @@ import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateView
 import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
 import { forecastConfidenceDisplay } from "@shared/confidenceDisplay";
 import { SectorRotationQuestion } from "@/components/sectorRotation/SectorRotationModule";
+import { IntelligenceEvidenceContext } from "@/components/intelligenceCore/IntelligenceEvidenceContext";
 
 const WATCH_DEEP_PATH = "/app/watch/deep";
 
@@ -363,6 +364,8 @@ export default function Watch() {
             </div>
           </div>
         </section>
+
+        <IntelligenceEvidenceContext mode="watch" />
 
         {/* ── SECTIONS ─────────────────────────────────────────────────── */}
 

@@ -7,6 +7,8 @@ import { useMemo } from "react";
 import { RefreshCw, TrendingUp, TrendingDown, AlertTriangle, Zap, ArrowRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { CRASH_RISK_DISPLAY_TEXT, contractScenarioText } from "@/lib/contractProbabilityText";
+import type { IntelligenceEvidenceResponse } from "@shared/intelligenceEvidence";
+import { CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 
 // ── Helpers ───────────────────────────────────────────────────
 function getRegimeColor(regime: string): string {
@@ -39,12 +41,47 @@ function getRegimeLabel(regime: string): string {
   return "NEUTRAL REGIME";
 }
 
+function MobileIntelligenceCoreLink({ evidence }: { evidence: IntelligenceEvidenceResponse | undefined }) {
+  if (!evidence?.snapshot || evidence.status === "DISABLED") return null;
+  return (
+    <a
+      href={CANONICAL_DESTINATION_BY_ID.now.path}
+      className="block rounded-xl p-4 transition active:scale-[0.98]"
+      style={{ background: "rgba(218,179,88,0.05)", border: "1px solid rgba(218,179,88,0.22)" }}
+      aria-label="Open verified Intelligence Core on NOW"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[9px] font-mono tracking-widest text-[#e5c169]">INTELLIGENCE CORE</p>
+          <p className="mt-1 text-[11px] text-[#A8B8CC]">Verified six-domain evidence map</p>
+        </div>
+        <span className="text-[8px] font-mono tracking-widest" style={{ color: evidence.status === "CURRENT" ? "#62e7d5" : evidence.status === "DEGRADED" ? "#f6c45d" : "#8e9aac" }}>{evidence.status}</span>
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-1.5">
+        {evidence.snapshot.domains.map(domain => {
+          const color = domain.status === "healthy" ? "#62e7d5" : domain.status === "degraded" ? "#f6c45d" : "#8e9aac";
+          return <span key={domain.id} className="rounded-md border px-1.5 py-1 text-center text-[7px] font-mono tracking-wide" style={{ borderColor: `${color}44`, color }}>{domain.label.toUpperCase()}</span>;
+        })}
+      </div>
+    </a>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────
 export default function MobilePulse() {
   const { data: canonicalState, isLoading: canonicalLoading, refetch, isFetching, fetchStatus } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
+  // Legacy isolated client tests predate this feature-gated router. In an
+  // application runtime the router is always present; an absent mock simply
+  // produces no Core link, preserving the prior Pulse contract.
+  const intelligenceEvidenceQuery = trpc.intelligenceEvidence?.visual?.useQuery;
+  const { data: intelligenceEvidence } = intelligenceEvidenceQuery?.(undefined, {
+    staleTime: 60_000,
+    retry: false,
+    refetchOnWindowFocus: false,
+  }) ?? { data: undefined };
 
   const regimeColor = useMemo(() => getRegimeColor(canonicalState?.regime ?? ""), [canonicalState?.regime]);
 
@@ -66,6 +103,7 @@ export default function MobilePulse() {
       <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
         <span data-mobile-pulse-unavailable={offlinePaused ? "offline" : "unavailable"} className="text-[10px] font-mono tracking-widest text-[#64748B]">{offlinePaused ? "OFFLINE · " : ""}CANONICAL STATE UNAVAILABLE</span>
         <p className="text-xs text-[#A8B8CC]">{offlinePaused ? "No network connection. " : ""}Current mobile pulse is withheld. No default, fixture, or live pressure recalculation is shown as current intelligence.</p>
+        <div className="w-full max-w-sm text-left"><MobileIntelligenceCoreLink evidence={intelligenceEvidence} /></div>
         <button type="button" onClick={() => { void refetch(); }} className="mt-2 text-[10px] font-mono tracking-widest text-[#00D4FF] border border-[#00D4FF]/30 rounded px-3 py-1.5">RETRY</button>
       </div>
     );
@@ -229,6 +267,8 @@ export default function MobilePulse() {
             })}
           </div>
         )}
+
+        <MobileIntelligenceCoreLink evidence={intelligenceEvidence} />
 
         {/* What changed today */}
         <div
