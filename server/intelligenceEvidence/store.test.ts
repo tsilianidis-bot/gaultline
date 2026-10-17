@@ -35,6 +35,7 @@ const snapshot = (capturedAt: string): IntelligenceEvidenceSnapshot => ({
   methodVersion: INTELLIGENCE_EVIDENCE_METHOD_VERSION,
   capturedAt,
   canonicalStateId: "state-1",
+  canonicalState: null,
   observations: [],
   providerHealth: [],
   domains: [],

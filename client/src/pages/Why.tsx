@@ -30,6 +30,7 @@ import type { CanonicalMarketState } from "@shared/marketState";
 import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
+import { IntelligenceEvidenceContext } from "@/components/intelligenceCore/IntelligenceEvidenceContext";
 
 type EvidenceFamily = CanonicalMarketState["why"]["evidenceFamilies"][number];
 
@@ -373,6 +374,8 @@ export default function Why() {
             </div>
           </div>
         </section>
+
+        <IntelligenceEvidenceContext mode="why" />
 
         {/* ── SECTIONS ─────────────────────────────────────────────────── */}
 

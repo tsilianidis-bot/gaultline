@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState, useMemo } from "react";
+import { lazy, Suspense, useRef, useEffect, useCallback, useState, useMemo } from "react";
 import { Link } from "wouter";
 import {
   ArrowRight,
@@ -31,6 +31,7 @@ import SystemicRegimeModule from "@/components/SystemicRegimeModule";
 import { trpc } from "@/lib/trpc";
 
 const NOW_DEEP_PATH = "/app/now/deep";
+const IntelligenceCore = lazy(() => import("@/components/intelligenceCore/IntelligenceCore"));
 
 // ── Color helpers ────────────────────────────────────────────────────────────
 function pressureColor(score: number) {
@@ -868,7 +869,18 @@ export default function Now() {
   }, [refresh]);
 
   if (isLoading && !marketState) {
-    return <PageLoadingState eyebrow="NOW · Current market state" message="Loading canonical market state…" />;
+    return (
+      <main className="min-h-screen bg-[#05080d] text-white">
+        <div className="mx-auto max-w-7xl px-4 pb-16 pt-6 md:px-8 md:pt-10">
+          <PageLoadingState eyebrow="NOW · Current market state" message="Loading canonical market state…" />
+          <section className="mt-8" data-now-section="intelligence-core" aria-label="Verified Intelligence Core">
+            <Suspense fallback={<div className="rounded-sm border border-white/10 bg-[#070a0f] p-5 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-500">Loading Intelligence Core boundary…</div>}>
+              <IntelligenceCore />
+            </Suspense>
+          </section>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -1138,6 +1150,12 @@ export default function Now() {
             )}
           </div>
         </div>
+
+        <section className="mt-8" data-now-section="intelligence-core" aria-label="Verified Intelligence Core">
+          <Suspense fallback={<div className="rounded-sm border border-white/10 bg-[#070a0f] p-5 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-500">Loading Intelligence Core boundary…</div>}>
+            <IntelligenceCore />
+          </Suspense>
+        </section>
 
         {/* ── STANDARD SECTIONS ─────────────────────────────────────────── */}
         <Section id="summary" index="01" eyebrow="Summary" title="The market in plain English" description="A direct synthesis before charts, modules, or specialist tools.">

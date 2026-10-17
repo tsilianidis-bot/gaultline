@@ -31,6 +31,7 @@ import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/cus
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
+import { IntelligenceEvidenceContext } from "@/components/intelligenceCore/IntelligenceEvidenceContext";
 
 const WATCH_DEEP_PATH = "/app/watch/deep";
 
@@ -373,6 +374,8 @@ export default function Watch() {
             </div>
           </div>
         </section>
+
+        <IntelligenceEvidenceContext mode="watch" />
 
         {/* ── SECTIONS ─────────────────────────────────────────────────── */}
 
