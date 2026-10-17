@@ -70,6 +70,16 @@ These #95 edits duplicate #97 or #98 and were not reapplied.
 
 Neither `scripts/governed-research-append-only.sql` nor #84's `0074_pi_v2_research_private.sql` is in the journal on this branch, and neither was applied. Release still ends at idx 73. #84 owns idx 74. The governed-research script, if an operator later journals it, belongs at idx 75. The two scripts touch disjoint tables. Prior disposable probes showed either order leaves inserts working and `UPDATE` blocked with `SQLSTATE 45000`. That is an ordering note, not an instruction to apply either file.
 
+## Tests on `5b54c286af5cd1f5dc0ee54e5d60bf335c9618ba`
+
+`tsc --noEmit` passed. `FRED_API_KEY` was unset and was not printed.
+
+Focused regressions: 13 files passed; 83 tests passed, 1 skipped. That skip is the live FRED case in `server/fredIntegrityGate.live.test.ts`. The unset path ran and made no request. Covered there: NYSE window, Thanksgiving skip, in-process duplicate callback guard, legacy 18:00 UTC provenance, Track Record gates, evidence collector fixtures, MarketState and Yahoo/CoinGecko freshness tests from #97/#98.
+
+Full suite, once: **285 files passed, 7 skipped; 3,567 tests passed, 45 skipped, 0 failed.** The live FRED case remains inside the 45 skipped tests. It is outstanding, not passed. #95's prior suite was 283 files and 3,557 tests passed, with the same 45 skips. The extra files are #97's seismograph admission tests, which this branch keeps.
+
+Disposable database tests in that suite applied the append-only script only on `127.0.0.1`. They did not apply `0074`.
+
 ## Not done
 
 No merge into release. No deploy. No Railway change. No flag or cron activation. No production database write. No billing action. `FRED_API_KEY` was not set and was not printed. The live FRED test is outstanding, not passed.
