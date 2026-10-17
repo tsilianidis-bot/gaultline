@@ -5374,3 +5374,20 @@
 - [ ] Add focused regression coverage for stale persisted output, source outage, delayed macro publication, cross-engine isolation, DST transitions, NYSE holiday/early-close gates, and CoinGecko timestamp absence.
 - [ ] Preserve the Pressure Index methodology, billing and pricing, existing product flows, append-only ledgers, Scenario C restrictions, feature flags, production data, and live schedule; make no production deployment.
 - [ ] Publish reviewable draft PRs from release-based branches, attach a verification report, and identify the sole owner-only Railway connector action required for the final production-readiness check.
+
+
+## 2026-10-17 — Rebased Intelligence Core Phase 1 Evidence Pipeline
+
+- [x] Rebase the already-validated Phase 1.1 evidence pipeline from `feature/intelligence-core-phase1-evidence-clean` onto the current release-readiness remediation baseline; preserve both the new MarketState source-age integrity controls and existing non-Core product behavior.
+- [x] Build a server-side, read-only evidence pipeline from the existing canonical MarketState and current Yahoo, FRED, and CoinGecko adapters. Reuse their caches, in-flight deduplication, request timeouts, and configured fallbacks; do not create a duplicate market-state pipeline or alter Pressure Index, MarketState calculations, trading tools, Daily Briefs, pricing, or Stripe.
+- [x] Map returned inputs to `IntelligenceEvidence`, preserving provider identity, provider observation time, ingestion time, observed-versus-modeled classification, freshness policy, validation status, and model version for modeled outputs. Never use ingestion time as observation time.
+- [x] Apply the Integrity Gate at the canonical evidence boundary. Reject NaN/infinite values, missing/invalid timestamps, unidentified sources, unhealthy providers, stale current-use claims, and modeled outputs without model version. Retain last verified observations only as explicitly historical.
+- [x] Keep the authenticated evidence interface and collector disabled by default and server-side only. Do not activate visual nodes, an activity stream, feature flags, provider credentials, production data, migrations, or a deployment.
+- [ ] Re-run complete validation and publish the dedicated rebased Phase 1 review branch and pull request without merging or deploying.
+
+## 2026-10-17 — Disposable Track Record integration onto #97 and #98
+
+- [x] Keep #97 as the owner of MarketState freshness, source provenance, and `shared/nyseSession.ts`.
+- [x] Keep #98 as the owner of the verified evidence pipeline. Do not add a second collector or store.
+- [x] Add only the Track Record surface from #95: append-only assessments, capture guards, outcome resolution, and read-only publication.
+- [ ] Owner approval before any push, pull request, merge, flag change, or production operation.

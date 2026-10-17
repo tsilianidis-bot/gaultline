@@ -39,6 +39,47 @@ export interface YahooQuote {
   error?: string;
 }
 
+/**
+ * Temporal classification is intentionally separate from price direction. Yahoo
+ * is delayed by contract, and a completed-session quote is historical context,
+ * never a current market claim.
+ */
+export type YahooObservationTiming = "live" | "delayed" | "completed_session" | "stale" | "unavailable";
+
+export interface YahooObservationFreshness {
+  timing: YahooObservationTiming;
+  supportsCurrentClaim: boolean;
+  detail: string;
+}
+
+const LIVE_OBSERVATION_MAX_AGE_MS = 2 * 60_000;
+const DELAYED_OBSERVATION_MAX_AGE_MS = 20 * 60_000;
+const COMPLETED_SESSION_HISTORY_MAX_AGE_MS = 96 * 60 * 60_000;
+
+/**
+ * Keeps provider-reported timing distinct from local receipt timing. The Yahoo
+ * adapter currently marks quotes as delayed, so it cannot produce a `live`
+ * classification unless a future provider explicitly supplies an undelayed
+ * observation during an active session.
+ */
+export function classifyYahooObservation(quote: Pick<YahooQuote, "price" | "observedAt" | "isDelayed" | "marketState" | "source"> | null | undefined, nowMs = Date.now()): YahooObservationFreshness {
+  if (!quote || !Number.isFinite(quote.price) || !Number.isFinite(quote.observedAt) || quote.source === "error") {
+    return { timing: "unavailable", supportsCurrentClaim: false, detail: "No usable provider observation timestamp is available." };
+  }
+  const ageMs = Math.max(0, nowMs - (quote.observedAt as number));
+  const activeSession = quote.marketState === "REGULAR" || quote.marketState === "PRE" || quote.marketState === "POST";
+  if (!quote.isDelayed && activeSession && ageMs <= LIVE_OBSERVATION_MAX_AGE_MS) {
+    return { timing: "live", supportsCurrentClaim: true, detail: "Provider-reported observation is within the live-use window during an active session." };
+  }
+  if (activeSession && ageMs <= DELAYED_OBSERVATION_MAX_AGE_MS) {
+    return { timing: "delayed", supportsCurrentClaim: true, detail: "Provider-reported delayed observation is within the active-session use window." };
+  }
+  if ((quote.marketState === "CLOSED" || quote.source === "polygon-prev") && ageMs <= COMPLETED_SESSION_HISTORY_MAX_AGE_MS) {
+    return { timing: "completed_session", supportsCurrentClaim: false, detail: "Completed-session observation is retained only as historical context." };
+  }
+  return { timing: "stale", supportsCurrentClaim: false, detail: "Provider observation exceeds its permitted current-use window." };
+}
+
 export type PolygonFallbackKind = "index" | "equity" | "proxy";
 
 export type PolygonFallbackStep = {

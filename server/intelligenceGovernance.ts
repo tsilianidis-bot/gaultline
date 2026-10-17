@@ -322,7 +322,7 @@ export interface ManifestRunProvenance {
   trigger?: RunTrigger;
   triggerSource?: RunSource;
   runStartedAt?: string;
-  /** true when runStartedAt is inside [18:00, 18:30) UTC */
+  /** true only inside the NYSE post-close window (16:15–16:45 America/New_York). Historical rows may still reflect the retired 18:00 UTC classifier. */
   scheduledWindow?: boolean;
   ledgerSchemaVersion?: typeof LEDGER_SCHEMA_VERSION;
   hashRecipe?: typeof STATE_HASH_RECIPE;

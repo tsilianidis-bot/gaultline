@@ -81,6 +81,10 @@ curl -sS -X POST "$PREVIEW_URL/api/scheduled/ping" \
 #    The service coalesces duplicate callbacks within one running process, but the
 #    scheduler must still emit only one request per ET session; that host behavior
 #    is not provable from the repository.
+#    Track Record capture runs only inside that pipeline. It still no-ops unless
+#    the run is SCHEDULED_CRON, TRACK_RECORD_CRON_WRITES is exactly "true", the
+#    intelligence_track_record flag is on, and verified evidence is fresh.
+#    This note does not change the host scheduler.
 ```
 
 There is **no** in-repo proof any job has `lastExecutedAt`. Treat all schedules as **UNVERIFIED** until the owner screenshot/export of Forge jobs.
