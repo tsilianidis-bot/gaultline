@@ -30,9 +30,18 @@ import { desc, asc, sql } from "drizzle-orm";
 import { getLatestSeismographOutput } from "./scheduledSeismograph";
 import type { SeismographProviderProvenance } from "./seismographCore";
 import { describeHistoricalPercentile, formatOrdinal } from "../shared/historicalPercentile";
+import {
+  buildWhatIsHappeningCopy,
+  buildWhyThisRegimeCopy,
+  type EvidenceFamilyCopyInput,
+} from "../shared/nowInterpretationCopy";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+import { pressureRegimeLabel } from "../shared/pressureBands";
+import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import { readCachedPriorComponents } from "./pressure/priorComponents";
+import { classifyCondition, isBroadRecoveryVerified, DIRECTION_MIN_CHANGE, type ConditionState } from "../shared/conditionDirection";
 export interface HistoricalMonth {
   month: string;
   score: number;
@@ -94,6 +103,10 @@ export interface EvidenceFamily {
   historicalContext: string;
   trend: "improving" | "deteriorating" | "stable";
   whyItMatters: string;
+  /** Directional state from the actual change vs the prior observation (shared/conditionDirection.ts) */
+  conditionState?: ConditionState;
+  /** Engine-score change vs prior observation; null when no comparable prior exists */
+  conditionChange?: number | null;
 }
 
 export interface EvolutionAnalysis {
@@ -412,7 +425,8 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
   const history: HistoricalMonth[] = allHistory.map((r) => ({
     month: r.month,
     score: r.overallPressure,
-    regime: r.regime,
+    // Canonical band from the stored score (stored legacy regime labels are not rewritten).
+    regime: pressureRegimeLabel(r.overallPressure),
     liquidity: r.liquidityStress || 50,
     credit: r.creditContagion || 50,
     volatility: r.volatilityRegime || 50,
@@ -466,7 +480,17 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
         breadth:   (rawLatest.marketBreadth    === 0 || rawLatest.marketBreadth    === null) ? prev.breadth   : latest.breadth,
       }
     : latest;
-  const evidenceFamilies = buildEvidenceFamilies(latestForFamilies, history);
+  // Request path: cached priors only (computed by the scheduled pipeline); never fetches FRED.
+  const canonicalForDirection = await getAuthoritativeCanonicalIntelligenceState().catch(() => null);
+  const priorForDirection = await readCachedPriorComponents(canonicalForDirection?.generatedAt ?? null).catch(() => null);
+  const evidenceFamilies = buildEvidenceFamilies(
+    latestForFamilies,
+    history,
+    currentEnginesFromCanonical(
+      canonicalForDirection ? Object.fromEntries(canonicalForDirection.engines.map(e => [e.engineId, e.value])) : undefined,
+    ),
+    currentEnginesFromCanonical(priorForDirection?.components),
+  );
   const enginesAgreeing = evidenceFamilies
     .filter((f) => f.signal === "bearish" || f.signal === "stressed")
     .map((f) => f.name);
@@ -709,11 +733,31 @@ export function normalizeLaborRatesScore(raw: number | null | undefined): number
   return typeof raw === "number" && Number.isFinite(raw) && raw !== 0 ? raw : null;
 }
 
+/** Current canonical engine values (0–100), keyed by family field. */
+export type CurrentEngineValues = Partial<Record<"liquidity" | "credit" | "volatility" | "macro" | "breadth", number | null>>;
+
+/** Map canonical engine ids → family fields. */
+export function currentEnginesFromCanonical(engineValues: Record<string, unknown> | null | undefined): CurrentEngineValues {
+  const v = (id: string) => { const x = engineValues?.[id]; return typeof x === "number" && Number.isFinite(x) ? x : null; };
+  return { liquidity: v("liquidity-stress"), credit: v("credit-contagion"), volatility: v("volatility-regime"), macro: v("macro-sensitivity"), breadth: v("market-breadth") };
+}
+
 export function buildEvidenceFamilies(
   latest: HistoricalMonth,
-  history: HistoricalMonth[]
+  history: HistoricalMonth[],
+  currentEngines: CurrentEngineValues = {},
+  priorEngines: CurrentEngineValues = {},
 ): EvidenceFamily[] {
   const last6 = history.slice(-6);
+  // Direction (QA r3): CURRENT canonical engine value vs the SAME v1 component
+  // recomputed from FRED observations dated one month earlier
+  // (server/pressure/priorComponents.ts). Never the stored monthly history rows
+  // (a different series) and never a low level. No prior → "Insufficient evidence".
+  const directional = (cur: number | null | undefined, prior: number | null | undefined) => {
+    const c = classifyCondition(cur ?? null, prior ?? null);
+    if (prior == null || cur == null) return { trend: "stable" as const, conditionState: "Insufficient evidence" as const, conditionChange: null };
+    return { trend: c.trend, conditionState: c.state, conditionChange: c.change };
+  };
   const avgLiquidity = last6.reduce((s, h) => s + h.liquidity, 0) / last6.length;
   const avgCredit = last6.reduce((s, h) => s + h.credit, 0) / last6.length;
   const avgVol = last6.reduce((s, h) => s + h.volatility, 0) / last6.length;
@@ -734,14 +778,9 @@ export function buildEvidenceFamilies(
           ? "Liquidity conditions are improving relative to recent trend."
           : "Liquidity conditions are consistent with recent trend."
       }`,
-      trend:
-        latest.liquidity > avgLiquidity + 5
-          ? "deteriorating"
-          : latest.liquidity < avgLiquidity - 5
-          ? "improving"
-          : "stable",
+      ...directional(currentEngines.liquidity, priorEngines.liquidity),
       whyItMatters:
-        "Liquidity stress drives credit tightening and forced selling. Elevated readings historically precede broader market dislocations by 2–4 months.",
+        "Liquidity stress drives credit tightening and forced selling. Elevated readings have accompanied past market dislocations; lead time has not been validated in FAULTLINE's own record.",
     },
     {
       name: "Credit Markets",
@@ -759,14 +798,9 @@ export function buildEvidenceFamilies(
             }.`
           : "Credit contagion index based on composite spread signals."
       }`,
-      trend:
-        latest.credit > avgCredit + 5
-          ? "deteriorating"
-          : latest.credit < avgCredit - 5
-          ? "improving"
-          : "stable",
+      ...directional(currentEngines.credit, priorEngines.credit),
       whyItMatters:
-        "Credit spreads are the most reliable leading indicator of systemic stress. Widening spreads signal that institutional investors are pricing in elevated default risk.",
+        "Credit spreads are a widely watched gauge of financial stress. Widening spreads signal that institutional investors are pricing in elevated default risk.",
     },
     {
       name: YIELD_CURVE_FAMILY_NAME,
@@ -780,12 +814,7 @@ export function buildEvidenceFamilies(
           ? "Curve shape and the 10Y level are adding elevated rate-structure pressure (an inverted 10Y–2Y curve, raised further by a high 10Y yield)."
           : "Curve shape and the 10Y level are adding limited rate-structure pressure (a flat-to-positive 10Y–2Y curve scores low)."
       }`,
-      trend:
-        latest.volatility > avgVol + 5
-          ? "deteriorating"
-          : latest.volatility < avgVol - 5
-          ? "improving"
-          : "stable",
+      ...directional(currentEngines.volatility, priorEngines.volatility),
       whyItMatters:
         "The 10Y–2Y curve and the 10Y level summarize the rate structure facing borrowers and risk assets. This vector does not read VIX or realized volatility.",
     },
@@ -807,12 +836,7 @@ export function buildEvidenceFamilies(
             }.`
           : "Macro sensitivity composite reflects inflation, employment, and monetary policy dynamics."
       }`,
-      trend:
-        latest.macro > avgMacro + 5
-          ? "deteriorating"
-          : latest.macro < avgMacro - 5
-          ? "improving"
-          : "stable",
+      ...directional(currentEngines.macro, priorEngines.macro),
       whyItMatters:
         "Macro sensitivity captures how exposed markets are to economic deterioration. High readings mean that negative economic surprises will have outsized market impact.",
     },
@@ -835,14 +859,7 @@ export function buildEvidenceFamilies(
           ? "Labor-market and rate conditions are adding little pressure."
           : "Labor-and-rates pressure is moderate."
       }`,
-      trend:
-        avgLaborRates == null
-          ? "stable"
-          : laborRates > avgLaborRates + 5
-          ? "deteriorating"
-          : laborRates < avgLaborRates - 5
-          ? "improving"
-          : "stable",
+      ...directional(currentEngines.breadth, priorEngines.breadth),
       whyItMatters:
         "This vector blends the unemployment rate with the 10Y Treasury yield. It is not an advance/decline or market-participation breadth measure.",
     });
@@ -866,7 +883,7 @@ export function buildEvidenceFamilies(
       currentValue: `10Y: ${latest.tsy10y}% | 2Y: ${latest.tsy2y}% | Spread: ${spread.toFixed(2)}%`,
       historicalContext: `6-month average spread: ${avgSpread.toFixed(2)}%. ${
         spread < 0
-          ? "Inverted yield curve — historically the most reliable recession predictor with a 12–18 month lead time."
+          ? "Inverted yield curve — has preceded many past U.S. recessions with long and variable lead times; not a recession probability."
           : spread < 0.5
           ? "Flattening yield curve — historically associated with late-cycle economic conditions."
           : "Positively sloped yield curve — consistent with normal economic expansion."
@@ -882,6 +899,10 @@ export function buildEvidenceFamilies(
     });
   }
 
+  // QA B-1: "recovering"/"bullish" wording only when direction is verified Improving.
+  for (const f of families) {
+    if ((f.signal === "recovering" || f.signal === "bullish") && f.conditionState !== "Improving") f.signal = "neutral";
+  }
   return families;
 }
 
@@ -1400,7 +1421,7 @@ function detectActivePatterns(
   if (creditHigh && liquidityLow) {
     patterns.push({
       name: "Credit-Liquidity Divergence",
-      description: `Credit stress is elevated while liquidity conditions remain relatively contained. This divergence historically precedes either credit contagion spreading to liquidity markets or credit stress resolving.`,
+      description: `Credit stress is elevated while liquidity conditions remain relatively contained. How this divergence resolves has not been validated in FAULTLINE's record.`,
       confidence: 72,
       daysActive: 4 * 30,
       historicalFrequency: "Observed in approximately 15% of historical months",
@@ -1454,7 +1475,7 @@ function buildTodayStory(
         todayStory: brief.narrative,
         keyDevelopments: Array.isArray(brief.keyDevelopments) ? brief.keyDevelopments as string[] : buildKeyDevelopments(score, regime, evidenceFamilies, evolution),
         whyThisScore: buildWhyThisScore(score, percentile, evidenceFamilies),
-        whyThisRegime: buildWhyThisRegime(regime, evidenceFamilies, analogs),
+        whyThisRegime: buildWhyThisRegime(score, regime, percentile, evidenceFamilies, analogs),
       };
     }
   }
@@ -1468,7 +1489,7 @@ function buildTodayStory(
       ? "elevated pressure"
       : score >= 30
       ? "moderate conditions"
-      : "low-stress environment";
+      : "low absolute pressure (confirmation still required)";
 
   const directionDesc =
     direction === "Deteriorating" || direction === "Accelerating"
@@ -1477,19 +1498,22 @@ function buildTodayStory(
       ? "and conditions are improving"
       : "with conditions broadly stable";
 
-  const topFamily = evidenceFamilies.sort((a, b) => b.strength - a.strength)[0];
+  const topFamily = [...evidenceFamilies]
+    .filter((f) => f.currentValue && !/unavailable/i.test(f.currentValue))
+    .sort((a, b) => b.strength - a.strength)[0];
   const analogRef =
     analogs[0]
       ? ` Current conditions most closely resemble ${analogs[0].label} (${analogs[0].similarity}% similarity).`
       : "";
 
-  const todayStory = `FAULTLINE's Seismograph is reading ${score}/100 — ${stressDesc} — ${directionDesc}. The market is in a ${regimeLabel(regime)} regime, placing current conditions in the ${formatOrdinal(percentile)} historical percentile (${describeHistoricalPercentile(percentile)}) across ${evidenceFamilies.length > 0 ? `${evidenceFamilies.length} intelligence domains` : "all tracked domains"}.${topFamily ? ` The primary pressure driver is ${topFamily.name}, which is signaling ${topFamily.signal} conditions.` : ""}${analogRef}`;
+  // Percentile phrase once (#70); verified-driver / empty wording from #64.
+  const todayStory = `FAULTLINE's Seismograph is reading ${score}/100 — ${stressDesc} — ${directionDesc}. The market is in a ${regimeLabel(regime)} regime, ${describeHistoricalPercentile(percentile)} at the ${formatOrdinal(percentile)} historical percentile across ${evidenceFamilies.length > 0 ? `${evidenceFamilies.length} intelligence domains` : "all tracked domains"}.${topFamily ? ` The primary verified pressure driver among available evidence is ${topFamily.name}, which is signaling ${topFamily.signal} conditions.` : " No single verified evidence family is currently available to cite as the primary driver."}${analogRef}`;
 
   return {
     todayStory,
     keyDevelopments: buildKeyDevelopments(score, regime, evidenceFamilies, evolution),
     whyThisScore: buildWhyThisScore(score, percentile, evidenceFamilies),
-    whyThisRegime: buildWhyThisRegime(regime, evidenceFamilies, analogs),
+    whyThisRegime: buildWhyThisRegime(score, regime, percentile, evidenceFamilies, analogs),
   };
 }
 
@@ -1515,30 +1539,34 @@ function buildWhyThisScore(
 ): string {
   const stressed = evidenceFamilies.filter((f) => f.signal === "stressed" || f.signal === "bearish");
   const constructive = evidenceFamilies.filter((f) => f.signal === "bullish" || f.signal === "recovering");
-  return `The ${score}/100 reading reflects ${stressed.length} of ${evidenceFamilies.length} intelligence engines signaling elevated stress, with ${constructive.length} signaling constructive conditions. This places current pressure in the ${formatOrdinal(percentile)} historical percentile (${describeHistoricalPercentile(percentile)}) — meaning ${percentile}% of all historical months recorded lower pressure than today.`;
+  return `The ${score}/100 reading reflects ${stressed.length} of ${evidenceFamilies.length} intelligence engines signaling elevated stress, with ${constructive.length} signaling constructive conditions. This places current pressure ${describeHistoricalPercentile(percentile)} at the ${formatOrdinal(percentile)} historical percentile — meaning ${percentile}% of all historical months recorded lower pressure than today.`;
+}
+
+function toCopyFamilies(evidenceFamilies: EvidenceFamily[]): EvidenceFamilyCopyInput[] {
+  return evidenceFamilies.map((f) => ({
+    name: f.name,
+    signal: f.signal,
+    strength: f.strength,
+    currentValue: f.currentValue,
+    trend: f.trend,
+  }));
 }
 
 function buildWhyThisRegime(
+  score: number,
   regime: string,
+  percentile: number,
   evidenceFamilies: EvidenceFamily[],
-  analogs: HistoricalAnalog[]
+  _analogs: HistoricalAnalog[]
 ): string {
-  const topFamilies = evidenceFamilies
-    .sort((a, b) => b.strength - a.strength)
-    .slice(0, 3)
-    // Display names as labelled (e.g. "Labor & Rates (Unemployment, 10Y)").
-    .map((f) => f.name);
-  const analogRef =
-    analogs.length > 0
-      ? ` This regime classification is consistent with historical analogs including ${analogs[0].label}.`
-      : "";
-  return `The ${regimeLabel(regime)} regime classification is driven primarily by ${topFamilies.join(", ")}. These factors collectively indicate that the market environment is ${
-    regime.toUpperCase().includes("CRITICAL") || regime.toUpperCase().includes("HIGH")
-      ? "not conducive to risk-taking — defensive positioning is historically appropriate"
-      : regime.toUpperCase().includes("ELEVATED")
-      ? "requiring elevated caution — selective exposure with tight risk management"
-      : "broadly supportive of measured risk-taking with standard risk management"
-  }.${analogRef}`;
+  // Analogs remain available to callers for other surfaces; regime copy cites
+  // only verified available evidence families (never unavailable drivers).
+  return buildWhyThisRegimeCopy({
+    pressureScore: score,
+    regimeLabel: regimeLabel(regime),
+    historicalPercentile: percentile,
+    evidenceFamilies: toCopyFamilies(evidenceFamilies),
+  });
 }
 
 // ─── Historical timeline ──────────────────────────────────────────────────────
@@ -1612,14 +1640,14 @@ function buildDevelopingConditions(
       : "stable";
     conditions.push({
       title: "Systemic Stress Accumulation",
-      description: `${stressed.length} of ${evidenceFamilies.length} intelligence engines are signaling stress or deterioration simultaneously. Multi-engine agreement of this magnitude historically precedes regime transitions.`,
+      description: `${stressed.length} of ${evidenceFamilies.length} intelligence engines are signaling stress or deterioration simultaneously. Multi-engine agreement describes current conditions; it has not been validated as a predictor of regime transitions.`,
       engines: stressed.map((f) => f.name),
       evidence: stressed.map((f) => `${f.name}: ${f.currentValue}`).join("; "),
       severity,
       durationDescription: evolution.buildingPressure ? "Pressure has been building over the past 30 days" : "Current stress level has been stable for several weeks",
       trend,
       expectedImpact: severity === "Critical"
-        ? "Elevated probability of regime deterioration within 30–60 days if conditions persist"
+        ? "Broad stress across engines; no validated forecast horizon — monitor for further deterioration"
         : severity === "High"
         ? "Moderate risk of continued pressure; monitor for additional engine deterioration"
         : "Manageable stress level; watch for confirmation from additional engines",
@@ -1630,13 +1658,13 @@ function buildDevelopingConditions(
   if (deteriorating.length >= 2) {
     conditions.push({
       title: "Deteriorating Trend Momentum",
-      description: `${deteriorating.length} engines are showing worsening conditions on a trend basis. Trend deterioration often leads score deterioration by 4–8 weeks, making this an early-warning signal.`,
+      description: `${deteriorating.length} engines are showing worsening conditions on a trend basis. This is a description of recent direction, not a validated early-warning signal.`,
       engines: deteriorating.map((f) => f.name),
       evidence: deteriorating.map((f) => `${f.name} trending ${f.trend}: ${f.currentValue}`).join("; "),
       severity: deteriorating.length >= 4 ? "High" : deteriorating.length >= 3 ? "Moderate" : "Low",
       durationDescription: "Trend deterioration detected over the past 30-day window",
       trend: "building",
-      expectedImpact: "If trend deterioration continues, expect the composite pressure score to follow higher within 4–8 weeks",
+      expectedImpact: "If deterioration continues, the composite score would be expected to rise; no lead time has been validated",
     });
   }
 
@@ -1647,13 +1675,13 @@ function buildDevelopingConditions(
   if (stressed.length >= 2 && bullEngines.length >= 2) {
     conditions.push({
       title: "Cross-Engine Signal Divergence",
-      description: `The intelligence engines are sending contradictory signals — ${stressed.length} engines indicate stress while ${bullEngines.length} engines indicate strength. Divergence of this type often resolves with a sharp directional move as one set of signals proves dominant.`,
+      description: `The intelligence engines are sending contradictory signals — ${stressed.length} engines indicate stress while ${bullEngines.length} engines indicate strength. How such divergence resolves has not been validated in FAULTLINE's record.`,
       engines: [...stressed.map((f) => f.name), ...bullEngines.map((f) => f.name)],
       evidence: `Bearish: ${stressed.map((f) => f.name).join(", ")}. Bullish: ${bullEngines.map((f) => f.name).join(", ")}`,
       severity: "Moderate",
       durationDescription: "Divergence has been present across the current measurement window",
       trend: "stable",
-      expectedImpact: "Resolution of divergence typically produces a 5–15% directional move in the dominant direction within 60 days",
+      expectedImpact: "Watch which set of engines moves next; no move size or horizon is implied",
     });
   }
 
@@ -1667,30 +1695,32 @@ function buildDevelopingConditions(
     conditions.push({
       title: rising ? "Rapid Pressure Escalation" : "Rapid Pressure Decompression",
       description: rising
-        ? `The composite pressure score has risen ${scoreDelta.toFixed(1)} points over the past 6 months — a pace that historically signals a regime transition is underway rather than a temporary fluctuation.`
-        : `The composite pressure score has fallen ${Math.abs(scoreDelta).toFixed(1)} points over the past 6 months — a decompression rate that historically precedes a sustained regime improvement.`,
+        ? `The composite pressure score has risen ${scoreDelta.toFixed(1)} points over the past 6 months — a large move for this index; whether it persists is not established.`
+        : `The composite pressure score has fallen ${Math.abs(scoreDelta).toFixed(1)} points over the past 6 months — a large move for this index; whether it persists is not established.`,
       engines: evidenceFamilies.map((f) => f.name),
       evidence: `Score moved from ${avgPrev6.toFixed(1)} to ${currentScore} over the past 6 months (${rising ? "+" : ""}${scoreDelta.toFixed(1)} pts)`,
       severity: Math.abs(scoreDelta) >= 15 ? "High" : "Moderate",
       durationDescription: "Velocity of change observed over the past 6-month window",
       trend: rising ? "building" : "easing",
       expectedImpact: rising
-        ? "Rapid escalation increases the probability of a regime shift to a higher stress classification"
-        : "Rapid decompression increases the probability of a regime improvement within 60–90 days",
+        ? "A continued rise would move the index toward a higher band; no probability is implied"
+        : "A continued decline would move the index toward a lower band; no probability is implied",
     });
   }
 
-  // Condition 5: Recovery signal
-  if (recovering.length >= 3 && currentScore <= 45) {
+  // Condition 5: Recovery signal — requires VERIFIED directional improvement
+  // (Phase 2 #6): actual change vs the prior observation, not a low level.
+  const improvingFamilies = evidenceFamilies.filter((f) => f.conditionState === "Improving");
+  if (isBroadRecoveryVerified(evidenceFamilies, currentScore)) {
     conditions.push({
       title: "Broad Recovery Signal",
-      description: `${recovering.length} engines are signaling recovery or bullish conditions. Broad multi-engine recovery at this pressure level has historically been a reliable early indicator of a sustained risk-on environment.`,
-      engines: recovering.map((f) => f.name),
-      evidence: recovering.map((f) => `${f.name}: ${f.currentValue}`).join("; "),
+      description: `${improvingFamilies.length} engines improved by at least ${DIRECTION_MIN_CHANGE} points versus their prior observation, including Credit, Liquidity or Macro Sensitivity. This describes the current direction of measured conditions; it has not been validated as a predictor of a sustained risk-on environment.`,
+      engines: improvingFamilies.map((f) => f.name),
+      evidence: improvingFamilies.map((f) => `${f.name}: ${f.currentValue} (${f.conditionChange != null ? (f.conditionChange > 0 ? "+" : "") + f.conditionChange : "n/a"} pts)`).join("; "),
       severity: "Low",
       durationDescription: "Recovery signals detected across the current measurement window",
       trend: "easing",
-      expectedImpact: "If recovery signals persist, expect continued pressure decompression and improving risk-adjusted return environment",
+      expectedImpact: "Watch whether the improvement persists at the next observation; one interval of improvement is not confirmation",
     });
   }
 
@@ -1739,18 +1769,19 @@ function buildMarketNarrative(
   analogs: HistoricalAnalog[],
   transitionProbabilities: UnifiedSeismographIntelligence["transitionProbabilities"]
 ): UnifiedSeismographIntelligence["marketNarrative"] {
-  const stressLevel = currentScore >= 80 ? "crisis" : currentScore >= 65 ? "high" : currentScore >= 45 ? "elevated" : "moderate";
   const stressed = evidenceFamilies.filter((f) => f.signal === "stressed" || f.signal === "bearish");
   const bullish = evidenceFamilies.filter((f) => f.signal === "bullish" || f.signal === "recovering");
   const deteriorating = evidenceFamilies.filter((f) => f.trend === "deteriorating");
   const improving = evidenceFamilies.filter((f) => f.trend === "improving");
 
-  // 1. What is happening?
-  const whatIsHappening = currentScore >= 65
-    ? `The market is operating under ${stressLevel} systemic pressure (${currentScore}/100), placing current conditions in the ${formatOrdinal(currentPercentile)} percentile (${describeHistoricalPercentile(currentPercentile)}) of all observations since 2000. ${stressed.length} of ${evidenceFamilies.length} intelligence engines are signaling stress, with ${currentRegime} as the prevailing regime classification.`
-    : currentScore >= 45
-    ? `The market is operating under ${stressLevel} systemic pressure (${currentScore}/100), in the ${formatOrdinal(currentPercentile)} percentile historically (${describeHistoricalPercentile(currentPercentile)}). Conditions are mixed — ${stressed.length} engines signal stress while ${bullish.length} signal strength, producing a divergent environment that requires careful monitoring.`
-    : `The market is operating under ${stressLevel} systemic pressure (${currentScore}/100), in the ${formatOrdinal(currentPercentile)} percentile historically (${describeHistoricalPercentile(currentPercentile)}). ${bullish.length} of ${evidenceFamilies.length} intelligence engines are signaling strength or recovery, consistent with a constructive risk environment.`;
+  // 1. What is happening? — #64 hierarchy (pressure → percentile → direction → confirmation)
+  // via buildWhatIsHappeningCopy; bands come from canonical pressureBand (#70).
+  const whatIsHappening = buildWhatIsHappeningCopy({
+    pressureScore: currentScore,
+    regimeLabel: currentRegime,
+    historicalPercentile: currentPercentile,
+    evidenceFamilies: toCopyFamilies(evidenceFamilies),
+  });
 
   // 2. Why is it happening?
   const topStressed = stressed.slice(0, 3).map((f) => `${f.name} (${f.currentValue})`).join(", ");
@@ -1767,7 +1798,7 @@ function buildMarketNarrative(
   // 4. What is building beneath the surface?
   const buildingSignals = evidenceFamilies.filter((f) => f.trend === "deteriorating" && (f.signal === "neutral" || f.signal === "recovering"));
   const whatIsBuildingBeneathSurface = buildingSignals.length > 0
-    ? `Beneath the headline score, ${buildingSignals.map((f) => f.name).join(" and ")} ${buildingSignals.length === 1 ? "is" : "are"} showing early deterioration while still registering as neutral or recovering. This leading indicator pattern — where trend precedes signal — has historically preceded composite score increases by 4–8 weeks. ${evolution.buildingPressure ? "The overall pressure trend is accelerating, suggesting the headline score may understate developing risk." : ""}`
+    ? `Beneath the headline score, ${buildingSignals.map((f) => f.name).join(" and ")} ${buildingSignals.length === 1 ? "is" : "are"} up at least 3 points versus the same component recomputed from FRED observations one month earlier, while their level still registers as neutral. FAULTLINE has not validated whether this pattern leads the composite score, or by how long. ${evolution.buildingPressure ? "The overall pressure trend is accelerating, suggesting the headline score may understate developing risk." : ""}`
     : evolution.buildingPressure
     ? `The composite pressure score is accelerating to the upside, suggesting that conditions are building faster than the headline number reflects. Watch for additional engines to shift from neutral to stressed in the coming weeks.`
     : `No clear sub-surface pressure is building at this time. The current reading appears to reflect conditions accurately across all monitored engines.`;

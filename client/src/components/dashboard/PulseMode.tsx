@@ -14,6 +14,12 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
+import {
+  buildWhyThisRegimeCopy,
+  laborRatesUnavailableMessage,
+  LABOR_RATES_DISPLAY_NAME,
+} from "@shared/nowInterpretationCopy";
+import { PROBABILITY_DISPLAY_TEXT } from "@shared/probabilityContract";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function riskLabel(level: string): string {
@@ -28,6 +34,70 @@ function DeltaIcon({ delta }: { delta: number }) {
   if (delta > 0.1) return <TrendingUp size={12} className="inline" style={{ color: "#FF2D55" }} />;
   if (delta < -0.1) return <TrendingDown size={12} className="inline" style={{ color: "#00FF88" }} />;
   return <Minus size={12} className="inline" style={{ color: "#94A3B8" }} />;
+}
+
+
+// ── Evidence-contracted Pulse regime paragraph ───────────────────────────────
+function PulseRegimeInterpretation() {
+  const { output } = useEngine();
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const pressureScore = useMemo(() => {
+    const fromCanonical = canonicalState && typeof (canonicalState as { pressureIndex?: number }).pressureIndex === "number"
+      ? (canonicalState as { pressureIndex: number }).pressureIndex
+      : null;
+    if (fromCanonical !== null) return Math.round(fromCanonical);
+    return Math.round(output.overall.score * 10);
+  }, [canonicalState, output.overall.score]);
+
+  const regimeLabel = canonicalState?.regime ?? output.regime.label;
+  const families = output.domains.map(d => ({
+    name: d.label,
+    signal: d.riskLevel,
+    strength: Math.round(d.score * 10),
+    currentValue: d.drivers?.[0] ?? undefined,
+    // Delta-unavailable is not the same as evidence-unavailable; treat missing
+    // / empty driver values and explicit unavailable tokens as unavailable.
+    available: Boolean(d.drivers?.[0]) && !/unavailable/i.test(String(d.drivers?.[0] ?? "")),
+  }));
+
+  const volatilityDomain = output.domains.find(d =>
+    d.id === "volatility-vix" || /volatility|yield curve/i.test(d.label),
+  );
+  const liquidityDomain = output.domains.find(d =>
+    d.id === "liquidity" || /liquidity/i.test(d.label),
+  );
+
+  const bullText = engineProbabilityText(output, "bullProbability");
+  const crashText = engineProbabilityText(output, "crashProbability");
+  const scenarioConfidenceAvailable =
+    bullText !== PROBABILITY_DISPLAY_TEXT.UNCALIBRATED &&
+    bullText !== PROBABILITY_DISPLAY_TEXT.NOT_OFFERED &&
+    bullText !== PROBABILITY_DISPLAY_TEXT.UNAVAILABLE &&
+    crashText !== PROBABILITY_DISPLAY_TEXT.NOT_OFFERED &&
+    crashText !== PROBABILITY_DISPLAY_TEXT.UNAVAILABLE &&
+    crashText !== PROBABILITY_DISPLAY_TEXT.UNCALIBRATED;
+
+  const copy = buildWhyThisRegimeCopy({
+    pressureScore,
+    regimeLabel: String(regimeLabel),
+    historicalPercentile: null,
+    evidenceFamilies: families,
+    volatilityAvailable: Boolean(volatilityDomain),
+    liquidityAvailable: Boolean(liquidityDomain),
+    scenarioConfidenceAvailable,
+    missingFamilyNames: families.some(f => /labor|breadth/i.test(f.name))
+      ? []
+      : [LABOR_RATES_DISPLAY_NAME],
+  });
+
+  return (
+    <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "rgba(148,163,184,0.8)", lineHeight: 1.6, textAlign: "center" }}>
+      {copy}
+    </p>
+  );
 }
 
 // ── Pressure Index Hero ────────────────────────────────────────────────────────
@@ -146,10 +216,8 @@ function PressureHero() {
           ))}
         </div>
 
-        {/* Regime description */}
-        <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "rgba(148,163,184,0.8)", lineHeight: 1.6, textAlign: "center" }}>
-          {regime.description}
-        </p>
+        {/* Regime description — evidence-contracted; never cites unavailable drivers */}
+        <PulseRegimeInterpretation />
       </div>
     </div>
   );
@@ -168,7 +236,11 @@ function WhatChangedToday() {
       const direction = delta === null ? "unavailable" : delta > 0.05 ? "rising" : delta < -0.05 ? "easing" : "stable";
       const directionLabel = direction === "unavailable" ? "— Unavailable" : direction === "rising" ? "↑ Rising" : direction === "easing" ? "↓ Easing" : "→ Stable";
       const directionColor = direction === "rising" ? "#FF2D55" : direction === "easing" ? "#00FF88" : "#94A3B8";
-      return { label: d.label, riskLevel: d.riskLevel, delta: d.delta, color: c, directionLabel, directionColor, score: d.score };
+      const isLabor = d.label === LABOR_RATES_DISPLAY_NAME || /labor|breadth/i.test(d.label);
+      const laborNote = isLabor && direction === "unavailable"
+        ? laborRatesUnavailableMessage()
+        : null;
+      return { label: d.label, riskLevel: d.riskLevel, delta: d.delta, color: c, directionLabel, directionColor, score: d.score, laborNote };
     });
   }, [domains]);
 
@@ -188,8 +260,8 @@ function WhatChangedToday() {
 
       <div className="px-3 pb-3 flex flex-col gap-1.5">
         {updates.map((u) => (
+          <div key={u.label}>
           <div
-            key={u.label}
             className="flex items-center justify-between rounded-xl px-3 py-2.5"
             style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.14)" }}
           >
@@ -213,6 +285,12 @@ function WhatChangedToday() {
                 {riskLabel(u.riskLevel)}
               </span>
             </div>
+          </div>
+          {u.laborNote ? (
+            <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11, color: "rgba(148,163,184,0.75)", lineHeight: 1.5, padding: "0 12px 8px" }}>
+              {u.laborNote}
+            </p>
+          ) : null}
           </div>
         ))}
       </div>

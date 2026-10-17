@@ -1,12 +1,14 @@
 import { publicProcedure, router } from "../_core/trpc";
 import { getCanonicalMarketState } from "../marketStateService";
+import { toPublicMarketStateWire } from "../../shared/publicProbabilityWire";
 import { getAuthoritativeCanonicalIntelligenceState, toClientCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "../canonicalIntelligenceState";
 import { buildCanonicalEvidencePacket } from "../evidencePacket";
 import { getAuthoritativeCrossEngineSynthesis } from "../crossEngineSynthesis";
 import { getCurrentGovernedEarlyWarningPresentation, getCurrentGovernedEarlyWarningTimeline } from "../earlyWarningPresentation";
 
 export const marketStateRouter = router({
-  current: publicProcedure.query(() => getCanonicalMarketState()),
+  // Public boundary: withheld probabilities serialize as null, never the string "NaN".
+  current: publicProcedure.query(async () => toPublicMarketStateWire(await getCanonicalMarketState())),
   canonicalCurrent: publicProcedure.query(async () => {
     const state = await getAuthoritativeCanonicalIntelligenceState();
     return state ? toClientCanonicalIntelligenceState(state) : null;

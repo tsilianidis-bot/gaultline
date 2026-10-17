@@ -15,6 +15,7 @@
  *   8. Data Transparency — N, date range, last refresh
  */
 
+import { fromPublicMarketStateWire } from "@shared/publicProbabilityWire";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
@@ -181,7 +182,8 @@ export default function HistoricalContextEngine() {
   );
   // Reference-library analogs (and the interpretation that names one) are shown
   // only when the canonical outlook has a top analog. Fail closed while loading.
-  const { data: marketState } = trpc.marketState.current.useQuery(undefined, { staleTime: 60_000, refetchOnWindowFocus: false });
+  const { data: marketState } = trpc.marketState.current.useQuery(undefined, {
+    select: fromPublicMarketStateWire, staleTime: 60_000, refetchOnWindowFocus: false });
   const governedAnalog = marketState?.outlook.topAnalog != null;
   const analogMatches = governedAnalog ? data?.analogMatches ?? [] : [];
   const NO_GOVERNED_ANALOG = "The canonical outlook has no governed top analog for the current state, so no reference period is shown.";

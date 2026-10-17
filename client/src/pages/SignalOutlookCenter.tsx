@@ -1162,7 +1162,7 @@ function FullOutlookView({
 
       {/* ── MARKET PREFLIGHT IMPACT ── */}
       <Section
-        title="Market Preflight Impact"
+        title="Impact on this reading"
         icon={<Shield size={14} color="#00D4FF" />}
         collapsible
       >

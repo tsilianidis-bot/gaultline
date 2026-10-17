@@ -25,7 +25,6 @@ import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner";
-import { PreflightTrigger } from "@/components/MarketPreflight";
 import { ShareReportButton } from "@/components/ShareReportButton";
 import { SizingCalculator } from "@/components/SizingCalculator";
 import { trackStockSignalViewed } from "@/hooks/useAnalytics";
@@ -1689,7 +1688,6 @@ function SignalsInner() {
                 }}
               />
             )}
-            <PreflightTrigger currentPage="signals" regimeLabel={regimeForSignals?.label ?? 'UNAVAILABLE'} actionKey="viewed_signals" />
           </div>
         }
       />

@@ -39,7 +39,7 @@ Schedules below are **comments in handlers**, not a live Forge export. Owner mus
 | `POST /api/scheduled/ledger-evaluation` | Comment: **every 6 hours** | `requireCron` only | `{ ok, evaluated, skipped, errors, results }` max 100; never overwrites user outcomes | 500 + stack | `decision_ledger` auto-eval flags |
 | `POST /api/scheduled/weekly-improvement-report` | Comment: **Monday 06:00 UTC**. File comment still says `/weeklyImprovementReport` (**path drift**) | `requireCron` + SDK in handler | Idempotent skip if week exists; else LLM report row | Auth fail / LLM / DB | `ai_improvement_reports` |
 | `POST /api/scheduled/drip-email` | Comment: **hourly** | `requireCron` + cron/admin SDK | `{ sent1, sent2, sent3 }` (handler continues per-user on send fail) | 403; SendGrid 401 historically | `onboardingEmailSequence`; **not WORKING** until SendGrid live |
-| `POST /api/scheduled/seismograph-daily` | Comment: **`0 0 18 * * *`** 18:00 UTC | `requireCron` only | `{ ok, date, pressureScore, regime, … }` | **500 if Pressure engine fails** (`cannot proceed without core data`); cache not invalidated | Market memory `seismograph:latest_output`; `invalidateCanonicalMarketStateCache`; EngineContext refresh |
+| `POST /api/scheduled/seismograph-daily` | **Required host schedule:** `15 16 * * 1-5` with timezone `America/New_York`. Handler admits only valid NYSE sessions in 16:15–16:45 ET; weekends/full-day closures skip without writing, while early-close sessions retain 16:15 ET and record their 13:00 ET close. | `requireCron` only | `{ ok, date, pressureScore, regime, … }`, or explicit non-writing `{ ok:true, skipped:"outside_nyse_post_close_window" }` | **500 if Pressure engine fails** (`cannot proceed without core data`); out-of-window callbacks do not run the pipeline | Market memory `seismograph:latest_output`; `invalidateCanonicalMarketStateCache`; EngineContext refresh |
 | `POST /api/scheduled/shadow-forward-outcomes` | Owner (shadow eval) | `requireCron` only | `{ ok, collected }` or `{ ok:false, error:"DB unavailable" }` **200 even on no DB** | 500 `{ ok:false, error:"Failed" }` | `shadowForwardOutcomes.collectedAt` |
 | `POST /api/scheduled/shadow-daily-summary` | Owner daily | `requireCron` only | Summary row or `{ message:"No readings today" }` | 500 | `shadowDailySummaries` |
 | `POST /api/scheduled/rising-stars-continuity` | Owner daily | `requireCron` only | `{ ok, historyClass:"live_verified", … }` | 500 `rising_stars_daily_continuity_failed` | `risingStarHistoryJobs` |
@@ -75,7 +75,12 @@ curl -sS -X POST "$PREVIEW_URL/api/scheduled/ping" \
 # expect {"ok":true}
 
 # 3) Do NOT retarget production Heartbeat URLs to preview
-# 4) Seismograph fire is BLOCKED-OWNER (RV-7). Confirm Forge job path + cron + lastExecutedAt in UI.
+# 4) Seismograph is BLOCKED-OWNER until the external scheduler is configured as
+#    `15 16 * * 1-5` with timezone `America/New_York`, pointing to the existing
+#    production route, and its path + lastExecutedAt are confirmed in the host UI.
+#    The service coalesces duplicate callbacks within one running process, but the
+#    scheduler must still emit only one request per ET session; that host behavior
+#    is not provable from the repository.
 ```
 
 There is **no** in-repo proof any job has `lastExecutedAt`. Treat all schedules as **UNVERIFIED** until the owner screenshot/export of Forge jobs.

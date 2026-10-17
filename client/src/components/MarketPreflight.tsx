@@ -293,7 +293,7 @@ function buildMarketScenarios(output: EngineOutput, degraded: boolean, canonical
 }
 
 // ── Score Ring ───────────────────────────────────────────────
-function ScoreRing({ score, color, size = 120 }: { score: number; color: string; size?: number }) {
+function ScoreRing({ score, color, size = 120, caption = "PRE-FLIGHT" }: { score: number; color: string; size?: number; caption?: string }) {
   const [anim, setAnim] = useState(0);
   useEffect(() => {
     const t = setTimeout(() => setAnim(score), 200);
@@ -303,9 +303,11 @@ function ScoreRing({ score, color, size = 120 }: { score: number; color: string;
   const r = (size / 2) - 10;
   const circ = 2 * Math.PI * r;
   const dash = (anim / 100) * circ;
+  // Explicit preflight scale — never presentable as Pressure Index / market intelligence.
+  const scaleLabel = size >= 64 ? "PRE-FLIGHT /100" : "/100";
 
   return (
-    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }} data-preflight-score-ring="true" aria-label={`Pre-Flight Completion ${score} of 100`}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
         {/* Track */}
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={8} />
@@ -321,8 +323,8 @@ function ScoreRing({ score, color, size = 120 }: { score: number; color: string;
         />
       </svg>
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: size > 100 ? "28px" : "22px", color, lineHeight: 1 }}>{score}</span>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.8)", letterSpacing: "0.1em", marginTop: "2px" }}>/ 100</span>
+        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: size > 100 ? "28px" : size >= 64 ? "18px" : "14px", color, lineHeight: 1 }} data-preflight-score-value={score}>{score}</span>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: size >= 64 ? "8px" : "7px", color: "rgba(100,116,139,0.85)", letterSpacing: "0.06em", marginTop: "2px", textAlign: "center", maxWidth: size - 8 }} data-preflight-score-caption={caption}>{scaleLabel}</span>
       </div>
     </div>
   );
@@ -334,7 +336,7 @@ export function AwarenessScoreBadge({ score, color, label }: { score: number; co
     <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 12px", background: `${color}10`, border: `1px solid ${color}30`, borderRadius: "4px" }}>
       <ScoreRing score={score} color={color} size={36} />
       <div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color, letterSpacing: "0.12em", textTransform: "uppercase" }}>Market Awareness</div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color, letterSpacing: "0.12em", textTransform: "uppercase" }}>PRE-FLIGHT COMPLETION</div>
         <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "rgba(148,163,184,0.8)" }}>{label}</div>
       </div>
     </div>
@@ -342,7 +344,7 @@ export function AwarenessScoreBadge({ score, color, label }: { score: number; co
 }
 
 // ── Dashboard Card ───────────────────────────────────────────
-export function AwarenessDashboardCard({ onOpen }: { onOpen: () => void }) {
+export function AwarenessDashboardCard({ onOpen, variant = "full" }: { onOpen: () => void; variant?: "full" | "compact" }) {
   const { user } = useAuth();
   const { data: scoreData, isLoading } = trpc.awareness.getScore.useQuery(undefined, {
     enabled: !!user,
@@ -373,6 +375,8 @@ export function AwarenessDashboardCard({ onOpen }: { onOpen: () => void }) {
   const label = scoreData?.rating.label ?? "Loading...";
   const completed = scoreData?.completedKeys.length ?? 0;
   const total = 13; // number of checklist items with points > 0
+  const completionLabel = `PRE-FLIGHT COMPLETION · ${score}/100`;
+  const checkpointLabel = `MARKET AWARENESS CHECK · ${completed}/${total} COMPLETED`;
 
   // Format last preflight timestamp — subtle, no gamification
   const lastPreflightLabel = (() => {
@@ -387,24 +391,32 @@ export function AwarenessDashboardCard({ onOpen }: { onOpen: () => void }) {
     return `Last preflight: Today at ${h12}:${mins} ${ampm}`;
   })();
 
-  // Minimal Reminders: compact score + button only
-  if (mode === "minimal_reminders") {
+  // Compact secondary banner (SIGNALS hierarchy) — never dominates movers, never reads as Pressure Index.
+  if (variant === "compact" || mode === "minimal_reminders") {
     return (
       <div
-        style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", marginBottom: "10px", background: "rgba(255,255,255,0.02)", border: `1px solid ${color}25`, borderRadius: "6px", cursor: "pointer" }}
+        style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 12px", marginBottom: "8px", background: "rgba(255,255,255,0.02)", border: `1px solid ${color}28`, borderRadius: "6px", cursor: "pointer" }}
         onClick={onOpen}
         role="button"
-        aria-label="Open Market Preflight"
+        aria-label="Open Market Preflight checklist"
+        data-preflight-card="compact"
+        data-preflight-score-label={completionLabel}
       >
-        <ScoreRing score={score} color={color} size={36} />
-        <div style={{ flex: 1 }}>
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color, letterSpacing: "0.12em", textTransform: "uppercase" }}>
-            Market Awareness: {score}/100
-          </span>
+        <ScoreRing score={score} color={color} size={40} caption="PRE-FLIGHT" />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+            {completionLabel}
+          </div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.7)", letterSpacing: "0.06em", marginTop: 2 }}>
+            {checkpointLabel}
+          </div>
+          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "rgba(148,163,184,0.55)", marginTop: 2 }}>
+            Checklist only — not Pressure Index / market intelligence.
+          </div>
         </div>
         <button
           onClick={(e) => { e.stopPropagation(); onOpen(); }}
-          style={{ padding: "5px 12px", background: `${color}15`, border: `1px solid ${color}40`, borderRadius: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
+          style={{ padding: "5px 10px", background: `${color}15`, border: `1px solid ${color}40`, borderRadius: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer", whiteSpace: "nowrap" }}
         >
           Run Preflight
         </button>
@@ -425,11 +437,13 @@ export function AwarenessDashboardCard({ onOpen }: { onOpen: () => void }) {
       onClick={onOpen}
       role="button"
       aria-label="Open Market Preflight Checklist"
+      data-preflight-card="full"
+      data-preflight-score-label={completionLabel}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: color, boxShadow: `0 0 8px ${color}`, animation: score >= 80 ? "blink-alert 6s ease-in-out infinite" : undefined }} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color, textTransform: "uppercase", letterSpacing: "0.18em", fontWeight: 600 }}>Complete Market Awareness™</span>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color, textTransform: "uppercase", letterSpacing: "0.14em", fontWeight: 600 }}>Market Awareness Check</span>
         </div>
         <div style={{ padding: "2px 8px", background: `${color}15`, border: `1px solid ${color}35`, borderRadius: "3px" }}>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color, letterSpacing: "0.12em" }}>
@@ -442,14 +456,17 @@ export function AwarenessDashboardCard({ onOpen }: { onOpen: () => void }) {
         {isLoading ? (
           <div style={{ width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.04)", animation: "pulse 2s ease-in-out infinite" }} />
         ) : (
-          <ScoreRing score={score} color={color} size={80} />
+          <ScoreRing score={score} color={color} size={80} caption="PRE-FLIGHT" />
         )}
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#F0F4FF", marginBottom: "4px" }}>
-            {isLoading ? "Calculating..." : label}
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: "13px", color: "#F0F4FF", marginBottom: "4px", letterSpacing: "0.08em" }} data-preflight-score-headline="true">
+            {completionLabel}
+          </div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: color, marginBottom: "4px", letterSpacing: "0.06em" }}>
+            {checkpointLabel}
           </div>
           <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", marginBottom: "8px" }}>
-            {isLoading ? "Loading your daily context score..." : `${completed} of ${total} context checkpoints completed today`}
+            {isLoading ? "Loading your daily checklist score..." : `${label}. Checklist completion only — not the Pressure Index.`}
           </div>
           {/* Progress bar */}
           <div style={{ height: "4px", background: "rgba(255,255,255,0.06)", borderRadius: "2px", overflow: "hidden" }}>
@@ -1056,7 +1073,7 @@ export function PreflightTrigger({
     <>
       <button
         onClick={handleOpen}
-        title={`Market Awareness: ${score}/100 — ${scoreData?.rating.label ?? "Run preflight"}`}
+        title={`PRE-FLIGHT COMPLETION · ${score}/100 — ${scoreData?.rating.label ?? "Run preflight"}`}
         style={{
           display: "flex",
           alignItems: "center",

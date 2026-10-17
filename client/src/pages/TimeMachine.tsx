@@ -5,6 +5,7 @@
  * See what FAULTLINE would have known using only the information available at the time.
  * Watch pressure build. See when the regime changed. Compare the warning with what happened next.
  */
+import { pressureShortLabel } from "@shared/pressureBands";
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import AppLayout from "@/components/AppLayout";
@@ -71,11 +72,7 @@ function formatMonth(m: string): string {
 }
 
 function pressureLabel(score: number): string {
-  if (score >= 85) return "CRITICAL";
-  if (score >= 70) return "HIGH RISK";
-  if (score >= 55) return "ELEVATED";
-  if (score >= 40) return "MODERATE";
-  return "LOW RISK";
+  return pressureShortLabel(score);
 }
 
 const CATEGORY_COLORS: Record<string, string> = {

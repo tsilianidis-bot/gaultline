@@ -2,6 +2,7 @@ import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { institutionalEventOutcomes, institutionalEvents } from "../../drizzle/schema";
 import { getDb } from "../db";
+import { buildInstitutionalOutcomeView, isBroadOutcomeEligibleEvent } from "../../shared/institutionalOutcomeDisplay";
 import { publicProcedure, router } from "../_core/trpc";
 
 const archiveInput = z.object({
@@ -44,8 +45,15 @@ export const institutionalMemoryRouter = router({
       list.push(outcome);
       outcomesByEvent.set(outcome.eventId, list);
     }
+    // Only corrected v2 completed-session rows are returned as outcomes; legacy rows
+    // (intraday targets, 1962 DGS10) never leave the server and mark their horizon SUPERSEDED.
     return {
-      events: events.map((event) => ({ ...event, outcomes: outcomesByEvent.get(event.id) ?? [] })),
+      events: events.map((event) => {
+        const rows = outcomesByEvent.get(event.id) ?? [];
+        const view = buildInstitutionalOutcomeView(rows);
+        const measured = rows.length > 0 || isBroadOutcomeEligibleEvent(event);
+        return { ...event, outcomes: view.outcomes, outcomeStatus: measured ? view.outcomeStatus : [] };
+      }),
       total: Number(countRows[0]?.count ?? 0),
       historyClass: "live_verified" as const,
     };

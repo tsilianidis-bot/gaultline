@@ -36,6 +36,7 @@ import { handleScheduledSeismograph } from "../scheduledSeismograph";
 import { handleShadowForwardOutcomes, handleShadowDailySummary } from "../scheduledShadowModel";
 import { handleScheduledRisingStarsContinuity } from "../scheduledRisingStarsHistory";
 import { handleScheduledSystemicRegimeInfer } from "../systemicRegime/scheduled";
+import { startSectorRotationCollector } from "../sectorRotation/service";
 import { appRouter } from "../routers.ts";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -288,6 +289,8 @@ async function startServer() {
 
   server.listen(port, LISTEN_HOST, () => {
     process.stdout.write(`Server running on http://${LISTEN_HOST}:${port}/\n`);
+    // Sector Rotation post-close collector: in-process timer (no cron, no env var). Page loads never build.
+    startSectorRotationCollector();
   });
 }
 

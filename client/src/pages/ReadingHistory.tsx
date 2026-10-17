@@ -15,7 +15,6 @@ import { useState, useCallback } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import PageHeader from "@/components/PageHeader";
-import { PreflightTrigger } from "@/components/MarketPreflight";
 import { useSEO } from "@/hooks/useSEO";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -618,12 +617,6 @@ export default function ReadingHistory() {
       <PageHeader
         title="Reading History"
         subtitle="Daily FAULTLINE readings across timeframes"
-        rightSlot={
-          <PreflightTrigger
-            currentPage="reading-history"
-            regimeLabel={regimeLabel}
-          />
-        }
       />
 
       <div className="flex-1 container py-6 space-y-5 max-w-5xl">

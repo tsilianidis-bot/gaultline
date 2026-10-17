@@ -19,7 +19,7 @@ Its flagship product, FAULTLINE, is a structural market intelligence platform. I
 
 FAULTLINE is designed for investors, traders, and analysts who want to understand the risk environment they are operating in. The platform provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice.
 
-FAULTLINE is available at getfaultline.live. The public Pressure Index and methodology are free to read; signed-in access starts with a free account. Paid plans are not on sale.
+FAULTLINE is available at getfaultline.live. The public Pressure Index and methodology are free to read; full intelligence is offered through FAULTLINE Standard at $99/month or FAULTLINE Lifetime at $1,500 one-time.
 
 Press contact: press@getfaultline.live`;
 
@@ -39,7 +39,7 @@ The platform's primary metric is the Faultline Pressure Index™ — a 0–100 c
 
 All FAULTLINE outputs are probabilistic rather than deterministic. The platform does not generate buy or sell signals. It generates probability-weighted assessments of current conditions, historical analog distributions, and scenario likelihoods — designed to support informed judgment, not to replace it.
 
-FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The public Pressure Index and methodology are free to read; signed-in access starts with a free account. Paid plans are not on sale.
+FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The public Pressure Index and methodology are free to read; full intelligence is offered through FAULTLINE Standard at $99/month or FAULTLINE Lifetime at $1,500 one-time.
 
 Press contact: press@getfaultline.live
 Website: getfaultline.live`;
@@ -70,14 +70,14 @@ Intelligence areas PLATO interprets from one shared market state:
 
 Data sources: FRED (Federal Reserve Economic Data) for credit spreads, rates, inflation, labor and financial-stress series; Polygon daily equity aggregates; Yahoo Finance quotes; CoinGecko crypto market statistics. No on-chain or institutional-flow feed is ingested.
 
-Platform capabilities: PLATO AI Intelligence, Seismograph™, Pressure Index™, Regime Detection, Signal Intelligence, Historical Analog Engine, Decision Engine, Day Trade Intelligence, Pre-Flight Briefing, Symbol Intelligence, Crypto Hub, Portfolio Intelligence, Market Scenarios, Aftershock Engine
+Platform capabilities: PLATO AI Intelligence, Seismograph™, Pressure Index™, Regime Detection, Signal Intelligence, Historical Analog Engine, Decision Engine, Day Trade Intelligence, Symbol Intelligence, Crypto Hub, Portfolio Intelligence, Market Scenarios, Aftershock Engine
 
 Availability: Web (getfaultline.live) + Progressive Web App (iOS/Android)
 
 Access:
   Public — Pressure Index and methodology, no account required
-  Free account — sign in to open the signed-in app
-  Paid plans — not on sale
+  FAULTLINE Intelligence — $99/month
+  Membership: Standard $99/month · Lifetime $1,500 one-time
 
 Press contact: press@getfaultline.live`;
 
@@ -93,9 +93,9 @@ Unlike AI assistants that answer questions in isolation, PLATO answers from the 
 
 "Most investors see price action. PLATO sees the structural conditions beneath it," said JT, Founder of Phoenix Systems. "FAULTLINE synthesizes multiple market-risk engines into one decision framework. That is not a chatbot. That is an intelligence layer."
 
-FAULTLINE's Seismograph™ records Pressure Index readings over time and gives PLATO the path behind today's level. The platform also includes a Historical Analog Engine, Decision Engine, Day Trade Intelligence, Pre-Flight Briefing, Symbol Intelligence, Crypto Hub, Aftershock Engine, and Portfolio Intelligence tools.
+FAULTLINE's Seismograph™ records Pressure Index readings over time and gives PLATO the path behind today's level. The platform also includes a Historical Analog Engine, Decision Engine, Day Trade Intelligence, Symbol Intelligence, Crypto Hub, Aftershock Engine, and Portfolio Intelligence tools.
 
-FAULTLINE is available at getfaultline.live. The public Pressure Index and methodology are free to read, and signed-in access starts with a free account. Paid plans are not on sale.
+FAULTLINE is available at getfaultline.live. The public Pressure Index and methodology are free to read, and full intelligence is offered through FAULTLINE Standard at $99/month or FAULTLINE Lifetime at $1,500 one-time.
 
 About Phoenix Systems
 Phoenix Systems is an AI-first technology company building intelligent platforms that transform complex information into actionable understanding. FAULTLINE is its flagship product.
@@ -182,28 +182,26 @@ CORE CAPABILITIES
 7. Day Trade Intelligence
    Intraday intelligence layer for active traders. Regime-aware setups, pre-market context, and regularly refreshed PLATO synthesis.
 
-8. Pre-Flight Briefing
-   A structured pre-session intelligence briefing covering macro conditions, key risk factors, and PLATO's read on the current environment before each trading session.
 
-9. Symbol Intelligence
+8. Symbol Intelligence
    Deep-dive analysis for individual stocks and crypto assets. Includes pressure context, regime overlay, and PLATO interpretation. Prices come from Polygon daily aggregates and Yahoo quotes.
 
-10. Crypto Hub & Crypto Intelligence
+9. Crypto Hub & Crypto Intelligence
     Dedicated crypto intelligence layer covering CoinGecko market statistics, Bitcoin dominance, crypto regime classification, digital asset stress indicators, and PLATO crypto interpretation.
 
-11. Portfolio Intelligence
+10. Portfolio Intelligence
     Portfolio-level regime awareness. Evaluates holdings against current macro conditions and surfaces concentration risk, regime misalignment, and hedging considerations.
 
-12. Aftershock Engine
+11. Aftershock Engine
     Detects secondary market stress events and systemic contagion risk following initial regime shifts.
 
-13. Market Scenarios
+12. Market Scenarios
     Probabilistic scenario analysis for key macro events. Assigns likelihood scores and potential market impact to multiple outcomes.
 
 AVAILABILITY
 Web: getfaultline.live
 PWA: Available on iOS and Android
-Access: public Pressure Index (no account) · free account for the signed-in app · paid plans not on sale
+Access: public Pressure Index (no account) · FAULTLINE Standard $99/month · Lifetime $1,500 one-time
 
 DISCLAIMER
 ${PUBLIC_DISCLAIMER} FAULTLINE is not a financial adviser.
@@ -284,7 +282,7 @@ TARGET CUSTOMERS
 • Media and research organisations covering financial markets
 
 CURRENT PLATFORM CAPABILITIES
-Seismograph™ · Pressure Index™ · PLATO Daily Intelligence Brief · Historical Analog Engine · Signal Intelligence · Decision Engine · Day Trade Intelligence · Pre-Flight Briefing · Symbol Intelligence · Crypto Hub · Portfolio Intelligence · Aftershock Engine · Market Scenarios
+Seismograph™ · Pressure Index™ · PLATO Daily Intelligence Brief · Historical Analog Engine · Signal Intelligence · Decision Engine · Day Trade Intelligence · Symbol Intelligence · Crypto Hub · Portfolio Intelligence · Aftershock Engine · Market Scenarios
 
 LONG-TERM VISION
 To become the world's most trusted AI Market Intelligence Operating System — the platform that serious investors, traders, advisers, and institutions rely on to understand what markets are communicating before they move.
@@ -602,7 +600,6 @@ export default function Press() {
             { name: "Signal Intelligence", role: "Directional labels across equities and crypto. Always contextualised against the current regime." },
             { name: "Decision Engine", role: "Evaluates trade ideas against the current macro regime, pressure environment, and signal consensus." },
             { name: "Day Trade Intelligence", role: "Intraday intelligence layer for active traders. Regime-aware setups and regularly refreshed PLATO synthesis." },
-            { name: "Pre-Flight Briefing", role: "Structured pre-session intelligence briefing. PLATO's read on the current environment before each trading session." },
             { name: "Symbol Intelligence", role: "Deep-dive analysis for individual stocks and crypto assets. Pressure context, regime overlay, and PLATO synthesis." },
             { name: "Crypto Hub", role: "Dedicated crypto intelligence layer. CoinGecko market statistics, crypto regime classification, and PLATO crypto interpretation." },
             { name: "Portfolio Intelligence", role: "Portfolio-level regime awareness. Surfaces concentration risk, regime misalignment, and hedging considerations." },
@@ -673,7 +670,7 @@ export default function Press() {
             { label: "AVAILABILITY", value: "Web + PWA (iOS / Android)" },
             { label: "PRIMARY METRIC", value: "Pressure Index™ (0–100)" },
             { label: "AI LAYER", value: "PLATO" },
-            { label: "ACCESS", value: "Free account · paid plans not on sale" },
+            { label: "ACCESS", value: "FAULTLINE Standard $99/month · Lifetime $1,500 one-time" },
             { label: "PRESS CONTACT", value: "press@getfaultline.live" },
           ].map((fact) => (
             <div key={fact.label} style={{ padding: "20px 24px", background: "#050608" }}>
@@ -709,7 +706,7 @@ export default function Press() {
             <div style={{ fontStyle: "normal", fontSize: "11px", color: "#64748B", marginTop: "8px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em" }}>JT · FOUNDER · PHOENIX SYSTEMS</div>
           </blockquote>
           <p style={prose}>
-            FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The public Pressure Index and methodology are free to read; signed-in access starts with a free account. Paid plans are not on sale.
+            FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The public Pressure Index and methodology are free to read; full intelligence is offered through FAULTLINE Standard at $99/month or FAULTLINE Lifetime at $1,500 one-time.
           </p>
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", lineHeight: 1.7, margin: 0, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "16px" }}>
             FAULTLINE is a macroeconomic risk intelligence platform. {PUBLIC_DISCLAIMER} It is not a financial adviser. Past performance of any indicator or signal does not guarantee future results.
