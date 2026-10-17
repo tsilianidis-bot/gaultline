@@ -1,6 +1,6 @@
 # Track record readiness — 2026-10-17
 
-Draft review of PR #95 (`cursor/track-record-core-integration-f2f3`). Remediation commit `1b1bd44d052a958b1c150de5bffe8614538716f4`. No production database was written. No migration was applied outside a disposable local MariaDB. No pull request was merged. No flag, cron writer, evidence collector, or checkout runtime was enabled. Pressure Index math and canonical MarketState calculations were not changed on this branch. Visual designs were not changed.
+Draft review of PR #95 (`cursor/track-record-core-integration-f2f3`). Code commit `1b1bd44d052a958b1c150de5bffe8614538716f4`. This file is the readiness commit directly above that code. No production database was written. No migration was applied outside a disposable local MariaDB. No pull request was merged. No flag, cron writer, evidence collector, or checkout runtime was enabled. Pressure Index math and canonical MarketState calculations were not changed on this branch. Visual designs were not changed.
 
 **Integration: NO-GO to merge into `release/2026-10-05-ux-r3`.** The immutability script, the NYSE window, and the skipping FRED check are in the draft. Merge still waits on a live FRED run, an in-session quote, retargeting #88 off `main`, and a separate review before #97's non-schedule edits land with this branch.
 
@@ -18,13 +18,13 @@ Draft review of PR #95 (`cursor/track-record-core-integration-f2f3`). Remediatio
 | #90 | `afbd8dea48520a63e58213ad690d6e4f4418de9b` | release | no | Evidence pipeline, already merged with release. Contained in #95 |
 | #91 | `06dc2305ceaf6b91e310b289b96352d7d206d9df` | release | yes | Track record ledger. Contained in #95 |
 | #93 | `5988f75e27f0ddcd091120083f4b8dffc7f22339` | release | yes | Review patch only. Do not merge |
-| #95 | `1b1bd44d052a958b1c150de5bffe8614538716f4` | release | yes | Integration vehicle. Contains #90 and #91. Stays draft |
+| #95 | `1b1bd44d052a958b1c150de5bffe8614538716f4` plus this readiness commit | release | yes | Integration vehicle. Contains #90 and #91. Stays draft |
 | #97 | `d119512881942bfbc8897b3c36a93aebcbe78f13` | release | no | Session-aware MarketState freshness. Schedule helper consumed here. Not merged into #95 |
 | #94 | `a84b074a0ca5` | #87 | yes | Checkout enablement, ancestor of #96 |
 | #96 | `fe90d8a13ba8` | #94 | yes | Checkout kill switch. Separate from this release |
 | #100 | `51d94e899f65b9026925e927c6f43f941dbdce74` | release | yes | Visual presentation. Separate from this release |
 
-#95 parents already on the branch: `b60a07efdf934e3273e1822586e1b3c5acaa3903` (merge of #91 onto #90's release merge `afbd8de`), integration commit `33df1d0`, readiness commit `2f565fb`, remediation commit `1b1bd44`.
+#95 parents already on the branch: `b60a07efdf934e3273e1822586e1b3c5acaa3903` (merge of #91 onto #90's release merge `afbd8de`), integration commit `33df1d0`, readiness commit `2f565fb`, code commit `1b1bd44`. Tests below were run on `1b1bd44`.
 
 ## 2. End-to-end evidence
 
@@ -227,7 +227,7 @@ Do not execute this list.
 
 ## Test counts from this remediation
 
-- `tsc --noEmit`: passed on `1b1bd44`.
-- Full suite on this branch: 283 files passed, 7 skipped; 3,557 tests passed, 45 skipped, 0 failed. The previous tip `2f565fb` was 280 files passed, 7 skipped; 3,550 passed, 44 skipped, 0 failed. Added passing tests: NYSE window (4), append-only SQL (2), FRED unset path (1). The live FRED case is the additional skip. No new failures. This VM is UTC, so `getISOWeek` passes. `polygon.key.test.ts` stayed skipped.
+- `tsc --noEmit`: passed on `1b1bd44`. The following commit only updates this document.
+- Full suite on `1b1bd44`: 283 files passed, 7 skipped; 3,557 tests passed, 45 skipped, 0 failed. The previous tip `2f565fb` was 280 files passed, 7 skipped; 3,550 passed, 44 skipped, 0 failed. Added passing tests: NYSE window (4), append-only SQL (2), FRED unset path (1). The live FRED case is the additional skip. No new failures. This VM is UTC, so `getISOWeek` passes. `polygon.key.test.ts` stayed skipped.
 - Pipeline e2e: 2 passed, including `45000` on direct SQL mutation and a same-session duplicate. Append-only e2e: 2 passed. Workflow e2e remained in the full suite.
 - 0074 disposable apply from the prior review: 20 SQL statements. Ordering probe on port 3311: both orders, inserts allowed, updates `45000`.
