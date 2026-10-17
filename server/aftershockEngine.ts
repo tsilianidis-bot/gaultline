@@ -342,50 +342,12 @@ function deriveConfirmationStatus(
   return "Unconfirmed";
 }
 
-// ── Mock live price data (uses Polygon prev-close as proxy) ───
-// In production this would call the live signals proxy.
-// We derive approximate current reactions from the pressure engine
-// context and known correlations.
-
-interface MockQuote {
-  symbol: string;
-  changePercent: number;
-  volumeRatio: number;
-}
-
-function generateMockMarketSnapshot(pressure: FaultlinePressureOutput): MockQuote[] {
-  // Derive approximate market conditions from pressure index
-  const p = pressure.overallPressure;
-  const regime = pressure.regime;
-  const isRiskOff = p > 60 || regime.includes("Elevated") || regime.includes("Critical");
-  const isBullish = p < 35 && (regime.includes("Stable") || regime.includes("Low"));
-
-  const baseDirection = isRiskOff ? -1 : isBullish ? 1 : 0;
-  const volatilityMult = 1 + (p / 100) * 2;
-
-  // Seeded pseudo-random for reproducibility within a session
-  const seed = Math.floor(Date.now() / (5 * 60 * 1000)); // changes every 5 min
-  const rng = (i: number) => {
-    const x = Math.sin(seed + i * 9301 + 49297) * 233280;
-    return (x - Math.floor(x));
-  };
-
-  const assets = [
-    "NVDA", "AMD", "SMCI", "PLTR", "AVGO", "MSFT", "AAPL", "TSLA",
-    "QQQ", "SPY", "IWM", "SOXX", "XLE", "XLF", "XLRE", "TLT", "GLD",
-    "BTC", "ETH", "SOL", "COIN", "MSTR", "RIOT", "MARA", "IBIT",
-    "USO", "VIX", "RIVN", "LCID", "LIT", "QCOM", "INTC", "TIP",
-    "DAL", "UAL", "XOM",
-  ];
-
-  return assets.map((sym, i) => {
-    const rand = rng(i);
-    const isCrypto = ["BTC", "ETH", "SOL"].includes(sym);
-    const cryptoMult = isCrypto ? 2.5 : 1;
-    const change = (baseDirection * (0.5 + rand * 3) + (rand - 0.5) * 2) * volatilityMult * cryptoMult;
-    const volRatio = 0.8 + rand * 2.5;
-    return { symbol: sym, changePercent: parseFloat(change.toFixed(2)), volumeRatio: parseFloat(volRatio.toFixed(2)) };
-  });
+// Verified market observations only. No simulated current price or volume observations.
+interface VerifiedQuote { symbol: string; changePercent: number; volumeRatio: number }
+async function fetchObservedMarketSnapshot(): Promise<VerifiedQuote[]> {
+  // Provider integration deferred until timestamp and volume-baseline provenance are established.
+  // An empty set means no verified ruptures, not a fabricated calm-market reading.
+  return [];
 }
 
 // ── Main Engine ────────────────────────────────────────────────
@@ -430,7 +392,7 @@ export async function runAftershockEngine(): Promise<AftershockEngineOutput> {
   }
 
   // 2. Get mock market snapshot (would be live data in production)
-  const quotes = generateMockMarketSnapshot(pressure);
+  const quotes = await fetchObservedMarketSnapshot();
   const quoteMap = new Map(quotes.map(q => [q.symbol, q]));
 
   // 3. Detect ruptures
@@ -631,7 +593,7 @@ function buildEngineSummary(
   pressure: FaultlinePressureOutput
 ): string {
   if (ruptures.length === 0) {
-    return `No active ruptures detected. Markets are within normal volatility parameters. FAULTLINE Pressure Index: ${pressure.overallPressure.toFixed(0)}/100.`;
+    return `Rupture observations unavailable: no verified market-volume snapshot. FAULTLINE Pressure Index: ${pressure.overallPressure.toFixed(0)}/100.`;
   }
   const topRupture = ruptures[0];
   const dirDesc = topRupture.direction === "Bullish" ? "bullish breakout" : topRupture.direction === "Bearish" ? "bearish rupture" : "volatile move";
