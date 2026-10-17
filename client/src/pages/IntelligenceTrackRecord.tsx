@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useSEO } from "@/hooks/useSEO";
@@ -5,7 +6,6 @@ import PageHeader from "@/components/PageHeader";
 import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 import {
   emptyPublicTrackRecord,
-  examplePublicTrackRecord,
   type PublicChronologyItem,
   type PublicMetric,
   type PublicTrackRecord,
@@ -250,6 +250,19 @@ export function IntelligenceTrackRecordView({ record, mode }: { record: PublicTr
   );
 }
 
+function ExamplePreview() {
+  const [record, setRecord] = useState<PublicTrackRecord | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void import("@shared/intelligenceAccountability").then(mod => {
+      if (!cancelled) setRecord(mod.examplePublicTrackRecord());
+    });
+    return () => { cancelled = true; };
+  }, []);
+  if (!record) return <div className="min-h-screen bg-black px-6 py-16 text-sm text-zinc-500">Loading example preview.</div>;
+  return <IntelligenceTrackRecordView record={record} mode="example" />;
+}
+
 function previewMode(): ViewMode | null {
   if (!import.meta.env.DEV || typeof window === "undefined") return null;
   const preview = new URLSearchParams(window.location.search).get("preview");
@@ -265,7 +278,7 @@ export default function IntelligenceTrackRecord() {
   });
   const preview = previewMode();
   const query = trpc.intelligenceAccountability.publicRecord.useQuery(undefined, { retry: false, enabled: preview == null });
-  if (preview === "example") return <IntelligenceTrackRecordView record={examplePublicTrackRecord()} mode="example" />;
+  if (import.meta.env.DEV && preview === "example") return <ExamplePreview />;
   if (preview === "empty") return <IntelligenceTrackRecordView record={emptyPublicTrackRecord()} mode="empty" />;
   if (query.isLoading) {
     return <div className="min-h-screen bg-black px-6 py-16 text-sm text-zinc-500">Loading the accountability record.</div>;
