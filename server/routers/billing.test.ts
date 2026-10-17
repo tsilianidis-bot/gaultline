@@ -32,13 +32,15 @@ function authCtx(): TrpcContext {
 }
 
 describe("billing plan availability lock", () => {
-  it("keeps checkout OFF (CHECKOUT_ENABLED=false) even with a Stripe price ID configured", () => {
-    expect(CHECKOUT_ENABLED).toBe(false);
+  it("checkout is ON (CHECKOUT_ENABLED=true): only Intelligence and Lifetime, and only with a configured price ID", () => {
+    expect(CHECKOUT_ENABLED).toBe(true);
     expect(PRICING_PLANS.lifetime.available).toBe(true);
-    expect(isPlanAvailableForPurchase("lifetime", "price_test_lifetime_1500")).toBe(false);
+    expect(PRICING_PLANS.premium.available).toBe(true);
+    expect(isPlanAvailableForPurchase("lifetime", "price_test_lifetime_1500")).toBe(true);
     expect(isPlanAvailableForPurchase("lifetime", null)).toBe(false);
-    expect(isPlanAvailableForPurchase("premium", "price_test_99")).toBe(false);
+    expect(isPlanAvailableForPurchase("premium", "price_test_99")).toBe(true);
     expect(isPlanAvailableForPurchase("premium", null)).toBe(false);
+    // Legacy / non-public plans stay unbuyable even with a price ID configured.
     expect(isPlanAvailableForPurchase("core_annual", "price_test_annual")).toBe(false);
     expect(isPlanAvailableForPurchase("premium_annual", "price_test_annual")).toBe(false);
     expect(isPlanAvailableForPurchase("core", "price_test_core")).toBe(false);

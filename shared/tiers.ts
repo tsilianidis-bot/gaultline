@@ -21,10 +21,12 @@ export const PAID_PLANS_ON_SALE: boolean = true;
  */
 export const OPEN_REGISTRATION: boolean = false;
 /**
- * Checkout switch. Default OFF until Stripe prices are configured and verified.
+ * Checkout switch. ON: signed-in members can start Stripe Checkout for the public offers.
+ * Each purchase is still gated server-side: the plan must be on sale, its Stripe price ID must be
+ * configured, and the live Stripe price/product must verify (active, USD, exact amount and name).
  * While false, prices are displayed but no Stripe call is made and buy buttons show "Coming soon".
  */
-export const CHECKOUT_ENABLED: boolean = false;
+export const CHECKOUT_ENABLED: boolean = true;
 /** Label on disabled buy buttons while CHECKOUT_ENABLED is false. */
 export const CHECKOUT_COMING_SOON_LABEL = 'Checkout coming soon';
 
