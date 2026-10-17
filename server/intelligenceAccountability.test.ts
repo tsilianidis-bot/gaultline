@@ -1,5 +1,7 @@
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { registryCanonicalJson, type StressBenchmarkRegistry } from "../shared/stressBenchmarkRegistry";
 import { capturesForwardEvidence } from "./forwardRunProvenance";
 import { assessmentToResearchRecord, intelligenceTrackRecordFlagEnabled } from "./intelligenceAccountability";
 import {
@@ -36,6 +38,15 @@ import {
 } from "../shared/intelligenceAccountability";
 
 const scenarios = equalStandingScenarios("ELEVATED", ["The recorded regime changes."]);
+
+function testRegistry(
+  events: StressBenchmarkRegistry["events"],
+  benchmarks: StressBenchmarkRegistry["benchmarks"] = [],
+): StressBenchmarkRegistry {
+  const versionId = "test-registry";
+  const contentHash = createHash("sha256").update(registryCanonicalJson({ versionId, events, benchmarks })).digest("hex");
+  return { versionId, contentHash, events, benchmarks };
+}
 
 function input(key: string, overrides: Partial<MarketAssessmentInput> = {}): MarketAssessmentInput {
   return {
@@ -283,12 +294,20 @@ describe("insufficient-evidence gating and metric math", () => {
       direction: "stress_increase",
       assessedAt: new Date(Date.parse(event.occurredAt) - 10 * 86_400_000).toISOString(),
     }));
-    expect(measurePerformance(prior, events).metrics.find(item => item.id === "missedWarningRate")).toMatchObject({ status: "reported", sampleSize: 20, value: 15 / 20 });
+    const eventRegistry = testRegistry(events.map(event => ({ ...event, label: event.id })));
+    expect(measurePerformance(prior, events, eventRegistry).metrics.find(item => item.id === "missedWarningRate")).toMatchObject({ status: "reported", sampleSize: 20, value: 15 / 20 });
+    expect(measurePerformance(prior, events).metrics.find(item => item.id === "missedWarningRate")?.sampleSize).toBe(0);
 
+    const benchRegistry = testRegistry([], [{ id: "spy-20d", label: "SPY 20 trading-day comparison" }]);
     const benchmarkLedger = new AccountabilityLedger();
     for (let index = 0; index < 30; index += 1) {
       const key = `bench-${index}`;
-      benchmarkLedger.recordAssessment(input(key, { ...spread(index), preregisteredBenchmarkId: "spy-20d" }));
+      benchmarkLedger.recordAssessment(input(key, {
+        ...spread(index),
+        preregisteredBenchmarkId: "spy-20d",
+        registryVersionId: benchRegistry.versionId,
+        registryContentHash: benchRegistry.contentHash,
+      }));
       benchmarkLedger.appendDevelopment({
         developmentKey: `${key}-d`,
         assessmentKey: key,
@@ -297,7 +316,8 @@ describe("insufficient-evidence gating and metric math", () => {
         benchmark: { id: "spy-20d", matched: index < 21 },
       });
     }
-    expect(measurePerformance(benchmarkLedger.list()).metrics.find(item => item.id === "benchmarkComparison")).toMatchObject({ status: "reported", value: 21 / 30 });
+    expect(measurePerformance(benchmarkLedger.list(), [], benchRegistry).metrics.find(item => item.id === "benchmarkComparison")).toMatchObject({ status: "reported", value: 21 / 30 });
+    expect(measurePerformance(benchmarkLedger.list()).metrics.find(item => item.id === "benchmarkComparison")?.sampleSize).toBe(0);
 
     const coverage = [
       ...Array.from({ length: 7 }, (_, index) => withStatus(`cov-${index}`, null, spread(index))),
@@ -436,11 +456,13 @@ describe("frozen classification and diversity guard", () => {
     const note = withStatus("note", RESOLUTION_SUPPORTED, { assessmentKind: "early_warning", direction: "stress_increase" });
     expect(measurePerformance([note]).metrics.find(item => item.id === "missedWarningRate")).toMatchObject({ status: "insufficient_evidence", sampleSize: 0, value: null });
     const sameDay = Array.from({ length: 20 }, (_, index) => ({ id: `same-${index}`, occurredAt: "2024-06-01T00:00:00.000Z" }));
-    const concentrated = measurePerformance([], sameDay).metrics.find(item => item.id === "missedWarningRate")!;
+    expect(measurePerformance([], sameDay).metrics.find(item => item.id === "missedWarningRate")?.sampleSize).toBe(0);
+    const concentrated = measurePerformance([], sameDay, testRegistry(sameDay.map(event => ({ ...event, label: event.id })))).metrics.find(item => item.id === "missedWarningRate")!;
     expect(concentrated).toMatchObject({ status: "insufficient_evidence", sampleSize: 20, value: null });
     expect(concentrated.detail).toMatch(/UTC date/);
     const duplicates = Array.from({ length: 20 }, () => ({ id: "event-1", occurredAt: "2024-06-01T00:00:00.000Z" }));
-    expect(measurePerformance([], duplicates).metrics.find(item => item.id === "missedWarningRate")?.sampleSize).toBe(1);
+    const duplicateRegistry = testRegistry([{ id: "event-1", occurredAt: "2024-06-01T00:00:00.000Z", label: "event-1" }]);
+    expect(measurePerformance([], duplicates, duplicateRegistry).metrics.find(item => item.id === "missedWarningRate")?.sampleSize).toBe(1);
     expect(measurePerformance([], [{ id: " ", occurredAt: "2024-06-01T00:00:00.000Z" }]).metrics.find(item => item.id === "missedWarningRate")?.sampleSize).toBe(0);
 
     const unregistered = new AccountabilityLedger();
@@ -530,7 +552,8 @@ describe("accountability surface does not join the five-question navigation", ()
     const procedure = router.slice(router.indexOf("publicRecord"));
     expect(procedure.indexOf("if (!enabled)")).toBeLessThan(procedure.indexOf("loadAccountabilityLedger"));
     expect(procedure).toContain("enabled: false");
+    expect(cron).toContain("captureTrackRecordFromScheduledRun");
+    expect(cron).toContain("TRACK_RECORD_CRON_WRITES");
     expect(cron).not.toContain("captureScheduledAssessment");
-    expect(cron).not.toContain("intelligenceAccountability");
   });
 });

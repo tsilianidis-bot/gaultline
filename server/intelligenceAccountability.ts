@@ -61,6 +61,9 @@ export function assessmentToResearchRecord(assessment: StoredAssessment) {
     assessmentKind: assessment.assessmentKind,
     direction: assessment.direction,
     preregisteredBenchmarkId: assessment.preregisteredBenchmarkId,
+    evidenceReferences: assessment.evidenceReferences,
+    registryVersionId: assessment.registryVersionId,
+    registryContentHash: assessment.registryContentHash,
   };
   return buildGovernedResearchObservation({
     observationKey: `intelligence-accountability:${assessment.assessmentKey}`,
@@ -79,10 +82,10 @@ export function assessmentToResearchRecord(assessment: StoredAssessment) {
   });
 }
 
-export async function persistAccountabilityAssessment(assessment: StoredAssessment): Promise<{ created: boolean }> {
+export async function persistAccountabilityAssessment(assessment: StoredAssessment): Promise<{ created: boolean; id: number | null }> {
   const record = assessmentToResearchRecord(assessment);
   const saved = await persistGovernedResearchObservation(record);
-  return { created: saved.created };
+  return { created: saved.created, id: saved.id };
 }
 
 export async function persistAccountabilityDevelopment(observationId: number, development: StoredDevelopment): Promise<{ created: boolean }> {
@@ -123,6 +126,9 @@ interface StoredBody {
   assessmentKind?: StoredAssessment["assessmentKind"];
   direction?: StoredAssessment["direction"];
   preregisteredBenchmarkId?: string | null;
+  evidenceReferences?: StoredAssessment["evidenceReferences"];
+  registryVersionId?: string | null;
+  registryContentHash?: string | null;
 }
 
 function asAssessment(historyClass: string, raw: unknown, developments: StoredDevelopment[], resolutions: StoredResolution[]): StoredAssessment | null {
@@ -146,6 +152,9 @@ function asAssessment(historyClass: string, raw: unknown, developments: StoredDe
     assessmentKind: body.assessmentKind === "early_warning" ? "early_warning" : "market_assessment",
     direction: body.direction ?? "unspecified",
     preregisteredBenchmarkId: body.preregisteredBenchmarkId?.trim() || null,
+    evidenceReferences: body.evidenceReferences ?? [],
+    registryVersionId: body.registryVersionId ?? null,
+    registryContentHash: body.registryContentHash ?? null,
     originalJson: JSON.stringify(body),
     developments,
     resolutions,

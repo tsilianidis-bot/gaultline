@@ -43,6 +43,7 @@ import { invalidateCanonicalMarketStateCache } from "./marketStateCache";
 import { collectBroadInstitutionalEventOutcomes, recordDailyMarketEvidence } from "./institutionalMemory";
 import { collectForwardChampionOutcomesV2, recordForwardChampionProvenance } from "./algorithmProvenance";
 import { capturesForwardEvidence, championProvenanceKey, resolveRunContext, type RunContext } from "./forwardRunProvenance";
+import { captureTrackRecordFromScheduledRun } from "./trackRecordCapture";
 import { buildAtomicIntelligenceStateManifest, persistAtomicIntelligenceStateManifest } from "./intelligenceGovernance";
 
 function mapPressureLevelToSeismographStress(level: string | null | undefined): SeismographOutput["stressLevel"] {
@@ -296,6 +297,22 @@ export async function runSeismographPipeline(options: { runContext?: RunContext 
   await collectForwardOutcomesForRun(runContext);
   invalidateCanonicalMarketStateCache();
   console.log("[Seismograph] Output persisted to Market Memory");
+
+  // Track record is read-only against Core evidence and no-ops unless the flag
+  // and TRACK_RECORD_CRON_WRITES are both explicitly on. Failures never change the score.
+  try {
+    const capture = await captureTrackRecordFromScheduledRun({
+      run: runContext,
+      pressureIndex: seismographOutput.pressureScore,
+      regime: seismographOutput.regime,
+      generatedAt: runContext.runStartedAt,
+    });
+    if (capture.reason !== "not_scheduled" && capture.reason !== "cron_writes_disabled" && capture.reason !== "flag_disabled") {
+      console.log(`[Seismograph] Track record capture: ${capture.reason}`);
+    }
+  } catch (error) {
+    console.warn("[Seismograph] Track record capture skipped:", error instanceof Error ? error.message : "unavailable");
+  }
 
   return seismographOutput;
 }

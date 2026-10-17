@@ -10,6 +10,7 @@
  * (see server/intelligenceAccountability.ts). No new table is required.
  */
 import { PUBLIC_DISCLAIMER } from "./publicDisclaimer";
+import { activeStressBenchmarkRegistry, type StressBenchmarkRegistry } from "./stressBenchmarkRegistry";
 
 /** Matches server/forwardRunProvenance capturesForwardEvidence: only SCHEDULED_CRON. */
 export function isScheduledForwardRun(run: { trigger?: string | null } | null | undefined): boolean {
@@ -128,6 +129,9 @@ export interface MarketAssessmentInput {
   direction: AssessmentDirection;
   /** Frozen at assessment time. Later benchmark ids that differ are ignored. */
   preregisteredBenchmarkId?: string | null;
+  evidenceReferences?: EvidenceReference[];
+  registryVersionId?: string | null;
+  registryContentHash?: string | null;
   favoredScenario?: ScenarioId | null;
   founderThesisAffinity?: unknown;
 }
@@ -135,6 +139,14 @@ export interface MarketAssessmentInput {
 export interface BenchmarkMatch {
   id: string;
   matched: boolean;
+}
+
+/** Pointer to a verified observation. The measurement value is not copied. */
+export interface EvidenceReference {
+  id: string;
+  observedAt: string | null;
+  receivedAt: string | null;
+  contentHash: string;
 }
 
 export interface ObservedDevelopmentInput {
@@ -185,6 +197,9 @@ export interface StoredAssessment {
   assessmentKind: AssessmentKind;
   direction: AssessmentDirection;
   preregisteredBenchmarkId: string | null;
+  evidenceReferences: EvidenceReference[];
+  registryVersionId: string | null;
+  registryContentHash: string | null;
   /** Canonical JSON of the original assessment. Appends must not change it. */
   originalJson: string;
   developments: StoredDevelopment[];
@@ -210,6 +225,9 @@ export interface PublicChronologyItem {
   supportingObservations: SupportingObservation[];
   developments: Array<{ observedAt: string; statement: string }>;
   resolutions: Array<{ resolvedAt: string; status: ResolutionStatus; statement: string }>;
+  evidenceReferences: EvidenceReference[];
+  registryVersionId: string | null;
+  registryContentHash: string | null;
   currentStatus: ResolutionStatus;
 }
 
@@ -376,6 +394,9 @@ export function normalizeAssessment(input: MarketAssessmentInput): Omit<StoredAs
     assessmentKind: input.assessmentKind,
     direction: input.direction,
     preregisteredBenchmarkId: input.preregisteredBenchmarkId?.trim() || null,
+    evidenceReferences: normalizeEvidenceReferences(input.evidenceReferences),
+    registryVersionId: input.registryVersionId?.trim() || null,
+    registryContentHash: input.registryContentHash?.trim() || null,
   };
   if (assessment.assessmentKind !== "market_assessment" && assessment.assessmentKind !== "early_warning") {
     throw new AccountabilityValidationError("assessmentKind must be market_assessment or early_warning.");
@@ -384,6 +405,26 @@ export function normalizeAssessment(input: MarketAssessmentInput): Omit<StoredAs
     throw new AccountabilityValidationError("direction must be stress_increase, stress_decrease, unchanged, or unspecified.");
   }
   return assessment;
+}
+
+function normalizeEvidenceReferences(references: EvidenceReference[] | undefined): EvidenceReference[] {
+  return (references ?? []).map(item => {
+    if (!item || typeof item !== "object") throw new AccountabilityValidationError("Evidence reference is required.");
+    if ("value" in item) {
+      throw new AccountabilityValidationError("Evidence references store ids, timestamps, and hashes, not measurement copies.");
+    }
+    const id = requireText(item.id, "evidence reference id");
+    const contentHash = requireText(item.contentHash, "evidence reference hash");
+    if (!/^[a-f0-9]{64}$/.test(contentHash)) {
+      throw new AccountabilityValidationError("Evidence reference hash must be a sha256 hex digest.");
+    }
+    return {
+      id,
+      observedAt: item.observedAt ? requireIso(item.observedAt, "evidence observedAt") : null,
+      receivedAt: item.receivedAt ? requireIso(item.receivedAt, "evidence receivedAt") : null,
+      contentHash,
+    };
+  });
 }
 
 function originalBody(assessment: Omit<StoredAssessment, "originalJson" | "developments" | "resolutions">): string {
@@ -613,6 +654,7 @@ export interface PerformanceMeasurement {
 export function measurePerformance(
   rows: readonly StoredAssessment[],
   confirmedStressEvents: readonly ConfirmedStressEvent[] = [],
+  registry: StressBenchmarkRegistry = activeStressBenchmarkRegistry(),
 ): PerformanceMeasurement {
   const forward = rows.filter(isForwardEvidence);
   const resolved = forward.filter(row => {
@@ -645,10 +687,11 @@ export function measurePerformance(
     concentrationReason: concentrationOf(resolvedWarnings, true),
   });
 
+  const allowedEventIds = new Set(registry.events.map(event => event.id));
   const seenEvents = new Set<string>();
   const events = confirmedStressEvents.filter(event => {
     const id = event.id?.trim();
-    if (!id || seenEvents.has(id) || !Number.isFinite(Date.parse(event.occurredAt))) return false;
+    if (!id || !allowedEventIds.has(id) || seenEvents.has(id) || !Number.isFinite(Date.parse(event.occurredAt))) return false;
     seenEvents.add(id);
     return true;
   });
@@ -689,9 +732,14 @@ export function measurePerformance(
     concentrationReason: concentrationOf(leadRows.map(item => item.row), true),
   });
 
+  const allowedBenchmarks = new Set(registry.benchmarks.map(benchmark => benchmark.id));
   const benchmarkEligible = forward.filter(row => {
     const id = row.preregisteredBenchmarkId;
-    return Boolean(id) && row.developments.some(item => item.benchmark?.id === id);
+    if (!id) return false;
+    return allowedBenchmarks.has(id)
+      && row.registryContentHash === registry.contentHash
+      && row.registryVersionId === registry.versionId
+      && row.developments.some(item => item.benchmark?.id === id);
   });
   const benchmarkRows = benchmarkEligible.map(row => row.developments.find(item => item.benchmark?.id === row.preregisteredBenchmarkId)!.benchmark!);
   const matched = benchmarkRows.filter(item => item.matched).length;
@@ -796,6 +844,9 @@ export function buildPublicTrackRecord(
       supportingObservations: row.supportingObservations.map(item => ({ ...item })),
       developments: row.developments.map(item => ({ observedAt: item.observedAt, statement: item.statement })),
       resolutions: row.resolutions.map(item => ({ resolvedAt: item.resolvedAt, status: item.status, statement: item.statement })),
+      evidenceReferences: row.evidenceReferences.map(item => ({ ...item })),
+      registryVersionId: row.registryVersionId,
+      registryContentHash: row.registryContentHash,
       currentStatus: currentStatus(row),
     }));
 
@@ -839,12 +890,20 @@ export interface ScheduledAssessmentSnapshot {
   invalidationConditions: string[];
   supportingObservations: SupportingObservation[];
   evidence: EvidenceCoverageInput;
+  evidenceReferences?: EvidenceReference[];
+  registryVersionId?: string | null;
+  registryContentHash?: string | null;
+  reconstructed?: boolean;
+  historyClass?: string | null;
 }
 
 /** Only a scheduled forward run may be labelled forward-recorded. Backfills stay reconstructions. */
 export function buildScheduledAssessment(snapshot: ScheduledAssessmentSnapshot): MarketAssessmentInput {
   if (!isScheduledForwardRun(snapshot.run)) {
     throw new AccountabilityValidationError("Only a scheduled forward run can be recorded as forward-recorded.");
+  }
+  if (snapshot.reconstructed || (snapshot.historyClass != null && snapshot.historyClass !== "live_verified")) {
+    throw new AccountabilityValidationError("Forward-recorded assessments cannot be created from reconstructed or historical data.");
   }
   return {
     assessmentKey: `scheduled:${snapshot.stateId ?? "no-state"}:${requireIso(snapshot.generatedAt, "generatedAt")}`,
@@ -861,6 +920,9 @@ export function buildScheduledAssessment(snapshot: ScheduledAssessmentSnapshot):
     assessmentKind: "market_assessment",
     direction: "unspecified",
     preregisteredBenchmarkId: null,
+    evidenceReferences: snapshot.evidenceReferences ?? [],
+    registryVersionId: snapshot.registryVersionId ?? null,
+    registryContentHash: snapshot.registryContentHash ?? null,
   };
 }
 
