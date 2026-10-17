@@ -72,11 +72,24 @@ export interface IntelligenceEvidenceDomainProjection {
   limitation: string | null;
 }
 
+/** Read-only provenance copied from the existing canonical MarketState. */
+export interface IntelligenceEvidenceCanonicalState {
+  stateId: string;
+  generatedAt: string;
+  effectiveAt: string;
+  modelVersion: string;
+  regime: string | null;
+  pressureIndex: number | null;
+  pressureDirection: string;
+}
+
 export interface IntelligenceEvidenceSnapshot {
   kind: "intelligence-evidence-snapshot";
   methodVersion: typeof INTELLIGENCE_EVIDENCE_METHOD_VERSION;
   capturedAt: string;
   canonicalStateId: string | null;
+  /** Null only when the authoritative canonical state was unavailable. */
+  canonicalState: IntelligenceEvidenceCanonicalState | null;
   observations: ValidatedIntelligenceEvidence[];
   providerHealth: EvidenceProviderHealth[];
   /** Fixed six-domain projection for the future Intelligence Core. */

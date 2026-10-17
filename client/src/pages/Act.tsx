@@ -33,6 +33,7 @@ import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 import { forecastConfidenceDisplay } from "@shared/confidenceDisplay";
 import { SectorRotationQuestion } from "@/components/sectorRotation/SectorRotationModule";
+import { IntelligenceEvidenceContext } from "@/components/intelligenceCore/IntelligenceEvidenceContext";
 
 const ACT_DEEP_PATH = "/app/act/deep";
 
@@ -430,6 +431,8 @@ export default function Act() {
             </div>
           </div>
         </section>
+
+        <IntelligenceEvidenceContext mode="act" />
 
         {/* ── SECTIONS ─────────────────────────────────────────────────── */}
 
