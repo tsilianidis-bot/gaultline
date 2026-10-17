@@ -403,7 +403,7 @@ export async function getAsymmetricOpportunities(limit = 20): Promise<Asymmetric
       const volumeSurge       = scoreVolumeSurge(volume, avgVolume);
       const marketCapScore    = scoreMarketCap(marketCap);
       const volatilityScore   = scoreVolatility(intradayRangePct);
-      const macroFit          = clamp(macroFitBase + (Math.random() * 10 - 5)); // slight variation per stock
+      const macroFit          = macroFitBase; // Deterministic, source-derived regime assessment
 
       // Weighted composite
       const compositeScore = clamp(
