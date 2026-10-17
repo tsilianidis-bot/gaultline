@@ -21,10 +21,12 @@ export const PAID_PLANS_ON_SALE: boolean = true;
  */
 export const OPEN_REGISTRATION: boolean = false;
 /**
- * Checkout switch. ON: signed-in members can start Stripe Checkout for the public offers.
- * Each purchase is still gated server-side: the plan must be on sale, its Stripe price ID must be
- * configured, and the live Stripe price/product must verify (active, USD, exact amount and name).
- * While false, prices are displayed but no Stripe call is made and buy buttons show "Coming soon".
+ * Compiled checkout switch. True in this build, but it does not open purchases by itself.
+ * The server reads CHECKOUT_RUNTIME_ENABLED at request time and stays closed unless that
+ * variable is exactly true. Unset or false rejects createCheckout without a rebuild.
+ * Each purchase is still gated: the plan must be on sale, its Stripe price ID must be
+ * configured, and the Stripe price/product must verify (active, USD, exact amount and name).
+ * While purchases are closed, prices are displayed and buy buttons stay disabled.
  */
 export const CHECKOUT_ENABLED: boolean = true;
 /** Label on disabled buy buttons while CHECKOUT_ENABLED is false. */
@@ -326,6 +328,13 @@ export const GATE_REQUIRED_TIER: Record<GateVariant, AccessTier> = {
 };
 
 // ─── CTA Label Helpers ────────────────────────────────────────────────────────
+/**
+ * Plan id in-app upgrade gates may send to createCheckout.
+ * Trader (`core`) is not on sale. Intelligence (`premium`) is the monthly offer and
+ * satisfies both Trader-tier and Intelligence-tier gates.
+ */
+export const GATE_CHECKOUT_PLAN_ID: StripePlanId = "premium";
+
 /** Returns the primary upgrade CTA label for a given gate */
 export function getGatePrimaryCtaLabel(_variant: GateVariant): string {
   return `FAULTLINE Intelligence — ${PRICING_PLANS.premium.priceLabel}`;

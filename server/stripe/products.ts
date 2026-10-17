@@ -43,8 +43,18 @@ export const PLANS: Record<PlanId, Plan> = Object.fromEntries(
   ])
 ) as Record<PlanId, Plan>;
 
+/**
+ * When more than one plan is configured with the same Stripe price id, prefer the plan
+ * that is actually on sale (Intelligence or Lifetime). A legacy id that merely collides
+ * with a public price must not win the webhook tier lookup.
+ */
+export function selectPlanForPrice(matches: readonly Plan[]): Plan | undefined {
+  if (matches.length === 0) return undefined;
+  return matches.find(plan => PRICING_PLANS[plan.id].available) ?? matches[0];
+}
+
 export function getPlanByPriceId(priceId: string): Plan | undefined {
-  return Object.values(PLANS).find(p => p.priceId === priceId);
+  return selectPlanForPrice(Object.values(PLANS).filter(p => p.priceId === priceId));
 }
 
 export async function verifyStripePlanConfiguration(plan: Plan): Promise<{ verified: true } | { verified: false; reason: string }> {

@@ -8,6 +8,7 @@ import { trackUpgradeClick, trackStripeCheckoutStarted } from "@/hooks/useAnalyt
 import {
   tierMeetsRequirement,
   GATE_REQUIRED_TIER,
+  GATE_CHECKOUT_PLAN_ID,
   PRICING_PLANS,
   PAID_PLANS_ON_SALE,
   PLAN_NOT_ON_SALE_LABEL,
@@ -15,6 +16,7 @@ import {
   type GateVariant,
   type AccessTier,
 } from '../../../shared/tiers';
+import { CHECKOUT_ALLOWLIST_COPY, CHECKOUT_TEMPORARILY_UNAVAILABLE_COPY } from '../../../shared/checkoutAccess';
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -40,6 +42,21 @@ interface PremiumGateConfig {
 
 function publicPlanCopy(_value: string, slot: "primary" | "secondary" = "primary") {
   return slot === "primary" ? `FAULTLINE Intelligence — ${PRICING_PLANS.premium.priceLabel}` : 'View public preview';
+}
+
+/** Server getPlans is authoritative: runtime flag and allowlist can close checkout without a rebuild. */
+function useIntelligenceCheckout() {
+  const plans = trpc.billing.getPlans.useQuery(undefined, { staleTime: 30_000 });
+  const premium = plans.data?.find(plan => plan.id === GATE_CHECKOUT_PLAN_ID);
+  const canBuy = premium?.available === true;
+  const blockedReason = premium?.blockedReason ?? null;
+  let label = `FAULTLINE Intelligence — ${PRICING_PLANS.premium.priceLabel}`;
+  if (!canBuy) {
+    if (plans.isLoading) label = "Checking checkout…";
+    else if (blockedReason === "allowlist") label = CHECKOUT_ALLOWLIST_COPY;
+    else label = CHECKOUT_TEMPORARILY_UNAVAILABLE_COPY;
+  }
+  return { canBuy, blockedReason, label, planId: GATE_CHECKOUT_PLAN_ID };
 }
 
 const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
@@ -621,20 +638,11 @@ export function PremiumGateFull({
                 {PAID_PLANS_NOT_ON_SALE_COPY} Existing account access is preserved.
               </p>
             ) : isLoggedIn ? (
-              // Logged-in users: show Stripe upgrade buttons based on context
-              <>
-                <button
-                  onClick={() => checkoutMutation.mutate({ planId: 'premium', origin: window.location.origin })}
-                  disabled={checkoutMutation.isPending}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-widest transition-all duration-200 hover:scale-[1.02] active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed"
-                  style={GATE_REQUIRED_TIER[variant] === 'premium'
-                    ? { background: "#00D4FF", color: "#050608", boxShadow: "0 0 24px rgba(0,212,255,0.45)" }
-                    : { background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.25)", color: "#00D4FF" }}
-                >
-                  <Crown className="w-4 h-4" />
-                  {checkoutMutation.isPending ? 'Loading...' : `FAULTLINE Intelligence — ${PRICING_PLANS.premium.priceLabel}`}
-                </button>
-              </>
+              <IntelligenceCheckoutButton
+                pending={checkoutMutation.isPending}
+                onBuy={() => checkoutMutation.mutate({ planId: GATE_CHECKOUT_PLAN_ID, origin: window.location.origin })}
+                prominent={GATE_REQUIRED_TIER[variant] === 'premium'}
+              />
             ) : (
               // Unauthenticated: show login / sign up
               <>
@@ -878,7 +886,40 @@ export function PremiumBlurOverlay({
   );
 }
 
+function IntelligenceCheckoutButton({
+  pending,
+  onBuy,
+  prominent = true,
+}: {
+  pending: boolean;
+  onBuy: () => void;
+  prominent?: boolean;
+}) {
+  const offer = useIntelligenceCheckout();
+  const disabled = pending || !offer.canBuy;
+  return (
+    <button
+      type="button"
+      data-checkout-plan={offer.planId}
+      data-checkout-blocked={offer.canBuy ? undefined : (offer.blockedReason ?? "unavailable")}
+      onClick={() => {
+        if (!offer.canBuy) return;
+        onBuy();
+      }}
+      disabled={disabled}
+      className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-widest transition-all duration-200 hover:scale-[1.02] active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed"
+      style={prominent
+        ? { background: "#00D4FF", color: "#050608", boxShadow: "0 0 24px rgba(0,212,255,0.45)" }
+        : { background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.25)", color: "#00D4FF" }}
+    >
+      <Crown className="w-4 h-4" />
+      {pending ? "Loading..." : offer.label}
+    </button>
+  );
+}
+
 function BlurUpgradeCTA({ variant, cfg }: { variant: PremiumGateVariant; cfg: PremiumGateConfig }) {
+  const offer = useIntelligenceCheckout();
   const checkoutMutation = trpc.billing.createCheckout.useMutation({
     onSuccess: (data) => {
       if (data.url) {
@@ -888,23 +929,27 @@ function BlurUpgradeCTA({ variant, cfg }: { variant: PremiumGateVariant; cfg: Pr
     },
     onError: (err) => toast.error('Checkout unavailable', { description: err.message }),
   });
-  const planId = GATE_REQUIRED_TIER[variant] === 'core' ? 'core' : 'premium';
+  const disabled = checkoutMutation.isPending || !offer.canBuy;
   return (
     <button
+      type="button"
+      data-checkout-plan={GATE_CHECKOUT_PLAN_ID}
+      data-checkout-blocked={offer.canBuy ? undefined : (offer.blockedReason ?? "unavailable")}
       onClick={() => {
+        if (!offer.canBuy) return;
         trackUpgradeClick(variant, 'blur_overlay');
-        checkoutMutation.mutate({ planId, origin: window.location.origin });
+        checkoutMutation.mutate({ planId: GATE_CHECKOUT_PLAN_ID, origin: window.location.origin });
       }}
-      disabled={checkoutMutation.isPending}
+      disabled={disabled}
       className="text-xs font-bold px-4 py-2 rounded-lg transition-all hover:scale-[1.02] disabled:opacity-60"
       style={{
         background: cfg.accentHex,
         color: "#050608",
         boxShadow: `0 0 16px ${cfg.accentHex}35`,
-        cursor: checkoutMutation.isPending ? 'not-allowed' : 'pointer',
+        cursor: disabled ? 'not-allowed' : 'pointer',
       }}
     >
-      {checkoutMutation.isPending ? 'Loading...' : cfg.ctaPrimary}
+      {checkoutMutation.isPending ? 'Loading...' : offer.label}
     </button>
   );
 }
