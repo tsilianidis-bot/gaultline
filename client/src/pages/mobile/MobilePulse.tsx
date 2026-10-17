@@ -73,11 +73,15 @@ export default function MobilePulse() {
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
-  const { data: intelligenceEvidence } = trpc.intelligenceEvidence.visual.useQuery(undefined, {
+  // Legacy isolated client tests predate this feature-gated router. In an
+  // application runtime the router is always present; an absent mock simply
+  // produces no Core link, preserving the prior Pulse contract.
+  const intelligenceEvidenceQuery = trpc.intelligenceEvidence?.visual?.useQuery;
+  const { data: intelligenceEvidence } = intelligenceEvidenceQuery?.(undefined, {
     staleTime: 60_000,
     retry: false,
     refetchOnWindowFocus: false,
-  });
+  }) ?? { data: undefined };
 
   const regimeColor = useMemo(() => getRegimeColor(canonicalState?.regime ?? ""), [canonicalState?.regime]);
 
