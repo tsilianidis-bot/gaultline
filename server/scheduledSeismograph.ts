@@ -11,10 +11,12 @@
  * 7. Persist the assembled SeismographOutput to Market Memory
  *
  * Registered at: POST /api/scheduled/seismograph-daily
- * Cron: "0 0 18 * * *" (18:00 UTC / 2pm ET daily, after market close)
+ * Host schedule: 4:15 PM America/New_York on valid NYSE sessions. The handler
+ * independently skips callbacks outside that post-close schedule window.
  */
 import { randomUUID } from "node:crypto";
 import type { Request, Response } from "express";
+import { nyseSeismographRunWindow } from "../shared/nyseSession";
 import { calculateFaultlinePressure, type PressureAlert } from "./pressure/engine";
 import { persistPressureRunAndShadows } from "./pressure/scheduledPersistence";
 import { refreshPriorComponentsAfterVerifiedRun } from "./pressure/priorComponents";
@@ -42,7 +44,7 @@ import type { FMOSUniversalOutput } from "./fmos/types";
 import { invalidateCanonicalMarketStateCache } from "./marketStateCache";
 import { collectBroadInstitutionalEventOutcomes, recordDailyMarketEvidence } from "./institutionalMemory";
 import { collectForwardChampionOutcomesV2, recordForwardChampionProvenance } from "./algorithmProvenance";
-import { capturesForwardEvidence, championProvenanceKey, resolveRunContext, type RunContext } from "./forwardRunProvenance";
+import { capturesForwardEvidence, championProvenanceKey, etDateOf, resolveRunContext, type RunContext } from "./forwardRunProvenance";
 import { buildAtomicIntelligenceStateManifest, persistAtomicIntelligenceStateManifest } from "./intelligenceGovernance";
 
 function mapPressureLevelToSeismographStress(level: string | null | undefined): SeismographOutput["stressLevel"] {
@@ -61,6 +63,53 @@ import { resolveBuildIdentity } from "./buildIdentity";
 
 /** Cache key for the latest assembled SeismographOutput in Market Memory */
 export const SEISMOGRAPH_OUTPUT_KEY = "seismograph:latest_output";
+
+type ScheduledExecutionDisposition = "executed" | "joined_inflight" | "already_completed";
+type ScheduledExecutionResult = { output: SeismographOutput; disposition: ScheduledExecutionDisposition };
+
+// The host must schedule one authenticated callback per session. This guard makes
+// that invariant safe within a running service: a retry cannot mutate daily state
+// twice while a run is active, and a completed session cannot be re-run until a
+// process restart. It deliberately does not infer a durable lock from a manual
+// run or create a new database record/schema.
+const scheduledExecutions = new Map<string, Promise<SeismographOutput>>();
+const completedScheduledExecutions = new Map<string, SeismographOutput>();
+const MAX_COMPLETED_SCHEDULED_SESSIONS = 3;
+
+function rememberCompletedScheduledExecution(etDate: string, output: SeismographOutput) {
+  completedScheduledExecutions.set(etDate, output);
+  while (completedScheduledExecutions.size > MAX_COMPLETED_SCHEDULED_SESSIONS) {
+    const oldest = completedScheduledExecutions.keys().next().value;
+    if (oldest === undefined) break;
+    completedScheduledExecutions.delete(oldest);
+  }
+}
+
+export async function runScheduledSeismographOnce(
+  etDate: string,
+  runContext: RunContext,
+  run: (options: { runContext: RunContext }) => Promise<SeismographOutput> = runSeismographPipeline,
+): Promise<ScheduledExecutionResult> {
+  const completed = completedScheduledExecutions.get(etDate);
+  if (completed) return { output: completed, disposition: "already_completed" };
+  const active = scheduledExecutions.get(etDate);
+  if (active) return { output: await active, disposition: "joined_inflight" };
+  const execution = run({ runContext });
+  scheduledExecutions.set(etDate, execution);
+  try {
+    const output = await execution;
+    rememberCompletedScheduledExecution(etDate, output);
+    return { output, disposition: "executed" };
+  } finally {
+    scheduledExecutions.delete(etDate);
+  }
+}
+
+/** Test-only isolation for the in-process duplicate-callback guard. */
+export function resetScheduledSeismographExecutionGuard() {
+  scheduledExecutions.clear();
+  completedScheduledExecutions.clear();
+}
 
 /**
  * Retrieve the latest assembled SeismographOutput from Market Memory.
@@ -138,7 +187,9 @@ export async function collectForwardOutcomesForRun(
 export async function runSeismographPipeline(options: { runContext?: RunContext } = {}): Promise<SeismographOutput> {
   // Unattributed callers (scripts, tests) are AD_HOC: they never capture forward evidence.
   const runContext = options.runContext ?? resolveRunContext("unspecified");
-  const today = new Date().toISOString().split("T")[0];
+  // The daily record belongs to the market's Eastern session date, never the host's
+  // UTC calendar day. This is especially important for a post-close scheduled run.
+  const today = etDateOf(runContext.runStartedAt);
   const originatingRunId = `seismograph:${randomUUID()}`;
   console.log(`[Seismograph] Pipeline starting for ${today}`);
 
@@ -304,14 +355,34 @@ export async function handleScheduledSeismograph(
   _req: Request,
   res: Response
 ): Promise<void> {
-  // The cron schedule and a cron-service redeploy hit this same endpoint; the start time
-  // decides SCHEDULED_CRON ([18:00, 18:30) UTC) vs CRON_DEPLOY.
-  const runContext = resolveRunContext("cron-endpoint", new Date());
-  try {
-    const seismographOutput = await runSeismographPipeline({ runContext });
+  const now = new Date();
+  const runWindow = nyseSeismographRunWindow(now);
+  // The host scheduler and a cron-service redeploy hit the same endpoint. A callback
+  // outside the documented NYSE post-close window must not record a pre-close canonical
+  // observation or forward ledger provenance.
+  if (!runWindow.isScheduledWindow) {
+    console.warn(`[Seismograph] Scheduled callback skipped: ${runWindow.reason}`);
     res.json({
       ok: true,
-      date: new Date().toISOString().split("T")[0],
+      skipped: "outside_nyse_post_close_window",
+      session: runWindow.session,
+      etDate: runWindow.etDate,
+      expectedRunAtEt: runWindow.scheduledRunAtEt,
+      reason: runWindow.reason,
+    });
+    return;
+  }
+  // Closed/invalid windows return above; retain a total fallback for the typed
+  // boundary without changing the accepted Eastern session date.
+  const scheduledEtDate = runWindow.etDate ?? etDateOf(now);
+  const runContext = resolveRunContext("cron-endpoint", now);
+  try {
+    const execution = await runScheduledSeismographOnce(scheduledEtDate, runContext);
+    const seismographOutput = execution.output;
+    res.json({
+      ok: true,
+      date: scheduledEtDate,
+      execution: execution.disposition,
       pressureScore: seismographOutput.pressureScore,
       regime: seismographOutput.regime,
       stressLevel: seismographOutput.stressLevel,

@@ -64,6 +64,22 @@ describe("Phase 5 governed cross-engine synthesis", () => {
     expect(synthesis.engineObservations.every(item => item.direction === "UNAVAILABLE")).toBe(true);
   });
 
+  it("keeps delayed evidence distinct from stale evidence and excludes it from current confirmation", () => {
+    const state = stateFixture({
+      engineValues: { credit: 63, liquidity: 58 },
+      engineDirections: { credit: "deteriorating", liquidity: "deteriorating" },
+      inputQuality: [
+        { inputId: "hy", freshnessStatus: "DELAYED", contributesTo: ["credit"] },
+        { inputId: "funding", freshnessStatus: "LIVE", contributesTo: ["liquidity"] },
+      ],
+    });
+    const synthesis = buildCrossEngineSynthesis(state, buildCanonicalEvidencePacket(state));
+    expect(synthesis.delayedEngines).toEqual(["credit"]);
+    expect(synthesis.staleEngines).toEqual([]);
+    expect(synthesis.relationships).toEqual([]);
+    expect(synthesis.confirmations).toEqual([]);
+  });
+
   it("does not convert historical or analog references into a current probability", () => {
     const state = stateFixture();
     const synthesis = buildCrossEngineSynthesis(state, buildCanonicalEvidencePacket(state));

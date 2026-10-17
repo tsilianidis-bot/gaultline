@@ -31,6 +31,8 @@ function direction(value: unknown, engineId?: string): CanonicalDirection {
 function quality(manifest: StoredManifest): CanonicalQualityStatus {
   const summary = manifest.dataQualitySummary ?? {};
   const inputQuality = Array.isArray(manifest.inputQuality) ? manifest.inputQuality : [];
+  const derivedDelayedInputs = inputQuality.filter((input: any) => String(input.freshnessStatus).toUpperCase() === "DELAYED");
+  const derivedStaleInputs = inputQuality.filter((input: any) => String(input.freshnessStatus).toUpperCase() === "STALE");
   const unavailable = Array.isArray(manifest.unavailableInputs)
     ? manifest.unavailableInputs
     : Array.isArray(summary.unavailableInputs) ? summary.unavailableInputs : [];
@@ -44,7 +46,13 @@ function quality(manifest: StoredManifest): CanonicalQualityStatus {
   if (manifest.coherenceStatus === "UNAVAILABLE" || requiredUnavailable.length > 0) return "UNAVAILABLE";
   if (unavailable.length > 0) return "PARTIAL";
   if (fallback.length > 0 || manifest.coherenceStatus === "EXPLICIT_MISMATCH") return "DEGRADED";
-  if ((summary.staleInputs?.length ?? 0) > 0 || (summary.delayedInputs ?? 0) > 0 || (summary.staticInputs?.length ?? 0) > 0) return "PARTIAL";
+  if (
+    (summary.staleInputs?.length ?? 0) > 0
+    || (summary.delayedInputs ?? 0) > 0
+    || (summary.staticInputs?.length ?? 0) > 0
+    || derivedStaleInputs.length > 0
+    || derivedDelayedInputs.length > 0
+  ) return "PARTIAL";
   return "HEALTHY";
 }
 
@@ -107,7 +115,15 @@ export function buildCanonicalIntelligenceState(manifest: StoredManifest, option
     const engineUnavailable = evidence === "UNAVAILABLE";
     const engineStale = evidence === "STALE" || evidence === "DELAYED";
     const engineFallback = evidence === "FALLBACK" || engineInputs.some((input: any) => fallbackInputs.includes(input.inputId) || input.freshnessStatus === "FALLBACK");
-    const engineQuality: CanonicalQualityStatus = engineUnavailable ? "UNAVAILABLE" : engineStale ? "PARTIAL" : engineFallback ? "DEGRADED" : stateQuality;
+    // State-level quality describes the composite. It must not downgrade a current
+    // engine whose own contributing inputs are healthy, but a static-trend engine
+    // remains degraded because it has no observed directional basis.
+    const engineQuality: CanonicalQualityStatus = engineInputs.length === 0 || STATIC_TREND_ENGINES.has(engineId)
+      ? "DEGRADED"
+      : engineUnavailable ? "UNAVAILABLE"
+      : engineStale ? "PARTIAL"
+      : engineFallback ? "DEGRADED"
+      : "HEALTHY";
     return {
       engineId, engineName: engineId, value: typeof value === "number" ? value : null, unit: "score_0_to_100",
       classification: null, direction: direction(manifest.engineDirections?.[engineId], engineId), acceleration: null, persistence: null,

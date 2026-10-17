@@ -45,6 +45,22 @@ describe("Phase 2 canonical intelligence state", () => {
     expect(state.engines[0]).toMatchObject({ engineId: "liquidity-stress", freshnessStatus: "STALE", qualityStatus: "PARTIAL" });
   });
 
+  it("does not let an unrelated delayed macro input downgrade a healthy liquidity engine", () => {
+    const state = buildCanonicalIntelligenceState(base);
+    expect(state.confidenceOrEvidenceQuality).toBe("PARTIAL");
+    expect(state.engines[0]).toMatchObject({ engineId: "liquidity-stress", freshnessStatus: "CURRENT", qualityStatus: "HEALTHY" });
+  });
+
+  it("marks engines with only a static direction basis as degraded rather than current evidence", () => {
+    const state = buildCanonicalIntelligenceState({
+      ...base,
+      engineValues: { "ai-bubble": 61 },
+      engineDirections: { "ai-bubble": "secular" },
+      inputQuality: [],
+    });
+    expect(state.engines[0]).toMatchObject({ engineId: "ai-bubble", direction: "Unknown", qualityStatus: "DEGRADED" });
+  });
+
   it("TEST D: preserves an optional unavailable input as unavailable without converting it to zero or healthy input", () => {
     const state = buildCanonicalIntelligenceState({
       ...base,

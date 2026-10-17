@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   assembleCanonicalMarketState,
   createCanonicalMarketStateReader,
+  deriveMarketStateFreshness,
   type CanonicalMarketStateSource,
 } from "./marketStateService";
 import { pressureToEvidencePacket } from "./seismographAdapters";
@@ -176,6 +177,40 @@ describe("assembleCanonicalMarketState", () => {
     expect(state.cache.staleReason).toContain("Refresh failed");
     expect(state.sourceHealth.find(item => item.id === "seismograph")?.status).toBe("degraded");
     expect(state.warnings).toContain("Refresh failed; serving the last known-good MarketState.");
+  });
+
+  it("does not relabel a nine-hour-old source as fresh because its read cache refreshed", () => {
+    const state = assembleCanonicalMarketState(source({ lastUpdated: "2026-07-23T12:00:00.000Z" }), {
+      generatedAt: "2026-07-23T21:00:00.000Z",
+      cacheStatus: "refreshed",
+      cacheAgeMs: 1,
+      canonicalQuality: "HEALTHY",
+    });
+    expect(state.freshness).toBe("recent");
+    expect(state.sourceHealth.find(item => item.id === "seismograph")).toMatchObject({ status: "degraded", asOf: "2026-07-23T12:00:00.000Z" });
+    expect(state.warnings.join(" ")).toContain("cache refresh time does not change its source observation time");
+  });
+
+  it("fails closed when the canonical source timestamp is invalid or beyond the recent window", () => {
+    expect(deriveMarketStateFreshness(source({ lastUpdated: "not-a-timestamp" }), {
+      generatedAt: "2026-07-23T21:00:00.000Z", cacheStatus: "refreshed", canonicalQuality: "HEALTHY",
+    })).toBe("stale");
+    expect(deriveMarketStateFreshness(source({ lastUpdated: "2026-07-23T01:00:00.000Z" }), {
+      generatedAt: "2026-07-23T21:00:00.000Z", cacheStatus: "refreshed", canonicalQuality: "HEALTHY",
+    })).toBe("stale");
+  });
+
+  it("reports optional crypto from a provider timestamp rather than local receipt time", () => {
+    const current = assembleCanonicalMarketState(source(), {
+      generatedAt: "2026-07-23T12:05:00.000Z", cacheStatus: "refreshed", cacheAgeMs: 0,
+      cryptoOverlay: { observedAt: Date.parse("2026-07-23T12:01:00.000Z") },
+    });
+    const missing = assembleCanonicalMarketState(source(), {
+      generatedAt: "2026-07-23T12:05:00.000Z", cacheStatus: "refreshed", cacheAgeMs: 0,
+      cryptoOverlay: { observedAt: null },
+    });
+    expect(current.sourceHealth.find(item => item.id === "coingecko")).toMatchObject({ status: "healthy", asOf: "2026-07-23T12:01:00.000Z" });
+    expect(missing.sourceHealth.find(item => item.id === "coingecko")?.status).toBe("unavailable");
   });
 
   it("normalizes all canonical pressure and probability values to 0-100", () => {
