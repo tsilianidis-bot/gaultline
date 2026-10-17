@@ -224,11 +224,20 @@ function initializeGa4(): boolean {
       send_page_view: false,
     });
 
-    if (!document.getElementById(GA4_SCRIPT_ID)) {
+    // A failed download must not leave the runtime permanently marked ready.
+    // Retrying requires a fresh consented initialization; never load before consent.
+    const existingScript = document.getElementById(GA4_SCRIPT_ID);
+    if (!existingScript) {
       const script = document.createElement("script");
       script.id = GA4_SCRIPT_ID;
       script.async = true;
       script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GA4_MEASUREMENT_ID)}`;
+      script.onerror = () => {
+        script.remove();
+        ga4Initialized = false;
+        // Failure must be visible for debugging without exposing user data.
+        console.warn("[FAULTLINE analytics] Google Analytics script failed to load");
+      };
       document.head.appendChild(script);
     }
 
