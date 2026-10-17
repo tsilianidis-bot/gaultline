@@ -27,7 +27,7 @@ function inputs(overrides: Record<string, unknown> = {}) {
       ticker, price: 100 + index, prevClose: 99, open: 99, high: 101, low: 98, volume: 1000, change: 1, changePercent: 1,
       marketState: "REGULAR" as const, isDelayed: true, source: "yahoo" as const, observedAt: NOW_MS - 120_000, fetchedAt: NOW_MS - 60_000,
     })),
-    crypto: { totalMarketCap: 2_000_000_000_000, totalVolume24h: 100, btcDominance: 50, ethDominance: 15, marketCapChangePercent24h: 1, activeCryptocurrencies: 1, markets: 1, fetchedAt: NOW_MS - 60_000 },
+    crypto: { totalMarketCap: 2_000_000_000_000, totalVolume24h: 100, btcDominance: 50, ethDominance: 15, marketCapChangePercent24h: 1, activeCryptocurrencies: 1, markets: 1, observedAt: NOW_MS - 120_000, fetchedAt: NOW_MS - 60_000 },
     fred: {
       timestamp: new Date(NOW_MS - 60_000).toISOString(),
       results: {
@@ -54,9 +54,16 @@ describe("Phase 1 Intelligence Evidence collector", () => {
     expect(finding(snapshot, "canonical:credit-stress")).toMatchObject({ origin: "modeled", modelVersion: "champion-v1", validationStatus: "delayed", supportsCurrentClaim: true });
   });
 
-  it("withholds a CoinGecko aggregate from current use when the adapter has only ingestion time", () => {
+  it("maps a CoinGecko aggregate only when its provider observation timestamp is present", () => {
     const snapshot = buildEvidenceSnapshot(inputs(), NOW);
-    expect(finding(snapshot, "coingecko:global-market-cap")).toMatchObject({ value: null, validationStatus: "unavailable", supportsCurrentClaim: false, observedAt: null });
+    expect(finding(snapshot, "coingecko:global-market-cap")).toMatchObject({ value: 2_000_000_000_000, validationStatus: "verified", supportsCurrentClaim: true, observedAt: "2026-10-16T14:58:00.000Z", temporalStatus: "delayed" });
+    expect(snapshot.providerHealth.find(provider => provider.id === "coingecko")?.status).toBe("healthy");
+  });
+
+  it("withholds a CoinGecko aggregate when the adapter has only ingestion time", () => {
+    const crypto = { ...(inputs().crypto as Record<string, unknown>), observedAt: null };
+    const snapshot = buildEvidenceSnapshot(inputs({ crypto }), NOW);
+    expect(finding(snapshot, "coingecko:global-market-cap")).toMatchObject({ value: null, validationStatus: "unavailable", supportsCurrentClaim: false, observedAt: null, temporalStatus: "unavailable" });
     expect(snapshot.providerHealth.find(provider => provider.id === "coingecko")?.status).toBe("unavailable");
   });
 
@@ -102,5 +109,13 @@ describe("Phase 1 Intelligence Evidence collector", () => {
     const result = await withinDeadline(new Promise<string>(() => {}), "unavailable", 5, "provider deadline reached", warnings);
     expect(result).toBe("unavailable");
     expect(warnings).toEqual(["provider deadline reached"]);
+  });
+
+  it("projects the fixed six evidence domains without calculating a new market score", () => {
+    const snapshot = buildEvidenceSnapshot(inputs(), NOW);
+    expect(snapshot.domains.map(domain => domain.id)).toEqual(["equities", "bonds_rates", "credit", "liquidity", "volatility", "crypto"]);
+    expect(snapshot.domains.find(domain => domain.id === "equities")).toMatchObject({ status: "healthy", currentObservationIds: ["quote:SPY", "quote:QQQ", "quote:IWM"] });
+    expect(snapshot.domains.find(domain => domain.id === "crypto")).toMatchObject({ status: "healthy", currentObservationIds: ["coingecko:global-market-cap"] });
+    expect(snapshot.domains.find(domain => domain.id === "liquidity")).toMatchObject({ status: "unavailable", observationIds: [] });
   });
 });
