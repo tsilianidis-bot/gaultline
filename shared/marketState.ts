@@ -24,6 +24,10 @@ export interface MarketStateProbabilityDistribution {
 
 export interface CanonicalMarketState {
   version: "1.0";
+  /** Present only when every current field is bound to this same immutable state. */
+  canonicalStateId?: string | null;
+  stateHash?: string | null;
+  inputSnapshotId?: string | null;
   generatedAt: string;
   sourceUpdatedAt: string;
   freshness: MarketStateFreshness;

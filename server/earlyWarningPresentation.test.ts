@@ -3,7 +3,11 @@ import { PHASE10_PRESENTATION_CONTRACT_VERSION, PRESENTATION_SEMANTICS } from ".
 import {
   buildGovernedEvaluationUnavailablePresentation,
   buildNoMaterialEarlyWarningPresentation,
+  isCurrentLifecycleObservation,
 } from "./earlyWarningPresentation";
+
+// Mock ledger provenance only — no database or production call is made in this suite.
+const MOCK_LEDGER_PROVENANCE = { provider: "fixture-early-warning-ledger", observedAt: "2026-08-27T02:00:00.000Z" } as const;
 
 describe("Phase 10 early-warning presentation contract", () => {
   it("declares one immutable compute-once distribution contract", () => {
@@ -25,5 +29,14 @@ describe("Phase 10 early-warning presentation contract", () => {
     expect(presentation).toMatchObject({ kind: "GOVERNED_EVALUATION_UNAVAILABLE", freshness: "UNAVAILABLE", reason: "CANONICAL_STATE_UNAVAILABLE" });
     expect(presentation.message).toMatch(/could not complete/i);
     expect(presentation.message).not.toMatch(/no current candidate/i);
+  });
+
+  it("MOCK ledger: requires exact canonical state and synthesis identity before treating a lifecycle observation as current", () => {
+    const priorObservation = { originatingStateId: "state:S1", originatingSynthesisId: "syn:S1", fixtureProvenance: MOCK_LEDGER_PROVENANCE };
+    const currentObservation = { originatingStateId: "state:S2", originatingSynthesisId: "syn:S2", fixtureProvenance: MOCK_LEDGER_PROVENANCE };
+
+    expect(isCurrentLifecycleObservation(priorObservation, "state:S2", "syn:S2")).toBe(false);
+    expect(isCurrentLifecycleObservation(currentObservation, "state:S2", "syn:S2")).toBe(true);
+    expect(isCurrentLifecycleObservation({ ...currentObservation, originatingSynthesisId: "syn:other" }, "state:S2", "syn:S2")).toBe(false);
   });
 });

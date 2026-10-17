@@ -63,7 +63,7 @@ const COMPLETED_SESSION_HISTORY_MAX_AGE_MS = 96 * 60 * 60_000;
  * observation during an active session.
  */
 export function classifyYahooObservation(quote: Pick<YahooQuote, "price" | "observedAt" | "isDelayed" | "marketState" | "source"> | null | undefined, nowMs = Date.now()): YahooObservationFreshness {
-  if (!quote || !Number.isFinite(quote.price) || !Number.isFinite(quote.observedAt) || quote.source === "error") {
+  if (!quote || !Number.isFinite(quote.price) || !Number.isFinite(quote.observedAt) || (quote.observedAt as number) > nowMs + 60_000 || quote.source === "error") {
     return { timing: "unavailable", supportsCurrentClaim: false, detail: "No usable provider observation timestamp is available." };
   }
   const ageMs = Math.max(0, nowMs - (quote.observedAt as number));
@@ -1020,4 +1020,53 @@ export async function getSmallCapRunners(limit = 100): Promise<StockPerformer[]>
     captureError(err as Error, { source: "yahooProxy", stage: "smallcap_fetch_failed" }).catch(() => {});
     return [];
   }
+}
+
+/** Raw screener observations for Asymmetric Opportunities, never zero-filled. */
+export interface AsymmetricScreenerCandidate {
+  ticker: string;
+  name: string;
+  sector: string | null;
+  marketCap: number | null;
+  high52w: number | null;
+  low52w: number | null;
+  avgVolume: number | null;
+  observedAt: number | null;
+  fetchedAt: number;
+  sourceIdentifier: string;
+}
+
+const asymmetricCandidateCache = new LRUCache<string, { status: "AVAILABLE" | "UNAVAILABLE"; candidates: AsymmetricScreenerCandidate[]; limitations: string[] }>(2, 3 * 60_000);
+const observedScreenerNumber = (value: unknown): number | null => typeof value === "number" && Number.isFinite(value) ? value : null;
+
+export async function getAsymmetricScreenerCandidates() {
+  const cached = asymmetricCandidateCache.get("pool");
+  if (cached) return cached;
+  const screeners = ["day_gainers", "small_cap_gainers", "most_actives"];
+  const fetchedAt = Date.now();
+  const results = await Promise.all(screeners.map(async id => {
+    try {
+      const url = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=${id}&count=50&start=0`;
+      const response = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" }, signal: AbortSignal.timeout(10_000) });
+      if (!response.ok) throw new Error(`Yahoo screener HTTP ${response.status}`);
+      const payload = await response.json() as { finance?: { result?: Array<{ quotes?: Record<string, unknown>[] }> } };
+      const quotes = payload.finance?.result?.[0]?.quotes;
+      if (!Array.isArray(quotes)) throw new Error("Yahoo screener response omitted quotes");
+      const candidates = quotes.flatMap(q => typeof q.symbol !== "string" || !q.symbol ? [] : [{
+        ticker: q.symbol.toUpperCase(), name: String(q.shortName ?? q.longName ?? q.symbol),
+        sector: typeof q.sector === "string" ? q.sector : null,
+        marketCap: observedScreenerNumber(q.marketCap), high52w: observedScreenerNumber(q.fiftyTwoWeekHigh),
+        low52w: observedScreenerNumber(q.fiftyTwoWeekLow), avgVolume: observedScreenerNumber(q.averageDailyVolume3Month),
+        observedAt: observedScreenerNumber(q.regularMarketTime) === null ? null : (q.regularMarketTime as number) * 1000,
+        fetchedAt, sourceIdentifier: `yahoo:${id}:${q.symbol}`,
+      } satisfies AsymmetricScreenerCandidate]);
+      return { available: true, candidates, limitation: null };
+    } catch (error) { return { available: false, candidates: [], limitation: `${id}: ${error instanceof Error ? error.message : "provider unavailable"}` }; }
+  }));
+  const byTicker = new Map<string, AsymmetricScreenerCandidate>();
+  for (const result of results) for (const candidate of result.candidates) if (!byTicker.has(candidate.ticker)) byTicker.set(candidate.ticker, candidate);
+  const output = { status: results.some(result => result.available) ? "AVAILABLE" as const : "UNAVAILABLE" as const,
+    candidates: Array.from(byTicker.values()), limitations: results.flatMap(result => result.limitation ? [result.limitation] : []) };
+  asymmetricCandidateCache.set("pool", output);
+  return output;
 }

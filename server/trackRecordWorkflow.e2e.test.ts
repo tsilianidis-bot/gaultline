@@ -50,7 +50,9 @@ function verifiedSnapshot(capturedAt: string): IntelligenceEvidenceSnapshot {
     kind: "intelligence-evidence-snapshot",
     methodVersion: INTELLIGENCE_EVIDENCE_METHOD_VERSION,
     capturedAt,
+    purpose: "forward_recording",
     canonicalStateId: "state-e2e-1",
+    canonicalStateHash: "b".repeat(64), canonicalInputSnapshotId: "input:mock-workflow-1", canonicalPressureIndex: 41, canonicalRegime: "ELEVATED", canonicalCoherenceStatus: "COHERENT",
     observations: REQUIRED_VERIFIED_EVIDENCE_IDS.map(observation),
     providerHealth: [
       { id: "yahoo", label: "quotes", provider: "Yahoo", status: "healthy", observedAt: capturedAt, checkedAt: capturedAt, detail: "ok" },
@@ -160,21 +162,23 @@ describe("track record workflow on an isolated database", () => {
     expect(JSON.stringify(loaded?.observations[0])).not.toBe(JSON.stringify({ copied: true }));
 
     const base = {
+      expectedStateHash: "b".repeat(64), expectedInputSnapshotId: "input:mock-workflow-1",
+      loadCanonical: async () => ({ stateId: "state-e2e-1", stateHash: "b".repeat(64), inputSnapshotId: "input:mock-workflow-1", pressureIndex: 41, regime: "ELEVATED", provenance: { coherenceStatus: "COHERENT" }, domains: { pressureVerification: { status: "verified", inputs: [{ inputId: "tsy10y", value: 4, observationDate: "2026-10-17" }, { inputId: "hySpread", value: 400, observationDate: "2026-10-17" }] } } } as never),
       pressureIndex: 41,
       regime: "ELEVATED",
       generatedAt,
       nowMs,
       env: { TRACK_RECORD_CRON_WRITES: "false" },
     };
-    expect(await captureTrackRecordFromScheduledRun({ ...base, run: { trigger: "SCHEDULED_CRON" } })).toEqual({ recorded: false, reason: "cron_writes_disabled" });
-    expect(await captureTrackRecordFromScheduledRun({
+    expect(await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: "state-e2e-1", ...base, run: { trigger: "SCHEDULED_CRON" } })).toEqual({ recorded: false, reason: "cron_writes_disabled" });
+    expect(await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: "state-e2e-1",
       ...base,
       run: { trigger: "SCHEDULED_CRON" },
       env: { TRACK_RECORD_CRON_WRITES: "true" },
     })).toEqual({ recorded: false, reason: "flag_disabled" });
 
     await admin!.query("UPDATE featureFlags SET enabled = 1 WHERE `key` = 'intelligence_track_record'");
-    const missing = await captureTrackRecordFromScheduledRun({
+    const missing = await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: "state-e2e-1",
       ...base,
       run: { trigger: "SCHEDULED_CRON" },
       env: { TRACK_RECORD_CRON_WRITES: "true" },
@@ -183,7 +187,7 @@ describe("track record workflow on an isolated database", () => {
     expect(missing).toEqual({ recorded: false, reason: "evidence_missing" });
     expect(await loadAccountabilityLedger()).toHaveLength(0);
 
-    const reconstructed = await captureTrackRecordFromScheduledRun({
+    const reconstructed = await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: "state-e2e-1",
       ...base,
       run: { trigger: "SCHEDULED_CRON" },
       env: { TRACK_RECORD_CRON_WRITES: "true" },
@@ -192,13 +196,13 @@ describe("track record workflow on an isolated database", () => {
     expect(reconstructed).toEqual({ recorded: false, reason: "reconstructed_input" });
     expect(await loadAccountabilityLedger()).toHaveLength(0);
 
-    const appended = await captureTrackRecordFromScheduledRun({
+    const appended = await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: "state-e2e-1",
       ...base,
       run: { trigger: "SCHEDULED_CRON" },
       env: { TRACK_RECORD_CRON_WRITES: "true" },
     });
     expect(appended).toEqual({ recorded: true, reason: "appended" });
-    const duplicate = await captureTrackRecordFromScheduledRun({
+    const duplicate = await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: "state-e2e-1",
       ...base,
       run: { trigger: "SCHEDULED_CRON" },
       env: { TRACK_RECORD_CRON_WRITES: "true" },

@@ -17,7 +17,7 @@
 // ============================================================
 
 import { invokeLLM } from "./_core/llm";
-import { calculateFaultlinePressure, type FaultlinePressureOutput } from "./pressure/engine";
+import type { DataStatus, FaultlinePressureOutput, PressureLevel, RiskVector } from "./pressure/engine";
 import { getDiagnosticReport, pressureToActionBias } from "./diagnosticAI";
 import { getPreFlightData } from "./preFlight";
 import { LRUCache } from "./lruCache";
@@ -25,14 +25,17 @@ import { getDb } from "./db";
 import { outlookHistory } from "../drizzle/schema";
 import { getLatestSeismographOutput } from "./scheduledSeismograph";
 import { desc, eq, and, gte } from "drizzle-orm";
-import { getDailyBars as getYahooDailyBars, getQuote } from "./yahooProxy";
+import { getDailyBars as getYahooDailyBars, getQuote, classifyYahooObservation } from "./yahooProxy";
 import { getCoinMarketData, getCoinOHLC } from "./coingeckoProxy";
 import { computeCalculatedLevels, type CalculatedLevels } from "./priceLevels";
-import { getCachedVerifiedSocialSnapshot } from "./socialIntelligence";
+import { getCachedVerifiedSocialSnapshot, type VerifiedSocialSnapshot } from "./socialIntelligence";
 import { scoreRisingStar, type ConfidenceBand, type RisingStarResult } from "./risingStars";
 import { fetchDailyBars } from "./signalsProxy";
 import { MAGNIFICENT_SEVEN, classifyListingAge, classifyMarketCap, deriveFaultlineThemes, deriveSector, getPublicCompanyProfile, marketCapLabel, type ListingAgeCategory, type MarketCapCategory } from "./risingStarsDiscovery";
 import { recordRisingStarObservation } from "./risingStarsHistory";
+import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import type { CanonicalEngineState, CanonicalIntelligenceState, CanonicalQualityStatus } from "../shared/canonicalIntelligenceState";
+import { completedSessionBars } from "./algorithmProvenance";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -48,6 +51,8 @@ export interface OutlookScoreFactor {
   weight: number;      // 0–1, weights sum to 1 per asset class
   label: string;       // e.g. "Strong", "Neutral", "Weak"
   note: string;        // one-line explanation
+  /** Canonical risk-vector inputs used by this factor, when applicable. */
+  sourceVectorIds?: OutlookPressureVectorId[];
 }
 
 export interface OutlookScoreBreakdown {
@@ -194,6 +199,9 @@ export interface OutlookHistoryComparison {
 export interface QuickOutlook {
   symbol: string;
   assetType: "stock" | "crypto";
+  canonicalStateId: string;
+  asOf: string;
+  quality: CanonicalQualityStatus;
   outlookScore: number;
   direction: OutlookDirection;
   confidence: number;
@@ -205,6 +213,9 @@ export interface TopOpportunity {
   symbol: string;
   name: string;
   assetType: "stock" | "crypto";
+  canonicalStateId: string;
+  asOf: string;
+  quality: CanonicalQualityStatus;
   outlookScore: number;
   direction: OutlookDirection;
   confidence: number;
@@ -214,6 +225,7 @@ export interface TopOpportunity {
 }
 
 export interface FullOutlookResult {
+  priceObservation?: { observedAt: string; source: string; timing: string } | null;
   // Header
   symbol: string;
   name: string;
@@ -221,6 +233,9 @@ export interface FullOutlookResult {
   timeframe: OutlookTimeframe;
   generatedAt: number;
   dataStatus: OutlookDataStatus;
+  canonicalStateId: string;
+  asOf: string;
+  quality: CanonicalQualityStatus;
 
   // Outlook Card
   outlookScore: number;
@@ -278,8 +293,151 @@ export interface FullOutlookResult {
 // ── Caches ────────────────────────────────────────────────────
 
 const fullOutlookCache = new LRUCache<string, FullOutlookResult>(50, 10 * 60 * 1000); // 10 min
-const topOppsCache = new LRUCache<string, { stocks: TopOpportunity[]; crypto: TopOpportunity[] }>(4, 8 * 60 * 1000); // 8 min
+const topOppsCache = new LRUCache<string, TopOpportunitiesResult>(4, 8 * 60 * 1000); // 8 min
 const quickOutlookCache = new LRUCache<string, QuickOutlook>(200, 10 * 60 * 1000);
+
+/** The six RiskVector IDs published by the canonical Pressure methodology. */
+export const OUTLOOK_CANONICAL_VECTOR_IDS = [
+  "liquidity-stress",
+  "credit-contagion",
+  "volatility-regime",
+  "macro-sensitivity",
+  "market-breadth",
+  "ai-bubble",
+] as const;
+export type OutlookPressureVectorId = typeof OUTLOOK_CANONICAL_VECTOR_IDS[number];
+
+export interface OutlookPressureVectorReading {
+  value: number | null;
+  dataStatus: DataStatus;
+  observationDates: Record<string, string | null>;
+}
+
+export interface ResolvedOutlookState {
+  canonicalStateId: string;
+  asOf: string;
+  quality: CanonicalQualityStatus;
+  pressure: FaultlinePressureOutput;
+}
+
+export class OutlookStateUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "OutlookStateUnavailableError";
+  }
+}
+
+function pressureLevel(score: number): PressureLevel {
+  if (score >= 80) return "Critical";
+  if (score >= 65) return "High";
+  if (score >= 45) return "Elevated";
+  if (score >= 25) return "Moderate";
+  return "Low";
+}
+
+function vectorDataStatus(engine: CanonicalEngineState): DataStatus {
+  if (engine.qualityStatus === "UNAVAILABLE") return "unavailable";
+  const freshness = engine.freshnessStatus.toUpperCase();
+  if (freshness === "STALE") return "stale";
+  if (freshness === "DELAYED") return "delayed";
+  if (freshness === "FALLBACK" || engine.fallbackStatus === "ACTIVE" || engine.qualityStatus === "DEGRADED") return "fallback";
+  return "live";
+}
+
+function trendFromCanonical(direction: CanonicalEngineState["direction"]): RiskVector["trend"] {
+  if (direction === "Deteriorating") return "rising";
+  if (direction === "Improving") return "falling";
+  return "stable";
+}
+
+/**
+ * Project the canonical state into the established Outlook pressure shape. The
+ * projection deliberately contains no invented raw values or analogs; it is a
+ * transport adapter, not a second Pressure calculation.
+ */
+export function projectCanonicalOutlookState(state: CanonicalIntelligenceState): ResolvedOutlookState | null {
+  if (
+    state.confidenceOrEvidenceQuality === "UNAVAILABLE" ||
+    state.provenance.coherenceStatus === "UNAVAILABLE" ||
+    state.provenance.coherenceStatus === "INVALID" ||
+    !Number.isFinite(state.pressureIndex) ||
+    (state.pressureIndex as number) < 0 ||
+    (state.pressureIndex as number) > 100 ||
+    !state.regime
+  ) return null;
+
+  const engines = new Map(state.engines.map(engine => [engine.engineId, engine]));
+  const vectors: RiskVector[] = [];
+  for (const id of OUTLOOK_CANONICAL_VECTOR_IDS) {
+    const engine = engines.get(id);
+    if (!engine || engine.qualityStatus === "UNAVAILABLE" || !Number.isFinite(engine.value) || (engine.value as number) < 0 || (engine.value as number) > 100) {
+      return null;
+    }
+    const score = engine.value as number;
+    vectors.push({
+      id,
+      label: engine.engineName || id,
+      description: "Canonical Pressure-engine vector projection.",
+      score,
+      level: pressureLevel(score),
+      driver: "Canonical intelligence state projection.",
+      trend: trendFromCanonical(engine.direction),
+      weight: 0,
+      rawInputs: {},
+      dataStatus: vectorDataStatus(engine),
+      source: `FAULTLINE canonical intelligence state ${state.stateId}`,
+      observationDates: {},
+    });
+  }
+
+  const pressureIndex = state.pressureIndex as number;
+  const isHealthy = state.confidenceOrEvidenceQuality === "HEALTHY";
+  return {
+    canonicalStateId: state.stateId,
+    asOf: state.generatedAt,
+    quality: state.confidenceOrEvidenceQuality,
+    pressure: {
+      overallPressure: pressureIndex,
+      regime: state.regime,
+      level: pressureLevel(pressureIndex),
+      vectors,
+      alerts: [],
+      topAnalog: { year: 0, label: "Unavailable", similarity: 0, description: "No historical analog is projected into Outlook." },
+      analogs: [],
+      timestamp: state.generatedAt,
+      lastUpdated: state.generatedAt,
+      dataSource: isHealthy ? "live" : "fallback",
+      priorPressure: null,
+    },
+  };
+}
+
+/** Read exactly the canonical vector IDs; missing vectors remain unavailable. */
+export function readOutlookPressureVectors(pressure: FaultlinePressureOutput): Record<OutlookPressureVectorId, OutlookPressureVectorReading> {
+  return Object.fromEntries(OUTLOOK_CANONICAL_VECTOR_IDS.map(id => {
+    const vector = pressure.vectors.find(candidate => candidate.id === id);
+    const usable = vector && Number.isFinite(vector.score) && vector.dataStatus !== "unavailable";
+    return [id, {
+      value: usable ? vector.score : null,
+      dataStatus: vector?.dataStatus ?? "unavailable",
+      observationDates: vector?.observationDates ?? {},
+    }];
+  })) as Record<OutlookPressureVectorId, OutlookPressureVectorReading>;
+}
+
+function requireOutlookPressureVectors(pressure: FaultlinePressureOutput): Record<OutlookPressureVectorId, number> {
+  const readings = readOutlookPressureVectors(pressure);
+  const missing = OUTLOOK_CANONICAL_VECTOR_IDS.filter(id => readings[id].value === null);
+  if (missing.length) throw new OutlookStateUnavailableError(`Outlook withheld: required canonical vectors unavailable (${missing.join(", ")})`);
+  return Object.fromEntries(OUTLOOK_CANONICAL_VECTOR_IDS.map(id => [id, readings[id].value as number])) as Record<OutlookPressureVectorId, number>;
+}
+
+export async function resolveOutlookState(state?: CanonicalIntelligenceState | null): Promise<ResolvedOutlookState> {
+  const canonical = state === undefined ? await getAuthoritativeCanonicalIntelligenceState() : state;
+  const projected = canonical ? projectCanonicalOutlookState(canonical) : null;
+  if (!projected) throw new OutlookStateUnavailableError("Outlook withheld: no complete canonical intelligence-state projection is available");
+  return projected;
+}
 
 // ── Stock universe for top opportunities ──────────────────────
 
@@ -361,39 +519,38 @@ function scoreStockFactors(
   timeframe: OutlookTimeframe
 ): OutlookScoreBreakdown {
   const p = pressure.overallPressure;
-  const vectors = pressure.vectors;
-
-  const getVec = (id: string) => vectors.find(v => v.id === id)?.score ?? 50;
+  const vectorValues = requireOutlookPressureVectors(pressure);
+  const getVec = (id: OutlookPressureVectorId) => vectorValues[id];
 
   // Factor 1: Trend (inverse of pressure — high pressure = bearish trend)
   const trendScore = clamp(100 - p * 0.8);
 
   // Factor 2: Relative Strength (based on market breadth vector)
-  const breadthScore = clamp(100 - getVec("market_breadth"));
+  const breadthScore = clamp(100 - getVec("market-breadth"));
 
   // Factor 3: Volume (based on volatility vector as proxy — high vol = volume expansion)
-  const volumeScore = clamp(100 - getVec("volatility_regime") * 0.6);
+  const volumeScore = clamp(100 - getVec("volatility-regime") * 0.6);
 
   // Factor 4: Volatility (inverse — high volatility = unfavorable for entries)
-  const volatilityScore = clamp(100 - getVec("volatility_regime"));
+  const volatilityScore = clamp(100 - getVec("volatility-regime"));
 
   // Factor 5: Sector Strength (based on sector leadership / AI concentration)
   const aiTechSymbols = ["NVDA", "AMD", "MSFT", "META", "GOOGL", "SMCI", "PLTR", "IONQ"];
   const isAITech = aiTechSymbols.includes(symbol.toUpperCase());
-  const aiBubbleVec = getVec("ai_bubble");
+  const aiBubbleVec = getVec("ai-bubble");
   const sectorScore = isAITech
     ? clamp(100 - aiBubbleVec * 0.7)  // AI stocks penalized when bubble is elevated
-    : clamp(100 - getVec("macro_sensitivity") * 0.5);
+    : clamp(100 - getVec("macro-sensitivity") * 0.5);
 
   // Factor 6: Market Breadth (direct from breadth vector)
-  const breadthDirectScore = clamp(100 - getVec("market_breadth"));
+  const breadthDirectScore = clamp(100 - getVec("market-breadth"));
 
   // Factor 7: Regime Alignment (how well the asset fits current regime)
   const regimeScore = clamp(100 - p * 0.75);
 
   // Factor 8: Market Structure (credit + liquidity conditions)
-  const creditVec = getVec("credit_contagion");
-  const liquidityVec = getVec("liquidity_stress");
+  const creditVec = getVec("credit-contagion");
+  const liquidityVec = getVec("liquidity-stress");
   const structureScore = clamp(100 - (creditVec * 0.5 + liquidityVec * 0.5));
 
   // Timeframe adjustment — day trade amplifies momentum; longer timeframes smooth noise
@@ -402,28 +559,28 @@ function scoreStockFactors(
   // ── 6 New Proprietary Signals ──────────────────────────────────────────
 
   // Signal 9: Early Accumulation (low breadth stress + low credit stress = accumulation phase)
-  const earlyAccumScore = clamp(100 - (getVec("market_breadth") * 0.4 + getVec("credit_contagion") * 0.6));
+  const earlyAccumScore = clamp(100 - (getVec("market-breadth") * 0.4 + getVec("credit-contagion") * 0.6));
 
   // Signal 10: Momentum Beginning (pressure declining from elevated = momentum inflection)
   const momentumBeginScore = clamp(p > 40 && p < 65 ? 100 - p * 0.8 : p <= 40 ? 80 : 30);
 
   // Signal 11: Institutional Accumulation (low liquidity stress + low volatility = institutional window)
-  const instAccumScore = clamp(100 - (getVec("liquidity_stress") * 0.5 + getVec("volatility_regime") * 0.5));
+  const instAccumScore = clamp(100 - (getVec("liquidity-stress") * 0.5 + getVec("volatility-regime") * 0.5));
 
   // Signal 12: Volatility Compression (very low vol = coil before breakout)
-  const volCompressionScore = clamp(getVec("volatility_regime") < 35 ? 85 : getVec("volatility_regime") < 50 ? 65 : 40);
+  const volCompressionScore = clamp(getVec("volatility-regime") < 35 ? 85 : getVec("volatility-regime") < 50 ? 65 : 40);
 
   // Signal 13: News Catalyst score, a 0–100 heuristic (macro sensitivity + AI bubble = catalyst-rich environment); not a probability
-  const newsCatalystScore = clamp(100 - (getVec("macro_sensitivity") * 0.4 + getVec("ai_bubble") * 0.3 + p * 0.3));
+  const newsCatalystScore = clamp(100 - (getVec("macro-sensitivity") * 0.4 + getVec("ai-bubble") * 0.3 + p * 0.3));
 
   // Signal 14: Technical Breakout (trend + breadth + low vol = breakout conditions)
   const technicalBreakoutScore = clamp((trendScore * 0.4 + breadthScore * 0.3 + volatilityScore * 0.3) * tfMultiplier);
 
   const factors: OutlookScoreFactor[] = [
     { name: "Trend",                      score: clamp(trendScore * tfMultiplier),          weight: 0.12, label: scoreToLabel(trendScore),          note: `Macro pressure at ${p}/100 — ${p > 60 ? "bearish trend conditions" : p > 40 ? "mixed trend" : "favorable trend environment"}` },
-    { name: "Relative Strength",          score: clamp(breadthScore * tfMultiplier),        weight: 0.10, label: scoreToLabel(breadthScore),        note: `Market breadth score ${getVec("market_breadth")}/100 — ${getVec("market_breadth") > 60 ? "narrow leadership" : "broad participation"}` },
-    { name: "Volume Expansion",           score: clamp(volumeScore * tfMultiplier),         weight: 0.08, label: scoreToLabel(volumeScore),         note: `Volatility regime ${getVec("volatility_regime")}/100 — ${getVec("volatility_regime") > 60 ? "elevated volatility" : "normal volume conditions"}` },
-    { name: "Volatility",                 score: clamp(volatilityScore * tfMultiplier),     weight: 0.08, label: scoreToLabel(volatilityScore),     note: `${getVec("volatility_regime") > 70 ? "High volatility — entry risk elevated" : getVec("volatility_regime") > 40 ? "Moderate volatility" : "Low volatility — favorable for entries"}` },
+    { name: "Relative Strength",          score: clamp(breadthScore * tfMultiplier),        weight: 0.10, label: scoreToLabel(breadthScore),        note: `Market breadth score ${getVec("market-breadth")}/100 — ${getVec("market-breadth") > 60 ? "narrow leadership" : "broad participation"}` },
+    { name: "Volume Expansion",           score: clamp(volumeScore * tfMultiplier),         weight: 0.08, label: scoreToLabel(volumeScore),         note: `Volatility regime ${getVec("volatility-regime")}/100 — ${getVec("volatility-regime") > 60 ? "elevated volatility" : "normal volume conditions"}` },
+    { name: "Volatility",                 score: clamp(volatilityScore * tfMultiplier),     weight: 0.08, label: scoreToLabel(volatilityScore),     note: `${getVec("volatility-regime") > 70 ? "High volatility — entry risk elevated" : getVec("volatility-regime") > 40 ? "Moderate volatility" : "Low volatility — favorable for entries"}` },
     { name: "Sector Strength",            score: clamp(sectorScore * tfMultiplier),         weight: 0.10, label: scoreToLabel(sectorScore),         note: isAITech ? `AI bubble score ${aiBubbleVec}/100 — ${aiBubbleVec > 70 ? "extreme AI concentration risk" : "manageable AI exposure"}` : "Sector macro sensitivity analysis" },
     { name: "Market Breadth",             score: clamp(breadthDirectScore * tfMultiplier),  weight: 0.08, label: scoreToLabel(breadthDirectScore),  note: "Participation across market cap spectrum" },
     { name: "Regime Alignment",           score: clamp(regimeScore * tfMultiplier),         weight: 0.08, label: scoreToLabel(regimeScore),         note: `Current regime: ${pressure.regime} — ${p > 60 ? "unfavorable for new longs" : "supportive of risk-taking"}` },
@@ -451,8 +608,8 @@ function scoreCryptoFactors(
   timeframe: OutlookTimeframe
 ): OutlookScoreBreakdown {
   const p = pressure.overallPressure;
-  const vectors = pressure.vectors;
-  const getVec = (id: string) => vectors.find(v => v.id === id)?.score ?? 50;
+  const vectorValues = requireOutlookPressureVectors(pressure);
+  const getVec = (id: OutlookPressureVectorId) => vectorValues[id];
 
   const isBTC = symbol.toUpperCase() === "BTC";
   const isETH = symbol.toUpperCase() === "ETH";
@@ -463,7 +620,7 @@ function scoreCryptoFactors(
 
   // Factor 2: BTC Dominance (BTC benefits from rising dominance, alts suffer)
   // Approximated from AI bubble vector (correlated with risk-on/risk-off)
-  const aiBubble = getVec("ai_bubble");
+  const aiBubble = getVec("ai-bubble");
   const btcDomScore = isBTC
     ? clamp(50 + (p - 50) * 0.3)  // BTC benefits from defensive rotation
     : clamp(100 - (p - 50) * 0.5); // Alts suffer when pressure is high
@@ -479,18 +636,18 @@ function scoreCryptoFactors(
     : clamp(100 - p * 0.9); // Small caps more sensitive
 
   // Factor 5: Liquidity Environment
-  const liquidityVec = getVec("liquidity_stress");
+  const liquidityVec = getVec("liquidity-stress");
   const liquidityScore = clamp(100 - liquidityVec);
 
   // Factor 6: Volatility
-  const volVec = getVec("volatility_regime");
+  const volVec = getVec("volatility-regime");
   const volatilityScore = clamp(100 - volVec);
 
   // Factor 7: Regime Alignment
   const regimeScore = clamp(100 - p * 0.75);
 
   // Factor 8: Market Structure
-  const creditVec = getVec("credit_contagion");
+  const creditVec = getVec("credit-contagion");
   const structureScore = clamp(100 - (creditVec * 0.4 + liquidityVec * 0.6));
 
     const tfMultiplier = timeframe === "day" ? 1.1 : timeframe === "short" ? 1.0 : timeframe === "swing" ? 0.9 : 0.8;
@@ -519,12 +676,12 @@ function buildStockAnalysis(
   pressure: FaultlinePressureOutput
 ): StockOutlookAnalysis {
   const p = pressure.overallPressure;
-  const vectors = pressure.vectors;
-  const getVec = (id: string) => vectors.find(v => v.id === id)?.score ?? 50;
+  const vectorValues = requireOutlookPressureVectors(pressure);
+  const getVec = (id: OutlookPressureVectorId) => vectorValues[id];
 
   const aiTechSymbols = ["NVDA", "AMD", "MSFT", "META", "SMCI", "PLTR", "IONQ", "MSTR"];
   const isAITech = aiTechSymbols.includes(symbol.toUpperCase());
-  const aiBubble = getVec("ai_bubble");
+  const aiBubble = getVec("ai-bubble");
 
   const sectorStrength = isAITech
     ? clamp(100 - aiBubble * 0.7)
@@ -540,9 +697,9 @@ function buildStockAnalysis(
   const qqqAlignment: "Aligned" | "Diverging" | "Opposed" =
     isAITech && aiBubble > 70 ? "Opposed" : p < 50 ? "Aligned" : "Diverging";
 
-  const relativeStrength = clamp(100 - getVec("market_breadth") * 0.6);
+  const relativeStrength = clamp(100 - getVec("market-breadth") * 0.6);
   const volumeTrend: "Expanding" | "Contracting" | "Neutral" =
-    getVec("volatility_regime") > 65 ? "Expanding" : getVec("volatility_regime") < 35 ? "Contracting" : "Neutral";
+    getVec("volatility-regime") > 65 ? "Expanding" : getVec("volatility-regime") < 35 ? "Contracting" : "Neutral";
 
   const earningsRisk: "Low" | "Moderate" | "High" | "Unknown" = "Unknown"; // No earnings date data available
   const macroSensitivity: "Low" | "Moderate" | "High" =
@@ -573,9 +730,9 @@ function buildCryptoAnalysis(
   pressure: FaultlinePressureOutput
 ): CryptoOutlookAnalysis {
   const p = pressure.overallPressure;
-  const vectors = pressure.vectors;
-  const getVec = (id: string) => vectors.find(v => v.id === id)?.score ?? 50;
-  const liquidityVec = getVec("liquidity_stress");
+  const vectorValues = requireOutlookPressureVectors(pressure);
+  const getVec = (id: OutlookPressureVectorId) => vectorValues[id];
+  const liquidityVec = getVec("liquidity-stress");
 
   const btcDominanceTrend: "Rising" | "Falling" | "Stable" =
     p > 60 ? "Rising" : p < 40 ? "Falling" : "Stable";
@@ -1104,53 +1261,15 @@ function buildScenarios(
   direction: OutlookDirection,
   pressure: FaultlinePressureOutput
 ): OutlookScenario[] {
-  const p = pressure.overallPressure;
-
-  if (assetType === "stock") {
-    return [
-      {
-        label: "Aggressive",
-        assets: p < 50 ? ["NVDA", "PLTR", "AMD", "TSLA"] : ["COIN", "MSTR"],
-        rationale: p < 50
-          ? "Low macro pressure supports higher-beta growth exposure. AI and momentum names benefit from risk-on conditions."
-          : "Elevated pressure limits aggressive positioning. Only highest-conviction setups with tight stops.",
-      },
-      {
-        label: "Balanced",
-        assets: ["AAPL", "MSFT", "AMZN", "SPY"],
-        rationale: "Large-cap quality names with strong balance sheets and diversified revenue streams. SPY provides broad market exposure with built-in diversification.",
-      },
-      {
-        label: "Defensive",
-        assets: p > 60 ? ["SPY", "QQQ"] : ["SPY"],
-        rationale: p > 60
-          ? "Elevated pressure warrants index-only exposure. Individual stock risk elevated. Reduce position sizes."
-          : "Defensive positioning via broad index ETFs. Preserves capital while maintaining market exposure.",
-      },
-    ];
-  } else {
-    return [
-      {
-        label: "Aggressive",
-        assets: p < 50 ? ["SOL", "AVAX", "TAO", "LINK"] : ["ETH"],
-        rationale: p < 50
-          ? "Risk-on conditions support high-beta altcoin exposure. Layer 1 alternatives and AI-adjacent tokens benefit from rotation."
-          : "Elevated macro pressure limits aggressive crypto positioning. ETH as the only aggressive option in stressed conditions.",
-      },
-      {
-        label: "Balanced",
-        assets: ["ETH", "BTC"],
-        rationale: "ETH and BTC provide crypto exposure with the highest liquidity and institutional participation. Core holdings for any crypto allocation.",
-      },
-      {
-        label: "Defensive",
-        assets: p > 60 ? ["BTC", "Stablecoins"] : ["BTC"],
-        rationale: p > 60
-          ? "High macro pressure — BTC as the defensive crypto asset. Stablecoin allocation preserves capital during risk-off periods."
-          : "BTC as the lowest-risk crypto exposure. Defensive positioning while maintaining crypto market presence.",
-      },
-    ];
-  }
+  // There is no provider-backed symbol-specific scenario evidence in this
+  // path. Do not turn a macro score into named tickers, allocation, horizon,
+  // catalyst, or institutional-conviction assertions.
+  const rationale = "MODEL_ASSUMPTION — generic framework only. No source-backed, ticker-specific scenario claim is available.";
+  return ["Aggressive", "Balanced", "Defensive"].map(label => ({
+    label: label as OutlookScenario["label"],
+    assets: [],
+    rationale,
+  }));
 }
 
 // ── AI Interpretation Layer ───────────────────────────────────
@@ -1403,9 +1522,11 @@ async function getOutlookHistory(
 export async function getFullOutlook(
   symbol: string,
   assetType: "stock" | "crypto",
-  timeframe: OutlookTimeframe = "swing"
+  timeframe: OutlookTimeframe = "swing",
+  canonicalState?: CanonicalIntelligenceState | null,
 ): Promise<FullOutlookResult> {
-  const cacheKey = `${symbol.toUpperCase()}_${assetType}_${timeframe}`;
+  const resolved = await resolveOutlookState(canonicalState);
+  const cacheKey = `${resolved.canonicalStateId}_${symbol.toUpperCase()}_${assetType}_${timeframe}`;
   const cached = fullOutlookCache.get(cacheKey);
   if (cached) return { ...cached, cached: true };
 
@@ -1418,8 +1539,9 @@ export async function getFullOutlook(
     ? (stockEntry?.name ?? sym)
     : (cryptoEntry?.name ?? sym);
 
-  // Get pressure data
-  const pressure = await calculateFaultlinePressure();
+  // All current-state scoring reads this one canonical projection. Price data
+  // below remains a separately dated market-data overlay.
+  const pressure = resolved.pressure;
   const p = pressure.overallPressure;
 
   // Score
@@ -1465,6 +1587,7 @@ export async function getFullOutlook(
 
   // Fetch live price data + daily bars for trade framework and calculated levels
   let livePrice: number | null = null;
+  let priceObservation: FullOutlookResult["priceObservation"] = null;
   let priceHigh: number | null = null;
   let priceLow: number | null = null;
   let dailyBarsForLevels: Array<{ close: number; open: number; high: number; low: number; volume: number; timestamp: number }> = [];
@@ -1479,16 +1602,22 @@ export async function getFullOutlook(
           return fetchDailyBars(apiKey, sym, 252);
         })(),
       ]);
-      livePrice = quote.price ?? null;
-      priceHigh = quote.high ?? null;
-      priceLow  = quote.low  ?? null;
+      const timing = classifyYahooObservation(quote);
+      if ((timing.supportsCurrentClaim || timing.timing === "completed_session") && typeof quote.price === "number" && quote.price > 0 && typeof quote.observedAt === "number") {
+        livePrice = quote.price;
+        priceHigh = Number.isFinite(quote.high) ? quote.high : null;
+        priceLow = Number.isFinite(quote.low) ? quote.low : null;
+        priceObservation = { observedAt: new Date(quote.observedAt).toISOString(), source: quote.source, timing: timing.timing };
+      }
       dailyBarsForLevels = bars;
     } else {
       const [coinData, ohlcBars] = await Promise.all([
         getCoinMarketData(sym),
         getCoinOHLC(sym, 90),
       ]);
-      if (coinData) {
+      const coinObservedAt = Date.parse(coinData?.lastUpdated ?? "");
+      if (coinData && Number.isFinite(coinObservedAt) && coinObservedAt <= Date.now() + 60_000 && Date.now() - coinObservedAt <= 20 * 60_000 && Number.isFinite(coinData.currentPrice) && coinData.currentPrice > 0) {
+        priceObservation = { observedAt: new Date(coinObservedAt).toISOString(), source: "CoinGecko", timing: "delayed" };
         livePrice = coinData.currentPrice;
         priceHigh = coinData.high24h;
         priceLow  = coinData.low24h;
@@ -1523,7 +1652,11 @@ export async function getFullOutlook(
     assetType,
     timeframe,
     generatedAt: Date.now(),
-    dataStatus: pressure.dataSource === "live" ? "Live" : "Delayed",
+    dataStatus: "Delayed", // A derived macro model, never an intraday observation.
+    priceObservation,
+    canonicalStateId: resolved.canonicalStateId,
+    asOf: resolved.asOf,
+    quality: resolved.quality,
     outlookScore: scoreBreakdown.composite,
     direction,
     confidence,
@@ -1565,13 +1698,15 @@ export async function getFullOutlook(
 
 export async function getQuickOutlook(
   symbol: string,
-  assetType: "stock" | "crypto"
+  assetType: "stock" | "crypto",
+  canonicalState?: CanonicalIntelligenceState | null,
 ): Promise<QuickOutlook> {
-  const cacheKey = `quick_${symbol.toUpperCase()}_${assetType}`;
+  const resolved = await resolveOutlookState(canonicalState);
+  const cacheKey = `quick_${resolved.canonicalStateId}_${symbol.toUpperCase()}_${assetType}`;
   const cached = quickOutlookCache.get(cacheKey);
   if (cached) return cached;
 
-  const pressure = await calculateFaultlinePressure();
+  const pressure = resolved.pressure;
   const p = pressure.overallPressure;
 
   const scoreBreakdown = assetType === "stock"
@@ -1581,6 +1716,9 @@ export async function getQuickOutlook(
   const result: QuickOutlook = {
     symbol: symbol.toUpperCase(),
     assetType,
+    canonicalStateId: resolved.canonicalStateId,
+    asOf: resolved.asOf,
+    quality: resolved.quality,
     outlookScore: scoreBreakdown.composite,
     direction: scoreToDirection(scoreBreakdown.composite),
     confidence: clamp(Math.abs(scoreBreakdown.composite - 50) * 2),
@@ -1594,14 +1732,21 @@ export async function getQuickOutlook(
 
 // ── Top Opportunities ─────────────────────────────────────────
 
-export async function getTopOpportunities(): Promise<{
+export interface TopOpportunitiesResult {
   stocks: TopOpportunity[];
   crypto: TopOpportunity[];
-}> {
-  const cached = topOppsCache.get("top");
+  canonicalStateId: string;
+  asOf: string;
+  quality: CanonicalQualityStatus;
+}
+
+export async function getTopOpportunities(canonicalState?: CanonicalIntelligenceState | null): Promise<TopOpportunitiesResult> {
+  const resolved = await resolveOutlookState(canonicalState);
+  const cacheKey = `top_${resolved.canonicalStateId}`;
+  const cached = topOppsCache.get(cacheKey);
   if (cached) return cached;
 
-  const pressure = await calculateFaultlinePressure();
+  const pressure = resolved.pressure;
   const p = pressure.overallPressure;
 
   // Score all stocks
@@ -1640,6 +1785,9 @@ export async function getTopOpportunities(): Promise<{
       symbol: s.symbol,
       name: s.name,
       assetType: "stock" as const,
+      canonicalStateId: resolved.canonicalStateId,
+      asOf: resolved.asOf,
+      quality: resolved.quality,
       outlookScore: s.score,
       direction: s.direction,
       confidence: s.confidence,
@@ -1655,6 +1803,9 @@ export async function getTopOpportunities(): Promise<{
       symbol: c.symbol,
       name: c.name,
       assetType: "crypto" as const,
+      canonicalStateId: resolved.canonicalStateId,
+      asOf: resolved.asOf,
+      quality: resolved.quality,
       outlookScore: c.score,
       direction: c.direction,
       confidence: c.confidence,
@@ -1663,8 +1814,8 @@ export async function getTopOpportunities(): Promise<{
       topReason: c.topReason,
     }));
 
-  const result = { stocks: topStocks, crypto: topCrypto };
-  topOppsCache.set("top", result);
+  const result = { stocks: topStocks, crypto: topCrypto, canonicalStateId: resolved.canonicalStateId, asOf: resolved.asOf, quality: resolved.quality };
+  topOppsCache.set(cacheKey, result);
   return result;
 }
 
@@ -1710,12 +1861,15 @@ export type DiscoveryCategory =
   | "space_deep_tech";
 
 export interface DiscoveryItem {
+  /** Static-universe macro projection, not a source-backed ticker-specific claim. */
+  evidenceClass: "MODEL_ASSUMPTION";
   ticker: string;
   name: string;
   assetType: "stock" | "crypto";
   opportunityScore: number;
-  expectedTimeHorizon: string;
-  catalyst: string;
+  /** Provider-backed only; null when no observed claim is supplied. */
+  expectedTimeHorizon: string | null;
+  catalyst: string | null;
   riskLevel: "Low" | "Medium" | "High" | "Extreme";
   direction: OutlookDirection;
   rationale: string;
@@ -1724,15 +1878,17 @@ export interface DiscoveryItem {
   bearCase: string;
   invalidationLevel: string;
   whyFaultlineLikesIt: string;
-  institutionalConviction: "Low" | "Moderate" | "High" | "Very High";
+  institutionalConviction: "Low" | "Moderate" | "High" | "Very High" | null;
   macroAlignment: number;         // 0–100
-  riskRewardRatio: string;        // e.g. "2.5:1"
+  riskRewardRatio: string | null; // Provider-backed only; no heuristic R:R claim
   confidenceLevel: number | null; // QA confidence sweep: withheld (was score × 0.85 + band, a formula)
-  topCatalyst: string;
-  actionBias: "BUY" | "WATCH" | "HOLD" | "REDUCE" | "AVOID";
+  topCatalyst: string | null;
+  actionBias: "BUY" | "WATCH" | "HOLD" | "REDUCE" | "AVOID" | null;
 }
 
 export interface DiscoveryBucket {
+  /** The category is a static presentation grouping, not observed market evidence. */
+  evidenceClass: "MODEL_ASSUMPTION";
   category: DiscoveryCategory;
   label: string;
   description: string;
@@ -1745,6 +1901,9 @@ export interface OpportunityDiscoveryResult {
   risingStars: RisingStarItem[];
   pressureIndex: number;
   regime: string;
+  canonicalStateId: string;
+  asOf: string;
+  quality: CanonicalQualityStatus;
   generatedAt: number;
 }
 
@@ -2283,6 +2442,16 @@ function average(values: number[]): number {
   return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
 }
 
+/** Reuse the platform's regular-session-close (+60 minute) completion rule. */
+function completedRisingStarBars(bars: DailyBar[], collectedAt = new Date()): DailyBar[] {
+  const completed = completedSessionBars(bars, collectedAt);
+  const completeTimestamps = new Set(completed.map(bar => bar.timestamp));
+  return bars
+    .filter(bar => completeTimestamps.has(bar.timestamp))
+    .filter(bar => [bar.open, bar.high, bar.low, bar.close, bar.volume, bar.timestamp].every(Number.isFinite))
+    .sort((a, b) => a.timestamp - b.timestamp);
+}
+
 function buildRisingStarTechnical(bars: DailyBar[]) {
   const latest = bars.at(-1);
   const close20 = bars.slice(-20).map(bar => bar.close);
@@ -2315,6 +2484,42 @@ function buildRisingStarTechnical(bars: DailyBar[]) {
   };
 }
 
+type FiniteVerifiedSocialSnapshot = VerifiedSocialSnapshot & { sentimentScore: number };
+
+/**
+ * Rising-Star scoring may use social data only when every number it consumes is
+ * observed and finite. In particular, a nullable synthesized sentiment value is
+ * not equivalent to neutral (zero) sentiment.
+ */
+function adaptFiniteSocialSnapshot(snapshot: VerifiedSocialSnapshot | null): FiniteVerifiedSocialSnapshot | null {
+  if (
+    !snapshot
+    || !Number.isFinite(snapshot.sentimentScore)
+    || (snapshot.sentimentScore as number) < -1
+    || (snapshot.sentimentScore as number) > 1
+    || !Number.isFinite(snapshot.sourceCount)
+    || !Number.isFinite(snapshot.socialVolume)
+    || !Number.isFinite(snapshot.newsCount)
+    || !Number.isFinite(snapshot.positiveNews)
+    || !Number.isFinite(snapshot.negativeNews)
+    || !Number.isFinite(snapshot.fetchedAt)
+  ) return null;
+  return snapshot as FiniteVerifiedSocialSnapshot;
+}
+
+function hasObservedNewsCatalyst(snapshot: FiniteVerifiedSocialSnapshot | null): boolean {
+  return Boolean(
+    snapshot
+    && snapshot.newsCount >= 2
+    && snapshot.positiveNews + snapshot.negativeNews > 0
+    && snapshot.sources.some(source =>
+      source.provider === "Polygon.io"
+      && source.available
+      && source.contributesToComposite
+    )
+  );
+}
+
 async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<RisingStarItem[]> {
   const apiKey = process.env.POLYGON_API_KEY;
   if (!apiKey) return [];
@@ -2329,43 +2534,47 @@ async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<Risi
         getQuote(candidate.symbol),
       ]);
       if (!profile?.description) return null;
-      const social = getCachedVerifiedSocialSnapshot(candidate.symbol, "stock");
-      const technical = buildRisingStarTechnical(bars);
+      const social = adaptFiniteSocialSnapshot(getCachedVerifiedSocialSnapshot(candidate.symbol, "stock"));
+      const completedBars = completedRisingStarBars(bars);
+      const technical = buildRisingStarTechnical(completedBars);
       if (!technical) return null;
-      const latest = bars.at(-1);
-      const prior = bars.at(-2);
+      const latest = completedBars.at(-1);
+      const prior = completedBars.at(-2);
       if (!latest) return null;
       const dailyChange = prior ? latest.close - prior.close : null;
       const dailyChangePercent = prior && prior.close !== 0
         ? ((latest.close - prior.close) / prior.close) * 100
         : null;
 
-      const newsAvailable = (social?.newsCount ?? 0) >= 2;
+      const newsAvailable = hasObservedNewsCatalyst(social);
       const result = scoreRisingStar({
         ticker: candidate.symbol,
         name: profile.name,
         technical,
-        catalyst: newsAvailable
+        catalyst: newsAvailable && social
           ? {
               available: true,
-              score: clamp(50 + social!.sentimentScore * 30 + Math.min(20, (social!.positiveNews + social!.negativeNews) * 4)),
+              score: clamp(50 + social.sentimentScore * 30 + Math.min(20, (social.positiveNews + social.negativeNews) * 4)),
               note: `${social!.positiveNews + social!.negativeNews} directionally classified recent public-news items.`,
             }
-          : { available: false, note: "Insufficient recent public-news coverage; excluded from score." },
+          : { available: false, note: "No finite Polygon.io public-news catalyst snapshot is available; excluded from score." },
         macroAlignment: {
           score: clamp(100 - pressure.overallPressure * 0.75),
           note: `Current FAULTLINE pressure is ${pressure.overallPressure}/100 (${pressure.regime}).`,
         },
         sectorTailwind: { available: false, note: "No source-backed sector/theme flow feed is connected; excluded from score." },
         social: {
-          available: (social?.sourceCount ?? 0) >= 2,
-          sourceCount: social?.sourceCount ?? 0,
-          socialVolume: social?.socialVolume ?? 0,
-          sentimentScore: social?.sentimentScore ?? 0,
-          positiveNews: social?.positiveNews ?? 0,
-          negativeNews: social?.negativeNews ?? 0,
+          available: social !== null && social.sourceCount >= 2,
+          // These values are ignored by scoreRisingStar when `available` is
+          // false. NaN makes a missing source impossible to mistake for a
+          // neutral zero in a future scoring-path change.
+          sourceCount: social?.sourceCount ?? Number.NaN,
+          socialVolume: social?.socialVolume ?? Number.NaN,
+          sentimentScore: social?.sentimentScore ?? Number.NaN,
+          positiveNews: social?.positiveNews ?? Number.NaN,
+          negativeNews: social?.negativeNews ?? Number.NaN,
           memeHypeDetected: social?.extremeAttentionDetected ?? false,
-          note: (social?.sourceCount ?? 0) >= 2
+          note: social !== null && social.sourceCount >= 2
             ? `${social!.sourceCount} social/news sources available; data refreshed ${new Date(social!.fetchedAt).toLocaleTimeString()}.`
             : "No cached multi-source social snapshot is available; excluded from score.",
         },
@@ -2422,11 +2631,13 @@ async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<Risi
     .sort((a, b) => b.risingStarScore - a.risingStarScore);
 }
 
-export async function getOpportunityDiscovery(options: { forceRefresh?: boolean; captureEngineEvents?: boolean } = {}): Promise<OpportunityDiscoveryResult> {
-  const cached = options.forceRefresh ? undefined : discoveryCache.get("discovery");
+export async function getOpportunityDiscovery(options: { forceRefresh?: boolean; captureEngineEvents?: boolean; canonicalState?: CanonicalIntelligenceState | null } = {}): Promise<OpportunityDiscoveryResult> {
+  const resolved = await resolveOutlookState(options.canonicalState);
+  const cacheKey = `discovery_${resolved.canonicalStateId}`;
+  const cached = options.forceRefresh ? undefined : discoveryCache.get(cacheKey);
   if (cached) return cached;
 
-  const pressure = await calculateFaultlinePressure();
+  const pressure = resolved.pressure;
   const p = pressure.overallPressure;
   const now = Date.now();
 
@@ -2448,38 +2659,38 @@ export async function getOpportunityDiscovery(options: { forceRefresh?: boolean;
 
       const topFactor = sb.factors.sort((a, b) => b.score - a.score)[0];
       const macroAlignment = Math.round((topFactor?.score ?? score) * 0.9);
-      const rr = score >= 75 ? "3:1" : score >= 60 ? "2:1" : "1.5:1";
-
       return {
+        evidenceClass: "MODEL_ASSUMPTION",
         ticker: item.symbol,
         name: item.name,
         assetType: item.assetType,
         opportunityScore: score,
-        expectedTimeHorizon: discoveryTimeHorizon(score, item.assetType),
-        catalyst: discoveryCatalyst(category, score),
+        expectedTimeHorizon: null,
+        catalyst: null,
         riskLevel,
         direction,
-        rationale: topFactor?.note ?? "Regime-aligned setup",
-        // Extended fields
-        bullCase: discoveryBullCase(category, score, p),
-        bearCase: discoveryBearCase(category, p),
-        invalidationLevel: discoveryInvalidation(score, item.assetType),
-        whyFaultlineLikesIt: discoveryWhyFaultlineLikesIt(score, p, category),
-        institutionalConviction: discoveryInstitutionalConviction(score, category),
+        rationale: topFactor?.note ?? "Canonical macro-derived model score; no source-backed asset-specific claim is available.",
+        // No provider-backed asset claim has entered this general discovery path.
+        bullCase: "No source-backed asset-specific bull case available.",
+        bearCase: "No source-backed asset-specific bear case available.",
+        invalidationLevel: "No source-backed asset-specific invalidation level available.",
+        whyFaultlineLikesIt: "Canonical macro-derived model score only; not a ticker-specific recommendation.",
+        institutionalConviction: null,
         macroAlignment,
-        riskRewardRatio: rr,
+        riskRewardRatio: null,
         // QA confidence sweep: was Math.round(score × 0.85 + pressure band), a formula
         // restating the score, not a calibrated confidence. Withheld at the source.
         confidenceLevel: null,
-        topCatalyst: discoveryCatalyst(category, score),
-        actionBias: discoveryActionBias(score, p),
+        topCatalyst: null,
+        actionBias: null,
       };
     });
 
     return {
+      evidenceClass: "MODEL_ASSUMPTION",
       category,
       label: meta.label,
-      description: meta.description,
+      description: `MODEL_ASSUMPTION — static-universe grouping; no provider-backed category claim. ${meta.description}`,
       items: scored.sort((a, b) => b.opportunityScore - a.opportunityScore).slice(0, 4),
       generatedAt: now,
     };
@@ -2499,6 +2710,9 @@ export async function getOpportunityDiscovery(options: { forceRefresh?: boolean;
     risingStars,
     pressureIndex: p,
     regime: pressure.regime,
+    canonicalStateId: resolved.canonicalStateId,
+    asOf: resolved.asOf,
+    quality: resolved.quality,
     generatedAt: now,
   };
 
@@ -2513,6 +2727,6 @@ export async function getOpportunityDiscovery(options: { forceRefresh?: boolean;
     if (failures) console.warn(`[RisingStars] ${failures} immutable event-ledger writes failed; discovery result remains available.`);
   }
 
-  discoveryCache.set("discovery", result);
+  discoveryCache.set(cacheKey, result);
   return result;
 }

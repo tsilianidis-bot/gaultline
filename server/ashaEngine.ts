@@ -199,6 +199,8 @@ export interface AshaResponse {
   sourceCitations?: Array<{
     name: string;
     claim: string;
+    claimId?: string;
+    evidenceClass?: string;
     observedAt: string;
     freshness: "LIVE" | "RECENT" | "STALE" | "ESTIMATED";
   }>;
@@ -759,19 +761,15 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     }
   }
 
-  // Parse source citations
-  let sourceCitations: AshaResponse["sourceCitations"] | undefined;
-  if (Array.isArray(parsed.sourceCitations)) {
-    const citations = (parsed.sourceCitations as Array<Record<string, unknown>>)
-      .map(c => ({
-        name: readString(c.name) || "",
-        claim: readString(c.claim) || "",
-        observedAt: readString(c.observedAt) || "estimated",
-        freshness: readEnum(c.freshness, ["LIVE", "RECENT", "STALE", "ESTIMATED"] as const) || "ESTIMATED" as const,
-      }))
-      .filter(c => c.name && c.claim);
-    if (citations.length > 0) sourceCitations = citations;
-  }
+  // A language model cannot create sources or upgrade source freshness.
+  const sourceCitations: AshaResponse["sourceCitations"] = packetClaims.map(claim => ({
+    name: claim.sourceIds?.join(", ") || claim.methodologyId || "Canonical model",
+    claim: claim.statement,
+    claimId: claim.claimId,
+    evidenceClass: claim.evidenceClass,
+    observedAt: claim.sourceTimestamp ?? claim.effectiveAt,
+    freshness: /STALE|UNAVAILABLE|FALLBACK/i.test(claim.qualityStatus) ? "STALE" as const : "ESTIMATED" as const,
+  }));
 
   // Build limitations: combine LLM-reported + engine context
   const llmLimitations = readStringArray(parsed.limitations);
@@ -792,9 +790,9 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     executiveSummary: readString(parsed.executiveSummary) || reply.split("\n")[0],
     coreThesis,
     marketBias: readEnum(parsed.marketBias, ["BULLISH", "BEARISH", "NEUTRAL"] as const),
-    marketRegime: readString(parsed.marketRegime) || gatewayContext.marketState.now.regime,
+    marketRegime: authoritativeState?.regime ?? undefined,
     threatLevel: readEnum(parsed.threatLevel, ["LOW", "ELEVATED", "HIGH", "CRITICAL"] as const),
-    pressureIndex: readBoundedScore(parsed.pressureIndex, gatewayContext.marketState.now.pressureScore),
+    pressureIndex: authoritativeState?.pressureIndex ?? undefined,
     riskLevel: readString(parsed.riskLevel),
     suggestedBias: readString(parsed.suggestedBias),
     bullProbability: readNullableBoundedScore(parsed.bullProbability),
@@ -858,23 +856,9 @@ export interface AshaDailyGreetingRequest {
 }
 
 export async function generateAshaDailyGreeting(req: AshaDailyGreetingRequest): Promise<string> {
-  const { engineContext, userName } = req;
-  const pressureChange = engineContext.previousPressureScore !== undefined && engineContext.pressureScore !== undefined
-    ? engineContext.pressureScore - engineContext.previousPressureScore
-    : undefined;
-
-  // Page supplement carries only the readings the client supplied; nothing is defaulted.
+  const { userName } = req;
+  // The request only personalizes the greeting; all market data is read server-side.
   const page: AshaPageContext = { page: "daily-greeting" };
-  if (engineContext.pressureScore !== undefined) page.pressureScore = engineContext.pressureScore;
-  if (engineContext.regime) page.regime = engineContext.regime;
-  // A client-sent regimeConfidence is never forwarded: no real confidence exists for the greeting.
-  // Client narrative is not market evidence and could carry a probability: only the fixed
-  // evidence-quality line is kept; any other text is dropped (the block has the canonical story).
-  const narrative = greetingNarrativeForModel(engineContext.narrative);
-  if (narrative) page.narrative = narrative;
-  if (engineContext.trend) page.trend = engineContext.trend;
-  if (engineContext.keyDrivers && engineContext.keyDrivers.length > 0) page.keyDrivers = engineContext.keyDrivers;
-  if (pressureChange !== undefined) page.additionalContext = { pressureChangeSinceLastSession: pressureChange };
   const gatewayContext = await createAshaGatewayContext(page);
   const contextBlock = buildAshaCanonicalContextBlock(gatewayContext);
   const authoritativeState = await getAuthoritativeCanonicalIntelligenceState();

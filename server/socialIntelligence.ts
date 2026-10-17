@@ -88,15 +88,22 @@ export interface SocialIntelligenceData {
 
 // ── Multi-Source Ticker Intelligence Types ────────────────────
 
+export type SourceClassification = "OBSERVED" | "PROVIDER_MODEL" | "DERIVED_HEURISTIC" | "UNAVAILABLE";
+
 export interface SourceSentiment {
   source: string;
+  provider: string;
+  classification: SourceClassification;
   available: boolean;
+  contributesToComposite: boolean;
   bullishPct: number;
   bearishPct: number;
   neutralPct: number;
   volume: number; // number of posts/articles/mentions
   weight: number; // 0-100 contribution weight in composite score
+  observedAt: string | null; // latest provider-supplied observation time, never local receipt time
   note?: string;
+  methodology?: string;
 }
 
 export interface SentimentTrend {
@@ -161,19 +168,19 @@ export interface MultiSourceSocialData {
   assetType: "stock" | "crypto";
 
   // Composite score
-  socialIntelligenceScore: number; // 0-100 weighted composite
-  overallSentiment: "STRONGLY BULLISH" | "BULLISH" | "NEUTRAL" | "BEARISH" | "STRONGLY BEARISH";
-  overallSentimentScore: number; // -1 to +1
-  overallBullishPct: number;
-  overallBearishPct: number;
+  socialIntelligenceScore: number | null; // 0-100 weighted composite; null without contributing evidence
+  overallSentiment: "STRONGLY BULLISH" | "BULLISH" | "NEUTRAL" | "BEARISH" | "STRONGLY BEARISH" | null;
+  overallSentimentScore: number | null; // -1 to +1
+  overallBullishPct: number | null;
+  overallBearishPct: number | null;
 
   // Source breakdown
   sources: SourceSentiment[];
 
   // Volume & momentum
   socialVolume: number; // total posts/articles/mentions
-  socialMomentum: "rising" | "falling" | "stable";
-  discussionVelocity: string; // human-readable e.g. "+42% vs 7d avg"
+  socialMomentum: "rising" | "falling" | "stable" | null;
+  discussionVelocity: string | null; // model interpretation, unavailable when synthesis is unavailable
 
   // Sentiment trends
   sentimentTrends: SentimentTrend[];
@@ -183,14 +190,15 @@ export interface MultiSourceSocialData {
   topBearishArguments: string[];
   keyTopics: string[];
   influencerMentions: string[];
-  retailInterestScore: number; // 0-100
-  crowdConvictionScore: number; // 0-100
-  contrarianSignalScore: number; // 0-100
-  memeHypeDetected: boolean;
-  memeHypeDescription: string;
+  retailInterestScore: number | null; // 0-100, model-generated
+  crowdConvictionScore: number | null; // 0-100, model-generated
+  contrarianSignalScore: number | null; // 0-100, model-generated
+  memeHypeDetected: boolean | null;
+  memeHypeDescription: string | null;
   socialRiskWarnings: string[];
-  bullCaseSummary: string;
-  bearCaseSummary: string;
+  bullCaseSummary: string | null;
+  bearCaseSummary: string | null;
+  synthesisStatus: "MODEL_GENERATED" | "UNAVAILABLE";
 
   // Raw data
   stocktwits: StockTwitsData | null;
@@ -211,7 +219,7 @@ export interface VerifiedSocialSnapshot {
   sourceCount: number;
   socialVolume: number;
   newsCount: number;
-  sentimentScore: number;
+  sentimentScore: number | null;
   positiveNews: number;
   negativeNews: number;
   extremeAttentionDetected: boolean;
@@ -227,6 +235,12 @@ let cacheTime = 0;
 const tickerSocialCache = new Map<string, { data: MultiSourceSocialData; time: number }>();
 const verifiedSocialSnapshotCache = new Map<string, { data: VerifiedSocialSnapshot; time: number }>();
 const TICKER_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+const COMPOSITE_WEIGHTS = {
+  stocktwits: 35,
+  financialNews: 40,
+  reddit: 25,
+} as const;
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -250,6 +264,13 @@ function insightSentimentToDirection(s: string): "positive" | "neutral" | "negat
   return "neutral";
 }
 
+function latestObservedAt(timestamps: Array<string | null | undefined>): string | null {
+  return timestamps.reduce<string | null>((latest, timestamp) => {
+    if (!timestamp || Number.isNaN(Date.parse(timestamp))) return latest;
+    return !latest || Date.parse(timestamp) > Date.parse(latest) ? timestamp : latest;
+  }, null);
+}
+
 // ── Polygon News Fetcher ──────────────────────────────────────
 
 interface PolygonInsight {
@@ -270,6 +291,22 @@ interface PolygonNewsItem {
   description?: string;
   keywords?: string[];
   insights?: PolygonInsight[];
+}
+
+/** Labels only the providers that produced this global response path. */
+export function globalSourceLabel({
+  polygonNews,
+  yahooTrending,
+  yahooScreener,
+}: {
+  polygonNews: PolygonNewsItem[];
+  yahooTrending: string[];
+  yahooScreener: unknown[];
+}): string {
+  const labels: string[] = [];
+  if (polygonNews.length > 0) labels.push("Polygon.io News");
+  if (yahooTrending.length > 0 || yahooScreener.length > 0) labels.push("Yahoo Finance Trending/Screener");
+  return labels.length > 0 ? labels.join(" + ") : "No global provider observations available";
 }
 
 async function fetchPolygonNews(ticker?: string, limit = 25): Promise<PolygonNewsItem[]> {
@@ -508,16 +545,17 @@ interface LLMSocialSynthesis {
   topBearishArguments: string[];
   keyTopics: string[];
   influencerMentions: string[];
-  retailInterestScore: number;
-  crowdConvictionScore: number;
-  contrarianSignalScore: number;
-  memeHypeDetected: boolean;
-  memeHypeDescription: string;
+  retailInterestScore: number | null;
+  crowdConvictionScore: number | null;
+  contrarianSignalScore: number | null;
+  memeHypeDetected: boolean | null;
+  memeHypeDescription: string | null;
   socialRiskWarnings: string[];
-  bullCaseSummary: string;
-  bearCaseSummary: string;
+  bullCaseSummary: string | null;
+  bearCaseSummary: string | null;
   sentimentTrends: SentimentTrend[];
-  discussionVelocity: string;
+  discussionVelocity: string | null;
+  synthesisStatus: "MODEL_GENERATED" | "UNAVAILABLE";
 }
 
 async function synthesizeSocialIntelligence(
@@ -527,6 +565,10 @@ async function synthesizeSocialIntelligence(
   news: TickerNewsArticle[],
   redditPosts: RedditPost[]
 ): Promise<LLMSocialSynthesis> {
+  if ((stocktwits?.messages.length ?? 0) + news.length + redditPosts.length === 0) {
+    return unavailableSynthesis(symbol);
+  }
+
   // Build context for LLM
   const stContext = stocktwits
     ? `StockTwits: ${stocktwits.bullishCount} bullish, ${stocktwits.bearishCount} bearish, ${stocktwits.neutralCount} neutral. Watchlist: ${stocktwits.watchlistCount.toLocaleString()}. Top messages: ${stocktwits.messages.slice(0, 5).map(m => `"${m.body.slice(0, 120)}" (${m.sentiment ?? 'no tag'})`).join(" | ")}`
@@ -639,49 +681,52 @@ Return ONLY valid JSON matching this schema exactly:
     const rawContent = response.choices?.[0]?.message?.content;
     if (!rawContent) throw new Error("Empty LLM response");
     const content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
-    const parsed = JSON.parse(content);
-    return parsed as LLMSocialSynthesis;
+    const parsed = JSON.parse(content) as Omit<LLMSocialSynthesis, "synthesisStatus">;
+    return { ...parsed, synthesisStatus: "MODEL_GENERATED" };
   } catch (err) {
     log.warn(`[SocialIntel] LLM synthesis failed for ${symbol}: ${(err as Error).message}`);
-    // Fallback synthesis from raw data
-    return buildFallbackSynthesis(symbol, stocktwits, news, redditPosts);
+    return unavailableSynthesis(symbol);
   }
 }
 
-function buildFallbackSynthesis(
-  symbol: string,
-  stocktwits: StockTwitsData | null,
-  news: TickerNewsArticle[],
-  redditPosts: RedditPost[]
-): LLMSocialSynthesis {
-  const bullNews = news.filter(n => n.sentiment === "positive");
-  const bearNews = news.filter(n => n.sentiment === "negative");
-
+export function unavailableSynthesis(symbol: string): LLMSocialSynthesis {
   return {
-    topBullishArguments: bullNews.slice(0, 3).map(n => n.title),
-    topBearishArguments: bearNews.slice(0, 3).map(n => n.title),
-    keyTopics: [symbol, "market sentiment", "price action"],
+    topBullishArguments: [],
+    topBearishArguments: [],
+    keyTopics: [],
     influencerMentions: [],
-    retailInterestScore: stocktwits ? Math.min(100, Math.round(stocktwits.watchlistCount / 100)) : 30,
-    crowdConvictionScore: stocktwits
-      ? Math.round(Math.abs(stocktwits.sentimentScore) * 100)
-      : 40,
-    contrarianSignalScore: 50,
-    memeHypeDetected: false,
-    memeHypeDescription: "",
-    socialRiskWarnings: ["Limited data available — analysis based on partial sources"],
-    bullCaseSummary: bullNews.length > 0 ? bullNews[0].title : `Insufficient data for ${symbol} bull case.`,
-    bearCaseSummary: bearNews.length > 0 ? bearNews[0].title : `Insufficient data for ${symbol} bear case.`,
-    sentimentTrends: [
-      { period: "24h", direction: "stable", bullishPct: 50, bearishPct: 50, volume: news.length },
-      { period: "7d", direction: "stable", bullishPct: 50, bearishPct: 50, volume: news.length },
-      { period: "30d", direction: "stable", bullishPct: 50, bearishPct: 50, volume: news.length },
-    ],
-    discussionVelocity: "Data insufficient for velocity estimate",
+    retailInterestScore: null,
+    crowdConvictionScore: null,
+    contrarianSignalScore: null,
+    memeHypeDetected: null,
+    memeHypeDescription: null,
+    socialRiskWarnings: [`Model interpretation unavailable for ${symbol} — no source-backed synthesis.`],
+    bullCaseSummary: null,
+    bearCaseSummary: null,
+    sentimentTrends: [],
+    discussionVelocity: null,
+    synthesisStatus: "UNAVAILABLE",
   };
 }
 
 // ── Source Attribution Builder ────────────────────────────────
+
+function unavailableSource(source: string, provider: string): SourceSentiment {
+  return {
+    source,
+    provider,
+    classification: "UNAVAILABLE",
+    available: false,
+    contributesToComposite: false,
+    bullishPct: 0,
+    bearishPct: 0,
+    neutralPct: 0,
+    volume: 0,
+    weight: 0,
+    observedAt: null,
+    note: "Source unavailable",
+  };
+}
 
 function buildSourceAttribution(
   stocktwits: StockTwitsData | null,
@@ -696,30 +741,44 @@ function buildSourceAttribution(
     const tagged = stocktwits.bullishCount + stocktwits.bearishCount;
     sources.push({
       source: "StockTwits",
-      available: true,
-      bullishPct: tagged > 0 ? Math.round((stocktwits.bullishCount / tagged) * 100) : 50,
-      bearishPct: tagged > 0 ? Math.round((stocktwits.bearishCount / tagged) * 100) : 50,
+      provider: "StockTwits",
+      classification: "OBSERVED",
+      available: tagged > 0,
+      contributesToComposite: tagged > 0,
+      bullishPct: tagged > 0 ? Math.round((stocktwits.bullishCount / tagged) * 100) : 0,
+      bearishPct: tagged > 0 ? Math.round((stocktwits.bearishCount / tagged) * 100) : 0,
       neutralPct: 0,
       volume: stocktwits.messages.length,
-      weight: 25,
+      weight: COMPOSITE_WEIGHTS.stocktwits,
+      observedAt: latestObservedAt(stocktwits.messages.map(message => message.createdAt)),
+      note: tagged > 0 ? undefined : "No Bullish/Bearish tags; excluded from composite",
     });
   } else {
-    sources.push({ source: "StockTwits", available: false, bullishPct: 0, bearishPct: 0, neutralPct: 0, volume: 0, weight: 0, note: "Source unavailable" });
+    sources.push(unavailableSource("StockTwits", "StockTwits"));
   }
 
   // Polygon News / Financial News
   const posNews = news.filter(n => n.sentiment === "positive").length;
   const negNews = news.filter(n => n.sentiment === "negative").length;
-  const totalNews = news.length;
+  const neutralNews = news.filter(n => n.sentiment === "neutral").length;
+  const classifiedNews = posNews + negNews + neutralNews;
   sources.push({
     source: "Financial News",
-    available: totalNews > 0,
-    bullishPct: totalNews > 0 ? Math.round((posNews / totalNews) * 100) : 0,
-    bearishPct: totalNews > 0 ? Math.round((negNews / totalNews) * 100) : 0,
-    neutralPct: totalNews > 0 ? Math.round(((totalNews - posNews - negNews) / totalNews) * 100) : 0,
-    volume: totalNews,
-    weight: 30,
-    note: totalNews === 0 ? "Source unavailable" : undefined,
+    provider: "Polygon.io",
+    classification: "PROVIDER_MODEL",
+    available: classifiedNews > 0,
+    contributesToComposite: classifiedNews > 0,
+    bullishPct: classifiedNews > 0 ? Math.round((posNews / classifiedNews) * 100) : 0,
+    bearishPct: classifiedNews > 0 ? Math.round((negNews / classifiedNews) * 100) : 0,
+    neutralPct: classifiedNews > 0 ? Math.round((neutralNews / classifiedNews) * 100) : 0,
+    volume: news.length,
+    weight: COMPOSITE_WEIGHTS.financialNews,
+    observedAt: latestObservedAt(news.map(article => article.publishedUtc)),
+    note: news.length === 0
+      ? "Source unavailable"
+      : classifiedNews === 0
+        ? "No Polygon.io provider-model sentiment classification; excluded from composite"
+        : "Sentiment classification is a Polygon.io provider-model output",
   });
 
   // Reddit
@@ -729,28 +788,33 @@ function buildSourceAttribution(
     const negReddit = Math.max(0, redditPosts.length - posReddit - Math.floor(redditPosts.length * 0.3));
     sources.push({
       source: "Reddit",
+      provider: "Reddit",
+      classification: "DERIVED_HEURISTIC",
       available: true,
+      contributesToComposite: true,
       bullishPct: Math.round((posReddit / redditPosts.length) * 100),
       bearishPct: Math.round((negReddit / redditPosts.length) * 100),
       neutralPct: Math.max(0, 100 - Math.round((posReddit / redditPosts.length) * 100) - Math.round((negReddit / redditPosts.length) * 100)),
       volume: redditPosts.length,
-      weight: 20,
+      weight: COMPOSITE_WEIGHTS.reddit,
+      observedAt: latestObservedAt(redditPosts.map(post => post.createdUtc > 0 ? new Date(post.createdUtc * 1000).toISOString() : null)),
+      methodology: "Derived heuristic: posts with score >100 are positive; remaining posts include a fixed neutral allocation.",
     });
   } else {
-    sources.push({ source: "Reddit", available: false, bullishPct: 0, bearishPct: 0, neutralPct: 0, volume: 0, weight: 0, note: "Source unavailable" });
+    sources.push(unavailableSource("Reddit", "Reddit"));
   }
 
   // Sources requiring paid credentials — always report as unavailable
-  sources.push({ source: "X (Twitter)", available: false, bullishPct: 0, bearishPct: 0, neutralPct: 0, volume: 0, weight: 0, note: "Source unavailable" });
-  sources.push({ source: "YouTube", available: false, bullishPct: 0, bearishPct: 0, neutralPct: 0, volume: 0, weight: 0, note: "Source unavailable" });
-  sources.push({ source: "TikTok", available: false, bullishPct: 0, bearishPct: 0, neutralPct: 0, volume: 0, weight: 0, note: "Source unavailable" });
-  sources.push({ source: "Seeking Alpha", available: false, bullishPct: 0, bearishPct: 0, neutralPct: 0, volume: 0, weight: 0, note: "Source unavailable" });
-  sources.push({ source: "TradingView", available: false, bullishPct: 0, bearishPct: 0, neutralPct: 0, volume: 0, weight: 0, note: "Source unavailable" });
+  sources.push(unavailableSource("X (Twitter)", "X"));
+  sources.push(unavailableSource("YouTube", "YouTube"));
+  sources.push(unavailableSource("TikTok", "TikTok"));
+  sources.push(unavailableSource("Seeking Alpha", "Seeking Alpha"));
+  sources.push(unavailableSource("TradingView", "TradingView"));
 
   // Crypto-specific sources
   if (assetType === "crypto") {
-    sources.push({ source: "Telegram", available: false, bullishPct: 0, bearishPct: 0, neutralPct: 0, volume: 0, weight: 0, note: "Source unavailable" });
-    sources.push({ source: "Discord", available: false, bullishPct: 0, bearishPct: 0, neutralPct: 0, volume: 0, weight: 0, note: "Source unavailable" });
+    sources.push(unavailableSource("Telegram", "Telegram"));
+    sources.push(unavailableSource("Discord", "Discord"));
   }
 
   return sources;
@@ -762,53 +826,62 @@ function computeCompositeScore(
   stocktwits: StockTwitsData | null,
   news: TickerNewsArticle[],
   redditPosts: RedditPost[]
-): { score: number; bullishPct: number; bearishPct: number; overallSentimentScore: number } {
+): { score: number | null; bullishPct: number | null; bearishPct: number | null; overallSentimentScore: number | null } {
   let weightedScore = 0;
   let totalWeight = 0;
 
   // StockTwits (weight: 35%)
   if (stocktwits && (stocktwits.bullishCount + stocktwits.bearishCount) > 0) {
-    weightedScore += stocktwits.sentimentScore * 35;
-    totalWeight += 35;
+    weightedScore += stocktwits.sentimentScore * COMPOSITE_WEIGHTS.stocktwits;
+    totalWeight += COMPOSITE_WEIGHTS.stocktwits;
   }
 
   // News (weight: 40%)
-  if (news.length > 0) {
-    const pos = news.filter(n => n.sentiment === "positive").length;
-    const neg = news.filter(n => n.sentiment === "negative").length;
+  const classifiedNews = news.filter(article => article.sentiment !== "unknown");
+  if (classifiedNews.length > 0) {
+    const pos = classifiedNews.filter(n => n.sentiment === "positive").length;
+    const neg = classifiedNews.filter(n => n.sentiment === "negative").length;
     const newsScore = (pos + neg) > 0 ? (pos - neg) / (pos + neg) : 0;
-    weightedScore += newsScore * 40;
-    totalWeight += 40;
+    weightedScore += newsScore * COMPOSITE_WEIGHTS.financialNews;
+    totalWeight += COMPOSITE_WEIGHTS.financialNews;
   }
 
   // Reddit (weight: 25%)
   if (redditPosts.length > 0) {
     const highScore = redditPosts.filter(p => p.score > 100).length;
     const redditScore = (highScore / redditPosts.length) * 2 - 1; // normalize to -1..+1
-    weightedScore += redditScore * 25;
-    totalWeight += 25;
+    weightedScore += redditScore * COMPOSITE_WEIGHTS.reddit;
+    totalWeight += COMPOSITE_WEIGHTS.reddit;
   }
 
-  const rawScore = totalWeight > 0 ? weightedScore / totalWeight : 0;
+  if (totalWeight === 0) {
+    return { score: null, bullishPct: null, bearishPct: null, overallSentimentScore: null };
+  }
+
+  const rawScore = weightedScore / totalWeight;
   const normalizedScore = Math.round(rawScore * 100) / 100;
 
   // Convert to 0-100 composite
   const compositeScore = Math.round((normalizedScore + 1) * 50);
 
   // Compute overall bull/bear %
-  let bullPct = 50, bearPct = 50;
+  let bullPct: number | null = null;
+  let bearPct: number | null = null;
   if (stocktwits && (stocktwits.bullishCount + stocktwits.bearishCount) > 0) {
     const tagged = stocktwits.bullishCount + stocktwits.bearishCount;
     bullPct = Math.round((stocktwits.bullishCount / tagged) * 100);
     bearPct = 100 - bullPct;
-  } else if (news.length > 0) {
-    const pos = news.filter(n => n.sentiment === "positive").length;
-    const neg = news.filter(n => n.sentiment === "negative").length;
-    const total = pos + neg;
-    if (total > 0) {
-      bullPct = Math.round((pos / total) * 100);
+  } else if (classifiedNews.length > 0) {
+    const pos = classifiedNews.filter(n => n.sentiment === "positive").length;
+    const neg = classifiedNews.filter(n => n.sentiment === "negative").length;
+    const directionalTotal = pos + neg;
+    if (directionalTotal > 0) {
+      bullPct = Math.round((pos / directionalTotal) * 100);
       bearPct = 100 - bullPct;
     }
+  } else if (redditPosts.length > 0) {
+    bullPct = Math.round((redditPosts.filter(post => post.score > 100).length / redditPosts.length) * 100);
+    bearPct = 100 - bullPct;
   }
 
   return { score: compositeScore, bullishPct: bullPct, bearishPct: bearPct, overallSentimentScore: normalizedScore };
@@ -1046,7 +1119,11 @@ export async function getSocialIntelligenceData(): Promise<SocialIntelligenceDat
     narrativeClusters,
     mostActive,
     fetchedAt: Date.now(),
-    dataSource: "Polygon.io News + Yahoo Finance Trending/Screener + StockTwits + Reddit",
+    dataSource: globalSourceLabel({
+      polygonNews: newsRaw,
+      yahooTrending: trendingSymbols,
+      yahooScreener: mostActiveRaw,
+    }),
   };
 
   cachedData = result;
@@ -1096,19 +1173,18 @@ export async function getTickerSocialData(
 
   // Social momentum from trends
   const trend24h = synthesis.sentimentTrends.find(t => t.period === "24h");
-  const socialMomentum: "rising" | "falling" | "stable" = trend24h?.direction ?? "stable";
 
   const result: MultiSourceSocialData = {
     symbol: symbol.toUpperCase(),
     assetType,
     socialIntelligenceScore: score,
-    overallSentiment: sentimentToLabel(overallSentimentScore),
+    overallSentiment: overallSentimentScore === null ? null : sentimentToLabel(overallSentimentScore),
     overallSentimentScore,
     overallBullishPct: bullishPct,
     overallBearishPct: bearishPct,
     sources,
     socialVolume,
-    socialMomentum,
+    socialMomentum: trend24h?.direction ?? null,
     discussionVelocity: synthesis.discussionVelocity,
     sentimentTrends: synthesis.sentimentTrends as SentimentTrend[],
     topBullishArguments: synthesis.topBullishArguments,
@@ -1123,6 +1199,7 @@ export async function getTickerSocialData(
     socialRiskWarnings: synthesis.socialRiskWarnings,
     bullCaseSummary: synthesis.bullCaseSummary,
     bearCaseSummary: synthesis.bearCaseSummary,
+    synthesisStatus: synthesis.synthesisStatus,
     stocktwits,
     news,
     redditPosts,
@@ -1160,7 +1237,10 @@ export async function getVerifiedSocialSnapshot(
     sentimentScore: composite.overallSentimentScore,
     positiveNews: news.filter(article => article.sentiment === "positive").length,
     negativeNews: news.filter(article => article.sentiment === "negative").length,
-    extremeAttentionDetected: sourceCount >= 2 && socialVolume >= 75 && composite.overallSentimentScore >= 0.7,
+    extremeAttentionDetected: sourceCount >= 2
+      && socialVolume >= 75
+      && composite.overallSentimentScore !== null
+      && composite.overallSentimentScore >= 0.7,
     fetchedAt: Date.now(),
   };
   verifiedSocialSnapshotCache.set(cacheKey, { data: result, time: Date.now() });

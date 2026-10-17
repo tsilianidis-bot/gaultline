@@ -2,7 +2,7 @@
 // FAULTLINE — Signal Outlook Center™ Unit Tests
 // server/signalOutlook.test.ts
 // ============================================================
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   getFullOutlook,
   getQuickOutlook,
@@ -47,52 +47,30 @@ vi.mock("./_core/llm", () => ({
   }),
 }));
 
-// ── Mock the pressure engine ─────────────────────────────────
-vi.mock("./pressure/engine", () => ({
-  calculateFaultlinePressure: vi.fn().mockResolvedValue({
-    overallPressure: 45,
-    regime: "MODERATE_RISK",
-    level: "moderate",
-    dataSource: "live",
-    vectors: [],
-    alerts: [],
-    topAnalog: { period: "2019", similarity: 0.7, outcome: "Mild correction", description: "Test analog" },
-    analogs: [],
-    timestamp: new Date().toISOString(),
-    lastUpdated: new Date().toISOString(),
-  }),
-}));
+/** Explicit MOCK-only canonical/provider fixtures, NOT LIVE market evidence. */
+const fixture = vi.hoisted(() => {
+  const now = Date.parse("2026-10-16T18:00:00Z");
+  const ids = ["liquidity-stress", "credit-contagion", "macro-sensitivity", "volatility-regime", "market-breadth", "ai-bubble"];
+  const canonical = { stateId: "state:mock-outlook", stateHash: "a".repeat(64), inputSnapshotId: "input:mock-outlook", modelVersion: "champion-v1", scoringVersion: "faultline-pressure-v1-frozen",
+    pressureIndex: 45, regime: "MODERATE_RISK", generatedAt: new Date(now - 60_000).toISOString(), effectiveAt: new Date(now - 60_000).toISOString(), confidenceOrEvidenceQuality: "HEALTHY",
+    provenance: { coherenceStatus: "COHERENT" }, engines: ids.map((engineId, index) => ({ engineId, engineName: engineId, value: 40 + index, qualityStatus: "HEALTHY", freshnessStatus: "CURRENT", sourceInputIds: ["mock:FRED:DGS10"] })) };
+  const bars = Array.from({ length: 60 }, (_, index) => ({ close: 750 + index, open: 749 + index, high: 752 + index, low: 748 + index, volume: 1_000_000 + index * 10_000, timestamp: now - (60 - index) * 86_400_000, date: new Date(now - (60 - index) * 86_400_000).toISOString().slice(0,10) }));
+  const quote = (ticker: string) => ({ ticker, name: "MOCK " + ticker, price: 850, high: 860, low: 835, open: 840, prevClose: 839, change: 11, changePercent: 1.2, volume: 45_000_000, avgVolume: 40_000_000,
+    marketCap: 2_100_000_000_000, marketState: "REGULAR", source: "yahoo", isDelayed: true, observedAt: now - 60_000, fetchedAt: now, sector: "Technology", industry: "Semiconductors" });
+  return { now, canonical, bars, quote };
+});
+vi.mock("./pressure/engine", async () => ({ ...await vi.importActual<typeof import("./pressure/engine")>("./pressure/engine"), calculateFaultlinePressure: vi.fn().mockRejectedValue(new Error("Independent calculation forbidden in this MOCK source-boundary test")) }));
+vi.mock("./canonicalIntelligenceState", async () => ({ ...await vi.importActual<typeof import("./canonicalIntelligenceState")>("./canonicalIntelligenceState"), getAuthoritativeCanonicalIntelligenceState: vi.fn(async () => fixture.canonical) }));
+beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(fixture.now); });
+afterEach(() => vi.useRealTimers());
 
 // ── Mock Yahoo proxy ─────────────────────────────────────────
-vi.mock("./yahooProxy", () => ({
-  getQuotes: vi.fn().mockResolvedValue([
-    {
-      ticker: "NVDA",
-      price: 850,
-      open: 840,
-      high: 860,
-      low: 835,
-      changePercent: 1.2,
-      volumeMillions: 45,
-      avgVolume: 40,
-      sparkline: [800, 810, 820, 830, 840, 850],
-      marketCap: 2100000000000,
-      sector: "Technology",
-      industry: "Semiconductors",
-      description: "NVIDIA Corporation",
-    },
-  ]),
-  getTopStockPerformers: vi.fn().mockResolvedValue([
-    { ticker: "NVDA", changePercent: 3.5 },
-    { ticker: "TSLA", changePercent: 2.8 },
-    { ticker: "META", changePercent: 2.1 },
-    { ticker: "AMD",  changePercent: 1.9 },
-    { ticker: "PLTR", changePercent: 1.7 },
-  ]),
-  getQuote: vi.fn().mockResolvedValue({ price: 100, isDelayed: true, observedAt: Date.parse("2026-08-14T20:00:00Z") }),
-  getDailyBars: vi.fn().mockResolvedValue(Array.from({ length: 60 }, (_, index) => ({
-    close: 75 + index, open: 74 + index, high: 76 + index, low: 73 + index, volume: 1_000_000 + index * 10_000, timestamp: Date.parse("2026-06-01T00:00:00Z") + index * 86_400_000,
-  }))),
+vi.mock("./yahooProxy", async () => ({
+  ...await vi.importActual<typeof import("./yahooProxy")>("./yahooProxy"),
+  getQuote: vi.fn(async (ticker: string) => fixture.quote(ticker)),
+  getQuotes: vi.fn(async (tickers: string[]) => tickers.map(fixture.quote)),
+  getDailyBars: vi.fn(async () => fixture.bars),
+  getTopStockPerformers: vi.fn(async () => ["NVDA", "TSLA", "META", "AMD", "PLTR"].map(ticker => ({ ticker, changePercent: 2 }))),
 }));
 
 vi.mock("./risingStarsDiscovery", () => ({
@@ -103,7 +81,7 @@ vi.mock("./risingStarsDiscovery", () => ({
   deriveSector: () => "Technology",
   getPublicCompanyProfile: vi.fn().mockResolvedValue({
     ticker: "TEST", name: "Verified Test Company", exchange: "Nasdaq", exchangeCode: "XNAS", marketCap: 12_000_000_000,
-    listingDate: "2022-01-01", sector: null, industry: "Software", description: "Verified provider description for a public software company.", active: true, profileAsOf: Date.now(),
+    listingDate: "2022-01-01", sector: null, industry: "Software", description: "Verified provider description for a public software company.", active: true, profileAsOf: Date.parse("2026-10-16T18:00:00Z"),
   }),
   marketCapLabel: () => "Large Cap",
 }));
@@ -114,6 +92,8 @@ vi.mock("./socialIntelligence", () => ({
 
 // ── Mock CoinGecko proxy ─────────────────────────────────────
 vi.mock("./coingeckoProxy", () => ({
+  getCoinMarketData: vi.fn(async (symbol: string) => ({ id: "mock-coin", symbol, name: "MOCK " + symbol, currentPrice: 64000, high24h: 65000, low24h: 63000, marketCap: 1_300_000_000_000, totalVolume: 30_000_000_000, lastUpdated: new Date(fixture.now - 60_000).toISOString() })),
+  getCoinOHLC: vi.fn(async () => fixture.bars.map(bar => ({ ...bar, open: bar.open * 80, high: bar.high * 80, low: bar.low * 80, close: bar.close * 80 }))),
   getTopMarkets: vi.fn().mockResolvedValue([
     { id: "bitcoin", symbol: "BTC", name: "Bitcoin", current_price: 65000, price_change_percentage_24h: 2.1, total_volume: 30000000000, market_cap: 1300000000000 },
     { id: "ethereum", symbol: "ETH", name: "Ethereum", current_price: 3200, price_change_percentage_24h: 1.8, total_volume: 15000000000, market_cap: 380000000000 },
@@ -394,8 +374,8 @@ describe("Signal Outlook Center — scoring engine", () => {
         expect(["stock", "crypto"]).toContain(item.assetType);
         expect(item.opportunityScore).toBeGreaterThanOrEqual(0);
         expect(item.opportunityScore).toBeLessThanOrEqual(100);
-        expect(item.expectedTimeHorizon).toBeTruthy();
-        expect(item.catalyst).toBeTruthy();
+        expect(item.expectedTimeHorizon).toBeNull();
+        expect(item.catalyst).toBeNull();
         expect(["Low", "Medium", "High", "Extreme"]).toContain(item.riskLevel);
         expect(["Bullish", "Bearish", "Neutral", "Avoid"]).toContain(item.direction);
         expect(item.rationale).toBeTruthy();
@@ -478,13 +458,13 @@ describe("Signal Outlook factor labels — no probability claims (fix-up 6)", ()
 describe("Signal Outlook regime label uses the canonical vocabulary (fix-up 7)", () => {
   vi.setConfig({ testTimeout: 15000 });
   it("environment.regimeLabel, the AI prompt and the LLM-failure fallback text all read MODERATE RISK at P=34", async () => {
-    const { calculateFaultlinePressure } = await import("./pressure/engine");
+    const { getAuthoritativeCanonicalIntelligenceState } = await import("./canonicalIntelligenceState");
     const { invokeLLM } = await import("./_core/llm");
-    const pressureMock = vi.mocked(calculateFaultlinePressure);
+    const pressureMock = vi.mocked(getAuthoritativeCanonicalIntelligenceState);
     const llm = vi.mocked(invokeLLM);
     const basePressure = await pressureMock();
     const llmImpl = llm.getMockImplementation();
-    pressureMock.mockResolvedValue({ ...basePressure, overallPressure: 34, regime: "MODERATE RISK" } as any);
+    pressureMock.mockResolvedValue({ ...basePressure, pressureIndex: 34, regime: "MODERATE RISK", stateId: "state:mock-outlook-34" } as any);
     try {
       clearOutlookCaches(); llm.mockClear();
       const r = await getFullOutlook("NVDA", "stock", "swing");

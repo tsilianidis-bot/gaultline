@@ -18,6 +18,7 @@ import {
   buildBriefingGreetingContext,
   buildDailyGreetingContext,
 } from "../client/src/lib/ashaBriefingContext";
+import type { AshaGatewayContext, AshaPageContext } from "../shared/ashaContext";
 import type { CanonicalMarketState } from "../shared/marketState";
 import { buildAshaCanonicalContextBlock, outlookForModel, pageSupplementForModel, withholdScenarioPercents, withholdScenarioPercentsDeep } from "./ashaGateway";
 
@@ -31,24 +32,50 @@ vi.mock("wouter", () => ({ useLocation: () => ["/app/now", vi.fn()] }));
 
 import AshaLiveBriefing from "../client/src/components/AshaLiveBriefing";
 
-function canonicalState(): CanonicalMarketState {
+/**
+ * Static test double only: this fixture is not a live-provider assertion. Fake
+ * values are explicitly MOCK and retain provider observation/receipt timestamps.
+ */
+const MOCK_CANONICAL_PROVENANCE = {
+  sourceKind: "MOCK",
+  fixtureId: "plato-briefing-canonical-gate/2026-10-02",
+  providerObservations: [
+    { provider: "seismograph", adapter: "seismographAdapters", observedAt: "2026-10-02T11:55:00.000Z", receivedAt: "2026-10-02T11:56:00.000Z" },
+    { provider: "FRED", adapter: "fred", observedAt: "2026-10-02T11:50:00.000Z", receivedAt: "2026-10-02T11:56:00.000Z" },
+    { provider: "CoinGecko", adapter: "coingecko", observedAt: "2026-10-02T11:54:00.000Z", receivedAt: "2026-10-02T11:56:00.000Z" },
+  ],
+} as const;
+
+type MockCanonicalMarketState = CanonicalMarketState & {
+  fixtureProvenance: typeof MOCK_CANONICAL_PROVENANCE;
+};
+
+function canonicalState(): MockCanonicalMarketState {
   return {
     version: "1.0",
+    canonicalStateId: "mock-state:plato-briefing-2026-10-02T12:00:00.000Z",
+    stateHash: "mock-sha256:plato-briefing-canonical-gate-v1",
+    inputSnapshotId: "mock-input:plato-briefing-2026-10-02T11:56:00.000Z",
     generatedAt: "2026-10-02T12:00:00.000Z",
     sourceUpdatedAt: "2026-10-02T11:55:00.000Z",
-    freshness: { status: "fresh", ageMs: 300_000, asOf: "2026-10-02T11:55:00.000Z" },
+    freshness: "live",
     cache: { status: "fresh-cache", ageMs: 300_000, staleReason: null },
-    sourceHealth: [],
+    sourceHealth: [
+      { id: "seismograph", label: "Seismograph [MOCK]", status: "healthy", required: true, asOf: "2026-10-02T11:55:00.000Z", detail: "MOCK fixture observation; not a provider connectivity claim." },
+      { id: "historical-memory", label: "Historical memory [MOCK]", status: "healthy", required: false, asOf: "2026-10-02T11:50:00.000Z", detail: "MOCK fixture observation; not a historical-data claim." },
+      { id: "fred", label: "FRED [MOCK]", status: "healthy", required: true, asOf: "2026-10-02T11:50:00.000Z", detail: "MOCK fixture observation; not a provider connectivity claim." },
+      { id: "coingecko", label: "CoinGecko [MOCK]", status: "healthy", required: false, asOf: "2026-10-02T11:54:00.000Z", detail: "MOCK fixture observation; not a provider connectivity claim." },
+    ],
     warnings: [],
-    now: { pressureScore: 33, regime: "Moderate Risk", stressLevel: "Moderate", direction: "Stable", historicalPercentile: 40, headline: "Pressure is contained.", topDrivers: ["Credit"] },
+    now: { pressureScore: 33, regime: "Moderate Risk", stressLevel: "Moderate", direction: "Stable", historicalPercentile: 40, headline: "Pressure is contained.", topDrivers: ["Credit"], threats: [], supports: ["Credit"] },
     why: {
       story: "Credit is calm while rates are steady.",
       whyThisScore: "Evidence is mixed.",
       whyThisRegime: "No family is stressed.",
       keyDevelopments: [],
       narrative: { whatIsHappening: "Calm.", whyIsItHappening: "Liquidity ample.", whatHasChanged: "Little.", whatIsBuildingBeneathSurface: "Nothing notable." },
-      evidenceFamilies: [{ name: "Credit", signal: "calm", strength: 30, trend: "stable", currentValue: "Spreads tight", historicalContext: "Below median", whyItMatters: "Credit transmits stress." }],
-      evidenceConsensus: "mixed",
+      evidenceFamilies: [{ name: "Credit", signal: "neutral", strength: 30, trend: "stable", currentValue: "Spreads tight", historicalContext: "Below median", whyItMatters: "Credit transmits stress." }],
+      evidenceConsensus: "moderate",
     },
     outlook: {
       probabilities: { bull: 53, neutral: 30, bear: 17, confidence: 0, primaryDriver: "Credit", evidenceBasis: "Spreads", historicalBasis: "Analogs" },
@@ -59,9 +86,10 @@ function canonicalState(): CanonicalMarketState {
       topAnalog: null,
     },
     watch: { developingConditions: [], activePatterns: [], whatChanged: [], whatToWatch: ["Credit spreads"], accelerating: false, buildingPressure: false },
-    act: { marketPosture: "neutral", decisionSummary: "Hold.", whatWouldInvalidate: "Credit widening.", riskControls: [] },
+    act: { marketPosture: "balanced", decisionSummary: "Hold.", whatWouldInvalidate: "Credit widening.", riskControls: [] },
     history: { observationCount: 100, datasetSpan: "2018-present", currentStreakDescription: "Two weeks", lastMajorShift: null, analogSummary: "Mid-cycle" },
-  } as CanonicalMarketState;
+    fixtureProvenance: MOCK_CANONICAL_PROVENANCE,
+  };
 }
 
 const fallback = () => selectBrowserMarketOutput({ marketState: null, baselineIndicators: DEFAULT_INDICATORS, simulationOverrides: {} });
@@ -102,6 +130,20 @@ describe("demo baseline facts (guards the fixture)", () => {
     const { output: selected, mode } = fallback();
     expect(mode).toBe("deterministic-fallback");
     expect((selected.overall.score * 10).toFixed(1)).toBe("44.6");
+  });
+
+  it("the canonical fixture declares MOCK provenance, immutable identity, and timestamped provider observations", () => {
+    const state = canonicalState();
+    expect(state.fixtureProvenance.sourceKind).toBe("MOCK");
+    expect(state.canonicalStateId).toMatch(/^mock-state:/);
+    expect(state.stateHash).toMatch(/^mock-sha256:/);
+    expect(state.inputSnapshotId).toMatch(/^mock-input:/);
+    expect(state.fixtureProvenance.providerObservations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ provider: "seismograph", adapter: "seismographAdapters", observedAt: state.sourceUpdatedAt }),
+      expect.objectContaining({ provider: "FRED", adapter: "fred", observedAt: "2026-10-02T11:50:00.000Z" }),
+      expect.objectContaining({ provider: "CoinGecko", adapter: "coingecko", observedAt: "2026-10-02T11:54:00.000Z" }),
+    ]));
+    expect(state.sourceHealth.every(source => source.detail.includes("MOCK fixture"))).toBe(true);
   });
 });
 
@@ -259,10 +301,23 @@ describe("AshaDailyGreeting context", () => {
 });
 
 describe("PLATO model context carries no scenario percent", () => {
-  const context = () => ({
+  const clientAuthoredPage: AshaPageContext = {
+    page: "/app/outlook",
+    pressureScore: 91,
+    regime: "CLIENT-FABRICATED CRISIS",
+    regimeConfidence: 0.99,
+    narrative: "Client-provided market claim",
+    trend: "Client-provided trend",
+    keyDrivers: ["Client-provided driver"],
+    historicalAnalog: "Client-provided analog",
+    transitionProbability: 88,
+    additionalContext: { unsupportedMarketClaim: "Client-provided claim" },
+  };
+
+  const context = (): AshaGatewayContext => ({
     version: "1.1" as const,
     destination: "outlook" as const,
-    page: { page: "/app/outlook", transitionProbability: 20, pressureScore: 33 },
+    page: clientAuthoredPage,
     marketState: canonicalState(),
   });
 
@@ -281,16 +336,22 @@ describe("PLATO model context carries no scenario percent", () => {
     expect(serialized).toContain("Spreads");
   });
 
-  it("the full context block has no scenario percent and drops the page transition probability", () => {
-    const block = buildAshaCanonicalContextBlock(context() as Parameters<typeof buildAshaCanonicalContextBlock>[0]);
+  it("the full context block takes market facts from server canonical state and drops every client-authored supplement claim", () => {
+    const block = buildAshaCanonicalContextBlock(context());
     const json = JSON.parse(block.slice(block.indexOf("{"), block.indexOf("\n\nSCOPE RULE")));
     expect(json.outlook.scenarioProbabilities).toBe("Uncalibrated");
-    expect(json.pageSupplement).not.toHaveProperty("transitionProbability");
-    expect(json.pageSupplement.pressureScore).toBe(33);
+    expect(json.pageSupplement).toEqual({ page: "/app/outlook" });
+    expect(Object.keys(json.pageSupplement)).toEqual(["page"]);
     expect(json.now.pressureScore).toBe(33);
     expect(json.now.regime).toBe("Moderate Risk");
     expect(JSON.stringify(json.outlook)).not.toMatch(PERCENT);
     expect(block).not.toMatch(/"bull":\s*53|"crash":\s*2\b|53%/);
+    for (const clientOnlyValue of ["CLIENT-FABRICATED CRISIS", "Client-provided market claim", "Client-provided trend", "Client-provided driver", "Client-provided analog", "unsupportedMarketClaim"]) {
+      expect(block).not.toContain(clientOnlyValue);
+    }
+    expect(json.pageSupplement).not.toHaveProperty("pressureScore");
+    expect(json.pageSupplement).not.toHaveProperty("transitionProbability");
+    expect(json.pageSupplement).not.toHaveProperty("regimeConfidence");
   });
 
   it("percents embedded in outlook prose are withheld; analog similarity is kept", () => {
@@ -325,7 +386,7 @@ describe("PLATO model context carries no scenario percent", () => {
     expect(block).not.toMatch(/20%|30%/);
   });
 
-  it("the page supplement drops a client-sent regimeConfidence and transitionProbability", () => {
-    expect(pageSupplementForModel({ page: "/app/now", regimeConfidence: 0.75, transitionProbability: 20, pressureScore: 33 })).toEqual({ page: "/app/now", pressureScore: 33 });
+  it("the page supplement preserves only the route, never client-authored market facts", () => {
+    expect(pageSupplementForModel(clientAuthoredPage)).toEqual({ page: "/app/outlook" });
   });
 });

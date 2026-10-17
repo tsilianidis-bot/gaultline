@@ -54,6 +54,39 @@ function stableId(parts: unknown[]) {
   return createHash("sha256").update(JSON.stringify(parts)).digest("hex").slice(0, 24);
 }
 
+export const DERIVED_DIVERGENCE_METRIC_METHODOLOGY_ID = "canonical-engine-score-gap-v1" as const;
+
+/**
+ * A score gap is a deterministic relationship between two canonical model
+ * outputs. It is deliberately not an observed provider measurement.
+ */
+export type DerivedDivergenceMetric = {
+  value: number;
+  evidenceClass: "DERIVED";
+  methodologyId: typeof DERIVED_DIVERGENCE_METRIC_METHODOLOGY_ID;
+  inputs: { engineIds: [string, string]; values: [number, number] };
+};
+
+/**
+ * Derives a finite absolute canonical-score gap only when both state-bound
+ * engine readings are finite. Callers must retain this provenance; a gap is
+ * not converted into an observed provider value.
+ */
+export function deriveDivergenceMetric(
+  a: Pick<CrossEngineObservation, "engineId" | "currentState">,
+  b: Pick<CrossEngineObservation, "engineId" | "currentState">,
+): DerivedDivergenceMetric | null {
+  const aValue = a.currentState.value;
+  const bValue = b.currentState.value;
+  if (typeof aValue !== "number" || typeof bValue !== "number" || !Number.isFinite(aValue) || !Number.isFinite(bValue)) return null;
+  return {
+    value: Math.abs(aValue - bValue),
+    evidenceClass: "DERIVED",
+    methodologyId: DERIVED_DIVERGENCE_METRIC_METHODOLOGY_ID,
+    inputs: { engineIds: [a.engineId, b.engineId], values: [aValue, bValue] },
+  };
+}
+
 function observations(state: PublicCanonicalIntelligenceState, packet: EvidencePacket): CrossEngineObservation[] {
   return state.engines.map(engine => {
     const status = availability(engine.qualityStatus, engine.freshnessStatus, engine.value);
@@ -131,20 +164,32 @@ export function buildCrossEngineSynthesis(state: PublicCanonicalIntelligenceStat
     }));
   const divergences: CrossEngineDivergence[] = relationships
     .filter(item => item.relationshipType === "ENGINE_DIRECTION_DIVERGENCE")
-    .map(item => ({
-      divergenceId: stableId([state.stateId, item.relationshipId, "divergence"]),
-      participatingEngines: item.participatingEngines,
-      direction: "DIVERGENT",
-      firstObservedAt: item.firstObservedAt,
-      latestObservedAt: item.latestObservedAt,
-      magnitude: null,
-      persistence: item.persistence,
-      acceleration: null,
-      supportingClaimIds: item.evidenceClaimIds,
-      evidenceIndependence: item.independence,
-      dataQuality: item.dataQuality,
-      limitations: item.limitations,
-    }));
+    .map(item => {
+      const [firstEngineId, secondEngineId] = item.participatingEngines;
+      const first = engineObservations.find(observation => observation.engineId === firstEngineId);
+      const second = engineObservations.find(observation => observation.engineId === secondEngineId);
+      const metric = first && second ? deriveDivergenceMetric(first, second) : null;
+      return {
+        divergenceId: stableId([state.stateId, item.relationshipId, "divergence"]),
+        participatingEngines: item.participatingEngines,
+        direction: "DIVERGENT",
+        firstObservedAt: item.firstObservedAt,
+        latestObservedAt: item.latestObservedAt,
+        magnitude: metric?.value ?? null,
+        magnitudeEvidence: metric,
+        persistence: item.persistence,
+        acceleration: null,
+        supportingClaimIds: item.evidenceClaimIds,
+        evidenceIndependence: item.independence,
+        dataQuality: item.dataQuality,
+        limitations: [
+          ...item.limitations,
+          ...(metric
+            ? [`Divergence gap ${metric.value} is DERIVED by ${metric.methodologyId} from finite canonical engine scores; it is not an observed provider measurement.`]
+            : ["Divergence gap is unavailable because one or both canonical engine scores are not finite; no value is imputed."]),
+        ],
+      };
+    });
   const available = engineObservations.filter(item => item.availability === "AVAILABLE");
   const deteriorating = engineObservations.filter(item => item.direction === "DETERIORATING").map(item => item.engineId);
   const improving = engineObservations.filter(item => item.direction === "IMPROVING").map(item => item.engineId);
@@ -234,7 +279,11 @@ export async function getAuthoritativeCrossEngineSynthesis(): Promise<CrossEngin
   const state = await getAuthoritativeCanonicalIntelligenceState();
   if (!state) return null;
   const publicState = toPublicCanonicalIntelligenceState(state);
-  return buildCrossEngineSynthesis(publicState, buildCanonicalEvidencePacket(publicState));
+  const latest = await getLatestCrossEngineSynthesis();
+  // A same-state read is not a prior observation. Only a persisted, different
+  // canonical state may establish cross-state persistence.
+  const previous = latest?.originatingStateId === publicState.stateId ? null : latest;
+  return buildCrossEngineSynthesis(publicState, buildCanonicalEvidencePacket(publicState), previous);
 }
 
 export async function getLatestCrossEngineSynthesis(): Promise<CrossEngineSynthesis | null> {

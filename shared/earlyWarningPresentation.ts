@@ -98,7 +98,7 @@ export interface GovernedEvaluationUnavailablePresentation {
   presentationId: string;
   stateId: string | null;
   synthesisId: string | null;
-  reason: "CANONICAL_STATE_UNAVAILABLE" | "SYNTHESIS_UNAVAILABLE" | "SYNTHESIS_STATE_MISMATCH" | "GOVERNED_LEDGER_UNAVAILABLE";
+  reason: "CANONICAL_STATE_UNAVAILABLE" | "SYNTHESIS_UNAVAILABLE" | "SYNTHESIS_STATE_MISMATCH" | "GOVERNED_LEDGER_UNAVAILABLE" | "GOVERNANCE_CONFIGURATION_BLOCKED";
   message: "FAULTLINE could not complete the governed Early Warning evaluation for the current market state.";
   limitations: ["No conclusion about the absence of a warning, market safety, bullishness, or downside risk is authorized."];
   freshness: "UNAVAILABLE";

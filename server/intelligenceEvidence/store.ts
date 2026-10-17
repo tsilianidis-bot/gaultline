@@ -1,4 +1,5 @@
-import { desc, like } from "drizzle-orm";
+import { createHash } from "node:crypto";
+import { and, desc, like, notLike } from "drizzle-orm";
 import { marketMemory } from "../../drizzle/schema";
 import { INTELLIGENCE_EVIDENCE_METHOD_VERSION, type IntelligenceEvidenceSnapshot } from "../../shared/intelligenceEvidence";
 import { getDb } from "../db";
@@ -13,8 +14,9 @@ type Db = NonNullable<Awaited<ReturnType<typeof getDb>>>;
 export type CollectionClaim = "CLAIMED" | "HELD" | "UNAVAILABLE";
 export type SnapshotWrite = "INSERTED" | "DUPLICATE" | "UNAVAILABLE";
 
-export const evidenceSnapshotKey = (capturedAtMs: number) => `${SNAPSHOT_PREFIX}${Math.floor(capturedAtMs / SNAPSHOT_INTERVAL_MS)}`;
-export const evidenceClaimKey = (capturedAtMs: number) => `${CLAIM_PREFIX}${Math.floor(capturedAtMs / CLAIM_INTERVAL_MS)}`;
+const stateSuffix = (stateId?: string | null) => stateId ? `:${createHash("sha256").update(stateId).digest("hex").slice(0, 16)}` : "";
+export const evidenceSnapshotKey = (capturedAtMs: number, stateId?: string | null, forwardRecording = false) => `${SNAPSHOT_PREFIX}${Math.floor(capturedAtMs / SNAPSHOT_INTERVAL_MS)}${stateSuffix(stateId)}${forwardRecording ? ":forward" : ""}`;
+export const evidenceClaimKey = (capturedAtMs: number, stateId?: string | null, forwardRecording = false) => `${CLAIM_PREFIX}${Math.floor(capturedAtMs / CLAIM_INTERVAL_MS)}${stateSuffix(stateId)}${forwardRecording ? ":forward" : ""}`;
 
 function duplicateKey(error: unknown) {
   const candidate = error as { code?: string; errno?: number; message?: string; cause?: { code?: string; errno?: number; message?: string } };
@@ -36,27 +38,29 @@ function decode(value: string): IntelligenceEvidenceSnapshot | null {
 export class IntelligenceEvidenceStore {
   constructor(private readonly dbProvider: () => Promise<Db | null> = getDb) {}
 
-  async loadLatest(): Promise<IntelligenceEvidenceSnapshot | null> {
+  async loadLatest(canonicalStateId?: string, forwardRecording = false): Promise<IntelligenceEvidenceSnapshot | null> {
     const db = await this.dbProvider();
     if (!db) return null;
     const rows = await db.select({ memoryKey: marketMemory.memoryKey, memoryValue: marketMemory.memoryValue })
       .from(marketMemory)
-      .where(like(marketMemory.memoryKey, `${SNAPSHOT_PREFIX}%`))
-      .orderBy(desc(marketMemory.memoryKey))
+      .where(forwardRecording
+        ? like(marketMemory.memoryKey, `${SNAPSHOT_PREFIX}%${stateSuffix(canonicalStateId)}:forward`)
+        : and(like(marketMemory.memoryKey, `${SNAPSHOT_PREFIX}%${stateSuffix(canonicalStateId)}`), notLike(marketMemory.memoryKey, "%:forward")))
+      .orderBy(desc(marketMemory.updatedAt), desc(marketMemory.id))
       .limit(5);
     for (const row of rows) {
       const snapshot = decode(row.memoryValue);
-      if (snapshot) return snapshot;
+      if (snapshot && (snapshot.purpose === "forward_recording") === forwardRecording) return snapshot;
     }
     return null;
   }
 
-  async tryClaim(nowMs: number): Promise<CollectionClaim> {
+  async tryClaim(nowMs: number, canonicalStateId?: string | null, forwardRecording = false): Promise<CollectionClaim> {
     const db = await this.dbProvider();
     if (!db) return "UNAVAILABLE";
     try {
       await db.insert(marketMemory).values({
-        memoryKey: evidenceClaimKey(nowMs),
+        memoryKey: evidenceClaimKey(nowMs, canonicalStateId, forwardRecording),
         memoryValue: JSON.stringify({ kind: "intelligence-evidence-claim", methodVersion: INTELLIGENCE_EVIDENCE_METHOD_VERSION, claimedAt: new Date(nowMs).toISOString() }),
         description: "Phase 1 verified-evidence collection claim (append-only five-minute lease)",
         writtenBy: WRITER,
@@ -72,9 +76,10 @@ export class IntelligenceEvidenceStore {
     const db = await this.dbProvider();
     if (!db) return "UNAVAILABLE";
     const capturedAt = Date.parse(snapshot.capturedAt);
+    if (!Number.isFinite(capturedAt)) return "UNAVAILABLE";
     try {
       await db.insert(marketMemory).values({
-        memoryKey: evidenceSnapshotKey(Number.isFinite(capturedAt) ? capturedAt : Date.now()),
+        memoryKey: evidenceSnapshotKey(capturedAt, snapshot.canonicalStateId, snapshot.purpose === "forward_recording"),
         memoryValue: JSON.stringify(snapshot),
         description: `Phase 1 validated evidence snapshot (${INTELLIGENCE_EVIDENCE_METHOD_VERSION}, append-only)`,
         writtenBy: WRITER,

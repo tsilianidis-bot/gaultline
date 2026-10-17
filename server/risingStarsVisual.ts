@@ -1,6 +1,7 @@
 import { getDailyBars, type YahooDailyBar } from "./yahooProxy";
 import { getOpportunityDiscovery, type RisingStarItem } from "./signalOutlook";
 import { getVerifiedRisingStarHistory } from "./risingStarsHistory";
+import { completedSessionBars } from "./algorithmProvenance";
 
 export type RisingStarChartRange = "1W" | "1M" | "3M" | "6M";
 
@@ -15,6 +16,16 @@ const RANGE_DAYS: Record<RisingStarChartRange, number> = {
 export function chartBarsForRange(bars: YahooDailyBar[], range: RisingStarChartRange) {
   const cutoff = Date.now() - RANGE_DAYS[range] * 24 * 60 * 60 * 1000;
   return bars.filter(bar => bar.timestamp >= cutoff);
+}
+
+/** Yahoo chart bars are usable only after the regular session close + platform buffer. */
+export function completedRisingStarVisualBars(bars: YahooDailyBar[], collectedAt = new Date()): YahooDailyBar[] {
+  const completed = completedSessionBars(bars, collectedAt);
+  const completeTimestamps = new Set(completed.map(bar => bar.timestamp));
+  return bars
+    .filter(bar => completeTimestamps.has(bar.timestamp))
+    .filter(bar => [bar.open, bar.high, bar.low, bar.close, bar.volume, bar.timestamp].every(Number.isFinite))
+    .sort((a, b) => a.timestamp - b.timestamp);
 }
 
 export function deriveDefensibleTechnicalLevels(bars: YahooDailyBar[]) {
@@ -90,7 +101,8 @@ export async function getRisingStarVisualDetail(ticker: string, range: RisingSta
     getDailyBars(symbol, RANGE_TO_YAHOO[range]),
     getVerifiedRisingStarHistory(symbol),
   ]);
-  const chartBars = chartBarsForRange(bars, range);
+  const completedBars = completedRisingStarVisualBars(bars);
+  const chartBars = chartBarsForRange(completedBars, range);
   const snapshots = verifiedHistory.snapshots.map(normalizeSnapshot).sort((a, b) => a.observedAt - b.observedAt);
   const events = verifiedHistory.events.map(event => ({
     id: event.id,
@@ -105,7 +117,7 @@ export async function getRisingStarVisualDetail(ticker: string, range: RisingSta
     : null;
   const detectionAt = firstQualification?.eventAt ?? null;
   const detectionPrice = detectionSnapshot?.price ?? null;
-  const levels = deriveDefensibleTechnicalLevels(bars);
+  const levels = deriveDefensibleTechnicalLevels(completedBars);
 
   return {
     item: toVisualItem(item),
@@ -121,7 +133,7 @@ export async function getRisingStarVisualDetail(ticker: string, range: RisingSta
         ? "LIVE VERIFIED HISTORY begins at the first stored FAULTLINE observation. Earlier chart data is market history only and carries no implied FAULTLINE detection."
         : "No live verified Rising Stars observations have been stored for this asset yet. Historical chart data is market history only, not a reconstructed FAULTLINE signal.",
     },
-    signalWindow: computeRecordedSignalWindow(detectionPrice, detectionAt, bars, item.latestPrice),
+    signalWindow: computeRecordedSignalWindow(detectionPrice, detectionAt, completedBars, item.latestPrice),
     currentContext: {
       pressureIndex: discovery.pressureIndex,
       regime: discovery.regime,

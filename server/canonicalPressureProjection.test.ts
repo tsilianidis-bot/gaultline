@@ -1,5 +1,6 @@
+import { beforeEach, afterEach, vi } from "vitest";
 import { describe, expect, it } from "vitest";
-import { buildCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import { buildCanonicalIntelligenceState, isAuthorizedScheduledManifest } from "./canonicalIntelligenceState";
 import {
   hasRequiredCryptoVectors,
   isCanonicalCurrentUsable,
@@ -84,4 +85,19 @@ describe("canonical pressure projection", () => {
     const state = buildCanonicalIntelligenceState(manifest({ scenarioOutputs: {} }));
     expect(selectScenarioProbabilities(state)).toEqual({ bull: null, crash: null, neutral: null });
   });
+});
+
+
+beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-09-12T18:00:00.000Z")); });
+afterEach(() => vi.useRealTimers());
+
+it("accepts only actual scheduled run provenance, not same-date manual/ad-hoc or legacy rows", () => {
+  const run = { trigger: "SCHEDULED_CRON", triggerSource: "cron-endpoint", scheduledWindow: true, runStartedAt: "2026-10-16T20:30:00Z" };
+  expect(isAuthorizedScheduledManifest({runProvenance: run})).toBe(true);
+  for (const trigger of ["MANUAL", "AD_HOC", "CRON_DEPLOY", "BACKFILL_RECOVERY"]) expect(isAuthorizedScheduledManifest({runProvenance: {...run, trigger}})).toBe(false);
+  expect(isAuthorizedScheduledManifest({})).toBe(false);
+  expect(isAuthorizedScheduledManifest({runProvenance: {...run, runStartedAt: "2026-10-17T20:30:00Z"}})).toBe(false);
+  expect(isAuthorizedScheduledManifest({runProvenance: {...run, triggerSource: "admin-seedNow"}})).toBe(false);
+  const manual = buildCanonicalIntelligenceState(manifest({runProvenance: {...run, trigger: "MANUAL"}}));
+  expect(isCanonicalCurrentUsable(manual)).toBe(false);
 });

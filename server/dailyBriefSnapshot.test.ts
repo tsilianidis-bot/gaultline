@@ -3,21 +3,25 @@ import { buildDailyBriefPromptContext, buildDailyBriefSnapshot, validateDailyBri
 
 const pressure = { overallPressure: 29, regime: "MODERATE RISK", level: "Elevated" } as any;
 const seismograph = {
+  canonicalStateId: "state:mock-brief-1", stateHash: "a".repeat(64), inputSnapshotId: "input:mock-brief-1",
   computedAt: Date.UTC(2026, 7, 13, 18, 0, 0), pressureScore: 19.8, regime: "LOW PRESSURE", stressLevel: "Low", direction: "Improving",
   probabilities: { bull: 45, neutral: 35, bear: 20, confidence: 80 }, marketMemory: { streakDays: 3, streakDirection: "improving" }, evidenceConsensus: "moderate",
   transitionProbabilities: { remainInRegime: 70, transitionToCrisis: 5 }, topAnalog: { label: "Fed Pivot Rally", similarity: 91 }, providerProvenance: {},
 } as any;
 
+const canonicalState = { stateId: seismograph.canonicalStateId, stateHash: seismograph.stateHash, inputSnapshotId: seismograph.inputSnapshotId,
+  pressureIndex: seismograph.pressureScore, regime: seismograph.regime, generatedAt: new Date(seismograph.computedAt).toISOString(), effectiveAt: new Date(seismograph.computedAt).toISOString() } as never;
+
 describe("Daily Brief snapshot contract", () => {
   it("uses one canonical source rather than mixing a later pressure-engine value into the brief", () => {
-    const snapshot = buildDailyBriefSnapshot({ pressure, seismograph, now: Date.UTC(2026, 7, 13, 19, 0, 0) });
+    const snapshot = buildDailyBriefSnapshot({ pressure, seismograph, canonicalState, now: Date.UTC(2026, 7, 13, 19, 0, 0) });
     expect(snapshot.canonicalSource).toBe("seismograph");
     expect(snapshot.pressureIndex).toBe(19.8);
     expect(snapshot.proprietaryOutputs.join(" ")).not.toContain("29/100");
   });
 
   it("withholds scenario and transition percentages from the brief prompt (probability contract)", () => {
-    const snapshot = buildDailyBriefSnapshot({ pressure, seismograph, now: Date.UTC(2026, 7, 13, 19, 0, 0) });
+    const snapshot = buildDailyBriefSnapshot({ pressure, seismograph, canonicalState, now: Date.UTC(2026, 7, 13, 19, 0, 0) });
     const ctx = buildDailyBriefPromptContext(snapshot);
     expect(ctx).toContain("Scenario Readings: Uncalibrated");
     expect(ctx).toContain("Transition Confidence: Uncalibrated");
@@ -26,7 +30,7 @@ describe("Daily Brief snapshot contract", () => {
 
   it("blocks a publication when mutually exclusive regime probabilities do not total 100", () => {
     const broken = { ...seismograph, probabilities: { bull: 70, neutral: 0, bear: 5, confidence: 80 } };
-    const snapshot = buildDailyBriefSnapshot({ pressure, seismograph: broken, now: Date.UTC(2026, 7, 13, 19, 0, 0) });
+    const snapshot = buildDailyBriefSnapshot({ pressure, seismograph: broken, canonicalState, now: Date.UTC(2026, 7, 13, 19, 0, 0) });
     expect(snapshot.validation.passed).toBe(false);
     expect(snapshot.validation.errors).toContain("probability-distribution-does-not-total-100");
   });

@@ -53,6 +53,8 @@ export function assessmentToResearchRecord(assessment: StoredAssessment) {
     assessedAt: assessment.assessedAt,
     summary: assessment.summary,
     canonicalStateId: assessment.canonicalStateId,
+    ...(assessment.canonicalStateHash ? { canonicalStateHash: assessment.canonicalStateHash } : {}),
+    ...(assessment.inputSnapshotId ? { inputSnapshotId: assessment.inputSnapshotId } : {}),
     pressureIndex: assessment.pressureIndex,
     regime: assessment.regime,
     scenarios: assessment.scenarios,
@@ -71,14 +73,14 @@ export function assessmentToResearchRecord(assessment: StoredAssessment) {
     historyClass: historyClassForProvenance(assessment.provenance),
     observationDate: assessment.assessedAt,
     informationCutoff: assessment.assessedAt,
-    inputSnapshotId: assessment.canonicalStateId,
+    inputSnapshotId: assessment.inputSnapshotId ?? null,
     sourceModel: ACCOUNTABILITY_SOURCE_MODEL,
     modelVersion: ACCOUNTABILITY_SCHEMA,
     originalState: body,
     originalInterpretation: assessment.summary,
     outcomeDefinition: "Append-only later observation. Status is classified by invalidation-match-v1 and is not chosen.",
     outcomeWindow: "appended_when_observed",
-    sourceDataVersions: { schema: ACCOUNTABILITY_SCHEMA, provenance: assessment.provenance },
+    sourceDataVersions: { schema: ACCOUNTABILITY_SCHEMA, provenance: assessment.provenance, canonicalStateId: assessment.canonicalStateId, canonicalStateHash: assessment.canonicalStateHash ?? null, inputSnapshotId: assessment.inputSnapshotId ?? null },
   });
 }
 
@@ -118,6 +120,8 @@ interface StoredBody {
   assessedAt?: string;
   summary?: string;
   canonicalStateId?: string | null;
+  canonicalStateHash?: string | null;
+  inputSnapshotId?: string | null;
   pressureIndex?: number | null;
   regime?: string | null;
   scenarios?: StoredAssessment["scenarios"];
@@ -144,6 +148,8 @@ function asAssessment(historyClass: string, raw: unknown, developments: StoredDe
     assessedAt: body.assessedAt,
     summary: body.summary,
     canonicalStateId: body.canonicalStateId ?? null,
+    ...(body.canonicalStateHash ? { canonicalStateHash: body.canonicalStateHash } : {}),
+    ...(body.inputSnapshotId ? { inputSnapshotId: body.inputSnapshotId } : {}),
     pressureIndex: body.pressureIndex ?? null,
     regime: body.regime ?? null,
     scenarios: body.scenarios ?? [],

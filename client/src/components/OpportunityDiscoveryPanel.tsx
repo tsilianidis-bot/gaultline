@@ -126,8 +126,8 @@ interface DiscoveryItem {
   ticker: string;
   name: string;
   opportunityScore: number;
-  expectedTimeHorizon: string;
-  catalyst: string;
+  expectedTimeHorizon: string | null;
+  catalyst: string | null;
   riskLevel: string;
   assetType: string;
   direction: string;
@@ -137,12 +137,12 @@ interface DiscoveryItem {
   bearCase?: string;
   invalidationLevel?: string;
   whyFaultlineLikesIt?: string;
-  institutionalConviction?: string;
+  institutionalConviction?: string | null;
   macroAlignment?: number;
-  riskRewardRatio?: string;
+  riskRewardRatio?: string | null;
   confidenceLevel?: number | null; // withheld by the server; never rendered
-  topCatalyst?: string;
-  actionBias?: string;
+  topCatalyst?: string | null;
+  actionBias?: string | null;
 }
 
 interface DiscoveryBucket {
@@ -253,7 +253,7 @@ function BucketCard({ bucket, onNavigate, onWatchlist }: { bucket: DiscoveryBuck
                     )}
                   </div>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.55)", marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {item.catalyst}
+                    {item.catalyst ?? "No verified catalyst supplied"}
                   </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px", flexShrink: 0 }}>

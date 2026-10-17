@@ -38,6 +38,7 @@ import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngi
 import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinOHLC, getCoinDetail } from "./coingeckoProxy";
 import { getQuotes, getTopStockPerformers, getTopStockLosers, getTopStockByVolume, getTopNear52WeekHigh, getTopNear52WeekLow, getMostVolatileStocks, getSmallCapRunners } from "./yahooProxy";
 import { getAsymmetricOpportunities } from "./asymmetricOpportunities";
+import { readOperationalPressure, toOperationalPressure, toSignalRegime, requireObservedCryptoGlobals, requireFiniteSignalPayload } from "./operationalSignalInputs";
 import {
   getSimAccounts, upsertSimAccount, getSimOpenPositions, insertSimPosition, updateSimPosition,
   insertSimTrade, getSimTrades, getSimJournalEntries, upsertSimJournalEntry,
@@ -65,7 +66,7 @@ import {
   calcGoalProgress, generateOwnerJournal, getOptimalAction, OBJECTIVE_TYPES,
   buildStockOpportunity, buildCryptoOpportunity,
 } from './ownerSimulation';
-import { getInsiderRadar, getInsiderCompany, getInsiderAlertsForTicker } from './insiderIntelligence';
+import { getInsiderRadar, getInsiderCompany, getInsiderAlertsForTicker, InsiderSourceUnavailableError } from './insiderIntelligence';
 import { dayTradeScanner, dayTradeSymbolSetup, getDayTradeFavorability, clearDayTradeCache } from './dayTradeEngine';
 import { fetchDailyBars } from './signalsProxy';
 import { saveDayTradeSnapshot, loadDayTradeSnapshot, getPipelineHealthLogs, getPipelineHealthSummary } from './db';
@@ -148,7 +149,7 @@ export const appRouter = router({
         ticker: z.string().min(1).max(10).trim().regex(/^[A-Za-z0-9.\-]+$/).transform(s => s.toUpperCase()),
         regime: z.object({
           label: z.string(),
-          score: z.number().min(0).max(10),
+          score: z.number().finite(),
           description: z.string().optional(),
         }),
         // Pass the ticker profile from the frontend (already fetched via /api/signals/ticker/:symbol)
@@ -246,14 +247,21 @@ export const appRouter = router({
         })).max(50),
         regime: z.object({
           label: z.string(),
-          score: z.number().min(0).max(10),
+          score: z.number().finite(),
         }),
       }))
-      .mutation(({ input }) => {
+      .mutation(async ({ input }) => {
         try {
-          // Launch fix-up: formula confidence is withheld at the response boundary.
-          return withholdSignalsConfidence(computeTradingSignals(input.tickers, input.regime));
+          const { getAuthoritativeCanonicalIntelligenceState } = await import("./canonicalIntelligenceState");
+          const canonical = await getAuthoritativeCanonicalIntelligenceState();
+          toOperationalPressure(canonical);
+          // The browser chooses symbols, never the financial inputs or market regime.
+          const details = await Promise.all(input.tickers.map(item => getSignalVisualDetailPayload(item.ticker, canonical)));
+          const signals = details.flatMap(detail => detail.signal ? [detail.signal] : []);
+          if (!signals.length) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Source-backed trading signal observations unavailable." });
+          return signals;
         } catch (err) {
+          if (err instanceof TRPCError) throw err;
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trading signal computation failed", cause: err });
         }
       }),
@@ -284,12 +292,13 @@ export const appRouter = router({
           score: z.number().min(0).max(10),
         }),
       }))
-      .mutation(({ input }) => {
+      .mutation(async ({ input }) => {
         try {
-          const { regime, ...tickerInput } = input;
-          // Launch fix-up: formula confidence is withheld at the response boundary.
-          return withholdSignalConfidence(computeTradingSignal(tickerInput, regime));
+          const detail = await getSignalVisualDetailPayload(input.ticker);
+          if (!detail.signal) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Source-backed ticker signal observations unavailable." });
+          return detail.signal;
         } catch (err) {
+          if (err instanceof TRPCError) throw err;
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trading signal computation failed", cause: err });
         }
       }),
@@ -861,25 +870,20 @@ export const appRouter = router({
             getCoinMarketData(input.idOrSymbol),
             getCoinOHLC(input.idOrSymbol, 30),
             getGlobalStats(),
-            calculateFaultlinePressure(),
+            readOperationalPressure(),
           ]);
           if (!market) throw new TRPCError({ code: "NOT_FOUND", message: `Asset not found: ${input.idOrSymbol}` });
+          const observedGlobals = requireObservedCryptoGlobals(globalStats);
           const result = computeCryptoSignal({
             market,
             ohlcBars: ohlcBars.length > 0 ? ohlcBars : undefined,
-            btcDominance: globalStats?.btcDominance ?? 55,
-            regime: { label: pressure.regime, score: pressure.overallPressure },
+            btcDominance: observedGlobals.btcDominance,
+            regime: toSignalRegime(pressure),
           });
-          const sanitizeNumbers = (v: unknown): unknown => {
-            if (typeof v === 'number') return (isFinite(v) && !isNaN(v)) ? v : 0;
-            if (v === null || v === undefined) return v;
-            if (Array.isArray(v)) return v.map(sanitizeNumbers);
-            if (typeof v === 'object') return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNumbers(val)]));
-            return v;
-          };
-          // Launch fix-up: formula confidence is withheld at the response boundary.
           const withheld = withholdSignalConfidence(result);
-          return sanitizeNumbers(withheld) as typeof withheld;
+          requireFiniteSignalPayload(withheld);
+          return { ...withheld, canonicalStateId: pressure.canonicalStateId, evidenceQuality: pressure.evidenceQuality,
+            globalsObservedAt: observedGlobals.observedAt, globalsFetchedAt: observedGlobals.fetchedAt };
         } catch (err) {
           if (err instanceof TRPCError) throw err;
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Crypto signal computation failed", cause: err });
@@ -895,32 +899,32 @@ export const appRouter = router({
           const [markets, globalStats, pressure] = await Promise.all([
             getTopMarkets(limit),
             getGlobalStats(),
-            calculateFaultlinePressure(),
+            readOperationalPressure(),
           ]);
-          const regime = { label: pressure.regime, score: pressure.overallPressure };
-          const btcDominance = globalStats?.btcDominance ?? 55;
+          const observedGlobals = requireObservedCryptoGlobals(globalStats);
+          const regime = toSignalRegime(pressure);
+          const btcDominance = observedGlobals.btcDominance;
           // Compute signals without OHLC for screener speed (sparkline fallback)
           const results = computeCryptoSignals(
             markets.map(m => ({ market: m, btcDominance, regime }))
           );
-          const sanitizeNums = (v: unknown): unknown => {
-            if (typeof v === 'number') return (isFinite(v) && !isNaN(v)) ? v : 0;
-            if (v === null || v === undefined) return v;
-            if (Array.isArray(v)) return v.map(sanitizeNums);
-            if (typeof v === 'object') return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNums(val)]));
-            return v;
-          };
           const screenerResult = {
             // Launch fix-up: formula confidence is withheld at the response boundary.
             signals: withholdScreenerConfidence(results),
             regime,
             btcDominance,
-            totalMarketCap: globalStats?.totalMarketCap ?? 0,
-            marketCapChange24h: globalStats?.marketCapChangePercent24h ?? 0,
+            totalMarketCap: observedGlobals.totalMarketCap,
+            marketCapChange24h: observedGlobals.marketCapChangePercent24h,
+            globalsObservedAt: observedGlobals.observedAt,
+            globalsFetchedAt: observedGlobals.fetchedAt,
+            canonicalStateId: pressure.canonicalStateId,
+            evidenceQuality: pressure.evidenceQuality,
             computedAt: Date.now(),
           };
-          return sanitizeNums(screenerResult) as typeof screenerResult;
+          requireFiniteSignalPayload(screenerResult);
+          return screenerResult;
         } catch (err) {
+          if (err instanceof TRPCError) throw err;
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Crypto screener failed", cause: err });
         }
       }),
@@ -1653,19 +1657,27 @@ export const appRouter = router({
 
   // ── Insider Intelligence — containment until SEC verification ──
   insider: router({
-    radar: protectedProcedure.query(() => {
-      throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Insider Intelligence unavailable: source verification required." });
+    radar: protectedProcedure.query(async () => {
+      try { return await getInsiderRadar(); }
+      catch (error) {
+        if (error instanceof InsiderSourceUnavailableError) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: error.message, cause: error });
+        throw error;
+      }
     }),
-    company: protectedProcedure
-      .input(z.object({ ticker: z.string().min(1).max(10) }))
-      .query(() => {
-        throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Insider Intelligence unavailable: source verification required." });
-      }),
-    tickerAlert: protectedProcedure
-      .input(z.object({ ticker: z.string().min(1).max(10) }))
-      .query(() => {
-        throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Insider Intelligence unavailable: source verification required." });
-      }),
+    company: protectedProcedure.input(z.object({ ticker: z.string().min(1).max(10) })).query(async ({ input }) => {
+      try { return await getInsiderCompany(input.ticker); }
+      catch (error) {
+        if (error instanceof InsiderSourceUnavailableError) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: error.message, cause: error });
+        throw error;
+      }
+    }),
+    tickerAlert: protectedProcedure.input(z.object({ ticker: z.string().min(1).max(10) })).query(async ({ input }) => {
+      try { return await getInsiderAlertsForTicker(input.ticker); }
+      catch (error) {
+        if (error instanceof InsiderSourceUnavailableError) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: error.message, cause: error });
+        throw error;
+      }
+    }),
   }),
 
   // ── Trade Preflight Simulator ───────────────────────────────
@@ -1720,7 +1732,7 @@ export const appRouter = router({
               exitType: input.exitType as ExitType | undefined,
               holdConcern: input.holdConcern as HoldConcern | undefined,
             },
-            undefined,
+            toOperationalPressure(canonical, true),
             publicCanonical
               ? {
                   stateId: publicCanonical.stateId,
@@ -1730,6 +1742,7 @@ export const appRouter = router({
               : null,
           );
         } catch (err) {
+          if (err instanceof TRPCError) throw err;
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trade Preflight simulation failed", cause: err });
         }
       }),

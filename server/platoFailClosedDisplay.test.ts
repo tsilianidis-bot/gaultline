@@ -16,6 +16,22 @@ import { selectBrowserMarketOutput } from "../client/src/lib/marketStateProjecti
 import { insufficientHorizonMetadata } from "../shared/forecastMetadata";
 import type { CanonicalMarketState } from "../shared/marketState";
 
+/**
+ * MOCK FIXTURE ONLY — this file makes no provider request. These are recorded,
+ * timestamped provider-observation identifiers so the display fixture cannot be
+ * mistaken for live market evidence.
+ */
+const MOCK_SOURCE_METADATA = Object.freeze({
+  sourceType: "MOCK" as const,
+  fixtureId: "plato-fail-closed-display-2026-10-02",
+  recordedAt: "2026-10-02T12:00:00.000Z",
+  providerObservations: [
+    { provider: "FRED", observationId: "BAMLH0A0HYM2", observedAt: "2026-10-02T11:55:00.000Z" },
+    { provider: "Yahoo Finance", observationId: "^VIX", observedAt: "2026-10-02T11:55:00.000Z" },
+    { provider: "CoinGecko", observationId: "bitcoin-usd", observedAt: "2026-10-02T11:55:00.000Z" },
+  ],
+});
+
 const state = vi.hoisted(() => ({
   engine: null as null | { output: unknown; isLoading: boolean; marketMode: string },
   intelligence: null as unknown,
@@ -74,31 +90,82 @@ function literalEscapesInJsxText(source: string): string[] {
   return hits;
 }
 
-function canonicalState(): CanonicalMarketState {
+type MockCanonicalMarketState = CanonicalMarketState & {
+  /** Test-only provenance, deliberately outside the production display contract. */
+  fixtureSource: typeof MOCK_SOURCE_METADATA;
+};
+
+function canonicalState(): MockCanonicalMarketState {
   return {
+    fixtureSource: MOCK_SOURCE_METADATA,
     version: "1.0",
+    canonicalStateId: "state:plato-display-fixture:2026-10-02T12:00:00.000Z",
+    stateHash: "hash:plato-display-fixture:9d1a04e6",
+    inputSnapshotId: "input:plato-display-fixture:2026-10-02T11:55:00.000Z",
     generatedAt: "2026-10-02T12:00:00.000Z",
     sourceUpdatedAt: "2026-10-02T11:55:00.000Z",
-    freshness: { status: "fresh", ageMs: 300_000, asOf: "2026-10-02T11:55:00.000Z" },
+    freshness: "live",
     cache: { status: "fresh-cache", ageMs: 300_000, staleReason: null },
-    sourceHealth: [],
+    sourceHealth: [
+      { id: "seismograph", label: "Canonical Seismograph", status: "healthy", required: true, asOf: "2026-10-02T11:55:00.000Z", detail: "MOCK fixture assembled from recorded provider observations." },
+      { id: "historical-memory", label: "Historical Market Memory", status: "healthy", required: true, asOf: "2026-10-02T11:55:00.000Z", detail: "MOCK fixture history; not a live provider claim." },
+      { id: "fred", label: "Macro and Credit Evidence", status: "healthy", required: true, asOf: "2026-10-02T11:55:00.000Z", detail: "MOCK fixture of recorded FRED observation BAMLH0A0HYM2." },
+      { id: "coingecko", label: "Crypto Market Overlay", status: "healthy", required: false, asOf: "2026-10-02T11:55:00.000Z", detail: "MOCK fixture of recorded CoinGecko observation bitcoin-usd." },
+    ],
     warnings: [],
-    now: { pressureScore: 33, regime: "Moderate Risk", stressLevel: "Moderate", direction: "Stable", historicalPercentile: 40, headline: "Pressure is contained.", topDrivers: ["Credit"] },
+    now: {
+      pressureScore: 33,
+      regime: "Moderate Risk",
+      stressLevel: "Moderate",
+      direction: "Stable",
+      historicalPercentile: 40,
+      headline: "Mocked canonical display fixture.",
+      topDrivers: ["Credit Markets", "Liquidity Conditions", "Volatility Regime"],
+      threats: ["Credit Markets"],
+      supports: ["Liquidity Conditions"],
+    },
     why: {
-      story: "Credit is calm.", whyThisScore: "Mixed.", whyThisRegime: "No family is stressed.", keyDevelopments: [],
-      narrative: { whatIsHappening: "Calm.", whyIsItHappening: "Liquidity.", whatHasChanged: "Little.", whatIsBuildingBeneathSurface: "Nothing." },
-      evidenceFamilies: [], evidenceConsensus: "mixed",
+      story: "Mocked display fixture only.",
+      whyThisScore: "Recorded mock vector values are displayed only in this isolated test.",
+      whyThisRegime: "The canonical fixture is bound to one immutable mock state identity.",
+      keyDevelopments: [],
+      narrative: {
+        whatIsHappening: "Mocked fixture.",
+        whyIsItHappening: "Recorded provider-observation metadata.",
+        whatHasChanged: "Not assessed by this display test.",
+        whatIsBuildingBeneathSurface: "Not assessed by this display test.",
+      },
+      evidenceFamilies: [
+        ["Liquidity Conditions", "recovering", 24, "improving", "MOCK FRED liquidity observation"],
+        ["Credit Markets", "neutral", 33, "stable", "MOCK FRED credit-spread observation"],
+        ["Yield Curve & Rates", "neutral", 38, "stable", "MOCK FRED rates observation"],
+        ["Macro Sensitivity", "neutral", 35, "stable", "MOCK FRED macro observation"],
+        ["Market Breadth", "neutral", 36, "stable", "MOCK Yahoo Finance breadth observation"],
+        ["AI Bubble Risk", "neutral", 32, "stable", "MOCK provider observation"],
+      ].map(([name, signal, strength, trend, currentValue]) => ({
+        name,
+        signal: signal as "bullish" | "bearish" | "neutral" | "stressed" | "recovering",
+        strength,
+        trend: trend as "improving" | "deteriorating" | "stable",
+        currentValue,
+        historicalContext: "Mocked fixture context only.",
+        whyItMatters: "Included to keep the fixture's canonical vector set complete.",
+      })),
+      evidenceConsensus: "moderate",
+      evidenceAsOfMonth: "2026-10",
     },
     outlook: {
-      probabilities: { bull: 53, neutral: 30, bear: 17, confidence: 0, primaryDriver: "Credit", evidenceBasis: "Spreads", historicalBasis: "Analogs" },
-      regimeProbabilities: { bull: 53, softLanding: 30, stagflation: 7, recession: 8, crash: 2 },
-      transitionProbabilities: { remainInRegime: 60, transitionToElevated: 20, transitionToLow: 15, transitionToCrisis: 5, confidence: 0, historicalBasis: "Analogs", currentEvidence: [] },
-      highestProbabilityPath: "Remain moderate", invalidationConditions: [], topAnalog: null,
+      // Unsupported forecasts remain withheld even in a fully identified mock state.
+      probabilities: { bull: Number.NaN, neutral: Number.NaN, bear: Number.NaN, confidence: Number.NaN, primaryDriver: "Not established", evidenceBasis: "Mocked fixture", historicalBasis: "Not established" },
+      regimeProbabilities: { bull: Number.NaN, softLanding: Number.NaN, stagflation: Number.NaN, recession: Number.NaN, crash: Number.NaN },
+      transitionProbabilities: { remainInRegime: Number.NaN, transitionToElevated: Number.NaN, transitionToLow: Number.NaN, transitionToCrisis: Number.NaN, confidence: Number.NaN, historicalBasis: "Not established", currentEvidence: [] },
+      probabilityContract: null,
+      highestProbabilityPath: "Not established", invalidationConditions: [], topAnalog: null,
     },
     watch: { developingConditions: [], activePatterns: [], whatChanged: [], whatToWatch: [], accelerating: false, buildingPressure: false },
-    act: { marketPosture: "neutral", decisionSummary: "Hold.", whatWouldInvalidate: "Credit widening.", riskControls: [] },
-    history: { observationCount: 100, datasetSpan: "2018-present", currentStreakDescription: "Two weeks", lastMajorShift: null, analogSummary: "Mid-cycle" },
-  } as CanonicalMarketState;
+    act: { marketPosture: "balanced", decisionSummary: "No operational guidance is asserted by this display fixture.", whatWouldInvalidate: "Not established", riskControls: [] },
+    history: { observationCount: 100, datasetSpan: "MOCK fixture history", currentStreakDescription: "Not established", lastMajorShift: null, analogSummary: "Not established" },
+  };
 }
 
 const MODES = {
@@ -178,12 +245,26 @@ function briefing(overrides: Partial<OracleBriefingData> = {}): OracleBriefingDa
 describe("2. PLATO briefing: no 50 default for pressure, bull or bear", () => {
   const panel = read("client/src/components/AshaPanel.tsx");
 
-  it("AshaPanel maps a missing pressure, bull and bear to null, never 50", () => {
-    expect(panel).toContain("pressureIndex: response.pressureIndex ?? fullPageContext.pressureScore ?? null,");
-    expect(panel).toContain("bullProbability: response.bullProbability ?? null,");
-    expect(panel).toContain("bearProbability: response.bearProbability ?? null,");
-    expect(panel).not.toMatch(/\?\?\s*50\b/);
-    expect(panel).not.toMatch(/(pressureIndex|pressureScore|bullProbability|bearProbability)[^\n;]*\|\|\s*\d/);
+  it("AshaPanel accepts only server-response facts and citations; missing fields stay withheld", () => {
+    // Isolate the object that crosses the panel-to-Oracle boundary instead of
+    // pinning a whole source line. This makes the test resistant to safe
+    // formatting/provenance edits while retaining the no-client-authority guard.
+    const match = /const data: OracleBriefingData = \{([\s\S]*?)\n\s*\};\n\s*setBriefingData\(data\)/.exec(panel);
+    expect(match, "Oracle briefing mapping must remain explicit").not.toBeNull();
+    const mapping = match?.[1] ?? "";
+
+    for (const field of ["pressureIndex", "bullProbability", "bearProbability"]) {
+      expect(mapping).toMatch(new RegExp(`\\b${field}:\\s*response\\.${field}\\s*\\?\\?\\s*null\\b`));
+    }
+    // The browser/page context is request context only — it cannot supplement
+    // an absent response fact or become an Oracle citation.
+    expect(mapping).not.toMatch(/fullPageContext\.|canonicalState\.|canonicalEngine\./);
+    expect(mapping).toMatch(/\bsourceCitations:\s*response\.sourceCitations\b/);
+    expect(mapping).toMatch(/\bsupportingEvidence:\s*response\.supportingEvidence\?\.length\s*\?\s*response\.supportingEvidence\s*:\s*response\.sources\b/);
+    // Response confidence and horizon are not manufactured from a numeric default.
+    expect(mapping).toMatch(/\bconfidence:\s*undefined\b/);
+    expect(mapping).toMatch(/\bforecastMetadata:\s*insufficientHorizonMetadata\(/);
+    expect(mapping).not.toMatch(/\?\?\s*50\b|\|\|\s*50\b/);
   });
 
   it("a null, undefined or NaN pressure renders PRESSURE INDEX NOT AVAILABLE, never 50/100", () => {
@@ -276,4 +357,3 @@ describe("3. /app/portfolio intelligence consumers render a null score as —", 
     for (const out of [html, commentary]) expect(out).not.toMatch(/undefined|null/);
   });
 });
-

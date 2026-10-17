@@ -15,7 +15,8 @@ import {
   type FullOutlookResult,
   type OutlookHistoryPoint,
 } from "../signalOutlook";
-import { calculateFaultlinePressure } from "../pressure/engine";
+import { toOperationalPressure, requireFiniteSignalPayload } from "../operationalSignalInputs";
+import { buildCanonicalEvidencePacket } from "../evidencePacket";
 import { runFMOSPipelineFast } from "../fmos/pipeline";
 import { invokeLLM } from "../_core/llm";
 import { getQuote } from "../yahooProxy";
@@ -28,21 +29,8 @@ import { getAuthoritativeCanonicalIntelligenceState, toClientCanonicalIntelligen
 const timeframeSchema = z.enum(["day", "short", "swing", "long"]).default("swing");
 const assetTypeSchema = z.enum(["stock", "crypto"]);
 
-/**
- * Recursively replace NaN and Infinity with 0 so SuperJSON never throws
- * "Unable to transform response from server" on the client.
- */
-function sanitizeNumbers(v: unknown): unknown {
-  if (typeof v === "number") return isFinite(v) && !isNaN(v) ? v : 0;
-  if (v === null || v === undefined) return v;
-  if (Array.isArray(v)) return v.map(sanitizeNumbers);
-  if (typeof v === "object") {
-    return Object.fromEntries(
-      Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNumbers(val)])
-    );
-  }
-  return v;
-}
+/** Invalid numeric claims are withheld as a failed payload, never rewritten as 0. */
+function sanitizeNumbers<T>(value: T): T { requireFiniteSignalPayload(value); return value; }
 
 /**
  * QA r13 B12: no outlook "confidence" leaves the server. Each one is a formula
@@ -108,12 +96,10 @@ export const outlookRouter = router({
     }))
     .query(async ({ input }) => {
       try {
-        const [result, canonicalState] = await Promise.all([
-          getFullOutlook(input.symbol, input.assetType, input.timeframe as OutlookTimeframe),
-          getAuthoritativeCanonicalIntelligenceState(),
-        ]);
+        const canonicalState = await getAuthoritativeCanonicalIntelligenceState();
+        const result = await getFullOutlook(input.symbol, input.assetType, input.timeframe as OutlookTimeframe, canonicalState);
+        if (!canonicalState || result.canonicalStateId !== canonicalState.stateId) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Outlook canonical state unavailable or mismatched." });
         const forecastMetadata = insufficientHorizonMetadata(`outlook:${input.symbol}`, new Date().toISOString());
-        recordHorizonObservation("outlook", `${input.symbol}:${input.assetType}:${input.timeframe}`, forecastMetadata);
         return {
           ...withoutFullOutlookConfidence(sanitizeNumbers(result) as typeof result),
           analysisTimeframe: input.timeframe,
@@ -142,12 +128,10 @@ export const outlookRouter = router({
     }))
     .query(async ({ input }) => {
       try {
-        const [result, canonicalState] = await Promise.all([
-          getQuickOutlook(input.symbol, input.assetType),
-          getAuthoritativeCanonicalIntelligenceState(),
-        ]);
+        const canonicalState = await getAuthoritativeCanonicalIntelligenceState();
+        const result = await getQuickOutlook(input.symbol, input.assetType, canonicalState);
+        if (!canonicalState || result.canonicalStateId !== canonicalState.stateId) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Quick Outlook canonical state unavailable or mismatched." });
         const forecastMetadata = insufficientHorizonMetadata(`quick-outlook:${input.symbol}`, new Date().toISOString());
-        recordHorizonObservation("quick_outlook", `${input.symbol}:${input.assetType}`, forecastMetadata);
         return {
           ...withoutOutlookConfidence(sanitizeNumbers(result) as typeof result),
           forecastMetadata,
@@ -171,8 +155,9 @@ export const outlookRouter = router({
   getTopOpportunities: publicProcedure
     .query(async () => {
       try {
-        const result = sanitizeNumbers(await getTopOpportunities()) as Awaited<ReturnType<typeof getTopOpportunities>>;
-        return { stocks: result.stocks.map(withoutOutlookConfidence), crypto: result.crypto.map(withoutOutlookConfidence) };
+        const canonicalState = await getAuthoritativeCanonicalIntelligenceState();
+        const result = sanitizeNumbers(await getTopOpportunities(canonicalState)) as Awaited<ReturnType<typeof getTopOpportunities>>;
+        return { ...result, stocks: result.stocks.map(withoutOutlookConfidence), crypto: result.crypto.map(withoutOutlookConfidence) };
       } catch (err) {
         console.error("[outlook.getTopOpportunities] Error:", err);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Top opportunities unavailable." });
@@ -192,9 +177,10 @@ export const outlookRouter = router({
       })).max(30),
     }))
     .query(async ({ input }) => {
+      const canonicalState = await getAuthoritativeCanonicalIntelligenceState();
       const results = await Promise.allSettled(
         input.items.map(item =>
-          getQuickOutlook(item.symbol.toUpperCase(), item.assetType)
+          getQuickOutlook(item.symbol.toUpperCase(), item.assetType, canonicalState)
         )
       );
       return results.map((r, i) => ({
@@ -213,7 +199,8 @@ export const outlookRouter = router({
   getOpportunityDiscovery: publicProcedure
     .query(async () => {
       try {
-        const result = await getOpportunityDiscovery();
+        const canonicalState = await getAuthoritativeCanonicalIntelligenceState();
+        const result = await getOpportunityDiscovery({ canonicalState, captureEngineEvents: false });
         return sanitizeNumbers(result) as typeof result;
       } catch (err) {
         console.error("[outlook.getOpportunityDiscovery] Error:", err);
@@ -255,9 +242,10 @@ export const outlookRouter = router({
     }))
     .query(async ({ input }) => {
       try {
+        const canonicalState = await getAuthoritativeCanonicalIntelligenceState();
         const [quote, quickOutlook] = await Promise.allSettled([
           getQuote(input.symbol),
-          getQuickOutlook(input.symbol, input.assetType),
+          getQuickOutlook(input.symbol, input.assetType, canonicalState),
         ]);
 
         const q = quote.status === "fulfilled" ? quote.value : null;
@@ -329,153 +317,57 @@ export const outlookRouter = router({
    * what matters next, and the invalidation thesis.
    * Cached for 15 minutes.
    */
-  getTodaysStory: publicProcedure
-    .query(async () => {
-      try {
-        const [fmosResult, topOpp] = await Promise.allSettled([
-          runFMOSPipelineFast(),
-          getTopOpportunities(),
-        ]);
-        const fmos = fmosResult.status === "fulfilled" ? fmosResult.value : null;
-        const pressure = fmos?.pressure ?? await calculateFaultlinePressure();
-        const topOppData = topOpp.status === "fulfilled" ? topOpp.value : { stocks: [], crypto: [] };
-
-        const topStocks = topOppData.stocks.slice(0, 3).map(s => `${s.symbol} (score: ${s.outlookScore}, ${s.direction})`).join(", ");
-        const topCrypto = topOppData.crypto.slice(0, 3).map(s => `${s.symbol} (score: ${s.outlookScore}, ${s.direction})`).join(", ");
-        const topVectors = pressure.vectors.slice(0, 5).map(v => `${v.label}: ${v.score}/100 (${v.driver})`).join("; ");
-
-        const topOpportunityTicker = topOppData.stocks[0]?.symbol || topOppData.crypto[0]?.symbol || "SPY";
-        const topOpportunityName = topOppData.stocks[0]?.name || topOppData.crypto[0]?.name || "S&P 500 ETF";
-        const topOpportunityScore = topOppData.stocks[0]?.outlookScore || topOppData.crypto[0]?.outlookScore || 50;
-        const topOpportunityDir = topOppData.stocks[0]?.direction || topOppData.crypto[0]?.direction || "WATCH";
-
-        const prompt = `You are FAULTLINE — an elite institutional market intelligence system operating as a Chief Investment Strategist.
-Write today's market story using the STORY INTELLIGENCE 2.0 format. Be specific, data-driven, and institutional in tone.
-
-========================
-LIVE FAULTLINE DATA
-========================
-- Overall Pressure Index: ${pressure.overallPressure}/100
-- Market Regime: ${fmos?.regime?.currentRegime ?? pressure.regime} (${pressure.level})
-- Top Risk Vectors: ${topVectors}
-- Top Stock Opportunities: ${topStocks || "None identified"}
-- Top Crypto Opportunities: ${topCrypto || "None identified"}
-- Historical Analog: ${fmos?.topAnalog?.label ?? pressure.topAnalog.label} (${fmos?.topAnalog?.similarity ?? pressure.topAnalog.similarity}% similarity)
-	- Scenario, crash, recession and regime-transition probabilities: not offered (FAULTLINE probability contract). Do not state or estimate any probability percentage.
-	- Top Opportunity: ${topOpportunityTicker} (${topOpportunityName}) — ${topOpportunityDir}, Score: ${topOpportunityScore}/100
-		- Data Source: ${pressure.dataSource}
-		- ${forecastHorizonPromptContract()}
-		- ${evidenceNarrativePromptContract()}
-
-========================
-STORY INTELLIGENCE 2.0 — ALL 14 SECTIONS REQUIRED
-========================
-
-Write exactly this JSON structure:
-{
-  "headline": "Concise institutional headline summarizing the regime (10-15 words). Examples: 'Moderate Risk Regime Persists Despite Improving Liquidity' or 'Risk-On Conditions Strengthen as Credit Markets Stabilize'.",
-  "executiveSummary": "2-4 sentences answering: What happened? Why does it matter? What should investors understand immediately? Read like the opening paragraph of an institutional macro report.",
-  "faultlineAction": "One of: 'Maintain existing exposure' / 'Accumulate selectively' / 'Favor quality growth' / 'Increase defensive allocation' / 'Reduce leverage' / 'Raise cash' / 'Wait for confirmation' / 'Rotate into defensive sectors'. Never leave users wondering what FAULTLINE would do.",
-  "topOpportunityTicker": "${topOpportunityTicker}",
-  "topOpportunityName": "${topOpportunityName}",
-  "topOpportunityRating": "${topOpportunityDir}",
-  "topOpportunityScore": ${topOpportunityScore},
-  "topOpportunityConfidence": number (0-100),
-  "topOpportunityTimeHorizon": "Not yet established — insufficient evidence for reliable estimate",
-  "topOpportunityExpectedRisk": "e.g. 'Medium' or 'Low'",
-  "topOpportunityExpectedReward": "Not established — no calibrated magnitude estimate",
-  "topOpportunityWhyFirst": "One sentence: why this asset ranked first.",
-  "topOpportunityBullDrivers": ["2-4 specific bull driver strings"],
-  "topOpportunityBearDrivers": ["2-3 specific bear driver strings"],
-  "topOpportunityCatalysts": ["2-3 near-term catalysts"],
-  "topOpportunityUpgradeTriggers": ["2-3 conditions that would upgrade the rating"],
-  "topOpportunityDowngradeTriggers": ["2-3 conditions that would downgrade the rating"],
-  "riskWarning": "One sentence identifying the single biggest macro threat and why it represents the primary downside risk.",
-  "whatHappened": "2-3 sentences on what happened in markets today/overnight. Explain what changed, why it matters, and how it affected the regime.",
-  "whatChanged": "List 4-6 specific variables that moved (e.g. Treasury yields, credit spreads, VIX, liquidity, dollar, oil). Show whether each improved, worsened, or remained stable. NEVER say 'nothing changed'.",
-  "whyFaultlineBelieves": "2-3 sentences on the evidence supporting today's conclusion (e.g. liquidity improving, credit stable, historical analog alignment). Then 1-2 sentences on the evidence arguing against it.",
-  "whatInstitutionsAreDoing": "2-3 sentences on institutional positioning signals suggested by the available evidence. Reference the top vectors and historical analog. Explain why.",
-  "whatMattersNext": "List the 3-5 most important upcoming catalysts ranked by expected market impact (e.g. CPI, FOMC, earnings, GDP, Treasury auction).",
-  "invalidationTriggers": ["3-5 specific conditions that would invalidate the current regime reading and force a reassessment. Each should explain how it would change FAULTLINE's outlook."],
-  "confidenceExplanation": "2-3 sentences explaining WHY the confidence level is what it is. Never just show a number. Example: 'Confidence is moderate because liquidity and credit conditions are supportive, while elevated inflation and concentrated market leadership reduce conviction.'",
-  "pressureIndexExplanation": "Explain why the Pressure Index is at ${pressure.overallPressure}/100. List the top 2-3 drivers that pushed it up or down. Every movement should be traceable to underlying evidence.",
-  "portfolioTakeaway": "One concise institutional recommendation ending the story. Examples: 'Remain selectively bullish. Favor high-quality companies. Maintain cash reserves for opportunities.' This is FAULTLINE's signature closing.",
-  "regimeSummary": "${pressure.regime} — Pressure ${pressure.overallPressure}/100",
-  "generatedAt": "${new Date().toISOString()}"
-}`;
-
-        const response = await invokeLLM({
-	          messages: [
-	            { role: "system", content: "You are FAULTLINE — an elite institutional market intelligence system operating as a Chief Investment Strategist. You synthesize current market evidence into clear analysis. Be direct, specific, and institutional. Derived scenario scores are not calibrated probabilities. Do not invent a price target, expected reward, timing, target date, probability, or historical success rate. Every statement must identify whether it is observed, derived, historical, interpreted, or forecast. Every thesis requires evidence and an invalidation condition. Respond only with valid JSON." },
-            { role: "user", content: prompt },
-          ],
-          response_format: { type: "json_object" } as any,
-        });
-
-        const rawContent = response.choices?.[0]?.message?.content;
-        let content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent ?? {});
-        // Strip markdown code fences if the LLM wrapped the JSON in ```json ... ```
-        content = content.trim();
-        if (content.startsWith("```")) {
-          content = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-        }
-        const story = JSON.parse(content);
-        const forecastMetadata = insufficientHorizonMetadata("daily-story-top-opportunity", new Date().toISOString());
-        recordHorizonObservation("daily_story", `daily-story:${new Date().toISOString().slice(0, 10)}`, forecastMetadata);
-        return sanitizeNumbers({
-          ...story,
-          pressureIndex: pressure.overallPressure,
-          regime: pressure.regime,
-          regimeLevel: pressure.level,
-          topAnalog: pressure.topAnalog,
-          dataSource: pressure.dataSource,
-          forecastMetadata,
-	          generatedAt: new Date().toISOString(),
-        }) as {
-          headline: string;
-          executiveSummary: string;
-          faultlineAction: string;
-          topOpportunityTicker: string;
-          topOpportunityName: string;
-          topOpportunityRating: string;
-          topOpportunityScore: number;
-          topOpportunityConfidence: number;
-          topOpportunityTimeHorizon: string;
-          topOpportunityExpectedRisk: string;
-          topOpportunityExpectedReward: string;
-          topOpportunityWhyFirst: string;
-          topOpportunityBullDrivers: string[];
-          topOpportunityBearDrivers: string[];
-          topOpportunityCatalysts: string[];
-          topOpportunityUpgradeTriggers: string[];
-          topOpportunityDowngradeTriggers: string[];
-          riskWarning: string;
-          whatHappened: string;
-          whatChanged: string;
-          whyFaultlineBelieves: string;
-          whatInstitutionsAreDoing: string;
-          whatMattersNext: string;
-          invalidationTriggers: string[];
-          confidenceExplanation: string;
-          pressureIndexExplanation: string;
-          portfolioTakeaway: string;
-          regimeSummary: string;
-          pressureIndex: number;
-          regime: string;
-          regimeLevel: string;
-          topAnalog: { label: string; similarity: number; description: string };
-          dataSource: string;
-          generatedAt: string;
-          // Legacy fields for backward compat
-          invalidationThesis?: string;
-          topOpportunity?: string;
-          topOpportunityReason?: string;
-        };
-      } catch (err) {
-        console.error("[outlook.getTodaysStory] Error:", err);
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Today's Story unavailable. Market data may be temporarily unavailable." });
-      }
-    }),
+  getTodaysStory: publicProcedure.query(async () => {
+    try {
+      const canonical = await getAuthoritativeCanonicalIntelligenceState();
+      const pressure = toOperationalPressure(canonical, true);
+      const packet = buildCanonicalEvidencePacket(toClientCanonicalIntelligenceState(canonical!));
+      const opportunityResult = await getTopOpportunities(canonical).catch(() => null);
+      const first = opportunityResult?.stocks[0] ?? opportunityResult?.crypto[0] ?? null;
+      const prompt = `${evidenceNarrativePromptContract()}
+Interpret only this canonical DERIVED evidence packet: ${JSON.stringify(packet)}.
+No prior comparable raw-source snapshot, market-event calendar, institutional positions/flows, or ticker news is supplied. Do not claim overnight changes, duration, historical outcomes, catalysts, institutional activity, future returns or calibrated confidence.
+Return JSON {"executiveSummary":string,"whyFaultlineBelieves":string,"pressureIndexExplanation":string,"claimIds":string[]}. Every claim ID must be from this packet. These three text fields are MODEL_INTERPRETATION, not new observed facts.`;
+      const response = await invokeLLM({ messages: [{ role: "system", content: "Explain supplied market evidence clearly. Do not create financial facts or sources." }, { role: "user", content: prompt }], response_format: { type: "json_object" } as any });
+      const raw = response.choices?.[0]?.message?.content;
+      if (typeof raw !== "string") throw new Error("Market story interpretation unavailable.");
+      const story = JSON.parse(raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, ""));
+      const allowedIds = new Set(packet.claims.map(claim => claim.claimId));
+      if (![story.executiveSummary, story.whyFaultlineBelieves, story.pressureIndexExplanation].every(value => typeof value === "string") ||
+        !Array.isArray(story.claimIds) || !story.claimIds.length || !story.claimIds.every((id: unknown) => typeof id === "string" && allowedIds.has(id))) throw new Error("Market story is not bound to supplied evidence claims.");
+      return sanitizeNumbers({
+        headline: `${canonical!.regime} — Pressure ${canonical!.pressureIndex}/100`,
+        executiveSummary: story.executiveSummary as string,
+        whyFaultlineBelieves: story.whyFaultlineBelieves as string,
+        pressureIndexExplanation: story.pressureIndexExplanation as string,
+        interpretationClass: "MODEL_INTERPRETATION" as const,
+        sourceClaimIds: story.claimIds as string[], evidencePacket: packet,
+        canonicalStateId: canonical!.stateId, inputSnapshotId: canonical!.inputSnapshotId,
+        dataAsOf: canonical!.effectiveAt, evidenceQuality: canonical!.confidenceOrEvidenceQuality,
+        faultlineAction: "Review the source-backed market regime; ticker-specific execution requires separate asset evidence.",
+        topOpportunityTicker: first?.symbol ?? "", topOpportunityName: first?.name ?? "",
+        topOpportunityRating: first?.direction ?? "UNAVAILABLE", topOpportunityScore: first?.outlookScore ?? null,
+        topOpportunityConfidence: null, topOpportunityTimeHorizon: "Not established", topOpportunityExpectedRisk: first?.riskLevel ?? "UNAVAILABLE",
+        topOpportunityExpectedReward: "Not established", topOpportunityWhyFirst: first ? "Highest available deterministic Outlook score in this canonical-bound candidate set; not a calibrated return forecast." : "No verified candidate is available.",
+        topOpportunityBullDrivers: [] as string[], topOpportunityBearDrivers: [] as string[], topOpportunityCatalysts: [] as string[],
+        topOpportunityUpgradeTriggers: [] as string[], topOpportunityDowngradeTriggers: [] as string[],
+        riskWarning: "Derived regime readings are not calibrated forecasts or ticker-specific execution advice.",
+        whatHappened: `Current canonical reading is effective ${canonical!.effectiveAt}. Prior comparable market observations are not supplied.`,
+        whatChanged: "Unavailable — no comparable prior raw-source snapshot was supplied; no overnight movement is asserted.",
+        whatInstitutionsAreDoing: "Unavailable — no verified institutional-position or flow source was supplied.",
+        whatMattersNext: "No verified event calendar was supplied; upcoming catalysts are not asserted.",
+        invalidationTriggers: [] as string[], confidenceExplanation: "Calibrated forecast confidence is not established; original evidence quality is shown.",
+        portfolioTakeaway: "Use the canonical market context alongside verified asset and portfolio observations.",
+        regimeSummary: `${canonical!.regime} — Pressure ${canonical!.pressureIndex}/100`,
+        pressureIndex: pressure.overallPressure, regime: pressure.regime, regimeLevel: pressure.level,
+        topAnalog: null, dataSource: "canonical-intelligence-state", forecastMetadata: insufficientHorizonMetadata("daily-story", canonical!.effectiveAt),
+        generatedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Today's Story unavailable: canonical evidence or bound interpretation is unavailable." });
+    }
+  }),
 
   /**
    * Admin: clear all outlook caches (forces fresh computation on next request).

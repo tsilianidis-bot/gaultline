@@ -1,3 +1,7 @@
+import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import type { CanonicalIntelligenceState } from "../shared/canonicalIntelligenceState";
+import { getIntelligenceEvidenceCollector } from "./intelligenceEvidence/collector";
+import { isIntelligenceEvidenceEnabled } from "./intelligenceEvidence/config";
 /**
  * Read-only bridge from a scheduled Seismograph run to the track record.
  *
@@ -25,6 +29,7 @@ import {
 } from "../shared/stressBenchmarkRegistry";
 import { isIntelligenceTrackRecordEnabled, persistAccountabilityAssessment } from "./intelligenceAccountability";
 import { IntelligenceEvidenceStore } from "./intelligenceEvidence/store";
+import { evaluateIntelligenceEvidence } from "../shared/intelligenceIntegrity";
 
 export const TRACK_RECORD_CRON_WRITES = "TRACK_RECORD_CRON_WRITES" as const;
 export const REQUIRED_VERIFIED_EVIDENCE_IDS = ["quote:SPY", "fred:DGS10", "fred:BAMLH0A0HYM2"] as const;
@@ -42,13 +47,15 @@ export type TrackRecordCaptureReason =
   | "evidence_failed"
   | "integrity_gate_failed"
   | "canonical_state_missing"
+  | "canonical_state_mismatch"
+  | "temporal_cutoff_failed"
   | "reconstructed_input"
   | "already_recorded"
   | "database_unavailable"
   | "appended";
 
 export function trackRecordCronWritesEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env[TRACK_RECORD_CRON_WRITES]?.trim().toLowerCase() === "true";
+  return env[TRACK_RECORD_CRON_WRITES] === "true";
 }
 
 export function evidenceReferenceHash(parts: {
@@ -57,6 +64,11 @@ export function evidenceReferenceHash(parts: {
   receivedAt: string | null;
   validationStatus: string;
   methodVersion: string;
+  value?: number | string | null;
+  provider?: string;
+  sourceIdentifier?: string;
+  origin?: string;
+  unit?: string | null;
 }): string {
   return createHash("sha256").update(JSON.stringify({
     id: parts.id,
@@ -64,6 +76,11 @@ export function evidenceReferenceHash(parts: {
     observedAt: parts.observedAt,
     receivedAt: parts.receivedAt,
     validationStatus: parts.validationStatus,
+    value: parts.value,
+    provider: parts.provider,
+    sourceIdentifier: parts.sourceIdentifier,
+    origin: parts.origin,
+    unit: parts.unit,
   })).digest("hex");
 }
 
@@ -107,18 +124,26 @@ export function selectVerifiedEvidenceReferences(
   const references: EvidenceReference[] = [];
   for (const id of REQUIRED_VERIFIED_EVIDENCE_IDS) {
     const observation = byId.get(id);
-    const gate = gateFailure(observation);
+    const gate = gateFailure(observation, nowMs);
     if (gate) return { ok: false, reason: gate };
     references.push(toReference(observation!, snapshot.methodVersion));
   }
   return { ok: true, canonicalStateId: snapshot.canonicalStateId, references };
 }
 
-function gateFailure(observation: ValidatedIntelligenceEvidence | undefined): TrackRecordCaptureReason | null {
+function gateFailure(observation: ValidatedIntelligenceEvidence | undefined, nowMs: number): TrackRecordCaptureReason | null {
   if (!observation) return "evidence_missing";
   if (observation.validationStatus === "stale") return "evidence_stale";
   if (observation.validationStatus === "unavailable" || observation.value === null) return "integrity_gate_failed";
   if (!observation.supportsCurrentClaim || observation.validationStatus !== "verified") return "integrity_gate_failed";
+  if (observation.origin !== "observed") return "reconstructed_input";
+  if (!observation.sourceIdentifier?.trim()) return "integrity_gate_failed";
+  const admission = evaluateIntelligenceEvidence({ id: observation.id, source: observation.provider,
+    origin: observation.origin, value: observation.value, observedAt: observation.observedAt,
+    receivedAt: observation.receivedAt, maxAgeMs: observation.maxAgeMs,
+    sourceHealthy: true, modelVersion: observation.modelVersion ?? undefined }, nowMs);
+  if (admission.status === "stale") return "evidence_stale";
+  if (admission.status !== "verified" || !admission.canSupportCurrentClaim) return "integrity_gate_failed";
   return null;
 }
 
@@ -135,15 +160,25 @@ function toReference(observation: ValidatedIntelligenceEvidence, methodVersion: 
       receivedAt,
       validationStatus: observation.validationStatus,
       methodVersion,
+      value: observation.value,
+      provider: observation.provider,
+      sourceIdentifier: observation.sourceIdentifier,
+      origin: observation.origin,
+      unit: observation.unit,
     }),
   };
 }
 
 export async function captureTrackRecordFromScheduledRun(args: {
+  expectedCanonicalStateId?: string;
+  expectedStateHash?: string;
+  expectedInputSnapshotId?: string;
+  loadCanonical?: () => Promise<CanonicalIntelligenceState | null>;
   run: { trigger?: string | null };
   pressureIndex: number | null;
   regime: string | null;
-  generatedAt: string;
+  /** Explicit cutoff only for already-collected inputs; scheduled caller omits it. */
+  generatedAt?: string;
   env?: NodeJS.ProcessEnv;
   flagEnabled?: boolean;
   nowMs?: number;
@@ -160,12 +195,47 @@ export async function captureTrackRecordFromScheduledRun(args: {
   if (!trackRecordCronWritesEnabled(args.env ?? process.env)) return { recorded: false, reason: "cron_writes_disabled" };
   const enabled = args.flagEnabled ?? await isIntelligenceTrackRecordEnabled();
   if (!enabled) return { recorded: false, reason: "flag_disabled" };
-  const snapshot = await (args.loadSnapshot ?? (() => new IntelligenceEvidenceStore().loadLatest()))();
+  const snapshot = await (args.loadSnapshot ?? (async () => {
+    if (args.expectedCanonicalStateId && isIntelligenceEvidenceEnabled())
+      await getIntelligenceEvidenceCollector().refreshForCanonicalRun(args.expectedCanonicalStateId);
+    return new IntelligenceEvidenceStore().loadLatest(args.expectedCanonicalStateId, true);
+  }))();
   const selected = selectVerifiedEvidenceReferences(snapshot, args.nowMs ?? Date.now());
   if (!selected.ok) {
     console.warn(`[TrackRecord] No forward assessment recorded: ${selected.reason}`);
     return { recorded: false, reason: selected.reason };
   }
+  if (!args.expectedCanonicalStateId?.trim() || !args.expectedStateHash?.trim() || !args.expectedInputSnapshotId?.trim())
+    return { recorded: false, reason: "canonical_state_missing" };
+  const canonical = await (args.loadCanonical ?? getAuthoritativeCanonicalIntelligenceState)();
+  if (!canonical) return { recorded: false, reason: "canonical_state_missing" };
+  if (selected.canonicalStateId !== args.expectedCanonicalStateId || canonical.stateId !== args.expectedCanonicalStateId ||
+      canonical.stateHash !== args.expectedStateHash || canonical.inputSnapshotId !== args.expectedInputSnapshotId ||
+      snapshot?.canonicalStateHash !== canonical.stateHash || snapshot.canonicalInputSnapshotId !== canonical.inputSnapshotId ||
+      snapshot.canonicalPressureIndex !== canonical.pressureIndex || snapshot.canonicalRegime !== canonical.regime ||
+      snapshot.canonicalCoherenceStatus !== "COHERENT" || canonical.provenance.coherenceStatus !== "COHERENT" ||
+      args.pressureIndex !== canonical.pressureIndex || args.regime !== canonical.regime)
+    return { recorded: false, reason: "canonical_state_mismatch" };
+  // Provider observations must be the same FRED reference values used by this
+  // immutable macro frame, not a later release silently carrying the old ID.
+  const verification = canonical.domains?.pressureVerification as { status?: string; inputs?: Array<{inputId: string; value: number | null; observationDate: string | null}> } | undefined;
+  if (verification?.status !== "verified" || !Array.isArray(verification.inputs)) return { recorded: false, reason: "integrity_gate_failed" };
+  for (const [evidenceId, inputId, scale] of [["fred:DGS10", "tsy10y", 1], ["fred:BAMLH0A0HYM2", "hySpread", 100]] as const) {
+    const observation = snapshot.observations.find(item => item.id === evidenceId);
+    const original = verification.inputs.find(item => item.inputId === inputId);
+    if (!observation || typeof observation.value !== "number" || !original || typeof original.value !== "number" ||
+        !Number.isFinite(original.value) || Math.abs(observation.value * scale - original.value) > 1e-8 ||
+        observation.observedAt?.slice(0, 10) !== original.observationDate)
+      return { recorded: false, reason: "canonical_state_mismatch" };
+  }
+  // Decide only after all required inputs have been admitted; never backdate to
+  // the run's start. Explicit supplied cutoffs remain fail-closed and testable.
+  const cutoffMs = args.generatedAt === undefined ? (args.nowMs ?? Date.now()) : Date.parse(args.generatedAt);
+  const admissionMs = args.nowMs ?? Date.now();
+  if (!Number.isFinite(cutoffMs) || cutoffMs > admissionMs + 60_000 || selected.references.some(reference =>
+      !reference.receivedAt || !Number.isFinite(Date.parse(reference.receivedAt)) || Date.parse(reference.receivedAt) > cutoffMs))
+    return { recorded: false, reason: "temporal_cutoff_failed" };
+  const assessedAt = new Date(cutoffMs).toISOString();
   const registry = args.registry ?? publishedRegistry();
   const contentHash = hashStressBenchmarkRegistry(registry);
   if (contentHash !== registry.contentHash) {
@@ -177,7 +247,9 @@ export async function captureTrackRecordFromScheduledRun(args: {
     const stored = ledger.recordAssessment(buildScheduledAssessment({
       run: args.run,
       stateId: selected.canonicalStateId,
-      generatedAt: args.generatedAt,
+      generatedAt: assessedAt,
+      canonicalStateHash: canonical.stateHash,
+      inputSnapshotId: canonical.inputSnapshotId,
       pressureIndex: args.pressureIndex,
       regime: args.regime,
       summary: "Scheduled assessment. Verified evidence references and the canonical state id were recorded. No later outcome is implied.",
@@ -202,4 +274,3 @@ export async function captureTrackRecordFromScheduledRun(args: {
     throw error;
   }
 }
-

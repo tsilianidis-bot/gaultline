@@ -516,7 +516,10 @@ Return exactly this format: ["question 1", "question 2", "question 3", "question
           .orderBy(desc(conversationMessages.timestamp))
           .limit(1);
 
-        const prompt = `You are PLATO, the continuously active intelligence layer of FAULTLINE. The user last spoke with you ${daysSince === 0 ? "earlier today" : `${daysSince} day${daysSince > 1 ? "s" : ""} ago`}. Write 2 sentences describing what has continued to develop since their last visit. ${whatChangedMarketStateClause(input.currentRegime, input.currentPressureScore)} Reference the topics they were discussing: ${topics}${symbols ? `. Symbols they were watching: ${symbols}` : ""}${lastUserMsg ? `. Their last question was: "${lastUserMsg.content.slice(0, 150)}"` : ""}. Start with "Since we last spoke..."`;
+        const { getAuthoritativeCanonicalIntelligenceState } = await import("../canonicalIntelligenceState");
+        const canonical = await getAuthoritativeCanonicalIntelligenceState();
+        if (!canonical || canonical.confidenceOrEvidenceQuality === "UNAVAILABLE" || canonical.pressureIndex === null) return { summary: null, unavailable: true };
+        const prompt = `You are PLATO, the continuously active intelligence layer of FAULTLINE. The user last spoke with you ${daysSince === 0 ? "earlier today" : `${daysSince} day${daysSince > 1 ? "s" : ""} ago`}. Write 2 sentences describing current context. Canonical state ${canonical.stateId}, effective ${canonical.effectiveAt}, evidence quality ${canonical.confidenceOrEvidenceQuality}. ${whatChangedMarketStateClause(canonical.regime, canonical.pressureIndex)} A prior comparable market snapshot is not supplied; do not claim measured market changes, duration, or new events. Conversation topics are user interests, not market evidence: ${topics}${symbols ? `. Requested symbols: ${symbols}` : ""}${lastUserMsg ? `. Their last question was: "${lastUserMsg.content.slice(0, 150)}"` : ""}. Start with "Since we last spoke..."`;
 
         const response = await invokeLLM({
           messages: [

@@ -284,7 +284,7 @@ export default function MarketIntelligence() {
                 {isLoading ? <div className="h-20 bg-white/5 rounded animate-pulse" /> : (
                   <div className="space-y-4">
                     <p className="text-sm text-white/80 leading-relaxed">{data?.forwardBias}</p>
-                    {stock && (
+                    {stock && stock.pressureScore !== null && (
                       <div className="space-y-2">
                         <div className="flex justify-between text-xs text-white/40">
                           <span>Pressure Index</span>

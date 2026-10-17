@@ -87,11 +87,14 @@ describe("critical public claim containment", () => {
     expect(marketContext).toContain("DERIVED SCENARIO");
   });
 
-  it("does not require the Daily Story model to invent a target horizon or reward", () => {
-    expect(outlookRouter).toContain("Not yet established — insufficient evidence for reliable estimate");
-    expect(outlookRouter).toContain("Not established — no calibrated magnitude estimate");
-    expect(outlookRouter).toContain("Do not invent a price target, expected reward, timing");
-    expect(outlookRouter).toContain("recordHorizonObservation");
+  it("binds Daily Story interpretations to server-issued claim IDs and withholds unsupported horizon or reward", () => {
+    expect(outlookRouter).toContain("No prior comparable raw-source snapshot, market-event calendar, institutional positions/flows, or ticker news is supplied.");
+    expect(outlookRouter).toContain("Do not claim overnight changes, duration, historical outcomes, catalysts, institutional activity, future returns or calibrated confidence.");
+    expect(outlookRouter).toContain("allowedIds.has(id)");
+    expect(outlookRouter).toContain("sourceClaimIds: story.claimIds as string[], evidencePacket: packet");
+    expect(outlookRouter).toContain('topOpportunityTimeHorizon: "Not established"');
+    expect(outlookRouter).toContain('topOpportunityExpectedReward: "Not established"');
+    expect(outlookRouter).toContain("forecastMetadata: insufficientHorizonMetadata");
   });
 
   it("does not imply that Crypto Hub has activated Early Warning Intelligence", () => {

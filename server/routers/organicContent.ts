@@ -316,6 +316,9 @@ export const organicContentRouter = router({
       ]),
     }))
     .mutation(async ({ input }) => {
+      if (input.contentType === "daily_market_brief") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Daily Brief publication requires the verified scheduled snapshot pipeline." });
+      }
       const result = await generateOrganicContent(input.contentType as ContentType);
       return result;
     }),

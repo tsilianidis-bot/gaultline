@@ -16,6 +16,9 @@ import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { dailyBriefSnapshots, userPreferences } from "../../drizzle/schema";
 import { invokeLLM } from "../_core/llm";
+import { getAuthoritativeCanonicalIntelligenceState } from "../canonicalIntelligenceState";
+import { toOperationalPressure } from "../operationalSignalInputs";
+import type { CanonicalIntelligenceState } from "../../shared/canonicalIntelligenceState";
 
 // ── Zod schemas ──────────────────────────────────────────────────────────────
 
@@ -49,7 +52,7 @@ export const OVERALL_CONFIDENCE_DISPLAY_TEXT = "Uncalibrated" as const;
  */
 export function computeOverallConfidence(engineSnapshot: {
   overallPressure: number;
-  breadth: number;
+  breadth: number | null;
   liquidity: number | null;
   bullProbability?: number | null;
 }): number | null {
@@ -57,6 +60,7 @@ export function computeOverallConfidence(engineSnapshot: {
   if (typeof bullProbability !== "number" || !Number.isFinite(bullProbability)) return null;
   // Fail closed: a missing liquidity reading is not replaced with a neutral value.
   if (typeof engineSnapshot.liquidity !== "number" || !Number.isFinite(engineSnapshot.liquidity)) return null;
+  if (typeof engineSnapshot.breadth !== "number" || !Number.isFinite(engineSnapshot.breadth)) return null;
   return Math.round(
     (100 - engineSnapshot.overallPressure) * 0.35 +
     engineSnapshot.breadth * 0.25 +
@@ -73,7 +77,7 @@ export const EngineSnapshotSchema = z.object({
   // defaults). Older stored snapshots may still carry numbers.
   liquidity:        z.number().nullable(),
   credit:           z.number().nullable(),
-  breadth:          z.number(),
+  breadth:          z.number().nullable(),
   aiConcentration:  z.number().nullable(),
   volatility:       z.number().nullable(),
   // Probability contract: the bull scenario is withheld unless AVAILABLE, so the
@@ -86,6 +90,19 @@ export const EngineSnapshotSchema = z.object({
 });
 
 type EngineSnapshot = z.infer<typeof EngineSnapshotSchema>;
+
+/** Server-derived brief input. Page snapshots are never financial authority. */
+export function canonicalBriefEngineSnapshot(state: CanonicalIntelligenceState | null): EngineSnapshot {
+  const pressure = toOperationalPressure(state);
+  const vector = (id: string) => pressure.vectors.find(candidate => candidate.id === id)?.score ?? null;
+  const liquidityStress = vector("liquidity-stress");
+  return { overallPressure: pressure.overallPressure, regime: pressure.regime,
+    liquidity: liquidityStress === null ? null : 100 - liquidityStress,
+    credit: vector("credit-contagion"), breadth: null,
+    aiConcentration: null, volatility: null, bullProbability: null, vix: null, dxy: null, treasury10y: null,
+    timestamp: Date.parse(state!.effectiveAt) };
+}
+
 
 // ── Opportunity card shape ────────────────────────────────────────────────────
 const OpportunityInputSchema = z.object({
@@ -125,8 +142,8 @@ function deriveInstitutionalBias(pressure: number, regime: string): string {
 }
 
 // ── Helper: derive market health label ───────────────────────────────────────
-function deriveMarketHealth(pressure: number, breadth: number, liquidity: number | null): string {
-  if (liquidity === null || !Number.isFinite(liquidity)) return "UNAVAILABLE";
+function deriveMarketHealth(pressure: number, breadth: number | null, liquidity: number | null): string {
+  if (breadth === null || !Number.isFinite(breadth) || liquidity === null || !Number.isFinite(liquidity)) return "UNAVAILABLE";
   const composite = (100 - pressure) * 0.4 + breadth * 0.3 + liquidity * 0.3;
   if (composite >= 75) return "HEALTHY";
   if (composite >= 55) return "MODERATE";
@@ -195,8 +212,8 @@ function computeChanges(
   }
 
   // Market breadth
-  const breadthDelta = current.breadth - previous.breadth;
-  if (Math.abs(breadthDelta) >= 5) {
+  const breadthDelta = knownDelta(current.breadth, previous.breadth);
+  if (breadthDelta !== null && Math.abs(breadthDelta) >= 5) {
     changes.push({
       label: `Market breadth ${breadthDelta > 0 ? "strengthened" : "weakened"}`,
       direction: breadthDelta > 0 ? "up" : "down",
@@ -318,6 +335,8 @@ export const dailyBriefRouter = router({
   recordVisit: protectedProcedure
     .input(z.object({ snapshot: EngineSnapshotSchema }))
     .mutation(async ({ ctx, input }) => {
+      const canonical = await getAuthoritativeCanonicalIntelligenceState();
+      const snapshot = canonicalBriefEngineSnapshot(canonical);
       const db = await getDb();
       if (!db) return { success: false };
 
@@ -325,7 +344,7 @@ export const dailyBriefRouter = router({
 
       const data = {
         lastVisitAt:       new Date(),
-        lastVisitSnapshot: JSON.stringify(input.snapshot),
+        lastVisitSnapshot: JSON.stringify({ ...snapshot, canonicalStateId: canonical!.stateId, inputSnapshotId: canonical!.inputSnapshotId }),
       };
 
       if (existing.length) {
@@ -353,7 +372,8 @@ export const dailyBriefRouter = router({
       }
 
       const previous = JSON.parse(rows[0].lastVisitSnapshot) as EngineSnapshot;
-      const changes = computeChanges(input.currentSnapshot, previous);
+      const currentSnapshot = canonicalBriefEngineSnapshot(await getAuthoritativeCanonicalIntelligenceState());
+      const changes = computeChanges(currentSnapshot, previous);
 
       return {
         changes,
@@ -366,7 +386,9 @@ export const dailyBriefRouter = router({
   generateBrief: protectedProcedure
     .input(BriefInputSchema)
     .mutation(async ({ ctx, input }) => {
-      const { engineSnapshot, investorType, riskProfile, interests, watchlistTickers, topOpportunities } = input;
+      const { investorType, riskProfile, interests, watchlistTickers } = input;
+      const canonical = await getAuthoritativeCanonicalIntelligenceState();
+      const engineSnapshot = canonicalBriefEngineSnapshot(canonical);
 
       const institutionalBias = deriveInstitutionalBias(engineSnapshot.overallPressure, engineSnapshot.regime);
       const marketHealth = deriveMarketHealth(engineSnapshot.overallPressure, engineSnapshot.breadth, engineSnapshot.liquidity);
@@ -375,7 +397,7 @@ export const dailyBriefRouter = router({
       // Build top risks from engine data
       const topRisks: string[] = [];
       if (known(engineSnapshot.credit) && engineSnapshot.credit > 60) topRisks.push("Credit market deterioration");
-      if (engineSnapshot.breadth < 40) topRisks.push("Weak market breadth — narrow participation");
+      if (known(engineSnapshot.breadth) && engineSnapshot.breadth < 40) topRisks.push("Weak market breadth — narrow participation");
       if (known(engineSnapshot.liquidity) && engineSnapshot.liquidity < 40) topRisks.push("Liquidity contraction");
       if (known(engineSnapshot.aiConcentration) && engineSnapshot.aiConcentration > 65) topRisks.push("Overextended AI sector concentration");
       if (known(engineSnapshot.volatility) && engineSnapshot.volatility > 60) topRisks.push("Elevated volatility regime");
@@ -404,7 +426,7 @@ Write exactly 3 sentences in measured language. Do not invent price action, mark
 - Institutional Bias: ${institutionalBias}
 - Liquidity: ${readingText(engineSnapshot.liquidity)}
 - Credit Stress: ${readingText(engineSnapshot.credit)}
-- Market Breadth: ${engineSnapshot.breadth}/100
+- Market Breadth: ${readingText(engineSnapshot.breadth)} (no market-participation adapter is supplied)
 - Scenario probabilities: not offered (FAULTLINE probability contract); do not state any bull, bear, crash or recession percentage
 - VIX: ${engineSnapshot.vix ?? "N/A"}
 - 10Y Treasury: ${engineSnapshot.treasury10y ?? "N/A"}%
@@ -418,7 +440,7 @@ Write the 3-sentence CIO institutional insight for today's brief.`,
         });
         institutionalInsight = (llmResp.choices?.[0]?.message?.content as string) ?? "";
       } catch {
-        institutionalInsight = `FAULTLINE currently identifies ${engineSnapshot.regime} conditions with a Pressure Index of ${engineSnapshot.overallPressure}. The model-derived institutional bias is ${institutionalBias}, based on the supplied breadth and liquidity inputs. Monitor subsequent confirmed data for changes in the current assessment.`;
+        institutionalInsight = `FAULTLINE currently identifies ${engineSnapshot.regime} conditions with a Pressure Index of ${engineSnapshot.overallPressure}. The model-derived institutional bias is ${institutionalBias}, based on canonical model inputs. Market breadth is unavailable; no participation claim is made. Monitor subsequent confirmed data for changes in the current assessment.`;
       }
 
       // A symbol-specific data packet is not supplied to this procedure, so do
@@ -445,7 +467,7 @@ Write the 3-sentence CIO institutional insight for today's brief.`,
           marketStatus:       engineSnapshot.overallPressure < 30 ? "RISK-ON" : engineSnapshot.overallPressure < 55 ? "NEUTRAL" : "RISK-OFF",
         },
         // Section 3: Top Opportunities
-        topOpportunities: (topOpportunities ?? []).slice(0, 5),
+        topOpportunities: [],
         // Section 4: Top Risks
         topRisks: topRisks.slice(0, 5),
         // Section 5: Watchlist Intelligence
@@ -459,10 +481,12 @@ Write the 3-sentence CIO institutional insight for today's brief.`,
         engineStatus: {
           fmosVersion:        "FMOS v3.0",
           engineHealth:       null,
-          dataFreshness:      "Source-specific freshness was not included in this procedure input.",
+          dataFreshness:      canonical!.confidenceOrEvidenceQuality,
+          canonicalStateId:   canonical!.stateId,
+          inputSnapshotId:    canonical!.inputSnapshotId,
           liveDataSources:    null,
           averageLatency:     null,
-          lastUpdated:        new Date().toISOString(),
+          lastUpdated:        canonical!.effectiveAt,
         },
         generatedAt: Date.now(),
       };

@@ -1,319 +1,249 @@
-/**
- * Aftershock Engine™ — Vitest test suite
- * Tests rupture detection, contagion graph, signal classification,
- * and the full engine pipeline.
- */
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-
-// ── Mock external dependencies ────────────────────────────────
-
-vi.mock("./coingeckoProxy", () => ({
-  getTopMarkets: vi.fn().mockResolvedValue([
-    {
-      id: "bitcoin", symbol: "BTC", name: "Bitcoin",
-      current_price: 65000, price_change_percentage_24h: -5.8,
-      price_change_percentage_7d_in_currency: -8.2,
-      market_cap: 1_280_000_000_000, total_volume: 42_000_000_000,
-      sparkline_in_7d: { price: [] },
-    },
-    {
-      id: "ethereum", symbol: "ETH", name: "Ethereum",
-      current_price: 3200, price_change_percentage_24h: -4.1,
-      price_change_percentage_7d_in_currency: -6.0,
-      market_cap: 385_000_000_000, total_volume: 18_000_000_000,
-      sparkline_in_7d: { price: [] },
-    },
-    {
-      id: "solana", symbol: "SOL", name: "Solana",
-      current_price: 145, price_change_percentage_24h: -7.2,
-      price_change_percentage_7d_in_currency: -12.0,
-      market_cap: 65_000_000_000, total_volume: 4_500_000_000,
-      sparkline_in_7d: { price: [] },
-    },
-  ]),
-  getGlobalStats: vi.fn().mockResolvedValue({
-    total_market_cap: { usd: 2_200_000_000_000 },
-    total_volume: { usd: 95_000_000_000 },
-    market_cap_percentage: { btc: 58.5 },
-    market_cap_change_percentage_24h_usd: -3.8,
-  }),
-}));
-
-vi.mock("./pressureEngine", () => ({
-  computePressureIndex: vi.fn().mockResolvedValue({
-    overallPressure: 72,
-    domains: {
-      treasuryDebt: { score: 68 },
-      creditStress: { score: 55 },
-      recession: { score: 45 },
-      aiBubble: { score: 80 },
-    },
-  }),
-}));
-
-vi.mock("./yahooProxy", () => ({
-  getQuotes: vi.fn().mockResolvedValue({
-    NVDA: { symbol: "NVDA", regularMarketPrice: 890, regularMarketChangePercent: 8.5, regularMarketVolume: 52_000_000, averageVolume: 35_000_000 },
-    AMD:  { symbol: "AMD",  regularMarketPrice: 175, regularMarketChangePercent: 3.2, regularMarketVolume: 28_000_000, averageVolume: 22_000_000 },
-    TSLA: { symbol: "TSLA", regularMarketPrice: 185, regularMarketChangePercent: -6.1, regularMarketVolume: 110_000_000, averageVolume: 75_000_000 },
-    SPY:  { symbol: "SPY",  regularMarketPrice: 510, regularMarketChangePercent: -1.2, regularMarketVolume: 80_000_000, averageVolume: 60_000_000 },
-    QQQ:  { symbol: "QQQ",  regularMarketPrice: 430, regularMarketChangePercent: -1.8, regularMarketVolume: 45_000_000, averageVolume: 35_000_000 },
-    TLT:  { symbol: "TLT",  regularMarketPrice: 92,  regularMarketChangePercent: -2.5, regularMarketVolume: 22_000_000, averageVolume: 15_000_000 },
-    GLD:  { symbol: "GLD",  regularMarketPrice: 215, regularMarketChangePercent: 1.8,  regularMarketVolume: 12_000_000, averageVolume: 9_000_000 },
-    COIN: { symbol: "COIN", regularMarketPrice: 195, regularMarketChangePercent: -9.2, regularMarketVolume: 18_000_000, averageVolume: 8_000_000 },
-    MSTR: { symbol: "MSTR", regularMarketPrice: 1450, regularMarketChangePercent: -11.5, regularMarketVolume: 5_000_000, averageVolume: 2_500_000 },
-  }),
-}));
-
-// ── Import after mocks ─────────────────────────────────────────
-
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { CanonicalIntelligenceState } from "../shared/canonicalIntelligenceState";
 import {
-  runAftershockEngine,
+  clearAftershockCache,
   getAssetContagionChain,
   getAllContagionAssets,
-  clearAftershockCache,
+  normalizeAftershockTicker,
+  runAftershockEngine,
+  toObservedAftershockQuote,
+  type AftershockMarketSnapshot,
+  type ObservedAftershockQuote,
 } from "./aftershockEngine";
+import type { YahooDailyBar } from "./yahooProxy";
 
-// ── Tests ──────────────────────────────────────────────────────
+const OBSERVED_AT = Date.parse("2026-09-18T21:00:00.000Z");
+const RECEIVED_AT = Date.parse("2026-09-18T21:05:00.000Z");
+const FIXTURE_NOW = Date.parse("2026-10-17T17:00:00.000Z");
 
-describe("Aftershock Engine™ — Core Pipeline", () => {
-  beforeEach(() => {
-    clearAftershockCache();
-    vi.clearAllMocks();
+/** Exact completed Yahoo daily-bar fixture: 20-bar mean volume = 109.5, latest volume = 219. */
+function bars(count = 21): YahooDailyBar[] {
+  return Array.from({ length: count }, (_, index) => ({
+    timestamp: Date.parse(`2026-08-${String(index + 1).padStart(2, "0")}T21:00:00.000Z`),
+    open: 100 + index,
+    high: 102 + index,
+    low: 99 + index,
+    close: index === 20 ? 125 : 100 + index,
+    volume: index === 20 ? 219 : 100 + index,
+  }));
+}
+
+function canonical(overrides: Partial<CanonicalIntelligenceState> = {}): CanonicalIntelligenceState {
+  return {
+    stateId: "state:aftershock-fixture",
+    generatedAt: "2026-09-19T00:00:00.000Z",
+    effectiveAt: "2026-09-18T21:00:00.000Z",
+    inputSnapshotId: "input:aftershock-fixture",
+    stateHash: "hash:aftershock-fixture",
+    pressureIndex: 64,
+    pressureLevel: "Elevated",
+    regime: "ELEVATED STRESS",
+    confidenceOrEvidenceQuality: "HEALTHY",
+    unavailableInputs: [],
+    staleInputs: [],
+    delayedInputs: [],
+    fallbackInputs: [],
+    engines: [],
+    provenance: { coherenceStatus: "COHERENT" },
+    ...overrides,
+  } as CanonicalIntelligenceState;
+}
+
+function observedQuote(symbol: string, overrides: Partial<ObservedAftershockQuote> = {}): ObservedAftershockQuote {
+  return {
+    symbol,
+    providerSymbol: symbol,
+    changePercent: 0.25,
+    volumeRatio: 1.1,
+    observedAt: OBSERVED_AT,
+    receivedAt: RECEIVED_AT,
+    source: "yahoo-daily",
+    freshness: "DELAYED",
+    availability: "AVAILABLE",
+    ...overrides,
+  };
+}
+
+function snapshot(quotes: ObservedAftershockQuote[], reason: string | null = null): AftershockMarketSnapshot {
+  return { availability: quotes.length ? "AVAILABLE" : "UNAVAILABLE", quotes, reason };
+}
+
+beforeEach(() => clearAftershockCache());
+
+describe("toObservedAftershockQuote", () => {
+  it("derives exact close-to-close change and a 20-prior-completed-bar volume ratio with Yahoo provenance", () => {
+    const quote = toObservedAftershockQuote("nvda", bars(), RECEIVED_AT, FIXTURE_NOW, "NVDA");
+
+    expect(quote).toEqual({
+      symbol: "NVDA",
+      providerSymbol: "NVDA",
+      changePercent: ((125 - 119) / 119) * 100,
+      volumeRatio: 219 / 109.5,
+      observedAt: Date.parse("2026-08-21T21:00:00.000Z"),
+      receivedAt: RECEIVED_AT,
+      source: "yahoo-daily",
+      freshness: "DELAYED",
+      availability: "AVAILABLE",
+    });
   });
 
-  afterEach(() => {
-    clearAftershockCache();
+  it.each([
+    ["has fewer than 21 completed bars", bars(20)],
+    ["has a zero-volume baseline bar", bars().map((bar, index) => index === 4 ? { ...bar, volume: 0 } : bar)],
+    ["has an invalid price", bars().map((bar, index) => index === 20 ? { ...bar, close: Number.NaN } : bar)],
+  ])("returns null when the observation %s", (_label, fixture) => {
+    expect(toObservedAftershockQuote("NVDA", fixture, RECEIVED_AT, FIXTURE_NOW, "NVDA")).toBeNull();
   });
 
-  it("should run the full engine and return a valid AftershockEngineResult", async () => {
-    const result = await runAftershockEngine();
-
-    expect(result).toBeDefined();
-    expect(result).toHaveProperty("activeRuptures");
-    expect(result).toHaveProperty("aftershocks");
-    expect(result).toHaveProperty("chains");
-    expect(result).toHaveProperty("summary");
-    expect(result).toHaveProperty("pressureIndex");
-    expect(result).toHaveProperty("systemicRiskLevel");
-    expect(result).toHaveProperty("generatedAt");
-  }, 30000);
-
-  it("should return a numeric pressureIndex between 0 and 100", async () => {
-    const result = await runAftershockEngine();
-    expect(result.pressureIndex).toBeGreaterThanOrEqual(0);
-    expect(result.pressureIndex).toBeLessThanOrEqual(100);
-  }, 30000);
-
-  it("should classify systemicRiskLevel as one of the four valid levels", async () => {
-    const result = await runAftershockEngine();
-    expect(["Low", "Moderate", "Elevated", "High", "Critical"]).toContain(result.systemicRiskLevel);
-  }, 30000);
-
-  it("should return a non-empty summary string", async () => {
-    const result = await runAftershockEngine();
-    expect(typeof result.summary).toBe("string");
-    expect(result.summary.length).toBeGreaterThan(10);
-  });
-
-  it("should have generatedAt as a recent timestamp", async () => {
-    const before = Date.now();
-    const result = await runAftershockEngine();
-    const after  = Date.now();
-    expect(result.generatedAt).toBeGreaterThanOrEqual(before);
-    expect(result.generatedAt).toBeLessThanOrEqual(after);
-  });
-});
-
-describe("Aftershock Engine™ — Rupture Detection", () => {
-  beforeEach(() => {
-    clearAftershockCache();
-    vi.clearAllMocks();
-  });
-
-  it("should detect ruptures as an array", async () => {
-    const result = await runAftershockEngine();
-    expect(Array.isArray(result.activeRuptures)).toBe(true);
-  });
-
-  it("each rupture should have required fields", async () => {
-    const result = await runAftershockEngine();
-    for (const rupture of result.activeRuptures) {
-      expect(rupture).toHaveProperty("id");
-      expect(rupture).toHaveProperty("triggerAsset");
-      expect(rupture).toHaveProperty("triggerName");
-      expect(rupture).toHaveProperty("assetClass");
-      expect(rupture).toHaveProperty("ruptureType");
-      expect(rupture).toHaveProperty("magnitude");
-      expect(rupture).toHaveProperty("strength");
-      expect(rupture).toHaveProperty("direction");
-      expect(rupture).toHaveProperty("description");
-      expect(rupture).toHaveProperty("aftershockWindowHours");
-    }
-  });
-
-  it("rupture strength should be between 0 and 100", async () => {
-    const result = await runAftershockEngine();
-    for (const rupture of result.activeRuptures) {
-      expect(rupture.strength).toBeGreaterThanOrEqual(0);
-      expect(rupture.strength).toBeLessThanOrEqual(100);
-    }
-  });
-
-  it("rupture direction should be Bullish, Bearish, or Uncertain", async () => {
-    const result = await runAftershockEngine();
-    for (const rupture of result.activeRuptures) {
-      expect(["Bullish", "Bearish", "Uncertain"]).toContain(rupture.direction);
-    }
-  });
-
-  it("rupture assetClass should be a valid class", async () => {
-    const result = await runAftershockEngine();
-    const validClasses = ["Stock", "ETF", "Crypto", "Macro", "Sector"];
-    for (const rupture of result.activeRuptures) {
-      expect(validClasses).toContain(rupture.assetClass);
-    }
+  it("uses explicit provider mappings rather than sending internal crypto symbols to Yahoo unchanged", () => {
+    expect(normalizeAftershockTicker("BTC")).toBe("BTC-USD");
+    expect(normalizeAftershockTicker("eth")).toBe("ETH-USD");
+    expect(normalizeAftershockTicker("VIX")).toBe("^VIX");
+    expect(normalizeAftershockTicker("unknown")).toBeNull();
   });
 });
 
-describe("Aftershock Engine™ — Aftershock Signals", () => {
-  beforeEach(() => {
-    clearAftershockCache();
-    vi.clearAllMocks();
+describe("runAftershockEngine source-truth boundary", () => {
+  it("returns UNAVAILABLE and no calm-market or rupture output when the observed snapshot is absent", async () => {
+    const marketSnapshotProvider = vi.fn().mockResolvedValue(snapshot([], "Observed market bars unavailable in fixture."));
+    const canonicalStateProvider = vi.fn().mockResolvedValue(canonical());
+
+    const result = await runAftershockEngine({ marketSnapshotProvider, canonicalStateProvider, now: () => FIXTURE_NOW });
+
+    expect(canonicalStateProvider).toHaveBeenCalledTimes(1);
+    expect(marketSnapshotProvider).toHaveBeenCalledTimes(1);
+    expect(result).toMatchObject({
+      availability: "UNAVAILABLE",
+      evidenceStatus: "UNAVAILABLE",
+      canonicalStateId: "state:aftershock-fixture",
+      pressureIndex: null,
+      regime: null,
+      activeRuptures: [],
+      aftershocks: [],
+      chains: [],
+    });
+    expect(result.summary).toContain("Observations unavailable");
+    expect(result.summary).not.toMatch(/normal|no active ruptures/i);
   });
 
-  it("should return aftershocks as an array", async () => {
-    const result = await runAftershockEngine();
-    expect(Array.isArray(result.aftershocks)).toBe(true);
+  it("withholds all claims when canonical macro projection is absent instead of manufacturing 50 or a regime", async () => {
+    const marketSnapshotProvider = vi.fn().mockResolvedValue(snapshot([observedQuote("NVDA")]));
+    const canonicalStateProvider = vi.fn().mockResolvedValue(null);
+
+    const result = await runAftershockEngine({ marketSnapshotProvider, canonicalStateProvider, now: () => FIXTURE_NOW });
+
+    expect(result).toMatchObject({
+      availability: "UNAVAILABLE",
+      evidenceStatus: "UNAVAILABLE",
+      canonicalStateId: null,
+      pressureIndex: null,
+      regime: null,
+      systemicRiskLevel: null,
+    });
+    expect(marketSnapshotProvider).not.toHaveBeenCalled();
+    expect(JSON.stringify(result)).not.toContain("Rate Shock");
+    expect(JSON.stringify(result)).not.toContain('"pressureIndex":50');
   });
 
-  it("each aftershock should have required fields", async () => {
-    const result = await runAftershockEngine();
-    for (const signal of result.aftershocks) {
-      expect(signal).toHaveProperty("id");
-      expect(signal).toHaveProperty("ruptureId");
-      expect(signal).toHaveProperty("triggerAsset");
-      expect(signal).toHaveProperty("relatedAsset");
-      expect(signal).toHaveProperty("label");
-      expect(signal).toHaveProperty("probability");
-      expect(signal).toHaveProperty("strength");
-      expect(signal).toHaveProperty("timingWindowHours");
-      expect(signal).toHaveProperty("timingWindowLabel");
-      expect(signal).toHaveProperty("direction");
-      expect(signal).toHaveProperty("confidence");
-      expect(signal).toHaveProperty("confirmationStatus");
-      expect(signal).toHaveProperty("explanation");
-    }
+  it("derives a rupture only from fixed observed quotes and preserves source, time, receipt, canonical, and model metadata", async () => {
+    const marketSnapshotProvider = vi.fn().mockResolvedValue(snapshot([
+      observedQuote("NVDA", { changePercent: 6, volumeRatio: 2.2 }),
+      observedQuote("AMD", { changePercent: 3.1, volumeRatio: 1.1, observedAt: OBSERVED_AT + 1_000, receivedAt: RECEIVED_AT + 1_000 }),
+    ]));
+    const canonicalStateProvider = vi.fn().mockResolvedValue(canonical());
+
+    const result = await runAftershockEngine({ marketSnapshotProvider, canonicalStateProvider, now: () => FIXTURE_NOW });
+    const rupture = result.activeRuptures.find(item => item.triggerAsset === "NVDA");
+    const signal = result.aftershocks.find(item => item.triggerAsset === "NVDA" && item.relatedAsset === "AMD");
+
+    expect(marketSnapshotProvider).toHaveBeenCalledTimes(1);
+    expect(canonicalStateProvider).toHaveBeenCalledTimes(1);
+    expect(result).toMatchObject({
+      availability: "AVAILABLE",
+      evidenceStatus: "DELAYED",
+      source: "yahoo-daily",
+      canonicalStateId: "state:aftershock-fixture",
+      canonicalInputSnapshotId: "input:aftershock-fixture",
+      model: { modelDerived: true, calibrationStatus: "NOT_CALIBRATED", probabilityStatus: "NOT_ESTABLISHED" },
+    });
+    expect(rupture).toMatchObject({
+      id: `rupture_NVDA_${OBSERVED_AT}`,
+      source: "yahoo-daily",
+      observedAt: OBSERVED_AT,
+      receivedAt: RECEIVED_AT,
+      availability: "AVAILABLE",
+      evidenceStatus: "DELAYED",
+      canonicalStateId: "state:aftershock-fixture",
+      modelDerived: true,
+    });
+    expect(signal).toMatchObject({
+      source: "aftershock-static-contagion-graph",
+      probability: null,
+      confidence: null,
+      confirmationStatus: "Confirmed",
+      reactionSource: "yahoo-daily",
+      reactionObservedAt: OBSERVED_AT + 1_000,
+      reactionReceivedAt: RECEIVED_AT + 1_000,
+      reactionAvailability: "AVAILABLE",
+      canonicalStateId: "state:aftershock-fixture",
+      modelDerived: true,
+      model: { methodologyVersion: "aftershock-methodology-v1", calibrationStatus: "NOT_CALIBRATED" },
+    });
+    expect(signal?.sourceInputIds).toContain(`market:yahoo-daily:AMD:${OBSERVED_AT + 1_000}`);
   });
 
-  it("aftershock probability should be between 0 and 100", async () => {
-    const result = await runAftershockEngine();
-    for (const signal of result.aftershocks) {
-      expect(signal.probability).toBeGreaterThanOrEqual(0);
-      expect(signal.probability).toBeLessThanOrEqual(100);
-    }
+  it("cannot confirm a graph edge without an independently observed related reaction", async () => {
+    const result = await runAftershockEngine({
+      canonicalStateProvider: async () => canonical(),
+      marketSnapshotProvider: async () => snapshot([observedQuote("NVDA", { changePercent: -6, volumeRatio: 2.2 })]),
+      now: () => FIXTURE_NOW,
+    });
+    const signal = result.aftershocks.find(item => item.triggerAsset === "NVDA" && item.relatedAsset === "AMD");
+
+    expect(signal).toMatchObject({
+      confirmationStatus: "Unconfirmed",
+      reactionStarted: false,
+      currentReactionPercent: null,
+      reactionAvailability: "UNAVAILABLE",
+      reactionSource: null,
+    });
   });
 
-  it("aftershock label should be one of the 9 valid labels", async () => {
-    const validLabels = [
-      "Primary Rupture", "First-Wave Aftershock", "Delayed Reaction",
-      "Sympathy Momentum", "Sector Echo", "Liquidity Spillover",
-      "Macro Shockwave", "Fading Aftershock", "False Aftershock",
-    ];
-    const result = await runAftershockEngine();
-    for (const signal of result.aftershocks) {
-      expect(validLabels).toContain(signal.label);
-    }
+  it("is reproducible from a fixed source fixture; advancing response time does not create a rupture", async () => {
+    const fixedSnapshot = snapshot([observedQuote("NVDA", { changePercent: 6, volumeRatio: 2.2 })]);
+    const dependencies = {
+      canonicalStateProvider: async () => canonical(),
+      marketSnapshotProvider: async () => fixedSnapshot,
+    };
+    const first = await runAftershockEngine({ ...dependencies, now: () => FIXTURE_NOW });
+    const second = await runAftershockEngine({ ...dependencies, now: () => FIXTURE_NOW + 86_400_000 });
+
+    expect(second.activeRuptures).toEqual(first.activeRuptures);
+    expect(second.aftershocks.map(signal => signal.id)).toEqual(first.aftershocks.map(signal => signal.id));
+    expect(second.generatedAt).toBeGreaterThan(first.generatedAt);
   });
 
-  it("aftershock confidence should be High, Moderate, or Low", async () => {
-    const result = await runAftershockEngine();
-    for (const signal of result.aftershocks) {
-      expect(["High", "Moderate", "Low"]).toContain(signal.confidence);
-    }
-  });
+  it("propagates stale canonical evidence rather than relabelling it CURRENT", async () => {
+    const result = await runAftershockEngine({
+      canonicalStateProvider: async () => canonical({ confidenceOrEvidenceQuality: "PARTIAL", staleInputs: ["fred:DGS10"] }),
+      marketSnapshotProvider: async () => snapshot([observedQuote("NVDA", { changePercent: 6, volumeRatio: 2.2 })]),
+      now: () => FIXTURE_NOW,
+    });
 
-  it("aftershock confirmationStatus should be a valid status", async () => {
-    const result = await runAftershockEngine();
-    const validStatuses = ["Confirmed", "Developing", "Unconfirmed", "Fading"];
-    for (const signal of result.aftershocks) {
-      expect(validStatuses).toContain(signal.confirmationStatus);
-    }
+    expect(result).toMatchObject({ availability: "AVAILABLE", evidenceStatus: "STALE", canonicalStateId: "state:aftershock-fixture" });
   });
 });
 
-describe("Aftershock Engine™ — Contagion Chains", () => {
-  beforeEach(() => {
-    clearAftershockCache();
-    vi.clearAllMocks();
-  });
-
-  it("should return chains as an array", async () => {
-    const result = await runAftershockEngine();
-    expect(Array.isArray(result.chains)).toBe(true);
-  });
-
-  it("each chain should have required fields", async () => {
-    const result = await runAftershockEngine();
-    for (const chain of result.chains) {
-      expect(chain).toHaveProperty("triggerAsset");
-      expect(chain).toHaveProperty("triggerName");
-      expect(chain).toHaveProperty("ruptureType");
-      expect(chain).toHaveProperty("direction");
-      expect(chain).toHaveProperty("signals");
-      expect(chain).toHaveProperty("totalAftershocks");
-      expect(chain).toHaveProperty("confirmedAftershocks");
-      expect(chain).toHaveProperty("macroContext");
-      expect(Array.isArray(chain.signals)).toBe(true);
-    }
-  });
-
-  it("chain confirmedAftershocks should not exceed totalAftershocks", async () => {
-    const result = await runAftershockEngine();
-    for (const chain of result.chains) {
-      expect(chain.confirmedAftershocks).toBeLessThanOrEqual(chain.totalAftershocks);
-    }
-  });
-});
-
-describe("Aftershock Engine™ — Contagion Graph API", () => {
-  beforeEach(() => {
-    clearAftershockCache();
-    vi.clearAllMocks();
-  });
-
-  it("getAssetContagionChain should return an array for any symbol", async () => {
-    // Run engine first to populate graph
-    await runAftershockEngine();
+describe("contagion graph provenance", () => {
+  it("keeps the useful graph but exposes it as versioned, uncalibrated methodology", () => {
     const edges = getAssetContagionChain("NVDA");
-    expect(Array.isArray(edges)).toBe(true);
-  });
-
-  it("getAllContagionAssets should return an array of strings", async () => {
-    await runAftershockEngine();
-    const assets = getAllContagionAssets();
-    expect(Array.isArray(assets)).toBe(true);
-    assets.forEach(a => expect(typeof a).toBe("string"));
-  });
-
-  it("getAssetContagionChain for unknown symbol should return empty array", async () => {
-    await runAftershockEngine();
-    const edges = getAssetContagionChain("ZZZZUNKNOWN");
-    expect(Array.isArray(edges)).toBe(true);
-    expect(edges.length).toBe(0);
-  });
-});
-
-describe("Aftershock Engine™ — Cache", () => {
-  it("clearAftershockCache should not throw", () => {
-    expect(() => clearAftershockCache()).not.toThrow();
-  });
-
-  it("second call within cache window should return same generatedAt", async () => {
-    clearAftershockCache();
-    vi.clearAllMocks();
-    const first  = await runAftershockEngine();
-    const second = await runAftershockEngine();
-    expect(second.generatedAt).toBe(first.generatedAt);
+    expect(edges.length).toBeGreaterThan(0);
+    expect(edges[0]?.model).toEqual(expect.objectContaining({
+      modelDerived: true,
+      modelVersion: "static-graph-v1",
+      calibrationStatus: "NOT_CALIBRATED",
+      probabilityStatus: "NOT_ESTABLISHED",
+    }));
+    expect(getAllContagionAssets()).toContain("NVDA");
   });
 });

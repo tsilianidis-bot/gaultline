@@ -29,8 +29,10 @@
 //
 // ============================================================
 
-import { calculateFaultlinePressure } from "../pressure/engine";
-import { fetchMacroData } from "./engines/dataAcquisition";
+import { getAuthoritativeCanonicalIntelligenceState } from "../canonicalIntelligenceState";
+import { toOperationalPressure } from "../operationalSignalInputs";
+import { TRPCError } from "@trpc/server";
+import { adaptVerifiedPressureToFmosMacro, hasVerifiedFmosMacroInputs } from "./engines/dataAcquisition";
 import { computeMarketDNA } from "./engines/marketDNA";
 import { computeMarketWeather } from "./engines/marketWeather";
 import { computeRegime } from "./engines/regime";
@@ -62,17 +64,25 @@ export async function runFMOSPipeline(
     symbol,
     skipAIInterpretation = false,
     topAnalogCount = 3,
+    pressureOverride,
   } = options;
 
   const startTime = Date.now();
 
-  // ── Stage 1: Data Acquisition ─────────────────────────────
-  const macro = await fetchMacroData();
+  // ── Stage 1: Pressure Engine ──────────────────────────────
+  // The pressure engine is the foundation — all other engines consume its
+  // output. A scheduler may supply the exact verified snapshot it already
+  // acquired for this run through `options.pressureOverride`; in that case do
+  // not issue a second provider calculation with a different observation set.
+  const canonical = pressureOverride ? null : await getAuthoritativeCanonicalIntelligenceState();
+  const pressure = pressureOverride ?? toOperationalPressure(canonical, true);
 
-  // ── Stage 2: Pressure Engine ──────────────────────────────
-  // The pressure engine is the foundation — all other engines
-  // consume its output.
-  const pressure = await calculateFaultlinePressure();
+  // ── Stage 2: Data Acquisition ─────────────────────────────
+  // Reuse the precise verified FRED inputs that produced `pressure`; never
+  // issue a second local bulk request or manufacture a numeric fallback.
+  const macro = adaptVerifiedPressureToFmosMacro(pressure);
+  if (pressure.verification?.status !== "verified" || !hasVerifiedFmosMacroInputs(macro))
+    throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "FMOS requires the exact verified macro source snapshot backing canonical Pressure; no substitute financial values are scored." });
 
   // ── Stage 3: Market DNA ───────────────────────────────────
   const dna = computeMarketDNA(pressure, macro);
@@ -111,7 +121,7 @@ export async function runFMOSPipeline(
       ...quick,
       supportingEvidence: probability.bullEvidence[0] ?? "",
       contradictingEvidence: probability.bearEvidence[0] ?? "",
-      historicalContext: `Most similar to ${topAnalog.label} (${topAnalog.similarity}% similarity)`,
+      historicalContext: "Historical analog output is withheld unless independently governed source evidence is supplied.",
       watchFor: decision.invalidationConditions,
       educationalNote: `FAULTLINE Pressure Index at ${pressure.overallPressure}/100`,
     };
@@ -149,12 +159,28 @@ export async function runFMOSPipeline(
   if (pressure.dataSource === "fallback") {
     pipelineErrors.push("Pressure engine running on fallback data — live feeds unavailable");
   }
+  if (macro.dataSource === "unavailable") {
+    pipelineErrors.push(`FRED macro inputs unavailable${macro.unavailableReason ? `: ${macro.unavailableReason}` : ""}`);
+  }
+  if (!dna.available) {
+    missingFields.push("marketDNA");
+    pipelineErrors.push(`Market DNA unavailable: ${dna.unavailableReason ?? "required source inputs unavailable"}`);
+  }
+  if (!evidence.available) {
+    missingFields.push("evidence");
+    pipelineErrors.push(`Evidence unavailable: ${evidence.unavailableReason ?? "required source inputs unavailable"}`);
+  }
 
   const isComplete = missingFields.length === 0 && pipelineErrors.length === 0;
+  const dataSource = macro.dataSource === "unavailable"
+    ? "unavailable"
+    : pressure.dataSource;
 
   return {
     // Metadata
     symbol: symbol ?? null,
+    canonicalStateId: canonical?.stateId ?? null,
+    dataAsOf: pressure.lastUpdated,
     assetType: null,
     timestamp: new Date().toISOString(),
     engineVersion: FMOS_VERSION,
@@ -174,7 +200,7 @@ export async function runFMOSPipeline(
     interpretation: aiInterpretation,
 
     // Metadata
-    dataSource: pressure.dataSource,
+    dataSource,
     complete: isComplete,
     errors: pipelineErrors,
   };

@@ -32,8 +32,8 @@ interface DiscoveryItem {
   ticker: string;
   name: string;
   opportunityScore: number;
-  expectedTimeHorizon: string;
-  catalyst: string;
+  expectedTimeHorizon: string | null;
+  catalyst: string | null;
   riskLevel: string;
   assetType: string;
   direction: string;
@@ -42,12 +42,12 @@ interface DiscoveryItem {
   bearCase?: string;
   invalidationLevel?: string;
   whyFaultlineLikesIt?: string;
-  institutionalConviction?: string;
+  institutionalConviction?: string | null;
   macroAlignment?: number;
-  riskRewardRatio?: string;
+  riskRewardRatio?: string | null;
   confidenceLevel?: number | null; // withheld by the server; never rendered
-  topCatalyst?: string;
-  actionBias?: string;
+  topCatalyst?: string | null;
+  actionBias?: string | null;
 }
 
 interface DiscoveryBucket {
@@ -214,12 +214,12 @@ function RadarCard({
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)", flexShrink: 0 }}>·</span>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)", flexShrink: 0, display: "flex", alignItems: "center", gap: "3px" }}>
-              <Clock size={8} />{item.expectedTimeHorizon}
+              <Clock size={8} />{item.expectedTimeHorizon ?? "Not established"}
             </span>
           </div>
           {/* Row 3: catalyst */}
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.6)", lineHeight: 1.4, borderLeft: `2px solid ${accent}40`, paddingLeft: "6px" }}>
-            {item.catalyst}
+            {item.catalyst ?? "No verified catalyst supplied"}
           </div>
         </div>
         {/* Right: risk + expand */}
@@ -552,7 +552,7 @@ function OpportunitiesInner() {
                     <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "16px", color: accent, letterSpacing: "0.04em", textShadow: `0 0 12px ${accent}60` }}>{item.ticker}</span>
                     {item.actionBias && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", fontWeight: 700, color: biasColors.color, background: biasColors.bg, padding: "1px 5px", borderRadius: "2px" }}>{item.actionBias}</span>}
                   </div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.catalyst}</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.catalyst ?? "No verified catalyst supplied"}</div>
                 </div>
                 <ChevronRight size={12} color={`${accent}60`} />
               </button>
@@ -631,7 +631,7 @@ function OpportunitiesInner() {
                       <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "14px", color: accent }}>{item.ticker}</span>
                       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
                     </div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.catalyst}</div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.catalyst ?? "No verified catalyst supplied"}</div>
                   </div>
                   <DirectionBadge direction={item.direction} />
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: RISK_COLORS[item.riskLevel] ?? "#94A3B8" }}>{item.riskLevel.toUpperCase()}</span>

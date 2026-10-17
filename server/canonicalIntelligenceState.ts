@@ -1,3 +1,6 @@
+import { resolveRunContext } from "./forwardRunProvenance";
+import { validateStoredIntelligenceManifest } from "./intelligenceGovernance";
+import { isCanonicalPublicationCurrent } from "../shared/nyseSession";
 import { and, desc, gte, lte } from "drizzle-orm";
 import { intelligenceStateManifests } from "../drizzle/schema";
 import {
@@ -15,6 +18,15 @@ import { compositePressureDirection, engineEvidenceStatus, stressTrendDirection 
 import type { IntelligenceEvidence } from "../shared/intelligenceIntegrity";
 
 type StoredManifest = Record<string, any>;
+/** Existing scheduled provenance authorizes daily current publication. Manual,
+ * deploy, ad-hoc, and unclassified legacy rows remain historical/diagnostic. */
+export function isAuthorizedScheduledManifest(manifest: StoredManifest): boolean {
+  const run = manifest.runProvenance;
+  if (run?.trigger !== "SCHEDULED_CRON" || run.triggerSource !== "cron-endpoint" || run.scheduledWindow !== true || typeof run.runStartedAt !== "string") return false;
+  const started = new Date(run.runStartedAt);
+  if (!Number.isFinite(started.getTime())) return false;
+  return resolveRunContext("cron-endpoint", started).trigger === "SCHEDULED_CRON";
+}
 
 /**
  * Vectors whose engine trend is a fixed constant rather than an observation
@@ -154,7 +166,9 @@ export function buildCanonicalIntelligenceState(manifest: StoredManifest, option
     dataQualitySummary: manifest.dataQualitySummary ?? {}, confidenceOrEvidenceQuality: stateQuality, staleInputs, delayedInputs,
     unavailableInputs, fallbackInputs, warnings: [...notes, ...staleInputs.map((id: string) => `${id}: stale`), ...unavailableInputs.map((id: string) => `${id}: unavailable`)],
     conflicts, historicalDatasetVersion: manifest.historicalDatasetVersion, researchDatasetVersion: manifest.researchDatasetVersion,
-    provenance: { manifestSource: "intelligenceStateManifests", governanceVersion: manifest.configurationVersion, coherenceStatus: coherence(manifest) },
+    provenance: { manifestSource: "intelligenceStateManifests", governanceVersion: manifest.configurationVersion, coherenceStatus: coherence(manifest),
+      ...(manifest.runProvenance ? { runTrigger: manifest.runProvenance.trigger ?? null, scheduledPublication: isAuthorizedScheduledManifest(manifest) } : {}),
+    },
   };
 }
 
@@ -171,7 +185,9 @@ export function canonicalEngineIntegrityEvidence(state: CanonicalIntelligenceSta
     value: typeof engine.value === "number" && Number.isFinite(engine.value) ? engine.value : null,
     observedAt: engine.calculatedAt ?? state.generatedAt ?? null,
     receivedAt: state.generatedAt ?? null,
-    maxAgeMs: 30 * 60 * 60_000,
+    maxAgeMs: isCanonicalPublicationCurrent(state.effectiveAt ?? state.generatedAt)
+      ? Math.max(30 * 60 * 60_000, Date.now() - Date.parse(engine.calculatedAt ?? state.generatedAt) + 60_000)
+      : 30 * 60 * 60_000,
     sourceHealthy: state.confidenceOrEvidenceQuality !== "UNAVAILABLE" && engine.qualityStatus !== "UNAVAILABLE",
     modelVersion: engine.modelVersion || state.modelVersion || undefined,
   };
@@ -180,11 +196,18 @@ export function canonicalEngineIntegrityEvidence(state: CanonicalIntelligenceSta
 export async function getAuthoritativeCanonicalIntelligenceState(): Promise<CanonicalIntelligenceState | null> {
   const db = await getDb();
   if (!db) return null;
-  const row = (await db.select().from(intelligenceStateManifests).orderBy(desc(intelligenceStateManifests.generatedAt)).limit(1))[0];
-  if (!row) return null;
-  const manifest = JSON.parse(row.manifestJson);
-  const priorPressureIndex = await readPriorPressureIndex(db, row, manifest).catch(() => null);
-  return buildCanonicalIntelligenceState(manifest, { priorPressureIndex });
+  // A later seedNow/ad-hoc row must not shadow the actual daily scheduled state.
+  const rows = await db.select().from(intelligenceStateManifests).orderBy(desc(intelligenceStateManifests.generatedAt)).limit(50);
+  for (const row of rows) {
+    let manifest: StoredManifest;
+    try { manifest = JSON.parse(row.manifestJson); } catch { continue; }
+    if (!validateStoredIntelligenceManifest(manifest, row) || !isAuthorizedScheduledManifest(manifest)) continue;
+    const priorPressureIndex = await readPriorPressureIndex(db, row, manifest).catch(() => null);
+    const state = buildCanonicalIntelligenceState(manifest, { priorPressureIndex });
+    if (isCanonicalPublicationCurrent(state.effectiveAt ?? state.generatedAt) && state.provenance.coherenceStatus === "COHERENT" &&
+        (state.confidenceOrEvidenceQuality === "HEALTHY" || state.confidenceOrEvidenceQuality === "PARTIAL")) return state;
+  }
+  return null;
 }
 
 /** Composite direction compares against the latest manifest at least this old. */

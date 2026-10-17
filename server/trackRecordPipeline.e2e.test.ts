@@ -41,6 +41,8 @@ import {
 const PRODUCTION_URL = /prod|railway|getfaultline|amazonaws|planetscale/i;
 const PORT = 3308;
 const STATE_ID = "state-pipeline-fixture-1";
+const STATE_HASH = "a".repeat(64);
+const INPUT_ID = "input:mock-pipeline-1";
 
 function assertIsolated(url: string): void {
   if (!url || PRODUCTION_URL.test(url) || !/127\.0\.0\.1|localhost/.test(url)) {
@@ -53,6 +55,13 @@ function fixtureInputs(nowMs: number, overrides: Record<string, unknown> = {}) {
   return {
     canonical: {
       stateId: STATE_ID,
+      stateHash: STATE_HASH, inputSnapshotId: INPUT_ID, pressureIndex: 42, regime: "ELEVATED",
+      provenance: { coherenceStatus: "COHERENT" },
+      domains: { pressureVerification: { status: "verified", receivedAt: new Date(nowMs - 60_000).toISOString(), inputs: [
+        { inputId: "tsy10y", seriesId: "DGS10", sourceValue: 4.25, value: 4.25, observationDate: fredDate },
+        { inputId: "tsy2y", seriesId: "DGS2", sourceValue: 4.1, value: 4.1, observationDate: fredDate },
+        { inputId: "hySpread", seriesId: "BAMLH0A0HYM2", sourceValue: 3.1, value: 310, observationDate: fredDate },
+      ] } },
       generatedAt: new Date(nowMs - 60_000).toISOString(),
       modelVersion: "champion-v1",
       confidenceOrEvidenceQuality: "HEALTHY",
@@ -228,14 +237,14 @@ describe("evidence pipeline on an isolated database", () => {
     expect(governance).not.toContain(".update(governedResearch");
 
     const scheduled = { trigger: "SCHEDULED_CRON" as const };
-    const base = { pressureIndex: 42, regime: "ELEVATED", generatedAt, nowMs };
-    expect(await captureTrackRecordFromScheduledRun({
+    const base = { expectedStateHash: STATE_HASH, expectedInputSnapshotId: INPUT_ID, loadCanonical: async () => fixtureInputs(nowMs).canonical, pressureIndex: 42, regime: "ELEVATED", generatedAt, nowMs };
+    expect(await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: STATE_ID,
       ...base,
       run: scheduled,
       env: {},
       loadSnapshot: async () => drafted,
     })).toEqual({ recorded: false, reason: "cron_writes_disabled" });
-    expect(await captureTrackRecordFromScheduledRun({
+    expect(await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: STATE_ID,
       ...base,
       run: scheduled,
       env: { TRACK_RECORD_CRON_WRITES: "true" },
@@ -243,7 +252,7 @@ describe("evidence pipeline on an isolated database", () => {
     })).toEqual({ recorded: false, reason: "flag_disabled" });
 
     await admin!.query("UPDATE featureFlags SET enabled = 1 WHERE `key` = 'intelligence_track_record'");
-    expect(await captureTrackRecordFromScheduledRun({
+    expect(await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: STATE_ID,
       ...base,
       run: scheduled,
       env: {},
@@ -251,14 +260,14 @@ describe("evidence pipeline on an isolated database", () => {
     })).toEqual({ recorded: false, reason: "cron_writes_disabled" });
 
     const on = { TRACK_RECORD_CRON_WRITES: "true" };
-    expect(await captureTrackRecordFromScheduledRun({
+    expect(await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: STATE_ID,
       ...base, run: scheduled, env: on, loadSnapshot: async () => null,
     })).toEqual({ recorded: false, reason: "evidence_missing" });
     const stale = { ...drafted, persistence: "recorded" as const, capturedAt: new Date(nowMs - 30 * 60_000).toISOString() };
-    expect(await captureTrackRecordFromScheduledRun({
+    expect(await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: STATE_ID,
       ...base, run: scheduled, env: on, loadSnapshot: async () => stale,
     })).toEqual({ recorded: false, reason: "evidence_stale" });
-    expect(await captureTrackRecordFromScheduledRun({
+    expect(await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: STATE_ID,
       ...base,
       run: scheduled,
       env: on,
@@ -276,7 +285,7 @@ describe("evidence pipeline on an isolated database", () => {
     });
     const failedSnapshot = { ...buildEvidenceSnapshot(failedFred, new Date(nowMs)), persistence: "recorded" as const };
     expect(failedSnapshot.observations.find(item => item.id === "fred:DGS10")?.validationStatus).toBe("unavailable");
-    expect(await captureTrackRecordFromScheduledRun({
+    expect(await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: STATE_ID,
       ...base, run: scheduled, env: on, loadSnapshot: async () => failedSnapshot,
     })).toEqual({ recorded: false, reason: "evidence_failed" });
     const rejected = {
@@ -286,16 +295,16 @@ describe("evidence pipeline on an isolated database", () => {
         ? { ...item, validationStatus: "unavailable" as const, supportsCurrentClaim: false, value: null }
         : item),
     };
-    expect(await captureTrackRecordFromScheduledRun({
+    expect(await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: STATE_ID,
       ...base, run: scheduled, env: on, loadSnapshot: async () => rejected,
     })).toEqual({ recorded: false, reason: "integrity_gate_failed" });
 
     for (const trigger of ["CRON_DEPLOY", "MANUAL", "AD_HOC", "BACKFILL_RECOVERY"] as const) {
-      expect(await captureTrackRecordFromScheduledRun({
+      expect(await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: STATE_ID,
         ...base, run: { trigger }, env: on, loadSnapshot: async () => ({ ...drafted, persistence: "recorded" as const }),
       })).toEqual({ recorded: false, reason: "not_scheduled" });
     }
-    expect(await captureTrackRecordFromScheduledRun({
+    expect(await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: STATE_ID,
       ...base,
       run: scheduled,
       env: on,
@@ -323,24 +332,35 @@ describe("evidence pipeline on an isolated database", () => {
       receivedAt: spy.receivedAt,
       validationStatus: spy.validationStatus,
       methodVersion: loaded!.methodVersion,
+      value: spy.value, provider: spy.provider, sourceIdentifier: spy.sourceIdentifier, origin: spy.origin, unit: spy.unit,
     }));
     const [memoryRows] = await admin!.query("SELECT COUNT(*) AS n FROM marketMemory WHERE memoryKey LIKE 'intelligence-evidence:%'") as unknown as [Array<{ n: number }>];
     expect(Number(memoryRows[0]?.n)).toBe(1);
 
-    const appended = await captureTrackRecordFromScheduledRun({ ...base, run: scheduled, env: on });
+    const bound = await collector.refreshForCanonicalRun(STATE_ID);
+    expect(bound?.purpose).toBe("forward_recording");
+    const appended = await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: STATE_ID, ...base, run: scheduled, env: on });
     expect(appended).toEqual({ recorded: true, reason: "appended" });
-    const duplicate = await captureTrackRecordFromScheduledRun({
+    const duplicate = await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: STATE_ID,
       ...base, run: scheduled, env: on, pressureIndex: 7,
     });
-    expect(duplicate).toEqual({ recorded: false, reason: "already_recorded" });
-    const sameSession = await captureTrackRecordFromScheduledRun({
+    expect(duplicate).toEqual({ recorded: false, reason: "canonical_state_mismatch" });
+    const sameSession = await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: STATE_ID,
       ...base,
       run: scheduled,
       env: on,
       generatedAt: new Date(Date.parse(generatedAt) + 60_000).toISOString(),
       pressureIndex: 8,
     });
-    expect(sameSession).toEqual({ recorded: false, reason: "already_recorded" });
+    expect(sameSession).toEqual({ recorded: false, reason: "canonical_state_mismatch" });
+    expect(await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: STATE_ID, ...base, run: scheduled, env: on }))
+      .toEqual({ recorded: false, reason: "already_recorded" });
+    for (const override of [{ expectedStateHash: "b".repeat(64) }, { expectedInputSnapshotId: "input:wrong" }, { regime: "wrong" }])
+      expect(await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: STATE_ID, ...base, ...override, run: scheduled, env: on }))
+        .toEqual({ recorded: false, reason: "canonical_state_mismatch" });
+    expect(await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: STATE_ID, ...base, run: scheduled, env: on,
+      generatedAt: new Date(nowMs - 10 * 60_000).toISOString() }))
+      .toEqual({ recorded: false, reason: "temporal_cutoff_failed" });
     const [counts] = await admin!.query("SELECT historyClass, COUNT(*) AS n FROM governedResearchObservations GROUP BY historyClass") as unknown as [Array<{ historyClass: string; n: number }>];
     expect(counts).toEqual([{ historyClass: "live_verified", n: 1 }]);
 
@@ -349,6 +369,8 @@ describe("evidence pipeline on an isolated database", () => {
     expect(rows[0]?.provenance).toBe("forward_recorded");
     expect(rows[0]?.canonicalStateId).toBe(STATE_ID);
     expect(rows[0]?.pressureIndex).toBe(42);
+    expect(rows[0]?.canonicalStateHash).toBe(STATE_HASH);
+    expect(rows[0]?.inputSnapshotId).toBe(INPUT_ID);
     expect(rows[0]?.registryVersionId).toBe("stress-benchmark-registry-v1");
     expect(rows[0]?.scenarios.map(item => item.id)).toEqual(["A", "B", "C"]);
     expect(new Set(rows[0]?.scenarios.map(item => item.invalidation)).size).toBe(1);

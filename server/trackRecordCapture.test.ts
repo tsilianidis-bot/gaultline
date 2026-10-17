@@ -93,6 +93,11 @@ describe("verified evidence selection", () => {
       receivedAt: "2026-10-17T18:04:00.000Z",
       validationStatus: "verified",
       methodVersion: INTELLIGENCE_EVIDENCE_METHOD_VERSION,
+      value: 12,
+      provider: "Yahoo Finance",
+      sourceIdentifier: "quote:SPY",
+      origin: "observed",
+      unit: "points",
     }));
     const changed = evidenceReferenceHash({
       id: "quote:SPY",
@@ -141,7 +146,7 @@ describe("verified evidence selection", () => {
     })).toThrow(/reconstructed or historical/);
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const env = { TRACK_RECORD_CRON_WRITES: "true" };
-    expect(await captureTrackRecordFromScheduledRun({
+    expect(await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: "state-live-1",
       run: { trigger: "CRON_DEPLOY" },
       pressureIndex: 40,
       regime: "ELEVATED",
@@ -150,7 +155,7 @@ describe("verified evidence selection", () => {
       flagEnabled: true,
       loadSnapshot: async () => snapshot(),
     })).toEqual({ recorded: false, reason: "not_scheduled" });
-    expect(await captureTrackRecordFromScheduledRun({
+    expect(await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: "state-live-1",
       run: { trigger: "SCHEDULED_CRON" },
       pressureIndex: 40,
       regime: "ELEVATED",
@@ -162,7 +167,7 @@ describe("verified evidence selection", () => {
     })).toEqual({ recorded: false, reason: "reconstructed_input" });
     expect(trackRecordCronWritesEnabled({})).toBe(false);
     expect(trackRecordCronWritesEnabled({ TRACK_RECORD_CRON_WRITES: "false" })).toBe(false);
-    expect(await captureTrackRecordFromScheduledRun({
+    expect(await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: "state-live-1",
       run: { trigger: "SCHEDULED_CRON" },
       pressureIndex: 40,
       regime: "ELEVATED",
@@ -171,7 +176,7 @@ describe("verified evidence selection", () => {
       flagEnabled: true,
       loadSnapshot: async () => snapshot(),
     })).toEqual({ recorded: false, reason: "cron_writes_disabled" });
-    expect(await captureTrackRecordFromScheduledRun({
+    expect(await captureTrackRecordFromScheduledRun({ expectedCanonicalStateId: "state-live-1",
       run: { trigger: "SCHEDULED_CRON" },
       pressureIndex: 40,
       regime: "ELEVATED",
@@ -186,7 +191,8 @@ describe("verified evidence selection", () => {
   it("does not write Core evidence or canonical state", () => {
     const source = readFileSync("server/trackRecordCapture.ts", "utf8");
     const sql = readFileSync("scripts/intelligence-track-record-flag.sql", "utf8");
-    expect(source).not.toMatch(/\.insert\(|tryClaim|startIntelligenceEvidenceCollector|calculateFaultlinePressure|canonicalIntelligenceState/);
+    expect(source).not.toMatch(/\.insert\(|tryClaim|startIntelligenceEvidenceCollector|calculateFaultlinePressure/);
+    expect(source).toContain("getAuthoritativeCanonicalIntelligenceState");
     expect(source).toContain("loadLatest");
     expect(source).toContain("TRACK_RECORD_CRON_WRITES");
     expect(sql).toContain("enabled");

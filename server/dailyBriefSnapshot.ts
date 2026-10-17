@@ -1,3 +1,4 @@
+import { isCanonicalPublicationCurrent } from "../shared/nyseSession";
 import { randomUUID } from "node:crypto";
 import type { FaultlinePressureOutput } from "./pressure/engine";
 import type { SeismographOutput } from "./seismographCore";
@@ -37,13 +38,14 @@ export interface DailyBriefSnapshotPayload {
     status: "linked" | "unavailable";
     reason: string | null;
     originatingStateId: string | null;
+    originatingStateHash: string | null;
     originatingEffectiveAt: string | null;
     originatingGeneratedAt: string | null;
     originatingModelVersion: string | null;
     originatingConfigurationVersion: string | null;
     originatingInputSnapshotId: string | null;
   };
-  pressureIndex: number;
+  pressureIndex: number | null;
   regime: string;
   stressClassification: string;
   direction: string | null;
@@ -86,8 +88,10 @@ export function buildDailyBriefSnapshot({
   now?: number;
 }): DailyBriefSnapshotPayload {
   const source = seismograph ? "seismograph" : "pressure_engine";
-  const sourceAsOf = seismograph?.computedAt ?? now;
-  const sourceFreshness = seismograph ? freshness(seismograph.computedAt, "daily", now) : pressure ? "fresh" : "unavailable";
+  const pressureTime = Date.parse(pressure?.verification?.computedAt ?? pressure?.lastUpdated ?? "");
+  const sourceAsOf = seismograph?.computedAt ?? (Number.isFinite(pressureTime) ? pressureTime : null);
+  const sourceFreshness = sourceAsOf != null && isCanonicalPublicationCurrent(new Date(sourceAsOf).toISOString(), now)
+    ? "fresh" : sourceAsOf == null ? "unavailable" : "stale";
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -106,16 +110,26 @@ export function buildDailyBriefSnapshot({
     errors.push("probability-distribution-does-not-total-100");
   }
 
-  const pressureIndex = seismograph?.pressureScore ?? pressure?.overallPressure ?? 0;
+  const pressureIndex = seismograph?.pressureScore ?? pressure?.overallPressure ?? null;
+  if (pressureIndex == null || !Number.isFinite(pressureIndex) || pressureIndex < 0 || pressureIndex > 100) errors.push("critical-pressure-value-unavailable");
   const regime = seismograph?.regime ?? pressure?.regime ?? "Unavailable";
   const stressClassification = seismograph?.stressLevel ?? pressure?.level ?? "Unavailable";
+  const originSource = seismograph ?? (pressure as (FaultlinePressureOutput & { canonicalStateId?: string; stateHash?: string; inputSnapshotId?: string }) | null);
+  const originatingStateId = originSource?.canonicalStateId;
   const canonicalOrigin = canonicalState
+    && Boolean(originatingStateId)
+    && originatingStateId === canonicalState.stateId
+    && Boolean(originSource?.stateHash && originSource?.inputSnapshotId)
+    && originSource?.stateHash === canonicalState.stateHash
+    && originSource?.inputSnapshotId === canonicalState.inputSnapshotId
+    && isCanonicalPublicationCurrent(canonicalState.effectiveAt ?? canonicalState.generatedAt, now)
     && canonicalState.pressureIndex === pressureIndex
     && canonicalState.regime === regime
     ? {
         status: "linked" as const,
         reason: null,
         originatingStateId: canonicalState.stateId,
+        originatingStateHash: canonicalState.stateHash,
         originatingEffectiveAt: canonicalState.effectiveAt ?? null,
         originatingGeneratedAt: canonicalState.generatedAt ?? null,
         originatingModelVersion: canonicalState.modelVersion ?? null,
@@ -128,17 +142,19 @@ export function buildDailyBriefSnapshot({
           ? "canonical-state-did-not-match-immutable-brief-snapshot"
           : "canonical-state-unavailable-at-publication",
         originatingStateId: null,
+        originatingStateHash: null,
         originatingEffectiveAt: null,
         originatingGeneratedAt: null,
         originatingModelVersion: null,
         originatingConfigurationVersion: null,
         originatingInputSnapshotId: null,
       };
+  if (canonicalOrigin.status !== "linked") errors.push("canonical-origin-unavailable");
   const sourceMeta = {
     source: source === "seismograph" ? "Scheduled Seismograph Core" : "FAULTLINE Pressure Engine",
     category: "faultline_output",
-    asOf: source === "seismograph" ? seismograph!.computedAt : now,
-    lastSuccessfulUpdate: source === "seismograph" ? seismograph!.computedAt : now,
+    asOf: sourceAsOf,
+    lastSuccessfulUpdate: sourceAsOf,
     expectedCadence: source === "seismograph" ? "daily" : "real-time",
     expectedFreshnessHours: source === "seismograph" ? 30 : 0.5,
     freshness: sourceFreshness,
@@ -167,7 +183,7 @@ export function buildDailyBriefSnapshot({
     briefSnapshotId: randomUUID(),
     generatedAt: now,
     briefDateEt: etDate(now),
-    tradingDate: etDate(sourceAsOf),
+    tradingDate: sourceAsOf == null ? "" : etDate(sourceAsOf),
     canonicalSource: source,
     canonicalOrigin,
     pressureIndex,
@@ -201,7 +217,7 @@ export function buildDailyBriefPromptContext(snapshot: DailyBriefSnapshotPayload
   const unavailable = snapshot.unavailableData.length ? snapshot.unavailableData.map(item => `- ${item}`).join("\n") : "- No required snapshot category was unavailable.";
   return [
     `BRIEF SNAPSHOT ID: ${snapshot.briefSnapshotId}`,
-    `READING USED FOR THIS BRIEF: ${new Date(snapshot.generatedAt).toISOString()} (trading date ${snapshot.tradingDate}; canonical source ${snapshot.canonicalSource})`,
+    `MARKET READING AS OF: ${snapshot.tradingDate} (canonical source ${snapshot.canonicalSource}); BRIEF GENERATED AT: ${new Date(snapshot.generatedAt).toISOString()}`,
     snapshot.canonicalOrigin.status === "linked"
       ? `CANONICAL ORIGIN: ${snapshot.canonicalOrigin.originatingStateId} (effective ${snapshot.canonicalOrigin.originatingEffectiveAt})`
       : `CANONICAL ORIGIN: unavailable (${snapshot.canonicalOrigin.reason}); this is an archived generated snapshot, not a current market-state claim.`,

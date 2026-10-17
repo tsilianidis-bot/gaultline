@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
 import type { CanonicalIntelligenceState } from "../../shared/canonicalIntelligenceState";
 import { canonicalEngineIntegrityEvidence } from "../canonicalIntelligenceState";
-import { buildEvidenceSnapshot, withinDeadline } from "./collector";
+import { retainedCanonicalFred, buildEvidenceSnapshot, withinDeadline, isObservedPostCloseQuote, IntelligenceEvidenceCollector } from "./collector";
 
 const NOW = new Date("2026-10-16T15:00:00.000Z");
 const NOW_MS = NOW.getTime();
 
 const canonical = (): CanonicalIntelligenceState => ({
   stateId: "state-verified-1",
+  domains: { pressureVerification: { status: "verified", receivedAt: new Date(NOW_MS - 60_000).toISOString(), inputs: [
+    { seriesId: "DGS10", sourceValue: 4.12, value: 4.12, observationDate: "2026-10-16" },
+    { seriesId: "DGS2", sourceValue: 3.77, value: 3.77, observationDate: "2026-10-16" },
+    { seriesId: "BAMLH0A0HYM2", sourceValue: 3.18, value: 318, observationDate: "2026-10-16" },
+  ] } },
   generatedAt: new Date(NOW_MS - 60_000).toISOString(),
   modelVersion: "champion-v1",
   confidenceOrEvidenceQuality: "HEALTHY",
@@ -117,5 +122,44 @@ describe("Phase 1 Intelligence Evidence collector", () => {
     expect(snapshot.domains.find(domain => domain.id === "equities")).toMatchObject({ status: "healthy", currentObservationIds: ["quote:SPY", "quote:QQQ", "quote:IWM"] });
     expect(snapshot.domains.find(domain => domain.id === "crypto")).toMatchObject({ status: "healthy", currentObservationIds: ["coingecko:global-market-cap"] });
     expect(snapshot.domains.find(domain => domain.id === "liquidity")).toMatchObject({ status: "unavailable", observationIds: [] });
+  });
+});
+
+describe("scheduled canonical source reuse — mocked fixtures only", () => {
+  it("admits genuine last-session quotes in the unchanged approved regular and early-close windows", () => {
+    const regular = { ...inputs().quotes[0], marketState: "CLOSED" as const, observedAt: Date.parse("2026-10-16T20:00:00.000Z") };
+    expect(isObservedPostCloseQuote(regular, Date.parse("2026-10-16T20:30:00.000Z"))).toBe(true);
+    expect(isObservedPostCloseQuote(regular, Date.parse("2026-10-17T20:30:00.000Z"))).toBe(false);
+    expect(isObservedPostCloseQuote({ ...regular, observedAt: Date.parse("2026-10-15T20:00:00.000Z") }, Date.parse("2026-10-16T20:30:00.000Z"))).toBe(false);
+    const early = { ...regular, observedAt: Date.parse("2026-11-27T18:00:00.000Z") };
+    expect(isObservedPostCloseQuote(early, Date.parse("2026-11-27T21:30:00.000Z"))).toBe(true);
+    const nowMs = Date.parse("2026-10-16T20:30:00.000Z");
+    const snapshot = buildEvidenceSnapshot(inputs({ quotes: [{ ...regular, fetchedAt: nowMs }], crypto: null }), new Date(nowMs));
+    expect(finding(snapshot, "quote:SPY")).toMatchObject({ observedAt: "2026-10-16T20:00:00.000Z", validationStatus: "verified", temporalStatus: "delayed", supportsCurrentClaim: true });
+  });
+  it("one-shot refresh claims/persists only the supplied exact canonical state; rollover is withheld", async () => {
+    const inserted: Array<{ canonicalStateId: string | null }> = [];
+    const claimed: Array<string | null> = [];
+    const store = {
+      tryClaim: async (_now: number, stateId: string | null) => { claimed.push(stateId); return "CLAIMED"; },
+      insert: async (snapshot: { canonicalStateId: string | null }) => { inserted.push(snapshot); return "INSERTED"; },
+      loadLatest: async () => null,
+    };
+    const collector = new IntelligenceEvidenceCollector(store as never, async () => inputs());
+    expect(await collector.refreshForCanonicalRun("different-state")).toBeNull();
+    expect(inserted).toHaveLength(0);
+    expect((await collector.refreshForCanonicalRun("state-verified-1"))?.canonicalStateId).toBe("state-verified-1");
+    expect(claimed).toEqual(["state-verified-1"]);
+    expect(inserted).toHaveLength(1);
+  });
+});
+
+describe("retained macro source identity — MOCK only", () => {
+  it("retains original receipt/value rather than later FRED release or computation time", () => {
+    const original = retainedCanonicalFred(canonical());
+    expect(original?.timestamp).toBe(new Date(NOW_MS - 60_000).toISOString());
+    expect(original?.results.DGS10.observations[0]).toMatchObject({ date: "2026-10-16", value: "4.12" });
+    const unknown = canonical(); delete (unknown.domains.pressureVerification as {receivedAt?:string}).receivedAt;
+    expect(retainedCanonicalFred(unknown)).toBeNull();
   });
 });

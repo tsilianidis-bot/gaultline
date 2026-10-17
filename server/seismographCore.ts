@@ -233,6 +233,10 @@ export interface SeismographOutput {
   // ── Identity ──────────────────────────────────────────────
   version: string;
   computedAt: number;
+  /** Origin identity persisted with the output only after its manifest succeeds. */
+  canonicalStateId?: string | null;
+  stateHash?: string | null;
+  inputSnapshotId?: string | null;
   dataFreshness: "live" | "recent" | "stale";
 
   // ── Core Market Assessment ────────────────────────────────

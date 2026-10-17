@@ -1,12 +1,13 @@
 /**
  * PR #58 r6: the fully assembled PLATO prompts (asha.ask answer call and the daily greeting)
- * built from the real stored production snapshot shape carry no scenario or probability percent.
+ * built from a stored historical fixture shape carry no scenario or probability percent.
  * The only percents allowed through are an analog "% similarity" (regime resemblance, not a
  * probability) and the stated breadth threshold in the invalidation conditions. Mocked provider only.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { buildCanonicalEvidencePacket } from "./evidencePacket";
 
 // The gateway reads its env at import time: set a fake key before any module loads. No network.
 vi.hoisted(() => {
@@ -16,8 +17,52 @@ vi.hoisted(() => {
 
 const FIX = path.join(import.meta.dirname, "__fixtures__", "prod-2026-10-01");
 const fixture = (name: string) => JSON.parse(readFileSync(path.join(FIX, name), "utf8"));
-const marketState = fixture("market-state-current.json");
-const canonical = fixture("canonical-current.json");
+const MOCK_SOURCE_METADATA = Object.freeze({
+  sourceType: "MOCK",
+  fixtureId: "plato-prompt-no-scenario-percent/2026-10-01",
+  provider: "test-only-static-fixture",
+  observedAt: "2026-10-01T18:00:34.034Z",
+  receivedAt: "2026-10-01T18:00:34.100Z",
+});
+const CANONICAL_IDENTITY = Object.freeze({
+  stateId: "state:mock:plato-prompt-no-scenario-percent:2026-10-01",
+  stateHash: "b5e09da21f746c0e6563e7a27bdf4589a8d896a3c77610db59df5c37cf17f501",
+  inputSnapshotId: "input:mock:plato-prompt-no-scenario-percent:2026-10-01",
+});
+// Static provider-observation references make this test's fixture provenance explicit. They are
+// mock metadata only: this test neither calls nor establishes the availability of a live provider.
+const MOCK_PROVIDER_OBSERVATIONS = Object.freeze([
+  { inputId: "hy_credit_spread", provider: "FRED", seriesId: "BAMLH0A0HYM2", sourceType: "MOCK", observedAt: "2026-10-01T18:00:32.884Z" },
+  { inputId: "secured_overnight_financing_rate", provider: "FRED", seriesId: "SOFR", sourceType: "MOCK", observedAt: "2026-10-01T18:00:32.884Z" },
+  { inputId: "ten_year_treasury_yield", provider: "FRED", seriesId: "DGS10", sourceType: "MOCK", observedAt: "2026-09-30T00:00:00.000Z" },
+  { inputId: "two_year_treasury_yield", provider: "FRED", seriesId: "DGS2", sourceType: "MOCK", observedAt: "2026-09-30T00:00:00.000Z" },
+  { inputId: "consumer_price_index_yoy", provider: "FRED", seriesId: "CPIAUCSL", sourceType: "MOCK", observedAt: "2026-09-01T00:00:00.000Z" },
+  { inputId: "producer_price_index_yoy", provider: "FRED", seriesId: "PPIACO", sourceType: "MOCK", observedAt: "2026-09-01T00:00:00.000Z" },
+  { inputId: "federal_funds_rate", provider: "FRED", seriesId: "FEDFUNDS", sourceType: "MOCK", observedAt: "2026-09-01T00:00:00.000Z" },
+  { inputId: "unemployment_rate", provider: "FRED", seriesId: "UNRATE", sourceType: "MOCK", observedAt: "2026-09-01T00:00:00.000Z" },
+]);
+const rawMarketState = fixture("market-state-current.json");
+const marketState = {
+  ...rawMarketState,
+  ...CANONICAL_IDENTITY,
+  provenance: MOCK_SOURCE_METADATA,
+  sourceHealth: rawMarketState.sourceHealth.map((source: { id: string; label: string; detail: string }) => ({
+    ...source,
+    id: `mock:${source.id}`,
+    label: `MOCK ${source.label}`,
+    detail: `TEST FIXTURE ONLY — ${source.detail}`,
+  })),
+};
+const rawCanonical = fixture("canonical-current.json");
+const canonical = {
+  ...rawCanonical,
+  ...CANONICAL_IDENTITY,
+  provenance: {
+    ...rawCanonical.provenance,
+    source: MOCK_SOURCE_METADATA,
+    providerObservations: MOCK_PROVIDER_OBSERVATIONS,
+  },
+};
 
 vi.mock("./marketStateService", async importOriginal => ({
   ...(await importOriginal<typeof import("./marketStateService")>()),
@@ -28,9 +73,9 @@ vi.mock("./canonicalIntelligenceState", async importOriginal => ({
   getAuthoritativeCanonicalIntelligenceState: async () => structuredClone(canonical),
 }));
 
-// The live prod systemic-regime reading (snapshot 2026-10-02 18:34Z, freshness CURRENT): the
-// prompt must not carry its crisis/transition probability or regime confidence in any form.
-const PROD_SYSTEMIC_READING = {
+// Explicit MOCK systemic-regime fixture: the prompt must not carry its crisis/transition
+// probability or regime confidence in any form.
+const MOCK_SYSTEMIC_READING = {
   systemicRiskScore: 0,
   crisisProbability: 0.0036016037127718343,
   stressBuildingProbability: null,
@@ -85,7 +130,7 @@ afterAll(() => {
 });
 beforeEach(() => {
   bodies.length = 0;
-  systemic.reading = structuredClone(PROD_SYSTEMIC_READING);
+  systemic.reading = structuredClone(MOCK_SYSTEMIC_READING);
   systemic.convergence = null;
   vi.spyOn(console, "warn").mockImplementation(() => {});
   vi.spyOn(console, "log").mockImplementation(() => {});
@@ -103,14 +148,26 @@ function disallowedPercents(prompt: string): string[] {
 }
 /** Any probability/confidence field with a numeric value, in raw or JSON-escaped form. */
 const NUMERIC_PROBABILITY_FIELD = /\\?"(\w*(?:[Pp]robabilit\w*|[Cc]onfidence|[Ll]ikelihood|[Oo]dds)|bull|bear|neutral|crash|softLanding|stagflation|recession|remainInRegime|transitionTo\w+)\\?"\s*:\s*-?\d/;
-/** The prod systemic-regime values, in any written form (decimal, rounded, or as a percent). */
-const PROD_SYSTEMIC_VALUES = /0\.0036|0\.36\s*%|0\.030000|\b0\.03\b|\b3(?:\.0)?\s*%|0\.9963|0\.996\b|99\.6\s*%|\b100\s*%/;
+/** The MOCK systemic-regime values, in any written form (decimal, rounded, or as a percent). */
+const MOCK_SYSTEMIC_VALUES = /0\.0036|0\.36\s*%|0\.030000|\b0\.03\b|\b3(?:\.0)?\s*%|0\.9963|0\.996\b|99\.6\s*%|\b100\s*%/;
 
 function prompt(): string {
   return bodies.map(body => JSON.stringify(body.messages)).join("\n");
 }
 
-describe("fixture guard: the stored snapshot really carries scenario percents", () => {
+describe("fixture guard: the explicit MOCK canonical packet has complete immutable provenance", () => {
+  it("uses one test-only identity, complete model vectors, and timestamped provider references", () => {
+    expect(MOCK_SOURCE_METADATA.sourceType).toBe("MOCK");
+    expect(marketState).toMatchObject(CANONICAL_IDENTITY);
+    expect(canonical).toMatchObject({ ...CANONICAL_IDENTITY, scoringVersion: "faultline-pressure-v1-frozen" });
+    expect(canonical.provenance).toMatchObject({ source: MOCK_SOURCE_METADATA, providerObservations: MOCK_PROVIDER_OBSERVATIONS });
+    expect(canonical.engines.map((engine: { engineId: string }) => engine.engineId)).toEqual([
+      "liquidity-stress", "credit-contagion", "volatility-regime", "macro-sensitivity", "market-breadth", "ai-bubble",
+    ]);
+    expect(canonical.engines.every((engine: { sourceInputIds: string[] }) => engine.sourceInputIds.length > 0)).toBe(true);
+    expect(MOCK_PROVIDER_OBSERVATIONS.every(observation => observation.sourceType === "MOCK" && observation.observedAt)).toBe(true);
+  });
+
   it("highestProbabilityPath and act.decisionSummary embed (60% historical frequency)", () => {
     expect(marketState.outlook.highestProbabilityPath).toContain("60% historical frequency");
     expect(marketState.act.decisionSummary).toContain("60% historical frequency");
@@ -119,7 +176,7 @@ describe("fixture guard: the stored snapshot really carries scenario percents", 
   });
 });
 
-describe("each model-bound field from the prod 2026-10-01 snapshot, on its own", () => {
+describe("each model-bound field from the explicit MOCK 2026-10-01 snapshot, on its own", () => {
   it("outlook.highestProbabilityPath has its percent withheld", () => {
     const outlook = outlookForModel(marketState.outlook);
     expect(outlook.highestProbabilityPath).toContain(`(${PLATO_SCENARIO_WITHHELD})`);
@@ -134,10 +191,10 @@ describe("each model-bound field from the prod 2026-10-01 snapshot, on its own",
   });
 });
 
-describe("assembled PLATO prompts from the prod 2026-10-01 snapshot", () => {
+describe("assembled PLATO prompts from the explicit MOCK 2026-10-01 snapshot", () => {
   const cases: Array<[string, () => Promise<unknown>]> = [
     ["daily greeting, no client readings", () => generateAshaDailyGreeting({ engineContext: {} })],
-    ["daily greeting, canonical client readings", () => generateAshaDailyGreeting({ userName: "Ada", engineContext: { pressureScore: 33, regime: "MODERATE RISK", trend: "Elevated · Stable", keyDrivers: ["Credit"] } })],
+    ["daily greeting, client readings have no authority", () => generateAshaDailyGreeting({ userName: "Ada", engineContext: { pressureScore: 33, regime: "MODERATE RISK", trend: "Elevated · Stable", keyDrivers: ["Credit"] } })],
     ["daily greeting, client sends regimeConfidence", () => generateAshaDailyGreeting({ engineContext: { regimeConfidence: 0.75, pressureScore: 33 } })],
     ["ask, plain", () => askAsha({ userMessage: "Is credit stress building?", history: [], pageContext: { page: "/app/now" } })],
     ["ask, client sends confidence and transition probability", () => askAsha({ userMessage: "Is credit stress building?", history: [], pageContext: { page: "/app/seismograph", regimeConfidence: 0.75, transitionProbability: 20 } })],
@@ -153,7 +210,7 @@ describe("assembled PLATO prompts from the prod 2026-10-01 snapshot", () => {
       expect(text).not.toMatch(/\\?"(bull|bear|neutral|crash|softLanding|stagflation|recession|remainInRegime|transitionTo\w+|regimeConfidence|transitionProbability)\\?"\s*:\s*-?\d/);
       expect(text).not.toContain("0.75");
       expect(text).not.toMatch(NUMERIC_PROBABILITY_FIELD);
-      expect(text).not.toMatch(PROD_SYSTEMIC_VALUES);
+      expect(text).not.toMatch(MOCK_SYSTEMIC_VALUES);
     });
   }
 
@@ -170,8 +227,23 @@ describe("assembled PLATO prompts from the prod 2026-10-01 snapshot", () => {
     for (const key of ["crisisProbability", "transitionProbability", "regimeConfidence"]) {
       expect(text).toMatch(new RegExp(`\\\\?"${key}\\\\?":\\\\?"${PLATO_SCENARIO_WITHHELD}`));
     }
-    expect(text).not.toMatch(PROD_SYSTEMIC_VALUES);
+    expect(text).not.toMatch(MOCK_SYSTEMIC_VALUES);
     expect(text).not.toMatch(NUMERIC_PROBABILITY_FIELD);
+  });
+
+  it("ask: every allowed evidence claim is bound to the one immutable MOCK canonical identity", async () => {
+    const packet = buildCanonicalEvidencePacket(structuredClone(canonical));
+    expect(packet.canonicalState).toMatchObject({
+      stateId: CANONICAL_IDENTITY.stateId,
+      inputSnapshotId: CANONICAL_IDENTITY.inputSnapshotId,
+    });
+    expect(packet.claims.length).toBeGreaterThan(0);
+    expect(packet.claims.every(claim => claim.canonical?.stateId === CANONICAL_IDENTITY.stateId)).toBe(true);
+
+    await askAsha({ userMessage: "Is credit stress building?", history: [], pageContext: { page: "/app/now", regimeConfidence: 0.75 } });
+    const text = prompt();
+    expect(text).toContain(CANONICAL_IDENTITY.stateId);
+    expect(text).not.toContain("0.75");
   });
 
   it("ask: a convergence summary cannot carry a probability", async () => {
@@ -190,9 +262,22 @@ describe("assembled PLATO prompts from the prod 2026-10-01 snapshot", () => {
     expect(disallowedPercents(text)).toEqual([]);
   });
 
-  it("greeting: the fixed evidence-quality line is still forwarded", async () => {
-    await generateAshaDailyGreeting({ engineContext: { narrative: "Current evidence quality: healthy" } });
-    expect(prompt()).toContain("Current evidence quality: healthy");
+  it("greeting: client market/page supplements, including the fixed evidence-quality line, have no authority", async () => {
+    await generateAshaDailyGreeting({
+      engineContext: {
+        pressureScore: 91,
+        regime: "CLIENT FABRICATED REGIME",
+        narrative: "Current evidence quality: healthy",
+        trend: "CLIENT TREND",
+        keyDrivers: ["CLIENT DRIVER"],
+        previousPressureScore: 12,
+      },
+    });
+    const text = prompt();
+    for (const clientOnlyValue of ["91", "CLIENT FABRICATED REGIME", "Current evidence quality: healthy", "CLIENT TREND", "CLIENT DRIVER", "12"]) {
+      expect(text).not.toContain(clientOnlyValue);
+    }
+    expect(text).toContain(CANONICAL_IDENTITY.stateId);
   });
 
   it("the greeting prompt keeps the decision summary, with the percent withheld", async () => {

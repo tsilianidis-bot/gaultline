@@ -1,3 +1,4 @@
+import { nyseSeismographRunWindow } from "../../shared/nyseSession";
 import type { CanonicalEngineState, CanonicalIntelligenceState } from "../../shared/canonicalIntelligenceState";
 import {
   INTELLIGENCE_EVIDENCE_METHOD_VERSION,
@@ -53,7 +54,7 @@ function finite(value: unknown): value is number {
 }
 
 function toIso(timestamp: number | null | undefined): string | null {
-  return finite(timestamp) ? new Date(timestamp).toISOString() : null;
+  return finite(timestamp) && Number.isFinite(new Date(timestamp).getTime()) ? new Date(timestamp).toISOString() : null;
 }
 
 function providerStatus(current: ValidatedIntelligenceEvidence[], ids: string[]): "healthy" | "degraded" | "unavailable" {
@@ -97,6 +98,9 @@ function validate(draft: EvidenceDraft, nowMs: number): ValidatedIntelligenceEvi
     unit: draft.unit,
     observedAt: integrity.observedAt,
     receivedAt: draft.receivedAt,
+    publicationAt: draft.publicationAt ?? null,
+    referenceDate: draft.referenceDate ?? null,
+    observationTimeBasis: draft.observationTimeBasis ?? (draft.kind === "canonical_model" ? "calculation_time" : draft.observedAt ? "provider_timestamp" : "unknown"),
     maxAgeMs: draft.maxAgeMs,
     validationStatus: integrity.status,
     supportsCurrentClaim: integrity.canSupportCurrentClaim,
@@ -133,10 +137,26 @@ function canonicalEngineDraft(canonical: CanonicalIntelligenceState, engine: Can
   };
 }
 
+/** Only the verified last-session quote gets the approved post-close cadence. */
+export function isObservedPostCloseQuote(quote: YahooQuote | undefined, nowMs: number): boolean {
+  if (!quote || quote.marketState !== "CLOSED" || !Number.isFinite(quote.observedAt)) return false;
+  const window = nyseSeismographRunWindow(new Date(nowMs));
+  if (!window.isScheduledWindow || !window.etDate) return false;
+  const fields = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(new Date(quote.observedAt!)).map(part => [part.type, part.value]));
+  const day = `${fields.year}-${fields.month}-${fields.day}`;
+  const closeMinute = (window.session === "EARLY_CLOSE" ? 13 : 16) * 60;
+  const quoteMinute = Number(fields.hour) * 60 + Number(fields.minute);
+  return day === window.etDate && Math.abs(quoteMinute - closeMinute) <= 1;
+}
+
 function quoteDraft(id: string, label: string, quote: YahooQuote | undefined, nowMs: number): EvidenceDraft {
   const polygon = quote?.source === "polygon-prev";
   const provider = polygon ? "Polygon.io previous-close fallback" : "Yahoo Finance";
   const freshness = classifyYahooObservation(quote, nowMs);
+  const completedSession = isObservedPostCloseQuote(quote, nowMs);
   return {
     id,
     label,
@@ -147,18 +167,19 @@ function quoteDraft(id: string, label: string, quote: YahooQuote | undefined, no
     unit: "points",
     observedAt: toIso(quote?.observedAt),
     receivedAt: toIso(quote?.fetchedAt) ?? null,
-    maxAgeMs: 20 * 60_000,
+    // Approved 16:15–16:45 ET recording also follows 13:00 early closes.
+    maxAgeMs: completedSession ? 4 * 60 * 60_000 : 20 * 60_000,
     modelVersion: null,
     sourceIdentifier: `${quote?.source ?? "unavailable"}:${quote?.ticker ?? id}`,
     sourceHealthy: Boolean(quote && quote.source !== "error" && finite(quote.price) && quote.observedAt),
-    temporalStatus: freshness.timing,
-    temporalDetail: freshness.detail,
+    temporalStatus: completedSession ? "delayed" : freshness.timing,
+    temporalDetail: completedSession ? "Verified last NYSE session quote in the approved post-close recording window; source observation time is retained, not relabelled intraday live." : freshness.detail,
   };
 }
 
 function fredDraft(id: string, label: string, unit: string | null, fred: FredBulkResult): EvidenceDraft {
   const result = fred.results[id];
-  const observation = result?.observations.find(item => finite(Number(item.value)));
+  const observation = result?.observations.find(item => typeof item.value === "string" && item.value.trim().length > 0 && finite(Number(item.value)));
   return {
     id: `fred:${id}`,
     label,
@@ -167,14 +188,17 @@ function fredDraft(id: string, label: string, unit: string | null, fred: FredBul
     origin: "observed",
     rawValue: observation && finite(Number(observation.value)) ? Number(observation.value) : null,
     unit,
-    observedAt: observation ? new Date(`${observation.date}T00:00:00.000Z`).toISOString() : null,
+    observedAt: observation ? toIso(Date.parse(`${observation.date}T00:00:00.000Z`)) : null,
     receivedAt: fred.timestamp ?? null,
+    publicationAt: null,
+    referenceDate: observation?.date ?? null,
+    observationTimeBasis: "reference_date",
     maxAgeMs: 96 * 60 * 60_000,
     modelVersion: null,
     sourceIdentifier: `fred:${id}`,
     sourceHealthy: Boolean(observation && !result?.error),
     temporalStatus: observation ? "released" : "unavailable",
-    temporalDetail: observation ? "Released macro observation; its source date is retained." : "No usable released source observation is available.",
+    temporalDetail: observation ? "FRED reference-period date retained; actual publication time was not supplied and is unknown. Freshness is assessed against this daily series date, not retrieval time." : "No usable released source observation is available.",
   };
 }
 
@@ -316,6 +340,11 @@ export function buildEvidenceSnapshot(inputs: EvidenceInputs, now: Date = new Da
     methodVersion: INTELLIGENCE_EVIDENCE_METHOD_VERSION,
     capturedAt: now.toISOString(),
     canonicalStateId: inputs.canonical?.stateId ?? null,
+    canonicalStateHash: inputs.canonical?.stateHash ?? null,
+    canonicalInputSnapshotId: inputs.canonical?.inputSnapshotId ?? null,
+    canonicalPressureIndex: finite(inputs.canonical?.pressureIndex) ? inputs.canonical!.pressureIndex : null,
+    canonicalRegime: inputs.canonical?.regime ?? null,
+    canonicalCoherenceStatus: inputs.canonical?.provenance?.coherenceStatus ?? null,
     observations,
     providerHealth: health,
     domains: buildSixDomainProjection(observations),
@@ -338,6 +367,22 @@ export async function withinDeadline<T>(task: Promise<T>, fallback: T, deadlineM
       () => { clearTimeout(timer); warnings.push(warning); resolve(fallback); },
     );
   });
+}
+
+/** Reuse actual retained source observations from the same verified macro run.
+ * Never recreate an absent receipt, copy a model score into a source value, or
+ * silently substitute a subsequent FRED release under an earlier state ID.
+ */
+export function retainedCanonicalFred(canonical: CanonicalIntelligenceState | null): Awaited<ReturnType<typeof fetchFredBulk>> | null {
+  const verification = canonical?.domains?.pressureVerification as { status?: string; receivedAt?: string; inputs?: Array<{seriesId: string; sourceValue?: number | null; observationDate: string | null}> } | undefined;
+  if (verification?.status !== "verified" || !verification.receivedAt || !Number.isFinite(Date.parse(verification.receivedAt)) || !Array.isArray(verification.inputs)) return null;
+  const results: Record<string, { seriesId: string; cached: boolean; observations: Array<{date: string; value: string}> }> = {};
+  for (const seriesId of ["DGS10", "DGS2", "BAMLH0A0HYM2"]) {
+    const source = verification.inputs.find(item => item.seriesId === seriesId);
+    if (!source?.observationDate || typeof source.sourceValue !== "number" || !Number.isFinite(source.sourceValue)) return null;
+    results[seriesId] = { seriesId, cached: true, observations: [{ date: source.observationDate, value: String(source.sourceValue) }] };
+  }
+  return { timestamp: verification.receivedAt, results } as Awaited<ReturnType<typeof fetchFredBulk>>;
 }
 
 export class IntelligenceEvidenceCollector {
@@ -365,24 +410,41 @@ export class IntelligenceEvidenceCollector {
     return this.refreshPromise;
   }
 
-  private async refreshInternal(): Promise<IntelligenceEvidenceSnapshot | null> {
+  /** Bounded one-shot reuse of the existing collector, invoked only behind recording/collection opt-ins. */
+  async refreshForCanonicalRun(expectedCanonicalStateId: string): Promise<IntelligenceEvidenceSnapshot | null> {
+    if (this.refreshPromise) await this.refreshPromise;
+    this.refreshPromise = this.refreshInternal(expectedCanonicalStateId).finally(() => { this.refreshPromise = null; });
+    return this.refreshPromise;
+  }
+
+  private async refreshInternal(expectedCanonicalStateId?: string): Promise<IntelligenceEvidenceSnapshot | null> {
+    const sources = await this.loadSources();
+    const forwardRecording = Boolean(expectedCanonicalStateId);
+    if (expectedCanonicalStateId && sources.canonical?.stateId !== expectedCanonicalStateId) return null;
+    if (forwardRecording) {
+      const retainedFred = retainedCanonicalFred(sources.canonical);
+      if (!retainedFred) return null;
+      sources.fred = retainedFred;
+    }
     const now = Date.now();
-    const claim = await this.store.tryClaim(now);
+    const stateId = sources.canonical?.stateId ?? null;
+    const claim = await this.store.tryClaim(now, stateId, forwardRecording);
     if (claim === "HELD") {
-      const persisted = await this.store.loadLatest();
+      const persisted = await this.store.loadLatest(expectedCanonicalStateId, forwardRecording);
+      if (forwardRecording) return persisted?.canonicalStateId === expectedCanonicalStateId ? persisted : null;
       if (persisted) this.latest = persisted;
       return this.latest;
     }
-    const previous = this.latest ?? await this.store.loadLatest();
-    const snapshot = buildEvidenceSnapshot(await this.loadSources(), new Date(now), previous);
+    const previous = forwardRecording ? await this.store.loadLatest(expectedCanonicalStateId, true) : this.latest ?? await this.store.loadLatest();
+    const snapshot = { ...buildEvidenceSnapshot(sources, new Date(now), previous), purpose: forwardRecording ? "forward_recording" as const : "interface" as const };
+    let result: IntelligenceEvidenceSnapshot = snapshot;
     if (claim === "CLAIMED") {
       const persisted = { ...snapshot, persistence: "recorded" as const };
       const write = await this.store.insert(persisted);
-      this.latest = write === "INSERTED" ? persisted : snapshot;
-    } else {
-      this.latest = snapshot;
+      result = write === "INSERTED" ? persisted : snapshot;
     }
-    return this.latest;
+    if (!forwardRecording) this.latest = result;
+    return result;
   }
 
   async current(): Promise<IntelligenceEvidenceResponse> {

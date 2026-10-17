@@ -3,7 +3,7 @@
  * This is a fail-closed, side-effect-free contract for future Intelligence Core consumers.
  * It does not change the Pressure Index or existing production outputs.
  */
-export type IntelligenceOrigin = "observed" | "modeled" | "inferred";
+export type IntelligenceOrigin = "observed" | "derived" | "modeled" | "inferred" | "historical_reconstruction" | "simulated" | "unavailable";
 export type IntelligenceIntegrityStatus = "verified" | "delayed" | "stale" | "unavailable";
 
 export interface IntelligenceEvidence {
@@ -47,6 +47,8 @@ export function evaluateIntelligenceEvidence(
     reason,
   });
   if (!evidence.id.trim() || !evidence.source.trim()) return unavailable("Missing evidence identity or source.");
+  if (evidence.origin === "historical_reconstruction" || evidence.origin === "simulated" || evidence.origin === "unavailable")
+    return unavailable("Historical reconstruction, explicit simulation or unavailable evidence cannot support an operational current claim.");
   if (evidence.value === null || (typeof evidence.value === "number" && !Number.isFinite(evidence.value)))
     return unavailable("Missing or invalid measurement.");
   if (!evidence.observedAt || !evidence.receivedAt) return unavailable("Missing observation or ingestion timestamp.");
@@ -56,8 +58,8 @@ export function evaluateIntelligenceEvidence(
       !Number.isFinite(nowMs) || !Number.isFinite(evidence.maxAgeMs) || evidence.maxAgeMs <= 0 ||
       observed > received || received > nowMs + 60_000 || observed > nowMs + 60_000)
     return unavailable("Invalid timestamps or refresh policy.");
-  if (evidence.origin === "modeled" && !evidence.modelVersion?.trim())
-    return unavailable("Model version required for modeled output.");
+  if ((evidence.origin === "modeled" || evidence.origin === "derived") && !evidence.modelVersion?.trim())
+    return unavailable("Model or methodology version required for modeled or derived output.");
   const ageMs = Math.max(0, nowMs - observed);
   if (!evidence.sourceHealthy)
     return { ...base, status: "unavailable", displayValue: evidence.value,

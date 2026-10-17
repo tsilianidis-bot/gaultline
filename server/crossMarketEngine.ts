@@ -1,3 +1,6 @@
+import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import { toOperationalPressure } from "./operationalSignalInputs";
+import { TRPCError } from "@trpc/server";
 /**
  * Cross-Market Intelligence Engine
  * Detects alignment and divergence between the Stock Market Regime and
@@ -44,6 +47,11 @@ export interface CrossMarketIntelligence {
   regimeChangeAlerts:   RegimeChangeAlert[];
   fetchedAt:            number;
   cached:               boolean;
+  canonicalStateId: string;
+  dataAsOf: string;
+  evidenceQuality: string;
+  methodology: "cross-market-regime-alignment-heuristic-v1";
+  limitations: string[];
 }
 
 // ── Cache ─────────────────────────────────────────────────────
@@ -149,9 +157,9 @@ function buildKeyInsights(
     insights.push(`Cross-market divergence detected: stocks are ${ss} while crypto is ${cs}. Divergences typically resolve within 2\u20134 weeks.`);
   }
 
-  if (stock.pressureScore >= 70) {
+  if (stock.pressureScore !== null && stock.pressureScore >= 70) {
     insights.push(`FAULTLINE Pressure Index is at ${Math.round(stock.pressureScore)}/100 \u2014 elevated stress. Reduce risk exposure.`);
-  } else if (stock.pressureScore <= 30) {
+  } else if (stock.pressureScore !== null && stock.pressureScore <= 30) {
     insights.push(`FAULTLINE Pressure Index is at ${Math.round(stock.pressureScore)}/100 \u2014 benign conditions. The macro backdrop supports risk-taking.`);
   }
 
@@ -262,84 +270,29 @@ function buildWhatToWatchNext(asset: "Stock" | "Crypto", current: string): strin
 
 // ── Public API ────────────────────────────────────────────────
 export async function computeCrossMarketIntelligence(): Promise<CrossMarketIntelligence> {
-  const cacheKey = "cross-market";
+  const canonical = await getAuthoritativeCanonicalIntelligenceState();
+  const pressure = toOperationalPressure(canonical);
+  const cacheKey = `cross-market:${canonical!.stateId}`;
   const hit = cache.get(cacheKey);
-  if (hit && Date.now() - hit.fetchedAt < CACHE_TTL_MS) {
-    return { ...hit.result, cached: true };
-  }
-
-  const [stock, crypto] = await Promise.all([
-    computeStockMarketRegime(),
-    computeCryptoMarketRegime(),
-  ]);
-
-  const ss = stockSentiment(stock.regime);
-  const cs = cryptoSentiment(crypto.regime);
+  if (hit && Date.now() - hit.fetchedAt < CACHE_TTL_MS) return { ...hit.result, cached: true };
+  const [stock, crypto] = await Promise.all([computeStockMarketRegime(canonical), computeCryptoMarketRegime(canonical)]);
+  if (stock.regime === "UNAVAILABLE" || stock.pressureScore === null || crypto.regime === "UNAVAILABLE")
+    throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Cross-market interpretations require available canonical-bound stock and crypto context." });
+  const ss = stockSentiment(stock.regime), cs = cryptoSentiment(crypto.regime);
   const { status, score } = computeAlignmentStatus(ss, cs);
-
-  const regimeChangeAlerts: RegimeChangeAlert[] = [];
-  const now = Date.now();
-
-  if (prevStockRegime !== null && prevStockRegime !== stock.regime) {
-    const alert: RegimeChangeAlert = {
-      asset:           "Stock",
-      previous:        prevStockRegime,
-      current:         stock.regime,
-      message:         `US equity market regime changed from ${prevStockRegime} to ${stock.regime}. Review your equity positioning.`,
-      whyItMatters:    buildWhyItMatters("Stock", prevStockRegime, stock.regime),
-      whatToWatchNext: buildWhatToWatchNext("Stock", stock.regime),
-      timestamp:       now,
-    };
-    regimeChangeAlerts.push(alert);
-    // Persist to DB (fire-and-forget)
-    getDb().then(db => { if (db) return db.insert(regimeAlerts).values({
-      asset:           alert.asset,
-      previous:        alert.previous,
-      current:         alert.current,
-      message:         alert.message,
-      whyItMatters:    alert.whyItMatters,
-      whatToWatchNext: alert.whatToWatchNext,
-      detectedAt:      alert.timestamp,
-    }); }).catch(err => console.error("[CrossMarket] Failed to persist stock regime alert:", err));
-  }
-  if (prevCryptoRegime !== null && prevCryptoRegime !== crypto.regime) {
-    const alert: RegimeChangeAlert = {
-      asset:           "Crypto",
-      previous:        prevCryptoRegime,
-      current:         crypto.regime,
-      message:         `Crypto market regime changed from ${prevCryptoRegime} to ${crypto.regime}. Review your crypto positioning.`,
-      whyItMatters:    buildWhyItMatters("Crypto", prevCryptoRegime, crypto.regime),
-      whatToWatchNext: buildWhatToWatchNext("Crypto", crypto.regime),
-      timestamp:       now,
-    };
-    regimeChangeAlerts.push(alert);
-    // Persist to DB (fire-and-forget)
-    getDb().then(db => { if (db) return db.insert(regimeAlerts).values({
-      asset:           alert.asset,
-      previous:        alert.previous,
-      current:         alert.current,
-      message:         alert.message,
-      whyItMatters:    alert.whyItMatters,
-      whatToWatchNext: alert.whatToWatchNext,
-      detectedAt:      alert.timestamp,
-    }); }).catch(err => console.error("[CrossMarket] Failed to persist crypto regime alert:", err));
-  }
-  prevStockRegime  = stock.regime;
-  prevCryptoRegime = crypto.regime;
-
   const result: CrossMarketIntelligence = {
-    stockRegime:         stock,
-    cryptoRegime:        crypto,
-    alignmentStatus:     status,
-    alignmentScore:      score,
-    plainEnglishSummary: buildPlainEnglishSummary(stock.regime, crypto.regime, status),
-    keyInsights:         buildKeyInsights(stock, crypto, status),
-    forwardBias:         buildForwardBias(ss, cs),
-    regimeChangeAlerts,
-    fetchedAt:           Date.now(),
-    cached:              false,
+    stockRegime: stock, cryptoRegime: crypto, alignmentStatus: status, alignmentScore: score,
+    plainEnglishSummary: `Rule-derived interpretations of canonical state ${canonical!.stateId}: equities ${stock.regime}; crypto macro context ${crypto.regime}. Alignment is a fixed model heuristic, not observed price outperformance or a forecast probability.`,
+    keyInsights: [`Canonical Pressure Index: ${pressure.overallPressure}/100 (${pressure.regime}).`,
+      `Evidence quality: ${canonical!.confidenceOrEvidenceQuality}; source effective ${canonical!.effectiveAt}.`,
+      "Both interpretations use the same canonical macro input snapshot.",
+      "No institutional-flow, on-chain, historical return or divergence-duration claim is supplied."],
+    forwardBias: "Model interpretation only. Apply the shared macro context alongside separately verified asset observations; alignment is not execution advice.",
+    regimeChangeAlerts: [], fetchedAt: Date.now(), cached: false,
+    canonicalStateId: canonical!.stateId, dataAsOf: canonical!.effectiveAt, evidenceQuality: canonical!.confidenceOrEvidenceQuality,
+    methodology: "cross-market-regime-alignment-heuristic-v1",
+    limitations: ["Uncalibrated fixed lookup heuristic; no probability or historical-return claim.", "Regime-change alerts withheld until durable prior/current manifest evidence is explicitly supplied by an authorized scheduled writer. Public reads do not persist or notify."],
   };
-
   cache.set(cacheKey, { result, fetchedAt: Date.now() });
   return result;
 }

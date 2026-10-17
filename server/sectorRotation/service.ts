@@ -152,7 +152,12 @@ async function readCanonicalLink(): Promise<CanonicalLink> {
 export async function collectSectorRotationInputs(budget: FanoutBudget = newBudget(Date.now()), now: () => number = Date.now): Promise<SectorRotationInputs> {
   const charts = await pacedMap(ROTATION_CHART_SYMBOLS, budget, s => getDailyChart(s, "6mo"), skippedChart, checkChart(budget));
   const [fred, universe, canonical] = await Promise.all([
-    Promise.all(ROTATION_FRED_SERIES.map(async s => { const r = await fetchFredSeries(s.id, s.limit, "desc"); return { id: s.id, observations: r.observations, error: r.error ?? null } as FredInput; })),
+    pacedMap(ROTATION_FRED_SERIES, budget, async s => {
+      const result = await fetchFredSeries(s.id, s.limit, "desc");
+      return { id: s.id, observations: result.observations, error: result.error ?? null } as FredInput;
+    }, (s, reason) => ({ id: s.id, observations: [], error: `Skipped: ${reason}` }), result => {
+      if (isRateLimit(result.error)) abortBudget(budget, `FRED ${result.id}: ${result.error}`, true);
+    }),
     budget.aborted ? Promise.resolve<UniverseInput>({ name: "S&P 500", source: "ssga.com", status: "UNAVAILABLE", asOf: null, members: [], reason: `Not fetched: ${budget.abortReason}` }) : fetchUniverse(budget),
     readCanonicalLink(),
   ]);

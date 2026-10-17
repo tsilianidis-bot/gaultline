@@ -32,6 +32,10 @@ export interface ValidatedIntelligenceEvidence {
   unit: string | null;
   observedAt: string | null;
   receivedAt: string | null;
+  /** Actual publication time, null when the provider only supplies a reference date. */
+  publicationAt?: string | null;
+  referenceDate?: string | null;
+  observationTimeBasis?: "provider_timestamp" | "reference_date" | "calculation_time" | "unknown";
   maxAgeMs: number;
   validationStatus: IntelligenceIntegrityStatus;
   supportsCurrentClaim: boolean;
@@ -76,7 +80,15 @@ export interface IntelligenceEvidenceSnapshot {
   kind: "intelligence-evidence-snapshot";
   methodVersion: typeof INTELLIGENCE_EVIDENCE_METHOD_VERSION;
   capturedAt: string;
+  /** Same ledger; exact-run evidence is not the live interface refresh. */
+  purpose?: "interface" | "forward_recording";
   canonicalStateId: string | null;
+  /** Optional only for archived legacy rows. New recordings require the full tuple. */
+  canonicalStateHash?: string | null;
+  canonicalInputSnapshotId?: string | null;
+  canonicalPressureIndex?: number | null;
+  canonicalRegime?: string | null;
+  canonicalCoherenceStatus?: string | null;
   observations: ValidatedIntelligenceEvidence[];
   providerHealth: EvidenceProviderHealth[];
   /** Fixed six-domain projection for the future Intelligence Core. */

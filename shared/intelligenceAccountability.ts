@@ -121,6 +121,8 @@ export interface MarketAssessmentInput {
   assessedAt: string;
   summary: string;
   canonicalStateId: string | null;
+  canonicalStateHash?: string | null;
+  inputSnapshotId?: string | null;
   pressureIndex: number | null;
   regime: string | null;
   scenarios: ScenarioExpectation[];
@@ -184,6 +186,8 @@ export interface StoredResolution {
 }
 
 export interface StoredAssessment {
+  canonicalStateHash?: string | null;
+  inputSnapshotId?: string | null;
   assessmentKey: string;
   provenance: AssessmentProvenance;
   exampleData: boolean;
@@ -379,6 +383,8 @@ export function normalizeAssessment(input: MarketAssessmentInput): Omit<StoredAs
     assessedAt: requireIso(input.assessedAt, "assessedAt"),
     summary: requireText(input.summary, "summary"),
     canonicalStateId: input.canonicalStateId?.trim() || null,
+    ...(input.canonicalStateHash ? { canonicalStateHash: input.canonicalStateHash } : {}),
+    ...(input.inputSnapshotId ? { inputSnapshotId: input.inputSnapshotId } : {}),
     pressureIndex: input.pressureIndex == null ? null : input.pressureIndex,
     regime: input.regime?.trim() || null,
     scenarios: normalizeScenarios(input),
@@ -884,6 +890,8 @@ export function agreedProvenance(historyClass: string, payloadProvenance: string
 export interface ScheduledAssessmentSnapshot {
   run: { trigger?: string | null };
   stateId: string | null;
+  canonicalStateHash?: string | null;
+  inputSnapshotId?: string | null;
   generatedAt: string;
   pressureIndex: number | null;
   regime: string | null;
@@ -918,6 +926,8 @@ export function buildScheduledAssessment(snapshot: ScheduledAssessmentSnapshot):
     assessedAt,
     summary: requireText(snapshot.summary, "summary"),
     canonicalStateId: snapshot.stateId,
+    ...(snapshot.canonicalStateHash ? { canonicalStateHash: snapshot.canonicalStateHash } : {}),
+    ...(snapshot.inputSnapshotId ? { inputSnapshotId: snapshot.inputSnapshotId } : {}),
     pressureIndex: snapshot.pressureIndex,
     regime: snapshot.regime,
     scenarios: equalStandingScenarios(snapshot.regime, snapshot.invalidationConditions),
