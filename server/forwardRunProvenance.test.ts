@@ -6,21 +6,37 @@ import { captureChampionProvenanceForRun, collectForwardOutcomesForRun } from ".
 
 describe("run trigger provenance (A1)", () => {
   it("trigger matrix", () => {
-    const inWin = new Date("2026-10-05T18:00:03Z");
+    const inWin = new Date("2026-10-05T20:15:03Z");
+    const legacyUtc = new Date("2026-10-05T18:00:03Z");
     const outWin = new Date("2026-10-05T17:06:00Z");
-    expect(resolveRunContext("cron-endpoint", inWin)).toEqual({ trigger: "SCHEDULED_CRON", triggerSource: "cron-endpoint", runStartedAt: "2026-10-05T18:00:03.000Z", scheduledWindow: true });
+    expect(resolveRunContext("cron-endpoint", inWin)).toEqual({ trigger: "SCHEDULED_CRON", triggerSource: "cron-endpoint", runStartedAt: "2026-10-05T20:15:03.000Z", scheduledWindow: true });
+    expect(resolveRunContext("cron-endpoint", legacyUtc)).toMatchObject({ trigger: "CRON_DEPLOY", scheduledWindow: false });
     expect(resolveRunContext("cron-endpoint", outWin).trigger).toBe("CRON_DEPLOY");
     expect(resolveRunContext("admin-seedNow", inWin).trigger).toBe("MANUAL");
     expect(resolveRunContext("backfill-recovery", inWin).trigger).toBe("BACKFILL_RECOVERY");
     expect(resolveRunContext("unspecified", inWin).trigger).toBe("AD_HOC");
   });
 
-  it("window is [18:00, 18:30) UTC", () => {
-    expect(isInScheduledWindow("2026-10-05T17:59:59Z")).toBe(false);
-    expect(isInScheduledWindow("2026-10-05T18:00:00Z")).toBe(true);
-    expect(isInScheduledWindow("2026-10-05T18:29:59Z")).toBe(true);
-    expect(isInScheduledWindow("2026-10-05T18:30:00Z")).toBe(false);
+  it("uses the NYSE 16:15–16:45 America/New_York window and keeps 18:00 UTC for unlabeled history", () => {
+    expect(isInScheduledWindow("2026-10-05T20:14:59.999Z")).toBe(false);
+    expect(isInScheduledWindow("2026-10-05T20:15:00.000Z")).toBe(true);
+    expect(isInScheduledWindow("2026-10-05T20:44:59.999Z")).toBe(true);
+    expect(isInScheduledWindow("2026-10-05T20:45:00.000Z")).toBe(false);
+    expect(isInScheduledWindow("2026-10-05T18:00:00.000Z")).toBe(false);
     expect(isInScheduledWindow("not a date")).toBe(false);
+    expect(isInScheduledWindow("2026-03-09T20:15:00.000Z")).toBe(true);
+    expect(isInScheduledWindow("2026-03-09T21:15:00.000Z")).toBe(false);
+    expect(isInScheduledWindow("2026-11-02T21:15:00.000Z")).toBe(true);
+    expect(isInScheduledWindow("2026-11-02T20:15:00.000Z")).toBe(false);
+    expect(resolveRunContext("cron-endpoint", new Date("2026-10-17T20:15:00.000Z")).trigger).toBe("CRON_DEPLOY");
+    expect(resolveRunContext("cron-endpoint", new Date("2026-11-26T21:15:00.000Z")).trigger).toBe("CRON_DEPLOY");
+    expect(resolveRunContext("cron-endpoint", new Date("2026-07-03T20:15:00.000Z")).trigger).toBe("CRON_DEPLOY");
+    expect(resolveRunContext("cron-endpoint", new Date("2026-11-27T21:15:00.000Z")).trigger).toBe("SCHEDULED_CRON");
+    expect(resolveRunContext("cron-endpoint", new Date("2026-11-27T18:15:00.000Z")).trigger).toBe("CRON_DEPLOY");
+    const legacy = { stateId: "legacy", originatingRunId: "l", generatedAt: "2026-10-05T18:00:00.000Z", pressureIndex: 1, regime: "MODERATE" };
+    expect(stateOrigin(legacy)).toBe("LEGACY_SCHEDULED_WINDOW");
+    expect(stateOrigin({ ...legacy, generatedAt: "2026-10-05T20:15:00.000Z" })).toBe("LEGACY_OUTSIDE_WINDOW");
+    expect(stateOrigin({ ...legacy, generatedAt: "2026-10-05T20:15:00.000Z", runProvenance: { trigger: "SCHEDULED_CRON" } })).toBe("SCHEDULED_CRON");
   });
 
   it("only SCHEDULED_CRON captures forward evidence", () => {
@@ -37,11 +53,11 @@ describe("scheduled vs ad-hoc on the same day (A5)", () => {
     const record = vi.fn(async () => ({ id: 21, created: true }));
     const collect = vi.fn(async () => ({ appended: 0, deferred: 0, reasons: {} }));
     const collectBroad = vi.fn(async () => ({ appended: 0, deferred: 0 }));
-    const scheduled = resolveRunContext("cron-endpoint", new Date("2026-10-05T18:00:02Z"));
+    const scheduled = resolveRunContext("cron-endpoint", new Date("2026-10-05T20:15:02Z"));
     const adhoc = resolveRunContext("admin-seedNow", new Date("2026-10-05T15:00:00Z"));
-    const deploy = resolveRunContext("cron-endpoint", new Date("2026-10-05T17:06:00Z"));
+    const deploy = resolveRunContext("cron-endpoint", new Date("2026-10-05T18:00:00Z"));
 
-    for (const ctx of [adhoc, deploy, resolveRunContext("unspecified", new Date("2026-10-05T18:05:00Z"))]) {
+    for (const ctx of [adhoc, deploy, resolveRunContext("unspecified", new Date("2026-10-05T20:20:00Z"))]) {
       expect(await captureChampionProvenanceForRun(ctx, pressure, "2026-10-05T18:05:00.000Z", record)).toMatchObject({ status: "NOT_CAPTURED_NON_SCHEDULED_RUN", championProvenanceId: null });
       expect(await collectForwardOutcomesForRun(ctx, collect, collectBroad)).toEqual({ collected: false });
     }
@@ -49,10 +65,10 @@ describe("scheduled vs ad-hoc on the same day (A5)", () => {
     expect(collect).not.toHaveBeenCalled();
     expect(collectBroad).not.toHaveBeenCalled();
 
-    const link = await captureChampionProvenanceForRun(scheduled, pressure, "2026-10-05T18:00:09.000Z", record);
+    const link = await captureChampionProvenanceForRun(scheduled, pressure, "2026-10-05T20:15:09.000Z", record);
     expect(link).toEqual({ status: "CAPTURED", championProvenanceKey: "champion-forward:2026-10-05:v1-forward-provenance-2026-08-19", championProvenanceId: 21, championProvenanceCreatedByThisRun: true, outcomeKeyVersion: "v2" });
     expect(record).toHaveBeenCalledTimes(1);
-    expect(record.mock.calls[0][1]).toEqual(new Date("2026-10-05T18:00:09.000Z"));
+    expect(record.mock.calls[0][1]).toEqual(new Date("2026-10-05T20:15:09.000Z"));
     expect(await collectForwardOutcomesForRun(scheduled, collect, collectBroad)).toEqual({ collected: true });
     expect(collect).toHaveBeenCalledTimes(1);
     expect(collectBroad).toHaveBeenCalledTimes(1);
@@ -63,10 +79,10 @@ describe("scheduled vs ad-hoc on the same day (A5)", () => {
   });
 
   it("provenance failures are non-blocking and recorded on the link", async () => {
-    const scheduled = resolveRunContext("cron-endpoint", new Date("2026-10-05T18:00:02Z"));
-    const link = await captureChampionProvenanceForRun(scheduled, pressure, "2026-10-05T18:00:09.000Z", async () => { throw new Error("db down"); });
+    const scheduled = resolveRunContext("cron-endpoint", new Date("2026-10-05T20:15:02Z"));
+    const link = await captureChampionProvenanceForRun(scheduled, pressure, "2026-10-05T20:15:09.000Z", async () => { throw new Error("db down"); });
     expect(link).toMatchObject({ status: "PROVENANCE_CAPTURE_FAILED", championProvenanceId: null, championProvenanceCreatedByThisRun: false });
-    const existing = await captureChampionProvenanceForRun(scheduled, pressure, "2026-10-05T18:00:09.000Z", async () => ({ id: 20, created: false }));
+    const existing = await captureChampionProvenanceForRun(scheduled, pressure, "2026-10-05T20:15:09.000Z", async () => ({ id: 20, created: false }));
     expect(existing).toMatchObject({ status: "DAY_ALREADY_CAPTURED", championProvenanceCreatedByThisRun: false });
   });
 
@@ -102,7 +118,11 @@ describe("trigger wiring at the call sites (A1)", () => {
   it("cron endpoint, admin seedNow and the v1 collector retirement", () => {
     const ss = source("server/scheduledSeismograph.ts");
     const router = source("server/routers/seismograph.ts");
-    expect(ss).toMatch(/const runContext = resolveRunContext\("cron-endpoint", new Date\(\)\);\s*try \{\s*const seismographOutput = await runSeismographPipeline\(\{ runContext \}\);/);
+    expect(ss).toMatch(/const now = new Date\(\);\s*const runWindow = nyseSeismographRunWindow\(now\);/);
+    expect(ss).toContain('skipped: "outside_nyse_post_close_window"');
+    expect(ss).toMatch(/const runContext = resolveRunContext\("cron-endpoint", now\);\s*try \{\s*const seismographOutput = await runSeismographPipeline\(\{ runContext \}\);/);
+    expect(ss).not.toContain("runScheduledSeismographOnce");
+    expect(ss).toContain("captureTrackRecordFromScheduledRun");
     expect(router).toMatch(/seedNow:\s*adminProcedure\.mutation\(async \(\) => \{[\s\S]{0,200}runSeismographPipeline\(\{ runContext: resolveRunContext\("admin-seedNow"\) \}\)/);
     expect(ss).not.toMatch(/collectForwardChampionOutcomes\(/);
     // F2: the broad institutional collector runs only through the scheduled-only gate
