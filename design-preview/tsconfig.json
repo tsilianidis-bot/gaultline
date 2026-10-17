@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "./**/*.ts",
+    "./**/*.tsx",
+    "../client/src/components/intelligence-core-visual/**/*.ts",
+    "../client/src/components/intelligence-core-visual/**/*.tsx"
+  ],
+  "exclude": ["../node_modules"],
+  "compilerOptions": { "incremental": false, "noEmit": true }
+}

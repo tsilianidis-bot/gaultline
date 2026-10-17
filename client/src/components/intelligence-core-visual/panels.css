@@ -1,0 +1,735 @@
+.fic .fic-panel {
+  box-sizing: border-box;
+  color: var(--fic-text);
+  font-family: inherit;
+  border-top: 1px solid var(--fic-line);
+  border-bottom: 1px solid var(--fic-line);
+  background: var(--fic-surface);
+}
+
+.fic .fic-panel *,
+.fic .fic-panel *::before,
+.fic .fic-panel *::after {
+  box-sizing: border-box;
+}
+
+.fic .fic-panel-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 88px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid var(--fic-line);
+}
+
+.fic .fic-eyebrow,
+.fic .fic-header-note,
+.fic .fic-tab-index,
+.fic .fic-tab-status,
+.fic .fic-status-chip,
+.fic .fic-record-date,
+.fic .fic-demo-badge,
+.fic .fic-outcome-badge,
+.fic .fic-tab-count,
+.fic .fic-metrics-heading p {
+  margin: 0;
+  font-family:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.11em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.fic .fic-eyebrow {
+  margin-bottom: 7px;
+  color: var(--fic-cyan);
+}
+
+.fic .fic-panel h2,
+.fic .fic-panel h3,
+.fic .fic-panel h4,
+.fic .fic-panel p {
+  margin-top: 0;
+}
+
+.fic .fic-panel h2,
+.fic .fic-panel h3,
+.fic .fic-panel h4 {
+  color: var(--fic-text);
+  font-family: inherit;
+}
+
+.fic .fic-panel h2 {
+  margin-bottom: 0;
+  font-size: clamp(20px, 2vw, 26px);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+.fic .fic-header-note {
+  max-width: 190px;
+  color: var(--fic-muted);
+  text-align: right;
+}
+
+.fic .fic-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-bottom: 1px solid var(--fic-line);
+}
+
+.fic .fic-tab {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 10px 14px;
+  overflow: hidden;
+  color: var(--fic-muted);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.25;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--fic-line);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+.fic .fic-tab:last-child {
+  border-right: 0;
+}
+
+.fic .fic-tab:hover:not(:disabled),
+.fic .fic-tab.is-selected {
+  color: var(--fic-text);
+  background: color-mix(in srgb, var(--fic-cyan) 6%, transparent);
+}
+
+.fic .fic-tab.is-selected {
+  border-bottom-color: var(--fic-cyan);
+}
+
+.fic .fic-tab:disabled {
+  color: color-mix(in srgb, var(--fic-muted) 58%, transparent);
+  cursor: not-allowed;
+}
+
+.fic .fic-tab:focus-visible,
+.fic .fic-evidence-action:focus-visible,
+.fic .fic-disclosure-button:focus-visible,
+.fic .fic-metric-evidence:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--fic-cyan);
+  outline-offset: -2px;
+}
+
+.fic .fic-tab-index {
+  color: var(--fic-cyan);
+}
+
+.fic .fic-tab-status {
+  overflow: hidden;
+  color: var(--fic-muted);
+  font-size: 9px;
+  letter-spacing: 0.07em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fic .fic-tab-status.is-favored,
+.fic .fic-status-chip.is-favored {
+  color: var(--fic-cyan);
+}
+
+.fic .fic-tab-status.is-conditional,
+.fic .fic-status-chip.is-conditional {
+  color: var(--fic-amber);
+}
+
+.fic .fic-scenario-reading {
+  padding: 28px 24px 24px;
+  outline: none;
+}
+
+.fic .fic-scenario-reading:focus-visible,
+.fic .fic-record-ledger:focus-visible {
+  outline: 2px solid var(--fic-cyan);
+  outline-offset: -2px;
+}
+
+.fic .fic-scenario-reading-header,
+.fic .fic-record-header,
+.fic .fic-record-actions,
+.fic .fic-metrics-heading,
+.fic .fic-metric {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.fic .fic-scenario-identity {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+}
+
+.fic .fic-scenario-index {
+  display: grid;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  color: var(--fic-cyan);
+  font-family:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  font-size: 13px;
+  place-items: center;
+  border: 1px solid var(--fic-cyan);
+}
+
+.fic .fic-scenario-identity h3 {
+  margin-bottom: 6px;
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.fic .fic-status-chip {
+  display: inline-block;
+  color: var(--fic-muted);
+}
+
+.fic .fic-evidence-action,
+.fic .fic-disclosure-button,
+.fic .fic-metric-evidence {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 10px 12px;
+  color: var(--fic-cyan);
+  font-family:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  line-height: 1.2;
+  text-align: center;
+  background: transparent;
+  border: 1px solid var(--fic-line);
+  cursor: pointer;
+}
+
+.fic .fic-evidence-action:hover,
+.fic .fic-disclosure-button:hover,
+.fic .fic-metric-evidence:hover {
+  color: var(--fic-text);
+  border-color: var(--fic-cyan);
+  background: color-mix(in srgb, var(--fic-cyan) 7%, transparent);
+}
+
+.fic .fic-no-evidence {
+  color: var(--fic-muted);
+  font-family:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.fic .fic-scenario-summary {
+  max-width: 790px;
+  margin: 26px 0 28px;
+  color: var(--fic-text);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.fic .fic-scenario-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--fic-line);
+}
+
+.fic .fic-detail-block {
+  min-height: 150px;
+  padding: 19px 20px 18px 0;
+  border-bottom: 1px solid var(--fic-line);
+}
+
+.fic .fic-detail-block + .fic-detail-block {
+  padding-right: 0;
+  padding-left: 20px;
+  border-left: 1px solid var(--fic-line);
+}
+
+.fic .fic-detail-block h4,
+.fic .fic-domain-line h4 {
+  margin-bottom: 13px;
+  color: var(--fic-muted);
+  font-family:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.fic .fic-condition-list,
+.fic .fic-domain-list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.fic .fic-condition-list {
+  display: grid;
+  gap: 9px;
+}
+
+.fic .fic-condition-list li {
+  position: relative;
+  padding-left: 14px;
+  color: var(--fic-text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.fic .fic-condition-list li::before {
+  position: absolute;
+  top: 0.68em;
+  left: 0;
+  width: 6px;
+  height: 1px;
+  content: "";
+  background: var(--fic-cyan);
+}
+
+.fic .fic-invalidation-list li::before {
+  background: var(--fic-amber);
+}
+
+.fic .fic-absent-copy {
+  margin-bottom: 0;
+  color: var(--fic-muted);
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.fic .fic-domain-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 22px;
+  padding-top: 19px;
+}
+
+.fic .fic-domain-line h4 {
+  flex: 0 0 126px;
+  margin: 5px 0 0;
+}
+
+.fic .fic-domain-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fic .fic-domain-list li {
+  padding: 6px 8px;
+  color: var(--fic-text);
+  font-family:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  font-size: 10px;
+  letter-spacing: 0.025em;
+  line-height: 1.2;
+  border: 1px solid var(--fic-line);
+}
+
+.fic .fic-empty-state,
+.fic .fic-cohort-empty {
+  padding: 30px 24px;
+  color: var(--fic-muted);
+  font-size: 14px;
+  line-height: 1.55;
+  border-bottom: 1px solid var(--fic-line);
+}
+
+.fic .fic-empty-state p:last-child {
+  max-width: 550px;
+  margin-bottom: 0;
+}
+
+.fic .fic-empty-state-title {
+  margin-bottom: 6px;
+  color: var(--fic-text);
+  font-family:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.fic .fic-record-tabs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.fic .fic-record-tabs .fic-tab {
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 56px;
+}
+
+.fic .fic-tab-count {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  color: var(--fic-muted);
+  font-size: 10px;
+  letter-spacing: 0;
+  place-items: center;
+  border: 1px solid var(--fic-line);
+}
+
+.fic .fic-tab.is-selected .fic-tab-count {
+  color: var(--fic-cyan);
+  border-color: color-mix(in srgb, var(--fic-cyan) 70%, var(--fic-line));
+}
+
+.fic .fic-record-ledger {
+  outline: none;
+}
+
+.fic .fic-record-list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.fic .fic-record-row {
+  padding: 21px 24px 20px;
+  border-bottom: 1px solid var(--fic-line);
+}
+
+.fic .fic-record-header {
+  align-items: flex-start;
+}
+
+.fic .fic-record-date {
+  padding-top: 4px;
+  color: var(--fic-muted);
+}
+
+.fic .fic-record-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.fic .fic-outcome-badge,
+.fic .fic-demo-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 7px;
+  color: var(--fic-muted);
+  font-size: 9px;
+  letter-spacing: 0.07em;
+  border: 1px solid var(--fic-line);
+}
+
+.fic .fic-outcome-badge.is-supported {
+  color: var(--fic-cyan);
+  border-color: color-mix(in srgb, var(--fic-cyan) 65%, var(--fic-line));
+}
+
+.fic .fic-outcome-badge.is-contradicted {
+  color: var(--fic-amber);
+  border-color: color-mix(in srgb, var(--fic-amber) 65%, var(--fic-line));
+}
+
+.fic .fic-demo-badge {
+  color: var(--fic-amber);
+}
+
+.fic .fic-record-summary {
+  max-width: 850px;
+  margin: 14px 0 16px;
+  color: var(--fic-text);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.fic .fic-record-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fic .fic-disclosure-button {
+  color: var(--fic-muted);
+}
+
+.fic .fic-disclosure-button svg {
+  flex: 0 0 auto;
+}
+
+.fic .fic-disclosure-button svg.is-open {
+  transform: rotate(180deg);
+}
+
+.fic .fic-record-evidence {
+  margin-top: 10px;
+  padding: 12px 14px;
+  color: var(--fic-muted);
+  font-family:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  background: color-mix(in srgb, var(--fic-bg) 68%, transparent);
+  border-left: 1px solid var(--fic-cyan);
+}
+
+.fic .fic-record-evidence p {
+  margin-bottom: 0;
+}
+
+.fic .fic-evidence-lineage-label {
+  margin-bottom: 7px;
+  color: var(--fic-text);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.fic .fic-evidence-id-list {
+  display: grid;
+  gap: 5px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.fic .fic-evidence-id-list li {
+  overflow-wrap: anywhere;
+  color: var(--fic-muted);
+}
+
+.fic .fic-cohort-empty {
+  min-height: 116px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--fic-line);
+}
+
+.fic .fic-metrics {
+  padding: 22px 24px 24px;
+  background: color-mix(in srgb, var(--fic-bg) 35%, var(--fic-surface));
+}
+
+.fic .fic-metrics-heading {
+  align-items: baseline;
+  margin-bottom: 14px;
+}
+
+.fic .fic-metrics-heading h3 {
+  margin-bottom: 0;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.fic .fic-metrics-heading p {
+  color: var(--fic-muted);
+  font-size: 9px;
+}
+
+.fic .fic-metric-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1px;
+  padding: 1px;
+  margin: 0;
+  background: var(--fic-line);
+}
+
+.fic .fic-metric {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 5px 12px;
+  min-height: 88px;
+  padding: 14px;
+  background: var(--fic-surface);
+}
+
+.fic .fic-metric dt {
+  color: var(--fic-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.fic .fic-metric dd {
+  margin: 0;
+  color: var(--fic-text);
+  font-family:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+  text-align: right;
+}
+
+.fic .fic-metric .fic-metric-sample {
+  grid-column: 1 / -1;
+  color: var(--fic-muted);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  text-align: left;
+}
+
+.fic .fic-metric-evidence {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-height: 32px;
+  padding: 6px 8px;
+  font-size: 10px;
+}
+
+.fic .fic-metrics-withheld h3 {
+  margin-bottom: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.fic .fic-metrics-withheld p {
+  max-width: 680px;
+  margin-bottom: 0;
+  color: var(--fic-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+@media (max-width: 680px) {
+  .fic .fic-panel-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+    padding: 20px 16px 17px;
+  }
+
+  .fic .fic-header-note {
+    max-width: none;
+    text-align: left;
+  }
+
+  .fic .fic-tabs {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .fic .fic-tab {
+    flex: 1 0 142px;
+    min-height: 58px;
+    padding: 9px 12px;
+  }
+
+  .fic .fic-tab-status {
+    display: none;
+  }
+
+  .fic .fic-scenario-reading,
+  .fic .fic-record-row,
+  .fic .fic-metrics {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .fic .fic-scenario-reading-header,
+  .fic .fic-record-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 13px;
+  }
+
+  .fic .fic-evidence-action {
+    width: 100%;
+  }
+
+  .fic .fic-no-evidence {
+    padding: 10px 0;
+  }
+
+  .fic .fic-scenario-summary {
+    margin: 22px 0 24px;
+  }
+
+  .fic .fic-scenario-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fic .fic-detail-block,
+  .fic .fic-detail-block + .fic-detail-block {
+    min-height: 0;
+    padding: 18px 0;
+    border-left: 0;
+  }
+
+  .fic .fic-domain-line {
+    display: block;
+  }
+
+  .fic .fic-domain-line h4 {
+    margin: 0 0 11px;
+  }
+
+  .fic .fic-record-badges {
+    justify-content: flex-start;
+  }
+
+  .fic .fic-record-actions > * {
+    flex: 1 1 150px;
+  }
+
+  .fic .fic-empty-state,
+  .fic .fic-cohort-empty {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .fic .fic-metric-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fic .fic-panel *,
+  .fic .fic-panel *::before,
+  .fic .fic-panel *::after {
+    scroll-behavior: auto;
+  }
+}
