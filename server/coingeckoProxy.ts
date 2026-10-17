@@ -89,6 +89,9 @@ export interface GlobalStats {
   marketCapChangePercent24h: number;
   activeCryptocurrencies: number;
   markets: number;
+  /** CoinGecko `data.updated_at`, in Unix milliseconds; null when absent or invalid. */
+  observedAt: number | null;
+  /** Local receipt time. This is never used as a provider observation time. */
   fetchedAt: number;
 }
 
@@ -483,10 +486,14 @@ export async function getGlobalStats(): Promise<GlobalStats | null> {
         market_cap_change_percentage_24h_usd: number;
         active_cryptocurrencies: number;
         markets: number;
+        updated_at?: number | null;
       };
     }
     const data = await cgFetch<GlobalResponse>("/global");
     const d = data.data;
+    const updatedAtSeconds = typeof d.updated_at === "number" && Number.isFinite(d.updated_at) && d.updated_at > 0
+      ? d.updated_at
+      : null;
     const stats: GlobalStats = {
       totalMarketCap:            d.total_market_cap?.usd ?? 0,
       totalVolume24h:            d.total_volume?.usd ?? 0,
@@ -495,6 +502,7 @@ export async function getGlobalStats(): Promise<GlobalStats | null> {
       marketCapChangePercent24h: d.market_cap_change_percentage_24h_usd ?? 0,
       activeCryptocurrencies:    d.active_cryptocurrencies ?? 0,
       markets:                   d.markets ?? 0,
+      observedAt:                updatedAtSeconds === null ? null : updatedAtSeconds * 1000,
       fetchedAt:                 Date.now(),
     };
     globalCache.set("global", stats);
