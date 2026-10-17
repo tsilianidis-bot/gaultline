@@ -564,64 +564,7 @@ export async function getGuidanceForTicker(
     return cards[0];
   }
 
-  // Synthesise a generic AssetProfile based on asset type
-  const isCrypto = assetType === "Crypto";
-  const isETF    = assetType === "ETF";
-  const syntheticProfile: AssetProfile = {
-    ticker:               ticker.toUpperCase(),
-    name,
-    assetType:            isCrypto ? "Crypto" : isETF ? "ETF" : "Stock",
-    sector:               isCrypto ? "Digital Assets" : isETF ? "Broad Market" : "Equity",
-    aiExposure:           isCrypto ? 40 : isETF ? 30 : 45,
-    debtRisk:             isCrypto ? 10 : isETF ? 20 : 35,
-    recessionSensitivity: isCrypto ? 85 : isETF ? 60 : 65,
-    volatilityBase:       isCrypto ? 85 : isETF ? 35 : 50,
-    momentumBase:         55,
-    sectorStrengthBase:   55,
-    priceNote:            "See Portfolio tab for live price",
-  };
-
-  const cacheKey = `${ticker.toUpperCase()}:${pressure.overallPressure}:${new Date().toISOString().slice(0, 13)}`;
-  const cached = guidanceCache.get(cacheKey);
-  if (cached) {
-    return { ...cached, cached: true };
-  }
-
-  const scores = computeAssetScores(syntheticProfile, pressure);
-  const action = scoreToAction(scores.compositeScore);
-  const conviction = scoreToConviction(scores.compositeScore, pressure.overallPressure);
-  const trendCondition = deriveTrendCondition(syntheticProfile, pressure.overallPressure);
-  const supportLevel = deriveSupportLevel(syntheticProfile, pressure.overallPressure);
-  const keyDrivers = deriveKeyDrivers(syntheticProfile, scores, pressure);
-  const timeframe: PositionTimeframe =
-    pressure.overallPressure >= 70 ? "Today" :
-    pressure.overallPressure >= 50 ? "Week" :
-    "Month";
-
-  const interpretation = await generatePositionInterpretation(
-    syntheticProfile, action, conviction, scores, pressure, keyDrivers
-  );
-
-  const card: PositionGuidanceCard = {
-    ticker: ticker.toUpperCase(),
-    name,
-    assetType: syntheticProfile.assetType,
-    action,
-    conviction,
-    timeframe,
-    currentPrice: syntheticProfile.priceNote,
-    pressureIndex: pressure.overallPressure,
-    regime: pressure.regime,
-    regimeLabel: pressure.level,
-    scores,
-    trendCondition,
-    supportLevel,
-    keyDrivers,
-    ...interpretation,
-    cached: false,
-  };
-
-    guidanceCache.set(cacheKey, card);
-  return card;
+  // No verified asset-specific inputs for arbitrary holdings. Never infer traits from ticker category.
+  throw new Error("Position Guidance unavailable: verified company-specific characteristics are required.");
 }
 export { DEMO_ASSETS };
