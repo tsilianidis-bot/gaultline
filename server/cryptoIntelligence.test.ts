@@ -4,10 +4,12 @@
 // Tests for the crypto signal scoring engine.
 // CURRENT macro context binds to the canonical intelligence state.
 // ============================================================
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
+import { buildAtomicIntelligenceStateManifest, validateStoredIntelligenceManifest } from "./intelligenceGovernance";
+import { resolveRunContext } from "./forwardRunProvenance";
 
 vi.mock("./canonicalIntelligenceState", async () => {
   const actual = await vi.importActual<typeof import("./canonicalIntelligenceState")>("./canonicalIntelligenceState");
@@ -23,52 +25,117 @@ vi.mock("./_core/llm", () => ({
   }),
 }));
 
+const MOCK_GENERATED_AT = "2026-10-16T20:30:00.000Z"; // Friday, 16:30 ET
+const MOCK_NOW = new Date("2026-10-16T21:00:00.000Z");
+const MOCK_RUN_STARTED_AT = new Date(MOCK_GENERATED_AT);
+const MOCK_VECTOR_VALUES = {
+  "liquidity-stress": 40,
+  "credit-contagion": 35,
+  "volatility-regime": 50,
+  "macro-sensitivity": 38,
+  "market-breadth": 42,
+  "ai-bubble": 40,
+};
+const MOCK_VECTOR_WEIGHTS: Record<string, number> = {
+  "liquidity-stress": 0.20,
+  "credit-contagion": 0.20,
+  "volatility-regime": 0.15,
+  "macro-sensitivity": 0.20,
+  "market-breadth": 0.10,
+  "ai-bubble": 0.15,
+};
+const MOCK_RAW_INPUTS = {
+  hySpread: 350,
+  sofr: 4.5,
+  tsy10y: 4.2,
+  tsy2y: 3.9,
+  cpi: 2.7,
+  ppi: 2.1,
+  fedFunds: 4.25,
+  unemployment: 4.1,
+};
+const MOCK_OBSERVATION_DATES = Object.fromEntries(
+  Object.keys(MOCK_RAW_INPUTS).map(inputId => [inputId, "2026-10-16"]),
+);
+
+/** A complete, hash-valid scheduled MOCK source; it never represents a live provider result. */
 function manifest(overrides: Record<string, unknown> = {}) {
-  return {
-    stateId: "state:crypto-test",
-    generatedAt: "2026-09-12T00:00:00.000Z",
-    championVersion: "champion-v1-frozen",
-    modelVersion: "2.0",
-    scoringVersion: "faultline-pressure-v1-frozen",
-    configurationVersion: "phase1b-governance-v1",
-    inputSnapshotId: "input:crypto-test",
-    stateHash: "hash:crypto-test",
-    pressureIndex: 45,
-    regime: "MODERATE STRESS",
-    engineValues: {
-      "liquidity-stress": 40,
-      "credit-contagion": 35,
-      "volatility-regime": 50,
-      "macro-sensitivity": 38,
-      "market-breadth": 42,
-      "ai-bubble": 40,
-    },
-    engineDirections: { "liquidity-stress": "stable" },
-    domainValues: {},
-    scenarioOutputs: { bull: 43, neutral: 43, bear: 14 },
-    probabilityClaimIds: [],
-    analogClaimIds: [],
-    historicalDatasetVersion: "historical",
-    researchDatasetVersion: "research",
-    coherenceStatus: "COHERENT",
-    coherenceNotes: [],
-    dataQualitySummary: { staleInputs: [], unavailableInputs: [], fallbackInputs: [], staticInputs: [] },
-    staleInputs: [],
-    unavailableInputs: [],
-    fallbackInputs: [],
-    inputQuality: [],
-    ...overrides,
+  const pressureIndex = typeof overrides.pressureIndex === "number" ? overrides.pressureIndex : 45;
+  const regime = typeof overrides.regime === "string" ? overrides.regime : "MODERATE STRESS";
+  const engineValues = {
+    ...MOCK_VECTOR_VALUES,
+    ...(overrides.engineValues as Record<string, number> | undefined),
   };
+  const pressure = {
+    overallPressure: pressureIndex,
+    regime,
+    level: "Moderate",
+    timestamp: MOCK_GENERATED_AT,
+    lastUpdated: MOCK_GENERATED_AT,
+    dataSource: "live",
+    priorPressure: null,
+    alerts: [],
+    topAnalog: { year: 0, label: "UNAVAILABLE", similarity: 0, description: "MOCK canonical source has no analog claim." },
+    analogs: [],
+    vectors: Object.entries(engineValues).map(([id, score]) => ({
+      id,
+      label: id,
+      description: `MOCK ${id} canonical vector`,
+      score,
+      level: "Moderate",
+      driver: "MOCK canonical fixture",
+      trend: "stable",
+      weight: MOCK_VECTOR_WEIGHTS[id],
+      rawInputs: { ...MOCK_RAW_INPUTS },
+      observationDates: { ...MOCK_OBSERVATION_DATES },
+      dataStatus: "live",
+      source: "MOCK:FRED",
+    })),
+  } as any;
+  const seismograph = {
+    version: "seismograph-core-v1",
+    computedAt: Date.parse(MOCK_GENERATED_AT),
+    dataFreshness: "live",
+    pressureScore: pressureIndex,
+    regime,
+    stressLevel: "Moderate",
+    direction: "Stable",
+    probabilities: { bull: 43, neutral: 43, bear: 14, primaryDriver: "MOCK canonical fixture", confidence: 55 },
+    historicalPercentile: 50,
+    analogMatches: [],
+    topAnalog: { label: "UNAVAILABLE", similarity: 0, description: "MOCK canonical source has no analog claim." },
+    activePatterns: [],
+    patternsSummary: "MOCK canonical fixture",
+    transitionProbabilities: { remainInRegime: 70, transitionToElevated: 15, transitionToLow: 10, transitionToCrisis: 5, primaryDriver: "MOCK canonical fixture" },
+    evidenceFamilies: [],
+    activeContributors: ["pressure"],
+    evidenceConsensus: "moderate",
+    marketMemory: { streakDays: 1, streakDirection: "stable", peakPressureThisCycle: pressureIndex, troughPressureThisCycle: pressureIndex, daysSinceLastTransition: 0, keyMemoryPoints: [] },
+  } as any;
+  const atomic = buildAtomicIntelligenceStateManifest({
+    pressure,
+    seismograph,
+    originatingRunId: "seismograph:mock-crypto-2026-10-16",
+    generatedAt: MOCK_GENERATED_AT,
+    runContext: resolveRunContext("cron-endpoint", MOCK_RUN_STARTED_AT),
+  });
+  const stored = { ...atomic.manifest, inputQuality: atomic.inputQuality, runProvenance: atomic.runProvenance };
+  if (!validateStoredIntelligenceManifest(stored)) throw new Error("Invalid canonical MOCK source fixture");
+  return stored;
 }
 
+let boundCanonical: ReturnType<typeof buildCanonicalIntelligenceState> | null = null;
 function bindCanonical(overrides: Record<string, unknown> = {}) {
-  vi.mocked(getAuthoritativeCanonicalIntelligenceState).mockResolvedValue(
-    buildCanonicalIntelligenceState(manifest(overrides)),
-  );
+  boundCanonical = buildCanonicalIntelligenceState(manifest(overrides));
+  vi.mocked(getAuthoritativeCanonicalIntelligenceState).mockResolvedValue(boundCanonical);
 }
+
+afterEach(() => vi.useRealTimers());
 
 describe("getCryptoIntelligence", () => {
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(MOCK_NOW);
     clearCryptoCache();
     bindCanonical();
   });
@@ -78,7 +145,15 @@ describe("getCryptoIntelligence", () => {
 
     expect(report).toBeDefined();
     expect(report.availability).toBe("AVAILABLE");
-    expect(report.canonicalStateId).toBe("state:crypto-test");
+    expect(report.canonicalStateId).toBe(boundCanonical!.stateId);
+    expect(boundCanonical).toMatchObject({
+      generatedAt: MOCK_GENERATED_AT,
+      confidenceOrEvidenceQuality: "PARTIAL",
+      provenance: { coherenceStatus: "COHERENT", runTrigger: "SCHEDULED_CRON", scheduledPublication: true },
+    });
+    expect(boundCanonical!.stateHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(boundCanonical!.inputSnapshotId).toMatch(/^input:[a-f0-9]{32}$/);
+    expect(boundCanonical!.engines).toHaveLength(6);
     expect(typeof report.generatedAt).toBe("number");
     expect(report.pressureIndex).toBe(45);
     expect(report.regime).toBe("MODERATE STRESS");
@@ -214,14 +289,20 @@ describe("getCryptoIntelligence", () => {
     const report = await getCryptoIntelligence();
     expect(report.availability).toBe("UNAVAILABLE");
     expect(report.pressureIndex).toBeNull();
+    expect(report.regime).toBeNull();
     expect(report.signals).toEqual([]);
     expect(report.btcDashboard.overallBtcBias).toBe("UNAVAILABLE");
     expect(report.btcDashboard.marketCyclePhase.phase).toBe("UNAVAILABLE");
+    expect(report.altcoinRisk.overallRisk).toBe("UNAVAILABLE");
+    expect(report.macroCorrelation.overallMacroSignal).toBe("UNAVAILABLE");
+    expect(report.portfolioGuidance.overallBias).toBe("UNAVAILABLE");
   });
 });
 
 describe("Bear Market → Accumulation Phase classification", () => {
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(MOCK_NOW);
     clearCryptoCache();
     bindCanonical({
       pressureIndex: 55,

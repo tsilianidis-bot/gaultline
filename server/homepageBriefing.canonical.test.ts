@@ -1,7 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import { buildAtomicIntelligenceStateManifest } from "./intelligenceGovernance";
 import { computeHomepageBriefing } from "./homepageBriefing";
+import { resolveRunContext } from "./forwardRunProvenance";
+import type { FaultlinePressureOutput, RiskVector } from "./pressure/engine";
+import type { SeismographOutput } from "./seismographCore";
 
 vi.mock("./canonicalIntelligenceState", async () => {
   const actual = await vi.importActual<typeof import("./canonicalIntelligenceState")>("./canonicalIntelligenceState");
@@ -24,48 +28,69 @@ vi.mock("./_core/llm", () => ({
   invokeLLM: vi.fn().mockRejectedValue(new Error("llm withheld in test")),
 }));
 
+const SOURCE_AT = "2026-10-16T20:30:00.000Z"; // 16:30 ET, inside the Friday NYSE publication window.
+const INPUT_OBSERVED_AT = "2026-10-16";
+
+const vectors: RiskVector[] = [
+  { id: "liquidity-stress", label: "Liquidity Stress", description: "MOCK fixture", score: 30, level: "Moderate", driver: "MOCK fixture", trend: "stable", weight: 0.20, rawInputs: { hySpread: 3.2, sofr: 4.1 }, observationDates: { hySpread: INPUT_OBSERVED_AT, sofr: INPUT_OBSERVED_AT }, dataStatus: "live", source: "MOCK fixture" },
+  { id: "credit-contagion", label: "Credit Contagion Risk", description: "MOCK fixture", score: 28, level: "Moderate", driver: "MOCK fixture", trend: "stable", weight: 0.20, rawInputs: { tsy10y: 4.1 }, observationDates: { tsy10y: INPUT_OBSERVED_AT }, dataStatus: "live", source: "MOCK fixture" },
+  { id: "volatility-regime", label: "Yield Curve", description: "MOCK fixture", score: 33, level: "Moderate", driver: "MOCK fixture", trend: "stable", weight: 0.15, rawInputs: { tsy2y: 3.8 }, observationDates: { tsy2y: INPUT_OBSERVED_AT }, dataStatus: "live", source: "MOCK fixture" },
+  { id: "macro-sensitivity", label: "Macro Sensitivity", description: "MOCK fixture", score: 36, level: "Moderate", driver: "MOCK fixture", trend: "stable", weight: 0.20, rawInputs: { cpi: 2.7, ppi: 3.1 }, observationDates: { cpi: INPUT_OBSERVED_AT, ppi: INPUT_OBSERVED_AT }, dataStatus: "live", source: "MOCK fixture" },
+  { id: "market-breadth", label: "Labor & Rates", description: "MOCK fixture", score: 29, level: "Moderate", driver: "MOCK fixture", trend: "stable", weight: 0.10, rawInputs: { fedFunds: 3.5, unemployment: 4.2 }, observationDates: { fedFunds: INPUT_OBSERVED_AT, unemployment: INPUT_OBSERVED_AT }, dataStatus: "live", source: "MOCK fixture" },
+  { id: "ai-bubble", label: "AI / Speculation", description: "MOCK fixture", score: 31, level: "Moderate", driver: "MOCK fixture", trend: "stable", weight: 0.15, rawInputs: {}, observationDates: {}, dataStatus: "static", source: "MOCK fixture" },
+];
+
 function manifest(overrides: Record<string, unknown> = {}) {
-  return {
-    stateId: "state:briefing-test",
-    generatedAt: "2026-09-12T00:00:00.000Z",
-    championVersion: "champion-v1-frozen",
-    modelVersion: "2.0",
-    scoringVersion: "faultline-pressure-v1-frozen",
-    configurationVersion: "phase1b-governance-v1",
-    inputSnapshotId: "input:briefing-test",
-    stateHash: "hash:briefing-test",
-    pressureIndex: 41,
+  const pressure: FaultlinePressureOutput = {
+    overallPressure: 41,
     regime: "MODERATE RISK",
-    engineValues: {
-      "liquidity-stress": 30,
-      "credit-contagion": 28,
-      "volatility-regime": 33,
-      "macro-sensitivity": 36,
-      "market-breadth": 29,
-      "ai-bubble": 31,
-    },
-    engineDirections: {},
-    domainValues: {},
-    scenarioOutputs: { bull: 52, neutral: 31, bear: 17 },
-    probabilityClaimIds: [],
-    analogClaimIds: [],
-    historicalDatasetVersion: "historical",
-    researchDatasetVersion: "research",
-    coherenceStatus: "COHERENT",
-    coherenceNotes: [],
-    dataQualitySummary: { staleInputs: [], unavailableInputs: [], fallbackInputs: [], staticInputs: [] },
-    staleInputs: [],
-    unavailableInputs: [],
-    fallbackInputs: [],
-    inputQuality: [],
-    ...overrides,
+    level: "Moderate",
+    vectors,
+    alerts: [],
+    topAnalog: { year: 0, label: "UNAVAILABLE", similarity: 0, description: "MOCK fixture" },
+    analogs: [],
+    timestamp: SOURCE_AT,
+    lastUpdated: SOURCE_AT,
+    dataSource: "live",
+    priorPressure: null,
   };
+  const seismograph = {
+    version: "2.0",
+    pressureScore: 41,
+    regime: "MODERATE RISK",
+    probabilities: { bull: 52, neutral: 31, bear: 17, primaryDriver: "MOCK fixture", confidence: 0 },
+    activeContributors: [],
+    evidenceConsensus: "moderate",
+    analogMatches: [],
+    activePatterns: [],
+    transitionProbabilities: {
+      remainInRegime: 0,
+      transitionToElevated: 0,
+      transitionToLow: 0,
+      transitionToCrisis: 0,
+      primaryDriver: "MOCK fixture",
+    },
+  } as SeismographOutput;
+  const scheduledRun = resolveRunContext("cron-endpoint", new Date(SOURCE_AT));
+  const built = buildAtomicIntelligenceStateManifest({
+    pressure,
+    seismograph,
+    originatingRunId: "run:homepage-briefing-mock-2026-10-16",
+    generatedAt: SOURCE_AT,
+    runContext: scheduledRun,
+  });
+  return { ...built.manifest, inputQuality: built.inputQuality, runProvenance: built.runProvenance, ...overrides };
 }
 
 describe("homepage briefing canonical bind", () => {
   beforeEach(() => {
+    // Friday 20:00 ET: the 16:30 ET scheduled source above is the latest eligible publication.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-17"));
     vi.mocked(getAuthoritativeCanonicalIntelligenceState).mockReset();
   });
+
+  afterEach(() => vi.useRealTimers());
 
   it("withholds CURRENT briefing when canonical state is missing", async () => {
     vi.mocked(getAuthoritativeCanonicalIntelligenceState).mockResolvedValue(null);
@@ -85,7 +110,7 @@ describe("homepage briefing canonical bind", () => {
     const briefing = await computeHomepageBriefing();
     expect(briefing.availability).toBe("AVAILABLE");
     expect(briefing.dataSource).toBe("canonical");
-    expect(briefing.canonicalStateId).toBe("state:briefing-test");
+    expect(briefing.canonicalStateId).toBe(manifest().stateId);
     expect(briefing.metrics.pressureIndex.current).toBe(41);
     expect(briefing.metrics.regime).toBe("MODERATE RISK");
     // The stored 52/31/17 evidence-vote weights are uncalibrated: no number, contract text only.

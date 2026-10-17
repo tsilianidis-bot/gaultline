@@ -58,16 +58,21 @@ describe("ASHA Phase 4 canonical evidence integration", () => {
     expect(response.modelTrace).toBe(modelTrace);
   });
 
-  it("withholds unsupported numeric probability, timing, and invalidation fields instead of projecting legacy defaults", async () => {
+  it("withholds all operational fields when canonical source evidence is unavailable", async () => {
     gatewayMocks.invokeGateway.mockResolvedValue({
       response: llmResult(JSON.stringify({ reply: "The evidence is incomplete.", bullProbability: 75, bearProbability: 25, expectedTimeframe: "4 weeks", invalidationConditions: ["Break 90"] })),
       trace: modelTrace,
     });
     const response = await askAsha({ userMessage: "What happens next?", history: [], pageContext: { page: "/app/now" } });
+    expect(response.integrity.validation).toMatchObject({
+      status: "WITHHELD",
+    });
+    expect(response.integrity.transaction.originatingStateId).toBeNull();
+    expect(response.reply).toBe("Canonical state unavailable. Insufficient evidence for a current market interpretation.");
     expect(response.bullProbability).toBeUndefined();
     expect(response.bearProbability).toBeUndefined();
     expect(response.expectedTimeframe).toBe("Not established");
-    expect(response.invalidationConditions).toEqual(["No governed invalidation condition is currently defined."]);
+    expect(response.invalidationConditions).toEqual([]);
   });
 
   it("preserves bounded conversation ordering without turning history into current market evidence", async () => {

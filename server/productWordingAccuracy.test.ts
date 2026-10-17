@@ -14,6 +14,9 @@ const calculateFaultlinePressure = async () => {
 };
 import { buildCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 import { projectPressureFromCanonical } from "./canonicalPressureProjection";
+import { buildAtomicIntelligenceStateManifest, validateStoredIntelligenceManifest } from "./intelligenceGovernance";
+import { resolveRunContext } from "./forwardRunProvenance";
+import type { SeismographOutput } from "./seismographCore";
 import { PRESSURE_VECTOR_DISPLAY, pressureVectorLabel } from "../shared/pressureVectorLabels";
 
 const root = resolve(import.meta.dirname, "..");
@@ -63,46 +66,52 @@ describe("Pressure Index vector display labels", () => {
     expect(byId["ai-bubble"].driver).toMatch(/static/i);
   });
 
-  it("canonical projection uses the same display labels", () => {
-    const state = buildCanonicalIntelligenceState({
-      stateId: "state:wording-test",
-      generatedAt: "2026-09-30T00:00:00.000Z",
-      championVersion: "champion-v1-frozen",
-      modelVersion: "2.0",
-      scoringVersion: "faultline-pressure-v1-frozen",
-      configurationVersion: "phase1b-governance-v1",
-      inputSnapshotId: "input:wording-test",
-      stateHash: "hash:wording-test",
-      pressureIndex: 45,
-      regime: "MODERATE RISK",
-      engineValues: {
-        "liquidity-stress": 40,
-        "credit-contagion": 35,
-        "volatility-regime": 50,
-        "macro-sensitivity": 38,
-        "market-breadth": 42,
-        "ai-bubble": 40,
-      },
-      engineDirections: { "liquidity-stress": "stable" },
-      domainValues: {},
-      scenarioOutputs: { bull: 43, neutral: 43, bear: 14 },
-      probabilityClaimIds: [],
-      analogClaimIds: [],
-      historicalDatasetVersion: "historical",
-      researchDatasetVersion: "research",
-      coherenceStatus: "COHERENT",
-      coherenceNotes: [],
-      dataQualitySummary: { staleInputs: [], unavailableInputs: [], fallbackInputs: [], staticInputs: [] },
-      staleInputs: [],
-      unavailableInputs: [],
-      fallbackInputs: [],
-      inputQuality: [],
-    } as any);
-    const pressure = projectPressureFromCanonical(state);
-    expect(pressure).not.toBeNull();
-    expect(pressure!.vectors).toHaveLength(6);
-    for (const v of pressure!.vectors) {
-      expect(v.label, v.id).toBe(pressureVectorLabel(v.id));
+  it("canonical projection uses the same display labels", async () => {
+    // Static fixture observations only: this creates no live-provider or operational claim.
+    // Oct 12 was an NYSE session; the source and fake clock share that explicit ET date.
+    const asOf = new Date("2026-10-12T20:30:00.000Z"); // 16:30 ET, within the scheduled window
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-12T20:40:00.000Z"));
+    try {
+      const sourcePressure = await calculateFaultlinePressure();
+      const scheduledRun = resolveRunContext("cron-endpoint", asOf);
+      const mockSeismograph = {
+        version: "mock-seismograph-product-wording-v1",
+        pressureScore: sourcePressure.overallPressure,
+        regime: sourcePressure.regime,
+        probabilities: { bull: 43, neutral: 43, bear: 14, primaryDriver: "MOCK fixture", confidence: 0 },
+        transitionProbabilities: { remainInRegime: 0, transitionToElevated: 0, transitionToLow: 0, transitionToCrisis: 0, primaryDriver: "MOCK fixture" },
+        analogMatches: [],
+        activePatterns: [],
+        activeContributors: ["MOCK:fred-2026-10-12"],
+        evidenceConsensus: "strong",
+      } as Pick<SeismographOutput, "version" | "pressureScore" | "regime" | "probabilities" | "transitionProbabilities" | "analogMatches" | "activePatterns" | "activeContributors" | "evidenceConsensus"> as SeismographOutput;
+      const { manifest, inputQuality, runProvenance } = buildAtomicIntelligenceStateManifest({
+        pressure: sourcePressure,
+        seismograph: mockSeismograph,
+        originatingRunId: "run:mock-product-wording-2026-10-12",
+        generatedAt: asOf.toISOString(),
+        runContext: scheduledRun,
+      });
+      const storedManifest = { ...manifest, inputQuality, runProvenance };
+      expect(scheduledRun).toMatchObject({ trigger: "SCHEDULED_CRON", triggerSource: "cron-endpoint", scheduledWindow: true });
+      expect(validateStoredIntelligenceManifest(storedManifest)).toBe(true);
+
+      const state = buildCanonicalIntelligenceState(storedManifest);
+      expect(state).toMatchObject({
+        stateId: manifest.stateId,
+        stateHash: manifest.stateHash,
+        inputSnapshotId: manifest.inputSnapshotId,
+        provenance: { coherenceStatus: "COHERENT", scheduledPublication: true },
+      });
+      const pressure = projectPressureFromCanonical(state);
+      expect(pressure).not.toBeNull();
+      expect(pressure!.vectors).toHaveLength(6);
+      for (const v of pressure!.vectors) {
+        expect(v.label, v.id).toBe(pressureVectorLabel(v.id));
+      }
+    } finally {
+      vi.useRealTimers();
     }
   });
 });

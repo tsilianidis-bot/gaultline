@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CanonicalIntelligenceState } from "../shared/canonicalIntelligenceState";
 import {
   clearAftershockCache,
@@ -10,11 +10,16 @@ import {
   type AftershockMarketSnapshot,
   type ObservedAftershockQuote,
 } from "./aftershockEngine";
+import { resolveRunContext } from "./forwardRunProvenance";
 import type { YahooDailyBar } from "./yahooProxy";
 
 const OBSERVED_AT = Date.parse("2026-09-18T21:00:00.000Z");
 const RECEIVED_AT = Date.parse("2026-09-18T21:05:00.000Z");
-const FIXTURE_NOW = Date.parse("2026-10-17T17:00:00.000Z");
+const CANONICAL_AT = "2026-10-16T20:30:00.000Z";
+const FIXTURE_NOW = Date.parse("2026-10-16T21:00:00.000Z");
+const CANONICAL_STATE_ID = "state:2026-10-16T20:30:00.000Z:aftershock-fixture";
+const CANONICAL_INPUT_SNAPSHOT_ID = "input:aftershock-fixture:9c20e3038cb343ef";
+const SCHEDULED_RUN = resolveRunContext("cron-endpoint", new Date(CANONICAL_AT));
 
 /** Exact completed Yahoo daily-bar fixture: 20-bar mean volume = 109.5, latest volume = 219. */
 function bars(count = 21): YahooDailyBar[] {
@@ -30,23 +35,79 @@ function bars(count = 21): YahooDailyBar[] {
 
 function canonical(overrides: Partial<CanonicalIntelligenceState> = {}): CanonicalIntelligenceState {
   return {
-    stateId: "state:aftershock-fixture",
-    generatedAt: "2026-09-19T00:00:00.000Z",
-    effectiveAt: "2026-09-18T21:00:00.000Z",
-    inputSnapshotId: "input:aftershock-fixture",
-    stateHash: "hash:aftershock-fixture",
+    schemaVersion: "phase2-canonical-state-v1",
+    stateId: CANONICAL_STATE_ID,
+    generatedAt: CANONICAL_AT,
+    effectiveAt: CANONICAL_AT,
+    calculationStartedAt: "2026-10-16T20:15:00.000Z",
+    calculationCompletedAt: CANONICAL_AT,
+    championVersion: "champion-v1-frozen",
+    modelVersion: "seismograph-core-v1",
+    scoringVersion: "faultline-pressure-v1-frozen",
+    configurationVersion: "phase1b-governance-v1",
+    inputSnapshotId: CANONICAL_INPUT_SNAPSHOT_ID,
+    stateHash: "c2f8138ab8e1844293a925b257940f38003361d3cb2dd61ae42f5f6cb51aa32b",
     pressureIndex: 64,
     pressureLevel: "Elevated",
     regime: "ELEVATED STRESS",
+    pressureDirection: "Stable",
+    pressureAcceleration: null,
+    pressurePersistence: null,
     confidenceOrEvidenceQuality: "HEALTHY",
     unavailableInputs: [],
     staleInputs: [],
     delayedInputs: [],
     fallbackInputs: [],
-    engines: [],
-    provenance: { coherenceStatus: "COHERENT" },
+    engines: [
+      ["liquidity-stress", 64, ["hy_credit_spread", "secured_overnight_financing_rate"]],
+      ["credit-contagion", 61, ["hy_credit_spread", "ten_year_treasury_yield", "unemployment_rate"]],
+      ["volatility-regime", 66, ["ten_year_treasury_yield", "two_year_treasury_yield"]],
+      ["macro-sensitivity", 62, ["consumer_price_index_yoy", "producer_price_index_yoy", "federal_funds_rate"]],
+      ["market-breadth", 63, ["unemployment_rate", "ten_year_treasury_yield"]],
+      ["ai-bubble", 68, ["ai_concentration_static_baseline"]],
+    ].map(([engineId, value, sourceInputIds]) => ({
+      engineId,
+      engineName: engineId,
+      value,
+      unit: "score_0_to_100",
+      classification: null,
+      direction: engineId === "ai-bubble" ? "Unknown" : "Stable",
+      acceleration: null,
+      persistence: null,
+      observedAt: CANONICAL_AT,
+      calculatedAt: CANONICAL_AT,
+      sourceInputIds,
+      qualityStatus: engineId === "ai-bubble" ? "DEGRADED" : "HEALTHY",
+      freshnessStatus: "CURRENT",
+      fallbackStatus: "NONE",
+      modelVersion: "seismograph-core-v1",
+      calculationVersion: "faultline-pressure-v1-frozen",
+      contributionToComposite: true,
+    })),
+    domains: {},
+    scenarioOutputs: {},
+    probabilityClaimIds: [],
+    analogClaimIds: [],
+    historicalContext: {
+      canonicalLiveHistory: "intelligenceStateManifests append-only operational snapshots only",
+      reconstructedResearch: "reconstructed-champion-v1-2000-2026-research-only",
+      historicalAnalogOutput: "governed analog claim references only",
+      patternResolution: "governedResearchResolutions append-only later outcomes",
+    },
+    dataQualitySummary: { totalInputs: 8, liveInputs: 8, delayedInputs: 0, staleInputs: [], unavailableInputs: [], fallbackInputs: [] },
+    warnings: [],
+    conflicts: [],
+    historicalDatasetVersion: "legacy-317-unreconciled",
+    researchDatasetVersion: "reconstructed-champion-v1-2000-2026-research-only",
+    provenance: {
+      manifestSource: "intelligenceStateManifests",
+      governanceVersion: "phase1b-governance-v1",
+      coherenceStatus: "COHERENT",
+      runTrigger: SCHEDULED_RUN.trigger,
+      scheduledPublication: SCHEDULED_RUN.trigger === "SCHEDULED_CRON" && SCHEDULED_RUN.scheduledWindow,
+    },
     ...overrides,
-  } as CanonicalIntelligenceState;
+  } satisfies CanonicalIntelligenceState;
 }
 
 function observedQuote(symbol: string, overrides: Partial<ObservedAftershockQuote> = {}): ObservedAftershockQuote {
@@ -68,7 +129,13 @@ function snapshot(quotes: ObservedAftershockQuote[], reason: string | null = nul
   return { availability: quotes.length ? "AVAILABLE" : "UNAVAILABLE", quotes, reason };
 }
 
-beforeEach(() => clearAftershockCache());
+beforeEach(() => {
+  clearAftershockCache();
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(FIXTURE_NOW);
+});
+
+afterEach(() => vi.useRealTimers());
 
 describe("toObservedAftershockQuote", () => {
   it("derives exact close-to-close change and a 20-prior-completed-bar volume ratio with Yahoo provenance", () => {
@@ -115,7 +182,7 @@ describe("runAftershockEngine source-truth boundary", () => {
     expect(result).toMatchObject({
       availability: "UNAVAILABLE",
       evidenceStatus: "UNAVAILABLE",
-      canonicalStateId: "state:aftershock-fixture",
+      canonicalStateId: CANONICAL_STATE_ID,
       pressureIndex: null,
       regime: null,
       activeRuptures: [],
@@ -162,8 +229,8 @@ describe("runAftershockEngine source-truth boundary", () => {
       availability: "AVAILABLE",
       evidenceStatus: "DELAYED",
       source: "yahoo-daily",
-      canonicalStateId: "state:aftershock-fixture",
-      canonicalInputSnapshotId: "input:aftershock-fixture",
+      canonicalStateId: CANONICAL_STATE_ID,
+      canonicalInputSnapshotId: CANONICAL_INPUT_SNAPSHOT_ID,
       model: { modelDerived: true, calibrationStatus: "NOT_CALIBRATED", probabilityStatus: "NOT_ESTABLISHED" },
     });
     expect(rupture).toMatchObject({
@@ -173,7 +240,7 @@ describe("runAftershockEngine source-truth boundary", () => {
       receivedAt: RECEIVED_AT,
       availability: "AVAILABLE",
       evidenceStatus: "DELAYED",
-      canonicalStateId: "state:aftershock-fixture",
+      canonicalStateId: CANONICAL_STATE_ID,
       modelDerived: true,
     });
     expect(signal).toMatchObject({
@@ -185,7 +252,7 @@ describe("runAftershockEngine source-truth boundary", () => {
       reactionObservedAt: OBSERVED_AT + 1_000,
       reactionReceivedAt: RECEIVED_AT + 1_000,
       reactionAvailability: "AVAILABLE",
-      canonicalStateId: "state:aftershock-fixture",
+      canonicalStateId: CANONICAL_STATE_ID,
       modelDerived: true,
       model: { methodologyVersion: "aftershock-methodology-v1", calibrationStatus: "NOT_CALIBRATED" },
     });
@@ -230,7 +297,7 @@ describe("runAftershockEngine source-truth boundary", () => {
       now: () => FIXTURE_NOW,
     });
 
-    expect(result).toMatchObject({ availability: "AVAILABLE", evidenceStatus: "STALE", canonicalStateId: "state:aftershock-fixture" });
+    expect(result).toMatchObject({ availability: "AVAILABLE", evidenceStatus: "STALE", canonicalStateId: CANONICAL_STATE_ID });
   });
 });
 
