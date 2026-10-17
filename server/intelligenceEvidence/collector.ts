@@ -2,6 +2,9 @@ import type { CanonicalEngineState, CanonicalIntelligenceState } from "../../sha
 import {
   INTELLIGENCE_EVIDENCE_METHOD_VERSION,
   type EvidenceInterfaceStatus,
+  type EvidenceTemporalStatus,
+  type IntelligenceEvidenceDomain,
+  type IntelligenceEvidenceDomainProjection,
   type EvidenceProviderHealth,
   type IntelligenceEvidenceResponse,
   type IntelligenceEvidenceSnapshot,
@@ -13,6 +16,7 @@ import { canonicalEngineIntegrityEvidence, getAuthoritativeCanonicalIntelligence
 import { getGlobalStats, type GlobalStats } from "../coingeckoProxy";
 import { fetchFredBulk, type FredBulkResult } from "../fredClient";
 import { getQuotes, type YahooQuote } from "../yahooProxy";
+import { classifyYahooObservation } from "../yahooProxy";
 import { IntelligenceEvidenceStore } from "./store";
 
 const COLLECTION_INTERVAL_MS = 5 * 60_000;
@@ -99,6 +103,8 @@ function validate(draft: EvidenceDraft, nowMs: number): ValidatedIntelligenceEvi
     validationReason: integrity.reason,
     modelVersion: draft.modelVersion,
     sourceIdentifier: draft.sourceIdentifier,
+    temporalStatus: draft.temporalStatus,
+    temporalDetail: draft.temporalDetail,
     historicalValue: null,
     lastVerified: null,
   };
@@ -122,12 +128,15 @@ function canonicalEngineDraft(canonical: CanonicalIntelligenceState, engine: Can
     modelVersion: boundary.modelVersion ?? null,
     sourceIdentifier: `canonical:${canonical.stateId}:${engine.engineId}`,
     sourceHealthy: boundary.sourceHealthy,
+    temporalStatus: "modeled",
+    temporalDetail: "Versioned canonical model output; displayed separately from direct provider observations.",
   };
 }
 
-function quoteDraft(id: string, label: string, quote: YahooQuote | undefined): EvidenceDraft {
+function quoteDraft(id: string, label: string, quote: YahooQuote | undefined, nowMs: number): EvidenceDraft {
   const polygon = quote?.source === "polygon-prev";
   const provider = polygon ? "Polygon.io previous-close fallback" : "Yahoo Finance";
+  const freshness = classifyYahooObservation(quote, nowMs);
   return {
     id,
     label,
@@ -142,6 +151,8 @@ function quoteDraft(id: string, label: string, quote: YahooQuote | undefined): E
     modelVersion: null,
     sourceIdentifier: `${quote?.source ?? "unavailable"}:${quote?.ticker ?? id}`,
     sourceHealthy: Boolean(quote && quote.source !== "error" && finite(quote.price) && quote.observedAt),
+    temporalStatus: freshness.timing,
+    temporalDetail: freshness.detail,
   };
 }
 
@@ -162,6 +173,8 @@ function fredDraft(id: string, label: string, unit: string | null, fred: FredBul
     modelVersion: null,
     sourceIdentifier: `fred:${id}`,
     sourceHealthy: Boolean(observation && !result?.error),
+    temporalStatus: observation ? "released" : "unavailable",
+    temporalDetail: observation ? "Released macro observation; its source date is retained." : "No usable released source observation is available.",
   };
 }
 
@@ -174,15 +187,54 @@ function cryptoDraft(crypto: GlobalStats | null): EvidenceDraft {
     origin: "observed",
     rawValue: finite(crypto?.totalMarketCap) ? crypto.totalMarketCap : null,
     unit: "USD",
-    // CoinGecko's global response carries a fetch time, not a source-observed
-    // timestamp. The gate therefore makes this unavailable for current claims.
-    observedAt: null,
+    observedAt: toIso(crypto?.observedAt) ?? null,
     receivedAt: toIso(crypto?.fetchedAt) ?? null,
     maxAgeMs: 15 * 60_000,
     modelVersion: null,
     sourceIdentifier: "coingecko:global",
-    sourceHealthy: Boolean(crypto),
+    sourceHealthy: Boolean(crypto && finite(crypto.observedAt)),
+    temporalStatus: finite(crypto?.observedAt) ? "delayed" : "unavailable",
+    temporalDetail: finite(crypto?.observedAt)
+      ? "CoinGecko provider timestamp is retained; aggregate updates follow the provider cadence."
+      : "CoinGecko aggregate lacked a provider observation timestamp and is unavailable for current claims.",
   };
+}
+
+function domainStatus(observations: ValidatedIntelligenceEvidence[], ids: string[]): EvidenceProviderHealth["status"] {
+  const matched = observations.filter(observation => ids.includes(observation.id));
+  if (matched.length === 0 || matched.every(observation => !observation.supportsCurrentClaim)) return "unavailable";
+  return matched.every(observation => observation.supportsCurrentClaim) ? "healthy" : "degraded";
+}
+
+function buildDomainProjection(id: IntelligenceEvidenceDomain, label: string, observations: ValidatedIntelligenceEvidence[], select: (observation: ValidatedIntelligenceEvidence) => boolean): IntelligenceEvidenceDomainProjection {
+  const matching = observations.filter(select);
+  const observationIds = matching.map(observation => observation.id);
+  const currentObservationIds = matching.filter(observation => observation.supportsCurrentClaim).map(observation => observation.id);
+  const historicalObservationIds = matching.filter(observation => !observation.supportsCurrentClaim && (observation.historicalValue || observation.lastVerified)).map(observation => observation.id);
+  const status = domainStatus(observations, observationIds);
+  return {
+    id,
+    label,
+    status,
+    observationIds,
+    currentObservationIds,
+    historicalObservationIds,
+    limitation: status === "healthy" ? null : matching.length === 0
+      ? "No validated source observation is mapped to this domain."
+      : "Current-use eligibility is shown per source; unavailable or historical evidence is not treated as a current condition.",
+  };
+}
+
+export function buildSixDomainProjection(observations: ValidatedIntelligenceEvidence[]): IntelligenceEvidenceDomainProjection[] {
+  const canonicalFor = (term: string) => (observation: ValidatedIntelligenceEvidence) => observation.kind === "canonical_model" && new RegExp(term, "i").test(`${observation.id} ${observation.label}`);
+  return [
+    buildDomainProjection("equities", "Equities", observations, observation => ["quote:SPY", "quote:QQQ", "quote:IWM"].includes(observation.id)),
+    buildDomainProjection("bonds_rates", "Bonds / Rates", observations, observation => ["fred:DGS10", "fred:DGS2"].includes(observation.id)),
+    buildDomainProjection("credit", "Credit", observations, observation => observation.id === "fred:BAMLH0A0HYM2" || canonicalFor("credit")(observation)),
+    buildDomainProjection("liquidity", "Liquidity", observations, canonicalFor("liquidity")),
+    buildDomainProjection("volatility", "Volatility", observations, observation => observation.id === "quote:VIX" || canonicalFor("volatility")(observation)),
+    buildDomainProjection("crypto", "Crypto", observations, observation => observation.id === "coingecko:global-market-cap"),
+  ];
 }
 
 function addLastVerified(current: ValidatedIntelligenceEvidence[], previous: IntelligenceEvidenceSnapshot | null) {
@@ -202,7 +254,7 @@ function sourceFailureWarnings(inputs: EvidenceInputs) {
   const fredFailures = Object.entries(inputs.fred.results)
     .filter(([, result]) => result.error)
     .map(([series, result]) => `FRED ${series}: ${result.error}`);
-  const cryptoFailure = inputs.crypto ? [] : ["CoinGecko aggregate: no timestamped provider observation was available."];
+  const cryptoFailure = inputs.crypto && finite(inputs.crypto.observedAt) ? [] : ["CoinGecko aggregate: no timestamped provider observation was available."];
   return [...quoteFailures, ...fredFailures, ...cryptoFailure];
 }
 
@@ -210,10 +262,10 @@ export function buildEvidenceSnapshot(inputs: EvidenceInputs, now: Date = new Da
   const quoteByTicker = new Map(inputs.quotes.map(quote => [quote.ticker.toUpperCase(), quote]));
   const drafts: EvidenceDraft[] = [
     ...(inputs.canonical?.engines.map(engine => canonicalEngineDraft(inputs.canonical as CanonicalIntelligenceState, engine)) ?? []),
-    quoteDraft("quote:SPY", "S&P 500 proxy (SPY)", quoteByTicker.get("SPY")),
-    quoteDraft("quote:QQQ", "Nasdaq-100 proxy (QQQ)", quoteByTicker.get("QQQ")),
-    quoteDraft("quote:IWM", "Russell 2000 proxy (IWM)", quoteByTicker.get("IWM")),
-    quoteDraft("quote:VIX", "Cboe Volatility Index (^VIX)", quoteByTicker.get("^VIX")),
+    quoteDraft("quote:SPY", "S&P 500 proxy (SPY)", quoteByTicker.get("SPY"), now.getTime()),
+    quoteDraft("quote:QQQ", "Nasdaq-100 proxy (QQQ)", quoteByTicker.get("QQQ"), now.getTime()),
+    quoteDraft("quote:IWM", "Russell 2000 proxy (IWM)", quoteByTicker.get("IWM"), now.getTime()),
+    quoteDraft("quote:VIX", "Cboe Volatility Index (^VIX)", quoteByTicker.get("^VIX"), now.getTime()),
     fredDraft("DGS10", "10-year Treasury yield", "percent", inputs.fred),
     fredDraft("DGS2", "2-year Treasury yield", "percent", inputs.fred),
     fredDraft("BAMLH0A0HYM2", "High-yield option-adjusted spread", "percent", inputs.fred),
@@ -254,9 +306,9 @@ export function buildEvidenceSnapshot(inputs: EvidenceInputs, now: Date = new Da
       label: "Crypto aggregate",
       provider: "CoinGecko",
       status: providerStatus(observations, ["coingecko:global-market-cap"]),
-      observedAt: null,
+      observedAt: observations.find(item => item.id === "coingecko:global-market-cap")?.observedAt ?? null,
       checkedAt: now.toISOString(),
-      detail: "The current adapter does not supply a provider observation timestamp for the aggregate response, so the Phase 0 gate withholds it from current claims.",
+      detail: "Provider observation timestamps are required. Aggregate evidence is withheld whenever the source timestamp is missing, invalid, or stale.",
     },
   ];
   return {
@@ -266,6 +318,7 @@ export function buildEvidenceSnapshot(inputs: EvidenceInputs, now: Date = new Da
     canonicalStateId: inputs.canonical?.stateId ?? null,
     observations,
     providerHealth: health,
+    domains: buildSixDomainProjection(observations),
     limitations: [
       "This Phase 1 interface is a provenance record. It does not alter the Pressure Index, MarketState calculations, trading tools, Daily Briefs, or recommendations.",
       "A read being unavailable, stale, or historical is not interpreted as calm or neutral.",
