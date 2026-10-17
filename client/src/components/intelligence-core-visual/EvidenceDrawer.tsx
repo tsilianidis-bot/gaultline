@@ -3,6 +3,7 @@ import { ArrowUpRight, FileSearch, Link2, X } from "lucide-react";
 import { useRef } from "react";
 import type { CoreDomain, IntelligenceCoreViewModel } from "./types";
 import { observationLabel, StatusBadge } from "./CoreTopology";
+import "./evidence-refinement.css";
 
 export interface EvidenceSelection {
   title: string;
@@ -22,6 +23,14 @@ function safeSourceUrl(value: string | null): string | null {
     return null;
   }
 }
+
+function ObservationTimestamp({ value }: { value: string | null }) {
+  const label = observationLabel(value);
+  if (!value || !Number.isFinite(Date.parse(value))) return <>{label}</>;
+
+  return <time dateTime={value}>{label}</time>;
+}
+
 export function EvidenceDrawer({
   selection,
   model,
@@ -32,13 +41,19 @@ export function EvidenceDrawer({
   onClose: () => void;
 }) {
   const opener = useRef<HTMLElement | null>(null);
-  const domain = selection?.domain
-    ? model.domains.find(item => item.id === selection.domain?.id)
+  // Resolve by ID on every render so a drawer opened from an older interaction
+  // never presents a retained domain snapshot after the sanitized model updates.
+  const selectedDomainId = selection?.domain?.id;
+  const domain = selectedDomainId
+    ? model.domains.find(item => item.id === selectedDomainId)
     : undefined;
   const selectedIds = domain?.evidenceIds || selection?.ids || [];
   const evidence = model.evidence.filter(item => selectedIds.includes(item.id));
   const relationships = model.relationships.filter(
-    item => domain && (item.from === domain.id || item.to === domain.id)
+    item =>
+      domain &&
+      item.supported &&
+      (item.from === domain.id || item.to === domain.id)
   );
   return (
     <Dialog.Root
@@ -52,10 +67,13 @@ export function EvidenceDrawer({
         <Dialog.Content
           className="fic fic-drawer"
           onOpenAutoFocus={() => {
-            opener.current =
-              document.activeElement instanceof HTMLElement
-                ? document.activeElement
-                : null;
+            const activeElement = document.activeElement;
+            if (
+              activeElement instanceof HTMLElement &&
+              !activeElement.closest(".fic-drawer")
+            ) {
+              opener.current = activeElement;
+            }
           }}
           onCloseAutoFocus={event => {
             event.preventDefault();
@@ -102,14 +120,18 @@ export function EvidenceDrawer({
               <dl className="fic-detail-facts">
                 <div>
                   <dt>Last source observation</dt>
-                  <dd>{observationLabel(domain.observationAt)}</dd>
+                  <dd>
+                    <ObservationTimestamp value={domain.observationAt} />
+                  </dd>
                 </div>
                 <div>
                   <dt>Developing since</dt>
                   <dd>
-                    {domain.developingSince
-                      ? observationLabel(domain.developingSince)
-                      : "Not established by connected evidence"}
+                    {domain.developingSince ? (
+                      <ObservationTimestamp value={domain.developingSince} />
+                    ) : (
+                      "Not established by connected evidence"
+                    )}
                   </dd>
                 </div>
                 <div>
@@ -157,7 +179,9 @@ export function EvidenceDrawer({
                     </div>
                     <div>
                       <dt>Observation</dt>
-                      <dd>{observationLabel(item.observationAt)}</dd>
+                      <dd>
+                        <ObservationTimestamp value={item.observationAt} />
+                      </dd>
                     </div>
                   </dl>
                   {url && (
@@ -179,15 +203,19 @@ export function EvidenceDrawer({
               <h3>Evidence-supported relationships</h3>
               {relationships.map(item => (
                 <article key={item.id}>
-                  <span className="fic-micro">
+                  <span
+                    className={`fic-micro fic-relationship-kind is-${item.kind}`}
+                  >
                     <Link2 size={13} />{" "}
                     {item.kind === "causal"
-                      ? "SUPPORTED CAUSAL RELATIONSHIP"
+                      ? "CAUSAL · EVIDENCE-SUPPORTED"
                       : "ASSOCIATION · NOT CAUSATION"}
                   </span>
                   <p>{item.explanation}</p>
                   <span className="fic-source-reference">
-                    Evidence: {item.evidenceIds.join(", ")}
+                    {item.evidenceIds.length > 0
+                      ? `Evidence: ${item.evidenceIds.join(", ")}`
+                      : "No evidence identifiers were supplied."}
                   </span>
                 </article>
               ))}

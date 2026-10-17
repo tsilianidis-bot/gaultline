@@ -1,7 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { IntelligenceCoreExperience } from "../client/src/components/intelligence-core-visual/IntelligenceCoreExperience";
-import { getPreviewModel } from "./fixtures";
+import {
+  getPreviewModel,
+  refreshPreviewAfterExpiry,
+  schedulePreviewExpiry,
+  transitionPreviewModel,
+  type PreviewTransitionAction,
+} from "./fixtures";
 import "./preview.css";
 
 const STATES = [
@@ -9,15 +15,28 @@ const STATES = [
   { id: "demo", label: "Mixed evidence demonstration" },
   { id: "degraded", label: "Degraded demonstration" },
   { id: "records", label: "Track Record demonstration" },
+  { id: "transitions", label: "Evidence transition demonstration" },
 ];
 function Preview() {
-  const initial =
+  const requested =
     new URLSearchParams(window.location.search).get("state") || "unavailable";
-  const [state, setState] = useState(
-    STATES.some(item => item.id === initial) ? initial : "unavailable"
-  );
+  const initial = STATES.some(item => item.id === requested)
+    ? requested
+    : "unavailable";
+  const [state, setState] = useState(initial);
+  const [model, setModel] = useState(() => getPreviewModel(initial));
   const [destination, setDestination] = useState("now");
   const [message, setMessage] = useState("");
+  const [expiryPending, setExpiryPending] = useState(false);
+  const sequence = useRef(0);
+  const expiryTimer = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (expiryTimer.current !== null)
+        window.clearTimeout(expiryTimer.current);
+    },
+    []
+  );
   const navigate = (id: string) => {
     setDestination(id);
     setMessage(
@@ -28,6 +47,38 @@ function Preview() {
         .querySelector("[aria-label*='cenario']")
         ?.scrollIntoView({ block: "center", behavior: "auto" });
   };
+  const transition = (action: PreviewTransitionAction) => {
+    sequence.current += 1;
+    setModel(previous =>
+      transitionPreviewModel(previous, action, sequence.current)
+    );
+    setMessage(
+      "Fictional snapshot supplied manually. Highlights show its admitted changes, not artificial live activity."
+    );
+  };
+  const expire = () => {
+    const deadline = Date.now() + 1100;
+    setExpiryPending(true);
+    setModel(previous => schedulePreviewExpiry(previous, deadline));
+    setMessage(
+      "Fictional source validity ends in about one second. Its actual elapsed deadline will make the retained observation stale."
+    );
+    expiryTimer.current = window.setTimeout(
+      () => {
+        setModel(previous => refreshPreviewAfterExpiry(previous));
+        setExpiryPending(false);
+        setMessage(
+          "Fictional liquidity observation expired at its declared source deadline. The current pressure and regime claims are withheld."
+        );
+        expiryTimer.current = null;
+      },
+      Math.max(1, deadline - Date.now() + 25)
+    );
+  };
+  const creditCurrent =
+    model.domains.find(item => item.id === "credit")?.status === "current";
+  const liquidityCurrent =
+    model.domains.find(item => item.id === "liquidity")?.status === "current";
   return (
     <>
       <div className="preview-warning">
@@ -66,7 +117,7 @@ function Preview() {
           ))}
         </nav>
         <div className="preview-release">
-          VISUAL DRAFT <span>release-r3 / 1cb5dee</span>
+          VISUAL REFINEMENT<span>PR #100 / approved baseline</span>
         </div>
       </header>
       <div className="preview-controls">
@@ -75,8 +126,15 @@ function Preview() {
           id="preview-state"
           value={state}
           onChange={event => {
+            if (expiryTimer.current !== null) {
+              window.clearTimeout(expiryTimer.current);
+              expiryTimer.current = null;
+            }
+            setExpiryPending(false);
             setState(event.target.value);
+            setModel(getPreviewModel(event.target.value));
             setMessage("");
+            sequence.current = 0;
             const url = new URL(window.location.href);
             url.searchParams.set("state", event.target.value);
             window.history.replaceState(null, "", url);
@@ -90,6 +148,60 @@ function Preview() {
         </select>
         <span>No merge. No flags. No deployment.</span>
       </div>
+      {state === "transitions" && (
+        <section
+          className="preview-transition-controls"
+          aria-label="Isolated fictional evidence transitions"
+        >
+          <div>
+            <strong>Fictional snapshot controls</strong>
+            <p>
+              Manual source-backed fixture changes. No live market claims or
+              looping activity.
+            </p>
+          </div>
+          <div className="preview-transition-actions">
+            <button
+              type="button"
+              onClick={() => transition("admit-credit")}
+              disabled={creditCurrent || expiryPending}
+            >
+              Admit credit evidence
+            </button>
+            <button
+              type="button"
+              onClick={() => transition("regime")}
+              disabled={
+                !creditCurrent ||
+                !liquidityCurrent ||
+                expiryPending ||
+                model.pressure.value === 65.1
+              }
+            >
+              Change verified fixture regime
+            </button>
+            <button
+              type="button"
+              onClick={() => transition("relationship")}
+              disabled={
+                !creditCurrent ||
+                !liquidityCurrent ||
+                expiryPending ||
+                model.relationships.length > 0
+              }
+            >
+              Support an association
+            </button>
+            <button
+              type="button"
+              onClick={expire}
+              disabled={!liquidityCurrent || expiryPending}
+            >
+              Expire liquidity observation
+            </button>
+          </div>
+        </section>
+      )}
       {message && (
         <div className="preview-host-message" role="status">
           {message}
@@ -98,7 +210,7 @@ function Preview() {
       <main>
         <IntelligenceCoreExperience
           key={state}
-          model={getPreviewModel(state)}
+          model={model}
           onNavigate={navigate}
         />
       </main>

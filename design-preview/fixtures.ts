@@ -225,3 +225,88 @@ export function getPreviewModel(state: string): IntelligenceCoreViewModel {
   }
   return model;
 }
+
+export type PreviewTransitionAction =
+  | "admit-credit"
+  | "regime"
+  | "relationship";
+/** Manual, fictional snapshots for the isolated preview only. Never a provider or production fallback. */
+export function transitionPreviewModel(
+  previous: IntelligenceCoreViewModel,
+  action: PreviewTransitionAction,
+  sequence: number
+): IntelligenceCoreViewModel {
+  const input: IntelligenceCoreInput = structuredClone(previous);
+  const now = Date.now();
+  const nextObservation = new Date(now - 10).toISOString();
+  input.canonicalStateId = `DEMO-TRANSITION-${sequence}`;
+  input.observationAt = nextObservation;
+  input.evaluatedAt = new Date(now).toISOString();
+  input.integrityReason =
+    "Fictional manually supplied canonical snapshot. This is a visual transition demonstration, not live market data.";
+  if (action === "admit-credit") {
+    const source = input.evidence.find(item => item.id === "DEMO-credit")!;
+    source.status = "current";
+    source.admitted = true;
+    source.observationAt = nextObservation;
+    source.validUntil = new Date(now + 3_600_000).toISOString();
+    source.value = "New credit observation · fictional fixture";
+    const domain = input.domains.find(item => item.id === "credit")!;
+    domain.status = "current";
+    domain.observationAt = nextObservation;
+    domain.assessment = "Current credit evidence · fictional";
+    domain.direction = "unknown";
+  }
+  if (action === "regime") {
+    const source = input.evidence.find(item => item.id === "DEMO-liquidity")!;
+    source.observationAt = nextObservation;
+    source.value = "Changed funding observation · fictional fixture";
+    source.validUntil = new Date(now + 3_600_000).toISOString();
+    const domain = input.domains.find(item => item.id === "liquidity")!;
+    domain.observationAt = nextObservation;
+    domain.assessment = "Updated funding context · fictional";
+    input.pressure.value = 65.1;
+    input.regime.label = "Broader pressure · fictional example";
+    input.overview =
+      "In this fictional updated snapshot, source-backed liquidity and credit observations are current. The changed regime is a supplied design fixture, not a market forecast.";
+    input.overviewEvidenceIds = ["DEMO-liquidity", "DEMO-credit"];
+  }
+  if (action === "relationship") {
+    input.relationships = [
+      {
+        id: "DEMO-association-liquidity-credit",
+        from: "liquidity",
+        to: "credit",
+        kind: "association",
+        supported: true,
+        evidenceIds: ["DEMO-liquidity", "DEMO-credit"],
+        explanation:
+          "Fictional supported association between two supplied observations. Association does not establish contagion or causation. No real-world relationship is claimed.",
+      },
+    ];
+  }
+  const model = adaptIntelligenceCore(input, previous);
+  model.mode = "demonstration";
+  return model;
+}
+
+/** Short source deadline is a preview-only admitted fixture; expiry is handled at its actual elapsed deadline. */
+export function schedulePreviewExpiry(
+  previous: IntelligenceCoreViewModel,
+  deadline: number
+): IntelligenceCoreViewModel {
+  const input: IntelligenceCoreInput = structuredClone(previous);
+  input.evaluatedAt = new Date(Date.now()).toISOString();
+  const evidence = input.evidence.find(item => item.id === "DEMO-liquidity")!;
+  evidence.validUntil = new Date(deadline).toISOString();
+  const model = adaptIntelligenceCore(input);
+  model.mode = "demonstration";
+  return model;
+}
+export function refreshPreviewAfterExpiry(
+  previous: IntelligenceCoreViewModel
+): IntelligenceCoreViewModel {
+  const model = adaptIntelligenceCore(previous);
+  model.mode = "demonstration";
+  return model;
+}

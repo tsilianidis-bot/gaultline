@@ -386,9 +386,25 @@ function sourceStatusForDomain(
   if (!lineage.complete || !hasUsableEvidence(lineage.ids, evidenceById))
     return "unavailable";
   if (status === "current") {
-    return allEvidenceHaveStatus(lineage.ids, evidenceById, "current")
-      ? "current"
-      : "unavailable";
+    if (allEvidenceHaveStatus(lineage.ids, evidenceById, "current"))
+      return "current";
+    // Preserve inspectable history only for complete, admitted, actually elapsed
+    // source deadlines. This never restores a current assessment or direction.
+    const now = Date.now();
+    const expiredLineage = lineage.ids.every(id => {
+      const source = evidenceById.get(id)!;
+      const observed = parseTimestamp(source.observationAt);
+      const deadline = parseTimestamp(source.validUntil);
+      return (
+        source.admitted &&
+        source.status === "stale" &&
+        observed !== null &&
+        deadline !== null &&
+        deadline >= observed &&
+        deadline < now
+      );
+    });
+    return expiredLineage ? "stale" : "unavailable";
   }
   if (status === "unavailable") return "unavailable";
   // Do not promote delayed, stale, static, or degraded upstream statuses.

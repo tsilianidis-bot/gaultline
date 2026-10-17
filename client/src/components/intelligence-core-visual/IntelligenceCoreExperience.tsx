@@ -5,37 +5,70 @@ import {
   Layers3,
   ShieldCheck,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { adaptIntelligenceCore, createUnavailableCore } from "./adapter";
 import { CoreTopology, observationLabel, StatusBadge } from "./CoreTopology";
 import { EvidenceDrawer, type EvidenceSelection } from "./EvidenceDrawer";
 import { ScenarioPanel, TrackRecordPanel } from "./Panels";
+import {
+  detectCoreVisualTransition,
+  type CoreVisualTransition,
+} from "./transitions";
 import type {
   DomainId,
   IntelligenceCoreExperienceProps,
+  IntelligenceCoreViewModel,
   ThesisDestination,
 } from "./types";
 import "./intelligence-core.css";
+import "./core-refinement.css";
 
-const THESIS: { id: ThesisDestination; label: string; question: string }[] = [
+const THESIS: {
+  id: ThesisDestination;
+  label: string;
+  question: string;
+  short: string;
+}[] = [
   {
     id: "now",
-    label: "What’s happening",
+    label: "REALITY",
     question: "Read the current assessment",
+    short: "What’s happening",
   },
-  { id: "why", label: "Why", question: "Trace the evidence and drivers" },
+  {
+    id: "why",
+    label: "CAUSATION",
+    question: "Trace the evidence and drivers, without assuming causality",
+    short: "Why it matters",
+  },
   {
     id: "outlook",
-    label: "What’s next",
+    label: "CONSEQUENCE",
     question: "Explore conditional scenarios",
+    short: "What could follow",
   },
   {
     id: "watch",
-    label: "What to watch",
-    question: "Inspect confirmation conditions",
+    label: "VERIFICATION",
+    question: "Inspect confirmation and invalidation evidence",
+    short: "What to watch",
   },
-  { id: "act", label: "What to do", question: "Review decision context" },
+  {
+    id: "act",
+    label: "ACTION",
+    question: "Review decision context",
+    short: "What to do",
+  },
 ];
+const CLASSIFICATIONS = [
+  "current",
+  "delayed",
+  "stale",
+  "static",
+  "degraded",
+  "unavailable",
+] as const;
+
 export function IntelligenceCoreExperience({
   model: suppliedModel = createUnavailableCore(),
   onNavigate,
@@ -71,6 +104,26 @@ export function IntelligenceCoreExperience({
     );
     return () => window.clearTimeout(timer);
   }, [model.evidence, model.mode]);
+
+  const previousModel = useRef<IntelligenceCoreViewModel | null>(null);
+  const [activeTransition, setActiveTransition] =
+    useState<CoreVisualTransition | null>(null);
+  const [lastTransition, setLastTransition] =
+    useState<CoreVisualTransition | null>(null);
+  useEffect(() => {
+    const transition = detectCoreVisualTransition(previousModel.current, model);
+    previousModel.current = model;
+    if (transition) {
+      setActiveTransition(transition);
+      setLastTransition(transition);
+    }
+  }, [model]);
+  useEffect(() => {
+    if (!activeTransition) return;
+    const timer = window.setTimeout(() => setActiveTransition(null), 1200);
+    return () => window.clearTimeout(timer);
+  }, [activeTransition?.id]);
+
   const [selection, setSelection] = useState<EvidenceSelection | null>(null);
   const [scenarioDomains, setScenarioDomains] = useState<DomainId[]>([]);
   const selectEvidence = (ids: string[], title: string) =>
@@ -80,8 +133,20 @@ export function IntelligenceCoreExperience({
     if (domain)
       setSelection({ ids: domain.evidenceIds, title: domain.label, domain });
   };
-  const navigate = (destination: ThesisDestination) =>
-    onNavigate?.(destination);
+  const assessmentRefs = new Set([
+    ...model.pressure.evidenceIds,
+    ...model.regime.evidenceIds,
+    ...(model.overviewEvidenceIds || []),
+  ]);
+  const supportingDomains = model.domains.filter(
+    domain =>
+      domain.status === "current" &&
+      domain.evidenceIds.some(id => assessmentRefs.has(id))
+  );
+  const currentCount = model.domains.filter(
+    domain => domain.status === "current"
+  ).length;
+
   return (
     <section
       className="fic fic-experience"
@@ -97,13 +162,13 @@ export function IntelligenceCoreExperience({
         <div>
           <div className="fic-eyebrow">
             <span aria-hidden="true" /> INTELLIGENCE CORE{" "}
-            <span className="fic-eyebrow-separator">/</span> MARKET EVIDENCE
-            SYSTEM
+            <span className="fic-eyebrow-separator">/</span> SYSTEMIC MARKET
+            INTELLIGENCE
           </div>
           <h1>The market, connected.</h1>
           <p>
-            Understand the conditions. Trace the evidence. See what would change
-            the assessment.
+            Understand current conditions. Trace what changed. Know what would
+            invalidate the assessment.
           </p>
         </div>
         <button
@@ -138,22 +203,21 @@ export function IntelligenceCoreExperience({
             selectedDomain={selection?.domain?.id || null}
             scenarioDomains={scenarioDomains}
             onSelect={selectDomain}
+            transition={activeTransition}
           />
           <div
             className="fic-status-legend"
             aria-label="Evidence classifications"
           >
-            {(
-              [
-                "current",
-                "delayed",
-                "stale",
-                "static",
-                "degraded",
-                "unavailable",
-              ] as const
-            ).map(status => (
-              <StatusBadge key={status} status={status} />
+            {CLASSIFICATIONS.map(status => (
+              <span key={status} className="fic-classification-count">
+                <StatusBadge status={status} />
+                <small
+                  aria-label={`${model.domains.filter(item => item.status === status).length} domains`}
+                >
+                  {model.domains.filter(item => item.status === status).length}
+                </small>
+              </span>
             ))}
           </div>
         </div>
@@ -162,27 +226,78 @@ export function IntelligenceCoreExperience({
           aria-label="Market interpretation"
         >
           <div className="fic-rail-label">
-            <span className="fic-micro">01 / CURRENT READOUT</span>
+            <span className="fic-micro">01 / CURRENT ASSESSMENT</span>
             <Fingerprint size={17} strokeWidth={1.4} />
           </div>
           <h2>{model.regime.label || "Evidence before certainty."}</h2>
           <p className="fic-interpretation-lead">
             {model.overview ||
-              "The verified Intelligence Core has not been connected to this presentation. No current market assessment is being inferred."}
+              "The verified Intelligence Core has not supplied a supported current assessment. No current market condition is inferred from delayed, missing or unavailable observations."}
           </p>
           <div className="fic-rail-rule" />
           <div className="fic-rail-label">
-            <span className="fic-micro">EVIDENCE COVERAGE</span>
+            <span className="fic-micro">CURRENT EVIDENCE DOMAINS</span>
             <Layers3 size={15} />
           </div>
           <div className="fic-coverage-number">
-            {model.domains.filter(item => item.status === "current").length}
+            {currentCount}
             <span> / 6 domains</span>
           </div>
           <p className="fic-rail-small">
-            With admitted current evidence. Other classifications remain
-            visible, not blended into a live signal.
+            Source availability, not confidence. Delayed and historical
+            observations are kept separate.
           </p>
+          {supportingDomains.length > 0 ? (
+            <ul
+              className="fic-support-domains"
+              aria-label="Domains supporting this assessment"
+            >
+              {supportingDomains.map(domain => (
+                <li key={domain.id}>
+                  <button
+                    type="button"
+                    className="fic-support-domain"
+                    onClick={() => selectDomain(domain.id)}
+                  >
+                    {domain.label}
+                    <ArrowUpRight size={14} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="fic-rail-small">
+              No admitted domains support a current assessment.
+            </p>
+          )}
+          <div className="fic-rail-rule" />
+          <div className="fic-change-heading">
+            <h3>What changed</h3>
+            <span>
+              {model.mode === "demonstration"
+                ? "FICTIONAL SNAPSHOTS"
+                : "VERIFIED SNAPSHOTS"}
+            </span>
+          </div>
+          <div
+            className="fic-change-record"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {lastTransition ? (
+              <ul>
+                {lastTransition.summary.map((line, index) => (
+                  <li key={`${lastTransition.id}-${index}`}>{line}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="fic-rail-small">
+                No prior verified snapshot supplied. A current observation alone
+                does not establish a change.
+              </p>
+            )}
+          </div>
           <div className="fic-rail-rule" />
           <h3>Emerging stress</h3>
           {model.emergingStress.length ? (
@@ -228,7 +343,7 @@ export function IntelligenceCoreExperience({
       <nav className="fic-thesis" aria-label="Pentagonal Thesis methodology">
         <div className="fic-thesis-title">
           <span className="fic-micro">PENTAGONAL THESIS™</span>
-          <span>From evidence to understanding</span>
+          <span>From reality to evidence-led action</span>
         </div>
         <div className="fic-thesis-steps">
           {THESIS.map((step, index) => (
@@ -239,12 +354,15 @@ export function IntelligenceCoreExperience({
               onClick={event => {
                 if (onNavigate) {
                   event.preventDefault();
-                  navigate(step.id);
+                  onNavigate(step.id);
                 }
               }}
             >
               <span className="fic-step-number">0{index + 1}</span>
-              <span>{step.label}</span>
+              <span>
+                {step.label}
+                <small>{step.short}</small>
+              </span>
               <ArrowUpRight size={14} />
             </a>
           ))}

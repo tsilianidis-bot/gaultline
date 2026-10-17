@@ -733,3 +733,429 @@
     scroll-behavior: auto;
   }
 }
+
+/* Institutional panel refinement: retain the approved structure, with a quieter
+   mineral surface, stronger reading hierarchy, and finite interaction feedback. */
+.fic .fic-panel {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--fic-line) 88%, var(--fic-text));
+  background:
+    linear-gradient(
+      116deg,
+      color-mix(in srgb, var(--fic-cyan) 5%, transparent),
+      transparent 42%
+    ),
+    var(--fic-surface);
+}
+
+.fic .fic-panel::before {
+  position: absolute;
+  top: -1px;
+  left: 24px;
+  z-index: 1;
+  width: 52px;
+  height: 2px;
+  content: "";
+  pointer-events: none;
+  background: var(--fic-cyan);
+}
+
+.fic .fic-panel-header {
+  position: relative;
+  min-height: 104px;
+  padding: 27px 28px 23px;
+  border-color: color-mix(in srgb, var(--fic-line) 84%, var(--fic-text));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--fic-bg) 32%, transparent),
+    transparent 62%
+  );
+}
+
+.fic .fic-panel-header::after {
+  position: absolute;
+  right: 28px;
+  bottom: -4px;
+  width: 7px;
+  height: 7px;
+  content: "";
+  pointer-events: none;
+  background: var(--fic-line);
+  transform: rotate(45deg);
+}
+
+.fic .fic-eyebrow {
+  margin-bottom: 9px;
+  letter-spacing: 0.14em;
+}
+
+.fic .fic-panel h2 {
+  font-size: clamp(24px, 2.4vw, 32px);
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+}
+
+.fic .fic-header-note {
+  max-width: 220px;
+  line-height: 1.55;
+}
+
+.fic .fic-tabs {
+  background: color-mix(in srgb, var(--fic-bg) 26%, transparent);
+}
+
+.fic .fic-tab {
+  min-height: 64px;
+  gap: 12px;
+  padding: 12px 16px;
+  border-right-color: color-mix(in srgb, var(--fic-line) 88%, var(--fic-text));
+  border-bottom-width: 2px;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+.fic .fic-tab:hover:not(:disabled),
+.fic .fic-tab.is-selected {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--fic-cyan) 9%, transparent),
+      transparent 82%
+    ),
+    color-mix(in srgb, var(--fic-bg) 30%, transparent);
+}
+
+.fic .fic-tab-index {
+  min-width: 14px;
+  color: var(--fic-cyan);
+  font-size: 11px;
+}
+
+.fic .fic-tab-label {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fic .fic-tab-status {
+  padding-left: 8px;
+  border-left: 1px solid var(--fic-line);
+}
+
+.fic .fic-scenario-reading {
+  padding: 32px 28px 28px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--fic-cyan) 3%, transparent),
+    transparent 44%
+  );
+  animation: fic-panel-reveal 180ms ease-out;
+}
+
+.fic .fic-scenario-index {
+  width: 40px;
+  height: 40px;
+  font-size: 14px;
+  background: color-mix(in srgb, var(--fic-cyan) 5%, transparent);
+}
+
+.fic .fic-scenario-identity h3 {
+  font-size: 20px;
+  letter-spacing: -0.03em;
+}
+
+.fic .fic-evidence-action,
+.fic .fic-disclosure-button,
+.fic .fic-metric-evidence {
+  border-color: color-mix(in srgb, var(--fic-line) 82%, var(--fic-text));
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+.fic .fic-scenario-summary {
+  max-width: 830px;
+  margin-top: 29px;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.fic .fic-scenario-detail-grid {
+  border-top-color: color-mix(in srgb, var(--fic-line) 82%, var(--fic-text));
+}
+
+.fic .fic-detail-block {
+  min-height: 164px;
+  padding-top: 22px;
+  padding-bottom: 21px;
+  border-bottom-color: color-mix(in srgb, var(--fic-line) 82%, var(--fic-text));
+}
+
+.fic .fic-detail-block + .fic-detail-block {
+  border-left-color: color-mix(in srgb, var(--fic-line) 82%, var(--fic-text));
+}
+
+.fic .fic-detail-block h4,
+.fic .fic-domain-line h4 {
+  color: var(--fic-muted);
+  letter-spacing: 0.12em;
+}
+
+.fic .fic-condition-list {
+  gap: 11px;
+}
+
+.fic .fic-condition-list li {
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.fic .fic-domain-line {
+  padding-top: 22px;
+}
+
+.fic .fic-domain-list li {
+  padding: 7px 9px;
+  border-color: color-mix(in srgb, var(--fic-line) 78%, var(--fic-text));
+  background: color-mix(in srgb, var(--fic-bg) 28%, transparent);
+}
+
+.fic .fic-record-tabs .fic-tab {
+  min-height: 64px;
+}
+
+.fic .fic-record-row {
+  position: relative;
+  padding: 25px 28px 24px;
+  border-bottom-color: color-mix(in srgb, var(--fic-line) 82%, var(--fic-text));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--fic-bg) 22%, transparent),
+    transparent 62%
+  );
+}
+
+.fic .fic-record-row::before {
+  position: absolute;
+  top: 25px;
+  bottom: 24px;
+  left: 0;
+  width: 2px;
+  content: "";
+  background: color-mix(in srgb, var(--fic-cyan) 55%, transparent);
+}
+
+.fic .fic-record-date {
+  padding-top: 2px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+
+.fic .fic-outcome-badge,
+.fic .fic-demo-badge {
+  min-height: 24px;
+  padding: 4px 8px;
+}
+
+.fic .fic-record-summary {
+  max-width: 875px;
+  margin-top: 16px;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.fic .fic-disclosure-button svg {
+  transition: transform 180ms ease;
+}
+
+.fic .fic-record-evidence {
+  margin-top: 14px;
+  padding: 15px 16px;
+  border-left-width: 2px;
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--fic-cyan) 6%, transparent),
+      transparent 72%
+    ),
+    color-mix(in srgb, var(--fic-bg) 70%, transparent);
+  animation: fic-lineage-reveal 180ms ease-out;
+}
+
+.fic .fic-evidence-lineage-label {
+  color: var(--fic-text);
+}
+
+.fic .fic-metrics {
+  padding: 27px 28px 29px;
+  border-top: 1px solid color-mix(in srgb, var(--fic-line) 82%, var(--fic-text));
+  background:
+    linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--fic-cyan) 4%, transparent),
+      transparent 48%
+    ),
+    color-mix(in srgb, var(--fic-bg) 30%, var(--fic-surface));
+}
+
+.fic .fic-metrics-heading h3,
+.fic .fic-metrics-withheld h3 {
+  font-size: 15px;
+  letter-spacing: -0.02em;
+}
+
+.fic .fic-metric-list {
+  gap: 1px;
+  padding: 1px;
+  background: color-mix(in srgb, var(--fic-line) 86%, var(--fic-text));
+}
+
+.fic .fic-metric {
+  min-height: 102px;
+  padding: 17px 16px;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--fic-cyan) 3%, transparent),
+      transparent 64%
+    ),
+    var(--fic-surface);
+}
+
+.fic .fic-metric dt {
+  font-size: 13px;
+}
+
+.fic .fic-metric dd {
+  font-size: 17px;
+  letter-spacing: -0.025em;
+}
+
+.fic .fic-metric .fic-metric-sample {
+  font-size: 10px;
+  letter-spacing: 0.035em;
+}
+
+@keyframes fic-panel-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fic-lineage-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 680px) {
+  .fic .fic-panel-header {
+    min-height: 0;
+    padding: 22px 16px 19px;
+  }
+
+  .fic .fic-panel-header::after {
+    right: 18px;
+  }
+
+  .fic .fic-panel::before {
+    left: 16px;
+  }
+
+  .fic .fic-tab {
+    min-width: 0;
+    min-height: 60px;
+  }
+
+  .fic .fic-scenario-reading,
+  .fic .fic-record-row,
+  .fic .fic-metrics {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .fic .fic-record-row::before {
+    top: 22px;
+    bottom: 22px;
+  }
+
+  .fic .fic-scenario-summary {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 420px) {
+  .fic .fic-tabs,
+  .fic .fic-record-tabs {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    overflow: visible;
+  }
+
+  .fic .fic-tab,
+  .fic .fic-record-tabs .fic-tab {
+    flex: none;
+    width: 100%;
+    min-height: 56px;
+    border-right: 0;
+    border-bottom: 1px solid var(--fic-line);
+  }
+
+  .fic .fic-tab:last-child {
+    border-bottom: 2px solid transparent;
+  }
+
+  .fic .fic-tab.is-selected {
+    border-bottom-color: var(--fic-cyan);
+  }
+
+  .fic .fic-tab-status {
+    display: inline;
+  }
+
+  .fic .fic-tab-label {
+    white-space: normal;
+  }
+
+  .fic .fic-record-actions > * {
+    flex-basis: 100%;
+  }
+
+  .fic .fic-metric {
+    min-height: 96px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fic .fic-tab,
+  .fic .fic-evidence-action,
+  .fic .fic-disclosure-button,
+  .fic .fic-metric-evidence,
+  .fic .fic-disclosure-button svg {
+    transition: none !important;
+  }
+
+  .fic .fic-scenario-reading,
+  .fic .fic-record-evidence {
+    animation: none !important;
+  }
+}

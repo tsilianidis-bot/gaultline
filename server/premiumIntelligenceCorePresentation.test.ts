@@ -530,3 +530,48 @@ describe("premium intelligence-core presentation adapter", () => {
     expect(delayed.animateVerifiedChange).toBe(false);
   });
 });
+
+describe("refinement stale-domain lineage retention", () => {
+  it("retains actually elapsed admitted source lineage as stale while withholding all current domain claims", () => {
+    const model = adaptIntelligenceCore(
+      input({
+        evidence: [evidence({ validUntil: "2026-02-01T12:00:00.000Z" })],
+      })
+    );
+    expect(model.domains[0]).toMatchObject({
+      status: "stale",
+      evidenceIds: ["e-current"],
+      observationAt: OBSERVED_AT,
+      assessment: null,
+      direction: "unknown",
+    });
+    expect(model.pressure.value).toBeNull();
+    expect(model.regime.label).toBeNull();
+  });
+
+  it("does not classify mixed current references, absent deadlines or unadmitted history as a verified expiry", () => {
+    for (const source of [
+      evidence({ status: "stale", validUntil: null }),
+      evidence({ status: "stale", validUntil: VALID_UNTIL }),
+      evidence({
+        status: "stale",
+        admitted: false,
+        validUntil: "2026-02-01T12:00:00.000Z",
+      }),
+    ]) {
+      expect(
+        adaptIntelligenceCore(input({ evidence: [source] })).domains[0].status
+      ).toBe("unavailable");
+    }
+    const raw = input();
+    raw.evidence.push(
+      evidence({
+        id: "e-expired",
+        status: "stale",
+        validUntil: "2026-02-01T12:00:00.000Z",
+      })
+    );
+    raw.domains[0].evidenceIds = ["e-current", "e-expired"];
+    expect(adaptIntelligenceCore(raw).domains[0].status).toBe("unavailable");
+  });
+});

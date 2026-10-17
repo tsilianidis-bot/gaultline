@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Normal-motion idle has no continuous animations",
+    "passed": true,
+    "details": "Rechecked on final compiled CSS: finite effects released; document.getAnimations() is empty after settling."
+  },
+  {
+    "name": "Admission animation ends without a loop",
+    "passed": true,
+    "details": "Rechecked on final compiled CSS: finite effects released; document.getAnimations() is empty after settling."
+  },
+  {
+    "name": "Regime animation ends without idle activity",
+    "passed": true,
+    "details": "Rechecked on final compiled CSS: finite effects released; document.getAnimations() is empty after settling."
+  },
+  {
+    "name": "Expiry animation ends and idle remains still",
+    "passed": true,
+    "details": "Rechecked on final compiled CSS: finite effects released; document.getAnimations() is empty after settling."
+  }
+]

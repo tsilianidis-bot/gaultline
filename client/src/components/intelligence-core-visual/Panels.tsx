@@ -189,7 +189,7 @@ export function ScenarioPanel({
                   onKeyDown={event => moveScenarioFocus(event, id)}
                 >
                   <span className="fic-tab-index">{id}</span>
-                  <span>
+                  <span className="fic-tab-label">
                     {scenario ? scenarioName(scenario) : "Not connected"}
                   </span>
                   {tabStatus && (
@@ -204,6 +204,7 @@ export function ScenarioPanel({
 
           {selectedScenario && (
             <article
+              key={selectedScenario.id}
               className="fic-scenario-reading"
               id={`${panelId}-content-${selectedScenario.id}`}
               role="tabpanel"
