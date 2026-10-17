@@ -17,6 +17,8 @@ import {
   buildReconstructionAssessment,
   buildScheduledAssessment,
   captureScheduledAssessment,
+  classifyResolution,
+  DIVERSITY_GUARD,
   emptyPublicTrackRecord,
   equalStandingScenarios,
   examplePublicTrackRecord,
@@ -26,6 +28,7 @@ import {
   measurePerformance,
   median,
   provenanceLabel,
+  RESOLUTION_RULE_ID,
   seedExampleLedger,
   type MarketAssessmentInput,
   type ResolutionStatus,
@@ -57,9 +60,28 @@ function input(key: string, overrides: Partial<MarketAssessmentInput> = {}): Mar
   };
 }
 
+function spread(index: number): Partial<MarketAssessmentInput> {
+  return {
+    assessedAt: new Date(Date.parse("2026-01-01T18:05:00.000Z") + (index % 10) * 86_400_000).toISOString(),
+    regime: index % 2 === 0 ? "ELEVATED" : "MODERATE",
+    canonicalStateId: `state-${index}`,
+  };
+}
+
 function withStatus(key: string, status: ResolutionStatus | null, overrides: Partial<MarketAssessmentInput> = {}): StoredAssessment {
   const ledger = new AccountabilityLedger();
-  ledger.recordAssessment(input(key, overrides));
+  const recorded = input(key, overrides);
+  ledger.recordAssessment(recorded);
+  if (status === RESOLUTION_SUPPORTED || status === RESOLUTION_CONTRADICTED) {
+    ledger.appendDevelopment({
+      developmentKey: `${key}-d`,
+      assessmentKey: key,
+      observedAt: "2026-04-01T18:00:00.000Z",
+      statement: status === RESOLUTION_CONTRADICTED
+        ? recorded.scenarios[0]!.invalidation
+        : "Later observation did not match a frozen invalidation.",
+    });
+  }
   if (status) {
     ledger.appendResolution({
       resolutionKey: `${key}-resolution`,
@@ -97,29 +119,38 @@ describe("accountability recording immutability", () => {
       resolutionKey: "r1",
       assessmentKey: "a",
       resolvedAt: "2026-02-02T00:00:00.000Z",
-      status: RESOLUTION_SUPPORTED,
       statement: "Supported.",
     });
-    ledger.appendResolution({
+    expect(() => ledger.appendResolution({
       resolutionKey: "r2",
       assessmentKey: "a",
       resolvedAt: "2026-03-02T00:00:00.000Z",
       status: RESOLUTION_CONTRADICTED,
-      statement: "A later append contradicted it.",
-    });
+      statement: "A later label tried to call it contradicted.",
+    })).toThrow(/cannot be chosen/);
     const stored = ledger.list()[0]!;
     expect(stored.originalJson).toBe(created.assessment.originalJson);
     expect(stored.developments).toHaveLength(1);
-    expect(stored.resolutions.map(item => item.status)).toEqual([RESOLUTION_SUPPORTED, RESOLUTION_CONTRADICTED]);
+    expect(stored.resolutions.map(item => item.status)).toEqual([RESOLUTION_SUPPORTED]);
+    expect(classifyResolution(stored)).toBe(RESOLUTION_SUPPORTED);
     expect(ledger.appendDevelopment({
       developmentKey: "d1",
       assessmentKey: "a",
       observedAt: "2026-02-01T00:00:00.000Z",
       statement: "Later observation.",
     }).created).toBe(false);
+    expect(ledger.appendResolution({
+      resolutionKey: "r1",
+      assessmentKey: "a",
+      resolvedAt: "2026-02-02T00:00:00.000Z",
+      status: RESOLUTION_CONTRADICTED,
+      statement: "Edited.",
+    }).created).toBe(false);
+    expect(ledger.list()[0]?.resolutions[0]?.statement).toBe("Supported.");
   });
 
   it("does not favor scenario C and rejects a founder-thesis preference", () => {
+    expect(() => new AccountabilityLedger().recordAssessment(input("kind", { assessmentKind: "forecast" as "market_assessment" }))).toThrow(/assessmentKind/);
     expect(() => new AccountabilityLedger().recordAssessment(input("c", { favoredScenario: "C" }))).toThrow(/Scenario C/);
     expect(() => new AccountabilityLedger().recordAssessment(input("c2", { founderThesisAffinity: "stress" }))).toThrow(/founder thesis/);
     const recorded = new AccountabilityLedger().recordAssessment(input("equal")).assessment;
@@ -201,28 +232,34 @@ describe("insufficient-evidence gating and metric math", () => {
 
   it("computes fixed rates once the real forward sample is large enough", () => {
     const directionalRows = [
-      ...Array.from({ length: 20 }, (_, index) => withStatus(`hit-${index}`, RESOLUTION_SUPPORTED)),
-      ...Array.from({ length: 10 }, (_, index) => withStatus(`miss-${index}`, RESOLUTION_CONTRADICTED)),
+      ...Array.from({ length: 20 }, (_, index) => withStatus(`hit-${index}`, RESOLUTION_SUPPORTED, spread(index))),
+      ...Array.from({ length: 10 }, (_, index) => withStatus(`miss-${index}`, RESOLUTION_CONTRADICTED, spread(index + 20))),
     ];
     const directional = measurePerformance(directionalRows).metrics.find(item => item.id === "directionalAccuracy")!;
     expect(directional).toMatchObject({ status: "reported", sampleSize: 30, value: 20 / 30 });
     const regime = measurePerformance(directionalRows).regimeMetrics.find(item => item.regime === "ELEVATED")!;
-    expect(regime).toMatchObject({ status: "reported", sampleSize: 30, minimumSample: MINIMUM_SAMPLES.regimePerformance, value: 20 / 30 });
+    expect(regime).toMatchObject({ status: "reported", sampleSize: 15, minimumSample: MINIMUM_SAMPLES.regimePerformance, value: 10 / 15 });
 
     const warnings = [
-      ...Array.from({ length: 18 }, (_, index) => withStatus(`w${index}`, RESOLUTION_SUPPORTED, { assessmentKind: "early_warning", direction: "stress_increase" })),
-      ...Array.from({ length: 12 }, (_, index) => withStatus(`wf${index}`, RESOLUTION_CONTRADICTED, { assessmentKind: "early_warning", direction: "stress_increase" })),
+      ...Array.from({ length: 18 }, (_, index) => withStatus(`w${index}`, RESOLUTION_SUPPORTED, { ...spread(index), assessmentKind: "early_warning", direction: "stress_increase" })),
+      ...Array.from({ length: 12 }, (_, index) => withStatus(`wf${index}`, RESOLUTION_CONTRADICTED, { ...spread(index + 18), assessmentKind: "early_warning", direction: "stress_increase" })),
     ];
     expect(measurePerformance(warnings).metrics.find(item => item.id === "falsePositiveRate")).toMatchObject({ status: "reported", value: 12 / 30 });
 
     const leadLedger = new AccountabilityLedger();
     for (let index = 0; index < 20; index += 1) {
       const key = `lead-${index}`;
-      leadLedger.recordAssessment(input(key, { assessmentKind: "early_warning", direction: "stress_increase", assessedAt: "2026-01-01T00:00:00.000Z" }));
+      const assessedAt = new Date(Date.parse("2026-01-01T00:00:00.000Z") + (index % 10) * 86_400_000).toISOString();
+      leadLedger.recordAssessment(input(key, {
+        ...spread(index),
+        assessmentKind: "early_warning",
+        direction: "stress_increase",
+        assessedAt,
+      }));
       leadLedger.appendDevelopment({
         developmentKey: `${key}-d`,
         assessmentKey: key,
-        observedAt: new Date(Date.parse("2026-01-01T00:00:00.000Z") + (index + 1) * 86_400_000).toISOString(),
+        observedAt: new Date(Date.parse(assessedAt) + (index + 1) * 86_400_000).toISOString(),
         statement: "Confirmed later.",
         confirmsWarning: true,
       });
@@ -251,7 +288,7 @@ describe("insufficient-evidence gating and metric math", () => {
     const benchmarkLedger = new AccountabilityLedger();
     for (let index = 0; index < 30; index += 1) {
       const key = `bench-${index}`;
-      benchmarkLedger.recordAssessment(input(key));
+      benchmarkLedger.recordAssessment(input(key, { ...spread(index), preregisteredBenchmarkId: "spy-20d" }));
       benchmarkLedger.appendDevelopment({
         developmentKey: `${key}-d`,
         assessmentKey: key,
@@ -263,8 +300,8 @@ describe("insufficient-evidence gating and metric math", () => {
     expect(measurePerformance(benchmarkLedger.list()).metrics.find(item => item.id === "benchmarkComparison")).toMatchObject({ status: "reported", value: 21 / 30 });
 
     const coverage = [
-      ...Array.from({ length: 7 }, (_, index) => withStatus(`cov-${index}`, null)),
-      ...Array.from({ length: 3 }, (_, index) => withStatus(`gap-${index}`, null, { evidence: { availableInputs: 2, requiredInputs: 6, unavailableInputs: ["hy_spread"] }, supportingObservations: [] })),
+      ...Array.from({ length: 7 }, (_, index) => withStatus(`cov-${index}`, null, spread(index))),
+      ...Array.from({ length: 3 }, (_, index) => withStatus(`gap-${index}`, null, { ...spread(index + 7), evidence: { availableInputs: 2, requiredInputs: 6, unavailableInputs: ["hy_spread"] }, supportingObservations: [] })),
     ];
     expect(measurePerformance(coverage).metrics.find(item => item.id === "evidenceCoverage")).toMatchObject({ status: "reported", sampleSize: 10, value: 0.7 });
   });
@@ -280,6 +317,162 @@ describe("insufficient-evidence gating and metric math", () => {
     expect(directional.value).toBeNull();
   });
 });
+
+describe("frozen classification and diversity guard", () => {
+  it("classifies from the frozen invalidation text and ignores a stored label", () => {
+    expect(RESOLUTION_RULE_ID).toBe("invalidation-match-v1");
+    const supported = withStatus("rule-s", RESOLUTION_SUPPORTED);
+    const contradicted = withStatus("rule-c", RESOLUTION_CONTRADICTED);
+    const unresolved = withStatus("rule-u", RESOLUTION_UNRESOLVED);
+    expect(classifyResolution(supported)).toBe(RESOLUTION_SUPPORTED);
+    expect(classifyResolution(contradicted)).toBe(RESOLUTION_CONTRADICTED);
+    expect(classifyResolution(unresolved)).toBe(RESOLUTION_UNRESOLVED);
+    const lying = structuredClone(supported);
+    lying.resolutions[0]!.status = RESOLUTION_CONTRADICTED;
+    expect(classifyResolution(lying)).toBe(RESOLUTION_SUPPORTED);
+    expect(currentStatusIgnoresLabel(lying)).toBe(RESOLUTION_SUPPORTED);
+
+    const ledger = new AccountabilityLedger();
+    ledger.recordAssessment(input("undo"));
+    ledger.appendDevelopment({
+      developmentKey: "hit",
+      assessmentKey: "undo",
+      observedAt: "2026-02-01T00:00:00.000Z",
+      statement: scenarios[0]!.invalidation,
+    });
+    ledger.appendDevelopment({
+      developmentKey: "spin",
+      assessmentKey: "undo",
+      observedAt: "2026-03-01T00:00:00.000Z",
+      statement: "A later note tried to walk the invalidation back.",
+    });
+    expect(classifyResolution(ledger.list()[0]!)).toBe(RESOLUTION_CONTRADICTED);
+    expect(() => ledger.appendResolution({
+      resolutionKey: "spin-label",
+      assessmentKey: "undo",
+      resolvedAt: "2026-03-02T00:00:00.000Z",
+      status: RESOLUTION_SUPPORTED,
+      statement: "Called supported after the fact.",
+    })).toThrow(/cannot be chosen/);
+    const priorOnly = new AccountabilityLedger();
+    priorOnly.recordAssessment(input("prior"));
+    priorOnly.appendDevelopment({
+      developmentKey: "before",
+      assessmentKey: "prior",
+      observedAt: "2025-12-01T00:00:00.000Z",
+      statement: scenarios[0]!.invalidation,
+    });
+    expect(classifyResolution(priorOnly.list()[0]!)).toBe(RESOLUTION_UNRESOLVED);
+  });
+
+  it("keeps contradicted assessments in the public chronology", () => {
+    const rows = [withStatus("shown-s", RESOLUTION_SUPPORTED), withStatus("shown-c", RESOLUTION_CONTRADICTED)];
+    const view = buildPublicTrackRecord(rows);
+    expect(view.chronology.map(item => item.assessmentKey).sort()).toEqual(["shown-c", "shown-s"]);
+    expect(view.chronology.find(item => item.assessmentKey === "shown-c")?.currentStatus).toBe(RESOLUTION_CONTRADICTED);
+    expect(view.chronology.find(item => item.assessmentKey === "shown-s")?.scenarios[0]?.invalidation).toBe(scenarios[0]!.invalidation);
+  });
+
+  it("withholds rates when the sample is one day, one regime, or one canonical state", () => {
+    expect(DIVERSITY_GUARD.minimumDistinctUtcDates).toBe(5);
+    const oneDay = Array.from({ length: 30 }, (_, index) => withStatus(`day-${index}`, index < 20 ? RESOLUTION_SUPPORTED : RESOLUTION_CONTRADICTED, {
+      regime: index % 2 === 0 ? "ELEVATED" : "MODERATE",
+      canonicalStateId: `state-${index}`,
+    }));
+    const dayMetric = measurePerformance(oneDay).metrics.find(item => item.id === "directionalAccuracy")!;
+    expect(dayMetric).toMatchObject({ status: "insufficient_evidence", sampleSize: 30, value: null });
+    expect(dayMetric.detail).toMatch(/UTC date/);
+
+    const oneRegime = Array.from({ length: 30 }, (_, index) => withStatus(`reg-${index}`, index < 20 ? RESOLUTION_SUPPORTED : RESOLUTION_CONTRADICTED, {
+      ...spread(index),
+      regime: "ELEVATED",
+    }));
+    const regimeMetric = measurePerformance(oneRegime).metrics.find(item => item.id === "directionalAccuracy")!;
+    expect(regimeMetric).toMatchObject({ status: "insufficient_evidence", value: null });
+    expect(regimeMetric.detail).toMatch(/one regime/);
+    expect(measurePerformance(oneRegime).regimeMetrics.find(item => item.regime === "ELEVATED")).toMatchObject({ status: "reported", sampleSize: 30, value: 20 / 30 });
+
+    const oneCluster = Array.from({ length: 30 }, (_, index) => withStatus(`cl-${index}`, index < 20 ? RESOLUTION_SUPPORTED : RESOLUTION_CONTRADICTED, {
+      ...spread(index),
+      canonicalStateId: "state-same",
+    }));
+    const clusterMetric = measurePerformance(oneCluster).metrics.find(item => item.id === "directionalAccuracy")!;
+    expect(clusterMetric.detail).toMatch(/one canonical state/);
+    expect(clusterMetric.value).toBeNull();
+
+    const leadLedger = new AccountabilityLedger();
+    for (let index = 0; index < 20; index += 1) {
+      const key = `same-day-lead-${index}`;
+      leadLedger.recordAssessment(input(key, {
+        assessmentKind: "early_warning",
+        direction: "stress_increase",
+        assessedAt: "2026-01-01T00:00:00.000Z",
+        regime: index % 2 === 0 ? "ELEVATED" : "MODERATE",
+        canonicalStateId: `lead-state-${index}`,
+      }));
+      leadLedger.appendDevelopment({
+        developmentKey: `${key}-d`,
+        assessmentKey: key,
+        observedAt: new Date(Date.parse("2026-01-01T00:00:00.000Z") + (index + 1) * 86_400_000).toISOString(),
+        statement: "Confirmed later.",
+        confirmsWarning: true,
+      });
+      leadLedger.appendResolution({
+        resolutionKey: `${key}-r`,
+        assessmentKey: key,
+        resolvedAt: "2026-03-01T00:00:00.000Z",
+        statement: "Supported.",
+      });
+    }
+    const leads = measurePerformance(leadLedger.list()).metrics.find(item => item.id === "leadTimeDays")!;
+    expect(leads).toMatchObject({ status: "insufficient_evidence", sampleSize: 20, value: null });
+    expect(leads.detail).toMatch(/UTC date/);
+
+    const shortLeads = leadLedger.list().slice(0, 19);
+    expect(measurePerformance(shortLeads).metrics.find(item => item.id === "leadTimeDays")).toMatchObject({ status: "insufficient_evidence", sampleSize: 19, value: null });
+  });
+
+  it("counts missed warnings and benchmarks only from preregistered ids", () => {
+    const note = withStatus("note", RESOLUTION_SUPPORTED, { assessmentKind: "early_warning", direction: "stress_increase" });
+    expect(measurePerformance([note]).metrics.find(item => item.id === "missedWarningRate")).toMatchObject({ status: "insufficient_evidence", sampleSize: 0, value: null });
+    const sameDay = Array.from({ length: 20 }, (_, index) => ({ id: `same-${index}`, occurredAt: "2024-06-01T00:00:00.000Z" }));
+    const concentrated = measurePerformance([], sameDay).metrics.find(item => item.id === "missedWarningRate")!;
+    expect(concentrated).toMatchObject({ status: "insufficient_evidence", sampleSize: 20, value: null });
+    expect(concentrated.detail).toMatch(/UTC date/);
+    const duplicates = Array.from({ length: 20 }, () => ({ id: "event-1", occurredAt: "2024-06-01T00:00:00.000Z" }));
+    expect(measurePerformance([], duplicates).metrics.find(item => item.id === "missedWarningRate")?.sampleSize).toBe(1);
+    expect(measurePerformance([], [{ id: " ", occurredAt: "2024-06-01T00:00:00.000Z" }]).metrics.find(item => item.id === "missedWarningRate")?.sampleSize).toBe(0);
+
+    const unregistered = new AccountabilityLedger();
+    for (let index = 0; index < 30; index += 1) {
+      const key = `bare-${index}`;
+      unregistered.recordAssessment(input(key, spread(index)));
+      unregistered.appendDevelopment({
+        developmentKey: `${key}-d`,
+        assessmentKey: key,
+        observedAt: "2026-05-01T00:00:00.000Z",
+        statement: "Compared after the fact.",
+        benchmark: { id: "spy-20d", matched: true },
+      });
+    }
+    expect(measurePerformance(unregistered.list()).metrics.find(item => item.id === "benchmarkComparison")).toMatchObject({ sampleSize: 0, value: null, status: "insufficient_evidence" });
+
+    const mismatched = new AccountabilityLedger();
+    mismatched.recordAssessment(input("mismatch", { ...spread(0), preregisteredBenchmarkId: "spy-20d" }));
+    mismatched.appendDevelopment({
+      developmentKey: "mismatch-d",
+      assessmentKey: "mismatch",
+      observedAt: "2026-05-01T00:00:00.000Z",
+      statement: "Different benchmark.",
+      benchmark: { id: "chosen-later", matched: true },
+    });
+    expect(measurePerformance(mismatched.list()).metrics.find(item => item.id === "benchmarkComparison")?.sampleSize).toBe(0);
+  });
+});
+
+function currentStatusIgnoresLabel(row: StoredAssessment): ResolutionStatus {
+  return classifyResolution(row);
+}
 
 describe("public projection, flag, and example seed", () => {
   it("publishes no probability fields and labels example rows", () => {
@@ -318,6 +511,11 @@ describe("accountability surface does not join the five-question navigation", ()
     const nav = readFileSync("client/src/components/LeftNavDrawer.tsx", "utf8");
     const registry = readFileSync("shared/routeRegistry.ts", "utf8");
     const server = readFileSync("server/intelligenceAccountability.ts", "utf8");
+    const governance = readFileSync("server/intelligenceGovernance.ts", "utf8");
+    const schema = readFileSync("drizzle/schema.ts", "utf8");
+    const router = readFileSync("server/routers/intelligenceAccountability.ts", "utf8");
+    const cron = readFileSync("server/scheduledSeismograph.ts", "utf8");
+    expect(page).toContain("This record is not published.");
     expect(page).toContain("PUBLIC_DISCLAIMER");
     expect(page).toContain("Insufficient evidence");
     expect(page).toContain("import.meta.env.DEV");
@@ -326,5 +524,13 @@ describe("accountability surface does not join the five-question navigation", ()
     expect(nav).toContain('item.id !== "intelligence-track-record" || showAccountability');
     expect(registry).not.toContain("intelligence-track-record");
     expect(server).not.toMatch(/pressure\/engine|stripe|marketStateService|pressure\/v2/);
+    expect(server).not.toMatch(/\.update\(|\.delete\(/);
+    expect(governance).not.toMatch(/\.update\(governedResearch|\.delete\(governedResearch/);
+    expect(schema).toContain('onDelete("restrict")');
+    const procedure = router.slice(router.indexOf("publicRecord"));
+    expect(procedure.indexOf("if (!enabled)")).toBeLessThan(procedure.indexOf("loadAccountabilityLedger"));
+    expect(procedure).toContain("enabled: false");
+    expect(cron).not.toContain("captureScheduledAssessment");
+    expect(cron).not.toContain("intelligenceAccountability");
   });
 });

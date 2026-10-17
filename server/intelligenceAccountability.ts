@@ -60,6 +60,7 @@ export function assessmentToResearchRecord(assessment: StoredAssessment) {
     evidence: assessment.evidence,
     assessmentKind: assessment.assessmentKind,
     direction: assessment.direction,
+    preregisteredBenchmarkId: assessment.preregisteredBenchmarkId,
   };
   return buildGovernedResearchObservation({
     observationKey: `intelligence-accountability:${assessment.assessmentKey}`,
@@ -72,7 +73,7 @@ export function assessmentToResearchRecord(assessment: StoredAssessment) {
     modelVersion: ACCOUNTABILITY_SCHEMA,
     originalState: body,
     originalInterpretation: assessment.summary,
-    outcomeDefinition: "Append-only later observation. Status is supported, contradicted, or unresolved.",
+    outcomeDefinition: "Append-only later observation. Status is classified by invalidation-match-v1 and is not chosen.",
     outcomeWindow: "appended_when_observed",
     sourceDataVersions: { schema: ACCOUNTABILITY_SCHEMA, provenance: assessment.provenance },
   });
@@ -121,6 +122,7 @@ interface StoredBody {
   evidence?: StoredAssessment["evidence"];
   assessmentKind?: StoredAssessment["assessmentKind"];
   direction?: StoredAssessment["direction"];
+  preregisteredBenchmarkId?: string | null;
 }
 
 function asAssessment(historyClass: string, raw: unknown, developments: StoredDevelopment[], resolutions: StoredResolution[]): StoredAssessment | null {
@@ -143,6 +145,7 @@ function asAssessment(historyClass: string, raw: unknown, developments: StoredDe
     evidence: body.evidence ?? { availableInputs: 0, requiredInputs: 0, unavailableInputs: [] },
     assessmentKind: body.assessmentKind === "early_warning" ? "early_warning" : "market_assessment",
     direction: body.direction ?? "unspecified",
+    preregisteredBenchmarkId: body.preregisteredBenchmarkId?.trim() || null,
     originalJson: JSON.stringify(body),
     developments,
     resolutions,

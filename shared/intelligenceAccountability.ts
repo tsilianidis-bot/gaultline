@@ -36,7 +36,7 @@ export const SCENARIO_IDS = ["A", "B", "C"] as const;
 export type ScenarioId = (typeof SCENARIO_IDS)[number];
 
 /** Fixed in advance. This module has no parameter for revising them from outcomes. */
-export const MINIMUM_SAMPLES = {
+export const MINIMUM_SAMPLES = Object.freeze({
   directionalAccuracy: 30,
   falsePositiveRate: 30,
   missedWarningRate: 20,
@@ -44,7 +44,31 @@ export const MINIMUM_SAMPLES = {
   regimePerformance: 15,
   benchmarkComparison: 30,
   evidenceCoverage: 10,
-} as const;
+});
+
+/**
+ * Fixed in advance. A count that clears MINIMUM_SAMPLES is still withheld when
+ * the eligible sample is concentrated. Not fitted from outcomes.
+ * - at least 5 distinct UTC dates
+ * - no single UTC date holds more than half the eligible sample
+ * - pooled rates also need at least 2 recorded regimes
+ * - a single non-null canonical state id is one cluster and is withheld
+ */
+export const DIVERSITY_GUARD = Object.freeze({
+  minimumDistinctUtcDates: 5,
+  maxSingleUtcDateShare: 0.5,
+  minimumDistinctRegimes: 2,
+});
+
+/**
+ * Frozen classification rule. Status is not an input.
+ * unresolved: no development at or after assessedAt.
+ * contradicted: any such development's statement equals a scenario invalidation
+ * frozen on the assessment (trimmed, exact).
+ * supported: at least one such development exists and none match those invalidations.
+ * A later non-matching development does not undo a match.
+ */
+export const RESOLUTION_RULE_ID = "invalidation-match-v1" as const;
 
 /** How far before a confirmed stress event a recorded stress note can count. Not fitted. */
 export const RECORDED_NOTE_WINDOW_DAYS = 60;
@@ -102,6 +126,8 @@ export interface MarketAssessmentInput {
   evidence: EvidenceCoverageInput;
   assessmentKind: AssessmentKind;
   direction: AssessmentDirection;
+  /** Frozen at assessment time. Later benchmark ids that differ are ignored. */
+  preregisteredBenchmarkId?: string | null;
   favoredScenario?: ScenarioId | null;
   founderThesisAffinity?: unknown;
 }
@@ -124,7 +150,8 @@ export interface ResolutionInput {
   resolutionKey: string;
   assessmentKey: string;
   resolvedAt: string;
-  status: ResolutionStatus;
+  /** If supplied, it must equal the frozen rule. It is not a way to choose the status. */
+  status?: ResolutionStatus;
   statement: string;
 }
 
@@ -157,6 +184,7 @@ export interface StoredAssessment {
   evidence: EvidenceCoverageInput;
   assessmentKind: AssessmentKind;
   direction: AssessmentDirection;
+  preregisteredBenchmarkId: string | null;
   /** Canonical JSON of the original assessment. Appends must not change it. */
   originalJson: string;
   developments: StoredDevelopment[];
@@ -345,11 +373,16 @@ export function normalizeAssessment(input: MarketAssessmentInput): Omit<StoredAs
       };
     }),
     evidence: normalizeEvidence(input.evidence),
-    assessmentKind: input.assessmentKind === "early_warning" ? "early_warning" : "market_assessment",
-    direction: (["stress_increase", "stress_decrease", "unchanged", "unspecified"] as const).includes(input.direction)
-      ? input.direction
-      : "unspecified",
+    assessmentKind: input.assessmentKind,
+    direction: input.direction,
+    preregisteredBenchmarkId: input.preregisteredBenchmarkId?.trim() || null,
   };
+  if (assessment.assessmentKind !== "market_assessment" && assessment.assessmentKind !== "early_warning") {
+    throw new AccountabilityValidationError("assessmentKind must be market_assessment or early_warning.");
+  }
+  if (!(["stress_increase", "stress_decrease", "unchanged", "unspecified"] as const).includes(assessment.direction)) {
+    throw new AccountabilityValidationError("direction must be stress_increase, stress_decrease, unchanged, or unspecified.");
+  }
   return assessment;
 }
 
@@ -407,13 +440,16 @@ export class AccountabilityLedger {
       this.assertUntouched(row, before);
       return { created: false };
     }
-    if (![RESOLUTION_SUPPORTED, RESOLUTION_CONTRADICTED, RESOLUTION_UNRESOLVED].includes(input.status)) {
-      throw new AccountabilityValidationError("Resolution status must be supported, contradicted, or unresolved.");
+    const status = classifyResolution(row);
+    if (input.status != null && input.status !== status) {
+      throw new AccountabilityValidationError(
+        `Resolution status is classified by ${RESOLUTION_RULE_ID} and cannot be chosen. The rule result is ${status}.`,
+      );
     }
     row.resolutions.push({
       resolutionKey,
       resolvedAt: requireIso(input.resolvedAt, "resolvedAt"),
-      status: input.status,
+      status,
       statement: requireText(input.statement, "resolution"),
     });
     row.resolutions.sort((a, b) => a.resolvedAt.localeCompare(b.resolvedAt) || a.resolutionKey.localeCompare(b.resolutionKey));
@@ -448,8 +484,57 @@ export function latestResolution(row: StoredAssessment): StoredResolution | null
   return row.resolutions.length ? row.resolutions[row.resolutions.length - 1]! : null;
 }
 
+/** Status used by metrics and the public current label. Stored resolution labels are not an input. */
+export function classifyResolution(row: Pick<StoredAssessment, "assessedAt" | "scenarios" | "developments">): ResolutionStatus {
+  const assessedMs = Date.parse(row.assessedAt);
+  const invalidations = new Set(row.scenarios.map(scenario => scenario.invalidation.trim()).filter(Boolean));
+  const later = row.developments.filter(item => {
+    const observedMs = Date.parse(item.observedAt);
+    return Number.isFinite(observedMs) && Number.isFinite(assessedMs) && observedMs >= assessedMs;
+  });
+  if (!later.length) return RESOLUTION_UNRESOLVED;
+  const contradicted = later.some(item => invalidations.has(item.statement.trim()));
+  return contradicted ? RESOLUTION_CONTRADICTED : RESOLUTION_SUPPORTED;
+}
+
 export function currentStatus(row: StoredAssessment): ResolutionStatus {
-  return latestResolution(row)?.status ?? RESOLUTION_UNRESOLVED;
+  return classifyResolution(row);
+}
+
+export function utcDateKey(iso: string): string | null {
+  const parsed = Date.parse(iso);
+  if (!Number.isFinite(parsed)) return null;
+  return new Date(parsed).toISOString().slice(0, 10);
+}
+
+export function sampleConcentrationReason(
+  timestamps: readonly string[],
+  options?: { regimes?: readonly (string | null | undefined)[]; requireMultipleRegimes?: boolean; clusterIds?: readonly (string | null | undefined)[] },
+): string | null {
+  const dates = timestamps.map(utcDateKey).filter((date): date is string => date != null);
+  if (!dates.length) return null;
+  const counts = new Map<string, number>();
+  for (const date of dates) counts.set(date, (counts.get(date) ?? 0) + 1);
+  const distinctDates = counts.size;
+  const maxShare = Math.max(...Array.from(counts.values())) / dates.length;
+  if (distinctDates < DIVERSITY_GUARD.minimumDistinctUtcDates) {
+    return `Sample is concentrated on ${distinctDates} UTC date(s); at least ${DIVERSITY_GUARD.minimumDistinctUtcDates} are required.`;
+  }
+  if (maxShare > DIVERSITY_GUARD.maxSingleUtcDateShare) {
+    return "One UTC date holds more than half the sample.";
+  }
+  if (options?.requireMultipleRegimes) {
+    const regimes = new Set((options.regimes ?? []).map(regime => regime?.trim() || "Unspecified"));
+    if (regimes.size < DIVERSITY_GUARD.minimumDistinctRegimes) {
+      return "Sample is concentrated in one regime.";
+    }
+  }
+  const clusterIds = options?.clusterIds ?? [];
+  const present = clusterIds.map(id => id?.trim() || "").filter(Boolean);
+  if (present.length === timestamps.length && new Set(present).size < 2) {
+    return "Sample is concentrated in one canonical state.";
+  }
+  return null;
 }
 
 export function provenanceLabel(row: Pick<StoredAssessment, "provenance" | "exampleData">): string {
@@ -477,10 +562,12 @@ interface MetricDraft {
   value: number | null;
   unit: PublicMetric["unit"];
   emptyDetail: string;
+  concentrationReason?: string | null;
 }
 
 function gate(draft: MetricDraft): PublicMetric {
-  const ready = draft.sampleSize >= draft.minimumSample && draft.value != null && Number.isFinite(draft.value);
+  const enough = draft.sampleSize >= draft.minimumSample && draft.value != null && Number.isFinite(draft.value);
+  const ready = enough && !draft.concentrationReason;
   return {
     id: draft.id,
     label: draft.label,
@@ -490,9 +577,19 @@ function gate(draft: MetricDraft): PublicMetric {
     value: ready ? draft.value : null,
     unit: draft.unit,
     detail: ready
-      ? `${draft.sampleSize} real forward observations (minimum ${draft.minimumSample}).`
-      : `${draft.emptyDetail} ${draft.sampleSize} of ${draft.minimumSample} required real forward observations.`,
+      ? `${draft.sampleSize} real forward observations (minimum ${draft.minimumSample}), spread across the diversity guard.`
+      : draft.concentrationReason
+        ? `${draft.concentrationReason} ${draft.sampleSize} observations are not reported as a rate.`
+        : `${draft.emptyDetail} ${draft.sampleSize} of ${draft.minimumSample} required real forward observations.`,
   };
+}
+
+function concentrationOf(rows: readonly StoredAssessment[], requireMultipleRegimes: boolean): string | null {
+  return sampleConcentrationReason(rows.map(row => row.assessedAt), {
+    regimes: rows.map(row => row.regime),
+    requireMultipleRegimes,
+    clusterIds: rows.map(row => row.canonicalStateId),
+  });
 }
 
 export interface ConfirmedStressEvent {
@@ -507,8 +604,11 @@ export interface PerformanceMeasurement {
 
 /**
  * Measure only real forward-recorded rows. Historical reconstructions, example
- * rows, and unresolved rows do not enter a rate. Thresholds are the constants
- * in MINIMUM_SAMPLES; callers cannot pass replacements.
+ * rows, and unresolved rows do not enter a rate. Status comes from
+ * RESOLUTION_RULE_ID, not from a stored label. Thresholds are MINIMUM_SAMPLES
+ * and DIVERSITY_GUARD; callers cannot pass replacements.
+ * Missed-warning and benchmark rates count only preregistered ids: stress
+ * events passed in by id, and benchmark ids frozen on the assessment.
  */
 export function measurePerformance(
   rows: readonly StoredAssessment[],
@@ -528,6 +628,7 @@ export function measurePerformance(
     value: resolved.length ? supported / resolved.length : null,
     unit: "ratio",
     emptyDetail: "Insufficient evidence.",
+    concentrationReason: concentrationOf(resolved, true),
   });
 
   const warnings = forward.filter(row => row.assessmentKind === "early_warning" && row.direction === "stress_increase");
@@ -541,9 +642,16 @@ export function measurePerformance(
     value: resolvedWarnings.length ? falsePositives / resolvedWarnings.length : null,
     unit: "ratio",
     emptyDetail: "Insufficient evidence.",
+    concentrationReason: concentrationOf(resolvedWarnings, true),
   });
 
-  const events = confirmedStressEvents.filter(event => Number.isFinite(Date.parse(event.occurredAt)));
+  const seenEvents = new Set<string>();
+  const events = confirmedStressEvents.filter(event => {
+    const id = event.id?.trim();
+    if (!id || seenEvents.has(id) || !Number.isFinite(Date.parse(event.occurredAt))) return false;
+    seenEvents.add(id);
+    return true;
+  });
   const missed = events.filter(event => {
     const eventMs = Date.parse(event.occurredAt);
     return !warnings.some(row => {
@@ -559,30 +667,33 @@ export function measurePerformance(
     minimumSample: MINIMUM_SAMPLES.missedWarningRate,
     value: events.length ? missed / events.length : null,
     unit: "ratio",
-    emptyDetail: "Insufficient evidence.",
+    emptyDetail: "Insufficient evidence. Missed-warning counts only preregistered events.",
+    concentrationReason: sampleConcentrationReason(events.map(event => event.occurredAt)),
   });
 
-  const leads = warnings
+  const leadRows = warnings
     .filter(row => currentStatus(row) === RESOLUTION_SUPPORTED)
     .map(row => {
       const confirmation = row.developments.find(item => item.confirmsWarning && Date.parse(item.observedAt) >= Date.parse(row.assessedAt));
-      return confirmation ? daysBetween(row.assessedAt, confirmation.observedAt) : null;
+      return confirmation ? { row, lead: daysBetween(row.assessedAt, confirmation.observedAt) } : null;
     })
-    .filter((value): value is number => value != null && value >= 0);
+    .filter((value): value is { row: StoredAssessment; lead: number } => value != null && value.lead >= 0);
   const leadTime = gate({
     id: "leadTimeDays",
     label: "Days from a recorded stress note to later confirmation",
-    sampleSize: leads.length,
+    sampleSize: leadRows.length,
     minimumSample: MINIMUM_SAMPLES.leadTimeDays,
-    value: median(leads),
+    value: median(leadRows.map(item => item.lead)),
     unit: "days",
     emptyDetail: "Insufficient evidence.",
+    concentrationReason: concentrationOf(leadRows.map(item => item.row), true),
   });
 
-  const benchmarkRows = forward.flatMap(row => {
-    const first = row.developments.find(item => item.benchmark)?.benchmark ?? null;
-    return first ? [first] : [];
+  const benchmarkEligible = forward.filter(row => {
+    const id = row.preregisteredBenchmarkId;
+    return Boolean(id) && row.developments.some(item => item.benchmark?.id === id);
   });
+  const benchmarkRows = benchmarkEligible.map(row => row.developments.find(item => item.benchmark?.id === row.preregisteredBenchmarkId)!.benchmark!);
   const matched = benchmarkRows.filter(item => item.matched).length;
   const benchmark = gate({
     id: "benchmarkComparison",
@@ -591,7 +702,8 @@ export function measurePerformance(
     minimumSample: MINIMUM_SAMPLES.benchmarkComparison,
     value: benchmarkRows.length ? matched / benchmarkRows.length : null,
     unit: "ratio",
-    emptyDetail: "Insufficient evidence.",
+    emptyDetail: "Insufficient evidence. Benchmark counts only ids frozen on the assessment.",
+    concentrationReason: concentrationOf(benchmarkEligible, true),
   });
 
   const covered = forward.filter(row =>
@@ -608,6 +720,7 @@ export function measurePerformance(
     value: forward.length ? covered / forward.length : null,
     unit: "ratio",
     emptyDetail: "Insufficient evidence.",
+    concentrationReason: concentrationOf(forward, true),
   });
 
   const byRegime = new Map<string, StoredAssessment[]>();
@@ -629,6 +742,7 @@ export function measurePerformance(
           value: group.length ? hits / group.length : null,
           unit: "ratio",
           emptyDetail: "Insufficient evidence.",
+          concentrationReason: concentrationOf(group, false),
         }),
       };
     });
@@ -644,13 +758,16 @@ const METHODOLOGY = [
   "Later observations and resolutions are appended. The original assessment is not edited.",
   "Forward-recorded assessments come only from a scheduled forward run. Historical reconstructions use a different provenance value and are excluded from every measurement.",
   "Scenarios A, B, and C are stored with equal standing. Scenario C is not preferred where it resembles a founder thesis.",
-  "A rate is shown only after the minimum number of real forward observations. Otherwise the status is insufficient evidence. Unresolved assessments stay unresolved.",
+  "A rate is shown only after the minimum number of real forward observations, and only when those observations are not concentrated on one UTC date, one regime, or one canonical state. Otherwise the status is insufficient evidence.",
+  `Resolution status uses ${RESOLUTION_RULE_ID}. Unresolved means no later development. Contradicted means a later development statement equals an invalidation frozen on the assessment. Supported means a later development exists and none match. The status is not chosen, and a later non-matching note does not undo a match.`,
+  "Missed-warning counts only preregistered stress events supplied by id. Benchmark comparison counts only a benchmark id frozen on the assessment. Duplicate event ids are counted once.",
 ];
 
 const LIMITATIONS = [
   "Counts of records are an inventory, not a measure of skill.",
   "Unresolved assessments are not treated as successes or failures.",
   "Example rows are labelled example data and are excluded from measurement.",
+  "A sample that all falls on one UTC date, one regime, or one canonical state is not reported as a rate.",
   "Nothing here is optimized against historical outcomes, and nothing here is a forecast.",
   PUBLIC_DISCLAIMER,
 ];
@@ -743,6 +860,7 @@ export function buildScheduledAssessment(snapshot: ScheduledAssessmentSnapshot):
     evidence: snapshot.evidence,
     assessmentKind: "market_assessment",
     direction: "unspecified",
+    preregisteredBenchmarkId: null,
   };
 }
 
@@ -854,7 +972,7 @@ export function buildExampleLedger(): AccountabilityLedger {
     developmentKey: "example-dev-2",
     assessmentKey: second.assessmentKey,
     observedAt: "2026-03-02T18:00:00.000Z",
-    statement: "EXAMPLE DATA. The recorded stress increase was not present in the later observation.",
+    statement: "Pressure leaves the recorded band.",
   });
   ledger.appendResolution({
     resolutionKey: "example-res-2",
