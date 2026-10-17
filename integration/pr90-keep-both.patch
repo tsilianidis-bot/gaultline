@@ -1,0 +1,91 @@
+diff --git a/server/canonicalIntelligenceState.ts b/server/canonicalIntelligenceState.ts
+--- a/server/canonicalIntelligenceState.ts
++++ b/server/canonicalIntelligenceState.ts
+@@ -10,12 +10,9 @@
+   type PublicCanonicalIntelligenceState,
+ } from "../shared/canonicalIntelligenceState";
+ import { getDb } from "./db";
+-<<<<<<< HEAD
+ import { buildCanonicalProbabilityContract, withholdUndisplayedClaimValues } from "./probabilityContract";
+ import { compositePressureDirection, engineEvidenceStatus, stressTrendDirection } from "../shared/snapshotEvidence";
+-=======
+ import type { IntelligenceEvidence } from "../shared/intelligenceIntegrity";
+->>>>>>> refs/review/pr90
+ 
+ type StoredManifest = Record<string, any>;
+ 
+diff --git a/server/_core/index.ts b/server/_core/index.ts
+--- a/server/_core/index.ts
++++ b/server/_core/index.ts
+@@ -35,14 +35,10 @@
+ import { handleScheduledSeismograph } from "../scheduledSeismograph";
+ import { handleShadowForwardOutcomes, handleShadowDailySummary } from "../scheduledShadowModel";
+ import { handleScheduledRisingStarsContinuity } from "../scheduledRisingStarsHistory";
+-<<<<<<< HEAD
+ import { handleScheduledSystemicRegimeInfer } from "../systemicRegime/scheduled";
+ import { startSectorRotationCollector } from "../sectorRotation/service";
+-=======
+-import { handleScheduledSystemicRegimeInfer, handleScheduledSystemicRegimeTrain } from "../systemicRegime/scheduled";
+ import { startIntelligenceEvidenceCollector } from "../intelligenceEvidence/collector";
+ import { isIntelligenceEvidenceEnabled } from "../intelligenceEvidence/config";
+->>>>>>> refs/review/pr90
+ import { appRouter } from "../routers.ts";
+ import { createContext } from "./context";
+ import { serveStatic, setupVite } from "./vite";
+@@ -295,13 +291,10 @@
+ 
+   server.listen(port, LISTEN_HOST, () => {
+     process.stdout.write(`Server running on http://${LISTEN_HOST}:${port}/\n`);
+-<<<<<<< HEAD
+     // Sector Rotation post-close collector: in-process timer (no cron, no env var). Page loads never build.
+     startSectorRotationCollector();
+-=======
+     // Explicit opt-in: production behavior remains unchanged until enabled.
+     if (isIntelligenceEvidenceEnabled()) startIntelligenceEvidenceCollector();
+->>>>>>> refs/review/pr90
+   });
+ }
+ 
+diff --git a/server/routers/index.ts b/server/routers/index.ts
+--- a/server/routers/index.ts
++++ b/server/routers/index.ts
+@@ -24,9 +24,5 @@
+ export { marketsRouter } from "./markets";
+ export { institutionalMemoryRouter } from "./institutionalMemory";
+ export { systemicRegimeRouter } from "./systemicRegime";
+-<<<<<<< HEAD
+ export { sectorRotationRouter } from "./sectorRotation";
+-=======
+-
+ export { intelligenceEvidenceRouter } from "./intelligenceEvidence";
+->>>>>>> refs/review/pr90
+diff --git a/server/routers.ts b/server/routers.ts
+--- a/server/routers.ts
++++ b/server/routers.ts
+@@ -1,11 +1,7 @@
+ import { COOKIE_NAME } from "@shared/const";
+ import { ENV } from "./_core/env";
+-<<<<<<< HEAD
+-import { analyticsRouter, blogRouter, billingRouter, adminRouter, outlookRouter, organicContentRouter, smartDiscoveryRouter, fmosRouter, dailyBriefRouter, intelligenceValidationRouter, marketIntelligenceRouter, conversationIntelligenceRouter, seismographRouter, ashaMemoryRouter, promoRouter, gscRouter, marketStateRouter, timeMachineRouter, marketsRouter, institutionalMemoryRouter, systemicRegimeRouter, sectorRotationRouter } from "./routers/index";
++import { analyticsRouter, blogRouter, billingRouter, adminRouter, outlookRouter, organicContentRouter, smartDiscoveryRouter, fmosRouter, dailyBriefRouter, intelligenceValidationRouter, marketIntelligenceRouter, conversationIntelligenceRouter, seismographRouter, ashaMemoryRouter, promoRouter, gscRouter, marketStateRouter, timeMachineRouter, marketsRouter, institutionalMemoryRouter, systemicRegimeRouter, sectorRotationRouter, intelligenceEvidenceRouter } from "./routers/index";
+ import { intelligenceAccountabilityRouter } from "./routers/intelligenceAccountability";
+-=======
+-import { analyticsRouter, blogRouter, billingRouter, adminRouter, outlookRouter, organicContentRouter, smartDiscoveryRouter, fmosRouter, dailyBriefRouter, intelligenceValidationRouter, marketIntelligenceRouter, conversationIntelligenceRouter, seismographRouter, ashaMemoryRouter, promoRouter, gscRouter, marketStateRouter, timeMachineRouter, marketsRouter, institutionalMemoryRouter, systemicRegimeRouter, intelligenceEvidenceRouter } from "./routers/index";
+->>>>>>> refs/review/pr90
+ import { notifyOwner } from "./_core/notification";
+ import { getSessionCookieOptions } from "./_core/cookies";
+ import { systemRouter } from "./_core/systemRouter";
+@@ -124,12 +120,9 @@
+   markets: marketsRouter,
+   institutionalMemory: institutionalMemoryRouter,
+   systemicRegime: systemicRegimeRouter,
+-<<<<<<< HEAD
+   sectorRotation: sectorRotationRouter,
+-  intelligenceAccountability: intelligenceAccountabilityRouter,
+-=======
+   intelligenceEvidence: intelligenceEvidenceRouter,
+->>>>>>> refs/review/pr90
++  intelligenceAccountability: intelligenceAccountabilityRouter,
+ 
+   auth: router({
+     me: publicProcedure.query(opts => opts.ctx.user),
