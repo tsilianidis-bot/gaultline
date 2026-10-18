@@ -26,7 +26,7 @@
 import { pressureVectorLabel } from "../../../shared/pressureVectorLabels";
 import { clamp, scoreToRisk } from "../utils";
 import type { FaultlinePressureOutput } from "../../pressure/engine";
-import type { FMOSMacroData } from "./dataAcquisition";
+import { hasVerifiedFmosMacroInputs, type FMOSMacroData } from "./dataAcquisition";
 import type {
   FMOSEvidenceOutput,
   FMOSEvidenceFamily,
@@ -36,8 +36,58 @@ import type {
 
 // ── Helper ────────────────────────────────────────────────────
 
-function getVec(pressure: FaultlinePressureOutput, id: string, fallback = 30): number {
-  return pressure.vectors.find(v => v.id === id)?.score ?? fallback;
+function getVec(pressure: FaultlinePressureOutput, id: string): number | null {
+  const vector = pressure.vectors.find(v => v.id === id);
+  return vector && Number.isFinite(vector.score) && vector.dataStatus !== "unavailable"
+    ? vector.score
+    : null;
+}
+
+const REQUIRED_PRESSURE_VECTOR_IDS = [
+  "liquidity-stress",
+  "credit-contagion",
+  "volatility-regime",
+  "macro-sensitivity",
+  "market-breadth",
+  "ai-bubble",
+] as const;
+
+function hasCompletePressureInputs(pressure: FaultlinePressureOutput): boolean {
+  return Number.isFinite(pressure.overallPressure)
+    && pressure.overallPressure >= 0
+    && pressure.overallPressure <= 100
+    && REQUIRED_PRESSURE_VECTOR_IDS.every(id => getVec(pressure, id) !== null);
+}
+
+const EVIDENCE_FAMILY_LABELS: Array<[FMOSEvidenceFamily["name"], string]> = [
+  ["macro", "Macroeconomic"],
+  ["liquidity", "Liquidity & Credit"],
+  ["technical", "Technical"],
+  ["fundamental", "Fundamental"],
+  ["sentiment", "Sentiment"],
+  ["cross_asset", "Cross-Asset"],
+];
+
+function unavailableEvidence(reason: string): FMOSEvidenceOutput {
+  return {
+    available: false,
+    unavailableReason: reason,
+    families: EVIDENCE_FAMILY_LABELS.map(([name, label]) => ({
+      name,
+      label,
+      signal: "neutral",
+      strength: 0,
+      items: [],
+      available: false,
+    })),
+    bullishFamilies: 0,
+    bearishFamilies: 0,
+    overallStrength: 0,
+    overallSignal: "neutral",
+    diversityScore: 0,
+    contradictions: [],
+    missingData: [reason],
+  };
 }
 
 // ── Signal Classification ─────────────────────────────────────
@@ -117,11 +167,10 @@ function buildMacroFamily(
   pressure: FaultlinePressureOutput,
   macro: FMOSMacroData
 ): FMOSEvidenceFamily {
-  const macroScore = getVec(pressure, "macro-sensitivity");
   const items: FMOSEvidenceItem[] = [];
 
   // Inflation
-  if (macro.cpiYoY !== null) {
+  if (macro.dataSource === "live" && macro.cpiYoY !== null) {
     const inflationStress = clamp(Math.round((macro.cpiYoY - 2) * 15));
     items.push({
       name: "CPI Inflation",
@@ -134,7 +183,7 @@ function buildMacroFamily(
   }
 
   // Unemployment
-  if (macro.unemployment !== null) {
+  if (macro.dataSource === "live" && macro.unemployment !== null) {
     const unempStress = clamp(Math.round((macro.unemployment - 3.5) * 20));
     items.push({
       name: "Unemployment Rate",
@@ -147,7 +196,7 @@ function buildMacroFamily(
   }
 
   // Yield curve
-  if (macro.yieldCurveSpread !== null) {
+  if (macro.dataSource === "live" && macro.yieldCurveSpread !== null) {
     const curveStress = clamp(Math.round((-macro.yieldCurveSpread - 0) / 2));
     items.push({
       name: "Yield Curve (10Y-2Y)",
@@ -160,7 +209,7 @@ function buildMacroFamily(
   }
 
   // Fed Funds
-  if (macro.fedFunds !== null) {
+  if (macro.dataSource === "live" && macro.fedFunds !== null) {
     const rateStress = clamp(Math.round((macro.fedFunds - 2) * 10));
     items.push({
       name: "Fed Funds Rate",
@@ -192,7 +241,7 @@ function buildLiquidityFamily(
   const items: FMOSEvidenceItem[] = [];
 
   // HY Credit Spread
-  if (macro.hySpreadBps !== null) {
+  if (macro.dataSource === "live" && macro.hySpreadBps !== null) {
     const spreadStress = clamp(Math.round((macro.hySpreadBps - 200) / 6));
     items.push({
       name: "HY Credit Spread",
@@ -204,25 +253,27 @@ function buildLiquidityFamily(
     });
   }
 
-  // Liquidity vector
-  items.push({
-    name: "Funding Liquidity",
-    family: "liquidity",
-    signal: scoreToSignal(liquidityScore),
-    strength: liquidityScore,
-    description: `Funding liquidity stress at ${liquidityScore}/100 — ${scoreToRisk(liquidityScore)} risk`,
-    source: "FAULTLINE Engine",
-  });
-
-  // Credit contagion vector
-  items.push({
-    name: "Credit Contagion Risk",
-    family: "liquidity",
-    signal: scoreToSignal(creditScore),
-    strength: creditScore,
-    description: `Credit contagion risk at ${creditScore}/100 — ${scoreToRisk(creditScore)} risk`,
-    source: "FAULTLINE Engine",
-  });
+  // Derived pressure-vector evidence is present only when the vector exists.
+  if (liquidityScore !== null) {
+    items.push({
+      name: "Funding Liquidity",
+      family: "liquidity",
+      signal: scoreToSignal(liquidityScore),
+      strength: liquidityScore,
+      description: `Funding liquidity stress at ${liquidityScore}/100 — ${scoreToRisk(liquidityScore)} risk`,
+      source: "FAULTLINE Engine",
+    });
+  }
+  if (creditScore !== null) {
+    items.push({
+      name: "Credit Contagion Risk",
+      family: "liquidity",
+      signal: scoreToSignal(creditScore),
+      strength: creditScore,
+      description: `Credit contagion risk at ${creditScore}/100 — ${scoreToRisk(creditScore)} risk`,
+      source: "FAULTLINE Engine",
+    });
+  }
 
   const { signal, strength } = aggregateFamily(items);
   return {
@@ -231,7 +282,7 @@ function buildLiquidityFamily(
     signal,
     strength,
     items,
-    available: true,
+    available: items.length > 0,
   };
 }
 
@@ -244,14 +295,16 @@ function buildTechnicalFamily(
 
   // "volatility-regime" vector: reads the 10Y–2Y curve and the 10Y level
   // (DGS10, DGS2), not VIX — labelled with its canonical display label.
-  items.push({
-    name: pressureVectorLabel("volatility-regime"),
-    family: "technical",
-    signal: scoreToSignal(volatilityScore),
-    strength: volatilityScore,
-    description: `Yield-curve / 10Y-level pressure score ${volatilityScore}/100 — ${volatilityScore > 65 ? "high rate-structure pressure" : volatilityScore < 30 ? "limited rate-structure pressure" : "moderate rate-structure pressure"} (not a VIX reading)`,
-    source: "FAULTLINE Engine",
-  });
+  if (volatilityScore !== null) {
+    items.push({
+      name: pressureVectorLabel("volatility-regime"),
+      family: "technical",
+      signal: scoreToSignal(volatilityScore),
+      strength: volatilityScore,
+      description: `Yield-curve / 10Y-level pressure score ${volatilityScore}/100 — ${volatilityScore > 65 ? "high rate-structure pressure" : volatilityScore < 30 ? "limited rate-structure pressure" : "moderate rate-structure pressure"} (not a VIX reading)`,
+      source: "FAULTLINE Engine",
+    });
+  }
 
   // Overall pressure as technical signal
   items.push({
@@ -270,7 +323,7 @@ function buildTechnicalFamily(
     signal,
     strength,
     items,
-    available: true,
+    available: items.length > 0,
   };
 }
 
@@ -282,24 +335,28 @@ function buildFundamentalFamily(
   const items: FMOSEvidenceItem[] = [];
 
   // AI/Valuation concentration
-  items.push({
-    name: "Valuation / AI Concentration",
-    family: "fundamental",
-    signal: scoreToSignal(aiScore),
-    strength: aiScore,
-    description: `AI/tech valuation concentration at ${aiScore}/100 — ${aiScore > 65 ? "extreme concentration, bubble risk" : aiScore > 45 ? "elevated but manageable" : "healthy diversification"}`,
-    source: "FAULTLINE Engine",
-  });
+  if (aiScore !== null) {
+    items.push({
+      name: "Valuation / AI Concentration",
+      family: "fundamental",
+      signal: scoreToSignal(aiScore),
+      strength: aiScore,
+      description: `AI/tech valuation concentration at ${aiScore}/100 — ${aiScore > 65 ? "extreme concentration, bubble risk" : aiScore > 45 ? "elevated but manageable" : "healthy diversification"}`,
+      source: "FAULTLINE Engine",
+    });
+  }
 
   // Macro sensitivity (earnings proxy)
-  items.push({
-    name: "Earnings Sensitivity",
-    family: "fundamental",
-    signal: scoreToSignal(macroScore),
-    strength: macroScore,
-    description: `Macro/earnings sensitivity at ${macroScore}/100 — ${macroScore > 60 ? "high sensitivity to macro deterioration" : macroScore < 30 ? "earnings resilient" : "moderate sensitivity"}`,
-    source: "FAULTLINE Engine",
-  });
+  if (macroScore !== null) {
+    items.push({
+      name: "Earnings Sensitivity",
+      family: "fundamental",
+      signal: scoreToSignal(macroScore),
+      strength: macroScore,
+      description: `Macro/earnings sensitivity at ${macroScore}/100 — ${macroScore > 60 ? "high sensitivity to macro deterioration" : macroScore < 30 ? "earnings resilient" : "moderate sensitivity"}`,
+      source: "FAULTLINE Engine",
+    });
+  }
 
   const { signal, strength } = aggregateFamily(items);
   return {
@@ -308,7 +365,7 @@ function buildFundamentalFamily(
     signal,
     strength,
     items,
-    available: true,
+    available: items.length > 0,
   };
 }
 
@@ -320,15 +377,17 @@ function buildSentimentFamily(
   const items: FMOSEvidenceItem[] = [];
 
   // Derived sentiment from pressure and volatility
-  const sentimentScore = clamp(Math.round(p * 0.6 + volatilityScore * 0.4));
-  items.push({
-    name: "Market Sentiment",
-    family: "sentiment",
-    signal: scoreToSignal(sentimentScore),
-    strength: sentimentScore,
-    description: `Derived sentiment score ${sentimentScore}/100 — ${sentimentScore > 65 ? "fear dominant, capitulation risk" : sentimentScore < 30 ? "greed dominant, complacency risk" : "neutral sentiment"}`,
-    source: "FAULTLINE Engine",
-  });
+  if (volatilityScore !== null) {
+    const sentimentScore = clamp(Math.round(p * 0.6 + volatilityScore * 0.4));
+    items.push({
+      name: "Market Sentiment",
+      family: "sentiment",
+      signal: scoreToSignal(sentimentScore),
+      strength: sentimentScore,
+      description: `Derived sentiment score ${sentimentScore}/100 — ${sentimentScore > 65 ? "fear dominant, capitulation risk" : sentimentScore < 30 ? "greed dominant, complacency risk" : "neutral sentiment"}`,
+      source: "FAULTLINE Engine",
+    });
+  }
 
   const { signal, strength } = aggregateFamily(items);
   return {
@@ -337,7 +396,7 @@ function buildSentimentFamily(
     signal,
     strength,
     items,
-    available: true,
+    available: items.length > 0,
   };
 }
 
@@ -348,7 +407,7 @@ function buildCrossAssetFamily(
   const items: FMOSEvidenceItem[] = [];
 
   // Yield curve as cross-asset signal
-  if (macro.yieldCurveSpread !== null) {
+  if (macro.dataSource === "live" && macro.yieldCurveSpread !== null) {
     const curveStress = clamp(Math.round((-macro.yieldCurveSpread) / 2));
     items.push({
       name: "Treasury Yield Curve",
@@ -361,7 +420,7 @@ function buildCrossAssetFamily(
   }
 
   // SOFR as funding cost signal
-  if (macro.sofr !== null) {
+  if (macro.dataSource === "live" && macro.sofr !== null) {
     const sofrStress = clamp(Math.round((macro.sofr - 2) * 12));
     items.push({
       name: "SOFR (Funding Cost)",
@@ -421,6 +480,13 @@ export function computeEvidence(
   pressure: FaultlinePressureOutput,
   macro: FMOSMacroData
 ): FMOSEvidenceOutput {
+  if (!hasVerifiedFmosMacroInputs(macro)) {
+    return unavailableEvidence(macro.unavailableReason ?? "Complete verified FRED macro inputs are required for FMOS evidence");
+  }
+  if (!hasCompletePressureInputs(pressure)) {
+    return unavailableEvidence("Complete canonical Pressure inputs are required for FMOS evidence");
+  }
+
   const families: FMOSEvidenceFamily[] = [
     buildMacroFamily(pressure, macro),
     buildLiquidityFamily(pressure, macro),
@@ -453,10 +519,13 @@ export function computeEvidence(
   const contradictions = detectContradictions(families);
 
   const missingData: string[] = [];
-  if (!macro.hySpreadBps) missingData.push("HY credit spread data unavailable");
-  if (!macro.cpiYoY) missingData.push("CPI inflation data unavailable");
+  if (macro.hySpreadBps === null) missingData.push("HY credit spread data unavailable");
+  if (macro.cpiYoY === null) missingData.push("CPI inflation data unavailable");
+  if (macro.dataSource === "unavailable") missingData.push(macro.unavailableReason ?? "Verified FRED macro snapshot unavailable");
 
   return {
+    available: true,
+    unavailableReason: null,
     families,
     bullishFamilies,
     bearishFamilies,

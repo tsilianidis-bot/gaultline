@@ -94,8 +94,12 @@ export function mergeCanonicalMarketState(
   legacy: CanonicalMarketState | null,
 ): CanonicalMarketState | null {
   if (!canonicalState || !legacy) return null;
-  const pressureScore = canonicalState.pressureIndex ?? legacy.now.pressureScore;
-  const regime = canonicalState.regime ?? legacy.now.regime;
+  if (!legacy.canonicalStateId || legacy.canonicalStateId !== canonicalState.stateId ||
+      !legacy.stateHash || legacy.stateHash !== canonicalState.stateHash ||
+      !legacy.inputSnapshotId || legacy.inputSnapshotId !== canonicalState.inputSnapshotId) return null;
+  if (canonicalState.pressureIndex === null || !Number.isFinite(canonicalState.pressureIndex) || !canonicalState.regime) return null;
+  const pressureScore = canonicalState.pressureIndex;
+  const regime = canonicalState.regime;
   // Band, direction and headline come from the canonical snapshot and the engine
   // thresholds; the seismograph's own direction/stress labels are not used here.
   const now = projectCanonicalNow(canonicalState, legacy.now);

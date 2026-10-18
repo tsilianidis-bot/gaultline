@@ -179,6 +179,13 @@ export function validateInterpretationOutput(
     issues.push("Current interpretation withheld because canonical state is unavailable.");
     normalizedOutput.reply = "Canonical state unavailable. Insufficient evidence for a current market interpretation.";
     normalizedOutput.directAnswer = normalizedOutput.reply;
+    normalizedOutput.executiveSummary = normalizedOutput.reply;
+    normalizedOutput.coreThesis = normalizedOutput.reply;
+    normalizedOutput.limitations = ["No verified canonical state is available for an operational market claim."];
+    const unavailableFields = new Set(["reply", "directAnswer", "executiveSummary", "coreThesis", "limitations"]);
+    for (const field of Object.keys(normalizedOutput)) {
+      if (!unavailableFields.has(field)) normalizedOutput[field] = null;
+    }
     withheldClaimReasons.push("Current narrative withheld: canonical state unavailable.");
   }
 

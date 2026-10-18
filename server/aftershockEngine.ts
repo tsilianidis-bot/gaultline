@@ -1,25 +1,20 @@
 // ============================================================
-// FAULTLINE — Aftershock Engine™  (server/aftershockEngine.ts)
+// FAULTLINE — Aftershock Engine™ (server/aftershockEngine.ts)
 //
-// Detects primary market ruptures and maps the contagion chain
-// of delayed secondary reactions across stocks, ETFs, crypto,
-// sectors, and macro-sensitive assets.
-//
-// Design principles:
-//  • Rupture detection is driven by live market data (Polygon,
-//    CoinGecko) combined with FAULTLINE Pressure Index context.
-//  • Contagion graph is a static relationship map enriched with
-//    dynamic scoring from live price/volume/volatility data.
-//  • All scoring functions are pure and independently testable.
-//  • LRU-cached at the engine level; procedures re-use results
-//    within the cache window.
+// Observed market changes use completed, source-backed daily bars only.
+// The static contagion graph remains a methodology assumption; it is not a
+// calibrated forecast and is never emitted as an observed market fact.
 // ============================================================
 
 import { LRUCache } from "./lruCache";
 import { log } from "./logger";
-import { calculateFaultlinePressure, FaultlinePressureOutput } from "./pressure/engine";
-
-// ── Types ─────────────────────────────────────────────────────
+import { getDailyBars, type YahooDailyBar } from "./yahooProxy";
+import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import { projectPressureFromCanonical } from "./canonicalPressureProjection";
+import { etDate, isSessionComplete } from "./sectorRotation/calc";
+import type { CanonicalIntelligenceState } from "../shared/canonicalIntelligenceState";
+import type { EngineEvidenceStatus } from "../shared/snapshotEvidence";
+import type { FaultlinePressureOutput } from "./pressure/engine";
 
 export type AftershockLabel =
   | "Primary Rupture"
@@ -47,6 +42,36 @@ export type AssetClass = "Stock" | "ETF" | "Crypto" | "Macro" | "Sector";
 export type ContagionDirection = "Bullish" | "Bearish" | "Uncertain";
 export type ConfidenceLevel = "High" | "Moderate" | "Low";
 export type ConfirmationStatus = "Confirmed" | "Developing" | "Unconfirmed" | "Fading";
+export type AftershockAvailability = "AVAILABLE" | "UNAVAILABLE";
+export type AftershockObservationSource = "yahoo-daily";
+
+/** Completed daily-bar observation with the provider symbol and local receipt retained separately. */
+export interface ObservedAftershockQuote {
+  symbol: string;
+  providerSymbol: string;
+  changePercent: number;
+  volumeRatio: number;
+  observedAt: number;
+  receivedAt: number;
+  source: AftershockObservationSource;
+  freshness: "DELAYED";
+  availability: "AVAILABLE";
+}
+
+export interface AftershockMarketSnapshot {
+  availability: AftershockAvailability;
+  quotes: ObservedAftershockQuote[];
+  reason: string | null;
+}
+
+export interface AftershockGraphModelMetadata {
+  modelId: "aftershock-static-contagion-graph";
+  modelVersion: "static-graph-v1";
+  methodologyVersion: "aftershock-methodology-v1";
+  modelDerived: true;
+  calibrationStatus: "NOT_CALIBRATED";
+  probabilityStatus: "NOT_ESTABLISHED";
+}
 
 export interface RuptureEvent {
   id: string;
@@ -54,51 +79,68 @@ export interface RuptureEvent {
   triggerName: string;
   assetClass: AssetClass;
   ruptureType: RuptureType;
-  /** Price change % that triggered detection */
+  /** Observed completed-bar close-to-close price change %. */
   magnitude: number;
-  /** Volume ratio vs 20-day average (1.0 = normal) */
+  /** Observed latest volume divided by the prior 20 completed bars' mean volume. */
   volumeRatio: number;
-  /** Volatility expansion ratio */
+  /** Derived descriptive metric, not a provider volatility observation. */
   volatilityRatio: number;
-  /** 0–100 rupture strength */
+  /** Derived methodology output, not a calibrated score. */
   strength: number;
   direction: ContagionDirection;
   description: string;
-  detectedAt: number; // Unix ms
-  /** Estimated aftershock window in hours */
+  detectedAt: number;
   aftershockWindowHours: number;
+  source: AftershockObservationSource;
+  observedAt: number;
+  receivedAt: number;
+  availability: "AVAILABLE";
+  evidenceStatus: "DELAYED";
+  canonicalStateId: string;
+  sourceInputIds: string[];
+  modelDerived: true;
+  methodologyVersion: "aftershock-methodology-v1";
 }
 
 export interface AftershockSignal {
   id: string;
-  /** The rupture that triggered this aftershock */
   ruptureId: string;
   triggerAsset: string;
   triggerName: string;
-  /** The asset expected to react */
   relatedAsset: string;
   relatedName: string;
   relatedAssetClass: AssetClass;
   label: AftershockLabel;
-  /** 0–100 probability this asset will react */
-  probability: number;
-  /** 0–100 expected reaction strength */
+  /** Withheld: the static graph has no authorized calibrated forecast contract. */
+  probability: null;
+  /** Graph-derived strength; it is not a calibrated probability or observed reaction magnitude. */
   strength: number;
-  /** Hours until expected peak reaction */
   timingWindowHours: number;
   timingWindowLabel: string;
-  /** Type of relationship between trigger and related asset */
   relationshipType: string;
   direction: ContagionDirection;
-  confidence: ConfidenceLevel;
+  /** Withheld: no calibrated confidence metric exists. */
+  confidence: null;
   confirmationStatus: ConfirmationStatus;
-  /** "Why This Aftershock?" explanation */
+  /** Methodology explanation for a static graph edge, not an observed causal claim. */
   explanation: string;
-  /** Current price change % of the related asset (if available) */
   currentReactionPercent: number | null;
-  /** Whether the predicted reaction has started */
   reactionStarted: boolean;
   generatedAt: number;
+  source: "aftershock-static-contagion-graph";
+  observedAt: number;
+  receivedAt: number;
+  availability: "AVAILABLE";
+  evidenceStatus: "DELAYED";
+  canonicalStateId: string;
+  sourceInputIds: string[];
+  reactionSource: AftershockObservationSource | null;
+  reactionObservedAt: number | null;
+  reactionReceivedAt: number | null;
+  reactionAvailability: AftershockAvailability;
+  modelDerived: true;
+  methodologyVersion: "aftershock-methodology-v1";
+  model: AftershockGraphModelMetadata;
 }
 
 export interface AftershockChain {
@@ -110,23 +152,49 @@ export interface AftershockChain {
   totalAftershocks: number;
   confirmedAftershocks: number;
   macroContext: string;
+  model: AftershockGraphModelMetadata;
 }
 
 export interface AftershockEngineOutput {
+  availability: AftershockAvailability;
+  evidenceStatus: EngineEvidenceStatus;
+  reason: string | null;
+  /** Observation provider used by this run; null when no usable quote was available. */
+  source: AftershockObservationSource | null;
+  /** Latest provider observation represented in this run, never response-generation time. */
+  observedAt: number | null;
+  /** Local provider-receipt time, retained separately from observedAt. */
+  receivedAt: number | null;
+  canonicalStateId: string | null;
+  canonicalInputSnapshotId: string | null;
+  canonicalAsOf: string | null;
   activeRuptures: RuptureEvent[];
   aftershocks: AftershockSignal[];
   chains: AftershockChain[];
-  systemicRiskLevel: string;
-  pressureIndex: number;
-  regime: string;
+  systemicRiskLevel: string | null;
+  pressureIndex: number | null;
+  regime: string | null;
   summary: string;
+  model: AftershockGraphModelMetadata;
   generatedAt: number;
   cached: boolean;
 }
 
+export type AftershockMarketSnapshotProvider = (now: number) => Promise<AftershockMarketSnapshot>;
+export type AftershockCanonicalStateProvider = () => Promise<CanonicalIntelligenceState | null>;
+
+export interface AftershockEngineDependencies {
+  /** Test seam; the production default only uses the existing Yahoo completed daily-bar adapter. */
+  marketSnapshotProvider?: AftershockMarketSnapshotProvider;
+  /** Test seam; the production default is the read-only canonical-state accessor. */
+  canonicalStateProvider?: AftershockCanonicalStateProvider;
+  /** Test seam. It never substitutes for a provider observation time. */
+  now?: () => number;
+}
+
 // ── Contagion Graph ────────────────────────────────────────────
-// Maps trigger assets to their known contagion targets.
-// Each entry: { asset, name, class, relationship, direction, weight, timingHours }
+// Static graph weights/timing/explanations are methodology assumptions. They
+// are shown only as model-derived context and have no calibration claim.
 
 interface ContagionEdge {
   asset: string;
@@ -134,8 +202,8 @@ interface ContagionEdge {
   assetClass: AssetClass;
   relationship: string;
   directionBias: "same" | "inverse" | "uncertain";
-  weight: number; // 0–1 contagion strength
-  timingHours: number; // typical delay
+  weight: number;
+  timingHours: number;
   explanation: string;
 }
 
@@ -217,93 +285,197 @@ const CONTAGION_GRAPH: Record<string, ContagionEdge[]> = {
 
 // ── Rupture Detection ──────────────────────────────────────────
 
-function clamp(v: number, lo: number, hi: number): number {
-  return Math.max(lo, Math.min(hi, v));
+const GRAPH_MODEL: AftershockGraphModelMetadata = {
+  modelId: "aftershock-static-contagion-graph",
+  modelVersion: "static-graph-v1",
+  methodologyVersion: "aftershock-methodology-v1",
+  modelDerived: true,
+  calibrationStatus: "NOT_CALIBRATED",
+  probabilityStatus: "NOT_ESTABLISHED",
+};
+
+const RUPTURE_THRESHOLD_STOCK = 3.5;
+const RUPTURE_THRESHOLD_CRYPTO = 5.0;
+const RUPTURE_THRESHOLD_ETF = 2.5;
+const VOLUME_RUPTURE_THRESHOLD = 1.8;
+
+/** Yahoo symbols are explicit so internal contagion tickers cannot leak into provider calls unchanged. */
+const YAHOO_SYMBOLS: Readonly<Record<string, string>> = {
+  BTC: "BTC-USD",
+  ETH: "ETH-USD",
+  SOL: "SOL-USD",
+  VIX: "^VIX",
+};
+
+const ETF_SYMBOLS = new Set(["QQQ", "SPY", "IWM", "SOXX", "XLE", "XLF", "XLRE", "TLT", "GLD", "USO", "TIP", "IBIT", "LIT"]);
+const CRYPTO_SYMBOLS = new Set(["BTC", "ETH", "SOL"]);
+
+const engineCache = new LRUCache<string, AftershockEngineOutput>(5, 3 * 60 * 1000);
+
+export function clearAftershockCache(): void {
+  engineCache.clear();
 }
 
-function detectRuptureType(
-  changePercent: number,
-  volumeRatio: number,
-  assetClass: AssetClass
-): RuptureType {
-  const absChange = Math.abs(changePercent);
-  if (assetClass === "Crypto" && absChange > 5) return "Crypto Breakout";
-  if (volumeRatio > 3.0 && absChange > 3) return "Volume Surge";
-  if (absChange > 8) return "Momentum Breakout";
-  if (volumeRatio > 2.0) return "Volume Surge";
-  if (absChange > 4) return "Volatility Spike";
+function clamp(value: number, low: number, high: number): number {
+  return Math.max(low, Math.min(high, value));
+}
+
+function stableInputId(quote: ObservedAftershockQuote): string {
+  return `market:${quote.source}:${quote.symbol}:${quote.observedAt}`;
+}
+
+function canonicalEvidenceStatus(state: CanonicalIntelligenceState): EngineEvidenceStatus {
+  if (state.confidenceOrEvidenceQuality === "UNAVAILABLE" || state.unavailableInputs.length > 0) return "UNAVAILABLE";
+  if (state.staleInputs.length > 0) return "STALE";
+  if (state.fallbackInputs.length > 0) return "FALLBACK";
+  if (state.delayedInputs.length > 0) return "DELAYED";
+  return "CURRENT";
+}
+
+function mostConservativeStatus(...statuses: EngineEvidenceStatus[]): EngineEvidenceStatus {
+  const rank: Record<EngineEvidenceStatus, number> = {
+    UNAVAILABLE: 5, STALE: 4, FALLBACK: 3, DELAYED: 2, CURRENT: 1,
+  };
+  return statuses.reduce((worst, status) => rank[status] > rank[worst] ? status : worst, "CURRENT");
+}
+
+/**
+ * Maps a graph ticker to the provider ticker deliberately. Crypto quote values
+ * are only admitted through Yahoo's own completed daily bars (e.g. BTC-USD),
+ * never synthesized from CoinGecko's 24h fields or a Polygon/Yahoo quote mix.
+ */
+export function normalizeAftershockTicker(symbol: string): string | null {
+  const normalized = symbol.trim().toUpperCase();
+  if (!normalized || !DISPLAY_NAMES[normalized]) return null;
+  return YAHOO_SYMBOLS[normalized] ?? normalized;
+}
+
+function completedBars(bars: readonly YahooDailyBar[], now: number): YahooDailyBar[] {
+  return [...bars]
+    .filter(bar => Number.isFinite(bar.timestamp) && isSessionComplete(etDate(bar.timestamp), now))
+    .sort((a, b) => a.timestamp - b.timestamp);
+}
+
+/**
+ * Converts 21 valid completed daily bars into one reproducible observation.
+ * Baseline is precisely the twenty bars preceding the latest bar; no values
+ * are generated or defaulted. `receivedAt` is caller-supplied so fixtures can
+ * replay byte-for-byte without treating Date.now() as an observation.
+ */
+export function toObservedAftershockQuote(
+  symbol: string,
+  bars: readonly YahooDailyBar[],
+  receivedAt = Date.now(),
+  now = receivedAt,
+  providerSymbol = normalizeAftershockTicker(symbol) ?? symbol,
+): ObservedAftershockQuote | null {
+  const completed = completedBars(bars, now).filter(bar => (
+    Number.isFinite(bar.close) && bar.close > 0
+    && Number.isFinite(bar.volume) && bar.volume > 0
+    && Number.isFinite(bar.timestamp)
+  ));
+  if (completed.length < 21 || !Number.isFinite(receivedAt)) return null;
+  const latest = completed.at(-1)!;
+  const prior = completed.at(-2)!;
+  const baseline = completed.slice(-21, -1);
+  const average20 = baseline.reduce((sum, bar) => sum + bar.volume, 0) / baseline.length;
+  if (!Number.isFinite(prior.close) || prior.close <= 0 || !Number.isFinite(average20) || average20 <= 0) return null;
+  const changePercent = ((latest.close - prior.close) / prior.close) * 100;
+  const volumeRatio = latest.volume / average20;
+  if (!Number.isFinite(changePercent) || !Number.isFinite(volumeRatio) || volumeRatio <= 0) return null;
+  return {
+    symbol: symbol.trim().toUpperCase(),
+    providerSymbol,
+    changePercent,
+    volumeRatio,
+    observedAt: latest.timestamp,
+    receivedAt,
+    source: "yahoo-daily",
+    freshness: "DELAYED",
+    availability: "AVAILABLE",
+  };
+}
+
+function aftershockSymbols(): string[] {
+  return Array.from(new Set([
+    ...Object.keys(CONTAGION_GRAPH),
+    ...Object.values(CONTAGION_GRAPH).flatMap(edges => edges.map(edge => edge.asset)),
+  ])).sort();
+}
+
+/** Production observation adapter. Existing CoinGecko OHLC lacks a volume field, so it is intentionally not coerced into this contract. */
+async function fetchObservedMarketSnapshot(now: number): Promise<AftershockMarketSnapshot> {
+  const receivedAt = now;
+  const observations = await Promise.all(aftershockSymbols().map(async symbol => {
+    const providerSymbol = normalizeAftershockTicker(symbol);
+    if (!providerSymbol) return null;
+    try {
+      const bars = await getDailyBars(providerSymbol, "3mo");
+      return toObservedAftershockQuote(symbol, bars, receivedAt, now, providerSymbol);
+    } catch (error) {
+      log.warn("[Aftershock Engine] Daily-bar observation unavailable", { symbol, error });
+      return null;
+    }
+  }));
+  const quotes = observations.filter((quote): quote is ObservedAftershockQuote => quote !== null);
+  if (quotes.length === 0) {
+    return {
+      availability: "UNAVAILABLE",
+      quotes: [],
+      reason: "Completed Yahoo daily-bar observations with a 20-session volume baseline are unavailable.",
+    };
+  }
+  return { availability: "AVAILABLE", quotes, reason: null };
+}
+
+function assetClass(symbol: string): AssetClass {
+  if (CRYPTO_SYMBOLS.has(symbol)) return "Crypto";
+  if (ETF_SYMBOLS.has(symbol)) return "ETF";
+  if (symbol === "VIX") return "Macro";
+  return "Stock";
+}
+
+function ruptureThreshold(symbol: string): number {
+  return CRYPTO_SYMBOLS.has(symbol) ? RUPTURE_THRESHOLD_CRYPTO : ETF_SYMBOLS.has(symbol) ? RUPTURE_THRESHOLD_ETF : RUPTURE_THRESHOLD_STOCK;
+}
+
+function detectRuptureType(changePercent: number, volumeRatio: number, klass: AssetClass): RuptureType {
+  const magnitude = Math.abs(changePercent);
+  if (klass === "Crypto" && magnitude > 5) return "Crypto Breakout";
+  if (volumeRatio > 3 && magnitude > 3) return "Volume Surge";
+  if (magnitude > 8) return "Momentum Breakout";
+  if (volumeRatio > 2) return "Volume Surge";
+  if (magnitude > 4) return "Volatility Spike";
   return "Momentum Breakout";
 }
 
-function computeRuptureStrength(
-  changePercent: number,
-  volumeRatio: number,
-  pressureIndex: number
-): number {
-  const absChange = Math.abs(changePercent);
-  const momentumScore = clamp(absChange * 8, 0, 50);
+function computeRuptureStrength(changePercent: number, volumeRatio: number, pressureIndex: number): number {
+  const momentumScore = clamp(Math.abs(changePercent) * 8, 0, 50);
   const volumeScore = clamp((volumeRatio - 1) * 15, 0, 30);
-  const pressureBoost = clamp(pressureIndex * 0.2, 0, 20);
-  return Math.round(clamp(momentumScore + volumeScore + pressureBoost, 0, 100));
+  const macroContribution = clamp(pressureIndex * 0.2, 0, 20);
+  return Math.round(clamp(momentumScore + volumeScore + macroContribution, 0, 100));
 }
 
-function computeAftershockWindowHours(
-  ruptureType: RuptureType,
-  strength: number
-): number {
+function computeAftershockWindowHours(ruptureType: RuptureType, strength: number): number {
   const baseWindows: Record<RuptureType, number> = {
-    "Volatility Spike":   24,
-    "Volume Surge":       12,
-    "Momentum Breakout":  48,
-    "Earnings Shock":     72,
-    "Macro Event":        96,
-    "Crypto Breakout":    18,
-    "Liquidity Event":    48,
-    "Treasury Shock":     72,
-    "Sector Rotation":    48,
+    "Volatility Spike": 24, "Volume Surge": 12, "Momentum Breakout": 48,
+    "Earnings Shock": 72, "Macro Event": 96, "Crypto Breakout": 18,
+    "Liquidity Event": 48, "Treasury Shock": 72, "Sector Rotation": 48,
   };
-  const base = baseWindows[ruptureType] ?? 48;
-  // Stronger ruptures have longer aftershock windows
-  return Math.round(base * (0.7 + strength / 333));
+  return Math.round((baseWindows[ruptureType] ?? 48) * (0.7 + strength / 333));
 }
 
-// ── Aftershock Scoring ─────────────────────────────────────────
-
-function computeAftershockProbability(
-  edge: ContagionEdge,
-  rupture: RuptureEvent,
-  pressureIndex: number
-): number {
-  // Base probability from contagion weight
-  let prob = edge.weight * 70;
-  // Boost for strong ruptures
-  prob += (rupture.strength / 100) * 20;
-  // Boost when macro pressure is elevated
-  prob += clamp(pressureIndex / 10, 0, 10);
-  return Math.round(clamp(prob, 10, 97));
-}
-
-function computeAftershockStrength(
-  edge: ContagionEdge,
-  rupture: RuptureEvent
-): number {
+function computeAftershockStrength(edge: ContagionEdge, rupture: RuptureEvent): number {
   return Math.round(clamp(rupture.strength * edge.weight * 0.9, 5, 95));
 }
 
-function deriveAftershockLabel(
-  edge: ContagionEdge,
-  timingHours: number,
-  probability: number,
-  reactionStarted: boolean,
-  currentReactionPercent: number | null
-): AftershockLabel {
-  if (reactionStarted && currentReactionPercent !== null) {
-    const absReaction = Math.abs(currentReactionPercent);
-    if (absReaction > 3) return "First-Wave Aftershock";
-    if (absReaction > 1) return "Sympathy Momentum";
-    if (absReaction < 0.5 && probability > 60) return "Fading Aftershock";
+function deriveAftershockLabel(edge: ContagionEdge, timingHours: number, reactionStarted: boolean, reactionPercent: number | null): AftershockLabel {
+  if (reactionStarted && reactionPercent !== null) {
+    const absolute = Math.abs(reactionPercent);
+    if (absolute > 3) return "First-Wave Aftershock";
+    if (absolute > 1) return "Sympathy Momentum";
   }
-  if (timingHours <= 4)  return "First-Wave Aftershock";
+  if (timingHours <= 4) return "First-Wave Aftershock";
   if (timingHours <= 12) return "Sympathy Momentum";
   if (timingHours <= 24) return "Delayed Reaction";
   if (edge.relationship.includes("Sector") || edge.relationship.includes("ETF")) return "Sector Echo";
@@ -313,239 +485,189 @@ function deriveAftershockLabel(
 }
 
 function deriveTimingLabel(hours: number): string {
-  if (hours <= 2)  return "Immediate (< 2h)";
-  if (hours <= 6)  return "Short-Term (2–6h)";
+  if (hours <= 2) return "Immediate (< 2h)";
+  if (hours <= 6) return "Short-Term (2–6h)";
   if (hours <= 24) return "Intraday (6–24h)";
   if (hours <= 48) return "1–2 Days";
   if (hours <= 72) return "2–3 Days";
   return "3–5 Days";
 }
 
-function deriveConfidence(probability: number, edge: ContagionEdge): ConfidenceLevel {
-  if (probability >= 75 && edge.weight >= 0.75) return "High";
-  if (probability >= 55) return "Moderate";
-  return "Low";
-}
-
-function deriveConfirmationStatus(
-  reactionStarted: boolean,
-  currentReactionPercent: number | null,
-  direction: ContagionDirection
-): ConfirmationStatus {
-  if (!reactionStarted || currentReactionPercent === null) return "Unconfirmed";
-  const absReaction = Math.abs(currentReactionPercent);
-  const isAligned = (direction === "Bullish" && currentReactionPercent > 0) ||
-                    (direction === "Bearish" && currentReactionPercent < 0);
-  if (absReaction > 2 && isAligned)  return "Confirmed";
-  if (absReaction > 0.5 && isAligned) return "Developing";
-  if (!isAligned && absReaction > 1)  return "Fading";
+/** Confirmation is allowed only where a separately observed related quote is direction-aligned. */
+function deriveConfirmationStatus(reactionStarted: boolean, reactionPercent: number | null, direction: ContagionDirection): ConfirmationStatus {
+  if (!reactionStarted || reactionPercent === null) return "Unconfirmed";
+  const aligned = (direction === "Bullish" && reactionPercent > 0) || (direction === "Bearish" && reactionPercent < 0);
+  const magnitude = Math.abs(reactionPercent);
+  if (aligned && magnitude > 2) return "Confirmed";
+  if (aligned && magnitude > 0.5) return "Developing";
+  if (!aligned && magnitude > 1) return "Fading";
   return "Unconfirmed";
 }
 
-// ── Mock live price data (uses Polygon prev-close as proxy) ───
-// In production this would call the live signals proxy.
-// We derive approximate current reactions from the pressure engine
-// context and known correlations.
-
-interface MockQuote {
-  symbol: string;
-  changePercent: number;
-  volumeRatio: number;
-}
-
-function generateMockMarketSnapshot(pressure: FaultlinePressureOutput): MockQuote[] {
-  // Derive approximate market conditions from pressure index
-  const p = pressure.overallPressure;
-  const regime = pressure.regime;
-  const isRiskOff = p > 60 || regime.includes("Elevated") || regime.includes("Critical");
-  const isBullish = p < 35 && (regime.includes("Stable") || regime.includes("Low"));
-
-  const baseDirection = isRiskOff ? -1 : isBullish ? 1 : 0;
-  const volatilityMult = 1 + (p / 100) * 2;
-
-  // Seeded pseudo-random for reproducibility within a session
-  const seed = Math.floor(Date.now() / (5 * 60 * 1000)); // changes every 5 min
-  const rng = (i: number) => {
-    const x = Math.sin(seed + i * 9301 + 49297) * 233280;
-    return (x - Math.floor(x));
+function unavailableOutput(
+  now: number,
+  reason: string,
+  canonical: CanonicalIntelligenceState | null,
+): AftershockEngineOutput {
+  return {
+    availability: "UNAVAILABLE",
+    evidenceStatus: "UNAVAILABLE",
+    reason,
+    source: null,
+    observedAt: null,
+    receivedAt: null,
+    canonicalStateId: canonical?.stateId ?? null,
+    canonicalInputSnapshotId: canonical?.inputSnapshotId ?? null,
+    canonicalAsOf: canonical?.effectiveAt ?? null,
+    activeRuptures: [], aftershocks: [], chains: [],
+    systemicRiskLevel: null, pressureIndex: null, regime: null,
+    summary: `Observations unavailable: ${reason}`,
+    model: GRAPH_MODEL,
+    generatedAt: now,
+    cached: false,
   };
-
-  const assets = [
-    "NVDA", "AMD", "SMCI", "PLTR", "AVGO", "MSFT", "AAPL", "TSLA",
-    "QQQ", "SPY", "IWM", "SOXX", "XLE", "XLF", "XLRE", "TLT", "GLD",
-    "BTC", "ETH", "SOL", "COIN", "MSTR", "RIOT", "MARA", "IBIT",
-    "USO", "VIX", "RIVN", "LCID", "LIT", "QCOM", "INTC", "TIP",
-    "DAL", "UAL", "XOM",
-  ];
-
-  return assets.map((sym, i) => {
-    const rand = rng(i);
-    const isCrypto = ["BTC", "ETH", "SOL"].includes(sym);
-    const cryptoMult = isCrypto ? 2.5 : 1;
-    const change = (baseDirection * (0.5 + rand * 3) + (rand - 0.5) * 2) * volatilityMult * cryptoMult;
-    const volRatio = 0.8 + rand * 2.5;
-    return { symbol: sym, changePercent: parseFloat(change.toFixed(2)), volumeRatio: parseFloat(volRatio.toFixed(2)) };
-  });
 }
 
-// ── Main Engine ────────────────────────────────────────────────
+/**
+ * Runs only from a canonical macro projection plus traceable completed bars.
+ * Default providers are read-only; injected providers exist solely for source
+ * fixture tests and never change the public procedure signature.
+ */
+export async function runAftershockEngine(dependencies: AftershockEngineDependencies = {}): Promise<AftershockEngineOutput> {
+  const now = dependencies.now ?? Date.now;
+  const canonicalProvider = dependencies.canonicalStateProvider ?? getAuthoritativeCanonicalIntelligenceState;
+  const marketSnapshotProvider = dependencies.marketSnapshotProvider ?? fetchObservedMarketSnapshot;
+  const useCache = !dependencies.canonicalStateProvider && !dependencies.marketSnapshotProvider && !dependencies.now;
 
-const RUPTURE_THRESHOLD_STOCK  = 3.5;  // % move to qualify as a rupture
-const RUPTURE_THRESHOLD_CRYPTO = 5.0;
-const RUPTURE_THRESHOLD_ETF    = 2.5;
-const VOLUME_RUPTURE_THRESHOLD = 1.8;  // volume ratio
-
-const engineCache = new LRUCache<string, AftershockEngineOutput>(5, 3 * 60 * 1000); // 3 min TTL
-
-export function clearAftershockCache(): void {
-  engineCache.clear();
-}
-
-export async function runAftershockEngine(): Promise<AftershockEngineOutput> {
-  const cacheKey = "aftershock_engine";
-  const cached = engineCache.peek(cacheKey);
-  if (cached) return { ...cached.value, cached: true };
-
-  log.info("[Aftershock Engine] Running full analysis...");
-
-  // 1. Get FAULTLINE pressure context
-  let pressure: FaultlinePressureOutput;
+  let canonical: CanonicalIntelligenceState | null;
   try {
-    pressure = await calculateFaultlinePressure();
-  } catch (err) {
-    log.warn("[Aftershock Engine] Pressure engine failed, using fallback", { err });
-    pressure = {
-      overallPressure: 50,
-      regime: "Moderate Pressure",
-      level: "Moderate",
-      vectors: [],
-      alerts: [],
-      topAnalog: { year: 2022, label: "Rate Shock", similarity: 50, description: "Moderate pressure analog" },
-      analogs: [],
-      timestamp: new Date().toISOString(),
-      lastUpdated: new Date().toISOString(),
-      dataSource: "fallback",
-      priorPressure: null,
-    };
+    canonical = await canonicalProvider();
+  } catch (error) {
+    log.warn("[Aftershock Engine] Canonical state unavailable", { error });
+    return unavailableOutput(now(), "Canonical macro state could not be read.", null);
+  }
+  const pressure = projectPressureFromCanonical(canonical);
+  if (!canonical || !pressure || !Number.isFinite(canonical.pressureIndex) || !canonical.regime?.trim()) {
+    return unavailableOutput(now(), "Canonical macro state is unavailable, lacks a canonical regime, or cannot be projected.", canonical);
   }
 
-  // 2. Get mock market snapshot (would be live data in production)
-  const quotes = generateMockMarketSnapshot(pressure);
-  const quoteMap = new Map(quotes.map(q => [q.symbol, q]));
+  const cacheKey = `aftershock_engine:${canonical.stateId}`;
+  if (useCache) {
+    const cached = engineCache.peek(cacheKey);
+    if (cached) return { ...cached.value, cached: true };
+  }
 
-  // 3. Detect ruptures
+  const generatedAt = now();
+  let market: AftershockMarketSnapshot;
+  try {
+    market = await marketSnapshotProvider(generatedAt);
+  } catch (error) {
+    log.warn("[Aftershock Engine] Market observation provider failed", { error });
+    return unavailableOutput(generatedAt, "Market observations could not be verified.", canonical);
+  }
+  const quotes = market.quotes.filter(isValidObservedQuote);
+  if (market.availability !== "AVAILABLE" || quotes.length === 0) {
+    return unavailableOutput(generatedAt, market.reason ?? "No verified completed market observations were returned.", canonical);
+  }
+
+  const quoteMap = new Map(quotes.map(quote => [quote.symbol, quote]));
   const ruptures: RuptureEvent[] = [];
-  for (const [symbol, edges] of Object.entries(CONTAGION_GRAPH)) {
+  for (const symbol of Object.keys(CONTAGION_GRAPH)) {
     const quote = quoteMap.get(symbol);
     if (!quote) continue;
-
-    const absChange = Math.abs(quote.changePercent);
-    const isCrypto = ["BTC", "ETH", "SOL"].includes(symbol);
-    const isETF = ["QQQ", "SPY", "IWM", "SOXX", "XLE", "XLF", "XLRE", "TLT", "GLD", "USO", "TIP", "IBIT", "LIT"].includes(symbol);
-    const threshold = isCrypto ? RUPTURE_THRESHOLD_CRYPTO : isETF ? RUPTURE_THRESHOLD_ETF : RUPTURE_THRESHOLD_STOCK;
-
-    const isRupture = absChange >= threshold || quote.volumeRatio >= VOLUME_RUPTURE_THRESHOLD;
-    if (!isRupture) continue;
-
-    const assetClass: AssetClass = isCrypto ? "Crypto" : isETF ? "ETF" : symbol === "VIX" ? "Macro" : "Stock";
-    const ruptureType = detectRuptureType(quote.changePercent, quote.volumeRatio, assetClass);
+    if (Math.abs(quote.changePercent) < ruptureThreshold(symbol) && quote.volumeRatio < VOLUME_RUPTURE_THRESHOLD) continue;
+    const klass = assetClass(symbol);
+    const ruptureType = detectRuptureType(quote.changePercent, quote.volumeRatio, klass);
     const strength = computeRuptureStrength(quote.changePercent, quote.volumeRatio, pressure.overallPressure);
     const direction: ContagionDirection = quote.changePercent > 0 ? "Bullish" : quote.changePercent < 0 ? "Bearish" : "Uncertain";
-    const aftershockWindowHours = computeAftershockWindowHours(ruptureType, strength);
-
-    // Get display name from first edge's reverse lookup or use symbol
-    const firstName = edges[0]?.asset ? symbol : symbol;
-
     ruptures.push({
-      id: `rupture_${symbol}_${Date.now()}`,
+      id: `rupture_${symbol}_${quote.observedAt}`,
       triggerAsset: symbol,
       triggerName: getAssetDisplayName(symbol),
-      assetClass,
+      assetClass: klass,
       ruptureType,
       magnitude: quote.changePercent,
       volumeRatio: quote.volumeRatio,
       volatilityRatio: 1 + Math.abs(quote.changePercent) / 5,
       strength,
       direction,
-      description: buildRuptureDescription(symbol, quote.changePercent, quote.volumeRatio, ruptureType, pressure),
-      detectedAt: Date.now(),
-      aftershockWindowHours,
+      description: buildRuptureDescription(symbol, quote, ruptureType, pressure),
+      detectedAt: quote.observedAt,
+      aftershockWindowHours: computeAftershockWindowHours(ruptureType, strength),
+      source: quote.source,
+      observedAt: quote.observedAt,
+      receivedAt: quote.receivedAt,
+      availability: "AVAILABLE",
+      evidenceStatus: quote.freshness,
+      canonicalStateId: canonical.stateId,
+      sourceInputIds: [stableInputId(quote), `canonical:${canonical.stateId}`],
+      modelDerived: true,
+      methodologyVersion: GRAPH_MODEL.methodologyVersion,
     });
   }
 
-  // Sort by strength descending, take top 8
-  ruptures.sort((a, b) => b.strength - a.strength);
-  const topRuptures = ruptures.slice(0, 8);
-
-  // 4. Build aftershock signals for each rupture
+  const topRuptures = ruptures.sort((a, b) => b.strength - a.strength).slice(0, 8);
   const allAftershocks: AftershockSignal[] = [];
-
   for (const rupture of topRuptures) {
-    const edges = CONTAGION_GRAPH[rupture.triggerAsset] ?? [];
-    for (const edge of edges) {
-      const relatedQuote = quoteMap.get(edge.asset);
-      const currentReactionPercent = relatedQuote?.changePercent ?? null;
-
-      // Determine direction of aftershock
-      let direction: ContagionDirection;
-      if (edge.directionBias === "same") {
-        direction = rupture.direction;
-      } else if (edge.directionBias === "inverse") {
-        direction = rupture.direction === "Bullish" ? "Bearish" : rupture.direction === "Bearish" ? "Bullish" : "Uncertain";
-      } else {
-        direction = "Uncertain";
-      }
-
-      const probability = computeAftershockProbability(edge, rupture, pressure.overallPressure);
-      const strength = computeAftershockStrength(edge, rupture);
-      const timingHours = edge.timingHours;
-      const timingWindowLabel = deriveTimingLabel(timingHours);
-      const confidence = deriveConfidence(probability, edge);
-
-      // Check if reaction has started
-      const reactionStarted = currentReactionPercent !== null && Math.abs(currentReactionPercent) > 0.5;
-      const confirmationStatus = deriveConfirmationStatus(reactionStarted, currentReactionPercent, direction);
-      const label = deriveAftershockLabel(edge, timingHours, probability, reactionStarted, currentReactionPercent);
-
+    for (const edge of CONTAGION_GRAPH[rupture.triggerAsset] ?? []) {
+      const relatedQuote = quoteMap.get(edge.asset) ?? null;
+      const reactionPercent = relatedQuote?.changePercent ?? null;
+      const direction: ContagionDirection = edge.directionBias === "same"
+        ? rupture.direction
+        : edge.directionBias === "inverse"
+          ? rupture.direction === "Bullish" ? "Bearish" : rupture.direction === "Bearish" ? "Bullish" : "Uncertain"
+          : "Uncertain";
+      const reactionStarted = relatedQuote !== null && Math.abs(reactionPercent ?? 0) > 0.5;
+      const confirmationStatus = deriveConfirmationStatus(reactionStarted, reactionPercent, direction);
       allAftershocks.push({
-        id: `aftershock_${rupture.triggerAsset}_${edge.asset}_${Date.now()}`,
+        id: `aftershock_${rupture.id}_${edge.asset}_${relatedQuote?.observedAt ?? "unavailable"}`,
         ruptureId: rupture.id,
         triggerAsset: rupture.triggerAsset,
         triggerName: rupture.triggerName,
         relatedAsset: edge.asset,
         relatedName: edge.name,
         relatedAssetClass: edge.assetClass,
-        label,
-        probability,
-        strength,
-        timingWindowHours: timingHours,
-        timingWindowLabel,
+        label: deriveAftershockLabel(edge, edge.timingHours, reactionStarted, reactionPercent),
+        probability: null,
+        strength: computeAftershockStrength(edge, rupture),
+        timingWindowHours: edge.timingHours,
+        timingWindowLabel: deriveTimingLabel(edge.timingHours),
         relationshipType: edge.relationship,
         direction,
-        confidence,
+        confidence: null,
         confirmationStatus,
         explanation: edge.explanation,
-        currentReactionPercent,
+        currentReactionPercent: reactionPercent,
         reactionStarted,
-        generatedAt: Date.now(),
+        generatedAt,
+        source: "aftershock-static-contagion-graph",
+        observedAt: rupture.observedAt,
+        receivedAt: rupture.receivedAt,
+        availability: "AVAILABLE",
+        evidenceStatus: "DELAYED",
+        canonicalStateId: canonical.stateId,
+        sourceInputIds: [
+          ...rupture.sourceInputIds,
+          ...(relatedQuote ? [stableInputId(relatedQuote)] : []),
+        ],
+        reactionSource: relatedQuote?.source ?? null,
+        reactionObservedAt: relatedQuote?.observedAt ?? null,
+        reactionReceivedAt: relatedQuote?.receivedAt ?? null,
+        reactionAvailability: relatedQuote ? "AVAILABLE" : "UNAVAILABLE",
+        modelDerived: true,
+        methodologyVersion: GRAPH_MODEL.methodologyVersion,
+        model: GRAPH_MODEL,
       });
     }
   }
 
-  // Sort aftershocks: confirmed first, then by probability
   allAftershocks.sort((a, b) => {
-    const statusOrder: Record<ConfirmationStatus, number> = {
-      "Confirmed": 0, "Developing": 1, "Unconfirmed": 2, "Fading": 3,
-    };
-    const statusDiff = statusOrder[a.confirmationStatus] - statusOrder[b.confirmationStatus];
-    if (statusDiff !== 0) return statusDiff;
-    return b.probability - a.probability;
+    const order: Record<ConfirmationStatus, number> = { Confirmed: 0, Developing: 1, Unconfirmed: 2, Fading: 3 };
+    return order[a.confirmationStatus] - order[b.confirmationStatus] || b.strength - a.strength;
   });
-
-  // 5. Build chains
-  const chains: AftershockChain[] = topRuptures.map(rupture => {
-    const signals = allAftershocks.filter(a => a.ruptureId === rupture.id);
-    const confirmed = signals.filter(s => s.confirmationStatus === "Confirmed" || s.confirmationStatus === "Developing").length;
+  const emittedAftershocks = allAftershocks.slice(0, 40);
+  const chains = topRuptures.map(rupture => {
+    const signals = emittedAftershocks.filter(signal => signal.ruptureId === rupture.id);
     return {
       triggerAsset: rupture.triggerAsset,
       triggerName: rupture.triggerName,
@@ -553,34 +675,47 @@ export async function runAftershockEngine(): Promise<AftershockEngineOutput> {
       direction: rupture.direction,
       signals,
       totalAftershocks: signals.length,
-      confirmedAftershocks: confirmed,
-      macroContext: buildMacroContext(rupture, pressure),
+      confirmedAftershocks: signals.filter(signal => signal.confirmationStatus === "Confirmed" || signal.confirmationStatus === "Developing").length,
+      macroContext: buildMacroContext(pressure, canonical),
+      model: GRAPH_MODEL,
     };
   });
 
-  // 6. Build summary
-  const confirmedCount = allAftershocks.filter(a => a.confirmationStatus === "Confirmed").length;
-  const developingCount = allAftershocks.filter(a => a.confirmationStatus === "Developing").length;
-  const summary = buildEngineSummary(topRuptures, confirmedCount, developingCount, pressure);
-
+  const evidenceStatus = mostConservativeStatus(canonicalEvidenceStatus(canonical), "DELAYED");
   const result: AftershockEngineOutput = {
+    availability: "AVAILABLE",
+    evidenceStatus,
+    reason: null,
+    source: "yahoo-daily",
+    observedAt: Math.max(...quotes.map(quote => quote.observedAt)),
+    receivedAt: Math.max(...quotes.map(quote => quote.receivedAt)),
+    canonicalStateId: canonical.stateId,
+    canonicalInputSnapshotId: canonical.inputSnapshotId,
+    canonicalAsOf: canonical.effectiveAt,
     activeRuptures: topRuptures,
-    aftershocks: allAftershocks.slice(0, 40),
+    aftershocks: emittedAftershocks,
     chains,
     systemicRiskLevel: pressure.level,
     pressureIndex: pressure.overallPressure,
     regime: pressure.regime,
-    summary,
-    generatedAt: Date.now(),
+    summary: buildEngineSummary(topRuptures, emittedAftershocks, quotes.length, pressure, evidenceStatus),
+    model: GRAPH_MODEL,
+    generatedAt,
     cached: false,
   };
-
-  engineCache.set(cacheKey, result);
-  log.info(`[Aftershock Engine] Detected ${topRuptures.length} ruptures, ${allAftershocks.length} aftershocks`);
+  if (useCache) engineCache.set(cacheKey, result);
+  log.info(`[Aftershock Engine] Observed ${quotes.length} completed-bar inputs; ${topRuptures.length} ruptures.`);
   return result;
 }
 
-// ── Helper functions ───────────────────────────────────────────
+function isValidObservedQuote(quote: ObservedAftershockQuote): boolean {
+  return quote.availability === "AVAILABLE"
+    && quote.source === "yahoo-daily"
+    && quote.freshness === "DELAYED"
+    && typeof quote.symbol === "string" && quote.symbol.length > 0
+    && Number.isFinite(quote.changePercent) && Number.isFinite(quote.volumeRatio) && quote.volumeRatio > 0
+    && Number.isFinite(quote.observedAt) && Number.isFinite(quote.receivedAt);
+}
 
 const DISPLAY_NAMES: Record<string, string> = {
   NVDA: "Nvidia", AMD: "Advanced Micro Devices", SMCI: "Super Micro Computer",
@@ -600,48 +735,34 @@ function getAssetDisplayName(symbol: string): string {
   return DISPLAY_NAMES[symbol] ?? symbol;
 }
 
-function buildRuptureDescription(
-  symbol: string,
-  changePercent: number,
-  volumeRatio: number,
-  ruptureType: RuptureType,
-  pressure: FaultlinePressureOutput
-): string {
-  const dir = changePercent > 0 ? "surged" : "dropped";
-  const volDesc = volumeRatio > 2.5 ? ` on ${volumeRatio.toFixed(1)}x average volume` : "";
-  const pressureDesc = pressure.overallPressure > 60
-    ? ` against an elevated FAULTLINE Pressure Index of ${pressure.overallPressure.toFixed(0)}`
-    : "";
-  return `${symbol} ${dir} ${Math.abs(changePercent).toFixed(1)}%${volDesc}, triggering a ${ruptureType} signal${pressureDesc}. Aftershock monitoring is active.`;
+function buildRuptureDescription(symbol: string, quote: ObservedAftershockQuote, ruptureType: RuptureType, pressure: FaultlinePressureOutput): string {
+  const direction = quote.changePercent > 0 ? "rose" : quote.changePercent < 0 ? "fell" : "was unchanged";
+  const volume = quote.volumeRatio > 1 ? `; volume was ${quote.volumeRatio.toFixed(1)}× the prior 20 completed sessions` : "";
+  return `${symbol} ${direction} ${Math.abs(quote.changePercent).toFixed(1)}% on a completed Yahoo daily bar${volume}. ${ruptureType} classification and strength are methodology-derived with canonical macro context ${pressure.overallPressure.toFixed(0)}/100.`;
 }
 
-function buildMacroContext(rupture: RuptureEvent, pressure: FaultlinePressureOutput): string {
-  const pressureDesc = pressure.overallPressure > 70
-    ? "Critical macro pressure amplifies contagion risk."
-    : pressure.overallPressure > 50
-    ? "Elevated macro pressure increases aftershock probability."
-    : "Moderate macro conditions — aftershocks may be contained.";
-  return `${pressure.regime}. ${pressureDesc} FAULTLINE Pressure Index: ${pressure.overallPressure.toFixed(0)}/100.`;
+function buildMacroContext(pressure: FaultlinePressureOutput, canonical: CanonicalIntelligenceState): string {
+  return `Canonical macro context: ${pressure.regime} · ${pressure.overallPressure.toFixed(0)}/100 · state ${canonical.stateId} · as of ${canonical.effectiveAt}.`;
 }
 
 function buildEngineSummary(
-  ruptures: RuptureEvent[],
-  confirmed: number,
-  developing: number,
-  pressure: FaultlinePressureOutput
+  ruptures: readonly RuptureEvent[],
+  signals: readonly AftershockSignal[],
+  observationCount: number,
+  pressure: FaultlinePressureOutput,
+  evidenceStatus: EngineEvidenceStatus,
 ): string {
   if (ruptures.length === 0) {
-    return `No active ruptures detected. Markets are within normal volatility parameters. FAULTLINE Pressure Index: ${pressure.overallPressure.toFixed(0)}/100.`;
+    return `${observationCount} completed Yahoo daily-bar observations are available; none met the configured rupture thresholds. This is not a claim of market calm. Observation freshness: ${evidenceStatus}. Canonical pressure context: ${pressure.overallPressure.toFixed(0)}/100.`;
   }
-  const topRupture = ruptures[0];
-  const dirDesc = topRupture.direction === "Bullish" ? "bullish breakout" : topRupture.direction === "Bearish" ? "bearish rupture" : "volatile move";
-  return `${ruptures.length} active rupture${ruptures.length > 1 ? "s" : ""} detected. Primary signal: ${topRupture.triggerAsset} ${dirDesc} (${topRupture.magnitude > 0 ? "+" : ""}${topRupture.magnitude.toFixed(1)}%). ${confirmed + developing} aftershocks confirmed or developing. FAULTLINE Pressure Index: ${pressure.overallPressure.toFixed(0)}/100 — ${pressure.regime}.`;
+  const confirmed = signals.filter(signal => signal.confirmationStatus === "Confirmed").length;
+  const developing = signals.filter(signal => signal.confirmationStatus === "Developing").length;
+  return `${ruptures.length} observed rupture${ruptures.length === 1 ? "" : "s"} met configured thresholds from completed Yahoo daily bars. ${confirmed} related reactions are confirmed and ${developing} are developing only where an observed related quote is direction-aligned. Static graph strength and timing are methodology-derived, not calibrated probabilities.`;
 }
 
-// ── Asset chain lookup ─────────────────────────────────────────
-
-export function getAssetContagionChain(symbol: string): ContagionEdge[] {
-  return CONTAGION_GRAPH[symbol.toUpperCase()] ?? [];
+/** Returns graph edges with explicit model provenance for public read-only consumers. */
+export function getAssetContagionChain(symbol: string): Array<ContagionEdge & { model: AftershockGraphModelMetadata }> {
+  return (CONTAGION_GRAPH[symbol.toUpperCase()] ?? []).map(edge => ({ ...edge, model: GRAPH_MODEL }));
 }
 
 export function getAllContagionAssets(): string[] {

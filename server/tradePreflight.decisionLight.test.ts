@@ -14,6 +14,7 @@ import { runTradePreflightSimulation } from "./tradePreflight";
 import { DECISION_LIGHT_REQUIRED_FIELDS } from "../shared/decisionLight";
 
 const LIVE_LOW = {
+  canonicalStateId: "state:preflight-live",
   overallPressure: 22,
   dataSource: "live" as const,
   vectors: [
@@ -30,6 +31,7 @@ const LIVE_LOW = {
 
 const LIVE_HIGH = {
   ...LIVE_LOW,
+  canonicalStateId: "state:preflight-high",
   overallPressure: 75,
   dataSource: "live" as const,
   vectors: LIVE_LOW.vectors.map(vector => ({ ...vector, score: 70, riskLevel: "critical" })),

@@ -208,3 +208,25 @@ export function nyseSeismographRunWindow(at: Date | string = new Date()): NyseSe
       : `Scheduled Seismograph runs only from ${timeLabel(scheduledMinute)} through ${timeLabel(windowEndMinute)} on this ${earlyClose ? "early-close" : "regular"} session.`,
   };
 }
+
+/** Latest eligible canonical publication day, using this same approved NYSE calendar.
+ * Retained weekend/holiday states stay valid until the next eligible daily cadence.
+ * This does not alter market hours, schedules, source values, or scoring.
+ */
+export function isCanonicalPublicationCurrent(asOf: string | null | undefined, nowMs = Date.now()): boolean {
+  const sourceMs = typeof asOf === "string" ? Date.parse(asOf) : Number.NaN;
+  if (!Number.isFinite(sourceMs) || !Number.isFinite(nowMs) || sourceMs > nowMs + 60_000) return false;
+  const current = easternFields(new Date(nowMs));
+  const source = easternFields(new Date(sourceMs));
+  if (!current || !source) return false;
+  for (let offset = 0; offset < 14; offset++) {
+    const day = addDays(current.date, -offset);
+    // 22:00 UTC is after the approved window in both US Eastern offsets.
+    const session = nyseSeismographRunWindow(new Date(Date.UTC(day.year, day.month - 1, day.day, 22)));
+    if (session.session === "CLOSED") continue;
+    // The recorder may legitimately complete anywhere in its existing window.
+    if (offset === 0 && current.minuteOfDay < 16 * 60 + POST_CLOSE_DELAY_MINUTES + SCHEDULED_WINDOW_MINUTES) continue;
+    return dateKey(source.date) >= dateKey(day);
+  }
+  return false;
+}

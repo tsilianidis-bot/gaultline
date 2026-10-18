@@ -1499,7 +1499,7 @@ function SignalsInner() {
   }, [location]);
 
   // ── Asymmetric Opportunities query ────────────────────────
-  const { data: asymData, isLoading: asymLoading, refetch: asymRefetch } = trpc.stocks.getAsymmetricOpportunities.useQuery(
+  const { data: asymData, isLoading: asymLoading, refetch: asymRefetch, error: asymError } = trpc.stocks.getAsymmetricOpportunities.useQuery(
     { limit: 20 },
     { staleTime: 5 * 60 * 1000, enabled: activeView === 'asymmetric' }
   );
@@ -1745,6 +1745,7 @@ function SignalsInner() {
         <AsymmetricOpportunitiesView
           data={asymData ?? []}
           isLoading={asymLoading}
+          error={asymError?.message}
           onRefresh={() => asymRefetch()}
           regimeColor="#A855F7"
           regimeLabel={regimeForSignals?.label ?? 'UNAVAILABLE'}
@@ -2229,6 +2230,12 @@ interface AsymmetricOpportunity {
   source: 'yahoo-screener';
   fetchedAt: number;
   aiEnriched: boolean;
+  observedAt: number;
+  observationTiming: string;
+  priceSource: string;
+  canonicalStateId: string;
+  canonicalAsOf: string;
+  evidenceQuality: string;
 }
 
 // ── Conviction colors ─────────────────────────────────────────
@@ -2463,14 +2470,15 @@ function AsymmetricCard({ opp }: { opp: AsymmetricOpportunity }) {
         marginBottom: '8px',
       }}>
         <div style={{ fontSize: '10px', color: 'rgba(168,85,247,0.7)', letterSpacing: '0.1em', marginBottom: '3px' }}>CATALYST</div>
-        <div style={{ fontSize: '12px', color: 'rgba(148,163,184,0.85)', lineHeight: 1.5 }}>{opp.catalyst}</div>
+        <div style={{ fontSize: '12px', color: 'rgba(148,163,184,0.85)', lineHeight: 1.5 }}>{opp.catalyst || 'No verified catalyst source supplied.'}</div>
+        <div style={{ fontSize: '10px', color: 'rgba(148,163,184,0.75)', marginTop: '4px' }}>Rule-derived estimates · {opp.observationTiming} · {new Date(opp.observedAt).toLocaleString()} · {opp.priceSource}</div>
       </div>
 
       {/* Scores (always visible) */}
       <div style={{ marginBottom: '8px' }}>
         <ScoreBar value={opp.momentumScore}    color="#00D4FF" label="MOMENTUM"         tip="Momentum score (0–100). Sweet spot: +2% to +8% daily change. Parabolic moves score lower." />
-        <ScoreBar value={opp.supportProximity} color="#A855F7" label="SUPPORT PROXIMITY" tip="How close the price is to its 52-week low (support floor). Higher = more room to bounce." />
-        <ScoreBar value={opp.volumeSurge}      color="#FFD700" label="VOLUME SURGE"      tip="Current volume vs 3-month average. 2× = 75 score. 5× = 100 score. Confirms institutional interest." />
+        <ScoreBar value={opp.supportProximity} color="#A855F7" label="SUPPORT PROXIMITY" tip="Rule-derived position within the observed completed three-month price range; not a guaranteed support floor." />
+        <ScoreBar value={opp.volumeSurge}      color="#FFD700" label="VOLUME SURGE"      tip="Observed volume relative to the previous 20 completed sessions. This does not identify institutional trading." />
         <ScoreBar value={opp.macroFit}         color="#00FF88" label="MACRO FIT"         tip="How well this setup aligns with the current FAULTLINE macro regime. Higher = regime tailwind." />
       </div>
 
@@ -2553,10 +2561,11 @@ function AsymmetricCard({ opp }: { opp: AsymmetricOpportunity }) {
 
 // ── Asymmetric Opportunities View ─────────────────────────────
 function AsymmetricOpportunitiesView({
-  data, isLoading, onRefresh, regimeColor, regimeLabel, pressureIndex,
+  data, isLoading, onRefresh, regimeColor, regimeLabel, pressureIndex, error,
 }: {
   data: AsymmetricOpportunity[];
   isLoading: boolean;
+  error?: string;
   onRefresh: () => void;
   regimeColor: string;
   regimeLabel: string;
@@ -2766,6 +2775,10 @@ function AsymmetricOpportunitiesView({
             }}>
               {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
+          </div>
+        ) : error ? (
+          <div role="alert" style={{ textAlign: 'center', padding: '32px 24px', color: '#FFD700', fontSize: '12px' }}>
+            Source-backed Asymmetric Opportunities unavailable. {error}
           </div>
         ) : filtered.length === 0 ? (
           <div style={{

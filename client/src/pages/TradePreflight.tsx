@@ -219,7 +219,7 @@ export default function TradePreflight() {
       <div style={{ maxWidth: "780px", margin: "0 auto", padding: "0 16px" }}>
         <PageHeader
           title="Trade Preflight Simulator"
-          subtitle="Stress-test your move against today's market regime"
+          subtitle="Regime-only stress test; ticker-specific facts require verified asset evidence"
           badge="PREMIUM"
           rightSlot={
             result ? (
@@ -499,7 +499,7 @@ export default function TradePreflight() {
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: riskColor(result.riskLevel), letterSpacing: "0.1em" }}>RISK: {result.riskLevel.toUpperCase()}</span>
                   </div>
                   <div style={{ padding: "4px 10px", background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.25)", borderRadius: "3px" }}>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#00D4FF", letterSpacing: "0.1em" }}>CONFIDENCE: {result.confidenceLevel.toUpperCase()}</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#00D4FF", letterSpacing: "0.1em" }}>EVIDENCE: {(result.evidenceQuality ?? "UNAVAILABLE").toUpperCase()}</span>
                   </div>
                 </div>
               </div>

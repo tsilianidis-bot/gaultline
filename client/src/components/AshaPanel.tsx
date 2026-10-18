@@ -303,9 +303,9 @@ export default function AshaPanel() {
         marketBias: response.marketBias ?? "NOT STATED",
         // No response confidence is established; OracleBriefing renders NOT ESTABLISHED.
         confidence: undefined,
-        marketRegime: response.marketRegime || fullPageContext.regime || "Unknown",
+        marketRegime: response.marketRegime || "Unknown",
         threatLevel: response.threatLevel ?? "NOT STATED",
-        pressureIndex: response.pressureIndex ?? fullPageContext.pressureScore ?? null,
+        pressureIndex: response.pressureIndex ?? null,
         riskLevel: response.riskLevel ?? "Not stated",
         suggestedBias: response.suggestedBias,
         // Fail closed: a missing scenario weight is null, never a 50 default.
@@ -315,7 +315,7 @@ export default function AshaPanel() {
         supportingEvidence: response.supportingEvidence?.length ? response.supportingEvidence : response.sources,
         crossEngineSynthesis: response.crossEngineSynthesis,
         synthesisProvenance: response.integrity?.synthesis ?? undefined,
-        historicalAnalog: response.historicalAnalog || fullPageContext.historicalAnalog,
+        historicalAnalog: response.historicalAnalog,
         riskFactors: response.riskFactors?.length ? response.riskFactors : (response.invalidationTriggers || []),
         confirmationConditions: response.confirmationConditions,
         invalidationConditions: response.invalidationConditions?.length ? response.invalidationConditions : [],

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import {
   candidateDetections,
   earlyWarningLifecycleObservations,
@@ -14,6 +14,7 @@ import {
 import { getDb } from "./db";
 import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 import { getAuthoritativeCrossEngineSynthesis } from "./crossEngineSynthesis";
+import { getPersistedCandidateDetectionEvaluation } from "./candidateDetection";
 import {
   PHASE10_PRESENTATION_CONTRACT_VERSION,
   type ConfirmationPresentationStatus,
@@ -57,6 +58,15 @@ function invalidationFor(planResult: string | null | undefined, invalidation: st
   return "NOT_TRIGGERED";
 }
 
+/** A lifecycle is current only when its newest append-only observation names this exact canonical/synthesis pair. */
+export function isCurrentLifecycleObservation(
+  observation: { originatingStateId: string; originatingSynthesisId: string } | null | undefined,
+  canonicalStateId: string,
+  synthesisId: string,
+) {
+  return observation?.originatingStateId === canonicalStateId && observation.originatingSynthesisId === synthesisId;
+}
+
 /**
  * Compute once, distribute many. This service only reads Phase 5–9 ledgers;
  * it never calls candidate, scoring, lifecycle, or Phase 9 evaluation code.
@@ -72,23 +82,74 @@ export async function getCurrentGovernedEarlyWarningPresentation(): Promise<Gove
   if (synthesis.originatingStateId !== canonicalState.stateId) {
     return unavailable(canonicalState.stateId, synthesis.synthesisId, "SYNTHESIS_STATE_MISMATCH", generatedAt);
   }
-  const lifecycle = (await db.select().from(earlyWarningLifecycles)
+  const evaluationReceipt = await getPersistedCandidateDetectionEvaluation();
+  if (!evaluationReceipt
+    || evaluationReceipt.originatingStateId !== canonicalState.stateId
+    || evaluationReceipt.originatingSynthesisId !== synthesis.synthesisId) {
+    return unavailable(canonicalState.stateId, synthesis.synthesisId, "GOVERNED_LEDGER_UNAVAILABLE", generatedAt);
+  }
+  // A state-bound persisted zero-candidate evaluation is the only permitted
+  // basis for no-material. Absence of that receipt fails closed above.
+  if (evaluationReceipt.noCandidates) return noMaterial(canonicalState.stateId, synthesis.synthesisId, "CURRENT", generatedAt);
+
+  const currentQualifications = await db.select().from(importanceQualificationEvaluations).where(and(
+    eq(importanceQualificationEvaluations.originatingStateId, canonicalState.stateId),
+    eq(importanceQualificationEvaluations.originatingSynthesisId, synthesis.synthesisId),
+  ));
+  if (!currentQualifications.length) {
+    // Phase 6 completed but the dependent Phase 7 ledger has not yet recorded
+    // this canonical moment; do not call it no-material.
+    return unavailable(canonicalState.stateId, synthesis.synthesisId, "GOVERNED_LEDGER_UNAVAILABLE", generatedAt);
+  }
+  if (evaluationReceipt.qualificationFeasibility.length > 0
+    && evaluationReceipt.qualificationFeasibility.every(item => item.status === "GOVERNANCE_BLOCKED")) {
+    // Frozen weights and thresholds are not silently revised to force a warning.
+    return unavailable(canonicalState.stateId, synthesis.synthesisId, "GOVERNANCE_CONFIGURATION_BLOCKED", generatedAt);
+  }
+
+  const lifecycles = await db.select().from(earlyWarningLifecycles)
     .where(ne(earlyWarningLifecycles.currentLifecycleState, "INVALIDATED"))
-    .orderBy(desc(earlyWarningLifecycles.latestObservationAt)).limit(1))[0];
-  if (!lifecycle) return noMaterial(canonicalState.stateId, synthesis.synthesisId, "CURRENT", generatedAt);
-  const [candidate, qualification, observation, thesis, projection] = await Promise.all([
+    .orderBy(desc(earlyWarningLifecycles.latestObservationAt));
+  let lifecycle: typeof earlyWarningLifecycles.$inferSelect | null = null;
+  let observation: typeof earlyWarningLifecycleObservations.$inferSelect | null = null;
+  for (const candidateLifecycle of lifecycles) {
+    const latest = (await db.select().from(earlyWarningLifecycleObservations)
+      .where(eq(earlyWarningLifecycleObservations.lifecycleId, candidateLifecycle.lifecycleId))
+      .orderBy(desc(earlyWarningLifecycleObservations.effectiveAt)).limit(1))[0];
+    if (isCurrentLifecycleObservation(latest, canonicalState.stateId, synthesis.synthesisId)) {
+      lifecycle = candidateLifecycle;
+      observation = latest;
+      break;
+    }
+  }
+  if (!lifecycle || !observation) {
+    if (currentQualifications.some(item => item.qualificationStatus === "QUALIFIED")) {
+      return unavailable(canonicalState.stateId, synthesis.synthesisId, "GOVERNED_LEDGER_UNAVAILABLE", generatedAt);
+    }
+    return noMaterial(canonicalState.stateId, synthesis.synthesisId, "CURRENT", generatedAt);
+  }
+
+  const [candidate, qualification, thesis, projection] = await Promise.all([
     db.select().from(candidateDetections).where(eq(candidateDetections.candidateId, lifecycle.candidateId)).limit(1),
-    db.select().from(importanceQualificationEvaluations).where(eq(importanceQualificationEvaluations.evaluationId, lifecycle.latestQualificationEvaluationId)).limit(1),
-    db.select().from(earlyWarningLifecycleObservations).where(eq(earlyWarningLifecycleObservations.lifecycleId, lifecycle.lifecycleId)).orderBy(desc(earlyWarningLifecycleObservations.effectiveAt)).limit(1),
-    db.select().from(phase9WarningTheses).where(eq(phase9WarningTheses.lifecycleId, lifecycle.lifecycleId)).limit(1),
+    db.select().from(importanceQualificationEvaluations).where(eq(importanceQualificationEvaluations.evaluationId, observation.qualificationEvaluationId)).limit(1),
+    db.select().from(phase9WarningTheses).where(and(
+      eq(phase9WarningTheses.lifecycleId, lifecycle.lifecycleId),
+      eq(phase9WarningTheses.originatingStateId, canonicalState.stateId),
+      eq(phase9WarningTheses.originatingSynthesisId, synthesis.synthesisId),
+    )).limit(1),
     db.select().from(phase9CurrentProjections).where(eq(phase9CurrentProjections.lifecycleId, lifecycle.lifecycleId)).limit(1),
   ]);
-  if (!candidate[0] || !qualification[0] || !observation[0]) {
-    return unavailable(lifecycle.originatingStateId, lifecycle.originatingSynthesisId, "GOVERNED_LEDGER_UNAVAILABLE", generatedAt);
+  if (!candidate[0] || !qualification[0]
+    || !isCurrentLifecycleObservation(qualification[0], canonicalState.stateId, synthesis.synthesisId)) {
+    return unavailable(canonicalState.stateId, synthesis.synthesisId, "GOVERNED_LEDGER_UNAVAILABLE", generatedAt);
   }
   const plan = projection[0] ? (await db.select().from(phase9ConfirmationPlans).where(eq(phase9ConfirmationPlans.planId, projection[0].planId)).limit(1))[0] : null;
-  const planEvaluation = projection[0] ? (await db.select().from(phase9PlanEvaluations).where(eq(phase9PlanEvaluations.planEvaluationId, projection[0].latestPlanEvaluationId)).limit(1))[0] : null;
-  const events = await db.select().from(phase9AuthorityEvents).where(eq(phase9AuthorityEvents.lifecycleId, lifecycle.lifecycleId)).orderBy(desc(phase9AuthorityEvents.effectiveAt));
+  const rawPlanEvaluation = projection[0] ? (await db.select().from(phase9PlanEvaluations).where(eq(phase9PlanEvaluations.planEvaluationId, projection[0].latestPlanEvaluationId)).limit(1))[0] : null;
+  const planEvaluation = rawPlanEvaluation && isCurrentLifecycleObservation(rawPlanEvaluation, canonicalState.stateId, synthesis.synthesisId) ? rawPlanEvaluation : null;
+  const events = await db.select().from(phase9AuthorityEvents).where(and(
+    eq(phase9AuthorityEvents.lifecycleId, lifecycle.lifecycleId),
+    eq(phase9AuthorityEvents.originatingStateId, canonicalState.stateId),
+  )).orderBy(desc(phase9AuthorityEvents.effectiveAt));
   const confirmationEvent = events.find(event => event.eventType === "CONFIRMATION_AUTHORIZED") ?? null;
   const invalidationEvent = events.find(event => event.eventType === "INVALIDATION_AUTHORIZED") ?? null;
   const candidatePayload = safeObject(candidate[0].originalPayloadJson);
@@ -96,10 +157,10 @@ export async function getCurrentGovernedEarlyWarningPresentation(): Promise<Gove
   const planPayload = safeObject(plan?.planPayloadJson);
   const confirmationRules = Array.isArray(planPayload.confirmationConditions) ? planPayload.confirmationConditions as Array<Record<string, unknown>> : [];
   const invalidationRules = Array.isArray(planPayload.invalidationConditions) ? planPayload.invalidationConditions as Array<Record<string, unknown>> : [];
-  const quality = observation[0].dataQuality;
+  const quality = observation.dataQuality;
   const score = qualification[0].importanceScore;
   const first = lifecycle.openedAt;
-  const latest = lifecycle.latestObservationAt;
+  const latest = observation.observedAt;
   const durationDays = Math.max(0, Math.floor((latest.getTime() - first.getTime()) / 86_400_000));
   const eventSuffix = projection[0]?.latestPlanEvaluationId ?? lifecycle.latestQualificationEvaluationId;
   const warningId = `ew:${lifecycle.lifecycleId}`;
@@ -117,8 +178,8 @@ export async function getCurrentGovernedEarlyWarningPresentation(): Promise<Gove
     kind: "ACTIVE_GOVERNED_WARNING",
     presentationId, warningId, candidateId: candidate[0].candidateId, qualificationId: qualification[0].evaluationId,
     lifecycleEpisodeId: lifecycle.lifecycleId, lifecycleState: lifecycle.currentLifecycleState,
-    lifecycleStateChangedAt: observation[0].effectiveAt.toISOString(), synthesisId: lifecycle.originatingSynthesisId,
-    stateId: lifecycle.originatingStateId, warningType: candidate[0].candidateType,
+    lifecycleStateChangedAt: observation.effectiveAt.toISOString(), synthesisId: synthesis.synthesisId,
+    stateId: canonicalState.stateId, warningType: candidate[0].candidateType,
     thesis: { code: thesisCode, statement: thesisStatement }, conciseTitle: title,
     conciseSummary: "A governed cross-engine divergence remains under structured observation. Presentation does not alter the underlying lifecycle, score, or authority.",
     warningScore: score, scoreSemantics: "Prioritization score, not probability.",
@@ -138,11 +199,11 @@ export async function getCurrentGovernedEarlyWarningPresentation(): Promise<Gove
       "Historical and analog context are not presented unless separately authorized.",
     ],
     historicalContext: { status: "UNAVAILABLE", label: "HISTORICAL CONTEXT NOT PRESENTED" }, analogContext: { status: "UNAVAILABLE", label: "ANALOG CONTEXT NOT PRESENTED" },
-    freshness: qualityFreshness, observedAt: observation[0].observedAt.toISOString(), effectiveAt: observation[0].effectiveAt.toISOString(), generatedAt,
-    provenance: { presentationId, warningId, candidateId: candidate[0].candidateId, qualificationId: qualification[0].evaluationId, lifecycleEpisodeId: lifecycle.lifecycleId, synthesisId: lifecycle.originatingSynthesisId, stateId: lifecycle.originatingStateId, thesisId: thesis[0]?.thesisId ?? null, planId: plan?.planId ?? null, latestPlanEvaluationId: planEvaluation?.planEvaluationId ?? null, confirmationAuthorityEventId: confirmationEvent?.phase9EventId ?? null, invalidationAuthorityEventId: invalidationEvent?.phase9EventId ?? null, supportingClaimRefs: claimRefs, presentationContractVersion: PHASE10_PRESENTATION_CONTRACT_VERSION },
+    freshness: qualityFreshness, observedAt: observation.observedAt.toISOString(), effectiveAt: observation.effectiveAt.toISOString(), generatedAt,
+    provenance: { presentationId, warningId, candidateId: candidate[0].candidateId, qualificationId: qualification[0].evaluationId, lifecycleEpisodeId: lifecycle.lifecycleId, synthesisId: synthesis.synthesisId, stateId: canonicalState.stateId, thesisId: thesis[0]?.thesisId ?? null, planId: plan?.planId ?? null, latestPlanEvaluationId: planEvaluation?.planEvaluationId ?? null, confirmationAuthorityEventId: confirmationEvent?.phase9EventId ?? null, invalidationAuthorityEventId: invalidationEvent?.phase9EventId ?? null, supportingClaimRefs: claimRefs, presentationContractVersion: PHASE10_PRESENTATION_CONTRACT_VERSION },
     presentationGeneratedAt: generatedAt, presentationContractVersion: PHASE10_PRESENTATION_CONTRACT_VERSION,
   };
-	  return active;
+  return active;
 }
 
 export type GovernedEarlyWarningTimelineEntry = {

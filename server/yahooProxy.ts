@@ -39,6 +39,47 @@ export interface YahooQuote {
   error?: string;
 }
 
+/**
+ * Temporal classification is intentionally separate from price direction. Yahoo
+ * is delayed by contract, and a completed-session quote is historical context,
+ * never a current market claim.
+ */
+export type YahooObservationTiming = "live" | "delayed" | "completed_session" | "stale" | "unavailable";
+
+export interface YahooObservationFreshness {
+  timing: YahooObservationTiming;
+  supportsCurrentClaim: boolean;
+  detail: string;
+}
+
+const LIVE_OBSERVATION_MAX_AGE_MS = 2 * 60_000;
+const DELAYED_OBSERVATION_MAX_AGE_MS = 20 * 60_000;
+const COMPLETED_SESSION_HISTORY_MAX_AGE_MS = 96 * 60 * 60_000;
+
+/**
+ * Keeps provider-reported timing distinct from local receipt timing. The Yahoo
+ * adapter currently marks quotes as delayed, so it cannot produce a `live`
+ * classification unless a future provider explicitly supplies an undelayed
+ * observation during an active session.
+ */
+export function classifyYahooObservation(quote: Pick<YahooQuote, "price" | "observedAt" | "isDelayed" | "marketState" | "source"> | null | undefined, nowMs = Date.now()): YahooObservationFreshness {
+  if (!quote || !Number.isFinite(quote.price) || !Number.isFinite(quote.observedAt) || (quote.observedAt as number) > nowMs + 60_000 || quote.source === "error") {
+    return { timing: "unavailable", supportsCurrentClaim: false, detail: "No usable provider observation timestamp is available." };
+  }
+  const ageMs = Math.max(0, nowMs - (quote.observedAt as number));
+  const activeSession = quote.marketState === "REGULAR" || quote.marketState === "PRE" || quote.marketState === "POST";
+  if (!quote.isDelayed && activeSession && ageMs <= LIVE_OBSERVATION_MAX_AGE_MS) {
+    return { timing: "live", supportsCurrentClaim: true, detail: "Provider-reported observation is within the live-use window during an active session." };
+  }
+  if (activeSession && ageMs <= DELAYED_OBSERVATION_MAX_AGE_MS) {
+    return { timing: "delayed", supportsCurrentClaim: true, detail: "Provider-reported delayed observation is within the active-session use window." };
+  }
+  if ((quote.marketState === "CLOSED" || quote.source === "polygon-prev") && ageMs <= COMPLETED_SESSION_HISTORY_MAX_AGE_MS) {
+    return { timing: "completed_session", supportsCurrentClaim: false, detail: "Completed-session observation is retained only as historical context." };
+  }
+  return { timing: "stale", supportsCurrentClaim: false, detail: "Provider observation exceeds its permitted current-use window." };
+}
+
 export type PolygonFallbackKind = "index" | "equity" | "proxy";
 
 export type PolygonFallbackStep = {
@@ -979,4 +1020,53 @@ export async function getSmallCapRunners(limit = 100): Promise<StockPerformer[]>
     captureError(err as Error, { source: "yahooProxy", stage: "smallcap_fetch_failed" }).catch(() => {});
     return [];
   }
+}
+
+/** Raw screener observations for Asymmetric Opportunities, never zero-filled. */
+export interface AsymmetricScreenerCandidate {
+  ticker: string;
+  name: string;
+  sector: string | null;
+  marketCap: number | null;
+  high52w: number | null;
+  low52w: number | null;
+  avgVolume: number | null;
+  observedAt: number | null;
+  fetchedAt: number;
+  sourceIdentifier: string;
+}
+
+const asymmetricCandidateCache = new LRUCache<string, { status: "AVAILABLE" | "UNAVAILABLE"; candidates: AsymmetricScreenerCandidate[]; limitations: string[] }>(2, 3 * 60_000);
+const observedScreenerNumber = (value: unknown): number | null => typeof value === "number" && Number.isFinite(value) ? value : null;
+
+export async function getAsymmetricScreenerCandidates() {
+  const cached = asymmetricCandidateCache.get("pool");
+  if (cached) return cached;
+  const screeners = ["day_gainers", "small_cap_gainers", "most_actives"];
+  const fetchedAt = Date.now();
+  const results = await Promise.all(screeners.map(async id => {
+    try {
+      const url = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=${id}&count=50&start=0`;
+      const response = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" }, signal: AbortSignal.timeout(10_000) });
+      if (!response.ok) throw new Error(`Yahoo screener HTTP ${response.status}`);
+      const payload = await response.json() as { finance?: { result?: Array<{ quotes?: Record<string, unknown>[] }> } };
+      const quotes = payload.finance?.result?.[0]?.quotes;
+      if (!Array.isArray(quotes)) throw new Error("Yahoo screener response omitted quotes");
+      const candidates = quotes.flatMap(q => typeof q.symbol !== "string" || !q.symbol ? [] : [{
+        ticker: q.symbol.toUpperCase(), name: String(q.shortName ?? q.longName ?? q.symbol),
+        sector: typeof q.sector === "string" ? q.sector : null,
+        marketCap: observedScreenerNumber(q.marketCap), high52w: observedScreenerNumber(q.fiftyTwoWeekHigh),
+        low52w: observedScreenerNumber(q.fiftyTwoWeekLow), avgVolume: observedScreenerNumber(q.averageDailyVolume3Month),
+        observedAt: observedScreenerNumber(q.regularMarketTime) === null ? null : (q.regularMarketTime as number) * 1000,
+        fetchedAt, sourceIdentifier: `yahoo:${id}:${q.symbol}`,
+      } satisfies AsymmetricScreenerCandidate]);
+      return { available: true, candidates, limitation: null };
+    } catch (error) { return { available: false, candidates: [], limitation: `${id}: ${error instanceof Error ? error.message : "provider unavailable"}` }; }
+  }));
+  const byTicker = new Map<string, AsymmetricScreenerCandidate>();
+  for (const result of results) for (const candidate of result.candidates) if (!byTicker.has(candidate.ticker)) byTicker.set(candidate.ticker, candidate);
+  const output = { status: results.some(result => result.available) ? "AVAILABLE" as const : "UNAVAILABLE" as const,
+    candidates: Array.from(byTicker.values()), limitations: results.flatMap(result => result.limitation ? [result.limitation] : []) };
+  asymmetricCandidateCache.set("pool", output);
+  return output;
 }

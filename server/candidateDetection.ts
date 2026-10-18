@@ -9,11 +9,16 @@ import {
   type CandidateDetection,
   type CandidateDetectionEvaluation,
 } from "../shared/candidateDetection";
+import { IMPORTANCE_SCORING_CONFIG } from "../shared/importanceQualification";
 import { candidateDetectionObservations, candidateDetections } from "../drizzle/schema";
 import { desc, eq } from "drizzle-orm";
 import { getDb } from "./db";
+import { deriveDivergenceMetric, type DerivedDivergenceMetric } from "./crossEngineSynthesis";
+import { memoryGetJson, memorySetJson } from "./seismographEngine";
 
 export const CANDIDATE_DETECTION_MIN_MAGNITUDE = 10;
+export const CANDIDATE_DETECTION_EVALUATION_MEMORY_KEY = "candidate_detection:evaluation:latest";
+export const CANDIDATE_DETECTION_EVALUATION_RECEIPT_VERSION = "phase6-candidate-evaluation-receipt-v1" as const;
 
 function stableId(parts: unknown[]) {
   return createHash("sha256").update(JSON.stringify(parts)).digest("hex").slice(0, 24);
@@ -21,6 +26,18 @@ function stableId(parts: unknown[]) {
 
 function titleFor(divergence: CrossEngineDivergence) {
   return `${divergence.participatingEngines.join(" / ").toUpperCase()} DIVERGENCE`;
+}
+
+/** Stable stream identity deliberately excludes state-specific divergence IDs. */
+export function candidateStreamKey(divergence: Pick<CrossEngineDivergence, "participatingEngines">) {
+  return `CROSS_ENGINE_DIVERGENCE:${divergence.participatingEngines.slice().sort().join("|")}`;
+}
+
+function derivedMetricFor(synthesis: CrossEngineSynthesis, divergence: CrossEngineDivergence): DerivedDivergenceMetric | null {
+  const [firstEngineId, secondEngineId] = divergence.participatingEngines.slice().sort();
+  const first = synthesis.engineObservations.find(observation => observation.engineId === firstEngineId);
+  const second = synthesis.engineObservations.find(observation => observation.engineId === secondEngineId);
+  return first && second ? deriveDivergenceMetric(first, second) : null;
 }
 
 function confidenceFor(synthesis: CrossEngineSynthesis, divergence: CrossEngineDivergence): CandidateDataConfidence {
@@ -37,22 +54,24 @@ function freshnessFor(synthesis: CrossEngineSynthesis, divergence: CrossEngineDi
   return "FRESH";
 }
 
-function suppressionReasons(synthesis: CrossEngineSynthesis, divergence: CrossEngineDivergence, confidence: CandidateDataConfidence) {
+function suppressionReasons(synthesis: CrossEngineSynthesis, divergence: CrossEngineDivergence, confidence: CandidateDataConfidence, metric: DerivedDivergenceMetric | null) {
   const reasons: string[] = [];
   if (divergence.evidenceIndependence !== "INDEPENDENT") reasons.push("Candidate suppressed: governed evidence is not independent.");
   if (synthesis.staleEngines.some(engine => divergence.participatingEngines.includes(engine))) reasons.push("Candidate suppressed: a participating engine is stale.");
   if (confidence === "INSUFFICIENT") reasons.push("Candidate suppressed: current evidence quality is insufficient.");
-  if (divergence.magnitude == null) reasons.push("Candidate suppressed: governed divergence magnitude is unavailable.");
-  else if (divergence.magnitude < CANDIDATE_DETECTION_MIN_MAGNITUDE) reasons.push("Candidate suppressed: governed divergence magnitude is below the candidate detection minimum.");
+  if (!metric) reasons.push("Candidate suppressed: finite derived divergence magnitude is unavailable.");
+  else if (metric.value < CANDIDATE_DETECTION_MIN_MAGNITUDE) reasons.push("Candidate suppressed: governed derived divergence magnitude is below the candidate detection minimum.");
   if (divergence.persistence !== "PERSISTING") reasons.push("Candidate suppressed: relationship has not persisted under the candidate detector rule.");
   return reasons;
 }
 
 function candidateFor(synthesis: CrossEngineSynthesis, divergence: CrossEngineDivergence): CandidateDetection | null {
   const dataConfidence = confidenceFor(synthesis, divergence);
-  const suppression = suppressionReasons(synthesis, divergence, dataConfidence);
+  const metric = derivedMetricFor(synthesis, divergence);
+  const suppression = suppressionReasons(synthesis, divergence, dataConfidence, metric);
   if (suppression.length > 0) return null;
-  const candidateId = `cd:${stableId([CANDIDATE_DETECTOR_ID, divergence.participatingEngines.slice().sort(), divergence.divergenceId])}`;
+  const streamKey = candidateStreamKey(divergence);
+  const candidateId = `cd:${stableId([CANDIDATE_DETECTOR_ID, streamKey])}`;
   return {
     contractVersion: CANDIDATE_DETECTION_CONTRACT_VERSION,
     candidateId,
@@ -70,7 +89,7 @@ function candidateFor(synthesis: CrossEngineSynthesis, divergence: CrossEngineDi
     supportingDivergences: [divergence.divergenceId],
     evidenceClaimIds: divergence.supportingClaimIds,
     relevantArchiveEventIds: [],
-    magnitude: divergence.magnitude,
+    magnitude: metric!.value,
     acceleration: divergence.acceleration,
     persistence: divergence.persistence,
     dataConfidence,
@@ -80,6 +99,7 @@ function candidateFor(synthesis: CrossEngineSynthesis, divergence: CrossEngineDi
     hasBlockingConflict: (synthesis.conflicts?.length ?? 0) > 0,
     limitations: [
       ...divergence.limitations,
+      `Magnitude is ${metric!.evidenceClass}, produced by ${metric!.methodologyId} from finite canonical engine scores; it is not an observed provider measurement.`,
       "Candidate detection is not importance scoring, qualification, publication, lifecycle, confirmation, invalidation, probability, target, or forecast authority.",
     ],
     detectorId: CANDIDATE_DETECTOR_ID,
@@ -106,6 +126,85 @@ export function evaluateCandidateDetections(synthesis: CrossEngineSynthesis): Ca
     noCandidates: candidates.length === 0,
     limitations: synthesis.limitations,
   };
+}
+
+export type CandidateQualificationFeasibility = {
+  status: "FEASIBLE" | "GOVERNANCE_BLOCKED";
+  scoreCeiling: number;
+  qualificationThreshold: number;
+  limitation: string | null;
+};
+
+function systemicMaximum(candidate: CandidateDetection) {
+  const domains = new Set(candidate.participatingEngines.map(item => item.toLowerCase()));
+  const canonicalTaxonomy = ["credit", "liquidity", "treasury", "macro"];
+  const matching = canonicalTaxonomy.filter(item => domains.has(item));
+  if (matching.length >= 2) return 1;
+  if (matching.length === 1 && domains.size >= 2) return 0.75;
+  if (domains.size >= 2) return 0.5;
+  return 0.25;
+}
+
+/**
+ * Checks whether the currently authorized live Phase 5/6 shape could ever
+ * cross the frozen Phase 7 threshold. This is a governance diagnostic only:
+ * it does not change weights, thresholds, or any candidate score.
+ */
+export function qualificationFeasibilityFor(candidate: CandidateDetection): CandidateQualificationFeasibility {
+  const weights = IMPORTANCE_SCORING_CONFIG.factorWeights;
+  const evidenceMaximum = Math.min(1, Math.max(0, (candidate.participatingEngines.length - 1) / 2));
+  const dataMaximum = ({ HIGH: 1, MODERATE: 2 / 3, LOW: 1 / 3, INSUFFICIENT: 0 } as const)[candidate.dataConfidence];
+  const scoreCeiling = Math.round(
+    weights.magnitude
+    + (candidate.acceleration === null ? 0 : weights.acceleration)
+    + (candidate.persistence === "PERSISTING" ? weights.persistence : 0)
+    // Phase 7 explicitly has no governed historical lead adapter.
+    + weights.crossEngineConfirmation * evidenceMaximum
+    + weights.systemicImportance * systemicMaximum(candidate)
+    + weights.novelty
+    + weights.dataConfidence * dataMaximum,
+  );
+  const qualificationThreshold = IMPORTANCE_SCORING_CONFIG.thresholds.qualificationScore;
+  const blocked = scoreCeiling < qualificationThreshold;
+  return {
+    status: blocked ? "GOVERNANCE_BLOCKED" : "FEASIBLE",
+    scoreCeiling,
+    qualificationThreshold,
+    limitation: blocked
+      ? `Current authorized live candidate shape has a governed score ceiling of ${scoreCeiling}, below the frozen qualification threshold of ${qualificationThreshold}; weights and thresholds were not changed.`
+      : null,
+  };
+}
+
+export type CandidateDetectionEvaluationReceipt = {
+  receiptVersion: typeof CANDIDATE_DETECTION_EVALUATION_RECEIPT_VERSION;
+  originatingStateId: string;
+  originatingSynthesisId: string;
+  effectiveAt: string;
+  noCandidates: boolean;
+  candidateIds: string[];
+  qualificationFeasibility: CandidateQualificationFeasibility[];
+};
+
+function evaluationReceipt(evaluation: CandidateDetectionEvaluation): CandidateDetectionEvaluationReceipt {
+  return {
+    receiptVersion: CANDIDATE_DETECTION_EVALUATION_RECEIPT_VERSION,
+    originatingStateId: evaluation.originatingStateId,
+    originatingSynthesisId: evaluation.originatingSynthesisId,
+    effectiveAt: evaluation.effectiveAt,
+    noCandidates: evaluation.noCandidates,
+    candidateIds: evaluation.candidates.map(candidate => candidate.candidateId),
+    qualificationFeasibility: evaluation.candidates.map(qualificationFeasibilityFor),
+  };
+}
+
+/** A persisted Phase 6 receipt is the state-bound proof that zero candidates was evaluated, not assumed. */
+export async function getPersistedCandidateDetectionEvaluation(): Promise<CandidateDetectionEvaluationReceipt | null> {
+  try {
+    return await memoryGetJson<CandidateDetectionEvaluationReceipt | null>(CANDIDATE_DETECTION_EVALUATION_MEMORY_KEY, null);
+  } catch {
+    return null;
+  }
 }
 
 function candidatePayload(candidate: CandidateDetection) {
@@ -175,5 +274,11 @@ export async function evaluateAndPersistCandidateDetections(synthesis: CrossEngi
       appendedObservationCount += 1;
     }
   }
-  return { evaluation, createdCandidateCount, appendedObservationCount, unavailable: false };
+  const receipt = evaluationReceipt(evaluation);
+  await memorySetJson(
+    CANDIDATE_DETECTION_EVALUATION_MEMORY_KEY,
+    receipt,
+    "Latest state-bound Phase 6 candidate evaluation receipt, including evaluated zero-candidate outcomes",
+  );
+  return { evaluation, receipt, createdCandidateCount, appendedObservationCount, unavailable: false };
 }

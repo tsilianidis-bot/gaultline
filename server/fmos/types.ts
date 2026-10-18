@@ -131,6 +131,10 @@ export interface FMOSEvidenceFamily {
 }
 
 export interface FMOSEvidenceOutput {
+  /** False when required verified macro or canonical pressure inputs are unavailable. */
+  available: boolean;
+  /** Explains why the whole evidence synthesis was withheld, when unavailable. */
+  unavailableReason: string | null;
   /** All evidence families */
   families: FMOSEvidenceFamily[];
   /** Number of independent families with bullish signal */
@@ -165,18 +169,22 @@ export type MarketDNARegime =
   | "Liquidity Contraction";
 
 export interface FMOSMarketDNA {
+  /** False when the required verified macro snapshot or canonical pressure inputs are unavailable. */
+  available: boolean;
+  /** Explains why Market DNA was withheld rather than classified from defaults. */
+  unavailableReason: string | null;
   /** Current long-term structural regime */
-  currentDNA: MarketDNARegime;
+  currentDNA: MarketDNARegime | null;
   /** Confidence in this classification (0–100) */
-  confidence: number;
+  confidence: number | null;
   /** Historical frequency of this regime (%) */
-  historicalFrequency: number;
+  historicalFrequency: number | null;
   /** Key characteristics of this regime */
   characteristics: string[];
   /** Portfolio implications of this regime */
   portfolioImplications: string[];
   /** How long this regime has been in effect (estimated) */
-  estimatedDuration: string;
+  estimatedDuration: string | null;
   /** When this regime typically transitions */
   typicalTransitionTriggers: string[];
 }
@@ -399,6 +407,8 @@ export interface FMOSCalibrationMetrics {
 export interface FMOSUniversalOutput {
   /** The ticker or asset being analyzed (null for market-wide analysis) */
   symbol: string | null;
+  canonicalStateId?: string | null;
+  dataAsOf?: string;
   /** Asset type */
   assetType: "stock" | "crypto" | "etf" | "market" | null;
   /** ISO timestamp of this analysis */
@@ -441,8 +451,8 @@ export interface FMOSUniversalOutput {
   interpretation: FMOSAIInterpretation;
 
   // ── Metadata ─────────────────────────────────────────────────
-  /** Data source status */
-  dataSource: "live" | "fallback";
+  /** Data source status. `unavailable` means required verified macro inputs were withheld. */
+  dataSource: "live" | "fallback" | "unavailable";
   /** Whether all engines ran successfully */
   complete: boolean;
   /** Any engine errors that occurred */
@@ -458,6 +468,14 @@ export interface FMOSPipelineOptions {
   skipAIInterpretation?: boolean;
   /** Number of historical analogs to return (default: 3) */
   topAnalogCount?: number;
+  /**
+   * A caller-supplied Pressure snapshot that has already been acquired for the
+   * same scheduled run. Exact signature: `pressureOverride?: FaultlinePressureOutput`.
+   * The pipeline reuses it and never performs a second Pressure calculation;
+   * non-verified snapshots are retained as unavailable macro evidence rather
+   * than replaced with another provider request.
+   */
+  pressureOverride?: FaultlinePressureOutput;
 }
 
 // ── Partial Pipeline Output ───────────────────────────────────

@@ -629,6 +629,12 @@ function FullOutlookView({
 
       {/* ── CALCULATED PRICE LEVELS ── */}
       <div style={{ marginBottom: "12px" }}>
+        {d.priceObservation && (
+          <p style={{ color: "#94A3B8", fontSize: "11px", margin: "0 0 8px" }}>
+            {d.priceObservation.timing === "completed_session" ? "Reference closing price — not a live quote" : "Provider-reported quote"}
+            {" · "}{d.priceObservation.source}{" · "}{new Date(d.priceObservation.observedAt).toLocaleString()}
+          </p>
+        )}
         {d.calculatedLevels.available ? (
           <div style={{
             background: "rgba(0,0,0,0.4)",

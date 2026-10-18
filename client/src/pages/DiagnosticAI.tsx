@@ -560,7 +560,7 @@ function PositionGuidanceSection({ guidance, isLoading }: { guidance: any[] | un
           POSITION GUIDANCE™
         </h2>
         <p style={{ fontSize: 13, color: "#64748B", margin: 0 }}>
-          AI-powered add, hold, trim, and exit-bias signals based on market conditions.
+          Deterministic market-context labels bound to canonical macro state and provider-observed price history.
         </p>
 
       </div>
@@ -607,6 +607,16 @@ function PositionCard({ card }: { card: any }) {
   const [expanded, setExpanded] = useState(false);
   const [whyOpen, setWhyOpen] = useState(false);
 
+  if (card?.status !== "AVAILABLE") {
+    return (
+      <div className="intel-module" style={{ padding: "16px", borderLeft: "2px solid rgba(255,149,0,0.55)" }}>
+        <div style={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace", color: "#FF9500", letterSpacing: "0.12em", marginBottom: 6 }}>MARKET-CONTEXT GUIDANCE UNAVAILABLE</div>
+        <div style={{ fontSize: 12, color: "#94A3B8", lineHeight: 1.55 }}>{card?.ticker ?? "Asset"}: {card?.reason ?? "Required verified evidence is unavailable."}</div>
+        {card?.stateId && <div style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", color: "#475569", marginTop: 8 }}>CANONICAL STATE {card.stateId} · EVIDENCE {card.quality}</div>}
+      </div>
+    );
+  }
+
   const actionCol = actionColor(card.action as PositionAction);
   const convCol   = convictionColor(card.conviction as ConvictionLevel);
 
@@ -645,6 +655,9 @@ function PositionCard({ card }: { card: any }) {
             </div>
             <div style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", color: "#475569", marginTop: 3 }}>
               {card.timeframe} · {card.regime}
+            </div>
+            <div style={{ fontSize: 8, fontFamily: "'IBM Plex Mono', monospace", color: "#64B5F6", marginTop: 5, letterSpacing: "0.08em" }}>
+              DERIVED MARKET-CONTEXT MODEL · {card.source?.assetProvider ?? "SOURCE UNAVAILABLE"}
             </div>
           </div>
           {/* Action badge */}
@@ -687,10 +700,10 @@ function PositionCard({ card }: { card: any }) {
           { label: "PRESSURE", value: card.pressureIndex, invert: true },
           { label: "ASSET SCORE", value: card.scores.assetSignalScore, invert: false },
           { label: "MOMENTUM", value: card.scores.momentumScore, invert: false },
-          { label: "SECTOR STR", value: card.scores.sectorStrengthScore, invert: false },
+          { label: "VOLUME", value: card.scores.liquidityScore, invert: false },
           { label: "VOLATILITY", value: card.scores.volatilityScore, invert: true },
           { label: "MACRO RISK", value: card.scores.macroRiskScore, invert: false },
-        ].map((s, i) => (
+        ].filter(s => typeof s.value === "number").map((s, i) => (
           <div key={i} style={{
             padding: "10px 12px",
             borderRight: i % 3 !== 2 ? "1px solid rgba(255,255,255,0.05)" : "none",
@@ -724,8 +737,9 @@ function PositionCard({ card }: { card: any }) {
           {card.supportLevel}
         </div>
         <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 3 }}>
-          <span style={{ color: "#64748B", fontFamily: "'IBM Plex Mono', monospace", fontSize: 9 }}>PRICE  </span>
+          <span style={{ color: "#64748B", fontFamily: "'IBM Plex Mono', monospace", fontSize: 9 }}>OBSERVED PRICE  </span>
           <span style={{ color: "#64B5F6" }}>{card.currentPrice}</span>
+          <span style={{ color: "#475569", fontFamily: "'IBM Plex Mono', monospace", fontSize: 8 }}> · {card.priceStatus} · {card.source?.quoteObservedAt ?? "time unavailable"}</span>
         </div>
       </div>
 

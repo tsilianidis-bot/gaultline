@@ -328,7 +328,7 @@ function PositionCard({ position: p, onEdit, onDelete }: PositionCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Fetch AI guidance for this position — eager (loads in background for badge)
+  // Fetch canonical-bound market-context guidance — eager for the card status.
   const guidanceQuery = trpc.portfolio.getPositionGuidance.useQuery(
     { ticker: p.ticker, name: p.name, assetType: p.assetType as any },
     { staleTime: 10 * 60 * 1000, refetchOnWindowFocus: false }
@@ -337,8 +337,10 @@ function PositionCard({ position: p, onEdit, onDelete }: PositionCardProps) {
   const pnl = p.unrealizedPnl;
   const pnlPct = p.unrealizedPnlPct;
 
-  const actionColor = guidanceQuery.data?.action
-    ? ACTION_COLORS[guidanceQuery.data.action] ?? "#6B7280"
+  const availableGuidance = guidanceQuery.data?.status === "AVAILABLE" ? guidanceQuery.data : null;
+
+  const actionColor = availableGuidance?.action
+    ? ACTION_COLORS[availableGuidance.action] ?? "#6B7280"
     : "#6B7280";
 
   return (
@@ -376,18 +378,18 @@ function PositionCard({ position: p, onEdit, onDelete }: PositionCardProps) {
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#4B5563", marginTop: "2px" }}>
             {p.shares} shares @ {fmt(p.costBasis)} avg
           </div>
-          {/* AI action badge — shown directly on card */}
-          {guidanceQuery.data?.action && (
+          {/* Available-only model action badge — never render a withheld action. */}
+          {availableGuidance?.action && (
             <div style={{
               marginTop: "6px",
               display: "inline-flex", alignItems: "center", gap: "4px",
               padding: "2px 8px", borderRadius: "3px",
-              background: `${ACTION_COLORS[guidanceQuery.data.action] ?? "#6B7280"}18`,
-              border: `1px solid ${ACTION_COLORS[guidanceQuery.data.action] ?? "#6B7280"}44`,
+              background: `${ACTION_COLORS[availableGuidance.action] ?? "#6B7280"}18`,
+              border: `1px solid ${ACTION_COLORS[availableGuidance.action] ?? "#6B7280"}44`,
             }}>
-              <Brain size={9} style={{ color: ACTION_COLORS[guidanceQuery.data.action] ?? "#6B7280" }} />
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: ACTION_COLORS[guidanceQuery.data.action] ?? "#6B7280", letterSpacing: "0.08em" }}>
-                {guidanceQuery.data.action}
+              <Brain size={9} style={{ color: ACTION_COLORS[availableGuidance.action] ?? "#6B7280" }} />
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: ACTION_COLORS[availableGuidance.action] ?? "#6B7280", letterSpacing: "0.08em" }}>
+                {availableGuidance.action}
               </span>
             </div>
           )}
@@ -487,7 +489,7 @@ function PositionCard({ position: p, onEdit, onDelete }: PositionCardProps) {
         ))}
       </div>
 
-      {/* AI Guidance toggle */}
+      {/* Market-context guidance toggle */}
       <button
         onClick={() => setExpanded(v => !v)}
         style={{
@@ -502,31 +504,31 @@ function PositionCard({ position: p, onEdit, onDelete }: PositionCardProps) {
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <Brain size={11} style={{ color: expanded ? "#00D4FF" : "#4B5563" }} />
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: expanded ? "#00D4FF" : "#4B5563", letterSpacing: "0.12em" }}>
-            AI GUIDANCE
+            MARKET CONTEXT
           </span>
-          {guidanceQuery.data?.action && (
+          {availableGuidance?.action && (
             <span style={{
               fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px",
               color: actionColor, padding: "1px 6px",
               border: `1px solid ${actionColor}44`,
               borderRadius: "3px", background: `${actionColor}11`,
             }}>
-              {guidanceQuery.data.action}
+              {availableGuidance.action}
             </span>
           )}
         </div>
         {expanded ? <ChevronUp size={12} style={{ color: "#6B7280" }} /> : <ChevronDown size={12} style={{ color: "#6B7280" }} />}
       </button>
 
-      {/* AI Guidance expanded panel */}
+      {/* Market-context guidance expanded panel */}
       {expanded && (
         <div style={{ padding: "16px", borderTop: "1px solid rgba(0,212,255,0.08)" }}>
           {guidanceQuery.isLoading ? (
             <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#4B5563", fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px" }}>
               <RefreshCw size={12} style={{ animation: "spin 1s linear infinite" }} />
-              Generating AI guidance…
+              Loading verified market context…
             </div>
-          ) : guidanceQuery.data ? (
+          ) : availableGuidance ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {/* Action + conviction */}
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
@@ -537,7 +539,7 @@ function PositionCard({ position: p, onEdit, onDelete }: PositionCardProps) {
                   fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px",
                   color: actionColor, letterSpacing: "0.06em",
                 }}>
-                  {guidanceQuery.data.action}
+                  {availableGuidance.action}
                 </div>
                 <div style={{
                   padding: "4px 12px", borderRadius: "4px",
@@ -546,7 +548,7 @@ function PositionCard({ position: p, onEdit, onDelete }: PositionCardProps) {
                   fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px",
                   color: "#94A3B8",
                 }}>
-                  {guidanceQuery.data.conviction} Conviction
+                  {availableGuidance.conviction} Conviction
                 </div>
                 <div style={{
                   padding: "4px 12px", borderRadius: "4px",
@@ -555,20 +557,26 @@ function PositionCard({ position: p, onEdit, onDelete }: PositionCardProps) {
                   fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px",
                   color: "#94A3B8",
                 }}>
-                  {guidanceQuery.data.timeframe} View
+                  {availableGuidance.timeframe} View
                 </div>
+              </div>
+
+              <div style={{ padding: "8px 10px", background: "rgba(100,181,246,0.05)", border: "1px solid rgba(100,181,246,0.14)", borderRadius: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#64748B", lineHeight: 1.55 }}>
+                <strong style={{ color: "#64B5F6" }}>DERIVED MARKET-CONTEXT MODEL</strong>
+                {` · Canonical state ${availableGuidance.stateId} · evidence ${availableGuidance.quality}`}<br />
+                {`${availableGuidance.source.assetProvider} observed price (${availableGuidance.priceStatus}) · ${availableGuidance.source.dailyBarCount} daily bars · model ${availableGuidance.model.modelVersion}`}
               </div>
 
               {/* Score bars */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px" }}>
                 {[
-                  { label: "Asset Signal",  value: guidanceQuery.data.scores.assetSignalScore },
-                  { label: "Market Regime", value: guidanceQuery.data.scores.marketRegimeScore },
-                  { label: "Pressure Idx",  value: guidanceQuery.data.scores.pressureIndexScore },
-                  { label: "Momentum",      value: guidanceQuery.data.scores.momentumScore },
-                  { label: "Sector",        value: guidanceQuery.data.scores.sectorStrengthScore },
-                  { label: "Composite",     value: guidanceQuery.data.scores.compositeScore },
-                ].map(s => (
+                  { label: "Asset Signal",  value: availableGuidance.scores.assetSignalScore },
+                  { label: "Market Regime", value: availableGuidance.scores.marketRegimeScore },
+                  { label: "Pressure Idx",  value: availableGuidance.scores.pressureIndexScore },
+                  { label: "Momentum",      value: availableGuidance.scores.momentumScore },
+                  { label: "Volume",        value: availableGuidance.scores.liquidityScore },
+                  { label: "Composite",     value: availableGuidance.scores.compositeScore },
+                ].filter((s): s is { label: string; value: number } => typeof s.value === "number").map(s => (
                   <div key={s.label}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
                       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#6B7280", letterSpacing: "0.1em" }}>{s.label.toUpperCase()}</span>
@@ -586,21 +594,21 @@ function PositionCard({ position: p, onEdit, onDelete }: PositionCardProps) {
                 ))}
               </div>
 
-              {/* AI interpretation */}
-              {guidanceQuery.data.aiInterpretation && (
+              {/* Deterministic model interpretation */}
+              {availableGuidance.aiInterpretation && (
                 <div style={{ padding: "10px 12px", background: "rgba(0,212,255,0.04)", borderLeft: "2px solid rgba(0,212,255,0.3)", borderRadius: "0 4px 4px 0" }}>
                   <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", lineHeight: 1.6, margin: 0 }}>
-                    {guidanceQuery.data.aiInterpretation}
+                    {availableGuidance.aiInterpretation}
                   </p>
                 </div>
               )}
 
               {/* Key drivers */}
-              {guidanceQuery.data.keyDrivers?.length > 0 && (
+              {availableGuidance.keyDrivers?.length > 0 && (
                 <div>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", letterSpacing: "0.15em", marginBottom: "6px" }}>KEY DRIVERS</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    {guidanceQuery.data.keyDrivers.map((d, i) => (
+                    {availableGuidance.keyDrivers.map((d, i) => (
                       <div key={i} style={{ display: "flex", gap: "6px", alignItems: "flex-start" }}>
                         <span style={{ color: "#374151", fontSize: "10px", marginTop: "1px", flexShrink: 0 }}>›</span>
                         <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#6B7280", lineHeight: 1.4 }}>{d}</span>
@@ -611,11 +619,11 @@ function PositionCard({ position: p, onEdit, onDelete }: PositionCardProps) {
               )}
 
               {/* Suggested behavior */}
-              {guidanceQuery.data.suggestedBehavior && (
+              {availableGuidance.suggestedBehavior && (
                 <div style={{ display: "flex", gap: "8px", padding: "8px 10px", background: "rgba(255,255,255,0.03)", borderRadius: "4px", border: "1px solid rgba(255,255,255,0.06)" }}>
                   <Zap size={12} style={{ color: "#FF9500", flexShrink: 0, marginTop: "1px" }} />
                   <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#94A3B8", lineHeight: 1.5 }}>
-                    {guidanceQuery.data.suggestedBehavior}
+                    {availableGuidance.suggestedBehavior}
                   </span>
                 </div>
               )}
@@ -650,12 +658,17 @@ function PositionCard({ position: p, onEdit, onDelete }: PositionCardProps) {
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#00D4FF" }}>→</span>
               </Link>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151", letterSpacing: "0.08em" }}>
-                NOT FINANCIAL ADVICE — FAULTLINE AI GUIDANCE IS FOR INFORMATIONAL PURPOSES ONLY
+                NOT FINANCIAL ADVICE — DERIVED MARKET CONTEXT IS FOR INFORMATIONAL PURPOSES ONLY
               </div>
+            </div>
+          ) : guidanceQuery.data?.status === "UNAVAILABLE" ? (
+            <div style={{ color: "#94A3B8", fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", lineHeight: 1.5 }}>
+              <strong style={{ color: "#FF9500" }}>GUIDANCE UNAVAILABLE</strong><br />
+              {guidanceQuery.data.reason}
             </div>
           ) : (
             <div style={{ color: "#FF2D55", fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px" }}>
-              Failed to load AI guidance
+              Failed to load market-context guidance
             </div>
           )}
         </div>

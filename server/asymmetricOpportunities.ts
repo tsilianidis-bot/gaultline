@@ -20,7 +20,12 @@
 // ============================================================
 
 import { invokeLLM } from "./_core/llm";
-import { calculateFaultlinePressure } from "./pressure/engine";
+import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import { toOperationalPressure } from "./operationalSignalInputs";
+import { getAsymmetricScreenerCandidates, getQuotes, getDailyBars, classifyYahooObservation } from "./yahooProxy";
+import { completedSignalBars } from "./signalVisualDetail";
+import { TRPCError } from "@trpc/server";
+import { evidenceNarrativePromptContract } from "../shared/evidenceContract";
 import { LRUCache } from "./lruCache";
 import { log } from "./logger";
 import { captureError } from "./errorTracking";
@@ -68,6 +73,17 @@ export interface AsymmetricOpportunity {
   source: "yahoo-screener";
   fetchedAt: number;
   aiEnriched: boolean;
+  canonicalStateId: string;
+  canonicalAsOf: string;
+  evidenceQuality: string;
+  observedAt: number;
+  priceSource: string;
+  sourceInputIds: string[];
+  methodologyVersion: "asymmetric-observed-rules-v2";
+  evidenceClass: "DERIVED";
+  interpretationStatus?: "MODEL_INTERPRETATION" | "UNAVAILABLE";
+  observationTiming: string;
+  rangeBasis: "completed-3mo-observations";
 }
 
 // ── Cache ─────────────────────────────────────────────────────
@@ -232,13 +248,16 @@ async function enrichWithLLM(
   opportunity: Omit<AsymmetricOpportunity, "catalyst" | "riskFactors" | "entryThesis" | "whyAsymmetric" | "invalidation" | "aiEnriched">,
   regime: string,
   pressureIndex: number,
-): Promise<Pick<AsymmetricOpportunity, "catalyst" | "riskFactors" | "entryThesis" | "whyAsymmetric" | "invalidation">> {
+): Promise<Pick<AsymmetricOpportunity, "catalyst" | "riskFactors" | "entryThesis" | "whyAsymmetric" | "invalidation" | "aiEnriched" | "interpretationStatus">> {
   try {
-    const prompt = `You are FAULTLINE's Asymmetric Opportunity Analyst. Analyze this stock setup and provide concise, actionable intelligence.
+    const prompt = `You are FAULTLINE's Asymmetric Opportunity Analyst. Interpret only supplied observations and explicitly identified deterministic rule estimates.
+${evidenceNarrativePromptContract()}
+Canonical state: ${opportunity.canonicalStateId}; source observations: ${opportunity.sourceInputIds.join(", ")}; methodology: ${opportunity.methodologyVersion}.
+No company news, earnings, analyst, insider, institutional-flow, or catalyst source is provided. Leave catalyst empty. Range basis is completed three-month bars, not a 52-week support observation. Targets/stops and conviction are rule estimates, not observed facts or calibrated forecasts.
 
 Stock: ${opportunity.ticker} (${opportunity.name})
 Sector: ${opportunity.sector ?? "Unknown"}
-Price: $${opportunity.price.toFixed(2)} (${opportunity.changePercent >= 0 ? "+" : ""}${opportunity.changePercent.toFixed(2)}% today)
+Price: $${opportunity.price.toFixed(2)} (${opportunity.changePercent >= 0 ? "+" : ""}${opportunity.changePercent.toFixed(2)}% at provider observation ${new Date(opportunity.observedAt).toISOString()})
 Market Cap: ${opportunity.marketCap ? `$${(opportunity.marketCap / 1e9).toFixed(1)}B` : "Unknown"}
 Volume: ${opportunity.volume.toLocaleString()} shares
 Setup Type: ${opportunity.setupType}
@@ -292,22 +311,13 @@ Provide a JSON response with these exact fields:
     const content = typeof rawContent === "string" ? rawContent : null;
     if (!content) throw new Error("Empty LLM response");
     const parsed = JSON.parse(content);
-    return {
-      catalyst:      parsed.catalyst      ?? "Momentum setup with volume confirmation",
-      riskFactors:   Array.isArray(parsed.riskFactors) ? parsed.riskFactors.slice(0, 3) : ["Market risk", "Sector rotation", "Macro headwinds"],
-      entryThesis:   parsed.entryThesis   ?? "Technical setup shows favorable risk/reward.",
-      whyAsymmetric: parsed.whyAsymmetric ?? "Limited downside near support with significant upside potential.",
-      invalidation:  parsed.invalidation  ?? "Break below key support level.",
-    };
+    if (![parsed.entryThesis, parsed.whyAsymmetric, parsed.invalidation].every(value => typeof value === "string") || !Array.isArray(parsed.riskFactors)) throw new Error("Invalid model interpretation");
+    return { catalyst: "", riskFactors: parsed.riskFactors.filter((value: unknown) => typeof value === "string").slice(0, 3),
+      entryThesis: parsed.entryThesis, whyAsymmetric: parsed.whyAsymmetric, invalidation: parsed.invalidation,
+      aiEnriched: true, interpretationStatus: "MODEL_INTERPRETATION" };
   } catch (err: any) {
-    log.warn(`[Asymmetric] LLM enrichment failed for ${opportunity.ticker}: ${err?.message}`);
-    return {
-      catalyst:      "Momentum and volume setup detected",
-      riskFactors:   ["Market volatility", "Sector headwinds", "Macro uncertainty"],
-      entryThesis:   `${opportunity.ticker} shows a ${opportunity.setupType} pattern with ${opportunity.asymmetryRatio}:1 risk/reward. The setup offers limited downside near support with meaningful upside potential.`,
-      whyAsymmetric: `Estimated ${opportunity.upsidePct.toFixed(0)}% upside vs ${opportunity.downsidePct.toFixed(0)}% downside risk creates a favorable asymmetric profile.`,
-      invalidation:  `Close below $${opportunity.downsideRisk.toFixed(2)} invalidates the setup.`,
-    };
+    log.warn(`[Asymmetric] Model interpretation unavailable for ${opportunity.ticker}: ${err?.message}`);
+    return { catalyst: "", riskFactors: [], entryThesis: "", whyAsymmetric: "", invalidation: "", aiEnriched: false, interpretationStatus: "UNAVAILABLE" };
   }
 }
 
@@ -318,140 +328,63 @@ Provide a JSON response with these exact fields:
  * Returns top N opportunities sorted by composite score descending.
  */
 export async function getAsymmetricOpportunities(limit = 20): Promise<AsymmetricOpportunity[]> {
-  const cacheKey = `asym_${limit}`;
+  const canonical = await getAuthoritativeCanonicalIntelligenceState();
+  const pressure = toOperationalPressure(canonical);
+  const pressureIndex = pressure.overallPressure;
+  const regime = pressure.regime;
+  const cacheKey = `asym_${limit}_${canonical!.stateId}`;
   const cached = asymCache.get(cacheKey);
   if (cached) return cached;
-
-  // 1. Get macro context
-  let pressureIndex = 50;
-  let regime = "Uncertain";
-  try {
-    const pressure = await calculateFaultlinePressure();
-    pressureIndex = pressure.overallPressure;
-    regime = pressure.regime;
-  } catch {
-    log.warn("[Asymmetric] Pressure engine unavailable, using defaults");
-  }
-
-  // 2. Fetch candidate pools from Yahoo Finance
-  const candidateMap = new Map<string, any>();
-
-  async function fetchScreener(scrId: string, referer: string): Promise<any[]> {
-    try {
-      const url = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=${scrId}&count=50&start=0`;
-      const res = await fetch(url, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Accept": "application/json",
-          "Accept-Language": "en-US,en;q=0.9",
-          "Referer": referer,
-        },
-        signal: AbortSignal.timeout(10_000),
-      });
-      if (!res.ok) return [];
-      const json = await res.json() as any;
-      return json?.finance?.result?.[0]?.quotes ?? [];
-    } catch {
-      return [];
-    }
-  }
-
-  // Fetch from multiple screeners in parallel
-  const [gainers, smallCapGainers, mostActives] = await Promise.all([
-    fetchScreener("day_gainers", "https://finance.yahoo.com/gainers/"),
-    fetchScreener("small_cap_gainers", "https://finance.yahoo.com/screener/"),
-    fetchScreener("most_actives", "https://finance.yahoo.com/most-active/"),
-  ]);
-
-  // Merge all candidates, deduplicate by ticker
-  for (const q of [...gainers, ...smallCapGainers, ...mostActives]) {
-    if (q.symbol && !candidateMap.has(q.symbol)) {
-      candidateMap.set(q.symbol, q);
-    }
-  }
-
-  log.info(`[Asymmetric] Candidate pool: ${candidateMap.size} stocks`);
-
-  if (candidateMap.size === 0) {
-    log.warn("[Asymmetric] No candidates found from screeners");
-    return [];
-  }
-
-  // 3. Score each candidate
-  const macroFitBase = scoreMacroFit(pressureIndex, regime);
+  const pool = await getAsymmetricScreenerCandidates();
+  if (pool.status === "UNAVAILABLE") throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Asymmetric Opportunities: Yahoo candidate discovery is unavailable." });
+  const quotes = await getQuotes(pool.candidates.map(candidate => candidate.ticker));
+  const byTicker = new Map(quotes.map(quote => [quote.ticker.toUpperCase(), quote]));
+  const macroFit = scoreMacroFit(pressureIndex, regime);
   const scored: Array<Omit<AsymmetricOpportunity, "catalyst" | "riskFactors" | "entryThesis" | "whyAsymmetric" | "invalidation" | "aiEnriched">> = [];
-
-  for (const [, q] of Array.from(candidateMap)) {
-    try {
-      const price         = q.regularMarketPrice ?? 0;
-      const changePercent = q.regularMarketChangePercent ?? 0;
-      const volume        = q.regularMarketVolume ?? 0;
-      const avgVolume     = q.averageDailyVolume3Month ?? null;
-      const marketCap     = q.marketCap ?? null;
-      const high52w       = q.fiftyTwoWeekHigh ?? null;
-      const low52w        = q.fiftyTwoWeekLow  ?? null;
-      const high          = q.regularMarketDayHigh ?? price;
-      const low           = q.regularMarketDayLow  ?? price;
-      const open          = q.regularMarketOpen    ?? price;
-
-      if (price <= 0) continue;
-
-      const intradayRangePct = open > 0 ? ((high - low) / open) * 100 : 0;
-
-      const momentumScore     = scoreMomentum(changePercent);
-      const supportProximity  = scoreSupportProximity(price, low52w, high52w);
-      const volumeSurge       = scoreVolumeSurge(volume, avgVolume);
-      const marketCapScore    = scoreMarketCap(marketCap);
-      const volatilityScore   = scoreVolatility(intradayRangePct);
-      const macroFit          = clamp(macroFitBase + (Math.random() * 10 - 5)); // slight variation per stock
-
-      // Weighted composite
-      const compositeScore = clamp(
-        momentumScore    * 0.25 +
-        supportProximity * 0.20 +
-        volumeSurge      * 0.15 +
-        marketCapScore   * 0.15 +
-        volatilityScore  * 0.10 +
-        macroFit         * 0.15
-      );
-
-      const setupType = classifySetup(momentumScore, supportProximity, volumeSurge, marketCapScore, changePercent);
-      const { upsideTarget, downsideRisk, upsidePct, downsidePct, asymmetryRatio } = computeAsymmetry(price, high52w, low52w, changePercent, setupType);
-      const conviction = determineConviction(compositeScore, asymmetryRatio);
-
-      // Filter: only include stocks with meaningful asymmetry
-      if (asymmetryRatio < 1.5 || compositeScore < 40) continue;
-
-      scored.push({
-        ticker:          q.symbol,
-        name:            q.shortName ?? q.longName ?? q.symbol,
-        sector:          q.sector ?? null,
-        price,
-        changePercent,
-        volume,
-        marketCap,
-        asymmetryRatio,
-        upsideTarget,
-        downsideRisk,
-        upsidePct,
-        downsidePct,
-        momentumScore,
-        supportProximity,
-        volumeSurge,
-        macroFit,
-        compositeScore,
-        conviction,
-        setupType,
-        source: "yahoo-screener",
-        fetchedAt: Date.now(),
-      });
-    } catch {
-      // Skip malformed entries
+  let verifiedCount = 0;
+  // Bound provider work without turning failures into invented score inputs.
+  for (let start = 0; start < pool.candidates.length; start += 5) {
+    const batch = pool.candidates.slice(start, start + 5);
+    const observations = await Promise.all(batch.map(async candidate => ({ candidate, bars: completedSignalBars(await getDailyBars(candidate.ticker, "3mo")) })));
+    for (const { candidate, bars } of observations) {
+      const quote = byTicker.get(candidate.ticker);
+      const timing = classifyYahooObservation(quote);
+      if (!quote || quote.source === "error" || !["live", "delayed", "completed_session"].includes(timing.timing) ||
+          ![quote.price, quote.changePercent, quote.volume, quote.open, quote.high, quote.low, quote.observedAt].every(value => typeof value === "number" && Number.isFinite(value)) || bars.length < 21) continue;
+      const price = quote.price as number, changePercent = quote.changePercent as number, volume = quote.volume as number;
+      const high = quote.high as number, low = quote.low as number, open = quote.open as number;
+      if (price <= 0 || open <= 0 || volume < 0 || high < low) continue;
+      const avgVolume = bars.slice(-21, -1).reduce((sum, bar) => sum + bar.volume, 0) / 20;
+      const rangeHigh = Math.max(...bars.map(bar => bar.high));
+      const rangeLow = Math.min(...bars.map(bar => bar.low));
+      if (avgVolume <= 0 || rangeHigh <= rangeLow || rangeLow <= 0) continue;
+      verifiedCount++;
+      const marketCap = candidate.observedAt !== null && candidate.marketCap !== null && candidate.marketCap > 0 ? candidate.marketCap : null;
+      const momentumScore = scoreMomentum(changePercent);
+      const supportProximity = scoreSupportProximity(price, rangeLow, rangeHigh);
+      const volumeSurge = scoreVolumeSurge(volume, avgVolume);
+      const marketCapScore = marketCap === null ? null : scoreMarketCap(marketCap);
+      const volatilityScore = scoreVolatility(((high - low) / open) * 100);
+      // Original dimension weights retained; absent market cap is omitted and
+      // available weights renormalized, never replaced with neutral 50.
+      const scoreNumerator = momentumScore * .25 + supportProximity * .20 + volumeSurge * .15 + volatilityScore * .10 + macroFit * .15 + (marketCapScore === null ? 0 : marketCapScore * .15);
+      const compositeScore = clamp(scoreNumerator / (marketCapScore === null ? .85 : 1));
+      const setupType = classifySetup(momentumScore, supportProximity, volumeSurge, marketCapScore ?? -1, changePercent);
+      const estimates = computeAsymmetry(price, rangeHigh, rangeLow, changePercent, setupType);
+      if (estimates.asymmetryRatio < 1.5 || compositeScore < 40) continue;
+      scored.push({ ticker: candidate.ticker, name: candidate.name, sector: candidate.sector, price, changePercent, volume, marketCap,
+        ...estimates, momentumScore, supportProximity, volumeSurge, macroFit, compositeScore,
+        conviction: determineConviction(compositeScore, estimates.asymmetryRatio), setupType, source: "yahoo-screener", fetchedAt: quote.fetchedAt,
+        canonicalStateId: canonical!.stateId, canonicalAsOf: canonical!.effectiveAt, evidenceQuality: canonical!.confidenceOrEvidenceQuality,
+        observedAt: quote.observedAt as number, priceSource: quote.source,
+        sourceInputIds: [candidate.sourceIdentifier, `yahoo:quote:${candidate.ticker}:${quote.observedAt}`, `yahoo:completed-bars:${candidate.ticker}:${bars.at(-1)!.timestamp}`, canonical!.inputSnapshotId],
+        methodologyVersion: "asymmetric-observed-rules-v2", evidenceClass: "DERIVED", observationTiming: timing.timing, rangeBasis: "completed-3mo-observations" });
     }
   }
+  if (pool.candidates.length > 0 && verifiedCount === 0) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Asymmetric Opportunities: timestamped quotes and sufficient completed volume observations unavailable." });
 
   // Sort by composite score descending, take top N
-  scored.sort((a, b) => b.compositeScore - a.compositeScore);
+  scored.sort((a, b) => b.compositeScore - a.compositeScore || a.ticker.localeCompare(b.ticker));
   const topCandidates = scored.slice(0, Math.min(limit, scored.length));
 
   if (topCandidates.length === 0) {
@@ -468,7 +401,7 @@ export async function getAsymmetricOpportunities(limit = 20): Promise<Asymmetric
     const batchResults = await Promise.all(
       batch.map(async (opp) => {
         const llm = await enrichWithLLM(opp, regime, pressureIndex);
-        return { ...opp, ...llm, aiEnriched: true } as AsymmetricOpportunity;
+        return { ...opp, ...llm } as AsymmetricOpportunity;
       })
     );
     enriched.push(...batchResults);

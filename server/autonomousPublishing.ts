@@ -517,12 +517,13 @@ async function runPublishingPipeline(
     : null;
 
   if (dailySnapshot) {
+    if (dailySnapshot.sourceInputs[0]?.asOf == null) return { ok: true, status: "draft", reason: "snapshot-validation-failed:critical-pressure-source-unavailable" };
     await db.insert(dailyBriefSnapshots).values({
       snapshotId: dailySnapshot.briefSnapshotId,
       briefDateEt: dailySnapshot.briefDateEt,
       tradingDate: dailySnapshot.tradingDate,
       generatedAt: new Date(dailySnapshot.generatedAt),
-      engineComputedAt: dailySnapshot.canonicalSource === "pressure_engine" ? new Date(dailySnapshot.generatedAt) : null,
+      engineComputedAt: dailySnapshot.canonicalSource === "pressure_engine" && dailySnapshot.sourceInputs[0]?.asOf != null ? new Date(dailySnapshot.sourceInputs[0].asOf) : null,
       seismographComputedAt: dailySnapshot.canonicalSource === "seismograph" ? new Date(seismographOutput!.computedAt) : null,
       status: dailySnapshot.validation.passed ? "generating" : "blocked",
       promptVersion: DAILY_BRIEF_PROMPT_VERSION,
@@ -680,7 +681,7 @@ CRITICAL: Base all analysis on the provided data. Do not invent statistics. Mini
     qualityScore: validation.score,
     wordCount,
     rejectionReason: validation.reason ?? null,
-    pressureScore: dailySnapshot ? Math.round(dailySnapshot.pressureIndex) : engineData.pressureScore,
+    pressureScore: dailySnapshot ? Math.round(dailySnapshot.pressureIndex!) : engineData.pressureScore,
     regime: dailySnapshot?.regime ?? engineData.regime,
     briefSnapshotId: dailySnapshot?.briefSnapshotId ?? null,
     publishedAt: shouldPublish ? now : null,

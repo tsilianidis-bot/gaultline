@@ -31,11 +31,30 @@ const fixtureDir = join(__dirname, "__fixtures__", "prod-2026-10-01");
 const prodCanonical = JSON.parse(readFileSync(join(fixtureDir, "canonical-current.json"), "utf8"));
 const prodMarketState = JSON.parse(readFileSync(join(fixtureDir, "market-state-current.json"), "utf8"));
 
+/**
+ * These recorded values are a deterministic test fixture, not a live-provider
+ * response.  Keep the explicit marker beside every derived fixture so neither
+ * this test nor a future reader can treat the 2026-10-01 snapshot as current
+ * operational market evidence.
+ */
+const MOCK_SOURCE_METADATA = Object.freeze({
+  sourceType: "MOCK" as const,
+  fixtureId: "probability-contract-regression-2026-10-01",
+  recordedAt: "2026-10-01T18:00:34.034Z",
+  providerObservations: [
+    { provider: "FRED", observationId: "ten_year_treasury_yield", observedAt: "2026-10-01T18:00:32.884Z" },
+    { provider: "FRED", observationId: "unemployment_rate", observedAt: "2026-10-01T18:00:32.884Z" },
+  ],
+});
 
-/** A stored-manifest shape built from the 2026-10-01 production canonical state. */
+
+/** A mock stored-manifest shape recorded from the 2026-10-01 canonical state. */
 function prodManifest(overrides: Record<string, unknown> = {}) {
   return {
+    fixtureSource: MOCK_SOURCE_METADATA,
     stateId: prodCanonical.stateId,
+    stateHash: prodCanonical.stateHash,
+    inputSnapshotId: prodCanonical.inputSnapshotId,
     generatedAt: prodCanonical.generatedAt,
     modelVersion: prodCanonical.modelVersion,
     scenarioOutputs: prodCanonical.scenarioOutputs,
@@ -151,8 +170,12 @@ describe("MarketState overlay and client projections", () => {
 
   it("assembleCanonicalMarketState sets NaN for withheld numbers and carries the contract", () => {
     const src = {
+      fixtureSource: MOCK_SOURCE_METADATA,
+      canonicalStateId: prodCanonical.stateId,
+      stateHash: prodCanonical.stateHash,
+      inputSnapshotId: prodCanonical.inputSnapshotId,
       currentScore: 30, currentRegime: "Moderate Risk", currentStressLevel: "Elevated", currentDirection: "Stable", currentPercentile: 50,
-      dataFreshness: "live", lastUpdated: "2026-10-01T18:00:00.000Z", providerProvenance: { fred: { status: "live", detail: "FRED", asOf: Date.parse("2026-10-01T18:00:00.000Z") } }, todayStory: "s", keyDevelopments: [],
+      dataFreshness: "live", lastUpdated: "2026-10-01T18:00:00.000Z", providerProvenance: { fred: { status: "live", detail: "MOCK fixture of recorded FRED observation", asOf: Date.parse(MOCK_SOURCE_METADATA.providerObservations[0].observedAt) } }, todayStory: "s", keyDevelopments: [],
       whyThisScore: "w", whyThisRegime: "r",
       probabilities: { bull: 64, neutral: 21, bear: 15, confidence: 50, primaryDriver: "p", evidenceBasis: "e", historicalBasis: "h" },
       evidenceFamilies: [], evidenceConsensus: "weak", topAnalog: null, analogSummary: "a",
@@ -170,6 +193,7 @@ describe("MarketState overlay and client projections", () => {
     expect(Object.values(state.outlook.regimeProbabilities).every(Number.isNaN)).toBe(true);
     expect(state.outlook.transitionProbabilities.transitionToCrisis).toBeNaN();
     expect(state.outlook.probabilityContract?.stateId).toBe(prodCanonical.stateId);
+    expect(state.outlook.probabilityContract?.scenarioSet.scenarios.map(claim => claim.value)).toEqual([null, null, null]);
     expect(state.outlook.highestProbabilityPath).not.toMatch(/\d+%/);
     expect(state.act.marketPosture).toBe("balanced");
     // No contract (canonical state unavailable) withholds every number too.
@@ -185,9 +209,19 @@ describe("MarketState overlay and client projections", () => {
   });
 
   it("merge + browser projection carry contract text, never numbers or the 5300% defect", () => {
-    const legacy = { ...prodMarketState, outlook: { ...prodMarketState.outlook, probabilityContract: null } };
-    const canonical = { ...prodCanonical, probabilityContract: contract };
+    const legacy = {
+      ...prodMarketState,
+      canonicalStateId: prodCanonical.stateId,
+      stateHash: prodCanonical.stateHash,
+      inputSnapshotId: prodCanonical.inputSnapshotId,
+      outlook: { ...prodMarketState.outlook, probabilityContract: null },
+    };
+    const canonical = { ...prodCanonical, fixtureSource: MOCK_SOURCE_METADATA, probabilityContract: contract };
     const merged = mergeCanonicalMarketState(canonical, legacy)!;
+    expect(merged.canonicalStateId).toBe(canonical.stateId);
+    expect(merged.stateHash).toBe(canonical.stateHash);
+    expect(merged.inputSnapshotId).toBe(canonical.inputSnapshotId);
+    expect(merged.outlook.probabilityContract?.stateId).toBe(canonical.stateId);
     expect(merged.outlook.probabilities.bull).toBeNaN();
     expect(Object.values(merged.outlook.regimeProbabilities).every(Number.isNaN)).toBe(true);
     expect(merged.outlook.transitionProbabilities.transitionToCrisis).toBeNaN();
@@ -206,6 +240,12 @@ describe("MarketState overlay and client projections", () => {
     const sim = selectBrowserMarketOutput({ marketState: merged, baselineIndicators: DEFAULT_INDICATORS, simulationOverrides: { vix: 40 } as never });
     expect(engineProbabilityText(sim.output, "bullProbability")).toBe("Uncalibrated");
     expect(engineProbabilityText(sim.output, "crashProbability")).toBe("Not offered");
+
+    // The browser must fail closed rather than blend facts from a different
+    // immutable snapshot into the current canonical state.
+    expect(mergeCanonicalMarketState(canonical, { ...legacy, canonicalStateId: "state:other" })).toBeNull();
+    expect(mergeCanonicalMarketState(canonical, { ...legacy, stateHash: "hash:other" })).toBeNull();
+    expect(mergeCanonicalMarketState(canonical, { ...legacy, inputSnapshotId: "input:other" })).toBeNull();
   });
 });
 

@@ -145,8 +145,25 @@ function AftershockSnapshot() {
             <div key={i} className="h-12 rounded-xl animate-pulse mb-2" style={{ background: "rgba(255,255,255,0.14)" }} />
           ))}
         </div>
+      ) : data?.availability === "UNAVAILABLE" || !data?.canonicalStateId ? (
+        <div className="px-3 pb-3">
+          <div className="rounded-xl px-3 py-3 text-center" style={{ background: "rgba(245,158,11,0.05)", border: "1px solid rgba(245,158,11,0.25)" }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "#F59E0B", letterSpacing: "0.12em" }}>
+              OBSERVATIONS UNAVAILABLE
+            </div>
+            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 10, color: "rgba(148,163,184,0.75)", marginTop: 6, lineHeight: 1.4 }}>
+              {data?.reason ?? "No canonical-bound, source-backed market observation is available."}
+            </div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: "rgba(100,116,139,0.65)", marginTop: 7 }}>
+              {data?.evidenceStatus ?? "UNAVAILABLE"} · not a no-rupture finding
+            </div>
+          </div>
+        </div>
       ) : data ? (
         <div className="px-3 pb-3 flex flex-col gap-1.5">
+          <div className="px-1 pb-1" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, color: "rgba(100,116,139,0.65)", letterSpacing: "0.08em" }}>
+            {data.source ?? "SOURCE UNAVAILABLE"} · {data.evidenceStatus} · OBSERVED {data.observedAt ? new Date(data.observedAt).toLocaleDateString() : "—"}
+          </div>
           {/* Overall risk */}
           <div
             className="flex items-center justify-between rounded-xl px-3 py-2.5"
@@ -195,7 +212,7 @@ function AftershockSnapshot() {
 
           {(!data.activeRuptures || data.activeRuptures.length === 0) && (
             <div className="rounded-xl px-3 py-2 text-center" style={{ background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.12)" }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "rgba(0,255,136,0.7)" }}>NO ACTIVE RUPTURES DETECTED</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "rgba(0,255,136,0.7)" }}>NO OBSERVED RUPTURES MET THRESHOLDS</span>
             </div>
           )}
         </div>

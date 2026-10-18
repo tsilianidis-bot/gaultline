@@ -120,13 +120,18 @@ interface TickerNewsArticle {
 
 interface SourceSentiment {
   source: string;
+  provider: string;
+  classification: "OBSERVED" | "PROVIDER_MODEL" | "DERIVED_HEURISTIC" | "UNAVAILABLE";
   available: boolean;
+  contributesToComposite: boolean;
   bullishPct: number;
   bearishPct: number;
   neutralPct: number;
   volume: number;
   weight: number;
+  observedAt: string | null;
   note?: string;
+  methodology?: string;
 }
 
 interface SentimentTrend {
@@ -151,28 +156,29 @@ interface RedditPost {
 interface MultiSourceSocialData {
   symbol: string;
   assetType: "stock" | "crypto";
-  socialIntelligenceScore: number;
-  overallSentiment: SentimentLabel;
-  overallSentimentScore: number;
-  overallBullishPct: number;
-  overallBearishPct: number;
+  socialIntelligenceScore: number | null;
+  overallSentiment: SentimentLabel | null;
+  overallSentimentScore: number | null;
+  overallBullishPct: number | null;
+  overallBearishPct: number | null;
   sources: SourceSentiment[];
   socialVolume: number;
-  socialMomentum: "rising" | "falling" | "stable";
-  discussionVelocity: string;
+  socialMomentum: "rising" | "falling" | "stable" | null;
+  discussionVelocity: string | null;
   sentimentTrends: SentimentTrend[];
   topBullishArguments: string[];
   topBearishArguments: string[];
   keyTopics: string[];
   influencerMentions: string[];
-  retailInterestScore: number;
-  crowdConvictionScore: number;
-  contrarianSignalScore: number;
-  memeHypeDetected: boolean;
-  memeHypeDescription: string;
+  retailInterestScore: number | null;
+  crowdConvictionScore: number | null;
+  contrarianSignalScore: number | null;
+  memeHypeDetected: boolean | null;
+  memeHypeDescription: string | null;
   socialRiskWarnings: string[];
-  bullCaseSummary: string;
-  bearCaseSummary: string;
+  bullCaseSummary: string | null;
+  bearCaseSummary: string | null;
+  synthesisStatus: "MODEL_GENERATED" | "UNAVAILABLE";
   stocktwits: StockTwitsData | null;
   news: TickerNewsArticle[];
   redditPosts: RedditPost[];
@@ -631,16 +637,16 @@ function ScoreGauge({ score, label, color }: { score: number; label: string; col
 
 // ── Source Attribution Row ────────────────────────────────────
 function SourceRow({ src }: { src: SourceSentiment }) {
-  const totalPct = src.bullishPct + src.bearishPct + src.neutralPct;
-  const bPct = totalPct > 0 ? Math.round((src.bullishPct / totalPct) * 100) : 0;
-  const rPct = totalPct > 0 ? Math.round((src.bearishPct / totalPct) * 100) : 0;
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 10, padding: "8px 0",
       borderBottom: "1px solid rgba(255,255,255,0.04)",
     }}>
-      <div style={{ minWidth: 110, fontSize: 12, fontWeight: 600, color: src.available ? "var(--fl-text-primary)" : "var(--fl-text-muted)" }}>
-        {src.source}
+      <div style={{ minWidth: 145, fontSize: 12, fontWeight: 600, color: src.available ? "var(--fl-text-primary)" : "var(--fl-text-muted)" }}>
+        <div>{src.source}</div>
+        <div style={{ marginTop: 2, fontSize: 9, fontWeight: 500, color: "var(--fl-text-dim)", letterSpacing: "0.04em" }}>
+          {src.provider} · {src.classification.replace("_", " ")}
+        </div>
       </div>
       {src.available ? (
         <>
@@ -666,6 +672,15 @@ function SourceRow({ src }: { src: SourceSentiment }) {
       ) : (
         <div style={{ flex: 1, fontSize: 11, color: "var(--fl-text-dim)", fontStyle: "italic" }}>
           {src.note ?? "Source unavailable"}
+          {src.volume > 0 && ` ${src.volume} observed item${src.volume === 1 ? "" : "s"}; no sentiment bar.`}
+        </div>
+      )}
+      <div style={{ minWidth: 126, fontSize: 9, color: "var(--fl-text-dim)", textAlign: "right" }}>
+        {src.observedAt ? `Latest source time: ${timeAgo(src.observedAt)}` : "Source time unavailable"}
+      </div>
+      {src.methodology && (
+        <div style={{ flexBasis: "100%", marginLeft: 155, marginTop: -3, fontSize: 9, color: "var(--fl-text-dim)", lineHeight: 1.4 }}>
+          {src.methodology}
         </div>
       )}
     </div>
@@ -812,11 +827,20 @@ function TickerSearchPanel() {
             </div>
             <div style={{ flex: 1 }} />
             <div style={{ textAlign: "right" }}>
-              <div style={{
-                fontSize: 14, fontWeight: 700,
-                color: sentimentColor(data.overallSentiment),
-              }}>{data.overallSentiment}</div>
-              <div style={{ fontSize: 11, color: "var(--fl-text-muted)" }}>Overall Sentiment</div>
+              {data.overallSentiment ? (
+                <>
+                  <div style={{
+                    fontSize: 14, fontWeight: 700,
+                    color: sentimentColor(data.overallSentiment),
+                  }}>{data.overallSentiment}</div>
+                  <div style={{ fontSize: 11, color: "var(--fl-text-muted)" }}>Derived Overall Sentiment</div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--fl-text-muted)" }}>Unavailable</div>
+                  <div style={{ fontSize: 11, color: "var(--fl-text-muted)" }}>No contributing source sentiment</div>
+                </>
+              )}
             </div>
             {st && (
               <div style={{ textAlign: "right" }}>
@@ -844,33 +868,60 @@ function TickerSearchPanel() {
             padding: "14px 18px",
             background: "var(--fl-surface)", border: "1px solid var(--fl-border)", borderRadius: 8,
           }}>
-            <ScoreGauge score={data.socialIntelligenceScore} label="SOCIAL SCORE" color="#00D4FF" />
-            <ScoreGauge score={data.retailInterestScore} label="RETAIL INTEREST" color="#FF9500" />
-            <ScoreGauge score={data.crowdConvictionScore} label="CROWD CONVICTION" color="#00FF88" />
-            <ScoreGauge score={data.contrarianSignalScore} label="CONTRARIAN SIGNAL" color="#FF2D55" />
+            {data.socialIntelligenceScore !== null ? (
+              <ScoreGauge score={data.socialIntelligenceScore} label="DERIVED SOCIAL SCORE" color="#00D4FF" />
+            ) : (
+              <div style={{ minWidth: 160, display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--fl-text-muted)" }}>Unavailable</span>
+                <span style={{ fontSize: 10, color: "var(--fl-text-dim)" }}>No source-backed composite</span>
+              </div>
+            )}
+            {data.synthesisStatus === "MODEL_GENERATED" ? (
+              <>
+                <div style={{ flexBasis: "100%", fontSize: 10, color: "var(--fl-text-dim)", letterSpacing: "0.05em" }}>
+                  MODEL INTERPRETATION — generated from the listed source observations; not an observed provider measurement.
+                </div>
+                {data.retailInterestScore !== null && <ScoreGauge score={data.retailInterestScore} label="MODEL: RETAIL INTEREST" color="#FF9500" />}
+                {data.crowdConvictionScore !== null && <ScoreGauge score={data.crowdConvictionScore} label="MODEL: CROWD CONVICTION" color="#00FF88" />}
+                {data.contrarianSignalScore !== null && <ScoreGauge score={data.contrarianSignalScore} label="MODEL: CONTRARIAN SIGNAL" color="#FF2D55" />}
+              </>
+            ) : (
+              <div style={{ minWidth: 220, display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--fl-text-muted)" }}>Unavailable — no source-backed synthesis</span>
+                <span style={{ fontSize: 10, color: "var(--fl-text-dim)" }}>Model interpretation scores, velocity, and trends are withheld.</span>
+              </div>
+            )}
             <div style={{ flex: 1, minWidth: 160, display: "flex", flexDirection: "column", justifyContent: "center", gap: 8 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                <span style={{ fontSize: 10, color: "#00FF88", fontWeight: 700 }}>▲ {data.overallBullishPct}% Bull</span>
-                <span style={{ fontSize: 10, color: "#FF2D55", fontWeight: 700 }}>{data.overallBearishPct}% Bear ▼</span>
-              </div>
-              <div style={{ height: 8, borderRadius: 4, background: "rgba(255,45,85,0.3)", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${data.overallBullishPct}%`, background: "#00FF88", borderRadius: 4, transition: "width 0.4s" }} />
-              </div>
+              {data.overallBullishPct !== null && data.overallBearishPct !== null && (
+                <>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                    <span style={{ fontSize: 10, color: "#00FF88", fontWeight: 700 }}>▲ {data.overallBullishPct}% Bull</span>
+                    <span style={{ fontSize: 10, color: "#FF2D55", fontWeight: 700 }}>{data.overallBearishPct}% Bear ▼</span>
+                  </div>
+                  <div style={{ height: 8, borderRadius: 4, background: "rgba(255,45,85,0.3)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${data.overallBullishPct}%`, background: "#00FF88", borderRadius: 4, transition: "width 0.4s" }} />
+                  </div>
+                </>
+              )}
               <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
                 <div>
                   <div style={{ fontSize: 10, color: "var(--fl-text-muted)" }}>VOLUME</div>
                   <div style={{ fontSize: 12, fontFamily: "monospace", color: "var(--fl-text-primary)" }}>{data.socialVolume} signals</div>
                 </div>
-                <div>
-                  <div style={{ fontSize: 10, color: "var(--fl-text-muted)" }}>MOMENTUM</div>
-                  <div style={{ fontSize: 12, fontFamily: "monospace", color: data.socialMomentum === "rising" ? "#00FF88" : data.socialMomentum === "falling" ? "#FF2D55" : "#FF9500" }}>
-                    {data.socialMomentum === "rising" ? "↑ Rising" : data.socialMomentum === "falling" ? "↓ Falling" : "→ Stable"}
+                {data.socialMomentum && (
+                  <div>
+                    <div style={{ fontSize: 10, color: "var(--fl-text-muted)" }}>MODEL MOMENTUM</div>
+                    <div style={{ fontSize: 12, fontFamily: "monospace", color: data.socialMomentum === "rising" ? "#00FF88" : data.socialMomentum === "falling" ? "#FF2D55" : "#FF9500" }}>
+                      {data.socialMomentum === "rising" ? "↑ Rising" : data.socialMomentum === "falling" ? "↓ Falling" : "→ Stable"}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 10, color: "var(--fl-text-muted)" }}>VELOCITY</div>
-                  <div style={{ fontSize: 12, fontFamily: "monospace", color: "var(--fl-text-secondary)" }}>{data.discussionVelocity}</div>
-                </div>
+                )}
+                {data.discussionVelocity && (
+                  <div>
+                    <div style={{ fontSize: 10, color: "var(--fl-text-muted)" }}>MODEL VELOCITY</div>
+                    <div style={{ fontSize: 12, fontFamily: "monospace", color: "var(--fl-text-secondary)" }}>{data.discussionVelocity}</div>
+                  </div>
+                )}
               </div>
               {data.memeHypeDetected && (
                 <div style={{ marginTop: 4, padding: "4px 8px", borderRadius: 4, background: "rgba(255,45,85,0.12)", border: "1px solid rgba(255,45,85,0.3)" }}>
@@ -934,33 +985,39 @@ function TickerSearchPanel() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {/* Sentiment Trends */}
               <div style={{ background: "var(--fl-surface)", border: "1px solid var(--fl-border)", borderRadius: 8, padding: "14px 16px" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--fl-text-muted)", letterSpacing: "0.08em", marginBottom: 12 }}>SENTIMENT TRENDS</div>
-                {data.sentimentTrends.map((t) => (
-                  <div key={t.period} style={{ marginBottom: 10 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ fontSize: 11, color: "var(--fl-text-secondary)", fontFamily: "monospace" }}>{t.period}</span>
-                      <span style={{ fontSize: 11, color: t.direction === "rising" ? "#00FF88" : t.direction === "falling" ? "#FF2D55" : "#FF9500" }}>
-                        {t.direction === "rising" ? "↑ Rising" : t.direction === "falling" ? "↓ Falling" : "→ Stable"}
-                      </span>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--fl-text-muted)", letterSpacing: "0.08em", marginBottom: 12 }}>MODEL INTERPRETATION — SENTIMENT TRENDS</div>
+                {data.sentimentTrends.length > 0 ? data.sentimentTrends.map((t) => (
+                    <div key={t.period} style={{ marginBottom: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                        <span style={{ fontSize: 11, color: "var(--fl-text-secondary)", fontFamily: "monospace" }}>{t.period}</span>
+                        <span style={{ fontSize: 11, color: t.direction === "rising" ? "#00FF88" : t.direction === "falling" ? "#FF2D55" : "#FF9500" }}>
+                          {t.direction === "rising" ? "↑ Rising" : t.direction === "falling" ? "↓ Falling" : "→ Stable"}
+                        </span>
+                      </div>
+                      <div style={{ height: 5, borderRadius: 3, background: "rgba(255,45,85,0.2)", overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${t.bullishPct}%`, background: "#00FF88", borderRadius: 3 }} />
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
+                        <span style={{ fontSize: 10, color: "#00FF88" }}>{t.bullishPct}% bull</span>
+                        <span style={{ fontSize: 10, color: "#FF2D55" }}>{t.bearishPct}% bear</span>
+                      </div>
                     </div>
-                    <div style={{ height: 5, borderRadius: 3, background: "rgba(255,45,85,0.2)", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${t.bullishPct}%`, background: "#00FF88", borderRadius: 3 }} />
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
-                      <span style={{ fontSize: 10, color: "#00FF88" }}>{t.bullishPct}% bull</span>
-                      <span style={{ fontSize: 10, color: "#FF2D55" }}>{t.bearishPct}% bear</span>
-                    </div>
-                  </div>
-                ))}
+                  )) : (
+                    <div style={{ fontSize: 12, color: "var(--fl-text-muted)" }}>Unavailable — no source-backed synthesis</div>
+                  )}
               </div>
               {/* Key Topics */}
               <div style={{ background: "var(--fl-surface)", border: "1px solid var(--fl-border)", borderRadius: 8, padding: "14px 16px" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--fl-text-muted)", letterSpacing: "0.08em", marginBottom: 12 }}>KEY TOPICS</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {data.keyTopics.map((t, i) => (
-                    <span key={i} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 4, background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.15)", color: "#00D4FF" }}>#{t}</span>
-                  ))}
-                </div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--fl-text-muted)", letterSpacing: "0.08em", marginBottom: 12 }}>MODEL INTERPRETATION — KEY TOPICS</div>
+                {data.keyTopics.length > 0 ? (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {data.keyTopics.map((t, i) => (
+                      <span key={i} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 4, background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.15)", color: "#00D4FF" }}>#{t}</span>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 12, color: "var(--fl-text-muted)" }}>Unavailable — no source-backed synthesis</div>
+                )}
                 {data.influencerMentions.length > 0 && (
                   <>
                     <div style={{ fontSize: 11, fontWeight: 700, color: "var(--fl-text-muted)", letterSpacing: "0.08em", marginTop: 14, marginBottom: 8 }}>INFLUENCER MENTIONS</div>
@@ -987,35 +1044,41 @@ function TickerSearchPanel() {
                 <SourceRow key={src.source} src={src} />
               ))}
               <div style={{ marginTop: 12, padding: "8px 10px", borderRadius: 5, background: "rgba(255,255,255,0.03)", fontSize: 10, color: "var(--fl-text-dim)", lineHeight: 1.6 }}>
-                Sources marked "Source unavailable" require paid API credentials (X/Twitter, TikTok, Seeking Alpha, TradingView, Telegram, Discord). The Social Intelligence Score is computed from available sources only.
+                Source labels distinguish observed tags, Polygon.io provider-model classifications, and Reddit-derived heuristics. Weights are StockTwits 35%, Financial News 40%, and Reddit 25%; unavailable or excluded sources are not counted, and the composite is re-normalized across contributors.
               </div>
             </div>
           )}
 
           {/* ── Bull / Bear Arguments Tab ── */}
           {activeSource === "arguments" && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div style={{ background: "rgba(0,255,136,0.05)", border: "1px solid rgba(0,255,136,0.2)", borderRadius: 8, padding: "14px 16px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
-                  <ThumbsUp size={13} color="#00FF88" />
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#00FF88", letterSpacing: "0.08em" }}>BULL CASE</span>
+            data.synthesisStatus === "MODEL_GENERATED" ? (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div style={{ background: "rgba(0,255,136,0.05)", border: "1px solid rgba(0,255,136,0.2)", borderRadius: 8, padding: "14px 16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+                    <ThumbsUp size={13} color="#00FF88" />
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#00FF88", letterSpacing: "0.08em" }}>MODEL INTERPRETATION — BULL CASE</span>
+                  </div>
+                  <p style={{ fontSize: 12, color: "var(--fl-text-secondary)", lineHeight: 1.6, marginBottom: 12 }}>{data.bullCaseSummary}</p>
+                  {data.topBullishArguments.map((arg, i) => (
+                    <div key={i} style={{ fontSize: 11, color: "var(--fl-text-secondary)", marginBottom: 6, paddingLeft: 10, borderLeft: "2px solid rgba(0,255,136,0.3)" }}>{arg}</div>
+                  ))}
                 </div>
-                <p style={{ fontSize: 12, color: "var(--fl-text-secondary)", lineHeight: 1.6, marginBottom: 12 }}>{data.bullCaseSummary}</p>
-                {data.topBullishArguments.map((arg, i) => (
-                  <div key={i} style={{ fontSize: 11, color: "var(--fl-text-secondary)", marginBottom: 6, paddingLeft: 10, borderLeft: "2px solid rgba(0,255,136,0.3)" }}>{arg}</div>
-                ))}
-              </div>
-              <div style={{ background: "rgba(255,45,85,0.05)", border: "1px solid rgba(255,45,85,0.2)", borderRadius: 8, padding: "14px 16px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
-                  <ThumbsDown size={13} color="#FF2D55" />
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#FF2D55", letterSpacing: "0.08em" }}>BEAR CASE</span>
+                <div style={{ background: "rgba(255,45,85,0.05)", border: "1px solid rgba(255,45,85,0.2)", borderRadius: 8, padding: "14px 16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+                    <ThumbsDown size={13} color="#FF2D55" />
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#FF2D55", letterSpacing: "0.08em" }}>MODEL INTERPRETATION — BEAR CASE</span>
+                  </div>
+                  <p style={{ fontSize: 12, color: "var(--fl-text-secondary)", lineHeight: 1.6, marginBottom: 12 }}>{data.bearCaseSummary}</p>
+                  {data.topBearishArguments.map((arg, i) => (
+                    <div key={i} style={{ fontSize: 11, color: "var(--fl-text-secondary)", marginBottom: 6, paddingLeft: 10, borderLeft: "2px solid rgba(255,45,85,0.3)" }}>{arg}</div>
+                  ))}
                 </div>
-                <p style={{ fontSize: 12, color: "var(--fl-text-secondary)", lineHeight: 1.6, marginBottom: 12 }}>{data.bearCaseSummary}</p>
-                {data.topBearishArguments.map((arg, i) => (
-                  <div key={i} style={{ fontSize: 11, color: "var(--fl-text-secondary)", marginBottom: 6, paddingLeft: 10, borderLeft: "2px solid rgba(255,45,85,0.3)" }}>{arg}</div>
-                ))}
               </div>
-            </div>
+            ) : (
+              <div style={{ padding: 20, borderRadius: 8, background: "var(--fl-surface)", border: "1px solid var(--fl-border)", fontSize: 13, color: "var(--fl-text-muted)" }}>
+                Unavailable — no source-backed synthesis. Bull/bear interpretation is withheld rather than inferred from missing model output.
+              </div>
+            )
           )}
 
           {/* ── StockTwits Tab ── */}
@@ -1190,10 +1253,10 @@ function SocialIntelligenceInner() {
                   <TooltipTrigger asChild>
                     <span style={{ fontSize: 10, color: "var(--fl-text-muted)", cursor: "help" }}>
                       <Clock size={10} style={{ display: "inline", marginRight: 3 }} />
-                      {timeAgo(new Date(data.fetchedAt).toISOString())}
+                      received {timeAgo(new Date(data.fetchedAt).toISOString())}
                     </span>
                   </TooltipTrigger>
-                  <TooltipContent>Data refreshes every 5 minutes. Source: {data.dataSource}</TooltipContent>
+                  <TooltipContent>Local receipt time; it is not a provider observation time. Source: {data.dataSource}</TooltipContent>
                 </Tooltip>
               </>
             )}

@@ -50,7 +50,11 @@ export type CanonicalMarketStateSource = Pick<
   | "developingConditions"
   | "marketNarrative"
   | "activePatterns"
-> & Partial<Pick<UnifiedSeismographIntelligence, "macroTicker">>;
+> & Partial<Pick<UnifiedSeismographIntelligence, "macroTicker">> & {
+  canonicalStateId?: string | null;
+  stateHash?: string | null;
+  inputSnapshotId?: string | null;
+};
 
 interface AssembleMarketStateOptions {
   generatedAt: string;
@@ -332,6 +336,9 @@ export function assembleCanonicalMarketState(
 
   return {
     version: "1.0",
+    canonicalStateId: source.canonicalStateId ?? null,
+    stateHash: source.stateHash ?? null,
+    inputSnapshotId: source.inputSnapshotId ?? null,
     generatedAt: options.generatedAt,
     sourceUpdatedAt: source.lastUpdated,
     freshness,
@@ -478,6 +485,9 @@ export function createCanonicalMarketStateReader<T extends CanonicalMarketStateS
     engines: CanonicalEngineDisplayValue[];
     generatedAt: string | null;
     quality: CanonicalQualityStatus;
+    stateId?: string;
+    stateHash?: string;
+    inputSnapshotId?: string;
   } | null>;
   /** Optional provider overlay with its own observation timestamp. Failure is unavailable, never current. */
   loadCryptoOverlay?: () => Promise<CryptoOverlayObservation | null>;
@@ -498,6 +508,10 @@ export function createCanonicalMarketStateReader<T extends CanonicalMarketStateS
       dependencies.loadCanonicalState ? dependencies.loadCanonicalState().catch(() => null) : Promise.resolve(null),
       dependencies.loadCryptoOverlay ? dependencies.loadCryptoOverlay().catch(() => null) : Promise.resolve(null),
     ]);
+    if (dependencies.loadCanonicalState && (!canonical?.stateId || (
+      result.value.canonicalStateId !== canonical.stateId || result.value.stateHash !== canonical.stateHash ||
+      result.value.inputSnapshotId !== canonical.inputSnapshotId
+    ))) throw new Error("Current MarketState withheld: canonical source identity changed or is unavailable.");
     const probabilityContract = dependencies.loadCanonicalState
       ? canonical?.probabilityContract ?? null
       : dependencies.loadProbabilityContract
@@ -530,6 +544,9 @@ export const getCanonicalMarketState = createCanonicalMarketStateReader({
       engines: state.engines.map(engine => ({ engineId: engine.engineId, value: engine.value, direction: engine.direction })),
       generatedAt: state.generatedAt ?? null,
       quality: state.confidenceOrEvidenceQuality,
+      stateId: state.stateId,
+      stateHash: state.stateHash,
+      inputSnapshotId: state.inputSnapshotId,
     };
   },
   loadCryptoOverlay: async () => {

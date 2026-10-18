@@ -105,7 +105,7 @@ export default function TodaysStory() {
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
                 <BookOpen size={14} style={{ color: "#00D4FF" }} />
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(0,212,255,0.5)", letterSpacing: "0.2em" }}>TODAY'S STORY</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)", background: "rgba(255,255,255,0.04)", padding: "1px 5px", borderRadius: "2px" }}>LIVE INTELLIGENCE</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)", background: "rgba(255,255,255,0.04)", padding: "1px 5px", borderRadius: "2px" }}>SOURCE-BOUND INTERPRETATION</span>
               </div>
               <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 900, fontSize: "clamp(18px, 4vw, 26px)", color: "#E2E8F0", letterSpacing: "0.04em", margin: 0, lineHeight: 1.1 }}>
                 {isLoading ? "GENERATING NARRATIVE…" : (data?.headline ?? "MARKET INTELLIGENCE BRIEF")}
@@ -174,8 +174,8 @@ export default function TodaysStory() {
                   <TrendingUp size={10} style={{ color: "#22C55E" }} />
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(34,197,94,0.6)", letterSpacing: "0.14em" }}>TOP OPPORTUNITY</span>
                 </div>
-                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 900, fontSize: "18px", color: "#22C55E", letterSpacing: "0.06em" }}>{data.topOpportunity}</div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.6)", lineHeight: 1.5, marginTop: "3px" }}>{data.topOpportunityReason}</div>
+                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 900, fontSize: "18px", color: "#22C55E", letterSpacing: "0.06em" }}>{data.topOpportunityTicker || "Unavailable"}</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.6)", lineHeight: 1.5, marginTop: "3px" }}>{data.topOpportunityWhyFirst}</div>
               </div>
 
               {/* Risk warning */}
@@ -216,22 +216,14 @@ export default function TodaysStory() {
             <SectionCard
               icon={<Shield size={12} />}
               label="INVALIDATION THESIS"
-              content={data.invalidationThesis ?? (data.invalidationTriggers ? (data.invalidationTriggers as string[]).join(" | ") : "No invalidation data available.")}
+              content={data.invalidationTriggers.length ? data.invalidationTriggers.join(" | ") : "No source-backed ticker invalidation is supplied."}
               accentColor="#FF2D55"
             />
 
-            {/* Historical analog */}
-            {data.topAnalog && (
-              <div style={{ padding: "12px 14px", background: "rgba(167,139,250,0.04)", border: "1px solid rgba(167,139,250,0.15)", borderRadius: "6px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "6px" }}>
-                  <Clock size={10} style={{ color: "#A78BFA" }} />
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(167,139,250,0.6)", letterSpacing: "0.14em" }}>HISTORICAL ANALOG</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(167,139,250,0.4)", marginLeft: "auto" }}>{data.topAnalog.similarity}% SIMILARITY</span>
-                </div>
-                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#A78BFA", letterSpacing: "0.06em", marginBottom: "3px" }}>{data.topAnalog.label}</div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.5)", lineHeight: 1.5 }}>{data.topAnalog.description}</div>
-              </div>
-            )}
+            <div style={{ fontSize: "10px", color: "#94A3B8" }}>
+              MODEL_INTERPRETATION · Evidence {data.evidenceQuality} · Effective {data.dataAsOf}
+              <br />Historical analogs, institutional flows, and changes are withheld unless supplied verified evidence supports them.
+            </div>
 
             {/* CTA strip */}
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "4px" }}>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildAtomicIntelligenceStateManifest, buildGovernedClaims, buildLiveInputQualityManifest } from "./intelligenceGovernance";
+import { buildAtomicIntelligenceStateManifest, buildGovernedClaims, buildLiveInputQualityManifest, validateStoredIntelligenceManifest } from "./intelligenceGovernance";
 
 const pressure = {
   overallPressure: 27,
@@ -85,5 +85,32 @@ describe("Phase 1B intelligence governance", () => {
     expect(withCtx.runProvenance.evaluationPlan).toMatchObject({ horizonsTradingDays: [1, 5, 20, 60], outcomeKeyVersion: "v2" });
     expect(plain.runProvenance).not.toHaveProperty("trigger");
     expect(plain.runProvenance).not.toHaveProperty("outcomeLink");
+  });
+});
+
+describe("persisted canonical manifest read integrity — fixture only", () => {
+  const snapshot = () => {
+    const result = buildAtomicIntelligenceStateManifest({ pressure, seismograph, originatingRunId: "source-truth:fixture", generatedAt: "2026-08-20T16:00:00.000Z" });
+    return { ...result.manifest, inputQuality: result.inputQuality, runProvenance: result.runProvenance };
+  };
+  it("accepts only a valid body and matching immutable row identity", () => {
+    const body = snapshot();
+    expect(validateStoredIntelligenceManifest(body)).toBe(true);
+    expect(validateStoredIntelligenceManifest(body, { ...body, generatedAt: new Date(body.generatedAt) })).toBe(true);
+    expect(validateStoredIntelligenceManifest(body, { ...body, stateId: "other", generatedAt: new Date(body.generatedAt) })).toBe(false);
+  });
+  it("rejects wrong shape, nonfinite scores, missing identity and changed source values", () => {
+    const body = snapshot();
+    expect(validateStoredIntelligenceManifest(null)).toBe(false);
+    expect(validateStoredIntelligenceManifest({ ...body, pressureIndex: Number.NaN })).toBe(false);
+    expect(validateStoredIntelligenceManifest({ ...body, stateHash: "" })).toBe(false);
+    expect(validateStoredIntelligenceManifest({ ...body, engineValues: { ...body.engineValues, "credit-contagion": 99 } })).toBe(false);
+    expect(validateStoredIntelligenceManifest({ ...body, inputQuality: body.inputQuality.map((item, index) => index ? item : { ...item, value: 999 }) })).toBe(false);
+  });
+  it("records captured reference dates truthfully without claiming publication time or a vintage", () => {
+    const datedPressure = { ...pressure, vectors: pressure.vectors.map((vector: any, index: number) => index ? vector : { ...vector, observationDates: { hySpread: "2026-08-19" } }) };
+    const dated = buildAtomicIntelligenceStateManifest({ pressure: datedPressure, seismograph, originatingRunId: "dates:fixture", generatedAt: "2026-08-20T16:00:00.000Z" });
+    expect(dated.runProvenance.inputObservationDatesCaptured).toBe(true);
+    expect(snapshot().runProvenance.inputObservationDatesCaptured).toBe(false);
   });
 });

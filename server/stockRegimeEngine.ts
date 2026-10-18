@@ -1,9 +1,12 @@
 /**
  * Stock Market Regime Engine
  * Classifies the US equity market into 8 distinct regime states by combining
- * the FAULTLINE Pressure Index with SPY price trend data from Polygon.
+ * the authoritative canonical FAULTLINE Pressure Index with an optional,
+ * explicitly-provenanced SPY last-close technical overlay from Polygon.
  */
-import { calculateFaultlinePressure, FaultlinePressureOutput } from "./pressure/engine";
+import type { FaultlinePressureOutput } from "./pressure/engine";
+import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import { projectPressureFromCanonical } from "./canonicalPressureProjection";
 import { fetchDailyBars } from "./signalsProxy";
 import { LRUCache } from "./lruCache";
 
@@ -16,21 +19,36 @@ export type StockRegimeLabel =
   | "Distribution"
   | "Bear Market"
   | "Recovery"
-  | "Recession Risk";
+  | "Recession Risk"
+  | "UNAVAILABLE";
 
-export type StockRiskLevel = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
-export type StockRegimeTrend = "Improving" | "Stable" | "Deteriorating";
+export type StockRiskLevel = "Low" | "Moderate" | "Elevated" | "High" | "Critical" | "UNAVAILABLE";
+export type StockRegimeTrend = "Improving" | "Stable" | "Deteriorating" | "UNAVAILABLE";
+
+/** Optional technical overlay; it never substitutes for canonical macro state. */
+export interface SpyLastCloseOverlay {
+  status: "AVAILABLE" | "UNAVAILABLE";
+  provider: "Polygon";
+  asOf: number | null;
+  lastClose: number | null;
+  reason: string | null;
+}
 
 export interface StockMarketRegime {
   regime:        StockRegimeLabel;
   riskLevel:     StockRiskLevel;
   trend:         StockRegimeTrend;
-  confidence:    number;
-  pressureScore: number;
+  confidence:    number | null;
+  pressureScore: number | null;
   keyFactors:    string[];
   strategy:      string;
   explanation:   string;
   color:         string;
+  /** Identity and evidence quality of the canonical macro reading used. */
+  canonicalStateId: string | null;
+  canonicalQuality: string | null;
+  /** Polygon SPY is an optional last-close overlay, never a regime input fallback. */
+  spyLastClose: SpyLastCloseOverlay;
   fetchedAt:     number;
   cached:        boolean;
 }
@@ -56,6 +74,7 @@ function regimeColor(r: StockRegimeLabel): string {
     "Bear Market":    "#EF4444",
     "Recovery":       "#38BDF8",
     "Recession Risk": "#DC2626",
+    "UNAVAILABLE":    "#64748B",
   };
   return map[r] ?? "#94A3B8";
 }
@@ -70,6 +89,7 @@ function strategyText(r: StockRegimeLabel): string {
     "Bear Market":    "Capital preservation. Minimal equity exposure. Favour cash, bonds, and inverse hedges.",
     "Recovery":       "Selective re-entry. Favour quality growth and beaten-down cyclicals. Size small initially.",
     "Recession Risk": "Defensive posture. Raise cash significantly. Favour Treasuries, utilities, and staples.",
+    "UNAVAILABLE":    "UNAVAILABLE — no usable canonical CURRENT reading is bound. No stock regime is manufactured.",
   };
   return map[r] ?? "Monitor conditions closely.";
 }
@@ -130,6 +150,7 @@ function explanationText(r: StockRegimeLabel, pressure: number, trend: StockRegi
     "Bear Market":    `The market is in a bear market. ${pressurePhrase.charAt(0).toUpperCase() + pressurePhrase.slice(1)} and ${trendPhrase}. Structural damage is evident. Capital preservation is the primary objective.`,
     "Recovery":       `The market is in early recovery. ${pressurePhrase.charAt(0).toUpperCase() + pressurePhrase.slice(1)} and ${trendPhrase}. Price action is improving from lows but a new bull market is not yet confirmed. Selective re-entry is appropriate.`,
     "Recession Risk": `Recession risk is elevated. ${pressurePhrase.charAt(0).toUpperCase() + pressurePhrase.slice(1)} and ${trendPhrase}. Multiple macro indicators are flashing warning signs. Defensive positioning is strongly advised.`,
+    "UNAVAILABLE":    "UNAVAILABLE — no usable canonical CURRENT reading is bound. No stock regime is manufactured.",
   };
   return descriptions[r] ?? `Market regime: ${r}. Pressure index: ${Math.round(pressure)}/100.`;
 }
@@ -137,9 +158,9 @@ function explanationText(r: StockRegimeLabel, pressure: number, trend: StockRegi
 function classifyRegime(
   pressure: number,
   metrics: SpyMetrics,
-  creditScore: number,
-  liquidityScore: number,
-  breadthScore: number,
+  creditScore: number | null,
+  liquidityScore: number | null,
+  breadthScore: number | null,
 ): { regime: StockRegimeLabel; confidence: number; keyFactors: string[] } {
   const { pct20d, pct50d, pct200d, aboveSma50, aboveSma200 } = metrics;
   const keyFactors: string[] = [];
@@ -147,6 +168,7 @@ function classifyRegime(
   const scores: Record<StockRegimeLabel, number> = {
     "Bull Market": 0, "Expansion": 0, "Consolidation": 0, "Correction": 0,
     "Distribution": 0, "Bear Market": 0, "Recovery": 0, "Recession Risk": 0,
+    "UNAVAILABLE": 0,
   };
 
   if (pressure < 30) {
@@ -191,20 +213,20 @@ function classifyRegime(
     }
   }
 
-  if (creditScore > 70) {
+  if (creditScore != null && creditScore > 70) {
     scores["Recession Risk"] += 20; scores["Bear Market"] += 15;
     keyFactors.push(`Credit stress elevated (score: ${Math.round(creditScore)}) — systemic risk rising`);
-  } else if (creditScore > 50) {
+  } else if (creditScore != null && creditScore > 50) {
     scores["Distribution"] += 10; scores["Correction"] += 8;
-  } else if (creditScore < 30) {
+  } else if (creditScore != null && creditScore < 30) {
     scores["Bull Market"] += 10; scores["Expansion"] += 8;
     keyFactors.push("Credit conditions benign — supports risk appetite");
   }
 
-  if (liquidityScore > 65) {
+  if (liquidityScore != null && liquidityScore > 65) {
     scores["Bear Market"] += 10; scores["Recession Risk"] += 10;
     keyFactors.push(`Liquidity stress elevated (score: ${Math.round(liquidityScore)})`);
-  } else if (liquidityScore < 30) {
+  } else if (liquidityScore != null && liquidityScore < 30) {
     scores["Bull Market"] += 8; scores["Expansion"] += 8;
   }
 
@@ -213,9 +235,9 @@ function classifyRegime(
     keyFactors.push("Recovery pattern: improving price action with declining stress from elevated levels");
   }
 
-  if (breadthScore > 65) {
+  if (breadthScore != null && breadthScore > 65) {
     scores["Bear Market"] += 8; scores["Recession Risk"] += 8;
-  } else if (breadthScore < 35) {
+  } else if (breadthScore != null && breadthScore < 35) {
     scores["Bull Market"] += 8; scores["Expansion"] += 8;
   }
 
@@ -237,18 +259,46 @@ function classifyRegime(
 }
 
 // ── Public API ────────────────────────────────────────────────
-export async function computeStockMarketRegime(): Promise<StockMarketRegime> {
-  const cacheKey = "stock-regime";
+export async function computeStockMarketRegime(suppliedCanonical?: import("../shared/canonicalIntelligenceState").CanonicalIntelligenceState | null): Promise<StockMarketRegime> {
+  const canonical = suppliedCanonical !== undefined ? suppliedCanonical : await getAuthoritativeCanonicalIntelligenceState().catch(() => null);
+  const cacheKey = `stock-regime:${canonical?.stateId ?? "unavailable"}`;
   const hit = cache.get(cacheKey);
   if (hit && Date.now() - hit.fetchedAt < CACHE_TTL_MS) {
     return { ...hit.regime, cached: true };
   }
 
-  const pressure = await calculateFaultlinePressure();
-  const p = pressure.overallPressure; // already 0-100
+  const pressure = projectPressureFromCanonical(canonical);
+  if (!canonical || !pressure) {
+    return {
+      regime: "UNAVAILABLE",
+      riskLevel: "UNAVAILABLE",
+      trend: "UNAVAILABLE",
+      confidence: null,
+      pressureScore: null,
+      keyFactors: ["UNAVAILABLE — no usable canonical CURRENT reading is bound."],
+      strategy: strategyText("UNAVAILABLE"),
+      explanation: "UNAVAILABLE — no usable canonical CURRENT reading is bound. No stock regime or numeric pressure is manufactured.",
+      color: regimeColor("UNAVAILABLE"),
+      canonicalStateId: canonical?.stateId ?? null,
+      canonicalQuality: canonical?.confidenceOrEvidenceQuality ?? "UNAVAILABLE",
+      spyLastClose: {
+        status: "UNAVAILABLE",
+        provider: "Polygon",
+        asOf: null,
+        lastClose: null,
+        reason: "SPY last-close unavailable because canonical CURRENT is unavailable.",
+      },
+      fetchedAt: Date.now(),
+      cached: false,
+    };
+  }
+  const p = pressure.overallPressure; // canonical projection is already 0-100
 
-  // vectors scores are already 0-100 in the server-side engine
-  const vectorScore = (id: string) => pressure.vectors.find(v => v.id === id)?.score ?? 50;
+  // Missing canonical vectors remain unavailable; no neutral value is manufactured.
+  const vectorScore = (id: string): number | null => {
+    const score = pressure.vectors.find(v => v.id === id)?.score;
+    return typeof score === "number" && Number.isFinite(score) ? score : null;
+  };
   const creditScore    = vectorScore("credit-contagion");
   const liquidityScore = vectorScore("liquidity-stress");
   const breadthScore   = vectorScore("market-breadth");
@@ -258,14 +308,45 @@ export async function computeStockMarketRegime(): Promise<StockMarketRegime> {
     aboveSma50: false, aboveSma200: false,
     trend: "Stable", available: false,
   };
+  let spyLastClose: SpyLastCloseOverlay = {
+    status: "UNAVAILABLE",
+    provider: "Polygon",
+    asOf: null,
+    lastClose: null,
+    reason: "SPY last-close unavailable: Polygon API key is not configured.",
+  };
   if (process.env.POLYGON_API_KEY) {
     try {
       const bars = await fetchDailyBars(process.env.POLYGON_API_KEY!, "SPY", 210);
+      const lastBar = bars.at(-1);
+      if (lastBar && Number.isFinite(lastBar.close) && lastBar.close > 0) {
+        spyLastClose = {
+          status: "AVAILABLE",
+          provider: "Polygon",
+          asOf: Number.isFinite(lastBar.timestamp) && lastBar.timestamp > 0 ? lastBar.timestamp : null,
+          lastClose: lastBar.close,
+          reason: null,
+        };
+      } else {
+        spyLastClose = {
+          status: "UNAVAILABLE",
+          provider: "Polygon",
+          asOf: null,
+          lastClose: null,
+          reason: "SPY last-close unavailable: Polygon returned no usable completed daily bar.",
+        };
+      }
       if (bars && bars.length >= 201) {
         spyMetrics = computeSpyMetrics(bars);
       }
     } catch {
-      // Polygon unavailable — continue with pressure-only classification
+      spyLastClose = {
+        status: "UNAVAILABLE",
+        provider: "Polygon",
+        asOf: null,
+        lastClose: null,
+        reason: "SPY last-close unavailable: Polygon daily-bar request failed.",
+      };
     }
   }
 
@@ -280,6 +361,9 @@ export async function computeStockMarketRegime(): Promise<StockMarketRegime> {
     strategy:    strategyText(regime),
     explanation: explanationText(regime, p, trend),
     color:       regimeColor(regime),
+    canonicalStateId: canonical.stateId,
+    canonicalQuality: canonical.confidenceOrEvidenceQuality,
+    spyLastClose,
     fetchedAt:   Date.now(),
     cached:      false,
   };

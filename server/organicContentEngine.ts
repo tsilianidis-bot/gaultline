@@ -186,6 +186,9 @@ export async function generateOrganicContent(
     topDrivers?: string[];
   }
 ): Promise<{ ok: boolean; id?: number; slug?: string; error?: string; skipped?: boolean }> {
+  if (contentType === "daily_market_brief") {
+    return { ok: false, error: "Daily Brief publication requires the verified scheduled snapshot pipeline." };
+  }
   const db = await getDb();
   if (!db) return { ok: false, error: "database unavailable" };
 
@@ -482,6 +485,9 @@ export async function handleGenerateOrganicContent(req: Request, res: Response) 
 
     if (!contentType || !CONTENT_CONFIG[contentType]) {
       return res.status(400).json({ error: "invalid contentType", valid: Object.keys(CONTENT_CONFIG) });
+    }
+    if (contentType === "daily_market_brief") {
+      return res.status(400).json({ error: "Daily Brief publication requires the verified scheduled snapshot pipeline." });
     }
 
     const result = await generateOrganicContent(contentType, {

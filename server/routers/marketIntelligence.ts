@@ -12,19 +12,7 @@ import { desc } from "drizzle-orm";
 import { z } from "zod";
 
 export const marketIntelligenceRouter = router({
-  getAll: publicProcedure.query(async () => {
-    const result = await computeCrossMarketIntelligence();
-    if (result.regimeChangeAlerts.length > 0) {
-      const alertMessages = result.regimeChangeAlerts.map(a =>
-        `${a.asset} Market: ${a.previous} -> ${a.current}`
-      ).join("\n");
-      await notifyOwner({
-        title: "FAULTLINE: Regime Change Detected",
-        content: `${alertMessages}\n\nAlignment: ${result.alignmentStatus}\n\n${result.plainEnglishSummary}`,
-      }).catch(() => {});
-    }
-    return result;
-  }),
+  getAll: publicProcedure.query(async () => computeCrossMarketIntelligence()),
 
   getStock: publicProcedure.query(async () => {
     return computeStockMarketRegime();
@@ -48,8 +36,7 @@ export const marketIntelligenceRouter = router({
       return rows;
     }),
 
-  // Full enriched crypto regime dashboard — includes indicators, historical context,
-  // transition probabilities, actionable interpretation, and cross-market comparison
+  // Canonical-macro-implied dashboard; uncalibrated history/transitions are withheld.
   getCryptoRegimeDashboard: publicProcedure.query(async () => {
     const [regime, cross] = await Promise.all([
       computeCryptoMarketRegime(),

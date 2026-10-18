@@ -577,7 +577,7 @@ export function computeTradingSignal(
   input: TradingSignalsInput,
   regime: RegimeInput
 ): TradingSignalResult {
-  const cacheKey = `${input.ticker}:${regime.label}:${input.price}:${input.dailyBars?.length ?? 0}`;
+  const cacheKey = JSON.stringify({ input, regime });
   const cached = signalCache.peek(cacheKey);
   if (cached) {
     return cached.value.result;

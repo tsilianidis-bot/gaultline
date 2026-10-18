@@ -304,7 +304,7 @@ function computeCryptoRegimeAlignment(
 export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResult {
   const { market, ohlcBars, btcDominance = 55, regime } = input;
 
-  const cacheKey = `${market.id}:${regime.label}:${market.currentPrice}:${ohlcBars?.length ?? 0}`;
+  const cacheKey = JSON.stringify({ market, ohlcBars, btcDominance, regime });
   const cached = cryptoSignalCache.peek(cacheKey);
   if (cached) return cached.value.result;
 

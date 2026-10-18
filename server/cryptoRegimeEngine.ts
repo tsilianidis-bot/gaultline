@@ -2,7 +2,8 @@
  * Crypto Market Regime Engine
  * Thin adapter over the existing CryptoIntelligence engine that promotes
  * the BTC CyclePhase into a formal CryptoMarketRegime output.
- * Enriched with indicator breakdown, historical context, and transition probabilities.
+ * Enriched with canonical-macro indicator breakdown. Historical and transition
+ * claims are withheld until a calibrated, versioned evidence adapter exists.
  */
 import {
   getCryptoIntelligence,
@@ -36,6 +37,17 @@ export interface RegimeIndicator {
   contribution: "High" | "Medium" | "Low";
   confidence:   number;  // 0–100
   score:        number;  // 0–100 (raw score)
+  provenance:   "DERIVED_MODEL";
+}
+
+/** Required provenance for any future historical or calibrated transition claim. */
+export interface CalibratedCryptoEvidence {
+  sourceIds: string[];
+  datasetVersion: string;
+  modelVersion: string;
+  observedPeriod: { start: string; end: string };
+  asOf: string;
+  calibrationStatus: "CALIBRATED" | "NOT_CALIBRATED";
 }
 
 export interface HistoricalContext {
@@ -45,12 +57,14 @@ export interface HistoricalContext {
   btcAvgReturn:            string;  // e.g. "+180% over 12 months"
   ethAvgReturn:            string;
   altcoinBehavior:         string;
+  evidence:                CalibratedCryptoEvidence;
 }
 
 export interface TransitionProbability {
   regime:      string;
   probability: number;  // 0–100
   description: string;
+  evidence:    CalibratedCryptoEvidence;
 }
 
 export interface CryptoMarketRegime {
@@ -66,7 +80,8 @@ export interface CryptoMarketRegime {
   accumulationAnalysis:    AccumulationPhaseAnalysis | null;
   // Enriched fields
   indicators:              RegimeIndicator[];
-  historicalContext:       HistoricalContext;
+  /** Null until a versioned historical evidence adapter supplies calibrated provenance. */
+  historicalContext:       HistoricalContext | null;
   transitionProbabilities: TransitionProbability[];
   actionableInterpretation: string;
   // Cross-market context (populated by crossMarketEngine)
@@ -151,15 +166,15 @@ function explanationText(r: CryptoRegimeLabel, phase: CyclePhase, confidence: nu
     : confidence >= 55 ? "with moderate confidence"
     : "with low confidence";
   const descriptions: Record<CryptoRegimeLabel, string> = {
-    "Bull Market":                       `Bitcoin is in a bull market ${confPhrase}. Strong price momentum, expanding liquidity, and positive macro conditions support continued upside.`,
-    "Expansion":                         `Bitcoin is in an early bull expansion phase ${confPhrase}. The cycle is gaining momentum with improving on-chain metrics and growing institutional interest.`,
-    "Late Bull / Euphoria":              `Bitcoin is in the late bull / euphoria phase ${confPhrase}. Extreme sentiment and parabolic price action signal elevated risk of a cycle top. Profit-taking is warranted.`,
-    "Distribution":                      `Bitcoin is in a distribution phase ${confPhrase}. Long-term holders appear to be reducing exposure. This phase often precedes a more significant correction.`,
-    "Bear Market":                       `Bitcoin is in a bear market ${confPhrase}. Price structure is broken, liquidity is contracting, and macro conditions are unfavourable. Capital preservation is the priority.`,
-    "Capitulation":                      `Bitcoin is in a capitulation phase ${confPhrase}. Forced selling and extreme fear dominate. This is often the final stage of a bear market.`,
-    "Bear Market → Accumulation Phase":  `Bitcoin appears to be in an accumulation phase inside a broader bear-market structure ${confPhrase}. Price may be forming a base, but a new bull cycle is not confirmed until price breaks major resistance with strong volume, improving liquidity, and sustained risk-on confirmation.`,
-    "Accumulation":                      `Bitcoin is in an accumulation phase ${confPhrase}. Long-term holders are absorbing supply at depressed prices. This phase can last months before a new bull cycle begins.`,
-    "Early Recovery":                    `Bitcoin is showing early recovery signals ${confPhrase}. Price action is improving from lows but a new bull market is not yet confirmed.`,
+    "Bull Market":                       `The canonical macro projection maps to bull-market conditions ${confPhrase}. It is a derived risk-appetite classification, not an observation of Bitcoin price or flows.`,
+    "Expansion":                         `The canonical macro projection maps to early expansion conditions ${confPhrase}. It is macro-implied and does not use on-chain or institutional-flow inputs.`,
+    "Late Bull / Euphoria":              `The canonical macro projection maps to late-cycle risk conditions ${confPhrase}. This derived model does not observe sentiment or parabolic price action.`,
+    "Distribution":                      `The canonical macro projection maps to distribution-like risk conditions ${confPhrase}. It does not observe holder behavior or predict a correction.`,
+    "Bear Market":                       `The canonical macro projection maps to bear-market risk conditions ${confPhrase}. It is a macro-derived classification rather than a price-structure observation.`,
+    "Capitulation":                      `The canonical macro projection maps to capitulation-like risk conditions ${confPhrase}. It does not observe forced selling, fear, or a market bottom.`,
+    "Bear Market → Accumulation Phase":  `The canonical macro projection maps to a base-forming risk configuration inside a broader bear-market structure ${confPhrase}. It does not establish Bitcoin price, holder, exchange-balance, funding, or ETF-flow observations.`,
+    "Accumulation":                      `The canonical macro projection maps to accumulation-like risk conditions ${confPhrase}. It does not observe supply absorption or establish the timing of a new cycle.`,
+    "Early Recovery":                    `The canonical macro projection maps to early-recovery risk conditions ${confPhrase}. It is not a Bitcoin-price observation or a forecast of a new bull market.`,
     "UNAVAILABLE":                       "Crypto regime is UNAVAILABLE because no canonical market state is bound. No cycle phase is manufactured.",
   };
   return descriptions[r] ?? `Bitcoin cycle phase: ${phase}. Confidence: ${confidence}%.`;
@@ -193,30 +208,34 @@ function buildIndicators(report: CryptoIntelligenceReport, regime: CryptoRegimeL
       contribution: contributionLevel(btc.liquidityConditions.score, regime),
       confidence:   Math.round(Math.min(100, 50 + Math.abs(btc.liquidityConditions.score - 50))),
       score:        Math.round(btc.liquidityConditions.score),
+      provenance:   "DERIVED_MODEL",
     },
     {
-      name:         "Price Trend Strength",
+      name:         "Macro-implied trend strength (not BTC price)",
       reading:      btc.trendStrength.label,
       signal:       scoreToSignal(btc.trendStrength.score),
       contribution: contributionLevel(btc.trendStrength.score, regime),
       confidence:   Math.round(Math.min(100, 50 + Math.abs(btc.trendStrength.score - 50))),
       score:        Math.round(btc.trendStrength.score),
+      provenance:   "DERIVED_MODEL",
     },
     {
-      name:         "ETF / Institutional Flow",
+      name:         "Macro risk-appetite proxy (not ETF flow)",
       reading:      btc.etfInstitutionalFlow.label,
       signal:       scoreToSignal(btc.etfInstitutionalFlow.score),
       contribution: contributionLevel(btc.etfInstitutionalFlow.score, regime),
       confidence:   Math.round(Math.min(100, 50 + Math.abs(btc.etfInstitutionalFlow.score - 50))),
       score:        Math.round(btc.etfInstitutionalFlow.score),
+      provenance:   "DERIVED_MODEL",
     },
     {
-      name:         "Dollar Pressure (DXY)",
+      name:         "Macro dollar/rate proxy (not DXY)",
       reading:      btc.dollarPressure.label,
       signal:       btc.dollarPressure.direction === "weakening" ? "Bullish" : btc.dollarPressure.direction === "strengthening" ? "Bearish" : "Neutral",
       contribution: contributionLevel(btc.dollarPressure.score, regime),
       confidence:   Math.round(Math.min(100, 50 + Math.abs(btc.dollarPressure.score - 50))),
       score:        Math.round(btc.dollarPressure.score),
+      provenance:   "DERIVED_MODEL",
     },
     {
       name:         "Yield / Rate Pressure",
@@ -225,22 +244,25 @@ function buildIndicators(report: CryptoIntelligenceReport, regime: CryptoRegimeL
       contribution: contributionLevel(btc.yieldPressure.score, regime),
       confidence:   Math.round(Math.min(100, 50 + Math.abs(btc.yieldPressure.score - 50))),
       score:        Math.round(btc.yieldPressure.score),
+      provenance:   "DERIVED_MODEL",
     },
     {
-      name:         "Stablecoin Supply",
+      name:         "Macro liquidity proxy (not stablecoin supply)",
       reading:      alt.stablecoinSignal.split(" — ")[0] ?? alt.stablecoinSignal,
       signal:       alt.riskScore < 45 ? "Bullish" : alt.riskScore > 60 ? "Bearish" : "Neutral",
       contribution: contributionLevel(100 - alt.riskScore, regime),
       confidence:   Math.round(Math.min(100, 50 + Math.abs(alt.riskScore - 50))),
       score:        Math.round(100 - alt.riskScore),
+      provenance:   "DERIVED_MODEL",
     },
     {
-      name:         "BTC Dominance",
+      name:         "Macro risk proxy (not BTC dominance)",
       reading:      alt.btcDominanceSignal.split(" — ")[0] ?? alt.btcDominanceSignal,
       signal:       alt.riskScore > 60 ? "Bearish" : alt.riskScore < 40 ? "Bullish" : "Neutral",
       contribution: contributionLevel(alt.riskScore, regime),
       confidence:   Math.round(Math.min(100, 50 + Math.abs(alt.riskScore - 50))),
       score:        Math.round(alt.riskScore),
+      provenance:   "DERIVED_MODEL",
     },
     {
       name:         "Macro Risk Appetite",
@@ -249,180 +271,11 @@ function buildIndicators(report: CryptoIntelligenceReport, regime: CryptoRegimeL
       contribution: mac.overallMacroSignal !== "Neutral" ? "High" : "Low",
       confidence:   mac.overallMacroSignal !== "Neutral" ? 75 : 50,
       score:        mac.overallMacroSignal === "Bullish" ? 72 : mac.overallMacroSignal === "Bearish" ? 28 : 50,
+      provenance:   "DERIVED_MODEL",
     },
   ];
 
   return indicators;
-}
-
-// ── Historical Context ────────────────────────────────────────
-function buildHistoricalContext(regime: CryptoRegimeLabel): HistoricalContext {
-  const map: Record<CryptoRegimeLabel, HistoricalContext> = {
-    "Bull Market": {
-      avgDurationWeeks: 52,
-      previousOccurrence: "2023–2024",
-      nextRegimeProbabilities: [
-        { regime: "Late Bull / Euphoria", probability: 55 },
-        { regime: "Distribution", probability: 30 },
-        { regime: "Consolidation", probability: 15 },
-      ],
-      btcAvgReturn: "+180% over 12 months",
-      ethAvgReturn: "+240% over 12 months",
-      altcoinBehavior: "Altcoins outperform BTC in the mid-to-late phase. Small caps can return 5–20x.",
-    },
-    "Expansion": {
-      avgDurationWeeks: 26,
-      previousOccurrence: "2023 Q1",
-      nextRegimeProbabilities: [
-        { regime: "Bull Market", probability: 60 },
-        { regime: "Consolidation", probability: 25 },
-        { regime: "Distribution", probability: 15 },
-      ],
-      btcAvgReturn: "+80% over 6 months",
-      ethAvgReturn: "+110% over 6 months",
-      altcoinBehavior: "Selective altcoin participation begins. Quality L1/L2 tokens lead early.",
-    },
-    "Late Bull / Euphoria": {
-      avgDurationWeeks: 8,
-      previousOccurrence: "Late 2021",
-      nextRegimeProbabilities: [
-        { regime: "Distribution", probability: 65 },
-        { regime: "Bear Market", probability: 25 },
-        { regime: "Bull Market", probability: 10 },
-      ],
-      btcAvgReturn: "+40% short-term, then -60% over 12 months",
-      ethAvgReturn: "+60% short-term, then -70% over 12 months",
-      altcoinBehavior: "Extreme altcoin speculation. Many alts peak and crash 80–95% from highs.",
-    },
-    "Distribution": {
-      avgDurationWeeks: 12,
-      previousOccurrence: "2022 Q1",
-      nextRegimeProbabilities: [
-        { regime: "Bear Market", probability: 70 },
-        { regime: "Capitulation", probability: 20 },
-        { regime: "Consolidation", probability: 10 },
-      ],
-      btcAvgReturn: "-30% to -50% over 6 months",
-      ethAvgReturn: "-40% to -60% over 6 months",
-      altcoinBehavior: "Altcoins underperform BTC significantly. Liquidity dries up rapidly.",
-    },
-    "Bear Market": {
-      avgDurationWeeks: 52,
-      previousOccurrence: "2022–2023",
-      nextRegimeProbabilities: [
-        { regime: "Capitulation", probability: 35 },
-        { regime: "Bear Market → Accumulation Phase", probability: 40 },
-        { regime: "Accumulation", probability: 25 },
-      ],
-      btcAvgReturn: "-50% to -80% peak-to-trough",
-      ethAvgReturn: "-60% to -85% peak-to-trough",
-      altcoinBehavior: "Most altcoins lose 80–95% of value. Only BTC and ETH maintain relative strength.",
-    },
-    "Capitulation": {
-      avgDurationWeeks: 4,
-      previousOccurrence: "June 2022",
-      nextRegimeProbabilities: [
-        { regime: "Bear Market → Accumulation Phase", probability: 55 },
-        { regime: "Accumulation", probability: 35 },
-        { regime: "Bear Market", probability: 10 },
-      ],
-      btcAvgReturn: "-20% to -40% short-term, then +60% over 12 months",
-      ethAvgReturn: "-25% to -45% short-term, then +80% over 12 months",
-      altcoinBehavior: "Forced liquidations across altcoins. Historically a long-term buying opportunity.",
-    },
-    "Bear Market → Accumulation Phase": {
-      avgDurationWeeks: 24,
-      previousOccurrence: "2022–2023",
-      nextRegimeProbabilities: [
-        { regime: "Accumulation", probability: 50 },
-        { regime: "Early Recovery", probability: 30 },
-        { regime: "Bear Market", probability: 20 },
-      ],
-      btcAvgReturn: "+60% to +120% over 12 months (if confirmed)",
-      ethAvgReturn: "+80% to +150% over 12 months (if confirmed)",
-      altcoinBehavior: "Altcoins remain depressed. BTC dominance stays elevated. Selective accumulation only.",
-    },
-    "Accumulation": {
-      avgDurationWeeks: 20,
-      previousOccurrence: "2019, 2023",
-      nextRegimeProbabilities: [
-        { regime: "Early Recovery", probability: 55 },
-        { regime: "Expansion", probability: 30 },
-        { regime: "Bear Market", probability: 15 },
-      ],
-      btcAvgReturn: "+100% to +200% over 12–18 months",
-      ethAvgReturn: "+120% to +250% over 12–18 months",
-      altcoinBehavior: "Altcoins begin to recover selectively. Quality projects with strong fundamentals lead.",
-    },
-    "Early Recovery": {
-      avgDurationWeeks: 12,
-      previousOccurrence: "Early 2023",
-      nextRegimeProbabilities: [
-        { regime: "Expansion", probability: 60 },
-        { regime: "Bull Market", probability: 25 },
-        { regime: "Accumulation", probability: 15 },
-      ],
-      btcAvgReturn: "+50% to +100% over 6 months",
-      ethAvgReturn: "+70% to +130% over 6 months",
-      altcoinBehavior: "Altcoins begin to participate. BTC dominance starts declining. Selective exposure warranted.",
-    },
-    "UNAVAILABLE": {
-      avgDurationWeeks: 0,
-      previousOccurrence: "UNAVAILABLE",
-      nextRegimeProbabilities: [],
-      btcAvgReturn: "UNAVAILABLE",
-      ethAvgReturn: "UNAVAILABLE",
-      altcoinBehavior: "UNAVAILABLE — no canonical market state is bound.",
-    },
-  };
-  return map[regime] ?? {
-    avgDurationWeeks: 16,
-    previousOccurrence: "Unknown",
-    nextRegimeProbabilities: [{ regime: "Transition", probability: 100 }],
-    btcAvgReturn: "Insufficient historical data",
-    ethAvgReturn: "Insufficient historical data",
-    altcoinBehavior: "Monitor conditions closely.",
-  };
-}
-
-// ── Transition Probabilities ──────────────────────────────────
-function buildTransitionProbabilities(regime: CryptoRegimeLabel, confidence: number): TransitionProbability[] {
-  const ctx = buildHistoricalContext(regime);
-  const stayProb = Math.round(Math.min(80, confidence * 0.7));
-  const remaining = 100 - stayProb;
-
-  const transitions: TransitionProbability[] = [
-    {
-      regime: `Remain in ${regime}`,
-      probability: stayProb,
-      description: `Current regime signals remain intact. Confidence: ${confidence}%.`,
-    },
-  ];
-
-  const next = ctx.nextRegimeProbabilities;
-  const total = next.reduce((s, n) => s + n.probability, 0);
-  for (const n of next) {
-    transitions.push({
-      regime: n.regime,
-      probability: Math.round((n.probability / total) * remaining),
-      description: buildTransitionDescription(regime, n.regime),
-    });
-  }
-
-  return transitions;
-}
-
-function buildTransitionDescription(from: CryptoRegimeLabel, to: string): string {
-  if (to.includes("Bull") || to === "Expansion" || to === "Early Recovery") {
-    return "Requires: price breakout above resistance, improving liquidity, and risk-on macro confirmation.";
-  }
-  if (to.includes("Bear") || to === "Capitulation" || to === "Distribution") {
-    return "Triggered by: price breakdown below support, liquidity contraction, or macro risk-off shift.";
-  }
-  if (to.includes("Accumulation")) {
-    return "Signals: stabilising price action, declining exchange balances, and long-term holder accumulation resuming.";
-  }
-  return "Transition depends on macro conditions and on-chain signals.";
 }
 
 // ── Actionable Interpretation ─────────────────────────────────
@@ -447,14 +300,16 @@ function buildActionableInterpretation(regime: CryptoRegimeLabel, confidence: nu
 }
 
 // ── Public API ────────────────────────────────────────────────
-export async function computeCryptoMarketRegime(): Promise<CryptoMarketRegime> {
-  const cacheKey = "crypto-regime";
+export async function computeCryptoMarketRegime(suppliedCanonical?: import("../shared/canonicalIntelligenceState").CanonicalIntelligenceState | null): Promise<CryptoMarketRegime> {
+  const { getAuthoritativeCanonicalIntelligenceState } = await import("./canonicalIntelligenceState");
+  const canonical = suppliedCanonical !== undefined ? suppliedCanonical : await getAuthoritativeCanonicalIntelligenceState().catch(() => null);
+  const cacheKey = `crypto-regime:${canonical?.stateId ?? "unavailable"}`;
   const hit = cache.get(cacheKey);
   if (hit && Date.now() - hit.fetchedAt < CACHE_TTL_MS) {
     return { ...hit.regime, cached: true };
   }
 
-  const report = await getCryptoIntelligence();
+  const report = await getCryptoIntelligence(canonical);
   if (report.availability === "UNAVAILABLE") {
     const withheld: CryptoMarketRegime = {
       regime: "UNAVAILABLE",
@@ -468,7 +323,7 @@ export async function computeCryptoMarketRegime(): Promise<CryptoMarketRegime> {
       color: regimeColor("UNAVAILABLE"),
       accumulationAnalysis: null,
       indicators: [],
-      historicalContext: buildHistoricalContext("UNAVAILABLE"),
+      historicalContext: null,
       transitionProbabilities: [],
       actionableInterpretation: "UNAVAILABLE — no CURRENT crypto regime is manufactured without a canonical bind.",
       fetchedAt: Date.now(),
@@ -487,7 +342,7 @@ export async function computeCryptoMarketRegime(): Promise<CryptoMarketRegime> {
   keyFactors.push(`Trend: ${btc.trendStrength.label} — ${btc.trendStrength.note}`);
   keyFactors.push(`Liquidity: ${btc.liquidityConditions.label} — ${btc.liquidityConditions.note}`);
   if (btc.etfInstitutionalFlow.direction !== "neutral") {
-    keyFactors.push(`Institutional flow: ${btc.etfInstitutionalFlow.label} — ${btc.etfInstitutionalFlow.note}`);
+    keyFactors.push(`Macro risk-appetite proxy (DERIVED_MODEL): ${btc.etfInstitutionalFlow.label} — ${btc.etfInstitutionalFlow.note}`);
   }
   if (report.macroCorrelation.overallMacroSignal !== "Neutral") {
     keyFactors.push(`Macro signal: ${report.macroCorrelation.overallMacroSignal} — ${report.macroCorrelation.correlationSummary.split(".")[0]}`);
@@ -508,8 +363,8 @@ export async function computeCryptoMarketRegime(): Promise<CryptoMarketRegime> {
     color:                   regimeColor(regime),
     accumulationAnalysis:    btc.accumulationAnalysis ?? null,
     indicators:              buildIndicators(report, regime),
-    historicalContext:       buildHistoricalContext(regime),
-    transitionProbabilities: buildTransitionProbabilities(regime, conf),
+    historicalContext:       null,
+    transitionProbabilities: [],
     actionableInterpretation: buildActionableInterpretation(regime, conf, report),
     fetchedAt:               Date.now(),
     cached:                  false,
@@ -519,5 +374,5 @@ export async function computeCryptoMarketRegime(): Promise<CryptoMarketRegime> {
   return result;
 }
 
-// Export helpers for testing
-export { buildHistoricalContext, buildTransitionProbabilities, buildIndicators };
+// Export the retained canonical-macro indicator adapter for focused tests.
+export { buildIndicators };
