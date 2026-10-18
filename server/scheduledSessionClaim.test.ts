@@ -110,6 +110,28 @@ describe("scheduled seismograph database claim", () => {
       .resolves.toBe("already_recorded");
   });
 
+  it("marks a claim failed when the pipeline returns 500, then allows one recovery", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(inWindow));
+    const store = memoryStore();
+    const claimed = await claimScheduledSeismographSession("2026-10-05", async () => store, { nowMs: inWindow });
+    const json = vi.fn();
+    const status = vi.fn(() => ({ json }));
+    await handleScheduledSeismograph({
+      sessionClaim: async () => claimed,
+      sessionStore: async () => store,
+      runPipeline: async () => {
+        throw new Error("pipeline crashed after claim");
+      },
+    } as never, { json, status } as never);
+    expect(status).toHaveBeenCalledWith(500);
+    const recovered = await claimScheduledSeismographSession("2026-10-05", async () => store, {
+      nowMs: inWindow + 1000,
+      trigger: "SCHEDULED_CRON",
+    });
+    expect(recovered).toEqual({ status: "claimed", generation: 2, mode: "recovered" });
+  });
+
   it("hides claim and outcome keys from public market memory", () => {
     expect(isHiddenSessionMemoryKey("seismograph-scheduled-session:2026-10-05")).toBe(true);
     expect(isHiddenSessionMemoryKey("seismograph-scheduled-outcome:2026-10-05")).toBe(true);
