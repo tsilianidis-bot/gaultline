@@ -46,6 +46,7 @@ import { collectBroadInstitutionalEventOutcomes, recordDailyMarketEvidence } fro
 import { collectForwardChampionOutcomesV2, recordForwardChampionProvenance } from "./algorithmProvenance";
 import { capturesForwardEvidence, championProvenanceKey, etDateOf, resolveRunContext, type RunContext } from "./forwardRunProvenance";
 import { buildAtomicIntelligenceStateManifest, persistAtomicIntelligenceStateManifest } from "./intelligenceGovernance";
+import { claimScheduledSeismographSession, type ScheduledSessionClaim } from "./scheduledSessionClaim";
 
 function mapPressureLevelToSeismographStress(level: string | null | undefined): SeismographOutput["stressLevel"] {
   if (level === "Critical" || level === "Crisis") return "Crisis";
@@ -352,8 +353,8 @@ export async function runSeismographPipeline(options: { runContext?: RunContext 
 }
 
 export async function handleScheduledSeismograph(
-  _req: Request,
-  res: Response
+  req: Request & { sessionClaim?: (etDate: string) => Promise<ScheduledSessionClaim> },
+  res: Response,
 ): Promise<void> {
   const now = new Date();
   const runWindow = nyseSeismographRunWindow(now);
@@ -376,6 +377,23 @@ export async function handleScheduledSeismograph(
   // boundary without changing the accepted Eastern session date.
   const scheduledEtDate = runWindow.etDate ?? etDateOf(now);
   const runContext = resolveRunContext("cron-endpoint", now);
+  // Database claim is in addition to the in-process guard. Fail closed when the
+  // claim cannot be recorded so a second container cannot capture forward evidence.
+  const sessionClaim = await (req.sessionClaim ?? claimScheduledSeismographSession)(scheduledEtDate);
+  if (sessionClaim !== "claimed") {
+    const skipped = sessionClaim === "already_claimed" ? "session_already_claimed" : "session_claim_unavailable";
+    if (sessionClaim === "unavailable") {
+      res.status(503).json({
+        ok: false,
+        skipped,
+        etDate: scheduledEtDate,
+        reason: "Database session claim unavailable; the scheduled run and its forward capture were not started.",
+      });
+      return;
+    }
+    res.json({ ok: true, skipped, date: scheduledEtDate, etDate: scheduledEtDate, execution: "already_completed" });
+    return;
+  }
   try {
     const execution = await runScheduledSeismographOnce(scheduledEtDate, runContext);
     const seismographOutput = execution.output;

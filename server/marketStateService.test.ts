@@ -154,6 +154,7 @@ describe("assembleCanonicalMarketState", () => {
       generatedAt: "2026-07-23T12:01:00.000Z",
       cacheStatus: "refreshed",
       cacheAgeMs: 0,
+      canonicalQuality: "HEALTHY",
     });
 
     expect(state.now).toMatchObject({ pressureScore: 68, stressLevel: "High", historicalPercentile: 82 });
@@ -241,7 +242,13 @@ describe("assembleCanonicalMarketState", () => {
 
 describe("canonical MarketState provider boundary", () => {
   it("uses one authoritative provider and retries it once before succeeding", async () => {
-    const authoritative = source({ currentScore: 61, lastUpdated: "2026-07-23T13:00:00.000Z" });
+    const authoritative = source({
+      currentScore: 61,
+      lastUpdated: "2026-07-23T13:00:00.000Z",
+      providerProvenance: {
+        fred: { status: "live", detail: "FRED", asOf: Date.parse("2026-07-23T13:00:00.000Z") },
+      },
+    });
     const load = vi.fn()
       .mockRejectedValueOnce(new Error("temporary upstream failure"))
       .mockResolvedValueOnce(authoritative);
@@ -256,6 +263,12 @@ describe("canonical MarketState provider boundary", () => {
       provider: { id: "unified-seismograph", load },
       cache,
       now: () => new Date("2026-07-23T13:01:00.000Z"),
+      loadCanonicalState: async () => ({
+        probabilityContract: null,
+        engines: [],
+        generatedAt: authoritative.lastUpdated,
+        quality: "HEALTHY",
+      }),
     });
 
     const state = await read();

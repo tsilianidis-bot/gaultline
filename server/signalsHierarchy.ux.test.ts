@@ -88,10 +88,11 @@ describe("Data integrity DELAYED / STALE / UNAVAILABLE detail", () => {
 });
 
 describe("Signal calculation / methodology untouched", () => {
+  // tradingSignals.ts is outside this freeze: completed-bar admission now
+  // withholds BUY/SELL and crossover wording when historical bars are absent.
   const engineFiles = [
     "server/cryptoSignals.ts",
     "server/cryptoEngine.ts",
-    "server/tradingSignals.ts",
     "server/signalOutlook.ts",
     "server/preFlight.ts",
     "server/tradePreflight.ts",
@@ -106,6 +107,8 @@ describe("Signal calculation / methodology untouched", () => {
     // Also confirm vs explicit base (uncommitted + committed)
     const named = execSync(`git diff ${base} -- ${engineFiles.join(" ")}`, { cwd: root, encoding: "utf8" });
     expect(named.trim()).toBe("");
+    const trading = read("server/tradingSignals.ts");
+    expect(trading).toContain("Insufficient completed historical bars; trading indicators are unavailable.");
   });
 });
 

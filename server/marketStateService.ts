@@ -188,9 +188,10 @@ export const canonicalMarketStateProvider: CanonicalMarketStateProvider<UnifiedS
 };
 
 /**
- * The timestamp on the persisted Seismograph output and the authoritative canonical
- * quality decide freshness. A successful read-cache refresh can never relabel an old
- * snapshot as live.
+ * Freshness follows the source observation, not the presence of a snapshot and not
+ * the time a read cache was refreshed. Live requires a healthy canonical quality,
+ * a live required FRED provenance, and both the snapshot and the FRED observation
+ * inside the live window. Missing canonical quality is not live.
  */
 export function deriveMarketStateFreshness(
   source: CanonicalMarketStateSource,
@@ -200,14 +201,26 @@ export function deriveMarketStateFreshness(
   const sourceUpdatedAt = Date.parse(source.lastUpdated);
   const generatedAt = Date.parse(options.generatedAt);
   if (!Number.isFinite(sourceUpdatedAt) || !Number.isFinite(generatedAt)) return "stale";
-  const ageMs = Math.max(0, generatedAt - sourceUpdatedAt);
-  if (ageMs > MARKET_STATE_RECENT_MAX_AGE_MS || options.canonicalQuality === "UNAVAILABLE") return "stale";
+  const snapshotAgeMs = Math.max(0, generatedAt - sourceUpdatedAt);
+  const fred = source.providerProvenance?.fred;
+  const fredAsOf = fred && Number.isFinite(fred.asOf) ? fred.asOf : Number.NaN;
+  const fredAgeMs = Number.isFinite(fredAsOf) ? Math.max(0, generatedAt - fredAsOf) : Number.POSITIVE_INFINITY;
+  const fredStatus = fred?.status ?? "unavailable";
   if (
-    source.dataFreshness !== "live"
-    || ageMs > MARKET_STATE_LIVE_MAX_AGE_MS
-    || (options.canonicalQuality !== null && options.canonicalQuality !== undefined && options.canonicalQuality !== "HEALTHY")
-  ) return "recent";
-  return "live";
+    snapshotAgeMs > MARKET_STATE_RECENT_MAX_AGE_MS
+    || fredAgeMs > MARKET_STATE_RECENT_MAX_AGE_MS
+    || options.canonicalQuality === "UNAVAILABLE"
+    || fredStatus === "unavailable"
+    || fredStatus === "stale"
+  ) return "stale";
+  const observationCurrent = snapshotAgeMs <= MARKET_STATE_LIVE_MAX_AGE_MS && fredAgeMs <= MARKET_STATE_LIVE_MAX_AGE_MS;
+  if (
+    options.canonicalQuality === "HEALTHY"
+    && source.dataFreshness === "live"
+    && fredStatus === "live"
+    && observationCurrent
+  ) return "live";
+  return "recent";
 }
 
 function buildSourceHealth(

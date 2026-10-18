@@ -1470,7 +1470,7 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
     { label: "Market Regime",    value: regimeLabel,                       color: regimeColor },
     { label: "Pressure Score",   value: pressure === null ? "—" : `${score100Value(pressure)}/100`, color: pressure === null ? "#94A3B8" : pressure >= 6.5 ? "#FF6B6B" : pressure >= 4.0 ? "#FFD700" : "#00FF88" },
     { label: "Bull Scenario",    value: bullText,                          color: "#94A3B8" },
-    { label: "Data Source",      value: isLive ? "LIVE (FRED)" : "CACHED", color: isLive ? "#00FF88" : "#FFD700" },
+    { label: "Data Source",      value: isLive ? "LIVE (FRED)" : "NOT LIVE", color: isLive ? "#00FF88" : "#FFD700" },
     { label: "Last Updated",     value: lastUpdatedStr,                    color: "#94A3B8" },
   ];
 
@@ -1614,7 +1614,7 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
             { label: "Market Price Feed",  status: "OFFLINE",                      color: "#FF6B6B" },
             { label: "Volume Data",         status: "OFFLINE",                      color: "#FF6B6B" },
             { label: "Options Flow",        status: "OFFLINE",                      color: "#FF6B6B" },
-            { label: "FRED Macro Data",     status: isLive ? "ONLINE" : "CACHED",   color: isLive ? "#00FF88" : "#FFD700" },
+            { label: "FRED Macro Data",     status: isLive ? "ONLINE" : "NOT LIVE",   color: isLive ? "#00FF88" : "#FFD700" },
             { label: "AI Analysis Engine",  status: "STANDBY",                      color: "#FFD700" },
           ].map(item => (
             <div key={item.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 8px", background: "rgba(255,255,255,0.01)", borderRadius: "3px" }}>
