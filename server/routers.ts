@@ -64,7 +64,7 @@ import {
   calcGoalProgress, generateOwnerJournal, getOptimalAction, OBJECTIVE_TYPES,
   buildStockOpportunity, buildCryptoOpportunity,
 } from './ownerSimulation';
-import { getInsiderRadar, getInsiderCompany, getInsiderAlertsForTicker } from './insiderIntelligence';
+import type { ConvictionBand, InsiderCompanyOutput, InsiderRadarOutput } from "./insiderIntelligence";
 import { dayTradeScanner, dayTradeSymbolSetup, getDayTradeFavorability, clearDayTradeCache } from './dayTradeEngine';
 import { fetchDailyBars } from './signalsProxy';
 import { saveDayTradeSnapshot, loadDayTradeSnapshot, getPipelineHealthLogs, getPipelineHealthSummary } from './db';
@@ -1649,18 +1649,26 @@ export const appRouter = router({
   }),
 
   // ── Insider Intelligence — containment until SEC verification ──
+  // Output types keep the client compiling. The bodies still throw, so the
+  // synthetic generator is never called.
   insider: router({
-    radar: protectedProcedure.query(() => {
+    radar: protectedProcedure.query((): InsiderRadarOutput => {
       throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Insider Intelligence unavailable: source verification required." });
     }),
     company: protectedProcedure
       .input(z.object({ ticker: z.string().min(1).max(10) }))
-      .query(() => {
+      .query((): InsiderCompanyOutput => {
         throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Insider Intelligence unavailable: source verification required." });
       }),
     tickerAlert: protectedProcedure
       .input(z.object({ ticker: z.string().min(1).max(10) }))
-      .query(() => {
+      .query((): {
+        convictionScore: number;
+        convictionBand: ConvictionBand;
+        impactPoints: number;
+        recentActivity: string;
+        aiSummary: string;
+      } => {
         throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Insider Intelligence unavailable: source verification required." });
       }),
   }),

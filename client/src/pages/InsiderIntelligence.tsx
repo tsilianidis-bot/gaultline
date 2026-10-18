@@ -142,8 +142,18 @@ function CollapsiblePanel({ open, onToggle, icon, title, color, count, children 
 }
 
 // ── Company Profile Modal ─────────────────────────────────────
+const INSIDER_UNAVAILABLE = "Insider Intelligence unavailable: source verification required.";
+
+function InsiderUnavailable({ message }: { message: string }) {
+  return (
+    <div role="alert" style={{ padding: "14px 16px", marginBottom: "10px", background: "rgba(255,45,85,0.06)", border: "1px solid rgba(255,45,85,0.28)", borderRadius: "6px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#FF8FA3", lineHeight: 1.5 }}>
+      {message || INSIDER_UNAVAILABLE}
+    </div>
+  );
+}
+
 function CompanyProfileModal({ ticker, onClose }: { ticker: string; onClose: () => void }) {
-  const { data, isLoading } = trpc.insider.company.useQuery({ ticker });
+  const { data, isLoading, error } = trpc.insider.company.useQuery({ ticker });
   const [tab, setTab] = useState<"overview" | "timeline" | "accuracy">("overview");
 
   return (
@@ -168,7 +178,9 @@ function CompanyProfileModal({ ticker, onClose }: { ticker: string; onClose: () 
           </div>
         )}
 
-        {data && (
+        {error && <InsiderUnavailable message={error.message} />}
+
+        {data && !error && (
           <>
             {/* Score + Band */}
             <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "20px", padding: "16px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "6px" }}>
@@ -314,7 +326,7 @@ function CompanyProfileModal({ ticker, onClose }: { ticker: string; onClose: () 
 function InsiderIntelligenceInner() {
   useSEO(PAGE_SEO.insiderIntelligence);
 
-  const { data: radar, isLoading, refetch } = trpc.insider.radar.useQuery(undefined, {
+  const { data: radar, isLoading, error: radarError, refetch } = trpc.insider.radar.useQuery(undefined, {
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,
   });
@@ -366,8 +378,10 @@ function InsiderIntelligenceInner() {
           </div>
         </div>
 
+        {radarError && <InsiderUnavailable message={radarError.message} />}
+
         {/* ── WEEKLY STATS BAR ──────────────────────────────── */}
-        {radar && (
+        {radar && !radarError && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "6px", marginBottom: "10px" }}>
             {[
               { label: "Total Buy Value", value: fmtDollar(radar.weeklyStats.totalBuyValue), color: "#00FF88" },
@@ -392,7 +406,7 @@ function InsiderIntelligenceInner() {
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#64748B" }}>SCANNING INSIDER ACTIVITY…</span>
             </div>
           )}
-          {radar && (
+          {radar && !radarError && (
             <>
               {/* Column headers */}
               <div style={{ display: "grid", gridTemplateColumns: "32px 80px 1fr 90px 100px 90px 80px 60px", gap: "8px", padding: "6px 8px", marginBottom: "4px" }}>
@@ -484,7 +498,7 @@ function InsiderIntelligenceInner() {
               </div>
             );
           })}
-          {(!radar || radar.clusterAlerts.length === 0) && !isLoading && (
+          {!radarError && (!radar || radar.clusterAlerts.length === 0) && !isLoading && (
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.45)", padding: "8px 0" }}>No cluster buy alerts detected this period.</div>
           )}
         </CollapsiblePanel>
@@ -524,7 +538,7 @@ function InsiderIntelligenceInner() {
               </div>
             );
           })}
-          {(!radar || radar.topSellingAlerts.length === 0) && !isLoading && (
+          {!radarError && (!radar || radar.topSellingAlerts.length === 0) && !isLoading && (
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.45)", padding: "8px 0" }}>No significant selling activity to analyze this period.</div>
           )}
         </CollapsiblePanel>
