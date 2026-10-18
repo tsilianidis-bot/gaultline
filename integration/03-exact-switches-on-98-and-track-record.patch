@@ -1,0 +1,51 @@
+diff --git a/server/intelligenceEvidence/config.test.ts b/server/intelligenceEvidence/config.test.ts
+index 44669c1..7532520 100644
+--- a/server/intelligenceEvidence/config.test.ts
++++ b/server/intelligenceEvidence/config.test.ts
+@@ -6,5 +6,8 @@ describe("Phase 1 verified evidence rollout gate", () => {
+     expect(isIntelligenceEvidenceEnabled({})).toBe(false);
+     expect(isIntelligenceEvidenceEnabled({ [INTELLIGENCE_EVIDENCE_FLAG]: "false" })).toBe(false);
+     expect(isIntelligenceEvidenceEnabled({ [INTELLIGENCE_EVIDENCE_FLAG]: "true" })).toBe(true);
++    for (const value of ["TRUE", " true ", "true ", "1", "yes", "True", "true\n"]) {
++      expect(isIntelligenceEvidenceEnabled({ [INTELLIGENCE_EVIDENCE_FLAG]: value })).toBe(false);
++    }
+   });
+ });
+diff --git a/server/intelligenceEvidence/config.ts b/server/intelligenceEvidence/config.ts
+index 0dd0b45..551c83f 100644
+--- a/server/intelligenceEvidence/config.ts
++++ b/server/intelligenceEvidence/config.ts
+@@ -6,5 +6,5 @@ export const INTELLIGENCE_EVIDENCE_FLAG = "FAULTLINE_INTELLIGENCE_EVIDENCE_ENABL
+  * being activated merely because this code has been deployed.
+  */
+ export function isIntelligenceEvidenceEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+-  return env[INTELLIGENCE_EVIDENCE_FLAG]?.trim().toLowerCase() === "true";
++  return env[INTELLIGENCE_EVIDENCE_FLAG] === "true";
+ }
+diff --git a/server/trackRecordCapture.test.ts b/server/trackRecordCapture.test.ts
+index 5868648..503ebb1 100644
+--- a/server/trackRecordCapture.test.ts
++++ b/server/trackRecordCapture.test.ts
+@@ -162,6 +162,9 @@ describe("verified evidence selection", () => {
+     })).toEqual({ recorded: false, reason: "reconstructed_input" });
+     expect(trackRecordCronWritesEnabled({})).toBe(false);
+     expect(trackRecordCronWritesEnabled({ TRACK_RECORD_CRON_WRITES: "false" })).toBe(false);
++    for (const value of ["TRUE", " true ", "true ", "1", "yes", "True", "true\n"]) {
++      expect(trackRecordCronWritesEnabled({ TRACK_RECORD_CRON_WRITES: value })).toBe(false);
++    }
+     expect(await captureTrackRecordFromScheduledRun({
+       run: { trigger: "SCHEDULED_CRON" },
+       pressureIndex: 40,
+diff --git a/server/trackRecordCapture.ts b/server/trackRecordCapture.ts
+index c451bee..5864cce 100644
+--- a/server/trackRecordCapture.ts
++++ b/server/trackRecordCapture.ts
+@@ -48,7 +48,7 @@ export type TrackRecordCaptureReason =
+   | "appended";
+ 
+ export function trackRecordCronWritesEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+-  return env[TRACK_RECORD_CRON_WRITES]?.trim().toLowerCase() === "true";
++  return env[TRACK_RECORD_CRON_WRITES] === "true";
+ }
+ 
+ export function evidenceReferenceHash(parts: {
