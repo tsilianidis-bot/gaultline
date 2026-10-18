@@ -19,6 +19,7 @@ The builder fails closed unless all of these hold:
 - the committed 0057 content still has the production-recorded SHA-256;
 - its one invalid 72-character identifier is replaced only in generated fresh-bootstrap SQL with `algo_outcome_prov_fk`;
 - existing 0058 is exactly the known duplicate FK statement and is recorded in the ledger but not emitted physically;
+- the production-recorded 0060 source is replaced only in generated fresh-bootstrap SQL with a temporary FK-support index, the intended unique-to-nonunique composite-index swap, and removal of that temporary index; this avoids MySQL dropping the index on which the FK currently depends and leaves the same final index state as production;
 - all quoted identifiers emitted by the journal chain are 64 characters or fewer; and
 - the generated ledger has exactly one entry per journal migration, retaining each original source checksum and timestamp.
 

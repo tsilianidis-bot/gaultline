@@ -27,6 +27,15 @@ const expected0057Hash = 'e27c5cd660735b2d8309cce11a236fee47ad3cff6bf038e5d026f0
 const expected0057Tag = '0057_flawless_nuke';
 const expected0058Tag = '0058_lovely_skin';
 const expected0058Sql = 'ALTER TABLE `algorithmOutcomeObservations` ADD CONSTRAINT `algo_outcome_prov_fk` FOREIGN KEY (`provenanceId`) REFERENCES `algorithmScoreProvenance`(`id`) ON DELETE cascade ON UPDATE no action;';
+const expected0060Hash = 'd4e7fb08e58512cf03cadc77a4502b4857839da8ad1665cd541b61dc2f16aa41';
+const expected0060Tag = '0060_overrated_golden_guardian';
+const expected0060Sql = 'ALTER TABLE `verifiedHistoricalOutcomes` DROP INDEX `verifiedHist_outcome_score_horizon_idx`;--> statement-breakpoint\nCREATE INDEX `verifiedHist_outcome_score_fk_support_idx` ON `verifiedHistoricalOutcomes` (`verifiedScoreId`);\nALTER TABLE `verifiedHistoricalOutcomes` DROP INDEX `verifiedHist_outcome_score_horizon_idx`;\nCREATE INDEX `verifiedHist_outcome_score_horizon_idx` ON `verifiedHistoricalOutcomes` (`verifiedScoreId`,`horizonTradingDays`);';
+const fresh0060Sql = [
+  'CREATE INDEX `verifiedHist_outcome_score_fk_support_idx` ON `verifiedHistoricalOutcomes` (`verifiedScoreId`);',
+  'ALTER TABLE `verifiedHistoricalOutcomes` DROP INDEX `verifiedHist_outcome_score_horizon_idx`;',
+  'CREATE INDEX `verifiedHist_outcome_score_horizon_idx` ON `verifiedHistoricalOutcomes` (`verifiedScoreId`,`horizonTradingDays`);',
+  'ALTER TABLE `verifiedHistoricalOutcomes` DROP INDEX `verifiedHist_outcome_score_fk_support_idx`;',
+].join('\n--> statement-breakpoint\n');
 
 function fail(message) {
   throw new Error(`Fresh MySQL bootstrap refused: ${message}`);
@@ -82,6 +91,16 @@ for (const entry of journal.entries) {
     // 0057 emitted canonicalConstraint above; retaining this DDL would create a
     // duplicate physical FK. Keep 0058's original ledger entry for compatibility.
     sqlToEmit = '';
+  }
+
+  if (entry.tag === expected0060Tag) {
+    if (originalHash !== expected0060Hash) fail(`0060 historical checksum is ${originalHash}, expected ${expected0060Hash}`);
+    if (originalSql.trim() !== expected0060Sql) fail('0060 no longer matches the known MySQL index-ordering defect');
+    // The historical first DROP fails because MySQL is still using the unique
+    // composite index for the FK. Supply a temporary FK-support index, make the
+    // intended unique-to-nonunique swap, then remove the temporary index so the
+    // final state matches production and the committed 0060 snapshot.
+    sqlToEmit = fresh0060Sql;
   }
 
   const tooLong = identifiersOver64(sqlToEmit);
