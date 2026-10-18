@@ -49,7 +49,7 @@ const finding = (snapshot: ReturnType<typeof buildEvidenceSnapshot>, id: string)
 describe("Phase 1 Intelligence Evidence collector", () => {
   it("maps actual source identity, provider timestamps, and modeled canonical outputs through the gate", () => {
     const snapshot = buildEvidenceSnapshot(inputs(), NOW);
-    expect(finding(snapshot, "quote:SPY")).toMatchObject({ provider: "Yahoo Finance", validationStatus: "verified", supportsCurrentClaim: true, observedAt: "2026-10-16T14:58:00.000Z" });
+    expect(finding(snapshot, "quote:SPY")).toMatchObject({ provider: "Yahoo Finance", validationStatus: "verified", supportsCurrentClaim: true, observedAt: "2026-10-16T14:58:00.000Z", validUntil: "2026-10-16T15:18:00.000Z" });
     expect(finding(snapshot, "fred:DGS10")).toMatchObject({ provider: "Federal Reserve Economic Data (FRED)", validationStatus: "verified", supportsCurrentClaim: true });
     expect(finding(snapshot, "canonical:credit-stress")).toMatchObject({ origin: "modeled", modelVersion: "champion-v1", validationStatus: "delayed", supportsCurrentClaim: true });
   });

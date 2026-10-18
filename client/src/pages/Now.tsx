@@ -1,5 +1,5 @@
 import { useRef, useEffect, useCallback, useState, useMemo } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   ArrowRight,
   BrainCircuit,
@@ -42,6 +42,9 @@ import SystemicRegimeModule from "@/components/SystemicRegimeModule";
 import { trpc } from "@/lib/trpc";
 import { deltaDirection, deltaTrend, knownDelta } from "@/lib/deltaAvailability";
 import { SectorRotationMap } from "@/components/sectorRotation/SectorRotationModule";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { IntelligenceCoreExperience } from "@/components/intelligence-core-visual";
+import { presentVerifiedEvidenceCore } from "@/components/intelligence-core-visual/evidencePresentation";
 
 const NOW_DEEP_PATH = "/app/now/deep";
 
@@ -817,6 +820,8 @@ function DestinationLink({ href, label, detail }: { href: string; label: string;
 
 // ── Main component ───────────────────────────────────────────────────────────
 export default function Now() {
+  const [, navigate] = useLocation();
+  const { user } = useAuth();
   const {
     output, marketState, marketMode, sourceHealth,
     isLoading, lastUpdated, dataError, refresh,
@@ -824,6 +829,18 @@ export default function Now() {
   } = useEngine();
   const { data: systemicRegime } = trpc.systemicRegime.current.useQuery(undefined, { staleTime: 60_000 });
   const { data: signalConvergence } = trpc.systemicRegime.convergenceCurrent.useQuery(undefined, { staleTime: 60_000 });
+  // The evidence endpoint is authenticated and never queried for a guest. A
+  // missing, disabled, or mismatched response renders an explicit unavailable
+  // Core rather than raw provider data or an inferred market conclusion.
+  const { data: evidenceResponse } = trpc.intelligenceEvidence.current.useQuery(undefined, {
+    enabled: Boolean(user && canonicalState),
+    staleTime: 60_000,
+    retry: false,
+  });
+  const evidenceCore = useMemo(
+    () => presentVerifiedEvidenceCore(evidenceResponse, canonicalState),
+    [evidenceResponse, canonicalState],
+  );
 
   // Staged cinematic entry: phases 1–7 over ~5s
   const phase = useStagedLoad([0, 400, 900, 1500, 2200, 3000, 4000], [isLoading]);
@@ -1138,6 +1155,14 @@ export default function Now() {
 
         {/* ── FAULTLINE SECTOR ROTATION MAP™ (Pentagonal Thesis · NOW) ──── */}
         <SectorRotationMap />
+
+        {/* ── INTELLIGENCE CORE · admitted evidence only ────────────────── */}
+        <div className="mt-8">
+          <IntelligenceCoreExperience
+            model={evidenceCore}
+            onNavigate={destination => navigate(CANONICAL_DESTINATION_BY_ID[destination].path)}
+          />
+        </div>
 
         {/* ── WHAT CHANGED + SCENARIO DISTRIBUTION ─────────────────────── */}
         <div className="mt-6 grid gap-5 lg:grid-cols-2">

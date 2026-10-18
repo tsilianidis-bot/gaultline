@@ -33,6 +33,8 @@ export interface ValidatedIntelligenceEvidence {
   observedAt: string | null;
   receivedAt: string | null;
   maxAgeMs: number;
+  /** Canonical Integrity Gate deadline derived server-side from observedAt + maxAgeMs. */
+  validUntil: string | null;
   validationStatus: IntelligenceIntegrityStatus;
   supportsCurrentClaim: boolean;
   validationReason: string;

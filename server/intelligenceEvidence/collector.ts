@@ -43,7 +43,7 @@ type EvidenceInputs = {
   sourceWarnings?: string[];
 };
 
-type EvidenceDraft = Omit<ValidatedIntelligenceEvidence, "value" | "validationStatus" | "supportsCurrentClaim" | "validationReason" | "historicalValue" | "lastVerified"> & {
+type EvidenceDraft = Omit<ValidatedIntelligenceEvidence, "value" | "validUntil" | "validationStatus" | "supportsCurrentClaim" | "validationReason" | "historicalValue" | "lastVerified"> & {
   rawValue: number | string | null;
   sourceHealthy: boolean;
 };
@@ -54,6 +54,14 @@ function finite(value: unknown): value is number {
 
 function toIso(timestamp: number | null | undefined): string | null {
   return finite(timestamp) ? new Date(timestamp).toISOString() : null;
+}
+
+/** The client consumes this admitted deadline; it must never invent its own freshness window. */
+function validityDeadline(observedAt: string | null, maxAgeMs: number): string | null {
+  const observedMs = observedAt ? Date.parse(observedAt) : Number.NaN;
+  return Number.isFinite(observedMs) && finite(maxAgeMs) && maxAgeMs > 0
+    ? new Date(observedMs + maxAgeMs).toISOString()
+    : null;
 }
 
 function providerStatus(current: ValidatedIntelligenceEvidence[], ids: string[]): "healthy" | "degraded" | "unavailable" {
@@ -98,6 +106,7 @@ function validate(draft: EvidenceDraft, nowMs: number): ValidatedIntelligenceEvi
     observedAt: integrity.observedAt,
     receivedAt: draft.receivedAt,
     maxAgeMs: draft.maxAgeMs,
+    validUntil: validityDeadline(integrity.observedAt, draft.maxAgeMs),
     validationStatus: integrity.status,
     supportsCurrentClaim: integrity.canSupportCurrentClaim,
     validationReason: integrity.reason,
