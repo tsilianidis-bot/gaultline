@@ -19,8 +19,9 @@ type AftershockLabel =
 
 type ContagionDirection = "Bullish" | "Bearish" | "Uncertain";
 type ConfirmationStatus = "Confirmed" | "Developing" | "Unconfirmed" | "Fading";
-type ConfidenceLevel = "High" | "Moderate" | "Low";
 type AssetClass = "Stock" | "ETF" | "Crypto" | "Macro" | "Sector";
+type AftershockAvailability = "AVAILABLE" | "UNAVAILABLE";
+type EvidenceStatus = "CURRENT" | "DELAYED" | "FALLBACK" | "STALE" | "UNAVAILABLE";
 
 interface RuptureEvent {
   id: string;
@@ -36,6 +37,13 @@ interface RuptureEvent {
   description: string;
   detectedAt: number;
   aftershockWindowHours: number;
+  source: "yahoo-daily";
+  observedAt: number;
+  receivedAt: number;
+  availability: "AVAILABLE";
+  evidenceStatus: "DELAYED";
+  canonicalStateId: string;
+  modelDerived: true;
 }
 
 interface AftershockSignal {
@@ -47,18 +55,29 @@ interface AftershockSignal {
   relatedName: string;
   relatedAssetClass: AssetClass;
   label: AftershockLabel;
-  probability: number;
+  probability: null;
   strength: number;
   timingWindowHours: number;
   timingWindowLabel: string;
   relationshipType: string;
   direction: ContagionDirection;
-  confidence: ConfidenceLevel;
+  confidence: null;
   confirmationStatus: ConfirmationStatus;
   explanation: string;
   currentReactionPercent: number | null;
   reactionStarted: boolean;
   generatedAt: number;
+  source: "aftershock-static-contagion-graph";
+  observedAt: number;
+  receivedAt: number;
+  availability: "AVAILABLE";
+  evidenceStatus: "DELAYED";
+  canonicalStateId: string;
+  reactionSource: "yahoo-daily" | null;
+  reactionObservedAt: number | null;
+  reactionAvailability: AftershockAvailability;
+  modelDerived: true;
+  methodologyVersion: string;
 }
 
 interface AftershockChain {
@@ -70,6 +89,26 @@ interface AftershockChain {
   totalAftershocks: number;
   confirmedAftershocks: number;
   macroContext: string;
+}
+
+interface AftershockData {
+  availability: AftershockAvailability;
+  evidenceStatus: EvidenceStatus;
+  reason: string | null;
+  source: "yahoo-daily" | null;
+  observedAt: number | null;
+  receivedAt: number | null;
+  canonicalStateId: string | null;
+  canonicalInputSnapshotId: string | null;
+  canonicalAsOf: string | null;
+  activeRuptures: RuptureEvent[];
+  aftershocks: AftershockSignal[];
+  chains: AftershockChain[];
+  systemicRiskLevel: string | null;
+  pressureIndex: number | null;
+  regime: string | null;
+  summary: string;
+  model: { methodologyVersion: string; calibrationStatus: "NOT_CALIBRATED"; probabilityStatus: "NOT_ESTABLISHED"; modelDerived: true };
 }
 
 // ── Color helpers ──────────────────────────────────────────────
@@ -113,12 +152,6 @@ function labelColor(l: AftershockLabel): string {
     "False Aftershock":       "bg-zinc-700/20 border-zinc-700/50 text-zinc-500",
   };
   return map[l] ?? "bg-zinc-700/20 border-zinc-600/40 text-zinc-400";
-}
-
-function confidenceDot(c: ConfidenceLevel): string {
-  if (c === "High")     return "bg-emerald-400";
-  if (c === "Moderate") return "bg-amber-400";
-  return "bg-zinc-500";
 }
 
 function assetClassBadge(ac: AssetClass): string {
@@ -341,11 +374,14 @@ function RuptureCard({ rupture, isSelected, onClick }: {
         </div>
       </div>
 
-      <StrengthMeter value={rupture.strength} label="Rupture Strength" />
+      <StrengthMeter value={rupture.strength} label="Methodology-derived rupture strength" />
 
       <div className="mt-2 flex items-center justify-between text-[10px] text-zinc-500">
         <span>Vol {rupture.volumeRatio.toFixed(1)}x avg</span>
         <span>Window: {rupture.aftershockWindowHours}h</span>
+      </div>
+      <div className="mt-1 text-[9px] font-mono text-zinc-600">
+        {rupture.source} · {rupture.evidenceStatus} · observed {new Date(rupture.observedAt).toLocaleDateString()}
       </div>
     </button>
   );
@@ -404,25 +440,23 @@ function AftershockCard({ signal }: { signal: AftershockSignal }) {
           <div data-probability-status="not-established" className="text-sm font-mono font-bold text-zinc-400">Not established</div>
         </div>
         <div>
-          <div className="text-[9px] text-zinc-600 uppercase tracking-widest mb-1">Timing</div>
+          <div className="text-[9px] text-zinc-600 uppercase tracking-widest mb-1">Model Timing</div>
           <div className="text-[11px] font-mono text-zinc-300">{signal.timingWindowLabel}</div>
         </div>
         <div>
-          <div className="text-[9px] text-zinc-600 uppercase tracking-widest mb-1">Confidence</div>
-          <div className="flex items-center gap-1">
-            <div className={`w-1.5 h-1.5 rounded-full ${confidenceDot(signal.confidence)}`} />
-            <span className="text-[11px] font-mono text-zinc-300">{signal.confidence}</span>
-          </div>
+          <div className="text-[9px] text-zinc-600 uppercase tracking-widest mb-1">Methodology</div>
+          <div className="text-[11px] font-mono text-zinc-400">Model-derived</div>
         </div>
       </div>
 
-      <StrengthMeter value={signal.strength} label="Aftershock Strength" />
+      <StrengthMeter value={signal.strength} label="Model-derived edge strength" />
 
       {/* Expanded explanation */}
       {expanded && (
         <div className="mt-3 pt-3 border-t border-zinc-800/60">
-          <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1.5">Why This Aftershock?</div>
+          <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1.5">Graph Methodology Assumption</div>
           <p className="text-xs text-zinc-300 leading-relaxed">{signal.explanation}</p>
+          <p className="text-[10px] text-zinc-500 mt-2">Static relationship graph · {signal.methodologyVersion} · not a calibrated forecast.</p>
         </div>
       )}
 
@@ -537,7 +571,7 @@ function AftershockEnginePageInner() {
             </div>
 
             <div className="flex items-center gap-4">
-              {data && (
+              {data?.availability === "AVAILABLE" && (
                 <div className="hidden sm:flex items-center gap-4 text-[11px] font-mono">
                   <div className="flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
@@ -586,6 +620,15 @@ function AftershockEnginePageInner() {
 
         {data && !isLoading && (
           <>
+            {data.availability === "UNAVAILABLE" ? (
+              <div className="rounded border border-amber-500/30 bg-amber-500/5 p-6 text-center">
+                <div className="text-sm font-mono font-bold text-amber-300">OBSERVATIONS UNAVAILABLE</div>
+                <p className="mt-2 text-xs text-zinc-400">{data.reason ?? "No verified completed market observations are available."}</p>
+                <div className="mt-3 text-[10px] font-mono text-zinc-500">Status: {data.evidenceStatus} · Canonical state: {data.canonicalStateId ?? "unbound"}</div>
+                <p className="mt-3 text-[10px] text-zinc-500">This is not a no-rupture or calm-market finding. Rupture, strength, and contagion claims are withheld.</p>
+              </div>
+            ) : (
+          <>
             {/* ── Summary Banner ── */}
             <div className="mb-6 p-4 rounded border border-zinc-800/60 bg-zinc-900/30">
               <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -593,18 +636,23 @@ function AftershockEnginePageInner() {
                   <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1.5">Engine Summary</div>
                   <p className="text-sm text-zinc-200 leading-relaxed">{data.summary}</p>
                 </div>
-                <div className="flex gap-4 shrink-0">
-                  <div className="text-center">
-                    <div className="text-xl font-mono font-bold text-white">{Math.round(data.pressureIndex)}</div>
-                    <div className="text-[9px] text-zinc-500 uppercase tracking-widest">Pressure</div>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <div className="text-[9px] font-mono text-zinc-500">
+                    {data.source ?? "source unavailable"} · {data.evidenceStatus} · observed {data.observedAt ? new Date(data.observedAt).toLocaleDateString() : "—"}
                   </div>
-                  <div className="text-center">
-                    <div className={`text-xl font-mono font-bold ${
-                      data.systemicRiskLevel === "Critical" ? "text-red-400" :
-                      data.systemicRiskLevel === "High"     ? "text-orange-400" :
-                      data.systemicRiskLevel === "Elevated" ? "text-amber-400" : "text-emerald-400"
-                    }`}>{data.systemicRiskLevel}</div>
-                    <div className="text-[9px] text-zinc-500 uppercase tracking-widest">Risk Level</div>
+                  <div className="flex gap-4">
+                    <div className="text-center">
+                      <div className="text-xl font-mono font-bold text-white">{data.pressureIndex === null ? "—" : Math.round(data.pressureIndex)}</div>
+                      <div className="text-[9px] text-zinc-500 uppercase tracking-widest">Canonical Pressure</div>
+                    </div>
+                    <div className="text-center">
+                      <div className={`text-xl font-mono font-bold ${
+                        data.systemicRiskLevel === "Critical" ? "text-red-400" :
+                        data.systemicRiskLevel === "High"     ? "text-orange-400" :
+                        data.systemicRiskLevel === "Elevated" ? "text-amber-400" : "text-emerald-400"
+                      }`}>{data.systemicRiskLevel ?? "—"}</div>
+                      <div className="text-[9px] text-zinc-500 uppercase tracking-widest">Risk Level</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -622,7 +670,7 @@ function AftershockEnginePageInner() {
 
                 {data.activeRuptures.length === 0 ? (
                   <div className="text-center py-8 text-zinc-600 text-sm font-mono">
-                    No active ruptures detected
+                    No observed ruptures met the configured thresholds
                   </div>
                 ) : (
                   data.activeRuptures.map(rupture => (
@@ -715,7 +763,7 @@ function AftershockEnginePageInner() {
 
                     {filteredAftershocks.length === 0 ? (
                       <div className="text-center py-12 text-zinc-600 font-mono text-sm">
-                        No aftershocks match the current filters
+                        No model-derived graph signals match the current filters
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -732,7 +780,7 @@ function AftershockEnginePageInner() {
                   <div className="space-y-3">
                     {data.chains.length === 0 ? (
                       <div className="text-center py-12 text-zinc-600 font-mono text-sm">
-                        No active contagion chains
+                        No observed ruptures produced contagion chains
                       </div>
                     ) : (
                       data.chains.map((chain, i) => (
@@ -750,7 +798,7 @@ function AftershockEnginePageInner() {
                         <RippleCanvas ruptures={data.activeRuptures} />
                       ) : (
                         <div className="flex items-center justify-center h-full text-zinc-600 font-mono text-sm">
-                          No active ruptures to visualize
+                          No observed ruptures to visualize
                         </div>
                       )}
                     </div>
@@ -805,9 +853,11 @@ function AftershockEnginePageInner() {
             {/* ── Disclaimer ── */}
             <div className="mt-6 p-4 rounded border border-zinc-800/40 bg-zinc-900/20">
               <p className="text-[10px] text-zinc-600 leading-relaxed">
-                <span className="text-zinc-500 font-mono">AFTERSHOCK ENGINE™</span> — Signals are generated from market data analysis and historical contagion patterns. Aftershock probabilities represent statistical likelihoods based on observed correlations, not guarantees of future price movements. This system is for informational and research purposes only. Not financial advice. Past contagion patterns do not guarantee future reactions. Always conduct independent research before making investment decisions.
+                <span className="text-zinc-500 font-mono">AFTERSHOCK ENGINE™</span> — Price and volume values are completed, delayed Yahoo daily-bar observations. The contagion graph, timing windows, and strength are model methodology assumptions, not observed causal facts or calibrated forecasts; probability and confidence are intentionally not established. This system is for informational and research purposes only, not financial advice.
               </p>
             </div>
+          </>
+            )}
           </>
         )}
       </div>

@@ -8,6 +8,7 @@
  */
 
 import { pressureLevelWord } from "../shared/pressureBands";
+import { isCanonicalPublicationCurrent } from "../shared/nyseSession";
 import type { CanonicalIntelligenceState } from "../shared/canonicalIntelligenceState";
 import type { FaultlinePressureOutput, PressureLevel, RiskVector } from "./pressure/engine";
 
@@ -45,11 +46,12 @@ function scoreToLevel(score: number): PressureLevel {
 export function isCanonicalCurrentUsable(
   state: CanonicalIntelligenceState | null | undefined,
 ): state is CanonicalIntelligenceState {
-  if (!state) return false;
-  if (state.pressureIndex == null || Number.isNaN(state.pressureIndex)) return false;
-  if (state.confidenceOrEvidenceQuality === "UNAVAILABLE") return false;
+  if (!state || !isCanonicalPublicationCurrent(state.effectiveAt ?? state.generatedAt) || state.provenance?.scheduledPublication === false) return false;
+  if (state.pressureIndex == null || !Number.isFinite(state.pressureIndex) || state.pressureIndex < 0 || state.pressureIndex > 100) return false;
+  if (!state.stateId?.trim() || !state.regime?.trim()) return false;
+  if (state.confidenceOrEvidenceQuality !== "HEALTHY" && state.confidenceOrEvidenceQuality !== "PARTIAL") return false;
   const coherence = state.provenance?.coherenceStatus;
-  if (coherence === "UNAVAILABLE" || coherence === "INVALID") return false;
+  if (coherence !== "COHERENT") return false;
   return true;
 }
 
@@ -60,8 +62,18 @@ export function projectPressureFromCanonical(
   const pressureIndex = state.pressureIndex;
   if (pressureIndex == null || Number.isNaN(pressureIndex)) return null;
 
+  const candidate = state.domains?.pressureVerification as FaultlinePressureOutput["verification"] | undefined;
+  const verification = candidate && candidate.status === "verified" &&
+    Array.isArray(candidate.inputs) && typeof candidate.computedAt === "string" && Number.isFinite(Date.parse(candidate.computedAt))
+      ? candidate : undefined;
+  const rawInputIds = ["hySpread", "tsy10y", "tsy2y", "sofr", "fedFunds", "cpi", "ppi", "unemployment"];
+  const sourceInputs = verification?.inputs.filter(input => rawInputIds.includes(input.inputId) && input.status === "verified" &&
+    typeof input.value === "number" && Number.isFinite(input.value)) ?? [];
+  const rawInputs = Object.fromEntries(sourceInputs.map(input => [input.inputId, input.value]));
+  const observationDates = Object.fromEntries(sourceInputs.map(input => [input.inputId, input.observationDate]));
+
   const vectors: RiskVector[] = state.engines
-    .filter(engine => engine.value != null && engine.qualityStatus !== "UNAVAILABLE")
+    .filter(engine => engine.value != null && Number.isFinite(engine.value) && engine.qualityStatus !== "UNAVAILABLE")
     .map(engine => {
       const score = engine.value as number;
       const trend = engine.direction === "Improving"
@@ -78,7 +90,8 @@ export function projectPressureFromCanonical(
         driver: engine.classification ?? engine.engineName,
         trend,
         weight: ENGINE_WEIGHTS[engine.engineId] ?? 0,
-        rawInputs: {},
+        rawInputs,
+        observationDates,
         dataStatus: engine.freshnessStatus === "CURRENT"
           ? "live"
           : engine.freshnessStatus === "STALE"
@@ -116,6 +129,7 @@ export function projectPressureFromCanonical(
     lastUpdated: state.effectiveAt,
     dataSource: state.confidenceOrEvidenceQuality === "HEALTHY" ? "live" : "fallback",
     priorPressure: null,
+    verification,
   };
 }
 
@@ -145,5 +159,5 @@ export function hasRequiredCryptoVectors(pressure: FaultlinePressureOutput): boo
 
 export function canonicalVectorScore(pressure: FaultlinePressureOutput, id: string): number | null {
   const score = pressure.vectors.find(vector => vector.id === id)?.score;
-  return typeof score === "number" && !Number.isNaN(score) ? score : null;
+  return typeof score === "number" && Number.isFinite(score) ? score : null;
 }

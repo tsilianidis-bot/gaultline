@@ -59,7 +59,13 @@ export interface CrossEngineDivergence {
   direction: "DIVERGENT";
   firstObservedAt: string;
   latestObservedAt: string;
-  magnitude: null;
+  magnitude: number | null;
+  magnitudeEvidence?: {
+    value: number;
+    evidenceClass: "DERIVED";
+    methodologyId: "canonical-engine-score-gap-v1";
+    inputs: { engineIds: [string, string]; values: [number, number] };
+  } | null;
   persistence: "NEW" | "PERSISTING";
   acceleration: null;
   supportingClaimIds: string[];

@@ -18,6 +18,13 @@
 // ============================================================
 
 import { clamp } from "../utils";
+import { fetchFredBulk } from "../../fredClient";
+import {
+  PRESSURE_FRED_SERIES,
+  resolveVerifiedInputs,
+  type FaultlinePressureOutput,
+  type PressureInputProvenance,
+} from "../../pressure/engine";
 
 // ── Normalized Market Data Types ──────────────────────────────
 
@@ -40,10 +47,20 @@ export interface FMOSMacroData {
   ppiYoY: number | null;
   /** Unemployment rate (%) */
   unemployment: number | null;
-  /** Data freshness */
-  dataSource: "live" | "fallback";
+  /** Data freshness. `unavailable` is never populated with substitute FRED values. */
+  dataSource: "live" | "unavailable";
   /** Timestamp of data fetch */
   fetchedAt: string;
+  /** Verified Pressure computation timestamp backing this macro snapshot. */
+  macroAsOf: string | null;
+  /** Canonical source attribution; null means no verified source snapshot exists. */
+  source: "FRED" | null;
+  /** Provider attribution is present only for a verified FRED snapshot. */
+  provider: "FRED" | null;
+  /** Observation date for each normalized input, preserving FRED publication lag. */
+  observationDates: Record<string, string | null>;
+  /** Reason inputs were withheld rather than defaulted. */
+  unavailableReason?: string;
 }
 
 export interface FMOSEquityData {
@@ -97,108 +114,129 @@ export interface FMOSMarketData {
 
 // ── Data Acquisition Functions ────────────────────────────────
 
-/**
- * Fetch and normalize macroeconomic data from FRED.
- * This wraps the existing FRED bulk endpoint used by calculateFaultlinePressure().
- */
-export async function fetchMacroData(
-  baseUrl = "http://localhost:3000"
-): Promise<FMOSMacroData> {
-  const FRED_SERIES = [
-    { id: "BAMLH0A0HYM2", limit: 2 },
-    { id: "DGS10", limit: 2 },
-    { id: "DGS2", limit: 2 },
-    { id: "SOFR", limit: 2 },
-    { id: "CPIAUCSL", limit: 14 },
-    { id: "PPIACO", limit: 14 },
-    { id: "FEDFUNDS", limit: 2 },
-    { id: "UNRATE", limit: 2 },
-  ];
+const FMOS_MACRO_INPUT_IDS = ["hySpread", "tsy10y", "tsy2y", "sofr", "fedFunds", "cpi", "ppi", "unemployment"] as const;
 
-  const fallback: FMOSMacroData = {
-    hySpreadBps: 350,
-    tsy10y: 4.5,
-    tsy2y: 4.8,
-    yieldCurveSpread: -30,
-    sofr: 5.3,
-    fedFunds: 5.25,
-    cpiYoY: 3.5,
-    ppiYoY: 2.8,
-    unemployment: 4.0,
-    dataSource: "fallback",
-    fetchedAt: new Date().toISOString(),
+function unavailableMacroData(reason: string, fetchedAt = new Date().toISOString()): FMOSMacroData {
+  const observationDates = Object.fromEntries(FMOS_MACRO_INPUT_IDS.map(id => [id, null]));
+  return {
+    hySpreadBps: null,
+    tsy10y: null,
+    tsy2y: null,
+    yieldCurveSpread: null,
+    sofr: null,
+    fedFunds: null,
+    cpiYoY: null,
+    ppiYoY: null,
+    unemployment: null,
+    dataSource: "unavailable",
+    fetchedAt,
+    macroAsOf: null,
+    source: null,
+    provider: null,
+    observationDates,
+    unavailableReason: reason,
   };
+}
 
-  function latestValid(obs: { date: string; value: string }[]): number | null {
-    for (const o of obs) {
-      if (o.value !== "." && o.value !== "") {
-        const n = parseFloat(o.value);
-        if (!isNaN(n)) return n;
-      }
-    }
-    return null;
+/**
+ * Normalize a complete, verified FRED input provenance set. This intentionally
+ * has no per-field defaults: a partial FRED reading is unavailable as a whole.
+ */
+function macroFromVerifiedInputs(inputs: PressureInputProvenance[], fetchedAt: string): FMOSMacroData {
+  const byId = new Map(inputs.map(input => [input.inputId, input]));
+  const verified = FMOS_MACRO_INPUT_IDS.map(id => byId.get(id));
+  if (
+    !isFiniteIsoTimestamp(fetchedAt) ||
+    verified.some(input => !input || input.status !== "verified" || input.value === null || !Number.isFinite(input.value) || !isFiniteIsoDate(input.observationDate))
+  ) {
+    return unavailableMacroData("Required FRED macro inputs were not all verified", fetchedAt);
   }
 
+  const value = (id: typeof FMOS_MACRO_INPUT_IDS[number]) => byId.get(id)!.value as number;
+  const observationDates = Object.fromEntries(FMOS_MACRO_INPUT_IDS.map(id => [id, byId.get(id)?.observationDate ?? null]));
+  const tsy10y = value("tsy10y");
+  const tsy2y = value("tsy2y");
+  return {
+    hySpreadBps: value("hySpread"),
+    tsy10y,
+    tsy2y,
+    yieldCurveSpread: Math.round((tsy10y - tsy2y) * 100),
+    sofr: value("sofr"),
+    fedFunds: value("fedFunds"),
+    cpiYoY: value("cpi"),
+    ppiYoY: value("ppi"),
+    unemployment: value("unemployment"),
+    dataSource: "live",
+    fetchedAt,
+    macroAsOf: fetchedAt,
+    source: "FRED",
+    provider: "FRED",
+    observationDates,
+  };
+}
+
+function isFiniteIsoTimestamp(value: string | null | undefined): value is string {
+  return typeof value === "string" && value.length > 0 && Number.isFinite(Date.parse(value));
+}
+
+function isFiniteIsoDate(value: string | null | undefined): value is string {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(`${value}T00:00:00Z`));
+}
+
+/**
+ * Guard for downstream engines that must not classify or score from a partial
+ * macro object. Both numeric inputs and FRED source/as-of provenance are
+ * required, preventing a caller from relabelling hand-filled values as live.
+ */
+export function hasVerifiedFmosMacroInputs(macro: FMOSMacroData): boolean {
+  const values = [
+    macro.hySpreadBps,
+    macro.tsy10y,
+    macro.tsy2y,
+    macro.yieldCurveSpread,
+    macro.sofr,
+    macro.fedFunds,
+    macro.cpiYoY,
+    macro.ppiYoY,
+    macro.unemployment,
+  ];
+  return macro.dataSource === "live"
+    && macro.provider === "FRED"
+    && macro.source === "FRED"
+    && isFiniteIsoTimestamp(macro.macroAsOf)
+    && values.every(Number.isFinite)
+    && FMOS_MACRO_INPUT_IDS.every(inputId => isFiniteIsoDate(macro.observationDates[inputId]));
+}
+
+/**
+ * Reuse the one verified FRED snapshot already consumed by the Pressure Engine.
+ * A stale or otherwise non-verified pressure result cannot be re-labelled as
+ * fresh macro evidence, so its FMOS macro fields are explicitly unavailable.
+ */
+export function adaptVerifiedPressureToFmosMacro(pressure: FaultlinePressureOutput): FMOSMacroData {
+  const verification = pressure.verification;
+  if (verification?.status !== "verified") {
+    return unavailableMacroData(
+      verification?.problems.join("; ") || "Pressure verification is not a current verified FRED snapshot",
+      verification?.computedAt ?? pressure.lastUpdated ?? new Date().toISOString(),
+    );
+  }
+  return macroFromVerifiedInputs(verification.inputs, verification.computedAt);
+}
+
+/**
+ * Fetch a real FRED snapshot only for standalone acquisition consumers. The
+ * pipeline itself calls `adaptVerifiedPressureToFmosMacro` so it does not race
+ * a second macro observation against the Pressure Engine's verified snapshot.
+ */
+export async function fetchMacroData(_baseUrl = "http://localhost:3000"): Promise<FMOSMacroData> {
   try {
-    const res = await fetch(`${baseUrl}/api/fred/bulk`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ series: FRED_SERIES }),
-      signal: AbortSignal.timeout(15000),
-    });
-
-    if (!res.ok) return fallback;
-
-    const bulk = await res.json() as {
-      results: Record<string, { observations: { date: string; value: string }[] }>;
-    };
-    const r = bulk.results;
-
-    const hyRaw = latestValid(r["BAMLH0A0HYM2"]?.observations ?? []);
-    const hySpreadBps = hyRaw !== null ? (hyRaw > 20 ? hyRaw : hyRaw * 100) : null;
-    const tsy10y = latestValid(r["DGS10"]?.observations ?? []);
-    const tsy2y = latestValid(r["DGS2"]?.observations ?? []);
-    const yieldCurveSpread = tsy10y !== null && tsy2y !== null
-      ? Math.round((tsy10y - tsy2y) * 100)
-      : null;
-
-    // CPI YoY
-    const cpiObs = r["CPIAUCSL"]?.observations ?? [];
-    let cpiYoY: number | null = null;
-    if (cpiObs.length >= 13) {
-      const latest = latestValid(cpiObs.slice(0, 1));
-      const yearAgo = latestValid(cpiObs.slice(12, 13));
-      if (latest !== null && yearAgo !== null && yearAgo > 0) {
-        cpiYoY = Math.round(((latest - yearAgo) / yearAgo) * 1000) / 10;
-      }
-    }
-
-    // PPI YoY
-    const ppiObs = r["PPIACO"]?.observations ?? [];
-    let ppiYoY: number | null = null;
-    if (ppiObs.length >= 13) {
-      const latest = latestValid(ppiObs.slice(0, 1));
-      const yearAgo = latestValid(ppiObs.slice(12, 13));
-      if (latest !== null && yearAgo !== null && yearAgo > 0) {
-        ppiYoY = Math.round(((latest - yearAgo) / yearAgo) * 1000) / 10;
-      }
-    }
-
-    return {
-      hySpreadBps,
-      tsy10y,
-      tsy2y,
-      yieldCurveSpread,
-      sofr: latestValid(r["SOFR"]?.observations ?? []),
-      fedFunds: latestValid(r["FEDFUNDS"]?.observations ?? []),
-      cpiYoY,
-      ppiYoY,
-      unemployment: latestValid(r["UNRATE"]?.observations ?? []),
-      dataSource: "live",
-      fetchedAt: new Date().toISOString(),
-    };
-  } catch {
-    return fallback;
+    const bulk = await fetchFredBulk(PRESSURE_FRED_SERIES);
+    const resolved = resolveVerifiedInputs(bulk.results, new Date());
+    if (!resolved.ok) return unavailableMacroData(resolved.problems.join("; "));
+    return macroFromVerifiedInputs(resolved.provenance, new Date().toISOString());
+  } catch (error) {
+    return unavailableMacroData(`FRED fetch failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -254,10 +292,11 @@ export async function acquireMarketData(
   const { symbol, assetType, baseUrl = "http://localhost:3000" } = options;
   const errors: string[] = [];
 
-  // Always fetch macro data
+  // Always fetch macro data. Unavailable means fields remain null; no FRED
+  // substitute values are permitted at this boundary.
   const macro = await fetchMacroData(baseUrl);
-  if (macro.dataSource === "fallback") {
-    errors.push("FRED macro data unavailable — using fallback values");
+  if (macro.dataSource === "unavailable") {
+    errors.push(`FRED macro data unavailable${macro.unavailableReason ? `: ${macro.unavailableReason}` : ""}`);
   }
 
   // Fetch equity data if symbol provided and it's a stock/ETF
@@ -284,13 +323,10 @@ export async function acquireMarketData(
  * Derive a liquidity stress score (0–100) from macro data.
  * Higher = more stressed.
  */
-export function deriveLiquidityScore(macro: FMOSMacroData): number {
-  const hyScore = macro.hySpreadBps !== null
-    ? clamp(Math.round((macro.hySpreadBps - 200) / 6), 0, 100)
-    : 40;
-  const curveScore = macro.yieldCurveSpread !== null
-    ? clamp(Math.round((-macro.yieldCurveSpread - 0) / 2), 0, 100)
-    : 30;
+export function deriveLiquidityScore(macro: FMOSMacroData): number | null {
+  if (macro.hySpreadBps === null || macro.yieldCurveSpread === null) return null;
+  const hyScore = clamp(Math.round((macro.hySpreadBps - 200) / 6), 0, 100);
+  const curveScore = clamp(Math.round((-macro.yieldCurveSpread - 0) / 2), 0, 100);
   return clamp(Math.round(hyScore * 0.6 + curveScore * 0.4));
 }
 
@@ -298,23 +334,18 @@ export function deriveLiquidityScore(macro: FMOSMacroData): number {
  * Derive a credit contagion score (0–100) from macro data.
  * Higher = more credit stress.
  */
-export function deriveCreditScore(macro: FMOSMacroData): number {
-  const hyScore = macro.hySpreadBps !== null
-    ? clamp(Math.round((macro.hySpreadBps - 200) / 6), 0, 100)
-    : 35;
-  return hyScore;
+export function deriveCreditScore(macro: FMOSMacroData): number | null {
+  if (macro.hySpreadBps === null) return null;
+  return clamp(Math.round((macro.hySpreadBps - 200) / 6), 0, 100);
 }
 
 /**
  * Derive a macro sensitivity score (0–100) from macro data.
  * Higher = more macro headwinds.
  */
-export function deriveMacroScore(macro: FMOSMacroData): number {
-  const inflationScore = macro.cpiYoY !== null
-    ? clamp(Math.round((macro.cpiYoY - 2) * 15), 0, 100)
-    : 30;
-  const unemploymentScore = macro.unemployment !== null
-    ? clamp(Math.round((macro.unemployment - 3.5) * 20), 0, 100)
-    : 25;
+export function deriveMacroScore(macro: FMOSMacroData): number | null {
+  if (macro.cpiYoY === null || macro.unemployment === null) return null;
+  const inflationScore = clamp(Math.round((macro.cpiYoY - 2) * 15), 0, 100);
+  const unemploymentScore = clamp(Math.round((macro.unemployment - 3.5) * 20), 0, 100);
   return clamp(Math.round(inflationScore * 0.6 + unemploymentScore * 0.4));
 }

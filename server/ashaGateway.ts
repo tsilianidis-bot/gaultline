@@ -109,8 +109,9 @@ export function actForModel(act: CanonicalMarketState["act"]): CanonicalMarketSt
 
 /** Client page supplement without any probability number or client-sent confidence. */
 export function pageSupplementForModel(page: AshaPageContext): AshaPageContext {
-  const { transitionProbability: _transition, regimeConfidence: _confidence, ...rest } = page;
-  return rest;
+  // A browser-supplied reading is not evidence, even when a normal UI builds it
+  // from EngineContext. Ticker facts require a separate verified server adapter.
+  return { page: page.page };
 }
 
 export function buildAshaCanonicalContextBlock(context: AshaGatewayContext): string {
@@ -121,6 +122,9 @@ export function buildAshaCanonicalContextBlock(context: AshaGatewayContext): str
 
   const boundedContext = {
     contractVersion: context.version,
+    canonicalStateId: marketState.canonicalStateId ?? null,
+    stateHash: marketState.stateHash ?? null,
+    inputSnapshotId: marketState.inputSnapshotId ?? null,
     currentPage: context.page.page,
     destination: destination
       ? { id: destination.id, question: destination.question, view: destination.defaultView }

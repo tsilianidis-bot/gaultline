@@ -313,8 +313,8 @@ export interface ManifestRunProvenance {
     systemicRegimeDataAsOf: string | null;
   };
   inputSnapshotId: string;
-  /** Per-series provider observation dates are not exposed by the pressure engine yet. */
-  inputObservationDatesCaptured: false;
+  /** Reference-period dates retained from provider inputs; not proof of a stored vintage or publication time. */
+  inputObservationDatesCaptured: boolean;
   writePolicy: "APPEND_ONLY_INSERT_IF_ABSENT";
   correctionOf: { stateId: string; reason: string } | null;
   // ── Forward-ledger additions (A1–A4). Outside the stateHash core; the hash recipe is unchanged. ──
@@ -322,7 +322,7 @@ export interface ManifestRunProvenance {
   trigger?: RunTrigger;
   triggerSource?: RunSource;
   runStartedAt?: string;
-  /** true when runStartedAt is inside [18:00, 18:30) UTC */
+  /** true only inside the NYSE post-close window (16:15–16:45 America/New_York). Historical rows may still reflect the retired 18:00 UTC classifier. */
   scheduledWindow?: boolean;
   ledgerSchemaVersion?: typeof LEDGER_SCHEMA_VERSION;
   hashRecipe?: typeof STATE_HASH_RECIPE;
@@ -369,6 +369,9 @@ export function buildAtomicIntelligenceStateManifest({ pressure, seismograph, or
       activeContributors: seismograph?.activeContributors ?? [],
       evidenceConsensus: seismograph?.evidenceConsensus ?? "unavailable",
       providerProvenance: seismograph?.providerProvenance ?? null,
+      // Preserve the exact source-input set consumed by this run, not a later
+      // independent provider read. Existing hashes/records are never rewritten.
+      pressureVerification: pressure.verification ?? null,
       // Additive persisted snapshots. NEVER enter engineValues / Pressure weights.
       ...(persistedHooks?.systemicRegime ? { systemicRegime: persistedHooks.systemicRegime } : {}),
       ...(persistedHooks?.signalConvergence ? { signalConvergence: persistedHooks.signalConvergence } : {}),
@@ -418,9 +421,9 @@ export function buildAtomicIntelligenceStateManifest({ pressure, seismograph, or
       systemicRegimeDataAsOf: regimeHookField(persistedHooks?.systemicRegime, "dataAsOf"),
     },
     inputSnapshotId,
-    inputObservationDatesCaptured: false,
+    inputObservationDatesCaptured: inputQuality.some(input => input.observedAt !== null),
     writePolicy: "APPEND_ONLY_INSERT_IF_ABSENT",
-    correctionOf: correctionOf ?? null,
+    correctionOf,
     ...(runContext ? {
       trigger: runContext.trigger,
       triggerSource: runContext.triggerSource,
@@ -534,4 +537,44 @@ export async function appendGovernedResearchResolution(input: { observationId: n
     sourceDataVersionsJson: JSON.stringify(input.sourceDataVersions),
   }).$returningId();
   return { id: inserted[0]?.id ?? null, created: true };
+}
+
+/** Read-boundary validation; never repairs or rewrites a malformed persisted row. */
+export function validateStoredIntelligenceManifest(value: unknown, row?: {
+  stateId: string; stateHash: string; inputSnapshotId: string; generatedAt: Date | string;
+  championVersion?: string; modelVersion?: string; scoringVersion?: string; configurationVersion?: string;
+}): value is AtomicIntelligenceStateManifest & { inputQuality: LiveInputQualityManifestEntry[] } {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const manifest = value as Record<string, unknown>;
+  const identities = ["stateId", "originatingRunId", "generatedAt", "stateHash", "inputSnapshotId", "championVersion", "modelVersion", "scoringVersion", "configurationVersion", "regime", "historicalDatasetVersion", "researchDatasetVersion"];
+  if (identities.some(key => typeof manifest[key] !== "string" || !(manifest[key] as string).trim())) return false;
+  if (!Number.isFinite(Date.parse(manifest.generatedAt as string)) || !/^[a-f0-9]{64}$/.test(manifest.stateHash as string)) return false;
+  if (typeof manifest.pressureIndex !== "number" || !Number.isFinite(manifest.pressureIndex) || manifest.pressureIndex < 0 || manifest.pressureIndex > 100) return false;
+  if (!["COHERENT", "EXPLICIT_MISMATCH", "UNAVAILABLE"].includes(manifest.coherenceStatus as string)) return false;
+  const stringArrays = ["probabilityClaimIds", "analogClaimIds", "staleInputs", "unavailableInputs", "fallbackInputs", "coherenceNotes"];
+  if (stringArrays.some(key => !Array.isArray(manifest[key]) || !(manifest[key] as unknown[]).every(item => typeof item === "string"))) return false;
+  for (const key of ["engineValues", "engineDirections", "domainValues", "scenarioOutputs", "dataQualitySummary"]) {
+    if (!manifest[key] || typeof manifest[key] !== "object" || Array.isArray(manifest[key])) return false;
+  }
+  if (!Object.keys(manifest.engineValues as object).length || !Object.values(manifest.engineValues as Record<string, unknown>).every(value => typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100)) return false;
+  if (!Object.values(manifest.scenarioOutputs as Record<string, unknown>).every(value => typeof value === "number" && Number.isFinite(value))) return false;
+  if (!Array.isArray(manifest.inputQuality) || !manifest.inputQuality.every(input => {
+    if (!input || typeof input !== "object") return false;
+    const evidence = input as Record<string, unknown>;
+    return typeof evidence.inputId === "string" && typeof evidence.provider === "string" &&
+      (evidence.value === null || typeof evidence.value === "number" && Number.isFinite(evidence.value)) &&
+      (evidence.observedAt === null || typeof evidence.observedAt === "string" && Number.isFinite(Date.parse(evidence.observedAt))) &&
+      (evidence.fetchedAt === null || typeof evidence.fetchedAt === "string" && Number.isFinite(Date.parse(evidence.fetchedAt)));
+  })) return false;
+  const { stateId, generatedAt, stateHash, inputQuality, runProvenance, ...core } = manifest;
+  // Exactly the pre-existing canonical() + sha256(core) recipe. Added provenance
+  // remains outside the hash, as it was when these immutable records were written.
+  if (sha256(core) !== stateHash || stateId !== `state:${generatedAt}:${String(stateHash).slice(0, 16)}` ||
+    manifest.inputSnapshotId !== `input:${sha256(inputQuality).slice(0, 32)}`) return false;
+  if (row) {
+    if (row.stateId !== stateId || row.stateHash !== stateHash || row.inputSnapshotId !== manifest.inputSnapshotId ||
+      new Date(row.generatedAt).getTime() !== Date.parse(generatedAt as string)) return false;
+    for (const key of ["championVersion", "modelVersion", "scoringVersion", "configurationVersion"] as const) if (row[key] !== undefined && row[key] !== manifest[key]) return false;
+  }
+  return true;
 }

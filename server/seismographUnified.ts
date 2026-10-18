@@ -8,25 +8,16 @@
  * Data sources consumed:
  *  - pressureHistory (317 months, 2000–present): overallPressure, regime, 6 sub-scores,
  *    BAA spread, HY spread, 10Y/2Y treasuries, fed funds, CPI, unemployment, S&P 500
- *  - pressureRuns: recent live engine runs with full vector JSON
- *  - dailyReadingSnapshots: daily readings with AI summaries
- *  - outlookHistory: signal direction history by asset
- *  - seismographReadings: today's reading (if available)
  *  - marketMemory: latest assembled SeismographOutput (if available)
  *
- * The Seismograph NEVER shows "Insufficient Data" — it always has 317 months of history.
+ * Reconstructed history is research context; it is never promoted to a current
+ * state when canonical current evidence is unavailable.
  */
 
 import { getDb } from "./db";
 import { pressureVectorLabel } from "@shared/pressureVectorLabels";
-import {
-  pressureHistory,
-  pressureRuns,
-  dailyReadingSnapshots,
-  outlookHistory,
-  seismographReadings,
-} from "../drizzle/schema";
-import { desc, asc, sql } from "drizzle-orm";
+import { pressureHistory } from "../drizzle/schema";
+import { asc } from "drizzle-orm";
 import { getLatestSeismographOutput } from "./scheduledSeismograph";
 import type { SeismographProviderProvenance } from "./seismographCore";
 import { describeHistoricalPercentile, formatOrdinal } from "../shared/historicalPercentile";
@@ -40,23 +31,25 @@ import {
 
 import { pressureRegimeLabel } from "../shared/pressureBands";
 import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import type { CanonicalIntelligenceState, CanonicalQualityStatus } from "../shared/canonicalIntelligenceState";
 import { readCachedPriorComponents } from "./pressure/priorComponents";
 import { classifyCondition, isBroadRecoveryVerified, DIRECTION_MIN_CHANGE, type ConditionState } from "../shared/conditionDirection";
 export interface HistoricalMonth {
   month: string;
   score: number;
   regime: string;
-  liquidity: number;
-  credit: number;
-  volatility: number;
-  macro: number;
+  /** Legacy zero values are missing sentinels, never neutral scores. */
+  liquidity: number | null;
+  credit: number | null;
+  volatility: number | null;
+  macro: number | null;
   /**
    * "market-breadth" engine score. It reads unemployment + the 10Y yield
    * (shared/pressureVectorLabels.ts → "Labor & Rates"), NOT market breadth.
    * null = missing for that month; never replaced with a neutral 50.
    */
   breadth: number | null;
-  aiBubble: number;
+  aiBubble: number | null;
   baaSpread: number | null;
   hySpread: number | null;
   tsy10y: number | null;
@@ -84,6 +77,12 @@ export interface HistoricalAnalog {
   durationMonths: number;
   peakPressure: number;
   resolution: string;
+  /** The finite, non-sentinel terms used for this displayed similarity. */
+  comparisonCoverage: {
+    comparedTerms: number;
+    requiredTerms: number;
+    availableTerms: number;
+  };
 }
 
 export interface RegimeTransition {
@@ -124,6 +123,10 @@ export interface EvolutionAnalysis {
 
 export interface UnifiedSeismographIntelligence {
   // ── Current State ──────────────────────────────────────────
+  /** Present only when all current facts are bound to this same canonical state. */
+  canonicalStateId?: string | null;
+  stateHash?: string | null;
+  inputSnapshotId?: string | null;
   currentScore: number;
   currentRegime: string;
   currentStressLevel: "Low" | "Elevated" | "High" | "Crisis";
@@ -290,33 +293,158 @@ function scoreToStressLevel(score: number): "Low" | "Elevated" | "High" | "Crisi
   return "Low";
 }
 
-export function computeSimilarity(a: HistoricalMonth, b: HistoricalMonth): number {
-  // Multi-factor similarity: score (40%), sub-scores (40%), macro indicators (20%)
-  const scoreDiff = Math.abs(a.score - b.score);
-  const scoreSimil = Math.max(0, 100 - scoreDiff * 2);
+const isFiniteNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
 
-  // Sub-score distance = mean absolute difference over the compared terms.
-  // The Labor & Rates ("market-breadth") term is skipped when either side is
-  // missing — never compared as a neutral 50 — and the mean is taken over the
-  // remaining terms. With all five present this equals the original sum / 5.
-  const subTerms = [
-    Math.abs((a.liquidity || 50) - (b.liquidity || 50)),
-    Math.abs((a.credit || 50) - (b.credit || 50)),
-    Math.abs((a.volatility || 50) - (b.volatility || 50)),
-    Math.abs((a.macro || 50) - (b.macro || 50)),
+/**
+ * A stored zero in the legacy vector columns means "not computed", not a
+ * zero-stress observation. It is therefore not comparable evidence.
+ */
+const isObservedComparableTerm = (value: unknown): value is number =>
+  isFiniteNumber(value) && value !== 0;
+
+export interface ComparableHistoricalTerms {
+  scoreSimilarity: number;
+  subScoreSimilarity: number;
+  macroSimilarity: number | null;
+  comparedTerms: number;
+  requiredTerms: number;
+  availableTerms: number;
+}
+
+/**
+ * Retains only finite, observed pairs. Four core vector pairs plus the score
+ * are required; Labor & Rates and the 10Y term are included only when actually
+ * observed. Missing terms re-normalize the observed weights rather than being
+ * silently turned into 50- or 70-point assumptions.
+ */
+export function comparableHistoricalTerms(
+  a: HistoricalMonth,
+  b: HistoricalMonth,
+): ComparableHistoricalTerms | null {
+  if (!isFiniteNumber(a.score) || !isFiniteNumber(b.score)) return null;
+
+  const corePairs: Array<[number | null, number | null]> = [
+    [a.liquidity, b.liquidity],
+    [a.credit, b.credit],
+    [a.volatility, b.volatility],
+    [a.macro, b.macro],
   ];
-  const finiteScore = (v: number | null | undefined): v is number => typeof v === "number" && Number.isFinite(v);
-  if (finiteScore(a.breadth) && finiteScore(b.breadth)) subTerms.push(Math.abs(a.breadth - b.breadth));
-  const subDiff = subTerms.reduce((sum, d) => sum + d, 0);
-  const subSimil = Math.max(0, 100 - subDiff / subTerms.length);
-
-  let macroSimil = 70; // default when data missing
-  if (a.tsy10y !== null && b.tsy10y !== null) {
-    const macroScore = Math.max(0, 100 - Math.abs(a.tsy10y - b.tsy10y) * 10);
-    macroSimil = macroScore;
+  if (!corePairs.every(([left, right]) => isObservedComparableTerm(left) && isObservedComparableTerm(right))) {
+    return null;
   }
 
-  return Math.round(scoreSimil * 0.4 + subSimil * 0.4 + macroSimil * 0.2);
+  const subDistances = corePairs.map(([left, right]) => Math.abs(left! - right!));
+  if (isObservedComparableTerm(a.breadth) && isObservedComparableTerm(b.breadth)) {
+    subDistances.push(Math.abs(a.breadth - b.breadth));
+  }
+
+  const scoreSimilarity = Math.max(0, 100 - Math.abs(a.score - b.score) * 2);
+  const subScoreSimilarity = Math.max(0, 100 - subDistances.reduce((sum, distance) => sum + distance, 0) / subDistances.length);
+  const macroSimilarity = isObservedComparableTerm(a.tsy10y) && isObservedComparableTerm(b.tsy10y)
+    ? Math.max(0, 100 - Math.abs(a.tsy10y - b.tsy10y) * 10)
+    : null;
+
+  return {
+    scoreSimilarity,
+    subScoreSimilarity,
+    macroSimilarity,
+    comparedTerms: 1 + subDistances.length + (macroSimilarity === null ? 0 : 1),
+    requiredTerms: 5,
+    availableTerms: 7,
+  };
+}
+
+export function computeSimilarity(a: HistoricalMonth, b: HistoricalMonth): number | null {
+  const terms = comparableHistoricalTerms(a, b);
+  if (!terms) return null;
+  const weighted = terms.scoreSimilarity * 0.4 + terms.subScoreSimilarity * 0.4 + (terms.macroSimilarity ?? 0) * 0.2;
+  const observedWeight = terms.macroSimilarity === null ? 0.8 : 1;
+  return Math.round(weighted / observedWeight);
+}
+
+const MARKET_STATE_LIVE_MAX_AGE_MS = 20 * 60 * 1000;
+const MARKET_STATE_RECENT_MAX_AGE_MS = 18 * 60 * 60 * 1000;
+
+/**
+ * Constructs the only profile that may be used as the current comparison target.
+ * The assembled output must persist the exact originating state ID, hash and
+ * input snapshot ID. Equal displayed values or nearby clocks cannot establish
+ * origin. Unbound historical outputs remain unavailable. It never reads a legacy
+ * pressureHistory row as a substitute for current vectors.
+ */
+export function currentComparableProfile(
+  canonicalState: CanonicalIntelligenceState | null | undefined,
+  assembled: Awaited<ReturnType<typeof getLatestSeismographOutput>> | null | undefined,
+): HistoricalMonth | null {
+  if (!canonicalState || !assembled) return null;
+  if (!assembled.canonicalStateId || assembled.canonicalStateId !== canonicalState.stateId ||
+      !assembled.stateHash || assembled.stateHash !== canonicalState.stateHash ||
+      !assembled.inputSnapshotId || assembled.inputSnapshotId !== canonicalState.inputSnapshotId) return null;
+  if (!isFiniteNumber(canonicalState.pressureIndex) || !isFiniteNumber(assembled.pressureScore)) return null;
+  if (
+    canonicalState.pressureIndex !== assembled.pressureScore ||
+    typeof canonicalState.regime !== "string" ||
+    canonicalState.regime !== assembled.regime
+  ) return null;
+  const canonicalAt = Date.parse(canonicalState.generatedAt);
+  const assembledAt = Number(assembled.computedAt);
+  if (!Number.isFinite(canonicalAt) || !Number.isFinite(assembledAt)) return null;
+
+  const engineValue = (engineId: string): number | null => {
+    const engine = canonicalState.engines.find(candidate => candidate.engineId === engineId);
+    return engine && engine.qualityStatus !== "UNAVAILABLE" && isFiniteNumber(engine.value) && engine.value >= 0 && engine.value <= 100
+      ? engine.value
+      : null;
+  };
+  const liquidity = engineValue("liquidity-stress");
+  const credit = engineValue("credit-contagion");
+  const volatility = engineValue("volatility-regime");
+  const macro = engineValue("macro-sensitivity");
+  const breadth = engineValue("market-breadth");
+  // All current vector terms used by the fixed comparison method must be present.
+  if ([liquidity, credit, volatility, macro, breadth].some(value => value === null)) return null;
+
+  return {
+    month: canonicalState.generatedAt.slice(0, 7),
+    score: canonicalState.pressureIndex,
+    regime: canonicalState.regime,
+    liquidity,
+    credit,
+    volatility,
+    macro,
+    breadth,
+    // AI Bubble is not an analog term and cannot be inferred from a static trend.
+    aiBubble: null,
+    // Canonical engines do not expose raw macro observations. Withhold rather
+    // than borrowing them from a legacy month or treating them as neutral.
+    baaSpread: null,
+    hySpread: null,
+    tsy10y: null,
+    tsy2y: null,
+    fedfunds: null,
+    cpiYoy: null,
+    unemployment: null,
+    sp500: null,
+  };
+}
+
+/** Source time and canonical quality, not cache presence, determine freshness. */
+export function seismographFreshnessFromObservedAt(
+  observedAt: number | string | null | undefined,
+  canonicalQuality: CanonicalQualityStatus | null | undefined,
+  now: number = Date.now(),
+): "live" | "recent" | "stale" {
+  const observedMs = typeof observedAt === "number" ? observedAt : typeof observedAt === "string" ? Date.parse(observedAt) : Number.NaN;
+  if (!Number.isFinite(observedMs) || !Number.isFinite(now)) return "stale";
+  const ageMs = Math.max(0, now - observedMs);
+  if (ageMs > MARKET_STATE_RECENT_MAX_AGE_MS || canonicalQuality === "UNAVAILABLE" || !canonicalQuality) return "stale";
+  if (ageMs > MARKET_STATE_LIVE_MAX_AGE_MS || canonicalQuality !== "HEALTHY") return "recent";
+  return "live";
+}
+
+function legacyObservedNumber(raw: unknown): number | null {
+  const value = typeof raw === "number" ? raw : typeof raw === "string" && raw.trim() !== "" ? Number(raw) : Number.NaN;
+  return isObservedComparableTerm(value) ? value : null;
 }
 
 function regimeLabel(regime: string): string {
@@ -406,56 +534,62 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
   if (!db) throw new Error("Database unavailable");
 
   // ── 1. Load all historical data ──────────────────────────────
-  const [allHistory, recentRuns, recentSnapshots, latestAssembled] = await Promise.all([
+  const [allHistory, latestAssembled, canonicalState] = await Promise.all([
     db.select().from(pressureHistory).orderBy(asc(pressureHistory.month)),
-    db.select().from(pressureRuns).orderBy(desc(pressureRuns.computedAt)).limit(30),
-    db.select().from(dailyReadingSnapshots).orderBy(desc(dailyReadingSnapshots.readingDate)).limit(90),
     getLatestSeismographOutput(),
+    getAuthoritativeCanonicalIntelligenceState().catch(() => null),
   ]);
 
   // ── 2. Normalize history ──────────────────────────────────────
-  // NOTE: Use `|| 50` (not `?? 50`) so that DB rows storing 0 for missing sub-scores
-  // also fall back to the neutral sentinel value of 50. The DB stores 0 when a
-  // sub-score was not computed for that month (e.g. partial live-run rows), not
-  // as a genuine "zero stress" reading — genuine low-stress readings are ~20–30.
-  // We also track the raw DB values for the last two rows so the second-layer patch
-  // below can detect which sub-scores were genuinely missing (raw === 0).
-  const rawLatest = allHistory[allHistory.length - 1];
-  const rawPrev = allHistory.length >= 2 ? allHistory[allHistory.length - 2] : null;
-  const history: HistoricalMonth[] = allHistory.map((r) => ({
-    month: r.month,
-    score: r.overallPressure,
-    // Canonical band from the stored score (stored legacy regime labels are not rewritten).
-    regime: pressureRegimeLabel(r.overallPressure),
-    liquidity: r.liquidityStress || 50,
-    credit: r.creditContagion || 50,
-    volatility: r.volatilityRegime || 50,
-    macro: r.macroSensitivity || 50,
-    // Fail-closed: a missing (null) or unpopulated (0 sentinel, see note above)
-    // market-breadth sub-score stays null instead of becoming a neutral 50.
-    breadth: normalizeLaborRatesScore(r.marketBreadth),
-    aiBubble: r.aiBubble || 50,
-    baaSpread: r.baaSpread !== null ? Number(r.baaSpread) : null,
-    hySpread: r.hySpreadProxy !== null ? Number(r.hySpreadProxy) : null,
-    tsy10y: r.tsy10y !== null ? Number(r.tsy10y) : null,
-    tsy2y: r.tsy2y !== null ? Number(r.tsy2y) : null,
-    fedfunds: r.fedfunds !== null ? Number(r.fedfunds) : null,
-    cpiYoy: r.cpiYoy !== null ? Number(r.cpiYoy) : null,
-    unemployment: r.unemployment !== null ? Number(r.unemployment) : null,
-    sp500: r.sp500 !== null ? Number(r.sp500) : null,
-  }));
+  // Legacy history is research context. Its missing/zero-sentinel vectors stay
+  // null; they are never neutralized or filled from an adjacent row.
+  const history: HistoricalMonth[] = allHistory.flatMap((r) => {
+    const score = typeof r.overallPressure === "number" ? r.overallPressure : Number(r.overallPressure);
+    if (!isFiniteNumber(score)) return [];
+    return [{
+      month: r.month,
+      score,
+      // Canonical band from the stored score (stored legacy regime labels are not rewritten).
+      regime: pressureRegimeLabel(score),
+      liquidity: legacyObservedNumber(r.liquidityStress),
+      credit: legacyObservedNumber(r.creditContagion),
+      volatility: legacyObservedNumber(r.volatilityRegime),
+      macro: legacyObservedNumber(r.macroSensitivity),
+      breadth: legacyObservedNumber(r.marketBreadth),
+      aiBubble: legacyObservedNumber(r.aiBubble),
+      baaSpread: legacyObservedNumber(r.baaSpread),
+      hySpread: legacyObservedNumber(r.hySpreadProxy),
+      tsy10y: legacyObservedNumber(r.tsy10y),
+      tsy2y: legacyObservedNumber(r.tsy2y),
+      fedfunds: legacyObservedNumber(r.fedfunds),
+      cpiYoy: legacyObservedNumber(r.cpiYoy),
+      unemployment: legacyObservedNumber(r.unemployment),
+      sp500: legacyObservedNumber(r.sp500),
+    }];
+  });
 
   const latest = history[history.length - 1];
   if (!latest) throw new Error("No historical data available");
 
   // ── 3. Current state ────────────────────────────────────────────────
-  // Prefer the latest assembled output (live run) if available, fall back to pressureHistory
-  const currentScore = latestAssembled?.pressureScore ?? latest.score;
-  const currentRegime = latestAssembled?.regime ?? latest.regime;
-  const currentStressLevel = latestAssembled?.stressLevel
+  // A reconstructed pressureHistory row is never promoted to current state.
+  if (!latestAssembled || !isFiniteNumber(latestAssembled.pressureScore)) {
+    throw new Error("Current Seismograph output unavailable; legacy history is research context only");
+  }
+  const comparableProfile = currentComparableProfile(canonicalState, latestAssembled);
+  if (!comparableProfile || !canonicalState) {
+    throw new Error("Current Seismograph state unavailable: assembled output cannot be bound to the authoritative canonical state");
+  }
+  // Bind current core facts to the canonical record itself. The adapter above
+  // has already verified the paired assembled output is the same run.
+  const currentScore = comparableProfile.score;
+  const currentRegime = comparableProfile.regime;
+  const currentStressLevel = latestAssembled.stressLevel
     ? mapToUnifiedStressLevel(latestAssembled.stressLevel)
     : scoreToStressLevel(currentScore);
-  const currentDirection = latestAssembled?.direction ?? "Stable";
+  const currentDirection = canonicalState.pressureDirection === "Unknown"
+    ? latestAssembled.direction
+    : canonicalState.pressureDirection;
 
   // Historical percentile
   const sortedScores = history.map((h) => h.score).sort((a, b) => a - b);
@@ -463,32 +597,13 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
   const currentPercentile =
     percentileIdx >= 0 ? Math.round((percentileIdx / sortedScores.length) * 100) : 50;
 
-  // ── 4. Evidence families from sub-scores ─────────────────
-  // Guard: if the latest DB row has zero sub-scores (partial/incomplete row from a
-  // live run that did not fully populate all domain scores), patch each missing score
-  // with the previous row's actual value. We detect "missing" by checking the raw DB
-  // value (before the || 50 normalization) so we don't confuse the 50-sentinel with
-  // a genuine prior-row value.
-  const prev = history.length >= 2 ? history[history.length - 2] : null;
-  const latestForFamilies: typeof latest = (rawLatest && rawPrev && prev)
-    ? {
-        ...latest,
-        liquidity: (rawLatest.liquidityStress === 0 || rawLatest.liquidityStress === null) ? prev.liquidity : latest.liquidity,
-        credit:    (rawLatest.creditContagion  === 0 || rawLatest.creditContagion  === null) ? prev.credit    : latest.credit,
-        volatility:(rawLatest.volatilityRegime === 0 || rawLatest.volatilityRegime === null) ? prev.volatility: latest.volatility,
-        macro:     (rawLatest.macroSensitivity === 0 || rawLatest.macroSensitivity === null) ? prev.macro     : latest.macro,
-        breadth:   (rawLatest.marketBreadth    === 0 || rawLatest.marketBreadth    === null) ? prev.breadth   : latest.breadth,
-      }
-    : latest;
+  // ── 4. Evidence families from a same-state canonical profile ──────────
   // Request path: cached priors only (computed by the scheduled pipeline); never fetches FRED.
-  const canonicalForDirection = await getAuthoritativeCanonicalIntelligenceState().catch(() => null);
-  const priorForDirection = await readCachedPriorComponents(canonicalForDirection?.generatedAt ?? null).catch(() => null);
+  const priorForDirection = await readCachedPriorComponents(canonicalState.generatedAt).catch(() => null);
   const evidenceFamilies = buildEvidenceFamilies(
-    latestForFamilies,
+    comparableProfile,
     history,
-    currentEnginesFromCanonical(
-      canonicalForDirection ? Object.fromEntries(canonicalForDirection.engines.map(e => [e.engineId, e.value])) : undefined,
-    ),
+    currentEnginesFromCanonical(Object.fromEntries(canonicalState.engines.map(e => [e.engineId, e.value]))),
     currentEnginesFromCanonical(priorForDirection?.components),
   );
   const enginesAgreeing = evidenceFamilies
@@ -506,7 +621,9 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
   ).length;
   const total = evidenceFamilies.length || 1;
   const evidenceConsensus: "strong" | "moderate" | "weak" | "divergent" =
-    bearCount / total >= 0.75
+    evidenceFamilies.length === 0
+      ? "weak"
+      : bearCount / total >= 0.75
       ? "strong"
       : bullCount / total >= 0.75
       ? "strong"
@@ -515,7 +632,7 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
       : "moderate";
 
   // ── 5. Historical analog matching ────────────────────────────
-  const analogs = findHistoricalAnalogs(latest, history);
+  const analogs = findHistoricalAnalogs(comparableProfile, history);
 
   // ── 6. Regime transitions ─────────────────────────────────────
   const recentTransitions = detectRegimeTransitions(history);
@@ -561,49 +678,26 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
   const timeline = buildTimeline(history);
 
   // ── 14. Data freshness ────────────────────────────────────────
-  const dataFreshness: "live" | "recent" | "stale" =
-    latestAssembled ? "live" : recentRuns.length > 0 ? "recent" : "stale";
-
-  const lastUpdated =
-    latestAssembled
-      ? new Date(latestAssembled.computedAt).toISOString()
-      : new Date().toISOString();
-  // Infer providerProvenance when a legacy snapshot exists but predates the provenance field.
-  // A snapshot with dataFreshness="live" was computed from live FRED data — treat it as live.
-  // Only mark FRED as unavailable when there is genuinely no assembled output at all.
-  let providerProvenance: SeismographProviderProvenance;
-  if (latestAssembled?.providerProvenance) {
-    // Fresh snapshot with explicit provenance — use it directly.
-    providerProvenance = latestAssembled.providerProvenance;
-  } else if (latestAssembled) {
-    // Legacy snapshot (predates provenance field) — infer from dataFreshness.
-    const inferredStatus = latestAssembled.dataFreshness === "live" ? "live"
-      : latestAssembled.dataFreshness === "recent" ? "fallback"
-      : "unavailable";
-    const inferredDetail = latestAssembled.dataFreshness === "live"
-      ? "Inferred live: this snapshot was computed from live FRED data (provenance field predates this schema version)."
-      : latestAssembled.dataFreshness === "recent"
-      ? "Inferred from recent cache: snapshot predates provenance field; FRED data was available at compute time."
-      : "Legacy snapshot predates provider-level FRED provenance; data freshness is stale.";
-    providerProvenance = {
-      fred: {
-        status: inferredStatus,
-        detail: inferredDetail,
-        asOf: latestAssembled.computedAt,
-      },
-    };
-  } else {
-    // No assembled output at all.
-    providerProvenance = {
-      fred: {
-        status: "unavailable",
-        detail: "No assembled Seismograph output is available to verify FRED provenance.",
-        asOf: Date.parse(lastUpdated),
-      },
-    };
-  }
+  const dataFreshness = seismographFreshnessFromObservedAt(
+    latestAssembled.computedAt,
+    canonicalState.confidenceOrEvidenceQuality,
+  );
+  // Preserve the persisted source timestamp. A cache read never gets a new "now" timestamp.
+  const lastUpdated = new Date(latestAssembled.computedAt).toISOString();
+  const providerProvenance: SeismographProviderProvenance = latestAssembled.providerProvenance
+    ? latestAssembled.providerProvenance
+    : {
+        fred: {
+          status: "unavailable",
+          detail: "The same-state assembled Seismograph output lacks provider-level provenance.",
+          asOf: latestAssembled.computedAt,
+        },
+      };
 
   return {
+    canonicalStateId: canonicalState.stateId,
+    stateHash: canonicalState.stateHash,
+    inputSnapshotId: canonicalState.inputSnapshotId,
     currentScore,
     currentRegime,
     currentStressLevel,
@@ -630,7 +724,7 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
     memory,
     timeline,
     activePatterns,
-    macroTicker: buildMacroTicker(latest),
+    macroTicker: buildMacroTicker(comparableProfile),
     regimeProbabilities5way: compute5WayRegimeProbabilities(currentScore, currentRegime, evidenceFamilies, history),
     developingConditions: buildDevelopingConditions(evidenceFamilies, currentScore, currentRegime, evolution, history),
     engineContributions: buildEngineContributions(evidenceFamilies, currentScore),
@@ -642,9 +736,9 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
 
 
 // ─── Macro ticker ─────────────────────────────────────────────────────────────
-function buildMacroTicker(latest: HistoricalMonth): UnifiedSeismographIntelligence["macroTicker"] {
-  const tsy10y = latest.tsy10y ?? null;
-  const hySpread = latest.hySpread ?? null;
+function buildMacroTicker(current: HistoricalMonth | null): UnifiedSeismographIntelligence["macroTicker"] {
+  const tsy10y = current?.tsy10y ?? null;
+  const hySpread = current?.hySpread ?? null;
   const hySpreadBps = hySpread !== null ? Math.round(hySpread * 100) : null;
   return {
     tsy10y,
@@ -653,7 +747,7 @@ function buildMacroTicker(latest: HistoricalMonth): UnifiedSeismographIntelligen
     hySpreadBps,
     btcPrice: null,
     btcChange24h: null,
-    dataMonth: latest.month,
+    dataMonth: current?.month ?? "Unavailable",
   };
 }
 
@@ -743,11 +837,27 @@ export function currentEnginesFromCanonical(engineValues: Record<string, unknown
 }
 
 export function buildEvidenceFamilies(
-  latest: HistoricalMonth,
+  latestInput: HistoricalMonth,
   history: HistoricalMonth[],
   currentEngines: CurrentEngineValues = {},
   priorEngines: CurrentEngineValues = {},
 ): EvidenceFamily[] {
+  // A family is a current claim. If the same-state profile lacks one of the
+  // core vector values, withhold the whole family section rather than merging in
+  // a legacy row or a neutral score.
+  if (
+    !isObservedComparableTerm(latestInput.liquidity) ||
+    !isObservedComparableTerm(latestInput.credit) ||
+    !isObservedComparableTerm(latestInput.volatility) ||
+    !isObservedComparableTerm(latestInput.macro)
+  ) return [];
+  const latest = {
+    ...latestInput,
+    liquidity: latestInput.liquidity,
+    credit: latestInput.credit,
+    volatility: latestInput.volatility,
+    macro: latestInput.macro,
+  };
   const last6 = history.slice(-6);
   // Direction (QA r3): CURRENT canonical engine value vs the SAME v1 component
   // recomputed from FRED observations dated one month earlier
@@ -758,11 +868,18 @@ export function buildEvidenceFamilies(
     if (prior == null || cur == null) return { trend: "stable" as const, conditionState: "Insufficient evidence" as const, conditionChange: null };
     return { trend: c.trend, conditionState: c.state, conditionChange: c.change };
   };
-  const avgLiquidity = last6.reduce((s, h) => s + h.liquidity, 0) / last6.length;
-  const avgCredit = last6.reduce((s, h) => s + h.credit, 0) / last6.length;
-  const avgVol = last6.reduce((s, h) => s + h.volatility, 0) / last6.length;
-  const avgMacro = last6.reduce((s, h) => s + h.macro, 0) / last6.length;
-  const last6LaborRates = last6.map(h => h.breadth).filter((v): v is number => v != null);
+  const averageObserved = (values: Array<number | null>): number | null => {
+    const observed = values.filter(isObservedComparableTerm);
+    return observed.length ? observed.reduce((sum, value) => sum + value, 0) / observed.length : null;
+  };
+  const averageText = (value: number | null) => value === null
+    ? "Monthly context unavailable (no comparable observed records)."
+    : `6-month average: ${Math.round(value)}/100.`;
+  const avgLiquidity = averageObserved(last6.map(h => h.liquidity));
+  const avgCredit = averageObserved(last6.map(h => h.credit));
+  const avgVol = averageObserved(last6.map(h => h.volatility));
+  const avgMacro = averageObserved(last6.map(h => h.macro));
+  const last6LaborRates = last6.map(h => h.breadth).filter(isObservedComparableTerm);
   const avgLaborRates = last6LaborRates.length ? last6LaborRates.reduce((s, v) => s + v, 0) / last6LaborRates.length : null;
 
   const families: EvidenceFamily[] = [
@@ -771,10 +888,10 @@ export function buildEvidenceFamilies(
       signal: latest.liquidity >= 60 ? "stressed" : latest.liquidity >= 40 ? "neutral" : "recovering",
       strength: latest.liquidity,
       currentValue: `${latest.liquidity}/100`,
-      historicalContext: `6-month average: ${Math.round(avgLiquidity)}/100. ${
-        latest.liquidity > avgLiquidity + 10
+      historicalContext: `${averageText(avgLiquidity)} ${
+        avgLiquidity !== null && latest.liquidity > avgLiquidity + 10
           ? "Liquidity stress is accelerating above recent trend."
-          : latest.liquidity < avgLiquidity - 10
+          : avgLiquidity !== null && latest.liquidity < avgLiquidity - 10
           ? "Liquidity conditions are improving relative to recent trend."
           : "Liquidity conditions are consistent with recent trend."
       }`,
@@ -786,8 +903,8 @@ export function buildEvidenceFamilies(
       name: "Credit Markets",
       signal: latest.credit >= 65 ? "stressed" : latest.credit >= 40 ? "neutral" : "bullish",
       strength: latest.credit,
-      currentValue: `${latest.credit}/100${latest.baaSpread ? ` (BAA spread: ${latest.baaSpread}%)` : ""}`,
-      historicalContext: `6-month average: ${Math.round(avgCredit)}/100. ${
+      currentValue: `${latest.credit}/100${latest.baaSpread !== null ? ` (BAA spread: ${latest.baaSpread}%)` : ""}`,
+      historicalContext: `${averageText(avgCredit)} ${
         latest.baaSpread
           ? `BAA-Treasury spread at ${latest.baaSpread}% — ${
               latest.baaSpread > 3.5
@@ -807,7 +924,7 @@ export function buildEvidenceFamilies(
       signal: latest.volatility >= 65 ? "stressed" : latest.volatility >= 40 ? "neutral" : "bullish",
       strength: latest.volatility,
       currentValue: `${latest.volatility}/100`,
-      historicalContext: `6-month average: ${Math.round(avgVol)}/100. ${
+      historicalContext: `${averageText(avgVol)} ${
         latest.volatility > 70
           ? "Curve shape and the 10Y level are in the engine's highest band: a deeply inverted 10Y–2Y curve (below −1 pp) with an elevated 10Y yield. A steep curve scores low in this engine."
           : latest.volatility > 55
@@ -822,9 +939,9 @@ export function buildEvidenceFamilies(
       name: "Macro Sensitivity",
       signal: latest.macro >= 65 ? "bearish" : latest.macro >= 40 ? "neutral" : "bullish",
       strength: latest.macro,
-      currentValue: `${latest.macro}/100${latest.cpiYoy ? ` (CPI: ${latest.cpiYoy}% YoY)` : ""}${latest.fedfunds ? ` (Fed Funds: ${latest.fedfunds}%)` : ""}`,
-      historicalContext: `6-month average: ${Math.round(avgMacro)}/100. ${
-        latest.cpiYoy && latest.fedfunds
+      currentValue: `${latest.macro}/100${latest.cpiYoy !== null ? ` (CPI: ${latest.cpiYoy}% YoY)` : ""}${latest.fedfunds !== null ? ` (Fed Funds: ${latest.fedfunds}%)` : ""}`,
+      historicalContext: `${averageText(avgMacro)} ${
+        latest.cpiYoy !== null && latest.fedfunds !== null
           ? `With CPI at ${latest.cpiYoy}% and Fed Funds at ${latest.fedfunds}%, real rates are ${
               latest.fedfunds - latest.cpiYoy > 0 ? "positive" : "negative"
             } — ${
@@ -908,25 +1025,26 @@ export function buildEvidenceFamilies(
 
 // ─── Historical analog matching ───────────────────────────────────────────────
 
-function findHistoricalAnalogs(
-  current: HistoricalMonth,
+export function findHistoricalAnalogs(
+  current: HistoricalMonth | null,
   history: HistoricalMonth[]
 ): HistoricalAnalog[] {
+  if (!current) return [];
   // Exclude the last 12 months to avoid self-matching
   const candidates = history.slice(0, history.length - 12);
 
-  const scored = candidates.map((h, idx) => ({
-    month: h,
-    idx,
-    similarity: computeSimilarity(current, h),
-  }));
+  const scored = candidates.flatMap((h, idx) => {
+    const terms = comparableHistoricalTerms(current, h);
+    const similarity = computeSimilarity(current, h);
+    return terms && similarity !== null ? [{ month: h, idx, similarity, terms }] : [];
+  });
 
   scored.sort((a, b) => b.similarity - a.similarity);
 
   const topAnalogs: HistoricalAnalog[] = [];
   const usedPeriods = new Set<string>();
 
-  for (const { month: h, idx, similarity } of scored) {
+  for (const { month: h, idx, similarity, terms } of scored) {
     if (similarity < 60) break;
     // Avoid clustering — skip if within 6 months of an already-selected analog
     const yearMonth = h.month.substring(0, 7);
@@ -982,6 +1100,11 @@ function findHistoricalAnalogs(
         ...history.slice(idx, idx + durationMonths).map((h) => h.score)
       ),
       resolution: resolutionDescription(history, idx, h.regime),
+      comparisonCoverage: {
+        comparedTerms: terms.comparedTerms,
+        requiredTerms: terms.requiredTerms,
+        availableTerms: terms.availableTerms,
+      },
     });
 
     if (topAnalogs.length >= 5) break;
@@ -1364,95 +1487,15 @@ function computeProbabilities(
 
 // ─── Active patterns ──────────────────────────────────────────────────────────
 
-function detectActivePatterns(
-  history: HistoricalMonth[],
-  currentScore: number,
-  currentRegime: string
+export function detectActivePatterns(
+  _history: HistoricalMonth[],
+  _currentScore: number,
+  _currentRegime: string,
 ): UnifiedSeismographIntelligence["activePatterns"] {
-  const patterns: UnifiedSeismographIntelligence["activePatterns"] = [];
-  const last6 = history.slice(-6);
-  const last12 = history.slice(-12);
-
-  // Pattern 1: Sustained elevated pressure
-  const sustainedElevated = last6.every((h) => h.score >= 50);
-  if (sustainedElevated) {
-    const historicalCount = history.filter((_, i) => {
-      if (i < 5) return false;
-      return history.slice(i - 5, i + 1).every((h) => h.score >= 50);
-    }).length;
-    const outcomes = history
-      .filter((_, i) => {
-        if (i < 5 || i >= history.length - 3) return false;
-        return history.slice(i - 5, i + 1).every((h) => h.score >= 50);
-      })
-      .map((_, i) => history[i + 3]?.score ?? currentScore);
-    const bullishOutcomes = outcomes.filter((s) => s < currentScore - 5).length;
-    const bearishOutcomes = outcomes.filter((s) => s > currentScore + 5).length;
-    const sidewaysOutcomes = outcomes.length - bullishOutcomes - bearishOutcomes;
-
-    patterns.push({
-      name: "Sustained Elevated Pressure",
-      description: `Pressure has remained above 50/100 for 6+ consecutive months. This pattern historically signals a structural risk environment rather than a temporary spike.`,
-      confidence: 78,
-      daysActive: 6 * 30,
-      historicalFrequency: `Occurred ${historicalCount} times in the ${history.length}-month dataset`,
-      outcomeDistribution: {
-        bullish: outcomes.length > 0 ? Math.round((bullishOutcomes / outcomes.length) * 100) : 30,
-        sideways: outcomes.length > 0 ? Math.round((sidewaysOutcomes / outcomes.length) * 100) : 40,
-        correction: outcomes.length > 0 ? Math.round((bearishOutcomes / outcomes.length) * 100) : 30,
-      },
-      avgReturn1m: -1.2,
-      avgReturn3m: -2.8,
-      avgReturn6m: 1.5,
-      invalidationConditions: "Pressure drops below 45 for 2+ consecutive months",
-      analogs: history
-        .filter((_, i) => {
-          if (i < 5) return false;
-          return history.slice(i - 5, i + 1).every((h) => h.score >= 50);
-        })
-        .slice(0, 3)
-        .map((h) => periodLabel(h.month)),
-    });
-  }
-
-  // Pattern 2: Credit-Liquidity divergence
-  const creditHigh = last6.every((h) => h.credit >= 55);
-  const liquidityLow = last6.every((h) => h.liquidity <= 45);
-  if (creditHigh && liquidityLow) {
-    patterns.push({
-      name: "Credit-Liquidity Divergence",
-      description: `Credit stress is elevated while liquidity conditions remain relatively contained. How this divergence resolves has not been validated in FAULTLINE's record.`,
-      confidence: 72,
-      daysActive: 4 * 30,
-      historicalFrequency: "Observed in approximately 15% of historical months",
-      outcomeDistribution: { bullish: 35, sideways: 30, correction: 35 },
-      avgReturn1m: -0.8,
-      avgReturn3m: 1.2,
-      avgReturn6m: 3.5,
-      invalidationConditions: "Credit spreads narrow by 40+ basis points OR liquidity stress rises to match credit stress",
-      analogs: ["Mar 2016", "Oct 2019", "Sep 2022"],
-    });
-  }
-
-  // Pattern 3: Regime persistence
-  const regimeCount = last12.filter((h) => h.regime === currentRegime).length;
-  if (regimeCount >= 9) {
-    patterns.push({
-      name: "Regime Persistence",
-      description: `Current ${regimeLabel(currentRegime)} regime has been active for ${regimeCount} of the last 12 months. Extended regime persistence historically increases the probability of a sharp transition when conditions change.`,
-      confidence: 65,
-      daysActive: regimeCount * 30,
-      historicalFrequency: `${regimeCount}-month regime persistence occurs in approximately 20% of historical cycles`,
-      outcomeDistribution: { bullish: 40, sideways: 35, correction: 25 },
-      avgReturn1m: 0.5,
-      avgReturn3m: 2.1,
-      avgReturn6m: 4.8,
-      invalidationConditions: "Regime changes for 2+ consecutive months",
-      analogs: ["2012–2013 Moderate Risk", "2017–2018 Elevated Risk", "2019 Moderate Risk"],
-    });
-  }
-
-  return patterns;
+  // The legacy reconstructed series has no governed historical pattern source,
+  // calibration, frequency, outcomes, or confidence records. Preserve the
+  // response field but withhold all pattern claims until one is supplied.
+  return [];
 }
 
 // ─── Today's story ────────────────────────────────────────────────────────────

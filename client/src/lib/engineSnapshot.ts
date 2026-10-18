@@ -17,7 +17,7 @@ export interface EngineSnapshotPayload {
   regime: string;
   liquidity: number | null;
   credit: number | null;
-  breadth: number;
+  breadth: number | null;
   aiConcentration: number | null;
   volatility: number | null;
   bullProbability: number | null;
@@ -78,7 +78,7 @@ export function buildEngineSnapshot(
     regime: output.regime.label,
     liquidity: liquidityScore === null ? null : Math.round((10 - liquidityScore) * 10),
     credit: creditScore === null ? null : Math.round(creditScore * 10),
-    breadth: Math.max(0, Math.min(100, 100 - overallPressure)),
+    breadth: null, // Pressure has no measured market-participation input.
     aiConcentration: null,
     volatility: null,
     // Withheld (NaN) → null; zod rejects NaN.

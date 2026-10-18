@@ -88,6 +88,8 @@ export interface CanonicalIntelligenceState {
     manifestSource: "intelligenceStateManifests";
     governanceVersion: string;
     coherenceStatus: CanonicalCoherenceStatus;
+    runTrigger?: string | null;
+    scheduledPublication?: boolean;
   };
 }
 

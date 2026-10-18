@@ -104,7 +104,7 @@ export default function Methodology() {
             A two-state Gaussian hidden Markov model (sre-hmm2-v1.0.0) reads a FRED panel that adds investment-grade OAS, the 10-year/2-year spread series, NFCI, the St. Louis Fed Financial Stress Index, the VIX close, and the S&P 500. The code states that this model does not contribute to the Pressure Index.
           </p>
           <p className="mt-4 leading-relaxed text-[#C9D4E0]">
-            Equity regimes add SPY trend from Polygon daily bars. Crypto regimes and the crypto stress score use CoinGecko plus the pressure reading. Cross-market intelligence compares the equity regime with the crypto regime. Analogs rank Euclidean distance to a fixed fingerprint library. PLATO explains the measurements and is instructed not to invent a missing regime.
+            Equity regimes add SPY trend from Polygon daily bars. The Crypto Market Regime is macro-implied from the canonical Pressure projection and does not use BTC price, CoinGecko, on-chain, ETF-flow, exchange-balance, funding, or institutional-flow inputs. CoinGecko-backed crypto statistics, where separately shown, are not inputs to this regime. Cross-market intelligence compares the equity regime with the crypto regime. Analogs rank Euclidean distance to a fixed fingerprint library. PLATO explains the measurements and is instructed not to invent a missing regime.
           </p>
         </section>
 

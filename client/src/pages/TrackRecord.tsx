@@ -257,6 +257,7 @@ export default function TrackRecord() {
 
   const { data: history, isLoading: histLoading } = trpc.trackRecord.getHistory.useQuery({});
   const { data: stats, isLoading: statsLoading } = trpc.trackRecord.getStats.useQuery();
+  const accountability = trpc.intelligenceAccountability.publicRecord.useQuery(undefined, { retry: false, staleTime: 60_000 });
 
   const [activeYear, setActiveYear] = useState<string | null>(null);
 
@@ -575,6 +576,9 @@ export default function TrackRecord() {
             <Link href="/legal" className="hover:text-zinc-400 transition-colors">Privacy Policy</Link>
             <Link href="/legal" className="hover:text-zinc-400 transition-colors">Terms of Use</Link>
             <Link href="/blog" className="hover:text-zinc-400 transition-colors">Intelligence Briefings</Link>
+            {accountability.data?.enabled === true && (
+              <Link href="/intelligence-track-record" className="hover:text-zinc-300 transition-colors">Intelligence accountability</Link>
+            )}
           </div>
         </div>
       </footer>

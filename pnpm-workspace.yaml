@@ -1,0 +1,14 @@
+packages:
+  - '.'
+
+# Required native/toolchain build scripts for the existing pnpm 10 project.
+onlyBuiltDependencies:
+  - esbuild
+  - '@tailwindcss/oxide'
+
+# Preserve the existing dependency policy from package.json.
+patchedDependencies:
+  'wouter@3.7.1': patches/wouter@3.7.1.patch
+
+overrides:
+  'tailwindcss>nanoid': '3.3.7'

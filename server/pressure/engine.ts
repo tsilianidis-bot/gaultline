@@ -504,6 +504,8 @@ export type PressureInputId =
   | "hySpread" | "tsy10y" | "tsy2y" | "sofr" | "cpi" | "ppi" | "fedFunds" | "unemployment";
 
 export interface PressureInputProvenance {
+  /** Original published FRED value, before unit/YoY conversion. */
+  sourceValue?: number | null;
   inputId: PressureInputId;
   seriesId: string;
   value: number | null;
@@ -516,6 +518,8 @@ export interface PressureInputProvenance {
 }
 
 export interface PressureVerification {
+  /** Actual verified FRED adapter receipt; never inferred from computation time. */
+  receivedAt?: string | null;
   status: "verified" | "stale" | "unavailable";
   methodologyVersion: string;
   /** When the reported reading was actually computed */
@@ -861,9 +865,18 @@ export function markPreservedReadingStale(
  */
 export async function calculateFaultlinePressure(): Promise<FaultlinePressureOutput> {
   let resolved: ReturnType<typeof resolveVerifiedInputs>;
+  let adapterReceivedAt: string | null = null;
   try {
     const bulk = await fetchFredBulk(PRESSURE_FRED_SERIES);
     resolved = resolveVerifiedInputs(bulk.results, new Date());
+    const receivedMs = Date.parse(bulk.timestamp ?? "");
+    adapterReceivedAt = Number.isFinite(receivedMs) ? new Date(receivedMs).toISOString() : null;
+    for (const input of resolved.provenance) {
+      const observation = bulk.results[input.seriesId]?.observations?.find(item => item.date === input.observationDate);
+      const raw = observation?.value;
+      const sourceValue = typeof raw === "number" ? raw : typeof raw === "string" && raw.trim() !== "" && raw.trim() !== "." ? Number(raw) : null;
+      input.sourceValue = sourceValue != null && Number.isFinite(sourceValue) ? sourceValue : null;
+    }
   } catch (err) {
     log.warn("[Pressure Engine] FRED fetch failed", { err: err as Error });
     resolved = { ok: false, inputs: {} as any, provenance: [], problems: [`FRED fetch failed: ${(err as Error)?.message ?? String(err)}`] };
@@ -871,6 +884,7 @@ export async function calculateFaultlinePressure(): Promise<FaultlinePressureOut
 
   if (resolved.ok) {
     const result = computePressureFromVerifiedInputs(resolved.inputs, resolved.provenance, new Date());
+    if (result.verification) result.verification.receivedAt = adapterReceivedAt;
     log.info(`[Pressure Engine] All ${PRESSURE_FRED_SERIES.length} FRED inputs verified`);
     _lastLiveSnapshot = result;
     _lastLiveSnapshotAt = Date.now();

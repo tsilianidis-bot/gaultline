@@ -2,8 +2,9 @@
 // FAULTLINE Crypto Intelligence™ — server/cryptoIntelligence.ts
 //
 // Generates institutional-grade crypto market signals by
-// combining FAULTLINE macro pressure data with crypto-specific
-// risk factors (dominance, stablecoin supply, liquidity cycles).
+// projecting authoritative FAULTLINE macro pressure data into crypto-facing
+// derived indicators. This path does not read BTC prices, CoinGecko, on-chain
+// data, ETF flows, exchange balances, funding, or institutional flow feeds.
 //
 // Signal labels: Bullish | Neutral | Bearish
 // Risk levels:   Low | Moderate | Elevated | High | Critical
@@ -197,15 +198,15 @@ function scoreAltcoinSeason(p: FaultlinePressureOutput): { signalScore: number; 
 function scoreStablecoinLiquidity(p: FaultlinePressureOutput): { signalScore: number; riskScore: number; drivers: string[] } {
   const pressure = p.overallPressure;
   const liquidity = clamp(100 - requireVector(p, "liquidity-stress"), 0, 100);
-  // Stablecoin liquidity is a leading indicator — high stablecoin supply = dry powder
+  // Derived macro-liquidity proxy; this is not a stablecoin-supply observation.
   const signalScore = clamp(liquidity * 0.6 + (100 - pressure) * 0.4, 0, 100);
   const riskScore   = clamp(pressure * 0.5 + (100 - liquidity) * 0.5, 0, 100);
   return {
     signalScore,
     riskScore,
     drivers: [
-      signalScore > 60 ? "Stablecoin supply signals dry powder available for deployment" : "Stablecoin supply contraction suggests capital is already deployed",
-      "Stablecoin liquidity is a leading indicator for crypto market moves",
+      signalScore > 60 ? "Macro liquidity conditions suggest risk capital may be more available" : "Macro liquidity conditions suggest reduced risk appetite",
+      "Derived from canonical macro pressure and liquidity vectors; not a stablecoin-supply observation",
     ],
   };
 }
@@ -223,11 +224,13 @@ function buildBtcDashboard(p: FaultlinePressureOutput): Omit<BitcoinMacroDashboa
   // Trend strength: inverse of pressure + equity stress
   const trendScore = clamp(100 - (pressure * 0.6 + equity * 0.4), 0, 100);
 
-  // Dollar pressure: sovereign debt + yield curve (proxy for DXY strength)
+  // Derived macro dollar/rate proxy; this is not a direct DXY observation.
   const dxyScore = clamp(sovereign * 0.5 + yields * 0.5, 0, 100);
 
-  // ETF/institutional flow: inversely correlated with macro stress
-  const etfScore = clamp(100 - (pressure * 0.5 + credit * 0.5), 0, 100);
+  // Macro risk-appetite proxy: inverse of canonical macro stress and credit stress.
+  // The legacy response field name is retained for compatibility only; it is not ETF
+  // or institutional-flow data.
+  const macroRiskAppetiteScore = clamp(100 - (pressure * 0.5 + credit * 0.5), 0, 100);
 
   // ── Cycle phase determination ───────────────────────────────────────────
   //
@@ -240,8 +243,8 @@ function buildBtcDashboard(p: FaultlinePressureOutput): Omit<BitcoinMacroDashboa
   //
   // This represents: BTC is down from cycle highs, macro headwinds persist,
   // but conditions are stabilizing rather than deteriorating further.
-  // Long-term holder accumulation, declining exchange balances, muted funding,
-  // and stabilizing price action are consistent with this macro backdrop.
+    // This is a macro-implied classification only; it does not establish BTC price,
+    // holder, exchange-balance, or funding observations.
   let cyclePhase: CyclePhase;
   let cycleConfidence: number;
 
@@ -283,7 +286,7 @@ function buildBtcDashboard(p: FaultlinePressureOutput): Omit<BitcoinMacroDashboa
     if (trendScore >= 30 && trendScore <= 55)
       evidence.push("Price action is stabilizing: trend strength is weak but no longer deteriorating, consistent with base-forming behavior");
     if (liquidity >= 40 && liquidity <= 58)
-      evidence.push("Liquidity conditions are neutral-to-contracting but not collapsing — exchange outflows and stablecoin supply suggest dry powder accumulation");
+      evidence.push("Macro liquidity conditions are neutral-to-contracting but not collapsing, which is consistent with a less restrictive risk backdrop");
     if (credit < 50)
       evidence.push("Credit stress is contained below systemic levels — no contagion signal, which historically precedes accumulation windows");
     if (equity < 55)
@@ -295,7 +298,7 @@ function buildBtcDashboard(p: FaultlinePressureOutput): Omit<BitcoinMacroDashboa
     // Ensure at least 3 evidence points
     if (evidence.length < 3) {
       evidence.push("Macro regime indicators suggest conditions are stabilizing rather than deteriorating further");
-      evidence.push("On-chain proxy signals (via macro liquidity and credit conditions) are consistent with long-term holder accumulation patterns");
+      evidence.push("This derived macro pattern is consistent with a base-forming backdrop, but does not observe on-chain activity");
     }
 
     accumulationAnalysis = {
@@ -308,7 +311,7 @@ function buildBtcDashboard(p: FaultlinePressureOutput): Omit<BitcoinMacroDashboa
         "Liquidity conditions shift from neutral to expanding — FAULTLINE Liquidity score above 60",
         "FAULTLINE Pressure Index drops below 35, signaling macro tailwinds returning",
         "Sustained risk-on confirmation: equity stress falls below 35, credit spreads tighten",
-        "ETF and institutional flow signals shift to inflow bias with consistent weekly momentum",
+        "A separately sourced, timestamped crypto-market confirmation is available; this macro-only route does not observe ETF or institutional flows",
       ],
       invalidationSignals: [
         "Price breaks below the accumulation range low with high volume — capitulation re-entry",
@@ -343,7 +346,7 @@ function buildBtcDashboard(p: FaultlinePressureOutput): Omit<BitcoinMacroDashboa
       score: dxyScore,
       label: dxyScore >= 65 ? "Strong Dollar" : dxyScore >= 45 ? "Neutral" : "Weak Dollar",
       direction: dxyScore >= 55 ? "strengthening" : dxyScore >= 40 ? "neutral" : "weakening",
-      note: dxyScore >= 60 ? "Dollar strength historically creates headwinds for BTC" : "Dollar weakness may support BTC as an alternative store of value",
+      note: dxyScore >= 60 ? "Derived macro dollar/rate conditions are restrictive for risk assets" : "Derived macro dollar/rate conditions are less restrictive for risk assets",
     },
     yieldPressure: {
       score: yields,
@@ -352,10 +355,10 @@ function buildBtcDashboard(p: FaultlinePressureOutput): Omit<BitcoinMacroDashboa
       note: yields >= 60 ? "Rising yields compress risk-asset valuations including crypto" : "Yield conditions are not severely restrictive for crypto",
     },
     etfInstitutionalFlow: {
-      score: etfScore,
-      label: etfScore >= 65 ? "Inflow Bias" : etfScore >= 45 ? "Mixed" : "Outflow Bias",
-      direction: etfScore >= 55 ? "inflow" : etfScore >= 40 ? "neutral" : "outflow",
-      note: etfScore >= 60 ? "Macro conditions suggest institutional flows may favor crypto" : "Macro stress may be reducing institutional risk appetite for crypto",
+      score: macroRiskAppetiteScore,
+      label: macroRiskAppetiteScore >= 65 ? "Supportive" : macroRiskAppetiteScore >= 45 ? "Mixed" : "Constrained",
+      direction: macroRiskAppetiteScore >= 55 ? "inflow" : macroRiskAppetiteScore >= 40 ? "neutral" : "outflow",
+      note: "DERIVED_MODEL — canonical macro pressure and credit projection; not an ETF or institutional-flow observation.",
     },
     marketCyclePhase: {
       phase: cyclePhase,
@@ -396,14 +399,14 @@ function buildAltcoinRisk(p: FaultlinePressureOutput): AltcoinRiskAssessment {
     overallRisk: scoreToRisk(riskScore),
     riskScore,
     btcDominanceSignal: pressure > 60
-      ? "Elevated macro stress typically drives BTC dominance higher — altcoin risk is elevated"
-      : "Macro conditions may support rotation from BTC into altcoins",
+      ? "Elevated macro stress raises derived broad-altcoin risk"
+      : "Macro conditions may support broader risk appetite",
     liquiditySignal: liquidity > 60
       ? "Liquidity expansion signals may indicate favorable conditions for altcoin participation"
       : "Liquidity contraction historically precedes altcoin underperformance",
     stablecoinSignal: liquidity > 55
-      ? "Stablecoin supply conditions suggest dry powder available for altcoin deployment"
-      : "Stablecoin supply contraction may signal reduced altcoin buying pressure",
+      ? "Macro liquidity conditions suggest a less restrictive backdrop for risk assets"
+      : "Macro liquidity conditions suggest a more restrictive backdrop for risk assets",
     riskOnOffSignal: equity < 45
       ? "Risk-on equity conditions may support altcoin risk appetite"
       : "Risk-off equity conditions typically suppress altcoin performance",
@@ -523,7 +526,7 @@ function buildPortfolioGuidance(p: FaultlinePressureOutput): CryptoPortfolioGuid
       condition: altScore >= 60
         ? "Conditions may be developing that historically precede altcoin rotation"
         : "Macro environment suggests selectivity and risk management for altcoins",
-      note: "Altcoin guidance reflects liquidity, dominance, and macro risk conditions",
+      note: "Altcoin guidance reflects derived macro liquidity and risk conditions, not dominance or on-chain observations",
     },
     stableGuidance: {
       action: stableAction,
@@ -557,7 +560,7 @@ BTC Trend Strength: ${dashboard.trendStrength.label} (${dashboard.trendStrength.
 Liquidity Conditions: ${dashboard.liquidityConditions.label} (${dashboard.liquidityConditions.score.toFixed(0)}/100)
 Dollar Pressure: ${dashboard.dollarPressure.label}
 Yield Pressure: ${dashboard.yieldPressure.label}
-ETF/Institutional Flow: ${dashboard.etfInstitutionalFlow.label}
+Macro risk-appetite proxy (DERIVED_MODEL; not ETF flow): ${dashboard.etfInstitutionalFlow.label}
 Market Cycle Phase: ${dashboard.marketCyclePhase.phase}
 Overall BTC Bias: ${dashboard.overallBtcBias}
 
@@ -619,7 +622,7 @@ function withheldCryptoReport(canonicalStateId: string | null = null, qualitySta
       liquidityConditions: { score: 0, label: "UNAVAILABLE", direction: "neutral", note: withheld },
       dollarPressure: { score: 0, label: "UNAVAILABLE", direction: "neutral", note: withheld },
       yieldPressure: { score: 0, label: "UNAVAILABLE", direction: "neutral", note: withheld },
-      etfInstitutionalFlow: { score: 0, label: "UNAVAILABLE", direction: "neutral", note: withheld },
+      etfInstitutionalFlow: { score: 0, label: "UNAVAILABLE", direction: "neutral", note: "DERIVED_MODEL unavailable — canonical macro state is not bound; not an ETF or institutional-flow observation." },
       marketCyclePhase: { phase: "UNAVAILABLE", confidence: 0, note: withheld },
       overallBtcBias: "UNAVAILABLE",
       aiNarrative: withheld,
@@ -660,8 +663,8 @@ function withheldCryptoReport(canonicalStateId: string | null = null, qualitySta
 
 // ── Main export ───────────────────────────────────────────────
 
-export async function getCryptoIntelligence(): Promise<CryptoIntelligenceReport> {
-  const canonical = await getAuthoritativeCanonicalIntelligenceState().catch(() => null);
+export async function getCryptoIntelligence(suppliedCanonical?: import("../shared/canonicalIntelligenceState").CanonicalIntelligenceState | null): Promise<CryptoIntelligenceReport> {
+  const canonical = suppliedCanonical !== undefined ? suppliedCanonical : await getAuthoritativeCanonicalIntelligenceState().catch(() => null);
   const pressure = projectPressureFromCanonical(canonical);
   if (!canonical || !pressure || !hasRequiredCryptoVectors(pressure)) {
     return withheldCryptoReport(canonical?.stateId ?? null, canonical?.confidenceOrEvidenceQuality ?? "UNAVAILABLE");

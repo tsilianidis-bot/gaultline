@@ -19,6 +19,8 @@ import { scanOpportunities, type TradeOpportunity } from "./ownerSimulation";
 import { evaluateDecisionLight } from "./decisionLight";
 import type { DecisionLightOutput } from "../shared/decisionLight";
 import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import { toOperationalPressure } from "./operationalSignalInputs";
+import { TRPCError } from "@trpc/server";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -106,7 +108,7 @@ export type ExposureCategory =
 export type SimulatorTimeframe = "today" | "this_week" | "one_three_months" | "six_twelve_months";
 
 export type RiskLevel = "Low" | "Medium" | "High" | "Extreme";
-export type ConfidenceLevel = "Low" | "Moderate" | "High";
+export type ConfidenceLevel = "Not established" | "Low" | "Moderate" | "High";
 export type MarketStatus = "Cleared" | "Caution" | "Defensive";
 
 export type ThesisType =
@@ -229,6 +231,10 @@ export interface MarketInterpretation {
 }
 
 export interface TradeSimulationOutput {
+  requestedTicker?: string;
+  analysisScope?: "REGIME_ONLY";
+  evidenceQuality?: string;
+  canonicalStateId?: string | null;
   marketStatus: MarketStatus;
   moveType: MoveType;
   moveLabel: string;
@@ -2667,8 +2673,23 @@ export async function runTradePreflightSimulation(
   _pressureOverride?: any,
   canonicalBinding?: TradePreflightCanonicalBinding | null,
 ): Promise<TradeSimulationOutput> {
-  const pressure = _pressureOverride ?? await calculateFaultlinePressure();
-  const canonical = await resolveCanonicalBinding(canonicalBinding, Boolean(_pressureOverride));
+  let pressure: FaultlinePressureOutput;
+  let canonical: TradePreflightCanonicalBinding | null;
+  if (_pressureOverride === undefined) {
+    const state = await getAuthoritativeCanonicalIntelligenceState();
+    pressure = toOperationalPressure(state, true);
+    canonical = { stateId: state!.stateId, qualityStatus: state!.confidenceOrEvidenceQuality, coherenceStatus: state!.provenance.coherenceStatus };
+  } else {
+    pressure = _pressureOverride;
+    canonical = canonicalBinding ?? null;
+    if (canonical?.stateId && _pressureOverride.canonicalStateId !== canonical.stateId) {
+      throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Preflight canonical pressure identity does not match its binding." });
+    }
+  }
+  const requestedTicker = input.ticker;
+  // Favorability arithmetic uses market regime/move/timeframe only. Do not
+  // interpolate a requested ticker into a falsely asset-specific verdict.
+  input = { ...input, ticker: undefined };
 
   const marketCondition = buildMarketCondition(pressure);
   const { favorability, favorable, adverse } = computeFavorabilityScore(
@@ -2678,7 +2699,7 @@ export async function runTradePreflightSimulation(
   );
 
   const riskLevel = toRiskLevel(100 - favorability + Math.round(pressure.overallPressure * 0.20));
-  const confidenceLevel = toConfidenceLevel(pressure);
+  const confidenceLevel = "Not established" as ConfidenceLevel;
 
   const actionBias = computeActionBias(input.moveType, favorability, pressure, input.ticker, input.timeframe);
   const bestVersionOfMove = computeBestVersion(input.moveType, favorability, pressure);
@@ -2771,7 +2792,11 @@ export async function runTradePreflightSimulation(
     moveLabel: MOVE_LABELS[input.moveType],
     timeframe: input.timeframe,
     timeframeLabel: TIMEFRAME_LABELS[input.timeframe],
-    ticker: input.ticker,
+    ticker: undefined,
+    requestedTicker,
+    analysisScope: "REGIME_ONLY",
+    evidenceQuality: canonical?.qualityStatus ?? "EXPLICIT_SIMULATION",
+    canonicalStateId: canonical?.stateId ?? null,
     thesisType: inferredThesis,
     marketCondition,
     moveFavorabilityScore: favorability,

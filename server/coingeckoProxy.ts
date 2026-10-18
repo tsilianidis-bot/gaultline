@@ -494,17 +494,23 @@ export async function getGlobalStats(): Promise<GlobalStats | null> {
     }
     const data = await cgFetch<GlobalResponse>("/global");
     const d = data.data;
+    const measurements = [d.total_market_cap?.usd, d.total_volume?.usd,
+      d.market_cap_percentage?.btc, d.market_cap_percentage?.eth,
+      d.market_cap_change_percentage_24h_usd, d.active_cryptocurrencies, d.markets];
+    if (!measurements.every(value => typeof value === "number" && Number.isFinite(value))) {
+      throw new Error("CoinGecko global response omitted a required measurement");
+    }
     const updatedAtSeconds = typeof d.updated_at === "number" && Number.isFinite(d.updated_at) && d.updated_at > 0
       ? d.updated_at
       : null;
     const stats: GlobalStats = {
-      totalMarketCap:            d.total_market_cap?.usd ?? 0,
-      totalVolume24h:            d.total_volume?.usd ?? 0,
-      btcDominance:              d.market_cap_percentage?.btc ?? 0,
-      ethDominance:              d.market_cap_percentage?.eth ?? 0,
-      marketCapChangePercent24h: d.market_cap_change_percentage_24h_usd ?? 0,
-      activeCryptocurrencies:    d.active_cryptocurrencies ?? 0,
-      markets:                   d.markets ?? 0,
+      totalMarketCap:            d.total_market_cap.usd,
+      totalVolume24h:            d.total_volume.usd,
+      btcDominance:              d.market_cap_percentage.btc,
+      ethDominance:              d.market_cap_percentage.eth,
+      marketCapChangePercent24h: d.market_cap_change_percentage_24h_usd,
+      activeCryptocurrencies:    d.active_cryptocurrencies,
+      markets:                   d.markets,
       observedAt:                updatedAtSeconds === null ? null : updatedAtSeconds * 1000,
       fetchedAt:                 Date.now(),
     };

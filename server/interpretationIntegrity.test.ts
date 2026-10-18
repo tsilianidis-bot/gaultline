@@ -48,3 +48,14 @@ describe("Phase 4 interpretation integrity", () => {
     expect(() => assertSameInterpretationState(transaction, createEvidencePacket({ ...canonical, stateId: "state:other" }, [{ ...claim, claimId: "state:other:observed:pressure", canonical: { ...canonical, stateId: "state:other" }, sourceIds: ["state:other"] }], canonical.effectiveAt))).toThrow(/state changed/);
   });
 });
+
+// Explicit mocked output only; this is not a live-provider test.
+it("withholds executive, bias, threat, and mission fields as well as reply when canonical source is absent", () => {
+  const transaction = createInterpretationTransaction("ASHA", null, "model:test", canonical.effectiveAt);
+  const result = validateInterpretationOutput({ reply: "Unverified movement.", executiveSummary: "Risk is falling.", marketBias: "BULLISH", threatLevel: "LOW", keyFindings: ["Unverified growth"], missionRecommendationStructured: { verdict: "Buy", decisionPaths: [{scenario: "C", response: "Favor C"}] } }, transaction);
+  expect(result.normalizedOutput.executiveSummary).toMatch(/canonical state unavailable/i);
+  expect(result.normalizedOutput.marketBias).toBeNull();
+  expect(result.normalizedOutput.threatLevel).toBeNull();
+  expect(result.normalizedOutput.keyFindings).toBeNull();
+  expect(result.normalizedOutput.missionRecommendationStructured).toBeNull();
+});

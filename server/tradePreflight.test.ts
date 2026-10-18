@@ -150,7 +150,9 @@ describe("simulateTrade — output shape", () => {
       { moveType: "buy_specific_asset", timeframe: "this_week", ticker: "NVDA" },
       LOW_PRESSURE_OUTPUT as any
     );
-    expect(result.ticker).toBe("NVDA");
+    expect(result.ticker).toBeUndefined();
+    expect(result.requestedTicker).toBe("NVDA");
+    expect(result.analysisScope).toBe("REGIME_ONLY");
     expect(result.moveType).toBe("buy_specific_asset");
   }, 30000);
 });
@@ -188,7 +190,7 @@ describe("simulateTrade — score bounds", () => {
       { moveType: "raise_cash", timeframe: "today" },
       HIGH_PRESSURE_OUTPUT as any
     );
-    expect(["Low", "Moderate", "High"]).toContain(result.confidenceLevel);
+    expect(result.confidenceLevel).toBe("Not established");
   });
 });
 

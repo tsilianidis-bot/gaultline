@@ -13,6 +13,9 @@
  * Registered at: POST /api/scheduled/seismograph-daily
  * Host schedule: 4:15 PM America/New_York on valid NYSE sessions. The handler
  * independently skips callbacks outside that post-close schedule window.
+ * Track Record capture sits inside the pipeline and no-ops unless its own
+ * gates pass: SCHEDULED_CRON, TRACK_RECORD_CRON_WRITES exactly "true", the
+ * intelligence_track_record flag, and fresh verified evidence.
  */
 import { randomUUID } from "node:crypto";
 import type { Request, Response } from "express";
@@ -45,6 +48,7 @@ import { invalidateCanonicalMarketStateCache } from "./marketStateCache";
 import { collectBroadInstitutionalEventOutcomes, recordDailyMarketEvidence } from "./institutionalMemory";
 import { collectForwardChampionOutcomesV2, recordForwardChampionProvenance } from "./algorithmProvenance";
 import { capturesForwardEvidence, championProvenanceKey, etDateOf, resolveRunContext, type RunContext } from "./forwardRunProvenance";
+import { captureTrackRecordFromScheduledRun } from "./trackRecordCapture";
 import { buildAtomicIntelligenceStateManifest, persistAtomicIntelligenceStateManifest } from "./intelligenceGovernance";
 
 function mapPressureLevelToSeismographStress(level: string | null | undefined): SeismographOutput["stressLevel"] {
@@ -193,28 +197,15 @@ export async function runSeismographPipeline(options: { runContext?: RunContext 
   const originatingRunId = `seismograph:${randomUUID()}`;
   console.log(`[Seismograph] Pipeline starting for ${today}`);
 
-  // Step 1: Collect evidence from all contributors in parallel
-  const [pressureResult, fmosResult, crossMarketResult] =
-    await Promise.allSettled([
-      calculateFaultlinePressure(),
-      runFMOSPipeline({ skipAIInterpretation: false }),
-      computeCrossMarketIntelligence(),
-    ]);
-  const pressureOutput =
-    pressureResult.status === "fulfilled" ? pressureResult.value : null;
-  const fmosOutput =
-    fmosResult.status === "fulfilled" ? fmosResult.value : null;
-  const crossMarketOutput =
-    crossMarketResult.status === "fulfilled" ? crossMarketResult.value : null;
-  if (!pressureOutput) {
-    throw new Error("Pressure engine failed — cannot proceed without core data");
-  }
-  // FAIL CLOSED (Phase 1, 2026-10-13): a new canonical reading is recorded only
-  // from a fully verified input set. A stale preserved reading must never be
-  // re-recorded as today's observation; the last canonical state stays in force.
-  if (pressureOutput.verification?.status !== "verified") {
+  // One verified source-input set for this run. FMOS must not recalculate it.
+  const pressureOutput = await calculateFaultlinePressure();
+  if (pressureOutput.verification?.status !== "verified")
     throw new Error(`Pressure inputs not verified (${pressureOutput.verification?.problems?.join("; ") ?? "unknown"}) — preserving last canonical state`);
-  }
+  const [fmosResult] = await Promise.allSettled([runFMOSPipeline({ skipAIInterpretation: false, pressureOverride: pressureOutput })]);
+  const fmosOutput = fmosResult.status === "fulfilled" ? fmosResult.value : null;
+  // Cross-Market public interpretation is state-bound. A prior manifest is not
+  // evidence for the not-yet-persisted state being constructed by this run.
+  const crossMarketOutput = null;
   const sobResult = await Promise.allSettled([
     computeSOB({
       regime: pressureOutput.regime,
@@ -282,28 +273,7 @@ export async function runSeismographPipeline(options: { runContext?: RunContext 
   );
 
   // Step 8: Persist to Market Memory
-  await memorySetJson(SEISMOGRAPH_OUTPUT_KEY, seismographOutput);
-  await recordDailyMarketEvidence({
-    observedAt: new Date(),
-    pressureIndex: seismographOutput.pressureScore,
-    regime: seismographOutput.regime,
-    stressLevel: seismographOutput.stressLevel,
-    direction: seismographOutput.direction,
-    dataFreshness: seismographOutput.dataFreshness ?? "unknown",
-    probabilities: {
-      bull: seismographOutput.probabilities.bull,
-      neutral: seismographOutput.probabilities.neutral,
-      bear: seismographOutput.probabilities.bear,
-      confidence: seismographOutput.probabilities.confidence,
-    },
-    sourceState: {
-      activeContributors: seismographOutput.activeContributors,
-      evidenceConsensus: seismographOutput.evidenceConsensus,
-      analogCount: seismographOutput.analogMatches.length,
-      activePatternCount: seismographOutput.activePatterns.length,
-      vectorScores: Object.fromEntries((pressureOutput.vectors ?? []).filter(vector => vector.id && typeof vector.score === "number").map(vector => [vector.id, vector.score])),
-    },
-  });
+
   // Phase 1B governance capture is append-only and deliberately non-blocking.
   // It records this exact run's source quality, governed claim references, and
   // score/regime coherence without changing the canonical output.
@@ -324,6 +294,10 @@ export async function runSeismographPipeline(options: { runContext?: RunContext 
       codeVersion: (() => { try { return resolveBuildIdentity().commit; } catch { return null; } })(),
     });
     const persisted = await persistAtomicIntelligenceStateManifest(governanceState);
+    if (persisted.stateId !== governanceState.manifest.stateId) throw new Error("Persisted manifest identity mismatch.");
+    Object.assign(seismographOutput, { canonicalStateId: governanceState.manifest.stateId,
+      stateHash: governanceState.manifest.stateHash, inputSnapshotId: governanceState.manifest.inputSnapshotId });
+    await memorySetJson(SEISMOGRAPH_OUTPUT_KEY, seismographOutput);
     console.log(`[Seismograph] Governance manifest ${persisted.created ? "recorded" : "already present"}: ${persisted.stateId} (${governanceState.manifest.coherenceStatus})`);
     const synthesis = await getAuthoritativeCrossEngineSynthesis();
     if (synthesis) {
@@ -341,12 +315,60 @@ export async function runSeismographPipeline(options: { runContext?: RunContext 
   } catch (error) {
     console.warn("[Seismograph] Governance manifest capture deferred:", error);
   }
+  if (!seismographOutput.canonicalStateId || !seismographOutput.stateHash || !seismographOutput.inputSnapshotId)
+    throw new Error("Canonical manifest could not be persisted; unbound output is withheld.");
+  await recordDailyMarketEvidence({
+    observedAt: new Date(seismographOutput.computedAt),
+    pressureIndex: seismographOutput.pressureScore,
+    regime: seismographOutput.regime,
+    stressLevel: seismographOutput.stressLevel,
+    direction: seismographOutput.direction,
+    dataFreshness: seismographOutput.dataFreshness ?? "unknown",
+    probabilities: {
+      bull: seismographOutput.probabilities.bull,
+      neutral: seismographOutput.probabilities.neutral,
+      bear: seismographOutput.probabilities.bear,
+      confidence: seismographOutput.probabilities.confidence,
+    },
+    sourceState: {
+      canonicalStateId: seismographOutput.canonicalStateId,
+      stateHash: seismographOutput.stateHash,
+      inputSnapshotId: seismographOutput.inputSnapshotId,
+      activeContributors: seismographOutput.activeContributors,
+      evidenceConsensus: seismographOutput.evidenceConsensus,
+      analogCount: seismographOutput.analogMatches.length,
+      activePatternCount: seismographOutput.activePatterns.length,
+      vectorScores: Object.fromEntries((pressureOutput.vectors ?? []).filter(vector => vector.id && typeof vector.score === "number").map(vector => [vector.id, vector.score])),
+    },
+  });
   // Forward-only research evidence (scheduled run only). Failures are non-blocking because
   // they must never interrupt the canonical production Seismograph score. v1 outcome
   // collection (intraday target bars) is retired; v2 appends completed-bar outcomes.
   await collectForwardOutcomesForRun(runContext);
   invalidateCanonicalMarketStateCache();
   console.log("[Seismograph] Output persisted to Market Memory");
+
+  // Track record is read-only against the #98 evidence store. It no-ops unless
+  // the run is SCHEDULED_CRON, TRACK_RECORD_CRON_WRITES is exactly "true", the
+  // intelligence_track_record flag is on, and the evidence gate admits fresh
+  // verified inputs. A duplicate Eastern session returns already_recorded.
+  // Failures never change the Seismograph score.
+  try {
+    const capture = await captureTrackRecordFromScheduledRun({
+      expectedCanonicalStateId: seismographOutput.canonicalStateId ?? undefined,
+      expectedStateHash: seismographOutput.stateHash ?? undefined,
+      expectedInputSnapshotId: seismographOutput.inputSnapshotId ?? undefined,
+      run: runContext,
+      pressureIndex: seismographOutput.pressureScore,
+      regime: seismographOutput.regime,
+      // Capture chooses its decision time after required source receipt.
+    });
+    if (capture.reason !== "not_scheduled" && capture.reason !== "cron_writes_disabled" && capture.reason !== "flag_disabled") {
+      console.log(`[Seismograph] Track record capture: ${capture.reason}`);
+    }
+  } catch (error) {
+    console.warn("[Seismograph] Track record capture skipped:", error instanceof Error ? error.message : "unavailable");
+  }
 
   return seismographOutput;
 }

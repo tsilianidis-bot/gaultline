@@ -4,16 +4,19 @@
  *   (the same field list as #60's withoutModelProbabilities, plus PLATO's own answer fields).
  * - generateAshaDailyGreeting strips them from the greeting.
  * - Ordinary size statements ("A drawdown of 10% is typical") survive.
- * - The evidence packet the model sees (ALLOWED EVIDENCE CLAIMS, incl. "Scenario component … is N")
- *   is byte-identical to edb36648 for the same inputs (post-launch item, unchanged this round).
+ * - The evidence packet and delivered citations are bound to one immutable
+ *   canonical state, not model- or client-authored market facts.
  * QA r13 B8a: every string the model wrote is stripped at any depth (citation name/observedAt,
  * missionRecommendationStructured.timeHorizon, invented keys), and integrity.validation.normalizedOutput
  * carries only the known answer fields, from the final stripped and normalized answer.
- * Mocked provider only (fetch stub); prod 2026-10-01 fixtures.
+ * Explicit MOCK fixture and mocked provider transport only; no live call is made.
  */
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { buildCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import { assembleCanonicalMarketState, type CanonicalMarketStateSource } from "./marketStateService";
+import type { CanonicalIntelligenceState } from "../shared/canonicalIntelligenceState";
+import type { AshaPageContext } from "../shared/ashaContext";
+import type { CanonicalMarketState } from "../shared/marketState";
 
 vi.hoisted(() => {
   // Fake key for the mocked provider only (fetch is stubbed below); no real call is made.
@@ -21,19 +24,155 @@ vi.hoisted(() => {
   process.env.BUILT_IN_FORGE_API_KEY = "AIzaSy_TEST_FAKE_KEY_000000000000000000";
 });
 
-const FIX = path.join(import.meta.dirname, "__fixtures__", "prod-2026-10-01");
-const fixture = (name: string) => JSON.parse(readFileSync(path.join(FIX, name), "utf8"));
-const marketState = fixture("market-state-current.json");
-const canonical = fixture("canonical-current.json");
-const EVIDENCE_AT_EDB3664: string[] = fixture("plato-evidence-claims-edb3664.json");
+const state = vi.hoisted(() => ({
+  answer: "" as string,
+  greeting: "" as string,
+  marketState: null as CanonicalMarketState | null,
+  canonical: null as CanonicalIntelligenceState | null,
+}));
+
+const MOCK_STATE_ID = "state:mock-plato-provenance-2026-10-01";
+const MOCK_INPUT_SNAPSHOT_ID = "inputs:mock-plato-provenance-2026-10-01";
+const MOCK_STATE_HASH = "e50750fd59b6e8d8958db2d5fab3db0406e3caed1f7b574570a493ed625ea246";
+const MOCK_OBSERVED_AT = "2026-10-01T16:00:00.000Z";
+const MOCK_GENERATED_AT = "2026-10-01T16:05:00.000Z";
+
+/**
+ * Test-only data. It is deliberately labelled MOCK and never represents a
+ * provider call or a production observation.  The source ids and timestamps
+ * model the complete Pressure v1 input vector so provenance remains explicit.
+ */
+const MOCK_PROVIDER_METADATA = Object.freeze({
+  sourceType: "MOCK",
+  fixture: "plato-answer-probability-strip",
+  provider: "FRED fixture records",
+  observedAt: MOCK_OBSERVED_AT,
+  retrievedAt: MOCK_GENERATED_AT,
+  operationalUse: false,
+});
+const MOCK_PROVIDER_OBSERVATIONS = Object.freeze({
+  "fred:SOFR": { ...MOCK_PROVIDER_METADATA, seriesId: "SOFR", value: 4.82 },
+  "fred:BAMLH0A0HYM2": { ...MOCK_PROVIDER_METADATA, seriesId: "BAMLH0A0HYM2", value: 3.21 },
+  "fred:DGS10": { ...MOCK_PROVIDER_METADATA, seriesId: "DGS10", value: 4.12 },
+  "fred:DGS2": { ...MOCK_PROVIDER_METADATA, seriesId: "DGS2", value: 3.88 },
+  "fred:CPIAUCSL": { ...MOCK_PROVIDER_METADATA, seriesId: "CPIAUCSL", value: 2.7 },
+  "fred:PPIACO": { ...MOCK_PROVIDER_METADATA, seriesId: "PPIACO", value: 2.1 },
+  "fred:FEDFUNDS": { ...MOCK_PROVIDER_METADATA, seriesId: "FEDFUNDS", value: 4.75 },
+  "fred:UNRATE": { ...MOCK_PROVIDER_METADATA, seriesId: "UNRATE", value: 4.2 },
+  "market:SPX-ADVANCE-DECLINE": { ...MOCK_PROVIDER_METADATA, seriesId: "SPX-ADVANCE-DECLINE", value: 52 },
+});
+
+const canonical = buildCanonicalIntelligenceState({
+  stateId: MOCK_STATE_ID,
+  generatedAt: MOCK_GENERATED_AT,
+  championVersion: "champion-v1-frozen",
+  modelVersion: "mock-canonical-model-v1",
+  // This regression proves fixture/provenance changes do not change the
+  // frozen Pressure v1 score identity or its six-vector values.
+  scoringVersion: "faultline-pressure-v1-frozen",
+  configurationVersion: "mock-provenance-fixture-v1",
+  inputSnapshotId: MOCK_INPUT_SNAPSHOT_ID,
+  stateHash: MOCK_STATE_HASH,
+  pressureIndex: 33,
+  regime: "MODERATE RISK",
+  engineValues: {
+    "liquidity-stress": 22,
+    "credit-contagion": 22,
+    "volatility-regime": 40,
+    "macro-sensitivity": 43,
+    "market-breadth": 28,
+    "ai-bubble": 44,
+  },
+  engineDirections: {
+    "liquidity-stress": "stable",
+    "credit-contagion": "stable",
+    "volatility-regime": "stable",
+    "macro-sensitivity": "stable",
+    "market-breadth": "stable",
+    "ai-bubble": "unknown",
+  },
+  domains: { fixture: MOCK_PROVIDER_METADATA, providerObservations: MOCK_PROVIDER_OBSERVATIONS },
+  scenarioOutputs: { bull: 43, neutral: 43, bear: 14 },
+  probabilityClaimIds: [],
+  analogClaimIds: [],
+  historicalDatasetVersion: "mock-historical-dataset-v1",
+  researchDatasetVersion: "mock-research-dataset-v1",
+  coherenceStatus: "COHERENT",
+  coherenceNotes: ["MOCK fixture only; no operational market conclusion."],
+  dataQualitySummary: { staleInputs: [], unavailableInputs: [], fallbackInputs: [], staticInputs: [] },
+  staleInputs: [],
+  unavailableInputs: [],
+  fallbackInputs: [],
+  inputQuality: [
+    { inputId: "fred:SOFR", freshnessStatus: "LIVE", contributesTo: ["liquidity-stress"], ...MOCK_PROVIDER_OBSERVATIONS["fred:SOFR"] },
+    { inputId: "fred:BAMLH0A0HYM2", freshnessStatus: "LIVE", contributesTo: ["liquidity-stress", "credit-contagion"], ...MOCK_PROVIDER_OBSERVATIONS["fred:BAMLH0A0HYM2"] },
+    { inputId: "fred:DGS10", freshnessStatus: "LIVE", contributesTo: ["credit-contagion", "volatility-regime", "market-breadth"], ...MOCK_PROVIDER_OBSERVATIONS["fred:DGS10"] },
+    { inputId: "fred:DGS2", freshnessStatus: "LIVE", contributesTo: ["volatility-regime"], ...MOCK_PROVIDER_OBSERVATIONS["fred:DGS2"] },
+    { inputId: "fred:CPIAUCSL", freshnessStatus: "LIVE", contributesTo: ["macro-sensitivity"], ...MOCK_PROVIDER_OBSERVATIONS["fred:CPIAUCSL"] },
+    { inputId: "fred:PPIACO", freshnessStatus: "LIVE", contributesTo: ["macro-sensitivity"], ...MOCK_PROVIDER_OBSERVATIONS["fred:PPIACO"] },
+    { inputId: "fred:FEDFUNDS", freshnessStatus: "LIVE", contributesTo: ["macro-sensitivity"], ...MOCK_PROVIDER_OBSERVATIONS["fred:FEDFUNDS"] },
+    { inputId: "fred:UNRATE", freshnessStatus: "LIVE", contributesTo: ["credit-contagion", "market-breadth"], ...MOCK_PROVIDER_OBSERVATIONS["fred:UNRATE"] },
+    { inputId: "market:SPX-ADVANCE-DECLINE", freshnessStatus: "LIVE", contributesTo: ["ai-bubble"], ...MOCK_PROVIDER_OBSERVATIONS["market:SPX-ADVANCE-DECLINE"] },
+  ],
+});
+
+const MOCK_MARKET_SOURCE: CanonicalMarketStateSource = {
+  canonicalStateId: MOCK_STATE_ID,
+  stateHash: MOCK_STATE_HASH,
+  inputSnapshotId: MOCK_INPUT_SNAPSHOT_ID,
+  currentScore: 33,
+  currentRegime: "MODERATE RISK",
+  currentStressLevel: "Elevated",
+  currentDirection: "Stable",
+  currentPercentile: 50,
+  dataFreshness: "live",
+  lastUpdated: MOCK_OBSERVED_AT,
+  providerProvenance: { fred: { status: "live", detail: "MOCK fixture provider records; no live provider claim.", asOf: Date.parse(MOCK_OBSERVED_AT) } },
+  todayStory: "MOCK canonical state is available for provenance testing only.",
+  keyDevelopments: ["MOCK fixture preserves immutable canonical identity."],
+  whyThisScore: "A fixed mock Pressure v1 vector is supplied only to test provenance.",
+  whyThisRegime: "The regime is read only from the mock canonical state.",
+  probabilities: { bull: 0, neutral: 0, bear: 0, confidence: 0, primaryDriver: "Not established", evidenceBasis: "MOCK fixture only", historicalBasis: "Not established" },
+  evidenceFamilies: [
+    { name: "Liquidity Conditions", signal: "recovering", strength: 22, currentValue: "22/100", historicalContext: "MOCK fixture context.", trend: "stable", whyItMatters: "Fixture-only vector." },
+    { name: "Credit Markets", signal: "bullish", strength: 22, currentValue: "22/100", historicalContext: "MOCK fixture context.", trend: "stable", whyItMatters: "Fixture-only vector." },
+    { name: "Yield Curve", signal: "neutral", strength: 40, currentValue: "40/100", historicalContext: "MOCK fixture context.", trend: "stable", whyItMatters: "Fixture-only vector." },
+    { name: "Macro Sensitivity", signal: "bullish", strength: 43, currentValue: "43/100", historicalContext: "MOCK fixture context.", trend: "stable", whyItMatters: "Fixture-only vector." },
+    { name: "Labor & Rates", signal: "bullish", strength: 28, currentValue: "28/100", historicalContext: "MOCK fixture context.", trend: "stable", whyItMatters: "Fixture-only vector." },
+  ],
+  evidenceConsensus: "weak",
+  topAnalog: null,
+  analogSummary: "No governed historical analog is supplied by this mock fixture.",
+  transitionProbabilities: { remainInRegime: 0, transitionToElevated: 0, transitionToLow: 0, transitionToCrisis: 0, confidence: 0, historicalBasis: "Not established", currentEvidence: [] },
+  evolution: { sevenDayTrend: "Not established", thirtyDayTrend: "Not established", ninetyDayTrend: "Not established", yearTrend: "Not established", accelerating: false, buildingPressure: false, whatChanged: [], whatToWatch: [], invalidationConditions: [], sparkline90d: [] },
+  memory: { observationCount: 0, datasetSpan: "Unavailable", currentStreakDescription: "Not established", longestStreak: 0, regimeHistory: [], keyThresholdsCrossed: [], lastMajorShift: null, historicalStats: { avgPressure: 0, maxPressure: 0, minPressure: 0, criticalMonths: 0, highRiskMonths: 0, elevatedMonths: 0, moderateMonths: 0, lowMonths: 0 } },
+  regimeProbabilities5way: { bull: 0, softLanding: 0, stagflation: 0, recession: 0, crash: 0 },
+  developingConditions: [],
+  marketNarrative: { whatIsHappening: "MOCK fixture only.", whyIsItHappening: "Not established.", whatHasChanged: "Not established.", whatIsBuildingBeneathSurface: "Not established.", highestProbabilityPath: "No governed forecast available.", whatWouldInvalidate: "No governed invalidation condition is currently defined." },
+  activePatterns: [],
+};
+
+const marketState = assembleCanonicalMarketState(MOCK_MARKET_SOURCE, {
+  generatedAt: MOCK_GENERATED_AT,
+  cacheStatus: "fresh-cache",
+  cacheAgeMs: 0,
+  canonicalQuality: canonical.confidenceOrEvidenceQuality,
+  canonicalEngines: canonical.engines.map(engine => ({ engineId: engine.engineId, value: engine.value, direction: engine.direction })),
+  canonicalAsOf: canonical.generatedAt,
+  probabilityContract: canonical.probabilityContract ?? null,
+  cryptoOverlay: null,
+});
 
 vi.mock("./marketStateService", async importOriginal => ({
   ...(await importOriginal<typeof import("./marketStateService")>()),
-  getCanonicalMarketState: async () => structuredClone(marketState),
+  getCanonicalMarketState: async () => {
+    if (!state.marketState) throw new Error("MOCK MarketState unavailable");
+    return structuredClone(state.marketState);
+  },
 }));
 vi.mock("./canonicalIntelligenceState", async importOriginal => ({
   ...(await importOriginal<typeof import("./canonicalIntelligenceState")>()),
-  getAuthoritativeCanonicalIntelligenceState: async () => structuredClone(canonical),
+  getAuthoritativeCanonicalIntelligenceState: async () => structuredClone(state.canonical),
 }));
 vi.mock("./systemicRegime/reader", async importOriginal => ({
   ...(await importOriginal<typeof import("./systemicRegime/reader")>()),
@@ -88,7 +227,6 @@ const ANSWER = {
 };
 const GREETING = `Welcome back. ${CLAIM_A} ${KEEP}\nCredit is calm. ${CLAIM_B}`;
 
-const state = vi.hoisted(() => ({ answer: "" as string, greeting: "" as string }));
 const bodies: Array<{ messages: Array<{ role: string; content: string }>; response_format?: unknown; tools?: unknown }> = [];
 
 beforeAll(() => {
@@ -105,6 +243,8 @@ beforeAll(() => {
 afterAll(() => vi.unstubAllGlobals());
 beforeEach(() => {
   bodies.length = 0;
+  state.marketState = structuredClone(marketState);
+  state.canonical = structuredClone(canonical);
   state.answer = JSON.stringify(ANSWER);
   state.greeting = GREETING;
   vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -115,8 +255,8 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const ask = () => askAsha({ userMessage: "Is credit stress building?", history: [], pageContext: { page: "/app/now" } } as never);
-const greet = () => generateAshaDailyGreeting({ userName: "Ada", engineContext: {} } as never);
+const ask = (pageContext: AshaPageContext = { page: "/app/now" }) => askAsha({ userMessage: "Is credit stress building?", history: [], pageContext });
+const greet = () => generateAshaDailyGreeting({ userName: "Ada", engineContext: {} });
 
 /** Every string in a value, with its path. */
 function strings(value: unknown, at = "$"): Array<[string, string]> {
@@ -124,6 +264,50 @@ function strings(value: unknown, at = "$"): Array<[string, string]> {
   if (Array.isArray(value)) return value.flatMap((item, i) => strings(item, `${at}[${i}]`));
   if (value && typeof value === "object") return Object.entries(value).flatMap(([k, v]) => strings(v, `${at}.${k}`));
   return [];
+}
+
+type PromptEvidenceClaim = {
+  claimId: string;
+  class: string;
+  statement: string;
+  value: unknown;
+  unit: string | null;
+  evidenceStrength: string;
+  dataQuality: string;
+  limitations: string[];
+};
+
+function evidenceClaimsIn(body: (typeof bodies)[number]): PromptEvidenceClaim[] {
+  const system = body.messages.find(message => message.role === "system")?.content ?? "";
+  const line = system.split("\n").find(entry => entry.startsWith("ALLOWED EVIDENCE CLAIMS: "));
+  if (!line) throw new Error("PLATO prompt omitted its canonical evidence packet");
+  return JSON.parse(line.slice("ALLOWED EVIDENCE CLAIMS: ".length)) as PromptEvidenceClaim[];
+}
+
+function expectedServerCitations() {
+  const base = (claimId: string, name: string, claim: string, observedAt: string) => ({
+    name, claim, claimId, evidenceClass: "DERIVED", observedAt, freshness: "ESTIMATED" as const,
+  });
+  return [
+    ...canonical.engines.map(engine => base(
+      `${canonical.stateId}:derived:engine:${engine.engineId}`,
+      engine.sourceInputIds.join(", ") || `canonical-engine:${engine.engineId}`,
+      `${engine.engineName} model score is ${engine.value}.`,
+      engine.calculatedAt ?? canonical.effectiveAt,
+    )),
+    ...(canonical.pressureIndex === null ? [] : [base(
+      `${canonical.stateId}:derived:pressure-index`, canonical.stateId,
+      `Canonical Pressure Index is ${canonical.pressureIndex}.`, canonical.effectiveAt,
+    )]),
+    ...(canonical.regime === null ? [] : [base(
+      `${canonical.stateId}:derived:regime`, canonical.stateId,
+      `Canonical regime classification is ${canonical.regime}.`, canonical.effectiveAt,
+    )]),
+    ...Object.entries(canonical.scenarioOutputs).map(([label, value]) => base(
+      `${canonical.stateId}:derived:scenario:${label}`, "canonical-scenario-output",
+      `Scenario component ${label} is ${value}.`, canonical.effectiveAt,
+    )),
+  ];
 }
 
 describe("QA r10 B8: stripPlatoProbabilityClaims", () => {
@@ -213,15 +397,52 @@ describe("QA r10 B8: prompt and evidence", () => {
     expect(system).toContain("What does the spread between 2Y and 10Y indicate as a historical recession warning sign (no probability)?");
   });
 
-  it("the evidence packet for fixed inputs is byte-identical to edb36648 (ask, correction and greeting)", async () => {
+  it("binds every model call to one immutable canonical packet while preserving the frozen Pressure v1 values", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-10-02T20:00:00.000Z"));
     await ask();
     await greet();
-    const evidence = bodies.map(body => body.messages.filter(m => m.role === "system").map(m => m.content.split("\n").filter(l => l.startsWith("ALLOWED EVIDENCE CLAIMS: ")).join("\n")).join("\n"));
-    expect(evidence).toHaveLength(EVIDENCE_AT_EDB3664.length);
-    expect(evidence).toEqual(EVIDENCE_AT_EDB3664);
-    expect(evidence[0]).toContain("Scenario component bull is 43.");
+    const packets = bodies.map(evidenceClaimsIn);
+    expect(packets).toHaveLength(3);
+    expect(packets.every(packet => packet.every(claim => claim.claimId.startsWith(`${MOCK_STATE_ID}:`)))).toBe(true);
+    expect(packets.every(packet => packet.every(claim => claim.class === "DERIVED"))).toBe(true);
+    expect(packets.every(packet => packet.every(claim => !/forecast|probability/i.test(claim.class)))).toBe(true);
+    expect(packets.slice(1)).toEqual([packets[0], packets[0]]);
+    expect(canonical.scoringVersion).toBe("faultline-pressure-v1-frozen");
+    expect(packets[0].filter(claim => claim.claimId.includes(":derived:engine:")).map(claim => [claim.claimId.split(":").at(-1), claim.value]))
+      .toEqual(canonical.engines.map(engine => [engine.engineId, engine.value]));
+    expect(packets[0]).toEqual(expect.arrayContaining([
+      expect.objectContaining({ claimId: `${MOCK_STATE_ID}:derived:pressure-index`, statement: "Canonical Pressure Index is 33.", value: 33 }),
+      expect.objectContaining({ claimId: `${MOCK_STATE_ID}:derived:scenario:bull`, statement: "Scenario component bull is 43.", value: 43 }),
+    ]));
+  });
+
+  it("rejects client-authored market facts and uses only the shared canonical identity", async () => {
+    const response = await ask({
+      page: "/app/now",
+      pressureScore: 99,
+      regime: "CLIENT-INVENTED-CRISIS",
+      regimeConfidence: 1,
+      transitionProbability: 100,
+      additionalContext: { fabricatedFact: "CLIENT-INVENTED-MARKET-FACT" },
+    });
+    const system = bodies[0].messages[0].content;
+    expect(system).toContain(MOCK_STATE_ID);
+    expect(system).not.toContain("CLIENT-INVENTED-CRISIS");
+    expect(system).not.toContain("CLIENT-INVENTED-MARKET-FACT");
+    expect(response.pressureIndex).toBe(canonical.pressureIndex);
+    expect(response.marketRegime).toBe(canonical.regime);
+    expect(response.integrity.transaction.originatingStateId).toBe(MOCK_STATE_ID);
+  });
+
+  it("withholds current-market output when the canonical state is unavailable", async () => {
+    state.canonical = null;
+    const response = await ask();
+    expect(response.reply).toBe("Canonical state unavailable. Insufficient evidence for a current market interpretation.");
+    expect(response.pressureIndex).toBeUndefined();
+    expect(response.marketRegime).toBeUndefined();
+    expect(response.sourceCitations).toEqual([]);
+    expect(response.integrity.transaction.originatingStateId).toBeNull();
   });
 });
 
@@ -272,8 +493,12 @@ describe("QA r13 B8a: recursive stripping", () => {
     expect(unstripped(response)).toEqual([]);
     expect(JSON.stringify(response)).not.toMatch(CLAIMS);
     expect(JSON.stringify(response)).not.toContain("70% likely");
-    // Citation [1] lost its whole name: dropped, not rendered with an empty label.
-    expect(response.sourceCitations).toEqual([{ name: "FAULTLINE Pressure Index.", claim: `Pressure Index is 33. ${KEEP}`, observedAt: "2026-10-01.", freshness: "RECENT" }]);
+    // Citations are reconstructed from the server-owned canonical packet. The
+    // model's invented/stripped citation strings never become source metadata.
+    expect(response.sourceCitations).toEqual(expectedServerCitations());
+    expect(response.sourceCitations?.map(citation => citation.claimId)).toEqual(evidenceClaimsIn(bodies[0]).map(claim => claim.claimId));
+    expect(JSON.stringify(response.sourceCitations)).not.toContain("FAULTLINE Pressure Index");
+    expect(JSON.stringify(response.sourceCitations)).not.toContain("Credit spreads are tight");
     expect(response.missionRecommendationStructured?.timeHorizon).toBe("3-6 months.");
   });
 });

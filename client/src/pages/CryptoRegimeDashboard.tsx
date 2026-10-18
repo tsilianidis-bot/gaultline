@@ -3,8 +3,8 @@
  * Dedicated page exposing the full CryptoMarketRegime engine output:
  *  1. Regime Card (headline + confidence + trend + risk + forward bias)
  *  2. Why This Regime? (indicator breakdown)
- *  3. Historical Context
- *  4. Transition Probabilities
+ *  3. Historical Context (only when calibrated evidence is supplied)
+ *  4. Transition Probabilities (only when calibrated evidence is supplied)
  *  5. Actionable Interpretation
  *  6. Cross-Market Comparison
  */
@@ -13,8 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Bitcoin, TrendingUp, TrendingDown, Minus, RefreshCw,
-  BarChart3, Activity, AlertTriangle, Clock, Target,
-  ArrowRight, Info, Zap,
+  BarChart3, AlertTriangle, Target, Info, Zap,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -74,17 +73,6 @@ function AlignmentBadge({ status, score }: { status: string; score: number }) {
   );
 }
 
-function ProbBar({ probability, color }: { probability: number; color: string }) {
-  return (
-    <div className="h-2 w-full rounded-full bg-white/5 overflow-hidden">
-      <div
-        className="h-full rounded-full transition-all duration-700"
-        style={{ width: `${probability}%`, background: color }}
-      />
-    </div>
-  );
-}
-
 function Skeleton({ className }: { className?: string }) {
   return (
     <div className={`animate-pulse rounded bg-white/5 ${className ?? ""}`} />
@@ -107,6 +95,12 @@ export default function CryptoRegimeDashboard() {
   const regimeColor = data?.color ?? "#8B5CF6";
   const confidence  = data?.confidence ?? 0;
   const trend       = data?.trend ?? "Stable";
+  // These claims must be absent, rather than rendered as zeroes or placeholders,
+  // until a calibrated historical-evidence adapter supplies them.
+  const historicalContext = data?.historicalContext ?? null;
+  const transitionProbabilities = data?.transitionProbabilities ?? [];
+  const showHistoricalContext = !isLoading && historicalContext != null;
+  const showTransitionProbabilities = !isLoading && transitionProbabilities.length > 0;
 
   const TrendIcon = trend === "Improving" ? TrendingUp : trend === "Deteriorating" ? TrendingDown : Minus;
   const trendColor = trend === "Improving" ? "#00FF88" : trend === "Deteriorating" ? "#EF4444" : "#F59E0B";
@@ -242,6 +236,7 @@ export default function CryptoRegimeDashboard() {
               <BarChart3 className="w-4 h-4 text-cyan-400" />
               Why This Regime?
               <span className="text-xs font-normal text-white/40 ml-1">Indicators driving the classification</span>
+              <Badge variant="outline" className="ml-auto border-cyan-500/30 text-[9px] font-mono text-cyan-300">DERIVED MODEL</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -274,7 +269,7 @@ export default function CryptoRegimeDashboard() {
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <ContributionPill level={ind.contribution} />
-                        <span className="text-[10px] font-mono text-white/30">{ind.confidence}% conf.</span>
+                        <span className="text-[10px] font-mono text-white/30">{ind.provenance} · {ind.confidence}% conf.</span>
                       </div>
                     </div>
                   );
@@ -284,103 +279,60 @@ export default function CryptoRegimeDashboard() {
           </CardContent>
         </Card>
 
-        {/* ── Section 3: Historical Context ─────────────────────── */}
-        <Card className="border-white/10 bg-white/3">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base text-white">
-              <Clock className="w-4 h-4 text-amber-400" />
-              Historical Context
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
+        {/* Calibrated historical evidence is currently withheld, so these cards
+            are omitted rather than showing fabricated history or probabilities. */}
+        {showHistoricalContext && historicalContext && (
+          <Card className="border-white/10 bg-white/3">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base text-white">Historical Context</CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-                    <p className="text-[10px] font-mono text-white/40 mb-1">AVG DURATION</p>
-                    <p className="text-lg font-bold text-amber-300">
-                      {data?.historicalContext?.avgDurationWeeks ?? "—"} weeks
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-                    <p className="text-[10px] font-mono text-white/40 mb-1">PREVIOUS OCCURRENCE</p>
-                    <p className="text-sm font-bold text-white/80">
-                      {data?.historicalContext?.previousOccurrence ?? "—"}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-                    <p className="text-[10px] font-mono text-white/40 mb-1">BTC AVG RETURN</p>
-                    <p className="text-sm font-bold text-green-400">
-                      {data?.historicalContext?.btcAvgReturn ?? "—"}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-                    <p className="text-[10px] font-mono text-white/40 mb-1">ETH AVG RETURN</p>
-                    <p className="text-sm font-bold text-blue-400">
-                      {data?.historicalContext?.ethAvgReturn ?? "—"}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-white/10 bg-white/5 col-span-2 p-3">
-                    <p className="text-[10px] font-mono text-white/40 mb-1">TYPICAL ALTCOIN BEHAVIOR</p>
-                    <p className="text-xs text-white/70 leading-relaxed">
-                      {data?.historicalContext?.altcoinBehavior ?? "—"}
-                    </p>
-                  </div>
+                <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                  <p className="text-[10px] font-mono text-white/40 mb-1">AVG DURATION</p>
+                  <p className="text-lg font-bold text-amber-300">{historicalContext.avgDurationWeeks} weeks</p>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                  <p className="text-[10px] font-mono text-white/40 mb-1">PREVIOUS OCCURRENCE</p>
+                  <p className="text-sm font-bold text-white/80">{historicalContext.previousOccurrence}</p>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                  <p className="text-[10px] font-mono text-white/40 mb-1">BTC AVG RETURN</p>
+                  <p className="text-sm font-bold text-green-400">{historicalContext.btcAvgReturn}</p>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                  <p className="text-[10px] font-mono text-white/40 mb-1">ETH AVG RETURN</p>
+                  <p className="text-sm font-bold text-blue-400">{historicalContext.ethAvgReturn}</p>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-white/5 col-span-2 p-3">
+                  <p className="text-[10px] font-mono text-white/40 mb-1">TYPICAL ALTCOIN BEHAVIOR</p>
+                  <p className="text-xs text-white/70 leading-relaxed">{historicalContext.altcoinBehavior}</p>
                 </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* ── Section 4: Transition Probabilities ───────────────── */}
-        <Card className="border-white/10 bg-white/3">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base text-white">
-              <Activity className="w-4 h-4 text-purple-400" />
-              Probability of Transition
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
+        {showTransitionProbabilities && (
+          <Card className="border-white/10 bg-white/3">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base text-white">Probability of Transition</CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-3">
-                {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {(data?.transitionProbabilities ?? []).map((tp, i) => {
-                  const isStay = tp.regime.startsWith("Remain");
-                  const barColor =
-                    isStay ? "#8B5CF6" :
-                    tp.probability > 30 ? "#F59E0B" :
-                    "#94A3B8";
-                  return (
-                    <div key={i} className="rounded-lg border border-white/8 bg-white/4 px-4 py-3">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-2">
-                          {isStay ? (
-                            <span className="text-[9px] font-mono text-purple-400 bg-purple-500/20 px-1.5 py-0.5 rounded border border-purple-500/30">CURRENT</span>
-                          ) : (
-                            <ArrowRight className="w-3 h-3 text-white/30" />
-                          )}
-                          <span className="text-sm font-medium text-white/80">{tp.regime}</span>
-                        </div>
-                        <span className="text-lg font-bold font-mono" style={{ color: barColor }}>
-                          {tp.probability}%
-                        </span>
-                      </div>
-                      <ProbBar probability={tp.probability} color={barColor} />
-                      <p className="text-[10px] text-white/35 mt-1.5">{tp.description}</p>
+                {transitionProbabilities.map((tp, i) => (
+                  <div key={i} className="rounded-lg border border-white/8 bg-white/4 px-4 py-3">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-sm font-medium text-white/80">{tp.regime}</span>
+                      <span className="text-lg font-bold font-mono text-white/70">{tp.probability}%</span>
                     </div>
-                  );
-                })}
+                    <p className="text-[10px] text-white/35">{tp.description}</p>
+                  </div>
+                ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* ── Section 5: Actionable Interpretation ──────────────── */}
         <div

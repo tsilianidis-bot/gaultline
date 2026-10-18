@@ -19,7 +19,7 @@
 
 import { clamp } from "../utils";
 import type { FaultlinePressureOutput } from "../../pressure/engine";
-import type { FMOSMacroData } from "./dataAcquisition";
+import { hasVerifiedFmosMacroInputs, type FMOSMacroData } from "./dataAcquisition";
 import type { FMOSMarketDNA, MarketDNARegime } from "../types";
 
 // ── DNA Classification Logic ──────────────────────────────────
@@ -34,6 +34,45 @@ interface DNACandidate {
   estimatedDuration: string;
 }
 
+const REQUIRED_PRESSURE_VECTOR_IDS = [
+  "liquidity-stress",
+  "credit-contagion",
+  "volatility-regime",
+  "macro-sensitivity",
+  "market-breadth",
+  "ai-bubble",
+] as const;
+
+function hasCompletePressureInputs(pressure: FaultlinePressureOutput): boolean {
+  return Number.isFinite(pressure.overallPressure)
+    && pressure.overallPressure >= 0
+    && pressure.overallPressure <= 100
+    && typeof pressure.regime === "string"
+    && pressure.regime.length > 0
+    && REQUIRED_PRESSURE_VECTOR_IDS.every(id => {
+      const vector = pressure.vectors.find(candidate => candidate.id === id);
+      return vector !== undefined
+        && vector.dataStatus !== "unavailable"
+        && Number.isFinite(vector.score)
+        && vector.score >= 0
+        && vector.score <= 100;
+    });
+}
+
+function unavailableMarketDNA(reason: string): FMOSMarketDNA {
+  return {
+    available: false,
+    unavailableReason: reason,
+    currentDNA: null,
+    confidence: null,
+    historicalFrequency: null,
+    characteristics: [],
+    portfolioImplications: [],
+    estimatedDuration: null,
+    typicalTransitionTriggers: [],
+  };
+}
+
 /**
  * Score each possible DNA regime based on current conditions.
  * Returns all candidates sorted by score (highest = most likely).
@@ -43,7 +82,13 @@ function scoreDNACandidates(
   macro: FMOSMacroData
 ): DNACandidate[] {
   const p = pressure.overallPressure;
-  const getVec = (id: string) => pressure.vectors.find(v => v.id === id)?.score ?? 30;
+  const getVec = (id: typeof REQUIRED_PRESSURE_VECTOR_IDS[number]): number => {
+    const vector = pressure.vectors.find(candidate => candidate.id === id);
+    if (!vector || !Number.isFinite(vector.score)) {
+      throw new Error(`Required canonical pressure vector unavailable: ${id}`);
+    }
+    return vector.score;
+  };
 
   const liquidityScore = getVec("liquidity-stress");
   const creditScore = getVec("credit-contagion");
@@ -51,10 +96,12 @@ function scoreDNACandidates(
   const macroScore = getVec("macro-sensitivity");
   const volatilityScore = getVec("volatility-regime");
 
-  const cpi = macro.cpiYoY ?? 3.5;
-  const unemployment = macro.unemployment ?? 4.0;
-  const yieldCurve = macro.yieldCurveSpread ?? -20;
-  const fedFunds = macro.fedFunds ?? 5.25;
+  // computeMarketDNA gates this function with hasVerifiedFmosMacroInputs.
+  // Assertions preserve that requirement; they do not introduce defaults.
+  const cpi = macro.cpiYoY!;
+  const unemployment = macro.unemployment!;
+  const yieldCurve = macro.yieldCurveSpread!;
+  const fedFunds = macro.fedFunds!;
 
   const candidates: DNACandidate[] = [
     {
@@ -379,6 +426,13 @@ export function computeMarketDNA(
   pressure: FaultlinePressureOutput,
   macro: FMOSMacroData
 ): FMOSMarketDNA {
+  if (!hasVerifiedFmosMacroInputs(macro)) {
+    return unavailableMarketDNA(macro.unavailableReason ?? "Complete verified FRED macro inputs are required for Market DNA");
+  }
+  if (!hasCompletePressureInputs(pressure)) {
+    return unavailableMarketDNA("Complete canonical Pressure inputs are required for Market DNA");
+  }
+
   const candidates = scoreDNACandidates(pressure, macro);
   const top = candidates[0]!;
   const totalScore = candidates.reduce((sum, c) => sum + c.score, 0);
@@ -389,12 +443,18 @@ export function computeMarketDNA(
     : 40;
 
   return {
+    available: true,
+    unavailableReason: null,
     currentDNA: top.regime,
-    confidence,
-    historicalFrequency: top.historicalFrequency,
-    characteristics: top.characteristics,
-    portfolioImplications: top.portfolioImplications,
-    estimatedDuration: top.estimatedDuration,
-    typicalTransitionTriggers: top.typicalTransitionTriggers,
+    confidence: null,
+    historicalFrequency: null,
+    characteristics: [
+      `DERIVED model classification: ${top.regime}; canonical Pressure ${pressure.overallPressure}/100.`,
+      `Verified FRED inputs: CPI YoY ${macro.cpiYoY}%, unemployment ${macro.unemployment}%, Fed Funds ${macro.fedFunds}%.`,
+      `Verified Treasury-curve calculation: ${macro.yieldCurveSpread} basis points. Reference dates are retained separately; no publication time is invented.`,
+    ],
+    portfolioImplications: top.portfolioImplications.map(text => `MODEL_ASSUMPTION — ${text}`),
+    estimatedDuration: null,
+    typicalTransitionTriggers: [],
   };
 }

@@ -89,6 +89,11 @@ describe("scheduled vs ad-hoc on the same day (A5)", () => {
     expect(evaluated.has("2026-09-17")).toBe(false);
     expect(stateOrigin(rows[0])).toBe("NON_SCHEDULED");
     expect(stateOrigin(rows[4])).toBe("LEGACY_SCHEDULED_WINDOW");
+    const twin = selectEvaluatedDailyStates([
+      { stateId: "second", originatingRunId: "2", generatedAt: "2026-09-22T18:10:00.000Z", pressureIndex: 30, regime: "MODERATE RISK" },
+      { stateId: "first", originatingRunId: "1", generatedAt: "2026-09-22T18:00:10.000Z", pressureIndex: 29, regime: "MODERATE RISK" },
+    ]);
+    expect(twin.get("2026-09-22")?.stateId).toBe("first");
   });
 });
 
@@ -100,6 +105,9 @@ describe("trigger wiring at the call sites (A1)", () => {
     expect(scheduled).toMatch(/const runWindow = nyseSeismographRunWindow\(now\);/);
     expect(scheduled).toMatch(/if \(!runWindow\.isScheduledWindow\)/);
     expect(scheduled).toMatch(/const runContext = resolveRunContext\("cron-endpoint", now\);/);
+    expect(scheduled).toMatch(/runScheduledSeismographOnce\(scheduledEtDate, runContext\)/);
+    expect(scheduled).toContain("captureTrackRecordFromScheduledRun");
+    expect(scheduled).toContain("etDateOf(runContext.runStartedAt)");
     expect(router).toMatch(/seedNow:\s*adminProcedure\.mutation\(async \(\) => \{[\s\S]{0,200}runSeismographPipeline\(\{ runContext: resolveRunContext\("admin-seedNow"\) \}\)/);
     expect(scheduled).not.toMatch(/collectForwardChampionOutcomes\(/);
     expect(scheduled).not.toMatch(/collectBroadInstitutionalEventOutcomes\(/);

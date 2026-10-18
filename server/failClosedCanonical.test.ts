@@ -1,9 +1,9 @@
 /**
  * Fail-closed + canonical-consistency regression tests
- * (prod QA report 2026-10-01, snapshot state:2026-10-01T18:00:34.034Z:2ec8d9c1d8f6e278).
+ * Historical test fixture, explicitly MOCK-only (not a live-data assertion).
  *
- * Fixtures in server/__fixtures__/prod-2026-10-01 are the production API payloads
- * captured during that QA pass (deployment da863238 / d3cce2a).
+ * The static observations are retained only to exercise deterministic rendering
+ * and must never be represented as live or operational financial evidence.
  */
 import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -54,10 +54,35 @@ const FIX = path.join(import.meta.dirname, "__fixtures__", "prod-2026-10-01");
 const fixture = <T = any>(name: string): T => JSON.parse(readFileSync(path.join(FIX, name), "utf8"));
 const src = (rel: string) => readFileSync(path.join(ROOT, rel), "utf8");
 
-const canonical = fixture("canonical-current.json");
-const legacy = fixture("market-state-current.json");
-const globalSnapshot = fixture("global-snapshot.json");
-const signalsQuotes = fixture("signals-quotes.json");
+/** Static regression data only — no test value is a verified/live observation. */
+const MOCK_SOURCE_METADATA = Object.freeze({
+  kind: "MOCK",
+  provider: "test-fixture",
+  verification: "NOT_LIVE_OR_OPERATIONAL",
+  observedAt: "2026-10-01T18:00:34.034Z",
+});
+const MOCK_CANONICAL_STATE_ID = "state:mock:fail-closed-canonical:2026-10-01T18:00:34.034Z";
+const MOCK_INPUT_SNAPSHOT_ID = "input:mock:fail-closed-canonical";
+const MOCK_STATE_HASH = "mock:fail-closed-canonical:immutable-v1";
+
+// Identity is intentionally explicit and shared: mergeCanonicalMarketState must
+// reject an unbound page supplement rather than accepting its market facts.
+const canonical = Object.freeze({
+  ...fixture("canonical-current.json"),
+  stateId: MOCK_CANONICAL_STATE_ID,
+  inputSnapshotId: MOCK_INPUT_SNAPSHOT_ID,
+  stateHash: MOCK_STATE_HASH,
+  testSource: MOCK_SOURCE_METADATA,
+});
+const legacy = Object.freeze({
+  ...fixture("market-state-current.json"),
+  canonicalStateId: MOCK_CANONICAL_STATE_ID,
+  inputSnapshotId: MOCK_INPUT_SNAPSHOT_ID,
+  stateHash: MOCK_STATE_HASH,
+  testSource: MOCK_SOURCE_METADATA,
+});
+const globalSnapshot = Object.freeze({ ...fixture("global-snapshot.json"), testSource: MOCK_SOURCE_METADATA });
+const signalsQuotes = Object.freeze({ ...fixture("signals-quotes.json"), testSource: MOCK_SOURCE_METADATA });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. S.O.B. fail-closed
@@ -119,13 +144,13 @@ describe("S.O.B. fail-closed", () => {
     expect(none.some(p => p.engineId === "breakdown_signals")).toBe(false);
   });
 
-  it("Pressure passes the real inputs: HY bps, 10Y-2Y, Fed funds, VIX from the prod snapshot", () => {
+  it("Pressure passes the source-labelled fixture inputs: HY bps, 10Y-2Y, Fed funds, VIX", () => {
     const now = Number(globalSnapshot.fetchedAt); // epoch ms
     expect(Number.isFinite(now)).toBe(true);
     const inputs = buildSOBSourceInputs({
       quotes: globalSnapshot.items,
       fred: {
-        // FRED observations served by prod /api/fred during the same QA capture
+        // Static FRED-shaped observations are MOCK fixture data, not live evidence.
         BAMLH0A0HYM2: [{ date: "2026-09-30", value: "3.12" }, { date: "2026-09-29", value: "3.08" }],
         FEDFUNDS: [{ date: "2026-09-01", value: "3.75" }, { date: "2026-08-01", value: "3.63" }],
       },
@@ -292,7 +317,7 @@ describe("Signals quotes fail closed", () => {
     }
   });
 
-  it("captured prod quotes are closed / isLive:false → LAST CLOSE, never LIVE", () => {
+  it("closed mock quotes / isLive:false → LAST CLOSE, never LIVE", () => {
     expect(signalsQuotes.source).toBe("live");
     expect(signalsQuotes.marketStatus).toBe("closed");
     for (const q of quotes) expect(signalQuoteBadge(q)).not.toBe("LIVE");
@@ -343,12 +368,46 @@ describe("Signals quotes fail closed", () => {
 describe("canonical consistency (one source)", () => {
   const merged = mergeCanonicalMarketState(canonical, legacy)!;
 
-  it("fixture is the preserved snapshot (33/100 MODERATE RISK)", () => {
-    expect(canonical.stateId).toBe("state:2026-10-01T18:00:34.034Z:2ec8d9c1d8f6e278");
+  it("fixture is explicitly MOCK-only, has complete canonical vectors, and retains provider-labelled observations", () => {
+    expect(canonical.testSource).toEqual(MOCK_SOURCE_METADATA);
+    expect(legacy.testSource).toEqual(MOCK_SOURCE_METADATA);
+    expect(MOCK_SOURCE_METADATA.verification).toBe("NOT_LIVE_OR_OPERATIONAL");
+    expect(canonical.engines.map((engine: { engineId: string }) => engine.engineId)).toEqual([
+      "liquidity-stress", "credit-contagion", "volatility-regime", "macro-sensitivity", "market-breadth", "ai-bubble",
+    ]);
+    expect(canonical.engines.every((engine: { value: unknown }) => typeof engine.value === "number" && Number.isFinite(engine.value))).toBe(true);
+    const observedInputs = ["^VIX", "DERIVED:2Y10Y"].map(symbol => globalSnapshot.items.find((item: { symbol: string }) => item.symbol === symbol));
+    for (const observation of observedInputs) {
+      expect(observation).toMatchObject({ source: expect.any(String), provider: expect.any(String) });
+      expect(Number.isFinite(observation?.observedAt)).toBe(true);
+    }
+  });
+
+  it("fixture is bound to one immutable canonical state (33/100 MODERATE RISK)", () => {
+    expect(canonical.stateId).toBe(MOCK_CANONICAL_STATE_ID);
+    expect(canonical.inputSnapshotId).toBe(MOCK_INPUT_SNAPSHOT_ID);
+    expect(canonical.stateHash).toBe(MOCK_STATE_HASH);
+    expect(legacy.canonicalStateId).toBe(MOCK_CANONICAL_STATE_ID);
+    expect(legacy.inputSnapshotId).toBe(MOCK_INPUT_SNAPSHOT_ID);
+    expect(legacy.stateHash).toBe(MOCK_STATE_HASH);
     expect(canonical.pressureIndex).toBe(33);
     expect(canonical.regime).toBe("MODERATE RISK");
     expect(merged.now.pressureScore).toBe(33);
     expect(merged.now.regime).toBe("MODERATE RISK");
+  });
+
+  it("fails closed for missing or mismatched shared identities; a page supplement cannot author pressure", () => {
+    expect(mergeCanonicalMarketState(canonical, { ...legacy, canonicalStateId: null })).toBeNull();
+    expect(mergeCanonicalMarketState(canonical, { ...legacy, stateHash: "mock:other-state" })).toBeNull();
+    expect(mergeCanonicalMarketState(null, legacy)).toBeNull();
+
+    const clientSupplement = mergeCanonicalMarketState(canonical, {
+      ...legacy,
+      now: { ...legacy.now, pressureScore: 99, regime: "CRISIS", direction: "Accelerating" },
+    });
+    expect(clientSupplement?.now.pressureScore).toBe(canonical.pressureIndex);
+    expect(clientSupplement?.now.regime).toBe(canonical.regime);
+    expect(clientSupplement?.now.direction).toBe(directionDisplay(canonical.pressureDirection));
   });
 
   it("(a) direction + percentile: Pressure shows exactly what NOW shows", () => {
