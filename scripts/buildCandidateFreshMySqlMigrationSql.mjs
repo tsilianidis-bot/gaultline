@@ -36,6 +36,9 @@ const fresh0060Sql = [
   'CREATE INDEX `verifiedHist_outcome_score_horizon_idx` ON `verifiedHistoricalOutcomes` (`verifiedScoreId`,`horizonTradingDays`);',
   'ALTER TABLE `verifiedHistoricalOutcomes` DROP INDEX `verifiedHist_outcome_score_fk_support_idx`;',
 ].join('\n--> statement-breakpoint\n');
+const expected0064Hash = '0ed12d875314da0a6b66631bac8473c75f19ed04d43437797fb20378c44b71cc';
+const expected0064Tag = '0064_misty_lockheed';
+const duplicate0064Statement = 'ALTER TABLE `dailyBriefSnapshots` ADD `originatingStateId` varchar(96);';
 
 function fail(message) {
   throw new Error(`Fresh MySQL bootstrap refused: ${message}`);
@@ -101,6 +104,18 @@ for (const entry of journal.entries) {
     // intended unique-to-nonunique swap, then remove the temporary index so the
     // final state matches production and the committed 0060 snapshot.
     sqlToEmit = fresh0060Sql;
+  }
+
+  if (entry.tag === expected0064Tag) {
+    if (originalHash !== expected0064Hash) fail(`0064 historical checksum is ${originalHash}, expected ${expected0064Hash}`);
+    const duplicatePair = `${duplicate0064Statement}--> statement-breakpoint\n${duplicate0064Statement}`;
+    if ((originalSql.split(duplicate0064Statement).length - 1) !== 2 || !originalSql.includes(duplicatePair)) {
+      fail('0064 no longer matches the known duplicate daily-brief provenance-column defect');
+    }
+    // The first ADD creates the intended production column; the immediately
+    // repeated second ADD aborts a fresh MySQL bootstrap before the remaining
+    // provenance fields and index can be applied.
+    sqlToEmit = originalSql.replace(duplicatePair, duplicate0064Statement);
   }
 
   const tooLong = identifiersOver64(sqlToEmit);
