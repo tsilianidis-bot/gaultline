@@ -172,11 +172,9 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
   const isBitcoin = symbol.toUpperCase() === "BTC";
 
   // ── Extract price series ──────────────────────────────────
-  const closes: number[] = ohlcBars && ohlcBars.length >= 5
+  const closes: number[] = ohlcBars && ohlcBars.length >= 15
     ? ohlcBars.map(b => b.close)
-    : market.sparkline7d.length >= 10
-      ? market.sparkline7d
-      : [];
+    : [];
 
   const currentPrice = market.currentPrice;
   const change24h = market.priceChangePercent24h;
@@ -200,9 +198,6 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
       closes,
       closes[Math.max(0, closes.length - requiredConsecutiveCloses - 1)]
     );
-  } else {
-    // Fallback: use 24h change as a single-bar proxy
-    consecutiveGreenCloses = change24h > 0 ? 1 : 0;
   }
 
   // ── Breakdown level reclamation ───────────────────────────

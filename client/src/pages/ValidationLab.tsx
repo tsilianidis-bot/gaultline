@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip as UITooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useEngine } from "@/contexts/EngineContext";
+import { evidenceStatusFromIntegrity } from "../../../shared/evidenceStatus";
 import SystemicRegimeChart from "@/components/SystemicRegimeChart";
 import {
   BarChart,
@@ -140,7 +141,8 @@ const METRIC_STATUS_LABELS: Record<string, string> = { good: 'On Target', warn: 
 export default function ValidationLab() {
   const [days, setDays] = useState(90);
   const [activeTab, setActiveTab] = useState("overview");
-  const { fetchStatuses, successCount, failCount, isLive, isLoading: engineLoading, lastUpdated, forceRefresh: engineRefresh } = useEngine();
+  const { fetchStatuses, successCount, failCount, isLive, isLoading: engineLoading, lastUpdated, forceRefresh: engineRefresh, integrityLabel } = useEngine();
+  const labStatus = evidenceStatusFromIntegrity(integrityLabel);
 
   const { data: version } = trpc.fmos.getVersion.useQuery();
   const { data: _runStats, isLoading: statsLoading } = trpc.fmos.getRunStats.useQuery({ days });
@@ -459,19 +461,19 @@ export default function ValidationLab() {
             <div
               className="flex items-center justify-between p-4 rounded-xl border"
               style={{
-                background: isLive ? 'rgba(0,255,136,0.05)' : 'rgba(255,149,0,0.05)',
-                borderColor: isLive ? 'rgba(0,255,136,0.2)' : 'rgba(255,149,0,0.2)',
+                background: labStatus === 'LIVE' ? 'rgba(0,255,136,0.05)' : 'rgba(255,149,0,0.05)',
+                borderColor: labStatus === 'LIVE' ? 'rgba(0,255,136,0.2)' : 'rgba(255,149,0,0.2)',
               }}
             >
               <div className="flex items-center gap-3">
                 <div style={{
                   width: 10, height: 10, borderRadius: '50%',
-                  background: isLive ? '#00FF88' : '#FF9500',
-                  boxShadow: `0 0 8px ${isLive ? '#00FF88' : '#FF9500'}88`,
+                  background: labStatus === 'LIVE' ? '#00FF88' : '#FF9500',
+                  boxShadow: `0 0 8px ${labStatus === 'LIVE' ? '#00FF88' : '#FF9500'}88`,
                 }} />
                 <div>
-                  <p className="text-sm font-semibold" style={{ color: isLive ? '#00FF88' : '#FF9500' }}>
-                    {engineLoading ? 'Connecting...' : isLive ? 'All Systems Live' : 'Partial Data - Fallback Active'}
+                  <p className="text-sm font-semibold" style={{ color: labStatus === 'LIVE' ? '#00FF88' : '#FF9500' }}>
+                    {engineLoading ? 'Connecting...' : labStatus}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {successCount} of {successCount + failCount} data feeds active
@@ -547,7 +549,7 @@ export default function ValidationLab() {
                             color: feed.status === 'ok' ? '#00FF88' : feed.status === 'pending' ? '#6B7280' : '#FF9500',
                           }}
                         >
-                          {feed.status === 'ok' ? (feed.cached ? 'CACHED' : 'LIVE') : feed.status === 'pending' ? 'LOADING' : 'ERROR'}
+                          {feed.status === 'ok' ? (feed.cached ? 'RECENT' : labStatus) : feed.status === 'pending' ? 'LOADING' : 'UNAVAILABLE'}
                         </Badge>
                       </div>
                     </div>

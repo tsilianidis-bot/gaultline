@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TickerChip } from "@/components/TickerActionMenu";
+import { evidenceStatusLabel } from "../../../shared/evidenceStatus";
 import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Types (mirrored from server) ──────────────────────────────
@@ -1136,6 +1137,10 @@ function SocialIntelligenceInner() {
     staleTime: 4 * 60 * 1000, // 4 minutes
     refetchInterval: 5 * 60 * 1000, // auto-refresh every 5 minutes
   });
+  const socialFeedStatus = data
+    ? evidenceStatusLabel({ observedAtMs: data.fetchedAt, hasObservation: Number.isFinite(data.fetchedAt), liveEligible: false })
+    : isLoading ? "LOADING" : "UNAVAILABLE";
+  const socialFeedColor = socialFeedStatus === "LIVE" ? "#00FF88" : socialFeedStatus === "RECENT" || socialFeedStatus === "DELAYED" ? "#FFD700" : "#94A3B8";
 
   const filteredNews = useMemo(() => {
     if (!data?.latestNews) return [];
@@ -1173,12 +1178,12 @@ function SocialIntelligenceInner() {
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <div style={{
                 width: 7, height: 7, borderRadius: "50%",
-                background: data ? "#00FF88" : "#FF9500",
-                boxShadow: data ? "0 0 6px #00FF88" : "0 0 6px #FF9500",
+                background: socialFeedColor,
+                boxShadow: socialFeedStatus === "UNAVAILABLE" || socialFeedStatus === "STALE" ? "none" : `0 0 6px ${socialFeedColor}`,
                 animation: "fl-pulse 5s infinite",
               }} />
               <span style={{ fontSize: 11, color: "var(--fl-text-secondary)", fontFamily: "monospace" }}>
-                {data ? "LIVE" : isLoading ? "LOADING" : "OFFLINE"}
+                {socialFeedStatus}
               </span>
             </div>
             {data && (

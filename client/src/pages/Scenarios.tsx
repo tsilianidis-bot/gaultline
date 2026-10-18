@@ -15,6 +15,7 @@ import { useEngine } from "@/contexts/EngineContext";
 import { getRiskColor } from "@/components/RiskBadge";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
+import { evidenceStatusBadgeColor, evidenceStatusFromIntegrity } from "../../../shared/evidenceStatus";
 
 const TT: React.CSSProperties = {
   background: '#0A0C10', border: '1px solid rgba(0,212,255,0.18)',
@@ -213,7 +214,8 @@ function CascadeItem({ step, label, trigger, color, delay }: {
 export default function Scenarios() {
   useSEO(PAGE_SEO.scenarios);
   // ── ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURN ──
-  const { output, isLoading } = useEngine();
+  const { output, isLoading, integrityLabel } = useEngine();
+  const scenarioStatus = evidenceStatusFromIntegrity(integrityLabel);
 
   // Safely destructure with fallbacks — never trust live data to be fully hydrated
   const probability = output?.probability ?? {
@@ -303,8 +305,8 @@ export default function Scenarios() {
       <PageHeader
         title="Scenarios"
         subtitle="Probabilistic outcome modeling across bull, base, and bear cases — driven by current systemic pressure scores."
-        badge="LIVE"
-        badgeColor="green"
+        badge={scenarioStatus}
+        badgeColor={evidenceStatusBadgeColor(scenarioStatus)}
       />
       <div style={{ padding: '20px 16px 32px' }}>
 

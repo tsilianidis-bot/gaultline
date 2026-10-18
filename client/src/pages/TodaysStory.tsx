@@ -266,7 +266,7 @@ export default function TodaysStory() {
               <div style={{ display: "flex", gap: "6px", alignItems: "flex-start" }}>
                 <AlertTriangle size={9} style={{ color: "#374151", flexShrink: 0, marginTop: "1px" }} />
                 <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151", letterSpacing: "0.06em", lineHeight: 1.6, margin: 0 }}>
-                  TODAY'S STORY IS AI-GENERATED FROM LIVE FAULTLINE PRESSURE DATA. IT IS NOT PERSONALIZED FINANCIAL ADVICE. DATA SOURCE: {data.dataSource?.toUpperCase() ?? "LIVE"}. GENERATED AT {data.generatedAt ? new Date(data.generatedAt).toLocaleTimeString() : "—"}.
+                  TODAY'S STORY IS AI-GENERATED FROM FAULTLINE PRESSURE DATA. IT IS NOT PERSONALIZED FINANCIAL ADVICE. DATA SOURCE: {data.dataSource ? data.dataSource.toUpperCase() : "UNAVAILABLE"}. GENERATED AT {data.generatedAt ? new Date(data.generatedAt).toLocaleTimeString() : "—"}.
                 </p>
               </div>
             </div>

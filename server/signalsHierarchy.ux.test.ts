@@ -88,10 +88,11 @@ describe("Data integrity DELAYED / STALE / UNAVAILABLE detail", () => {
 });
 
 describe("Signal calculation / methodology untouched", () => {
-  // tradingSignals.ts is outside this freeze: completed-bar admission now
-  // withholds BUY/SELL and crossover wording when historical bars are absent.
+  // tradingSignals.ts and cryptoSignals.ts are outside this freeze: completed-bar
+  // admission withholds BUY/SELL, RSI, and crossover wording when fewer than 15
+  // verified closes exist. cryptoSignals.ts no longer scores a 7-day sparkline.
+  // Pressure Index formulas are not in this list and stay unchanged.
   const engineFiles = [
-    "server/cryptoSignals.ts",
     "server/cryptoEngine.ts",
     "server/signalOutlook.ts",
     "server/preFlight.ts",
@@ -108,7 +109,11 @@ describe("Signal calculation / methodology untouched", () => {
     const named = execSync(`git diff ${base} -- ${engineFiles.join(" ")}`, { cwd: root, encoding: "utf8" });
     expect(named.trim()).toBe("");
     const trading = read("server/tradingSignals.ts");
+    const crypto = read("server/cryptoSignals.ts");
     expect(trading).toContain("Insufficient completed historical bars; trading indicators are unavailable.");
+    expect(crypto).toContain("Insufficient completed historical bars; trading indicators are unavailable.");
+    expect(crypto).not.toContain("computeWildersRSI(sparkline7d");
+    expect(crypto).not.toContain("computeMACD(sparkline7d");
   });
 });
 

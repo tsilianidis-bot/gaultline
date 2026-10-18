@@ -24,6 +24,8 @@ import { getCoinMarketData, getCoinOHLC, getGlobalStats } from "./coingeckoProxy
 import { getQuote } from "./yahooProxy";
 import { invokeLLM } from "./_core/llm";
 import { log } from "./logger";
+import { providerRowFreshness } from "./evidenceFreshness";
+import type { EvidenceStatusLabel } from "../shared/evidenceStatus";
 
 // ── Constants ─────────────────────────────────────────────────
 const CG_BASE = "https://api.coingecko.com/api/v3";
@@ -44,7 +46,7 @@ export type ObjectiveType = typeof OBJECTIVE_TYPES[number]["id"];
 
 // ── Opportunity types ─────────────────────────────────────────
 export type OpportunityDirection = "LONG" | "AVOID" | "WATCH" | "TRIM" | "DEFENSIVE";
-export type DataFreshness = "LIVE" | "DELAYED" | "STALE" | "UNAVAILABLE";
+export type DataFreshness = EvidenceStatusLabel;
 
 export interface TradeOpportunity {
   id: string;                    // unique key for this opportunity
@@ -88,7 +90,12 @@ export interface TradeOpportunity {
   fetchedAt: number;
   // Data provenance — displayed on every recommendation card
   dataSource?: string;     // e.g. "CoinGecko", "Yahoo Finance"
-  priceTimestamp?: string; // ISO timestamp of the live price fetch
+  /** Provider observation time. Absent when the provider did not report one. */
+  priceTimestamp?: string;
+  /** Provider observation epoch ms. Smart Discovery classifies from this, not from a LIVE token. */
+  observedAtMs?: number | null;
+  /** Provider status passed to the evidence classifier (delayed, polygon-prev, live, unavailable). */
+  sourceStatus?: string | null;
 }
 
 // ── Stock candidates ──────────────────────────────────────────
@@ -496,7 +503,9 @@ export async function buildStockOpportunity(
       ticker, name, "stock", direction, price, changePercent, pressure, domains, signal, objectiveLabel
     );
 
-    const freshness: DataFreshness = quote.source === "yahoo" ? "LIVE" : quote.source === "polygon-prev" ? "DELAYED" : "STALE";
+    const observedAtMs = typeof quote.observedAt === "number" && Number.isFinite(quote.observedAt) ? quote.observedAt : null;
+    const sourceStatus = quote.source === "polygon-prev" ? "polygon-prev" : quote.source === "yahoo" ? "delayed" : "unavailable";
+    const freshness = providerRowFreshness({ observedAtMs, provider: quote.source });
 
     return {
       id: `stock-${ticker}-${Date.now()}`,
@@ -510,6 +519,10 @@ export async function buildStockOpportunity(
       volume: quote.volume ?? 0,
       marketCap: null,
       dataFreshness: freshness,
+      dataSource: quote.source === "polygon-prev" ? "Polygon previous close" : "Yahoo Finance",
+      priceTimestamp: observedAtMs != null ? new Date(observedAtMs).toISOString() : undefined,
+      observedAtMs,
+      sourceStatus,
       entryZoneLow: Math.round(entryLow * 100) / 100,
       entryZoneHigh: Math.round(entryHigh * 100) / 100,
       stopLoss: Math.round(stopLoss * 100) / 100,
@@ -664,8 +677,9 @@ export async function buildCryptoOpportunity(
     const universeEntry = CRYPTO_UNIVERSE.find(c => c.ticker === ticker);
     const sector = universeEntry?.sector ?? "Crypto";
 
-    // Get the timestamp from CoinGecko market data for provenance display
-    const lastUpdated = marketData?.lastUpdated ?? new Date().toISOString();
+    const parsedUpdated = Date.parse(marketData?.lastUpdated ?? "");
+    const observedAtMs = Number.isFinite(parsedUpdated) ? parsedUpdated : null;
+    const freshness = providerRowFreshness({ observedAtMs, provider: "coingecko" });
 
     return {
       id: `crypto-${ticker}-${Date.now()}`,
@@ -678,9 +692,11 @@ export async function buildCryptoOpportunity(
       changePercent,
       volume,
       marketCap,
-      dataFreshness: "LIVE",
+      dataFreshness: freshness,
       dataSource: "CoinGecko",
-      priceTimestamp: lastUpdated,
+      priceTimestamp: observedAtMs != null ? new Date(observedAtMs).toISOString() : undefined,
+      observedAtMs,
+      sourceStatus: observedAtMs != null ? "live" : "unavailable",
       entryZoneLow: entryLow,
       entryZoneHigh: entryHigh,
       stopLoss,

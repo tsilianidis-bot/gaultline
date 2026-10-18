@@ -272,7 +272,7 @@ type AssetFilter = "stocks" | "crypto" | "both";
 type RiskMode = "aggressive" | "balanced" | "defensive";
 type Timeframe = "intraday" | "1_5_days" | "2_6_weeks" | "3_12_months";
 type Direction = "LONG" | "AVOID" | "WATCH" | "TRIM" | "DEFENSIVE";
-type DataFreshness = "LIVE" | "DELAYED" | "STALE" | "UNAVAILABLE";
+type DataFreshness = "LIVE" | "RECENT" | "DELAYED" | "STALE" | "UNAVAILABLE";
 
 interface Opportunity {
   id: string;
@@ -334,7 +334,7 @@ function dirBg(d: Direction) {
 }
 function freshnessColor(f: DataFreshness) {
   if (f === "LIVE") return "text-[#00FF88]";
-  if (f === "DELAYED") return "text-[#FFD700]";
+  if (f === "RECENT" || f === "DELAYED") return "text-[#FFD700]";
   return "text-[#FF2D55]";
 }
 function scoreBar(score: number) {

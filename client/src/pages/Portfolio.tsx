@@ -18,6 +18,7 @@ import { navigateToLogin } from "@/const";
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
+import { evidenceStatusBadgeColor, evidenceStatusLabel } from "../../../shared/evidenceStatus";
 import PortfolioIntelligence from "@/components/PortfolioIntelligence";
 import PortfolioCommandCenter from "@/components/PortfolioCommandCenter";
 import { TickerChip } from "@/components/TickerActionMenu";
@@ -775,14 +776,19 @@ function PortfolioInner() {
   }
 
   const { positions = [], summary } = portfolioQuery.data ?? {};
+  const portfolioStatus = evidenceStatusLabel({
+    observedAtMs: portfolioQuery.dataUpdatedAt || null,
+    sourceStatus: "delayed",
+    hasObservation: portfolioQuery.dataUpdatedAt > 0,
+  });
 
   return (
     <div style={{ minHeight: "100vh", background: "#050608" }}>
       <PageHeader
         title="Portfolio Monitor"
         subtitle="Track P&L across your positions with AI-powered guidance and FAULTLINE pressure context. Quotes are delayed up to 15 minutes and refresh every 60 seconds."
-        badge="LIVE"
-        badgeColor="green"
+        badge={portfolioStatus}
+        badgeColor={evidenceStatusBadgeColor(portfolioStatus)}
       />
       <div style={{ padding: "20px 16px" }}>
       <div style={{ maxWidth: "900px", margin: "0 auto" }}>

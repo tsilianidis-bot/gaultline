@@ -46,7 +46,16 @@ import { collectBroadInstitutionalEventOutcomes, recordDailyMarketEvidence } fro
 import { collectForwardChampionOutcomesV2, recordForwardChampionProvenance } from "./algorithmProvenance";
 import { capturesForwardEvidence, championProvenanceKey, etDateOf, resolveRunContext, type RunContext } from "./forwardRunProvenance";
 import { buildAtomicIntelligenceStateManifest, persistAtomicIntelligenceStateManifest } from "./intelligenceGovernance";
-import { claimScheduledSeismographSession, type ScheduledSessionClaim } from "./scheduledSessionClaim";
+import {
+  admitScheduledSessionOutcome,
+  claimScheduledSeismographSession,
+  completeScheduledSession,
+  failScheduledSession,
+  heartbeatScheduledSession,
+  normalizeSessionClaim,
+  type ScheduledSessionClaimResult,
+  type ScheduledSessionClaimStatus,
+} from "./scheduledSessionClaim";
 
 function mapPressureLevelToSeismographStress(level: string | null | undefined): SeismographOutput["stressLevel"] {
   if (level === "Critical" || level === "Crisis") return "Crisis";
@@ -216,6 +225,18 @@ export async function runSeismographPipeline(options: { runContext?: RunContext 
   if (pressureOutput.verification?.status !== "verified") {
     throw new Error(`Pressure inputs not verified (${pressureOutput.verification?.problems?.join("; ") ?? "unknown"}) — preserving last canonical state`);
   }
+  // The outcome row is the persisted session result recovery checks. It is
+  // inserted only for the scheduled run, and only after verification. A duplicate
+  // stops this run before the daily score upsert and before forward capture.
+  if (capturesForwardEvidence(runContext)) {
+    const admitted = await admitScheduledSessionOutcome(today, {
+      pressureScore: pressureOutput.overallPressure,
+      regime: pressureOutput.regime,
+    });
+    if (admitted !== "admitted") {
+      throw new Error(`Scheduled session outcome ${admitted}; refusing a second score capture for ${today}`);
+    }
+  }
   const sobResult = await Promise.allSettled([
     computeSOB({
       regime: pressureOutput.regime,
@@ -353,7 +374,7 @@ export async function runSeismographPipeline(options: { runContext?: RunContext 
 }
 
 export async function handleScheduledSeismograph(
-  req: Request & { sessionClaim?: (etDate: string) => Promise<ScheduledSessionClaim> },
+  req: Request & { sessionClaim?: (etDate: string) => Promise<ScheduledSessionClaimStatus | ScheduledSessionClaimResult> },
   res: Response,
 ): Promise<void> {
   const now = new Date();
@@ -379,10 +400,12 @@ export async function handleScheduledSeismograph(
   const runContext = resolveRunContext("cron-endpoint", now);
   // Database claim is in addition to the in-process guard. Fail closed when the
   // claim cannot be recorded so a second container cannot capture forward evidence.
-  const sessionClaim = await (req.sessionClaim ?? claimScheduledSeismographSession)(scheduledEtDate);
-  if (sessionClaim !== "claimed") {
-    const skipped = sessionClaim === "already_claimed" ? "session_already_claimed" : "session_claim_unavailable";
-    if (sessionClaim === "unavailable") {
+  const sessionClaim = normalizeSessionClaim(await (req.sessionClaim
+    ? req.sessionClaim(scheduledEtDate)
+    : claimScheduledSeismographSession(scheduledEtDate, undefined, { nowMs: now.getTime(), trigger: runContext.trigger })));
+  if (sessionClaim.status !== "claimed") {
+    const skipped = sessionClaim.status === "already_claimed" ? "session_already_claimed" : "session_claim_unavailable";
+    if (sessionClaim.status === "unavailable") {
       res.status(503).json({
         ok: false,
         skipped,
@@ -394,8 +417,14 @@ export async function handleScheduledSeismograph(
     res.json({ ok: true, skipped, date: scheduledEtDate, etDate: scheduledEtDate, execution: "already_completed" });
     return;
   }
+  const generation = sessionClaim.generation;
+  const heartbeat = generation == null ? undefined : setInterval(() => {
+    void heartbeatScheduledSession(scheduledEtDate, generation).catch(() => undefined);
+  }, 30_000);
+  heartbeat?.unref?.();
   try {
     const execution = await runScheduledSeismographOnce(scheduledEtDate, runContext);
+    if (generation != null) await completeScheduledSession(scheduledEtDate, generation);
     const seismographOutput = execution.output;
     res.json({
       ok: true,
@@ -411,8 +440,11 @@ export async function handleScheduledSeismograph(
       dataFreshness: seismographOutput.dataFreshness,
     });
   } catch (err) {
+    if (generation != null) await failScheduledSession(scheduledEtDate, generation).catch(() => undefined);
     console.error("[Seismograph] Daily job failed:", err);
     res.status(500).json({ ok: false, error: String(err) });
+  } finally {
+    if (heartbeat) clearInterval(heartbeat);
   }
 }
 

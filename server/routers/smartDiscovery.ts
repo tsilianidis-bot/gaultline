@@ -1393,18 +1393,36 @@ Respond with a JSON object matching this exact schema:
 
   // Model prose never carries an invented probability: drop any sentence that
   // states one as a percentage (James's rule; probability contract).
-  const quoteFreshnessByTicker = new Map(topRaw.map(item => [item.ticker.toUpperCase(), item.dataFreshness]));
+  // Verified source requires canonical quality, FRED status, FRED age, and each
+  // quote observation to be independently live. Scanner LIVE tokens are not evidence.
+  const [authoritativeState, seismographOutput] = await Promise.all([
+    getAuthoritativeCanonicalIntelligenceState().catch(() => null),
+    getLatestSeismographOutput().catch(() => null),
+  ]);
+  const discoveryEvidence = {
+    canonicalQuality: authoritativeState?.confidenceOrEvidenceQuality ?? null,
+    fredStatus: seismographOutput?.providerProvenance?.fred?.status ?? null,
+    observedAtMs: seismographOutput?.providerProvenance?.fred?.asOf ?? null,
+  };
+  const quoteByTicker = new Map(topRaw.map(item => [item.ticker.toUpperCase(), {
+    observedAtMs: item.observedAtMs,
+    sourceStatus: item.sourceStatus,
+  }]));
   const opportunities = Array.isArray(raw.topOpportunities)
-    ? (raw.topOpportunities as Record<string, unknown>[]).map(o => ({
-        ...o,
-        primaryDriver: stripProbabilityPercentClaims(o.primaryDriver),
-        thesisSummary: stripProbabilityPercentClaims(o.thesisSummary),
-        keyRisk: stripProbabilityPercentClaims(o.keyRisk),
-        nearTermCatalyst: stripProbabilityPercentClaims(o.nearTermCatalyst),
-        dataFreshness: evidenceFreshnessLabel({
-          quoteFreshness: [quoteFreshnessByTicker.get(String(o.ticker ?? "").toUpperCase())],
-        }),
-      }))
+    ? (raw.topOpportunities as Record<string, unknown>[]).map(o => {
+        const quote = quoteByTicker.get(String(o.ticker ?? "").toUpperCase());
+        return {
+          ...o,
+          primaryDriver: stripProbabilityPercentClaims(o.primaryDriver),
+          thesisSummary: stripProbabilityPercentClaims(o.thesisSummary),
+          keyRisk: stripProbabilityPercentClaims(o.keyRisk),
+          nearTermCatalyst: stripProbabilityPercentClaims(o.nearTermCatalyst),
+          dataFreshness: evidenceFreshnessLabel({
+            ...discoveryEvidence,
+            quotes: quote ? [quote] : [],
+          }),
+        };
+      })
     : raw.topOpportunities;
 
   return sanitize({
@@ -1419,7 +1437,8 @@ Respond with a JSON object matching this exact schema:
     portfolioPositioning: stripProbabilityPercentClaims(raw.portfolioPositioning),
     followUpChips,
     dataFreshness: evidenceFreshnessLabel({
-      quoteFreshness: topRaw.map(item => item.dataFreshness),
+      ...discoveryEvidence,
+      quotes: topRaw.map(item => ({ observedAtMs: item.observedAtMs, sourceStatus: item.sourceStatus })),
     }),
     deepDiveLinks: [
       { label: "Opportunity Radar", path: "/app/opportunities", description: "Full ranked opportunity scan with filters" },

@@ -1,13 +1,12 @@
 // FAULTLINE — Crypto Trading Signal Engine
 //
 // Computes actionable BUY / SELL / HOLD / WATCH signals for crypto assets using:
-//   WHEN OHLC bars available (CoinGecko /ohlc endpoint):
+//   Completed daily OHLC closes (15 or more) are required:
 //     • True Wilder's 14-period RSI from daily closes
-//     • Real SMA crossover (10/20-day when 20+ bars; 5/10-day otherwise)
-//     • Proper MACD (12/26/9 EMA) with histogram
-//   FALLBACK (sparkline only):
-//     • RSI approximation from 7-day sparkline momentum
-//     • SMA proxy from short vs long sparkline windows
+//     • SMA 50/200 crossover only when 200 closes exist
+//     • MACD (12/26/9) only when the close series is long enough
+//   Fewer than 15 completed closes returns Unavailable. A 7-day sparkline
+//   is not a completed-bar history and is never scored.
 //
 //   Always applied:
 //     • Volume confirmation (24h volume vs market cap ratio)
@@ -110,19 +109,6 @@ function deriveTrendFromCloses(closes: number[]): "Uptrend" | "Downtrend" | "Sid
   const first = recent[0];
   const last = recent[recent.length - 1];
   const delta = ((last - first) / first) * 100;
-  if (delta > 2) return "Uptrend";
-  if (delta < -2) return "Downtrend";
-  return "Sideways";
-}
-
-/**
- * Derive trend from sparkline % values.
- */
-function deriveTrendFromSparkline(sparkline: number[]): "Uptrend" | "Downtrend" | "Sideways" {
-  if (sparkline.length < 2) return "Sideways";
-  const first = sparkline[0];
-  const last = sparkline[sparkline.length - 1];
-  const delta = last - first;
   if (delta > 2) return "Uptrend";
   if (delta < -2) return "Downtrend";
   return "Sideways";
@@ -315,7 +301,6 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
     priceChangePercent24h: changePercent,
     totalVolume: volume,
     marketCap,
-    sparkline7d,
     volatility24h: vol24h,
     distanceFromAth: dFromAth,
     priceChangePercent7d: change7d,
@@ -323,41 +308,56 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
   } = market;
 
   // ── Data quality path ─────────────────────────────────────
-  const closes = ohlcBars?.map(b => b.close) ?? [];
+  const closes = ohlcBars?.map(b => b.close).filter(close => Number.isFinite(close)) ?? [];
   const hasDailyBars = closes.length >= 15;
-
-  // Convert sparkline7d (hourly prices) to daily-like changes for fallback
-  // sparkline7d contains up to 48 hourly price points
-  const sparklineChanges: number[] = [];
-  if (sparkline7d.length >= 2) {
-    for (let i = 1; i < sparkline7d.length; i++) {
-      const pct = ((sparkline7d[i] - sparkline7d[i - 1]) / sparkline7d[i - 1]) * 100;
-      sparklineChanges.push(pct);
-    }
+  if (!hasDailyBars) {
+    const unavailable: CryptoSignalResult = {
+      symbol,
+      name,
+      coinId,
+      assetClass: "CRYPTO",
+      action: "WATCH",
+      actionLabel: "Unavailable",
+      cryptoRegime: regime.score < 3.5 ? "Bullish" : regime.score < 5.5 ? "Neutral" : regime.score < 7.5 ? "Defensive" : "Risk-Off",
+      regimeConflict: false,
+      regimeConflictExplanation: null,
+      confidence: 30,
+      strength: "Weak",
+      timeframe: "Watch",
+      rationale: "Insufficient completed historical bars; trading indicators are unavailable.",
+      technicals: {
+        rsiEstimate: 0,
+        rsiLabel: "Neutral",
+        rsiIsTrue: false,
+        trend: "Sideways",
+        volumeSignal: "Normal",
+        momentumScore: 0,
+        smaSignal: "Neutral",
+        smaIsTrue: false,
+        macd: null,
+        volatility24h: parseFloat(vol24h.toFixed(2)),
+        distanceFromAth: parseFloat(dFromAth.toFixed(2)),
+        priceChange7d: change7d !== null ? parseFloat(change7d.toFixed(2)) : null,
+        priceChange30d: change30d !== null ? parseFloat(change30d.toFixed(2)) : null,
+      },
+      priceLevels: computeCryptoPriceLevels(price, high, low, "WATCH", ohlcBars),
+      regimeAlignment: "Neutral",
+      regimeAlignmentScore: 0,
+      cryptoFactors: {
+        btcDominanceEffect: btcDominanceEffect(symbol, btcDominance),
+        volatilityRegime: volatilityRegime(vol24h),
+        athProximity: athProximity(dFromAth),
+        liquidityScore: computeLiquidityScore(volume, marketCap),
+      },
+      computedAt: Date.now(),
+    };
+    cryptoSignalCache.set(cacheKey, { result: unavailable, computedAt: Date.now() });
+    return unavailable;
   }
 
   // ── RSI ───────────────────────────────────────────────────
-  let rsiEstimate: number;
-  let rsiIsTrue: boolean;
-
-  if (hasDailyBars) {
-    rsiEstimate = computeWildersRSI(closes, 14);
-    rsiIsTrue = true;
-  } else if (sparkline7d.length >= 15) {
-    rsiEstimate = computeWildersRSI(sparkline7d, 14);
-    rsiIsTrue = false;
-  } else if (sparklineChanges.length >= 2) {
-    const gains = sparklineChanges.filter(c => c > 0);
-    const losses = sparklineChanges.filter(c => c < 0).map(Math.abs);
-    const avgGain = gains.length > 0 ? gains.reduce((s, v) => s + v, 0) / sparklineChanges.length : 0;
-    const avgLoss = losses.length > 0 ? losses.reduce((s, v) => s + v, 0) / sparklineChanges.length : 0;
-    rsiEstimate = avgLoss === 0 ? 100 : parseFloat((100 - 100 / (1 + avgGain / avgLoss)).toFixed(1));
-    rsiIsTrue = false;
-  } else {
-    // Last resort: derive from single 24h change
-    rsiEstimate = changePercent > 5 ? 65 : changePercent < -5 ? 35 : 50;
-    rsiIsTrue = false;
-  }
+  const rsiEstimate = computeWildersRSI(closes, 14);
+  const rsiIsTrue = true;
 
   const rsiLabel: "Overbought" | "Neutral" | "Oversold" =
     rsiEstimate >= 70 ? "Overbought" : rsiEstimate <= 30 ? "Oversold" : "Neutral";
@@ -366,34 +366,16 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
   let smaSignal: "Golden Cross" | "Death Cross" | "Neutral";
   let smaIsTrue: boolean;
 
-  if (hasDailyBars) {
-    const smaResult = computeSMACrossover(closes);
-    smaSignal = smaResult.signal;
-    smaIsTrue = smaResult.isTrue;
-  } else if (sparkline7d.length >= 20) {
-    const smaResult = computeSMACrossover(sparkline7d);
-    smaSignal = smaResult.signal;
-    smaIsTrue = false;
-  } else {
-    // Fallback: use 7d vs 30d price change direction
-    const short = change7d ?? changePercent;
-    const long = change30d ?? changePercent;
-    smaSignal = short > long + 1 ? "Golden Cross" : short < long - 1 ? "Death Cross" : "Neutral";
-    smaIsTrue = false;
-  }
+  const smaResult = computeSMACrossover(closes);
+  smaIsTrue = smaResult.isTrue;
+  smaSignal = smaIsTrue ? smaResult.signal : "Neutral";
 
   // ── MACD ──────────────────────────────────────────────────
-  let macd: MACDResult | null = null;
-  if (hasDailyBars && closes.length >= 35) {
-    macd = computeMACD(closes);
-  } else if (sparkline7d.length >= 35) {
-    macd = computeMACD(sparkline7d);
-  }
+  // computeMACD returns null until 26+9 completed closes exist.
+  const macd: MACDResult | null = computeMACD(closes);
 
   // ── Trend ─────────────────────────────────────────────────
-  const trend = hasDailyBars
-    ? deriveTrendFromCloses(closes)
-    : deriveTrendFromSparkline(sparklineChanges);
+  const trend = deriveTrendFromCloses(closes);
 
   // ── Volume ────────────────────────────────────────────────
   const volSignal = cryptoVolumeSignal(volume, marketCap);

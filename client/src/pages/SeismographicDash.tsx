@@ -12,6 +12,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { TrendingUp, TrendingDown, Minus, Share2, HelpCircle, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { metrics, MetricCard } from "@/lib/data";
 import { useEngine } from "@/contexts/EngineContext";
+import { evidenceStatusFromIntegrity } from "../../../shared/evidenceStatus";
 import { getRiskColor } from "@/components/RiskBadge";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import DataIntegrity from "@/components/DataIntegrity";
@@ -567,7 +568,8 @@ export default function SeismographicDash() {
   useSEO(PAGE_SEO.home);
 
   // ── Dashboard data ──────────────────────────────────────────
-  const { output, rawFred, indicators, isLoading: dashLoading, isLive, lastUpdated, isSimulating } = useEngine();
+  const { output, rawFred, indicators, isLoading: dashLoading, isLive, lastUpdated, isSimulating, integrityLabel } = useEngine();
+  const dashStatus = evidenceStatusFromIntegrity(integrityLabel);
   const { overall, domains, regime, probability, analogs, narrative } = output;
   const [showShare, setShowShare] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -720,7 +722,7 @@ export default function SeismographicDash() {
         { label: 'TOP THREAT', value: topThreat?.label?.split(' ')[0] ?? '—', color: '#FF2D55' },
         { label: 'ANALOG', value: analogs[0]?.era?.split(' ').slice(0, 2).join(' ') ?? '—', color: '#00E5FF' },
         { label: 'DELTA', value: `${overall.delta >= 0 ? '+' : ''}${overall.delta.toFixed(1)}`, color },
-        { label: 'STATUS', value: isLive ? 'LIVE FEED' : 'SIMULATED', color: isLive ? '#00FF88' : '#FF9500' },
+        { label: 'STATUS', value: dashStatus, color: dashStatus === 'LIVE' ? '#00FF88' : dashStatus === 'STALE' || dashStatus === 'UNAVAILABLE' ? '#94A3B8' : '#FF9500' },
       ]} />
       {/* Onboarding */}
       <Onboarding forceOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
