@@ -401,6 +401,40 @@ function resolutionDescription(
 
 // ─── Main synthesis function ──────────────────────────────────────────────────
 
+const LIVE_OBSERVATION_MAX_AGE_MS = 20 * 60 * 1000;
+const RECENT_OBSERVATION_MAX_AGE_MS = 18 * 60 * 60 * 1000;
+
+/**
+ * A stored snapshot is live only when its own label, FRED provenance, and both
+ * timestamps agree. Snapshot presence alone is not a live observation. A legacy
+ * row with no provenance is never live.
+ */
+export function freshnessFromAssembledSnapshot(
+  latest: {
+    computedAt: number;
+    dataFreshness?: "live" | "recent" | "stale";
+    providerProvenance?: { fred?: { status?: string; asOf?: number } };
+  } | null,
+  options: { recentRunCount: number; now?: number },
+): "live" | "recent" | "stale" {
+  const now = options.now ?? Date.now();
+  if (!latest) return options.recentRunCount > 0 ? "recent" : "stale";
+  const fred = latest.providerProvenance?.fred;
+  if (!fred || fred.status === "unavailable" || fred.status === "stale") return "stale";
+  const observedAt = Number.isFinite(fred.asOf) ? Number(fred.asOf) : Number.NaN;
+  if (!Number.isFinite(observedAt) || !Number.isFinite(latest.computedAt)) return "stale";
+  const observationAgeMs = Math.max(0, now - observedAt);
+  const snapshotAgeMs = Math.max(0, now - latest.computedAt);
+  if (observationAgeMs > RECENT_OBSERVATION_MAX_AGE_MS || snapshotAgeMs > RECENT_OBSERVATION_MAX_AGE_MS) return "stale";
+  if (
+    fred.status === "live"
+    && latest.dataFreshness === "live"
+    && observationAgeMs <= LIVE_OBSERVATION_MAX_AGE_MS
+    && snapshotAgeMs <= LIVE_OBSERVATION_MAX_AGE_MS
+  ) return "live";
+  return "recent";
+}
+
 export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismographIntelligence> {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");
@@ -561,34 +595,24 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
   const timeline = buildTimeline(history);
 
   // ── 14. Data freshness ────────────────────────────────────────
-  const dataFreshness: "live" | "recent" | "stale" =
-    latestAssembled ? "live" : recentRuns.length > 0 ? "recent" : "stale";
+  // Presence of a snapshot is not a live observation. Legacy rows without
+  // provider provenance stay non-live even if they were labeled live.
+  const dataFreshness = freshnessFromAssembledSnapshot(latestAssembled, {
+    recentRunCount: recentRuns.length,
+  });
 
   const lastUpdated =
     latestAssembled
       ? new Date(latestAssembled.computedAt).toISOString()
       : new Date().toISOString();
-  // Infer providerProvenance when a legacy snapshot exists but predates the provenance field.
-  // A snapshot with dataFreshness="live" was computed from live FRED data — treat it as live.
-  // Only mark FRED as unavailable when there is genuinely no assembled output at all.
   let providerProvenance: SeismographProviderProvenance;
   if (latestAssembled?.providerProvenance) {
-    // Fresh snapshot with explicit provenance — use it directly.
     providerProvenance = latestAssembled.providerProvenance;
   } else if (latestAssembled) {
-    // Legacy snapshot (predates provenance field) — infer from dataFreshness.
-    const inferredStatus = latestAssembled.dataFreshness === "live" ? "live"
-      : latestAssembled.dataFreshness === "recent" ? "fallback"
-      : "unavailable";
-    const inferredDetail = latestAssembled.dataFreshness === "live"
-      ? "Inferred live: this snapshot was computed from live FRED data (provenance field predates this schema version)."
-      : latestAssembled.dataFreshness === "recent"
-      ? "Inferred from recent cache: snapshot predates provenance field; FRED data was available at compute time."
-      : "Legacy snapshot predates provider-level FRED provenance; data freshness is stale.";
     providerProvenance = {
       fred: {
-        status: inferredStatus,
-        detail: inferredDetail,
+        status: "unavailable",
+        detail: "Legacy snapshot has no provider-level FRED provenance, so it is not a verified live observation.",
         asOf: latestAssembled.computedAt,
       },
     };

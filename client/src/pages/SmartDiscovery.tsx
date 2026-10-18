@@ -1253,9 +1253,9 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
         <EngineCard
           icon={<Shield size={9} />}
           label="Data"
-          value="LIVE"
-          color="#00FF88"
-          sub={answer.dataFreshness.slice(0, 18)}
+          value={answer.dataFreshness === "Verified source" ? "VERIFIED" : answer.dataFreshness === "Delayed" ? "DELAYED" : "UNAVAILABLE"}
+          color={answer.dataFreshness === "Verified source" ? "#00FF88" : answer.dataFreshness === "Delayed" ? "#FFD700" : "#94A3B8"}
+          sub={answer.dataFreshness}
         />
       </div>
 

@@ -363,7 +363,7 @@ Updated: ${updatedAgo}`;
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
             <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: isLive ? ACCENT.green : ACCENT.amber, boxShadow: isLive ? `0 0 8px ${ACCENT.green}` : `0 0 8px ${ACCENT.amber}` }} />
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", letterSpacing: "0.12em" }}>{isLive ? "LIVE" : "CACHED"} · {updatedAgo}</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", letterSpacing: "0.12em" }}>{isLive ? "LIVE" : "NOT LIVE"} · {updatedAgo}</span>
           </div>
           <button
             onClick={() => forceRefresh()}

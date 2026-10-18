@@ -107,8 +107,9 @@ export function EngineProvider({ children }: { children: ReactNode }) {
   const sourceHealth = marketState?.sourceHealth ?? [];
   const isLive = Boolean(
     marketState &&
+    marketState.freshness === 'live' &&
     marketState.cache.status !== 'stale-if-error' &&
-    !sourceHealth.some(source => source.required && source.status === 'unavailable'),
+    sourceHealth.every(source => !source.required || source.status === 'healthy'),
   );
   const lastUpdated = marketState ? new Date(marketState.sourceUpdatedAt) : null;
   const dataError = canonicalStateQuery.error?.message
