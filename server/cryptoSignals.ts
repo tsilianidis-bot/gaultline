@@ -439,11 +439,13 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
     if (macd.histogram < 0 && macd.macdLine < 0) score -= 0.5;
   }
 
-  // 24h momentum (crypto amplified)
-  if (changePercent > 8) score += 1.5;
-  else if (changePercent > 3) score += 0.75;
-  else if (changePercent < -8) score -= 1.5;
-  else if (changePercent < -3) score -= 0.75;
+  // 24h momentum (crypto amplified). A missing change does not move the score.
+  if (changePercent != null) {
+    if (changePercent > 8) score += 1.5;
+    else if (changePercent > 3) score += 0.75;
+    else if (changePercent < -8) score -= 1.5;
+    else if (changePercent < -3) score -= 0.75;
+  }
 
   // 7d momentum
   if (change7d !== null) {

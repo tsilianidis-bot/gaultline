@@ -887,6 +887,7 @@ async function buildCryptoSetup(
 
   if (
     typeof price !== "number" || price <= 0 ||
+    typeof changePercent !== "number" ||
     typeof coin.high24h !== "number" || typeof coin.low24h !== "number" ||
     typeof volume !== "number" || typeof marketCap !== "number" ||
     typeof coin.volatility24h !== "number"
@@ -1066,7 +1067,9 @@ export async function dayTradeScanner(input: ScannerInput): Promise<DayTradeSetu
   if (input.assetType === "crypto" || input.assetType === "both") {
     try {
       const coins = await getTopMarkets(50);
-      const sorted = [...coins].sort((a, b) => Math.abs(b.priceChangePercent24h) - Math.abs(a.priceChangePercent24h));
+      const sorted = coins
+        .filter((coin): coin is typeof coin & { priceChangePercent24h: number } => typeof coin.priceChangePercent24h === "number")
+        .sort((a, b) => Math.abs(b.priceChangePercent24h) - Math.abs(a.priceChangePercent24h));
 
       const BATCH = 5;
       for (let i = 0; i < Math.min(sorted.length, 20); i += BATCH) {
@@ -1227,7 +1230,8 @@ export async function dayTradeSymbolSetup(
     const high = coin.high24h;
     const low = coin.low24h;
     const volume = coin.totalVolume;
-    if (typeof price !== "number" || typeof high !== "number" || typeof low !== "number" || typeof volume !== "number") {
+    const changePercent = coin.priceChangePercent24h;
+    if (typeof price !== "number" || typeof high !== "number" || typeof low !== "number" || typeof volume !== "number" || typeof changePercent !== "number") {
       const withheld = withheldDayTradeReport(setup);
       reportCache.set(cacheKey, withheld);
       return withheld;
@@ -1235,7 +1239,7 @@ export async function dayTradeSymbolSetup(
     const vwap = estimateVwap(price * 0.99, high, low, price);
 
     const enrichment = await enrichWithLLM(
-      setup.symbol, setup.name, "crypto", price, coin.priceChangePercent24h,
+      setup.symbol, setup.name, "crypto", price, changePercent,
       volume, setup.relativeVolume, rsi,
       setup.setupType, setup.direction,
       setup.confidence, regime, regimePressure, setup.riskRewardRatio,
@@ -1254,7 +1258,7 @@ export async function dayTradeSymbolSetup(
 
     const { breakdown: executionScoreBreakdown } = computeExecutionScore(
       regimePressure, rsi, setup.setupType, setup.relativeVolume, setup.liquidityRating,
-      coin.priceChangePercent24h, setup.riskRewardRatio, setup.confidence,
+      changePercent, setup.riskRewardRatio, setup.confidence,
       setup.setupType === "NO_TRADE"
     );
 
@@ -1263,7 +1267,7 @@ export async function dayTradeSymbolSetup(
       intradayTrend: enrichmentCrypto.intradayTrend,
       marketContext: enrichmentCrypto.marketContext,
       vwapStatus: price > vwap ? "Above VWAP" : price < vwap ? "Below VWAP" : "At VWAP",
-      momentumRating: assessMomentum(coin.priceChangePercent24h, setup.relativeVolume, rsi),
+      momentumRating: assessMomentum(changePercent, setup.relativeVolume, rsi),
       supportLevel: roundTo(low, 4),
       resistanceLevel: roundTo(high, 4),
       whyTradeExists: enrichmentCrypto.whyTradeExists,

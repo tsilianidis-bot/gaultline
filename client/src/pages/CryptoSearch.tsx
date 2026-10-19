@@ -40,7 +40,7 @@ interface CryptoSignalVector {
 
 interface CryptoAssetIntelligence {
   id: string; symbol: string; name: string; image: string;
-  currentPrice: number | null; priceChangePercent24h: number; priceChangePercent24hDisplay?: number | null; priceChangePercent7d: number | null;
+  currentPrice: number | null; priceChangePercent24h: number | null; priceChangePercent24hDisplay?: number | null; priceChangePercent7d: number | null;
   marketCap: number | null; totalVolume: number | null; high24h: number | null; low24h: number | null;
   circulatingSupply: number; ath: number; athChangePercent: number;
   sparkline7d: number[]; volatility24h: number | null; distanceFromAth: number | null;

@@ -375,7 +375,7 @@ export default function HomeCryptoSection() {
             Top Digital Assets
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '5px' }}>
-            {(topMarkets ?? []).slice(0, 6).map((coin: { id: string; symbol: string; name: string; priceChangePercent24h: number; priceChangePercent24hDisplay?: number | null }) => {
+            {(topMarkets ?? []).slice(0, 6).map((coin: { id: string; symbol: string; name: string; priceChangePercent24h: number | null; priceChangePercent24hDisplay?: number | null }) => {
               const pct = displayChange24h(coin);
               const up = pct !== null && pct >= 0;
               const intensity = pct === null ? 0 : Math.min(Math.abs(pct) / 10, 1);

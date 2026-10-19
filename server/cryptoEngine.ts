@@ -47,7 +47,7 @@ export interface CryptoAssetIntelligence {
   name:                 string;
   image:                string;
   currentPrice:         number | null;
-  priceChangePercent24h: number;
+  priceChangePercent24h: number | null;
   /** Display only: null when the provider supplied no 24h change. */
   priceChangePercent24hDisplay?: number | null;
   priceChangePercent7d:  number | null;
@@ -133,8 +133,9 @@ function scoreToSignalBias(signalScore: number): CryptoSignalBias {
   return "Neutral";
 }
 
-export function deriveMomentum(change24h: number, change7d: number | null): MomentumDir {
+export function deriveMomentum(change24h: number | null, change7d: number | null): MomentumDir {
   if (change7d == null || !Number.isFinite(change7d)) return "Unavailable";
+  if (change24h == null || !Number.isFinite(change24h)) return "Unavailable";
   const weekly = change7d;
   if (change24h > 3  && weekly > 5)  return "Accelerating";
   if (change24h < -3 && weekly < -5) return "Reversing";
@@ -197,7 +198,7 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
   const macroScore = macroP ? clamp(macroP.overallPressure / 10, 0, 10) : 5;
 
   // 5. Breadth — how many of top 20 are down >5% in 24h
-  const downCount = top20.filter(c => c.priceChangePercent24h < -5).length;
+  const downCount = top20.filter(c => typeof c.priceChangePercent24h === "number" && c.priceChangePercent24h < -5).length;
   const breadthScore = downCount > 15 ? 9 : downCount > 10 ? 7 : downCount > 6 ? 5 :
                        downCount > 3  ? 3 : 1;
 
@@ -344,13 +345,19 @@ export async function computeAssetIntelligence(
   const vectors: CryptoSignalVector[] = [];
 
   // 1. Price momentum (24h) — higher sensitivity: multiplier 5 (was 3) so −5% = score 25 (Bearish)
-  const momScore24h = clamp(50 + c.priceChangePercent24h * 5, 0, 100);
-  vectors.push({
-    label: "24h Momentum",
-    score: momScore24h,
-    direction: c.priceChangePercent24h > 1 ? "positive" : c.priceChangePercent24h < -1 ? "negative" : "neutral",
-    description: c.priceChangePercent24hDisplay === null ? "24h change unavailable" : `${c.priceChangePercent24h >= 0 ? "+" : ""}${c.priceChangePercent24h.toFixed(2)}% in 24h`,
-  });
+  // A missing 24h change is withheld. An observed 0 stays on the prior score of 50.
+  const change24h = typeof c.priceChangePercent24h === "number" && Number.isFinite(c.priceChangePercent24h)
+    ? c.priceChangePercent24h
+    : null;
+  const momScore24h = change24h == null ? null : clamp(50 + change24h * 5, 0, 100);
+  if (change24h != null && momScore24h != null) {
+    vectors.push({
+      label: "24h Momentum",
+      score: momScore24h,
+      direction: change24h > 1 ? "positive" : change24h < -1 ? "negative" : "neutral",
+      description: `${change24h >= 0 ? "+" : ""}${change24h.toFixed(2)}% in 24h`,
+    });
+  }
 
   // 2. Weekly momentum — multiplier 2 (was 1.5) for stronger trend signal.
   // A missing 7-day change is withheld. An observed 0 stays on the prior score path.
@@ -416,7 +423,7 @@ export async function computeAssetIntelligence(
   // Composite signal score (weighted)
   // 24h momentum gets highest weight (0.35) so intraday moves dominate the signal.
   // ATH distance weight reduced (0.10) — a distant ATH should not mask a sharp daily drop.
-  const signalScore = momScore7d != null && athScore != null && liquidityScore != null && rangeRisk != null
+  const signalScore = momScore24h != null && momScore7d != null && athScore != null && liquidityScore != null && rangeRisk != null
     ? Math.round(
       momScore24h     * 0.35 +  // was 0.25 — intraday move is the primary signal
       momScore7d      * 0.20 +  // unchanged — weekly trend context
@@ -426,14 +433,14 @@ export async function computeAssetIntelligence(
       macroAlignScore * 0.15    // unchanged — macro regime context
     )
     : Math.round((
-      momScore24h * 0.35 +
+      (momScore24h ?? 0) * (momScore24h == null ? 0 : 0.35) +
       (momScore7d ?? 0) * (momScore7d == null ? 0 : 0.20) +
       (athScore ?? 0) * (athScore == null ? 0 : 0.10) +
       (liquidityScore ?? 0) * (liquidityScore == null ? 0 : 0.15) +
       (rangeRisk ?? 0) * (rangeRisk == null ? 0 : 0.05) +
       macroAlignScore * 0.15
     ) / (
-      0.35 +
+      (momScore24h == null ? 0 : 0.35) +
       (momScore7d == null ? 0 : 0.20) +
       (athScore == null ? 0 : 0.10) +
       (liquidityScore == null ? 0 : 0.15) +
@@ -442,15 +449,22 @@ export async function computeAssetIntelligence(
     ));
 
   // ── Risk score (0–10) ──────────────────────────────────────
-  const riskScore = c.volatility24h == null
+  const riskScore = change24h == null
+    ? (c.volatility24h == null
+      ? parseFloat(sr.score.toFixed(2))
+      : parseFloat(clamp(
+        (sr.score * 0.4 + (c.volatility24h / 2) * 0.3) / 0.7,
+        0, 10
+      ).toFixed(2)))
+    : c.volatility24h == null
     ? parseFloat(clamp(
-      (sr.score * 0.4 + (Math.abs(c.priceChangePercent24h) / 5) * 0.3) / 0.7,
+      (sr.score * 0.4 + (Math.abs(change24h) / 5) * 0.3) / 0.7,
       0, 10
     ).toFixed(2))
     : parseFloat(clamp(
       sr.score * 0.4 +
       (c.volatility24h / 2) * 0.3 +
-      (Math.abs(c.priceChangePercent24h) / 5) * 0.3,
+      (Math.abs(change24h) / 5) * 0.3,
       0, 10
     ).toFixed(2));
 
@@ -463,13 +477,13 @@ export async function computeAssetIntelligence(
     labels.push("AI Narrative Exposure");
   }
 
-  if (c.priceChangePercent24h > 8 && volMcRatio != null && volMcRatio > 10) {
+  if (change24h != null && change24h > 8 && volMcRatio != null && volMcRatio > 10) {
     labels.push("Speculative Acceleration");
   }
   if ((volMcRatio != null && volMcRatio < 2) || sr.stablecoinLiquidity === "Contracting") {
     labels.push("Liquidity Fragile");
   }
-  if (c.priceChangePercent24h > 5 && weekly != null && weekly > 10) {
+  if (change24h != null && change24h > 5 && weekly != null && weekly > 10) {
     labels.push("Momentum Breakout");
   }
   if (sr.score >= 6) {
@@ -479,11 +493,11 @@ export async function computeAssetIntelligence(
     labels.push("Stablecoin Stress");
   }
   // Deleveraging Risk: triggered at -5% with moderate systemic risk
-  if (c.priceChangePercent24h < -5 && sr.score > 5) {
+  if (change24h != null && change24h < -5 && sr.score > 5) {
     labels.push("Deleveraging Risk");
   }
   // Macro Sensitive: moderate daily drop (-3% to -5%) with any systemic risk present
-  if (c.priceChangePercent24h < -3 && c.priceChangePercent24h >= -5 && sr.score >= 4) {
+  if (change24h != null && change24h < -3 && change24h >= -5 && sr.score >= 4) {
     labels.push("Macro Sensitive");
   }
   // Risk-Off Vulnerable: high systemic risk or extreme volatility regime
@@ -565,7 +579,7 @@ export async function computeAssetIntelligence(
     signalScore,
     riskLevel:            scoreToRiskLevel(riskScore),
     riskScore,
-    momentum:             deriveMomentum(c.priceChangePercent24h, c.priceChangePercent7d),
+    momentum:             deriveMomentum(change24h, c.priceChangePercent7d),
     primaryLabel,
     secondaryLabels,
     vectors,

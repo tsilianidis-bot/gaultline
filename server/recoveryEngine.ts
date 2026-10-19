@@ -181,8 +181,12 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
   const currentPrice = market.currentPrice;
   const priceKnown = typeof currentPrice === "number" && Number.isFinite(currentPrice);
   const change24h = market.priceChangePercent24h;
-  const change7d = market.priceChangePercent7d ?? change24h * 3;
-  const change30d = market.priceChangePercent30d ?? change24h * 10;
+  const change7d = typeof market.priceChangePercent7d === "number" && Number.isFinite(market.priceChangePercent7d)
+    ? market.priceChangePercent7d
+    : null;
+  const change30d = typeof market.priceChangePercent30d === "number" && Number.isFinite(market.priceChangePercent30d)
+    ? market.priceChangePercent30d
+    : null;
   const volatility24h = market.volatility24h;
   const volatilityKnown = typeof volatility24h === "number" && Number.isFinite(volatility24h);
   const distanceFromAth = market.distanceFromAth; // negative = below ATH
@@ -228,8 +232,8 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
   const volatilityCooling = volatilityKnown && volatility24h < 4.0 && volatilityCV < 5.0;
 
   // ── 7d and 14d trend improvement ─────────────────────────
-  const trendImproving7d = change7d > -5; // not still in freefall
-  const trendImproving14d = change30d > -15; // 30d used as proxy for 14d
+  const trendImproving7d = change7d != null && change7d > -5; // not still in freefall
+  const trendImproving14d = change30d != null && change30d > -15; // 30d used as proxy for 14d
 
   // ── BTC dominance (altcoin breadth proxy) ─────────────────
   // A missing reading is withheld. It is not treated as 55 and does not pass.
@@ -239,7 +243,7 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
   // ── Recent selloff detection ──────────────────────────────
   const hadRecentSelloff = closes.length >= 3
     ? detectRecentSelloff(closes)
-    : change7d < -10 || change30d < -20;
+    : (change7d != null && change7d < -10) || (change30d != null && change30d < -20);
 
   // ── Macro pressure not worsening ─────────────────────────
   const macroNotWorsening = macroPressure != null && !macroWorsening && macroPressure < 70;
@@ -273,20 +277,26 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
       label: "7-Day Trend Improving",
       description: "7-day price change must not be in freefall (> -5%)",
       passed: trendImproving7d,
+      withheld: change7d == null,
       weight: 12,
-      detail: trendImproving7d
-        ? `7d change: ${change7d.toFixed(1)}% — trend stabilizing`
-        : `7d change: ${change7d.toFixed(1)}% — still in downtrend`,
+      detail: change7d == null
+        ? "7d change unavailable"
+        : trendImproving7d
+          ? `7d change: ${change7d.toFixed(1)}% — trend stabilizing`
+          : `7d change: ${change7d.toFixed(1)}% — still in downtrend`,
     },
     {
       id: "trend_14d",
       label: "14-Day Trend Not Deteriorating",
       description: "Medium-term trend must show signs of stabilization",
       passed: trendImproving14d,
+      withheld: change30d == null,
       weight: 10,
-      detail: trendImproving14d
-        ? `30d change: ${change30d.toFixed(1)}% — medium-term stabilizing`
-        : `30d change: ${change30d.toFixed(1)}% — medium-term still weak`,
+      detail: change30d == null
+        ? "30d change unavailable"
+        : trendImproving14d
+          ? `30d change: ${change30d.toFixed(1)}% — medium-term stabilizing`
+          : `30d change: ${change30d.toFixed(1)}% — medium-term still weak`,
     },
     {
       id: "volume_confirmation",
@@ -367,7 +377,7 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
 
   // Asymmetric decay: penalize heavily if recent selloff with weak bounce
   if (hadRecentSelloff) {
-    const bounceMagnitude = Math.max(0, change24h); // positive = bounced
+    const bounceMagnitude = Math.max(0, typeof change24h === "number" ? change24h : 0); // positive = bounced
     const bounceQuality = clamp(bounceMagnitude / 5, 0, 1); // normalize: 5%+ bounce = full quality
     rawConfidence = rawConfidence * (0.4 + 0.6 * bounceQuality);
   }
@@ -399,7 +409,7 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
   if (hadRecentSelloff) aftershockRiskScore += 35;
 
   // Weak bounce (small recovery after large drop)
-  if (hadRecentSelloff && change24h < 3) aftershockRiskScore += 20;
+  if (hadRecentSelloff && typeof change24h === "number" && change24h < 3) aftershockRiskScore += 20;
 
   // Failed to reclaim breakdown levels
   if (!reclaimedBreakdown) aftershockRiskScore += 15;
@@ -442,7 +452,7 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
     status = "Stabilizing";
   } else if (recoveryConfidence >= 26) {
     status = "Recovery Attempt";
-  } else if (change24h > 1 && hadRecentSelloff) {
+  } else if (typeof change24h === "number" && change24h > 1 && hadRecentSelloff) {
     // Small bounce after selloff = relief bounce
     status = "Relief Bounce";
   } else {

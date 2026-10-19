@@ -63,8 +63,8 @@ export interface CoinMarketData {
   high24h: number | null;
   low24h: number | null;
   priceChange24h: number;
-  priceChangePercent24h: number;
-  /** Display only: null when CoinGecko supplied no 24h change (priceChangePercent24h then stays 0 for the engine). */
+  priceChangePercent24h: number | null;
+  /** Display only: null when CoinGecko supplied no 24h change. */
   priceChangePercent24hDisplay?: number | null;
   priceChangePercent7d: number | null;
   priceChangePercent30d: number | null;
@@ -367,7 +367,7 @@ export function mapRawCoin(c: Record<string, unknown>): CoinMarketData {
     high24h:                  high,
     low24h:                   low,
     priceChange24h:           (c.price_change_24h as number) ?? 0,
-    priceChangePercent24h:    (c.price_change_percentage_24h as number) ?? 0,
+    priceChangePercent24h:    finiteCoinNumber(c.price_change_percentage_24h),
     priceChangePercent24hDisplay: typeof c.price_change_percentage_24h === "number" && Number.isFinite(c.price_change_percentage_24h) ? c.price_change_percentage_24h : null,
     priceChangePercent7d:     (c.price_change_percentage_7d_in_currency as number | null) ?? null,
     priceChangePercent30d:    (c.price_change_percentage_30d_in_currency as number | null) ?? null,

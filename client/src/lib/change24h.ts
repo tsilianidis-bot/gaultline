@@ -1,9 +1,7 @@
 /**
- * 24h price change for display. The server keeps feeding the crypto engine the
- * same number as before (a missing CoinGecko change still scores as 0; see
- * HELD_CHANGES item 8) but marks it with `priceChangePercent24hDisplay: null`,
- * which every display shows as "—" with a neutral color and no arrow instead of
- * "+0.00%". Display only.
+ * 24h price change for display. A missing CoinGecko change is null on both
+ * the scored field and `priceChangePercent24hDisplay`. Displays show "—" with
+ * a neutral color and no arrow instead of "+0.00%".
  */
 export type Change24hSource = {
   priceChangePercent24h?: number | null;

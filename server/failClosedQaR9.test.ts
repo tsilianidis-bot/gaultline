@@ -249,15 +249,17 @@ describe("QA r9 stack gate — public API payload carries no withheld scenario n
   });
 });
 
-describe("QA r9 — crypto 24h change: missing shows '—', engine input unchanged", () => {
+describe("QA r9 — crypto 24h change: missing shows '—', and is not scored as 0", () => {
   const raw = { id: "x", symbol: "x", name: "X", current_price: 1, high_24h: 1, low_24h: 1 };
-  it("mapRawCoin: engine value stays 0 (as before); display value is null", () => {
+  it("mapRawCoin: a missing 24h change stays null; an observed change is kept", () => {
     const missing = mapRawCoin(raw);
-    expect(missing.priceChangePercent24h).toBe(0);
+    expect(missing.priceChangePercent24h).toBeNull();
     expect(missing.priceChangePercent24hDisplay).toBeNull();
     const present = mapRawCoin({ ...raw, price_change_percentage_24h: -2.5 });
     expect(present.priceChangePercent24h).toBe(-2.5);
     expect(present.priceChangePercent24hDisplay).toBe(-2.5);
+    const zero = mapRawCoin({ ...raw, price_change_percentage_24h: 0 });
+    expect(zero.priceChangePercent24h).toBe(0);
   });
   it("helpers: '—' with neutral color for missing; signed % otherwise; legacy objects fall back", () => {
     expect(change24hText(displayChange24h({ priceChangePercent24h: 0, priceChangePercent24hDisplay: null }))).toBe("—");
@@ -266,14 +268,13 @@ describe("QA r9 — crypto 24h change: missing shows '—', engine input unchang
     expect(change24hText(-0.5, 1)).toBe("-0.5%");
     expect(change24hText(displayChange24h({ priceChangePercent24h: Number.NaN }))).toBe("—");
   });
-  it("cryptoEngine scoring lines unchanged; only the display field and vector text added", () => {
+  it("cryptoEngine drops a missing 24h change and keeps the present 0.35 weight", () => {
     const e = read("server/cryptoEngine.ts");
-    expect(e).toContain("const momScore24h = clamp(50 + c.priceChangePercent24h * 5, 0, 100);");
-    expect(e).toContain('direction: c.priceChangePercent24h > 1 ? "positive" : c.priceChangePercent24h < -1 ? "negative" : "neutral",');
-    expect(e).toContain("    priceChangePercent24h: c.priceChangePercent24h,\n");
-    expect(read("server/coingeckoProxy.ts")).toContain("priceChangePercent24h:    (c.price_change_percentage_24h as number) ?? 0,");
+    expect(e).toContain("momScore24h     * 0.35");
+    expect(e).toContain("change24h == null ? null : clamp(50 + change24h * 5, 0, 100)");
+    expect(e).not.toContain("priceChangePercent24h ?? 0");
+    expect(read("server/coingeckoProxy.ts")).not.toContain("price_change_percentage_24h as number) ?? 0");
     expect(e).toContain("priceChangePercent24hDisplay: c.priceChangePercent24hDisplay === undefined ? c.priceChangePercent24h : c.priceChangePercent24hDisplay,");
-    expect(e).toContain('description: c.priceChangePercent24hDisplay === null ? "24h change unavailable"');
   });
   it.each([
     "client/src/pages/CryptoWatchlist.tsx", "client/src/components/dashboard/PulseMode.tsx", "client/src/components/dashboard/SignalsMode.tsx",
