@@ -10,7 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { TickerChip } from "@/components/TickerActionMenu";
 import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
-import { formatObservedFixed } from "@/lib/nullableFormat";
+import { formatCryptoPrice, formatObservedFixed } from "@/lib/nullableFormat";
 
 // ── Types (mirrored from server/cryptoEngine.ts) ─────────────
 type CryptoSignalLabel =
@@ -22,8 +22,8 @@ type CryptoRiskLevel = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
 
 interface CryptoAssetIntelligence {
   id: string; symbol: string; name: string; image: string;
-  currentPrice: number; priceChangePercent24h: number; priceChangePercent24hDisplay?: number | null;
-  marketCap: number; totalVolume: number;
+  currentPrice: number | null; priceChangePercent24h: number | null; priceChangePercent24hDisplay?: number | null;
+  marketCap: number | null; totalVolume: number | null;
   signalBias: "Bullish" | "Neutral" | "Bearish";
   signalScore: number; riskLevel: CryptoRiskLevel; riskScore: number;
   momentum: "Accelerating" | "Stable" | "Decelerating" | "Reversing" | "Unavailable";
@@ -118,11 +118,7 @@ function MiniAssetCard({ asset }: { asset: CryptoAssetIntelligence }) {
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontFamily: MONO, fontSize: '11px', color: '#E2E8F0' }}>
-            ${asset.currentPrice >= 1000
-              ? asset.currentPrice.toLocaleString('en-US', { maximumFractionDigits: 0 })
-              : asset.currentPrice >= 1
-                ? asset.currentPrice.toFixed(2)
-                : asset.currentPrice.toFixed(4)}
+            {formatCryptoPrice(asset.currentPrice)}
           </div>
           <div style={{ fontFamily: MONO, fontSize: '13px', color: change24hColor(change24h) }}>
             {change24hText(change24h)}

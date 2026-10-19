@@ -13,6 +13,7 @@ import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import { TickerChip } from "@/components/TickerActionMenu";
 import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
+import { formatCryptoPrice } from "@/lib/nullableFormat";
 
 // ── Style constants ───────────────────────────────────────────
 const MONO = "'IBM Plex Mono', monospace";
@@ -29,8 +30,8 @@ type CryptoSignalLabel =
 
 interface CryptoAssetIntelligence {
   id: string; symbol: string; name: string; image: string;
-  currentPrice: number; priceChangePercent24h: number; priceChangePercent24hDisplay?: number | null;
-  marketCap: number; totalVolume: number;
+  currentPrice: number | null; priceChangePercent24h: number | null; priceChangePercent24hDisplay?: number | null;
+  marketCap: number | null; totalVolume: number | null;
   signalBias: CryptoSignalBias; signalScore: number;
   riskLevel: CryptoRiskLevel; riskScore: number;
   momentum: MomentumDir;
@@ -128,11 +129,7 @@ function WatchlistRow({
         ) : asset ? (
           <>
             <div style={{ fontFamily: MONO, fontSize: '12px', color: '#E2E8F0' }}>
-              ${asset.currentPrice >= 1000
-                ? asset.currentPrice.toLocaleString('en-US', { maximumFractionDigits: 0 })
-                : asset.currentPrice >= 1
-                  ? asset.currentPrice.toFixed(2)
-                  : asset.currentPrice.toFixed(4)}
+              {formatCryptoPrice(asset.currentPrice)}
             </div>
             <div style={{ fontFamily: MONO, fontSize: '9px', color: change24hColor(change24h) }}>
               {change24hText(change24h)}
@@ -276,9 +273,7 @@ function CompareColumn({ symbol, onRemove }: { symbol: string; onRemove: () => v
         ) : asset ? (
           <div style={{ marginTop: '6px' }}>
             <span style={{ fontFamily: MONO, fontSize: '14px', color: '#E2E8F0' }}>
-              ${asset.currentPrice >= 1000
-                ? asset.currentPrice.toLocaleString('en-US', { maximumFractionDigits: 0 })
-                : asset.currentPrice >= 1 ? asset.currentPrice.toFixed(2) : asset.currentPrice.toFixed(4)}
+              {formatCryptoPrice(asset.currentPrice)}
             </span>
             <span style={{ fontFamily: MONO, fontSize: '10px', color: change24hColor(change24h), marginLeft: '6px' }}>
               {change24hText(change24h)}
