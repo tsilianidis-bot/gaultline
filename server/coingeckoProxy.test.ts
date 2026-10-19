@@ -281,8 +281,10 @@ describe("Crypto Engine", () => {
       const { computeCryptoSystemicRisk } = await import("./cryptoEngine");
       const risk = await computeCryptoSystemicRisk();
 
-      expect(risk.score).toBeGreaterThanOrEqual(0);
-      expect(risk.score).toBeLessThanOrEqual(10);
+      expect(risk.score).toBeNull();
+      expect(risk.level).toBe("Unavailable");
+      expect(risk.leverageConditions).toBe("Unavailable");
+      expect(risk.summary).not.toContain("low-stress");
     });
   });
 

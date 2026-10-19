@@ -29,7 +29,7 @@ export type CryptoSignalLabel =
   | "Risk-Off Vulnerable"
   | "Neutral / Watch";
 
-export type CryptoSignalBias = "Bullish" | "Neutral" | "Bearish";
+export type CryptoSignalBias = "Bullish" | "Neutral" | "Bearish" | "Unavailable";
 export type CryptoRiskLevel  = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
 export type MomentumDir      = "Accelerating" | "Stable" | "Decelerating" | "Reversing" | "Unavailable";
 
@@ -64,14 +64,14 @@ export interface CryptoAssetIntelligence {
 
   // FAULTLINE intelligence
   signalBias:           CryptoSignalBias;
-  signalScore:          number;          // 0–100 (100 = max bullish)
-  riskLevel:            CryptoRiskLevel;
-  riskScore:            number;          // 0–10
+  signalScore:          number | null;  // 0–100 (100 = max bullish); null when nothing was scored
+  riskLevel:            CryptoRiskLevel | "Unavailable";
+  riskScore:            number | null;   // 0–10
   momentum:             MomentumDir;
   primaryLabel:         CryptoSignalLabel;
   secondaryLabels:      CryptoSignalLabel[];
   vectors:              CryptoSignalVector[];
-  macroAlignment:       "Aligned" | "Diverging" | "Neutral";
+  macroAlignment:       "Aligned" | "Diverging" | "Neutral" | "Unavailable";
   liquiditySensitivity: "Low" | "Moderate" | "High" | "Extreme" | "Unavailable";
   speculativeIntensity: "Low" | "Moderate" | "High" | "Extreme" | "Unavailable";
   regimeNote:           string;
@@ -80,12 +80,12 @@ export interface CryptoAssetIntelligence {
 }
 
 export interface CryptoSystemicRisk {
-  score:              number;   // 0–10
-  level:              CryptoRiskLevel;
+  score:              number | null;   // 0–10; null when every component is missing
+  level:              CryptoRiskLevel | "Unavailable";
   btcDominance:       number | null;
   stablecoinLiquidity: "Expanding" | "Stable" | "Tightening" | "Contracting" | "Unavailable";
   volatilityRegime:   "Low" | "Normal" | "Elevated" | "Extreme" | "Unavailable";
-  leverageConditions: "Low" | "Normal" | "Elevated" | "Extreme";
+  leverageConditions: "Low" | "Normal" | "Elevated" | "Extreme" | "Unavailable";
   marketBreadth:      "Strong" | "Moderate" | "Weak" | "Deteriorating" | "Unavailable";
   macroLiquidity:     "Expanding" | "Neutral" | "Tightening" | "Contracting" | "Unavailable";
   speculativeIntensity: "Low" | "Moderate" | "High" | "Extreme" | "Unavailable";
@@ -127,7 +127,8 @@ function scoreToRiskLevel(score: number): CryptoRiskLevel {
   return "Low";
 }
 
-function scoreToSignalBias(signalScore: number): CryptoSignalBias {
+function scoreToSignalBias(signalScore: number | null): CryptoSignalBias {
+  if (signalScore == null || !Number.isFinite(signalScore)) return "Unavailable";
   if (signalScore >= 60) return "Bullish";
   if (signalScore <= 43) return "Bearish";  // raised from 40 — catches borderline drops like -3% to -5%
   return "Neutral";
@@ -254,7 +255,14 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
       (macroScore != null && breadthScore != null ? 0.35 : macroWeight + breadthWeight) +
       (stableScore == null ? 0 : 0.05)
     );
-  const finalScore = clamp(composite, 0, 10);
+  const weightSum = mcScore != null && stableScore != null && volScore != null && macroScore != null && breadthScore != null
+    ? dominanceWeight + 0.85
+    : dominanceWeight +
+      (mcScore == null ? 0 : 0.25) +
+      (volScore == null ? 0 : 0.20) +
+      (macroScore != null && breadthScore != null ? 0.35 : macroWeight + breadthWeight) +
+      (stableScore == null ? 0 : 0.05);
+  const finalScore = weightSum === 0 || !Number.isFinite(composite) ? null : clamp(composite, 0, 10);
 
   // Qualitative labels
   const stablecoinLiquidity: CryptoSystemicRisk["stablecoinLiquidity"] =
@@ -269,6 +277,7 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
     avgVol24h > 4  ? "Normal"  : "Low";
 
   const leverageConditions: CryptoSystemicRisk["leverageConditions"] =
+    finalScore == null ? "Unavailable" :
     finalScore > 7.5 ? "Extreme" : finalScore > 5.5 ? "Elevated" :
     finalScore > 3   ? "Normal"  : "Low";
 
@@ -288,7 +297,7 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
     stableVolumeRatio > 5  ? "Moderate" : "Low";
 
   // Regime label
-  const level = scoreToRiskLevel(finalScore);
+  const level: CryptoSystemicRisk["level"] = finalScore == null ? "Unavailable" : scoreToRiskLevel(finalScore);
   const regimeMap: Record<CryptoRiskLevel, { label: string; color: string }> = {
     "Low":      { label: "CRYPTO STABLE",          color: "#00FF88" },
     "Moderate": { label: "MODERATE CRYPTO STRESS", color: "#00D4FF" },
@@ -296,9 +305,15 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
     "High":     { label: "HIGH CRYPTO STRESS",     color: "#FF9500" },
     "Critical": { label: "CRITICAL CRYPTO RISK",   color: "#FF2D55" },
   };
-  const { label: regime, color: regimeColor } = regimeMap[level];
+  const regimeInfo = level === "Unavailable"
+    ? { label: "CRYPTO RISK UNAVAILABLE", color: "#64748B" }
+    : regimeMap[level];
+  const regime = regimeInfo.label;
+  const regimeColor = regimeInfo.color;
 
-  const summary = finalScore >= 7
+  const summary = finalScore == null
+    ? "Crypto systemic risk is withheld. No market, breadth, or macro reading was available, so no stress score is shown."
+    : finalScore >= 7
     ? "Crypto markets are exhibiting systemic stress signals. Liquidity conditions are tightening, volatility is elevated, and macro pressure is weighing on digital assets. Risk management is critical."
     : finalScore >= 5
     ? "Crypto markets show elevated risk conditions. BTC dominance and volatility metrics suggest caution. Monitor liquidity conditions and macro developments closely."
@@ -307,7 +322,7 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
     : "Crypto markets are in a low-stress regime. Liquidity conditions are supportive and macro alignment is constructive. Risk-on conditions may favor digital assets.";
 
   const result: CryptoSystemicRisk = {
-    score:               parseFloat(finalScore.toFixed(2)),
+    score:               finalScore == null ? null : parseFloat(finalScore.toFixed(2)),
     level,
     btcDominance:        btcDom == null ? null : parseFloat(btcDom.toFixed(2)),
     stablecoinLiquidity,
@@ -423,19 +438,21 @@ export async function computeAssetIntelligence(
     });
   }
 
-  // 6. Macro alignment (inverse of systemic risk)
-  const macroAlignScore = clamp(100 - sr.score * 10, 0, 100);
-  vectors.push({
-    label: "Macro Alignment",
-    score: macroAlignScore,
-    direction: sr.score < 4 ? "positive" : sr.score > 6 ? "negative" : "neutral",
-    description: `Systemic risk: ${sr.score.toFixed(1)}/10 — ${sr.regime}`,
-  });
+  // 6. Macro alignment (inverse of systemic risk). A withheld systemic score drops this vector.
+  const macroAlignScore = sr.score == null ? null : clamp(100 - sr.score * 10, 0, 100);
+  if (sr.score != null && macroAlignScore != null) {
+    vectors.push({
+      label: "Macro Alignment",
+      score: macroAlignScore,
+      direction: sr.score < 4 ? "positive" : sr.score > 6 ? "negative" : "neutral",
+      description: `Systemic risk: ${sr.score.toFixed(1)}/10 — ${sr.regime}`,
+    });
+  }
 
   // Composite signal score (weighted)
   // 24h momentum gets highest weight (0.35) so intraday moves dominate the signal.
   // ATH distance weight reduced (0.10) — a distant ATH should not mask a sharp daily drop.
-  const signalScore = momScore24h != null && momScore7d != null && athScore != null && liquidityScore != null && rangeRisk != null
+  const signalScore = momScore24h != null && momScore7d != null && athScore != null && liquidityScore != null && rangeRisk != null && macroAlignScore != null
     ? Math.round(
       momScore24h     * 0.35 +  // was 0.25 — intraday move is the primary signal
       momScore7d      * 0.20 +  // unchanged — weekly trend context
@@ -450,18 +467,30 @@ export async function computeAssetIntelligence(
       (athScore ?? 0) * (athScore == null ? 0 : 0.10) +
       (liquidityScore ?? 0) * (liquidityScore == null ? 0 : 0.15) +
       (rangeRisk ?? 0) * (rangeRisk == null ? 0 : 0.05) +
-      macroAlignScore * 0.15
+      (macroAlignScore ?? 0) * (macroAlignScore == null ? 0 : 0.15)
     ) / (
       (momScore24h == null ? 0 : 0.35) +
       (momScore7d == null ? 0 : 0.20) +
       (athScore == null ? 0 : 0.10) +
       (liquidityScore == null ? 0 : 0.15) +
       (rangeRisk == null ? 0 : 0.05) +
-      0.15
+      (macroAlignScore == null ? 0 : 0.15)
     ));
+  const scoredSignal = Number.isFinite(signalScore) ? signalScore : null;
 
   // ── Risk score (0–10) ──────────────────────────────────────
-  const riskScore = change24h == null
+  const riskScore = sr.score == null
+    ? (change24h == null && c.volatility24h == null
+      ? null
+      : change24h == null
+      ? parseFloat(clamp(((c.volatility24h as number) / 2), 0, 10).toFixed(2))
+      : c.volatility24h == null
+      ? parseFloat(clamp(Math.abs(change24h) / 5, 0, 10).toFixed(2))
+      : parseFloat(clamp(
+        ((c.volatility24h / 2) * 0.3 + (Math.abs(change24h) / 5) * 0.3) / 0.6,
+        0, 10
+      ).toFixed(2)))
+    : change24h == null
     ? (c.volatility24h == null
       ? parseFloat(sr.score.toFixed(2))
       : parseFloat(clamp(
@@ -498,26 +527,26 @@ export async function computeAssetIntelligence(
   if (change24h != null && change24h > 5 && weekly != null && weekly > 10) {
     labels.push("Momentum Breakout");
   }
-  if (sr.score >= 6) {
+  if (sr.score != null && sr.score >= 6) {
     labels.push("Macro Sensitive");
   }
   if (sr.stablecoinLiquidity === "Tightening" || sr.stablecoinLiquidity === "Contracting") {
     labels.push("Stablecoin Stress");
   }
   // Deleveraging Risk: triggered at -5% with moderate systemic risk
-  if (change24h != null && change24h < -5 && sr.score > 5) {
+  if (change24h != null && change24h < -5 && sr.score != null && sr.score > 5) {
     labels.push("Deleveraging Risk");
   }
   // Macro Sensitive: moderate daily drop (-3% to -5%) with any systemic risk present
-  if (change24h != null && change24h < -3 && change24h >= -5 && sr.score >= 4) {
+  if (change24h != null && change24h < -3 && change24h >= -5 && sr.score != null && sr.score >= 4) {
     labels.push("Macro Sensitive");
   }
   // Risk-Off Vulnerable: high systemic risk or extreme volatility regime
-  if (sr.score > 7 || sr.volatilityRegime === "Extreme") {
+  if ((sr.score != null && sr.score > 7) || sr.volatilityRegime === "Extreme") {
     labels.push("Risk-Off Vulnerable");
   }
   // Downside Pressure: any bearish signal score without a more specific label yet
-  if (labels.length === 0 && signalScore <= 43) {
+  if (labels.length === 0 && signalScore != null && signalScore <= 43) {
     labels.push("Macro Sensitive");
   }
   if (labels.length === 0) {
@@ -529,8 +558,9 @@ export async function computeAssetIntelligence(
 
   // ── Macro alignment ────────────────────────────────────────
   const macroAlignment: CryptoAssetIntelligence["macroAlignment"] =
-    sr.score < 3 && signalScore > 55 ? "Aligned" :
-    sr.score > 6 && signalScore < 45 ? "Diverging" : "Neutral";
+    sr.score == null ? "Unavailable" :
+    sr.score < 3 && signalScore != null && signalScore > 55 ? "Aligned" :
+    sr.score > 6 && signalScore != null && signalScore < 45 ? "Diverging" : "Neutral";
 
   // ── Liquidity sensitivity ──────────────────────────────────
   const liquiditySensitivity: CryptoAssetIntelligence["liquiditySensitivity"] =
@@ -587,9 +617,9 @@ export async function computeAssetIntelligence(
     sparkline7d:          c.sparkline7d,
     volatility24h:        c.volatility24h,
     distanceFromAth:      c.distanceFromAth,
-    signalBias:           scoreToSignalBias(signalScore),
-    signalScore,
-    riskLevel:            scoreToRiskLevel(riskScore),
+    signalBias:           scoreToSignalBias(scoredSignal),
+    signalScore:          scoredSignal,
+    riskLevel:            riskScore == null ? "Unavailable" : scoreToRiskLevel(riskScore),
     riskScore,
     momentum:             deriveMomentum(change24h, c.priceChangePercent7d),
     primaryLabel,

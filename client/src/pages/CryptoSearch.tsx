@@ -27,7 +27,7 @@ type CryptoSignalLabel =
   | "Risk-Off Vulnerable"
   | "Neutral / Watch";
 
-type CryptoSignalBias = "Bullish" | "Neutral" | "Bearish";
+type CryptoSignalBias = "Bullish" | "Neutral" | "Bearish" | "Unavailable";
 type CryptoRiskLevel  = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
 type MomentumDir      = "Accelerating" | "Stable" | "Decelerating" | "Reversing" | "Unavailable";
 
@@ -44,21 +44,21 @@ interface CryptoAssetIntelligence {
   marketCap: number | null; totalVolume: number | null; high24h: number | null; low24h: number | null;
   circulatingSupply: number; ath: number | null; athChangePercent: number;
   sparkline7d: number[]; volatility24h: number | null; distanceFromAth: number | null;
-  signalBias: CryptoSignalBias; signalScore: number;
-  riskLevel: CryptoRiskLevel; riskScore: number;
+  signalBias: CryptoSignalBias; signalScore: number | null;
+  riskLevel: CryptoRiskLevel | "Unavailable"; riskScore: number | null;
   momentum: MomentumDir; primaryLabel: CryptoSignalLabel;
   secondaryLabels: CryptoSignalLabel[]; vectors: CryptoSignalVector[];
-  macroAlignment: "Aligned" | "Diverging" | "Neutral";
+  macroAlignment: "Aligned" | "Diverging" | "Neutral" | "Unavailable";
   liquiditySensitivity: "Low" | "Moderate" | "High" | "Extreme" | "Unavailable";
   speculativeIntensity: "Low" | "Moderate" | "High" | "Extreme" | "Unavailable";
   regimeNote: string; keyInsights: string[]; generatedAt: number;
 }
 
 interface CryptoSystemicRisk {
-  score: number; level: CryptoRiskLevel; btcDominance: number | null;
+  score: number | null; level: CryptoRiskLevel | "Unavailable"; btcDominance: number | null;
   stablecoinLiquidity: "Expanding" | "Stable" | "Tightening" | "Contracting" | "Unavailable";
   volatilityRegime: "Low" | "Normal" | "Elevated" | "Extreme" | "Unavailable";
-  leverageConditions: "Low" | "Normal" | "Elevated" | "Extreme";
+  leverageConditions: "Low" | "Normal" | "Elevated" | "Extreme" | "Unavailable";
   marketBreadth: "Strong" | "Moderate" | "Weak" | "Deteriorating" | "Unavailable";
   macroLiquidity: "Expanding" | "Neutral" | "Tightening" | "Contracting" | "Unavailable";
   speculativeIntensity: "Low" | "Moderate" | "High" | "Extreme" | "Unavailable";
@@ -86,6 +86,7 @@ const BIAS_COLORS = {
   Bullish: "#00FF88",
   Neutral: "#00D4FF",
   Bearish: "#FF2D55",
+  Unavailable: "#64748B",
 };
 
 const RISK_COLORS = {
@@ -94,6 +95,7 @@ const RISK_COLORS = {
   Elevated: "#FFD700",
   High:     "#FF9500",
   Critical: "#FF2D55",
+  Unavailable: "#64748B",
 };
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -177,7 +179,14 @@ function Sparkline({ data, color, height = 40 }: { data: number[]; color: string
 }
 
 // ── Risk gauge arc ────────────────────────────────────────────
-function RiskGauge({ score, size = 80 }: { score: number; size: number }) {
+function RiskGauge({ score, size = 80 }: { score: number | null; size: number }) {
+  if (score == null || !Number.isFinite(score)) {
+    return (
+      <div style={{ width: size, height: size, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#64748B", letterSpacing: "0.08em", textAlign: "center" }}>Unavailable</span>
+      </div>
+    );
+  }
   const level = score >= 8 ? "Critical" : score >= 6.5 ? "High" : score >= 5 ? "Elevated" : score >= 3 ? "Moderate" : "Low";
   const color = RISK_COLORS[level as keyof typeof RISK_COLORS];
   const [anim, setAnim] = useState(0);
