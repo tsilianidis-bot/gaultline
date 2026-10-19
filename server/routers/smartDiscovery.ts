@@ -36,7 +36,7 @@ import { buildInterpretationPromptContract, createInterpretationTransaction, val
 import { buildCrossEngineSynthesis, buildCrossEngineSynthesisPromptContract } from "../crossEngineSynthesis";
 import { buildEarlyWarningPresentationPromptContract, getCurrentGovernedEarlyWarningPresentation } from "../earlyWarningPresentation";
 import { stripProbabilityPercentClaims } from "../stripProbabilityClaims";
-import { evidenceFreshnessLabel } from "../evidenceFreshness";
+import { evidenceFreshnessLabel, fredObservationMs } from "../evidenceFreshness";
 
 // ── LLM timeout helper ───────────────────────────────────────
 // Wraps any promise with a 55-second timeout so the user gets a friendly
@@ -988,7 +988,7 @@ JSON schema:
     totalLatencyMs: Date.now() - t0,
   });
 
-  const observedAt = seismographOutput?.providerProvenance?.fred?.asOf ?? seismographOutput?.computedAt ?? null;
+  const observedAt = fredObservationMs(seismographOutput?.providerProvenance?.fred?.asOf);
   return sanitize({
     ...raw,
     dataFreshness: evidenceFreshnessLabel({

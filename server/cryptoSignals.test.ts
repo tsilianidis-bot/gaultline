@@ -75,7 +75,7 @@ describe("computeCryptoSignal", () => {
     expect(result.action).toBe("WATCH");
     expect(result.actionLabel).toBe("Unavailable");
     expect(result.technicals.rsiIsTrue).toBe(false);
-    expect(result.technicals.rsiEstimate).toBe(0);
+    expect(result.technicals.rsiEstimate).toBeNull();
     expect(`${result.actionLabel} ${result.rationale}`).not.toMatch(/BUY|SELL|RSI|golden cross|death cross/i);
   });
 
@@ -146,7 +146,7 @@ describe("computeCryptoSignal", () => {
     const result = computeCryptoSignal({ market, btcDominance: 55, regime: mockRegime });
     expect(result.actionLabel).toBe("Unavailable");
     expect(result.technicals.rsiIsTrue).toBe(false);
-    expect(result.technicals.rsiEstimate).toBe(0);
+    expect(result.technicals.rsiEstimate).toBeNull();
     expect(result.technicals.smaSignal).toBe("Neutral");
     expect(result.technicals.macd).toBeNull();
   });

@@ -849,7 +849,7 @@ export default function AnalyticsDashboard() {
                     <p className="text-xs font-medium text-zinc-200 truncate">{f.name}</p>
                     <p className="text-xs text-zinc-500 truncate">{f.path}</p>
                   </div>
-                  <Badge variant="outline" className="text-xs border-green-800 text-green-400 flex-shrink-0">LIVE</Badge>
+                  <Badge variant="outline" className="text-xs border-zinc-700 text-zinc-400 flex-shrink-0">INCLUDED</Badge>
                 </div>
               ))}
             </div>

@@ -13,6 +13,7 @@
 //   POST /api/crypto/clear-cache           — clear all caches
 // ============================================================
 import type { Express, Request, Response } from "express";
+import { coinGeckoOhlcPeriodMs, isCryptoCandleComplete } from "../shared/completedBars";
 import { LRUCache } from "./lruCache";
 import { log } from "./logger";
 
@@ -543,13 +544,15 @@ export async function getCoinOHLC(idOrSymbol: string, days = 30): Promise<CoinOH
     try {
       // CoinGecko returns array of [timestamp, open, high, low, close]
       const raw = await cgFetch<number[][]>(`/coins/${cgId}/ohlc?vs_currency=usd&days=${days}`);
+      const periodMs = coinGeckoOhlcPeriodMs(days);
+      const nowMs = Date.now();
       const bars: CoinOHLCBar[] = (raw ?? []).map(([ts, o, h, l, c]) => ({
         timestamp: ts,
         open: o,
         high: h,
         low: l,
         close: c,
-      }));
+      })).filter(bar => isCryptoCandleComplete(bar.timestamp, periodMs, nowMs));
       ohlcCache.set(key, bars);
       return bars;
     } catch (err) {

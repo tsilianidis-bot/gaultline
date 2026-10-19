@@ -44,7 +44,7 @@ export interface SimTradeRationale {
   domainNarrative: string;
 
   // Dimension 3: Technical Indicators
-  rsi: number;
+  rsi: number | null;
   rsiLabel: string;
   macdSignal: string;
   smaSignal: string;
@@ -258,7 +258,7 @@ DOMAIN SCORES (higher = more stress):
 ${domainStr}
 
 TECHNICAL ANALYSIS:
-- RSI: ${signal.technicals.rsiEstimate.toFixed(1)} (${signal.technicals.rsiLabel})
+- RSI: ${signal.technicals.rsiEstimate == null ? "unavailable" : signal.technicals.rsiEstimate.toFixed(1)} (${signal.technicals.rsiLabel})
 - MACD: ${signal.technicals.macd?.signal ?? "Neutral"}
 - SMA: ${signal.technicals.smaSignal}
 - Trend: ${signal.technicals.trend}
@@ -321,7 +321,7 @@ Respond with a JSON object with these exact fields:
   } catch (err) {
     log.warn("[SimPortfolio] LLM rationale generation failed", { err: err as Error });
     return {
-      fullNarrative: `${action} ${ticker} at $${price.toFixed(2)}. FAULTLINE pressure: ${pressure.overallPressure}/100 (${pressure.regime}). RSI: ${signal.technicals.rsiEstimate.toFixed(1)}, MACD: ${signal.technicals.macd?.signal ?? "N/A"}, Asymmetry: ${asym.ratio}:1.`,
+      fullNarrative: `${action} ${ticker} at $${price.toFixed(2)}. FAULTLINE pressure: ${pressure.overallPressure}/100 (${pressure.regime}). RSI: ${signal.technicals.rsiEstimate == null ? "unavailable" : signal.technicals.rsiEstimate.toFixed(1)}, MACD: ${signal.technicals.macd?.signal ?? "N/A"}, Asymmetry: ${asym.ratio}:1.`,
       catalyst: `${signal.technicals.trend} momentum with ${signal.technicals.volumeSignal.toLowerCase()} volume confirmation.`,
       riskFactors: ["Market regime shift", "Technical breakdown below support", "Macro deterioration"],
       invalidation: `Price closes below $${asym.downsideRisk} or FAULTLINE pressure exceeds 65/100.`,
@@ -355,7 +355,7 @@ async function buildRationale(
     `AI bubble risk (${domains.aiBubble}/100) ${domains.aiBubble >= 60 ? "is elevated — tech concentration risk is real" : "remains contained"}.`;
 
   // Technical narrative
-  const techNarrative = `RSI at ${signal.technicals.rsiEstimate.toFixed(1)} is ${signal.technicals.rsiLabel.toLowerCase()}. ` +
+  const techNarrative = `RSI at ${signal.technicals.rsiEstimate == null ? "unavailable" : signal.technicals.rsiEstimate.toFixed(1)} is ${signal.technicals.rsiLabel.toLowerCase()}. ` +
     `MACD histogram is ${signal.technicals.macd ? (signal.technicals.macd.histogram > 0 ? "positive (bullish momentum)" : "negative (bearish momentum)") : "unavailable"}. ` +
     `SMA alignment: ${signal.technicals.smaSignal}. Overall trend: ${signal.technicals.trend}.`;
 

@@ -279,7 +279,7 @@ function scoreObjectiveFit(
 
   switch (objType) {
     case "short_swing":
-      if (signal.technicals.rsiEstimate > 40 && signal.technicals.rsiEstimate < 70 && signal.technicals.trend === "Uptrend")
+      if (typeof signal.technicals.rsiEstimate === "number" && signal.technicals.rsiEstimate > 40 && signal.technicals.rsiEstimate < 70 && signal.technicals.trend === "Uptrend")
         return { fits: true, reason: "RSI in momentum zone with uptrend — ideal for swing entry" };
       return { fits: signal.confidence > 55, reason: signal.confidence > 55 ? "Moderate confidence swing setup" : "Low confidence for short-term swing" };
     case "long_position":
@@ -373,7 +373,7 @@ FAULTLINE CONTEXT:
 DOMAIN SCORES (higher = more stress): ${domainStr}
 
 TECHNICALS:
-- RSI: ${signal.technicals.rsiEstimate.toFixed(1)} (${signal.technicals.rsiLabel})
+- RSI: ${signal.technicals.rsiEstimate == null ? "unavailable" : signal.technicals.rsiEstimate.toFixed(1)} (${signal.technicals.rsiLabel})
 - MACD: ${signal.technicals.macd?.signal ?? "Neutral"}
 - SMA: ${signal.technicals.smaSignal}
 - Trend: ${signal.technicals.trend}
@@ -534,7 +534,7 @@ export async function buildStockOpportunity(
       riskAmountUsd: sizing.riskUsd,
       faultlineConfidence: signal.confidence,
       compositeScore,
-      momentumScore: Math.round(signal.technicals.rsiEstimate),
+      momentumScore: signal.technicals.rsiEstimate == null ? 0 : Math.round(signal.technicals.rsiEstimate),
       macroFit: Math.round(macroFit),
       objectiveFit: objFit.fits,
       objectiveFitReason: objFit.reason,

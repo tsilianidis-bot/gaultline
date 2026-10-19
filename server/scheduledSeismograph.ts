@@ -15,7 +15,10 @@
  * independently skips callbacks outside that post-close schedule window.
  */
 import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
 import type { Request, Response } from "express";
+import { seismographReadings } from "../drizzle/schema";
+import { getDb } from "./db";
 import { nyseSeismographRunWindow } from "../shared/nyseSession";
 import { calculateFaultlinePressure, type PressureAlert } from "./pressure/engine";
 import { persistPressureRunAndShadows } from "./pressure/scheduledPersistence";
@@ -52,7 +55,9 @@ import {
   completeScheduledSession,
   failScheduledSession,
   heartbeatScheduledSession,
+  markScheduledSessionOutcomeScored,
   normalizeSessionClaim,
+  reconcileScheduledSessionScore,
   type ScheduledSessionClaimResult,
   type ScheduledSessionClaimStatus,
 } from "./scheduledSessionClaim";
@@ -267,6 +272,9 @@ export async function runSeismographPipeline(options: { runContext?: RunContext 
       .map((a: PressureAlert) => `${a.title}: ${a.detail}`)
       .filter(Boolean),
   });
+  if (capturesForwardEvidence(runContext)) {
+    await markScheduledSessionOutcomeScored(today);
+  }
   console.log(`[Seismograph] Reading recorded: score=${pressureOutput.overallPressure}, regime=${pressureOutput.regime}`);
   // Persistence moved here from the public pressure.getCurrentPressure query
   // (Phase 2 #7): audit run + shadow readings are written only by this
@@ -373,6 +381,17 @@ export async function runSeismographPipeline(options: { runContext?: RunContext 
   return seismographOutput;
 }
 
+async function seismographReadingExists(date: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("seismograph reading lookup unavailable");
+  const rows = await db
+    .select({ id: seismographReadings.id })
+    .from(seismographReadings)
+    .where(eq(seismographReadings.readingDate, date))
+    .limit(1);
+  return rows.length > 0;
+}
+
 export async function handleScheduledSeismograph(
   req: Request & {
     sessionClaim?: (etDate: string) => Promise<ScheduledSessionClaimStatus | ScheduledSessionClaimResult>;
@@ -410,6 +429,61 @@ export async function handleScheduledSeismograph(
   const sessionClaim = normalizeSessionClaim(await (req.sessionClaim
     ? req.sessionClaim(scheduledEtDate)
     : claimScheduledSeismographSession(scheduledEtDate, sessionStore, { nowMs: now.getTime(), trigger: runContext.trigger })));
+  if (sessionClaim.status === "exhausted") {
+    res.json({
+      ok: true,
+      skipped: "session_recovery_exhausted",
+      date: scheduledEtDate,
+      etDate: scheduledEtDate,
+      generation: sessionClaim.generation ?? null,
+    });
+    return;
+  }
+  if (sessionClaim.status === "reconcile") {
+    try {
+      const pressureOutput = await calculateFaultlinePressure();
+      const verified = pressureOutput.verification?.status === "verified";
+      const resolution = await reconcileScheduledSessionScore(scheduledEtDate, sessionStore, {
+        nowMs: now.getTime(),
+        trigger: runContext.trigger,
+        evidenceVerified: verified,
+        readingExists: () => seismographReadingExists(scheduledEtDate),
+        recordScore: async () => {
+          const subScores: Record<string, number> = {};
+          for (const vector of pressureOutput.vectors ?? []) {
+            if (vector.id && typeof vector.score === "number") subScores[vector.id] = vector.score;
+          }
+          await recordSeismographReading({
+            date: scheduledEtDate,
+            pressureScore: pressureOutput.overallPressure,
+            stressLevel: pressureOutput.level,
+            regime: pressureOutput.regime,
+            subScores,
+            pressureDrivers: (pressureOutput.alerts ?? [])
+              .filter((alert: PressureAlert) => alert.severity === "high" || alert.severity === "critical")
+              .map((alert: PressureAlert) => alert.title)
+              .filter(Boolean)
+              .slice(0, 5),
+            activeAlerts: (pressureOutput.alerts ?? [])
+              .map((alert: PressureAlert) => `${alert.title}: ${alert.detail}`)
+              .filter(Boolean),
+          });
+        },
+      });
+      const skipped = resolution === "unrecoverable" ? "skipped: unrecoverable" : undefined;
+      res.json({
+        ok: true,
+        skipped,
+        execution: resolution,
+        date: scheduledEtDate,
+        etDate: scheduledEtDate,
+      });
+    } catch (err) {
+      console.error("[Seismograph] Score reconcile failed:", err);
+      res.status(500).json({ ok: false, error: String(err) });
+    }
+    return;
+  }
   if (sessionClaim.status !== "claimed") {
     const skipped = sessionClaim.status === "already_claimed" ? "session_already_claimed" : "session_claim_unavailable";
     if (sessionClaim.status === "unavailable") {

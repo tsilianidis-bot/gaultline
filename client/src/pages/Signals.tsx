@@ -89,7 +89,7 @@ interface TradingSignalResult {
   timeframe: 'Short-Term' | 'Swing' | 'Watch';
   rationale: string;
   technicals: {
-    rsiEstimate: number;
+    rsiEstimate: number | null;
     rsiIsTrue?: boolean;          // true = real Wilder's RSI from daily bars
     rsiLabel: 'Overbought' | 'Neutral' | 'Oversold';
     trend: 'Uptrend' | 'Downtrend' | 'Sideways';
@@ -496,7 +496,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
         {[
           // RSI only from a computed trading signal. The static signalsData
           // relativeStrength catalog value is never shown as an RSI reading.
-          { label: tradingSignal?.technicals.rsiIsTrue ? 'RSI(14)' : 'INDICATOR', value: tradingSignal?.technicals.rsiIsTrue ? tradingSignal.technicals.rsiEstimate.toFixed(0) : 'UNAVAILABLE', color: tradingSignal?.technicals.rsiIsTrue ? (tradingSignal.technicals.rsiEstimate > 70 ? '#FF2D55' : tradingSignal.technicals.rsiEstimate < 30 ? '#00D4FF' : '#94A3B8') : '#64748B' },
+          { label: tradingSignal?.technicals.rsiIsTrue && tradingSignal.technicals.rsiEstimate != null ? 'RSI(14)' : 'INDICATOR', value: tradingSignal?.technicals.rsiIsTrue && tradingSignal.technicals.rsiEstimate != null ? tradingSignal.technicals.rsiEstimate.toFixed(0) : 'UNAVAILABLE', color: tradingSignal?.technicals.rsiIsTrue && tradingSignal.technicals.rsiEstimate != null ? (tradingSignal.technicals.rsiEstimate > 70 ? '#FF2D55' : tradingSignal.technicals.rsiEstimate < 30 ? '#00D4FF' : '#94A3B8') : '#64748B' },
           // Quote volume itself; no ratio against the static catalog average volume.
           { label: 'VOL', value: quote.volumeMillions != null ? `${quote.volumeMillions.toFixed(1)}M` : '—', color: '#94A3B8' },
           { label: tradingSignal ? 'TREND' : 'SECTOR', value: tradingSignal ? tradingSignal.technicals.trend.split('trend')[0].toUpperCase() || tradingSignal.technicals.trend.toUpperCase() : stock.sector.split(' ')[0], color: tradingSignal?.technicals.trend === 'Uptrend' ? '#00D4FF' : tradingSignal?.technicals.trend === 'Downtrend' ? '#FF2D55' : '#94A3B8' },
@@ -684,7 +684,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
               display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px',
             }}>
               {[
-                { label: tradingSignal.technicals.rsiIsTrue ? 'RSI(14)' : 'INDICATOR', value: tradingSignal.technicals.rsiIsTrue ? `${tradingSignal.technicals.rsiEstimate.toFixed(0)} ${tradingSignal.technicals.rsiLabel.toUpperCase()}` : 'UNAVAILABLE', color: tradingSignal.technicals.rsiIsTrue ? (tradingSignal.technicals.rsiLabel === 'Overbought' ? '#FF2D55' : tradingSignal.technicals.rsiLabel === 'Oversold' ? '#00D4FF' : '#94A3B8') : '#64748B', badge: tradingSignal.technicals.rsiIsTrue ? 'TRUE' : undefined },
+                { label: tradingSignal.technicals.rsiIsTrue && tradingSignal.technicals.rsiEstimate != null ? 'RSI(14)' : 'INDICATOR', value: tradingSignal.technicals.rsiIsTrue && tradingSignal.technicals.rsiEstimate != null ? `${tradingSignal.technicals.rsiEstimate.toFixed(0)} ${tradingSignal.technicals.rsiLabel.toUpperCase()}` : 'UNAVAILABLE', color: tradingSignal.technicals.rsiIsTrue ? (tradingSignal.technicals.rsiLabel === 'Overbought' ? '#FF2D55' : tradingSignal.technicals.rsiLabel === 'Oversold' ? '#00D4FF' : '#94A3B8') : '#64748B', badge: tradingSignal.technicals.rsiIsTrue && tradingSignal.technicals.rsiEstimate != null ? 'TRUE' : undefined },
                 { label: tradingSignal.technicals.smaIsTrue ? 'SMA(50/200)' : 'SMA~', value: tradingSignal.technicals.smaSignal.toUpperCase(), color: tradingSignal.technicals.smaSignal === 'Golden Cross' ? '#00D4FF' : tradingSignal.technicals.smaSignal === 'Death Cross' ? '#FF2D55' : '#94A3B8', badge: tradingSignal.technicals.smaIsTrue ? 'TRUE' : undefined },
                 { label: 'VOLUME', value: tradingSignal.technicals.volumeSignal.toUpperCase(), color: tradingSignal.technicals.volumeSignal === 'Surge' ? '#FFD700' : tradingSignal.technicals.volumeSignal === 'Low' ? '#FF2D55' : '#94A3B8', badge: undefined },
               ].map(({ label, value, color, badge }) => (
@@ -894,7 +894,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(200,220,200,0.85)', lineHeight: 1.5 }}>
                   {tradingSignal.action === 'BUY' || tradingSignal.action === 'HOLD'
                     ? `${stock.name} shows ${tradingSignal.technicals.smaSignal === 'Golden Cross' ? 'golden cross formation' : 'positive momentum'} with regime alignment at ${tradingSignal.regimeAlignmentScore}. ${tradingSignal.technicals.volumeSignal === 'Surge' ? 'Volume surge confirms institutional interest.' : 'Momentum supports continuation.'}`
-                    : `Counter-trend bounce from $${tradingSignal.priceLevels.support.toFixed(2)} support. RSI ${tradingSignal.technicals.rsiEstimate.toFixed(0)} approaching oversold territory.`
+                    : `Counter-trend bounce from $${tradingSignal.priceLevels.support.toFixed(2)} support. ${typeof tradingSignal.technicals.rsiEstimate === "number" && tradingSignal.technicals.rsiIsTrue ? `RSI ${tradingSignal.technicals.rsiEstimate.toFixed(0)} approaching oversold territory.` : "Completed-bar RSI is unavailable."}`
                   }
                 </div>
               </div>

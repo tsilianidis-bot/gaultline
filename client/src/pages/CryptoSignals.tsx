@@ -45,7 +45,7 @@ interface CryptoSignalResult {
   timeframe: "Short-Term" | "Swing" | "Watch";
   rationale: string;
   technicals: {
-    rsiEstimate: number;
+    rsiEstimate: number | null;
     rsiLabel: "Overbought" | "Neutral" | "Oversold";
     rsiIsTrue: boolean;
     trend: "Uptrend" | "Downtrend" | "Sideways";
@@ -217,6 +217,27 @@ function ActionBadge({ action, strength, actionLabel }: { action: TradingAction;
 
 // ── RSI Bar ───────────────────────────────────────────────────
 
+export function CryptoRsiReadout({
+  rsiEstimate,
+  rsiLabel,
+  rsiIsTrue,
+  actionLabel,
+}: {
+  rsiEstimate: number | null;
+  rsiLabel: string;
+  rsiIsTrue: boolean;
+  actionLabel: string;
+}) {
+  if (actionLabel === "Unavailable" || rsiEstimate == null || !rsiIsTrue) return null;
+  return (
+    <div data-crypto-rsi="shown">
+      <RSIBar value={rsiEstimate} label={rsiLabel} />
+      <span>RSI(14)</span>
+      <span>{rsiEstimate.toFixed(0)}</span>
+    </div>
+  );
+}
+
 function RSIBar({ value, label }: { value: number; label: string }) {
   const color = label === "Overbought" ? "#FF2D55" : label === "Oversold" ? "#00D4FF" : "#FFD700";
   return (
@@ -327,9 +348,13 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
         </div>
       )}
 
-      {/* RSI bar */}
       <div style={{ marginBottom: "8px" }}>
-        <RSIBar value={sig.technicals.rsiEstimate} label={sig.technicals.rsiLabel} />
+        <CryptoRsiReadout
+          rsiEstimate={sig.technicals.rsiEstimate}
+          rsiLabel={sig.technicals.rsiLabel}
+          rsiIsTrue={sig.technicals.rsiIsTrue}
+          actionLabel={sig.actionLabel ?? "Unavailable"}
+        />
       </div>
 
       {/* Key metrics row */}
@@ -401,7 +426,7 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
           {/* Technical indicators */}
           <div style={{ marginBottom: "10px", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px" }}>
             {[
-              { label: sig.technicals.rsiIsTrue ? "RSI(14)" : "RSI~", value: `${sig.technicals.rsiEstimate.toFixed(0)} ${sig.technicals.rsiLabel.toUpperCase()}`, color: sig.technicals.rsiLabel === "Overbought" ? "#FF2D55" : sig.technicals.rsiLabel === "Oversold" ? "#00D4FF" : "#94A3B8", badge: sig.technicals.rsiIsTrue ? "TRUE" : undefined },
+              ...(sig.technicals.rsiEstimate == null || !sig.technicals.rsiIsTrue ? [] : [{ label: "RSI(14)", value: `${sig.technicals.rsiEstimate.toFixed(0)} ${sig.technicals.rsiLabel.toUpperCase()}`, color: sig.technicals.rsiLabel === "Overbought" ? "#FF2D55" : sig.technicals.rsiLabel === "Oversold" ? "#00D4FF" : "#94A3B8", badge: "TRUE" as string | undefined }]),
               { label: sig.technicals.smaIsTrue ? "SMA CROSS" : "SMA~", value: sig.technicals.smaSignal.toUpperCase(), color: sig.technicals.smaSignal === "Golden Cross" ? "#00D4FF" : sig.technicals.smaSignal === "Death Cross" ? "#FF2D55" : "#94A3B8", badge: sig.technicals.smaIsTrue ? "TRUE" : undefined },
               { label: "VOLUME", value: sig.technicals.volumeSignal.toUpperCase(), color: sig.technicals.volumeSignal === "Surge" ? "#FFD700" : sig.technicals.volumeSignal === "Low" ? "#FF2D55" : "#94A3B8", badge: undefined },
             ].map(({ label, value, color, badge }) => (

@@ -24,6 +24,8 @@ import {
   computeMACD,
   computeSMACrossover,
   cryptoActionLabel,
+  MACD_MIN_COMPLETED_BARS,
+  RSI_MIN_COMPLETED_BARS,
   type TradingAction,
   type MACDResult,
   type PriceLevels,
@@ -53,7 +55,7 @@ export interface CryptoSignalResult {
   timeframe: "Short-Term" | "Swing" | "Watch";
   rationale: string;
   technicals: {
-    rsiEstimate: number;
+    rsiEstimate: number | null;
     rsiLabel: "Overbought" | "Neutral" | "Oversold";
     rsiIsTrue: boolean;
     trend: "Uptrend" | "Downtrend" | "Sideways";
@@ -309,7 +311,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
 
   // ── Data quality path ─────────────────────────────────────
   const closes = ohlcBars?.map(b => b.close).filter(close => Number.isFinite(close)) ?? [];
-  const hasDailyBars = closes.length >= 15;
+  const hasDailyBars = closes.length >= RSI_MIN_COMPLETED_BARS;
   if (!hasDailyBars) {
     const unavailable: CryptoSignalResult = {
       symbol,
@@ -326,7 +328,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
       timeframe: "Watch",
       rationale: "Insufficient completed historical bars; trading indicators are unavailable.",
       technicals: {
-        rsiEstimate: 0,
+        rsiEstimate: null,
         rsiLabel: "Neutral",
         rsiIsTrue: false,
         trend: "Sideways",
@@ -357,6 +359,9 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
 
   // ── RSI ───────────────────────────────────────────────────
   const rsiEstimate = computeWildersRSI(closes, 14);
+  if (rsiEstimate == null) {
+    return computeCryptoSignal({ ...input, ohlcBars: [] });
+  }
   const rsiIsTrue = true;
 
   const rsiLabel: "Overbought" | "Neutral" | "Oversold" =
@@ -371,8 +376,8 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
   smaSignal = smaIsTrue ? smaResult.signal : "Neutral";
 
   // ── MACD ──────────────────────────────────────────────────
-  // computeMACD returns null until 26+9 completed closes exist.
-  const macd: MACDResult | null = computeMACD(closes);
+  // MACD_MIN_COMPLETED_BARS is 35 (26+9). 39 completed closes are enough; 34 are not.
+  const macd: MACDResult | null = closes.length >= MACD_MIN_COMPLETED_BARS ? computeMACD(closes) : null;
 
   // ── Trend ─────────────────────────────────────────────────
   const trend = deriveTrendFromCloses(closes);
@@ -490,7 +495,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
 
   // ── Rationale ─────────────────────────────────────────────
   const macdNote = macd ? ` MACD ${macd.signal.toLowerCase()}.` : "";
-  const rsiNote = rsiIsTrue ? `RSI(14) at ${rsiEstimate.toFixed(0)}` : `RSI~ ${rsiEstimate.toFixed(0)}`;
+  const rsiNote = `RSI(14) at ${rsiEstimate.toFixed(0)}`;
   const btcNote = btcEffect !== "Neutral" ? ` BTC dominance ${btcEffect === "Headwind" ? "rising (headwind for alts)" : "falling (tailwind for alts)"}.` : "";
 
   const rationaleMap: Record<TradingAction, string> = {

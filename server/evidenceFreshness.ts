@@ -67,16 +67,23 @@ function discoveryLabel(status: EvidenceStatusLabel): EvidenceFreshnessLabel {
   return "Delayed";
 }
 
+/** FRED observation time. A missing asOf stays missing. Assembly time is never a substitute. */
+export function fredObservationMs(asOf: unknown): number | null {
+  return typeof asOf === "number" && Number.isFinite(asOf) ? asOf : null;
+}
+
 export function evidenceFreshnessLabel(input: EvidenceFreshnessInput): EvidenceFreshnessLabel {
   const nowMs = input.nowMs ?? Date.now();
+  const fredStatus = typeof input.fredStatus === "string" ? input.fredStatus.trim() : "";
+  const observedAtMs = fredObservationMs(input.observedAtMs);
   const canonical = evidenceStatusLabel({
-    observedAtMs: input.observedAtMs,
+    observedAtMs,
     nowMs,
     // Missing canonical quality is not healthy evidence. PARTIAL keeps it
     // out of LIVE without treating an omitted field as a dead source.
     quality: input.canonicalQuality == null ? "PARTIAL" : input.canonicalQuality,
-    sourceStatus: input.fredStatus,
-    hasObservation: input.observedAtMs != null || input.canonicalQuality != null || input.fredStatus != null,
+    sourceStatus: fredStatus === "" ? null : fredStatus,
+    hasObservation: observedAtMs != null && fredStatus !== "",
   });
   const quoteLabels = (input.quotes ?? []).map(quote => evidenceStatusLabel({
     observedAtMs: quote.observedAtMs,
@@ -84,6 +91,8 @@ export function evidenceFreshnessLabel(input: EvidenceFreshnessInput): EvidenceF
     sourceStatus: quote.sourceStatus,
     hasObservation: quote.observedAtMs != null,
   }));
+  // An explicit empty quote list is not macro evidence for a ticker.
+  if (input.quotes && input.quotes.length === 0) quoteLabels.push("UNAVAILABLE");
   // A caller that only has the old LIVE/DELAYED strings has no observation time.
   if (input.quoteFreshness && input.quotes == null) {
     quoteLabels.push("UNAVAILABLE");

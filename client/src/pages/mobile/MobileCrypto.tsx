@@ -68,7 +68,7 @@ function SignalCard({
     technicals: {
       priceChange7d: number | null;
       trend: string;
-      rsiEstimate: number;
+      rsiEstimate: number | null;
       rsiLabel: string;
       momentumScore: number;
     };
@@ -155,7 +155,7 @@ function SignalCard({
           {/* Technicals row */}
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-[9px] font-mono text-[#64748B]">
-              RSI <span className="text-[#A8B8CC]">{signal.technicals.rsiEstimate.toFixed(0)}</span>
+              {signal.technicals.rsiEstimate == null ? "RSI unavailable" : <>RSI <span className="text-[#A8B8CC]">{signal.technicals.rsiEstimate.toFixed(0)}</span></>}
               <span className="ml-1 text-[#64748B]">({signal.technicals.rsiLabel})</span>
             </span>
             <span className="text-[9px] font-mono text-[#64748B]">

@@ -56,7 +56,7 @@ describe("crypto signal without completed bars", () => {
     });
     expect(result.actionLabel).toBe("Unavailable");
     expect(result.action).toBe("WATCH");
-    expect(result.technicals.rsiEstimate).toBe(0);
+    expect(result.technicals.rsiEstimate).toBeNull();
     expect(result.technicals.rsiIsTrue).toBe(false);
     expect(`${result.rationale} ${result.actionLabel}`).not.toMatch(/RSI|BUY|SELL|golden cross/i);
   });

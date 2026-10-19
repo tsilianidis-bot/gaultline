@@ -14,6 +14,7 @@ import { captureError } from "./errorTracking";
 // ============================================================
 
 import { LRUCache } from "./lruCache";
+import { isEquityDailyBarComplete } from "../shared/completedBars";
 import { log } from "./logger";
 
 const CACHE_TTL_MS = 60_000; // 60 seconds
@@ -119,10 +120,12 @@ export async function getDailyBars(ticker: string, range: "3mo" | "6mo" | "5y" |
     const quote = result?.indicators?.quote?.[0];
     const timestamps = result?.timestamp ?? [];
     if (!quote || timestamps.length === 0) return [];
+    const nowMs = Date.now();
     const bars = timestamps.map((timestamp, index) => ({
       close: quote.close?.[index] ?? null, open: quote.open?.[index] ?? null, high: quote.high?.[index] ?? null,
       low: quote.low?.[index] ?? null, volume: quote.volume?.[index] ?? null, timestamp: timestamp * 1000,
-    })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value)));
+    })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value)))
+      .filter(bar => isEquityDailyBarComplete(bar.timestamp, nowMs));
     dailyBarCache.set(cacheKey, bars);
     return bars;
   } catch (error) {
@@ -153,10 +156,12 @@ export async function getDailyBarsForPeriod(ticker: string, startDate: string, e
     const quote = result?.indicators?.quote?.[0];
     const timestamps = result?.timestamp ?? [];
     if (!quote || timestamps.length === 0) return [];
+    const nowMs = Date.now();
     const bars = timestamps.map((timestamp, index) => ({
       close: quote.close?.[index] ?? null, open: quote.open?.[index] ?? null, high: quote.high?.[index] ?? null,
       low: quote.low?.[index] ?? null, volume: quote.volume?.[index] ?? null, timestamp: timestamp * 1000,
-    })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value)));
+    })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value)))
+      .filter(bar => isEquityDailyBarComplete(bar.timestamp, nowMs));
     dailyBarCache.set(cacheKey, bars);
     return bars;
   } catch (error) {

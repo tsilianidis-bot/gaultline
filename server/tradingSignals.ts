@@ -103,7 +103,7 @@ export interface TradingSignalResult {
   timeframe: "Short-Term" | "Swing" | "Watch";
   rationale: string;           // 1-sentence reason
   technicals: {
-    rsiEstimate: number;       // 0–100 RSI (true 14-period when bars available)
+    rsiEstimate: number | null; // null when completed bars are insufficient
     rsiLabel: "Overbought" | "Neutral" | "Oversold";
     rsiIsTrue: boolean;        // true = Wilder's 14-period; false = sparkline approx
     trend: "Uptrend" | "Downtrend" | "Sideways";
@@ -174,9 +174,18 @@ export function computeEMA(values: number[], period: number): number[] {
  * Requires at least 15 values (14 changes).
  * Returns the most recent RSI value.
  */
-export function computeWildersRSI(closes: number[], period = 14): number {
+/** Wilder RSI needs 14 changes, which is 15 completed closes. */
+export const RSI_MIN_COMPLETED_BARS = 15;
+/**
+ * Default MACD(12/26/9) needs 26 + 9 completed closes. A 40-bar fixture is
+ * only a sample length: 35 completed closes produce MACD and 34 do not.
+ * 39 completed closes are valid.
+ */
+export const MACD_MIN_COMPLETED_BARS = 35;
+
+export function computeWildersRSI(closes: number[], period = 14): number | null {
+  if (closes.length < 2) return null;
   if (closes.length < period + 1) {
-    // Fallback: simple average gain/loss RSI
     return approximateRSIFromCloses(closes);
   }
 
@@ -212,8 +221,8 @@ export function computeWildersRSI(closes: number[], period = 14): number {
  * Simple RSI approximation from a short series of close prices.
  * Used as fallback when fewer than 15 bars are available.
  */
-function approximateRSIFromCloses(closes: number[]): number {
-  if (closes.length < 2) return 50;
+function approximateRSIFromCloses(closes: number[]): number | null {
+  if (closes.length < 2) return null;
   const changes: number[] = [];
   for (let i = 1; i < closes.length; i++) {
     changes.push(closes[i] - closes[i - 1]);
@@ -235,7 +244,8 @@ function approximateRSIFromCloses(closes: number[]): number {
  * Requires at least 35 values (26 + 9) for reliable output.
  */
 export function computeMACD(closes: number[], fast = 12, slow = 26, signal = 9): MACDResult | null {
-  if (closes.length < slow + signal) return null;
+  const minimum = fast === 12 && slow === 26 && signal === 9 ? MACD_MIN_COMPLETED_BARS : slow + signal;
+  if (closes.length < minimum) return null;
 
   const ema12 = computeEMA(closes, fast);
   const ema26 = computeEMA(closes, slow);
@@ -319,8 +329,8 @@ export function computeSMACrossover(closes: number[]): {
 /**
  * Approximate RSI from a series of % change values (sparkline).
  */
-function approximateRSI(changes: number[]): number {
-  if (changes.length < 2) return 50;
+function approximateRSI(changes: number[]): number | null {
+  if (changes.length < 2) return null;
   const gains: number[] = [];
   const losses: number[] = [];
   for (const c of changes) {
@@ -586,7 +596,7 @@ function insufficientCompletedBarsSignal(input: TradingSignalsInput): TradingSig
     timeframe: "Watch",
     rationale: INSUFFICIENT_BARS_RATIONALE,
     technicals: {
-      rsiEstimate: 0,
+      rsiEstimate: null,
       rsiLabel: "Neutral",
       rsiIsTrue: false,
       trend: "Sideways",
@@ -620,7 +630,7 @@ export function computeTradingSignal(
 
   // ── Determine data quality path ───────────────────────────
   const closes = dailyBars?.map(b => b.close) ?? [];
-  const hasDailyBars = closes.length >= 15;
+  const hasDailyBars = closes.length >= RSI_MIN_COMPLETED_BARS;
   if (!hasDailyBars) {
     const unavailable = insufficientCompletedBarsSignal(input);
     signalCache.set(cacheKey, { result: unavailable, computedAt: Date.now() });
@@ -628,16 +638,12 @@ export function computeTradingSignal(
   }
 
   // ── RSI ───────────────────────────────────────────────────
-  let rsiEstimate: number;
-  let rsiIsTrue: boolean;
-
-  if (hasDailyBars) {
-    rsiEstimate = computeWildersRSI(closes, 14);
-    rsiIsTrue = true;
-  } else {
-    const dailyChanges = sparklineToDailyChanges(sparkline);
-    rsiEstimate = approximateRSI(dailyChanges.length > 0 ? dailyChanges : [changePercent]);
-    rsiIsTrue = false;
+  const rsiEstimate = computeWildersRSI(closes, 14);
+  const rsiIsTrue = true;
+  if (rsiEstimate == null) {
+    const unavailable = insufficientCompletedBarsSignal(input);
+    signalCache.set(cacheKey, { result: unavailable, computedAt: Date.now() });
+    return unavailable;
   }
 
   const rsiLabel: "Overbought" | "Neutral" | "Oversold" =

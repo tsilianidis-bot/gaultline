@@ -19,6 +19,7 @@ import { getTopMarkets, getCoinMarketData, getCoinOHLC, type CoinMarketData } fr
 import { fetchDailyBars } from "./signalsProxy";
 import { log } from "./logger";
 import { LRUCache } from "./lruCache";
+import { MACD_MIN_COMPLETED_BARS, RSI_MIN_COMPLETED_BARS } from "./tradingSignals";
 
 // ── Constants ─────────────────────────────────────────────────
 const MIN_CONFIDENCE = 55;   // Below this → NO_TRADE
@@ -226,7 +227,8 @@ function computeAtr(bars: Array<{ high: number; low: number; close: number }>, p
   return recent.reduce((s, v) => s + v, 0) / recent.length;
 }
 
-export const DAY_TRADE_MIN_COMPLETED_BARS = 15;
+export const DAY_TRADE_MIN_COMPLETED_BARS = RSI_MIN_COMPLETED_BARS;
+export const DAY_TRADE_MACD_MIN_COMPLETED_BARS = MACD_MIN_COMPLETED_BARS;
 export const DAY_TRADE_INSUFFICIENT_BARS = "Insufficient completed historical bars; trading indicators are unavailable.";
 
 /** RSI-14 from completed closes. Short series return null — never a manufactured 50. */

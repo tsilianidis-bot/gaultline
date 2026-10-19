@@ -20,6 +20,7 @@ import {
   LABOR_RATES_DISPLAY_NAME,
 } from "@shared/nowInterpretationCopy";
 import { PROBABILITY_DISPLAY_TEXT } from "@shared/probabilityContract";
+import { evidenceStatusFromIntegrity } from "@shared/evidenceStatus";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function riskLabel(level: string): string {
@@ -225,7 +226,8 @@ function PressureHero() {
 
 // ── What Changed Today ─────────────────────────────────────────────────────────
 function WhatChangedToday() {
-  const { output } = useEngine();
+  const { output, integrityLabel } = useEngine();
+  const pulseStatus = evidenceStatusFromIntegrity(integrityLabel);
   const { domains, overall } = output;
 
   const updates = useMemo(() => {
@@ -254,7 +256,7 @@ function WhatChangedToday() {
           WHAT CHANGED TODAY
         </div>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "rgba(100,116,139,0.4)" }}>
-          LIVE INTELLIGENCE
+          {pulseStatus}
         </div>
       </div>
 

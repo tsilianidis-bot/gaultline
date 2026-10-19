@@ -17,6 +17,7 @@
 //   GET /api/signals/health          — health/cache status
 //   POST /api/signals/clear-cache    — clear quote cache
 // ============================================================
+import { lastCompletedEquitySessionDate } from "../shared/completedBars";
 import { log } from "./logger";
 import { captureError } from "./errorTracking";
 import type { Express, Request, Response } from "express";
@@ -149,15 +150,14 @@ export function isNonTradingDay(dateStr: string): boolean {
  * Skips weekends AND US market holidays.
  */
 function getLastTradingDate(): string {
-  const now = new Date();
-  const d = new Date(now.getTime());
-  // Always go back at least 1 day to get a completed session
+  const completed = lastCompletedEquitySessionDate(Date.now());
+  if (completed) return completed;
+  const d = new Date();
   d.setUTCDate(d.getUTCDate() - 1);
-  // Skip weekends and US holidays
   while (isNonTradingDay(d.toISOString().slice(0, 10))) {
     d.setUTCDate(d.getUTCDate() - 1);
   }
-  return d.toISOString().slice(0, 10); // YYYY-MM-DD
+  return d.toISOString().slice(0, 10);
 }
 
 /** Get date N trading days before a given date string */

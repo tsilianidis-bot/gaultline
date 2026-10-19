@@ -5,6 +5,7 @@ import {
   claimScheduledSeismographSession,
   completeScheduledSession,
   failScheduledSession,
+  markScheduledSessionOutcomeScored,
   isHiddenSessionMemoryKey,
   scheduledSeismographClaimKey,
   type SessionClaimStore,
@@ -105,9 +106,19 @@ describe("scheduled seismograph database claim", () => {
     await expect(claimScheduledSeismographSession("2026-10-05", async () => recorded, {
       nowMs: inWindow + 1000,
       trigger: "SCHEDULED_CRON",
-    })).resolves.toEqual({ status: "already_claimed" });
+    })).resolves.toMatchObject({ status: "reconcile", mode: "reconcile" });
     await expect(admitScheduledSessionOutcome("2026-10-05", { pressureScore: 99, regime: "OTHER" }, async () => recorded, inWindow))
       .resolves.toBe("already_recorded");
+
+    const scored = memoryStore();
+    const scoredClaim = await claimScheduledSeismographSession("2026-10-05", async () => scored, { nowMs: inWindow });
+    await admitScheduledSessionOutcome("2026-10-05", { pressureScore: 42, regime: "MODERATE RISK" }, async () => scored, inWindow);
+    await markScheduledSessionOutcomeScored("2026-10-05", async () => scored, inWindow);
+    await failScheduledSession("2026-10-05", scoredClaim.generation!, async () => scored, inWindow);
+    await expect(claimScheduledSeismographSession("2026-10-05", async () => scored, {
+      nowMs: inWindow + 1000,
+      trigger: "SCHEDULED_CRON",
+    })).resolves.toEqual({ status: "already_claimed" });
   });
 
   it("marks a claim failed when the pipeline returns 500, then allows one recovery", async () => {
