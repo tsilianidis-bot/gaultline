@@ -19,6 +19,7 @@
  * ILLUSTRATIVE copy never contains a number, so it cannot be mistaken for a
  * live value and cannot contradict the live one.
  */
+import type { SystemicRegimeReadingView } from "@shared/systemicRegimePublic";
 import { formatPressureAsOf, PRESSURE_BANDS, type PressureSnapshotView } from "@/lib/pressureSnapshot";
 import { snapshotEvidenceCounts } from "@shared/snapshotEvidence";
 import { customerIntegrityFromCanonical, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
@@ -84,7 +85,7 @@ export type AnalogInput =
   | { status: "unavailable" }
   | { status: "available"; canonicalStateId?: string | null; timestamp?: string | null; matches: Array<{ year?: string | number | null; period?: string | null; label: string; similarity: number }> };
 
-export type RegimeInput = { status: "loading" } | { status: "unavailable" } | { status: "available"; reading: SystemicRegimeReading | null | undefined };
+export type RegimeInput = { status: "loading" } | { status: "unavailable" } | { status: "available"; reading: SystemicRegimeReadingView | null | undefined };
 
 export interface WorkedExampleModel {
   status: LiveStatus;

@@ -14,7 +14,7 @@
      otherwise                          → "NN%"  (values are 0–100; never ×100)
    ============================================================ */
 import type { HorizonBucket } from "./forecastMetadata";
-import type { SystemicRegimeReading } from "./systemicRegime";
+import type { SystemicRegimeReading, SystemicRegimeReadingView } from "./systemicRegime";
 
 export const PROBABILITY_CONTRACT_VERSION = "faultline-probability-contract-v1" as const;
 
@@ -320,7 +320,7 @@ function systemicFreshness(reading: Pick<SystemicRegimeReading, "freshnessStatus
 
 /** Systemic-regime HMM outputs as contract claims. Fractions (0–1) are converted to 0–100 here, once. */
 export function systemicRegimeProbabilityClaims(
-  reading: SystemicRegimeReading | null | undefined,
+  reading: SystemicRegimeReadingView | null | undefined,
   stateId: string | null = null,
 ): NonNullable<CanonicalProbabilityContract["systemicRegime"]> | null {
   if (!reading) return null;

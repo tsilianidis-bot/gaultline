@@ -103,7 +103,7 @@ describe("QA r12 #1: stored / cached narrative '(60% historical frequency)' come
       expect(f, f).not.toMatch(/\d+\s*%\s*probability/i);
     }
     expect(state.outlook.highestProbabilityPath).toContain("(frequency withheld: uncalibrated)");
-    expect(state.act.decisionSummary).toMatch(/^Maintain a \w+ posture while The highest-probability outcome \(frequency withheld: uncalibrated\)/);
+    expect(state.act.decisionSummary).toMatch(/^Maintain a \w+ posture until the invalidation conditions below are met\.$/);
     expect(state.act.whatWouldInvalidate).toContain("A drawdown of 10% would invalidate it.");
     expect((state as any).why.narrative.whatHasChanged).toBe("VIX fell 5% this week.");
     expect((state as any).why.narrative.whyIsItHappening).toBe("Credit spreads are contained.");

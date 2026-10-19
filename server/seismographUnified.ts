@@ -38,7 +38,7 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-import { pressureRegimeLabel } from "../shared/pressureBands";
+import { pressureLevelWord, pressureRegimeLabel } from "../shared/pressureBands";
 import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 import { readCachedPriorComponents } from "./pressure/priorComponents";
 import { classifyCondition, isBroadRecoveryVerified, DIRECTION_MIN_CHANGE, type ConditionState } from "../shared/conditionDirection";
@@ -1045,6 +1045,10 @@ function detectRegimeTransitions(history: HistoricalMonth[]): RegimeTransition[]
   return transitions.reverse(); // Most recent first
 }
 
+function capitalize(s: string): string {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
 // ─── Transition probabilities ─────────────────────────────────────────────────
 
 function computeTransitionProbabilities(
@@ -1089,7 +1093,7 @@ function computeTransitionProbabilities(
   if (currentScore >= 70)
     evidence.push(`Score above 70 — historically ${Math.round(transitionRate * 100)}% of similar periods saw regime change within 3 months`);
   if (currentScore <= 35)
-    evidence.push(`Low pressure environment — regime persistence historically high at this level`);
+    evidence.push(`${capitalize(pressureLevelWord(currentScore))} pressure band — the current regime has usually persisted at this level in the available history`);
   evidence.push(`Based on ${sampleSize} historical months with similar pressure (±10 points)`);
 
   return {
@@ -1373,7 +1377,7 @@ function computeProbabilities(
             ? `Average S&P 500 return 3 months after similar conditions: ${avgAnalogReturn3m > 0 ? "+" : ""}${avgAnalogReturn3m}%.`
             : ""
         }`
-      : `Based on ${history.filter((h) => Math.abs(h.score - currentScore) <= 15).length} historical months with similar pressure levels.`;
+      : `Based on ${history.filter((h) => Math.abs(h.score - currentScore) <= 10).length} historical months with similar pressure (±10 points).`;
 
   return {
     bull,
@@ -1838,7 +1842,7 @@ function buildMarketNarrative(
 
   // 6. What would invalidate the current assessment?
   const whatWouldInvalidate = evolution.invalidationConditions.length > 0
-    ? evolution.invalidationConditions.slice(0, 3).join(" ") + ` A score move above ${Math.round(currentScore + 15)} or below ${Math.round(currentScore - 15)} would signal a regime change and require reassessment of the current outlook.`
+    ? evolution.invalidationConditions.slice(0, 3).map(c => /[.!?]$/.test(c.trim()) ? c.trim() : `${c.trim()}.`).join(" ") + ` A score move above ${Math.round(currentScore + 15)} or below ${Math.round(currentScore - 15)} would signal a regime change and require reassessment of the current outlook.`
     : `The current assessment would be invalidated by: (1) a rapid score increase above ${Math.round(currentScore + 15)} driven by multiple new engine deteriorations, (2) a credit event or liquidity shock not yet reflected in the current data, or (3) a Federal Reserve policy surprise that materially changes the macro backdrop. Conversely, a score decline below ${Math.round(currentScore - 15)} would confirm a regime improvement.`;
 
   return {

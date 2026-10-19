@@ -321,7 +321,7 @@ export default function Outlook() {
                 <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">Most frequent historical path</p>
                 <h1 className="mt-4 max-w-4xl font-['Rajdhani'] text-4xl font-semibold leading-[1.02] text-white md:text-5xl">{highestProbabilityPath}</h1>
                 <p className="mt-5 max-w-4xl text-base leading-7 text-slate-300">{probabilityDistribution.evidenceBasis}</p>
-                <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-500">Primary driver: {probabilityDistribution.primaryDriver}. Historical basis: {probabilityDistribution.historicalBasis}.</p>
+                <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-500">Primary driver: {probabilityDistribution.primaryDriver}. Historical basis: {String(probabilityDistribution.historicalBasis ?? "").replace(/[.\s]+$/, "")}.</p>
               </div>
 
               {/* Confidence panel */}
