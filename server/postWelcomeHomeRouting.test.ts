@@ -29,9 +29,10 @@ describe("ASHA post-welcome canonical Home routing", () => {
     expect(briefingSource).toContain("onContinue();");
   });
 
-  it("routes the logo and mobile Home control to the same canonical destination", () => {
+  it("routes the logo and exact mobile NOW control to the same canonical destination", () => {
     expect(layoutSource).toContain("CANONICAL_DESTINATION_BY_ID.now.path");
-    expect(layoutSource).toContain("Home — Oracle Now");
-    expect(layoutSource).toContain("HOME_TAB");
+    expect(layoutSource).toContain("FAULTLINE — NOW");
+    expect(layoutSource).toContain("NAVIGATION_HIERARCHY.primary.items.map");
+    expect(layoutSource).not.toContain("HOME_TAB");
   });
 });

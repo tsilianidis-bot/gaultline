@@ -131,7 +131,11 @@ export default function DailyBriefArchive() {
             </a>
             <span style={{ color: '#374151' }}>·</span>
             <Link href="/intel-archive" className="text-sm transition-colors hover:text-cyan-400" style={{ color: '#6B7280' }}>
-              Full Archive →
+              Historical Briefings →
+            </Link>
+            <span style={{ color: '#374151' }}>·</span>
+            <Link href="/intelligence-library" className="text-sm transition-colors hover:text-cyan-400" style={{ color: '#6B7280' }}>
+              Intelligence Library →
             </Link>
           </div>
         </div>
