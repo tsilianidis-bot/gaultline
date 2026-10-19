@@ -1,82 +1,79 @@
-# Premium marketing candidate — independent review record
+# Premium marketing continuation — verification record
 
-## Status and identity
+## Identity and disposition
 
-**Draft PR:** https://github.com/tsilianidis-bot/gaultline/pull/109
+Draft PR: <https://github.com/tsilianidis-bot/gaultline/pull/109>. Branch: `marketing/premium-homepage-20261019`. Authorized release base: `f908e04ff265d004488f92a909cba4b2e0cebe3b`. Continuation implementation commit: `71231a9cedfa7e77869133c0e116fdcc68ea8ad7`, following the original review package at `49d6ab7dbf97dcca272e96339217acf9e8ca022d`.
 
-**Head branch:** `marketing/premium-homepage-20261019`  
-**Authorized base:** `release/2026-10-05-ux-r3` at `f908e04ff265d004488f92a909cba4b2e0cebe3b`  
-**Implementation commit:** `66df256d4cb995c35a70415936afa4a218e6f677`
+The final review-package SHA, exact-SHA build, final browser results and final mobile audit are supplied in the PR body and delivered completion report. A documentation/package commit does not change canonical intelligence or turn a layout preview into operational evidence.
 
-The final review-record commit and exact production-build SHA are identified in the PR body and delivered verification summary. The final update changes documentation and removes the preview-only route manifest from the tracked diff; application behavior is unchanged.
+**Release recommendation: NO-GO while genuine product capture qualification remains blocked.** The candidate is suitable for continued independent review, not for merge or deployment. Production, databases, schedules, Stripe, registration controls and customer access were not changed. No integration PR was merged or cherry-picked.
 
-**Disposition: reviewable design candidate, not release-ready.** No merge, deployment, activation, production service access or production mutation is authorized or performed. Operational screenshot qualification and mobile startup performance remain open acceptance dependencies.
+This continuation supersedes the prior record’s 48/100 performance measurement and nonzero full-suite status caused by missing local MariaDB binaries. The original measurements remain baseline history, not current acceptance claims.
 
-## Verification results
+## Delivered continuation
 
-| Area | Result | Scope and limitation |
+The approved six-domain hero and shared topology/adapter are byte-for-byte unchanged. The five gallery categories now match the completion directive: Pressure Index/Market Overview; Six-Domain Intelligence; Signals/Smart Discovery; Outlook/Scenarios; and Daily Intelligence Brief, selected as the strongest additional public capture candidate—not claimed to be verified operationally.
+
+The existing layout now includes concise intended investor benefits, category-specific promotion blockers, links to existing public readings/documentation, responsive selectors, restrained selection/reveal transitions, and verified-only desktop/mobile image selection with bounded accessible zoom. Reduced motion and unsupported-animation fallbacks remain static. No operational image or metadata was fabricated.
+
+Public startup loads the marketing presentation independently of the original product App and Ticker/ASHA/Experience providers. Product paths load the original provider stack and full product CSS. Auth-aware safeFetch, query defaults, retry/error subscriptions, tRPC batching, session lookup, canonical member redirect, pricing and disabled checkout controls are unchanged. The original arrival-path cinematic eligibility is preserved. Marketing preloads are guarded to `/`, so direct product arrivals do not fetch/apply the marketing stylesheet.
+
+Production builds no longer inject the unrelated Manus editor-only SDK. Local development retains that instrumentation. Root fonts retain the existing families, load without a render-blocking remote stylesheet and use optional display; product-only families load with the product entry. Root CSS uses a bounded source scan rather than all product utilities. No runtime dependency or lockfile was added.
+
+## Test evidence
+
+| Check | Recorded result | Scope |
 |---|---|---|
-| TypeScript | `npm run check` passed | Current isolated candidate; no typecheck suppression or dependency declaration changes. |
-| Production build | Implementation build passed | Vite frontend and existing esbuild backend bundle; final review-record commit is rebuilt before handoff. Existing large-chunk warnings remain. |
-| Focused regressions | **87/87 passed, nine files** | Marketing content, reused topology, showcase qualification, source honesty, reduced motion, SEO, pricing, product cinematic preservation and billing. |
-| Full existing suite | **3,642 passed assertions; zero failed assertions; 54 skipped** | Overall command exits **1**, because three database-dependent suite hooks fail before their tests. Do not call the full suite green. |
-| Baseline failure comparison | Same three suites fail on untouched base | `governedResearchAppendOnly.e2e`, `trackRecordPipeline.e2e`, `trackRecordWorkflow.e2e`: `spawn mariadb-install-db ENOENT`, then 60-second hook timeout. No production DB used; tests attempt temporary local databases. No related code was modified or tests disabled. |
-| Browser interactions | **32/32 passed** | 1440px desktop, 768px tablet, 390px mobile; no horizontal overflow; six buttons; gallery choices; mobile menu; public CTAs; educational dialog and focus restoration; pause/offscreen/reduced motion; disabled checkout; no runtime exceptions or production API/state-changing requests. |
-| Motion fallback follow-up | **2/2 passed** | No `IntersectionObserver` means static presentation; reduced-motion pause control is disabled and announces the actual paused state. |
-| Accessibility | **Zero axe WCAG 2.1 A/AA violations** | Automated scan, not a comprehensive assistive-technology certification. Decorative numeric labels are hidden only by the marketing skin so visible domain labels match accessible names. |
-| Public HTML/metadata | Passed local checks | Meaningful 2,381-character no-JS public fallback, matching 158-character description/OG/Twitter descriptions, canonical public URL, four valid JSON-LD objects, existing robots/sitemap/private-route exclusions and genuine existing brand social image. No fabricated ratings, offers or operational screenshot schema. |
-| Route declarations | 219 local preview paths checked | Existing literal page routes covered, `/404` excluded; HTTP 200 JSON verified. The file is local-only and removed from the tracked marketing diff to avoid an add/add collision with PR #108. No routes or navigation categories were added. |
-| Source boundaries | Unchanged | Shared contracts, core topology/adapter, providers, canonical calculations, auth implementation, entitlements, MembershipOffer, pricing/billing handlers, database migrations, Railway and schedule configuration. |
+| TypeScript | Passed after final loading changes | Existing check-only command; no suppression. |
+| Production build | Passed | Frontend plus existing backend bundle; final package is rebuilt at its exact SHA before handoff. Backend was not started. |
+| Complete regression suite | **3,660 passed; 48 existing skips; zero failures; exit 0** | 299 files passed, 8 skipped; run before the final preload guard. No tests disabled or weakened. |
+| Final affected regressions | **72 passed**, followed by **6/6 startup guards** | Marketing, evidence, cinematic preservation and immutable API behavior; the last guard specifically checks route-conditional preloads. |
+| Local database integration | **6 passed, three files** | Previously blocked suites now use their temporary local MariaDB databases. No production database URL or credentials supplied. |
+| Runtime absence check | Canonical reading `null`; brief list empty | Actual public read procedures in the database-free sandbox; accidental external requests abort. This proves absence handling, not operational market intelligence. |
+| Capture source-integrity check | **0 admitted / 5 pending / no violations** | Current category IDs; hashes, dimensions and qualification records required for admission. |
+| Browser/accessibility | Final results attached in delivered report | Desktop/tablet/mobile, interaction, motion, overflow, prices, disabled checkout, axe and source-boundary checks. |
 
-The public-root `App.tsx` presentation skips only the marketing cinematic and renders public marketing during the existing session lookup. The authenticated redirect to `CANONICAL_HOME`, direct product onboarding and protected-product authentication gates remain unchanged. No cookies, session policy, registration or checkout behavior was changed.
+The full suite’s 48 skips are existing optional/credential-dependent coverage. Installing local MariaDB binaries resolved the inherited test prerequisite without altering application/database contracts. Unit fixtures remain tests; passing them does not qualify product screenshots.
 
-## Performance: open acceptance issue
+## Mobile performance history
 
-Mobile Lighthouse on the **isolated static production frontend**, using the existing Sandbox Chrome and simulated mobile throttling:
+All runs use the same isolated static production frontend, existing Sandbox Chrome, mobile form factor and Lighthouse simulated mobile throttling. These are lab measurements—not deployed production field Core Web Vitals.
 
-| Metric | Measured result |
-|---|---:|
-| Performance | **48/100** |
-| Accessibility | **100/100** |
-| Best Practices | **79/100** |
-| SEO | **100/100** |
-| First Contentful Paint | 4.5 s |
-| Largest Contentful Paint | **6.3 s** |
-| Total Blocking Time | **761 ms** |
-| Cumulative Layout Shift | **0** |
+| Stage | Performance | LCP | TBT | CLS |
+|---|---:|---:|---:|---:|
+| Original candidate | 48 | 6.3 s | 761 ms | 0 |
+| Public entry split | 76 | 4.9 s | 70 ms | 0 |
+| Editor-runtime/font remediation | 86 | 3.7 s | 50 ms | 0 |
+| Scoped CSS/preload build | 90 | 3.3 s | 20 ms | 0 |
 
-This does **not** meet the requested strong mobile performance standard. These are sandbox lab measurements, not production field Core Web Vitals. Startup includes the inherited large shared SPA bundles; render-blocking CSS/font loading also contributes. The new hero avoids photographic background downloads, timed counters, fabricated animation state, canvas/WebGL loops and new runtime dependencies. Best Practices is additionally affected by expected API JSON errors in the deliberately backend-disconnected static preview. Missing backend data is never replaced by demonstration market evidence.
+The scoped build recorded Accessibility 100, SEO 100 and Best Practices 96. Performance ≥90 is demonstrated in that run; **LCP ≤2.5 s is not**. Final route-guarded, exact-package measurement is attached at handoff; do not infer a target from an earlier build or a rounded score. Static preview lacks the production backend and returns HTML for attempted API reads, which are reported as unavailable rather than replaced with market fixtures.
 
-Do not solve this by changing canonical calculations, auth or production providers in the marketing workstream. A bounded shared-SPA startup/performance remediation and a fresh production-build audit are required before release acceptance. No production performance claim is made.
+Remaining client bootstrap, hydration/render delay and production/backend delivery require further assessment if final LCP remains above 2.5 s. No source calculation, provider, auth, billing or production infrastructure was altered to improve the score.
 
-## Screenshot and claim status
+## Screenshot qualification
 
-All five gallery entries remain **TEMPORARY DESIGN PLACEHOLDER / VERIFIED CAPTURE PENDING**. No operational application screenshot is admitted. The existing remote design capture pack is documented as fictional fixture evidence and was not reused. Social, insider, track-record, performance, early-warning accuracy, adoption and user-count claims were not added. See `SCREENSHOT_EVIDENCE.md` for source findings and promotion requirements.
+**No operational product screenshot is admitted.** Each of the five independent reports in `qualification/` identifies the missing source/resource and capture surface. `SCREENSHOT_REGISTER.json` records null capture dates and observations, false qualification/privacy completion, and the exact nonproduction resources required. A null date was not replaced by the page-render time.
 
-The six-domain visualization consumes `createUnavailableCore`: null Pressure Index, unavailable domain observations and no supported relationships. Organization-line dash motion and lighting are illustrative only. No live source state, simulated propagation or inferred causal relationship is presented. Educational explanations explicitly acknowledge missing observations, developing-since dates and historical comparisons. Genuine public Pressure Index source/timestamp/freshness handling remains separate and unchanged.
+The isolated candidate has no approved governed canonical manifest store, six-domain source set, reviewed provider/Discovery runtime, authorized nonproduction member session, or genuinely published snapshot-bound brief. The actual public read procedures return unavailable/empty. Checked-in historical QA/reproducibility fixtures, synthetic demo users, legacy seeded scenarios, research-only OOS data and old design captures were not replayed or promoted.
 
-## Preserved membership and guest controls
+An explicitly authorized nonproduction test session can later qualify private application screenshots without changing authentication or customer access. The source-only review did not create a blanket user prohibition on login; no such resource was supplied during this work. Public gallery links are documentation/preview destinations, not proof of present data operation.
 
-Standard remains **$99/month**; Lifetime remains **$1,500 one-time**. The two existing checkout controls remain disabled; the existing no-charge and Lifetime terms/final-sale notices remain present. No registration, checkout, payment processing, guest entitlement or billing flag is enabled. Main exploration uses the existing limited public `/pressure-index` route, not private product data or a broadened demo entry. Existing consent-aware analytics are retained; new hero exploration uses the existing event function.
+Layout previews are sanitized marketing screenshots only. Their provenance records the real branch/SHA, capture time and hash; observation classification remains non-operational. They must not be moved into the admitted `/marketing/` gallery solely because they render correctly.
 
-## Integration and isolation
+## Integration readiness
 
-Non-mutating `git merge-tree --write-tree` checks are run against the exact heads in `source-identities.json`; no integration PR is merged or cherry-picked. An initial add/add collision on `client/public/manus-routes.json` with PR #108 was corrected by removing that preview artifact from the tracked marketing diff. The local preview file remains available, but the final branch does not own it. `pnpm-workspace.yaml` matches PR #107 byte-for-byte and causes no conflict. Final per-PR outputs are attached to the review record.
+Current exact heads reviewed: #106 `1d605757234acc7d36ba7dc9cd5576baa3217d92`; #107 `c6856865e599fe335c914dda7ef6ca63624699e1`; #108 `5ee4a061c614562da0a9fb19c8d54fcb1b7c46d8`. All remain open/draft. The pinned continuation is textually conflict-free against each individually.
 
-These checks establish textual mergeability at the checked PR heads, not semantic integration readiness or permission to merge. Concurrent PR changes require the release owner to refresh the checks later.
+**Inherited cross-PR conflict:** #107 versus #108 has an add/add conflict in `client/public/manus-routes.json`. The marketing branch does not own that local preview manifest and did not repair another PR. The owners must reconcile it during authorized integration. These non-mutating merge-tree checks do not establish semantic operation, source freshness, session integrity or permission to merge.
 
-## Remaining launch-readiness dependencies
+## Independent review and release gate
 
-1. Independently qualify operational candidate behavior and source integrity, then produce sanitized, dated captures with source branch/SHA and actual observation classification. Keep placeholders until that evidence is admitted.
-2. Complete the separate PR #107 canonical-visual activation review, PR #106 live-signal/session readiness and PR #108 navigation integration. Refresh the marketing interpretation and capture record only after those approvals; no marketing visual constitutes activation proof.
-3. Remediate mobile SPA startup/performance and rerun a production-build lab check. Field Core Web Vitals remain unmeasured for this undeployed branch.
-4. Run the three baseline integration suites in an authorized nonproduction environment with the required local MariaDB binaries. Do not point them at production or weaken tests.
-5. Independent release-owner review and explicit authorization before any merge/deploy or existing checkout/registration-control change.
+The independent read-only reviewer confirmed unchanged auth transport/product providers, hero/core/offer contracts, honest gates and source-level accessibility/static fallbacks. The reviewer issued NO-GO for release because captures remained 0/5, the recorded LCP was above target and final source pinning was pending. The stale capture-integrity JSON finding was corrected and the implementation pinned. Final measurements do not erase the outstanding genuine-evidence dependency.
 
-## Reproduction
+To proceed: supply approved nonproduction source-backed observations and candidate access; verify actual behavior and privacy; capture and admit genuine desktop/mobile images; resolve remaining LCP acceptance; reconcile integration dependencies; then obtain explicit merge/deployment authorization. Do not enable checkout, registration, billing or production activation as part of marketing completion.
 
-Install the existing locked dependency set with pinned `pnpm@10.4.1` (`--frozen-lockfile`), retaining the reviewed lifecycle policy. The old npm lockfile is out of sync with the existing `xlsx` dependency; it was not regenerated. Required esbuild/Tailwind consuming tools build successfully; no new application dependencies or lockfile versions are introduced.
+## Reproduction and evidence
 
-Run `npm run check`, `npm run build`, and the nine focused Vitest files listed above. `scripts/verify-marketing-preview.py` connects to the existing sandbox browser on CDP port 9222 and a frontend-only local Vite preview on port 3000. It never launches another browser, uses production API/DB credentials, logs in, performs checkout or supplies market fixtures. Optional axe tools and Lighthouse are installed outside the repository. The local preview intentionally has no backend.
+Use the existing locked `pnpm@10.4.1` dependency policy; no lockfile regeneration. Run `npm run check`, `npm run build`, the existing Vitest suite, `scripts/verify-marketing-captures.ts`, and the database-free `scripts/verify-marketing-operational-readiness.ts`. Browser verification uses `MARKETING_PREVIEW_ORIGIN` and `MARKETING_CAPTURE_OUTPUT`, connects to existing Chrome CDP 9222, and never launches another browser or supplies market fixtures. External audit tools remain outside the repository.
 
-The preview images in `previews/` are sanitized layout captures of this isolated marketing candidate. They are not operational product screenshots, launch proof or a published website.
+The delivered completion report contains final full desktop/mobile previews, all five gallery states, capture provenance, before/after lab measurements, exact final package SHA, test artifacts, independent reviewer limitations and unresolved blockers. Nothing was published.
