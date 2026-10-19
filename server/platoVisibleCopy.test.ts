@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { PERSISTENT_UTILITY_BY_ID } from "../shared/routeRegistry";
+import { CUSTOMER_SEARCH_ITEMS } from "../shared/navigationHierarchy";
 import { getAskPlaceholder } from "../client/src/lib/askIntentClassifier";
 
 const root = resolve(import.meta.dirname, "..");
@@ -82,7 +83,12 @@ describe("customer-visible PLATO copy on intro + ASK surfaces", () => {
     for (const relativePath of CHROME_SURFACES) {
       const source = read(relativePath);
       expect(source, relativePath).not.toMatch(ASHA_CTA);
-      expect(source, relativePath).toContain("PLATO");
+      if (relativePath === "client/src/components/LeftNavDrawer.tsx" || relativePath === "client/src/pages/ToolsHome.tsx") {
+        expect(source, relativePath).toContain("NAVIGATION_HIERARCHY");
+        expect(CUSTOMER_SEARCH_ITEMS.some(item => item.label === "PLATO" || item.path === "/app/asha")).toBe(false);
+      } else {
+        expect(source, relativePath).toContain("PLATO");
+      }
     }
   });
 
