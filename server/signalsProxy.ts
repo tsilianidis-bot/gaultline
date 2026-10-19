@@ -275,6 +275,20 @@ export function fixedQuoteLevel(value: unknown): number | null {
   return n == null ? null : parseFloat(n.toFixed(2));
 }
 
+/** Session levels come only from the source. Price is not a stand-in for open, high, or low. */
+export function equitySessionLevels(quote: {
+  price?: number | null;
+  open?: unknown;
+  high?: unknown;
+  low?: unknown;
+}): { open: number | null; high: number | null; low: number | null } {
+  return {
+    open: fixedQuoteLevel(quote.open),
+    high: fixedQuoteLevel(quote.high),
+    low: fixedQuoteLevel(quote.low),
+  };
+}
+
 export function finiteQuoteNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -607,9 +621,10 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
     const yahooQuote = await getYahooQuote(symbol);
     if (yahooQuote.price != null && yahooQuote.price > 0) {
       price = parseFloat((yahooQuote.price).toFixed(2));
-      open = parseFloat((yahooQuote.open ?? yahooQuote.price).toFixed(2));
-      high = parseFloat((yahooQuote.high ?? yahooQuote.price).toFixed(2));
-      low = parseFloat((yahooQuote.low ?? yahooQuote.price).toFixed(2));
+      const levels = equitySessionLevels(yahooQuote);
+      open = levels.open;
+      high = levels.high;
+      low = levels.low;
       const quotedVolume = resolveSignalVolume(yahooQuote.volume);
       volumeRaw = quotedVolume.volume;
       volumeMillions = quotedVolume.volumeMillions;

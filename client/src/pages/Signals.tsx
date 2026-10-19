@@ -1557,12 +1557,13 @@ function SignalsInner() {
       const lq = quoteMap.get(stock.ticker);
       if (!lq || !hasUsableSignalQuote(lq)) return [];
       if (lq.volumeMillions == null) return [];
+      if (lq.open == null || lq.high == null || lq.low == null) return [];
       return [{
         ticker: stock.ticker,
         price: lq.price,
-        open: lq.open > 0 ? lq.open : lq.price,
-        high: lq.high > 0 ? lq.high : lq.price,
-        low: lq.low > 0 ? lq.low : lq.price,
+        open: lq.open,
+        high: lq.high,
+        low: lq.low,
         changePercent: lq.changePercent,
         volumeMillions: lq.volumeMillions,
         avgVolume: stock.avgVolume,
