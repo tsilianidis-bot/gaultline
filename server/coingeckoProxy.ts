@@ -517,9 +517,10 @@ export async function getGlobalStats(): Promise<GlobalStats | null> {
   }
 }
 
-// ── OHLC daily bars (for true RSI/MACD/SMA on crypto) ────────
+// ── Completed daily OHLC bars (for true RSI/MACD/SMA on crypto) ────────
 export interface CoinOHLCBar {
-  timestamp: number;  // Unix ms
+  /** CoinGecko provider timestamp: the documented close time of this candle, in Unix ms. */
+  timestamp: number;
   open: number;
   high: number;
   low: number;
@@ -529,27 +530,46 @@ export interface CoinOHLCBar {
 const ohlcCache = new LRUCache<string, CoinOHLCBar[]>(200, 5 * 60 * 1000); // 5 min TTL
 
 /**
- * Fetch daily OHLC bars for a coin from CoinGecko.
- * Uses /coins/{id}/ohlc?vs_currency=usd&days=30 (returns ~30 daily bars).
+ * CoinGecko documents OHLC timestamps as candle close times and makes a completed
+ * UTC daily candle available at approximately 00:35 UTC. Keep a 35-minute buffer:
+ * a row at or after this cutoff is not a completed daily observation.
+ */
+export const COINGECKO_DAILY_CLOSE_BUFFER_MS = 35 * 60 * 1000;
+
+export function completedCoinDailyBars(bars: CoinOHLCBar[], nowMs = Date.now()): CoinOHLCBar[] {
+  const cutoff = nowMs - COINGECKO_DAILY_CLOSE_BUFFER_MS;
+  return bars.filter(bar =>
+    Number.isFinite(bar.timestamp)
+    && bar.timestamp <= cutoff
+    && [bar.open, bar.high, bar.low, bar.close].every(value => Number.isFinite(value)),
+  );
+}
+
+/**
+ * Fetch completed daily OHLC bars for a coin from CoinGecko.
+ * `interval=daily` is deliberate: CoinGecko auto-granularity would otherwise
+ * return 4-hour bars for a 30-day request. If the configured provider plan does
+ * not support daily candles, this fails closed as an empty series.
  */
 export async function getCoinOHLC(idOrSymbol: string, days = 30): Promise<CoinOHLCBar[]> {
   const upper = idOrSymbol.toUpperCase();
   const cgId = SYMBOL_MAP[upper] ?? idOrSymbol.toLowerCase();
-  const key = `${cgId}:${days}`;
+  const key = `${cgId}:${days}:daily`;
   const cached = ohlcCache.peek(key);
   if (cached) return cached.value;
 
   return dedupe<CoinOHLCBar[]>(`ohlc:${key}`, async () => {
     try {
-      // CoinGecko returns array of [timestamp, open, high, low, close]
-      const raw = await cgFetch<number[][]>(`/coins/${cgId}/ohlc?vs_currency=usd&days=${days}`);
-      const bars: CoinOHLCBar[] = (raw ?? []).map(([ts, o, h, l, c]) => ({
+      // CoinGecko returns [timestamp, open, high, low, close]. Its timestamp is
+      // the candle close time, not the time this service received the response.
+      const raw = await cgFetch<number[][]>(`/coins/${cgId}/ohlc?vs_currency=usd&days=${days}&interval=daily`);
+      const bars = completedCoinDailyBars((raw ?? []).map(([ts, o, h, l, c]) => ({
         timestamp: ts,
         open: o,
         high: h,
         low: l,
         close: c,
-      }));
+      })));
       ohlcCache.set(key, bars);
       return bars;
     } catch (err) {

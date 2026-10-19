@@ -6,7 +6,7 @@
 //     • Real SMA crossover (10/20-day when 20+ bars; 5/10-day otherwise)
 //     • Proper MACD (12/26/9 EMA) with histogram
 //   FALLBACK (sparkline only):
-//     • RSI approximation from 7-day sparkline momentum
+//     • Nontechnical market context; no customer-facing RSI conclusion
 //     • SMA proxy from short vs long sparkline windows
 //
 //   Always applied:
@@ -30,7 +30,7 @@ import {
   type PriceLevels,
   type RegimeInput,
 } from "./tradingSignals";
-import type { CoinMarketData, CoinOHLCBar } from "./coingeckoProxy";
+import { completedCoinDailyBars, type CoinMarketData, type CoinOHLCBar } from "./coingeckoProxy";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -323,11 +323,17 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
   } = market;
 
   // ── Data quality path ─────────────────────────────────────
-  const closes = ohlcBars?.map(b => b.close) ?? [];
+  // This secondary admission check keeps direct callers from inadvertently
+  // calculating indicators or price levels from an active/incomplete candle.
+  const completedOhlcBars = completedCoinDailyBars(ohlcBars ?? []);
+  const closes = completedOhlcBars.map(b => b.close);
+  // `getCoinOHLC` admits only provider-supported completed daily bars. A
+  // technical indicator is customer-facing only when that daily basis exists.
   const hasDailyBars = closes.length >= 15;
 
-  // Convert sparkline7d (hourly prices) to daily-like changes for fallback
-  // sparkline7d contains up to 48 hourly price points
+  // Sparkline values can still inform nontechnical market context, but they are
+  // never presented as a daily RSI or allowed to drive an RSI conclusion.
+  // sparkline7d contains up to 48 hourly price points.
   const sparklineChanges: number[] = [];
   if (sparkline7d.length >= 2) {
     for (let i = 1; i < sparkline7d.length; i++) {
@@ -406,7 +412,9 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
 
   // ── Momentum score ────────────────────────────────────────
   // Blend RSI, trend, 7d change, and liquidity
-  let momentumBase = clamp(rsiEstimate, 0, 100);
+  // An approximate sparkline value is not an RSI input to a customer-facing
+  // signal. Retain neutral momentum until completed daily bars are available.
+  let momentumBase = rsiIsTrue ? clamp(rsiEstimate, 0, 100) : 50;
   if (trend === "Uptrend") momentumBase = Math.min(100, momentumBase + 8);
   if (trend === "Downtrend") momentumBase = Math.max(0, momentumBase - 8);
   if (change7d !== null) {
@@ -419,10 +427,10 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
   let score = 0;
 
   // RSI contribution (crypto uses wider bands due to higher volatility)
-  if (rsiEstimate <= 28) score += 3.5;
-  else if (rsiEstimate <= 40) score += 1.5;
-  else if (rsiEstimate >= 75) score -= 3.5;
-  else if (rsiEstimate >= 65) score -= 1.5;
+  if (rsiIsTrue && rsiEstimate <= 28) score += 3.5;
+  else if (rsiIsTrue && rsiEstimate <= 40) score += 1.5;
+  else if (rsiIsTrue && rsiEstimate >= 75) score -= 3.5;
+  else if (rsiIsTrue && rsiEstimate >= 65) score -= 1.5;
 
   // Trend
   if (trend === "Uptrend") score += 2;
@@ -508,7 +516,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
 
   // ── Rationale ─────────────────────────────────────────────
   const macdNote = macd ? ` MACD ${macd.signal.toLowerCase()}.` : "";
-  const rsiNote = rsiIsTrue ? `RSI(14) at ${rsiEstimate.toFixed(0)}` : `RSI~ ${rsiEstimate.toFixed(0)}`;
+  const rsiNote = rsiIsTrue ? `RSI(14) at ${rsiEstimate.toFixed(0)}` : "completed-bar RSI unavailable";
   const btcNote = btcEffect !== "Neutral" ? ` BTC dominance ${btcEffect === "Headwind" ? "rising (headwind for alts)" : "falling (tailwind for alts)"}.` : "";
 
   const rationaleMap: Record<TradingAction, string> = {
@@ -520,7 +528,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
   const rationale = rationaleMap[action];
 
   // ── Price levels ──────────────────────────────────────────
-  const priceLevels = computeCryptoPriceLevels(price, high, low, action, ohlcBars);
+  const priceLevels = computeCryptoPriceLevels(price, high, low, action, completedOhlcBars);
 
   // ── Regime alignment ──────────────────────────────────────
   const { alignment: regimeAlignment, score: regimeAlignmentScore } = computeCryptoRegimeAlignment(action, regime);
@@ -548,7 +556,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
     regimeConflictExplanation =
       `Overall crypto regime is ${cryptoRegime}, but ${symbol} shows asset-specific weakness: ` +
       `${trend === "Downtrend" ? "price in downtrend" : "overbought conditions"}, ` +
-      `${rsiEstimate > 70 ? `RSI at ${rsiEstimate.toFixed(0)} (overbought)` : `RSI at ${rsiEstimate.toFixed(0)}`}` +
+      `${rsiIsTrue ? (rsiEstimate > 70 ? `RSI at ${rsiEstimate.toFixed(0)} (overbought)` : `RSI at ${rsiEstimate.toFixed(0)}`) : "completed-bar RSI unavailable"}` +
       `${smaSignal === "Death Cross" ? ", death cross confirmed" : ""}` +
       `. Individual asset signal differs from broader crypto regime — reduce exposure to this asset only.`;
   } else if (isSignalBullish && regimeIsBearish) {
@@ -556,7 +564,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
     regimeConflictExplanation =
       `Overall crypto regime is ${cryptoRegime}, but ${symbol} shows relative strength: ` +
       `${trend === "Uptrend" ? "price in uptrend" : "oversold bounce potential"}, ` +
-      `${rsiEstimate < 30 ? `RSI at ${rsiEstimate.toFixed(0)} (oversold)` : `RSI at ${rsiEstimate.toFixed(0)}`}` +
+      `${rsiIsTrue ? (rsiEstimate < 30 ? `RSI at ${rsiEstimate.toFixed(0)} (oversold)` : `RSI at ${rsiEstimate.toFixed(0)}`) : "completed-bar RSI unavailable"}` +
       `. Proceed with caution — counter-trend signal in a defensive regime.`;
   }
 

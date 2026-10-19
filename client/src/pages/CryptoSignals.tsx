@@ -327,9 +327,15 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
         </div>
       )}
 
-      {/* RSI bar */}
+      {/* RSI is shown only when backed by completed daily provider bars. */}
       <div style={{ marginBottom: "8px" }}>
-        <RSIBar value={sig.technicals.rsiEstimate} label={sig.technicals.rsiLabel} />
+        {sig.technicals.rsiIsTrue ? (
+          <RSIBar value={sig.technicals.rsiEstimate} label={sig.technicals.rsiLabel} />
+        ) : (
+          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.55)" }}>
+            <span>RSI (14)</span><span>UNAVAILABLE — COMPLETED DAILY BARS REQUIRED</span>
+          </div>
+        )}
       </div>
 
       {/* Key metrics row */}
@@ -401,7 +407,7 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
           {/* Technical indicators */}
           <div style={{ marginBottom: "10px", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px" }}>
             {[
-              { label: sig.technicals.rsiIsTrue ? "RSI(14)" : "RSI~", value: `${sig.technicals.rsiEstimate.toFixed(0)} ${sig.technicals.rsiLabel.toUpperCase()}`, color: sig.technicals.rsiLabel === "Overbought" ? "#FF2D55" : sig.technicals.rsiLabel === "Oversold" ? "#00D4FF" : "#94A3B8", badge: sig.technicals.rsiIsTrue ? "TRUE" : undefined },
+              { label: sig.technicals.rsiIsTrue ? "RSI(14)" : "RSI (14)", value: sig.technicals.rsiIsTrue ? `${sig.technicals.rsiEstimate.toFixed(0)} ${sig.technicals.rsiLabel.toUpperCase()}` : "UNAVAILABLE", color: sig.technicals.rsiIsTrue ? (sig.technicals.rsiLabel === "Overbought" ? "#FF2D55" : sig.technicals.rsiLabel === "Oversold" ? "#00D4FF" : "#94A3B8") : "#94A3B8", badge: sig.technicals.rsiIsTrue ? "TRUE" : undefined },
               { label: sig.technicals.smaIsTrue ? "SMA CROSS" : "SMA~", value: sig.technicals.smaSignal.toUpperCase(), color: sig.technicals.smaSignal === "Golden Cross" ? "#00D4FF" : sig.technicals.smaSignal === "Death Cross" ? "#FF2D55" : "#94A3B8", badge: sig.technicals.smaIsTrue ? "TRUE" : undefined },
               { label: "VOLUME", value: sig.technicals.volumeSignal.toUpperCase(), color: sig.technicals.volumeSignal === "Surge" ? "#FFD700" : sig.technicals.volumeSignal === "Low" ? "#FF2D55" : "#94A3B8", badge: undefined },
             ].map(({ label, value, color, badge }) => (
