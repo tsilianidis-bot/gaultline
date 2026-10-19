@@ -1,0 +1,150 @@
+diff --git a/server/intelligenceEvidence/collector.test.ts b/server/intelligenceEvidence/collector.test.ts
+index 9c00e69..b650cab 100644
+--- a/server/intelligenceEvidence/collector.test.ts
++++ b/server/intelligenceEvidence/collector.test.ts
+@@ -1,6 +1,7 @@
+ import { describe, expect, it } from "vitest";
+ import type { CanonicalIntelligenceState } from "../../shared/canonicalIntelligenceState";
+ import { canonicalEngineIntegrityEvidence } from "../canonicalIntelligenceState";
++import { captureTrackRecordFromScheduledRun } from "../trackRecordCapture";
+ import { buildEvidenceSnapshot, withinDeadline } from "./collector";
+ 
+ const NOW = new Date("2026-10-16T15:00:00.000Z");
+@@ -118,4 +119,53 @@ describe("Phase 1 Intelligence Evidence collector", () => {
+     expect(snapshot.domains.find(domain => domain.id === "crypto")).toMatchObject({ status: "healthy", currentObservationIds: ["coingecko:global-market-cap"] });
+     expect(snapshot.domains.find(domain => domain.id === "liquidity")).toMatchObject({ status: "unavailable", observationIds: [] });
+   });
++
++  it("keeps a five-minute-old closed-session SPY quote historical and out of track-record evidence", async () => {
++    const closedAt = new Date("2026-10-16T20:05:00.000Z");
++    const closedMs = closedAt.getTime();
++    const quotes = (inputs().quotes as Array<Record<string, unknown>>).map(quote => quote.ticker === "SPY"
++      ? { ...quote, marketState: "CLOSED", observedAt: closedMs - 5 * 60_000, fetchedAt: closedMs }
++      : { ...quote, marketState: "REGULAR", observedAt: closedMs - 60_000, fetchedAt: closedMs });
++    const snapshot = buildEvidenceSnapshot(inputs({ quotes }), closedAt);
++    expect(finding(snapshot, "quote:SPY")).toMatchObject({
++      value: 100,
++      validationStatus: "historical",
++      supportsCurrentClaim: false,
++      temporalStatus: "completed_session",
++    });
++    expect(finding(snapshot, "quote:SPY").validationStatus).not.toBe("verified");
++    const capture = await captureTrackRecordFromScheduledRun({
++      run: { trigger: "SCHEDULED_CRON" },
++      pressureIndex: 40,
++      regime: "ELEVATED",
++      generatedAt: closedAt.toISOString(),
++      env: { TRACK_RECORD_CRON_WRITES: "true" },
++      flagEnabled: true,
++      nowMs: closedMs,
++      loadSnapshot: async () => ({ ...snapshot, persistence: "recorded" as const }),
++    });
++    expect(capture).toEqual({ recorded: false, reason: "integrity_gate_failed" });
++  });
++
++  it("keeps an age-stale in-session quote stale rather than historical", () => {
++    const staleQuotes = (inputs().quotes as Array<Record<string, unknown>>).map(quote => ({ ...quote, observedAt: NOW_MS - 25 * 60_000 }));
++    const snapshot = buildEvidenceSnapshot(inputs({ quotes: staleQuotes }), NOW);
++    expect(finding(snapshot, "quote:SPY")).toMatchObject({ validationStatus: "stale", supportsCurrentClaim: false, temporalStatus: "stale" });
++  });
++
++  it("retains a completed session as historical context distinct from a fresh in-session quote", () => {
++    const sessionQuotes = (inputs().quotes as Array<Record<string, unknown>>).map(quote => ({
++      ...quote,
++      marketState: quote.ticker === "QQQ" ? "CLOSED" : "REGULAR",
++      observedAt: quote.ticker === "QQQ" ? NOW_MS - 12 * 60 * 60_000 : NOW_MS - 60_000,
++    }));
++    const snapshot = buildEvidenceSnapshot(inputs({ quotes: sessionQuotes }), NOW);
++    expect(finding(snapshot, "quote:SPY")).toMatchObject({ validationStatus: "verified", supportsCurrentClaim: true, temporalStatus: "delayed" });
++    expect(finding(snapshot, "quote:QQQ")).toMatchObject({
++      validationStatus: "historical",
++      supportsCurrentClaim: false,
++      temporalStatus: "completed_session",
++      value: 101,
++    });
++  });
+ });
+diff --git a/server/intelligenceEvidence/collector.ts b/server/intelligenceEvidence/collector.ts
+index f0b8e7e..5b6bbe7 100644
+--- a/server/intelligenceEvidence/collector.ts
++++ b/server/intelligenceEvidence/collector.ts
+@@ -156,6 +156,29 @@ function quoteDraft(id: string, label: string, quote: YahooQuote | undefined, no
+   };
+ }
+ 
++/** A quote the session classifier rejects cannot stay verified-current. */
++function admitQuoteObservation(draft: EvidenceDraft, quote: YahooQuote | undefined, nowMs: number): ValidatedIntelligenceEvidence {
++  const item = validate(draft, nowMs);
++  const freshness = classifyYahooObservation(quote, nowMs);
++  if (freshness.supportsCurrentClaim) return item;
++  const historical = freshness.timing === "completed_session";
++  const validationStatus = historical
++    ? "historical"
++    : item.validationStatus === "verified"
++      ? freshness.timing === "stale" ? "stale" : "unavailable"
++      : item.validationStatus;
++  const withheld: ValidatedIntelligenceEvidence = {
++    ...item,
++    supportsCurrentClaim: false,
++    validationStatus,
++    temporalStatus: historical ? "completed_session" : freshness.timing === "stale" ? "stale" : "unavailable",
++    validationReason: freshness.detail,
++    historicalValue: null,
++  };
++  withheld.historicalValue = toHistorical(withheld);
++  return withheld;
++}
++
+ function fredDraft(id: string, label: string, unit: string | null, fred: FredBulkResult): EvidenceDraft {
+   const result = fred.results[id];
+   const observation = result?.observations.find(item => finite(Number(item.value)));
+@@ -259,19 +282,31 @@ function sourceFailureWarnings(inputs: EvidenceInputs) {
+ }
+ 
+ export function buildEvidenceSnapshot(inputs: EvidenceInputs, now: Date = new Date(), previous: IntelligenceEvidenceSnapshot | null = null): IntelligenceEvidenceSnapshot {
++  const nowMs = now.getTime();
+   const quoteByTicker = new Map(inputs.quotes.map(quote => [quote.ticker.toUpperCase(), quote]));
++  const quoteSpecs = [
++    ["quote:SPY", "S&P 500 proxy (SPY)", "SPY"],
++    ["quote:QQQ", "Nasdaq-100 proxy (QQQ)", "QQQ"],
++    ["quote:IWM", "Russell 2000 proxy (IWM)", "IWM"],
++    ["quote:VIX", "Cboe Volatility Index (^VIX)", "^VIX"],
++  ] as const;
+   const drafts: EvidenceDraft[] = [
+     ...(inputs.canonical?.engines.map(engine => canonicalEngineDraft(inputs.canonical as CanonicalIntelligenceState, engine)) ?? []),
+-    quoteDraft("quote:SPY", "S&P 500 proxy (SPY)", quoteByTicker.get("SPY"), now.getTime()),
+-    quoteDraft("quote:QQQ", "Nasdaq-100 proxy (QQQ)", quoteByTicker.get("QQQ"), now.getTime()),
+-    quoteDraft("quote:IWM", "Russell 2000 proxy (IWM)", quoteByTicker.get("IWM"), now.getTime()),
+-    quoteDraft("quote:VIX", "Cboe Volatility Index (^VIX)", quoteByTicker.get("^VIX"), now.getTime()),
+     fredDraft("DGS10", "10-year Treasury yield", "percent", inputs.fred),
+     fredDraft("DGS2", "2-year Treasury yield", "percent", inputs.fred),
+     fredDraft("BAMLH0A0HYM2", "High-yield option-adjusted spread", "percent", inputs.fred),
+     cryptoDraft(inputs.crypto),
+   ];
+-  const observations = addLastVerified(drafts.map(draft => validate(draft, now.getTime())), previous);
++  const quoteObservations = quoteSpecs.map(([id, label, ticker]) => {
++    const quote = quoteByTicker.get(ticker);
++    return admitQuoteObservation(quoteDraft(id, label, quote, nowMs), quote, nowMs);
++  });
++  const canonicalCount = inputs.canonical?.engines.length ?? 0;
++  const observations = addLastVerified([
++    ...drafts.slice(0, canonicalCount).map(draft => validate(draft, nowMs)),
++    ...quoteObservations,
++    ...drafts.slice(canonicalCount).map(draft => validate(draft, nowMs)),
++  ], previous);
+   const canonicalIds = observations.filter(item => item.kind === "canonical_model").map(item => item.id);
+   const health: EvidenceProviderHealth[] = [
+     {
+diff --git a/shared/intelligenceIntegrity.ts b/shared/intelligenceIntegrity.ts
+index 246c8ed..cfa1fa7 100644
+--- a/shared/intelligenceIntegrity.ts
++++ b/shared/intelligenceIntegrity.ts
+@@ -4,7 +4,7 @@
+  * It does not change the Pressure Index or existing production outputs.
+  */
+ export type IntelligenceOrigin = "observed" | "modeled" | "inferred";
+-export type IntelligenceIntegrityStatus = "verified" | "delayed" | "stale" | "unavailable";
++export type IntelligenceIntegrityStatus = "verified" | "delayed" | "stale" | "unavailable" | "historical";
+ 
+ export interface IntelligenceEvidence {
+   id: string;
