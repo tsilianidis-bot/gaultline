@@ -240,7 +240,7 @@ export function IntelligenceCoreExperience({
           <h2>{model.regime.label || "Evidence before certainty."}</h2>
           <p className="fic-interpretation-lead">
             {model.overview ||
-              "The verified Intelligence Core has not supplied a supported current assessment. No current market condition is inferred from delayed, missing or unavailable observations."}
+              "Not supplied by canonical Core. No current market condition is inferred from delayed, missing or unavailable observations. This is not an all-clear signal."}
           </p>
           <div className="fic-rail-rule" />
           <div className="fic-rail-label">
@@ -329,8 +329,7 @@ export function IntelligenceCoreExperience({
             </ul>
           ) : (
             <p className="fic-rail-small">
-              No evidence-supported emerging stress indicator connected. This is
-              not an all-clear signal.
+              Not supplied by canonical Core. This is not an all-clear signal.
             </p>
           )}
           <button

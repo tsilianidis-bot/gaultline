@@ -108,7 +108,7 @@ export function EvidenceDrawer({
               <h3>What this means</h3>
               <p>
                 {domain.assessment ||
-                  "A verified current assessment is not available for this domain."}
+                  "Not supplied by canonical Core. This is not an all-clear signal."}
               </p>
               <h3>Why it matters</h3>
               <p>{domain.significance}</p>
