@@ -11,6 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
 import { useEngine } from "@/contexts/EngineContext";
 import { canonicalRegimeDisplayColor } from "@/lib/marketStateProjection";
+import { cryptoScreenerStatus } from "@/lib/cryptoScreenerStatus";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Link } from "wouter";
 import { RecoveryStatusBadge, AftershockRiskInline } from "@/components/RecoveryStatus";
@@ -833,6 +834,11 @@ function CryptoSignalsInner() {
   );
 
   const screenerData = screenerQuery.data as ScreenerResponse | undefined;
+  const screenerStatus = cryptoScreenerStatus({
+    hasData: Boolean(screenerData),
+    hasError: Boolean(screenerQuery.error),
+    isFetching: screenerQuery.isFetching,
+  });
 
   useEffect(() => {
     if (screenerData) setLastRefresh(new Date(screenerData.computedAt).toLocaleTimeString());
@@ -957,11 +963,11 @@ function CryptoSignalsInner() {
 
         {/* Data freshness */}
         <div style={{ marginTop: "10px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", gap: "6px" }}>
-          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: screenerQuery.isFetching ? "#FFD700" : "#00D4FF", boxShadow: `0 0 6px ${screenerQuery.isFetching ? "#FFD700" : "#00D4FF"}`, animation: "fl-pulse 5s ease-in-out infinite" }} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.1em", color: screenerQuery.isFetching ? "#FFD700" : "#00D4FF" }}>
-            {screenerQuery.isFetching ? "REFRESHING..." : "COINGECKO LIVE"}
+          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: screenerStatus.color, boxShadow: `0 0 6px ${screenerStatus.color}`, animation: "fl-pulse 5s ease-in-out infinite" }} />
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.1em", color: screenerStatus.color }}>
+            {screenerStatus.label}
           </span>
-          {lastRefresh && (
+          {screenerStatus.available && lastRefresh && (
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>UPDATED: {lastRefresh}</span>
           )}
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>· AUTO-REFRESH 90s</span>
@@ -1111,9 +1117,8 @@ function CryptoSignalsInner() {
       {/* ── Data Source Panel ─────────────────────────── */}
       <div style={{ margin: "24px 16px 0", padding: "12px", background: "rgba(0,212,255,0.03)", border: "1px solid rgba(0,212,255,0.08)", borderRadius: "4px" }}>
         <div style={{ fontSize: "8px", letterSpacing: "0.12em", color: "rgba(100,116,139,0.5)", lineHeight: 1.6 }}>
-          <span style={{ color: "#00D4FF" }}>LIVE DATA</span> — CoinGecko market data via secure backend proxy.
-          {screenerData && <> Assets: <span style={{ color: "rgba(100,116,139,0.7)" }}>{screenerData.signals.length}</span> · BTC Dominance: <span style={{ color: "rgba(100,116,139,0.7)" }}>{screenerData.btcDominance.toFixed(1)}%</span></>}
-          {" "}· <span style={{ color: "#00D4FF" }}>TRADING SIGNALS</span> — FAULTLINE Engine · RSI, SMA, MACD, regime pressure. Refreshes every 90 seconds.
+          <span style={{ color: screenerStatus.color }}>{screenerStatus.available ? "MARKET DATA" : "MARKET DATA UNAVAILABLE"}</span> — {screenerStatus.available ? "CoinGecko market data via secure backend proxy." : "No qualified CoinGecko screener response is available."}
+          {screenerStatus.available && screenerData && <> Assets: <span style={{ color: "rgba(100,116,139,0.7)" }}>{screenerData.signals.length}</span> · BTC Dominance: <span style={{ color: "rgba(100,116,139,0.7)" }}>{screenerData.btcDominance.toFixed(1)}%</span>{" "}· <span style={{ color: "#00D4FF" }}>TRADING SIGNALS</span> — FAULTLINE Engine · RSI, SMA, MACD, regime pressure. Refreshes every 90 seconds.</>}
         </div>
       </div>
 

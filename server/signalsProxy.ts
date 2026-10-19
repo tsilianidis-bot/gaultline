@@ -502,9 +502,20 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
     };
   });
 
-  // Use today's date when Yahoo succeeded (live data), otherwise use Polygon's trade date
-  const effectiveTradeDate = yahooSucceeded ? today : tradeDate;
+  // Yahoo availability is not a LIVE proof: closed-market Yahoo quotes are explicitly
+  // delayed. Only a returned live or extended quote may use today's session label.
+  const effectiveTradeDate = selectEffectiveTradeDate(quotes, today, tradeDate);
   return { quotes, tradeDate: effectiveTradeDate };
+}
+
+export function selectEffectiveTradeDate(
+  quotes: readonly Pick<QuoteResult, "isLive" | "marketStatus">[],
+  currentDate: string,
+  completedTradeDate: string,
+): string {
+  return quotes.some(quote => quote.isLive && (quote.marketStatus === "open" || quote.marketStatus === "extended"))
+    ? currentDate
+    : completedTradeDate;
 }
 
 // ── Per-ticker cache ─────────────────────────────────────────

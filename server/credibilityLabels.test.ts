@@ -107,7 +107,7 @@ describe("1b header EQ/BTC regime chips", () => {
   };
 
   it("suppresses the heuristic percentages and states what each label is", () => {
-    const html = renderToStaticMarkup(createElement(AppMarketHeader, { items: [], isMobile: false, intelligence }));
+    const html = renderToStaticMarkup(createElement(AppMarketHeader, { items: [], isMobile: false, intelligence, canonicalAvailable: true }));
     expect(html).not.toContain("53%");
     expect(html).not.toContain("65%");
     expect(html).toContain("RULE-BASED");

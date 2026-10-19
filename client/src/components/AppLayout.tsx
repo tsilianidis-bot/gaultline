@@ -192,7 +192,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         top: 0,
         zIndex: 50,
       }}>
-        <AppMarketHeader items={liveTickerItems} intelligence={miData} isMobile={isMobile} />
+        <AppMarketHeader items={liveTickerItems} intelligence={miData} canonicalAvailable={canonicalState !== null} isMobile={isMobile} />
         <GlobalMarketTicker />
 
         {/* Logo row + status */}
