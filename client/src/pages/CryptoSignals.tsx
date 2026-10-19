@@ -83,11 +83,42 @@ interface CryptoSignalResult {
 interface ScreenerResponse {
   signals: CryptoSignalResult[];
   regime: { label: string; score: number };
-  btcDominance: number;
+  btcDominance: number | null;
   totalMarketCap: number;
   marketCapChange24h: number;
   marketObservedAtMs?: number | null;
   computedAt: number;
+}
+
+/** Header and footer dominance figure. A missing observation renders Unavailable. */
+export function BtcDominanceReadout({ btcDominance }: { btcDominance: number | null | undefined }) {
+  const dominance = btcDominance;
+  const text = typeof dominance === "number" && Number.isFinite(dominance) ? `${dominance.toFixed(1)}%` : "Unavailable";
+  return <span data-btc-dominance={text === "Unavailable" ? "unavailable" : "value"}>{text}</span>;
+}
+
+/** Finite momentum scores sort descending. Missing scores stay in `unavailable` and never become the leader. */
+export function rankMomentumSignals<T extends { symbol: string; technicals: { momentumScore: number | null } }>(signals: T[]) {
+  const ranked: T[] = [];
+  const unavailable: T[] = [];
+  for (const signal of signals) {
+    const score = signal.technicals.momentumScore;
+    if (typeof score === "number" && Number.isFinite(score)) ranked.push(signal);
+    else unavailable.push(signal);
+  }
+  ranked.sort((a, b) => (b.technicals.momentumScore as number) - (a.technicals.momentumScore as number));
+  return { leader: ranked[0] ?? null, ranked, unavailable };
+}
+
+export function MomentumLeaderReadout({
+  signal,
+}: {
+  signal: { symbol: string; technicals: { momentumScore: number | null } } | null;
+}) {
+  if (!signal || signal.technicals.momentumScore == null || !Number.isFinite(signal.technicals.momentumScore)) {
+    return <span data-momentum-leader="unavailable">Unavailable</span>;
+  }
+  return <span data-momentum-leader={signal.symbol}>{signal.symbol}</span>;
 }
 
 export function CryptoScreenerFreshnessBadge({
@@ -896,13 +927,12 @@ function CryptoSignalsInner() {
     const sigs = screenerData.signals;
     const buys  = sigs.filter(s => s.action === "BUY").sort(byStrengthRank);
     const sells = sigs.filter(s => s.action === "SELL").sort(byStrengthRank);
-    const momentumRank = (value: number | null) => typeof value === "number" && Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY;
-    const momentum = [...sigs].sort((a, b) => momentumRank(b.technicals.momentumScore) - momentumRank(a.technicals.momentumScore));
+    const momentum = rankMomentumSignals(sigs);
     const volatile = [...sigs].sort((a, b) => b.technicals.volatility24h - a.technicals.volatility24h);
     return {
       topBullish: buys[0] ?? sigs[0],
       topBearish: sells[0] ?? sigs[sigs.length - 1],
-      highestMomentum: momentum[0] ?? sigs[0],
+      highestMomentum: momentum.leader,
       mostVolatile: volatile[0] ?? sigs[0],
     };
   }, [screenerData]);
@@ -971,7 +1001,7 @@ function CryptoSignalsInner() {
           {screenerData && (
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <span style={{ fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>BTC DOM:</span>
-              <span style={{ fontSize: "9px", color: "#FFD700" }}>{screenerData.btcDominance.toFixed(1)}%</span>
+              <span style={{ fontSize: "9px", color: "#FFD700" }}><BtcDominanceReadout btcDominance={screenerData.btcDominance} /></span>
             </div>
           )}
           {screenerData && (
@@ -1027,7 +1057,9 @@ function CryptoSignalsInner() {
           <div style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "4px" }}>
             <TopSignalCard label="Top Bullish" sig={topSignals.topBullish} color="#00D4FF" icon="▲" />
             <TopSignalCard label="Top Bearish" sig={topSignals.topBearish} color="#FF2D55" icon="▼" />
-            <TopSignalCard label="Momentum" sig={topSignals.highestMomentum} color="#FFD700" icon="⚡" />
+            {topSignals.highestMomentum
+              ? <TopSignalCard label="Momentum" sig={topSignals.highestMomentum} color="#FFD700" icon="⚡" />
+              : <MomentumLeaderReadout signal={null} />}
             <TopSignalCard label="Most Volatile" sig={topSignals.mostVolatile} color="#FF9500" icon="⚠" />
           </div>
         </div>
@@ -1155,7 +1187,7 @@ function CryptoSignalsInner() {
       <div style={{ margin: "24px 16px 0", padding: "12px", background: "rgba(0,212,255,0.03)", border: "1px solid rgba(0,212,255,0.08)", borderRadius: "4px" }}>
         <div style={{ fontSize: "8px", letterSpacing: "0.12em", color: "rgba(100,116,139,0.5)", lineHeight: 1.6 }}>
           <CryptoScreenerFreshnessBadge observedAtMs={screenerData?.marketObservedAtMs} sourceStatus={screenerData?.marketObservedAtMs != null ? "live" : "unavailable"} /> — CoinGecko market data via secure backend proxy.
-          {screenerData && <> Assets: <span style={{ color: "rgba(100,116,139,0.7)" }}>{screenerData.signals.length}</span> · BTC Dominance: <span style={{ color: "rgba(100,116,139,0.7)" }}>{screenerData.btcDominance.toFixed(1)}%</span></>}
+          {screenerData && <> Assets: <span style={{ color: "rgba(100,116,139,0.7)" }}>{screenerData.signals.length}</span> · BTC Dominance: <span style={{ color: "rgba(100,116,139,0.7)" }}><BtcDominanceReadout btcDominance={screenerData.btcDominance} /></span></>}
           {" "}· <span style={{ color: "#00D4FF" }}>TRADING SIGNALS</span> — FAULTLINE Engine · RSI, SMA, MACD, regime pressure. Refreshes every 90 seconds.
         </div>
       </div>

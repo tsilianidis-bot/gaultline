@@ -10,6 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { TickerChip } from "@/components/TickerActionMenu";
 import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
+import { formatObservedFixed } from "@/lib/nullableFormat";
 
 // ── Types (mirrored from server/cryptoEngine.ts) ─────────────
 type CryptoSignalLabel =
@@ -197,7 +198,7 @@ function SystemicRiskMini({ risk }: { risk: CryptoSystemicRisk }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {[
           { label: "Crypto Risk Score", value: `${score100Value(risk.score)}/100` },
-          { label: "BTC Dominance", value: `${risk.btcDominance.toFixed(1)}%` },
+          { label: "BTC Dominance", value: formatObservedFixed(risk.btcDominance, 1, "%") },
           { label: "Stablecoin Liquidity", value: risk.stablecoinLiquidity },
           { label: "AI Token Speculation", value: risk.speculativeIntensity },
           { label: "Volatility Regime", value: risk.volatilityRegime },

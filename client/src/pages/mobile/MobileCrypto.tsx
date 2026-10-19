@@ -155,8 +155,7 @@ function SignalCard({
           {/* Technicals row */}
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-[9px] font-mono text-[#64748B]">
-              {signal.technicals.rsiEstimate == null ? "RSI unavailable" : <>RSI <span className="text-[#A8B8CC]">{signal.technicals.rsiEstimate.toFixed(0)}</span></>}
-              <span className="ml-1 text-[#64748B]">({signal.technicals.rsiLabel})</span>
+              {signal.technicals.rsiEstimate == null ? "RSI unavailable" : <>RSI <span className="text-[#A8B8CC]">{signal.technicals.rsiEstimate.toFixed(0)}</span> <span className="ml-1 text-[#64748B]">({signal.technicals.rsiLabel})</span></>}
             </span>
             <span className="text-[9px] font-mono text-[#64748B]">
               TREND <span className="text-[#A8B8CC]">{signal.technicals.trend}</span>
