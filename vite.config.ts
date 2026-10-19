@@ -79,7 +79,7 @@ function writeToLogFile(source: LogSource, entries: unknown[]) {
   const logPath = path.join(LOG_DIR, `${source}.log`);
 
   // Format entries with timestamps
-  const lines = entries.map((entry) => {
+  const lines = entries.map(entry => {
     const ts = new Date().toISOString();
     return `[${ts}] ${JSON.stringify(entry)}`;
   });
@@ -155,7 +155,7 @@ function vitePluginManusDebugCollector(): Plugin {
         }
 
         let body = "";
-        req.on("data", (chunk) => {
+        req.on("data", chunk => {
           body += chunk.toString();
         });
 
@@ -173,13 +173,96 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+type BuiltChunk = {
+  type: "chunk";
+  fileName: string;
+  imports: string[];
+  name: string;
+  viteMetadata?: { importedCss?: Set<string> };
+};
+
+/**
+ * Vite cannot discover a lazy entry until main.tsx has downloaded and run.
+ * Preload only the statically reachable graph of the public marketing entry
+ * in production HTML. ProductEntry/App is a separate dynamic graph and is
+ * intentionally never included here.
+ */
+function vitePluginRootMarketingPreload(): Plugin {
+  return {
+    name: "faultline-root-marketing-preload",
+    apply: "build",
+    writeBundle(outputOptions, bundle) {
+      const chunks = Object.values(bundle).filter(
+        entry => entry.type === "chunk"
+      ) as unknown as BuiltChunk[];
+      const entry = chunks.find(chunk => chunk.name === "marketing-entry");
+      if (!entry) {
+        this.error(
+          "Could not find the public marketing entry in the production chunk graph."
+        );
+      }
+
+      const visited = new Set<string>();
+      const scripts: BuiltChunk[] = [];
+      const styles = new Set<string>();
+      const collect = (chunk: BuiltChunk) => {
+        if (visited.has(chunk.fileName)) return;
+        visited.add(chunk.fileName);
+        scripts.push(chunk);
+        chunk.viteMetadata?.importedCss?.forEach(css => styles.add(css));
+        for (const imported of chunk.imports) {
+          const dependency = bundle[imported];
+          if (dependency?.type === "chunk") collect(dependency as BuiltChunk);
+        }
+      };
+      collect(entry);
+
+      const hints = [
+        ...Array.from(styles)
+          .sort()
+          .map(fileName => ({ rel: "stylesheet", href: `/${fileName}` })),
+        ...scripts
+          .sort((a, b) => a.fileName.localeCompare(b.fileName))
+          .map(chunk => ({ rel: "modulepreload", href: `/${chunk.fileName}` })),
+      ];
+      const rootOnlyHints = `<script id="faultline-root-marketing-preload">(function(){if(window.location.pathname!=="/")return;var hints=${JSON.stringify(hints)};hints.forEach(function(hint){var link=document.createElement("link");link.rel=hint.rel;link.crossOrigin="anonymous";link.href=hint.href;document.head.appendChild(link);});})();</script>`;
+
+      const outputDirectory =
+        outputOptions.dir ?? path.resolve(PROJECT_ROOT, "dist", "public");
+      const htmlPath = path.join(outputDirectory, "index.html");
+      const html = fs.readFileSync(htmlPath, "utf-8");
+      if (html.includes("faultline-root-marketing-preload")) return;
+      fs.writeFileSync(
+        htmlPath,
+        html.replace(
+          "</head>",
+          `    <!-- Public-root hints must not run on authenticated product paths. -->\n    ${rootOnlyHints}\n  </head>`
+        ),
+        "utf-8"
+      );
+    },
+  };
+}
+
+const sharedPlugins = [
+  react(),
+  tailwindcss(),
+  jsxLocPlugin(),
+  vitePluginManusDebugCollector(),
+  vitePluginRootMarketingPreload(),
+];
 
 const BUILD_COMMIT = getBuildCommit();
 const BUILD_TIME = getBuildTime();
 
-export default defineConfig({
-  plugins,
+export default defineConfig(({ command }) => ({
+  // The runtime plugin injects a 366 KB editor SDK inline into built HTML.
+  // This external GitHub/Railway application has no client dependency on that
+  // SDK, while local development and preview serving retain the plugin.
+  plugins:
+    command === "build"
+      ? sharedPlugins
+      : [...sharedPlugins, vitePluginManusRuntime()],
   // cacheDir defaults to node_modules/.vite — do NOT use /tmp/vite-cache as it persists
   // across container builds and causes stale bundle output in production.
   cacheDir: "node_modules/.vite",
@@ -200,7 +283,6 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
-
   },
   server: {
     host: true,
@@ -218,4 +300,4 @@ export default defineConfig({
       deny: ["**/.*"],
     },
   },
-});
+}));

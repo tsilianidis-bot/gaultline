@@ -27,7 +27,8 @@ const landingComponents = [
   "client/src/components/landing/useLandingPressure.ts",
 ].map(read);
 /** Everything a visitor can read on the landing page. */
-const landing = [page, ...landingComponents].join("\n");
+const premiumHero = read("client/src/components/marketing/MarketingIntelligenceHero.tsx");
+const landing = [page, premiumHero, ...landingComponents].join("\n");
 const methodology = read("client/src/pages/Methodology.tsx");
 const fullInventory = read("client/src/components/methodology/FullInventory.tsx");
 const inventorySource = read("client/src/content/methodologyInventory.ts");
@@ -39,7 +40,8 @@ describe("Marketing page positioning guardrails", () => {
     expect((landing.match(/<h1\b/g) ?? [])).toHaveLength(1);
     expect(page).toContain("See the pressure before the break.");
     expect(page).toContain("EXPLORE FAULTLINE");
-    expect(page).toContain("VIEW METHODOLOGY");
+    expect(premiumHero).toContain("See Intelligence in Action");
+    expect(premiumHero).toContain("Become a Member");
     expect(page).toContain('const EXPLORE_HREF = "/pressure-index"');
     expect(page).toContain('const METHOD_HREF = "/methodology"');
   });
@@ -77,7 +79,7 @@ describe("Marketing page positioning guardrails", () => {
 describe("Landing page structure", () => {
   it("renders the sections in the agreed order", () => {
     const main = page.slice(page.indexOf('<main id="main">'), page.indexOf("</main>"));
-    const order = ["<Hero />", "<PentagonalThesis />", "<Pressure />", "<HistoricalContext />", "<Plato />", "<Capabilities />", "<TrustTeaser />", "<FinalCta />"];
+    const order = ["<Hero />", "<PublicReadingProof />", "<ProductShowcase />", "<PentagonalThesis />", "<Pressure />", "<HistoricalContext />", "<Plato />", "<Capabilities />", "<TrustTeaser />", "<FinalCta />"];
     const positions = order.map((tag) => main.indexOf(tag));
     expect(positions.every((pos) => pos >= 0)).toBe(true);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
@@ -179,11 +181,12 @@ describe("Pentagonal Thesis section", () => {
     expect(html).toContain('data-pentagon="compact"');
   });
 
-  it("is self-contained and leaves the seismic underlay to the page", () => {
+  it("is self-contained and keeps illustrative organization motion in the premium hero", () => {
     expect(composition).toContain('import ThesisSection from "./thesis/ThesisSection"');
     expect(composition).toContain('import WorkedExample from "./thesis/WorkedExample"');
     expect(landingComponents.slice(1, 7).join("\n")).not.toContain("SeismicUnderlay");
-    expect(page).toContain("<SeismicUnderlay");
+    expect(premiumHero).toContain("<CoreTopology");
+    expect(page).not.toContain("<SeismicUnderlay");
   });
 });
 

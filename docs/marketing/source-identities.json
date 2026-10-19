@@ -1,0 +1,15 @@
+{
+  "repository": "https://github.com/tsilianidis-bot/gaultline",
+  "publicSite": "https://getfaultline.live/",
+  "sourceBranch": "release/2026-10-05-ux-r3",
+  "sourceCommit": "f908e04ff265d004488f92a909cba4b2e0cebe3b",
+  "marketingBranch": "marketing/premium-homepage-20261019",
+  "protectedPullRequests": [
+    { "number": 106, "url": "https://github.com/tsilianidis-bot/gaultline/pull/106", "headBranch": "cursor/remediate-live-signals-session-guard-f2f3", "headCommit": "1d605757234acc7d36ba7dc9cd5576baa3217d92" },
+    { "number": 107, "url": "https://github.com/tsilianidis-bot/gaultline/pull/107", "headBranch": "integration/graphics-canonical-20261019", "headCommit": "c6856865e599fe335c914dda7ef6ca63624699e1" },
+    { "number": 108, "url": "https://github.com/tsilianidis-bot/gaultline/pull/108", "headBranch": "nav/consolidation-20261019", "headCommit": "5ee4a061c614562da0a9fb19c8d54fcb1b7c46d8" }
+  ],
+  "publicationAuthorized": false,
+  "mergeAuthorized": false,
+  "verifiedOperationalScreenshotCount": 0
+}

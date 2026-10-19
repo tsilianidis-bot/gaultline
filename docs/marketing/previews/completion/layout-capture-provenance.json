@@ -1,0 +1,82 @@
+{
+  "sourceBranch": "marketing/premium-homepage-20261019",
+  "sourceSha": "71231a9cedfa7e77869133c0e116fdcc68ea8ad7",
+  "capturedAt": "2026-10-19T16:50:05.490212+00:00",
+  "workingTreeModified": false,
+  "classification": "isolated marketing layout; gallery placeholders; not operational product evidence",
+  "origin": "http://127.0.0.1:3001",
+  "images": [
+    {
+      "file": "desktop-domain-explanation.png",
+      "sha256": "f2645c45248d4b18384497f03b855deee1316d6aa80e9e3c1afc1015da684f2c"
+    },
+    {
+      "file": "desktop-hero.png",
+      "sha256": "0b96100ba826a02c3c2dd5a068a35c3e316e61c4e8fbc465587d998bbd700fe5"
+    },
+    {
+      "file": "desktop-homepage.png",
+      "sha256": "c1555ac006f415e3761e57c9a6c0933e2fb7452d0fedc3d6df54dbb17ecea3eb"
+    },
+    {
+      "file": "desktop-membership.png",
+      "sha256": "19b31bd61f9f2fff0f7799ef024adb9145b8ce776bc0b753ba44f8edc5225a40"
+    },
+    {
+      "file": "desktop-showcase.png",
+      "sha256": "ff7a5c3b83c3acea5c995dbcbe7e01d3d1cdc3b82b0d4da170bf153714d6a7a4"
+    },
+    {
+      "file": "gallery-entry-1-desktop.png",
+      "sha256": "1198248f155a18b605c16a09c5d124c17f0e8bb05b2fd32c1969a3d79c4a05e7"
+    },
+    {
+      "file": "gallery-entry-1-mobile.png",
+      "sha256": "dd07c7841cecd08b9d59a4f584d5b1e0156df4cfd3d119a1d3f5c86cfd54e4b9"
+    },
+    {
+      "file": "gallery-entry-2-desktop.png",
+      "sha256": "410cb7ca213c8733c08dbc3fbb5ec316f21874a5d95c83055c93ba71f80de884"
+    },
+    {
+      "file": "gallery-entry-2-mobile.png",
+      "sha256": "605772344b6592c5ebc5ef6180648d22b09436b8add235df0f08f80c09ad661d"
+    },
+    {
+      "file": "gallery-entry-3-desktop.png",
+      "sha256": "8049664c982f66676286270d2a2e3439e0b9cc7ac04ce440e22b310a9cbf10db"
+    },
+    {
+      "file": "gallery-entry-3-mobile.png",
+      "sha256": "89fef25e2bb9b4b917efd75314bb311158cec51cbf27b218afaf5694f1a207e7"
+    },
+    {
+      "file": "gallery-entry-4-desktop.png",
+      "sha256": "68c60d121a42a1de1c4a86cff165a10be2a0b393bc586b22482ffef0c581beee"
+    },
+    {
+      "file": "gallery-entry-4-mobile.png",
+      "sha256": "404340083e20e4e6658dde5cc2bbcb6cdcd38e864b8c1d8efb42f75bc4f4dd6e"
+    },
+    {
+      "file": "gallery-entry-5-desktop.png",
+      "sha256": "51453590d5cc4e1f9a3c7677741ecb9aa4d467aa425757b318420739540afaae"
+    },
+    {
+      "file": "gallery-entry-5-mobile.png",
+      "sha256": "1cd3fbe62449e5271d30d543dec485902bf8fe619a9471a4ac56ad8c088cd2d1"
+    },
+    {
+      "file": "mobile-hero.png",
+      "sha256": "8a8f8d539fddf9b9ade5afde936d1e84233f89ebbc2820418e1056157182aa20"
+    },
+    {
+      "file": "mobile-homepage.png",
+      "sha256": "db078410ad8540c651497686b411de3dab1aba09b932c1eed93bfa0607d4adff"
+    },
+    {
+      "file": "mobile-showcase.png",
+      "sha256": "9f317f8a6e51c3d498d98a2f5eaec279ad95bc16d107169f0511d0e22f809a2e"
+    }
+  ]
+}

@@ -15,7 +15,7 @@ describe("Market Risk Intelligence SEO positioning", () => {
   it("keeps FAULTLINE as the master brand while applying the approved homepage category descriptor", () => {
     expect(getPageMeta("/").title).toBe(homepageTitle);
     expect(homepage).toContain(`<title>${homepageTitle.replace("&", "&amp;")}</title>`);
-    expect(marketingPage).toContain("FAULTLINE STRUCTURAL MARKET INTELLIGENCE");
+    expect(marketingPage).toContain("FAULTLINE | Structural Market Intelligence");
     expect(marketingPage).toContain(">STRUCTURAL MARKET INTELLIGENCE<");
     expect(marketingPage).toContain("See the pressure before the break.");
     expect(marketingPage).not.toMatch(/see the fault before the break/i);

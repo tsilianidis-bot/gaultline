@@ -32,7 +32,7 @@ export interface PageMeta {
 const PAGE_META: Record<string, PageMeta> = {
   "/": {
     title: "FAULTLINE | Structural Market Intelligence",
-    description: "FAULTLINE reads high-yield credit, SOFR, the Treasury curve, macro conditions, equities, and crypto to show where systemic pressure is building.",
+    description: "Understand market pressure, its drivers and what to watch. FAULTLINE connects cross-market context with evidence-led intelligence for self-directed investors.",
   },
   "/blog": {
     title: "FAULTLINE Blog — Market Intelligence & Macro Analysis",

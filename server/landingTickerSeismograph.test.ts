@@ -49,10 +49,10 @@ describe("landing market ticker", () => {
     expect(mk("STALE")).toMatchObject({ state: "stale", stateLabel: "STALE" });
   });
 
-  it("sits above the navigation and pauses the marquee under reduced motion", () => {
+  it("preserves ticker integrity without mounting a decorative quote tape on the premium homepage", () => {
     const page = read("client/src/pages/MarketingSite.tsx");
-    expect(page.indexOf("<MarketTicker />")).toBeGreaterThan(-1);
-    expect(page.indexOf("<MarketTicker />")).toBeLessThan(page.indexOf("<Header />"));
+    expect(page).not.toContain("<MarketTicker />");
+    expect(page).toContain("<Header />");
     const ticker = read("client/src/components/landing/ticker/MarketTicker.tsx");
     expect(ticker).toContain("trpc.markets.getGlobalSnapshot.useQuery");
     expect(ticker).toMatch(/prefers-reduced-motion: reduce\)[\s\S]*animation: none/);
@@ -67,14 +67,16 @@ describe("amber-gold seismograph trace", () => {
     expect(html).toMatch(/prefers-reduced-motion: reduce\)[^}]*\{[^}]*animation: none/);
   });
 
-  it("renders behind the hero and the thesis section, leaving the cyan underlay in place", () => {
+  it("retains the completed thesis trace but makes the approved topology the sole hero centerpiece", () => {
     const page = read("client/src/pages/MarketingSite.tsx");
     const hero = page.slice(page.indexOf("function Hero()"), page.indexOf("function Pressure()"));
-    expect(hero).toContain("<SeismicUnderlay");
-    expect(hero).toContain("<AmberSeismograph");
+    expect(hero).toContain("<MarketingIntelligenceHero />");
+    expect(hero).not.toContain("<AmberSeismograph");
     expect(read("client/src/components/landing/thesis/ThesisSection.tsx")).toContain("<AmberSeismograph");
     const main = page.slice(page.indexOf('<main id="main">'));
     expect(main.indexOf("<Hero />")).toBeLessThan(main.indexOf("<PentagonalThesis />"));
-    expect(main.slice(main.indexOf("<Hero />"), main.indexOf("<PentagonalThesis />")).trim()).toBe("<Hero />");
+    const proof = main.slice(main.indexOf("<Hero />"), main.indexOf("<PentagonalThesis />"));
+    expect(proof).toContain("<PublicReadingProof />");
+    expect(proof).toContain("<ProductShowcase />");
   });
 });

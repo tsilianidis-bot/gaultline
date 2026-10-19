@@ -1,0 +1,94 @@
+{
+  "sourceReviewBranch": "marketing/premium-homepage-20261019",
+  "sourceReviewSha": "49d6ab7dbf97dcca272e96339217acf9e8ca022d",
+  "sourceReviewDate": "2026-10-19",
+  "admittedCount": 0,
+  "note": "Five independently source-reviewed categories remain blocked. No operational screenshot was captured or admitted. Layout previews are classified separately. Source review does not imply a production malfunction. Authorized nonproduction test access can qualify private features without changing authentication.",
+  "entries": [
+    {
+      "id": "pressure-index",
+      "category": "Pressure Index and Market Overview",
+      "status": "blocked",
+      "operationalQualified": false,
+      "desktopCapture": null,
+      "mobileCapture": null,
+      "capturedAt": null,
+      "observationAt": null,
+      "observationClassification": null,
+      "privacyReviewCompleted": false,
+      "requiredResource": [
+        "approved nonproduction canonical manifest and public Pressure Index runtime",
+        "authorized nonproduction member access for Market Overview"
+      ],
+      "qualificationReport": "docs/marketing/qualification/pressure-overview.md"
+    },
+    {
+      "id": "six-domain-intelligence",
+      "category": "Six-Domain Intelligence Architecture",
+      "status": "blocked",
+      "operationalQualified": false,
+      "desktopCapture": null,
+      "mobileCapture": null,
+      "capturedAt": null,
+      "observationAt": null,
+      "observationClassification": null,
+      "privacyReviewCompleted": false,
+      "requiredResource": [
+        "approved integration activation",
+        "genuine six-domain lineage/timestamps and operational candidate surface"
+      ],
+      "qualificationReport": "docs/marketing/qualification/six-domain.md"
+    },
+    {
+      "id": "signals-discovery",
+      "category": "Signals and Smart Discovery",
+      "status": "blocked",
+      "operationalQualified": false,
+      "desktopCapture": null,
+      "mobileCapture": null,
+      "capturedAt": null,
+      "observationAt": null,
+      "observationClassification": null,
+      "privacyReviewCompleted": false,
+      "requiredResource": [
+        "authorized nonproduction provider observations and source-backed answer runtime",
+        "authorized nonproduction candidate access"
+      ],
+      "qualificationReport": "docs/marketing/qualification/signals-discovery.md"
+    },
+    {
+      "id": "outlook-scenarios",
+      "category": "Outlook and Scenario Analysis",
+      "status": "blocked",
+      "operationalQualified": false,
+      "desktopCapture": null,
+      "mobileCapture": null,
+      "capturedAt": null,
+      "observationAt": null,
+      "observationClassification": null,
+      "privacyReviewCompleted": false,
+      "requiredResource": [
+        "genuine governed canonical observation",
+        "authorized nonproduction canonical OUTLOOK surface; not legacy Scenarios"
+      ],
+      "qualificationReport": "docs/marketing/qualification/outlook-scenarios.md"
+    },
+    {
+      "id": "daily-brief",
+      "category": "Daily Intelligence Brief",
+      "status": "blocked",
+      "operationalQualified": false,
+      "desktopCapture": null,
+      "mobileCapture": null,
+      "capturedAt": null,
+      "observationAt": null,
+      "observationClassification": null,
+      "privacyReviewCompleted": false,
+      "requiredResource": [
+        "genuinely published daily_market_brief row and immutable linked snapshot",
+        "public detail page serving the same snapshot-bound observation"
+      ],
+      "qualificationReport": "docs/marketing/qualification/additional-feature.md"
+    }
+  ]
+}
