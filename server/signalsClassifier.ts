@@ -311,7 +311,7 @@ function buildDeterministicClassification(
     primarySignal,
     bullishFactors: [
       `${changePercent > 0 ? "Positive" : "Negative"} daily momentum at ${changePercent > 0 ? "+" : ""}${changePercent.toFixed(2)}%`,
-      `Price action: $${profile.low.toFixed(2)} – $${profile.high.toFixed(2)} range`,
+      `Price action: ${profile.low == null ? "Unavailable" : `$${profile.low.toFixed(2)}`} – ${profile.high == null ? "Unavailable" : `$${profile.high.toFixed(2)}`} range`,
     ],
     bearishFactors: [
       `Current macro regime: ${regime.label} (${regime.score.toFixed(1)}/10)`,
@@ -356,9 +356,9 @@ MARKET CAP: ${mktCapStr}
 
 PRICE DATA (${profile.tradeDate}):
 - Close: ${profile.price == null ? "Unavailable" : `$${profile.price.toFixed(2)}`}
-- Open: $${profile.open.toFixed(2)}
-- High: $${profile.high.toFixed(2)}
-- Low: $${profile.low.toFixed(2)}
+- Open: ${profile.open == null ? "Unavailable" : `$${profile.open.toFixed(2)}`}
+- High: ${profile.high == null ? "Unavailable" : `$${profile.high.toFixed(2)}`}
+- Low: ${profile.low == null ? "Unavailable" : `$${profile.low.toFixed(2)}`}
 - Daily Change: ${profile.changePercent == null ? "Unavailable" : `${profile.changePercent > 0 ? "+" : ""}${profile.changePercent.toFixed(2)}%`}
 - Volume: ${profile.volumeMillions == null ? "Unavailable" : `${profile.volumeMillions.toFixed(1)}M shares`}
 - 5-Day Trend: ${sparklineTrend}

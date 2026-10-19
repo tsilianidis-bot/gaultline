@@ -51,9 +51,9 @@ const PRIORITY_TICKERS = [
 export interface QuoteResult {
   ticker: string;
   price: number | null;           // latest close price; null when the feed omitted it
-  open: number;            // day open
-  high: number;            // day high
-  low: number;             // day low
+  open: number | null;     // day open; null when the source omitted it
+  high: number | null;     // day high
+  low: number | null;      // day low
   changePercent: number | null;   // % change vs prior close; null when it cannot be observed
   volume: number | null;          // shares (raw); null when the feed omitted it
   volumeMillions: number | null;  // volume in millions for display
@@ -269,6 +269,12 @@ async function fetchSparklinesBg(apiKey: string, tradeDate: string): Promise<voi
   }
 }
 
+/** Two-decimal quote level. A missing or non-finite print stays null, including no zero fill. */
+export function fixedQuoteLevel(value: unknown): number | null {
+  const n = finiteQuoteNumber(value);
+  return n == null ? null : parseFloat(n.toFixed(2));
+}
+
 export function finiteQuoteNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -320,9 +326,9 @@ function missingPriorityQuote(ticker: string): QuoteResult {
   return {
     ticker,
     price: null,
-    open: 0,
-    high: 0,
-    low: 0,
+    open: null,
+    high: null,
+    low: null,
     changePercent: null,
     volume: null,
     volumeMillions: null,
@@ -451,9 +457,9 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
       return {
         ticker,
         price: parseFloat(price.toFixed(2)),
-        open: parseFloat((yahooQ.open ?? bar?.o ?? 0).toFixed(2)),
-        high: parseFloat((yahooQ.high ?? bar?.h ?? 0).toFixed(2)),
-        low: parseFloat((yahooQ.low ?? bar?.l ?? 0).toFixed(2)),
+        open: fixedQuoteLevel(yahooQ.open ?? bar?.o),
+        high: fixedQuoteLevel(yahooQ.high ?? bar?.h),
+        low: fixedQuoteLevel(yahooQ.low ?? bar?.l),
         changePercent,
         volume: volumeRaw,
         volumeMillions,
@@ -475,9 +481,9 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
       return {
         ticker,
         price: parseFloat(price.toFixed(2)),
-        open: parseFloat((yahooQ.open ?? bar?.o ?? 0).toFixed(2)),
-        high: parseFloat((yahooQ.high ?? bar?.h ?? 0).toFixed(2)),
-        low: parseFloat((yahooQ.low ?? bar?.l ?? 0).toFixed(2)),
+        open: fixedQuoteLevel(yahooQ.open ?? bar?.o),
+        high: fixedQuoteLevel(yahooQ.high ?? bar?.h),
+        low: fixedQuoteLevel(yahooQ.low ?? bar?.l),
         changePercent,
         volume: volumeRaw,
         volumeMillions,
@@ -500,9 +506,9 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
         return {
           ticker,
           price: parseFloat(price.toFixed(2)),
-          open: parseFloat((yahooQ.open ?? 0).toFixed(2)),
-          high: parseFloat((yahooQ.high ?? 0).toFixed(2)),
-          low: parseFloat((yahooQ.low ?? 0).toFixed(2)),
+          open: fixedQuoteLevel(yahooQ.open),
+          high: fixedQuoteLevel(yahooQ.high),
+          low: fixedQuoteLevel(yahooQ.low),
           changePercent,
           volume: volumeRaw,
           volumeMillions,
@@ -520,9 +526,9 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
     return {
       ticker,
       price: assembled.price,
-      open: parseFloat((bar.o ?? 0).toFixed(2)),
-      high: parseFloat((bar.h ?? 0).toFixed(2)),
-      low: parseFloat((bar.l ?? 0).toFixed(2)),
+      open: fixedQuoteLevel(bar.o),
+      high: fixedQuoteLevel(bar.h),
+      low: fixedQuoteLevel(bar.l),
       changePercent: assembled.changePercent,
       volume: assembled.volume,
       volumeMillions: assembled.volumeMillions,
@@ -555,9 +561,9 @@ export interface TickerProfile {
   ticker: string;
   name: string;
   price: number | null;
-  open: number;
-  high: number;
-  low: number;
+  open: number | null;
+  high: number | null;
+  low: number | null;
   changePercent: number | null;
   volume: number | null;
   volumeMillions: number | null;
@@ -590,7 +596,7 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
 
   // 1. Try Yahoo Finance first — real-time 15-min delayed price, same source as Portfolio
   let price: number | null = null;
-  let open = 0, high = 0, low = 0;
+  let open: number | null = null, high: number | null = null, low: number | null = null;
   let volumeRaw: number | null = null;
   let volumeMillions: number | null = null;
   let changePercent: number | null = null;
@@ -635,9 +641,9 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
     const rawClose = finiteQuoteNumber(bar.c);
     const rawOpen = finiteQuoteNumber(bar.o);
     price = rawClose == null ? null : parseFloat(rawClose.toFixed(2));
-    open = parseFloat((rawOpen ?? 0).toFixed(2));
-    high = parseFloat((bar.h ?? 0).toFixed(2));
-    low = parseFloat((bar.l ?? 0).toFixed(2));
+    open = fixedQuoteLevel(rawOpen);
+    high = fixedQuoteLevel(bar.h);
+    low = fixedQuoteLevel(bar.l);
     const polygonVolume = resolveSignalVolume(bar.v);
     volumeRaw = polygonVolume.volume;
     volumeMillions = polygonVolume.volumeMillions;
@@ -1049,9 +1055,9 @@ export function registerSignalsProxy(app: Express) {
         ticker: raw,
         name: raw,
         price,
-        open: parseFloat((bar.o ?? 0).toFixed(2)),
-        high: parseFloat((bar.h ?? 0).toFixed(2)),
-        low: parseFloat((bar.l ?? 0).toFixed(2)),
+        open: fixedQuoteLevel(bar.o),
+        high: fixedQuoteLevel(bar.h),
+        low: fixedQuoteLevel(bar.l),
         changePercent,
         volume: groupedVolume.volume,
         volumeMillions: groupedVolume.volumeMillions,

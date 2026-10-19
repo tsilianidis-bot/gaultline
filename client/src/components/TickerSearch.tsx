@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { trpc } from '@/lib/trpc';
 import { signalQuoteBadge } from '@/lib/signalQuoteView';
+import { formatUsdQuote } from '@/lib/nullableFormat';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { RiskFramework, type RiskLevels } from '@/components/RiskFramework';
 import { trackSignalSearch, trackWatchlistAction } from '@/hooks/useAnalytics';
@@ -19,9 +20,9 @@ interface TickerProfile {
   ticker: string;
   name: string;
   price: number | null;
-  open: number;
-  high: number;
-  low: number;
+  open: number | null;
+  high: number | null;
+  low: number | null;
   changePercent: number | null;
   volume: number | null;
   volumeMillions: number | null;
@@ -386,9 +387,9 @@ function StockIntelligenceCard({
 
         {/* ── Metrics Row ────────────────────────────────── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '12px' }}>
-          <Chip label="Open" value={`$${profile.open.toFixed(2)}`} />
-          <Chip label="High" value={`$${profile.high.toFixed(2)}`} color="#34D399" />
-          <Chip label="Low" value={`$${profile.low.toFixed(2)}`} color="#FF2D55" />
+          <Chip label="Open" value={formatUsdQuote(profile.open)} />
+          <Chip label="High" value={formatUsdQuote(profile.high)} color="#34D399" />
+          <Chip label="Low" value={formatUsdQuote(profile.low)} color="#FF2D55" />
           <Chip label="Volume" value={profile.volumeMillions == null ? "Unavailable" : `${profile.volumeMillions.toFixed(1)}M`} />
           {profile.marketCap && (
             <Chip label="Mkt Cap" value={fmtCap(profile.marketCap)} color="#FFD700" />
@@ -770,7 +771,7 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
       setHistory(newHistory);
       saveHistory(newHistory);
 
-      if (data.price != null && data.changePercent != null && data.volume != null && data.volumeMillions != null) {
+      if (data.price != null && data.changePercent != null && data.volume != null && data.volumeMillions != null && data.open != null && data.high != null && data.low != null) {
       // A missing price, change, or volume is shown on the card and is not scored.
       tradingSignalMutation.mutate({
         ticker: t,
