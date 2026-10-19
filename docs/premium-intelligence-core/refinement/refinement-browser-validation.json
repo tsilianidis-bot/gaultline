@@ -1,0 +1,241 @@
+{
+  "checks": [
+    {
+      "name": "First snapshot has no market change animation",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Normal-motion idle has no continuous animations",
+      "passed": true,
+      "details": "Rechecked on final compiled CSS: finite effects released; document.getAnimations() is empty after settling."
+    },
+    {
+      "name": "Exact Pentagonal labels in original route order",
+      "passed": true,
+      "details": [
+        "01REALITYWhat\u2019s happening",
+        "02CAUSATIONWhy it matters",
+        "03CONSEQUENCEWhat could follow",
+        "04VERIFICATIONWhat to watch",
+        "05ACTIONWhat to do"
+      ]
+    },
+    {
+      "name": "Existing routes unchanged",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "New admission highlights only its associated domain",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Admission announces factual prior and current status",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Fictional transition always labeled",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Admission animation ends without a loop",
+      "passed": true,
+      "details": "Rechecked on final compiled CSS: finite effects released; document.getAnimations() is empty after settling."
+    },
+    {
+      "name": "Verified fixture regime changes supplied readout",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Regime and pressure changes announce exact supplied values",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Regime animation ends without idle activity",
+      "passed": true,
+      "details": "Rechecked on final compiled CSS: finite effects released; document.getAnimations() is empty after settling."
+    },
+    {
+      "name": "Supported association receives distinct graphics",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Relationship announcement never changes association into causation",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Evidence drawer states association not causation",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Drawer exposes semantic original source time",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Accessibility tree names the evidence dialog",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Refined drawer restores exact opener focus",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Actual fixture deadline changes source to stale",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Expiry masks current pressure rather than retaining a live claim",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Expiry announces source observation, not market urgency",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Retained relationship becomes historical context",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Expiry animation ends and idle remains still",
+      "passed": true,
+      "details": "Rechecked on final compiled CSS: finite effects released; document.getAnimations() is empty after settling."
+    },
+    {
+      "name": "Reduced motion suppresses source transition animation",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Reduced-motion evidence change still communicated",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Reduced motion causes zero active animations",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Core number and domain controls do not overlap at 360px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "No refined page overflow at 360px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Core number and domain controls do not overlap at 390px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "No refined page overflow at 390px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Core number and domain controls do not overlap at 768px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "No refined page overflow at 768px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Core number and domain controls do not overlap at 1024px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "No refined page overflow at 1024px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Core number and domain controls do not overlap at 1440px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "No refined page overflow at 1440px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Core number and domain controls do not overlap at 1920px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "No refined page overflow at 1920px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Core SVG exposes meaningful screen-reader name",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Change communication is a polite atomic live region",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "No new runtime errors",
+      "passed": true,
+      "details": []
+    },
+    {
+      "name": "No production/provider requests",
+      "passed": true,
+      "details": []
+    }
+  ],
+  "runtimeErrors": [],
+  "apiRequests": [],
+  "screenReaderCoverage": "Chromium accessibility-tree names, roles, live regions and keyboard behavior; manual NVDA/VoiceOver unavailable in this sandbox",
+  "passed": true,
+  "rechecks": [
+    {
+      "name": "Normal-motion idle has no continuous animations",
+      "passed": true,
+      "details": "Rechecked on final compiled CSS: finite effects released; document.getAnimations() is empty after settling."
+    },
+    {
+      "name": "Admission animation ends without a loop",
+      "passed": true,
+      "details": "Rechecked on final compiled CSS: finite effects released; document.getAnimations() is empty after settling."
+    },
+    {
+      "name": "Regime animation ends without idle activity",
+      "passed": true,
+      "details": "Rechecked on final compiled CSS: finite effects released; document.getAnimations() is empty after settling."
+    },
+    {
+      "name": "Expiry animation ends and idle remains still",
+      "passed": true,
+      "details": "Rechecked on final compiled CSS: finite effects released; document.getAnimations() is empty after settling."
+    }
+  ]
+}

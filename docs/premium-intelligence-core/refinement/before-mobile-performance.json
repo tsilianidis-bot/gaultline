@@ -1,0 +1,42 @@
+{
+  "environment": "Fresh headless Chromium, compiled standalone preview, 4x CPU throttle; local network, lab observation only, not production RUM or a real-device guarantee",
+  "viewport": {
+    "width": 390,
+    "height": 900
+  },
+  "readyIncludingNetworkIdleMs": 1117.26670500002,
+  "paint": [
+    {
+      "name": "first-paint",
+      "ms": 80
+    },
+    {
+      "name": "first-contentful-paint",
+      "ms": 980
+    }
+  ],
+  "largestContentfulPaintMs": 980,
+  "layoutShiftSum": 0,
+  "renderedDomElements": 342,
+  "svgElements": 27,
+  "canvasElements": 0,
+  "activeIdleAnimations": 0,
+  "freshJsHeapUsedBytes": 3570076,
+  "idleTaskSecondsOver1500ms": 0.006683,
+  "idleScriptSecondsOver1500ms": 0,
+  "assets": [
+    {
+      "file": "index-C5Swgb0T.css",
+      "bytes": 29589,
+      "gzipBytes": 6272
+    },
+    {
+      "file": "index-KSmpImtd.js",
+      "bytes": 280282,
+      "gzipBytes": 87360
+    }
+  ],
+  "evidenceDrawerWorksOnCompiledPreview": true,
+  "focusRestoredOnCompiledPreview": true,
+  "allRequestsLocal": true
+}

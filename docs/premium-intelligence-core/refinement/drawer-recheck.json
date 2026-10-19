@@ -1,0 +1,9 @@
+{
+  "recheck": {
+    "name": "Developing-since and history shown",
+    "passed": true,
+    "details": "Rechecked exact inherited assertion on final compiled drawer; title-case fact labels retained. Drawer axe and exact focus restoration also passed."
+  },
+  "axeViolations": [],
+  "focusRestored": true
+}

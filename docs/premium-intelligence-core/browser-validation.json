@@ -1,0 +1,588 @@
+{
+  "checks": [
+    {
+      "name": "Production-safe default masks pressure",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Unavailable regime is explicit",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "All six unavailable nodes available",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "axe WCAG A/AA: unavailable",
+      "passed": true,
+      "details": []
+    },
+    {
+      "name": "Demo banner explicit",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Fictional pressure is isolated",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Six statuses visible in legend",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "axe WCAG A/AA: mixed demonstration",
+      "passed": true,
+      "details": []
+    },
+    {
+      "name": "Keyboard opens domain evidence",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Evidence retains original observation",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Developing-since and history shown",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Drawer traps keyboard focus",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "axe WCAG A/AA: evidence drawer",
+      "passed": true,
+      "details": []
+    },
+    {
+      "name": "Escape restores domain focus",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Keyboard selects Scenario C",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Scenario C never favored",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Scenario selects connected domains",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Scenario evidence drawer works",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Degraded current pressure withheld",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Degraded regime withheld",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "axe WCAG A/AA: degraded demonstration",
+      "passed": true,
+      "details": []
+    },
+    {
+      "name": "Example record provenance explicit",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Record lineage expands",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Reconstructed cohort separated",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "No fabricated metrics",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "axe WCAG A/AA: track record demonstration",
+      "passed": true,
+      "details": []
+    },
+    {
+      "name": "No horizontal overflow at 360px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Domain touch targets >=44px at 360px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "No horizontal overflow at 390px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Domain touch targets >=44px at 390px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "axe WCAG A/AA: mobile mixed demonstration",
+      "passed": true,
+      "details": []
+    },
+    {
+      "name": "Mobile drawer fits viewport",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "No horizontal overflow at 768px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Domain touch targets >=44px at 768px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "No horizontal overflow at 1024px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Domain touch targets >=44px at 1024px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "No horizontal overflow at 1440px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Domain touch targets >=44px at 1440px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "No horizontal overflow at 1920px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Domain touch targets >=44px at 1920px",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "Reduced motion disables transitions",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "No idle market motion",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "No browser runtime errors",
+      "passed": true,
+      "details": []
+    },
+    {
+      "name": "No production/provider API requests",
+      "passed": true,
+      "details": []
+    }
+  ],
+  "accessibility": [
+    {
+      "state": "unavailable",
+      "violations": [],
+      "passes": 25,
+      "incomplete": [
+        "aria-prohibited-attr",
+        "color-contrast"
+      ]
+    },
+    {
+      "state": "mixed demonstration",
+      "violations": [],
+      "passes": 27,
+      "incomplete": [
+        "aria-prohibited-attr",
+        "color-contrast"
+      ]
+    },
+    {
+      "state": "evidence drawer",
+      "violations": [],
+      "passes": 23,
+      "incomplete": [
+        "aria-hidden-focus",
+        "color-contrast"
+      ]
+    },
+    {
+      "state": "degraded demonstration",
+      "violations": [],
+      "passes": 27,
+      "incomplete": [
+        "aria-prohibited-attr",
+        "color-contrast"
+      ]
+    },
+    {
+      "state": "track record demonstration",
+      "violations": [],
+      "passes": 27,
+      "incomplete": [
+        "aria-prohibited-attr",
+        "color-contrast"
+      ]
+    },
+    {
+      "state": "mobile mixed demonstration",
+      "violations": [],
+      "passes": 28,
+      "incomplete": [
+        "aria-prohibited-attr",
+        "color-contrast"
+      ]
+    }
+  ],
+  "responsive": [
+    {
+      "width": 360,
+      "horizontalOverflow": false,
+      "domainTargets": [
+        {
+          "width": 155,
+          "height": 112
+        },
+        {
+          "width": 155,
+          "height": 112
+        },
+        {
+          "width": 155,
+          "height": 112
+        },
+        {
+          "width": 155,
+          "height": 112
+        },
+        {
+          "width": 155,
+          "height": 112
+        },
+        {
+          "width": 155,
+          "height": 112
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "horizontalOverflow": false,
+      "domainTargets": [
+        {
+          "width": 170,
+          "height": 112
+        },
+        {
+          "width": 170,
+          "height": 112
+        },
+        {
+          "width": 170,
+          "height": 112
+        },
+        {
+          "width": 170,
+          "height": 112
+        },
+        {
+          "width": 170,
+          "height": 112
+        },
+        {
+          "width": 170,
+          "height": 112
+        }
+      ]
+    },
+    {
+      "width": 768,
+      "horizontalOverflow": false,
+      "domainTargets": [
+        {
+          "width": 191.15625,
+          "height": 93.1875
+        },
+        {
+          "width": 191.15625,
+          "height": 93.1875
+        },
+        {
+          "width": 191.15625,
+          "height": 93.1875
+        },
+        {
+          "width": 191.15625,
+          "height": 93.1875
+        },
+        {
+          "width": 191.15625,
+          "height": 93.1875
+        },
+        {
+          "width": 191.15625,
+          "height": 93.1875
+        }
+      ]
+    },
+    {
+      "width": 1024,
+      "horizontalOverflow": false,
+      "domainTargets": [
+        {
+          "width": 260.265625,
+          "height": 81
+        },
+        {
+          "width": 260.265625,
+          "height": 81
+        },
+        {
+          "width": 260.265625,
+          "height": 81
+        },
+        {
+          "width": 260.265625,
+          "height": 81
+        },
+        {
+          "width": 260.265625,
+          "height": 81
+        },
+        {
+          "width": 260.265625,
+          "height": 81
+        }
+      ]
+    },
+    {
+      "width": 1440,
+      "horizontalOverflow": false,
+      "domainTargets": [
+        {
+          "width": 280.25,
+          "height": 81
+        },
+        {
+          "width": 280.25,
+          "height": 81
+        },
+        {
+          "width": 280.25,
+          "height": 81
+        },
+        {
+          "width": 280.25,
+          "height": 81
+        },
+        {
+          "width": 280.25,
+          "height": 81
+        },
+        {
+          "width": 280.25,
+          "height": 81
+        }
+      ]
+    },
+    {
+      "width": 1920,
+      "horizontalOverflow": false,
+      "domainTargets": [
+        {
+          "width": 328.859375,
+          "height": 91
+        },
+        {
+          "width": 328.859375,
+          "height": 91
+        },
+        {
+          "width": 328.859375,
+          "height": 91
+        },
+        {
+          "width": 328.859375,
+          "height": 91
+        },
+        {
+          "width": 328.859375,
+          "height": 91
+        },
+        {
+          "width": 328.859375,
+          "height": 91
+        }
+      ]
+    }
+  ],
+  "performance": {
+    "environment": "Headless Chromium, development Vite server, unthrottled sandbox; not production RUM or a low-end-device guarantee",
+    "idleWindowSeconds": 1.5026749459999564,
+    "idleTaskSeconds": 0.0018620000000000002,
+    "idleScriptSeconds": 0,
+    "domNodes": 9614,
+    "jsHeapUsedBytes": 73981056,
+    "activeIdleAnimations": 0,
+    "svgElements": 27,
+    "canvasElements": 0,
+    "resources": [
+      {
+        "name": "http://127.0.0.1:4173/@vite/client",
+        "transferSize": 300,
+        "duration": 4.599999999976717
+      },
+      {
+        "name": "http://127.0.0.1:4173/main.tsx?t=1792254798778",
+        "transferSize": 300,
+        "duration": 5.599999999976717
+      },
+      {
+        "name": "http://127.0.0.1:4173/@react-refresh",
+        "transferSize": 300,
+        "duration": 1.599999999976717
+      },
+      {
+        "name": "http://127.0.0.1:4173/@fs/home/ubuntu/gaultline/node_modules/.pnpm/vite@7.1.9_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.30.1_tsx@4.20.6/node_modules/vite/dist/client/env.mjs",
+        "transferSize": 300,
+        "duration": 3.199999999953434
+      },
+      {
+        "name": "http://127.0.0.1:4173/@fs/home/ubuntu/gaultline/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=65ea79fb",
+        "transferSize": 0,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:4173/@fs/home/ubuntu/gaultline/node_modules/.vite/deps/react.js?v=65ea79fb",
+        "transferSize": 0,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:4173/@fs/home/ubuntu/gaultline/node_modules/.vite/deps/react-dom_client.js?v=ed59a251",
+        "transferSize": 0,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:4173/@fs/home/ubuntu/gaultline/client/src/components/intelligence-core-visual/IntelligenceCoreExperience.tsx?t=1792254798778",
+        "transferSize": 300,
+        "duration": 4.5
+      },
+      {
+        "name": "http://127.0.0.1:4173/fixtures.ts?t=1792254730344",
+        "transferSize": 300,
+        "duration": 5.300000000046566
+      },
+      {
+        "name": "http://127.0.0.1:4173/preview.css",
+        "transferSize": 300,
+        "duration": 8.800000000046566
+      },
+      {
+        "name": "http://127.0.0.1:4173/@fs/home/ubuntu/gaultline/node_modules/.vite/deps/chunk-PJ76SMUZ.js?v=dfc2f882",
+        "transferSize": 0,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:4173/@fs/home/ubuntu/gaultline/node_modules/.vite/deps/chunk-IBPQTRP2.js?v=dfc2f882",
+        "transferSize": 0,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:4173/@fs/home/ubuntu/gaultline/node_modules/.vite/deps/lucide-react.js?v=5f831a55",
+        "transferSize": 0,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:4173/@fs/home/ubuntu/gaultline/client/src/components/intelligence-core-visual/adapter.ts?t=1792254730344",
+        "transferSize": 300,
+        "duration": 4.800000000046566
+      },
+      {
+        "name": "http://127.0.0.1:4173/@fs/home/ubuntu/gaultline/client/src/components/intelligence-core-visual/CoreTopology.tsx?t=1792254798561",
+        "transferSize": 300,
+        "duration": 8.900000000023283
+      },
+      {
+        "name": "http://127.0.0.1:4173/@fs/home/ubuntu/gaultline/client/src/components/intelligence-core-visual/EvidenceDrawer.tsx?t=1792254798561",
+        "transferSize": 300,
+        "duration": 9.600000000093132
+      },
+      {
+        "name": "http://127.0.0.1:4173/@fs/home/ubuntu/gaultline/client/src/components/intelligence-core-visual/Panels.tsx?t=1792254742760",
+        "transferSize": 300,
+        "duration": 9.699999999953434
+      },
+      {
+        "name": "http://127.0.0.1:4173/@fs/home/ubuntu/gaultline/client/src/components/intelligence-core-visual/intelligence-core.css?t=1792254798778",
+        "transferSize": 300,
+        "duration": 9.900000000023283
+      },
+      {
+        "name": "http://127.0.0.1:4173/@fs/home/ubuntu/gaultline/client/src/components/intelligence-core-visual/types.ts",
+        "transferSize": 300,
+        "duration": 4.599999999976717
+      },
+      {
+        "name": "http://127.0.0.1:4173/@fs/home/ubuntu/gaultline/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=5641e5ba",
+        "transferSize": 0,
+        "duration": 0
+      },
+      {
+        "name": "http://127.0.0.1:4173/@fs/home/ubuntu/gaultline/client/src/components/intelligence-core-visual/panels.css?t=1792254742760",
+        "transferSize": 300,
+        "duration": 3.300000000046566
+      },
+      {
+        "name": "http://127.0.0.1:4173/@fs/home/ubuntu/gaultline/node_modules/.vite/deps/chunk-VET2KMJB.js?v=dfc2f882",
+        "transferSize": 0,
+        "duration": 0
+      }
+    ]
+  },
+  "consoleErrors": [],
+  "productionApiRequests": [],
+  "passed": true
+}

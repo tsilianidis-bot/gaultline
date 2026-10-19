@@ -1,0 +1,191 @@
+{
+  "baselineCommit": "51d94e899f65b9026925e927c6f43f941dbdce74",
+  "regressions": {
+    "baseline": 70,
+    "refinement": 84
+  },
+  "browserChecks": {
+    "baseline": 44,
+    "retained": 44,
+    "added": 41,
+    "total": 85,
+    "allPassed": true
+  },
+  "desktop": {
+    "before": {
+      "environment": "Fresh headless Chromium, compiled standalone preview, unthrottled sandbox; not production RUM or a low-end-device guarantee",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "readyIncludingNetworkIdleMs": 774.5206209997377,
+      "paint": [
+        {
+          "name": "first-paint",
+          "ms": 72
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 764
+        }
+      ],
+      "largestContentfulPaintMs": 764,
+      "layoutShiftSum": 0,
+      "renderedDomElements": 342,
+      "svgElements": 27,
+      "canvasElements": 0,
+      "activeIdleAnimations": 0,
+      "freshJsHeapUsedBytes": 3560600,
+      "idleTaskSecondsOver1500ms": 0.0016890000000000002,
+      "idleScriptSecondsOver1500ms": 0,
+      "assets": [
+        {
+          "file": "index-C5Swgb0T.css",
+          "bytes": 29589,
+          "gzipBytes": 6272
+        },
+        {
+          "file": "index-KSmpImtd.js",
+          "bytes": 280282,
+          "gzipBytes": 87360
+        }
+      ],
+      "evidenceDrawerWorksOnCompiledPreview": true,
+      "focusRestoredOnCompiledPreview": true,
+      "allRequestsLocal": true
+    },
+    "after": {
+      "environment": "Fresh headless Chromium, compiled standalone preview, 1x CPU throttle; local network, lab observation only, not production RUM or a real-device guarantee",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "readyIncludingNetworkIdleMs": 646.3301839999076,
+      "paint": [
+        {
+          "name": "first-paint",
+          "ms": 68
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 612
+        }
+      ],
+      "largestContentfulPaintMs": 612,
+      "layoutShiftSum": 0,
+      "renderedDomElements": 447,
+      "svgElements": 28,
+      "canvasElements": 0,
+      "activeIdleAnimations": 0,
+      "freshJsHeapUsedBytes": 3738696,
+      "idleTaskSecondsOver1500ms": 0.006283,
+      "idleScriptSecondsOver1500ms": 0.000143,
+      "assets": [
+        {
+          "file": "index-uAUfKqZR.css",
+          "bytes": 57871,
+          "gzipBytes": 10931
+        },
+        {
+          "file": "index-CzxCsRSy.js",
+          "bytes": 298734,
+          "gzipBytes": 92504
+        }
+      ],
+      "evidenceDrawerWorksOnCompiledPreview": true,
+      "focusRestoredOnCompiledPreview": true,
+      "allRequestsLocal": true
+    }
+  },
+  "mobile4xCpu": {
+    "before": {
+      "environment": "Fresh headless Chromium, compiled standalone preview, 4x CPU throttle; local network, lab observation only, not production RUM or a real-device guarantee",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "readyIncludingNetworkIdleMs": 1117.26670500002,
+      "paint": [
+        {
+          "name": "first-paint",
+          "ms": 80
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 980
+        }
+      ],
+      "largestContentfulPaintMs": 980,
+      "layoutShiftSum": 0,
+      "renderedDomElements": 342,
+      "svgElements": 27,
+      "canvasElements": 0,
+      "activeIdleAnimations": 0,
+      "freshJsHeapUsedBytes": 3570076,
+      "idleTaskSecondsOver1500ms": 0.006683,
+      "idleScriptSecondsOver1500ms": 0,
+      "assets": [
+        {
+          "file": "index-C5Swgb0T.css",
+          "bytes": 29589,
+          "gzipBytes": 6272
+        },
+        {
+          "file": "index-KSmpImtd.js",
+          "bytes": 280282,
+          "gzipBytes": 87360
+        }
+      ],
+      "evidenceDrawerWorksOnCompiledPreview": true,
+      "focusRestoredOnCompiledPreview": true,
+      "allRequestsLocal": true
+    },
+    "after": {
+      "environment": "Fresh headless Chromium, compiled standalone preview, 4x CPU throttle; local network, lab observation only, not production RUM or a real-device guarantee",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "readyIncludingNetworkIdleMs": 1081.9669889997385,
+      "paint": [
+        {
+          "name": "first-paint",
+          "ms": 84
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 940
+        }
+      ],
+      "largestContentfulPaintMs": 940,
+      "layoutShiftSum": 0,
+      "renderedDomElements": 447,
+      "svgElements": 28,
+      "canvasElements": 0,
+      "activeIdleAnimations": 0,
+      "freshJsHeapUsedBytes": 3728652,
+      "idleTaskSecondsOver1500ms": 0.006409,
+      "idleScriptSecondsOver1500ms": 0.0,
+      "assets": [
+        {
+          "file": "index-uAUfKqZR.css",
+          "bytes": 57871,
+          "gzipBytes": 10931
+        },
+        {
+          "file": "index-CzxCsRSy.js",
+          "bytes": 298734,
+          "gzipBytes": 92504
+        }
+      ],
+      "evidenceDrawerWorksOnCompiledPreview": true,
+      "focusRestoredOnCompiledPreview": true,
+      "allRequestsLocal": true
+    }
+  },
+  "assetGzipBytesBefore": 93632,
+  "assetGzipBytesAfter": 103435,
+  "notes": "Single cold lab observations, local network; no statistical improvement claim or physical-device guarantee. Inherited and focused reports record affected-path rechecks rather than repeating unrelated acceptance work.",
+  "assetGzipDeltaBytes": 9803,
+  "heapDeltaBytes": 178096
+}

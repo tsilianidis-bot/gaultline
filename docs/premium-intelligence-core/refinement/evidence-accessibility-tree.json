@@ -1,0 +1,833 @@
+[
+  {
+    "role": "RootWebArea",
+    "name": "FAULTLINE \u2014 isolated Intelligence Core design preview",
+    "properties": [
+      {
+        "name": "focusable",
+        "value": {
+          "type": "booleanOrUndefined",
+          "value": true
+        }
+      },
+      {
+        "name": "focused",
+        "value": {
+          "type": "booleanOrUndefined",
+          "value": true
+        }
+      },
+      {
+        "name": "url",
+        "value": {
+          "type": "string",
+          "value": "http://127.0.0.1:4173/?state=transitions"
+        }
+      }
+    ]
+  },
+  {
+    "role": "generic",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "generic",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "dialog",
+    "name": "Liquidity Stress",
+    "properties": [
+      {
+        "name": "focusable",
+        "value": {
+          "type": "booleanOrUndefined",
+          "value": true
+        }
+      },
+      {
+        "name": "modal",
+        "value": {
+          "type": "boolean",
+          "value": false
+        }
+      },
+      {
+        "name": "describedby",
+        "value": {
+          "type": "idrefList",
+          "value": "radix-_r_5_",
+          "relatedNodes": [
+            {
+              "backendDOMNodeId": 502,
+              "idref": "radix-_r_5_"
+            }
+          ]
+        }
+      },
+      {
+        "name": "labelledby",
+        "value": {
+          "type": "nodeList",
+          "relatedNodes": [
+            {
+              "backendDOMNodeId": 501,
+              "idref": "radix-_r_4_",
+              "text": "Liquidity Stress"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "role": "main",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "banner",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "heading",
+    "name": "Liquidity Stress",
+    "properties": [
+      {
+        "name": "level",
+        "value": {
+          "type": "integer",
+          "value": 2
+        }
+      }
+    ]
+  },
+  {
+    "role": "paragraph",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "DEMONSTRATION ONLY \u2014 every observation here is a fictional design fixture, not live or historical market evidence.",
+    "properties": []
+  },
+  {
+    "role": "generic",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "heading",
+    "name": "Supporting evidence",
+    "properties": [
+      {
+        "name": "level",
+        "value": {
+          "type": "integer",
+          "value": 3
+        }
+      }
+    ]
+  },
+  {
+    "role": "StaticText",
+    "name": "1",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": " CONNECTED",
+    "properties": []
+  },
+  {
+    "role": "article",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "generic",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "contentinfo",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "region",
+    "name": "FAULTLINE Intelligence Core",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "EVIDENCE / INTELLIGENCE LINEAGE",
+    "properties": []
+  },
+  {
+    "role": "button",
+    "name": "Close evidence panel",
+    "properties": [
+      {
+        "name": "invalid",
+        "value": {
+          "type": "token",
+          "value": "false"
+        }
+      },
+      {
+        "name": "focusable",
+        "value": {
+          "type": "booleanOrUndefined",
+          "value": true
+        }
+      },
+      {
+        "name": "focused",
+        "value": {
+          "type": "booleanOrUndefined",
+          "value": true
+        }
+      }
+    ]
+  },
+  {
+    "role": "StaticText",
+    "name": "Liquidity Stress",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Source observations and analytical context, kept separate from current market claims.",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "DEMONSTRATION ONLY \u2014 every observation here is a fictional design fixture, not ",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "live or historical market evidence.",
+    "properties": []
+  },
+  {
+    "role": "generic",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "heading",
+    "name": "What this means",
+    "properties": [
+      {
+        "name": "level",
+        "value": {
+          "type": "integer",
+          "value": 3
+        }
+      }
+    ]
+  },
+  {
+    "role": "paragraph",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "heading",
+    "name": "Why it matters",
+    "properties": [
+      {
+        "name": "level",
+        "value": {
+          "type": "integer",
+          "value": 3
+        }
+      }
+    ]
+  },
+  {
+    "role": "paragraph",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "heading",
+    "name": "Market context",
+    "properties": [
+      {
+        "name": "level",
+        "value": {
+          "type": "integer",
+          "value": 3
+        }
+      }
+    ]
+  },
+  {
+    "role": "paragraph",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "DescriptionList",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Supporting evidence",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "1",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": " CONNECTED",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Verified current",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "DEMO-liquidity",
+    "properties": []
+  },
+  {
+    "role": "heading",
+    "name": "Liquidity Stress \u2014 fictional observation",
+    "properties": [
+      {
+        "name": "level",
+        "value": {
+          "type": "integer",
+          "value": 4
+        }
+      }
+    ]
+  },
+  {
+    "role": "generic",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "paragraph",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "DescriptionList",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "heading",
+    "name": "Evidence-supported relationships",
+    "properties": [
+      {
+        "name": "level",
+        "value": {
+          "type": "integer",
+          "value": 3
+        }
+      }
+    ]
+  },
+  {
+    "role": "article",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Observation time is not request time. Delayed, stale, modeled and degraded inputs are never presented as verified current measurements.",
+    "properties": []
+  },
+  {
+    "role": "complementary",
+    "name": "Market interpretation",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "EVIDENCE / INTELLIGENCE LINEAGE",
+    "properties": []
+  },
+  {
+    "role": "image",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Liquidity Stress",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Source observations and analytical context, kept separate from ",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "current market claims.",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Verified current",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "What this means",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Updated funding context \u00b7 fictional",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Why it matters",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Liquidity evidence helps explain whether market participants can obtain funding and transfer risk. A change requires source-backed confirmation.",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Market context",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Fictional example: admitted liquidity evidence contributes context to the Core readout. This is not a live market assessment.",
+    "properties": []
+  },
+  {
+    "role": "term",
+    "name": "Last source observation",
+    "properties": []
+  },
+  {
+    "role": "definition",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "term",
+    "name": "Developing since",
+    "properties": []
+  },
+  {
+    "role": "definition",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "term",
+    "name": "Historical comparison",
+    "properties": []
+  },
+  {
+    "role": "definition",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Supporting evidence",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Verified current",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "DEMO-liquidity",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Liquidity Stress \u2014 fictional observation",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Changed funding observation \u00b7 fictional fixture",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Fictional fixture used to demonstrate the evidence classification and drawer. This is not a verified observation of any real market.",
+    "properties": []
+  },
+  {
+    "role": "term",
+    "name": "Source",
+    "properties": []
+  },
+  {
+    "role": "definition",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "term",
+    "name": "Observation",
+    "properties": []
+  },
+  {
+    "role": "definition",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Evidence-supported relationships",
+    "properties": []
+  },
+  {
+    "role": "image",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "ASSOCIATION \u00b7 NOT CAUSATION",
+    "properties": []
+  },
+  {
+    "role": "paragraph",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Evidence: DEMO-liquidity, DEMO-credit",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Observation time is not request time. Delayed, stale, modeled and degraded inputs are never presented as ",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "verified current measurements.",
+    "properties": []
+  },
+  {
+    "role": "status",
+    "name": "",
+    "properties": [
+      {
+        "name": "live",
+        "value": {
+          "type": "token",
+          "value": "polite"
+        }
+      },
+      {
+        "name": "atomic",
+        "value": {
+          "type": "boolean",
+          "value": true
+        }
+      },
+      {
+        "name": "relevant",
+        "value": {
+          "type": "tokenList",
+          "value": "additions text"
+        }
+      }
+    ]
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Verified current",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "What this means",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Updated funding context \u00b7 fictional",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Why it matters",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Liquidity evidence helps explain whether market participants can obtain funding ",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "and transfer risk. A change requires source-backed confirmation.",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Market context",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Fictional example: admitted liquidity evidence contributes context to the Core ",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "readout. This is not a live market assessment.",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Last source observation",
+    "properties": []
+  },
+  {
+    "role": "time",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Developing since",
+    "properties": []
+  },
+  {
+    "role": "time",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Historical comparison",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Historical comparison (current): Historical comparison (current): Historical comparison (current): Historical comparison (current): No actual historical comparison. This example demonstrates where verified historical context would appear.",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Liquidity Stress \u2014 fictional observation",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Changed funding observation \u00b7 ",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "fictional fixture",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Fictional fixture used to demonstrate the evidence classification and drawer. This is ",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "not a verified observation of any real market.",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Source",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Design fixture \u00b7 no real provider",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Observation",
+    "properties": []
+  },
+  {
+    "role": "time",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Evidence-supported relationships",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "ASSOCIATION \u00b7 NOT CAUSATION",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Fictional supported association between two supplied observations. Association does not establish contagion or causation. No real-world relationship is claimed.",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Evidence: DEMO-liquidity, DEMO-credit",
+    "properties": []
+  },
+  {
+    "role": "list",
+    "name": "",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Last source observation",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Oct 17, 2026, 19:18 UTC",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Developing since",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Oct 12, 2026, 20:00 UTC",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Historical comparison",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Historical comparison (current): Historical ",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "comparison (current): Historical comparison ",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "(current): Historical comparison (current): No ",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "actual historical comparison. This example ",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "demonstrates where verified historical context ",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "would appear.",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Source",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Design fixture \u00b7 no real provider",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Observation",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "Oct 17, 2026, 19:18 UTC",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Fictional supported association between two supplied observations. Association ",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "does not establish contagion or causation. No real-world relationship is claimed.",
+    "properties": []
+  },
+  {
+    "role": "listitem",
+    "name": "",
+    "properties": [
+      {
+        "name": "level",
+        "value": {
+          "type": "integer",
+          "value": 1
+        }
+      }
+    ]
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Oct 17, 2026, 19:18 UTC",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Oct 12, 2026, 20:00 UTC",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "Oct 17, 2026, 19:18 UTC",
+    "properties": []
+  },
+  {
+    "role": "StaticText",
+    "name": "1 newly supported association",
+    "properties": []
+  },
+  {
+    "role": "InlineTextBox",
+    "name": "1 newly supported association",
+    "properties": []
+  }
+]
