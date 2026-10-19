@@ -6,6 +6,7 @@
    ============================================================ */
 import { useMemo } from "react";
 import { finiteOrNull } from "@/lib/displayFallbacks";
+import { formatObservedFixed } from "@/lib/nullableFormat";
 import { trpc } from "@/lib/trpc";
 import { TrendingUp, TrendingDown, Minus, ChevronRight } from "lucide-react";
 
@@ -172,10 +173,12 @@ export default function MobileRotation() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-2xl font-bold font-mono text-[#F59E0B]">
-                {rotation.btcDominance.current.toFixed(1)}%
+                {formatObservedFixed(rotation.btcDominance.current, 1, "%")}
               </div>
               <div className="text-[10px] font-mono text-[#64748B] mt-0.5">
-                {rotation.btcDominance.trend === "rising"
+                {rotation.btcDominance.current == null
+                  ? "Unavailable — dominance was not supplied"
+                  : rotation.btcDominance.trend === "rising"
                   ? "↑ Rising — Bitcoin dominance expanding"
                   : rotation.btcDominance.trend === "falling"
                   ? "↓ Falling — Altcoin rotation underway"

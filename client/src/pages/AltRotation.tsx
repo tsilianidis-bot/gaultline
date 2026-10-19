@@ -7,6 +7,7 @@ import { Link } from "wouter";
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO } from "@/hooks/useSEO";
 import { evidenceStatusLabel } from "../../../shared/evidenceStatus";
+import { formatObservedFixed } from "@/lib/nullableFormat";
 
 export function AltRotationFreshness({ observedAtMs, nowMs }: { observedAtMs?: number | null; nowMs?: number }) {
   const hasObservation = typeof observedAtMs === "number" && Number.isFinite(observedAtMs);
@@ -40,14 +41,15 @@ interface AltRotationPayload {
   score: number; regime: string;
   regimeKey: "btc_dominance" | "early_rotation" | "selective_expansion" | "broad_altseason" | "speculative_mania";
   regimeColor: string;
-  btcDominance: { current: number; trend: string; velocity: number; pressure: string; signal: string; score: number };
+  btcDominance: { current: number | null; trend: string | null; velocity: number; pressure: string | null; signal: string; score: number | null };
+  ethDominance: number | null;
   ethLeadership: { ethBtcRatio: number; ethChange24h: number; btcChange24h: number; relativePerformance: number; status: string; label: string; trend: string; score: number };
   stablecoinLiquidity: { usdtMarketCap: number; usdcMarketCap: number; totalStablecoinCap: number; usdtChange24h: number; usdcChange24h: number; combinedChange24h: number; status: string; label: string; score: number };
   sectors: SectorData[];
-  marketBreadth: { total2Proxy: number; total3Proxy: number; altcoinDominance: number; breadthSignal: string; score: number };
+  marketBreadth: { total2Proxy: number; total3Proxy: number; altcoinDominance: number | null; ethDominance: number | null; breadthSignal: string; score: number | null };
   alerts: RotationAlert[];
   aiCommentary: string;
-  scoreBreakdown: { label: string; weight: number; rawScore: number; contribution: number }[];
+  scoreBreakdown: { label: string; weight: number; rawScore: number | null; contribution: number | null }[];
   fetchedAt: number; dataSource: string;
 }
 
@@ -198,11 +200,11 @@ function ArcGauge({ score, color, regime }: { score: number; color: string; regi
 
 // ── Score Breakdown Bar ───────────────────────────────────────
 function ScoreBar({ label, weight, rawScore, contribution, color }: {
-  label: string; weight: number; rawScore: number; contribution: number; color: string;
+  label: string; weight: number; rawScore: number | null; contribution: number | null; color: string;
 }) {
   const [width, setWidth] = useState(0);
   useEffect(() => {
-    const t = setTimeout(() => setWidth(rawScore), 300);
+    const t = setTimeout(() => setWidth(rawScore ?? 0), 300);
     return () => clearTimeout(t);
   }, [rawScore]);
 
@@ -212,7 +214,7 @@ function ScoreBar({ label, weight, rawScore, contribution, color }: {
         <span className="text-xs font-mono text-zinc-400 tracking-wider">{label}</span>
         <div className="flex items-center gap-2">
           <span className="text-xs font-mono text-zinc-500">{weight}%</span>
-          <span className="text-xs font-mono font-bold" style={{ color }}>{contribution}pts</span>
+          <span className="text-xs font-mono font-bold" style={{ color }}>{contribution == null ? "Unavailable" : `${contribution}pts`}</span>
         </div>
       </div>
       <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
@@ -536,13 +538,13 @@ function AltRotationInner() {
                     color: d.btcDominance.pressure === "high" ? "#FF2D55" : d.btcDominance.pressure === "medium" ? "#F59E0B" : "#34D399",
                     borderColor: d.btcDominance.pressure === "high" ? "#FF2D5530" : d.btcDominance.pressure === "medium" ? "#F59E0B30" : "#34D39930",
                   }}>
-                  {d.btcDominance.pressure.toUpperCase()} PRESSURE
+                  {d.btcDominance.pressure == null ? "UNAVAILABLE" : `${d.btcDominance.pressure.toUpperCase()} PRESSURE`}
                 </div>
               </div>
 
               <div className="text-center py-4">
                 <div className="text-4xl font-mono font-bold text-amber-400">
-                  {d.btcDominance.current.toFixed(1)}%
+                  {formatObservedFixed(d.btcDominance.current, 1, "%")}
                 </div>
                 <div className="text-xs font-mono text-zinc-500 mt-1">BTC MARKET DOMINANCE</div>
               </div>
@@ -550,11 +552,11 @@ function AltRotationInner() {
               <div className="space-y-2">
                 <div className="flex justify-between text-xs font-mono">
                   <span className="text-zinc-500">TREND</span>
-                  <span className="text-zinc-300 capitalize">{d.btcDominance.trend}</span>
+                  <span className="text-zinc-300 capitalize">{d.btcDominance.trend ?? "Unavailable"}</span>
                 </div>
                 <div className="flex justify-between text-xs font-mono">
                   <span className="text-zinc-500">SCORE</span>
-                  <span style={{ color: regimeColor }}>{d.btcDominance.score}/100</span>
+                  <span style={{ color: regimeColor }}>{d.btcDominance.score == null ? "Unavailable" : `${d.btcDominance.score}/100`}</span>
                 </div>
               </div>
 
@@ -569,7 +571,7 @@ function AltRotationInner() {
                 </div>
                 <div className="h-2 bg-zinc-800 rounded-full overflow-hidden relative">
                   <div className="h-full rounded-full bg-amber-400/80"
-                    style={{ width: `${Math.min(100, Math.max(0, (d.btcDominance.current - 40) / 30 * 100))}%` }} />
+                    style={{ width: `${d.btcDominance.current == null ? 0 : Math.min(100, Math.max(0, (d.btcDominance.current - 40) / 30 * 100))}%` }} />
                 </div>
               </div>
             </div>
@@ -710,21 +712,21 @@ function AltRotationInner() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm font-mono">
                     <span className="text-zinc-400">Current Dominance</span>
-                    <span className="text-amber-400 font-bold">{d.btcDominance.current.toFixed(2)}%</span>
+                    <span className="text-amber-400 font-bold">{formatObservedFixed(d.btcDominance.current, 2, "%")}</span>
                   </div>
                   <div className="flex justify-between text-sm font-mono">
                     <span className="text-zinc-400">Trend</span>
-                    <span className="text-zinc-200 capitalize">{d.btcDominance.trend}</span>
+                    <span className="text-zinc-200 capitalize">{d.btcDominance.trend ?? "Unavailable"}</span>
                   </div>
                   <div className="flex justify-between text-sm font-mono">
                     <span className="text-zinc-400">Pressure</span>
                     <span className="capitalize" style={{ color: d.btcDominance.pressure === "high" ? "#FF2D55" : d.btcDominance.pressure === "medium" ? "#F59E0B" : "#34D399" }}>
-                      {d.btcDominance.pressure}
+                      {d.btcDominance.pressure ?? "Unavailable"}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm font-mono">
                     <span className="text-zinc-400">Engine Score</span>
-                    <span className="font-bold" style={{ color: regimeColor }}>{d.btcDominance.score}/100</span>
+                    <span className="font-bold" style={{ color: regimeColor }}>{d.btcDominance.score == null ? "Unavailable" : `${d.btcDominance.score}/100`}</span>
                   </div>
                 </div>
                 <div className="pt-3 border-t border-zinc-800 text-xs font-mono text-zinc-400 leading-relaxed">
@@ -805,7 +807,11 @@ function AltRotationInner() {
                   </div>
                   <div className="flex justify-between text-sm font-mono">
                     <span className="text-zinc-400">Altcoin Dominance</span>
-                    <span className="text-purple-400 font-bold">{d.marketBreadth.altcoinDominance.toFixed(1)}%</span>
+                    <span className="text-purple-400 font-bold">{formatObservedFixed(d.marketBreadth.altcoinDominance, 1, "%")}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-mono">
+                    <span className="text-zinc-400">ETH Dominance</span>
+                    <span className="text-cyan-400 font-bold">{formatObservedFixed(d.ethDominance, 1, "%")}</span>
                   </div>
                   <div className="flex justify-between text-sm font-mono">
                     <span className="text-zinc-400">Breadth Signal</span>
@@ -815,7 +821,7 @@ function AltRotationInner() {
                   </div>
                   <div className="flex justify-between text-sm font-mono">
                     <span className="text-zinc-400">Engine Score</span>
-                    <span className="font-bold" style={{ color: regimeColor }}>{d.marketBreadth.score}/100</span>
+                    <span className="font-bold" style={{ color: regimeColor }}>{d.marketBreadth.score == null ? "Unavailable" : `${d.marketBreadth.score}/100`}</span>
                   </div>
                 </div>
               </div>
@@ -831,7 +837,8 @@ function AltRotationInner() {
                 { label: "TOTAL CRYPTO MARKET", value: `$${((d.marketBreadth.total2Proxy + (d.stablecoinLiquidity.totalStablecoinCap)) / 1000).toFixed(2)}T`, color: regimeColor },
                 { label: "TOTAL2 (EX-BTC)", value: `$${d.marketBreadth.total2Proxy.toFixed(0)}B`, color: "#00D4FF" },
                 { label: "TOTAL3 (EX-BTC/ETH)", value: `$${d.marketBreadth.total3Proxy.toFixed(0)}B`, color: "#A78BFA" },
-                { label: "ALTCOIN DOMINANCE", value: `${d.marketBreadth.altcoinDominance.toFixed(1)}%`, color: "#34D399" },
+                { label: "ALTCOIN DOMINANCE", value: formatObservedFixed(d.marketBreadth.altcoinDominance, 1, "%"), color: "#34D399" },
+                { label: "ETH DOMINANCE", value: formatObservedFixed(d.ethDominance, 1, "%"), color: "#22D3EE" },
               ].map(stat => (
                 <div key={stat.label} className="rounded border border-zinc-800/60 p-5 text-center"
                   style={{ background: "rgba(8,8,8,0.95)" }}>

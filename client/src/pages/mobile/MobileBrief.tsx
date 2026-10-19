@@ -6,6 +6,7 @@
 import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { CRASH_RISK_DISPLAY_TEXT, contractScenarioClaim, contractScenarioText, contractTransitionClaim, probabilityText } from "@/lib/contractProbabilityText";
+import { formatObservedFixed } from "@/lib/nullableFormat";
 import { TrendingUp, Zap, Shield, RotateCcw, ChevronRight, Clock } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -222,9 +223,11 @@ export default function MobileBrief() {
         <BriefCard
           icon={<TrendingUp size={12} />}
           label="CRYPTO BRIEF"
-          title={`BTC Dominance: ${rotation.btcDominance.current.toFixed(1)}%`}
+          title={`BTC Dominance: ${formatObservedFixed(rotation.btcDominance.current, 1, "%")}`}
           body={`${rotation.regime}. ${
-            rotation.btcDominance.trend === "rising"
+            rotation.btcDominance.current == null
+              ? "Dominance unavailable. This is not an all-clear signal."
+              : rotation.btcDominance.trend === "rising"
               ? "Bitcoin is absorbing capital — altcoin rotation is limited."
               : rotation.btcDominance.trend === "falling"
               ? "BTC dominance declining — altcoin rotation window is open."

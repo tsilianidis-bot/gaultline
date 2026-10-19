@@ -22,12 +22,12 @@ const CG_CACHE_TTL = 3 * 60 * 1000; // 3 minutes
 // ── Types ─────────────────────────────────────────────────────
 
 export interface BtcDominanceData {
-  current: number;           // % e.g. 58.02
-  trend: "rising" | "falling" | "neutral";
+  current: number | null;    // % e.g. 58.02; null when CoinGecko did not supply it
+  trend: "rising" | "falling" | "neutral" | null;
   velocity: number;          // % change in dominance (proxy from ETH/BTC momentum)
-  pressure: "high" | "medium" | "low";
+  pressure: "high" | "medium" | "low" | null;
   signal: string;
-  score: number;             // 0–100 contribution (higher = more altseason)
+  score: number | null;      // null when dominance was not observed
 }
 
 export interface EthLeadershipData {
@@ -80,9 +80,10 @@ export interface SectorData {
 export interface MarketBreadthData {
   total2Proxy: number;       // total market cap excluding BTC (billions)
   total3Proxy: number;       // total market cap excluding BTC+ETH (billions)
-  altcoinDominance: number;  // 100 - BTC% - ETH%
-  breadthSignal: "expanding" | "contracting" | "neutral";
-  score: number;
+  altcoinDominance: number | null;  // 100 - BTC% - ETH%; null when either reading is missing
+  ethDominance: number | null;
+  breadthSignal: "expanding" | "contracting" | "neutral" | "unavailable";
+  score: number | null;
 }
 
 export interface RotationAlert {
@@ -100,13 +101,14 @@ export interface AltRotationPayload {
   regimeKey: "btc_dominance" | "early_rotation" | "selective_expansion" | "broad_altseason" | "speculative_mania";
   regimeColor: string;
   btcDominance: BtcDominanceData;
+  ethDominance: number | null;
   ethLeadership: EthLeadershipData;
   stablecoinLiquidity: StablecoinLiquidityData;
   sectors: SectorData[];
   marketBreadth: MarketBreadthData;
   alerts: RotationAlert[];
   aiCommentary: string;
-  scoreBreakdown: { label: string; weight: number; rawScore: number; contribution: number }[];
+  scoreBreakdown: { label: string; weight: number; rawScore: number | null; contribution: number | null }[];
   fetchedAt: number;
   dataSource: string;
 }
@@ -181,6 +183,14 @@ async function cgFetch(path: string, apiKey?: string): Promise<unknown> {
 
 function clamp(v: number, min = 0, max = 100): number {
   return Math.max(min, Math.min(max, v));
+}
+
+function observedPercent(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function dominancePhrase(current: number | null): string {
+  return current == null ? "BTC dominance unavailable" : `BTC dominance at ${current.toFixed(1)}%`;
 }
 
 function scoreBtcDominance(dom: number): { score: number; trend: BtcDominanceData["trend"]; pressure: BtcDominanceData["pressure"]; signal: string } {
@@ -259,22 +269,33 @@ function scoreSector(avgChange24h: number, avgChange7d: number): { score: number
 }
 
 function computeAltRotationScore(
-  btcDomScore: number,
+  btcDomScore: number | null,
   ethScore: number,
   stableScore: number,
   sectorScore: number,
-  breadthScore: number
+  breadthScore: number | null
 ): number {
-  // Weighted average
-  const weights = { btcDom: 0.30, eth: 0.25, stable: 0.20, sector: 0.15, breadth: 0.10 };
-  const raw =
-    btcDomScore * weights.btcDom +
-    ethScore * weights.eth +
-    stableScore * weights.stable +
-    sectorScore * weights.sector +
-    breadthScore * weights.breadth;
-
-  return clamp(Math.round(raw));
+  // Observed inputs keep the original weights. A missing dominance or breadth
+  // reading is omitted from both sides and cannot move the score.
+  if (btcDomScore != null && breadthScore != null) {
+    const raw =
+      btcDomScore * 0.30 +
+      ethScore * 0.25 +
+      stableScore * 0.20 +
+      sectorScore * 0.15 +
+      breadthScore * 0.10;
+    return clamp(Math.round(raw));
+  }
+  const parts = [
+    btcDomScore == null ? null : { score: btcDomScore, weight: 0.30 },
+    { score: ethScore, weight: 0.25 },
+    { score: stableScore, weight: 0.20 },
+    { score: sectorScore, weight: 0.15 },
+    breadthScore == null ? null : { score: breadthScore, weight: 0.10 },
+  ].filter((part): part is { score: number; weight: number } => part != null);
+  const weight = parts.reduce((sum, part) => sum + part.weight, 0);
+  if (weight <= 0) return 0;
+  return clamp(Math.round(parts.reduce((sum, part) => sum + part.score * part.weight, 0) / weight));
 }
 
 function getRegime(score: number): { regime: string; regimeKey: AltRotationPayload["regimeKey"]; regimeColor: string } {
@@ -294,23 +315,24 @@ function generateAlerts(
 ): RotationAlert[] {
   const alerts: RotationAlert[] = [];
   const now = Date.now();
+  const dominanceText = dominancePhrase(btcDom.current);
 
-  if (btcDom.current < 50) {
+  if (btcDom.current != null && btcDom.current < 50) {
     alerts.push({
       id: "btc_dom_weak",
       type: "dominance_shift",
       severity: "high",
       title: "Bitcoin Dominance Weakening",
-      body: `BTC dominance at ${btcDom.current.toFixed(1)}% — capital rotation into alts accelerating.`,
+      body: `${dominanceText} — capital rotation into alts accelerating.`,
       timestamp: now,
     });
-  } else if (btcDom.current > 62) {
+  } else if (btcDom.current != null && btcDom.current > 62) {
     alerts.push({
       id: "btc_dom_high",
       type: "dominance_shift",
       severity: "medium",
       title: "Bitcoin Dominance Elevated",
-      body: `BTC dominance at ${btcDom.current.toFixed(1)}% — altcoin capital under sustained pressure.`,
+      body: `${dominanceText} — altcoin capital under sustained pressure.`,
       timestamp: now,
     });
   }
@@ -391,15 +413,19 @@ function generateAiCommentary(
   sectors: SectorData[]
 ): string {
   const topSector = sectors.sort((a, b) => b.avgChange24h - a.avgChange24h)[0];
+  const dominanceText = dominancePhrase(btcDom.current);
   const ethStatus = eth.status === "outperforming" ? "ETH/BTC strengthening" : eth.status === "underperforming" ? "ETH/BTC weakening" : "ETH/BTC neutral";
   const stableStatus = stable.status === "expanding" ? "stablecoin liquidity expanding" : stable.status === "contracting" ? "stablecoin liquidity contracting" : "stablecoin supply stable";
 
   if (score >= 66) {
-    return `Broad altseason conditions confirmed. BTC dominance at ${btcDom.current.toFixed(1)}% with ${ethStatus} and ${stableStatus}. ${topSector.name} sector leading with ${topSector.avgChange24h.toFixed(1)}% average 24h performance. Systemic capital rotation into altcoins is underway — risk appetite elevated across multiple sectors simultaneously.`;
+    return `Broad altseason conditions confirmed. ${dominanceText} with ${ethStatus} and ${stableStatus}. ${topSector.name} sector leading with ${topSector.avgChange24h.toFixed(1)}% average 24h performance. Systemic capital rotation into altcoins is underway — risk appetite elevated across multiple sectors simultaneously.`;
   } else if (score >= 46) {
-    return `Selective alt expansion emerging. ${ethStatus} as BTC dominance holds at ${btcDom.current.toFixed(1)}%. ${stableStatus}. ${topSector.name} sector showing early rotation signals (+${topSector.avgChange24h.toFixed(1)}% 24h). Broad altseason not yet confirmed — capital rotation remains concentrated in quality names.`;
+    const holds = btcDom.current == null ? "BTC dominance is unavailable" : `BTC dominance holds at ${btcDom.current.toFixed(1)}%`;
+    return `Selective alt expansion emerging. ${ethStatus} as ${holds}. ${stableStatus}. ${topSector.name} sector showing early rotation signals (+${topSector.avgChange24h.toFixed(1)}% 24h). Broad altseason not yet confirmed — capital rotation remains concentrated in quality names.`;
   } else if (score >= 26) {
-    return `Early rotation watch conditions. BTC dominance at ${btcDom.current.toFixed(1)}% — moderating but not yet at altseason thresholds. ${ethStatus}. ${stableStatus}. Monitor ${topSector.name} sector for breakout confirmation. Conditions are building but not yet actionable for broad alt exposure.`;
+    return `Early rotation watch conditions. ${dominanceText} — moderating but not yet at altseason thresholds. ${ethStatus}. ${stableStatus}. Monitor ${topSector.name} sector for breakout confirmation. Conditions are building but not yet actionable for broad alt exposure.`;
+  } else if (btcDom.current == null) {
+    return `Bitcoin dominance unavailable. ${ethStatus}. ${stableStatus}. Altcoin capital flows cannot be read from a missing dominance print. This is not an all-clear signal.`;
   } else {
     return `Bitcoin dominance regime active at ${btcDom.current.toFixed(1)}%. ${ethStatus}. ${stableStatus}. Altcoin capital flows remain suppressed — BTC continues to absorb the majority of crypto market inflows. Wait for dominance breakdown below 55% before increasing alt exposure.`;
   }
@@ -425,8 +451,8 @@ export async function computeAltRotation(apiKey?: string): Promise<AltRotationPa
       };
     };
     const gd = globalData.data;
-    const btcDomPct = gd.market_cap_percentage.btc ?? 58;
-    const ethDomPct = gd.market_cap_percentage.eth ?? 9;
+    const btcDomPct = observedPercent(gd.market_cap_percentage?.btc);
+    const ethDomPct = observedPercent(gd.market_cap_percentage?.eth);
     const totalMcapUsd = gd.total_market_cap.usd ?? 0;
 
     // 2. BTC + ETH + stablecoin prices
@@ -500,15 +526,21 @@ export async function computeAltRotation(apiKey?: string): Promise<AltRotationPa
     });
 
     // ── BTC Dominance Engine ──────────────────────────────────
-    const btcDomScoring = scoreBtcDominance(btcDomPct);
-    const btcDominance: BtcDominanceData = {
-      current: parseFloat(btcDomPct.toFixed(2)),
-      trend: btcDomScoring.trend,
-      velocity: parseFloat((btcChange24h - ethChange24h).toFixed(2)),
-      pressure: btcDomScoring.pressure,
-      signal: btcDomScoring.signal,
-      score: btcDomScoring.score,
-    };
+    const velocity = parseFloat((btcChange24h - ethChange24h).toFixed(2));
+    const btcDominance: BtcDominanceData = btcDomPct == null
+      ? {
+          current: null,
+          trend: null,
+          velocity,
+          pressure: null,
+          signal: "BTC dominance unavailable",
+          score: null,
+        }
+      : {
+          current: parseFloat(btcDomPct.toFixed(2)),
+          velocity,
+          ...scoreBtcDominance(btcDomPct),
+        };
 
     // ── ETH Leadership Index ──────────────────────────────────
     const ethScoring = scoreEthLeadership(ethChange24h, btcChange24h, ethBtcRatio);
@@ -549,13 +581,15 @@ export async function computeAltRotation(apiKey?: string): Promise<AltRotationPa
     const totalMcapB = totalMcapUsd / 1e9;
     const total2Proxy = totalMcapB - btcMcap;
     const total3Proxy = totalMcapB - btcMcap - ethMcap;
-    const altcoinDominance = 100 - btcDomPct - ethDomPct;
-    const breadthScore = clamp(Math.round((altcoinDominance / 40) * 100)); // 40% altcoin dom = 100
+    const observedEth = ethDomPct == null ? null : parseFloat(ethDomPct.toFixed(2));
+    const altcoinDominance = btcDomPct == null || ethDomPct == null ? null : 100 - btcDomPct - ethDomPct;
+    const breadthScore = altcoinDominance == null ? null : clamp(Math.round((altcoinDominance / 40) * 100)); // 40% altcoin dom = 100
     const marketBreadth: MarketBreadthData = {
       total2Proxy: parseFloat(total2Proxy.toFixed(0)),
       total3Proxy: parseFloat(total3Proxy.toFixed(0)),
-      altcoinDominance: parseFloat(altcoinDominance.toFixed(2)),
-      breadthSignal: altcoinDominance > 35 ? "expanding" : altcoinDominance < 25 ? "contracting" : "neutral",
+      altcoinDominance: altcoinDominance == null ? null : parseFloat(altcoinDominance.toFixed(2)),
+      ethDominance: observedEth,
+      breadthSignal: altcoinDominance == null ? "unavailable" : altcoinDominance > 35 ? "expanding" : altcoinDominance < 25 ? "contracting" : "neutral",
       score: breadthScore,
     };
 
@@ -576,12 +610,14 @@ export async function computeAltRotation(apiKey?: string): Promise<AltRotationPa
     const { regime, regimeKey, regimeColor } = getRegime(score);
 
     // ── Score breakdown ───────────────────────────────────────
+    const weighted = (rawScore: number | null, weight: number) =>
+      rawScore == null ? null : Math.round(rawScore * weight);
     const scoreBreakdown = [
-      { label: "BTC Dominance Engine", weight: 30, rawScore: btcDominance.score, contribution: Math.round(btcDominance.score * 0.30) },
-      { label: "ETH Leadership Index", weight: 25, rawScore: ethLeadership.score, contribution: Math.round(ethLeadership.score * 0.25) },
-      { label: "Stablecoin Liquidity", weight: 20, rawScore: stablecoinLiquidity.score, contribution: Math.round(stablecoinLiquidity.score * 0.20) },
-      { label: "Sector Rotation", weight: 15, rawScore: Math.round(sectorComposite), contribution: Math.round(sectorComposite * 0.15) },
-      { label: "Market Breadth", weight: 10, rawScore: marketBreadth.score, contribution: Math.round(marketBreadth.score * 0.10) },
+      { label: "BTC Dominance Engine", weight: 30, rawScore: btcDominance.score, contribution: weighted(btcDominance.score, 0.30) },
+      { label: "ETH Leadership Index", weight: 25, rawScore: ethLeadership.score, contribution: weighted(ethLeadership.score, 0.25) },
+      { label: "Stablecoin Liquidity", weight: 20, rawScore: stablecoinLiquidity.score, contribution: weighted(stablecoinLiquidity.score, 0.20) },
+      { label: "Sector Rotation", weight: 15, rawScore: Math.round(sectorComposite), contribution: weighted(Math.round(sectorComposite), 0.15) },
+      { label: "Market Breadth", weight: 10, rawScore: marketBreadth.score, contribution: weighted(marketBreadth.score, 0.10) },
     ];
 
     // ── Alerts ────────────────────────────────────────────────
@@ -596,6 +632,7 @@ export async function computeAltRotation(apiKey?: string): Promise<AltRotationPa
       regimeKey,
       regimeColor,
       btcDominance,
+      ethDominance: observedEth,
       ethLeadership,
       stablecoinLiquidity,
       sectors,
@@ -609,7 +646,7 @@ export async function computeAltRotation(apiKey?: string): Promise<AltRotationPa
 
     cachedPayload = payload;
     cacheTime = Date.now();
-    log.info(`[AltRotation] Score: ${score} | Regime: ${regime} | BTC Dom: ${btcDomPct.toFixed(1)}%`);
+    log.info(`[AltRotation] Score: ${score} | Regime: ${regime} | BTC Dom: ${btcDomPct == null ? "unavailable" : `${btcDomPct.toFixed(1)}%`}`);
     return payload;
 
   } catch (err: unknown) {
