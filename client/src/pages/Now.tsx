@@ -45,6 +45,7 @@ import { SectorRotationMap } from "@/components/sectorRotation/SectorRotationMod
 import { useAuth } from "@/_core/hooks/useAuth";
 import { IntelligenceCoreExperience } from "@/components/intelligence-core-visual";
 import { presentVerifiedEvidenceCore } from "@/components/intelligence-core-visual/evidencePresentation";
+import type { IntelligenceEvidenceSnapshot } from "@shared/intelligenceEvidence";
 
 const NOW_DEEP_PATH = "/app/now/deep";
 
@@ -822,6 +823,8 @@ function DestinationLink({ href, label, detail }: { href: string; label: string;
 export default function Now() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
+  const utils = trpc.useUtils();
+  const previousEvidence = useRef<IntelligenceEvidenceSnapshot | null>(null);
   const {
     output, marketState, marketMode, sourceHealth,
     isLoading, lastUpdated, dataError, refresh,
@@ -832,15 +835,33 @@ export default function Now() {
   // The evidence endpoint is authenticated and never queried for a guest. A
   // missing, disabled, or mismatched response renders an explicit unavailable
   // Core rather than raw provider data or an inferred market conclusion.
-  const { data: evidenceResponse } = trpc.intelligenceEvidence.current.useQuery(undefined, {
+  const { data: evidenceResponse, error: evidenceError, refetch: refreshEvidence } = trpc.intelligenceEvidence.current.useQuery(undefined, {
     enabled: Boolean(user && canonicalState),
     staleTime: 60_000,
+    // This checks the canonical collector, not a tick feed. Its five-minute
+    // collection gate and provider-specific caches remain authoritative.
+    refetchInterval: query => query.state.error || query.state.data?.status === "DISABLED" ? false : 60_000,
+    refetchIntervalInBackground: false,
     retry: false,
   });
   const evidenceCore = useMemo(
-    () => presentVerifiedEvidenceCore(evidenceResponse, canonicalState),
-    [evidenceResponse, canonicalState],
+    () => presentVerifiedEvidenceCore(evidenceError ? null : evidenceResponse, canonicalState, previousEvidence.current),
+    [evidenceResponse, evidenceError, canonicalState],
   );
+  useEffect(() => {
+    const snapshot = evidenceResponse?.snapshot;
+    if (!snapshot || evidenceError || snapshot.canonicalStateId !== canonicalState?.stateId) return;
+    const prior = previousEvidence.current;
+    if (!prior || Date.parse(snapshot.capturedAt) > Date.parse(prior.capturedAt)) previousEvidence.current = snapshot;
+  }, [evidenceResponse, evidenceError, canonicalState?.stateId]);
+  useEffect(() => {
+    const stateId = evidenceResponse?.snapshot?.canonicalStateId;
+    if (!stateId || !canonicalState || stateId === canonicalState.stateId) return;
+    // Reconcile against the existing canonical provider rather than calculating
+    // a new regime when a later evidence collection arrives.
+    void utils.marketState.canonicalCurrent.invalidate();
+    void utils.marketState.current.invalidate();
+  }, [evidenceResponse?.snapshot?.canonicalStateId, canonicalState?.stateId, utils]);
 
   // Staged cinematic entry: phases 1–7 over ~5s
   const phase = useStagedLoad([0, 400, 900, 1500, 2200, 3000, 4000], [isLoading]);
@@ -917,7 +938,8 @@ export default function Now() {
 
   const handleRefresh = useCallback(() => {
     refresh();
-  }, [refresh]);
+    if (user && canonicalState) void refreshEvidence();
+  }, [refresh, refreshEvidence, user, canonicalState]);
 
   if (isLoading && !marketState) {
     return <PageLoadingState eyebrow="NOW · Current market state" message="Loading canonical market state…" />;
@@ -926,7 +948,10 @@ export default function Now() {
   // browser's deterministic engine runs on fixed DEFAULT_INDICATORS (demo
   // inputs), so it must never stand in for the market state.
   if (!marketState || !canonicalState) {
-    return <PageDegradedBanner message="Current canonical state is unavailable." detail="NOW withholds the current market reading until one authoritative state is available." />;
+    return <main className="min-h-screen bg-[#05080d] text-white p-4 md:p-8">
+      <PageDegradedBanner message="Current canonical state is unavailable." detail="NOW withholds the current market reading until one authoritative state is available." />
+      <IntelligenceCoreExperience model={evidenceCore} onNavigate={destination => navigate(CANONICAL_DESTINATION_BY_ID[destination].path)} />
+    </main>;
   }
 
   return (

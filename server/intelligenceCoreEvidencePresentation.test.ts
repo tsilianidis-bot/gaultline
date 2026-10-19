@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { IntelligenceEvidenceResponse } from "@shared/intelligenceEvidence";
+import type { IntelligenceEvidenceResponse, IntelligenceEvidenceSnapshot } from "@shared/intelligenceEvidence";
 import { presentVerifiedEvidenceCore } from "../client/src/components/intelligence-core-visual/evidencePresentation";
 
 function response(): IntelligenceEvidenceResponse {
@@ -67,6 +67,32 @@ const canonical = () => ({
   regime: "Caution",
 });
 
+function snapshotOf(value: IntelligenceEvidenceResponse): IntelligenceEvidenceSnapshot {
+  if (!value.snapshot) throw new Error("Expected test response to include a snapshot.");
+  return value.snapshot;
+}
+
+function canonicalEngine(
+  source: IntelligenceEvidenceSnapshot["observations"][number],
+  engineId: string,
+) {
+  return {
+    ...source,
+    id: `canonical:${engineId}`,
+    label: engineId,
+    kind: "canonical_model" as const,
+    provider: "FAULTLINE canonical MarketState",
+    origin: "modeled" as const,
+    value: 40,
+    unit: "score_0_to_100",
+    validationStatus: "delayed" as const,
+    modelVersion: "champion-v1",
+    sourceIdentifier: `canonical:canonical-1:${engineId}`,
+    temporalStatus: "modeled" as const,
+    temporalDetail: "Versioned canonical model output.",
+  };
+}
+
 describe("verified evidence Core presentation", () => {
   it("withholds the full assessment while retaining only server-admitted direct evidence", () => {
     const model = presentVerifiedEvidenceCore(response(), canonical());
@@ -96,5 +122,166 @@ describe("verified evidence Core presentation", () => {
     expect(model.mode).toBe("production");
     expect(model.integrity).toBe("unavailable");
     expect(model.integrityReason).toBe("Collection is disabled.");
+  });
+
+  it("keeps FRED releases recent, links their public series, and maps all six exact canonical engines", () => {
+    const value = response();
+    const snapshot = snapshotOf(value);
+    const quote = snapshot.observations[0]!;
+    snapshot.observations.push(
+      {
+        ...quote,
+        id: "fred:DGS10",
+        label: "10-year Treasury yield",
+        kind: "macro_release",
+        provider: "Federal Reserve Economic Data (FRED)",
+        value: 4.12,
+        unit: "percent",
+        sourceIdentifier: "fred:DGS10",
+        temporalStatus: "released",
+        temporalDetail: "Released macro observation.",
+      },
+      ...[
+        "liquidity-stress",
+        "credit-contagion",
+        "volatility-regime",
+        "macro-sensitivity",
+        "market-breadth",
+        "ai-bubble",
+      ].map(engineId => canonicalEngine(quote, engineId)),
+    );
+    snapshot.domains = snapshot.domains.map(domain => domain.id === "bonds_rates"
+      ? { ...domain, observationIds: ["fred:DGS10"], currentObservationIds: ["fred:DGS10"] }
+      : domain,
+    );
+
+    const model = presentVerifiedEvidenceCore(value, canonical());
+    expect(model.evidence).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: "fred:DGS10",
+        status: "recent",
+        sourceUrl: "https://fred.stlouisfed.org/series/DGS10",
+      }),
+      ...[
+        "liquidity-stress",
+        "credit-contagion",
+        "volatility-regime",
+        "macro-sensitivity",
+        "market-breadth",
+        "ai-bubble",
+      ].map(engineId => expect.objectContaining({ id: `canonical:${engineId}`, status: "static" })),
+    ]));
+    expect(model.domains.find(domain => domain.id === "macro")).toMatchObject({
+      status: "recent",
+      evidenceIds: ["fred:DGS10", "canonical:macro-sensitivity"],
+    });
+    for (const id of ["liquidity", "credit", "volatility", "breadth", "ai"] as const) {
+      expect(model.domains.find(domain => domain.id === id)).toMatchObject({
+        status: "static",
+        confidence: null,
+        confirmationConditions: [],
+        invalidationConditions: [],
+        pressureContribution: null,
+      });
+    }
+  });
+
+  it("marks an expired source deadline stale even when the source was recent or static", () => {
+    const value = response();
+    const snapshot = snapshotOf(value);
+    const quote = snapshot.observations[0]!;
+    const expired = new Date(Date.now() - 1_000).toISOString();
+    snapshot.observations.push(
+      {
+        ...quote,
+        id: "fred:DGS10",
+        kind: "macro_release",
+        provider: "Federal Reserve Economic Data (FRED)",
+        value: 4.12,
+        unit: "percent",
+        sourceIdentifier: "fred:DGS10",
+        temporalStatus: "released",
+        validUntil: expired,
+      },
+      { ...canonicalEngine(quote, "liquidity-stress"), validUntil: expired },
+    );
+    snapshot.domains = snapshot.domains.map(domain => domain.id === "bonds_rates"
+      ? { ...domain, observationIds: ["fred:DGS10"], currentObservationIds: [] }
+      : domain,
+    );
+
+    const model = presentVerifiedEvidenceCore(value, canonical());
+    expect(model.evidence.find(item => item.id === "fred:DGS10")?.status).toBe("stale");
+    expect(model.evidence.find(item => item.id === "canonical:liquidity-stress")?.status).toBe("stale");
+    expect(model.domains.find(domain => domain.id === "macro")?.status).toBe("stale");
+    expect(model.domains.find(domain => domain.id === "liquidity")?.status).toBe("stale");
+  });
+
+  it("fails closed rather than calling an unknown quote timing live", () => {
+    const value = response();
+    const snapshot = snapshotOf(value);
+    snapshot.observations[0] = {
+      ...snapshot.observations[0]!,
+      temporalStatus: "released" as never,
+    };
+
+    const model = presentVerifiedEvidenceCore(value, canonical());
+    expect(model.evidence.find(item => item.id === "quote:VIX")).toBeUndefined();
+    expect(model.domains.find(domain => domain.id === "volatility")?.status).toBe("unavailable");
+  });
+
+  it("exposes an exact, strictly later prior source observation without calculating a domain change", () => {
+    const value = response();
+    const snapshot = snapshotOf(value);
+    const previous = structuredClone(snapshot);
+    previous.observations[0] = {
+      ...previous.observations[0]!,
+      value: 17.5,
+      observedAt: new Date(Date.now() - 120_000).toISOString(),
+    };
+
+    const model = presentVerifiedEvidenceCore(value, canonical(), previous);
+    expect(model.domains.find(domain => domain.id === "volatility")?.previousObservation).toBe(
+      `quote:VIX (yahoo:^VIX): 17.5 points at ${previous.observations[0]!.observedAt} → 18.5 points at ${snapshot.observations[0]!.observedAt}`,
+    );
+  });
+
+  it("rejects an older response rather than regressing from a newer same-state snapshot", () => {
+    const value = response();
+    const snapshot = snapshotOf(value);
+    const previous = structuredClone(snapshot);
+    previous.capturedAt = new Date(Date.parse(snapshot.capturedAt) + 60_000).toISOString();
+
+    const model = presentVerifiedEvidenceCore(value, canonical(), previous);
+    expect(model.canonicalStateId).toBeNull();
+    expect(model.integrity).toBe("unavailable");
+    expect(model.evidence).toEqual([]);
+  });
+
+  it.each([
+    {
+      name: "a refreshed snapshot that only revises a same-timestamp value",
+      priorObservedAt: (snapshot: IntelligenceEvidenceSnapshot) => snapshot.observations[0]!.observedAt,
+    },
+    {
+      name: "an out-of-order prior source observation",
+      priorObservedAt: () => new Date(Date.now() - 30_000).toISOString(),
+    },
+    {
+      name: "a future-dated prior source observation",
+      priorObservedAt: () => new Date(Date.now() + 30_000).toISOString(),
+    },
+  ])("does not present a prior value for $name", ({ priorObservedAt }) => {
+    const value = response();
+    const snapshot = snapshotOf(value);
+    const previous = structuredClone(snapshot);
+    previous.observations[0] = {
+      ...previous.observations[0]!,
+      value: 17.5,
+      observedAt: priorObservedAt(snapshot),
+    };
+
+    const model = presentVerifiedEvidenceCore(value, canonical(), previous);
+    expect(model.domains.find(domain => domain.id === "volatility")?.previousObservation).toBeNull();
   });
 });

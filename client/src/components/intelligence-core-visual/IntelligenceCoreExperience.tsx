@@ -63,6 +63,7 @@ const THESIS: {
 const CLASSIFICATIONS = [
   "current",
   "delayed",
+  "recent",
   "stale",
   "static",
   "degraded",
@@ -90,7 +91,14 @@ export function IntelligenceCoreExperience({
   useEffect(() => {
     if (model.mode === "demonstration") return;
     const deadlines = model.evidence
-      .filter(item => item.status === "current" && item.validUntil)
+      .filter(
+        item =>
+          (item.status === "current" ||
+            item.status === "delayed" ||
+            item.status === "recent" ||
+            item.status === "static") &&
+          item.validUntil
+      )
       .map(item => Date.parse(item.validUntil!))
       .filter(value => Number.isFinite(value) && value >= Date.now());
     if (!deadlines.length) return;

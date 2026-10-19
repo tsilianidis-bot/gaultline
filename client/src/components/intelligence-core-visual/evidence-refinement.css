@@ -208,6 +208,27 @@
   color: var(--fic-text);
 }
 
+.fic.fic-drawer .fic-detail-fact--evidence-quality dd .fic-status {
+  font-size: 9px;
+}
+
+.fic.fic-drawer .fic-detail-fact--validity {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--fic-cyan) 5%, transparent),
+    transparent 72%
+  );
+}
+
+.fic.fic-drawer .fic-detail-fact--validity dt {
+  color: var(--fic-cyan);
+}
+
+.fic.fic-drawer .fic-detail-fact--validity.fic-detail-fact--stale dt,
+.fic.fic-drawer .fic-detail-fact--validity.fic-detail-fact--recent dt {
+  color: var(--fic-amber);
+}
+
 .fic.fic-drawer .fic-drawer-section-heading {
   padding: 21px 0 14px;
   border-top: 0;
