@@ -59,8 +59,8 @@ interface CryptoSystemicRisk {
   stablecoinLiquidity: "Expanding" | "Stable" | "Tightening" | "Contracting" | "Unavailable";
   volatilityRegime: "Low" | "Normal" | "Elevated" | "Extreme" | "Unavailable";
   leverageConditions: "Low" | "Normal" | "Elevated" | "Extreme";
-  marketBreadth: "Strong" | "Moderate" | "Weak" | "Deteriorating";
-  macroLiquidity: "Expanding" | "Neutral" | "Tightening" | "Contracting";
+  marketBreadth: "Strong" | "Moderate" | "Weak" | "Deteriorating" | "Unavailable";
+  macroLiquidity: "Expanding" | "Neutral" | "Tightening" | "Contracting" | "Unavailable";
   speculativeIntensity: "Low" | "Moderate" | "High" | "Extreme" | "Unavailable";
   breakdown: CryptoSignalVector[]; regime: string; regimeColor: string;
   summary: string; fetchedAt: number;

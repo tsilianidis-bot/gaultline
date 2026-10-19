@@ -86,8 +86,8 @@ export interface CryptoSystemicRisk {
   stablecoinLiquidity: "Expanding" | "Stable" | "Tightening" | "Contracting" | "Unavailable";
   volatilityRegime:   "Low" | "Normal" | "Elevated" | "Extreme" | "Unavailable";
   leverageConditions: "Low" | "Normal" | "Elevated" | "Extreme";
-  marketBreadth:      "Strong" | "Moderate" | "Weak" | "Deteriorating";
-  macroLiquidity:     "Expanding" | "Neutral" | "Tightening" | "Contracting";
+  marketBreadth:      "Strong" | "Moderate" | "Weak" | "Deteriorating" | "Unavailable";
+  macroLiquidity:     "Expanding" | "Neutral" | "Tightening" | "Contracting" | "Unavailable";
   speculativeIntensity: "Low" | "Moderate" | "High" | "Extreme" | "Unavailable";
   breakdown:          CryptoSignalVector[];
   regime:             string;
@@ -183,24 +183,32 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
 
   // 3. Volatility — average 24h range of top 20.
   // Coins with no reported range are left out of the average. An empty market
-  // list keeps the prior default of 5. A list whose ranges are all missing is withheld.
+  // list is withheld, not scored as a range of 5.
   const observedRanges = top20
     .map(c => c.volatility24h)
     .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
   const avgVol24h = observedRanges.length > 0
     ? observedRanges.reduce((sum, value) => sum + value, 0) / observedRanges.length
-    : top20.length === 0 ? 5 : null;
+    : null;
   const volScore = avgVol24h == null ? null
     : avgVol24h > 15 ? 9 : avgVol24h > 10 ? 7 : avgVol24h > 7 ? 5 :
       avgVol24h > 4  ? 3 : 1;
 
-  // 4. Macro pressure integration
-  const macroScore = macroP ? clamp(macroP.overallPressure / 10, 0, 10) : 5;
+  // 4. Macro pressure integration. A missing reading is withheld, not scored as 5.
+  let macroScore: number | null = null;
+  if (macroP && typeof macroP.overallPressure === "number" && Number.isFinite(macroP.overallPressure)) {
+    macroScore = clamp(macroP.overallPressure / 10, 0, 10);
+  }
 
-  // 5. Breadth — how many of top 20 are down >5% in 24h
-  const downCount = top20.filter(c => typeof c.priceChangePercent24h === "number" && c.priceChangePercent24h < -5).length;
-  const breadthScore = downCount > 15 ? 9 : downCount > 10 ? 7 : downCount > 6 ? 5 :
-                       downCount > 3  ? 3 : 1;
+  // 5. Breadth — how many of top 20 are down >5% in 24h.
+  // An empty list, or a list with no observed 24h changes, is withheld.
+  const observedChanges = top20.filter((c): c is typeof c & { priceChangePercent24h: number } =>
+    typeof c.priceChangePercent24h === "number" && Number.isFinite(c.priceChangePercent24h));
+  const breadthKnown = top20.length > 0 && observedChanges.length > 0;
+  const downCount = observedChanges.filter(c => c.priceChangePercent24h < -5).length;
+  const breadthScore = !breadthKnown ? null
+    : downCount > 15 ? 9 : downCount > 10 ? 7 : downCount > 6 ? 5 :
+      downCount > 3  ? 3 : 1;
 
   // 6. Stablecoin liquidity proxy — volume / market cap ratio of top stables.
   // Higher ratio = more active trading = potential stress.
@@ -221,7 +229,9 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
   // Weighted composite. When dominance, market-cap change, or the volume ratio
   // is missing, that weight is removed from both sides. Present inputs keep the
   // prior formula, including the dominanceWeight + 0.85 divisor.
-  const composite = mcScore != null && stableScore != null && volScore != null
+  const macroWeight = macroScore == null ? 0 : 0.20;
+  const breadthWeight = breadthScore == null ? 0 : 0.15;
+  const composite = mcScore != null && stableScore != null && volScore != null && macroScore != null && breadthScore != null
     ? (
       (btcDomScore ?? 0) * dominanceWeight +
       mcScore      * 0.25 +
@@ -234,14 +244,14 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
       (btcDomScore ?? 0) * dominanceWeight +
       (mcScore ?? 0) * (mcScore == null ? 0 : 0.25) +
       (volScore ?? 0) * (volScore == null ? 0 : 0.20) +
-      macroScore   * 0.20 +
-      breadthScore * 0.15 +
+      (macroScore ?? 0) * macroWeight +
+      (breadthScore ?? 0) * breadthWeight +
       (stableScore ?? 0) * (stableScore == null ? 0 : 0.05)
     ) / (
       dominanceWeight +
       (mcScore == null ? 0 : 0.25) +
       (volScore == null ? 0 : 0.20) +
-      0.35 +
+      (macroScore != null && breadthScore != null ? 0.35 : macroWeight + breadthWeight) +
       (stableScore == null ? 0 : 0.05)
     );
   const finalScore = clamp(composite, 0, 10);
@@ -263,10 +273,12 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
     finalScore > 3   ? "Normal"  : "Low";
 
   const marketBreadth: CryptoSystemicRisk["marketBreadth"] =
+    breadthScore == null ? "Unavailable" :
     downCount > 14 ? "Deteriorating" : downCount > 9 ? "Weak" :
     downCount > 4  ? "Moderate"      : "Strong";
 
   const macroLiquidity: CryptoSystemicRisk["macroLiquidity"] =
+    macroScore == null ? "Unavailable" :
     macroScore > 7 ? "Contracting" : macroScore > 5 ? "Tightening" :
     macroScore > 3 ? "Neutral"     : "Expanding";
 
@@ -308,8 +320,8 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
       ...(btcDom == null || btcDomScore == null ? [] : [{ label: "BTC Dominance", score: btcDomScore * 10, direction: btcDomScore > 5 ? "negative" as const : "positive" as const, description: `BTC dominance at ${btcDom.toFixed(1)}%` }]),
       ...(mcChange == null || mcScore == null ? [] : [{ label: "Market Cap Momentum", score: mcScore * 10, direction: mcScore > 5 ? "negative" as const : "positive" as const, description: `24h market cap change: ${mcChange.toFixed(1)}%` }]),
       ...(avgVol24h == null || volScore == null ? [] : [{ label: "Volatility", score: volScore * 10, direction: volScore > 5 ? "negative" as const : "positive" as const, description: `Avg 24h range: ${avgVol24h.toFixed(1)}%` }]),
-      { label: "Macro Pressure",      score: macroScore   * 10, direction: macroScore   > 5 ? "negative" : "positive", description: `FAULTLINE macro score: ${(macroScore * 10).toFixed(0)}` },
-      { label: "Market Breadth",      score: breadthScore * 10, direction: breadthScore > 5 ? "negative" : "positive", description: `${downCount}/20 top assets down >5%` },
+      ...(macroScore == null ? [] : [{ label: "Macro Pressure", score: macroScore * 10, direction: macroScore > 5 ? "negative" as const : "positive" as const, description: `FAULTLINE macro score: ${(macroScore * 10).toFixed(0)}` }]),
+      ...(breadthScore == null ? [] : [{ label: "Market Breadth", score: breadthScore * 10, direction: breadthScore > 5 ? "negative" as const : "positive" as const, description: `${downCount}/20 top assets down >5%` }]),
       ...(stableVolumeRatio == null || stableScore == null ? [] : [{ label: "Stablecoin Flow", score: stableScore * 10, direction: stableScore > 5 ? "negative" as const : "positive" as const, description: `Volume/MCap ratio: ${stableVolumeRatio.toFixed(1)}%` }]),
     ],
     regime,

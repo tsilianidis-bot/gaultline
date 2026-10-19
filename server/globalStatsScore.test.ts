@@ -42,7 +42,10 @@ function presentScore(btcDom: number, mcChange: number, ratio: number) {
 
 describe("systemic score with missing global totals", () => {
   beforeEach(() => {
-    mocks.getTopMarkets.mockResolvedValue([]);
+    mocks.getTopMarkets.mockResolvedValue([
+      { volatility24h: 5, priceChangePercent24h: 0 },
+      { volatility24h: 5, priceChangePercent24h: 0 },
+    ]);
     mocks.calculateFaultlinePressure.mockResolvedValue({ overallPressure: 40, regime: "MODERATE" });
   });
 
