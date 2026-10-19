@@ -10,6 +10,7 @@ export type DomainId = (typeof DOMAIN_IDS)[number];
 export type EvidenceStatus =
   | "current"
   | "delayed"
+  | "recent"
   | "stale"
   | "static"
   | "degraded"
@@ -44,6 +45,14 @@ export interface CoreDomain {
   context: string | null;
   developingSince: string | null;
   historicalComparison: string | null;
+  /** Supplied calibrated label only; this view never derives a numeric confidence. */
+  confidence?: string | null;
+  /** Canonical conditions are displayed as supplied only when domain lineage survives. */
+  confirmationConditions?: string[];
+  invalidationConditions?: string[];
+  /** A supplied domain detail, not a visual calculation of the central Pressure Index. */
+  pressureContribution?: string | null;
+  previousObservation?: string | null;
 }
 export interface CoreRelationship {
   id: string;

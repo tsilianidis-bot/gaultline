@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CanonicalIntelligenceState } from "../../shared/canonicalIntelligenceState";
+import { pressureVectorLabel } from "../../shared/pressureVectorLabels";
 import { canonicalEngineIntegrityEvidence } from "../canonicalIntelligenceState";
 import { buildEvidenceSnapshot, withinDeadline } from "./collector";
 
@@ -117,5 +118,29 @@ describe("Phase 1 Intelligence Evidence collector", () => {
     expect(snapshot.domains.find(domain => domain.id === "equities")).toMatchObject({ status: "healthy", currentObservationIds: ["quote:SPY", "quote:QQQ", "quote:IWM"] });
     expect(snapshot.domains.find(domain => domain.id === "crypto")).toMatchObject({ status: "healthy", currentObservationIds: ["coingecko:global-market-cap"] });
     expect(snapshot.domains.find(domain => domain.id === "liquidity")).toMatchObject({ status: "unavailable", observationIds: [] });
+  });
+
+  it("keeps the Cboe VIX quote out of the yield-curve vector family", () => {
+    const state = canonical();
+    const engine = state.engines[0]!;
+    state.engines = [
+      engine,
+      {
+        ...engine,
+        engineId: "volatility-regime",
+        engineName: pressureVectorLabel("volatility-regime"),
+      },
+    ];
+    const snapshot = buildEvidenceSnapshot(inputs({ canonical: state }), NOW);
+    const volatility = snapshot.domains.find(domain => domain.id === "volatility");
+    expect(volatility?.observationIds).toEqual(["quote:VIX"]);
+    expect(volatility?.observationIds).not.toContain("canonical:volatility-regime");
+    expect(volatility?.label).not.toBe(pressureVectorLabel("volatility-regime"));
+    expect(snapshot.observations.some(item => item.id === "canonical:volatility-regime")).toBe(true);
+    expect(snapshot.observations.find(item => item.id === "quote:VIX")?.label).toMatch(/Cboe Volatility Index/);
+    expect(snapshot.domains.find(domain => domain.id === "bonds_rates")?.observationIds).toEqual(["fred:DGS10", "fred:DGS2"]);
+    for (const id of ["fred:SOFR", "fred:UNRATE", "fred:CPIAUCSL", "fred:PPIACO", "fred:FEDFUNDS"]) {
+      expect(snapshot.observations.some(item => item.id === id)).toBe(false);
+    }
   });
 });

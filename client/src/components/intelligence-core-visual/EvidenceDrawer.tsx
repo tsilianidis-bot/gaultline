@@ -118,27 +118,69 @@ export function EvidenceDrawer({
                   "No evidence-supported market relationship has been connected."}
               </p>
               <dl className="fic-detail-facts">
-                <div>
+                <div className="fic-detail-fact">
                   <dt>Last source observation</dt>
                   <dd>
                     <ObservationTimestamp value={domain.observationAt} />
                   </dd>
                 </div>
-                <div>
+                <div className="fic-detail-fact fic-detail-fact--evidence-quality">
+                  <dt>Evidence quality</dt>
+                  <dd>
+                    <StatusBadge status={domain.status} />
+                  </dd>
+                </div>
+                <div className="fic-detail-fact fic-detail-fact--confidence">
+                  <dt>Calibrated confidence</dt>
+                  <dd>
+                    {domain.confidence ?? "Not supplied by canonical Core"}
+                  </dd>
+                </div>
+                <div className="fic-detail-fact">
                   <dt>Developing since</dt>
                   <dd>
                     {domain.developingSince ? (
                       <ObservationTimestamp value={domain.developingSince} />
                     ) : (
-                      "Not established by connected evidence"
+                      "Not supplied by canonical Core"
                     )}
                   </dd>
                 </div>
-                <div>
+                <div className="fic-detail-fact">
                   <dt>Historical comparison</dt>
                   <dd>
                     {domain.historicalComparison ||
-                      "No verified historical comparison connected"}
+                      "Not supplied by canonical Core"}
+                  </dd>
+                </div>
+                <div className="fic-detail-fact fic-detail-fact--conditions">
+                  <dt>Confirmation conditions</dt>
+                  <dd>
+                    {domain.confirmationConditions?.length
+                      ? domain.confirmationConditions.join(" · ")
+                      : "Not supplied by canonical Core"}
+                  </dd>
+                </div>
+                <div className="fic-detail-fact fic-detail-fact--conditions">
+                  <dt>Invalidation conditions</dt>
+                  <dd>
+                    {domain.invalidationConditions?.length
+                      ? domain.invalidationConditions.join(" · ")
+                      : "Not supplied by canonical Core"}
+                  </dd>
+                </div>
+                <div className="fic-detail-fact fic-detail-fact--pressure-contribution">
+                  <dt>Pressure contribution</dt>
+                  <dd>
+                    {domain.pressureContribution ??
+                      "Not supplied by canonical Core"}
+                  </dd>
+                </div>
+                <div className="fic-detail-fact fic-detail-fact--previous-observation">
+                  <dt>Previous observation</dt>
+                  <dd>
+                    {domain.previousObservation ??
+                      "Not supplied by canonical Core"}
                   </dd>
                 </div>
               </dl>
@@ -173,14 +215,26 @@ export function EvidenceDrawer({
                   </div>
                   <p>{item.explanation}</p>
                   <dl className="fic-detail-facts">
-                    <div>
+                    <div className="fic-detail-fact">
                       <dt>Source</dt>
                       <dd>{item.source || "Source unavailable"}</dd>
                     </div>
-                    <div>
+                    <div className="fic-detail-fact">
                       <dt>Observation</dt>
                       <dd>
                         <ObservationTimestamp value={item.observationAt} />
+                      </dd>
+                    </div>
+                    <div
+                      className={`fic-detail-fact fic-detail-fact--validity fic-detail-fact--${item.status}`}
+                    >
+                      <dt>Evidence validity deadline</dt>
+                      <dd>
+                        {item.validUntil ? (
+                          <ObservationTimestamp value={item.validUntil} />
+                        ) : (
+                          "Not supplied by canonical Core"
+                        )}
                       </dd>
                     </div>
                   </dl>

@@ -192,6 +192,13 @@
   background: #e6bf7a;
   border-radius: 0;
 }
+.fic-status--recent {
+  color: #bacb92;
+}
+.fic-status--recent > span {
+  background: #bacb92;
+  border-radius: 50%;
+}
 .fic-status--stale {
   color: #cca59a;
 }
@@ -304,6 +311,7 @@
   stroke: var(--fic-amber);
 }
 .fic-pressure-value--stale,
+.fic-pressure-value--recent,
 .fic-pressure-value--degraded,
 .fic-pressure-value--unavailable,
 .fic-pressure-value--static {
