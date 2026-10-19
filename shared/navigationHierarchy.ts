@@ -420,6 +420,20 @@ function cleanRoute(value: string): string {
   return path.replace(/\/+$/, "") || "/";
 }
 
+const MEMBER_MANIFEST_PATHS = new Set(
+  [...CUSTOMER_SEARCH_ITEMS, ...TOOLS_HOME_CONTEXTUAL_SECTION.items].map(item => cleanRoute(item.path)),
+);
+
+/** Paths that belong on the owner/admin surface and must not be published in the public route manifest. Member tools that also appear in the admin list stay public. */
+export function isAdministrativeManifestPath(path: string): boolean {
+  const clean = cleanRoute(path);
+  if (clean === "/admin" || clean.startsWith("/admin/")) return true;
+  if (clean === "/app/admin" || clean.startsWith("/app/admin/")) return true;
+  if (clean === "/owner" || clean.startsWith("/owner/")) return true;
+  const listedForAdmins = ADMIN_NAVIGATION_SECTION.items.some(item => cleanRoute(item.path) === clean);
+  return listedForAdmins && !MEMBER_MANIFEST_PATHS.has(clean);
+}
+
 /** Match only complete route segments, never an accidental string prefix. */
 export function isNavigationItemActive(item: NavigationItem, location: string): boolean {
   const currentPath = cleanRoute(location);

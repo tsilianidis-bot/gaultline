@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import { CANONICAL_DESTINATIONS, ANALYTICAL_LEGACY_ALIASES, preserveRouteContext, stripRouteContext } from '../shared/routeRegistry';
-import { CUSTOMER_NAVIGATION_SECTIONS, NAVIGATION_HIERARCHY, CUSTOMER_SEARCH_ITEMS, TOOLS_HOME_CONTEXTUAL_SECTION, ADMIN_NAVIGATION_SECTION, getSearchNavigationItems, isNavigationItemActive, sectionHasActiveItem } from '../shared/navigationHierarchy';
+import { CUSTOMER_NAVIGATION_SECTIONS, NAVIGATION_HIERARCHY, CUSTOMER_SEARCH_ITEMS, TOOLS_HOME_CONTEXTUAL_SECTION, ADMIN_NAVIGATION_SECTION, getSearchNavigationItems, isNavigationItemActive, sectionHasActiveItem, isAdministrativeManifestPath } from '../shared/navigationHierarchy';
 import { enumerateApplicationRoutes } from '../scripts/navigationInventory';
 
 const router = fs.readFileSync('client/src/App.tsx', 'utf8');
@@ -90,6 +91,21 @@ describe('complete route preservation', () => {
   });
   it('exposes a real synchronized route manifest rather than a SPA fallback', () => {
     const manifest = JSON.parse(fs.readFileSync('client/public/manus-routes.json', 'utf8'));
-    expect(manifest.routes.map((r: any) => r.path)).toEqual(mounted.filter(i => i.path !== '/404').map(i => i.path));
+    const publicRoutes = mounted.filter(i => i.path !== '/404' && !isAdministrativeManifestPath(i.path));
+    expect(manifest.routes.map((r: any) => r.path)).toEqual(publicRoutes.map(i => i.path));
+    expect(manifest.routes.some((r: { path: string }) => isAdministrativeManifestPath(r.path))).toBe(false);
+    expect(manifest.routes.some((r: { path: string }) => r.path === '/app/validation')).toBe(true);
+  });
+  it('is not read by application runtime code', () => {
+    let hits = '';
+    try {
+      hits = execSync(
+        "rg -l manus-routes -g '!server/navigationHierarchy.test.ts' -g '!scripts/navigationInventory.ts'",
+        { encoding: 'utf8' },
+      ).trim();
+    } catch (err) {
+      hits = String((err as { stdout?: string }).stdout ?? '').trim();
+    }
+    expect(hits).toBe('');
   });
 });

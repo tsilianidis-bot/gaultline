@@ -9,10 +9,6 @@
       "title": "Preserved direct route and existing contextual links"
     },
     {
-      "path": "/admin/promo",
-      "title": "Owner portal only; excluded from member navigation and search"
-    },
-    {
       "path": "/ai-bubble-monitor",
       "title": "/ai-bubble-risk-tracker"
     },
@@ -61,38 +57,6 @@
       "title": "Preserved direct route and existing contextual links"
     },
     {
-      "path": "/app/admin",
-      "title": "Owner portal only; excluded from member navigation and search"
-    },
-    {
-      "path": "/app/admin/blog",
-      "title": "Owner portal only; excluded from member navigation and search"
-    },
-    {
-      "path": "/app/admin/chat-inbox",
-      "title": "Owner portal only; excluded from member navigation and search"
-    },
-    {
-      "path": "/app/admin/conversation-intelligence",
-      "title": "Owner portal only; excluded from member navigation and search"
-    },
-    {
-      "path": "/app/admin/engineering",
-      "title": "Owner portal only; excluded from member navigation and search"
-    },
-    {
-      "path": "/app/admin/publishing",
-      "title": "Owner portal only; excluded from member navigation and search"
-    },
-    {
-      "path": "/app/admin/shadow-monitor",
-      "title": "Owner portal only; excluded from member navigation and search"
-    },
-    {
-      "path": "/app/admin/users",
-      "title": "Owner portal only; excluded from member navigation and search"
-    },
-    {
       "path": "/app/aftershock",
       "title": "/app/outlook/deep"
     },
@@ -115,10 +79,6 @@
     {
       "path": "/app/analogs",
       "title": "/app/historical-analogs"
-    },
-    {
-      "path": "/app/analytics",
-      "title": "Owner portal only; excluded from member navigation and search"
     },
     {
       "path": "/app/asha",
@@ -207,10 +167,6 @@
     {
       "path": "/app/early-warning",
       "title": "Preserved direct route and existing contextual links"
-    },
-    {
-      "path": "/app/fmos-health",
-      "title": "Owner portal only; excluded from member navigation and search"
     },
     {
       "path": "/app/glossary",
@@ -333,10 +289,6 @@
       "title": "/app/now/deep"
     },
     {
-      "path": "/app/seo-optimizer",
-      "title": "Owner portal only; excluded from member navigation and search"
-    },
-    {
       "path": "/app/signal-outlook",
       "title": "TRADING TOOLS / Signal Outlook"
     },
@@ -427,14 +379,6 @@
     {
       "path": "/app/why/deep",
       "title": "Preserved direct route and existing contextual links"
-    },
-    {
-      "path": "/app/x-post-queue",
-      "title": "Owner portal only; excluded from member navigation and search"
-    },
-    {
-      "path": "/app/x-posts",
-      "title": "Owner portal only; excluded from member navigation and search"
     },
     {
       "path": "/best-market-risk-indicators",
@@ -735,10 +679,6 @@
     {
       "path": "/mobile/watchlist",
       "title": "Preserved direct route and existing contextual links"
-    },
-    {
-      "path": "/owner/simulation",
-      "title": "Owner portal only; excluded from member navigation and search"
     },
     {
       "path": "/phoenix-systems",

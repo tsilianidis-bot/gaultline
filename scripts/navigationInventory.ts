@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
 import { ANALYTICAL_LEGACY_ALIASES, CANONICAL_DESTINATIONS, CANONICAL_DESTINATION_BY_ID, EXPERT_WORKSPACE_BY_ID, stripRouteContext } from '../shared/routeRegistry';
-import { CUSTOMER_NAVIGATION_SECTIONS } from '../shared/navigationHierarchy';
+import { CUSTOMER_NAVIGATION_SECTIONS, isAdministrativeManifestPath } from '../shared/navigationHierarchy';
 
 export type InventoryRow = { path: string; component: string | null; redirect: string | null; treatment: string; access: string; navigation: string; note: string };
 export function enumerateApplicationRoutes(sourceText: string): Array<{ path: string; component: string | null; redirect: string | null }> {
@@ -97,6 +97,6 @@ if (process.argv[1]?.endsWith('navigationInventory.ts')) {
   fs.writeFileSync('docs/navigation/navigation-tree.json', JSON.stringify(menu, null, 2) + '\n');
   fs.writeFileSync('docs/navigation/route-inventory.json', JSON.stringify(inventory, null, 2) + '\n');
   fs.writeFileSync('docs/navigation/route-inventory.md', '# FAULTLINE route preservation inventory\n\nEvery mounted route and centrally registered alias is listed below. Existing page mounts, intelligence calculations, entitlements and redirects are preserved. The standalone PWA is separate from the app shell.\n\n| Route | Treatment | Navigation / target | Access | Component | Notes |\n|---|---|---|---|---|---|\n' + inventory.map(r => `| \`${r.path}\` | ${r.treatment} | ${r.navigation} | ${r.access} | ${r.component ?? 'Redirect'} | ${r.note} |`).join('\n') + '\n');
-  fs.writeFileSync('client/public/manus-routes.json', JSON.stringify({ routes: inventory.filter(i => i.path !== '/404').map(i => ({ path: i.path, title: i.navigation })) }, null, 2) + '\n');
+  fs.writeFileSync('client/public/manus-routes.json', JSON.stringify({ routes: inventory.filter(i => i.path !== '/404' && !isAdministrativeManifestPath(i.path)).map(i => ({ path: i.path, title: i.navigation })) }, null, 2) + '\n');
   console.log(JSON.stringify({ routes: inventory.length, treatments: inventory.reduce((a,r) => { a[r.treatment] = (a[r.treatment] ?? 0) + 1; return a; }, {} as Record<string,number>) }, null, 2));
 }
