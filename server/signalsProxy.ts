@@ -668,6 +668,9 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
     effectiveTradeDate = tradeDate;
   }
 
+  const isLive = marketStatus === "open" || marketStatus === "extended";
+  effectiveTradeDate = selectEffectiveTradeDate([{ isLive, marketStatus }], new Date().toISOString().slice(0, 10), tradeDate);
+
   return {
     ticker: symbol,
     name,
@@ -686,7 +689,7 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
     sparkline,
     tradeDate: effectiveTradeDate,
     marketStatus,
-    isLive: marketStatus === "open" || marketStatus === "extended",
+    isLive,
     isDelayed: true,
     source: "live",
   };
