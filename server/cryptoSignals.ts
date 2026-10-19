@@ -31,7 +31,7 @@ import {
   type PriceLevels,
   type RegimeInput,
 } from "./tradingSignals";
-import type { CoinMarketData, CoinOHLCBar } from "./coingeckoProxy";
+import { completedCoinDailyBars, type CoinMarketData, type CoinOHLCBar } from "./coingeckoProxy";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -311,7 +311,8 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
   } = market;
 
   // ── Data quality path ─────────────────────────────────────
-  const closes = ohlcBars?.map(b => b.close).filter(close => Number.isFinite(close)) ?? [];
+  const admittedBars = completedCoinDailyBars(ohlcBars ?? []);
+  const closes = admittedBars.map(bar => bar.close).filter(close => Number.isFinite(close));
   const hasDailyBars = closes.length >= RSI_MIN_COMPLETED_BARS;
   if (!hasDailyBars) {
     const unavailable: CryptoSignalResult = {
@@ -343,7 +344,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
         priceChange7d: change7d !== null ? parseFloat(change7d.toFixed(2)) : null,
         priceChange30d: change30d !== null ? parseFloat(change30d.toFixed(2)) : null,
       },
-      priceLevels: computeCryptoPriceLevels(price, high, low, "WATCH", ohlcBars),
+      priceLevels: computeCryptoPriceLevels(price, high, low, "WATCH", admittedBars),
       regimeAlignment: "Neutral",
       regimeAlignmentScore: 0,
       cryptoFactors: {
@@ -393,7 +394,8 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
   const liquidityScore = computeLiquidityScore(volume, marketCap);
 
   // ── Momentum score ────────────────────────────────────────
-  // Blend RSI, trend, 7d change, and liquidity
+  // Blend a completed-bar RSI with trend, 7d change, and liquidity.
+  // A missing RSI never reaches this line: it returns Unavailable above.
   let momentumBase = clamp(rsiEstimate, 0, 100);
   if (trend === "Uptrend") momentumBase = Math.min(100, momentumBase + 8);
   if (trend === "Downtrend") momentumBase = Math.max(0, momentumBase - 8);
@@ -407,10 +409,10 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
   let score = 0;
 
   // RSI contribution (crypto uses wider bands due to higher volatility)
-  if (rsiEstimate <= 28) score += 3.5;
-  else if (rsiEstimate <= 40) score += 1.5;
-  else if (rsiEstimate >= 75) score -= 3.5;
-  else if (rsiEstimate >= 65) score -= 1.5;
+  if (rsiIsTrue && rsiEstimate <= 28) score += 3.5;
+  else if (rsiIsTrue && rsiEstimate <= 40) score += 1.5;
+  else if (rsiIsTrue && rsiEstimate >= 75) score -= 3.5;
+  else if (rsiIsTrue && rsiEstimate >= 65) score -= 1.5;
 
   // Trend
   if (trend === "Uptrend") score += 2;
@@ -508,7 +510,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
   const rationale = rationaleMap[action];
 
   // ── Price levels ──────────────────────────────────────────
-  const priceLevels = computeCryptoPriceLevels(price, high, low, action, ohlcBars);
+  const priceLevels = computeCryptoPriceLevels(price, high, low, action, admittedBars);
 
   // ── Regime alignment ──────────────────────────────────────
   const { alignment: regimeAlignment, score: regimeAlignmentScore } = computeCryptoRegimeAlignment(action, regime);
@@ -536,7 +538,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
     regimeConflictExplanation =
       `Overall crypto regime is ${cryptoRegime}, but ${symbol} shows asset-specific weakness: ` +
       `${trend === "Downtrend" ? "price in downtrend" : "overbought conditions"}, ` +
-      `${rsiEstimate > 70 ? `RSI at ${rsiEstimate.toFixed(0)} (overbought)` : `RSI at ${rsiEstimate.toFixed(0)}`}` +
+      `${rsiIsTrue ? (rsiEstimate > 70 ? `RSI at ${rsiEstimate.toFixed(0)} (overbought)` : `RSI at ${rsiEstimate.toFixed(0)}`) : "completed-bar RSI unavailable"}` +
       `${smaSignal === "Death Cross" ? ", death cross confirmed" : ""}` +
       `. Individual asset signal differs from broader crypto regime — reduce exposure to this asset only.`;
   } else if (isSignalBullish && regimeIsBearish) {
@@ -544,7 +546,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
     regimeConflictExplanation =
       `Overall crypto regime is ${cryptoRegime}, but ${symbol} shows relative strength: ` +
       `${trend === "Uptrend" ? "price in uptrend" : "oversold bounce potential"}, ` +
-      `${rsiEstimate < 30 ? `RSI at ${rsiEstimate.toFixed(0)} (oversold)` : `RSI at ${rsiEstimate.toFixed(0)}`}` +
+      `${rsiIsTrue ? (rsiEstimate < 30 ? `RSI at ${rsiEstimate.toFixed(0)} (oversold)` : `RSI at ${rsiEstimate.toFixed(0)}`) : "completed-bar RSI unavailable"}` +
       `. Proceed with caution — counter-trend signal in a defensive regime.`;
   }
 

@@ -28,11 +28,31 @@ describe("AppMarketHeader", () => {
         alignmentStatus: "DIVERGENT",
         alignmentScore: 29,
       },
+      canonicalAvailable: true,
     }));
 
     expect(html).toContain("Risk-Off");
     expect(html).toContain("Transition");
     expect(html).toContain("DIVERGENT");
+  });
+
+  it("withholds independent regime and alignment when canonical state is unavailable", () => {
+    const html = renderToStaticMarkup(createElement(AppMarketHeader, {
+      items,
+      isMobile: false,
+      intelligence: {
+        stockRegime: { regime: "EQ Expansion", confidence: 78 },
+        cryptoRegime: { regime: "Risk-On", confidence: 64 },
+        alignmentStatus: "DIVERGING",
+        alignmentScore: 29,
+      },
+      canonicalAvailable: false,
+    }));
+
+    expect(html).toContain("UNAVAILABLE");
+    expect(html).not.toContain("EQ Expansion");
+    expect(html).not.toContain("Risk-On");
+    expect(html).not.toContain("DIVERGING");
   });
 
   it("suppresses the regime strip on mobile", () => {

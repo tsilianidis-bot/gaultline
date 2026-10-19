@@ -1,0 +1,455 @@
+/* Drawer-local refinements intentionally use the existing Intelligence Core tokens. */
+.fic-drawer-overlay[data-state] {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--fic-bg, #070b11) 78%, transparent),
+      color-mix(in srgb, var(--fic-bg, #070b11) 91%, transparent)
+    ),
+    #02060bd9;
+  backdrop-filter: blur(3px);
+}
+
+.fic-drawer-overlay[data-state="open"] {
+  animation: fic-evidence-overlay-in 180ms ease-out both;
+}
+
+.fic-drawer-overlay[data-state="closed"] {
+  animation: fic-evidence-overlay-out 180ms ease-in both;
+}
+
+.fic.fic-drawer {
+  width: min(584px, 100vw);
+  max-width: 100vw;
+  padding: 24px 32px 30px;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  border-left-color: color-mix(in srgb, var(--fic-line) 72%, var(--fic-text));
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--fic-cyan) 6%, transparent),
+      transparent 36%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--fic-surface) 90%, var(--fic-bg)),
+      var(--fic-surface)
+    );
+  box-shadow: -32px 0 90px color-mix(in srgb, var(--fic-bg) 72%, transparent);
+  scrollbar-color: var(--fic-line) transparent;
+  animation-duration: 180ms;
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
+}
+
+.fic.fic-drawer[data-state="open"] {
+  animation-name: fic-evidence-drawer-in;
+}
+
+.fic.fic-drawer[data-state="closed"] {
+  animation-name: fic-evidence-drawer-out;
+  animation-timing-function: ease-in;
+}
+
+.fic.fic-drawer .fic-drawer-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  min-height: 48px;
+  padding: 2px 0 11px;
+  margin-top: -2px;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--fic-line) 78%, var(--fic-text));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--fic-surface) 96%, transparent),
+    color-mix(in srgb, var(--fic-surface) 88%, transparent)
+  );
+}
+
+.fic.fic-drawer .fic-drawer-header .fic-micro {
+  max-width: calc(100% - 60px);
+  color: var(--fic-cyan);
+  font-size: 9px;
+  letter-spacing: 0.13em;
+}
+
+.fic.fic-drawer .fic-icon-button {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  color: var(--fic-text);
+  border-color: color-mix(in srgb, var(--fic-line) 76%, var(--fic-text));
+  background: color-mix(in srgb, var(--fic-bg) 52%, var(--fic-surface));
+}
+
+.fic.fic-drawer .fic-icon-button:hover {
+  color: var(--fic-cyan);
+  border-color: var(--fic-cyan);
+  background: color-mix(in srgb, var(--fic-cyan) 8%, var(--fic-surface));
+}
+
+.fic.fic-drawer .fic-drawer-title {
+  max-width: 17ch;
+  margin-top: 27px !important;
+  color: var(--fic-text);
+  font-size: clamp(29px, 4vw, 36px);
+  font-weight: 500;
+  letter-spacing: -0.05em;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.fic.fic-drawer .fic-drawer-description {
+  max-width: 56ch;
+  margin-bottom: 26px !important;
+  color: var(--fic-muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.fic.fic-drawer .fic-demo-notice {
+  margin-bottom: 25px;
+  border-color: color-mix(in srgb, var(--fic-amber) 48%, var(--fic-line));
+}
+
+.fic.fic-drawer .fic-drawer-domain {
+  position: relative;
+  padding: 0 0 28px 16px;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--fic-line) 84%, var(--fic-text));
+}
+
+.fic.fic-drawer .fic-drawer-domain::before {
+  position: absolute;
+  top: 1px;
+  bottom: 28px;
+  left: 0;
+  width: 2px;
+  content: "";
+  background: var(--fic-cyan);
+}
+
+.fic.fic-drawer .fic-drawer-domain .fic-status {
+  margin-bottom: 19px;
+}
+
+.fic.fic-drawer h3 {
+  margin-top: 23px;
+  color: var(--fic-text);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+.fic.fic-drawer .fic-drawer-domain h3 {
+  position: relative;
+  padding-left: 12px;
+}
+
+.fic.fic-drawer .fic-drawer-domain h3::before {
+  position: absolute;
+  top: 0.35em;
+  left: 0;
+  width: 4px;
+  height: 4px;
+  content: "";
+  background: var(--fic-amber);
+  transform: rotate(45deg);
+}
+
+.fic.fic-drawer .fic-drawer-domain p,
+.fic.fic-drawer .fic-evidence-item p,
+.fic.fic-drawer .fic-relationship-list p {
+  color: color-mix(in srgb, var(--fic-text) 80%, var(--fic-muted));
+  font-size: 13px;
+  line-height: 1.72;
+}
+
+.fic.fic-drawer .fic-detail-facts {
+  display: grid;
+  margin-top: 22px;
+  border-top: 1px solid color-mix(in srgb, var(--fic-line) 88%, var(--fic-text));
+}
+
+.fic.fic-drawer .fic-detail-facts > div {
+  display: grid;
+  grid-template-columns: minmax(112px, 0.9fr) minmax(0, 1.25fr);
+  gap: 16px;
+  align-items: start;
+  padding: 13px 0;
+  border-color: color-mix(in srgb, var(--fic-line) 88%, var(--fic-text));
+}
+
+.fic.fic-drawer .fic-detail-facts dt {
+  max-width: none;
+  color: var(--fic-muted);
+  font-family:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  font-size: 9px;
+  letter-spacing: 0.07em;
+  line-height: 1.55;
+  text-transform: none;
+}
+
+.fic.fic-drawer .fic-detail-facts dd {
+  min-width: 0;
+  color: var(--fic-text);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.55;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.fic.fic-drawer .fic-detail-facts time {
+  color: var(--fic-text);
+}
+
+.fic.fic-drawer .fic-drawer-section-heading {
+  padding: 21px 0 14px;
+  border-top: 0;
+  border-bottom-color: color-mix(in srgb, var(--fic-line) 80%, var(--fic-text));
+}
+
+.fic.fic-drawer .fic-drawer-section-heading h3 {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.fic.fic-drawer .fic-drawer-section-heading .fic-micro {
+  color: var(--fic-cyan);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.fic.fic-drawer .fic-evidence-empty {
+  padding: 38px 0;
+  color: var(--fic-muted);
+}
+
+.fic.fic-drawer .fic-evidence-empty svg {
+  color: var(--fic-cyan);
+}
+
+.fic.fic-drawer .fic-evidence-empty h4 {
+  color: var(--fic-text);
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+
+.fic.fic-drawer .fic-evidence-item {
+  position: relative;
+  padding: 26px 0 25px 14px;
+  border-bottom-color: color-mix(in srgb, var(--fic-line) 82%, var(--fic-text));
+}
+
+.fic.fic-drawer .fic-evidence-item::before {
+  position: absolute;
+  top: 27px;
+  bottom: 26px;
+  left: 0;
+  width: 1px;
+  content: "";
+  background: color-mix(in srgb, var(--fic-cyan) 68%, transparent);
+}
+
+.fic.fic-drawer .fic-evidence-top {
+  gap: 10px;
+}
+
+.fic.fic-drawer .fic-evidence-top .fic-micro {
+  color: var(--fic-muted);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.fic.fic-drawer .fic-evidence-item h4 {
+  margin-top: 17px;
+  color: var(--fic-text);
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+}
+
+.fic.fic-drawer .fic-evidence-value {
+  margin: 10px 0 14px;
+  color: var(--fic-text);
+  font-family:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  font-size: clamp(24px, 3vw, 30px);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.055em;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.fic.fic-drawer .fic-evidence-link {
+  min-height: 44px;
+  padding: 10px 0 2px;
+  color: var(--fic-cyan);
+  font-family:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  font-size: 10px;
+  letter-spacing: 0.035em;
+}
+
+.fic.fic-drawer .fic-evidence-link:hover {
+  color: var(--fic-text);
+}
+
+.fic.fic-drawer .fic-relationship-list {
+  margin-top: 29px;
+  border-top: 1px solid color-mix(in srgb, var(--fic-line) 80%, var(--fic-text));
+}
+
+.fic.fic-drawer .fic-relationship-list > h3 {
+  margin: 0;
+  padding: 19px 0 7px;
+  font-size: 16px;
+}
+
+.fic.fic-drawer .fic-relationship-list article {
+  padding: 18px 0 19px 14px;
+  border-bottom-color: color-mix(in srgb, var(--fic-line) 82%, var(--fic-text));
+  border-left: 1px solid
+    color-mix(in srgb, var(--fic-text) 30%, var(--fic-line));
+}
+
+.fic.fic-drawer .fic-relationship-list .fic-relationship-kind {
+  display: flex;
+  color: var(--fic-text);
+  font-size: 9px;
+  letter-spacing: 0.085em;
+}
+
+.fic.fic-drawer .fic-relationship-list .fic-relationship-kind.is-causal {
+  color: var(--fic-cyan);
+}
+
+.fic.fic-drawer .fic-relationship-list .fic-relationship-kind.is-association {
+  color: var(--fic-amber);
+}
+
+.fic.fic-drawer .fic-source-reference {
+  color: var(--fic-muted);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+}
+
+.fic.fic-drawer .fic-drawer-footer {
+  margin-top: 29px;
+  padding: 14px 0 0 14px;
+  color: var(--fic-muted);
+  border-top: 1px solid color-mix(in srgb, var(--fic-line) 80%, var(--fic-text));
+  border-left: 1px solid var(--fic-amber);
+  font-size: 10px;
+  line-height: 1.75;
+}
+
+@keyframes fic-evidence-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fic-evidence-overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fic-evidence-drawer-in {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fic-evidence-drawer-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+}
+
+@media (max-width: 700px) {
+  .fic.fic-drawer {
+    width: min(100%, 584px);
+    padding: 16px 16px 24px;
+  }
+
+  .fic.fic-drawer .fic-drawer-header {
+    padding-bottom: 9px;
+  }
+
+  .fic.fic-drawer .fic-drawer-title {
+    margin-top: 23px !important;
+    font-size: clamp(27px, 9vw, 32px);
+  }
+
+  .fic.fic-drawer .fic-drawer-domain {
+    padding-left: 13px;
+  }
+
+  .fic.fic-drawer .fic-evidence-item {
+    padding-left: 12px;
+  }
+}
+
+@media (max-width: 380px) {
+  .fic.fic-drawer .fic-drawer-header .fic-micro {
+    font-size: 8px;
+    letter-spacing: 0.095em;
+  }
+
+  .fic.fic-drawer .fic-detail-facts > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 5px;
+    padding: 14px 0;
+  }
+
+  .fic.fic-drawer .fic-detail-facts dd {
+    font-size: 13px;
+  }
+
+  .fic.fic-drawer .fic-drawer-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .fic.fic-drawer .fic-evidence-top {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fic-drawer-overlay[data-state],
+  .fic.fic-drawer[data-state] {
+    animation: none !important;
+    transition: none !important;
+  }
+}

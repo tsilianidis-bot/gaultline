@@ -254,24 +254,20 @@ describe("blocker 6 — in-progress candles stay out of indicator bars", () => {
     expect(await getDailyBars("RED-EQ-EVE-CLOSE", "3mo")).toHaveLength(1);
   });
 
-  it("drops the open CoinGecko candle and the current UTC day", async () => {
+  it("requests CoinGecko daily bars and drops a candle inside the 35-minute close buffer", async () => {
     const now = Date.parse("2026-10-05T12:00:00.000Z");
-    const closed = now - 5 * 60 * 60 * 1000;
-    const open = now - 60 * 60 * 1000;
-    const yesterday = Date.parse("2026-10-04T00:00:00.000Z");
-    const today = Date.parse("2026-10-05T00:00:00.000Z");
+    const closed = now - 36 * 60 * 1000;
+    const forming = now - 10 * 60 * 1000;
+    const seen: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (url: string) => {
-      const candles = String(url).includes("days=30")
-        ? [[closed, 1, 2, 0.5, 1.5], [open, 1, 2, 0.5, 1.6]]
-        : [[yesterday, 1, 2, 0.5, 1.5], [today, 1, 2, 0.5, 1.6]];
-      return new Response(JSON.stringify(candles), { status: 200 });
+      seen.push(String(url));
+      return new Response(JSON.stringify([[closed, 1, 2, 0.5, 1.5], [forming, 1, 2, 0.5, 1.6]]), { status: 200 });
     }));
     vi.useFakeTimers();
     vi.setSystemTime(new Date(now));
-    const intraday = await getCoinOHLC("red-candle-intraday", 30);
-    expect(intraday.map(bar => bar.timestamp)).toEqual([closed]);
-    const daily = await getCoinOHLC("red-candle-daily", 90);
-    expect(daily.map(bar => bar.timestamp)).toEqual([yesterday]);
+    const daily = await getCoinOHLC("red-candle-daily", 30);
+    expect(seen[0]).toContain("interval=daily");
+    expect(daily.map(bar => bar.timestamp)).toEqual([closed]);
   });
 
   it("shares the 15-bar RSI and 35-bar MACD minimum across equities, crypto, and day trade", () => {

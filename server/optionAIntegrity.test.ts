@@ -256,13 +256,14 @@ describe("items 5–8 — withheld indicators are not numeric and the bar rules 
     expect(dayTradeIndicatorGate(Array.from({ length: 15 }, () => 100))).toEqual({ available: false, rsi: null });
   });
 
-  it("documents that day trade does not compute MACD and that CoinGecko days=30 is 4h", () => {
+  it("documents that day trade does not compute MACD and that CoinGecko requests daily bars", () => {
     const day = source("server/dayTradeEngine.ts");
     expect(day).not.toContain("DAY_TRADE_MACD_MIN_COMPLETED_BARS");
     expect(day).toContain("does not compute MACD");
     const proxy = source("server/coingeckoProxy.ts");
     expect(proxy).not.toContain("~30 daily bars");
-    expect(proxy).toMatch(/days=30[\s\S]{0,180}4-hour/);
+    expect(proxy).toContain("interval=daily");
+    expect(proxy).toMatch(/30-day request[\s\S]{0,80}4-hour|4-hour bars for a 30-day/);
   });
 });
 
