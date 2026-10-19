@@ -6,10 +6,10 @@ route interceptor, substitutes provider data, creates a user, or calls a write
 endpoint.  The managed-preview identity (when observed) is reported as the
 host-bound, read-only QA boundary it is; it is not a real paid-user login.
 
-The default target is the exact managed-preview candidate URL.  The current
-/App.tsx skips the cinematic for the deep /app/now route, so this runner does
-not write localStorage or sessionStorage at all.  In particular, it does not
-persist the ASHA, cookie, auth, or application-data gates.
+The default target is the exact managed-preview candidate URL. The runner does
+not write browser storage directly. Existing first-login and daily-welcome
+screens are dismissed through their normal buttons; those native actions may
+save the application's existing local intro preferences, never market data.
 """
 
 from __future__ import annotations
@@ -77,8 +77,8 @@ def new_results(url: str, out: pathlib.Path) -> dict[str, Any]:
             "chromiumExecutable": CHROMIUM_PATH,
             "networkMode": "live application only; no route interception, mocks, or provider-response injection",
             "verifierMutations": {
-                "localStorage": "none (deep /app/now route skips the cinematic in App.tsx)",
-                "sessionStorage": "none",
+                "localStorage": "no direct writes; normal intro-dismissal buttons may save existing client preferences",
+                "sessionStorage": "no direct writes; normal welcome-dismissal button may save existing client preferences",
                 "auth": "none",
                 "applicationData": "none",
             },
@@ -230,8 +230,9 @@ def attach_live_observers(page: Page, results: dict[str, Any]) -> None:
     page.on("response", response)
 
 
-def wait_for_candidate(page: Page) -> None:
+def wait_for_candidate(page: Page) -> list[str]:
     """Wait for the real core without waiting for a provider or forcing a state."""
+    dismissed: list[str] = []
     core = page.locator(".fic-experience")
     core.wait_for(state="visible", timeout=45_000)
     page.locator(".fic-topology").wait_for(state="visible", timeout=20_000)
@@ -239,23 +240,40 @@ def wait_for_candidate(page: Page) -> None:
     # would dismiss it. No auth, provider result or canonical state is altered.
     entry = page.get_by_role("button", name="ENTER MARKET INTELLIGENCE →", exact=True)
     try:
-        entry.wait_for(state="visible", timeout=5_000)
+        entry.wait_for(state="visible", timeout=15_000)
         entry.click(timeout=10_000)
         entry.wait_for(state="hidden", timeout=10_000)
+        dismissed.append("ENTER MARKET INTELLIGENCE →")
     except PlaywrightTimeoutError:
         if entry.is_visible():
             raise
+    intro_skip = page.get_by_role("button", name="Skip", exact=True)
+    try:
+        intro_skip.wait_for(state="visible", timeout=5_000)
+        intro_skip.click(timeout=10_000)
+        intro_skip.wait_for(state="hidden", timeout=10_000)
+        dismissed.append("Skip (existing first-login PLATO intro)")
+    except PlaywrightTimeoutError:
+        if intro_skip.is_visible():
+            raise
+    decline = page.get_by_role("button", name="DECLINE", exact=True)
+    if decline.is_visible():
+        decline.click(timeout=10_000)
+        dismissed.append("Decline (existing optional analytics cookie banner)")
     core.scroll_into_view_if_needed(timeout=10_000)
     # Let current actual application transitions settle before idle-animation sampling.
     page.wait_for_timeout(1_100)
+    return dismissed
 
 
 def fic_interactable(page: Page) -> dict[str, Any]:
+    page.locator(".fic-experience .fic-domain").first.scroll_into_view_if_needed()
     return page.locator(".fic-experience").evaluate(
         """root => {
-          const rect = root.getBoundingClientRect();
-          const x = Math.min(Math.max(rect.left + Math.min(32, rect.width / 2), 1), innerWidth - 1);
-          const y = Math.min(Math.max(rect.top + Math.min(32, rect.height / 2), 1), innerHeight - 1);
+          const target = root.querySelector('.fic-domain');
+          const rect = target.getBoundingClientRect();
+          const x = Math.min(Math.max(rect.left + rect.width / 2, 1), innerWidth - 1);
+          const y = Math.min(Math.max(rect.top + rect.height / 2, 1), innerHeight - 1);
           const atPoint = document.elementFromPoint(x, y);
           return {
             root: {left: rect.left, top: rect.top, width: rect.width, height: rect.height},
@@ -510,9 +528,14 @@ def test_responsive_and_capture(page: Page, results: dict[str, Any], out: pathli
             first.click(timeout=10_000)
             drawer = page.locator(".fic-drawer[role='dialog']")
             drawer.wait_for(state="visible", timeout=10_000)
+            # The approved entry motion lasts 180ms. Measure the settled layout,
+            # not its intentional transient 18px translateX entrance position.
+            page.wait_for_timeout(250)
             drawer_box = drawer.evaluate("node => { const r = node.getBoundingClientRect(); return {left:r.left,right:r.right,width:r.width,viewport:innerWidth}; }")
             add_screenshot(page, results, out / "mobile-390-liquidity-drawer-actual.png", locator=".fic-drawer[role='dialog']")
             check(results, "390px drawer fits its actual mobile viewport", drawer_box["left"] >= -1 and drawer_box["right"] <= drawer_box["viewport"] + 1, drawer_box)
+            drawer_above_chrome = drawer.evaluate("node => { const r = node.querySelector('.fic-drawer-header').getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!hit && node.contains(hit); }")
+            check(results, "Mobile evidence drawer stays above fixed application chrome", drawer_above_chrome)
             page.keyboard.press("Escape")
             drawer.wait_for(state="hidden", timeout=10_000)
         else:
@@ -552,7 +575,7 @@ def run(args: argparse.Namespace) -> int:
             # Deliberately no networkidle wait: live background queries and absent providers
             # are part of the observed application and must not be manufactured into success.
             page.goto(url, wait_until="domcontentloaded", timeout=60_000)
-            wait_for_candidate(page)
+            results["execution"]["uiPreferenceActions"] = wait_for_candidate(page)
             candidate_ready_seconds = time.monotonic() - navigation_started
 
             test_unavailable_state(page, results)
