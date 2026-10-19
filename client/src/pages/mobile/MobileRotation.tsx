@@ -32,13 +32,13 @@ function getRiskOnOff(score: number): { label: string; color: string; icon: Reac
 interface SectorCardProps {
   name: string;
   color: string;
-  momentum: number;
+  momentum: number | null;
   topCoin?: string;
 }
 
 function SectorCard({ name, color, momentum, topCoin }: SectorCardProps) {
-  const isPositive = momentum >= 0;
-  const barWidth = Math.min(Math.abs(momentum) * 5, 100);
+  const isPositive = momentum != null && momentum >= 0;
+  const barWidth = momentum == null ? 0 : Math.min(Math.abs(momentum) * 5, 100);
 
   return (
     <div
@@ -52,9 +52,9 @@ function SectorCard({ name, color, momentum, topCoin }: SectorCardProps) {
         </div>
         <span
           className="text-[10px] font-mono font-bold"
-          style={{ color: isPositive ? "#34D399" : "#FF2D55" }}
+          style={{ color: momentum == null ? "#64748B" : isPositive ? "#34D399" : "#FF2D55" }}
         >
-          {isPositive ? "+" : ""}{momentum.toFixed(1)}%
+          {momentum == null ? "Unavailable" : `${isPositive ? "+" : ""}${momentum.toFixed(1)}%`}
         </span>
       </div>
       {/* Momentum bar */}
@@ -94,7 +94,7 @@ export default function MobileRotation() {
   const topSectors = useMemo(() => {
     if (!rotation?.sectors) return [];
     return [...rotation.sectors]
-      .sort((a, b) => b.avgChange24h - a.avgChange24h)
+      .sort((a, b) => (b.avgChange24h ?? Number.NEGATIVE_INFINITY) - (a.avgChange24h ?? Number.NEGATIVE_INFINITY))
       .slice(0, 4);
   }, [rotation?.sectors]);
 
@@ -233,15 +233,15 @@ export default function MobileRotation() {
                 {rotation.ethLeadership.label}
               </div>
               <div className="text-[10px] font-mono text-[#64748B] mt-0.5">
-                ETH/BTC ratio: {rotation.ethLeadership.ethBtcRatio.toFixed(4)}
+                ETH/BTC ratio: {rotation.ethLeadership.ethBtcRatio == null ? "Unavailable" : rotation.ethLeadership.ethBtcRatio.toFixed(4)}
               </div>
             </div>
             <div className="text-right">
               <div
                 className="text-sm font-mono font-bold"
-                style={{ color: rotation.ethLeadership.ethChange24h >= 0 ? "#34D399" : "#FF2D55" }}
+                style={{ color: rotation.ethLeadership.ethChange24h == null ? "#64748B" : rotation.ethLeadership.ethChange24h >= 0 ? "#34D399" : "#FF2D55" }}
               >
-                {rotation.ethLeadership.ethChange24h >= 0 ? "+" : ""}{rotation.ethLeadership.ethChange24h.toFixed(2)}%
+                {rotation.ethLeadership.ethChange24h == null ? "Unavailable" : `${rotation.ethLeadership.ethChange24h >= 0 ? "+" : ""}${rotation.ethLeadership.ethChange24h.toFixed(2)}%`}
               </div>
               <div className="text-[9px] font-mono text-[#64748B]">ETH 24h</div>
             </div>

@@ -9,6 +9,15 @@ import { useSEO } from "@/hooks/useSEO";
 import { evidenceStatusLabel } from "../../../shared/evidenceStatus";
 import { formatObservedFixed } from "@/lib/nullableFormat";
 
+function moneyFixed(value: number | null, digits: number, suffix = ""): string {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "Unavailable";
+  return `$${value.toFixed(digits)}${suffix}`;
+}
+function signedPct(value: number | null, digits: number): string {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "Unavailable";
+  return `${value >= 0 ? "+" : ""}${value.toFixed(digits)}%`;
+}
+
 export function AltRotationFreshness({ observedAtMs, nowMs }: { observedAtMs?: number | null; nowMs?: number }) {
   const hasObservation = typeof observedAtMs === "number" && Number.isFinite(observedAtMs);
   const label = evidenceStatusLabel({
@@ -23,15 +32,15 @@ export function AltRotationFreshness({ observedAtMs, nowMs }: { observedAtMs?: n
 // ── Types (mirrored from server) ──────────────────────────────
 interface SectorCoin {
   id: string; symbol: string; name: string;
-  price: number; change24h: number; change7d: number;
-  marketCap: number; volume24h: number;
-  momentum: "strong" | "moderate" | "weak" | "negative";
+  price: number | null; change24h: number | null; change7d: number | null;
+  marketCap: number | null; volume24h: number | null;
+  momentum: "strong" | "moderate" | "weak" | "negative" | "unavailable";
 }
 interface SectorData {
   name: string; key: string; coins: SectorCoin[];
-  avgChange24h: number; avgChange7d: number;
-  momentum: "strong" | "moderate" | "weak" | "negative";
-  alert: string | null; score: number; color: string;
+  avgChange24h: number | null; avgChange7d: number | null;
+  momentum: "strong" | "moderate" | "weak" | "negative" | "unavailable";
+  alert: string | null; score: number | null; color: string;
 }
 interface RotationAlert {
   id: string; type: string; severity: "high" | "medium" | "low";
@@ -41,12 +50,12 @@ interface AltRotationPayload {
   score: number; regime: string;
   regimeKey: "btc_dominance" | "early_rotation" | "selective_expansion" | "broad_altseason" | "speculative_mania";
   regimeColor: string;
-  btcDominance: { current: number | null; trend: string | null; velocity: number; pressure: string | null; signal: string; score: number | null };
+  btcDominance: { current: number | null; trend: string | null; velocity: number | null; pressure: string | null; signal: string; score: number | null };
   ethDominance: number | null;
-  ethLeadership: { ethBtcRatio: number; ethChange24h: number; btcChange24h: number; relativePerformance: number; status: string; label: string; trend: string; score: number };
-  stablecoinLiquidity: { usdtMarketCap: number; usdcMarketCap: number; totalStablecoinCap: number; usdtChange24h: number; usdcChange24h: number; combinedChange24h: number; status: string; label: string; score: number };
+  ethLeadership: { ethBtcRatio: number | null; ethChange24h: number | null; btcChange24h: number | null; relativePerformance: number | null; status: string; label: string; trend: string; score: number | null };
+  stablecoinLiquidity: { usdtMarketCap: number | null; usdcMarketCap: number | null; totalStablecoinCap: number | null; usdtChange24h: number | null; usdcChange24h: number | null; combinedChange24h: number | null; status: string; label: string; score: number | null };
   sectors: SectorData[];
-  marketBreadth: { total2Proxy: number; total3Proxy: number; altcoinDominance: number | null; ethDominance: number | null; breadthSignal: string; score: number | null };
+  marketBreadth: { total2Proxy: number | null; total3Proxy: number | null; altcoinDominance: number | null; ethDominance: number | null; breadthSignal: string; score: number | null };
   alerts: RotationAlert[];
   aiCommentary: string;
   scoreBreakdown: { label: string; weight: number; rawScore: number | null; contribution: number | null }[];
@@ -248,8 +257,8 @@ function SectorCard({ sector }: { sector: SectorData }) {
         </div>
         <div className="text-right">
           <div className="text-sm font-mono font-bold"
-            style={{ color: sector.avgChange24h >= 0 ? "#34D399" : "#FF2D55" }}>
-            {sector.avgChange24h >= 0 ? "+" : ""}{sector.avgChange24h.toFixed(1)}%
+            style={{ color: sector.avgChange24h == null ? "#64748B" : sector.avgChange24h >= 0 ? "#34D399" : "#FF2D55" }}>
+            {sector.avgChange24h == null ? "Unavailable" : `${sector.avgChange24h >= 0 ? "+" : ""}${sector.avgChange24h.toFixed(1)}%`}
           </div>
           <div className="text-xs font-mono text-zinc-500">24h avg</div>
         </div>
@@ -259,7 +268,7 @@ function SectorCard({ sector }: { sector: SectorData }) {
       <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
         <div className="h-full rounded-full transition-all duration-700"
           style={{
-            width: `${Math.min(100, Math.max(0, (sector.avgChange24h + 15) / 30 * 100))}%`,
+            width: `${sector.avgChange24h == null ? 0 : Math.min(100, Math.max(0, (sector.avgChange24h + 15) / 30 * 100))}%`,
             background: `linear-gradient(90deg, ${sector.color}60, ${sector.color})`,
           }} />
       </div>
@@ -270,8 +279,8 @@ function SectorCard({ sector }: { sector: SectorData }) {
           <div key={coin.id} className="text-center">
             <div className="text-xs font-mono text-zinc-300">{coin.symbol}</div>
             <div className="text-xs font-mono"
-              style={{ color: coin.change24h >= 0 ? "#34D399" : "#FF2D55" }}>
-              {coin.change24h >= 0 ? "+" : ""}{coin.change24h.toFixed(1)}%
+              style={{ color: coin.change24h == null ? "#64748B" : coin.change24h >= 0 ? "#34D399" : "#FF2D55" }}>
+              {coin.change24h == null ? "Unavailable" : `${coin.change24h >= 0 ? "+" : ""}${coin.change24h.toFixed(1)}%`}
             </div>
           </div>
         ))}
@@ -280,7 +289,7 @@ function SectorCard({ sector }: { sector: SectorData }) {
       {/* Score pill */}
       <div className="flex justify-between items-center pt-1 border-t border-zinc-800">
         <span className="text-xs font-mono text-zinc-600">SECTOR SCORE</span>
-        <span className="text-xs font-mono font-bold" style={{ color: sector.color }}>{sector.score}</span>
+        <span className="text-xs font-mono font-bold" style={{ color: sector.color }}>{sector.score == null ? "Unavailable" : sector.score}</span>
       </div>
     </div>
   );
@@ -592,7 +601,7 @@ function AltRotationInner() {
 
               <div className="text-center py-4">
                 <div className="text-4xl font-mono font-bold text-cyan-400">
-                  {d.ethLeadership.ethBtcRatio.toFixed(4)}
+                  {formatObservedFixed(d.ethLeadership.ethBtcRatio, 4)}
                 </div>
                 <div className="text-xs font-mono text-zinc-500 mt-1">ETH/BTC RATIO</div>
               </div>
@@ -601,15 +610,15 @@ function AltRotationInner() {
                 <div className="text-center p-2 rounded border border-zinc-800">
                   <div className="text-xs font-mono text-zinc-500">ETH 24H</div>
                   <div className="text-sm font-mono font-bold"
-                    style={{ color: d.ethLeadership.ethChange24h >= 0 ? "#34D399" : "#FF2D55" }}>
-                    {d.ethLeadership.ethChange24h >= 0 ? "+" : ""}{d.ethLeadership.ethChange24h.toFixed(2)}%
+                    style={{ color: d.ethLeadership.ethChange24h == null ? "#64748B" : d.ethLeadership.ethChange24h >= 0 ? "#34D399" : "#FF2D55" }}>
+                    {d.ethLeadership.ethChange24h == null ? "Unavailable" : `${d.ethLeadership.ethChange24h >= 0 ? "+" : ""}${d.ethLeadership.ethChange24h.toFixed(2)}%`}
                   </div>
                 </div>
                 <div className="text-center p-2 rounded border border-zinc-800">
                   <div className="text-xs font-mono text-zinc-500">BTC 24H</div>
                   <div className="text-sm font-mono font-bold"
-                    style={{ color: d.ethLeadership.btcChange24h >= 0 ? "#34D399" : "#FF2D55" }}>
-                    {d.ethLeadership.btcChange24h >= 0 ? "+" : ""}{d.ethLeadership.btcChange24h.toFixed(2)}%
+                    style={{ color: d.ethLeadership.btcChange24h == null ? "#64748B" : d.ethLeadership.btcChange24h >= 0 ? "#34D399" : "#FF2D55" }}>
+                    {d.ethLeadership.btcChange24h == null ? "Unavailable" : `${d.ethLeadership.btcChange24h >= 0 ? "+" : ""}${d.ethLeadership.btcChange24h.toFixed(2)}%`}
                   </div>
                 </div>
               </div>
@@ -617,8 +626,8 @@ function AltRotationInner() {
               <div className="pt-3 border-t border-zinc-800 space-y-2">
                 <div className="flex justify-between text-xs font-mono">
                   <span className="text-zinc-500">RELATIVE PERF</span>
-                  <span style={{ color: d.ethLeadership.relativePerformance >= 0 ? "#34D399" : "#FF2D55" }}>
-                    {d.ethLeadership.relativePerformance >= 0 ? "+" : ""}{d.ethLeadership.relativePerformance.toFixed(2)}%
+                  <span style={{ color: d.ethLeadership.relativePerformance == null ? "#64748B" : d.ethLeadership.relativePerformance >= 0 ? "#34D399" : "#FF2D55" }}>
+                    {d.ethLeadership.relativePerformance == null ? "Unavailable" : `${d.ethLeadership.relativePerformance >= 0 ? "+" : ""}${d.ethLeadership.relativePerformance.toFixed(2)}%`}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs font-mono">
@@ -627,7 +636,7 @@ function AltRotationInner() {
                 </div>
                 <div className="flex justify-between text-xs font-mono">
                   <span className="text-zinc-500">SCORE</span>
-                  <span style={{ color: regimeColor }}>{d.ethLeadership.score}/100</span>
+                  <span style={{ color: regimeColor }}>{d.ethLeadership.score == null ? "Unavailable" : `${d.ethLeadership.score}/100`}</span>
                 </div>
               </div>
             </div>
@@ -648,7 +657,7 @@ function AltRotationInner() {
 
               <div className="text-center py-4">
                 <div className="text-4xl font-mono font-bold text-emerald-400">
-                  ${d.stablecoinLiquidity.totalStablecoinCap.toFixed(0)}B
+                  {d.stablecoinLiquidity.totalStablecoinCap == null ? "Unavailable" : `$${d.stablecoinLiquidity.totalStablecoinCap.toFixed(0)}B`}
                 </div>
                 <div className="text-xs font-mono text-zinc-500 mt-1">TOTAL STABLECOIN SUPPLY</div>
               </div>
@@ -657,13 +666,13 @@ function AltRotationInner() {
                 <div className="text-center p-2 rounded border border-zinc-800">
                   <div className="text-xs font-mono text-zinc-500">USDT</div>
                   <div className="text-sm font-mono font-bold text-zinc-200">
-                    ${d.stablecoinLiquidity.usdtMarketCap.toFixed(0)}B
+                    {d.stablecoinLiquidity.usdtMarketCap == null ? "Unavailable" : `$${d.stablecoinLiquidity.usdtMarketCap.toFixed(0)}B`}
                   </div>
                 </div>
                 <div className="text-center p-2 rounded border border-zinc-800">
                   <div className="text-xs font-mono text-zinc-500">USDC</div>
                   <div className="text-sm font-mono font-bold text-zinc-200">
-                    ${d.stablecoinLiquidity.usdcMarketCap.toFixed(0)}B
+                    {d.stablecoinLiquidity.usdcMarketCap == null ? "Unavailable" : `$${d.stablecoinLiquidity.usdcMarketCap.toFixed(0)}B`}
                   </div>
                 </div>
               </div>
@@ -677,7 +686,7 @@ function AltRotationInner() {
                 </div>
                 <div className="flex justify-between text-xs font-mono">
                   <span className="text-zinc-500">SCORE</span>
-                  <span style={{ color: regimeColor }}>{d.stablecoinLiquidity.score}/100</span>
+                  <span style={{ color: regimeColor }}>{d.stablecoinLiquidity.score == null ? "Unavailable" : `${d.stablecoinLiquidity.score}/100`}</span>
                 </div>
               </div>
             </div>
@@ -691,7 +700,7 @@ function AltRotationInner() {
               Regularly refreshed sector rotation intelligence across 7 crypto verticals. Synchronized breakouts across multiple assets within a sector generate rotation alerts.
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {d.sectors.sort((a, b) => b.avgChange24h - a.avgChange24h).map(sector => (
+              {d.sectors.sort((a, b) => (b.avgChange24h ?? Number.NEGATIVE_INFINITY) - (a.avgChange24h ?? Number.NEGATIVE_INFINITY)).map(sector => (
                 <SectorCard key={sector.key} sector={sector} />
               ))}
             </div>
@@ -741,7 +750,7 @@ function AltRotationInner() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm font-mono">
                     <span className="text-zinc-400">ETH/BTC Ratio</span>
-                    <span className="text-cyan-400 font-bold">{d.ethLeadership.ethBtcRatio.toFixed(5)}</span>
+                    <span className="text-cyan-400 font-bold">{formatObservedFixed(d.ethLeadership.ethBtcRatio, 5)}</span>
                   </div>
                   <div className="flex justify-between text-sm font-mono">
                     <span className="text-zinc-400">Status</span>
@@ -751,13 +760,13 @@ function AltRotationInner() {
                   </div>
                   <div className="flex justify-between text-sm font-mono">
                     <span className="text-zinc-400">Relative Perf</span>
-                    <span style={{ color: d.ethLeadership.relativePerformance >= 0 ? "#34D399" : "#FF2D55" }}>
-                      {d.ethLeadership.relativePerformance >= 0 ? "+" : ""}{d.ethLeadership.relativePerformance.toFixed(2)}%
+                    <span style={{ color: d.ethLeadership.relativePerformance == null ? "#64748B" : d.ethLeadership.relativePerformance >= 0 ? "#34D399" : "#FF2D55" }}>
+                      {signedPct(d.ethLeadership.relativePerformance, 2)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm font-mono">
                     <span className="text-zinc-400">Engine Score</span>
-                    <span className="font-bold" style={{ color: regimeColor }}>{d.ethLeadership.score}/100</span>
+                    <span className="font-bold" style={{ color: regimeColor }}>{d.ethLeadership.score == null ? "Unavailable" : `${d.ethLeadership.score}/100`}</span>
                   </div>
                 </div>
               </div>
@@ -769,15 +778,15 @@ function AltRotationInner() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm font-mono">
                     <span className="text-zinc-400">USDT Supply</span>
-                    <span className="text-zinc-200">${d.stablecoinLiquidity.usdtMarketCap.toFixed(1)}B</span>
+                    <span className="text-zinc-200">{moneyFixed(d.stablecoinLiquidity.usdtMarketCap, 1, "B")}</span>
                   </div>
                   <div className="flex justify-between text-sm font-mono">
                     <span className="text-zinc-400">USDC Supply</span>
-                    <span className="text-zinc-200">${d.stablecoinLiquidity.usdcMarketCap.toFixed(1)}B</span>
+                    <span className="text-zinc-200">{moneyFixed(d.stablecoinLiquidity.usdcMarketCap, 1, "B")}</span>
                   </div>
                   <div className="flex justify-between text-sm font-mono">
                     <span className="text-zinc-400">Total Supply</span>
-                    <span className="text-emerald-400 font-bold">${d.stablecoinLiquidity.totalStablecoinCap.toFixed(1)}B</span>
+                    <span className="text-emerald-400 font-bold">{moneyFixed(d.stablecoinLiquidity.totalStablecoinCap, 1, "B")}</span>
                   </div>
                   <div className="flex justify-between text-sm font-mono">
                     <span className="text-zinc-400">Status</span>
@@ -787,7 +796,7 @@ function AltRotationInner() {
                   </div>
                   <div className="flex justify-between text-sm font-mono">
                     <span className="text-zinc-400">Engine Score</span>
-                    <span className="font-bold" style={{ color: regimeColor }}>{d.stablecoinLiquidity.score}/100</span>
+                    <span className="font-bold" style={{ color: regimeColor }}>{d.stablecoinLiquidity.score == null ? "Unavailable" : `${d.stablecoinLiquidity.score}/100`}</span>
                   </div>
                 </div>
               </div>
@@ -799,11 +808,11 @@ function AltRotationInner() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm font-mono">
                     <span className="text-zinc-400">TOTAL2 (ex-BTC)</span>
-                    <span className="text-zinc-200">${d.marketBreadth.total2Proxy.toFixed(0)}B</span>
+                    <span className="text-zinc-200">{moneyFixed(d.marketBreadth.total2Proxy, 0, "B")}</span>
                   </div>
                   <div className="flex justify-between text-sm font-mono">
                     <span className="text-zinc-400">TOTAL3 (ex-BTC/ETH)</span>
-                    <span className="text-zinc-200">${d.marketBreadth.total3Proxy.toFixed(0)}B</span>
+                    <span className="text-zinc-200">{moneyFixed(d.marketBreadth.total3Proxy, 0, "B")}</span>
                   </div>
                   <div className="flex justify-between text-sm font-mono">
                     <span className="text-zinc-400">Altcoin Dominance</span>
@@ -834,9 +843,9 @@ function AltRotationInner() {
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                { label: "TOTAL CRYPTO MARKET", value: `$${((d.marketBreadth.total2Proxy + (d.stablecoinLiquidity.totalStablecoinCap)) / 1000).toFixed(2)}T`, color: regimeColor },
-                { label: "TOTAL2 (EX-BTC)", value: `$${d.marketBreadth.total2Proxy.toFixed(0)}B`, color: "#00D4FF" },
-                { label: "TOTAL3 (EX-BTC/ETH)", value: `$${d.marketBreadth.total3Proxy.toFixed(0)}B`, color: "#A78BFA" },
+                { label: "TOTAL CRYPTO MARKET", value: d.marketBreadth.total2Proxy == null || d.stablecoinLiquidity.totalStablecoinCap == null ? "Unavailable" : `$${((d.marketBreadth.total2Proxy + d.stablecoinLiquidity.totalStablecoinCap) / 1000).toFixed(2)}T`, color: regimeColor },
+                { label: "TOTAL2 (EX-BTC)", value: moneyFixed(d.marketBreadth.total2Proxy, 0, "B"), color: "#00D4FF" },
+                { label: "TOTAL3 (EX-BTC/ETH)", value: moneyFixed(d.marketBreadth.total3Proxy, 0, "B"), color: "#A78BFA" },
                 { label: "ALTCOIN DOMINANCE", value: formatObservedFixed(d.marketBreadth.altcoinDominance, 1, "%"), color: "#34D399" },
                 { label: "ETH DOMINANCE", value: formatObservedFixed(d.ethDominance, 1, "%"), color: "#22D3EE" },
               ].map(stat => (
@@ -866,7 +875,7 @@ function AltRotationInner() {
                     </tr>
                   </thead>
                   <tbody>
-                    {d.sectors.sort((a, b) => b.avgChange24h - a.avgChange24h).map(sector => (
+                    {d.sectors.sort((a, b) => (b.avgChange24h ?? Number.NEGATIVE_INFINITY) - (a.avgChange24h ?? Number.NEGATIVE_INFINITY)).map(sector => (
                       <tr key={sector.key} className="border-b border-zinc-800/30 hover:bg-zinc-900/30 transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
@@ -875,19 +884,19 @@ function AltRotationInner() {
                           </div>
                         </td>
                         <td className="px-4 py-3 text-right"
-                          style={{ color: sector.avgChange24h >= 0 ? "#34D399" : "#FF2D55" }}>
-                          {sector.avgChange24h >= 0 ? "+" : ""}{sector.avgChange24h.toFixed(2)}%
+                          style={{ color: sector.avgChange24h == null ? "#64748B" : sector.avgChange24h >= 0 ? "#34D399" : "#FF2D55" }}>
+                          {signedPct(sector.avgChange24h, 2)}
                         </td>
                         <td className="px-4 py-3 text-right"
-                          style={{ color: sector.avgChange7d >= 0 ? "#34D399" : "#FF2D55" }}>
-                          {sector.avgChange7d >= 0 ? "+" : ""}{sector.avgChange7d.toFixed(2)}%
+                          style={{ color: sector.avgChange7d == null ? "#64748B" : sector.avgChange7d >= 0 ? "#34D399" : "#FF2D55" }}>
+                          {signedPct(sector.avgChange7d, 2)}
                         </td>
                         <td className="px-4 py-3 text-right capitalize"
-                          style={{ color: sector.momentum === "strong" ? "#34D399" : sector.momentum === "moderate" ? "#00D4FF" : sector.momentum === "weak" ? "#F59E0B" : "#FF2D55" }}>
-                          {sector.momentum}
+                          style={{ color: sector.momentum === "strong" ? "#34D399" : sector.momentum === "moderate" ? "#00D4FF" : sector.momentum === "weak" ? "#F59E0B" : sector.momentum === "unavailable" ? "#64748B" : "#FF2D55" }}>
+                          {sector.momentum === "unavailable" ? "Unavailable" : sector.momentum}
                         </td>
                         <td className="px-4 py-3 text-right font-bold" style={{ color: sector.color }}>
-                          {sector.score}
+                          {sector.score == null ? "Unavailable" : sector.score}
                         </td>
                       </tr>
                     ))}

@@ -24,62 +24,62 @@ const CG_CACHE_TTL = 3 * 60 * 1000; // 3 minutes
 export interface BtcDominanceData {
   current: number | null;    // % e.g. 58.02; null when CoinGecko did not supply it
   trend: "rising" | "falling" | "neutral" | null;
-  velocity: number;          // % change in dominance (proxy from ETH/BTC momentum)
+  velocity: number | null;   // % change in dominance (proxy from ETH/BTC momentum)
   pressure: "high" | "medium" | "low" | null;
   signal: string;
   score: number | null;      // null when dominance was not observed
 }
 
 export interface EthLeadershipData {
-  ethBtcRatio: number;       // e.g. 0.02727
-  ethChange24h: number;
-  btcChange24h: number;
-  relativePerformance: number; // ETH 24h - BTC 24h
-  status: "outperforming" | "underperforming" | "neutral";
+  ethBtcRatio: number | null;       // e.g. 0.02727
+  ethChange24h: number | null;
+  btcChange24h: number | null;
+  relativePerformance: number | null; // ETH 24h - BTC 24h
+  status: "outperforming" | "underperforming" | "neutral" | "unavailable";
   label: string;
-  trend: "strengthening" | "weakening" | "neutral";
-  score: number;             // 0–100 contribution
+  trend: "strengthening" | "weakening" | "neutral" | "unavailable";
+  score: number | null;             // null when a change was not supplied
 }
 
 export interface StablecoinLiquidityData {
-  usdtMarketCap: number;     // billions
-  usdcMarketCap: number;     // billions
-  totalStablecoinCap: number;
-  usdtChange24h: number;
-  usdcChange24h: number;
-  combinedChange24h: number;
-  status: "expanding" | "contracting" | "neutral";
+  usdtMarketCap: number | null;     // billions
+  usdcMarketCap: number | null;     // billions
+  totalStablecoinCap: number | null;
+  usdtChange24h: number | null;
+  usdcChange24h: number | null;
+  combinedChange24h: number | null;
+  status: "expanding" | "contracting" | "neutral" | "unavailable";
   label: string;
-  score: number;             // 0–100 contribution
+  score: number | null;             // null when cap or change was not supplied
 }
 
 export interface SectorCoin {
   id: string;
   symbol: string;
   name: string;
-  price: number;
-  change24h: number;
-  change7d: number;
-  marketCap: number;
-  volume24h: number;
-  momentum: "strong" | "moderate" | "weak" | "negative";
+  price: number | null;
+  change24h: number | null;
+  change7d: number | null;
+  marketCap: number | null;
+  volume24h: number | null;
+  momentum: "strong" | "moderate" | "weak" | "negative" | "unavailable";
 }
 
 export interface SectorData {
   name: string;
   key: string;
   coins: SectorCoin[];
-  avgChange24h: number;
-  avgChange7d: number;
-  momentum: "strong" | "moderate" | "weak" | "negative";
+  avgChange24h: number | null;
+  avgChange7d: number | null;
+  momentum: "strong" | "moderate" | "weak" | "negative" | "unavailable";
   alert: string | null;
-  score: number;             // 0–100 sector momentum score
+  score: number | null;      // null when the sector changes were not supplied
   color: string;             // display accent color
 }
 
 export interface MarketBreadthData {
-  total2Proxy: number;       // total market cap excluding BTC (billions)
-  total3Proxy: number;       // total market cap excluding BTC+ETH (billions)
+  total2Proxy: number | null;       // total market cap excluding BTC (billions)
+  total3Proxy: number | null;       // total market cap excluding BTC+ETH (billions)
   altcoinDominance: number | null;  // 100 - BTC% - ETH%; null when either reading is missing
   ethDominance: number | null;
   breadthSignal: "expanding" | "contracting" | "neutral" | "unavailable";
@@ -189,6 +189,19 @@ function observedPercent(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function finiteNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function scaled(value: unknown, divisor: number): number | null {
+  const n = finiteNumber(value);
+  return n == null ? null : n / divisor;
+}
+
+function fixedOrNull(value: number | null, digits: number): number | null {
+  return value == null ? null : parseFloat(value.toFixed(digits));
+}
+
 function dominancePhrase(current: number | null): string {
   return current == null ? "BTC dominance unavailable" : `BTC dominance at ${current.toFixed(1)}%`;
 }
@@ -270,14 +283,14 @@ function scoreSector(avgChange24h: number, avgChange7d: number): { score: number
 
 function computeAltRotationScore(
   btcDomScore: number | null,
-  ethScore: number,
-  stableScore: number,
-  sectorScore: number,
+  ethScore: number | null,
+  stableScore: number | null,
+  sectorScore: number | null,
   breadthScore: number | null
 ): number {
-  // Observed inputs keep the original weights. A missing dominance or breadth
-  // reading is omitted from both sides and cannot move the score.
-  if (btcDomScore != null && breadthScore != null) {
+  // Observed inputs keep the original weights. A missing component is omitted
+  // from both sides and cannot move the score.
+  if (btcDomScore != null && ethScore != null && stableScore != null && sectorScore != null && breadthScore != null) {
     const raw =
       btcDomScore * 0.30 +
       ethScore * 0.25 +
@@ -288,9 +301,9 @@ function computeAltRotationScore(
   }
   const parts = [
     btcDomScore == null ? null : { score: btcDomScore, weight: 0.30 },
-    { score: ethScore, weight: 0.25 },
-    { score: stableScore, weight: 0.20 },
-    { score: sectorScore, weight: 0.15 },
+    ethScore == null ? null : { score: ethScore, weight: 0.25 },
+    stableScore == null ? null : { score: stableScore, weight: 0.20 },
+    sectorScore == null ? null : { score: sectorScore, weight: 0.15 },
     breadthScore == null ? null : { score: breadthScore, weight: 0.10 },
   ].filter((part): part is { score: number; weight: number } => part != null);
   const weight = parts.reduce((sum, part) => sum + part.weight, 0);
@@ -337,7 +350,7 @@ function generateAlerts(
     });
   }
 
-  if (eth.status === "outperforming" && eth.relativePerformance > 3) {
+  if (eth.status === "outperforming" && eth.relativePerformance != null && eth.relativePerformance > 3) {
     alerts.push({
       id: "eth_lead",
       type: "momentum",
@@ -369,13 +382,13 @@ function generateAlerts(
   }
 
   for (const sector of sectors) {
-    if (sector.alert && sector.momentum === "strong") {
+    if (sector.alert && sector.momentum === "strong" && sector.avgChange24h != null) {
       alerts.push({
         id: `sector_${sector.key}`,
         type: "sector_rotation",
         severity: sector.avgChange24h > 10 ? "high" : "medium",
         title: `${sector.name} ${sector.alert}`,
-        body: `${sector.name} sector averaging +${sector.avgChange24h.toFixed(1)}% (24h) with synchronized momentum across ${sector.coins.filter(c => c.change24h > 3).length} assets.`,
+        body: `${sector.name} sector averaging +${sector.avgChange24h.toFixed(1)}% (24h) with synchronized momentum across ${sector.coins.filter(c => c.change24h != null && c.change24h > 3).length} assets.`,
         timestamp: now,
       });
     }
@@ -412,16 +425,18 @@ function generateAiCommentary(
   stable: StablecoinLiquidityData,
   sectors: SectorData[]
 ): string {
-  const topSector = sectors.sort((a, b) => b.avgChange24h - a.avgChange24h)[0];
+  const topSector = [...sectors].sort((a, b) => (b.avgChange24h ?? Number.NEGATIVE_INFINITY) - (a.avgChange24h ?? Number.NEGATIVE_INFINITY))[0];
+  const topMove = topSector?.avgChange24h == null ? "unavailable" : `${topSector.avgChange24h.toFixed(1)}%`;
   const dominanceText = dominancePhrase(btcDom.current);
   const ethStatus = eth.status === "outperforming" ? "ETH/BTC strengthening" : eth.status === "underperforming" ? "ETH/BTC weakening" : "ETH/BTC neutral";
   const stableStatus = stable.status === "expanding" ? "stablecoin liquidity expanding" : stable.status === "contracting" ? "stablecoin liquidity contracting" : "stablecoin supply stable";
 
   if (score >= 66) {
-    return `Broad altseason conditions confirmed. ${dominanceText} with ${ethStatus} and ${stableStatus}. ${topSector.name} sector leading with ${topSector.avgChange24h.toFixed(1)}% average 24h performance. Systemic capital rotation into altcoins is underway — risk appetite elevated across multiple sectors simultaneously.`;
+    return `Broad altseason conditions confirmed. ${dominanceText} with ${ethStatus} and ${stableStatus}. ${topSector.name} sector leading with ${topMove} average 24h performance. Systemic capital rotation into altcoins is underway — risk appetite elevated across multiple sectors simultaneously.`;
   } else if (score >= 46) {
     const holds = btcDom.current == null ? "BTC dominance is unavailable" : `BTC dominance holds at ${btcDom.current.toFixed(1)}%`;
-    return `Selective alt expansion emerging. ${ethStatus} as ${holds}. ${stableStatus}. ${topSector.name} sector showing early rotation signals (+${topSector.avgChange24h.toFixed(1)}% 24h). Broad altseason not yet confirmed — capital rotation remains concentrated in quality names.`;
+    const earlyMove = topSector?.avgChange24h == null ? "unavailable" : `+${topSector.avgChange24h.toFixed(1)}%`;
+    return `Selective alt expansion emerging. ${ethStatus} as ${holds}. ${stableStatus}. ${topSector.name} sector showing early rotation signals (${earlyMove} 24h). Broad altseason not yet confirmed — capital rotation remains concentrated in quality names.`;
   } else if (score >= 26) {
     return `Early rotation watch conditions. ${dominanceText} — moderating but not yet at altseason thresholds. ${ethStatus}. ${stableStatus}. Monitor ${topSector.name} sector for breakout confirmation. Conditions are building but not yet actionable for broad alt exposure.`;
   } else if (btcDom.current == null) {
@@ -453,7 +468,7 @@ export async function computeAltRotation(apiKey?: string): Promise<AltRotationPa
     const gd = globalData.data;
     const btcDomPct = observedPercent(gd.market_cap_percentage?.btc);
     const ethDomPct = observedPercent(gd.market_cap_percentage?.eth);
-    const totalMcapUsd = gd.total_market_cap.usd ?? 0;
+    const totalMcapUsd = finiteNumber(gd.total_market_cap?.usd);
 
     // 2. BTC + ETH + stablecoin prices
     const priceData = await cgFetch(
@@ -461,11 +476,13 @@ export async function computeAltRotation(apiKey?: string): Promise<AltRotationPa
       apiKey
     ) as Record<string, { usd?: number; btc?: number; usd_market_cap?: number; usd_24h_change?: number }>;
 
-    const btcChange24h = priceData.bitcoin?.usd_24h_change ?? 0;
-    const ethChange24h = priceData.ethereum?.usd_24h_change ?? 0;
-    const ethBtcRatio = priceData.ethereum?.btc ?? 0;
-    const usdtMcap = (priceData.tether?.usd_market_cap ?? 0) / 1e9;
-    const usdcMcap = (priceData["usd-coin"]?.usd_market_cap ?? 0) / 1e9;
+    const btcChange24h = finiteNumber(priceData.bitcoin?.usd_24h_change);
+    const ethChange24h = finiteNumber(priceData.ethereum?.usd_24h_change);
+    const ethBtcRatio = finiteNumber(priceData.ethereum?.btc);
+    const usdtMcap = scaled(priceData.tether?.usd_market_cap, 1e9);
+    const usdcMcap = scaled(priceData["usd-coin"]?.usd_market_cap, 1e9);
+    const usdtChange = finiteNumber(priceData.tether?.usd_24h_change);
+    const usdcChange = finiteNumber(priceData["usd-coin"]?.usd_24h_change);
 
     // 3. Sector coins — batch fetch all sector coin IDs
     const allCoinIds = SECTORS.flatMap(s => s.coinIds).join(",");
@@ -480,53 +497,54 @@ export async function computeAltRotation(apiKey?: string): Promise<AltRotationPa
       apiKey
     ) as Array<{ id: string; price_change_percentage_7d_in_currency?: number }>;
 
-    const change7dMap: Record<string, number> = {};
+    const change7dMap: Record<string, number | null> = {};
     for (const c of marketsData) {
-      change7dMap[c.id] = c.price_change_percentage_7d_in_currency ?? 0;
+      change7dMap[c.id] = finiteNumber(c.price_change_percentage_7d_in_currency);
     }
 
     // ── Build sector data ─────────────────────────────────────
     const sectors: SectorData[] = SECTORS.map(sectorDef => {
       const coins: SectorCoin[] = sectorDef.coinIds.map(id => {
         const p = sectorPrices[id];
+        const change24h = finiteNumber(p?.usd_24h_change);
         return {
           id,
           symbol: id.split("-")[0].toUpperCase(),
           name: id.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase()),
-          price: p?.usd ?? 0,
-          change24h: p?.usd_24h_change ?? 0,
-          change7d: change7dMap[id] ?? 0,
-          marketCap: (p?.usd_market_cap ?? 0) / 1e9,
-          volume24h: (p?.usd_24h_vol ?? 0) / 1e6,
-          momentum: ((p?.usd_24h_change ?? 0) > 5 ? "strong" : (p?.usd_24h_change ?? 0) > 1 ? "moderate" : (p?.usd_24h_change ?? 0) > -3 ? "weak" : "negative") as SectorCoin["momentum"],
+          price: finiteNumber(p?.usd),
+          change24h,
+          change7d: change7dMap[id] ?? null,
+          marketCap: scaled(p?.usd_market_cap, 1e9),
+          volume24h: scaled(p?.usd_24h_vol, 1e6),
+          momentum: (change24h == null ? "unavailable" : change24h > 5 ? "strong" : change24h > 1 ? "moderate" : change24h > -3 ? "weak" : "negative") as SectorCoin["momentum"],
         };
-      }).filter(c => c.price > 0);
+      }).filter(c => c.price != null && c.price > 0);
 
-      const validCoins = coins.filter(c => c.change24h !== 0 || c.price > 0);
-      const avgChange24h = validCoins.length > 0
-        ? validCoins.reduce((s, c) => s + c.change24h, 0) / validCoins.length
-        : 0;
-      const avgChange7d = validCoins.length > 0
-        ? validCoins.reduce((s, c) => s + c.change7d, 0) / validCoins.length
-        : 0;
-
-      const { score, momentum, alert } = scoreSector(avgChange24h, avgChange7d);
+      const average = (values: Array<number | null>) => {
+        const nums = values.filter((value): value is number => typeof value === "number");
+        return nums.length > 0 ? nums.reduce((sum, value) => sum + value, 0) / nums.length : null;
+      };
+      const avgChange24h = average(coins.map(c => c.change24h));
+      const avgChange7d = average(coins.map(c => c.change7d));
+      const scored = avgChange24h != null && avgChange7d != null ? scoreSector(avgChange24h, avgChange7d) : null;
 
       return {
         name: sectorDef.name,
         key: sectorDef.key,
         coins,
-        avgChange24h: parseFloat(avgChange24h.toFixed(2)),
-        avgChange7d: parseFloat(avgChange7d.toFixed(2)),
-        momentum,
-        alert: alert ? `${sectorDef.name} ${alert}` : null,
-        score,
+        avgChange24h: fixedOrNull(avgChange24h, 2),
+        avgChange7d: fixedOrNull(avgChange7d, 2),
+        momentum: scored?.momentum ?? "unavailable",
+        alert: scored?.alert ? `${sectorDef.name} ${scored.alert}` : null,
+        score: scored?.score ?? null,
         color: sectorDef.color,
       };
     });
 
     // ── BTC Dominance Engine ──────────────────────────────────
-    const velocity = parseFloat((btcChange24h - ethChange24h).toFixed(2));
+    const velocity = btcChange24h != null && ethChange24h != null
+      ? parseFloat((btcChange24h - ethChange24h).toFixed(2))
+      : null;
     const btcDominance: BtcDominanceData = btcDomPct == null
       ? {
           current: null,
@@ -543,50 +561,58 @@ export async function computeAltRotation(apiKey?: string): Promise<AltRotationPa
         };
 
     // ── ETH Leadership Index ──────────────────────────────────
-    const ethScoring = scoreEthLeadership(ethChange24h, btcChange24h, ethBtcRatio);
+    const ethScoring = ethChange24h != null && btcChange24h != null
+      ? scoreEthLeadership(ethChange24h, btcChange24h, ethBtcRatio ?? 0)
+      : null;
     const ethLeadership: EthLeadershipData = {
-      ethBtcRatio: parseFloat(ethBtcRatio.toFixed(5)),
-      ethChange24h: parseFloat(ethChange24h.toFixed(2)),
-      btcChange24h: parseFloat(btcChange24h.toFixed(2)),
-      relativePerformance: parseFloat((ethChange24h - btcChange24h).toFixed(2)),
-      status: ethScoring.status,
-      label: ethScoring.label,
-      trend: ethScoring.trend,
-      score: ethScoring.score,
+      ethBtcRatio: fixedOrNull(ethBtcRatio, 5),
+      ethChange24h: fixedOrNull(ethChange24h, 2),
+      btcChange24h: fixedOrNull(btcChange24h, 2),
+      relativePerformance: ethChange24h != null && btcChange24h != null
+        ? parseFloat((ethChange24h - btcChange24h).toFixed(2))
+        : null,
+      status: ethScoring?.status ?? "unavailable",
+      label: ethScoring?.label ?? "Unavailable",
+      trend: ethScoring?.trend ?? "unavailable",
+      score: ethScoring?.score ?? null,
     };
 
     // ── Stablecoin Liquidity Engine ───────────────────────────
-    const totalStable = usdtMcap + usdcMcap;
-    // Proxy combined 24h change from individual changes (weighted)
-    const combinedStableChange = usdtMcap > 0 && usdcMcap > 0
-      ? (priceData.tether?.usd_24h_change ?? 0) * (usdtMcap / totalStable) +
-        (priceData["usd-coin"]?.usd_24h_change ?? 0) * (usdcMcap / totalStable)
-      : 0;
-    const stableScoring = scoreStablecoinLiquidity(combinedStableChange);
+    const totalStable = usdtMcap != null && usdcMcap != null ? usdtMcap + usdcMcap : null;
+    // Proxy combined 24h change from individual changes (weighted).
+    // An observed zero cap still yields 0. A missing cap or change is withheld.
+    const combinedStableChange = usdtMcap == null || usdcMcap == null
+      ? null
+      : usdtMcap > 0 && usdcMcap > 0
+        ? (usdtChange != null && usdcChange != null && totalStable
+          ? usdtChange * (usdtMcap / totalStable) + usdcChange * (usdcMcap / totalStable)
+          : null)
+        : 0;
+    const stableScoring = combinedStableChange == null ? null : scoreStablecoinLiquidity(combinedStableChange);
     const stablecoinLiquidity: StablecoinLiquidityData = {
-      usdtMarketCap: parseFloat(usdtMcap.toFixed(1)),
-      usdcMarketCap: parseFloat(usdcMcap.toFixed(1)),
-      totalStablecoinCap: parseFloat(totalStable.toFixed(1)),
-      usdtChange24h: parseFloat((priceData.tether?.usd_24h_change ?? 0).toFixed(3)),
-      usdcChange24h: parseFloat((priceData["usd-coin"]?.usd_24h_change ?? 0).toFixed(3)),
-      combinedChange24h: parseFloat(combinedStableChange.toFixed(3)),
-      status: stableScoring.status,
-      label: stableScoring.label,
-      score: stableScoring.score,
+      usdtMarketCap: fixedOrNull(usdtMcap, 1),
+      usdcMarketCap: fixedOrNull(usdcMcap, 1),
+      totalStablecoinCap: fixedOrNull(totalStable, 1),
+      usdtChange24h: fixedOrNull(usdtChange, 3),
+      usdcChange24h: fixedOrNull(usdcChange, 3),
+      combinedChange24h: fixedOrNull(combinedStableChange, 3),
+      status: stableScoring?.status ?? "unavailable",
+      label: stableScoring?.label ?? "Unavailable",
+      score: stableScoring?.score ?? null,
     };
 
     // ── Market Breadth (TOTAL2/TOTAL3 proxy) ──────────────────
-    const btcMcap = (priceData.bitcoin?.usd_market_cap ?? 0) / 1e9;
-    const ethMcap = (priceData.ethereum?.usd_market_cap ?? 0) / 1e9;
-    const totalMcapB = totalMcapUsd / 1e9;
-    const total2Proxy = totalMcapB - btcMcap;
-    const total3Proxy = totalMcapB - btcMcap - ethMcap;
+    const btcMcap = scaled(priceData.bitcoin?.usd_market_cap, 1e9);
+    const ethMcap = scaled(priceData.ethereum?.usd_market_cap, 1e9);
+    const totalMcapB = totalMcapUsd == null ? null : totalMcapUsd / 1e9;
+    const total2Proxy = totalMcapB != null && btcMcap != null ? totalMcapB - btcMcap : null;
+    const total3Proxy = total2Proxy != null && ethMcap != null ? total2Proxy - ethMcap : null;
     const observedEth = ethDomPct == null ? null : parseFloat(ethDomPct.toFixed(2));
     const altcoinDominance = btcDomPct == null || ethDomPct == null ? null : 100 - btcDomPct - ethDomPct;
     const breadthScore = altcoinDominance == null ? null : clamp(Math.round((altcoinDominance / 40) * 100)); // 40% altcoin dom = 100
     const marketBreadth: MarketBreadthData = {
-      total2Proxy: parseFloat(total2Proxy.toFixed(0)),
-      total3Proxy: parseFloat(total3Proxy.toFixed(0)),
+      total2Proxy: fixedOrNull(total2Proxy, 0),
+      total3Proxy: fixedOrNull(total3Proxy, 0),
       altcoinDominance: altcoinDominance == null ? null : parseFloat(altcoinDominance.toFixed(2)),
       ethDominance: observedEth,
       breadthSignal: altcoinDominance == null ? "unavailable" : altcoinDominance > 35 ? "expanding" : altcoinDominance < 25 ? "contracting" : "neutral",
@@ -594,9 +620,10 @@ export async function computeAltRotation(apiKey?: string): Promise<AltRotationPa
     };
 
     // ── Sector composite score ────────────────────────────────
-    const sectorComposite = sectors.length > 0
-      ? sectors.reduce((s, sec) => s + sec.score, 0) / sectors.length
-      : 50;
+    const scoredSectors = sectors.map(sec => sec.score).filter((score): score is number => typeof score === "number");
+    const sectorComposite = scoredSectors.length > 0
+      ? scoredSectors.reduce((sum, score) => sum + score, 0) / scoredSectors.length
+      : sectors.length === 0 ? 50 : null;
 
     // ── Final rotation score ──────────────────────────────────
     const score = computeAltRotationScore(
@@ -616,7 +643,7 @@ export async function computeAltRotation(apiKey?: string): Promise<AltRotationPa
       { label: "BTC Dominance Engine", weight: 30, rawScore: btcDominance.score, contribution: weighted(btcDominance.score, 0.30) },
       { label: "ETH Leadership Index", weight: 25, rawScore: ethLeadership.score, contribution: weighted(ethLeadership.score, 0.25) },
       { label: "Stablecoin Liquidity", weight: 20, rawScore: stablecoinLiquidity.score, contribution: weighted(stablecoinLiquidity.score, 0.20) },
-      { label: "Sector Rotation", weight: 15, rawScore: Math.round(sectorComposite), contribution: weighted(Math.round(sectorComposite), 0.15) },
+      { label: "Sector Rotation", weight: 15, rawScore: sectorComposite == null ? null : Math.round(sectorComposite), contribution: weighted(sectorComposite == null ? null : Math.round(sectorComposite), 0.15) },
       { label: "Market Breadth", weight: 10, rawScore: marketBreadth.score, contribution: weighted(marketBreadth.score, 0.10) },
     ];
 

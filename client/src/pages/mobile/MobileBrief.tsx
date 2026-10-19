@@ -85,7 +85,7 @@ export default function MobileBrief() {
   // Top rotation note
   const topSector = useMemo(() => {
     if (!rotation?.sectors?.length) return null;
-    return [...rotation.sectors].sort((a, b) => Math.abs(b.avgChange24h) - Math.abs(a.avgChange24h))[0];
+    return [...rotation.sectors].sort((a, b) => Math.abs(b.avgChange24h ?? 0) - Math.abs(a.avgChange24h ?? 0))[0];
   }, [rotation?.sectors]);
 
   const isLoading = canonicalLoading;
@@ -206,11 +206,11 @@ export default function MobileBrief() {
         <BriefCard
           icon={<RotateCcw size={12} />}
           label="ROTATION NOTE"
-          title={`${topSector.name} ${topSector.avgChange24h >= 0 ? "Leading" : "Lagging"}`}
-          body={`${topSector.name} is showing ${Math.abs(topSector.avgChange24h).toFixed(1)}% 24h momentum. ${
+          title={`${topSector.name} ${topSector.avgChange24h == null ? "Unavailable" : topSector.avgChange24h >= 0 ? "Leading" : "Lagging"}`}
+          body={`${topSector.name} is showing ${topSector.avgChange24h == null ? "Unavailable" : `${Math.abs(topSector.avgChange24h).toFixed(1)}%`} 24h momentum. ${
             rotation?.aiCommentary
               ? rotation.aiCommentary.split(".")[0] + "."
-              : topSector.avgChange24h >= 0
+              : topSector.avgChange24h != null && topSector.avgChange24h >= 0
               ? "Risk-on rotation detected in this sector."
               : "Risk-off pressure weighing on this sector."
           }`}
