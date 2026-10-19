@@ -133,7 +133,15 @@ describe("source guards — production surfaces", () => {
   });
 
   it("NOW fails closed when the canonical state is unavailable", () => {
-    expect(src("client/src/pages/Now.tsx")).toMatch(/if \(!marketState \|\| !canonicalState\) \{?\s*return <PageDegradedBanner/);
+    const source = src("client/src/pages/Now.tsx");
+    const unavailableBranch = source.match(/if \(!marketState \|\| !canonicalState\) \{([\s\S]*?)\n  \}/)?.[1];
+    expect(unavailableBranch).toBeDefined();
+    expect(unavailableBranch).toContain("<PageDegradedBanner");
+    expect(unavailableBranch).toContain("<IntelligenceCoreExperience model={evidenceCore}");
+    expect(unavailableBranch).not.toMatch(/PressureInstrument|formatCanonicalScore\(pressure\)|SystemicRegimeModule|SeismicBackground/);
+    // The visible constellation must use the existing canonical boundary, not
+    // raw provider results or the browser's deterministic demo engine.
+    expect(source).toContain("presentVerifiedEvidenceCore(evidenceError ? null : evidenceResponse, canonicalState, previousEvidence.current)");
   });
 
   it("Watchlist, Alerts and the deep dashboard never show EngineContext.indicators as readings", () => {

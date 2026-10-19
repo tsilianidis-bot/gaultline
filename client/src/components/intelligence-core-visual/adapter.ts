@@ -1,3 +1,4 @@
+import { PRESSURE_VECTOR_DISPLAY } from "@shared/pressureVectorLabels";
 import {
   DOMAIN_IDS,
   type CoreAssessmentRecord,
@@ -14,34 +15,44 @@ import {
   type ScenarioId,
 } from "./types";
 
-/** Fixed UI labels prevent an upstream payload from redefining the topology. */
+/** Visual node id → canonical Pressure vector. The vector id is not renamed. */
+export const DOMAIN_VECTOR_ID = {
+  liquidity: "liquidity-stress",
+  credit: "credit-contagion",
+  volatility: "volatility-regime",
+  macro: "macro-sensitivity",
+  breadth: "market-breadth",
+  ai: "ai-bubble",
+} as const satisfies Record<DomainId, keyof typeof PRESSURE_VECTOR_DISPLAY>;
+
+/** Fixed UI labels from the canonical vector display. A payload cannot rename a node. */
 export const DOMAIN_LABELS: Record<DomainId, string> = {
-  liquidity: "Liquidity Stress",
-  credit: "Credit Contagion",
-  volatility: "Volatility Regime",
-  macro: "Macro Sensitivity",
-  breadth: "Market Breadth",
-  ai: "AI Bubble Risk",
+  liquidity: PRESSURE_VECTOR_DISPLAY[DOMAIN_VECTOR_ID.liquidity].label,
+  credit: PRESSURE_VECTOR_DISPLAY[DOMAIN_VECTOR_ID.credit].label,
+  volatility: PRESSURE_VECTOR_DISPLAY[DOMAIN_VECTOR_ID.volatility].label,
+  macro: PRESSURE_VECTOR_DISPLAY[DOMAIN_VECTOR_ID.macro].label,
+  breadth: PRESSURE_VECTOR_DISPLAY[DOMAIN_VECTOR_ID.breadth].label,
+  ai: PRESSURE_VECTOR_DISPLAY[DOMAIN_VECTOR_ID.ai].label,
 };
 
-/** Educational copy only: these are descriptions of the topology, not market calls. */
+function emptyDomainSignificance(id: DomainId): string {
+  return `Educational domain: ${PRESSURE_VECTOR_DISPLAY[DOMAIN_VECTOR_ID[id]].description} No admitted market observation is available.`;
+}
+
+/** Educational copy only: these describe the canonical vector, not a market call. */
 const EMPTY_DOMAIN_SIGNIFICANCE: Record<DomainId, string> = {
-  liquidity:
-    "Educational domain: monitors funding and market-liquidity conditions; no admitted market observation is available.",
-  credit:
-    "Educational domain: monitors credit transmission and contagion conditions; no admitted market observation is available.",
-  volatility:
-    "Educational domain: monitors volatility-regime conditions; no admitted market observation is available.",
-  macro:
-    "Educational domain: monitors macro sensitivity; no admitted market observation is available.",
-  breadth:
-    "Educational domain: monitors market participation and breadth; no admitted market observation is available.",
-  ai: "Educational domain: monitors AI-bubble risk conditions; no admitted market observation is available.",
+  liquidity: emptyDomainSignificance("liquidity"),
+  credit: emptyDomainSignificance("credit"),
+  volatility: emptyDomainSignificance("volatility"),
+  macro: emptyDomainSignificance("macro"),
+  breadth: emptyDomainSignificance("breadth"),
+  ai: emptyDomainSignificance("ai"),
 };
 
 const EVIDENCE_STATUSES = new Set<EvidenceStatus>([
   "current",
   "delayed",
+  "recent",
   "stale",
   "static",
   "degraded",
@@ -281,9 +292,23 @@ function sanitizeEvidence(
     )
       continue;
 
-    // An otherwise well-formed expired current item remains useful as explicitly
-    // stale historical evidence in the drawer, but can no longer support claims.
-    if (status === "current" && parseTimestamp(validUntil)! < Date.now())
+    // Recent is historical-only at this boundary. It needs an actual observation
+    // timestamp so an unanchored payload cannot be made to look recently observed.
+    if (status === "recent" && !observationAt) continue;
+
+    // A canonical deadline is a freshness boundary, never a refresh policy this
+    // view invents. Expired current, delayed, recent, and static/model records
+    // remain inspectable as stale history and cannot retain a live/model-recent
+    // presentation after their supplied deadline.
+    const validUntilMs = validUntil ? parseTimestamp(validUntil) : null;
+    if (
+      validUntilMs !== null &&
+      validUntilMs < Date.now() &&
+      (status === "current" ||
+        status === "delayed" ||
+        status === "recent" ||
+        status === "static")
+    )
       status = "stale";
 
     const evidence: CoreEvidence = {
@@ -361,12 +386,56 @@ function hasUsableEvidence(
   });
 }
 
+function allEvidenceAreExpiredStale(
+  ids: string[],
+  evidenceById: EvidenceIndex
+): boolean {
+  const now = Date.now();
+  return (
+    ids.length > 0 &&
+    ids.every(id => {
+      const source = evidenceById.get(id);
+      const observed = source ? parseTimestamp(source.observationAt) : null;
+      const deadline = source ? parseTimestamp(source.validUntil) : null;
+      return (
+        source?.admitted === true &&
+        source.status === "stale" &&
+        observed !== null &&
+        deadline !== null &&
+        deadline >= observed &&
+        deadline < now
+      );
+    })
+  );
+}
+
 function cleanStringList(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap(item => {
     const text = nonEmptyText(item);
     return text ? [text] : [];
   });
+}
+
+/**
+ * Domain-detail copy is canonical metadata, never a calculation or an inferred
+ * claim. Keep only bounded strings and unique bounded strings from a complete,
+ * admitted domain lineage; numbers and arbitrary objects cannot become labels.
+ */
+function cleanDomainDetailText(value: unknown): string | null {
+  const text = nonEmptyText(value);
+  return text && text.length <= 500 ? text : null;
+}
+
+function cleanDomainDetailList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const details: string[] = [];
+  for (const item of value) {
+    const text = cleanDomainDetailText(item);
+    if (text && !details.includes(text) && details.length < 12)
+      details.push(text);
+  }
+  return details;
 }
 
 function cleanDomainIds(value: unknown): DomainId[] {
@@ -390,27 +459,21 @@ function sourceStatusForDomain(
       return "current";
     // Preserve inspectable history only for complete, admitted, actually elapsed
     // source deadlines. This never restores a current assessment or direction.
-    const now = Date.now();
-    const expiredLineage = lineage.ids.every(id => {
-      const source = evidenceById.get(id)!;
-      const observed = parseTimestamp(source.observationAt);
-      const deadline = parseTimestamp(source.validUntil);
-      return (
-        source.admitted &&
-        source.status === "stale" &&
-        observed !== null &&
-        deadline !== null &&
-        deadline >= observed &&
-        deadline < now
-      );
-    });
-    return expiredLineage ? "stale" : "unavailable";
+    return allEvidenceAreExpiredStale(lineage.ids, evidenceById)
+      ? "stale"
+      : "unavailable";
   }
   if (status === "unavailable") return "unavailable";
-  // Do not promote delayed, stale, static, or degraded upstream statuses.
-  return hasEvidenceWithStatus(lineage.ids, evidenceById, status)
-    ? status
-    : "unavailable";
+  // Do not promote delayed, recent, stale, static, or degraded upstream statuses.
+  if (hasEvidenceWithStatus(lineage.ids, evidenceById, status)) return status;
+  // A supplied freshness deadline may retire a delayed/recent/static record to
+  // stale history. It must not continue to render as delayed, recent, or model.
+  if (
+    (status === "delayed" || status === "recent" || status === "static") &&
+    allEvidenceAreExpiredStale(lineage.ids, evidenceById)
+  )
+    return "stale";
+  return "unavailable";
 }
 
 function qualifiedHistorical(
@@ -457,6 +520,19 @@ function sanitizeDomains(
     const significance =
       nonEmptyText(raw.significance) ??
       "Evidence status is explicitly non-current.";
+    // These are retained only after the domain's complete admitted lineage has
+    // survived above. They never restore a non-current assessment or direction.
+    const confidence = cleanDomainDetailText(raw.confidence);
+    const confirmationConditions = cleanDomainDetailList(
+      raw.confirmationConditions
+    );
+    const invalidationConditions = cleanDomainDetailList(
+      raw.invalidationConditions
+    );
+    const pressureContribution = cleanDomainDetailText(
+      raw.pressureContribution
+    );
+    const previousObservation = cleanDomainDetailText(raw.previousObservation);
 
     if (status !== "current") {
       return {
@@ -475,6 +551,11 @@ function sanitizeDomains(
           "comparison",
           raw.historicalComparison
         ),
+        confidence,
+        confirmationConditions,
+        invalidationConditions,
+        pressureContribution,
+        previousObservation,
       };
     }
 
@@ -502,6 +583,11 @@ function sanitizeDomains(
         "comparison",
         raw.historicalComparison
       ),
+      confidence,
+      confirmationConditions,
+      invalidationConditions,
+      pressureContribution,
+      previousObservation,
     };
   });
 }
@@ -743,7 +829,7 @@ function sanitizePressure(
   const lineage = evidenceLineage(rawPressure.evidenceIds, evidenceById);
   if (!lineage.complete || !hasUsableEvidence(lineage.ids, evidenceById))
     return unavailable;
-  const status = rawPressure.status;
+  let status = rawPressure.status;
   if (
     status === "current" &&
     !allEvidenceHaveStatus(lineage.ids, evidenceById, "current")
@@ -752,13 +838,25 @@ function sanitizePressure(
   if (
     status === "delayed" &&
     !hasEvidenceWithStatus(lineage.ids, evidenceById, "delayed")
-  )
-    return unavailable;
+  ) {
+    if (allEvidenceAreExpiredStale(lineage.ids, evidenceById))
+      status = "stale";
+    else return unavailable;
+  }
   if (
-    (status === "stale" || status === "static" || status === "degraded") &&
+    (status === "recent" ||
+      status === "stale" ||
+      status === "static" ||
+      status === "degraded") &&
     !hasEvidenceWithStatus(lineage.ids, evidenceById, status)
-  )
-    return unavailable;
+  ) {
+    if (
+      (status === "recent" || status === "static") &&
+      allEvidenceAreExpiredStale(lineage.ids, evidenceById)
+    )
+      status = "stale";
+    else return unavailable;
+  }
   if (status === "unavailable") return unavailable;
   // Historical/degraded values remain in evidence lineage, never in the central readout.
   return {
@@ -896,6 +994,15 @@ export function adaptIntelligenceCore(
   // item is historical, degraded, delayed, static, or unavailable.
   if (integrity === "current" && !hasCurrentEvidence) {
     integrity = evidence.some(isUsableEvidence) ? "stale" : "unavailable";
+  }
+  if (
+    (integrity === "delayed" ||
+      integrity === "recent" ||
+      integrity === "static") &&
+    !evidence.some(item => item.status === integrity) &&
+    evidence.some(item => item.status === "stale")
+  ) {
+    integrity = "stale";
   }
   const pressure = sanitizePressure(input.pressure, evidenceById);
   const regime = sanitizeRegime(input.regime, evidenceById, integrity);

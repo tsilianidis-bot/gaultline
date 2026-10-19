@@ -1,5 +1,8 @@
 /* Drawer-local refinements intentionally use the existing Intelligence Core tokens. */
 .fic-drawer-overlay[data-state] {
+  /* The existing app's cookie/intro layer is 9999. A modal must cover the
+     navigation rails and that non-modal banner while its focus trap is active. */
+  z-index: 10000;
   background:
     linear-gradient(
       90deg,
@@ -19,6 +22,7 @@
 }
 
 .fic.fic-drawer {
+  z-index: 10001;
   width: min(584px, 100vw);
   max-width: 100vw;
   padding: 24px 32px 30px;
@@ -206,6 +210,27 @@
 
 .fic.fic-drawer .fic-detail-facts time {
   color: var(--fic-text);
+}
+
+.fic.fic-drawer .fic-detail-fact--evidence-quality dd .fic-status {
+  font-size: 9px;
+}
+
+.fic.fic-drawer .fic-detail-fact--validity {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--fic-cyan) 5%, transparent),
+    transparent 72%
+  );
+}
+
+.fic.fic-drawer .fic-detail-fact--validity dt {
+  color: var(--fic-cyan);
+}
+
+.fic.fic-drawer .fic-detail-fact--validity.fic-detail-fact--stale dt,
+.fic.fic-drawer .fic-detail-fact--validity.fic-detail-fact--recent dt {
+  color: var(--fic-amber);
 }
 
 .fic.fic-drawer .fic-drawer-section-heading {

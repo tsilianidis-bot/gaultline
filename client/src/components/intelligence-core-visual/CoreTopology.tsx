@@ -18,12 +18,15 @@ import type {
 import type { CoreVisualTransition } from "./transitions";
 
 export const STATUS_LABELS: Record<EvidenceStatus, string> = {
-  current: "Verified current",
-  delayed: "Published · delayed",
-  stale: "Stale observation",
-  static: "Static baseline",
-  degraded: "Degraded source",
-  unavailable: "Unavailable",
+  // The adapter only retains `current` after complete, admitted, non-expired
+  // lineage checks. No historical classification may use the live label.
+  current: "LIVE",
+  delayed: "DELAYED",
+  recent: "RECENT",
+  stale: "STALE",
+  static: "RECENT · MODEL",
+  degraded: "UNAVAILABLE · DEGRADED",
+  unavailable: "UNAVAILABLE",
 };
 export function StatusBadge({ status }: { status: EvidenceStatus }) {
   return (
@@ -84,6 +87,7 @@ const ICONS = {
 const CONTEXT_LABELS: Record<EvidenceStatus, string> = {
   current: "Assessment not supplied",
   delayed: "Published, not a live signal",
+  recent: "Recent observation only",
   stale: "Prior observation only",
   static: "Model context only",
   degraded: "Current claim withheld",

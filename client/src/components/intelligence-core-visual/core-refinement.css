@@ -116,6 +116,10 @@
 .fic-availability-segment--delayed {
   stroke: #c9ab75;
 }
+.fic-availability-segment--recent {
+  stroke: #aebc7c;
+  stroke-dasharray: 8 3 2 3 2 325;
+}
 .fic-availability-segment--stale {
   stroke: #977f79;
   stroke-dasharray: 4 3 4 3 4 3 4 3 4 328;
@@ -222,6 +226,9 @@
 .fic-domain--delayed::before {
   background: #d4b078;
 }
+.fic-domain--recent::before {
+  background: #b5c681;
+}
 .fic-domain--stale::before {
   background: #a58b81;
 }
@@ -324,6 +331,10 @@
 .fic-path-group--delayed .fic-connection {
   stroke: #a88f67;
   stroke-dasharray: 7 6;
+}
+.fic-path-group--recent .fic-connection {
+  stroke: #889565;
+  stroke-dasharray: 5 5 1 5;
 }
 .fic-path-group--stale .fic-connection {
   stroke: #756c6e;
