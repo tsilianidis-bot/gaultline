@@ -49,14 +49,14 @@ interface ClassificationResult {
   bullishFactors: string[];
   bearishFactors: string[];
   whyThisSignal: string;
-  regimeFit: number;
-  regimeFitLabel: string;
+  regimeFit: number | null;
+  regimeFitLabel: string | null;
   aiExposure: 'High' | 'Medium' | 'Low' | 'None';
   debtRisk: 'High' | 'Medium' | 'Low' | 'None';
   recessionSensitivity: 'High' | 'Medium' | 'Low';
   liquidityRisk: 'High' | 'Medium' | 'Low' | 'None';
   momentumScore: number | null;
-  volatilityLabel: 'Very High' | 'High' | 'Moderate' | 'Low';
+  volatilityLabel: 'Very High' | 'High' | 'Moderate' | 'Low' | null;
   macroSensitivity: string;
   cached?: boolean;
 }
@@ -216,7 +216,17 @@ function MomentumBar({ score }: { score: number | null }) {
 }
 
 // ── Regime Fit Gauge ──────────────────────────────────────────
-function RegimeFitGauge({ score, label }: { score: number; label: string }) {
+function RegimeFitGauge({ score, label }: { score: number | null; label: string | null }) {
+  if (score == null || label == null) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.75)', textTransform: 'uppercase' }}>Regime Fit</span>
+          <span style={{ fontSize: '13px', fontFamily: "'IBM Plex Mono', monospace", color: '#94A3B8', fontWeight: 700 }}>not supplied</span>
+        </div>
+      </div>
+    );
+  }
   const color = regimeFitColor(label);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -432,7 +442,7 @@ function StockIntelligenceCard({
               <Chip label="AI Exposure" value={classification.aiExposure} color={riskColor(classification.aiExposure)} />
               <Chip label="Debt Risk" value={classification.debtRisk} color={riskColor(classification.debtRisk)} />
               <Chip label="Recession Sens." value={classification.recessionSensitivity} color={riskColor(classification.recessionSensitivity)} />
-              <Chip label="Volatility" value={classification.volatilityLabel} color={riskColor(classification.volatilityLabel)} />
+              <Chip label="Volatility" value={classification.volatilityLabel == null ? "not supplied" : classification.volatilityLabel} color={classification.volatilityLabel == null ? "#94A3B8" : riskColor(classification.volatilityLabel)} />
             </div>
 
             {/* Bullish / Bearish Factors */}

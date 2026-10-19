@@ -32,14 +32,14 @@ export interface ClassificationResult {
   bullishFactors: string[];             // 2–4 bullish observations
   bearishFactors: string[];             // 2–4 bearish observations
   whyThisSignal: string;               // 2–3 sentence explanation
-  regimeFit: number;                   // 0–10 score for current regime
-  regimeFitLabel: string;              // "Strong Fit" | "Moderate Fit" | "Poor Fit" | "Headwind"
+  regimeFit: number | null;           // 0–10 score for current regime; null when the model omitted it
+  regimeFitLabel: string | null;       // "Strong Fit" | "Moderate Fit" | "Poor Fit" | "Headwind"
   aiExposure: "High" | "Medium" | "Low" | "None";
   debtRisk: "High" | "Medium" | "Low" | "None";
   recessionSensitivity: "High" | "Medium" | "Low";
   liquidityRisk: "High" | "Medium" | "Low" | "None";
   momentumScore: number | null;       // null when the model omitted it
-  volatilityLabel: "Very High" | "High" | "Moderate" | "Low";
+  volatilityLabel: "Very High" | "High" | "Moderate" | "Low" | null;
   macroSensitivity: string;            // brief macro sensitivity description
   cached?: boolean;
 }
@@ -121,6 +121,50 @@ function getRegimeRules(regimeLabel: string): string {
 - Balanced regime: both momentum and defensive names can score moderately
 - Focus on stock-specific signals over macro tailwinds/headwinds
 - Regime fit: strong momentum stocks score 6–8, weak fundamentals score 3–5`;
+}
+
+/** Clamp a supplied regime fit. An omitted or non-finite fit stays null, as do an omitted label and volatility. */
+export function sanitizeLlmClassification(
+  parsed: {
+    signals?: FaultlineSignal[] | null;
+    primarySignal?: FaultlineSignal | null;
+    bullishFactors?: string[] | null;
+    bearishFactors?: string[] | null;
+    whyThisSignal?: string | null;
+    regimeFit?: number | null;
+    regimeFitLabel?: string | null;
+    aiExposure?: ClassificationResult["aiExposure"] | null;
+    debtRisk?: ClassificationResult["debtRisk"] | null;
+    recessionSensitivity?: ClassificationResult["recessionSensitivity"] | null;
+    liquidityRisk?: ClassificationResult["liquidityRisk"] | null;
+    momentumScore?: number | null;
+    volatilityLabel?: ClassificationResult["volatilityLabel"];
+    macroSensitivity?: string | null;
+  },
+  ticker: string,
+): ClassificationResult {
+  return {
+    ticker,
+    signals: (parsed.signals ?? ["Neutral / Watch"]).slice(0, 3) as FaultlineSignal[],
+    primarySignal: (parsed.primarySignal ?? "Neutral / Watch") as FaultlineSignal,
+    bullishFactors: (parsed.bullishFactors ?? []).slice(0, 4),
+    bearishFactors: (parsed.bearishFactors ?? []).slice(0, 4),
+    whyThisSignal: parsed.whyThisSignal ?? "",
+    regimeFit: typeof parsed.regimeFit === "number" && Number.isFinite(parsed.regimeFit)
+      ? Math.max(0, Math.min(10, parsed.regimeFit))
+      : null,
+    regimeFitLabel: parsed.regimeFitLabel == null ? null : parsed.regimeFitLabel,
+    aiExposure: parsed.aiExposure ?? "None",
+    debtRisk: parsed.debtRisk ?? "None",
+    recessionSensitivity: parsed.recessionSensitivity ?? "Medium",
+    liquidityRisk: parsed.liquidityRisk ?? "None",
+    momentumScore: typeof parsed.momentumScore === "number" && Number.isFinite(parsed.momentumScore)
+      ? Math.max(0, Math.min(100, parsed.momentumScore))
+      : null,
+    volatilityLabel: parsed.volatilityLabel == null ? null : parsed.volatilityLabel,
+    macroSensitivity: parsed.macroSensitivity ?? "",
+    cached: false,
+  };
 }
 
 // ── Main classifier function ──────────────────────────────────
@@ -221,27 +265,8 @@ export async function classifyTicker(
     return buildDeterministicClassification(profile, regime);
   }
 
-  // Validate and sanitize
-  const result: ClassificationResult = {
-    ticker: profile.ticker,
-    signals: (parsed.signals ?? ["Neutral / Watch"]).slice(0, 3) as FaultlineSignal[],
-    primarySignal: (parsed.primarySignal ?? "Neutral / Watch") as FaultlineSignal,
-    bullishFactors: (parsed.bullishFactors ?? []).slice(0, 4),
-    bearishFactors: (parsed.bearishFactors ?? []).slice(0, 4),
-    whyThisSignal: parsed.whyThisSignal ?? "",
-    regimeFit: Math.max(0, Math.min(10, parsed.regimeFit ?? 5)),
-    regimeFitLabel: parsed.regimeFitLabel ?? "Moderate Fit",
-    aiExposure: parsed.aiExposure ?? "None",
-    debtRisk: parsed.debtRisk ?? "None",
-    recessionSensitivity: parsed.recessionSensitivity ?? "Medium",
-    liquidityRisk: parsed.liquidityRisk ?? "None",
-    momentumScore: typeof parsed.momentumScore === "number" && Number.isFinite(parsed.momentumScore)
-      ? Math.max(0, Math.min(100, parsed.momentumScore))
-      : null,
-    volatilityLabel: parsed.volatilityLabel ?? "Moderate",
-    macroSensitivity: parsed.macroSensitivity ?? "",
-    cached: false,
-  };
+  // Validate and sanitize. Omitted regime fit and volatility stay null.
+  const result = sanitizeLlmClassification(parsed, profile.ticker);
 
   classCache.set(cacheKey, { result, fetchedAt: Date.now(), regimeLabel: regime.label });
   return result;
