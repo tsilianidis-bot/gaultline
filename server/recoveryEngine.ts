@@ -46,6 +46,8 @@ export interface ConfirmationRule {
   label: string;
   description: string;
   passed: boolean;
+  /** Missing observation. Reported, never passed, and excluded from both sides of the score. */
+  withheld?: boolean;
   weight: number;      // contribution to confidence score
   detail: string;      // specific reason why it passed or failed
 }
@@ -86,7 +88,7 @@ export interface RecoveryInput {
   name: string;
   market: CoinMarketData;
   ohlcBars?: CoinOHLCBar[];
-  btcDominance?: number;
+  btcDominance?: number | null;
   pressure?: FaultlinePressureOutput | null;
   isCrypto?: boolean;
 }
@@ -184,7 +186,9 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
   const distanceFromAth = market.distanceFromAth; // negative = below ATH
 
   // ── Macro pressure context ────────────────────────────────
-  const macroPressure = pressure?.overallPressure ?? 50;
+  const macroPressure = typeof pressure?.overallPressure === "number" && Number.isFinite(pressure.overallPressure)
+    ? pressure.overallPressure
+    : null;
   const macroLevel = pressure?.level ?? "Moderate";
   const macroWorsening = pressure?.vectors?.some(v => v.trend === "rising" && v.score > 60) ?? false;
 
@@ -225,10 +229,9 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
   const trendImproving14d = change30d > -15; // 30d used as proxy for 14d
 
   // ── BTC dominance (altcoin breadth proxy) ─────────────────
-  const btcDom = btcDominance ?? 55;
-  const altcoinsBreadthOk = isBitcoin
-    ? true // BTC doesn't need altcoin confirmation
-    : btcDom < 58; // altcoins confirm when BTC dom is not surging
+  // A missing reading is withheld. It is not treated as 55 and does not pass.
+  const observedDominance = typeof btcDominance === "number" && Number.isFinite(btcDominance) ? btcDominance : null;
+  const altcoinsBreadthOk = observedDominance != null && (isBitcoin || observedDominance < 58);
 
   // ── Recent selloff detection ──────────────────────────────
   const hadRecentSelloff = closes.length >= 3
@@ -236,7 +239,7 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
     : change7d < -10 || change30d < -20;
 
   // ── Macro pressure not worsening ─────────────────────────
-  const macroNotWorsening = !macroWorsening && macroPressure < 70;
+  const macroNotWorsening = macroPressure != null && !macroWorsening && macroPressure < 70;
 
   // ── Build confirmation rules ──────────────────────────────
   const confirmationRules: ConfirmationRule[] = [
@@ -316,28 +319,35 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
       id: "macro_not_worsening",
       label: "Macro Pressure Not Worsening",
       description: "FAULTLINE Pressure Index must not be escalating",
-      passed: macroNotWorsening,
+      passed: macroPressure != null && macroNotWorsening,
+      withheld: macroPressure == null,
       weight: 8,
-      detail: macroNotWorsening
-        ? `Macro pressure: ${macroLevel} (${macroPressure.toFixed(0)}/100) — not escalating`
-        : `Macro pressure: ${macroLevel} (${macroPressure.toFixed(0)}/100) — still worsening`,
+      detail: macroPressure == null
+        ? "Macro pressure unavailable"
+        : macroNotWorsening
+          ? `Macro pressure: ${macroLevel} (${macroPressure.toFixed(0)}/100) — not escalating`
+          : `Macro pressure: ${macroLevel} (${macroPressure.toFixed(0)}/100) — still worsening`,
     },
     ...(isCrypto ? [{
       id: "altcoin_breadth",
       label: "Crypto Breadth Confirming",
       description: "Altcoins must participate in the recovery (BTC dominance not surging)",
-      passed: altcoinsBreadthOk,
+      passed: observedDominance != null && altcoinsBreadthOk,
+      withheld: observedDominance == null,
       weight: 8,
-      detail: altcoinsBreadthOk
-        ? `BTC dominance: ${btcDom.toFixed(1)}% — altcoins participating`
-        : `BTC dominance: ${btcDom.toFixed(1)}% — altcoins not confirming`,
+      detail: observedDominance == null
+        ? "BTC dominance unavailable"
+        : altcoinsBreadthOk
+          ? `BTC dominance: ${observedDominance.toFixed(1)}% — altcoins participating`
+          : `BTC dominance: ${observedDominance.toFixed(1)}% — altcoins not confirming`,
     }] : []),
   ];
 
-  const totalWeight = confirmationRules.reduce((s, r) => s + r.weight, 0);
-  const passedWeight = confirmationRules.filter(r => r.passed).reduce((s, r) => s + r.weight, 0);
-  const confirmationsPassed = confirmationRules.filter(r => r.passed).length;
-  const confirmationsRequired = confirmationRules.length;
+  const scoredRules = confirmationRules.filter(r => !r.withheld);
+  const totalWeight = scoredRules.reduce((s, r) => s + r.weight, 0);
+  const passedWeight = scoredRules.filter(r => r.passed).reduce((s, r) => s + r.weight, 0);
+  const confirmationsPassed = scoredRules.filter(r => r.passed).length;
+  const confirmationsRequired = scoredRules.length;
 
   // ── Recovery Confidence Score (0–100) ─────────────────────
   // Base score from confirmation rules
@@ -387,14 +397,14 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
   else if (volatility24h > 3) aftershockRiskScore += 5;
 
   // Macro pressure elevated
-  if (macroPressure > 70) aftershockRiskScore += 10;
-  else if (macroPressure > 50) aftershockRiskScore += 5;
+  if (macroPressure != null && macroPressure > 70) aftershockRiskScore += 10;
+  else if (macroPressure != null && macroPressure > 50) aftershockRiskScore += 5;
 
   // Risk assets weak (price still below MAs)
   if (!aboveAnyMa) aftershockRiskScore += 8;
 
   // Crypto breadth poor
-  if (isCrypto && !altcoinsBreadthOk) aftershockRiskScore += 7;
+  if (isCrypto && observedDominance != null && !altcoinsBreadthOk) aftershockRiskScore += 7;
 
   // Asymmetric: reduce risk only if multiple confirmations passed
   if (confirmationsPassed >= Math.ceil(confirmationsRequired * 0.75)) {
@@ -445,7 +455,7 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
   else trendBias = "Bearish";
 
   // ── Market Regime ─────────────────────────────────────────
-  const marketRegime = pressure?.regime ?? (macroPressure > 65 ? "ELEVATED RISK" : "MODERATE RISK");
+  const marketRegime = pressure?.regime ?? ((macroPressure != null && macroPressure > 65) ? "ELEVATED RISK" : "MODERATE RISK");
 
   // ── Key Reasoning ─────────────────────────────────────────
   let keyReasoning: string;

@@ -82,7 +82,7 @@ export interface CryptoAssetIntelligence {
 export interface CryptoSystemicRisk {
   score:              number;   // 0–10
   level:              CryptoRiskLevel;
-  btcDominance:       number;
+  btcDominance:       number | null;
   stablecoinLiquidity: "Expanding" | "Stable" | "Tightening" | "Contracting";
   volatilityRegime:   "Low" | "Normal" | "Elevated" | "Extreme";
   leverageConditions: "Low" | "Normal" | "Elevated" | "Extreme";
@@ -159,11 +159,16 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
 
   // ── Component scores (0–10 each) ──────────────────────────
   // 1. BTC Dominance — high dominance = risk-off (bearish for alts, not systemic risk per se)
-  //    But extreme dominance (>65%) can signal flight to safety = elevated risk
-  const btcDom = globalS?.btcDominance ?? 55;
-  const btcDomScore = btcDom > 65 ? lerp(btcDom, 65, 80, 6, 9) :
-                      btcDom > 55 ? lerp(btcDom, 55, 65, 3, 6) :
-                      lerp(btcDom, 40, 55, 1, 3);
+  //    But extreme dominance (>65%) can signal flight to safety = elevated risk.
+  //    A missing reading is withheld: it is not shown as a number and its weight is omitted.
+  const btcDom = typeof globalS?.btcDominance === "number" && Number.isFinite(globalS.btcDominance)
+    ? globalS.btcDominance
+    : null;
+  const btcDomScore = btcDom == null ? null
+    : btcDom > 65 ? lerp(btcDom, 65, 80, 6, 9)
+    : btcDom > 55 ? lerp(btcDom, 55, 65, 3, 6)
+    : lerp(btcDom, 40, 55, 1, 3);
+  const dominanceWeight = btcDomScore == null ? 0 : 0.15;
 
   // 2. Market cap change 24h — large negative = systemic stress
   const mcChange = globalS?.marketCapChangePercent24h ?? 0;
@@ -193,15 +198,16 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
   const stableScore = stableVolumeRatio > 15 ? 8 : stableVolumeRatio > 10 ? 6 :
                       stableVolumeRatio > 6  ? 4 : 2;
 
-  // Weighted composite
+  // Weighted composite. When dominance is missing its 0.15 weight is removed
+  // from both sides, so the remaining observations keep the same relative weights.
   const composite = (
-    btcDomScore  * 0.15 +
+    (btcDomScore ?? 0) * dominanceWeight +
     mcScore      * 0.25 +
     volScore     * 0.20 +
     macroScore   * 0.20 +
     breadthScore * 0.15 +
     stableScore  * 0.05
-  );
+  ) / (dominanceWeight + 0.85);
   const finalScore = clamp(composite, 0, 10);
 
   // Qualitative labels
@@ -252,7 +258,7 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
   const result: CryptoSystemicRisk = {
     score:               parseFloat(finalScore.toFixed(2)),
     level,
-    btcDominance:        parseFloat(btcDom.toFixed(2)),
+    btcDominance:        btcDom == null ? null : parseFloat(btcDom.toFixed(2)),
     stablecoinLiquidity,
     volatilityRegime,
     leverageConditions,
@@ -260,7 +266,7 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
     macroLiquidity,
     speculativeIntensity,
     breakdown: [
-      { label: "BTC Dominance",       score: btcDomScore  * 10, direction: btcDomScore  > 5 ? "negative" : "positive", description: `BTC dominance at ${btcDom.toFixed(1)}%` },
+      ...(btcDom == null || btcDomScore == null ? [] : [{ label: "BTC Dominance", score: btcDomScore * 10, direction: btcDomScore > 5 ? "negative" as const : "positive" as const, description: `BTC dominance at ${btcDom.toFixed(1)}%` }]),
       { label: "Market Cap Momentum", score: mcScore      * 10, direction: mcScore      > 5 ? "negative" : "positive", description: `24h market cap change: ${mcChange.toFixed(1)}%` },
       { label: "Volatility",          score: volScore     * 10, direction: volScore     > 5 ? "negative" : "positive", description: `Avg 24h range: ${avgVol24h.toFixed(1)}%` },
       { label: "Macro Pressure",      score: macroScore   * 10, direction: macroScore   > 5 ? "negative" : "positive", description: `FAULTLINE macro score: ${(macroScore * 10).toFixed(0)}` },
@@ -453,7 +459,7 @@ export async function computeAssetIntelligence(
   if (liquiditySensitivity === "Extreme" || liquiditySensitivity === "High") {
     insights.push(`${c.symbol} has a smaller market cap, making it more sensitive to liquidity shifts and speculative flows.`);
   }
-  if (sr.btcDominance > 60) {
+  if (typeof sr.btcDominance === "number" && sr.btcDominance > 60) {
     insights.push(`BTC dominance at ${sr.btcDominance.toFixed(1)}% signals risk-off rotation. Altcoins may face relative pressure.`);
   }
   if (insights.length === 0) {

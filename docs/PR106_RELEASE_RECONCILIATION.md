@@ -56,4 +56,4 @@ Concurrent release-branch work should avoid these until the next review:
 - Production cron `15 20,21 * * 1-5` and Railway schedules.
 - Drizzle journal. Tail stays `0073_pressure_v2_shadow`.
 - Track Record flags, `TRACK_RECORD_CRON_WRITES`, and the capture hook's default-off behaviour.
-- Frozen engines: `server/tradePreflight.ts`, `server/cryptoEngine.ts`, `server/signalOutlook.ts`, `server/preFlight.ts`.
+- Frozen engines: `server/tradePreflight.ts`, `server/signalOutlook.ts`, `server/preFlight.ts`. `server/cryptoEngine.ts` stays frozen except the authorized BTC-dominance null handling: a missing reading is withheld instead of substituted with 55.

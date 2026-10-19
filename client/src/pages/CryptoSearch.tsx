@@ -55,7 +55,7 @@ interface CryptoAssetIntelligence {
 }
 
 interface CryptoSystemicRisk {
-  score: number; level: CryptoRiskLevel; btcDominance: number;
+  score: number; level: CryptoRiskLevel; btcDominance: number | null;
   stablecoinLiquidity: "Expanding" | "Stable" | "Tightening" | "Contracting";
   volatilityRegime: "Low" | "Normal" | "Elevated" | "Extreme";
   leverageConditions: "Low" | "Normal" | "Elevated" | "Extreme";

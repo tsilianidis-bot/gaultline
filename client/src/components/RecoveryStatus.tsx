@@ -7,7 +7,7 @@
 //   • BTC-specific language panel
 //   • Tooltip explanations for all key terms
 import { useState } from "react";
-import { CheckCircle, XCircle, AlertTriangle, Info, ChevronDown, ChevronUp, Shield, TrendingDown, Activity, Zap } from "lucide-react";
+import { CheckCircle, XCircle, Minus, AlertTriangle, Info, ChevronDown, ChevronUp, Shield, TrendingDown, Activity, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -27,6 +27,7 @@ export interface ConfirmationRule {
   label: string;
   description: string;
   passed: boolean;
+  withheld?: boolean;
   weight: number;
   detail: string;
 }
@@ -175,6 +176,7 @@ function ConfirmationChecklist({ rules, passed, required }: {
   required: number;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const withheldCount = rules.filter(rule => rule.withheld).length;
 
   return (
     <div className="space-y-2">
@@ -187,7 +189,7 @@ function ConfirmationChecklist({ rules, passed, required }: {
           <InfoTooltip term="Confirmation Status" />
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-mono text-gray-400">{passed}/{required} rules met</span>
+          <span className="text-xs font-mono text-gray-400">{passed}/{required} rules met{withheldCount > 0 ? ` · ${withheldCount} unavailable` : ""}</span>
           {expanded
             ? <ChevronUp className="w-3.5 h-3.5 text-gray-500 group-hover:text-gray-300 transition-colors" />
             : <ChevronDown className="w-3.5 h-3.5 text-gray-500 group-hover:text-gray-300 transition-colors" />
@@ -199,7 +201,7 @@ function ConfirmationChecklist({ rules, passed, required }: {
       <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
         <div
           className="h-full rounded-full bg-blue-500 transition-all duration-700"
-          style={{ width: `${(passed / required) * 100}%` }}
+          style={{ width: `${required > 0 ? (passed / required) * 100 : 0}%` }}
         />
       </div>
 
@@ -208,9 +210,11 @@ function ConfirmationChecklist({ rules, passed, required }: {
         <div className="mt-2 space-y-1.5 border border-gray-800 rounded-lg p-3 bg-gray-900/50">
           {rules.map(rule => (
             <div key={rule.id} className="flex items-start gap-2">
-              {rule.passed
-                ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
-                : <XCircle className="w-3.5 h-3.5 text-red-500/70 mt-0.5 shrink-0" />
+              {rule.withheld
+                ? <Minus className="w-3.5 h-3.5 text-gray-500 mt-0.5 shrink-0" />
+                : rule.passed
+                  ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                  : <XCircle className="w-3.5 h-3.5 text-red-500/70 mt-0.5 shrink-0" />
               }
               <div className="min-w-0">
                 <div className={`text-xs font-medium ${rule.passed ? "text-gray-200" : "text-gray-500"}`}>
@@ -219,7 +223,7 @@ function ConfirmationChecklist({ rules, passed, required }: {
                 <div className="text-[10px] text-gray-600 mt-0.5">{rule.detail}</div>
               </div>
               <div className="ml-auto shrink-0">
-                <span className="text-[10px] font-mono text-gray-600">{rule.weight}pt</span>
+                <span className="text-[10px] font-mono text-gray-600">{rule.withheld ? "—" : `${rule.weight}pt`}</span>
               </div>
             </div>
           ))}
