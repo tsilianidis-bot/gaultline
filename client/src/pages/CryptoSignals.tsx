@@ -51,13 +51,13 @@ interface CryptoSignalResult {
     rsiLabel: "Overbought" | "Neutral" | "Oversold";
     rsiIsTrue: boolean;
     trend: "Uptrend" | "Downtrend" | "Sideways";
-    volumeSignal: "Surge" | "Normal" | "Low";
+    volumeSignal: "Surge" | "Normal" | "Low" | "Unavailable";
     momentumScore: number | null;
     smaSignal: "Golden Cross" | "Death Cross" | "Neutral";
     smaIsTrue: boolean;
     macd: { macdLine: number; signalLine: number; histogram: number; signal: "Bullish" | "Bearish" | "Neutral" } | null;
-    volatility24h: number;
-    distanceFromAth: number;
+    volatility24h: number | null;
+    distanceFromAth: number | null;
     priceChange7d: number | null;
     priceChange30d: number | null;
   };
@@ -74,9 +74,9 @@ interface CryptoSignalResult {
   regimeAlignmentScore: number;
   cryptoFactors: {
     btcDominanceEffect: "Headwind" | "Neutral" | "Tailwind" | "Unavailable";
-    volatilityRegime: "High" | "Normal" | "Low";
-    athProximity: "Near ATH" | "Mid-Range" | "Deep Discount";
-    liquidityScore: number;
+    volatilityRegime: "High" | "Normal" | "Low" | "Unavailable";
+    athProximity: "Near ATH" | "Mid-Range" | "Deep Discount" | "Unavailable";
+    liquidityScore: number | null;
   };
   computedAt: number;
 }
@@ -525,7 +525,7 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
                 { label: "BTC DOMINANCE", value: sig.cryptoFactors.btcDominanceEffect, color: sig.cryptoFactors.btcDominanceEffect === "Tailwind" ? "#00D4FF" : sig.cryptoFactors.btcDominanceEffect === "Headwind" ? "#FF2D55" : "#94A3B8" },
                 { label: "VOLATILITY", value: sig.cryptoFactors.volatilityRegime, color: sig.cryptoFactors.volatilityRegime === "High" ? "#FF9500" : sig.cryptoFactors.volatilityRegime === "Low" ? "#00D4FF" : "#94A3B8" },
                 { label: "ATH PROXIMITY", value: sig.cryptoFactors.athProximity, color: sig.cryptoFactors.athProximity === "Near ATH" ? "#FF9500" : sig.cryptoFactors.athProximity === "Deep Discount" ? "#00D4FF" : "#94A3B8" },
-                { label: "ASSET VOLUME LIQUIDITY", value: `${sig.cryptoFactors.liquidityScore.toFixed(1)}/10`, color: sig.cryptoFactors.liquidityScore >= 7 ? "#00D4FF" : sig.cryptoFactors.liquidityScore >= 4 ? "#FFD700" : "#FF2D55" },
+                { label: "ASSET VOLUME LIQUIDITY", value: typeof sig.cryptoFactors.liquidityScore === "number" ? `${sig.cryptoFactors.liquidityScore.toFixed(1)}/10` : "Unavailable", color: typeof sig.cryptoFactors.liquidityScore === "number" && sig.cryptoFactors.liquidityScore >= 7 ? "#00D4FF" : typeof sig.cryptoFactors.liquidityScore === "number" && sig.cryptoFactors.liquidityScore >= 4 ? "#FFD700" : "#FF2D55" },
               ].map(({ label, value, color }) => (
                 <div key={label}>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>{label}</div>
@@ -538,8 +538,8 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
           {/* Additional price metrics */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginBottom: "8px" }}>
             {[
-              { label: "ATH DISTANCE", value: `${sig.technicals.distanceFromAth.toFixed(1)}%` },
-              { label: "VOLATILITY 24H", value: `${sig.technicals.volatility24h.toFixed(2)}%` },
+              { label: "ATH DISTANCE", value: formatObservedFixed(sig.technicals.distanceFromAth, 1, "%") },
+              { label: "VOLATILITY 24H", value: formatObservedFixed(sig.technicals.volatility24h, 2, "%") },
               ...(sig.technicals.priceChange30d !== null ? [{ label: "30D CHANGE", value: `${sig.technicals.priceChange30d > 0 ? "+" : ""}${sig.technicals.priceChange30d.toFixed(2)}%` }] : []),
               { label: "TIMEFRAME", value: sig.timeframe },
             ].map(({ label, value }) => (
@@ -929,7 +929,7 @@ function CryptoSignalsInner() {
     const buys  = sigs.filter(s => s.action === "BUY").sort(byStrengthRank);
     const sells = sigs.filter(s => s.action === "SELL").sort(byStrengthRank);
     const momentum = rankMomentumSignals(sigs);
-    const volatile = [...sigs].sort((a, b) => b.technicals.volatility24h - a.technicals.volatility24h);
+    const volatile = [...sigs].sort((a, b) => (b.technicals.volatility24h ?? -1) - (a.technicals.volatility24h ?? -1));
     return {
       topBullish: buys[0] ?? sigs[0],
       topBearish: sells[0] ?? sigs[sigs.length - 1],

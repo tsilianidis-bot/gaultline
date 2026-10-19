@@ -59,13 +59,13 @@ export interface CryptoSignalResult {
     rsiLabel: "Overbought" | "Neutral" | "Oversold";
     rsiIsTrue: boolean;
     trend: "Uptrend" | "Downtrend" | "Sideways";
-    volumeSignal: "Surge" | "Normal" | "Low";
+    volumeSignal: "Surge" | "Normal" | "Low" | "Unavailable";
     momentumScore: number | null; // null when RSI is withheld
     smaSignal: "Golden Cross" | "Death Cross" | "Neutral";
     smaIsTrue: boolean;
     macd: MACDResult | null;
-    volatility24h: number;       // % intraday range
-    distanceFromAth: number;     // % below ATH (negative = below)
+    volatility24h: number | null;       // % intraday range
+    distanceFromAth: number | null;     // % below ATH (negative = below)
     priceChange7d: number | null;
     priceChange30d: number | null;
   };
@@ -74,9 +74,9 @@ export interface CryptoSignalResult {
   regimeAlignmentScore: number;
   cryptoFactors: {
     btcDominanceEffect: "Headwind" | "Neutral" | "Tailwind" | "Unavailable";
-    volatilityRegime: "High" | "Normal" | "Low";
-    athProximity: "Near ATH" | "Mid-Range" | "Deep Discount";
-    liquidityScore: number;      // 0–10 (volume/mcap ratio)
+    volatilityRegime: "High" | "Normal" | "Low" | "Unavailable";
+    athProximity: "Near ATH" | "Mid-Range" | "Deep Discount" | "Unavailable";
+    liquidityScore: number | null;      // 0–10 (volume/mcap ratio); null when volume or market cap is missing
   };
   computedAt: number;
 }
@@ -120,7 +120,8 @@ function deriveTrendFromCloses(closes: number[]): "Uptrend" | "Downtrend" | "Sid
  * Volume signal: volume/mcap ratio as a proxy for liquidity surge.
  * Crypto volume is typically 2–8% of market cap per day.
  */
-function cryptoVolumeSignal(volume: number, marketCap: number): "Surge" | "Normal" | "Low" {
+function cryptoVolumeSignal(volume: number | null, marketCap: number | null): "Surge" | "Normal" | "Low" | "Unavailable" {
+  if (volume == null || marketCap == null) return "Unavailable";
   if (marketCap <= 0) return "Normal";
   const ratio = volume / marketCap;
   if (ratio >= 0.12) return "Surge";
@@ -131,7 +132,8 @@ function cryptoVolumeSignal(volume: number, marketCap: number): "Surge" | "Norma
 /**
  * Liquidity score (0–10) based on volume/mcap ratio.
  */
-function computeLiquidityScore(volume: number, marketCap: number): number {
+function computeLiquidityScore(volume: number | null, marketCap: number | null): number | null {
+  if (volume == null || marketCap == null) return null;
   if (marketCap <= 0) return 5;
   const ratio = volume / marketCap;
   // 0.02 = illiquid (score 1), 0.10 = very liquid (score 9)
@@ -158,7 +160,8 @@ function btcDominanceEffect(
 /**
  * ATH proximity classification.
  */
-function athProximity(distanceFromAth: number): "Near ATH" | "Mid-Range" | "Deep Discount" {
+function athProximity(distanceFromAth: number | null): "Near ATH" | "Mid-Range" | "Deep Discount" | "Unavailable" {
+  if (distanceFromAth == null || !Number.isFinite(distanceFromAth)) return "Unavailable";
   if (distanceFromAth >= -15) return "Near ATH";
   if (distanceFromAth >= -60) return "Mid-Range";
   return "Deep Discount";
@@ -167,7 +170,8 @@ function athProximity(distanceFromAth: number): "Near ATH" | "Mid-Range" | "Deep
 /**
  * Volatility regime from 24h intraday range.
  */
-function volatilityRegime(volatility24h: number): "High" | "Normal" | "Low" {
+function volatilityRegime(volatility24h: number | null): "High" | "Normal" | "Low" | "Unavailable" {
+  if (volatility24h == null || !Number.isFinite(volatility24h)) return "Unavailable";
   if (volatility24h >= 8) return "High";
   if (volatility24h <= 2) return "Low";
   return "Normal";
@@ -178,8 +182,8 @@ function volatilityRegime(volatility24h: number): "High" | "Normal" | "Low" {
  */
 function computeCryptoPriceLevels(
   price: number,
-  high: number,
-  low: number,
+  high: number | null,
+  low: number | null,
   action: TradingAction,
   ohlcBars?: CoinOHLCBar[]
 ): PriceLevels {
@@ -188,13 +192,17 @@ function computeCryptoPriceLevels(
     const ranges = ohlcBars.slice(-14).map(b => b.high - b.low);
     atr = ranges.reduce((s, v) => s + v, 0) / ranges.length;
     atr = Math.max(atr, price * 0.01); // crypto min ATR = 1% of price
-  } else {
+  } else if (typeof high === "number" && typeof low === "number") {
     const range = high - low;
     atr = Math.max(range, price * 0.02); // fallback: 2% of price
+  } else {
+    atr = price * 0.02;
   }
 
-  const support = parseFloat((low - atr * 0.1).toFixed(8));
-  const resistance = parseFloat((high + atr * 0.1).toFixed(8));
+  const supportBase = typeof low === "number" ? low : price;
+  const resistanceBase = typeof high === "number" ? high : price;
+  const support = parseFloat((supportBase - atr * 0.1).toFixed(8));
+  const resistance = parseFloat((resistanceBase + atr * 0.1).toFixed(8));
 
   let entryZone: number;
   let stopLoss: number;
@@ -202,12 +210,12 @@ function computeCryptoPriceLevels(
 
   if (action === "BUY") {
     entryZone = parseFloat(price.toFixed(8));
-    stopLoss = parseFloat(Math.max(low - atr * 0.1, entryZone - atr * 1.5).toFixed(8));
+    stopLoss = parseFloat(Math.max(supportBase - atr * 0.1, entryZone - atr * 1.5).toFixed(8));
     const risk = entryZone - stopLoss;
     targetPrice = parseFloat((entryZone + risk * 2).toFixed(8));
   } else if (action === "SELL") {
     entryZone = parseFloat(price.toFixed(8));
-    stopLoss = parseFloat(Math.min(high + atr * 0.1, entryZone + atr * 1.5).toFixed(8));
+    stopLoss = parseFloat(Math.min(resistanceBase + atr * 0.1, entryZone + atr * 1.5).toFixed(8));
     const risk = stopLoss - entryZone;
     targetPrice = parseFloat((entryZone - risk * 2).toFixed(8));
   } else {
@@ -222,11 +230,11 @@ function computeCryptoPriceLevels(
 
   // Build multi-tier risk levels for crypto
   // Crypto uses wider bands due to higher volatility
-  const tradeStopPrice = parseFloat(Math.max(low - atr * 0.75, entryZone * 0.85).toFixed(8));
+  const tradeStopPrice = parseFloat(Math.max(supportBase - atr * 0.75, entryZone * 0.85).toFixed(8));
   const tradeStopPct = parseFloat(((tradeStopPrice - entryZone) / entryZone * 100).toFixed(1));
   const swingStopRaw = ohlcBars && ohlcBars.length >= 20
     ? ohlcBars.slice(-20).reduce((s, b) => s + b.close, 0) / 20 - atr * 0.5
-    : low - atr * 2;
+    : supportBase - atr * 2;
   const swingStopPrice = parseFloat(Math.max(swingStopRaw, entryZone * 0.72).toFixed(8));
   const swingStopPct = parseFloat(((swingStopPrice - entryZone) / entryZone * 100).toFixed(1));
   const thesisRaw = ohlcBars && ohlcBars.length >= 50
@@ -309,6 +317,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
     priceChangePercent7d: change7d,
     priceChangePercent30d: change30d,
   } = market;
+  const levelPrice = typeof price === "number" && Number.isFinite(price) ? price : null;
 
   // ── Data quality path ─────────────────────────────────────
   const admittedBars = completedCoinDailyBars(ohlcBars ?? []);
@@ -339,12 +348,12 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
         smaSignal: "Neutral",
         smaIsTrue: false,
         macd: null,
-        volatility24h: parseFloat(vol24h.toFixed(2)),
-        distanceFromAth: parseFloat(dFromAth.toFixed(2)),
+        volatility24h: typeof vol24h === "number" ? parseFloat(vol24h.toFixed(2)) : null,
+        distanceFromAth: typeof dFromAth === "number" ? parseFloat(dFromAth.toFixed(2)) : null,
         priceChange7d: change7d !== null ? parseFloat(change7d.toFixed(2)) : null,
         priceChange30d: change30d !== null ? parseFloat(change30d.toFixed(2)) : null,
       },
-      priceLevels: computeCryptoPriceLevels(price, high, low, "WATCH", admittedBars),
+      priceLevels: computeCryptoPriceLevels(levelPrice ?? Number.NaN, high, low, "WATCH", admittedBars),
       regimeAlignment: "Neutral",
       regimeAlignmentScore: 0,
       cryptoFactors: {
@@ -510,7 +519,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
   const rationale = rationaleMap[action];
 
   // ── Price levels ──────────────────────────────────────────
-  const priceLevels = computeCryptoPriceLevels(price, high, low, action, admittedBars);
+  const priceLevels = computeCryptoPriceLevels(levelPrice ?? Number.NaN, high, low, action, admittedBars);
 
   // ── Regime alignment ──────────────────────────────────────
   const { alignment: regimeAlignment, score: regimeAlignmentScore } = computeCryptoRegimeAlignment(action, regime);
@@ -574,8 +583,8 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
       smaSignal,
       smaIsTrue,
       macd,
-      volatility24h: parseFloat(vol24h.toFixed(2)),
-      distanceFromAth: parseFloat(dFromAth.toFixed(2)),
+      volatility24h: typeof vol24h === "number" ? parseFloat(vol24h.toFixed(2)) : null,
+      distanceFromAth: typeof dFromAth === "number" ? parseFloat(dFromAth.toFixed(2)) : null,
       priceChange7d: change7d !== null ? parseFloat(change7d.toFixed(2)) : null,
       priceChange30d: change30d !== null ? parseFloat(change30d.toFixed(2)) : null,
     },

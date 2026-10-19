@@ -179,10 +179,12 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
     : [];
 
   const currentPrice = market.currentPrice;
+  const priceKnown = typeof currentPrice === "number" && Number.isFinite(currentPrice);
   const change24h = market.priceChangePercent24h;
   const change7d = market.priceChangePercent7d ?? change24h * 3;
   const change30d = market.priceChangePercent30d ?? change24h * 10;
   const volatility24h = market.volatility24h;
+  const volatilityKnown = typeof volatility24h === "number" && Number.isFinite(volatility24h);
   const distanceFromAth = market.distanceFromAth; // negative = below ATH
 
   // ── Macro pressure context ────────────────────────────────
@@ -210,19 +212,20 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
   // ── Moving average context ────────────────────────────────
   const sma10 = sma(closes, 10);
   const sma20 = sma(closes, 20);
-  const aboveSma10 = sma10 !== null && currentPrice > sma10;
-  const aboveSma20 = sma20 !== null && currentPrice > sma20;
+  const aboveSma10 = priceKnown && sma10 !== null && (currentPrice as number) > sma10;
+  const aboveSma20 = priceKnown && sma20 !== null && (currentPrice as number) > sma20;
   const aboveAnyMa = aboveSma10 || aboveSma20;
 
   // ── Volume confirmation ───────────────────────────────────
-  const volumeToMcap = market.marketCap > 0
-    ? (market.totalVolume / market.marketCap) * 100
+  const volumeKnown = typeof market.marketCap === "number" && typeof market.totalVolume === "number";
+  const volumeToMcap = volumeKnown && (market.marketCap as number) > 0
+    ? ((market.totalVolume as number) / (market.marketCap as number)) * 100
     : 0;
-  const volumeConfirmed = volumeToMcap > 1.5; // >1.5% volume/mcap ratio = meaningful volume
+  const volumeConfirmed = volumeKnown && volumeToMcap > 1.5; // >1.5% volume/mcap ratio = meaningful volume
 
   // ── Volatility cooling ────────────────────────────────────
   const volatilityCV = estimateVolatility(closes);
-  const volatilityCooling = volatility24h < 4.0 && volatilityCV < 5.0;
+  const volatilityCooling = volatilityKnown && volatility24h < 4.0 && volatilityCV < 5.0;
 
   // ── 7d and 14d trend improvement ─────────────────────────
   const trendImproving7d = change7d > -5; // not still in freefall
@@ -290,28 +293,37 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
       label: "Volume Supports the Move",
       description: "Volume must be meaningful relative to market cap",
       passed: volumeConfirmed,
+      withheld: !volumeKnown,
       weight: 12,
-      detail: volumeConfirmed
-        ? `Volume/MCap ratio: ${volumeToMcap.toFixed(2)}% — volume confirming`
-        : `Volume/MCap ratio: ${volumeToMcap.toFixed(2)}% — volume too thin`,
+      detail: !volumeKnown
+        ? "Volume or market cap unavailable"
+        : volumeConfirmed
+          ? `Volume/MCap ratio: ${volumeToMcap.toFixed(2)}% — volume confirming`
+          : `Volume/MCap ratio: ${volumeToMcap.toFixed(2)}% — volume too thin`,
     },
     {
       id: "volatility_cooling",
       label: "Volatility Cooling",
       description: "Intraday volatility must begin decreasing",
       passed: volatilityCooling,
+      withheld: !volatilityKnown,
       weight: 10,
-      detail: volatilityCooling
-        ? `24h volatility: ${volatility24h.toFixed(1)}% — cooling`
-        : `24h volatility: ${volatility24h.toFixed(1)}% — still elevated`,
+      detail: !volatilityKnown
+        ? "24h volatility unavailable"
+        : volatilityCooling
+          ? `24h volatility: ${volatility24h.toFixed(1)}% — cooling`
+          : `24h volatility: ${volatility24h.toFixed(1)}% — still elevated`,
     },
     {
       id: "above_ma",
       label: "Price Above Key Moving Averages",
       description: "Price must be above at least one key moving average",
       passed: aboveAnyMa,
+      withheld: !priceKnown,
       weight: 10,
-      detail: aboveAnyMa
+      detail: !priceKnown
+        ? "Price unavailable"
+        : aboveAnyMa
         ? `Price above ${aboveSma10 ? "10-period" : "20-period"} MA`
         : "Price still below key moving averages",
     },
@@ -366,7 +378,7 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
   }
 
   // Penalize if still well below ATH (deep discount = more downside risk)
-  if (distanceFromAth < -40) {
+  if (typeof distanceFromAth === "number" && distanceFromAth < -40) {
     rawConfidence *= 0.85;
   }
 
@@ -393,8 +405,8 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
   if (!reclaimedBreakdown) aftershockRiskScore += 15;
 
   // Volatility still high
-  if (volatility24h > 5) aftershockRiskScore += 10;
-  else if (volatility24h > 3) aftershockRiskScore += 5;
+  if (volatilityKnown && volatility24h > 5) aftershockRiskScore += 10;
+  else if (volatilityKnown && volatility24h > 3) aftershockRiskScore += 5;
 
   // Macro pressure elevated
   if (macroPressure != null && macroPressure > 70) aftershockRiskScore += 10;

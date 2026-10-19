@@ -58,7 +58,7 @@ export interface TradeOpportunity {
   // Price data
   currentPrice: number;
   changePercent: number;
-  volume: number;
+  volume: number | null;
   marketCap: number | null;
   dataFreshness: DataFreshness;
   // Trade levels
@@ -560,7 +560,7 @@ export async function buildCryptoOpportunity(
   ticker: string,
   coinId: string,
   name: string,
-  rawPrice: { usd: number; usd_24h_change: number; usd_24h_vol: number; usd_market_cap: number } | undefined,
+  rawPrice: { usd: number; usd_24h_change: number; usd_24h_vol: number | null; usd_market_cap: number | null } | undefined,
   pressure: FaultlinePressureOutput,
   objective: OwnerSimulationObjective | null,
   accountValue: number,
@@ -569,8 +569,8 @@ export async function buildCryptoOpportunity(
   try {
     const price = rawPrice.usd;
     const changePercent = rawPrice.usd_24h_change ?? 0;
-    const volume = rawPrice.usd_24h_vol ?? 0;
-    const marketCap = rawPrice.usd_market_cap ?? null;
+    const volume = rawPrice.usd_24h_vol;
+    const marketCap = rawPrice.usd_market_cap;
 
     // Fetch full CoinGecko market data and 30-day OHLC for ATR-based levels
     // These calls are cached (90s TTL) so they don't add latency on repeat calls
@@ -590,7 +590,7 @@ export async function buildCryptoOpportunity(
         name,
         image: "",
         currentPrice: price,
-        marketCap: marketCap ?? 0,
+        marketCap,
         marketCapRank: 999,
         fullyDilutedValuation: null,
         totalVolume: volume,

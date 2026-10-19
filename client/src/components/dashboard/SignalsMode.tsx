@@ -18,6 +18,7 @@ import { useEngine } from "@/contexts/EngineContext";
 import { getRiskColor } from "@/components/RiskBadge";
 import { ArrowRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { formatObservedFixed } from "@/lib/nullableFormat";
 import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
 import { formatEt } from "@shared/credibilityLabels";
 import { deltaDirection, vsBaselineText } from "@/lib/deltaAvailability";
@@ -28,8 +29,8 @@ type FilterTab = "crypto" | "stocks" | "rotation";
 const MONO = "'IBM Plex Mono', monospace";
 const SANS = "'IBM Plex Sans', sans-serif";
 
-function formatUsd(n: number): string {
-  if (!Number.isFinite(n)) return "—";
+function formatUsd(n: number | null): string {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "Unavailable";
   if (n >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
   if (n >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
   if (n < 1) return `$${n.toFixed(4)}`;
@@ -471,7 +472,7 @@ function RotationTracker({ regime }: { regime: string | null | undefined }) {
                 BTC DOMINANCE
               </span>
               <span style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color: "#F59E0B" }} data-signals-field="pct-move">
-                {btcDom?.current.toFixed(1)}%
+                {formatObservedFixed(btcDom?.current, 1, "%")}
               </span>
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 12, rowGap: 4, fontFamily: MONO, fontSize: 8, letterSpacing: "0.06em", color: "rgba(148,163,184,0.7)" }}>

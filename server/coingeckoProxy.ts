@@ -55,13 +55,13 @@ export interface CoinMarketData {
   symbol: string;
   name: string;
   image: string;
-  currentPrice: number;
-  marketCap: number;
+  currentPrice: number | null;
+  marketCap: number | null;
   marketCapRank: number;
   fullyDilutedValuation: number | null;
-  totalVolume: number;
-  high24h: number;
-  low24h: number;
+  totalVolume: number | null;
+  high24h: number | null;
+  low24h: number | null;
   priceChange24h: number;
   priceChangePercent24h: number;
   /** Display only: null when CoinGecko supplied no 24h change (priceChangePercent24h then stays 0 for the engine). */
@@ -80,8 +80,8 @@ export interface CoinMarketData {
   sparkline7d: number[];
   lastUpdated: string;
   // Computed volatility metrics
-  volatility24h: number;   // (high-low)/low * 100
-  distanceFromAth: number; // % below ATH
+  volatility24h: number | null;   // (high-low)/low * 100; null when the 24h range was not supplied
+  distanceFromAth: number | null; // % below ATH; null when price was not supplied
 }
 
 export interface GlobalStats {
@@ -342,11 +342,17 @@ function resolveCgId(query: string): string {
   return SYMBOL_MAP[upper] ?? NAME_MAP[upper] ?? query.toLowerCase().trim();
 }
 
+function finiteCoinNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
 export function mapRawCoin(c: Record<string, unknown>): CoinMarketData {
-  const high = (c.high_24h as number) ?? 0;
-  const low  = (c.low_24h  as number) ?? 0;
-  const ath  = (c.ath      as number) ?? 0;
-  const price = (c.current_price as number) ?? 0;
+  const high = finiteCoinNumber(c.high_24h);
+  const low  = finiteCoinNumber(c.low_24h);
+  const ath  = (c.ath as number) ?? 0;
+  const price = finiteCoinNumber(c.current_price);
+  const marketCap = finiteCoinNumber(c.market_cap);
+  const totalVolume = finiteCoinNumber(c.total_volume);
   const sparkRaw = (c.sparkline_in_7d as { price?: number[] })?.price ?? [];
   return {
     id:                       c.id as string,
@@ -354,10 +360,10 @@ export function mapRawCoin(c: Record<string, unknown>): CoinMarketData {
     name:                     c.name as string,
     image:                    (c.image as string) ?? "",
     currentPrice:             price,
-    marketCap:                (c.market_cap as number) ?? 0,
+    marketCap,
     marketCapRank:            (c.market_cap_rank as number) ?? 0,
     fullyDilutedValuation:    (c.fully_diluted_valuation as number | null) ?? null,
-    totalVolume:              (c.total_volume as number) ?? 0,
+    totalVolume,
     high24h:                  high,
     low24h:                   low,
     priceChange24h:           (c.price_change_24h as number) ?? 0,
@@ -376,8 +382,8 @@ export function mapRawCoin(c: Record<string, unknown>): CoinMarketData {
     atlChangePercent:         (c.atl_change_percentage as number) ?? 0,
     sparkline7d:              sparkRaw.slice(-48),  // last 48 data points (~2 days)
     lastUpdated:              (c.last_updated as string) ?? "",
-    volatility24h:            low > 0 ? ((high - low) / low) * 100 : 0,
-    distanceFromAth:          ath > 0 ? ((price - ath) / ath) * 100 : 0,
+    volatility24h:            high == null || low == null ? null : low > 0 ? ((high - low) / low) * 100 : 0,
+    distanceFromAth:          price == null ? null : ath > 0 ? ((price - ath) / ath) * 100 : 0,
   };
 }
 

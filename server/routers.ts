@@ -2436,11 +2436,14 @@ export const appRouter = router({
           if (!coinData) {
             throw new TRPCError({ code: 'NOT_FOUND', message: `No CoinGecko data found for "${input.symbol}". Try the full coin name (e.g. "bittensor") or check the symbol.` });
           }
+          if (coinData.currentPrice == null) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: `No verified price for "${input.symbol}".` });
+          }
           const rawPrice = {
             usd: coinData.currentPrice,
             usd_24h_change: coinData.priceChangePercent24h ?? 0,
-            usd_24h_vol: coinData.totalVolume ?? 0,
-            usd_market_cap: coinData.marketCap ?? 0,
+            usd_24h_vol: coinData.totalVolume,
+            usd_market_cap: coinData.marketCap,
           };
           const opp = await buildCryptoOpportunity(
             input.symbol,

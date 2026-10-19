@@ -422,7 +422,7 @@ function CompactSignalFooter() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#CBD5E1" }}>
-                    ${coin.currentPrice.toLocaleString()}
+                    {typeof coin.currentPrice === "number" ? `$${coin.currentPrice.toLocaleString()}` : "Unavailable"}
                   </span>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: changeColor, fontWeight: 600 }}>
                     {change24hText(change)}

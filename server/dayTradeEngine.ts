@@ -885,7 +885,12 @@ async function buildCryptoSetup(
   const volume = coin.totalVolume;
   const marketCap = coin.marketCap;
 
-  if (!price || price <= 0) return null;
+  if (
+    typeof price !== "number" || price <= 0 ||
+    typeof coin.high24h !== "number" || typeof coin.low24h !== "number" ||
+    typeof volume !== "number" || typeof marketCap !== "number" ||
+    typeof coin.volatility24h !== "number"
+  ) return null;
 
   let ohlcCloses: number[] = [];
   try {
@@ -1216,11 +1221,19 @@ export async function dayTradeSymbolSetup(
       return withheld;
     }
     const rsi = gate.rsi;
-    const vwap = estimateVwap(price * 0.99, coin.high24h, coin.low24h, price);
+    const high = coin.high24h;
+    const low = coin.low24h;
+    const volume = coin.totalVolume;
+    if (typeof price !== "number" || typeof high !== "number" || typeof low !== "number" || typeof volume !== "number") {
+      const withheld = withheldDayTradeReport(setup);
+      reportCache.set(cacheKey, withheld);
+      return withheld;
+    }
+    const vwap = estimateVwap(price * 0.99, high, low, price);
 
     const enrichment = await enrichWithLLM(
       setup.symbol, setup.name, "crypto", price, coin.priceChangePercent24h,
-      coin.totalVolume, setup.relativeVolume, rsi,
+      volume, setup.relativeVolume, rsi,
       setup.setupType, setup.direction,
       setup.confidence, regime, regimePressure, setup.riskRewardRatio,
       setup.setupType === "NO_TRADE"
@@ -1248,8 +1261,8 @@ export async function dayTradeSymbolSetup(
       marketContext: enrichmentCrypto.marketContext,
       vwapStatus: price > vwap ? "Above VWAP" : price < vwap ? "Below VWAP" : "At VWAP",
       momentumRating: assessMomentum(coin.priceChangePercent24h, setup.relativeVolume, rsi),
-      supportLevel: roundTo(coin.low24h, 4),
-      resistanceLevel: roundTo(coin.high24h, 4),
+      supportLevel: roundTo(low, 4),
+      resistanceLevel: roundTo(high, 4),
       whyTradeExists: enrichmentCrypto.whyTradeExists,
       whatCancelsThisTrade: enrichmentCrypto.whatCancelsThisTrade,
       confidenceReasoning: enrichmentCrypto.confidenceReasoning,

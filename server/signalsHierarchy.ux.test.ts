@@ -107,9 +107,10 @@ describe("Signal calculation / methodology untouched", () => {
     const named = execSync(`git diff ${base} -- ${frozenEngines.join(" ")}`, { cwd: root, encoding: "utf8" });
     expect(named.trim()).toBe("");
     // James authorized cryptoEngine null handling for a missing BTC dominance
-    // (withheld, not 55) and for a missing total market cap, 24h volume, or
-    // 24h market-cap change (withheld from the systemic score, not scored as 0 or 5).
-    // Present inputs keep the prior weighted formula. Other scoring fallbacks stay.
+    // (withheld, not 55), a missing total market cap, 24h volume, or 24h
+    // market-cap change, and a missing coin price, 24h range, volume, or
+    // market cap. Those readings are withheld from the score. Present inputs
+    // keep the prior weighted formula. Other scoring fallbacks stay.
     const cryptoDiff = execSync(`git diff ${base} -- server/cryptoEngine.ts`, { cwd: root, encoding: "utf8" });
     const added = cryptoDiff.split("\n").filter(line => line.startsWith("+") && !line.startsWith("+++"));
     expect(cryptoDiff).toContain("btcDominance ?? 55");

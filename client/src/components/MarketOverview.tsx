@@ -27,18 +27,21 @@ function fmtPct(v: number): string {
   const sign = v >= 0 ? "+" : "";
   return `${sign}${v.toFixed(2)}%`;
 }
-function fmtPrice(v: number): string {
+function fmtPrice(v: number | null): string {
+  if (typeof v !== "number" || !Number.isFinite(v)) return "Unavailable";
   if (v >= 1000) return `$${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   if (v >= 1) return `$${v.toFixed(2)}`;
   return `$${v.toFixed(4)}`;
 }
-function fmtVol(v: number): string {
+function fmtVol(v: number | null): string {
+  if (typeof v !== "number" || !Number.isFinite(v)) return "Unavailable";
   if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(2)}B`;
   if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
   if (v >= 1_000) return `${(v / 1_000).toFixed(0)}K`;
   return String(v);
 }
 function fmtMktCap(v: number | null): string {
+  if (v == null) return "Unavailable";
   if (!v) return "—";
   if (v >= 1e12) return `$${(v / 1e12).toFixed(2)}T`;
   if (v >= 1e9) return `$${(v / 1e9).toFixed(1)}B`;
@@ -315,8 +318,8 @@ function MoverRow({ ticker, name, price, changePct, volume, marketCap, rank }: {
 
 // ── Crypto row ────────────────────────────────────────────────
 function CryptoRow({ rank, symbol, name, price, changePct24h, volume, marketCap }: {
-  rank: number; symbol: string; name: string; price: number; changePct24h: number | null;
-  volume: number; marketCap: number;
+  rank: number; symbol: string; name: string; price: number | null; changePct24h: number | null;
+  volume: number | null; marketCap: number | null;
 }) {
   const color = change24hColor(changePct24h, "#00FF88", "#FF2D55");
   return (
