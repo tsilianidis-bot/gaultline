@@ -56,7 +56,7 @@ export interface CryptoAssetIntelligence {
   high24h:              number | null;
   low24h:               number | null;
   circulatingSupply:    number;
-  ath:                  number;
+  ath:                  number | null;
   athChangePercent:     number;
   sparkline7d:          number[];
   volatility24h:        number | null;

@@ -42,7 +42,7 @@ interface CryptoAssetIntelligence {
   id: string; symbol: string; name: string; image: string;
   currentPrice: number | null; priceChangePercent24h: number | null; priceChangePercent24hDisplay?: number | null; priceChangePercent7d: number | null;
   marketCap: number | null; totalVolume: number | null; high24h: number | null; low24h: number | null;
-  circulatingSupply: number; ath: number; athChangePercent: number;
+  circulatingSupply: number; ath: number | null; athChangePercent: number;
   sparkline7d: number[]; volatility24h: number | null; distanceFromAth: number | null;
   signalBias: CryptoSignalBias; signalScore: number;
   riskLevel: CryptoRiskLevel; riskScore: number;
@@ -377,7 +377,7 @@ function AssetCard({ asset, risk }: { asset: CryptoAssetIntelligence; risk: Cryp
             { label: "24h Volume",   value: fmtObserved(asset.totalVolume) },
             { label: "24h High",     value: fmtObserved(asset.high24h, typeof asset.high24h === "number" && asset.high24h < 1 ? 4 : 2) },
             { label: "24h Low",      value: fmtObserved(asset.low24h, typeof asset.low24h === "number" && asset.low24h < 1 ? 4 : 2) },
-            { label: "ATH",          value: fmt(asset.ath, asset.ath < 1 ? 4 : 2) },
+            { label: "ATH",          value: fmtObserved(asset.ath, typeof asset.ath === "number" && asset.ath < 1 ? 4 : 2) },
             { label: "From ATH",     value: formatObservedFixed(asset.distanceFromAth, 1, "%") },
           ].map(({ label, value }) => (
             <div key={label}>

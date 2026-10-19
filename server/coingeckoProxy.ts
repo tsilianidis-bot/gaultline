@@ -73,7 +73,7 @@ export interface CoinMarketData {
   circulatingSupply: number;
   totalSupply: number | null;
   maxSupply: number | null;
-  ath: number;
+  ath: number | null;
   athChangePercent: number;
   atl: number;
   atlChangePercent: number;
@@ -349,7 +349,8 @@ function finiteCoinNumber(value: unknown): number | null {
 export function mapRawCoin(c: Record<string, unknown>): CoinMarketData {
   const high = finiteCoinNumber(c.high_24h);
   const low  = finiteCoinNumber(c.low_24h);
-  const ath  = (c.ath as number) ?? 0;
+  const athRaw = finiteCoinNumber(c.ath);
+  const ath = athRaw != null && athRaw > 0 ? athRaw : null;
   const price = finiteCoinNumber(c.current_price);
   const marketCap = finiteCoinNumber(c.market_cap);
   const totalVolume = finiteCoinNumber(c.total_volume);
@@ -383,7 +384,7 @@ export function mapRawCoin(c: Record<string, unknown>): CoinMarketData {
     sparkline7d:              sparkRaw.slice(-48),  // last 48 data points (~2 days)
     lastUpdated:              (c.last_updated as string) ?? "",
     volatility24h:            high == null || low == null ? null : low > 0 ? ((high - low) / low) * 100 : 0,
-    distanceFromAth:          price == null ? null : ath > 0 ? ((price - ath) / ath) * 100 : 0,
+    distanceFromAth:          price == null || ath == null ? null : ((price - ath) / ath) * 100,
   };
 }
 
