@@ -1555,7 +1555,8 @@ function SignalsInner() {
   const tradingSignalsInput = useMemo(() => ({
     tickers: displayedStocks.flatMap(({ stock }) => {
       const lq = quoteMap.get(stock.ticker);
-      if (!lq || !hasUsableSignalQuote(lq) || lq.volumeMillions == null) return [];
+      if (!lq || !hasUsableSignalQuote(lq)) return [];
+      if (lq.volumeMillions == null) return [];
       return [{
         ticker: stock.ticker,
         price: lq.price,
