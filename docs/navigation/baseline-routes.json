@@ -1,0 +1,1102 @@
+[
+  {
+    "path": "/",
+    "component": "RootRoute",
+    "redirect": null
+  },
+  {
+    "path": "/404",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/about",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/admin/promo",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/ai-bubble-monitor",
+    "component": null,
+    "redirect": "/ai-bubble-risk-tracker"
+  },
+  {
+    "path": "/ai-bubble-risk-tracker",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/ai-stock-signals",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/ai-stocks-dashboard",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/alt-season-indicator",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/altcoin-season-index",
+    "component": null,
+    "redirect": "/alt-season-indicator"
+  },
+  {
+    "path": "/analogs",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/analysis",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/app",
+    "component": null,
+    "redirect": "/app/now"
+  },
+  {
+    "path": "/app/account",
+    "component": "UserAccount",
+    "redirect": null
+  },
+  {
+    "path": "/app/act",
+    "component": "Act",
+    "redirect": null
+  },
+  {
+    "path": "/app/act/deep",
+    "component": "SmartDiscovery",
+    "redirect": null
+  },
+  {
+    "path": "/app/admin",
+    "component": "AdminPortal",
+    "redirect": null
+  },
+  {
+    "path": "/app/admin/blog",
+    "component": "AdminBlog",
+    "redirect": null
+  },
+  {
+    "path": "/app/admin/chat-inbox",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/app/admin/conversation-intelligence",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/app/admin/engineering",
+    "component": "EngineeringDiagnostics",
+    "redirect": null
+  },
+  {
+    "path": "/app/admin/publishing",
+    "component": "AdminPublishing",
+    "redirect": null
+  },
+  {
+    "path": "/app/admin/shadow-monitor",
+    "component": "ShadowMonitor",
+    "redirect": null
+  },
+  {
+    "path": "/app/admin/users",
+    "component": "AdminUsers",
+    "redirect": null
+  },
+  {
+    "path": "/app/aftershock",
+    "component": null,
+    "redirect": "/app/outlook/deep"
+  },
+  {
+    "path": "/app/ai-diagnostic",
+    "component": null,
+    "redirect": "/app/now/deep"
+  },
+  {
+    "path": "/app/ai-watch",
+    "component": null,
+    "redirect": "/app/watch"
+  },
+  {
+    "path": "/app/alerts",
+    "component": "Alerts",
+    "redirect": null
+  },
+  {
+    "path": "/app/alt-rotation",
+    "component": null,
+    "redirect": "/app/why/deep"
+  },
+  {
+    "path": "/app/analogs",
+    "component": null,
+    "redirect": "/app/historical-analogs"
+  },
+  {
+    "path": "/app/analytics",
+    "component": "AnalyticsDashboard",
+    "redirect": null
+  },
+  {
+    "path": "/app/asha",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/app/asha-intelligence",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/app/ask-asha",
+    "component": null,
+    "redirect": "/app/asha"
+  },
+  {
+    "path": "/app/blog",
+    "component": "Blog",
+    "redirect": null
+  },
+  {
+    "path": "/app/blog/:slug",
+    "component": "BlogPost",
+    "redirect": null
+  },
+  {
+    "path": "/app/charts",
+    "component": null,
+    "redirect": "/app/now/deep"
+  },
+  {
+    "path": "/app/command",
+    "component": null,
+    "redirect": "/app/now/deep"
+  },
+  {
+    "path": "/app/command-center",
+    "component": null,
+    "redirect": "/app/now/deep"
+  },
+  {
+    "path": "/app/crypto",
+    "component": "CryptoHub",
+    "redirect": null
+  },
+  {
+    "path": "/app/crypto-regime",
+    "component": null,
+    "redirect": "/app/outlook/deep"
+  },
+  {
+    "path": "/app/crypto-search",
+    "component": "CryptoSearch",
+    "redirect": null
+  },
+  {
+    "path": "/app/crypto-signals",
+    "component": "CryptoSignals",
+    "redirect": null
+  },
+  {
+    "path": "/app/crypto-watchlist",
+    "component": "CryptoWatchlist",
+    "redirect": null
+  },
+  {
+    "path": "/app/daily-briefing",
+    "component": null,
+    "redirect": "/app/now"
+  },
+  {
+    "path": "/app/dashboard",
+    "component": null,
+    "redirect": "/app/now"
+  },
+  {
+    "path": "/app/day-trade-intelligence",
+    "component": "DayTradeIntelligence",
+    "redirect": null
+  },
+  {
+    "path": "/app/day-trade-intelligence/:symbol",
+    "component": "DayTradeDetail",
+    "redirect": null
+  },
+  {
+    "path": "/app/decision-engine",
+    "component": "DecisionEngine",
+    "redirect": null
+  },
+  {
+    "path": "/app/decision-ledger",
+    "component": "DecisionLedger",
+    "redirect": null
+  },
+  {
+    "path": "/app/diagnostic",
+    "component": null,
+    "redirect": "/app/now/deep"
+  },
+  {
+    "path": "/app/discover",
+    "component": "SmartDiscovery",
+    "redirect": null
+  },
+  {
+    "path": "/app/early-warning",
+    "component": "EarlyWarningDetail",
+    "redirect": null
+  },
+  {
+    "path": "/app/fmos-health",
+    "component": "FmosHealthDashboard",
+    "redirect": null
+  },
+  {
+    "path": "/app/glossary",
+    "component": "Glossary",
+    "redirect": null
+  },
+  {
+    "path": "/app/guide",
+    "component": "Guide",
+    "redirect": null
+  },
+  {
+    "path": "/app/historical-analogs",
+    "component": "HistoricalAnalogs",
+    "redirect": null
+  },
+  {
+    "path": "/app/insider-intelligence",
+    "component": "InsiderIntelligence",
+    "redirect": null
+  },
+  {
+    "path": "/app/intelligence-hub",
+    "component": null,
+    "redirect": "/app/now/deep"
+  },
+  {
+    "path": "/app/intelligence-track-record",
+    "component": "IntelligenceTrackRecord",
+    "redirect": null
+  },
+  {
+    "path": "/app/intelligence-validation",
+    "component": null,
+    "redirect": "/app/validation"
+  },
+  {
+    "path": "/app/market-intelligence",
+    "component": null,
+    "redirect": "/app/now/deep"
+  },
+  {
+    "path": "/app/market-movers",
+    "component": "MarketMovers",
+    "redirect": null
+  },
+  {
+    "path": "/app/markets",
+    "component": "Markets",
+    "redirect": null
+  },
+  {
+    "path": "/app/now",
+    "component": "Now",
+    "redirect": null
+  },
+  {
+    "path": "/app/now/deep",
+    "component": "Dashboard",
+    "redirect": null
+  },
+  {
+    "path": "/app/opportunities",
+    "component": null,
+    "redirect": "/app/act/deep"
+  },
+  {
+    "path": "/app/outlook",
+    "component": "Outlook",
+    "redirect": null
+  },
+  {
+    "path": "/app/outlook/deep",
+    "component": "SignalOutlookCenter",
+    "redirect": null
+  },
+  {
+    "path": "/app/portfolio",
+    "component": "Portfolio",
+    "redirect": null
+  },
+  {
+    "path": "/app/pre-flight",
+    "component": null,
+    "redirect": "/app/now/deep"
+  },
+  {
+    "path": "/app/pressure",
+    "component": "Pressure",
+    "redirect": null
+  },
+  {
+    "path": "/app/pressure-history",
+    "component": "PressureHistory",
+    "redirect": null
+  },
+  {
+    "path": "/app/pressure-index",
+    "component": null,
+    "redirect": "/app/now?view=pressure"
+  },
+  {
+    "path": "/app/reading-history",
+    "component": "ReadingHistory",
+    "redirect": null
+  },
+  {
+    "path": "/app/report",
+    "component": null,
+    "redirect": "/app/now/deep"
+  },
+  {
+    "path": "/app/rising-stars",
+    "component": "RisingStars",
+    "redirect": null
+  },
+  {
+    "path": "/app/rising-stars/:ticker",
+    "component": "RisingStarDetail",
+    "redirect": null
+  },
+  {
+    "path": "/app/roadmap",
+    "component": "Roadmap",
+    "redirect": null
+  },
+  {
+    "path": "/app/scenarios",
+    "component": null,
+    "redirect": "/app/outlook/deep"
+  },
+  {
+    "path": "/app/scores",
+    "component": null,
+    "redirect": "/app/pressure?tab=scores"
+  },
+  {
+    "path": "/app/seismograph",
+    "component": null,
+    "redirect": "/app/now/deep"
+  },
+  {
+    "path": "/app/seismograph-command-center",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/app/seismograph-legacy",
+    "component": null,
+    "redirect": "/app/now/deep"
+  },
+  {
+    "path": "/app/seo-optimizer",
+    "component": "SeoOptimizer",
+    "redirect": null
+  },
+  {
+    "path": "/app/signal-outlook",
+    "component": "SignalOutlookCenter",
+    "redirect": null
+  },
+  {
+    "path": "/app/signals",
+    "component": "Signals",
+    "redirect": null
+  },
+  {
+    "path": "/app/signals/:symbol",
+    "component": "SignalDetail",
+    "redirect": null
+  },
+  {
+    "path": "/app/sim-portfolio",
+    "component": "SimPortfolio",
+    "redirect": null
+  },
+  {
+    "path": "/app/simulate",
+    "component": null,
+    "redirect": "/app/simulate-pressure"
+  },
+  {
+    "path": "/app/simulate-pressure",
+    "component": "SimulatePressure",
+    "redirect": null
+  },
+  {
+    "path": "/app/situation-room",
+    "component": null,
+    "redirect": "/app/now/deep"
+  },
+  {
+    "path": "/app/social-intelligence",
+    "component": "SocialIntelligence",
+    "redirect": null
+  },
+  {
+    "path": "/app/stock-heatmap",
+    "component": null,
+    "redirect": "/app/now/deep"
+  },
+  {
+    "path": "/app/symbol-intelligence",
+    "component": "UniversalSymbolIntelligence",
+    "redirect": null
+  },
+  {
+    "path": "/app/time-machine",
+    "component": "TimeMachine",
+    "redirect": null
+  },
+  {
+    "path": "/app/todays-story",
+    "component": null,
+    "redirect": "/app/now"
+  },
+  {
+    "path": "/app/tools",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/app/track-record",
+    "component": "TrackRecord",
+    "redirect": null
+  },
+  {
+    "path": "/app/trade-journal",
+    "component": "TradeJournal",
+    "redirect": null
+  },
+  {
+    "path": "/app/trade-preflight",
+    "component": null,
+    "redirect": "/app/decision-engine#trade-preflight"
+  },
+  {
+    "path": "/app/validation",
+    "component": "IntelligenceValidation",
+    "redirect": null
+  },
+  {
+    "path": "/app/validation-lab",
+    "component": "ValidationLab",
+    "redirect": null
+  },
+  {
+    "path": "/app/watch",
+    "component": "Watch",
+    "redirect": null
+  },
+  {
+    "path": "/app/watch/deep",
+    "component": "AIWatch",
+    "redirect": null
+  },
+  {
+    "path": "/app/watchlist",
+    "component": "Watchlist",
+    "redirect": null
+  },
+  {
+    "path": "/app/why",
+    "component": "Why",
+    "redirect": null
+  },
+  {
+    "path": "/app/why/deep",
+    "component": "TodaysStory",
+    "redirect": null
+  },
+  {
+    "path": "/app/x-post-queue",
+    "component": "XPostQueue",
+    "redirect": null
+  },
+  {
+    "path": "/app/x-posts",
+    "component": "XPostGenerator",
+    "redirect": null
+  },
+  {
+    "path": "/best-market-risk-indicators",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/best-stock-market-risk-dashboard",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/bitcoin-risk-dashboard",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/bitcoin-vs-stock-market",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/blog",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/blog/:slug",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/bull-bear-conditions",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/bull-or-bear-market",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/checkout/success",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/contact",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/credit-market-stress",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/crypto-bull-or-bear",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/crypto-market-regime",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/crypto-market-risk-dashboard",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/crypto-signals",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/crypto-signals-intelligence",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/crypto/:symbol",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/crypto/tao",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/daily-brief",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/daily-brief/:slug",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/demo",
+    "component": null,
+    "redirect": "/app/discover"
+  },
+  {
+    "path": "/demo/:rest*",
+    "component": null,
+    "redirect": "/app/discover"
+  },
+  {
+    "path": "/demo/crypto",
+    "component": null,
+    "redirect": null
+  },
+  {
+    "path": "/demo/dashboard",
+    "component": null,
+    "redirect": "/app/now"
+  },
+  {
+    "path": "/demo/day-trade-intelligence",
+    "component": null,
+    "redirect": "/app/day-trade-intelligence"
+  },
+  {
+    "path": "/demo/decision-engine",
+    "component": null,
+    "redirect": "/app/decision-engine"
+  },
+  {
+    "path": "/demo/diagnostic",
+    "component": null,
+    "redirect": "/app/now/deep"
+  },
+  {
+    "path": "/demo/discover",
+    "component": null,
+    "redirect": "/app/discover"
+  },
+  {
+    "path": "/demo/insider-intelligence",
+    "component": null,
+    "redirect": null
+  },
+  {
+    "path": "/demo/opportunities",
+    "component": null,
+    "redirect": "/app/act"
+  },
+  {
+    "path": "/demo/portfolio",
+    "component": null,
+    "redirect": null
+  },
+  {
+    "path": "/demo/pressure",
+    "component": null,
+    "redirect": "/app/pressure"
+  },
+  {
+    "path": "/demo/signal-outlook",
+    "component": null,
+    "redirect": "/app/signal-outlook"
+  },
+  {
+    "path": "/demo/signals",
+    "component": null,
+    "redirect": "/app/watch"
+  },
+  {
+    "path": "/demo/social-intelligence",
+    "component": null,
+    "redirect": null
+  },
+  {
+    "path": "/demo/watchlist",
+    "component": null,
+    "redirect": null
+  },
+  {
+    "path": "/diagnostic-ai",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/ethereum-risk-dashboard",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/federal-reserve-tracker",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/intel-archive",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/intelligence",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/intelligence-library",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/intelligence-library/:slug",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/intelligence-track-record",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/is-now-good-time-to-buy-stocks",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/learn/bull-and-bear-markets",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/learn/credit-spreads",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/learn/crypto-cycles",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/learn/fed-policy",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/learn/how-to-read-stock-market",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/learn/inflation-and-stocks",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/learn/macro-investing",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/learn/risk-on-or-risk-off",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/learn/treasury-yields",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/learn/what-causes-market-crash",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/learn/what-is-liquidity",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/learn/what-is-market-regime",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/legal",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/liquidity-monitor",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/market-briefing",
+    "component": null,
+    "redirect": "/app/now"
+  },
+  {
+    "path": "/market-crash-indicator",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/market-crash-probability-2026",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/market-regime-tracker",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/methodology",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/mobile",
+    "component": null,
+    "redirect": "/mobile/pulse"
+  },
+  {
+    "path": "/mobile/",
+    "component": null,
+    "redirect": "/mobile/pulse"
+  },
+  {
+    "path": "/mobile/:tab*",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/mobile/account",
+    "component": "MobileAccount",
+    "redirect": null
+  },
+  {
+    "path": "/mobile/brief",
+    "component": "MobileBrief",
+    "redirect": null
+  },
+  {
+    "path": "/mobile/crypto",
+    "component": "MobileCrypto",
+    "redirect": null
+  },
+  {
+    "path": "/mobile/pulse",
+    "component": "MobilePulse",
+    "redirect": null
+  },
+  {
+    "path": "/mobile/rotation",
+    "component": "MobileRotation",
+    "redirect": null
+  },
+  {
+    "path": "/mobile/signals",
+    "component": "MobileSignals",
+    "redirect": null
+  },
+  {
+    "path": "/mobile/upgrade",
+    "component": "MobileUpgrade",
+    "redirect": null
+  },
+  {
+    "path": "/mobile/watchlist",
+    "component": "MobileWatchlist",
+    "redirect": null
+  },
+  {
+    "path": "/owner/simulation",
+    "component": "OwnerSimulation",
+    "redirect": null
+  },
+  {
+    "path": "/phoenix-systems",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/press",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/pressure-index",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/pricing",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/promo/:code",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/qa-access",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/r/:publicShareId",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/recession-probability",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/signals",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/situation-room",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/stock-market-risk-dashboard",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/stock-market-risk-today",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/stock-market-today",
+    "component": null,
+    "redirect": "/stock-market-risk-today"
+  },
+  {
+    "path": "/stock/:symbol",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/stock/aapl",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/stock/amd",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/stock/amzn",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/stock/dia",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/stock/iwm",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/stock/meta",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/stock/msft",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/stock/nvda",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/stock/pltr",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/stock/qqq",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/stock/spy",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/stock/tsla",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/track-record",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/treasury-yield-stress",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/trust",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/volatility-dashboard",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/vs/bloomberg",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/vs/finviz",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/vs/koyfin",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/vs/tradingview",
+    "component": "PageLoader",
+    "redirect": null
+  }
+]

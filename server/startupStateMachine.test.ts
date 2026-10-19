@@ -608,7 +608,7 @@ describe("Scenario 13 — FAULTLINE logo navigation", () => {
     const root = resolve(import.meta.dirname, "..");
     const appLayout = readFileSync(resolve(root, "client/src/components/AppLayout.tsx"), "utf8");
     // Logo must be a button with onClick
-    expect(appLayout).toContain("title=\"Home — Oracle Now\"");
+    expect(appLayout).toContain("title=\"FAULTLINE — NOW\"");
     // Must use CANONICAL_DESTINATION_BY_ID.now.path (not hardcoded string)
     expect(appLayout).toContain("CANONICAL_DESTINATION_BY_ID.now.path");
     // Must have a clickable element

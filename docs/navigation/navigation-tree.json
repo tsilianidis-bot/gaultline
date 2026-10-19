@@ -1,0 +1,456 @@
+[
+  {
+    "id": "five-questions",
+    "label": "THE FIVE QUESTIONS",
+    "description": "Market decision framework",
+    "kind": "primary",
+    "items": [
+      {
+        "id": "now",
+        "label": "NOW",
+        "path": "/app/now",
+        "description": "What is happening right now?",
+        "icon": "activity",
+        "accent": "#00E5FF",
+        "keywords": [
+          "now",
+          "market state",
+          "seismograph",
+          "pressure",
+          "markets"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "why",
+        "label": "WHY",
+        "path": "/app/why",
+        "description": "Why is it happening?",
+        "icon": "network",
+        "accent": "#FFAA00",
+        "keywords": [
+          "why",
+          "drivers",
+          "transmission",
+          "positioning",
+          "history"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "outlook",
+        "label": "OUTLOOK",
+        "path": "/app/outlook",
+        "description": "What is most likely next?",
+        "icon": "telescope",
+        "accent": "#A78BFA",
+        "keywords": [
+          "outlook",
+          "probabilities",
+          "scenarios",
+          "transition",
+          "recovery"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "watch",
+        "label": "WATCH",
+        "path": "/app/watch",
+        "description": "What should I keep watching?",
+        "icon": "bell",
+        "accent": "#F97316",
+        "keywords": [
+          "watch",
+          "signals",
+          "alerts",
+          "watchlists",
+          "portfolio"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "act",
+        "label": "ACT",
+        "path": "/app/act",
+        "description": "How should I respond?",
+        "icon": "crosshair",
+        "accent": "#00FF88",
+        "keywords": [
+          "act",
+          "opportunities",
+          "analyze",
+          "decide",
+          "journal"
+        ],
+        "match": "exact"
+      }
+    ]
+  },
+  {
+    "id": "intelligence-dashboards",
+    "label": "INTELLIGENCE DASHBOARDS",
+    "description": "Deep market intelligence and visual analysis",
+    "kind": "expandable",
+    "items": [
+      {
+        "id": "seismograph-deep",
+        "label": "Seismograph Deep Dashboard",
+        "path": "/app/now/deep",
+        "description": "Visual systemic-pressure dashboard and market synthesis.",
+        "icon": "activity",
+        "keywords": [
+          "seismograph",
+          "deep dashboard",
+          "market state",
+          "pressure"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "pressure-index",
+        "label": "Pressure Index",
+        "path": "/app/pressure",
+        "description": "Systemic pressure index with domain-level breakdowns.",
+        "icon": "gauge",
+        "keywords": [
+          "pressure",
+          "risk",
+          "stress",
+          "index"
+        ],
+        "match": "prefix"
+      },
+      {
+        "id": "global-markets",
+        "label": "Global Markets",
+        "path": "/app/markets",
+        "description": "Cross-market dashboard for global conditions.",
+        "icon": "bar-chart",
+        "keywords": [
+          "markets",
+          "global",
+          "macro",
+          "dashboard"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "historical-analogs",
+        "label": "Historical Analogs",
+        "path": "/app/historical-analogs",
+        "description": "Compare current conditions with historical market analogs.",
+        "icon": "history",
+        "keywords": [
+          "analogs",
+          "history",
+          "historical"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "time-machine",
+        "label": "Time Machine",
+        "path": "/app/time-machine",
+        "description": "Explore prior market regimes and historical readings.",
+        "icon": "history",
+        "keywords": [
+          "time machine",
+          "history",
+          "regimes"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "simulate-pressure",
+        "label": "Simulate Pressure",
+        "path": "/app/simulate-pressure",
+        "description": "Model how macro shocks affect systemic pressure.",
+        "icon": "rotate",
+        "keywords": [
+          "simulate",
+          "pressure",
+          "stress test",
+          "scenario"
+        ],
+        "match": "exact"
+      }
+    ]
+  },
+  {
+    "id": "trading-tools",
+    "label": "TRADING TOOLS",
+    "description": "Signals, opportunity discovery, and decision support",
+    "kind": "expandable",
+    "items": [
+      {
+        "id": "top-opportunities-smart-discovery",
+        "label": "Top Opportunities / Smart Discovery",
+        "path": "/app/discover",
+        "description": "The existing Smart Discovery workspace, including its Top Opportunities capability.",
+        "icon": "sparkles",
+        "keywords": [
+          "top opportunities",
+          "opportunities",
+          "smart discovery",
+          "discover",
+          "research",
+          "ideas"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "signals",
+        "label": "Signals",
+        "path": "/app/signals",
+        "description": "Multi-symbol signal and momentum dashboard.",
+        "icon": "radio",
+        "keywords": [
+          "signals",
+          "momentum",
+          "trading"
+        ],
+        "match": "prefix"
+      },
+      {
+        "id": "crypto-signals",
+        "label": "Crypto Signals",
+        "path": "/app/crypto-signals",
+        "description": "Crypto-specific signals and market conditions.",
+        "icon": "bitcoin",
+        "keywords": [
+          "crypto",
+          "signals",
+          "digital assets"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "decision-engine",
+        "label": "Decision Engine",
+        "path": "/app/decision-engine",
+        "description": "Structured trade evaluation and risk-aware decision support.",
+        "icon": "crosshair",
+        "keywords": [
+          "decision",
+          "preflight",
+          "risk reward",
+          "trade plan"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "day-trade-intelligence",
+        "label": "Day Trade Intelligence",
+        "path": "/app/day-trade-intelligence",
+        "description": "Intraday market context and symbol-specific setups.",
+        "icon": "target",
+        "keywords": [
+          "day trade",
+          "intraday",
+          "setup"
+        ],
+        "match": "prefix"
+      },
+      {
+        "id": "symbol-intelligence",
+        "label": "Symbol Intelligence",
+        "path": "/app/symbol-intelligence",
+        "description": "Deep analysis for a stock, ETF, or crypto asset.",
+        "icon": "search",
+        "keywords": [
+          "symbol",
+          "ticker",
+          "asset",
+          "analysis"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "signal-outlook",
+        "label": "Signal Outlook",
+        "path": "/app/signal-outlook",
+        "description": "Signal outlook and scenario analysis.",
+        "icon": "telescope",
+        "keywords": [
+          "signal outlook",
+          "scenarios",
+          "outlook"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "rising-stars",
+        "label": "Rising Stars",
+        "path": "/app/rising-stars",
+        "description": "Discover emerging symbols and follow their intelligence.",
+        "icon": "trending-up",
+        "keywords": [
+          "rising stars",
+          "discover",
+          "symbols"
+        ],
+        "match": "prefix"
+      },
+      {
+        "id": "market-movers",
+        "label": "Market Movers",
+        "path": "/app/market-movers",
+        "description": "Review notable moves, volume, and momentum leaders.",
+        "icon": "trending-up",
+        "keywords": [
+          "movers",
+          "volume",
+          "momentum"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "portfolio",
+        "label": "Portfolio",
+        "path": "/app/portfolio",
+        "description": "Review portfolio risk and regime exposure.",
+        "icon": "briefcase",
+        "keywords": [
+          "portfolio",
+          "risk",
+          "positions"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "trade-journal",
+        "label": "Trade Journal",
+        "path": "/app/trade-journal",
+        "description": "Log and review trades in the existing journal.",
+        "icon": "book-open",
+        "keywords": [
+          "journal",
+          "trades",
+          "review"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "decision-ledger",
+        "label": "Decision Ledger",
+        "path": "/app/decision-ledger",
+        "description": "Track and review investment decisions.",
+        "icon": "file-text",
+        "keywords": [
+          "ledger",
+          "decisions",
+          "review"
+        ],
+        "match": "exact"
+      }
+    ]
+  },
+  {
+    "id": "daily-brief",
+    "label": "DAILY BRIEF",
+    "kind": "direct",
+    "items": [
+      {
+        "id": "daily-brief",
+        "label": "DAILY BRIEF",
+        "path": "/daily-brief",
+        "description": "Current briefings; historical briefings and the intelligence library remain linked from the archive.",
+        "icon": "newspaper",
+        "keywords": [
+          "daily brief",
+          "briefing",
+          "archive",
+          "reports"
+        ],
+        "match": "prefix"
+      }
+    ]
+  },
+  {
+    "id": "more",
+    "label": "MORE",
+    "description": "Account, reference, and low-frequency utilities",
+    "kind": "more",
+    "items": [
+      {
+        "id": "account",
+        "label": "Account",
+        "path": "/app/account",
+        "description": "Account and subscription settings.",
+        "icon": "user",
+        "keywords": [
+          "account",
+          "settings",
+          "subscription"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "reading-history",
+        "label": "Reading History",
+        "path": "/app/reading-history",
+        "description": "Previously read FAULTLINE content.",
+        "icon": "history",
+        "keywords": [
+          "reading",
+          "history",
+          "saved"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "platform-guide",
+        "label": "Platform Guide",
+        "path": "/app/guide",
+        "description": "How to use FAULTLINE.",
+        "icon": "help",
+        "keywords": [
+          "guide",
+          "help",
+          "getting started"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "glossary",
+        "label": "Glossary",
+        "path": "/app/glossary",
+        "description": "Definitions for FAULTLINE terms.",
+        "icon": "graduation-cap",
+        "keywords": [
+          "glossary",
+          "definitions",
+          "terms"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "methodology",
+        "label": "Methodology",
+        "path": "/methodology",
+        "description": "How FAULTLINE intelligence is built and scored.",
+        "icon": "file-text",
+        "keywords": [
+          "methodology",
+          "model",
+          "evidence"
+        ],
+        "match": "exact"
+      },
+      {
+        "id": "roadmap",
+        "label": "Roadmap",
+        "path": "/app/roadmap",
+        "description": "Product roadmap and planned work.",
+        "icon": "map",
+        "keywords": [
+          "roadmap",
+          "product",
+          "plans"
+        ],
+        "match": "exact"
+      }
+    ]
+  }
+]
