@@ -20,6 +20,7 @@ import {
 } from "../drizzle/schema";
 import { eq, desc, and, lt } from "drizzle-orm";
 import { formatOrdinal } from "../shared/historicalPercentile";
+import { computeRegimePersistence, type RegimePersistenceState } from "./regimePersistence";
 
 // ─── DB helper ───────────────────────────────────────────────────────────────
 
@@ -58,6 +59,7 @@ export interface SeismographState {
     streakDays: number;
     historicalPercentile: number;
     pressureDrivers: string[];
+    regimePersistence: RegimePersistenceState;
   };
   transitionProbabilities: {
     remainInRegime: number;
@@ -785,11 +787,28 @@ export async function recordSeismographReading(params: {
       },
     });
 
+  const priorPersistence = await memoryGetJson<RegimePersistenceState | null>(
+    "regime_persistence_state",
+    null
+  );
+  const regimePersistence = computeRegimePersistence(
+    [
+      { pressureScore, regime },
+      ...priorReadings.map((r) => ({ pressureScore: r.pressureScore, regime: r.regime })),
+    ],
+    priorPersistence?.confirmedRegime ?? null
+  );
+
   await detectRegimeTransition(date, regime, pressureScore, priorReadings);
 
   await memorySetJson(
+    "regime_persistence_state",
+    regimePersistence,
+    "Canonical regime persistence, confirmation tier, and hysteresis state"
+  );
+  await memorySetJson(
     "last_reading",
-    { date, pressureScore, regime, direction, streakDays },
+    { date, pressureScore, regime, direction, streakDays, regimePersistence },
     "Last recorded pressure reading"
   );
   await memorySetJson(
@@ -910,6 +929,14 @@ export async function getSeismographState(): Promise<SeismographState | null> {
 
   const memorySummary = await buildMarketMemorySummary(readings);
   const evolution = computeEvolution(readings);
+  const persistedRegimeState = await memoryGetJson<RegimePersistenceState | null>(
+    "regime_persistence_state",
+    null
+  );
+  const regimePersistence = computeRegimePersistence(
+    readings.map((r) => ({ pressureScore: r.pressureScore, regime: r.regime })),
+    persistedRegimeState?.confirmedRegime ?? null
+  );
 
   return {
     today: {
@@ -922,6 +949,7 @@ export async function getSeismographState(): Promise<SeismographState | null> {
       streakDays: latest.streakDays ?? 0,
       historicalPercentile: latest.historicalPercentile ?? 50,
       pressureDrivers: JSON.parse(latest.pressureDriversJson ?? "[]") as string[],
+      regimePersistence,
     },
     transitionProbabilities: transitionProbs,
     activePatterns,
@@ -955,7 +983,10 @@ Current reading: ${today.pressureScore} (${today.stressLevel}) — ${formatOrdin
 Direction: ${today.direction} | Streak: ${today.streakDays} days | Delta: ${
     today.deltaFromPrior > 0 ? "+" : ""
   }${today.deltaFromPrior} pts
-Regime: ${today.regime}
+Regime snapshot: ${today.regime}
+Persistence: ${today.regimePersistence.label} | Consecutive readings: ${today.regimePersistence.consecutiveReadings} | Last-5 agreement: ${today.regimePersistence.matchingReadingsInLast5}/${today.regimePersistence.windowSize}
+Confirmed regime: ${today.regimePersistence.confirmedRegime ?? "Not yet confirmed"}
+Persistence interpretation: ${today.regimePersistence.explanation}
 ${marketMemorySummary.lastMajorShift ? `Last regime shift: ${marketMemorySummary.lastMajorShift}` : ""}
 
 Regime Transition Probabilities (historical base rates, not predictions):
