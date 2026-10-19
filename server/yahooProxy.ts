@@ -518,6 +518,24 @@ export function getQuoteCacheStats(): { size: number; tickers: string[] } {
 
 // ── Top Stock Performers (Daily Gainers Screener) ─────────────
 
+/**
+ * Intraday range used to rank the volatile screener.
+ * High and low must both be present. The open denominator keeps the prior
+ * fallback (open, then price, then 1) only after those two prints exist.
+ */
+export function volatileRangePercent(q: {
+  regularMarketDayHigh?: unknown;
+  regularMarketDayLow?: unknown;
+  regularMarketOpen?: unknown;
+  regularMarketPrice?: unknown;
+}): number | null {
+  const high = finiteQuoteNumber(q.regularMarketDayHigh);
+  const low = finiteQuoteNumber(q.regularMarketDayLow);
+  if (high == null || low == null) return null;
+  const open = (q.regularMarketOpen ?? q.regularMarketPrice ?? 1) as number;
+  return open > 0 ? ((high - low) / open) * 100 : 0;
+}
+
 export function finiteQuoteNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -980,12 +998,10 @@ export async function getMostVolatileStocks(limit = 100): Promise<StockPerformer
     const results: StockPerformer[] = quotes
       .filter((q: any) => q.symbol && q.regularMarketPrice != null)
       .slice(0, count)
-      .map((q: any) => {
-        const high = finiteQuoteNumber(q.regularMarketDayHigh) ?? finiteQuoteNumber(q.regularMarketPrice) ?? 0;
-        const low  = finiteQuoteNumber(q.regularMarketDayLow) ?? finiteQuoteNumber(q.regularMarketPrice) ?? 0;
-        const open = q.regularMarketOpen    ?? q.regularMarketPrice ?? 1;
-        const intradayRange = open > 0 ? ((high - low) / open) * 100 : 0;
-        return {
+      .flatMap((q: any) => {
+        const intradayRange = volatileRangePercent(q);
+        if (intradayRange == null) return [];
+        return [{
           ticker:        q.symbol,
           name:          q.shortName ?? q.longName ?? q.symbol,
           ...screenerQuoteFields(q),
@@ -995,7 +1011,7 @@ export async function getMostVolatileStocks(limit = 100): Promise<StockPerformer
           intradayRange,
           source:        "yahoo-screener" as const,
           fetchedAt:     Date.now(),
-        };
+        }];
       })
       .sort((a: any, b: any) => b.intradayRange - a.intradayRange);
     performersCache.set(cacheKey, results);
