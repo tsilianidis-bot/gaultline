@@ -63,7 +63,7 @@ type DayTradeSetup = {
   name: string;
   assetType: "stock" | "crypto";
   currentPrice: number;
-  changePercent: number;
+  changePercent: number | null;
   volume: number;
   relativeVolume: number | null;
   marketCap: number | null;
@@ -95,8 +95,8 @@ type DayTradeSetup = {
   marketContext?: string;
   vwapStatus?: string;
   momentumRating?: number;
-  supportLevel?: number;
-  resistanceLevel?: number;
+  supportLevel?: number | null;
+  resistanceLevel?: number | null;
   whyTradeExists?: string;
   whatCancelsThisTrade?: string;
   confidenceReasoning?: string;
@@ -149,10 +149,15 @@ type MarketFavorability = {
 };
 
 // ── Helpers ───────────────────────────────────────────────────
-const fmt = (n: number, dec = 2) =>
-  n >= 1000 ? `$${n.toLocaleString("en-US", { maximumFractionDigits: dec })}` : `$${n.toFixed(dec)}`;
+const fmt = (n: number | null | undefined, dec = 2) => {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "Unavailable";
+  return n >= 1000 ? `$${n.toLocaleString("en-US", { maximumFractionDigits: dec })}` : `$${n.toFixed(dec)}`;
+};
 
-const pct = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
+const pct = (n: number | null | undefined) => {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "Unavailable";
+  return `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
+};
 
 const confColor = (c: number) =>
   c >= 75 ? "#00FF88" : c >= 55 ? "#FFD700" : "#FF6B6B";
@@ -258,7 +263,7 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
           {ds && (
             <div style={{ textAlign: "right" }}>
               <div style={{ ...MONO_SM, color: "#F0F4FF", fontWeight: 600 }}>{fmt(ds.currentPrice)}</div>
-              <div style={{ ...MONO_SM, fontSize: "10px", color: ds.changePercent >= 0 ? "#00FF88" : "#FF6B6B" }}>
+              <div style={{ ...MONO_SM, fontSize: "10px", color: ds.changePercent == null ? "#6B7280" : ds.changePercent >= 0 ? "#00FF88" : "#FF6B6B" }}>
                 {pct(ds.changePercent)}
               </div>
             </div>
@@ -1694,7 +1699,7 @@ function Top10RankedTab({ onSearch }: { onSearch: (sym: string, type: "stock" | 
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
                     <div style={{ ...MONO_SM, fontWeight: 600, color: "#F0F4FF", fontSize: "12px" }}>{fmt(s.currentPrice)}</div>
-                    <div style={{ ...MONO_SM, fontSize: "10px", color: s.changePercent >= 0 ? "#00FF88" : "#FF6B6B" }}>{pct(s.changePercent)}</div>
+                    <div style={{ ...MONO_SM, fontSize: "10px", color: s.changePercent == null ? "#6B7280" : s.changePercent >= 0 ? "#00FF88" : "#FF6B6B" }}>{pct(s.changePercent)}</div>
                   </div>
                   <div style={{ flexShrink: 0 }}><DirIcon d={s.direction} /></div>
                   <div style={{ textAlign: "center", flexShrink: 0 }}>

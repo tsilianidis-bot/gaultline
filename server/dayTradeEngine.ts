@@ -56,8 +56,8 @@ export interface DayTradeSetup {
   name: string;
   assetType: "stock" | "crypto";
   currentPrice: number;
-  changePercent: number;
-  volume: number;
+  changePercent: number | null;
+  volume: number | null;
   relativeVolume: number | null;       // volume / avg volume
   marketCap: number | null;
   capBucket: CapBucket;
@@ -98,8 +98,8 @@ export interface DayTradeReport extends DayTradeSetup {
   marketContext: string;
   vwapStatus: "Above VWAP" | "Below VWAP" | "At VWAP" | "Unknown";
   momentumRating: number;              // 0–100
-  supportLevel: number;
-  resistanceLevel: number;
+  supportLevel: number | null;
+  resistanceLevel: number | null;
   whyTradeExists: string;
   whatCancelsThisTrade: string;
   confidenceReasoning: string;
@@ -199,6 +199,26 @@ function classifyCapBucket(marketCap: number | null): CapBucket {
   if (marketCap < 2_000) return "low";         // < $2B
   if (marketCap < 10_000) return "mid";        // $2B–$10B
   return "large";                               // > $10B
+}
+
+/** Observed market fields for a degraded crypto report. Missing prints stay null. */
+export function degradedCryptoMarketFields(coin: {
+  priceChangePercent24h: number | null;
+  totalVolume: number | null;
+  low24h: number | null;
+  high24h: number | null;
+}): {
+  changePercent: number | null;
+  volume: number | null;
+  supportLevel: number | null;
+  resistanceLevel: number | null;
+} {
+  return {
+    changePercent: typeof coin.priceChangePercent24h === "number" ? coin.priceChangePercent24h : null,
+    volume: typeof coin.totalVolume === "number" ? coin.totalVolume : null,
+    supportLevel: typeof coin.low24h === "number" ? coin.low24h : null,
+    resistanceLevel: typeof coin.high24h === "number" ? coin.high24h : null,
+  };
 }
 
 /** Estimate VWAP from OHLC (simplified intraday proxy) */
@@ -1196,8 +1216,7 @@ export async function dayTradeSymbolSetup(
       log.warn("[DayTradeSymbolSetup] Crypto setup unavailable, returning degraded report", { symbol });
       return {
         symbol: symbol.toUpperCase(), name: symbol.toUpperCase(), assetType: "crypto" as const,
-        currentPrice: coin.currentPrice, changePercent: coin.priceChangePercent24h ?? 0,
-        volume: coin.totalVolume ?? 0, relativeVolume: null, marketCap: coin.marketCap ?? null,
+        currentPrice: coin.currentPrice, ...degradedCryptoMarketFields(coin), relativeVolume: null, marketCap: coin.marketCap ?? null,
         capBucket: "mixed" as const, setupType: "NO_TRADE", direction: "bullish" as const,
         entryZoneLow: 0, entryZoneHigh: 0, target1: 0, target2: 0, stopLoss: 0,
         invalidationLevel: 0, expectedHoldMinutes: 0, confidence: 0, probabilityRating: 0,
@@ -1206,8 +1225,7 @@ export async function dayTradeSymbolSetup(
         catalyst: "N/A", whyToday: "N/A", reasonForRecommendation: "N/A",
         regimeImpact: "N/A", sectorStrength: "N/A", intradayTrend: "Neutral",
         marketContext: "Setup calculation temporarily unavailable. Price data retrieved successfully.",
-        vwapStatus: "Unknown", momentumRating: 0, supportLevel: coin.low24h ?? 0,
-        resistanceLevel: coin.high24h ?? 0, whyTradeExists: "N/A", whatCancelsThisTrade: "N/A",
+        vwapStatus: "Unknown", momentumRating: 0, whyTradeExists: "N/A", whatCancelsThisTrade: "N/A",
         confidenceReasoning: "N/A", catalystSummary: "N/A",
         noTradeReason: "Trade setup calculation temporarily unavailable. Price data was retrieved successfully but the setup engine encountered an error.",
         executionScoreBreakdown: emptyBreakdown, bullCase: "N/A", bearCase: "N/A",
