@@ -1,3 +1,4 @@
+import { PRESSURE_VECTOR_DISPLAY } from "@shared/pressureVectorLabels";
 import {
   DOMAIN_IDS,
   type CoreAssessmentRecord,
@@ -14,29 +15,38 @@ import {
   type ScenarioId,
 } from "./types";
 
-/** Fixed UI labels prevent an upstream payload from redefining the topology. */
+/** Visual node id → canonical Pressure vector. The vector id is not renamed. */
+export const DOMAIN_VECTOR_ID = {
+  liquidity: "liquidity-stress",
+  credit: "credit-contagion",
+  volatility: "volatility-regime",
+  macro: "macro-sensitivity",
+  breadth: "market-breadth",
+  ai: "ai-bubble",
+} as const satisfies Record<DomainId, keyof typeof PRESSURE_VECTOR_DISPLAY>;
+
+/** Fixed UI labels from the canonical vector display. A payload cannot rename a node. */
 export const DOMAIN_LABELS: Record<DomainId, string> = {
-  liquidity: "Liquidity Stress",
-  credit: "Credit Contagion",
-  volatility: "Volatility Regime",
-  macro: "Macro Sensitivity",
-  breadth: "Market Breadth",
-  ai: "AI Bubble Risk",
+  liquidity: PRESSURE_VECTOR_DISPLAY[DOMAIN_VECTOR_ID.liquidity].label,
+  credit: PRESSURE_VECTOR_DISPLAY[DOMAIN_VECTOR_ID.credit].label,
+  volatility: PRESSURE_VECTOR_DISPLAY[DOMAIN_VECTOR_ID.volatility].label,
+  macro: PRESSURE_VECTOR_DISPLAY[DOMAIN_VECTOR_ID.macro].label,
+  breadth: PRESSURE_VECTOR_DISPLAY[DOMAIN_VECTOR_ID.breadth].label,
+  ai: PRESSURE_VECTOR_DISPLAY[DOMAIN_VECTOR_ID.ai].label,
 };
 
-/** Educational copy only: these are descriptions of the topology, not market calls. */
+function emptyDomainSignificance(id: DomainId): string {
+  return `Educational domain: ${PRESSURE_VECTOR_DISPLAY[DOMAIN_VECTOR_ID[id]].description} No admitted market observation is available.`;
+}
+
+/** Educational copy only: these describe the canonical vector, not a market call. */
 const EMPTY_DOMAIN_SIGNIFICANCE: Record<DomainId, string> = {
-  liquidity:
-    "Educational domain: monitors funding and market-liquidity conditions; no admitted market observation is available.",
-  credit:
-    "Educational domain: monitors credit transmission and contagion conditions; no admitted market observation is available.",
-  volatility:
-    "Educational domain: monitors volatility-regime conditions; no admitted market observation is available.",
-  macro:
-    "Educational domain: monitors macro sensitivity; no admitted market observation is available.",
-  breadth:
-    "Educational domain: monitors market participation and breadth; no admitted market observation is available.",
-  ai: "Educational domain: monitors AI-bubble risk conditions; no admitted market observation is available.",
+  liquidity: emptyDomainSignificance("liquidity"),
+  credit: emptyDomainSignificance("credit"),
+  volatility: emptyDomainSignificance("volatility"),
+  macro: emptyDomainSignificance("macro"),
+  breadth: emptyDomainSignificance("breadth"),
+  ai: emptyDomainSignificance("ai"),
 };
 
 const EVIDENCE_STATUSES = new Set<EvidenceStatus>([

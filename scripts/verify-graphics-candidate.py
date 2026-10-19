@@ -37,11 +37,11 @@ CHROMIUM_PATH = "/usr/bin/chromium"
 VIEWPORT_HEIGHT = 1000
 DOMAIN_LABELS = [
     "Liquidity Stress",
-    "Credit Contagion",
-    "Volatility Regime",
+    "Credit Contagion Risk",
+    "Yield Curve (10Y–2Y) & 10Y Level",
     "Macro Sensitivity",
-    "Market Breadth",
-    "AI Bubble Risk",
+    "Labor & Rates (Unemployment, 10Y)",
+    "AI / Speculation (Static Baseline)",
 ]
 DEMO_MARKERS = [
     "ISOLATED DESIGN PREVIEW",

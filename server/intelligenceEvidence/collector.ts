@@ -241,7 +241,7 @@ export function buildSixDomainProjection(observations: ValidatedIntelligenceEvid
     buildDomainProjection("bonds_rates", "Bonds / Rates", observations, observation => ["fred:DGS10", "fred:DGS2"].includes(observation.id)),
     buildDomainProjection("credit", "Credit", observations, observation => observation.id === "fred:BAMLH0A0HYM2" || canonicalFor("credit")(observation)),
     buildDomainProjection("liquidity", "Liquidity", observations, canonicalFor("liquidity")),
-    buildDomainProjection("volatility", "Volatility", observations, observation => observation.id === "quote:VIX" || canonicalFor("volatility")(observation)),
+    buildDomainProjection("volatility", "Cboe Volatility Index", observations, observation => observation.id === "quote:VIX"),
     buildDomainProjection("crypto", "Crypto", observations, observation => observation.id === "coingecko:global-market-cap"),
   ];
 }

@@ -4,13 +4,14 @@ import type {
   IntelligenceEvidenceSnapshot,
   ValidatedIntelligenceEvidence,
 } from "@shared/intelligenceEvidence";
-import { adaptIntelligenceCore, createUnavailableCore } from "./adapter";
-import type {
-  CoreDomain,
-  CoreEvidence,
-  EvidenceStatus,
-  IntelligenceCoreInput,
-  IntelligenceCoreViewModel,
+import { DOMAIN_VECTOR_ID, adaptIntelligenceCore, createUnavailableCore } from "./adapter";
+import {
+  DOMAIN_IDS,
+  type CoreDomain,
+  type CoreEvidence,
+  type EvidenceStatus,
+  type IntelligenceCoreInput,
+  type IntelligenceCoreViewModel,
 } from "./types";
 
 type CanonicalPresentationState = Pick<
@@ -18,19 +19,20 @@ type CanonicalPresentationState = Pick<
   "stateId" | "generatedAt" | "pressureIndex" | "regime"
 >;
 
-const DOMAIN_SOURCES: Array<{
-  id: CoreDomain["id"];
-  projectionId: string | null;
-  /** Exact canonical-engine evidence only; never a label or regex inference. */
-  modelObservationId: string;
-}> = [
-  { id: "liquidity", projectionId: "liquidity", modelObservationId: "canonical:liquidity-stress" },
-  { id: "credit", projectionId: "credit", modelObservationId: "canonical:credit-contagion" },
-  { id: "volatility", projectionId: "volatility", modelObservationId: "canonical:volatility-regime" },
-  { id: "macro", projectionId: "bonds_rates", modelObservationId: "canonical:macro-sensitivity" },
-  { id: "breadth", projectionId: null, modelObservationId: "canonical:market-breadth" },
-  { id: "ai", projectionId: null, modelObservationId: "canonical:ai-bubble" },
-];
+/**
+ * Visual node → canonical Pressure vector. Source series are included only when
+ * that exact observation is already in the snapshot. CPI, PPI, Fed funds, SOFR
+ * and UNRATE are not collected, so those inputs stay unbound. quote:VIX is the
+ * Cboe quote and is not an input of the yield-curve vector.
+ */
+const DOMAIN_SOURCE_SERIES: Record<CoreDomain["id"], readonly string[]> = {
+  liquidity: [],
+  credit: ["fred:BAMLH0A0HYM2"],
+  volatility: ["fred:DGS10", "fred:DGS2"],
+  macro: [],
+  breadth: [],
+  ai: [],
+};
 
 function timestampMs(value: string | null): number | null {
   if (!value) return null;
@@ -159,16 +161,11 @@ function previousObservation(
 
 function domainObservationIds(
   snapshot: IntelligenceEvidenceSnapshot,
-  projectionId: string | null,
-  modelObservationId: string,
+  domainId: CoreDomain["id"],
 ): string[] {
-  const projection = projectionId
-    ? snapshot.domains.find(item => item.id === projectionId)
-    : undefined;
-  const ids = [...(projection?.observationIds ?? [])];
-  if (snapshot.observations.some(observation => observation.id === modelObservationId) && !ids.includes(modelObservationId))
-    ids.push(modelObservationId);
-  return ids;
+  const present = new Set(snapshot.observations.map(observation => observation.id));
+  const modelObservationId = `canonical:${DOMAIN_VECTOR_ID[domainId]}`;
+  return [...DOMAIN_SOURCE_SERIES[domainId], modelObservationId].filter(id => present.has(id));
 }
 
 function toCoreDomains(
@@ -178,11 +175,8 @@ function toCoreDomains(
 ): CoreDomain[] {
   const evidenceById = new Map(evidence.map(item => [item.id, item]));
   const observationById = new Map(snapshot.observations.map(observation => [observation.id, observation]));
-  return DOMAIN_SOURCES.map(({ id, projectionId, modelObservationId }) => {
-    const projection = projectionId
-      ? snapshot.domains.find(item => item.id === projectionId)
-      : undefined;
-    const evidenceIds = domainObservationIds(snapshot, projectionId, modelObservationId);
+  return DOMAIN_IDS.map(id => {
+    const evidenceIds = domainObservationIds(snapshot, id);
     const domainObservations = evidenceIds
       .map(itemId => observationById.get(itemId))
       .filter((item): item is ValidatedIntelligenceEvidence => item !== undefined);
@@ -199,7 +193,7 @@ function toCoreDomains(
         .sort()
         .at(-1) ?? null,
       evidenceIds,
-      significance: projection?.limitation ?? "Source evidence is available without an approved domain assessment.",
+      significance: "Source evidence is available without an approved domain assessment.",
       context: null,
       developingSince: null,
       historicalComparison: null,

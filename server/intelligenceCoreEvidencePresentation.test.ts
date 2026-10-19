@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { IntelligenceEvidenceResponse, IntelligenceEvidenceSnapshot } from "@shared/intelligenceEvidence";
+import { pressureVectorLabel } from "@shared/pressureVectorLabels";
 import { presentVerifiedEvidenceCore } from "../client/src/components/intelligence-core-visual/evidencePresentation";
 
 function response(): IntelligenceEvidenceResponse {
@@ -103,7 +104,12 @@ describe("verified evidence Core presentation", () => {
     expect(model.evidence).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: "quote:VIX", status: "current", validUntil: expect.any(String) }),
     ]));
-    expect(model.domains.find(domain => domain.id === "volatility")?.status).toBe("current");
+    const yieldCurve = model.domains.find(domain => domain.id === "volatility");
+    expect(yieldCurve?.label).toBe(pressureVectorLabel("volatility-regime"));
+    expect(yieldCurve?.label).not.toBe("Volatility Regime");
+    expect(yieldCurve?.status).toBe("unavailable");
+    expect(yieldCurve?.evidenceIds ?? []).not.toContain("quote:VIX");
+    expect(model.domains.find(domain => domain.id === "breadth")?.label).toBe(pressureVectorLabel("market-breadth"));
     expect(model.domains.find(domain => domain.id === "breadth")?.status).toBe("unavailable");
     expect(model.domains.find(domain => domain.id === "ai")?.status).toBe("unavailable");
     expect(model.scenarios).toHaveLength(3);
@@ -141,6 +147,18 @@ describe("verified evidence Core presentation", () => {
         temporalStatus: "released",
         temporalDetail: "Released macro observation.",
       },
+      {
+        ...quote,
+        id: "fred:DGS2",
+        label: "2-year Treasury yield",
+        kind: "macro_release",
+        provider: "Federal Reserve Economic Data (FRED)",
+        value: 3.77,
+        unit: "percent",
+        sourceIdentifier: "fred:DGS2",
+        temporalStatus: "released",
+        temporalDetail: "Released macro observation.",
+      },
       ...[
         "liquidity-stress",
         "credit-contagion",
@@ -150,17 +168,28 @@ describe("verified evidence Core presentation", () => {
         "ai-bubble",
       ].map(engineId => canonicalEngine(quote, engineId)),
     );
-    snapshot.domains = snapshot.domains.map(domain => domain.id === "bonds_rates"
-      ? { ...domain, observationIds: ["fred:DGS10"], currentObservationIds: ["fred:DGS10"] }
-      : domain,
-    );
+    snapshot.domains = snapshot.domains.map(domain => {
+      if (domain.id === "bonds_rates") {
+        return { ...domain, observationIds: ["fred:DGS10", "fred:DGS2"], currentObservationIds: ["fred:DGS10", "fred:DGS2"] };
+      }
+      if (domain.id === "volatility") {
+        return { ...domain, observationIds: ["quote:VIX", "canonical:volatility-regime"], currentObservationIds: ["quote:VIX"] };
+      }
+      return domain;
+    });
 
     const model = presentVerifiedEvidenceCore(value, canonical());
     expect(model.evidence).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "quote:VIX", status: "current" }),
       expect.objectContaining({
         id: "fred:DGS10",
         status: "recent",
         sourceUrl: "https://fred.stlouisfed.org/series/DGS10",
+      }),
+      expect.objectContaining({
+        id: "fred:DGS2",
+        status: "recent",
+        sourceUrl: "https://fred.stlouisfed.org/series/DGS2",
       }),
       ...[
         "liquidity-stress",
@@ -171,11 +200,37 @@ describe("verified evidence Core presentation", () => {
         "ai-bubble",
       ].map(engineId => expect.objectContaining({ id: `canonical:${engineId}`, status: "static" })),
     ]));
-    expect(model.domains.find(domain => domain.id === "macro")).toMatchObject({
+    expect(model.domains.find(domain => domain.id === "volatility")).toMatchObject({
+      label: pressureVectorLabel("volatility-regime"),
       status: "recent",
-      evidenceIds: ["fred:DGS10", "canonical:macro-sensitivity"],
+      evidenceIds: ["fred:DGS10", "fred:DGS2", "canonical:volatility-regime"],
     });
-    for (const id of ["liquidity", "credit", "volatility", "breadth", "ai"] as const) {
+    expect(model.domains.find(domain => domain.id === "macro")).toMatchObject({
+      label: pressureVectorLabel("macro-sensitivity"),
+      status: "static",
+      evidenceIds: ["canonical:macro-sensitivity"],
+    });
+    expect(model.domains.find(domain => domain.id === "breadth")).toMatchObject({
+      label: pressureVectorLabel("market-breadth"),
+      status: "static",
+      evidenceIds: ["canonical:market-breadth"],
+    });
+    for (const domain of model.domains) {
+      expect(domain.evidenceIds).not.toContain("quote:VIX");
+      expect(domain.evidenceIds).not.toEqual(expect.arrayContaining(["fred:CPIAUCSL"]));
+      expect(domain.assessment).toBeNull();
+      expect(domain.direction).toBe("unknown");
+      expect(domain.context).toBeNull();
+      expect(domain.developingSince).toBeNull();
+      expect(domain.historicalComparison).toBeNull();
+      expect(domain.confidence ?? null).toBeNull();
+      expect(domain.confirmationConditions ?? []).toEqual([]);
+      expect(domain.invalidationConditions ?? []).toEqual([]);
+      expect(domain.pressureContribution ?? null).toBeNull();
+    }
+    expect(model.domains.find(domain => domain.id === "macro")?.evidenceIds).not.toContain("fred:DGS10");
+    expect(model.domains.find(domain => domain.id === "breadth")?.evidenceIds).not.toContain("fred:DGS10");
+    for (const id of ["liquidity", "credit", "ai"] as const) {
       expect(model.domains.find(domain => domain.id === id)).toMatchObject({
         status: "static",
         confidence: null,
@@ -213,7 +268,12 @@ describe("verified evidence Core presentation", () => {
     const model = presentVerifiedEvidenceCore(value, canonical());
     expect(model.evidence.find(item => item.id === "fred:DGS10")?.status).toBe("stale");
     expect(model.evidence.find(item => item.id === "canonical:liquidity-stress")?.status).toBe("stale");
-    expect(model.domains.find(domain => domain.id === "macro")?.status).toBe("stale");
+    expect(model.domains.find(domain => domain.id === "volatility")).toMatchObject({
+      status: "stale",
+      evidenceIds: ["fred:DGS10"],
+    });
+    expect(model.domains.find(domain => domain.id === "macro")?.evidenceIds ?? []).not.toContain("fred:DGS10");
+    expect(model.domains.find(domain => domain.id === "macro")?.status).toBe("unavailable");
     expect(model.domains.find(domain => domain.id === "liquidity")?.status).toBe("stale");
   });
 
@@ -233,17 +293,36 @@ describe("verified evidence Core presentation", () => {
   it("exposes an exact, strictly later prior source observation without calculating a domain change", () => {
     const value = response();
     const snapshot = snapshotOf(value);
+    snapshot.observations.push({
+      ...snapshot.observations[0]!,
+      id: "fred:DGS10",
+      label: "10-year Treasury yield",
+      kind: "macro_release",
+      provider: "Federal Reserve Economic Data (FRED)",
+      value: 4.12,
+      unit: "percent",
+      sourceIdentifier: "fred:DGS10",
+      temporalStatus: "released",
+      temporalDetail: "Released macro observation.",
+    });
     const previous = structuredClone(snapshot);
     previous.observations[0] = {
       ...previous.observations[0]!,
       value: 17.5,
       observedAt: new Date(Date.now() - 120_000).toISOString(),
     };
+    const priorYield = previous.observations.find(item => item.id === "fred:DGS10")!;
+    priorYield.value = 4.05;
+    priorYield.observedAt = new Date(Date.now() - 2 * 24 * 60 * 60_000).toISOString();
 
     const model = presentVerifiedEvidenceCore(value, canonical(), previous);
-    expect(model.domains.find(domain => domain.id === "volatility")?.previousObservation).toBe(
-      `quote:VIX (yahoo:^VIX): 17.5 points at ${previous.observations[0]!.observedAt} → 18.5 points at ${snapshot.observations[0]!.observedAt}`,
+    const yieldCurve = model.domains.find(domain => domain.id === "volatility");
+    expect(yieldCurve?.evidenceIds).toEqual(["fred:DGS10"]);
+    expect(yieldCurve?.evidenceIds).not.toContain("quote:VIX");
+    expect(yieldCurve?.previousObservation).toBe(
+      `fred:DGS10 (fred:DGS10): 4.05 percent at ${priorYield.observedAt} → 4.12 percent at ${snapshot.observations.find(item => item.id === "fred:DGS10")!.observedAt}`,
     );
+    expect(yieldCurve?.previousObservation).not.toContain("quote:VIX");
   });
 
   it("rejects an older response rather than regressing from a newer same-state snapshot", () => {
@@ -274,12 +353,22 @@ describe("verified evidence Core presentation", () => {
   ])("does not present a prior value for $name", ({ priorObservedAt }) => {
     const value = response();
     const snapshot = snapshotOf(value);
+    snapshot.observations.push({
+      ...snapshot.observations[0]!,
+      id: "fred:DGS10",
+      label: "10-year Treasury yield",
+      kind: "macro_release",
+      provider: "Federal Reserve Economic Data (FRED)",
+      value: 4.12,
+      unit: "percent",
+      sourceIdentifier: "fred:DGS10",
+      temporalStatus: "released",
+      temporalDetail: "Released macro observation.",
+    });
     const previous = structuredClone(snapshot);
-    previous.observations[0] = {
-      ...previous.observations[0]!,
-      value: 17.5,
-      observedAt: priorObservedAt(snapshot),
-    };
+    const priorYield = previous.observations.find(item => item.id === "fred:DGS10")!;
+    priorYield.value = 4.05;
+    priorYield.observedAt = priorObservedAt(snapshot);
 
     const model = presentVerifiedEvidenceCore(value, canonical(), previous);
     expect(model.domains.find(domain => domain.id === "volatility")?.previousObservation).toBeNull();
