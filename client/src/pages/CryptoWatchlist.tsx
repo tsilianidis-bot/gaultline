@@ -21,7 +21,7 @@ const RAJDHANI = "'Rajdhani', sans-serif";
 
 type CryptoRiskLevel = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
 type CryptoSignalBias = "Bullish" | "Neutral" | "Bearish";
-type MomentumDir = "Accelerating" | "Stable" | "Decelerating" | "Reversing";
+type MomentumDir = "Accelerating" | "Stable" | "Decelerating" | "Reversing" | "Unavailable";
 type CryptoSignalLabel =
   | "Speculative Acceleration" | "Liquidity Fragile" | "Momentum Breakout"
   | "AI Narrative Exposure" | "Macro Sensitive" | "Stablecoin Stress"
@@ -57,7 +57,7 @@ const LABEL_COLORS: Partial<Record<CryptoSignalLabel, string>> = {
   "Neutral / Watch": "#64748B",
 };
 const MOMENTUM_COLORS: Record<MomentumDir, string> = {
-  Accelerating: "#00FF88", Stable: "#94A3B8", Decelerating: "#FF9500", Reversing: "#FF2D55",
+  Accelerating: "#00FF88", Stable: "#94A3B8", Decelerating: "#FF9500", Reversing: "#FF2D55", Unavailable: "#64748B",
 };
 
 function LabelBadge({ label }: { label: CryptoSignalLabel }) {

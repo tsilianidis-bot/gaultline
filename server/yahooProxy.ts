@@ -518,13 +518,64 @@ export function getQuoteCacheStats(): { size: number; tickers: string[] } {
 
 // ── Top Stock Performers (Daily Gainers Screener) ─────────────
 
+export function finiteQuoteNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/** A present screener number, including 0, is returned unchanged. A missing one stays null. */
+export function screenerQuoteFields(q: {
+  regularMarketPrice?: unknown;
+  regularMarketChange?: unknown;
+  regularMarketChangePercent?: unknown;
+  regularMarketVolume?: unknown;
+}): { price: number | null; change: number | null; changePercent: number | null; volume: number | null } {
+  return {
+    price: finiteQuoteNumber(q.regularMarketPrice),
+    change: finiteQuoteNumber(q.regularMarketChange),
+    changePercent: finiteQuoteNumber(q.regularMarketChangePercent),
+    volume: finiteQuoteNumber(q.regularMarketVolume),
+  };
+}
+
+/**
+ * Polygon snapshot quote. When both closes are present, change is close - previous close.
+ * A missing close, change, or volume stays null. `day` uses only today's close as the price.
+ */
+export function polygonSnapshotQuoteFields(
+  t: { day?: { c?: unknown; v?: unknown } | null; prevDay?: { c?: unknown } | null; todaysChangePerc?: unknown },
+  priceMode: "day-or-prev" | "day" = "day-or-prev",
+): { price: number | null; change: number | null; changePercent: number | null; volume: number | null } {
+  const close = finiteQuoteNumber(t.day?.c);
+  const prev = finiteQuoteNumber(t.prevDay?.c);
+  return {
+    price: priceMode === "day" ? close : (close ?? prev),
+    change: close != null && prev != null ? close - prev : null,
+    changePercent: finiteQuoteNumber(t.todaysChangePerc),
+    volume: finiteQuoteNumber(t.day?.v),
+  };
+}
+
+export function compareNullableDesc(a: number | null, b: number | null): number {
+  if (typeof a === "number" && typeof b === "number") return b - a;
+  if (typeof a === "number") return -1;
+  if (typeof b === "number") return 1;
+  return 0;
+}
+
+export function compareNullableAsc(a: number | null, b: number | null): number {
+  if (typeof a === "number" && typeof b === "number") return a - b;
+  if (typeof a === "number") return -1;
+  if (typeof b === "number") return 1;
+  return 0;
+}
+
 export interface StockPerformer {
   ticker: string;
   name: string;
-  price: number;
-  change: number;
-  changePercent: number;
-  volume: number;
+  price: number | null;
+  change: number | null;
+  changePercent: number | null;
+  volume: number | null;
   marketCap: number | null;
   sector: string | null;
   avgVolume: number | null;
@@ -574,17 +625,14 @@ export async function getTopStockPerformers(limit = 100): Promise<StockPerformer
       .map((q: any) => ({
         ticker:        q.symbol,
         name:          q.shortName ?? q.longName ?? q.symbol,
-        price:         q.regularMarketPrice ?? 0,
-        change:        q.regularMarketChange ?? 0,
-        changePercent: q.regularMarketChangePercent ?? 0,
-        volume:        q.regularMarketVolume ?? 0,
+        ...screenerQuoteFields(q),
         marketCap:     q.marketCap ?? null,
         sector:        q.sector ?? null,
         avgVolume:     q.averageDailyVolume3Month ?? null,
         source:        "yahoo-screener" as const,
         fetchedAt:     Date.now(),
       }))
-      .sort((a, b) => b.changePercent - a.changePercent);
+      .sort((a, b) => compareNullableDesc(a.changePercent, b.changePercent));
 
     performersCache.set(cacheKey, performers);
     log.info(`[Yahoo Proxy] Top ${performers.length} stock performers fetched`);
@@ -620,17 +668,14 @@ async function getPolygonTopGainers(limit: number): Promise<StockPerformer[]> {
       .map((t: any) => ({
         ticker:        t.ticker,
         name:          t.ticker,
-        price:         t.day?.c ?? t.prevDay?.c ?? 0,
-        change:        (t.day?.c ?? 0) - (t.prevDay?.c ?? 0),
-        changePercent: (t.todaysChangePerc ?? 0),
-        volume:        t.day?.v ?? 0,
+        ...polygonSnapshotQuoteFields(t),
         marketCap:     null,
         sector:        null,
         avgVolume:     null,
         source:        "yahoo-screener" as const,
         fetchedAt:     Date.now(),
       }))
-      .sort((a, b) => b.changePercent - a.changePercent);
+      .sort((a, b) => compareNullableDesc(a.changePercent, b.changePercent));
 
   } catch (err: any) {
     log.warn(`[Yahoo Proxy] Polygon gainers fallback also failed: ${err?.message}`);
@@ -668,17 +713,14 @@ export async function getTopStockLosers(limit = 100): Promise<StockPerformer[]> 
       .map((q: any) => ({
         ticker:        q.symbol,
         name:          q.shortName ?? q.longName ?? q.symbol,
-        price:         q.regularMarketPrice ?? 0,
-        change:        q.regularMarketChange ?? 0,
-        changePercent: q.regularMarketChangePercent ?? 0,
-        volume:        q.regularMarketVolume ?? 0,
+        ...screenerQuoteFields(q),
         marketCap:     q.marketCap ?? null,
         sector:        q.sector ?? null,
         avgVolume:     q.averageDailyVolume3Month ?? null,
         source:        "yahoo-screener" as const,
         fetchedAt:     Date.now(),
       }))
-      .sort((a, b) => a.changePercent - b.changePercent);
+      .sort((a, b) => compareNullableAsc(a.changePercent, b.changePercent));
     performersCache.set(cacheKey, losers);
     log.info(`[Yahoo Proxy] Top ${losers.length} stock losers fetched`);
     return losers;
@@ -719,17 +761,14 @@ export async function getTopStockByVolume(limit = 100): Promise<StockPerformer[]
       .map((q: any) => ({
         ticker:        q.symbol,
         name:          q.shortName ?? q.longName ?? q.symbol,
-        price:         q.regularMarketPrice ?? 0,
-        change:        q.regularMarketChange ?? 0,
-        changePercent: q.regularMarketChangePercent ?? 0,
-        volume:        q.regularMarketVolume ?? 0,
+        ...screenerQuoteFields(q),
         marketCap:     q.marketCap ?? null,
         sector:        q.sector ?? null,
         avgVolume:     q.averageDailyVolume3Month ?? null,
         source:        "yahoo-screener" as const,
         fetchedAt:     Date.now(),
       }))
-      .sort((a, b) => b.volume - a.volume);
+      .sort((a, b) => compareNullableDesc(a.volume, b.volume));
     performersCache.set(cacheKey, byVolume);
     log.info(`[Yahoo Proxy] Top ${byVolume.length} stocks by volume fetched`);
     return byVolume;
@@ -753,16 +792,13 @@ async function getPolygonTopLosers(limit: number): Promise<StockPerformer[]> {
     return tickers.slice(0, limit).map((t: any) => ({
       ticker:        t.ticker,
       name:          t.ticker,
-      price:         t.day?.c ?? t.prevDay?.c ?? 0,
-      change:        (t.day?.c ?? 0) - (t.prevDay?.c ?? 0),
-      changePercent: t.todaysChangePerc ?? 0,
-      volume:        t.day?.v ?? 0,
+      ...polygonSnapshotQuoteFields(t),
       marketCap:     null,
       sector:        null,
       avgVolume:     null,
       source:        "yahoo-screener" as const,
       fetchedAt:     Date.now(),
-    })).sort((a, b) => a.changePercent - b.changePercent);
+    })).sort((a, b) => compareNullableAsc(a.changePercent, b.changePercent));
   } catch (err: any) {
     log.warn(`[Yahoo Proxy] Polygon losers fallback failed: ${err?.message}`);
     return [];
@@ -786,17 +822,14 @@ async function getPolygonMostActive(limit: number): Promise<StockPerformer[]> {
       .map((t: any) => ({
         ticker:        t.ticker,
         name:          t.ticker,
-        price:         t.day?.c ?? 0,
-        change:        (t.day?.c ?? 0) - (t.prevDay?.c ?? 0),
-        changePercent: t.todaysChangePerc ?? 0,
-        volume:        t.day?.v ?? 0,
+        ...polygonSnapshotQuoteFields(t, "day"),
         marketCap:     null,
         sector:        null,
         avgVolume:     null,
         source:        "yahoo-screener" as const,
         fetchedAt:     Date.now(),
       }))
-      .sort((a, b) => b.volume - a.volume)
+      .sort((a, b) => compareNullableDesc(a.volume, b.volume))
       .slice(0, limit);
   } catch (err: any) {
     log.warn(`[Yahoo Proxy] Polygon most-active fallback failed: ${err?.message}`);
@@ -837,10 +870,7 @@ export async function getTopNear52WeekHigh(limit = 100): Promise<StockPerformer[
       .map((q: any) => ({
         ticker:        q.symbol,
         name:          q.shortName ?? q.longName ?? q.symbol,
-        price:         q.regularMarketPrice ?? 0,
-        change:        q.regularMarketChange ?? 0,
-        changePercent: q.regularMarketChangePercent ?? 0,
-        volume:        q.regularMarketVolume ?? 0,
+        ...screenerQuoteFields(q),
         marketCap:     q.marketCap ?? null,
         sector:        q.sector ?? null,
         avgVolume:     q.averageDailyVolume3Month ?? null,
@@ -896,10 +926,7 @@ export async function getTopNear52WeekLow(limit = 100): Promise<StockPerformer[]
       .map((q: any) => ({
         ticker:        q.symbol,
         name:          q.shortName ?? q.longName ?? q.symbol,
-        price:         q.regularMarketPrice ?? 0,
-        change:        q.regularMarketChange ?? 0,
-        changePercent: q.regularMarketChangePercent ?? 0,
-        volume:        q.regularMarketVolume ?? 0,
+        ...screenerQuoteFields(q),
         marketCap:     q.marketCap ?? null,
         sector:        q.sector ?? null,
         avgVolume:     q.averageDailyVolume3Month ?? null,
@@ -954,17 +981,14 @@ export async function getMostVolatileStocks(limit = 100): Promise<StockPerformer
       .filter((q: any) => q.symbol && q.regularMarketPrice != null)
       .slice(0, count)
       .map((q: any) => {
-        const high = q.regularMarketDayHigh ?? q.regularMarketPrice ?? 0;
-        const low  = q.regularMarketDayLow  ?? q.regularMarketPrice ?? 0;
+        const high = finiteQuoteNumber(q.regularMarketDayHigh) ?? finiteQuoteNumber(q.regularMarketPrice) ?? 0;
+        const low  = finiteQuoteNumber(q.regularMarketDayLow) ?? finiteQuoteNumber(q.regularMarketPrice) ?? 0;
         const open = q.regularMarketOpen    ?? q.regularMarketPrice ?? 1;
         const intradayRange = open > 0 ? ((high - low) / open) * 100 : 0;
         return {
           ticker:        q.symbol,
           name:          q.shortName ?? q.longName ?? q.symbol,
-          price:         q.regularMarketPrice ?? 0,
-          change:        q.regularMarketChange ?? 0,
-          changePercent: q.regularMarketChangePercent ?? 0,
-          volume:        q.regularMarketVolume ?? 0,
+          ...screenerQuoteFields(q),
           marketCap:     q.marketCap ?? null,
           sector:        q.sector ?? null,
           avgVolume:     q.averageDailyVolume3Month ?? null,
@@ -1014,17 +1038,14 @@ export async function getSmallCapRunners(limit = 100): Promise<StockPerformer[]>
       .map((q: any) => ({
         ticker:        q.symbol,
         name:          q.shortName ?? q.longName ?? q.symbol,
-        price:         q.regularMarketPrice ?? 0,
-        change:        q.regularMarketChange ?? 0,
-        changePercent: q.regularMarketChangePercent ?? 0,
-        volume:        q.regularMarketVolume ?? 0,
+        ...screenerQuoteFields(q),
         marketCap:     q.marketCap ?? null,
         sector:        q.sector ?? null,
         avgVolume:     q.averageDailyVolume3Month ?? null,
         source:        "yahoo-screener" as const,
         fetchedAt:     Date.now(),
       }))
-      .sort((a, b) => b.changePercent - a.changePercent);
+      .sort((a, b) => compareNullableDesc(a.changePercent, b.changePercent));
     performersCache.set(cacheKey, results);
     log.info(`[Yahoo Proxy] Top ${results.length} small-cap runners fetched`);
     return results;

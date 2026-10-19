@@ -26,7 +26,7 @@ interface CryptoAssetIntelligence {
   marketCap: number; totalVolume: number;
   signalBias: "Bullish" | "Neutral" | "Bearish";
   signalScore: number; riskLevel: CryptoRiskLevel; riskScore: number;
-  momentum: "Accelerating" | "Stable" | "Decelerating" | "Reversing";
+  momentum: "Accelerating" | "Stable" | "Decelerating" | "Reversing" | "Unavailable";
   primaryLabel: CryptoSignalLabel; secondaryLabels: CryptoSignalLabel[];
   liquiditySensitivity: "Low" | "Moderate" | "High" | "Extreme";
   speculativeIntensity: "Low" | "Moderate" | "High" | "Extreme";

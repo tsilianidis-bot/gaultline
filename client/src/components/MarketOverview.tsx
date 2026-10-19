@@ -13,17 +13,20 @@ import { Search, TrendingUp, TrendingDown, Minus, Activity, Star, ChevronRight, 
 import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
 
 // ── Color helpers ─────────────────────────────────────────────
-function changeColor(pct: number): string {
+function changeColor(pct: number | null): string {
+  if (pct == null || !Number.isFinite(pct)) return "#64748B";
   if (pct > 0) return "#00FF88";
   if (pct < 0) return "#FF2D55";
   return "#64748B";
 }
-function changeBg(pct: number): string {
+function changeBg(pct: number | null): string {
+  if (pct == null || !Number.isFinite(pct)) return "transparent";
   if (pct > 0) return "rgba(0,255,136,0.07)";
   if (pct < 0) return "rgba(255,45,85,0.07)";
   return "transparent";
 }
-function fmtPct(v: number): string {
+function fmtPct(v: number | null): string {
+  if (typeof v !== "number" || !Number.isFinite(v)) return "Unavailable";
   const sign = v >= 0 ? "+" : "";
   return `${sign}${v.toFixed(2)}%`;
 }
@@ -268,8 +271,8 @@ function SnapshotTile({ label, price, changePct, sub }: { label: string; price: 
 
 // ── Mover row ─────────────────────────────────────────────────
 function MoverRow({ ticker, name, price, changePct, volume, marketCap, rank }: {
-  ticker: string; name: string; price: number; changePct: number;
-  volume?: number; marketCap?: number | null; rank?: number;
+  ticker: string; name: string; price: number | null; changePct: number | null;
+  volume?: number | null; marketCap?: number | null; rank?: number;
 }) {
   const color = changeColor(changePct);
   return (

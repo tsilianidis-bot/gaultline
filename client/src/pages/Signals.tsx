@@ -38,13 +38,13 @@ import { formatEt } from "@shared/credibilityLabels";
 // ── Live Quote Types ──────────────────────────────────────────
 interface LiveQuote {
   ticker: string;
-  price: number;
+  price: number | null;
   open: number;
   high: number;
   low: number;
-  changePercent: number;
-  volume: number;
-  volumeMillions: number;
+  changePercent: number | null;
+  volume: number | null;
+  volumeMillions: number | null;
   /** Market time of the quote (ms); null when the server has none — the as-of is then omitted. */
   timestamp: number | null;
   marketStatus: 'open' | 'closed' | 'extended' | 'unknown';
@@ -348,7 +348,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
   const sparklineData = quote.sparkline;
   const isLiveData = quote.available;
 
-  const positive = (changePercent ?? 0) >= 0;
+  const positive = typeof changePercent === "number" && changePercent >= 0;
 
   // Trading signal colors for card border
   const actionColor = tradingSignal
@@ -1112,7 +1112,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
 function TopSignalCard({ label, stock, color, icon, liveQuote }: { label: string; stock: SignalStock | null; color: string; icon: string; liveQuote?: LiveQuote }) {
   // Server quote only; no quote → "—" + UNAVAILABLE (never signalsData reference values).
   const quote = signalQuoteView(liveQuote);
-  const positive = (quote.changePercent ?? 0) >= 0;
+  const positive = typeof quote.changePercent === "number" && quote.changePercent >= 0;
   return (
     <div style={{
       background: 'rgba(8,10,14,0.9)',
@@ -1452,12 +1452,12 @@ function SignalsInner() {
   const enrichedStocks = useMemo((): SignalStock[] => {
     return SIGNAL_STOCKS.map(s => {
       const q = quoteMap.get(s.ticker);
-      if (!q || q.price === 0) return s;
+      if (!q || q.price == null || q.price === 0 || q.changePercent == null) return s;
       return {
         ...s,
         price: q.price,
         changePercent: q.changePercent,
-        volume: q.volumeMillions,
+        volume: q.volumeMillions ?? s.volume,
         sparkline: q.sparkline.length > 0 ? q.sparkline : s.sparkline,
       };
     });
@@ -1555,7 +1555,7 @@ function SignalsInner() {
   const tradingSignalsInput = useMemo(() => ({
     tickers: displayedStocks.flatMap(({ stock }) => {
       const lq = quoteMap.get(stock.ticker);
-      if (!lq || !hasUsableSignalQuote(lq)) return [];
+      if (!lq || !hasUsableSignalQuote(lq) || lq.volumeMillions == null) return [];
       return [{
         ticker: stock.ticker,
         price: lq.price,

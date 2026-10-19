@@ -1040,12 +1040,15 @@ export async function dayTradeScanner(input: ScannerInput): Promise<DayTradeSetu
       for (let i = 0; i < Math.min(filtered.length, 20); i += BATCH) {
         const batch = filtered.slice(i, i + BATCH);
         const setups = await Promise.all(
-          batch.map(p => buildStockSetup(
-            p.ticker, p.name, p.price, p.changePercent,
-            p.volume, p.avgVolume, p.marketCap,
-            p.price * 0.995, p.price * 1.02, p.price * 0.98, // open/high/low proxy
-            input.direction, input.riskProfile, regime, regimePressure
-          ).catch(() => null))
+          batch.map(p => {
+            if (p.price == null || p.changePercent == null || p.volume == null) return null;
+            return buildStockSetup(
+              p.ticker, p.name, p.price, p.changePercent,
+              p.volume, p.avgVolume, p.marketCap,
+              p.price * 0.995, p.price * 1.02, p.price * 0.98, // open/high/low proxy
+              input.direction, input.riskProfile, regime, regimePressure
+            ).catch(() => null);
+          })
         );
         for (const s of setups) {
           if (s && s.setupType !== "NO_TRADE" && s.confidence >= MIN_CONFIDENCE) {
@@ -1294,7 +1297,7 @@ export async function dayTradeSymbolSetup(
 
   // ── Stock report ──
   const quote = await getQuote(symbol);
-  if (!quote || !quote.price || quote.source === "error") {
+  if (!quote || !quote.price || quote.source === "error" || quote.changePercent == null || quote.volume == null) {
     const noTradeReport: DayTradeReport = {
       symbol: symbol.toUpperCase(),
       name: symbol.toUpperCase(),
@@ -1352,8 +1355,8 @@ export async function dayTradeSymbolSetup(
   }
 
   const price = quote.price;
-  const changePercent = quote.changePercent ?? 0;
-  const volume = quote.volume ?? 0;
+  const changePercent = quote.changePercent;
+  const volume = quote.volume;
   const open = quote.open ?? price;
   const high = quote.high ?? price * 1.01;
   const low = quote.low ?? price * 0.99;
@@ -1502,21 +1505,24 @@ export async function getDayTradeFavorability(): Promise<MarketFavorability> {
       getTopMarkets(10).catch(() => []),
     ]);
 
-    bullishCount = gainers.filter(g => g.changePercent > 2).length;
-    bearishCount = losers.filter(l => l.changePercent < -2).length;
-    highConfCount = gainers.filter(g => g.changePercent > 3 && (g.avgVolume ? g.volume / g.avgVolume > 1.5 : false)).length;
+    bullishCount = gainers.filter(g => g.changePercent != null && g.changePercent > 2).length;
+    bearishCount = losers.filter(l => l.changePercent != null && l.changePercent < -2).length;
+    highConfCount = gainers.filter(g => g.changePercent != null && g.volume != null && g.changePercent > 3 && (g.avgVolume ? g.volume / g.avgVolume > 1.5 : false)).length;
 
     topMovers = [
-      ...gainers.slice(0, 3).map(g => ({ symbol: g.ticker, name: g.name, changePercent: g.changePercent, assetType: "stock" as const })),
-      ...coins.slice(0, 3).map(c => ({ symbol: c.symbol.toUpperCase(), name: c.name, changePercent: c.priceChangePercent24h, assetType: "crypto" as const })),
+      ...gainers.flatMap(g => (g.changePercent == null ? [] : [{ symbol: g.ticker, name: g.name, changePercent: g.changePercent, assetType: "stock" as const }])).slice(0, 3),
+      ...coins.flatMap(c => (typeof c.priceChangePercent24h === "number" ? [{ symbol: c.symbol.toUpperCase(), name: c.name, changePercent: c.priceChangePercent24h, assetType: "crypto" as const }] : [])).slice(0, 3),
     ].sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent)).slice(0, 6);
 
-    topRelVol = byVol.slice(0, 5).map(s => ({
-      symbol: s.ticker,
-      name: s.name,
-      relVol: s.avgVolume ? roundTo(s.volume / s.avgVolume, 2) : 1.0,
-      assetType: "stock" as const,
-    }));
+    topRelVol = byVol.flatMap(s => {
+      if (s.volume == null) return [];
+      return [{
+        symbol: s.ticker,
+        name: s.name,
+        relVol: s.avgVolume ? roundTo(s.volume / s.avgVolume, 2) : 1.0,
+        assetType: "stock" as const,
+      }];
+    }).slice(0, 5);
   } catch { /* non-fatal */ }
 
   // Compute overall score

@@ -29,7 +29,7 @@ type CryptoSignalLabel =
 
 type CryptoSignalBias = "Bullish" | "Neutral" | "Bearish";
 type CryptoRiskLevel  = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
-type MomentumDir      = "Accelerating" | "Stable" | "Decelerating" | "Reversing";
+type MomentumDir      = "Accelerating" | "Stable" | "Decelerating" | "Reversing" | "Unavailable";
 
 interface CryptoSignalVector {
   label: string;

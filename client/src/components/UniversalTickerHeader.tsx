@@ -101,8 +101,9 @@ export function UniversalTickerHeader({ symbol, assetType = "stock", className =
 
   if (isError || !data) return null;
 
-  const chgColor = (data.changePercent ?? 0) >= 0 ? "#22C55E" : "#FF2D55";
-  const chgSign  = (data.changePercent ?? 0) >= 0 ? "+" : "";
+  const changePct = typeof data.changePercent === "number" && Number.isFinite(data.changePercent) ? data.changePercent : null;
+  const chgColor = changePct == null ? "#64748B" : changePct >= 0 ? "#22C55E" : "#FF2D55";
+  const chgSign  = changePct != null && changePct >= 0 ? "+" : "";
   const mktState = MARKET_STATE_LABEL[data.marketState ?? "UNKNOWN"] ?? MARKET_STATE_LABEL["UNKNOWN"];
   const dirStyle = DIRECTION_STYLE[data.direction ?? ""] ?? { color: "#888", bg: "rgba(136,136,136,0.1)" };
   const riskStyle = RISK_STYLE[data.riskLevel ?? ""] ?? { color: "#888" };

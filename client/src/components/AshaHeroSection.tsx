@@ -47,9 +47,9 @@ const MACRO_INSTRUMENTS = [
 
 interface QuoteData {
   symbol: string;
-  price: number;
-  change: number;
-  changePercent: number;
+  price: number | null;
+  change: number | null;
+  changePercent: number | null;
 }
 
 // ── Live macro ticker strip ───────────────────────────────────
@@ -67,9 +67,9 @@ function MacroTickerStrip() {
         for (const q of data.quotes) {
           map[q.ticker] = {
             symbol: q.ticker,
-            price: q.price ?? 0,
-            change: q.change ?? 0,
-            changePercent: q.changePercent ?? 0,
+            price: typeof q.price === "number" && Number.isFinite(q.price) ? q.price : null,
+            change: typeof q.change === "number" && Number.isFinite(q.change) ? q.change : null,
+            changePercent: typeof q.changePercent === "number" && Number.isFinite(q.changePercent) ? q.changePercent : null,
           };
         }
       }
@@ -100,8 +100,10 @@ function MacroTickerStrip() {
       }}>
         {MACRO_INSTRUMENTS.map((inst) => {
           const q = quotes[inst.symbol];
-          const isUp = (q?.changePercent ?? 0) >= 0;
-          const color = loading || !q
+          const changePct = q && typeof q.changePercent === "number" && Number.isFinite(q.changePercent) ? q.changePercent : null;
+          const changeKnown = changePct != null;
+          const isUp = changeKnown && changePct >= 0;
+          const color = loading || !q || !changeKnown
             ? "rgba(255,255,255,0.25)"
             : isUp ? "#00FF88" : "#FF3B5C";
 
@@ -128,8 +130,8 @@ function MacroTickerStrip() {
                 color: "rgba(255,255,255,0.88)",
                 letterSpacing: "0.03em",
               }}>
-                {loading || !q
-                  ? "—"
+                {loading || !q || q.price == null
+                  ? "Unavailable"
                   : q.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
               {q && (
@@ -139,7 +141,7 @@ function MacroTickerStrip() {
                   fontWeight: 600,
                   color,
                 }}>
-                  {isUp ? "▲" : "▼"} {Math.abs(q.changePercent).toFixed(2)}%
+                  {changePct == null ? "Unavailable" : `${isUp ? "▲" : "▼"} ${Math.abs(changePct).toFixed(2)}%`}
                 </span>
               )}
             </div>

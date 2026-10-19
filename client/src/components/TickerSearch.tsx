@@ -18,13 +18,13 @@ import { trackSignalSearch, trackWatchlistAction } from '@/hooks/useAnalytics';
 interface TickerProfile {
   ticker: string;
   name: string;
-  price: number;
+  price: number | null;
   open: number;
   high: number;
   low: number;
-  changePercent: number;
-  volume: number;
-  volumeMillions: number;
+  changePercent: number | null;
+  volume: number | null;
+  volumeMillions: number | null;
   avgVolume: number | null;
   marketCap: number | null;
   sector: string | null;
@@ -271,7 +271,7 @@ function StockIntelligenceCard({
 }) {
   const [showWhy, setShowWhy] = useState(false);
   const [showDesc, setShowDesc] = useState(false);
-  const positive = profile.changePercent >= 0;
+  const positive = typeof profile.changePercent === "number" && profile.changePercent >= 0;
   const accentColor = positive ? '#00D4FF' : '#FF2D55';
   const primarySignal = classification?.primarySignal ?? 'Neutral / Watch';
   const signalColor = getSignalColor(primarySignal);
@@ -350,13 +350,13 @@ function StockIntelligenceCard({
               fontFamily: "'Rajdhani', sans-serif",
               fontWeight: 700, fontSize: '24px',
               color: '#F0F4FF',
-            }}>${profile.price.toFixed(2)}</div>
+            }}>{profile.price == null ? "Unavailable" : `$${profile.price.toFixed(2)}`}</div>
             <div style={{
               fontSize: '13px', fontWeight: 700,
               fontFamily: "'IBM Plex Mono', monospace",
-              color: accentColor,
+              color: profile.changePercent == null ? "#64748B" : accentColor,
             }}>
-              {positive ? '+' : ''}{profile.changePercent.toFixed(2)}%
+              {profile.changePercent == null ? "Unavailable" : `${positive ? "+" : ""}${profile.changePercent.toFixed(2)}%`}
             </div>
             {/* Save button */}
             <button
@@ -389,7 +389,7 @@ function StockIntelligenceCard({
           <Chip label="Open" value={`$${profile.open.toFixed(2)}`} />
           <Chip label="High" value={`$${profile.high.toFixed(2)}`} color="#34D399" />
           <Chip label="Low" value={`$${profile.low.toFixed(2)}`} color="#FF2D55" />
-          <Chip label="Volume" value={`${profile.volumeMillions.toFixed(1)}M`} />
+          <Chip label="Volume" value={profile.volumeMillions == null ? "Unavailable" : `${profile.volumeMillions.toFixed(1)}M`} />
           {profile.marketCap && (
             <Chip label="Mkt Cap" value={fmtCap(profile.marketCap)} color="#FFD700" />
           )}
@@ -770,7 +770,8 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
       setHistory(newHistory);
       saveHistory(newHistory);
 
-      // Trigger trading signal computation (price levels)
+      if (data.price != null && data.changePercent != null && data.volume != null && data.volumeMillions != null) {
+      // A missing price, change, or volume is shown on the card and is not scored.
       tradingSignalMutation.mutate({
         ticker: t,
         price: data.price,
@@ -811,6 +812,7 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
           source: data.source,
         },
       });
+      }
     } catch (err) {
       setProfileError(err instanceof Error ? err.message : 'Network error. Please try again.');
     } finally {

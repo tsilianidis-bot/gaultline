@@ -253,6 +253,26 @@ function buildDeterministicClassification(
   regime: RegimeContext
 ): ClassificationResult {
   const regimeLabel = regime.label.toUpperCase();
+  if (profile.changePercent == null || profile.price == null) {
+    return {
+      ticker: profile.ticker,
+      signals: ["Neutral / Watch"],
+      primarySignal: "Neutral / Watch",
+      bullishFactors: ["Price or daily change was not supplied."],
+      bearishFactors: ["A missing quote is not an all-clear signal."],
+      whyThisSignal: "Classification withheld because the price or daily change was not supplied.",
+      regimeFit: regime.score,
+      regimeFitLabel: "Poor Fit",
+      aiExposure: "None",
+      debtRisk: "None",
+      recessionSensitivity: "Medium",
+      liquidityRisk: "None",
+      momentumScore: null,
+      volatilityLabel: "Moderate",
+      macroSensitivity: `${profile.ticker} quote was not supplied, so no momentum reading was scored.`,
+      cached: false,
+    };
+  }
   const changePercent = profile.changePercent;
   const sparklineTrend = profile.sparkline.length >= 2
     ? profile.sparkline[profile.sparkline.length - 1] - profile.sparkline[0]
@@ -335,12 +355,12 @@ SECTOR: ${profile.sector ?? "Unknown"}
 MARKET CAP: ${mktCapStr}
 
 PRICE DATA (${profile.tradeDate}):
-- Close: $${profile.price.toFixed(2)}
+- Close: ${profile.price == null ? "Unavailable" : `$${profile.price.toFixed(2)}`}
 - Open: $${profile.open.toFixed(2)}
 - High: $${profile.high.toFixed(2)}
 - Low: $${profile.low.toFixed(2)}
-- Daily Change: ${profile.changePercent > 0 ? "+" : ""}${profile.changePercent.toFixed(2)}%
-- Volume: ${profile.volumeMillions.toFixed(1)}M shares
+- Daily Change: ${profile.changePercent == null ? "Unavailable" : `${profile.changePercent > 0 ? "+" : ""}${profile.changePercent.toFixed(2)}%`}
+- Volume: ${profile.volumeMillions == null ? "Unavailable" : `${profile.volumeMillions.toFixed(1)}M shares`}
 - 5-Day Trend: ${sparklineTrend}
 
 COMPANY DESCRIPTION (if available):

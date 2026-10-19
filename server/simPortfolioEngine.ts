@@ -418,7 +418,7 @@ export async function evaluateStockCandidate(
 ): Promise<SimPositionDecision | null> {
   try {
     const quote = await getQuote(ticker);
-    if (!quote.price || quote.source === "error") return null;
+    if (!quote.price || quote.source === "error" || quote.changePercent == null || quote.volume == null) return null;
 
     const signalInput: TradingSignalsInput = {
       ticker,
@@ -426,9 +426,9 @@ export async function evaluateStockCandidate(
       open: quote.open ?? quote.price,
       high: quote.high ?? quote.price * 1.02,
       low: quote.low ?? quote.price * 0.98,
-      changePercent: quote.changePercent ?? 0,
-      volumeMillions: (quote.volume ?? 0) / 1e6,
-      avgVolume: (quote.volume ?? 0) / 1e6,
+      changePercent: quote.changePercent,
+      volumeMillions: quote.volume / 1e6,
+      avgVolume: quote.volume / 1e6,
       sparkline: [],
       relativeStrength: 50,
     };
@@ -452,7 +452,7 @@ export async function evaluateStockCandidate(
     const rationale = await buildRationale(
       action as "BUY" | "SELL" | "HOLD",
       ticker, name, "stock",
-      quote.price, quote.changePercent ?? 0,
+      quote.price, quote.changePercent,
       pressure, signal, conviction,
     );
 

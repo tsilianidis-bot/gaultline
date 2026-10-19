@@ -53,7 +53,8 @@ interface SignalCardProps {
 
 function SignalCard({ ticker, price, changePercent, signal, riskLabel, momentum, loading }: SignalCardProps) {
   const signalColor = getSignalColor(signal ?? "HOLD");
-  const changeColor = (changePercent ?? 0) >= 0 ? "#34D399" : "#FF2D55";
+  const changeKnown = typeof changePercent === "number" && Number.isFinite(changePercent);
+  const changeColor = changeKnown && changePercent >= 0 ? "#34D399" : changeKnown ? "#FF2D55" : "#64748B";
 
   if (loading) {
     return (
@@ -100,14 +101,18 @@ function SignalCard({ ticker, price, changePercent, signal, riskLabel, momentum,
           )}
         </div>
         <div className="flex items-center gap-2 mt-0.5">
-          {price !== undefined && (
+          {typeof price === "number" ? (
             <span className="text-[11px] font-mono text-[#A8B8CC]">${price.toFixed(2)}</span>
-          )}
-          {changePercent !== undefined && (
+          ) : price === null ? (
+            <span className="text-[11px] font-mono text-[#64748B]">Unavailable</span>
+          ) : null}
+          {typeof changePercent === "number" ? (
             <span className="text-[10px] font-mono font-bold" style={{ color: changeColor }}>
               {formatChange(changePercent)}
             </span>
-          )}
+          ) : changePercent === null ? (
+            <span className="text-[10px] font-mono text-[#64748B]">Unavailable</span>
+          ) : null}
           {riskLabel && (
             <span className="text-[9px] font-mono text-[#64748B]">{riskLabel}</span>
           )}
@@ -164,7 +169,8 @@ interface CryptoSignalCardProps {
 
 function CryptoSignalCard({ id, name, price, changePercent, signal, loading }: CryptoSignalCardProps) {
   const signalColor = getSignalColor(signal ?? "HOLD");
-  const changeColor = (changePercent ?? 0) >= 0 ? "#34D399" : "#FF2D55";
+  const changeKnown = typeof changePercent === "number" && Number.isFinite(changePercent);
+  const changeColor = changeKnown && changePercent >= 0 ? "#34D399" : changeKnown ? "#FF2D55" : "#64748B";
   const symbol = id.slice(0, 3).toUpperCase();
 
   if (loading) {
@@ -207,14 +213,18 @@ function CryptoSignalCard({ id, name, price, changePercent, signal, loading }: C
           )}
         </div>
         <div className="flex items-center gap-2 mt-0.5">
-          {price !== undefined && (
+          {typeof price === "number" ? (
             <span className="text-[11px] font-mono text-[#A8B8CC]">${price.toLocaleString()}</span>
-          )}
-          {changePercent !== undefined && (
+          ) : price === null ? (
+            <span className="text-[11px] font-mono text-[#64748B]">Unavailable</span>
+          ) : null}
+          {typeof changePercent === "number" ? (
             <span className="text-[10px] font-mono font-bold" style={{ color: changeColor }}>
               {formatChange(changePercent)}
             </span>
-          )}
+          ) : changePercent === null ? (
+            <span className="text-[10px] font-mono text-[#64748B]">Unavailable</span>
+          ) : null}
         </div>
       </div>
     </div>

@@ -9,8 +9,8 @@
    ============================================================ */
 
 export interface SignalQuoteLike {
-  price: number;
-  changePercent: number;
+  price: number | null;
+  changePercent: number | null;
   isLive: boolean;
   /**
    * Provider delay flag from the server. Yahoo's chart feed is ~15-min delayed
@@ -26,7 +26,7 @@ export interface SignalQuoteLike {
   feedSource?: SignalFeedSource | null;
   marketStatus: "open" | "closed" | "extended" | "unknown" | string;
   sparkline?: number[];
-  volumeMillions?: number;
+  volumeMillions?: number | null;
 }
 
 export type SignalQuoteBadge = "LIVE" | "DELAYED" | "LAST CLOSE" | "STALE" | "UNAVAILABLE";
@@ -47,7 +47,9 @@ export const SIGNAL_QUOTE_UNAVAILABLE = "UNAVAILABLE";
 
 const finite = (n: unknown): n is number => typeof n === "number" && Number.isFinite(n);
 
-export function hasUsableSignalQuote(quote: SignalQuoteLike | null | undefined): quote is SignalQuoteLike {
+export function hasUsableSignalQuote(
+  quote: SignalQuoteLike | null | undefined,
+): quote is SignalQuoteLike & { price: number; changePercent: number } {
   return !!quote && finite(quote.price) && quote.price > 0 && finite(quote.changePercent);
 }
 

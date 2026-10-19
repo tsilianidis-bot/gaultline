@@ -38,12 +38,13 @@ function fmt(n: number | null): string {
   return `$${n.toFixed(2)}`;
 }
 
-function fmtPct(n: number): string {
+function fmtPct(n: number | null): string {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "Unavailable";
   return `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
 }
 
 function fmtVol(n: number | null): string {
-  if (n == null) return "—";
+  if (n == null) return "Unavailable";
   if (n >= 1e9) return `${(n / 1e9).toFixed(1)}B`;
   if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
   if (n >= 1e3) return `${(n / 1e3).toFixed(0)}K`;
@@ -61,10 +62,10 @@ function fmtSeconds(s: number): string {
 interface StockPerformer {
   ticker: string;
   name: string;
-  price: number;
-  change: number;
-  changePercent: number;
-  volume: number;
+  price: number | null;
+  change: number | null;
+  changePercent: number | null;
+  volume: number | null;
   marketCap: number | null;
   sector: string | null;
   avgVolume: number | null;
@@ -128,37 +129,42 @@ function HeatCell({
   isSelected: boolean;
   onClick: () => void;
 }) {
-  const pct = stock.changePercent;
-  const positive = pct >= 0;
+  const pct = typeof stock.changePercent === "number" && Number.isFinite(stock.changePercent) ? stock.changePercent : null;
+  const positive = pct != null && pct >= 0;
+  const pctAbs = pct == null ? 0 : Math.abs(pct);
 
   let color: string;
   let intensity: number;
   let displayValue: string;
 
-  if (tabId === "volume") {
+  if (pct == null && tabId !== "volume") {
+    color = "#64748B";
+    intensity = 0.15;
+    displayValue = "Unavailable";
+  } else if (tabId === "volume") {
     color = positive ? "#00FF88" : "#FF2D55";
-    intensity = Math.min(stock.volume / 5e7, 1);
+    intensity = Math.min((stock.volume ?? 0) / 5e7, 1);
     displayValue = fmtVol(stock.volume);
   } else if (tabId === "losers" || tabId === "lows52") {
     color = "#FF2D55";
-    intensity = Math.min(Math.abs(pct) / 15, 1);
+    intensity = Math.min(pctAbs / 15, 1);
     displayValue = fmtPct(pct);
   } else if (tabId === "highs52") {
     color = "#FFD700";
-    intensity = Math.min(Math.abs(pct) / 15, 1);
+    intensity = Math.min(pctAbs / 15, 1);
     displayValue = fmtPct(pct);
   } else if (tabId === "volatile") {
     color = "#FF9500";
-    intensity = Math.min(Math.abs(pct) / 15, 1);
+    intensity = Math.min(pctAbs / 15, 1);
     displayValue = fmtPct(pct);
   } else if (tabId === "smallcap") {
     color = "#A78BFA";
-    intensity = Math.min(Math.abs(pct) / 15, 1);
+    intensity = Math.min(pctAbs / 15, 1);
     displayValue = fmtPct(pct);
   } else {
     // gainers, split
     color = positive ? "#00FF88" : "#FF2D55";
-    intensity = Math.min(Math.abs(pct) / 15, 1);
+    intensity = Math.min(pctAbs / 15, 1);
     displayValue = fmtPct(pct);
   }
 
@@ -167,7 +173,7 @@ function HeatCell({
   return (
     <div
       onClick={onClick}
-      title={`${stock.name} (${stock.ticker})\n${fmtPct(pct)} | $${stock.price.toFixed(2)}\nVol: ${fmtVol(stock.volume)}\nMkt Cap: ${fmt(stock.marketCap)}${stock.sector ? `\nSector: ${stock.sector}` : ""}`}
+      title={`${stock.name} (${stock.ticker})\n${fmtPct(pct)} | ${stock.price == null ? "Unavailable" : `$${stock.price.toFixed(2)}`}\nVol: ${fmtVol(stock.volume)}\nMkt Cap: ${fmt(stock.marketCap)}${stock.sector ? `\nSector: ${stock.sector}` : ""}`}
       style={{
         background: `${color}${alpha}`,
         border: `1px solid ${isSelected ? color : color + "30"}`,
@@ -183,7 +189,7 @@ function HeatCell({
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#64748B", marginBottom: "1px" }}>#{rank}</div>
       <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "11px", color: "#F0F4FF", lineHeight: 1.1 }}>{stock.ticker}</div>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color, fontWeight: 600, lineHeight: 1.2 }}>{displayValue}</div>
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", marginTop: "1px" }}>${stock.price.toFixed(2)}</div>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", marginTop: "1px" }}>{stock.price == null ? "Unavailable" : `$${stock.price.toFixed(2)}`}</div>
     </div>
   );
 }
@@ -205,7 +211,7 @@ function HeatGrid({
 
   const filtered = useMemo(() => {
     let list = sectorFilter === "ALL" ? data : data.filter(p => p.sector === sectorFilter);
-    if (sortBy === "volume") list = [...list].sort((a, b) => b.volume - a.volume);
+    if (sortBy === "volume") list = [...list].sort((a, b) => (typeof a.volume === "number" && typeof b.volume === "number" ? b.volume - a.volume : a.volume == null ? 1 : -1));
     else if (sortBy === "marketCap") list = [...list].sort((a, b) => (b.marketCap ?? 0) - (a.marketCap ?? 0));
     return list;
   }, [data, sectorFilter, sortBy]);
@@ -257,26 +263,43 @@ function SectorHeatmap({ data, tabId }: { data: StockPerformer[]; tabId: TabId }
       map.get(key)!.push(s);
     }
     const result: {
-      sector: string; count: number; avgPct: number;
-      totalVol: number; topTicker: string; color: string;
+      sector: string; count: number; avgPct: number | null;
+      totalVol: number | null; topTicker: string; color: string;
     }[] = [];
     map.forEach((stocks, sector) => {
-      const avgPct = stocks.reduce((s, p) => s + p.changePercent, 0) / stocks.length;
-      const totalVol = stocks.reduce((s, p) => s + p.volume, 0);
-      const top = [...stocks].sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))[0];
+      const changes = stocks.map(p => p.changePercent).filter((n): n is number => typeof n === "number" && Number.isFinite(n));
+      const vols = stocks.map(p => p.volume).filter((n): n is number => typeof n === "number" && Number.isFinite(n));
+      const avgPct = changes.length ? changes.reduce((s, n) => s + n, 0) / changes.length : null;
+      const totalVol = vols.length ? vols.reduce((s, n) => s + n, 0) : null;
+      const top = [...stocks].sort((a, b) => {
+        const av = typeof a.changePercent === "number" ? Math.abs(a.changePercent) : -1;
+        const bv = typeof b.changePercent === "number" ? Math.abs(b.changePercent) : -1;
+        return bv - av;
+      })[0];
       result.push({ sector, count: stocks.length, avgPct, totalVol, topTicker: top.ticker, color: getSectorColor(sector) });
     });
-    if (tabId === "losers" || tabId === "lows52") return result.sort((a, b) => a.avgPct - b.avgPct);
-    if (tabId === "volume") return result.sort((a, b) => b.totalVol - a.totalVol);
-    return result.sort((a, b) => b.avgPct - a.avgPct);
+    const byAvg = (a: { avgPct: number | null }, b: { avgPct: number | null }, direction: 1 | -1) => {
+      if (typeof a.avgPct === "number" && typeof b.avgPct === "number") return (a.avgPct - b.avgPct) * direction;
+      if (typeof a.avgPct === "number") return -1;
+      if (typeof b.avgPct === "number") return 1;
+      return 0;
+    };
+    if (tabId === "losers" || tabId === "lows52") return result.sort((a, b) => byAvg(a, b, 1));
+    if (tabId === "volume") return result.sort((a, b) => {
+      if (typeof a.totalVol === "number" && typeof b.totalVol === "number") return b.totalVol - a.totalVol;
+      if (typeof a.totalVol === "number") return -1;
+      if (typeof b.totalVol === "number") return 1;
+      return 0;
+    });
+    return result.sort((a, b) => byAvg(a, b, -1));
   }, [data, tabId]);
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "6px" }}>
       {sectorGroups.map(g => {
-        const isPos = g.avgPct >= 0;
-        const baseColor = tabId === "volume" ? "#00D4FF" : isPos ? "#00FF88" : "#FF2D55";
-        const intensity = tabId === "volume" ? Math.min(g.totalVol / 5e8, 1) : Math.min(Math.abs(g.avgPct) / 10, 1);
+        const isPos = g.avgPct != null && g.avgPct >= 0;
+        const baseColor = tabId === "volume" ? "#00D4FF" : g.avgPct == null ? "#64748B" : isPos ? "#00FF88" : "#FF2D55";
+        const intensity = tabId === "volume" ? Math.min((g.totalVol ?? 0) / 5e8, 1) : Math.min(Math.abs(g.avgPct ?? 0) / 10, 1);
         const alpha = Math.max(0x18, Math.round(intensity * 0xCC)).toString(16).padStart(2, "0");
         return (
           <div
@@ -306,7 +329,7 @@ function SectorHeatmap({ data, tabId }: { data: StockPerformer[]; tabId: TabId }
 function DetailPanel({ stock, rank, tabId, onClose }: { stock: StockPerformer; rank: number; tabId: TabId; onClose: () => void }) {
   const pct = stock.changePercent;
   const tab = TABS.find(t => t.id === tabId)!;
-  const color = (tabId === "volume" || tabId === "split") ? (pct >= 0 ? "#00FF88" : "#FF2D55") : tab.accentColor;
+  const color = pct == null ? "#64748B" : (tabId === "volume" || tabId === "split") ? (pct >= 0 ? "#00FF88" : "#FF2D55") : tab.accentColor;
 
   return (
     <div style={{ background: "rgba(8,10,16,0.99)", border: `1px solid ${color}35`, borderLeft: `3px solid ${color}`, borderRadius: "6px", padding: "16px", marginBottom: "14px" }}>
@@ -319,14 +342,14 @@ function DetailPanel({ stock, rank, tabId, onClose }: { stock: StockPerformer; r
           <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "24px", color }}>
             {tabId === "volume" ? fmtVol(stock.volume) : fmtPct(pct)}
           </div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#94A3B8" }}>${stock.price.toFixed(2)}</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#94A3B8" }}>{stock.price == null ? "Unavailable" : `$${stock.price.toFixed(2)}`}</div>
           <button onClick={onClose} style={{ marginTop: "6px", background: "none", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "4px", padding: "3px 10px", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#64748B", letterSpacing: "0.1em" }}>CLOSE ✕</button>
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "8px" }}>
         {[
-          { label: "Change %",   value: fmtPct(pct),                                                                                          color: pct >= 0 ? "#00FF88" : "#FF2D55" },
-          { label: "Change $",   value: `${stock.change >= 0 ? "+" : ""}$${stock.change.toFixed(2)}`,                                         color: pct >= 0 ? "#00FF88" : "#FF2D55" },
+          { label: "Change %",   value: fmtPct(pct),                                                                                          color: pct == null ? "#64748B" : pct >= 0 ? "#00FF88" : "#FF2D55" },
+          { label: "Change $",   value: stock.change == null ? "Unavailable" : `${stock.change >= 0 ? "+" : ""}$${stock.change.toFixed(2)}`, color: stock.change == null ? "#64748B" : stock.change >= 0 ? "#00FF88" : "#FF2D55" },
           { label: "Volume",     value: fmtVol(stock.volume),                                                                                  color: "#00D4FF" },
           { label: "Avg Volume", value: fmtVol(stock.avgVolume),                                                                               color: "#64748B" },
           { label: "Market Cap", value: fmt(stock.marketCap),                                                                                  color: "#94A3B8" },
@@ -387,9 +410,9 @@ function CrossTabStrip({ gainers, losers, volume }: { gainers?: StockPerformer[]
   if (!topGainer && !topLoser && !topVol) return null;
 
   const items = [
-    topGainer && { label: "TOP GAINER", ticker: topGainer.ticker, value: fmtPct(topGainer.changePercent), sub: `$${topGainer.price.toFixed(2)}`, color: "#00FF88" },
-    topLoser  && { label: "TOP LOSER",  ticker: topLoser.ticker,  value: fmtPct(topLoser.changePercent),  sub: `$${topLoser.price.toFixed(2)}`,  color: "#FF2D55" },
-    topVol    && { label: "TOP VOLUME", ticker: topVol.ticker,    value: fmtVol(topVol.volume),           sub: `${topVol.changePercent >= 0 ? "+" : ""}${topVol.changePercent.toFixed(2)}%`, color: topVol.changePercent >= 0 ? "#00FF88" : "#FF2D55" },
+    topGainer && { label: "TOP GAINER", ticker: topGainer.ticker, value: fmtPct(topGainer.changePercent), sub: topGainer.price == null ? "Unavailable" : `$${topGainer.price.toFixed(2)}`, color: "#00FF88" },
+    topLoser  && { label: "TOP LOSER",  ticker: topLoser.ticker,  value: fmtPct(topLoser.changePercent),  sub: topLoser.price == null ? "Unavailable" : `$${topLoser.price.toFixed(2)}`,  color: "#FF2D55" },
+    topVol    && { label: "TOP VOLUME", ticker: topVol.ticker,    value: fmtVol(topVol.volume),           sub: fmtPct(topVol.changePercent), color: topVol.changePercent == null ? "#64748B" : topVol.changePercent >= 0 ? "#00FF88" : "#FF2D55" },
   ].filter(Boolean) as { label: string; ticker: string; value: string; sub: string; color: string }[];
 
   return (

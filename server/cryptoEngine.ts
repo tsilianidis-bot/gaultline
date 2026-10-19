@@ -31,7 +31,7 @@ export type CryptoSignalLabel =
 
 export type CryptoSignalBias = "Bullish" | "Neutral" | "Bearish";
 export type CryptoRiskLevel  = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
-export type MomentumDir      = "Accelerating" | "Stable" | "Decelerating" | "Reversing";
+export type MomentumDir      = "Accelerating" | "Stable" | "Decelerating" | "Reversing" | "Unavailable";
 
 export interface CryptoSignalVector {
   label: string;
@@ -133,8 +133,9 @@ function scoreToSignalBias(signalScore: number): CryptoSignalBias {
   return "Neutral";
 }
 
-function deriveMomentum(change24h: number, change7d: number | null): MomentumDir {
-  const weekly = change7d ?? 0;
+export function deriveMomentum(change24h: number, change7d: number | null): MomentumDir {
+  if (change7d == null || !Number.isFinite(change7d)) return "Unavailable";
+  const weekly = change7d;
   if (change24h > 3  && weekly > 5)  return "Accelerating";
   if (change24h < -3 && weekly < -5) return "Reversing";
   if (Math.abs(change24h) < 2)       return "Stable";
@@ -351,15 +352,20 @@ export async function computeAssetIntelligence(
     description: c.priceChangePercent24hDisplay === null ? "24h change unavailable" : `${c.priceChangePercent24h >= 0 ? "+" : ""}${c.priceChangePercent24h.toFixed(2)}% in 24h`,
   });
 
-  // 2. Weekly momentum — multiplier 2 (was 1.5) for stronger trend signal
-  const weekly = c.priceChangePercent7d ?? 0;
-  const momScore7d = clamp(50 + weekly * 2, 0, 100);
-  vectors.push({
-    label: "7d Momentum",
-    score: momScore7d,
-    direction: weekly > 2 ? "positive" : weekly < -2 ? "negative" : "neutral",
-    description: `${weekly >= 0 ? "+" : ""}${weekly.toFixed(2)}% over 7 days`,
-  });
+  // 2. Weekly momentum — multiplier 2 (was 1.5) for stronger trend signal.
+  // A missing 7-day change is withheld. An observed 0 stays on the prior score path.
+  const weekly = typeof c.priceChangePercent7d === "number" && Number.isFinite(c.priceChangePercent7d)
+    ? c.priceChangePercent7d
+    : null;
+  const momScore7d = weekly == null ? null : clamp(50 + weekly * 2, 0, 100);
+  if (weekly != null && momScore7d != null) {
+    vectors.push({
+      label: "7d Momentum",
+      score: momScore7d,
+      direction: weekly > 2 ? "positive" : weekly < -2 ? "negative" : "neutral",
+      description: `${weekly >= 0 ? "+" : ""}${weekly.toFixed(2)}% over 7 days`,
+    });
+  }
 
   // 3. Distance from ATH (bearish if far below). A missing price leaves this out.
   const athDist = c.distanceFromAth;
@@ -410,7 +416,7 @@ export async function computeAssetIntelligence(
   // Composite signal score (weighted)
   // 24h momentum gets highest weight (0.35) so intraday moves dominate the signal.
   // ATH distance weight reduced (0.10) — a distant ATH should not mask a sharp daily drop.
-  const signalScore = athScore != null && liquidityScore != null && rangeRisk != null
+  const signalScore = momScore7d != null && athScore != null && liquidityScore != null && rangeRisk != null
     ? Math.round(
       momScore24h     * 0.35 +  // was 0.25 — intraday move is the primary signal
       momScore7d      * 0.20 +  // unchanged — weekly trend context
@@ -421,13 +427,14 @@ export async function computeAssetIntelligence(
     )
     : Math.round((
       momScore24h * 0.35 +
-      momScore7d * 0.20 +
+      (momScore7d ?? 0) * (momScore7d == null ? 0 : 0.20) +
       (athScore ?? 0) * (athScore == null ? 0 : 0.10) +
       (liquidityScore ?? 0) * (liquidityScore == null ? 0 : 0.15) +
       (rangeRisk ?? 0) * (rangeRisk == null ? 0 : 0.05) +
       macroAlignScore * 0.15
     ) / (
-      0.35 + 0.20 +
+      0.35 +
+      (momScore7d == null ? 0 : 0.20) +
       (athScore == null ? 0 : 0.10) +
       (liquidityScore == null ? 0 : 0.15) +
       (rangeRisk == null ? 0 : 0.05) +
@@ -462,7 +469,7 @@ export async function computeAssetIntelligence(
   if ((volMcRatio != null && volMcRatio < 2) || sr.stablecoinLiquidity === "Contracting") {
     labels.push("Liquidity Fragile");
   }
-  if (c.priceChangePercent24h > 5 && (c.priceChangePercent7d ?? 0) > 10) {
+  if (c.priceChangePercent24h > 5 && weekly != null && weekly > 10) {
     labels.push("Momentum Breakout");
   }
   if (sr.score >= 6) {

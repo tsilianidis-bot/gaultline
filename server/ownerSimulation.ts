@@ -445,10 +445,10 @@ export async function buildStockOpportunity(
 ): Promise<TradeOpportunity | null> {
   try {
     const quote = await getQuote(ticker);
-    if (!quote.price || quote.source === "error") return null;
+    if (!quote.price || quote.source === "error" || quote.changePercent == null || quote.volume == null) return null;
 
     const price = quote.price;
-    const changePercent = quote.changePercent ?? 0;
+    const changePercent = quote.changePercent;
 
     const signalInput: TradingSignalsInput = {
       ticker,
@@ -457,8 +457,8 @@ export async function buildStockOpportunity(
       high: quote.high ?? price * 1.02,
       low: quote.low ?? price * 0.98,
       changePercent,
-      volumeMillions: (quote.volume ?? 0) / 1e6,
-      avgVolume: (quote.volume ?? 0) / 1e6,
+      volumeMillions: quote.volume / 1e6,
+      avgVolume: quote.volume / 1e6,
       sparkline: [],
       relativeStrength: 50,
     };
