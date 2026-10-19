@@ -13,3 +13,13 @@ The design uses the established charcoal/cyan identity, restrained gold editoria
 Only verified candidate captures may be promoted to operational showcase images. Until capture/source integrity is established, display unmistakable temporary design placeholders, without invented charts or values. Social, insider and track-record operational claims remain excluded. The new hero must be visible immediately on public arrival; any intro timing adjustment is confined to the public root path, preserving product onboarding/auth gates.
 
 Deliver a draft PR against the release baseline, exact commit SHA, desktop/mobile previews, a verification summary and launch-readiness dependencies. No merge, deployment or production mutation is authorized.
+
+## Completion continuation
+
+Continue PR #109 from `49d6ab7dbf97dcca272e96339217acf9e8ca022d`, preserving the approved hero and its six-domain component/illustrative disclosure. Qualify the five requested application screenshot categories independently against the isolated source and exact current integration heads. Do not equate unit fixtures, rendering or textual mergeability with verified market operation. Admit only actual source-qualified observations and sanitized application captures; record per-category external resource blockers when genuine candidate observations are absent.
+
+Public startup is now an authorized performance-remediation surface: avoid evaluating the unrelated product router and global product contexts on marketing arrival, while retaining the original tRPC/auth/session machinery and lazy-loading the unchanged product shell on product navigation. Preserve all public sections, approved typography/design, consent analytics and actual price/checkout controls. Improve loading, not claims or canonical engines. Measure a production build with the same mobile Lighthouse methodology; ≥90 and ≤2.5-second LCP remain measured acceptance targets.
+
+Retain the existing five-entry gallery’s layout and source gates. Add concise benefits, per-category qualification blockers and links only to authorized existing public routes; verified-only high-resolution previews may support restrained zoom and accessible static/reduced-motion fallbacks. No mocked charts or unsupported operational classification may be promoted.
+
+Local integration tests are permitted only in their temporary sandbox MariaDB databases with production-related environment variables removed. Installation of missing local test binaries is sandbox tooling, not production/database configuration work. Keep all active PRs unmerged, report current textual conflicts separately from semantic dependencies, and stop at the independent GO/NO-GO review gate.

@@ -22,6 +22,7 @@ import AshaLiveBriefing from './components/AshaLiveBriefing';
 import CinematicAuthGate from './components/CinematicAuthGate';
 import { useAuth } from './_core/hooks/useAuth';
 import { useLocation } from 'wouter';
+import { initialEntryPath } from './initial-entry-path';
 import { ANALYTICAL_LEGACY_ALIASES, CANONICAL_DESTINATIONS, CANONICAL_DESTINATION_BY_ID, EXPERT_WORKSPACE_BY_ID, preserveRouteContext, type CanonicalDestinationId, CANONICAL_HOME } from '@shared/routeRegistry';
 
 // ── Lazy-loaded pages — each page is a separate chunk ─────────
@@ -854,7 +855,9 @@ function getAshaBriefingKey(userId?: string | null): string {
 function shouldShowCinematic(): boolean {
   try {
     if (isDemoPath()) return false;
-    const path = window.location.pathname;
+    // main.tsx records the first arrival before a root auth redirect can lazily
+    // load this module. Preserve the original route's cinematic eligibility.
+    const path = initialEntryPath;
     // Marketing arrival is immediate; preserve cinematic/product onboarding on /app.
     if (path === '/') return false;
     // SEO/blog/public pages never trigger the cinematic

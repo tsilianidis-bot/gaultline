@@ -17,6 +17,15 @@ function qualifiedCandidate(): ShowcaseEvidence {
       operationalVerified: true,
       sourceVerified: true,
       actualCapturePath: "/marketing/pressure-index-reviewed.webp",
+      mobileCapturePath: "/marketing/pressure-index-mobile-reviewed.webp",
+      desktopWidth: 1600,
+      desktopHeight: 1000,
+      mobileWidth: 390,
+      mobileHeight: 844,
+      captureSha256: "a".repeat(64),
+      mobileCaptureSha256: "b".repeat(64),
+      operationalQualificationPath:
+        "docs/marketing/qualification/pressure-overview.md",
       capturedAt: "2026-10-19T15:00:00.000Z",
       sourceBranch: "marketing/premium-homepage-20261019",
       sourceSha: "f908e04ff265d004488f92a909cba4b2e0cebe3b",
@@ -32,11 +41,11 @@ function qualifiedCandidate(): ShowcaseEvidence {
 describe("marketing showcase evidence manifest", () => {
   it("keeps all five candidate views pending by default", () => {
     expect(SHOWCASE_EVIDENCE.map(item => item.label)).toEqual([
-      "Pressure Index",
-      "Detection",
+      "Pressure Index & Overview",
       "Six-Domain Intelligence",
-      "Sector Rotation",
-      "Smart Discovery",
+      "Signals & Smart Discovery",
+      "Outlook & Scenarios",
+      "Daily Intelligence Brief",
     ]);
 
     for (const item of SHOWCASE_EVIDENCE) {
@@ -77,6 +86,13 @@ describe("marketing showcase evidence manifest", () => {
     ["operational review", { operationalVerified: false }],
     ["source review", { sourceVerified: false }],
     ["recorded capture path", { actualCapturePath: null }],
+    ["mobile capture", { mobileCapturePath: null }],
+    ["desktop image hash", { captureSha256: null }],
+    ["mobile image hash", { mobileCaptureSha256: null }],
+    ["qualification report", { operationalQualificationPath: null }],
+    ["recorded desktop dimensions", { desktopWidth: null }],
+    ["recorded mobile dimensions", { mobileHeight: null }],
+    ["exact source SHA", { sourceSha: "f908e04" }],
     ["recorded timestamp", { capturedAt: null }],
     ["source branch", { sourceBranch: null }],
     ["source SHA", { sourceSha: "not-a-sha" }],

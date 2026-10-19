@@ -480,3 +480,116 @@
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Completion: presentation controls are never rendered for unqualified images. */
+.product-showcase__selection {
+  animation: product-showcase-selection 160ms ease-out;
+}
+.product-showcase__benefit {
+  margin: 0;
+  padding: 1.1rem 2.25rem;
+  color: #c3d2dd;
+  font-size: 0.88rem;
+  line-height: 1.7;
+  border-bottom: 1px solid #263640;
+}
+.product-showcase__benefit strong {
+  color: #d9bd81;
+  font-weight: 500;
+}
+.product-showcase__blockers {
+  margin-top: 1.5rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid #34414b;
+}
+.product-showcase__blockers > p {
+  color: #dbc18f;
+  font:
+    600 0.66rem/1.6 "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.08em;
+}
+.product-showcase__blockers ul {
+  margin: 0.7rem 0 0;
+  padding-left: 1.1rem;
+  color: #afbecb;
+  font-size: 0.78rem;
+  line-height: 1.75;
+}
+.product-showcase__provenance {
+  padding: 1rem 1.5rem;
+  color: #adc0ce;
+  font:
+    0.67rem/1.8 "IBM Plex Mono",
+    monospace;
+  overflow-wrap: anywhere;
+}
+.product-showcase__viewport-controls,
+.product-showcase__zoom-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.75rem 1.2rem;
+}
+.product-showcase__viewport-controls button,
+.product-showcase__zoom-controls button {
+  min-height: 44px;
+  border: 1px solid #44616f;
+  border-radius: 0.3rem;
+  padding: 0.5rem 0.8rem;
+  color: #d3e5ec;
+  background: #101c24;
+  font-size: 0.78rem;
+}
+.product-showcase__viewport-controls button[aria-pressed="true"] {
+  border-color: #65d6e5;
+  color: #92e4ed;
+}
+.product-showcase__zoom-controls button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.product-showcase__zoom-controls span {
+  min-width: 3rem;
+  font-size: 0.78rem;
+  text-align: center;
+  color: #c0d6e1;
+}
+.product-showcase__capture .product-showcase__mobile-image {
+  display: block;
+  max-width: min(100%, 28rem);
+  margin: 0 auto;
+}
+.product-showcase__zoom-area {
+  overflow: auto;
+  max-height: 62vh;
+  border: 1px solid #354b56;
+}
+.product-showcase__zoom-area img {
+  display: block;
+  height: auto;
+  transition: width 160ms ease;
+}
+@keyframes product-showcase-selection {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (max-width: 780px) {
+  .product-showcase__benefit {
+    padding: 1rem 1.25rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .product-showcase__selection,
+  .product-showcase__reveal {
+    animation: none !important;
+  }
+  .product-showcase__zoom-area img {
+    transition: none !important;
+  }
+}

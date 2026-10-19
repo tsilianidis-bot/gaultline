@@ -3,14 +3,12 @@ import { UNAUTHED_ERR_MSG } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, httpLink, splitLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
+import { lazy, Suspense } from "react";
 import superjson from "superjson";
-import App from "./App";
 import { navigateToLogin } from "./const";
-import { TickerStoreProvider } from "./contexts/TickerStore";
-import { AshaProvider } from "./contexts/AshaContext";
-import { ExperienceProvider } from "./contexts/ExperienceContext";
 import { initializeAnalytics } from "./lib/ga4";
-import "./index.css";
+import { useLocation } from "wouter";
+import "./initial-entry-path";
 
 initializeAnalytics();
 
@@ -176,16 +174,93 @@ const trpcClient = trpc.createClient({
   ],
 });
 
+const MarketingEntry = lazy(() => import("./marketing-entry"));
+
+const PRODUCT_FONT_STYLESHEET =
+  "https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap";
+
+function loadProductFonts() {
+  if (document.getElementById("faultline-product-fonts")) return;
+  const link = document.createElement("link");
+  link.id = "faultline-product-fonts";
+  link.rel = "stylesheet";
+  link.href = PRODUCT_FONT_STYLESHEET;
+  document.head.appendChild(link);
+}
+
+// Keep the established product application and all of its state providers in a
+// route-level chunk. The public root still shares the exact tRPC/query client
+// above, but does not fetch or evaluate product routing, ticker, ASHA, or
+// experience state until a product route is requested.
+const ProductEntry = lazy(async () => {
+  loadProductFonts();
+  const [
+    ,
+    { default: App },
+    { TickerStoreProvider },
+    { AshaProvider },
+    { ExperienceProvider },
+  ] = await Promise.all([
+    import("./index.css"),
+    import("./App"),
+    import("./contexts/TickerStore"),
+    import("./contexts/AshaContext"),
+    import("./contexts/ExperienceContext"),
+  ]);
+
+  return {
+    default: function ProductEntry() {
+      return (
+        <TickerStoreProvider>
+          <AshaProvider>
+            <ExperienceProvider>
+              <App />
+            </ExperienceProvider>
+          </AshaProvider>
+        </TickerStoreProvider>
+      );
+    },
+  };
+});
+
+function EntryLoader() {
+  return (
+    <div
+      aria-live="polite"
+      style={{
+        alignItems: "center",
+        color: "rgba(0,255,200,0.4)",
+        display: "flex",
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: "11px",
+        height: "60vh",
+        justifyContent: "center",
+        letterSpacing: "0.15em",
+      }}
+    >
+      LOADING MODULE…
+    </div>
+  );
+}
+
+function PathAwareEntry() {
+  const [location] = useLocation();
+
+  // Wouter Link navigation can stay client-side. Any transition away from the
+  // public root switches to the original application rather than leaving a
+  // marketing-only shell mounted on a product route.
+  const Entry = location === "/" ? MarketingEntry : ProductEntry;
+  return (
+    <Suspense fallback={<EntryLoader />}>
+      <Entry />
+    </Suspense>
+  );
+}
+
 createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
-      <TickerStoreProvider>
-        <AshaProvider>
-          <ExperienceProvider>
-            <App />
-          </ExperienceProvider>
-        </AshaProvider>
-      </TickerStoreProvider>
+      <PathAwareEntry />
     </QueryClientProvider>
   </trpc.Provider>
 );

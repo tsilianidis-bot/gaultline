@@ -6,12 +6,18 @@ login, checkout, production API or database are used. Run with Vite (or its stat
 production preview) listening on port 3000 and the browser on port 9222.
 """
 import json
+import os
+import subprocess
+import hashlib
+from datetime import datetime, timezone
 from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
 
-OUTPUT = Path('/home/ubuntu/marketing-deliverables')
+OUTPUT = Path(os.environ.get('MARKETING_CAPTURE_OUTPUT', '/home/ubuntu/marketing-deliverables'))
 OUTPUT.mkdir(exist_ok=True)
-ORIGIN = 'http://127.0.0.1:3000'
+ORIGIN = os.environ.get('MARKETING_PREVIEW_ORIGIN', 'http://127.0.0.1:3000')
+if not ORIGIN.startswith('http://127.0.0.1:'):
+    raise ValueError('Verification origin must be an isolated loopback preview.')
 AXE = Path('/home/ubuntu/marketing-audit-tools/node_modules/axe-core/axe.min.js')
 checks = []
 
@@ -80,6 +86,7 @@ with sync_playwright() as p:
     check('Five product gallery selectors', gallery_buttons.count() == 5)
     for index in range(gallery_buttons.count()):
         gallery_buttons.nth(index).click()
+        page.locator('#product-showcase-stage').screenshot(path=str(OUTPUT / f'gallery-entry-{index + 1}-desktop.png'))
         check(f'Gallery selection {index + 1} remains capture-pending', 'VERIFIED CAPTURE PENDING' in page.locator('#product-showcase').inner_text())
     if gallery_buttons.count(): gallery_buttons.first.click()
     page.set_viewport_size({'width': 768, 'height': 1024})
@@ -98,6 +105,11 @@ with sync_playwright() as p:
     page.screenshot(path=str(OUTPUT / 'mobile-homepage.png'), full_page=True)
     page.locator('.mp-hero').screenshot(path=str(OUTPUT / 'mobile-hero.png'))
     page.locator('#product-showcase').screenshot(path=str(OUTPUT / 'mobile-showcase.png'))
+    for index in range(gallery_buttons.count()):
+        gallery_buttons.nth(index).click()
+        page.locator('#product-showcase-stage').screenshot(path=str(OUTPUT / f'gallery-entry-{index + 1}-mobile.png'))
+    if gallery_buttons.count(): gallery_buttons.first.click()
+    check('Pending captures expose no expansion, viewport or zoom controls', page.locator('.product-showcase__expand, .product-showcase__viewport-controls, .product-showcase__zoom-controls').count() == 0)
     if AXE.exists():
         page.add_script_tag(path=str(AXE))
         accessibility = page.evaluate('async () => await axe.run(document, {runOnly: {type:"tag", values:["wcag2a","wcag2aa","wcag21a","wcag21aa"]}})')
@@ -107,6 +119,17 @@ with sync_playwright() as p:
     check('No production FAULTLINE/Railway/Stripe requests', not any('getfaultline.live/api' in r['url'] or 'railway' in r['url'] or 'stripe.com' in r['url'] for r in requests))
     check('No state-changing application requests', not any(r['method'] not in ('GET', 'HEAD', 'OPTIONS') and '/api/' in r['url'] for r in requests))
     context.close()
+
+provenance = {
+    'sourceBranch': subprocess.check_output(['git', 'branch', '--show-current'], text=True).strip(),
+    'sourceSha': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+    'capturedAt': datetime.now(timezone.utc).isoformat(),
+    'workingTreeModified': bool(subprocess.check_output(['git', 'status', '--porcelain'], text=True).strip()),
+    'classification': 'isolated marketing layout; gallery placeholders; not operational product evidence',
+    'origin': ORIGIN,
+    'images': [{ 'file': path.name, 'sha256': hashlib.sha256(path.read_bytes()).hexdigest() } for path in sorted(OUTPUT.glob('*.png'))],
+}
+(OUTPUT / 'layout-capture-provenance.json').write_text(json.dumps(provenance, indent=2))
 
 result = {'origin': ORIGIN, 'browser': 'Existing Sandbox Chrome via CDP; no browser launch', 'checks': checks, 'passed': sum(c['passed'] for c in checks), 'failed': sum(not c['passed'] for c in checks), 'limitations': ['Backend not connected: public canonical reading unavailable/loading, never replaced by fixtures.', 'All showcase images remain verification-pending placeholders.', 'Layout captures are not operational product screenshots.']}
 (OUTPUT / 'browser-verification.json').write_text(json.dumps(result, indent=2))

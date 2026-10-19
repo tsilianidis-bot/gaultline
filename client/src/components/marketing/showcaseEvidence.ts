@@ -1,9 +1,9 @@
 export type ShowcaseId =
   | "pressure-index"
-  | "detection"
   | "six-domain-intelligence"
-  | "sector-rotation"
-  | "smart-discovery";
+  | "signals-discovery"
+  | "outlook-scenarios"
+  | "daily-brief";
 
 export type CaptureStatus = "pending" | "verified";
 export type DataClassification =
@@ -20,6 +20,14 @@ export interface CaptureVerification {
   operationalVerified: boolean;
   sourceVerified: boolean;
   actualCapturePath: string | null;
+  mobileCapturePath: string | null;
+  desktopWidth: number | null;
+  desktopHeight: number | null;
+  mobileWidth: number | null;
+  mobileHeight: number | null;
+  captureSha256: string | null;
+  mobileCaptureSha256: string | null;
+  operationalQualificationPath: string | null;
   capturedAt: string | null;
   sourceBranch: string | null;
   sourceSha: string | null;
@@ -46,6 +54,10 @@ export interface ShowcaseEvidence {
   placeholderBody: string;
   verificationRequirements: readonly string[];
   imageAlt: string;
+  benefit?: string;
+  promotionBlockers?: readonly string[];
+  publicDemoHref?: string;
+  publicDemoLabel?: string;
   verification: CaptureVerification;
 }
 
@@ -54,6 +66,14 @@ const pendingVerification = (): CaptureVerification => ({
   operationalVerified: false,
   sourceVerified: false,
   actualCapturePath: null,
+  mobileCapturePath: null,
+  desktopWidth: null,
+  desktopHeight: null,
+  mobileWidth: null,
+  mobileHeight: null,
+  captureSha256: null,
+  mobileCaptureSha256: null,
+  operationalQualificationPath: null,
   capturedAt: null,
   sourceBranch: null,
   sourceSha: null,
@@ -66,8 +86,8 @@ const pendingVerification = (): CaptureVerification => ({
 
 const sharedRequirements = [
   "Operational behavior reviewed in the release candidate.",
-  "Source provenance and actual capture path recorded.",
-  "Capture timestamp, source branch, and source SHA recorded.",
+  "Source provenance, desktop/mobile captures and image hashes recorded.",
+  "Capture timestamp, exact source SHA, branch and qualification report recorded.",
   "Data observation date and live, recent, delayed or historical classification recorded.",
   "Public-safe classification confirmed; no sensitive information present.",
 ] as const;
@@ -76,72 +96,116 @@ const sharedRequirements = [
 export const SHOWCASE_EVIDENCE: readonly ShowcaseEvidence[] = [
   {
     id: "pressure-index",
-    label: "Pressure Index",
-    eyebrow: "PUBLIC READING",
-    title: "Pressure Index",
+    label: "Pressure Index & Overview",
+    eyebrow: "PRESSURE AND CONTEXT",
+    title: "Pressure Index and Market Overview",
     intent:
-      "A proposed evidence view for the public reading and its documented context.",
-    placeholderTitle: "A public reading, shown with its evidence trail.",
+      "Read one canonical pressure snapshot alongside its drivers, date and source health. Market Overview is a separate member workspace.",
+    benefit:
+      "Understand what is happening, which inputs are driving pressure and how current conditions should be interpreted—not just a headline number.",
+    placeholderTitle: "One reading. Its drivers and date, in view.",
     placeholderBody:
-      "This reserved space will hold a source-qualified capture only after the public state, provenance, and capture metadata are independently checked.",
+      "A genuine public Pressure Index capture belongs here only after the candidate snapshot and displayed observation agree. Member-only Market Overview requires separately authorized nonproduction access.",
+    promotionBlockers: [
+      "No genuine nonproduction canonical manifest is connected to this candidate.",
+      "Market Overview has no authorized nonproduction member session or reviewed source payload.",
+    ],
+    publicDemoHref: "/pressure-index",
+    publicDemoLabel: "Open the public Pressure Index",
     verificationRequirements: sharedRequirements,
-    imageAlt: "Verified FAULTLINE Pressure Index product capture.",
-    verification: pendingVerification(),
-  },
-  {
-    id: "detection",
-    label: "Detection",
-    eyebrow: "EVIDENCE TREATMENT",
-    title: "Detection",
-    intent:
-      "A proposed evidence view for how reviewed observations may be presented with context.",
-    placeholderTitle: "Observation needs provenance before presentation.",
-    placeholderBody:
-      "No detection output is represented here. A capture may be added only when its operational state and source record can be reviewed together.",
-    verificationRequirements: sharedRequirements,
-    imageAlt: "Verified FAULTLINE detection product capture.",
+    imageAlt:
+      "Source-qualified FAULTLINE Pressure Index and Market Overview product capture.",
     verification: pendingVerification(),
   },
   {
     id: "six-domain-intelligence",
     label: "Six-Domain Intelligence",
-    eyebrow: "ARCHITECTURE CONTEXT",
-    title: "Six-Domain Intelligence",
+    eyebrow: "CROSS-MARKET ARCHITECTURE",
+    title: "Six-Domain Intelligence Architecture",
     intent:
-      "A proposed evidence view for the approved six-domain architecture, not a claim of live output.",
-    placeholderTitle: "Architecture context, not a simulated screen.",
+      "Connect the six approved domains while keeping direct observations distinct from proxy limitations and inferred relationships.",
+    benefit:
+      "See where pressure is developing across markets, and distinguish measured evidence from an explanatory relationship.",
+    placeholderTitle: "Architecture is visible. Evidence must follow.",
     placeholderBody:
-      "This placeholder intentionally contains no dashboard, chart, score, or signal. It is reserved for a reviewed application capture with clear evidence labels.",
+      "The approved hero remains an educational illustration. It cannot stand in for an operational six-domain application capture.",
+    promotionBlockers: [
+      "PR #107 activation is a separate unmerged integration dependency.",
+      "No source-qualified six-domain evidence set or operational capture surface is connected here.",
+    ],
+    publicDemoHref: "/methodology#sources",
+    publicDemoLabel: "Review domain sources and limitations",
     verificationRequirements: sharedRequirements,
-    imageAlt: "Verified FAULTLINE six-domain intelligence product capture.",
+    imageAlt:
+      "Source-qualified FAULTLINE six-domain intelligence product capture.",
     verification: pendingVerification(),
   },
   {
-    id: "sector-rotation",
-    label: "Sector Rotation",
-    eyebrow: "CANDIDATE EVIDENCE",
-    title: "Sector Rotation",
+    id: "signals-discovery",
+    label: "Signals & Smart Discovery",
+    eyebrow: "OBSERVATION AND EXPLANATION",
+    title: "Signals and Smart Discovery",
     intent:
-      "A candidate evidence slot, not a statement that a sector-rotation capability is currently available.",
-    placeholderTitle: "Candidate capture awaiting qualification.",
+      "Inspect dated observations and investigate what changed, why it matters and what evidence would confirm or challenge the interpretation.",
+    benefit:
+      "Move from a market question to an explanation anchored in actual observations—not an unsupported recommendation.",
+    placeholderTitle: "An answer needs evidence behind it.",
     placeholderBody:
-      "The capability description is intent only. A genuine capture can replace this panel after operational, source, and privacy verification is complete.",
+      "Neither a fallback quote nor a synthetic demo account qualifies an operational signal or a Smart Discovery answer.",
+    promotionBlockers: [
+      "No reviewed nonproduction quote response, source-backed answer or provider runtime is available.",
+      "Computed signals and Discovery require authorized candidate access; demo paths cannot supply operational proof.",
+    ],
+    publicDemoHref: "/methodology#stack",
+    publicDemoLabel: "Read the existing capability inventory",
     verificationRequirements: sharedRequirements,
-    imageAlt: "Verified FAULTLINE sector rotation product capture.",
+    imageAlt:
+      "Source-qualified FAULTLINE Signals and Smart Discovery product capture.",
     verification: pendingVerification(),
   },
   {
-    id: "smart-discovery",
-    label: "Smart Discovery",
-    eyebrow: "CANDIDATE EVIDENCE",
-    title: "Smart Discovery",
+    id: "outlook-scenarios",
+    label: "Outlook & Scenarios",
+    eyebrow: "CONDITIONS, NOT CERTAINTY",
+    title: "Outlook and Scenario Analysis",
     intent:
-      "A candidate evidence slot, not a promise of an available discovery workflow.",
-    placeholderTitle: "Evidence first. Interface second.",
+      "Understand conditional outlook, confirmation and invalidation while withholding scenario claims the canonical evidence does not support.",
+    benefit:
+      "Know what to watch next, which developments would change the interpretation and where uncertainty remains.",
+    placeholderTitle: "A conditional outlook, not invented odds.",
     placeholderBody:
-      "No workflow is implied by this design placeholder. A verified capture must document its source, timing, classification, and privacy review before it can appear.",
+      "Only the current canonical OUTLOOK surface is a capture candidate. Legacy seeded scenarios and research-only history are excluded.",
+    promotionBlockers: [
+      "No genuine nonproduction canonical observation or authorized OUTLOOK session is available.",
+      "No public operational Outlook demo is currently established; static or seeded scenarios cannot substitute.",
+    ],
+    publicDemoHref: "/methodology#limitations",
+    publicDemoLabel: "Review uncertainty and limitations",
     verificationRequirements: sharedRequirements,
-    imageAlt: "Verified FAULTLINE Smart Discovery product capture.",
+    imageAlt: "Source-qualified FAULTLINE canonical Outlook product capture.",
+    verification: pendingVerification(),
+  },
+  {
+    id: "daily-brief",
+    label: "Daily Intelligence Brief",
+    eyebrow: "SNAPSHOT-BOUND PUBLIC CONTEXT",
+    title: "Daily Intelligence Brief",
+    intent:
+      "Read a saved market explanation tied to the exact generation snapshot, rather than quietly substituting a later live reading.",
+    benefit:
+      "Follow how the market interpretation developed over time, with the original observation date kept in view.",
+    placeholderTitle: "A market explanation with its original context.",
+    placeholderBody:
+      "Selected as the strongest additional public capture candidate because the existing archive supports published, snapshot-bound briefs. No qualified brief is connected in this checkout.",
+    promotionBlockers: [
+      "No genuinely generated published brief and immutable linked snapshot are available in the isolated runtime.",
+      "An archive render or unbound legacy article does not qualify a product capture.",
+    ],
+    publicDemoHref: "/daily-brief",
+    publicDemoLabel: "Open the existing public brief archive",
+    verificationRequirements: sharedRequirements,
+    imageAlt:
+      "Source-qualified FAULTLINE snapshot-bound Daily Intelligence Brief capture.",
     verification: pendingVerification(),
   },
 ] as const;
@@ -168,7 +232,9 @@ function isRecordedTimestamp(timestamp: string | null): timestamp is string {
 }
 
 function isRecordedSourceSha(sha: string | null): sha is string {
-  return typeof sha === "string" && /^[a-f0-9]{7,64}$/i.test(sha);
+  return (
+    typeof sha === "string" && /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/i.test(sha)
+  );
 }
 
 /**
@@ -183,6 +249,18 @@ export function hasVerifiedCapture(evidence: ShowcaseEvidence): boolean {
     gate.operationalVerified &&
     gate.sourceVerified &&
     isLocalMarketingAssetPath(gate.actualCapturePath) &&
+    isLocalMarketingAssetPath(gate.mobileCapturePath) &&
+    [
+      gate.desktopWidth,
+      gate.desktopHeight,
+      gate.mobileWidth,
+      gate.mobileHeight,
+    ].every(value => Number.isInteger(value) && (value ?? 0) > 0) &&
+    /^[a-f0-9]{64}$/i.test(gate.captureSha256 ?? "") &&
+    /^[a-f0-9]{64}$/i.test(gate.mobileCaptureSha256 ?? "") &&
+    /^docs\/marketing\/qualification\/[a-z0-9-]+\.md$/.test(
+      gate.operationalQualificationPath ?? ""
+    ) &&
     isRecordedTimestamp(gate.capturedAt) &&
     typeof gate.sourceBranch === "string" &&
     gate.sourceBranch.trim().length > 0 &&
