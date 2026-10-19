@@ -19,7 +19,7 @@ describe("crypto technical-indicator integrity", () => {
     const result = computeCryptoSignal({ market, btcDominance: 55, regime: { label: "MODERATE RISK", score: 5 } });
     expect(result.technicals.rsiIsTrue).toBe(false);
     expect(result.rationale).not.toMatch(/RSI(?:~|\(14\)| at)/i);
-    expect(result.rationale).toContain("completed-bar RSI unavailable");
+    expect(result.rationale).toContain("Insufficient completed historical bars");
   });
 
   it("rejects a direct caller’s current candle before it can establish a true RSI", () => {
@@ -35,7 +35,7 @@ describe("crypto technical-indicator integrity", () => {
   it("does not render the approximate RSI indicator anywhere in the Crypto Signals surface", () => {
     const source = readFileSync(path.join(root, "client/src/pages/CryptoSignals.tsx"), "utf8");
     expect(source).not.toContain("RSI~");
-    expect(source).toContain("COMPLETED DAILY BARS REQUIRED");
-    expect(source).toContain("sig.technicals.rsiIsTrue ? (");
+    expect(source).toContain("CryptoRsiReadout");
+    expect(source).not.toContain("sig.technicals.rsiIsTrue ? (");
   });
 });

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { evidenceFreshnessLabel } from "./evidenceFreshness";
+import { evidenceFreshnessLabel, providerRowFreshness } from "./evidenceFreshness";
 import { assembleCanonicalMarketState, deriveMarketStateFreshness } from "./marketStateService";
 import { freshnessFromAssembledSnapshot } from "./seismographUnified";
 import { computeTradingSignal, clearSignalCache } from "./tradingSignals";
@@ -96,10 +96,21 @@ describe("false LIVE remediation", () => {
 
 describe("Smart Discovery freshness label", () => {
   it("uses verified, delayed, or unavailable evidence and never a fixed live sentence", () => {
+    const stale = now - (19 * 60 * 60 * 1000);
     expect(evidenceFreshnessLabel({ quoteFreshness: ["LIVE", "LIVE"] })).toBe("Unavailable");
     expect(evidenceFreshnessLabel({ quoteFreshness: ["LIVE", "DELAYED"] })).toBe("Unavailable");
     expect(evidenceFreshnessLabel({ quoteFreshness: [] })).toBe("Unavailable");
     expect(evidenceFreshnessLabel({
+      scope: "ticker",
+      quoteFreshness: ["LIVE"],
+      canonicalQuality: "UNAVAILABLE",
+      fredStatus: "stale",
+      observedAtMs: stale,
+      nowMs: now,
+      quotes: [{ observedAtMs: fresh, sourceStatus: "live" }],
+    })).toBe("Unavailable");
+    expect(evidenceFreshnessLabel({
+      scope: "ticker",
       canonicalQuality: "HEALTHY",
       fredStatus: "live",
       observedAtMs: fresh,
@@ -107,23 +118,42 @@ describe("Smart Discovery freshness label", () => {
       quotes: [{ observedAtMs: fresh, sourceStatus: "live" }],
     })).toBe("Verified source");
     expect(evidenceFreshnessLabel({
+      scope: "ticker",
+      canonicalQuality: "HEALTHY",
+      fredStatus: "live",
+      observedAtMs: fresh,
+      nowMs: now,
+      quotes: [{ observedAtMs: fresh, sourceStatus: "delayed" }],
+    })).toBe("Delayed");
+    expect(evidenceFreshnessLabel({
+      scope: "macro",
       canonicalQuality: "DEGRADED",
       fredStatus: "fallback",
       observedAtMs: fresh,
       nowMs: now,
-      quotes: [{ observedAtMs: fresh, sourceStatus: "live" }],
     })).toBe("Delayed");
     expect(evidenceFreshnessLabel({
+      scope: "macro",
       canonicalQuality: null,
       fredStatus: "live",
       observedAtMs: fresh,
       nowMs: now,
-      quotes: [{ observedAtMs: fresh, sourceStatus: "live" }],
     })).toBe("Delayed");
     const server = readFileSync(path.resolve("server/routers/smartDiscovery.ts"), "utf8");
     const client = readFileSync(path.resolve("client/src/pages/SmartDiscovery.tsx"), "utf8");
     expect(server).not.toContain("Live — updated just now");
     expect(client).not.toContain('value="LIVE"');
+    expect(server).not.toContain("quoteFreshness:");
+  });
+
+  it("classifies Yahoo and CoinGecko rows from the provider observation, not a fixed LIVE token", () => {
+    expect(providerRowFreshness({ provider: "yahoo", observedAtMs: fresh, nowMs: now })).toBe("DELAYED");
+    expect(providerRowFreshness({ provider: "yahoo", observedAtMs: null, nowMs: now })).toBe("UNAVAILABLE");
+    expect(providerRowFreshness({ provider: "polygon-prev", observedAtMs: fresh, nowMs: now })).toBe("DELAYED");
+    expect(providerRowFreshness({ provider: "coingecko", observedAtMs: fresh, nowMs: now })).toBe("LIVE");
+    expect(providerRowFreshness({ provider: "coingecko", observedAtMs: now - 60 * 60 * 1000, nowMs: now })).toBe("RECENT");
+    expect(providerRowFreshness({ provider: "coingecko", observedAtMs: null, nowMs: now })).toBe("UNAVAILABLE");
+    expect(providerRowFreshness({ provider: "coingecko", observedAtMs: now - 19 * 60 * 60 * 1000, nowMs: now })).toBe("STALE");
   });
 });
 

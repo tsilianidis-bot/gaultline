@@ -14,6 +14,7 @@ import { TickerChip } from "@/components/TickerActionMenu";
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
+import { formatObservedFixed } from "@/lib/nullableFormat";
 // ── Inline types (mirrored from server/cryptoEngine.ts) ─────────
 type CryptoSignalLabel =
   | "Speculative Acceleration"
@@ -54,7 +55,7 @@ interface CryptoAssetIntelligence {
 }
 
 interface CryptoSystemicRisk {
-  score: number; level: CryptoRiskLevel; btcDominance: number;
+  score: number; level: CryptoRiskLevel; btcDominance: number | null;
   stablecoinLiquidity: "Expanding" | "Stable" | "Tightening" | "Contracting";
   volatilityRegime: "Low" | "Normal" | "Elevated" | "Extreme";
   leverageConditions: "Low" | "Normal" | "Elevated" | "Extreme";
@@ -270,7 +271,7 @@ function SystemicRiskPanel({ risk }: { risk: CryptoSystemicRisk }) {
         {/* Metrics grid */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginBottom: "12px" }}>
           {[
-            { label: "BTC Dominance",       value: `${risk.btcDominance.toFixed(1)}%`,  color: risk.btcDominance > 60 ? "#FF9500" : "#00FF88" },
+            { label: "BTC Dominance",       value: formatObservedFixed(risk.btcDominance, 1, "%"),  color: typeof risk.btcDominance === "number" && risk.btcDominance > 60 ? "#FF9500" : typeof risk.btcDominance === "number" ? "#00FF88" : "#94A3B8" },
             { label: "Stablecoin Liq.",     value: risk.stablecoinLiquidity,             color: risk.stablecoinLiquidity === "Expanding" ? "#00FF88" : risk.stablecoinLiquidity === "Contracting" ? "#FF2D55" : "#FFD700" },
             { label: "Volatility Regime",   value: risk.volatilityRegime,               color: risk.volatilityRegime === "Low" ? "#00FF88" : risk.volatilityRegime === "Extreme" ? "#FF2D55" : "#FFD700" },
             { label: "Market Breadth",      value: risk.marketBreadth,                  color: risk.marketBreadth === "Strong" ? "#00FF88" : risk.marketBreadth === "Deteriorating" ? "#FF2D55" : "#FFD700" },
@@ -663,7 +664,7 @@ function CryptoSearchInner() {
               {[
                 { label: "Total Market Cap",  value: fmt(resolvedGlobal.totalMarketCap),                                                    color: resolvedGlobal.marketCapChangePercent24h >= 0 ? "#00FF88" : "#FF2D55" },
                 { label: "24h Volume",        value: fmt(resolvedGlobal.totalVolume24h),                                                     color: "#00D4FF" },
-                { label: "BTC Dominance",     value: `${resolvedGlobal.btcDominance.toFixed(1)}%`,                                           color: resolvedGlobal.btcDominance > 60 ? "#FF9500" : "#00D4FF" },
+                { label: "BTC Dominance",     value: formatObservedFixed(resolvedGlobal.btcDominance, 1, "%"),                                           color: typeof resolvedGlobal.btcDominance === "number" && resolvedGlobal.btcDominance > 60 ? "#FF9500" : typeof resolvedGlobal.btcDominance === "number" ? "#00D4FF" : "#94A3B8" },
                 { label: "Market Cap Δ 24h",  value: fmtPct(resolvedGlobal.marketCapChangePercent24h),                                       color: resolvedGlobal.marketCapChangePercent24h >= 0 ? "#00FF88" : "#FF2D55" },
               ].map(({ label, value, color }) => (
                 <div key={label} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>

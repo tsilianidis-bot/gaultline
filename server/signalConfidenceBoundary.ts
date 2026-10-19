@@ -8,18 +8,18 @@
  * internally; only the tRPC response is nulled here.
  */
 
-export type WithheldConfidence<T extends { confidence: number }> =
+export type WithheldConfidence<T extends { confidence: number | null }> =
   Omit<T, "confidence"> & { confidence: null };
 
 /** Null the formula confidence on one signal at the response boundary. */
-export function withholdSignalConfidence<T extends { confidence: number }>(
+export function withholdSignalConfidence<T extends { confidence: number | null }>(
   signal: T,
 ): WithheldConfidence<T> {
   return { ...signal, confidence: null };
 }
 
 /** Null the formula confidence on a batch of signals. */
-export function withholdSignalsConfidence<T extends { confidence: number }>(
+export function withholdSignalsConfidence<T extends { confidence: number | null }>(
   signals: T[],
 ): WithheldConfidence<T>[] {
   return signals.map(withholdSignalConfidence);
@@ -31,12 +31,13 @@ export function withholdSignalsConfidence<T extends { confidence: number }>(
  * carries `strengthRank`: an ordinal position only (1 = first), ties kept in
  * engine order. It is never a percentage and must not be displayed.
  */
-export function withholdScreenerConfidence<T extends { confidence: number }>(
+export function withholdScreenerConfidence<T extends { confidence: number | null }>(
   signals: T[],
 ): Array<WithheldConfidence<T> & { strengthRank: number }> {
+  const rankOf = (value: number | null) => typeof value === "number" && Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY;
   const order = signals
     .map((s, index) => ({ index, confidence: s.confidence }))
-    .sort((a, b) => b.confidence - a.confidence || a.index - b.index);
+    .sort((a, b) => rankOf(b.confidence) - rankOf(a.confidence) || a.index - b.index);
   const rankByIndex = new Map<number, number>();
   order.forEach((entry, position) => rankByIndex.set(entry.index, position + 1));
   return signals.map((s, index) => ({

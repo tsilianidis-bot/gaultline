@@ -13,7 +13,7 @@ import { REQUIRED_VERIFIED_EVIDENCE_IDS, captureTrackRecordFromScheduledRun } fr
 import type { ValidatedIntelligenceEvidence } from "../shared/intelligenceEvidence";
 
 const PRODUCTION_URL = /prod|railway|getfaultline|amazonaws|planetscale/i;
-const PORT = 3307;
+const PORT = 3309;
 
 function assertIsolatedTrackRecordDatabase(url: string): void {
   if (!url || PRODUCTION_URL.test(url) || !/127\.0\.0\.1|localhost/.test(url)) {

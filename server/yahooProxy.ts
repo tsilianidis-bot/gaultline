@@ -14,6 +14,7 @@ import { captureError } from "./errorTracking";
 // ============================================================
 
 import { LRUCache } from "./lruCache";
+import { isEquityDailyBarComplete } from "../shared/completedBars";
 import { log } from "./logger";
 
 const CACHE_TTL_MS = 60_000; // 60 seconds
@@ -140,23 +141,12 @@ export interface YahooDailyBar {
 
 const dailyBarCache = new LRUCache<string, YahooDailyBar[]>(200, 60 * 60_000);
 
-/** New York exchange calendar date for a provider timestamp. */
-function newYorkDate(timestamp: number): string {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit",
-  }).formatToParts(new Date(timestamp));
-  const pick = (type: string) => parts.find(part => part.type === type)?.value;
-  return `${pick("year")}-${pick("month")}-${pick("day")}`;
-}
-
 /**
- * Yahoo daily-chart responses can contain the active US session’s evolving bar.
- * Exclude the entire current New York calendar date rather than guessing that a
- * close is final. This is deliberately conservative after the bell as well.
+ * A bar dated today counts once that NYSE session has closed, including an early close.
+ * The same calendar date is dropped while the session is still open.
  */
 export function completedYahooDailyBars(bars: YahooDailyBar[], nowMs = Date.now()): YahooDailyBar[] {
-  const currentSessionDate = newYorkDate(nowMs);
-  return bars.filter(bar => Number.isFinite(bar.timestamp) && newYorkDate(bar.timestamp) < currentSessionDate);
+  return bars.filter(bar => Number.isFinite(bar.timestamp) && isEquityDailyBarComplete(bar.timestamp, nowMs));
 }
 
 /**
@@ -179,13 +169,14 @@ export async function getDailyBars(ticker: string, range: "3mo" | "6mo" | "5y" |
     const quote = result?.indicators?.quote?.[0];
     const timestamps = result?.timestamp ?? [];
     if (!quote || timestamps.length === 0) return [];
+    const nowMs = Date.now();
     const bars = timestamps.map((timestamp, index) => ({
       close: quote.close?.[index] ?? null, open: quote.open?.[index] ?? null, high: quote.high?.[index] ?? null,
       low: quote.low?.[index] ?? null, volume: quote.volume?.[index] ?? null, timestamp: timestamp * 1000,
-    })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value)));
-    const completed = completedYahooDailyBars(bars);
-    dailyBarCache.set(cacheKey, completed);
-    return completed;
+    })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value)))
+      .filter(bar => isEquityDailyBarComplete(bar.timestamp, nowMs));
+    dailyBarCache.set(cacheKey, bars);
+    return bars;
   } catch (error) {
     log.warn(`[Yahoo Proxy] Daily bars unavailable for ${ticker}: ${error instanceof Error ? error.message : String(error)}`);
     return [];
@@ -214,13 +205,14 @@ export async function getDailyBarsForPeriod(ticker: string, startDate: string, e
     const quote = result?.indicators?.quote?.[0];
     const timestamps = result?.timestamp ?? [];
     if (!quote || timestamps.length === 0) return [];
+    const nowMs = Date.now();
     const bars = timestamps.map((timestamp, index) => ({
       close: quote.close?.[index] ?? null, open: quote.open?.[index] ?? null, high: quote.high?.[index] ?? null,
       low: quote.low?.[index] ?? null, volume: quote.volume?.[index] ?? null, timestamp: timestamp * 1000,
-    })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value)));
-    const completed = completedYahooDailyBars(bars);
-    dailyBarCache.set(cacheKey, completed);
-    return completed;
+    })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value)))
+      .filter(bar => isEquityDailyBarComplete(bar.timestamp, nowMs));
+    dailyBarCache.set(cacheKey, bars);
+    return bars;
   } catch (error) {
     log.warn(`[Yahoo Proxy] Period-bounded daily bars unavailable for ${ticker}: ${error instanceof Error ? error.message : String(error)}`);
     return [];

@@ -867,7 +867,7 @@ export const appRouter = router({
           const result = computeCryptoSignal({
             market,
             ohlcBars: ohlcBars.length > 0 ? ohlcBars : undefined,
-            btcDominance: globalStats?.btcDominance ?? 55,
+            btcDominance: globalStats?.btcDominance ?? null,
             regime: { label: pressure.regime, score: pressure.overallPressure },
           });
           const sanitizeNumbers = (v: unknown): unknown => {
@@ -898,7 +898,7 @@ export const appRouter = router({
             calculateFaultlinePressure(),
           ]);
           const regime = { label: pressure.regime, score: pressure.overallPressure };
-          const btcDominance = globalStats?.btcDominance ?? 55;
+          const btcDominance = globalStats?.btcDominance ?? null;
           // Compute signals without OHLC for screener speed (sparkline fallback)
           const results = computeCryptoSignals(
             markets.map(m => ({ market: m, btcDominance, regime }))
@@ -917,6 +917,7 @@ export const appRouter = router({
             btcDominance,
             totalMarketCap: globalStats?.totalMarketCap ?? 0,
             marketCapChange24h: globalStats?.marketCapChangePercent24h ?? 0,
+            marketObservedAtMs: globalStats?.observedAt ?? null,
             computedAt: Date.now(),
           };
           return sanitizeNums(screenerResult) as typeof screenerResult;
@@ -2196,7 +2197,7 @@ export const appRouter = router({
           changePercent: z.number(),
           volume: z.number(),
           marketCap: z.number().nullable(),
-          dataFreshness: z.enum(['LIVE', 'DELAYED', 'STALE', 'UNAVAILABLE']),
+          dataFreshness: z.enum(['LIVE', 'RECENT', 'DELAYED', 'STALE', 'UNAVAILABLE']),
           entryZoneLow: z.number(),
           entryZoneHigh: z.number(),
           stopLoss: z.number(),
@@ -2259,7 +2260,7 @@ export const appRouter = router({
             changePercent: 0,
             volume: 0,
             marketCap: null,
-            dataFreshness: 'LIVE' as const,
+            dataFreshness: 'UNAVAILABLE' as const,
             entryZoneLow: input.currentPrice,
             entryZoneHigh: input.currentPrice,
             stopLoss: input.currentPrice * 0.9,

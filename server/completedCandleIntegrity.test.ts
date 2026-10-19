@@ -28,6 +28,19 @@ describe("completed-candle admission", () => {
     const nov2 = Date.parse("2026-11-02T14:30:00.000Z");
     expect(completedYahooDailyBars([bar(oct30), bar(nov2)], now).map(item => item.timestamp)).toEqual([oct30]);
   });
+
+  it("keeps today's Yahoo bar after the NYSE close, including an early close, and drops it before the close", () => {
+    const friday = Date.parse("2026-10-16T13:30:00.000Z");
+    const before = Date.parse("2026-10-16T19:59:00.000Z");
+    const after = Date.parse("2026-10-16T20:00:00.000Z");
+    expect(completedYahooDailyBars([bar(friday)], before).map(item => item.timestamp)).toEqual([]);
+    expect(completedYahooDailyBars([bar(friday)], after).map(item => item.timestamp)).toEqual([friday]);
+    const eve = Date.parse("2026-12-24T14:30:00.000Z");
+    const beforeEarly = Date.parse("2026-12-24T17:59:00.000Z");
+    const afterEarly = Date.parse("2026-12-24T18:00:00.000Z");
+    expect(completedYahooDailyBars([bar(eve)], beforeEarly).map(item => item.timestamp)).toEqual([]);
+    expect(completedYahooDailyBars([bar(eve)], afterEarly).map(item => item.timestamp)).toEqual([eve]);
+  });
 });
 
 

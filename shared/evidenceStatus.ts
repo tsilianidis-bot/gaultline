@@ -9,6 +9,11 @@ export type EvidenceStatusLabel = (typeof EVIDENCE_STATUS_LABELS)[number];
 
 export const EVIDENCE_LIVE_MAX_AGE_MS = 20 * 60 * 1000;
 export const EVIDENCE_RECENT_MAX_AGE_MS = 18 * 60 * 60 * 1000;
+/**
+ * Observations this far ahead of the local clock are still treated as age 0.
+ * Anything further ahead is not an observation and is UNAVAILABLE.
+ */
+export const EVIDENCE_CLOCK_SKEW_MS = 60 * 1000;
 
 const DEGRADED_SOURCES = new Set(["delayed", "fallback", "degraded", "polygon-prev", "cached"]);
 const STALE_SOURCES = new Set(["stale"]);
@@ -39,10 +44,9 @@ export function evidenceStatusLabel(input: EvidenceStatusInput): EvidenceStatusL
 
   const observed = input.observedAtMs;
   const now = input.nowMs ?? Date.now();
-  const ageMs = typeof observed === "number" && Number.isFinite(observed)
-    ? Math.max(0, now - observed)
-    : Number.POSITIVE_INFINITY;
-  if (ageMs === Number.POSITIVE_INFINITY) return "UNAVAILABLE";
+  if (typeof observed !== "number" || !Number.isFinite(observed)) return "UNAVAILABLE";
+  if (observed > now + EVIDENCE_CLOCK_SKEW_MS) return "UNAVAILABLE";
+  const ageMs = Math.max(0, now - observed);
   if (ageMs > EVIDENCE_RECENT_MAX_AGE_MS) return "STALE";
 
   const degraded = DEGRADED_SOURCES.has(source)
@@ -53,8 +57,9 @@ export function evidenceStatusLabel(input: EvidenceStatusInput): EvidenceStatusL
   if (ageMs > EVIDENCE_LIVE_MAX_AGE_MS) return "RECENT";
   if (input.liveEligible === false) return "RECENT";
   if (quality !== "" && quality !== "HEALTHY") return "DELAYED";
-  if (source !== "" && source !== "live" && source !== "healthy") return "DELAYED";
-  if (quality === "" && source === "") return "RECENT";
+  if (source === "" && quality === "") return "RECENT";
+  if (source === "") return "UNAVAILABLE";
+  if (source !== "live" && source !== "healthy") return "DELAYED";
   return "LIVE";
 }
 

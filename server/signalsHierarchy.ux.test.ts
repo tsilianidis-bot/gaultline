@@ -88,11 +88,11 @@ describe("Data integrity DELAYED / STALE / UNAVAILABLE detail", () => {
 });
 
 describe("Signal calculation / methodology untouched", () => {
-  // tradingSignals.ts and cryptoSignals.ts are outside this freeze only for
-  // completed-bar admission. They withhold technical claims and RSI-derived
-  // conviction when verified completed daily bars are absent.
-  const engineFiles = [
-    "server/cryptoEngine.ts",
+  // tradingSignals.ts and cryptoSignals.ts are outside this freeze: completed-bar
+  // admission withholds BUY/SELL, RSI, and crossover wording when fewer than 15
+  // verified closes exist. cryptoSignals.ts no longer scores a 7-day sparkline.
+  // Pressure Index formulas are not in this list and stay unchanged.
+  const frozenEngines = [
     "server/signalOutlook.ts",
     "server/preFlight.ts",
     "server/tradePreflight.ts",
@@ -100,18 +100,32 @@ describe("Signal calculation / methodology untouched", () => {
 
   it("engine-diff is empty against branch base for signal engines", () => {
     const base = "1cfa1299f6644a7eb9a60246330c7b9a13ccc433";
-    for (const file of engineFiles) {
+    for (const file of frozenEngines) {
       const diff = execSync(`git diff -- ${file}`, { cwd: root, encoding: "utf8" });
       expect(diff, `${file} must be unchanged`).toBe("");
     }
-    // Also confirm vs explicit base (uncommitted + committed)
-    const named = execSync(`git diff ${base} -- ${engineFiles.join(" ")}`, { cwd: root, encoding: "utf8" });
+    const named = execSync(`git diff ${base} -- ${frozenEngines.join(" ")}`, { cwd: root, encoding: "utf8" });
     expect(named.trim()).toBe("");
+    // James authorized one cryptoEngine change: missing BTC dominance is withheld
+    // instead of substituted with 55. The other scoring fallbacks in that file stay.
+    const cryptoDiff = execSync(`git diff ${base} -- server/cryptoEngine.ts`, { cwd: root, encoding: "utf8" });
+    const added = cryptoDiff.split("\n").filter(line => line.startsWith("+") && !line.startsWith("+++"));
+    expect(cryptoDiff).toContain("btcDominance ?? 55");
+    const addedText = added.join("\n");
+    expect(addedText).not.toContain("?? 55");
+    expect(addedText).not.toMatch(/marketCapChangePercent24h \?\?/);
+    expect(addedText).not.toMatch(/stableVolumeRatio =/);
+    expect(addedText).not.toMatch(/macroScore =/);
+    expect(cryptoDiff).toContain("dominanceWeight");
+    const cryptoEngineSource = read("server/cryptoEngine.ts");
+    expect(cryptoEngineSource).not.toMatch(/\?\? 55/);
+    expect(cryptoEngineSource).toContain("btcDominance:       number | null");
     const trading = read("server/tradingSignals.ts");
-    expect(trading).toContain("Insufficient completed historical bars; trading indicators are unavailable.");
     const crypto = read("server/cryptoSignals.ts");
-    expect(crypto).toContain("rsiIsTrue ? clamp(rsiEstimate, 0, 100) : 50");
-    expect(crypto).toContain("completed-bar RSI unavailable");
+    expect(trading).toContain("Insufficient completed historical bars; trading indicators are unavailable.");
+    expect(crypto).toContain("Insufficient completed historical bars; trading indicators are unavailable.");
+    expect(crypto).not.toContain("computeWildersRSI(sparkline7d");
+    expect(crypto).not.toContain("computeMACD(sparkline7d");
   });
 });
 

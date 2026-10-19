@@ -4,6 +4,7 @@ import path from "path";
 const templateRoot = path.resolve(import.meta.dirname);
 
 export default defineConfig({
+  esbuild: { jsx: "automatic" },
   root: templateRoot,
   cacheDir: "/tmp/vite-cache-faultline",
   resolve: {

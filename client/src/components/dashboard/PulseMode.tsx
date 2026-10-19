@@ -20,6 +20,7 @@ import {
   LABOR_RATES_DISPLAY_NAME,
 } from "@shared/nowInterpretationCopy";
 import { PROBABILITY_DISPLAY_TEXT } from "@shared/probabilityContract";
+import { evidenceStatusFromIntegrity } from "@shared/evidenceStatus";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function riskLabel(level: string): string {
@@ -101,8 +102,18 @@ function PulseRegimeInterpretation() {
 }
 
 // ── Pressure Index Hero ────────────────────────────────────────────────────────
+export function PulseFeedStatus({ integrityLabel }: { integrityLabel: string | null | undefined }) {
+  const label = evidenceStatusFromIntegrity(integrityLabel);
+  const color = label === "LIVE" ? "#00FF88" : label === "UNAVAILABLE" || label === "STALE" ? "#94A3B8" : "#FF9500";
+  return (
+    <span data-pulse-feed-status={label} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: "0.25em", color }}>
+      {label}
+    </span>
+  );
+}
+
 function PressureHero() {
-  const { output, isLive, isLoading } = useEngine();
+  const { output, integrityLabel, isLoading } = useEngine();
   const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
     staleTime: 60_000,
     refetchOnWindowFocus: false,
@@ -138,17 +149,7 @@ function PressureHero() {
         {/* Live badge */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div
-              style={{
-                width: 6, height: 6, borderRadius: "50%",
-                background: isLive ? "#00FF88" : "#FF9500",
-                boxShadow: `0 0 8px ${isLive ? "#00FF88" : "#FF9500"}`,
-                animation: "blink-alert 6s ease-in-out infinite",
-              }}
-            />
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: "0.25em", color: "rgba(100,116,139,0.7)" }}>
-              {isLive ? "LIVE FEED" : "CACHED DATA"}
-            </span>
+            <PulseFeedStatus integrityLabel={integrityLabel} />
           </div>
           <div
             style={{
@@ -225,7 +226,8 @@ function PressureHero() {
 
 // ── What Changed Today ─────────────────────────────────────────────────────────
 function WhatChangedToday() {
-  const { output } = useEngine();
+  const { output, integrityLabel } = useEngine();
+  const pulseStatus = evidenceStatusFromIntegrity(integrityLabel);
   const { domains, overall } = output;
 
   const updates = useMemo(() => {
@@ -254,7 +256,7 @@ function WhatChangedToday() {
           WHAT CHANGED TODAY
         </div>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "rgba(100,116,139,0.4)" }}>
-          LIVE INTELLIGENCE
+          {pulseStatus}
         </div>
       </div>
 

@@ -94,7 +94,7 @@ describe("UI surfaces render v2 rows only (source wiring)", () => {
   it("Alerts: LIVE VERIFIED only over verified rows; unverified horizons as Pending/Superseded", () => {
     const alerts = source("client/src/pages/Alerts.tsx");
     expect(alerts).toMatch(/const outcomes = \(event\.outcomes \?\? \[\]\)\.filter\(isVerifiedInstitutionalOutcome\)/);
-    expect(alerts).toMatch(/\{outcomes\.length > 0 && <div><div[^>]*>APPENDED BROAD-MARKET OUTCOMES · LIVE VERIFIED<\/div>[\s\S]{0,200}\{outcomes\.map\(/);
+    expect(alerts).toMatch(/\{outcomes\.length > 0 && <div><div[^>]*>APPENDED BROAD-MARKET OUTCOMES · VERIFIED<\/div>[\s\S]{0,200}\{outcomes\.map\(/);
     expect(alerts).toMatch(/\n\s*\{unverified\.length > 0 && <div><div[^>]*>BROAD-MARKET OUTCOMES · NOT YET VERIFIED<\/div>[\s\S]{0,600}institutionalOutcomeStatusText\(entry\.status\)/);
     expect(alerts).toMatch(/entry\.status !== "VERIFIED"/);
   });

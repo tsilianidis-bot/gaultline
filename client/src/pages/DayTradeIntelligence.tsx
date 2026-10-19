@@ -6,6 +6,7 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { withholdConfidenceFigures } from "@/lib/confidenceDisplay";
 import { finiteOrNull, score100Value } from "@/lib/displayFallbacks";
+import { evidenceStatusFromFailureStats, evidenceStatusFromIntegrity } from "../../../shared/evidenceStatus";
 import { trpc } from "@/lib/trpc";
 import { useLocation, useSearch } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -1787,10 +1788,9 @@ function PipelineHealthTab() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px' }}>
         {PROVIDERS.map(p => {
           const s = (stats as Record<string, { total: number; failures: number; avgLatency: number | null; lastFailure: number | null }>)[p];
-          const failRate = s && s.total > 0 ? ((s.failures / s.total) * 100).toFixed(0) : '0';
-          const isHealthy = !s || s.failures === 0;
-          const isWarning = s && s.failures > 0 && s.failures / s.total < 0.2;
-          const color = isHealthy ? '#00FF88' : isWarning ? '#FFD700' : '#FF6B6B';
+          const failRate = s && s.total > 0 ? ((s.failures / s.total) * 100).toFixed(0) : '—';
+          const providerStatus = evidenceStatusFromFailureStats(s);
+          const color = providerStatus === 'RECENT' ? '#FFD700' : providerStatus === 'DELAYED' ? '#FFD700' : providerStatus === 'STALE' ? '#FF6B6B' : '#94A3B8';
           return (
             <div key={p} style={{ ...CARD, padding: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -1798,7 +1798,7 @@ function PipelineHealthTab() {
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}` }} />
               </div>
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '20px', color }}>
-                {isHealthy ? 'LIVE' : isWarning ? 'DEGRADED' : 'DOWN'}
+                {providerStatus}
               </div>
               {s && (
                 <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -1826,7 +1826,7 @@ function PipelineHealthTab() {
         {isLoading ? (
           <LoadingState label="Loading pipeline events..." />
         ) : logs.length === 0 ? (
-          <EmptyState icon={<CheckCircle size={28} style={{ color: '#00FF88' }} />} title="All Systems Operational" message="No pipeline failures recorded in the last 50 events. Live data is flowing normally." />
+          <EmptyState icon={<CheckCircle size={28} style={{ color: '#00FF88' }} />} title="All Systems Operational" message="No pipeline failures recorded in the last 50 events. An empty failure log is not a market observation." />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {logs.map((log: { id: number; provider: string; endpoint: string; failureReason: string | null; responseCode: number | null; latencyMs: number | null; retryAttempts: number; recoveryStatus: string | null; resolutionTimeMs: number | null; autoRecovered: boolean; createdAt: Date }) => {
@@ -1883,6 +1883,8 @@ const TABS = [
 // ── Main Page ─────────────────────────────────────────────────
 function DayTradeIntelligenceInner() {
   const { user, loading: authLoading } = useAuth();
+  const { integrityLabel } = useEngine();
+  const headerStatus = evidenceStatusFromIntegrity(integrityLabel);
   void authLoading; // used below
   const searchStr = useSearch();
   const urlParams = useMemo(() => new URLSearchParams(searchStr), [searchStr]);
@@ -2012,7 +2014,7 @@ function DayTradeIntelligenceInner() {
               boxShadow: "0 0 6px #00FF88",
               animation: "pulse 2s infinite",
             }} />
-            <span style={{ ...MONO_SM, fontSize: "10px", color: "#00FF88" }}>LIVE</span>
+            <span style={{ ...MONO_SM, fontSize: "10px", color: headerStatus === "LIVE" ? "#00FF88" : "#94A3B8" }}>{headerStatus}</span>
           </div>
         </div>
 

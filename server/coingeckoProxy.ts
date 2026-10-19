@@ -13,6 +13,7 @@
 //   POST /api/crypto/clear-cache           — clear all caches
 // ============================================================
 import type { Express, Request, Response } from "express";
+import { coinGeckoOhlcPeriodMs, isCryptoCandleComplete } from "../shared/completedBars";
 import { LRUCache } from "./lruCache";
 import { log } from "./logger";
 
@@ -86,7 +87,7 @@ export interface CoinMarketData {
 export interface GlobalStats {
   totalMarketCap: number;
   totalVolume24h: number;
-  btcDominance: number;
+  btcDominance: number | null;
   ethDominance: number;
   marketCapChangePercent24h: number;
   activeCryptocurrencies: number;
@@ -500,7 +501,9 @@ export async function getGlobalStats(): Promise<GlobalStats | null> {
     const stats: GlobalStats = {
       totalMarketCap:            d.total_market_cap?.usd ?? 0,
       totalVolume24h:            d.total_volume?.usd ?? 0,
-      btcDominance:              d.market_cap_percentage?.btc ?? 0,
+      btcDominance:              typeof d.market_cap_percentage?.btc === "number" && Number.isFinite(d.market_cap_percentage.btc)
+        ? d.market_cap_percentage.btc
+        : null,
       ethDominance:              d.market_cap_percentage?.eth ?? 0,
       marketCapChangePercent24h: d.market_cap_change_percentage_24h_usd ?? 0,
       activeCryptocurrencies:    d.active_cryptocurrencies ?? 0,

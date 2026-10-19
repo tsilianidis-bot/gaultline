@@ -8,13 +8,15 @@ import { useState } from "react";
 import { Share2, Copy, Check, X } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
 import { engineProbabilityPercent, engineProbabilityText } from "@/lib/marketStateProjection";
+import { evidenceStatusFromIntegrity } from "@shared/evidenceStatus";
 
 interface ShareCardProps {
   onClose: () => void;
 }
 
 export default function ShareCard({ onClose }: ShareCardProps) {
-  const { output, isLive } = useEngine();
+  const { output, integrityLabel } = useEngine();
+  const feedStatus = evidenceStatusFromIntegrity(integrityLabel);
   const { overall, regime, analogs, narrative } = output;
   // Probability contract: share text and card render contract display text only.
   const pText = (key: Parameters<typeof engineProbabilityText>[1]) => engineProbabilityText(output, key);
@@ -38,7 +40,7 @@ export default function ShareCard({ onClose }: ShareCardProps) {
     ``,
     `${narrative.summary.slice(0, 200)}...`,
     ``,
-    `${isLive ? '📡 Current source-status context' : '📊 Source-status qualification required'}`,
+    `📡 Source status: ${feedStatus}`,
     `⚠️ Derived scenario context, not a calibrated forecast. Not financial advice.`,
   ].join('\n');
 
@@ -127,12 +129,9 @@ export default function ShareCard({ onClose }: ShareCardProps) {
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '14px', color: '#F0F4FF', letterSpacing: '0.1em' }}>FAULTLINE</div>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.1em' }}>MACRO INTELLIGENCE · {date}</div>
             </div>
-            {isLive && (
-              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '4px', padding: '2px 6px', background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.2)', borderRadius: '2px' }}>
-                <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#00FF88', animation: 'pulse-gold 2s ease-in-out infinite' }} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#00FF88', letterSpacing: '0.1em' }}>LIVE</span>
-              </div>
-            )}
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '4px', padding: '2px 6px', background: 'rgba(148,163,184,0.08)', border: '1px solid rgba(148,163,184,0.2)', borderRadius: '2px' }}>
+              <span data-share-card-status={feedStatus} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: feedStatus === 'LIVE' ? '#00FF88' : '#94A3B8', letterSpacing: '0.1em' }}>{feedStatus}</span>
+            </div>
           </div>
 
           {/* Score + Regime */}

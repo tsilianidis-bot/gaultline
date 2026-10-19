@@ -906,7 +906,7 @@ export default function SeismographIntelligence() {
         {safeEvolution.sparkline90d.length > 0 && (
           <div style={{ marginBottom: "32px", opacity: loadPhase >= 4 ? 1 : 0, transition: "opacity 0.5s ease-out 0.25s" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
-              <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.18em", color: "rgba(6,182,212,0.4)", fontWeight: 700 }}>LIVE PRESSURE SIGNAL — LAST {safeEvolution.sparkline90d.length} MONTHLY READINGS</div>
+              <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.18em", color: "rgba(6,182,212,0.4)", fontWeight: 700 }}>PRESSURE SIGNAL — LAST {safeEvolution.sparkline90d.length} MONTHLY READINGS</div>
               <span style={{ position: "relative", display: "inline-block", width: "5px", height: "5px", flexShrink: 0 }}>
                 <span style={{ position: "absolute", inset: "-3px", borderRadius: "50%", background: scoreColor, opacity: 0, animation: "live-ripple 2.2s ease-out infinite", animationDelay: "0.4s" }} />
                 <span style={{ display: "block", width: "5px", height: "5px", borderRadius: "50%", background: scoreColor, boxShadow: `0 0 6px ${scoreColor}`, animation: "livepulse 2s infinite", position: "relative", zIndex: 1 }} />
@@ -914,7 +914,7 @@ export default function SeismographIntelligence() {
             </div>
             <LiveSeismographWave sparkline={safeEvolution.sparkline90d} scoreColor={scoreColor} currentScore={currentScore} />
             <div style={{ display: "flex", justifyContent: "space-between", ...mono, fontSize: "8px", color: "rgba(6,182,212,0.28)", marginTop: "5px" }}>
-              <span>{safeEvolution.sparkline90d.length - 1} MONTHS AGO</span><span>LIVE</span>
+              <span>{safeEvolution.sparkline90d.length - 1} MONTHS AGO</span><span>LATEST</span>
             </div>
           </div>
         )}

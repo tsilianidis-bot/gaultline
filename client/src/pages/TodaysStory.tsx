@@ -12,6 +12,15 @@ import {
 import { trpc } from "@/lib/trpc";
 import { useSEO } from "@/hooks/useSEO";
 import { Link } from "wouter";
+import { useEngine } from "@/contexts/EngineContext";
+import { evidenceStatusFromIntegrity } from "../../../shared/evidenceStatus";
+
+export function TodaysStoryStatusBadge({ integrityLabel }: { integrityLabel: string | null | undefined }) {
+  const label = evidenceStatusFromIntegrity(integrityLabel);
+  return (
+    <span data-evidence-status={label} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)", background: "rgba(255,255,255,0.04)", padding: "1px 5px", borderRadius: "2px" }}>{label}</span>
+  );
+}
 
 // ── Helpers ───────────────────────────────────────────────────
 function PressureBadge({ score }: { score: number }) {
@@ -80,6 +89,7 @@ export default function TodaysStory() {
   });
 
   const [refreshKey, setRefreshKey] = useState(0);
+  const { integrityLabel } = useEngine();
 
   const { data, isLoading, error, refetch, isFetching } = trpc.outlook.getTodaysStory.useQuery(undefined, {
     staleTime: 15 * 60 * 1000,
@@ -105,7 +115,7 @@ export default function TodaysStory() {
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
                 <BookOpen size={14} style={{ color: "#00D4FF" }} />
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(0,212,255,0.5)", letterSpacing: "0.2em" }}>TODAY'S STORY</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)", background: "rgba(255,255,255,0.04)", padding: "1px 5px", borderRadius: "2px" }}>LIVE INTELLIGENCE</span>
+                <TodaysStoryStatusBadge integrityLabel={integrityLabel} />
               </div>
               <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 900, fontSize: "clamp(18px, 4vw, 26px)", color: "#E2E8F0", letterSpacing: "0.04em", margin: 0, lineHeight: 1.1 }}>
                 {isLoading ? "GENERATING NARRATIVE…" : (data?.headline ?? "MARKET INTELLIGENCE BRIEF")}
@@ -266,7 +276,7 @@ export default function TodaysStory() {
               <div style={{ display: "flex", gap: "6px", alignItems: "flex-start" }}>
                 <AlertTriangle size={9} style={{ color: "#374151", flexShrink: 0, marginTop: "1px" }} />
                 <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151", letterSpacing: "0.06em", lineHeight: 1.6, margin: 0 }}>
-                  TODAY'S STORY IS AI-GENERATED FROM LIVE FAULTLINE PRESSURE DATA. IT IS NOT PERSONALIZED FINANCIAL ADVICE. DATA SOURCE: {data.dataSource?.toUpperCase() ?? "LIVE"}. GENERATED AT {data.generatedAt ? new Date(data.generatedAt).toLocaleTimeString() : "—"}.
+                  TODAY'S STORY IS AI-GENERATED FROM FAULTLINE PRESSURE DATA. IT IS NOT PERSONALIZED FINANCIAL ADVICE. DATA SOURCE: {data.dataSource ? data.dataSource.toUpperCase() : "UNAVAILABLE"}. GENERATED AT {data.generatedAt ? new Date(data.generatedAt).toLocaleTimeString() : "—"}.
                 </p>
               </div>
             </div>

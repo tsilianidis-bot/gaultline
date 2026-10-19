@@ -19,6 +19,13 @@ export interface EvidenceQuoteObservation {
 }
 
 export interface EvidenceFreshnessInput {
+  /**
+   * Required. `macro` may verify from canonical quality and FRED alone.
+   * `ticker` verifies only when that response's own quote observations are
+   * present. Omitting the scope is Unavailable, so a ticker cannot be
+   * verified by forgetting to pass quotes.
+   */
+  scope?: "macro" | "ticker" | null;
   canonicalQuality?: string | null;
   fredStatus?: string | null;
   observedAtMs?: number | null;
@@ -67,23 +74,39 @@ function discoveryLabel(status: EvidenceStatusLabel): EvidenceFreshnessLabel {
   return "Delayed";
 }
 
+/** FRED observation time. A missing asOf stays missing. Assembly time is never a substitute. */
+export function fredObservationMs(asOf: unknown): number | null {
+  return typeof asOf === "number" && Number.isFinite(asOf) ? asOf : null;
+}
+
+function quoteObservationLabel(quote: EvidenceQuoteObservation, nowMs: number): EvidenceStatusLabel {
+  const source = typeof quote.sourceStatus === "string" ? quote.sourceStatus.trim() : "";
+  if (!source || quote.observedAtMs == null) return "UNAVAILABLE";
+  return evidenceStatusLabel({
+    observedAtMs: quote.observedAtMs,
+    nowMs,
+    sourceStatus: source,
+    hasObservation: true,
+  });
+}
+
 export function evidenceFreshnessLabel(input: EvidenceFreshnessInput): EvidenceFreshnessLabel {
+  if (input.scope !== "macro" && input.scope !== "ticker") return "Unavailable";
+  if (input.scope === "ticker" && (!input.quotes || input.quotes.length === 0)) return "Unavailable";
+  if (input.quotes && input.quotes.length === 0) return "Unavailable";
   const nowMs = input.nowMs ?? Date.now();
+  const fredStatus = typeof input.fredStatus === "string" ? input.fredStatus.trim() : "";
+  const observedAtMs = fredObservationMs(input.observedAtMs);
   const canonical = evidenceStatusLabel({
-    observedAtMs: input.observedAtMs,
+    observedAtMs,
     nowMs,
     // Missing canonical quality is not healthy evidence. PARTIAL keeps it
     // out of LIVE without treating an omitted field as a dead source.
     quality: input.canonicalQuality == null ? "PARTIAL" : input.canonicalQuality,
-    sourceStatus: input.fredStatus,
-    hasObservation: input.observedAtMs != null || input.canonicalQuality != null || input.fredStatus != null,
+    sourceStatus: fredStatus === "" ? null : fredStatus,
+    hasObservation: observedAtMs != null && fredStatus !== "",
   });
-  const quoteLabels = (input.quotes ?? []).map(quote => evidenceStatusLabel({
-    observedAtMs: quote.observedAtMs,
-    nowMs,
-    sourceStatus: quote.sourceStatus,
-    hasObservation: quote.observedAtMs != null,
-  }));
+  const quoteLabels = (input.quotes ?? []).map(quote => quoteObservationLabel(quote, nowMs));
   // A caller that only has the old LIVE/DELAYED strings has no observation time.
   if (input.quoteFreshness && input.quotes == null) {
     quoteLabels.push("UNAVAILABLE");

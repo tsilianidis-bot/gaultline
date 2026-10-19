@@ -103,20 +103,26 @@ describe("computeTradingSignal — output structure", () => {
 // ── Value range tests ─────────────────────────────────────────
 
 describe("computeTradingSignal — value ranges", () => {
-  it("confidence is between 30 and 95", () => {
-    const result = computeTradingSignal(makeTicker(), MODERATE_REGIME);
+  it("confidence is null without completed bars and between 30 and 95 when bars exist", () => {
+    const withheld = computeTradingSignal(makeTicker(), MODERATE_REGIME);
+    expect(withheld.confidence).toBeNull();
+    const result = computeTradingSignal(makeTicker({ dailyBars: makeDailyBars(20) }), MODERATE_REGIME);
     expect(result.confidence).toBeGreaterThanOrEqual(30);
     expect(result.confidence).toBeLessThanOrEqual(95);
   });
 
-  it("RSI estimate is between 0 and 100", () => {
-    const result = computeTradingSignal(makeTicker(), MODERATE_REGIME);
-    expect(result.technicals.rsiEstimate).toBeGreaterThanOrEqual(0);
-    expect(result.technicals.rsiEstimate).toBeLessThanOrEqual(100);
+  it("RSI estimate is between 0 and 100 when completed bars exist, otherwise null", () => {
+    const withoutBars = computeTradingSignal(makeTicker(), MODERATE_REGIME);
+    expect(withoutBars.technicals.rsiEstimate).toBeNull();
+    const withBars = computeTradingSignal(makeTicker({ dailyBars: makeDailyBars(20) }), MODERATE_REGIME);
+    expect(withBars.technicals.rsiEstimate).toBeGreaterThanOrEqual(0);
+    expect(withBars.technicals.rsiEstimate).toBeLessThanOrEqual(100);
   });
 
-  it("momentum score is between 0 and 100", () => {
-    const result = computeTradingSignal(makeTicker(), MODERATE_REGIME);
+  it("momentum score is null without completed bars and between 0 and 100 when bars exist", () => {
+    const withheld = computeTradingSignal(makeTicker(), MODERATE_REGIME);
+    expect(withheld.technicals.momentumScore).toBeNull();
+    const result = computeTradingSignal(makeTicker({ dailyBars: makeDailyBars(20) }), MODERATE_REGIME);
     expect(result.technicals.momentumScore).toBeGreaterThanOrEqual(0);
     expect(result.technicals.momentumScore).toBeLessThanOrEqual(100);
   });
@@ -352,7 +358,8 @@ describe("computeTradingSignal — edge cases", () => {
       changePercent: 20,
     });
     const result = computeTradingSignal(input, MODERATE_REGIME);
-    expect(result.technicals.rsiEstimate).toBeLessThanOrEqual(100);
+    expect(result.technicals.rsiEstimate).toBeNull();
+    expect(result.indicatorsAvailable).toBe(false);
   });
 
   it("handles extreme RSI (all losses) without crashing", () => {
@@ -361,7 +368,8 @@ describe("computeTradingSignal — edge cases", () => {
       changePercent: -20,
     });
     const result = computeTradingSignal(input, MODERATE_REGIME);
-    expect(result.technicals.rsiEstimate).toBeGreaterThanOrEqual(0);
+    expect(result.technicals.rsiEstimate).toBeNull();
+    expect(result.indicatorsAvailable).toBe(false);
   });
 
   it("rationale is a non-empty string", () => {
@@ -428,10 +436,7 @@ describe("computeTradingSignal — with dailyBars (true indicators)", () => {
     const bars = makeDailyBars(20);
     const result = computeTradingSignal(makeTicker({ dailyBars: bars }), MODERATE_REGIME);
     // With only 20 bars, MACD (needs 26+9=35) should be null
-    if (result.technicals.macd !== null) {
-      // If engine still computes partial MACD, it should be valid
-      expect(typeof result.technicals.macd!.macdLine).toBe("number");
-    }
+    expect(result.technicals.macd).toBeNull();
   });
 
   it("MACD histogram = macdLine - signalLine", () => {

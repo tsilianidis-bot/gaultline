@@ -55,14 +55,14 @@ describe("computeCryptoSignal", () => {
     expect(result.symbol).toBe("BTC");
     expect(result.name).toBe("Bitcoin");
     expect(["BUY", "SELL", "HOLD", "WATCH"]).toContain(result.action);
-    expect(result.confidence).toBeGreaterThanOrEqual(0);
-    expect(result.confidence).toBeLessThanOrEqual(100);
+    expect(result.confidence).toBeNull();
+    expect(result.technicals.momentumScore).toBeNull();
     expect(["Strong", "Moderate", "Weak"]).toContain(result.strength);
     expect(["Short-Term", "Swing", "Watch"]).toContain(result.timeframe);
     expect(result.rationale).toBeTruthy();
   });
 
-  it("withholds a directional crypto action without completed daily bars, even in a strongly bearish scenario", () => {
+  it("returns Unavailable for a strongly bearish scenario that has no completed bars", () => {
     const market = makeMockMarket({
       priceChangePercent24h: -8.0,
       priceChangePercent7d: -18.0,
@@ -72,8 +72,11 @@ describe("computeCryptoSignal", () => {
       athChangePercent: -40.0,
     });
     const result = computeCryptoSignal({ market, btcDominance: 60, regime: { label: "HIGH RISK", score: 7.5 } });
-    expect(result.technicals.rsiIsTrue).toBe(false);
     expect(result.action).toBe("WATCH");
+    expect(result.actionLabel).toBe("Unavailable");
+    expect(result.technicals.rsiIsTrue).toBe(false);
+    expect(result.technicals.rsiEstimate).toBeNull();
+    expect(`${result.actionLabel} ${result.rationale}`).not.toMatch(/BUY|SELL|RSI|golden cross|death cross/i);
   });
 
   it("returns BUY for a strongly bullish scenario", () => {
@@ -138,35 +141,41 @@ describe("computeCryptoSignal", () => {
     expect(result.cryptoFactors.liquidityScore).toBeLessThanOrEqual(10);
   });
 
-  it("computes RSI estimate within valid range", () => {
+  it("does not score RSI from a 7-day sparkline", () => {
     const market = makeMockMarket({ sparkline7d: Array.from({ length: 48 }, (_, i) => 60000 + i * 200) });
     const result = computeCryptoSignal({ market, btcDominance: 55, regime: mockRegime });
-    expect(result.technicals.rsiEstimate).toBeGreaterThanOrEqual(0);
-    expect(result.technicals.rsiEstimate).toBeLessThanOrEqual(100);
+    expect(result.actionLabel).toBe("Unavailable");
+    expect(result.technicals.rsiIsTrue).toBe(false);
+    expect(result.technicals.rsiEstimate).toBeNull();
+    expect(result.technicals.smaSignal).toBe("Neutral");
+    expect(result.technicals.macd).toBeNull();
   });
 
-  it("computes MACD when OHLC bars are provided", () => {
-    const market = makeMockMarket();
-    const ohlcBars = Array.from({ length: 30 }, (_, i) => ({
-      timestamp: Date.now() - (30 - i) * 86400000,
+  it("computes MACD from completed OHLC bars and not from a sparkline", () => {
+    const market = makeMockMarket({ sparkline7d: [] });
+    const ohlcBars = Array.from({ length: 40 }, (_, i) => ({
+      timestamp: Date.now() - (39 - i) * 86400000,
       open: 65000 + i * 100,
       high: 65500 + i * 100,
       low: 64500 + i * 100,
       close: 65200 + i * 100,
     }));
     const result = computeCryptoSignal({ market, ohlcBars, btcDominance: 55, regime: mockRegime });
+    expect(result.actionLabel).not.toBe("Unavailable");
     expect(result.technicals.macd).not.toBeNull();
-    // rsiIsTrue requires 15+ bars — 30 bars satisfies this
     expect(result.technicals.rsiIsTrue).toBe(true);
-    // smaIsTrue requires 200+ bars for a true SMA50/200 crossover — 30 bars is not enough
+    expect(result.technicals.rsiEstimate).not.toBe(50);
+    // smaIsTrue requires 200+ bars for a true SMA50/200 crossover — 40 bars is not enough
     expect(result.technicals.smaIsTrue).toBe(false);
+    expect(result.technicals.smaSignal).toBe("Neutral");
   });
 
-  it("handles missing sparkline data gracefully", () => {
+  it("handles missing sparkline data by withholding the signal", () => {
     const market = makeMockMarket({ sparkline7d: [] });
     const result = computeCryptoSignal({ market, btcDominance: 55, regime: mockRegime });
-    expect(result.technicals.rsiEstimate).toBeGreaterThanOrEqual(0);
-    expect(result.technicals.rsiEstimate).toBeLessThanOrEqual(100);
+    expect(result.actionLabel).toBe("Unavailable");
+    expect(result.technicals.rsiIsTrue).toBe(false);
+    expect(result.rationale).toContain("Insufficient completed historical bars");
   });
 
   it("price levels are logically consistent for BUY signal", () => {

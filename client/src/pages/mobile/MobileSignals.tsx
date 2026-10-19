@@ -4,6 +4,7 @@
    Uses /api/signals/quotes for live data + trpc.signals.getTradingSignals
    ============================================================ */
 import { useState, useEffect, useMemo } from "react";
+import { formatObservedFixed } from "@/lib/nullableFormat";
 import { trpc } from "@/lib/trpc";
 import { TrendingUp, TrendingDown, Minus, Lock, RefreshCw, ChevronRight } from "lucide-react";
 
@@ -444,16 +445,18 @@ export default function MobileSignals() {
           </div>
 
           {/* BTC dominance */}
-          {globalStats?.btcDominance !== undefined && (
+          {globalStats && (
             <div
               className="rounded-xl p-4"
               style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
             >
               <div className="text-[9px] font-mono tracking-widest text-[#64748B] mb-2">BTC DOMINANCE</div>
               <div className="flex items-center gap-3">
-                <span className="text-2xl font-bold font-mono text-[#F59E0B]">{globalStats.btcDominance.toFixed(1)}%</span>
+                <span className="text-2xl font-bold font-mono text-[#F59E0B]">{formatObservedFixed(globalStats.btcDominance, 1, "%")}</span>
                 <span className="text-[10px] font-mono text-[#64748B]">
-                  {globalStats.btcDominance > 55 ? "Bitcoin Dominance Regime" : globalStats.btcDominance > 45 ? "Early Rotation Watch" : "Alt Expansion Phase"}
+                  {typeof globalStats.btcDominance === "number" && Number.isFinite(globalStats.btcDominance)
+                    ? (globalStats.btcDominance > 55 ? "Bitcoin Dominance Regime" : globalStats.btcDominance > 45 ? "Early Rotation Watch" : "Alt Expansion Phase")
+                    : "Unavailable"}
                 </span>
               </div>
             </div>
