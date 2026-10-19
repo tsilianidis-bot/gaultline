@@ -50,7 +50,7 @@ export interface CryptoSignalResult {
   cryptoRegime: CryptoRegimeLabel; // overall crypto market regime
   regimeConflict: boolean;     // true if individual signal conflicts with overall crypto regime
   regimeConflictExplanation: string | null; // why signal differs from regime (shown in UI)
-  confidence: number;          // 0–100
+  confidence: number | null;   // null when completed bars or RSI are withheld
   strength: "Strong" | "Moderate" | "Weak";
   timeframe: "Short-Term" | "Swing" | "Watch";
   rationale: string;
@@ -60,7 +60,7 @@ export interface CryptoSignalResult {
     rsiIsTrue: boolean;
     trend: "Uptrend" | "Downtrend" | "Sideways";
     volumeSignal: "Surge" | "Normal" | "Low";
-    momentumScore: number;       // 0–100
+    momentumScore: number | null; // null when RSI is withheld
     smaSignal: "Golden Cross" | "Death Cross" | "Neutral";
     smaIsTrue: boolean;
     macd: MACDResult | null;
@@ -73,7 +73,7 @@ export interface CryptoSignalResult {
   regimeAlignment: "Aligned" | "Neutral" | "Counter-Trend";
   regimeAlignmentScore: number;
   cryptoFactors: {
-    btcDominanceEffect: "Headwind" | "Neutral" | "Tailwind";
+    btcDominanceEffect: "Headwind" | "Neutral" | "Tailwind" | "Unavailable";
     volatilityRegime: "High" | "Normal" | "Low";
     athProximity: "Near ATH" | "Mid-Range" | "Deep Discount";
     liquidityScore: number;      // 0–10 (volume/mcap ratio)
@@ -84,7 +84,7 @@ export interface CryptoSignalResult {
 export interface CryptoSignalInput {
   market: CoinMarketData;
   ohlcBars?: CoinOHLCBar[];     // optional 30-day daily OHLC
-  btcDominance?: number;         // % BTC dominance from global stats
+  btcDominance?: number | null; // omitted when global stats did not supply it
   regime: RegimeInput;
 }
 
@@ -145,8 +145,9 @@ function computeLiquidityScore(volume: number, marketCap: number): number {
  */
 function btcDominanceEffect(
   symbol: string,
-  btcDominance: number
-): "Headwind" | "Neutral" | "Tailwind" {
+  btcDominance: number | null
+): "Headwind" | "Neutral" | "Tailwind" | "Unavailable" {
+  if (btcDominance == null || !Number.isFinite(btcDominance)) return "Unavailable";
   // BTC itself is not affected by its own dominance
   if (symbol === "BTC" || symbol === "WBTC") return "Neutral";
   if (btcDominance >= 58) return "Headwind";   // capital concentrating in BTC
@@ -290,7 +291,7 @@ function computeCryptoRegimeAlignment(
 // ── Core signal computation ───────────────────────────────────
 
 export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResult {
-  const { market, ohlcBars, btcDominance = 55, regime } = input;
+  const { market, ohlcBars, btcDominance = null, regime } = input;
 
   const cacheKey = `${market.id}:${regime.label}:${market.currentPrice}:${ohlcBars?.length ?? 0}`;
   const cached = cryptoSignalCache.peek(cacheKey);
@@ -323,7 +324,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
       cryptoRegime: regime.score < 3.5 ? "Bullish" : regime.score < 5.5 ? "Neutral" : regime.score < 7.5 ? "Defensive" : "Risk-Off",
       regimeConflict: false,
       regimeConflictExplanation: null,
-      confidence: 30,
+      confidence: null,
       strength: "Weak",
       timeframe: "Watch",
       rationale: "Insufficient completed historical bars; trading indicators are unavailable.",
@@ -333,7 +334,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
         rsiIsTrue: false,
         trend: "Sideways",
         volumeSignal: "Normal",
-        momentumScore: 0,
+        momentumScore: null,
         smaSignal: "Neutral",
         smaIsTrue: false,
         macd: null,

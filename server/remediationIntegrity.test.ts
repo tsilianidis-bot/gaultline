@@ -101,13 +101,16 @@ describe("Smart Discovery freshness label", () => {
     expect(evidenceFreshnessLabel({ quoteFreshness: ["LIVE", "DELAYED"] })).toBe("Unavailable");
     expect(evidenceFreshnessLabel({ quoteFreshness: [] })).toBe("Unavailable");
     expect(evidenceFreshnessLabel({
+      scope: "ticker",
       quoteFreshness: ["LIVE"],
       canonicalQuality: "UNAVAILABLE",
       fredStatus: "stale",
       observedAtMs: stale,
       nowMs: now,
+      quotes: [{ observedAtMs: fresh, sourceStatus: "live" }],
     })).toBe("Unavailable");
     expect(evidenceFreshnessLabel({
+      scope: "ticker",
       canonicalQuality: "HEALTHY",
       fredStatus: "live",
       observedAtMs: fresh,
@@ -115,6 +118,7 @@ describe("Smart Discovery freshness label", () => {
       quotes: [{ observedAtMs: fresh, sourceStatus: "live" }],
     })).toBe("Verified source");
     expect(evidenceFreshnessLabel({
+      scope: "ticker",
       canonicalQuality: "HEALTHY",
       fredStatus: "live",
       observedAtMs: fresh,
@@ -122,12 +126,14 @@ describe("Smart Discovery freshness label", () => {
       quotes: [{ observedAtMs: fresh, sourceStatus: "delayed" }],
     })).toBe("Delayed");
     expect(evidenceFreshnessLabel({
+      scope: "macro",
       canonicalQuality: "DEGRADED",
       fredStatus: "fallback",
       observedAtMs: fresh,
       nowMs: now,
     })).toBe("Delayed");
     expect(evidenceFreshnessLabel({
+      scope: "macro",
       canonicalQuality: null,
       fredStatus: "live",
       observedAtMs: fresh,

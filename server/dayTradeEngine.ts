@@ -19,7 +19,7 @@ import { getTopMarkets, getCoinMarketData, getCoinOHLC, type CoinMarketData } fr
 import { fetchDailyBars } from "./signalsProxy";
 import { log } from "./logger";
 import { LRUCache } from "./lruCache";
-import { MACD_MIN_COMPLETED_BARS, RSI_MIN_COMPLETED_BARS } from "./tradingSignals";
+import { RSI_MIN_COMPLETED_BARS } from "./tradingSignals";
 
 // ── Constants ─────────────────────────────────────────────────
 const MIN_CONFIDENCE = 55;   // Below this → NO_TRADE
@@ -227,8 +227,13 @@ function computeAtr(bars: Array<{ high: number; low: number; close: number }>, p
   return recent.reduce((s, v) => s + v, 0) / recent.length;
 }
 
+/**
+ * Day trade scores RSI from completed closes and does not compute MACD.
+ * Equities and crypto use MACD_MIN_COMPLETED_BARS (35). A flat series
+ * (no gain and no loss across the completed closes) is withheld here and
+ * inside computeWildersRSI. A genuine all-gain series remains RSI 100.
+ */
 export const DAY_TRADE_MIN_COMPLETED_BARS = RSI_MIN_COMPLETED_BARS;
-export const DAY_TRADE_MACD_MIN_COMPLETED_BARS = MACD_MIN_COMPLETED_BARS;
 export const DAY_TRADE_INSUFFICIENT_BARS = "Insufficient completed historical bars; trading indicators are unavailable.";
 
 /** RSI-14 from completed closes. Short series return null — never a manufactured 50. */

@@ -756,7 +756,7 @@ export default function SeismographicDash() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px 6px", borderBottom: `1px solid ${scoreColor}14` }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <Activity size={12} style={{ color: scoreColor, opacity: 0.7 }} />
-                <span style={{ ...seismoMono, fontSize: "8px", letterSpacing: "0.14em", color: "rgba(6,182,212,0.45)" }}>LIVE SEISMOGRAPH</span>
+                <span style={{ ...seismoMono, fontSize: "8px", letterSpacing: "0.14em", color: "rgba(6,182,212,0.45)" }}>{dashStatus} SEISMOGRAPH</span>
                 {!prefersReducedMotion() && (
                   <span style={{ display: "inline-block", width: "5px", height: "5px", borderRadius: "50%", background: scoreColor, animation: "pulse-dot 1.4s ease-in-out infinite" }} />
                 )}

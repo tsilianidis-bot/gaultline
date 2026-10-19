@@ -94,7 +94,7 @@ interface TradingSignalResult {
     rsiLabel: 'Overbought' | 'Neutral' | 'Oversold';
     trend: 'Uptrend' | 'Downtrend' | 'Sideways';
     volumeSignal: 'Surge' | 'Normal' | 'Low';
-    momentumScore: number;
+    momentumScore: number | null;
     smaSignal: 'Golden Cross' | 'Death Cross' | 'Neutral';
     smaIsTrue?: boolean;          // true = real 50/200-day SMA from daily bars
     macd?: {

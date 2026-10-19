@@ -55,8 +55,8 @@ describe("computeCryptoSignal", () => {
     expect(result.symbol).toBe("BTC");
     expect(result.name).toBe("Bitcoin");
     expect(["BUY", "SELL", "HOLD", "WATCH"]).toContain(result.action);
-    expect(result.confidence).toBeGreaterThanOrEqual(0);
-    expect(result.confidence).toBeLessThanOrEqual(100);
+    expect(result.confidence).toBeNull();
+    expect(result.technicals.momentumScore).toBeNull();
     expect(["Strong", "Moderate", "Weak"]).toContain(result.strength);
     expect(["Short-Term", "Swing", "Watch"]).toContain(result.timeframe);
     expect(result.rationale).toBeTruthy();

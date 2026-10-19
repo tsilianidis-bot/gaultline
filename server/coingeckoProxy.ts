@@ -530,8 +530,9 @@ export interface CoinOHLCBar {
 const ohlcCache = new LRUCache<string, CoinOHLCBar[]>(200, 5 * 60 * 1000); // 5 min TTL
 
 /**
- * Fetch daily OHLC bars for a coin from CoinGecko.
- * Uses /coins/{id}/ohlc?vs_currency=usd&days=30 (returns ~30 daily bars).
+ * Fetch OHLC bars for a coin from CoinGecko.
+ * Uses /coins/{id}/ohlc?vs_currency=usd&days=30. days=30 is the 4-hour
+ * candle period. Daily candles start above 30 days.
  */
 export async function getCoinOHLC(idOrSymbol: string, days = 30): Promise<CoinOHLCBar[]> {
   const upper = idOrSymbol.toUpperCase();

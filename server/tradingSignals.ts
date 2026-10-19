@@ -98,7 +98,7 @@ export interface TradingSignalResult {
   assetClass: "STOCK" | "CRYPTO" | "ETF";  // asset class for UI labeling
   action: TradingAction;
   actionLabel: string;         // human-readable precision label (e.g. "Accumulation Zone")
-  confidence: number;          // 0–100
+  confidence: number | null;   // null when completed bars or RSI are withheld
   strength: "Strong" | "Moderate" | "Weak";
   timeframe: "Short-Term" | "Swing" | "Watch";
   rationale: string;           // 1-sentence reason
@@ -108,7 +108,7 @@ export interface TradingSignalResult {
     rsiIsTrue: boolean;        // true = Wilder's 14-period; false = sparkline approx
     trend: "Uptrend" | "Downtrend" | "Sideways";
     volumeSignal: "Surge" | "Normal" | "Low";
-    momentumScore: number;     // 0–100
+    momentumScore: number | null; // null when RSI is withheld
     smaSignal: "Golden Cross" | "Death Cross" | "Neutral";
     smaIsTrue: boolean;        // true = real 50/200-day SMA; false = sparkline proxy
     macd: MACDResult | null;   // null when daily bars not available
@@ -184,10 +184,8 @@ export const RSI_MIN_COMPLETED_BARS = 15;
 export const MACD_MIN_COMPLETED_BARS = 35;
 
 export function computeWildersRSI(closes: number[], period = 14): number | null {
-  if (closes.length < 2) return null;
-  if (closes.length < period + 1) {
-    return approximateRSIFromCloses(closes);
-  }
+  const minimum = Math.max(period + 1, RSI_MIN_COMPLETED_BARS);
+  if (closes.length < minimum) return null;
 
   const changes: number[] = [];
   for (let i = 1; i < closes.length; i++) {
@@ -212,25 +210,9 @@ export function computeWildersRSI(closes: number[], period = 14): number | null 
     avgLoss = (avgLoss * (period - 1) + loss) / period;
   }
 
-  if (avgLoss === 0) return 100;
-  const rs = avgGain / avgLoss;
-  return parseFloat((100 - 100 / (1 + rs)).toFixed(1));
-}
-
-/**
- * Simple RSI approximation from a short series of close prices.
- * Used as fallback when fewer than 15 bars are available.
- */
-function approximateRSIFromCloses(closes: number[]): number | null {
-  if (closes.length < 2) return null;
-  const changes: number[] = [];
-  for (let i = 1; i < closes.length; i++) {
-    changes.push(closes[i] - closes[i - 1]);
-  }
-  const gains = changes.filter(c => c > 0);
-  const losses = changes.filter(c => c < 0).map(Math.abs);
-  const avgGain = gains.length > 0 ? gains.reduce((s, v) => s + v, 0) / changes.length : 0;
-  const avgLoss = losses.length > 0 ? losses.reduce((s, v) => s + v, 0) / changes.length : 0;
+  // A flat series has no gain and no loss. That is withheld, not RSI 100.
+  // A genuine all-gain series (loss is zero and gain is positive) stays 100.
+  if (avgGain === 0 && avgLoss === 0) return null;
   if (avgLoss === 0) return 100;
   const rs = avgGain / avgLoss;
   return parseFloat((100 - 100 / (1 + rs)).toFixed(1));
@@ -322,38 +304,6 @@ export function computeSMACrossover(closes: number[]): {
   const diff = (shortSMA - longSMA) / longSMA * 100;
   const signal = diff > 0.5 ? "Golden Cross" : diff < -0.5 ? "Death Cross" : "Neutral";
   return { signal, isTrue: false, sma50: null, sma200: null };
-}
-
-// ── Fallback helpers (sparkline-based) ───────────────────────
-
-/**
- * Approximate RSI from a series of % change values (sparkline).
- */
-function approximateRSI(changes: number[]): number | null {
-  if (changes.length < 2) return null;
-  const gains: number[] = [];
-  const losses: number[] = [];
-  for (const c of changes) {
-    if (c > 0) { gains.push(c); losses.push(0); }
-    else { gains.push(0); losses.push(Math.abs(c)); }
-  }
-  const avgGain = gains.reduce((s, v) => s + v, 0) / gains.length;
-  const avgLoss = losses.reduce((s, v) => s + v, 0) / losses.length;
-  if (avgLoss === 0) return 100;
-  const rs = avgGain / avgLoss;
-  return parseFloat((100 - 100 / (1 + rs)).toFixed(1));
-}
-
-/**
- * Derive daily % changes from a sparkline (% from first close).
- */
-function sparklineToDailyChanges(sparkline: number[]): number[] {
-  if (sparkline.length < 2) return [];
-  const changes: number[] = [];
-  for (let i = 1; i < sparkline.length; i++) {
-    changes.push(sparkline[i] - sparkline[i - 1]);
-  }
-  return changes;
 }
 
 /**
@@ -591,7 +541,7 @@ function insufficientCompletedBarsSignal(input: TradingSignalsInput): TradingSig
     assetClass: "STOCK",
     action: "WATCH",
     actionLabel: "Unavailable",
-    confidence: 30,
+    confidence: null,
     strength: "Weak",
     timeframe: "Watch",
     rationale: INSUFFICIENT_BARS_RATIONALE,
@@ -601,7 +551,7 @@ function insufficientCompletedBarsSignal(input: TradingSignalsInput): TradingSig
       rsiIsTrue: false,
       trend: "Sideways",
       volumeSignal: "Normal",
-      momentumScore: 0,
+      momentumScore: null,
       smaSignal: "Neutral",
       smaIsTrue: false,
       macd: null,

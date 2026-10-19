@@ -435,6 +435,7 @@ export async function evaluateStockCandidate(
 
     const regime = { label: pressure.regime, score: pressure.overallPressure / 10 };
     const signal = computeTradingSignal(signalInput, regime);
+    if (signal.confidence == null || signal.technicals.momentumScore == null) return null;
 
     // Determine action based on signal + pressure
     let action: "BUY" | "SELL" | "HOLD" | "WATCH" = signal.action;
@@ -506,6 +507,7 @@ export async function evaluateCryptoCandidate(
 
     const regime = { label: pressure.regime, score: pressure.overallPressure / 10 };
     const signal = computeTradingSignal(signalInput, regime);
+    if (signal.confidence == null || signal.technicals.momentumScore == null) return null;
 
     let action: "BUY" | "SELL" | "HOLD" | "WATCH" = signal.action;
     let conviction: "HIGH" | "MODERATE" | "SPECULATIVE" = "MODERATE";

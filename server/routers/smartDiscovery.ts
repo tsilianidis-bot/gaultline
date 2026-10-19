@@ -345,14 +345,20 @@ async function orchestrateAnswer(
     // Fetch live price + OHLV so the LLM can generate accurate price targets
     ticker
       ? (assetType === "crypto"
-          ? getCoinMarketData(ticker).then(d => d ? ({
-              price: d.currentPrice,
-              change: d.priceChangePercent24h,
-              high: d.high24h,
-              low: d.low24h,
-              volume: d.totalVolume,
-              open: null,
-            }) : null)
+          ? getCoinMarketData(ticker).then(d => {
+              if (!d) return null;
+              const observedAtMs = Number.isFinite(Date.parse(d.lastUpdated)) ? Date.parse(d.lastUpdated) : null;
+              return {
+                price: d.currentPrice,
+                change: d.priceChangePercent24h,
+                high: d.high24h,
+                low: d.low24h,
+                volume: d.totalVolume,
+                open: null,
+                observedAtMs,
+                sourceStatus: observedAtMs != null ? "live" : "unavailable",
+              };
+            })
           : getQuote(ticker).then(q => ({
               price: q.price,
               change: q.changePercent,
@@ -360,6 +366,8 @@ async function orchestrateAnswer(
               low: q.low,
               volume: q.volume,
               open: q.open,
+              observedAtMs: typeof q.observedAt === "number" && Number.isFinite(q.observedAt) ? q.observedAt : null,
+              sourceStatus: q.source === "yahoo" ? "delayed" : q.source === "polygon-prev" ? "polygon-prev" : "unavailable",
             }))
         ).catch(() => null)
       : Promise.resolve(null),
@@ -989,13 +997,21 @@ JSON schema:
   });
 
   const observedAt = fredObservationMs(seismographOutput?.providerProvenance?.fred?.asOf);
+  const askQuote = ticker
+    ? [{
+        observedAtMs: livePrice?.observedAtMs ?? null,
+        sourceStatus: livePrice?.sourceStatus ?? "unavailable",
+      }]
+    : undefined;
   return sanitize({
     ...raw,
     dataFreshness: evidenceFreshnessLabel({
+      scope: ticker ? "ticker" : "macro",
       canonicalQuality: authoritativeState?.confidenceOrEvidenceQuality ?? null,
       fredStatus: seismographOutput?.providerProvenance?.fred?.status ?? null,
       observedAtMs: observedAt,
       nowMs: Date.now(),
+      quotes: askQuote,
     }),
     ticker,
     assetType,
@@ -1419,6 +1435,7 @@ Respond with a JSON object matching this exact schema:
           nearTermCatalyst: stripProbabilityPercentClaims(o.nearTermCatalyst),
           dataFreshness: evidenceFreshnessLabel({
             ...discoveryEvidence,
+            scope: "ticker",
             quotes: quote ? [quote] : [],
           }),
         };
@@ -1438,6 +1455,7 @@ Respond with a JSON object matching this exact schema:
     followUpChips,
     dataFreshness: evidenceFreshnessLabel({
       ...discoveryEvidence,
+      scope: "ticker",
       quotes: topRaw.map(item => ({ observedAtMs: item.observedAtMs, sourceStatus: item.sourceStatus })),
     }),
     deepDiveLinks: [

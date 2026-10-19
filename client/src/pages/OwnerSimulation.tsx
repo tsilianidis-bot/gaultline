@@ -157,7 +157,7 @@ function ManualSearch({ accountValue, onTrade }: { accountValue: number; onTrade
               { label: "24H CHANGE", value: fmtPct(result.changePercent), color: result.changePercent >= 0 ? "text-[#00FF88]" : "text-[#FF2D55]" },
               // QA r13 B14: faultlineConfidence is the signal formula min(95, 55 + |score| × 5).
               { label: "CONFIDENCE", value: CONFIDENCE_NOT_ESTABLISHED, color: "text-[#94A3B8]" },
-              { label: "COMPOSITE SCORE", value: result.compositeScore.toString(), color: result.compositeScore >= 70 ? "text-[#00FF88]" : result.compositeScore >= 50 ? "text-[#FFD700]" : "text-[#FF2D55]" },
+              { label: "COMPOSITE SCORE", value: result.compositeScore == null ? "Unavailable" : result.compositeScore.toString(), color: result.compositeScore == null ? "text-[#94A3B8]" : result.compositeScore >= 70 ? "text-[#00FF88]" : result.compositeScore >= 50 ? "text-[#FFD700]" : "text-[#FF2D55]" },
             ].map(({ label, value, color }) => (
               <div key={label} className="bg-white/3 rounded-lg p-3">
                 <div className="text-[#64748B] text-[10px] font-mono tracking-widest mb-1">{label}</div>
@@ -295,10 +295,10 @@ interface Opportunity {
   suggestedPositionSizePct: number;
   suggestedPositionSizeUsd: number;
   riskAmountUsd: number;
-  faultlineConfidence: number;
-  compositeScore: number;
-  momentumScore: number;
-  macroFit: number;
+  faultlineConfidence: number | null;
+  compositeScore: number | null;
+  momentumScore: number | null;
+  macroFit: number | null;
   objectiveFit: boolean;
   objectiveFitReason: string;
   whyNow: string;
@@ -337,7 +337,10 @@ function freshnessColor(f: DataFreshness) {
   if (f === "RECENT" || f === "DELAYED") return "text-[#FFD700]";
   return "text-[#FF2D55]";
 }
-function scoreBar(score: number) {
+function scoreBar(score: number | null) {
+  if (score == null || !Number.isFinite(score)) {
+    return <span className="text-xs font-mono text-[#94A3B8]">Unavailable</span>;
+  }
   const color = score >= 70 ? "#00FF88" : score >= 50 ? "#FFD700" : "#FF2D55";
   return (
     <div className="flex items-center gap-2">
@@ -720,9 +723,9 @@ function OpportunityCard({ opp, onTrade, onReject }: {
           {/* Score */}
           <div className="flex-shrink-0 text-right">
             <div className="text-2xl font-mono font-bold" style={{
-              color: opp.compositeScore >= 70 ? "#00FF88" : opp.compositeScore >= 50 ? "#FFD700" : "#FF2D55"
+              color: opp.compositeScore == null ? "#94A3B8" : opp.compositeScore >= 70 ? "#00FF88" : opp.compositeScore >= 50 ? "#FFD700" : "#FF2D55"
             }}>
-              {opp.compositeScore}
+              {opp.compositeScore ?? "—"}
             </div>
             <div className="text-[10px] text-[#64748B] font-mono">SCORE</div>
           </div>
@@ -1619,7 +1622,24 @@ export default function OwnerSimulation() {
           opp={selectedOpp}
           accountValue={totalValue}
           onClose={() => setSelectedOpp(null)}
-          onExecute={(side, qty) => enterTradeMut.mutate({ opportunity: selectedOpp, side, quantity: qty })}
+          onExecute={(side, qty) => {
+            const confidence = selectedOpp.faultlineConfidence;
+            const composite = selectedOpp.compositeScore;
+            const momentum = selectedOpp.momentumScore;
+            const macro = selectedOpp.macroFit;
+            if (confidence == null || composite == null || momentum == null || macro == null) return;
+            enterTradeMut.mutate({
+              opportunity: {
+                ...selectedOpp,
+                faultlineConfidence: confidence,
+                compositeScore: composite,
+                momentumScore: momentum,
+                macroFit: macro,
+              },
+              side,
+              quantity: qty,
+            });
+          }}
           isExecuting={enterTradeMut.isPending}
         />
       )}

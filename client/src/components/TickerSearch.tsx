@@ -54,7 +54,7 @@ interface ClassificationResult {
   debtRisk: 'High' | 'Medium' | 'Low' | 'None';
   recessionSensitivity: 'High' | 'Medium' | 'Low';
   liquidityRisk: 'High' | 'Medium' | 'Low' | 'None';
-  momentumScore: number;
+  momentumScore: number | null;
   volatilityLabel: 'Very High' | 'High' | 'Moderate' | 'Low';
   macroSensitivity: string;
   cached?: boolean;
@@ -199,7 +199,10 @@ function Sparkline({ data, positive }: { data: number[]; positive: boolean }) {
 }
 
 // ── Momentum Bar ──────────────────────────────────────────────
-function MomentumBar({ score }: { score: number }) {
+function MomentumBar({ score }: { score: number | null }) {
+  if (score == null || !Number.isFinite(score)) {
+    return <span style={{ fontSize: '12px', fontFamily: "'IBM Plex Mono', monospace", color: '#94A3B8' }}>Unavailable</span>;
+  }
   const color = score >= 70 ? '#00D4FF' : score >= 40 ? '#FFD700' : '#FF2D55';
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

@@ -60,7 +60,7 @@ function getWatchlistReading(
   if (indicatorKey === 'score_overall') {
     const value = canonical.overallScore100;
     if (value == null || !Number.isFinite(value)) return { value: null, stateLabel: 'UNAVAILABLE', evaluable: false };
-    const tag = canonical.integrityLabel === 'LIVE' ? null : canonical.integrityLabel;
+    const tag = canonical.integrityLabel === 'LIVE' ? 'LIVE' : (canonical.integrityLabel || 'UNAVAILABLE');
     return { value, stateLabel: tag, evaluable: tag !== 'STALE' && tag !== 'UNAVAILABLE', source: 'Canonical Pressure Index (0–100)' };
   }
   // Credit / AI / Treasury / Recession domain scores have no canonical source.
@@ -159,11 +159,11 @@ function WatchlistCard({ item, reading, def, onEdit, onDelete, index }: Watchlis
               {liveValue != null && def.unit === '/100' && <span data-watchlist-score-suffix style={{ fontSize: '12px', color: '#6B7280', marginLeft: '2px' }}>/100</span>}
             </div>
             <div
-              data-watchlist-state={reading.stateLabel ?? 'LIVE'}
+              data-watchlist-state={reading.stateLabel ?? 'UNAVAILABLE'}
               title={reading.source}
-              style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: reading.stateLabel ? '#FF9500' : '#374151', letterSpacing: '0.08em' }}
+              style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: reading.stateLabel === 'LIVE' ? '#374151' : '#FF9500', letterSpacing: '0.08em' }}
             >
-              {reading.stateLabel ?? 'LIVE'}
+              {reading.stateLabel ?? 'UNAVAILABLE'}
             </div>
           </div>
         </div>
@@ -369,10 +369,11 @@ export default function Watchlist() {
   const pageBadge = useMemo(() => {
     const states = items.map(item => watchlistReadings[item.indicatorKey]).filter((r): r is WatchlistReading => Boolean(r));
     const present = states.filter(r => r.value != null);
-    if (present.length === 0) return 'UNAVAILABLE';
+    if (present.length === 0 || present.length < states.length) return 'UNAVAILABLE';
+    if (present.some(r => r.stateLabel === 'UNAVAILABLE' || r.stateLabel == null)) return 'UNAVAILABLE';
     if (present.some(r => r.stateLabel === 'STALE')) return 'STALE';
-    if (present.some(r => r.stateLabel != null) || present.length < states.length) return 'DELAYED';
-    return 'LIVE';
+    if (present.every(r => r.stateLabel === 'LIVE')) return 'LIVE';
+    return 'DELAYED';
   }, [items, watchlistReadings]);
 
   // Update breach counts when values change

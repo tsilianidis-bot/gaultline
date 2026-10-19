@@ -38,7 +38,7 @@ export interface ClassificationResult {
   debtRisk: "High" | "Medium" | "Low" | "None";
   recessionSensitivity: "High" | "Medium" | "Low";
   liquidityRisk: "High" | "Medium" | "Low" | "None";
-  momentumScore: number;               // 0–100 relative strength estimate
+  momentumScore: number | null;       // null when the model omitted it
   volatilityLabel: "Very High" | "High" | "Moderate" | "Low";
   macroSensitivity: string;            // brief macro sensitivity description
   cached?: boolean;
@@ -235,7 +235,9 @@ export async function classifyTicker(
     debtRisk: parsed.debtRisk ?? "None",
     recessionSensitivity: parsed.recessionSensitivity ?? "Medium",
     liquidityRisk: parsed.liquidityRisk ?? "None",
-    momentumScore: Math.max(0, Math.min(100, parsed.momentumScore ?? 50)),
+    momentumScore: typeof parsed.momentumScore === "number" && Number.isFinite(parsed.momentumScore)
+      ? Math.max(0, Math.min(100, parsed.momentumScore))
+      : null,
     volatilityLabel: parsed.volatilityLabel ?? "Moderate",
     macroSensitivity: parsed.macroSensitivity ?? "",
     cached: false,

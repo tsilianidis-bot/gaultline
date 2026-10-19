@@ -103,8 +103,10 @@ describe("computeTradingSignal — output structure", () => {
 // ── Value range tests ─────────────────────────────────────────
 
 describe("computeTradingSignal — value ranges", () => {
-  it("confidence is between 30 and 95", () => {
-    const result = computeTradingSignal(makeTicker(), MODERATE_REGIME);
+  it("confidence is null without completed bars and between 30 and 95 when bars exist", () => {
+    const withheld = computeTradingSignal(makeTicker(), MODERATE_REGIME);
+    expect(withheld.confidence).toBeNull();
+    const result = computeTradingSignal(makeTicker({ dailyBars: makeDailyBars(20) }), MODERATE_REGIME);
     expect(result.confidence).toBeGreaterThanOrEqual(30);
     expect(result.confidence).toBeLessThanOrEqual(95);
   });
@@ -117,8 +119,10 @@ describe("computeTradingSignal — value ranges", () => {
     expect(withBars.technicals.rsiEstimate).toBeLessThanOrEqual(100);
   });
 
-  it("momentum score is between 0 and 100", () => {
-    const result = computeTradingSignal(makeTicker(), MODERATE_REGIME);
+  it("momentum score is null without completed bars and between 0 and 100 when bars exist", () => {
+    const withheld = computeTradingSignal(makeTicker(), MODERATE_REGIME);
+    expect(withheld.technicals.momentumScore).toBeNull();
+    const result = computeTradingSignal(makeTicker({ dailyBars: makeDailyBars(20) }), MODERATE_REGIME);
     expect(result.technicals.momentumScore).toBeGreaterThanOrEqual(0);
     expect(result.technicals.momentumScore).toBeLessThanOrEqual(100);
   });

@@ -51,6 +51,7 @@ describe("blocker 1 — missing FRED status or timestamp is never verified", () 
 
   it.each([null, undefined, ""])("fred status %j with a fresh timestamp is Unavailable", (fredStatus) => {
     expect(evidenceFreshnessLabel({
+      scope: "macro",
       canonicalQuality: "HEALTHY",
       fredStatus,
       observedAtMs: now,
@@ -66,6 +67,7 @@ describe("blocker 1 — missing FRED status or timestamp is never verified", () 
 
   it("does not treat a missing observation time as fresh", () => {
     expect(evidenceFreshnessLabel({
+      scope: "macro",
       canonicalQuality: "HEALTHY",
       fredStatus: "live",
       observedAtMs: null,
@@ -75,7 +77,8 @@ describe("blocker 1 — missing FRED status or timestamp is never verified", () 
 
   it("Ask path does not substitute assembly computedAt for a missing FRED asOf", () => {
     const ask = source("server/routers/smartDiscovery.ts");
-    const observed = ask.slice(ask.indexOf("const observedAt"), ask.indexOf("const observedAt") + 180);
+    const marker = "const observedAt = fredObservationMs";
+    const observed = ask.slice(ask.indexOf(marker), ask.indexOf(marker) + 180);
     expect(observed).not.toMatch(/computedAt/);
     expect(observed).toMatch(/fred\?\.asOf/);
   });
@@ -84,6 +87,7 @@ describe("blocker 1 — missing FRED status or timestamp is never verified", () 
 describe("blocker 2 — empty quotes are Unavailable", () => {
   const now = Date.parse("2026-10-05T20:20:00.000Z");
   const liveMacro = {
+    scope: "macro" as const,
     canonicalQuality: "HEALTHY",
     fredStatus: "live",
     observedAtMs: now,
@@ -94,8 +98,10 @@ describe("blocker 2 — empty quotes are Unavailable", () => {
     expect(evidenceFreshnessLabel({ ...liveMacro, quotes: [] })).toBe("Unavailable");
   });
 
-  it("still classifies an omitted quotes field from canonical and FRED only", () => {
+  it("verifies canonical and FRED only when the caller declares macro scope", () => {
     expect(evidenceFreshnessLabel(liveMacro)).toBe("Verified source");
+    expect(evidenceFreshnessLabel({ ...liveMacro, scope: undefined })).toBe("Unavailable");
+    expect(evidenceFreshnessLabel({ ...liveMacro, scope: "ticker" })).toBe("Unavailable");
   });
 
   it("does not verify an unmatched ticker from macro evidence alone", () => {
@@ -277,7 +283,8 @@ describe("blocker 6 — in-progress candles stay out of indicator bars", () => {
     expect(crypto).toContain("RSI_MIN_COMPLETED_BARS");
     expect(crypto).toContain("MACD_MIN_COMPLETED_BARS");
     expect(day).toContain("RSI_MIN_COMPLETED_BARS");
-    expect(day).toContain("MACD_MIN_COMPLETED_BARS");
+    expect(day).toContain("does not compute MACD");
+    expect(day).not.toContain("DAY_TRADE_MACD_MIN_COMPLETED_BARS");
     const closes = (n: number) => Array.from({ length: n }, (_, i) => 100 + i);
     expect(computeMACD(closes(34))).toBeNull();
     expect(computeMACD(closes(35))).not.toBeNull();
@@ -295,7 +302,7 @@ describe("blocker 9 — one-price RSI is insufficient, not 50", () => {
 describe("findings 7 and 8 — outcome reconcile and generation cap", () => {
   it("reconciles a crash after the outcome insert without a second score write", async () => {
     const store = memoryStore();
-    const claimed = await claimScheduledSeismographSession("2026-10-05", async () => store, { nowMs: inWindow });
+    const claimed = await claimScheduledSeismographSession("2026-10-05", async () => store, { nowMs: inWindow, trigger: "SCHEDULED_CRON" });
     await admitScheduledSessionOutcome("2026-10-05", { pressureScore: 42, regime: "MODERATE RISK" }, async () => store, inWindow);
     await failScheduledSession("2026-10-05", claimed.generation!, async () => store, inWindow);
     const next = await claimScheduledSeismographSession("2026-10-05", async () => store, {
@@ -324,7 +331,7 @@ describe("findings 7 and 8 — outcome reconcile and generation cap", () => {
 
   it("stops at one recovery and records exhausted", async () => {
     const store = memoryStore();
-    const first = await claimScheduledSeismographSession("2026-10-05", async () => store, { nowMs: inWindow });
+    const first = await claimScheduledSeismographSession("2026-10-05", async () => store, { nowMs: inWindow, trigger: "SCHEDULED_CRON" });
     await failScheduledSession("2026-10-05", first.generation!, async () => store, inWindow);
     const recovered = await claimScheduledSeismographSession("2026-10-05", async () => store, {
       nowMs: inWindow + 1000,
@@ -342,7 +349,7 @@ describe("findings 7 and 8 — outcome reconcile and generation cap", () => {
 
   it("does not reconcile a pending outcome after the NYSE window closes", async () => {
     const store = memoryStore();
-    const claimed = await claimScheduledSeismographSession("2026-10-05", async () => store, { nowMs: inWindow });
+    const claimed = await claimScheduledSeismographSession("2026-10-05", async () => store, { nowMs: inWindow, trigger: "SCHEDULED_CRON" });
     await admitScheduledSessionOutcome("2026-10-05", { pressureScore: 42, regime: "MODERATE RISK" }, async () => store, inWindow);
     await failScheduledSession("2026-10-05", claimed.generation!, async () => store, inWindow);
     const late = await claimScheduledSeismographSession("2026-10-05", async () => store, {

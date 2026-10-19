@@ -54,6 +54,7 @@ import {
   claimScheduledSeismographSession,
   completeScheduledSession,
   failScheduledSession,
+  finalizeStaleScheduledSessionOutcomes,
   heartbeatScheduledSession,
   markScheduledSessionOutcomeScored,
   normalizeSessionClaim,
@@ -404,6 +405,21 @@ export async function handleScheduledSeismograph(
 ): Promise<void> {
   const now = new Date();
   const runWindow = nyseSeismographRunWindow(now);
+  const sessionStore = req.sessionStore;
+  // This handler is mounted only behind requireCron. The out-of-window fire is
+  // classified CRON_DEPLOY so it cannot run the pipeline or capture a forward
+  // record. It is still the real dual-cron callback, so it may finalize stale
+  // pending rows. Claim and reconcile below still require an in-window
+  // SCHEDULED_CRON context.
+  let finalized: { status: "finalized" | "unavailable"; marked: number } = { status: "unavailable", marked: 0 };
+  try {
+    finalized = await finalizeStaleScheduledSessionOutcomes(sessionStore ?? getDb, {
+      nowMs: now.getTime(),
+      trigger: "SCHEDULED_CRON",
+    });
+  } catch (error) {
+    console.warn("[Seismograph] Stale session finalize failed:", error);
+  }
   // The host scheduler and a cron-service redeploy hit the same endpoint. A callback
   // outside the documented NYSE post-close window must not record a pre-close canonical
   // observation or forward ledger provenance.
@@ -416,6 +432,7 @@ export async function handleScheduledSeismograph(
       etDate: runWindow.etDate,
       expectedRunAtEt: runWindow.scheduledRunAtEt,
       reason: runWindow.reason,
+      finalized,
     });
     return;
   }
@@ -425,7 +442,6 @@ export async function handleScheduledSeismograph(
   const runContext = resolveRunContext("cron-endpoint", now);
   // Database claim is in addition to the in-process guard. Fail closed when the
   // claim cannot be recorded so a second container cannot capture forward evidence.
-  const sessionStore = req.sessionStore;
   const sessionClaim = normalizeSessionClaim(await (req.sessionClaim
     ? req.sessionClaim(scheduledEtDate)
     : claimScheduledSeismographSession(scheduledEtDate, sessionStore, { nowMs: now.getTime(), trigger: runContext.trigger })));

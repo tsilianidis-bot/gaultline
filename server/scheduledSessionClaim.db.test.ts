@@ -14,6 +14,7 @@ import {
   claimScheduledSeismographSession,
   completeScheduledSession,
   failScheduledSession,
+  finalizeStaleScheduledSessionOutcomes,
   reconcileScheduledSessionScore,
 } from "./scheduledSessionClaim";
 
@@ -87,21 +88,21 @@ dbTest("disposable MySQL once-per-session claim", () => {
   it("serializes parallel processes, a retry, and a new process", async () => {
     await resetTable(databaseUrl);
     const firstWave = await Promise.all([
-      claimInProcess(databaseUrl, "2026-10-05"),
-      claimInProcess(databaseUrl, "2026-10-05"),
-      claimInProcess(databaseUrl, "2026-10-05"),
+      claimInProcess(databaseUrl, "2026-10-05", { trigger: "SCHEDULED_CRON" }),
+      claimInProcess(databaseUrl, "2026-10-05", { trigger: "SCHEDULED_CRON" }),
+      claimInProcess(databaseUrl, "2026-10-05", { trigger: "SCHEDULED_CRON" }),
     ]);
     const parsed = firstWave.map(result => JSON.parse(result) as { status: string });
     expect(parsed.filter(result => result.status === "claimed")).toHaveLength(1);
     expect(parsed.filter(result => result.status === "already_claimed")).toHaveLength(2);
 
-    const retry = JSON.parse(await claimInProcess(databaseUrl, "2026-10-05")) as { status: string };
+    const retry = JSON.parse(await claimInProcess(databaseUrl, "2026-10-05", { trigger: "SCHEDULED_CRON" })) as { status: string };
     expect(retry.status).toBe("already_claimed");
 
-    const restarted = JSON.parse(await claimInProcess(databaseUrl, "2026-10-05")) as { status: string };
+    const restarted = JSON.parse(await claimInProcess(databaseUrl, "2026-10-05", { trigger: "SCHEDULED_CRON" })) as { status: string };
     expect(restarted.status).toBe("already_claimed");
 
-    const otherSession = JSON.parse(await claimInProcess(databaseUrl, "2026-10-06")) as { status: string };
+    const otherSession = JSON.parse(await claimInProcess(databaseUrl, "2026-10-06", { trigger: "SCHEDULED_CRON" })) as { status: string };
     expect(otherSession.status).toBe("claimed");
   }, 60_000);
 
@@ -113,7 +114,7 @@ dbTest("disposable MySQL once-per-session claim", () => {
     await conn.end();
     const missing = await mysql.createConnection(databaseUrl);
     const db = drizzle(missing);
-    await expect(claimScheduledSeismographSession("2026-10-05", async () => db as never)).resolves.toEqual({ status: "unavailable" });
+    await expect(claimScheduledSeismographSession("2026-10-05", async () => db as never, { trigger: "SCHEDULED_CRON" })).resolves.toEqual({ status: "unavailable" });
     await missing.end();
   });
 
@@ -123,7 +124,7 @@ dbTest("disposable MySQL once-per-session claim", () => {
     const db = drizzle(conn);
     const provider = async () => db as never;
     const now = Date.parse("2026-10-05T20:20:00.000Z");
-    const first = await claimScheduledSeismographSession("2026-10-05", provider, { nowMs: now });
+    const first = await claimScheduledSeismographSession("2026-10-05", provider, { nowMs: now, trigger: "SCHEDULED_CRON" });
     expect(first.status).toBe("claimed");
     const retryWhileLeased = await claimScheduledSeismographSession("2026-10-05", provider, { nowMs: now + 1000, trigger: "SCHEDULED_CRON" });
     expect(retryWhileLeased.status).toBe("already_claimed");
@@ -140,14 +141,14 @@ dbTest("disposable MySQL once-per-session claim", () => {
 
     const after = await mysql.createConnection(databaseUrl);
     const afterDb = drizzle(after);
-    const outside = await claimScheduledSeismographSession("2026-10-06", async () => afterDb as never, { nowMs: now });
+    const outside = await claimScheduledSeismographSession("2026-10-06", async () => afterDb as never, { nowMs: now, trigger: "SCHEDULED_CRON" });
     await completeScheduledSession("2026-10-06", outside.generation!, async () => afterDb as never, now);
     await expect(claimScheduledSeismographSession("2026-10-06", async () => afterDb as never, {
       nowMs: now + 1000,
       trigger: "SCHEDULED_CRON",
     })).resolves.toMatchObject({ status: "already_claimed" });
 
-    const blocked = await claimScheduledSeismographSession("2026-10-07", async () => afterDb as never, { nowMs: Date.parse("2026-10-07T20:20:00.000Z") });
+    const blocked = await claimScheduledSeismographSession("2026-10-07", async () => afterDb as never, { nowMs: Date.parse("2026-10-07T20:20:00.000Z"), trigger: "SCHEDULED_CRON" });
     await admitScheduledSessionOutcome("2026-10-07", { pressureScore: 41, regime: "MODERATE RISK" }, async () => afterDb as never);
     await failScheduledSession("2026-10-07", blocked.generation!, async () => afterDb as never);
     await expect(claimScheduledSeismographSession("2026-10-07", async () => afterDb as never, {
@@ -171,7 +172,7 @@ dbTest("disposable MySQL once-per-session claim", () => {
     const conn = await mysql.createConnection(databaseUrl);
     const db = drizzle(conn);
     const provider = async () => db as never;
-    const first = await claimScheduledSeismographSession("2026-10-05", provider, { nowMs: now });
+    const first = await claimScheduledSeismographSession("2026-10-05", provider, { nowMs: now, trigger: "SCHEDULED_CRON" });
     await failScheduledSession("2026-10-05", first.generation!, provider, now);
     const recovered = await claimScheduledSeismographSession("2026-10-05", provider, { nowMs: now + 1000, trigger: "SCHEDULED_CRON" });
     expect(recovered).toMatchObject({ status: "claimed", generation: 2 });
@@ -191,7 +192,7 @@ dbTest("disposable MySQL once-per-session claim", () => {
     const conn = await mysql.createConnection(databaseUrl);
     const db = drizzle(conn);
     const provider = async () => db as never;
-    const claimed = await claimScheduledSeismographSession("2026-10-05", provider, { nowMs: now });
+    const claimed = await claimScheduledSeismographSession("2026-10-05", provider, { nowMs: now, trigger: "SCHEDULED_CRON" });
     await admitScheduledSessionOutcome("2026-10-05", { pressureScore: 44, regime: "MODERATE RISK" }, provider, now);
     await failScheduledSession("2026-10-05", claimed.generation!, provider, now);
     let writes = 0;
@@ -220,7 +221,7 @@ dbTest("disposable MySQL once-per-session claim", () => {
     const conn = await mysql.createConnection(databaseUrl);
     const db = drizzle(conn);
     const provider = async () => db as never;
-    const claimed = await claimScheduledSeismographSession("2026-10-05", provider, { nowMs: now });
+    const claimed = await claimScheduledSeismographSession("2026-10-05", provider, { nowMs: now, trigger: "SCHEDULED_CRON" });
     await admitScheduledSessionOutcome("2026-10-05", { pressureScore: 44, regime: "MODERATE RISK" }, provider, now);
     await failScheduledSession("2026-10-05", claimed.generation!, provider, now);
     const late = await claimScheduledSeismographSession("2026-10-05", provider, {
@@ -232,5 +233,37 @@ dbTest("disposable MySQL once-per-session claim", () => {
     const outcome = rows.find(row => String(row.memoryKey).includes("outcome"));
     expect(String(outcome?.memoryValue)).toContain("skipped: unrecoverable");
     await conn.end();
+  }, 60_000);
+
+  it("finalizes a prior pending row from the out-of-window cron in both DST offsets without writing a score", async () => {
+    await resetTable(databaseUrl);
+    const cases = [
+      { etDate: "2026-10-05", admittedAt: Date.parse("2026-10-05T20:20:00.000Z"), fireAt: Date.parse("2026-10-05T21:15:00.000Z") },
+      { etDate: "2026-01-05", admittedAt: Date.parse("2026-01-05T21:20:00.000Z"), fireAt: Date.parse("2026-01-05T20:15:00.000Z") },
+    ];
+    for (const row of cases) {
+      const conn = await mysql.createConnection(databaseUrl);
+      const db = drizzle(conn);
+      const provider = async () => db as never;
+      await claimScheduledSeismographSession(row.etDate, provider, { nowMs: row.admittedAt, trigger: "SCHEDULED_CRON" });
+      await admitScheduledSessionOutcome(row.etDate, { pressureScore: 40, regime: "MODERATE RISK" }, provider, row.admittedAt);
+      let writes = 0;
+      const refused = await finalizeStaleScheduledSessionOutcomes(provider, { nowMs: row.fireAt, trigger: "MANUAL" });
+      expect(refused.marked).toBe(0);
+      const second = await mysql.createConnection(databaseUrl);
+      const secondDb = drizzle(second);
+      const wave = await Promise.all([
+        finalizeStaleScheduledSessionOutcomes(provider, { nowMs: row.fireAt, trigger: "SCHEDULED_CRON" }),
+        finalizeStaleScheduledSessionOutcomes(async () => secondDb as never, { nowMs: row.fireAt, trigger: "SCHEDULED_CRON" }),
+      ]);
+      await second.end();
+      expect(wave.reduce((sum, item) => sum + item.marked, 0)).toBe(1);
+      expect(writes).toBe(0);
+      const stored = await db.select().from(marketMemory);
+      const outcome = stored.find(item => String(item.memoryKey).includes(row.etDate) && String(item.memoryKey).includes("outcome"));
+      expect(String(outcome?.memoryValue)).toContain("skipped: unrecoverable");
+      expect(String(outcome?.memoryValue)).not.toContain("\"state\":\"scored\"");
+      await conn.end();
+    }
   }, 60_000);
 });

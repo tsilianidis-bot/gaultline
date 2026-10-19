@@ -6,6 +6,18 @@ import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO } from "@/hooks/useSEO";
+import { evidenceStatusLabel } from "../../../shared/evidenceStatus";
+
+export function AltRotationFreshness({ observedAtMs, nowMs }: { observedAtMs?: number | null; nowMs?: number }) {
+  const hasObservation = typeof observedAtMs === "number" && Number.isFinite(observedAtMs);
+  const label = evidenceStatusLabel({
+    observedAtMs,
+    nowMs,
+    sourceStatus: hasObservation ? "live" : "unavailable",
+    hasObservation,
+  });
+  return <span data-alt-rotation-status={label}>{label}</span>;
+}
 
 // ── Types (mirrored from server) ──────────────────────────────
 interface SectorCoin {
@@ -349,7 +361,7 @@ function AltRotationInner() {
             INITIALIZING ALT ROTATION ENGINE™
           </div>
           <div className="text-xs font-mono text-zinc-600">
-            FETCHING LIVE MARKET STRUCTURE DATA...
+            FETCHING MARKET STRUCTURE...
           </div>
           <div className="flex gap-1 justify-center mt-4">
             {[0, 1, 2, 3, 4].map(i => (
@@ -411,7 +423,7 @@ function AltRotationInner() {
             </div>
             <div className="px-3 py-1.5 rounded border text-xs font-mono"
               style={{ borderColor: regimeColor + "40", color: regimeColor, background: regimeColor + "10" }}>
-              LIVE
+              <AltRotationFreshness observedAtMs={null} />
             </div>
           </div>
         </div>
@@ -882,7 +894,7 @@ function AltRotationInner() {
         {/* Footer */}
         <div className="border-t border-zinc-800/60 pt-4 flex justify-between items-center">
           <div className="text-xs font-mono text-zinc-600">
-            DATA: {d.dataSource} · UPDATED: {new Date(d.fetchedAt).toLocaleTimeString()} · CACHE: 3 MIN
+            DATA: {d.dataSource} · <AltRotationFreshness observedAtMs={null} /> · CACHE: 3 MIN
           </div>
           <Link href="/app/crypto-intel"
             className="text-xs font-mono text-zinc-500 hover:text-zinc-300 transition-colors">

@@ -5,10 +5,11 @@
 // row → summary bar → category tabs → filter panel → screener grid
 // ============================================================
 
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { score100Value } from "@/lib/displayFallbacks";
 import { trpc } from "@/lib/trpc";
 import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
+import { evidenceStatusLabel } from "../../../shared/evidenceStatus";
 import { useEngine } from "@/contexts/EngineContext";
 import { canonicalRegimeDisplayColor } from "@/lib/marketStateProjection";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -50,7 +51,7 @@ interface CryptoSignalResult {
     rsiIsTrue: boolean;
     trend: "Uptrend" | "Downtrend" | "Sideways";
     volumeSignal: "Surge" | "Normal" | "Low";
-    momentumScore: number;
+    momentumScore: number | null;
     smaSignal: "Golden Cross" | "Death Cross" | "Neutral";
     smaIsTrue: boolean;
     macd: { macdLine: number; signalLine: number; histogram: number; signal: "Bullish" | "Bearish" | "Neutral" } | null;
@@ -71,7 +72,7 @@ interface CryptoSignalResult {
   regimeAlignment: "Aligned" | "Neutral" | "Counter-Trend";
   regimeAlignmentScore: number;
   cryptoFactors: {
-    btcDominanceEffect: "Headwind" | "Neutral" | "Tailwind";
+    btcDominanceEffect: "Headwind" | "Neutral" | "Tailwind" | "Unavailable";
     volatilityRegime: "High" | "Normal" | "Low";
     athProximity: "Near ATH" | "Mid-Range" | "Deep Discount";
     liquidityScore: number;
@@ -85,7 +86,30 @@ interface ScreenerResponse {
   btcDominance: number;
   totalMarketCap: number;
   marketCapChange24h: number;
+  marketObservedAtMs?: number | null;
   computedAt: number;
+}
+
+export function CryptoScreenerFreshnessBadge({
+  observedAtMs,
+  nowMs,
+  sourceStatus,
+  refreshing,
+}: {
+  observedAtMs?: number | null;
+  nowMs?: number;
+  sourceStatus?: string | null;
+  refreshing?: boolean;
+}) {
+  if (refreshing) return <span data-crypto-screener-status="REFRESHING">REFRESHING...</span>;
+  const hasObservation = typeof observedAtMs === "number" && Number.isFinite(observedAtMs);
+  const label = evidenceStatusLabel({
+    observedAtMs,
+    nowMs,
+    sourceStatus: sourceStatus ?? (hasObservation ? "live" : "unavailable"),
+    hasObservation,
+  });
+  return <span data-crypto-screener-status={label}>{label}</span>;
 }
 
 // ── Constants ─────────────────────────────────────────────────
@@ -361,7 +385,7 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px", marginBottom: "8px" }}>
         {[
           { label: "TREND", value: sig.technicals.trend.toUpperCase(), color: TREND_COLORS[sig.technicals.trend] },
-          { label: "MOMENTUM", value: `${sig.technicals.momentumScore}`, color: sig.technicals.momentumScore >= 60 ? "#00D4FF" : sig.technicals.momentumScore <= 40 ? "#FF2D55" : "#FFD700" },
+          { label: "MOMENTUM", value: sig.technicals.momentumScore == null ? "Unavailable" : `${sig.technicals.momentumScore}`, color: sig.technicals.momentumScore == null ? "#94A3B8" : sig.technicals.momentumScore >= 60 ? "#00D4FF" : sig.technicals.momentumScore <= 40 ? "#FF2D55" : "#FFD700" },
           // QA r13 B14: signal "confidence" is min(95, 55 + |score| × 5) — a formula, not calibrated.
           { label: "CONFIDENCE", value: CONFIDENCE_NOT_ESTABLISHED, color: "#94A3B8" },
         ].map(({ label, value, color }) => (
@@ -837,7 +861,6 @@ function CryptoSignalsInner() {
   const [activeCategory, setActiveCategory] = useState<CryptoCategory>("All");
   const [filterAction, setFilterAction] = useState<TradingAction | "All">("All");
   const [screenerLimit] = useState(30);
-  const [lastRefresh, setLastRefresh] = useState<string | null>(null);
 
   // ── BTC market recovery (compact panel in regime banner) ──
   const { data: btcRecovery } = trpc.recovery.getMarketRecovery.useQuery(
@@ -852,10 +875,6 @@ function CryptoSignalsInner() {
   );
 
   const screenerData = screenerQuery.data as ScreenerResponse | undefined;
-
-  useEffect(() => {
-    if (screenerData) setLastRefresh(new Date(screenerData.computedAt).toLocaleTimeString());
-  }, [screenerData]);
 
   // ── Filter and sort ────────────────────────────────────────
   // Launch fix-up: rows keep the screener's ordinal strengthRank order (the
@@ -877,7 +896,8 @@ function CryptoSignalsInner() {
     const sigs = screenerData.signals;
     const buys  = sigs.filter(s => s.action === "BUY").sort(byStrengthRank);
     const sells = sigs.filter(s => s.action === "SELL").sort(byStrengthRank);
-    const momentum = [...sigs].sort((a, b) => b.technicals.momentumScore - a.technicals.momentumScore);
+    const momentumRank = (value: number | null) => typeof value === "number" && Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY;
+    const momentum = [...sigs].sort((a, b) => momentumRank(b.technicals.momentumScore) - momentumRank(a.technicals.momentumScore));
     const volatile = [...sigs].sort((a, b) => b.technicals.volatility24h - a.technicals.volatility24h);
     return {
       topBullish: buys[0] ?? sigs[0],
@@ -977,12 +997,16 @@ function CryptoSignalsInner() {
         {/* Data freshness */}
         <div style={{ marginTop: "10px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", gap: "6px" }}>
           <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: screenerQuery.isFetching ? "#FFD700" : "#00D4FF", boxShadow: `0 0 6px ${screenerQuery.isFetching ? "#FFD700" : "#00D4FF"}`, animation: "fl-pulse 5s ease-in-out infinite" }} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.1em", color: screenerQuery.isFetching ? "#FFD700" : "#00D4FF" }}>
-            {screenerQuery.isFetching ? "REFRESHING..." : "COINGECKO LIVE"}
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.1em", color: "#00D4FF" }}>
+            <CryptoScreenerFreshnessBadge
+              refreshing={screenerQuery.isFetching}
+              observedAtMs={screenerData?.marketObservedAtMs}
+              sourceStatus={screenerData?.marketObservedAtMs != null ? "live" : "unavailable"}
+            />
           </span>
-          {lastRefresh && (
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>UPDATED: {lastRefresh}</span>
-          )}
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>
+            {screenerData?.marketObservedAtMs != null ? `AS OF ${new Date(screenerData.marketObservedAtMs).toISOString()}` : "AS OF UNAVAILABLE"}
+          </span>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>· AUTO-REFRESH 90s</span>
         </div>
       </div>
@@ -1130,7 +1154,7 @@ function CryptoSignalsInner() {
       {/* ── Data Source Panel ─────────────────────────── */}
       <div style={{ margin: "24px 16px 0", padding: "12px", background: "rgba(0,212,255,0.03)", border: "1px solid rgba(0,212,255,0.08)", borderRadius: "4px" }}>
         <div style={{ fontSize: "8px", letterSpacing: "0.12em", color: "rgba(100,116,139,0.5)", lineHeight: 1.6 }}>
-          <span style={{ color: "#00D4FF" }}>LIVE DATA</span> — CoinGecko market data via secure backend proxy.
+          <CryptoScreenerFreshnessBadge observedAtMs={screenerData?.marketObservedAtMs} sourceStatus={screenerData?.marketObservedAtMs != null ? "live" : "unavailable"} /> — CoinGecko market data via secure backend proxy.
           {screenerData && <> Assets: <span style={{ color: "rgba(100,116,139,0.7)" }}>{screenerData.signals.length}</span> · BTC Dominance: <span style={{ color: "rgba(100,116,139,0.7)" }}>{screenerData.btcDominance.toFixed(1)}%</span></>}
           {" "}· <span style={{ color: "#00D4FF" }}>TRADING SIGNALS</span> — FAULTLINE Engine · RSI, SMA, MACD, regime pressure. Refreshes every 90 seconds.
         </div>

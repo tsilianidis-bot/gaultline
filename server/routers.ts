@@ -864,7 +864,7 @@ export const appRouter = router({
           const result = computeCryptoSignal({
             market,
             ohlcBars: ohlcBars.length > 0 ? ohlcBars : undefined,
-            btcDominance: globalStats?.btcDominance ?? 55,
+            btcDominance: globalStats?.btcDominance ?? null,
             regime: { label: pressure.regime, score: pressure.overallPressure },
           });
           const sanitizeNumbers = (v: unknown): unknown => {
@@ -895,7 +895,7 @@ export const appRouter = router({
             calculateFaultlinePressure(),
           ]);
           const regime = { label: pressure.regime, score: pressure.overallPressure };
-          const btcDominance = globalStats?.btcDominance ?? 55;
+          const btcDominance = globalStats?.btcDominance ?? null;
           // Compute signals without OHLC for screener speed (sparkline fallback)
           const results = computeCryptoSignals(
             markets.map(m => ({ market: m, btcDominance, regime }))
@@ -914,6 +914,7 @@ export const appRouter = router({
             btcDominance,
             totalMarketCap: globalStats?.totalMarketCap ?? 0,
             marketCapChange24h: globalStats?.marketCapChangePercent24h ?? 0,
+            marketObservedAtMs: globalStats?.observedAt ?? null,
             computedAt: Date.now(),
           };
           return sanitizeNums(screenerResult) as typeof screenerResult;

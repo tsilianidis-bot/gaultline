@@ -70,7 +70,7 @@ function SignalCard({
       trend: string;
       rsiEstimate: number | null;
       rsiLabel: string;
-      momentumScore: number;
+      momentumScore: number | null;
     };
     cryptoRegime: string;
   };

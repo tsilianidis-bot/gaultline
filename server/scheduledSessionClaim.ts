@@ -22,11 +22,15 @@
  * That path writes the missing score and does not capture a second forward record.
  * After the window, or when verification fails, the outcome becomes
  * `skipped: unrecoverable`. A scored outcome never starts another pipeline.
+ * The out-of-window dual-cron fire, and the next session's in-window fire,
+ * finalize stale pending or scoring rows for sessions that are not inside
+ * the NYSE window. That step does not write a score or a forward record.
+ * Claim, reconcile, and finalize all refuse a trigger other than SCHEDULED_CRON.
  *
  * Fail-closed: a missing database, a missing table, or any error other than a
  * duplicate key returns `unavailable` and the caller must not run the pipeline.
  */
-import { and, eq } from "drizzle-orm";
+import { and, eq, like } from "drizzle-orm";
 import { marketMemory } from "../drizzle/schema";
 import { getDb } from "./db";
 import { nyseSeismographRunWindow } from "../shared/nyseSession";
@@ -59,6 +63,8 @@ export interface SessionClaimStore {
   read(key: string): Promise<string | null>;
   insert(key: string, value: string, description: string): Promise<void>;
   cas(key: string, previous: string, next: string): Promise<boolean>;
+  /** Outcome rows for prior sessions. Absent on older test doubles; finalize then fails closed. */
+  listByPrefix?(prefix: string): Promise<Array<{ key: string; value: string }>>;
 }
 
 type ClaimState = "leased" | "completed" | "failed" | "exhausted";
@@ -144,6 +150,13 @@ async function drizzleStore(db: ClaimDb): Promise<SessionClaimStore> {
         .where(and(eq(marketMemory.memoryKey, key), eq(marketMemory.memoryValue, previous)));
       return affectedRows(result) === 1;
     },
+    async listByPrefix(prefix) {
+      const rows = await db
+        .select({ key: marketMemory.memoryKey, value: marketMemory.memoryValue })
+        .from(marketMemory)
+        .where(like(marketMemory.memoryKey, `${prefix}%`));
+      return rows;
+    },
   };
 }
 
@@ -221,6 +234,7 @@ export async function claimScheduledSeismographSession(
   } catch {
     return { status: "unavailable" };
   }
+  if (options.trigger !== "SCHEDULED_CRON") return { status: "unavailable" };
   const store = await resolveStore(dbProvider);
   if (!store) return { status: "unavailable" };
   const nowMs = options.nowMs ?? Date.now();
@@ -470,6 +484,7 @@ export async function reconcileScheduledSessionScore(
   dbProvider: () => Promise<ClaimDb | SessionClaimStore | null> = getDb,
   options: SessionScoreReconcileOptions,
 ): Promise<"scored" | "already_scored" | "unrecoverable" | "unavailable"> {
+  if (options.trigger !== "SCHEDULED_CRON") return "unavailable";
   const store = await resolveStore(dbProvider);
   if (!store) return "unavailable";
   const nowMs = options.nowMs ?? Date.now();
@@ -507,4 +522,47 @@ export async function reconcileScheduledSessionScore(
   } catch {
     return "unavailable";
   }
+}
+
+export interface StaleSessionFinalizeResult {
+  status: "finalized" | "unavailable";
+  marked: number;
+}
+
+/**
+ * Mark pending or scoring outcomes `skipped: unrecoverable` when their ET
+ * session is not inside the NYSE post-close window at `now`. Today's
+ * in-window row is left for reconcile. No score and no forward record.
+ * Compare-and-swap makes concurrent finalizers mark each row once.
+ */
+export async function finalizeStaleScheduledSessionOutcomes(
+  dbProvider: () => Promise<ClaimDb | SessionClaimStore | null> = getDb,
+  options: { nowMs?: number; trigger?: string } = {},
+): Promise<StaleSessionFinalizeResult> {
+  if (options.trigger !== "SCHEDULED_CRON") return { status: "unavailable", marked: 0 };
+  const store = await resolveStore(dbProvider);
+  if (!store || typeof store.listByPrefix !== "function") return { status: "unavailable", marked: 0 };
+  const nowMs = options.nowMs ?? Date.now();
+  let rows: Array<{ key: string; value: string }>;
+  try {
+    rows = await store.listByPrefix(SCHEDULED_SEISMOGRAPH_OUTCOME_PREFIX);
+  } catch {
+    return { status: "unavailable", marked: 0 };
+  }
+  const window = nyseSeismographRunWindow(new Date(nowMs));
+  let marked = 0;
+  for (const row of rows) {
+    const parsed = parseOutcome(row.value);
+    if (!parsed || (parsed.state !== "pending_score" && parsed.state !== "scoring")) continue;
+    const open = window.isScheduledWindow && window.etDate === parsed.etDate;
+    if (open) continue;
+    const next = encodeOutcome({
+      ...parsed,
+      state: "unrecoverable",
+      reason: "skipped: unrecoverable",
+    });
+    const won = await store.cas(row.key, row.value, next).catch(() => false);
+    if (won) marked += 1;
+  }
+  return { status: "finalized", marked };
 }
