@@ -342,6 +342,27 @@ function resolveCgId(query: string): string {
   return SYMBOL_MAP[upper] ?? NAME_MAP[upper] ?? query.toLowerCase().trim();
 }
 
+/**
+ * CoinGecko global volume in USD only. Other currency keys are not summed.
+ * A print above $10T, or above 10× a known USD market cap, is withheld.
+ * An observed zero stays zero.
+ */
+export function observedGlobalUsdVolume(totalVolume: unknown, totalMarketCap: number | null): number | null {
+  let usd: number | null = null;
+  if (typeof totalVolume === "number" && Number.isFinite(totalVolume)) {
+    usd = totalVolume;
+  } else if (totalVolume != null && typeof totalVolume === "object" && "usd" in totalVolume) {
+    const raw = (totalVolume as { usd?: unknown }).usd;
+    usd = typeof raw === "number" && Number.isFinite(raw) ? raw : null;
+  }
+  if (usd == null) return null;
+  if (usd > 1e13) return null;
+  if (typeof totalMarketCap === "number" && Number.isFinite(totalMarketCap) && totalMarketCap > 0 && usd > totalMarketCap * 10) {
+    return null;
+  }
+  return usd;
+}
+
 function finiteCoinNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -507,9 +528,10 @@ export async function getGlobalStats(): Promise<GlobalStats | null> {
       : null;
     const finite = (value: unknown): number | null =>
       typeof value === "number" && Number.isFinite(value) ? value : null;
+    const totalMarketCap = finite(d.total_market_cap?.usd);
     const stats: GlobalStats = {
-      totalMarketCap:            finite(d.total_market_cap?.usd),
-      totalVolume24h:            finite(d.total_volume?.usd),
+      totalMarketCap,
+      totalVolume24h:            observedGlobalUsdVolume(d.total_volume, totalMarketCap),
       btcDominance:              typeof d.market_cap_percentage?.btc === "number" && Number.isFinite(d.market_cap_percentage.btc)
         ? d.market_cap_percentage.btc
         : null,
