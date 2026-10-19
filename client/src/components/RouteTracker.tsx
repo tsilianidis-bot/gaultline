@@ -63,7 +63,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/app/aftershock": "FAULTLINE — Aftershock Engine",
   "/app/alt-rotation": "FAULTLINE — Sector Rotation",
   "/app/reading-history": "FAULTLINE — Reading History",
-  "/app/pre-flight": "FAULTLINE — Pre-Flight Market Awareness",
   "/app/situation-room": "FAULTLINE — Situation Room",
   "/app/insider-intelligence": "FAULTLINE — Insider Intelligence",
   "/app/seo-optimizer": "FAULTLINE — SEO Optimizer",

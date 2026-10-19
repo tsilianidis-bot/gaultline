@@ -49,6 +49,7 @@ function makeGlobalData() {
       market_cap_change_percentage_24h_usd: -1.5,
       active_cryptocurrencies: 13000,
       markets: 900,
+      updated_at: 1_704_067_200,
     },
   };
 }
@@ -178,6 +179,20 @@ describe("CoinGecko Proxy", () => {
       expect(stats!.totalMarketCap).toBe(2_500_000_000_000);
       expect(stats!.btcDominance).toBeCloseTo(55.2, 1);
       expect(stats!.activeCryptocurrencies).toBe(13000);
+      expect(stats!.observedAt).toBe(1_704_067_200_000);
+    });
+
+    it("does not substitute fetch receipt time when CoinGecko omits its observation timestamp", async () => {
+      const data = makeGlobalData();
+      delete (data.data as { updated_at?: number }).updated_at;
+      const mockFetch = vi.fn().mockResolvedValueOnce(mockOk(data));
+      vi.stubGlobal("fetch", mockFetch);
+      vi.doMock("./logger", () => ({ log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
+
+      const { getGlobalStats } = await import("./coingeckoProxy");
+      const stats = await getGlobalStats();
+      expect(stats?.observedAt).toBeNull();
+      expect(typeof stats?.fetchedAt).toBe("number");
     });
 
     it("returns null on fetch error", async () => {

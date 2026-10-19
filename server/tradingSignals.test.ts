@@ -171,38 +171,44 @@ describe("computeTradingSignal — value ranges", () => {
 // ── Directional logic tests ───────────────────────────────────
 
 describe("computeTradingSignal — directional logic", () => {
-  it("strong uptrend with high RS and volume surge leans BUY", () => {
+  it("sparkline uptrend without completed bars does not emit a trade", () => {
     const input = makeTicker({
-      sparkline: [0, 1.5, 3, 4.5, 6],  // strong uptrend
+      sparkline: [0, 1.5, 3, 4.5, 6],
       relativeStrength: 80,
       volumeMillions: 60,
       avgVolume: 30,
       changePercent: 4,
     });
     const result = computeTradingSignal(input, BULLISH_REGIME);
-    expect(["BUY", "HOLD"]).toContain(result.action);
+    expect(result.indicatorsAvailable).toBe(false);
+    expect(result.action).toBe("WATCH");
+    expect(result.actionLabel).toBe("Unavailable");
+    expect(`${result.rationale} ${result.technicals.smaSignal}`).not.toMatch(/BUY|SELL|RSI|golden cross|death cross/i);
   });
 
-  it("strong downtrend with low RS leans SELL", () => {
+  it("sparkline downtrend without completed bars does not emit a trade", () => {
     const input = makeTicker({
-      sparkline: [0, -1.5, -3, -4.5, -6],  // strong downtrend
+      sparkline: [0, -1.5, -3, -4.5, -6],
       relativeStrength: 20,
       changePercent: -4,
       volumeMillions: 50,
       avgVolume: 30,
     });
     const result = computeTradingSignal(input, BEARISH_REGIME);
-    expect(["SELL", "HOLD"]).toContain(result.action);
+    expect(result.indicatorsAvailable).toBe(false);
+    expect(result.action).not.toBe("SELL");
+    expect(result.action).not.toBe("BUY");
   });
 
-  it("flat sparkline with no conviction returns HOLD or WATCH", () => {
+  it("flat sparkline without completed bars stays unavailable", () => {
     const input = makeTicker({
-      sparkline: [0, 0.1, -0.1, 0.2, -0.2],  // sideways
+      sparkline: [0, 0.1, -0.1, 0.2, -0.2],
       relativeStrength: 50,
       changePercent: 0.1,
     });
     const result = computeTradingSignal(input, MODERATE_REGIME);
-    expect(["HOLD", "WATCH"]).toContain(result.action);
+    expect(result.indicatorsAvailable).toBe(false);
+    expect(result.action).toBe("WATCH");
   });
 
   it("BUY in bullish regime gets Aligned or Neutral regime alignment", () => {
@@ -446,10 +452,14 @@ describe("computeTradingSignal — with dailyBars (true indicators)", () => {
     expect(result.technicals.rsiEstimate).toBeLessThanOrEqual(100);
   });
 
-  it("handles 14 bars (below RSI threshold — falls back to sparkline)", () => {
+  it("handles 14 bars as insufficient completed history", () => {
     const bars = makeDailyBars(14);
     const result = computeTradingSignal(makeTicker({ dailyBars: bars }), MODERATE_REGIME);
+    expect(result.indicatorsAvailable).toBe(false);
     expect(result.technicals.rsiIsTrue).toBe(false);
+    expect(result.action).not.toBe("BUY");
+    expect(result.action).not.toBe("SELL");
+    expect(result.rationale).not.toMatch(/RSI|golden cross|death cross/i);
   });
 
   it("all-uptrend bars produce RSI > 50", () => {

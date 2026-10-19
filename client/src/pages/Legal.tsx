@@ -1,3 +1,4 @@
+import { LIFETIME_TERMS, LIFETIME_FINAL_SALE_NOTICE } from "@shared/tiers";
 /* ============================================================
    FAULTLINE — Legal Page
    Privacy Policy + Terms of Use
@@ -419,6 +420,12 @@ function TermsOfUse() {
         locked for the duration of the founding member program as described at the time of
         purchase.
       </Para>
+      <Para>
+        <strong>Lifetime terms.</strong> {LIFETIME_FINAL_SALE_NOTICE}
+      </Para>
+      <ol style={{ paddingLeft: "20px", listStyle: "decimal", color: "inherit" }} data-lifetime-terms>
+        {LIFETIME_TERMS.map((t) => <li key={t} style={{ marginBottom: "6px" }}>{t}</li>)}
+      </ol>
 
       <SectionHeading>9. Limitation of Liability</SectionHeading>
       <Para>

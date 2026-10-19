@@ -32,6 +32,8 @@ export interface MarketIntelligenceHeaderData {
 interface AppMarketHeaderProps {
   items: MarketTickerItem[];
   intelligence?: MarketIntelligenceHeaderData | null;
+  /** Header regime and alignment can only render from an available canonical MarketState. */
+  canonicalAvailable?: boolean;
   isMobile: boolean;
 }
 
@@ -48,10 +50,11 @@ function directionGlyph(direction: MarketTickerDirection | null) {
   return "";
 }
 
-export default function AppMarketHeader({ items, intelligence, isMobile }: AppMarketHeaderProps) {
+export default function AppMarketHeader({ items, intelligence, canonicalAvailable = false, isMobile }: AppMarketHeaderProps) {
   const visibleItems = useMemo(() => hideBlankTickerDuplicates(items), [items]);
-  const eqChip = headerRegimeChip("EQ", intelligence?.stockRegime);
-  const btcChip = headerRegimeChip("BTC", intelligence?.cryptoRegime);
+  const canonicalIntelligence = canonicalAvailable ? intelligence : null;
+  const eqChip = headerRegimeChip("EQ", canonicalIntelligence?.stockRegime);
+  const btcChip = headerRegimeChip("BTC", canonicalIntelligence?.cryptoRegime);
   return (
     <>
       <div style={{
@@ -102,19 +105,19 @@ export default function AppMarketHeader({ items, intelligence, isMobile }: AppMa
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: btcChip.regime === "UNAVAILABLE" ? "#64748B" : "#FCD34D", letterSpacing: "0.06em" }}>{btcChip.regime}</span>
             {btcChip.tag && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#64748B", letterSpacing: "0.12em" }}>{btcChip.tag}</span>}
           </div>
-          {intelligence.alignmentStatus && (
+          {canonicalIntelligence?.alignmentStatus && (
             <div style={{
               display: "flex",
               alignItems: "center",
               gap: "4px",
               padding: "1px 7px",
               borderRadius: "3px",
-              background: intelligence.alignmentScore != null && intelligence.alignmentScore > 65 ? "rgba(16,185,129,0.08)" : intelligence.alignmentScore != null && intelligence.alignmentScore < 35 ? "rgba(239,68,68,0.08)" : "rgba(107,114,128,0.08)",
-              border: intelligence.alignmentScore != null && intelligence.alignmentScore > 65 ? "1px solid rgba(16,185,129,0.2)" : intelligence.alignmentScore != null && intelligence.alignmentScore < 35 ? "1px solid rgba(239,68,68,0.2)" : "1px solid rgba(107,114,128,0.2)",
+              background: canonicalIntelligence.alignmentScore != null && canonicalIntelligence.alignmentScore > 65 ? "rgba(16,185,129,0.08)" : canonicalIntelligence.alignmentScore != null && canonicalIntelligence.alignmentScore < 35 ? "rgba(239,68,68,0.08)" : "rgba(107,114,128,0.08)",
+              border: canonicalIntelligence.alignmentScore != null && canonicalIntelligence.alignmentScore > 65 ? "1px solid rgba(16,185,129,0.2)" : canonicalIntelligence.alignmentScore != null && canonicalIntelligence.alignmentScore < 35 ? "1px solid rgba(239,68,68,0.2)" : "1px solid rgba(107,114,128,0.2)",
               flexShrink: 0,
             }}>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#8A9AB0", letterSpacing: "0.08em" }}>ALIGN</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: intelligence.alignmentScore != null && intelligence.alignmentScore > 65 ? "#6EE7B7" : intelligence.alignmentScore != null && intelligence.alignmentScore < 35 ? "#FCA5A5" : "#9CA3AF", letterSpacing: "0.06em" }}>{intelligence.alignmentStatus}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: canonicalIntelligence.alignmentScore != null && canonicalIntelligence.alignmentScore > 65 ? "#6EE7B7" : canonicalIntelligence.alignmentScore != null && canonicalIntelligence.alignmentScore < 35 ? "#FCA5A5" : "#9CA3AF", letterSpacing: "0.06em" }}>{canonicalIntelligence.alignmentStatus}</span>
             </div>
           )}
         </div>

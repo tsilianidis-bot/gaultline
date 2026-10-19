@@ -19,13 +19,12 @@ import Onboarding from "@/components/Onboarding";
 import ShareCard from "@/components/ShareCard";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import { trpc } from "@/lib/trpc";
+import { CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ViewModeSelector } from "@/components/ViewModeSelector";
 import PulseMode from "@/components/dashboard/PulseMode";
 import SignalsMode from "@/components/dashboard/SignalsMode";
 import IntelligenceMode from "@/components/dashboard/IntelligenceMode";
-import { AwarenessDashboardCard, MarketPreflightModal } from "@/components/MarketPreflight";
-import PreflightGate from "@/components/PreflightGate";
 import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
 import HomepageBriefingPanel from "@/components/HomepageBriefingPanel";
 import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner";
@@ -90,7 +89,7 @@ function DashboardUpgradePrompt() {
       <div>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(0,229,255,0.65)', marginBottom: '2px' }}>{tier === 'core' ? 'UPGRADE TO PRO' : 'UPGRADE TO CORE'}</div>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#C0D0E0' }}>
-          {tier === 'core' ? 'Situation Room · Market Preflight · Institutional dashboards · Historical analogs' : 'Unlimited Ask Intelligence · Symbol Intelligence · Full Signal Outlook · Portfolio tracker'}
+          {tier === 'core' ? 'Situation Room · Institutional dashboards · Historical analogs' : 'Unlimited Ask Intelligence · Symbol Intelligence · Full Signal Outlook · Portfolio tracker'}
         </div>
       </div>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: '#00E5FF', flexShrink: 0, marginLeft: '12px' }}>UPGRADE →</div>
@@ -475,24 +474,6 @@ function IntelTicker({ items }: { items: { label: string; value: string; color: 
   );
 }
 
-// ── Awareness Section (wrapper with modal state) ─────────────────────
-function DashboardAwarenessSection() {
-  const [open, setOpen] = useState(false);
-  const { output } = useEngine();
-  const regimeLabel = output?.regime?.label ?? "Unknown";
-  return (
-    <>
-      <AwarenessDashboardCard onOpen={() => setOpen(true)} />
-      <MarketPreflightModal
-        open={open}
-        onClose={() => setOpen(false)}
-        currentPage="dashboard"
-        regimeLabel={regimeLabel}
-      />
-    </>
-  );
-}
-
 export default function Dashboard() {
   useSEO(PAGE_SEO.home);
   const { output, isLoading, isLive, integrityLabel, lastUpdated, isSimulating, marketMode } = useEngine();
@@ -586,8 +567,6 @@ export default function Dashboard() {
 
   return (
     <div data-regime={regimeAttr} style={{ background: '#080A0F', minHeight: '100vh', position: 'relative' }} className="ambient-bg">
-      {/* Market Preflight Gate — first-login daily preflight prompt (zIndex 1000, above HUD shell) */}
-      <PreflightGate />
       {/* SEO: Visually hidden H1 for search engine crawlers */}
       <h1 style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}>
         FAULTLINE — Macroeconomic &amp; Market Risk Intelligence Platform
@@ -865,7 +844,7 @@ export default function Dashboard() {
             value: overall.riskLevel === 'low' ? 'RISK ON' : overall.riskLevel === 'moderate' ? 'STAY SELECTIVE' : overall.riskLevel === 'elevated' ? 'REDUCE EXPOSURE' : 'STEP ASIDE',
             sub: overall.riskLevel === 'low' ? 'Conditions favor risk-on positioning' : overall.riskLevel === 'moderate' ? 'High-conviction setups only' : overall.riskLevel === 'elevated' ? 'Trim and protect' : 'Capital preservation mode',
             color: overall.riskLevel === 'low' ? '#00FF88' : overall.riskLevel === 'moderate' ? '#FFD700' : overall.riskLevel === 'elevated' ? '#FF9500' : '#FF2D55',
-            href: '/app/pre-flight',
+            href: CANONICAL_DESTINATION_BY_ID.act.path,
           },
           {
             label: 'HIGHEST CONVICTION OPP',
@@ -928,7 +907,7 @@ export default function Dashboard() {
             value: topAnalog?.era?.split(' ').slice(0, 2).join(' ') ?? 'FED POLICY',
             sub: topAnalog ? `${similarityText(topAnalog.similarity)} analog match · ${topAnalog.year?.slice(0, 4) ?? ''}` : 'Watch FOMC + CPI',
             color: '#C084FC',
-            href: '/app/pre-flight',
+            href: CANONICAL_DESTINATION_BY_ID.watch.path,
           },
         ];
 
@@ -992,6 +971,8 @@ export default function Dashboard() {
         <ViewModeSelector mode={dashMode} onChange={handleModeChange} />
 
         {/* ── Mode-conditional rendering ───────────────────────── */}
+        {/* SIGNALS hierarchy: movers first inside SignalsMode; compact integrity secondary there (#66).
+            Pre-Flight / awareness entry cards removed from the customer experience (#67). */}
         {canonicalState ? (
           <>
             {dashMode === "pulse" && <PulseMode />}
@@ -1002,10 +983,9 @@ export default function Dashboard() {
           <PageDegradedBanner message="Current canonical state is unavailable." detail="Dashboard intelligence modes withhold current interpretation until one authoritative state is available." />
         )}
 
-        {/* ── Quick Actions bar ──────────────────────────────────── */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 100ms both' }}>
+        {/* ── Quick Actions bar (tertiary links; not the primary signals hierarchy) ── */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 100ms both' }} data-dashboard-quick-actions="true">
           {([
-            { label: 'Pre-Flight',      path: '/app/pre-flight',              color: '#00E5FF' },
             { label: 'Decision Engine', path: '/app/decision-engine',          color: '#FF9500' },
             { label: 'Day Trade',       path: '/app/day-trade-intelligence',  color: '#00FF88' },
             { label: 'Signal Outlook',  path: '/app/signal-outlook',          color: '#C084FC' },
@@ -1019,35 +999,11 @@ export default function Dashboard() {
             </a>
           ))}
         </div>
-        {/* Legacy content — always visible below modes ───────── */}
-        {/* Data Integrity panel */}
-        <DataIntegrity />
+        {/* Pulse / Intelligence: full Data Integrity here.
+            Signals mode owns compact integrity inside SignalsMode (#66).
+            Pre-Flight / awareness cards removed (#67). */}
+        {dashMode !== "signals" && <DataIntegrity />}
 
-        {/* ── Complete Market Awareness™ Dashboard Card ──────────────── */}
-        <DashboardAwarenessSection />
-
-        {/* ── PRE-FLIGHT ENTRY CARD ──────────────────────────────────────── */}
-        <div style={{ background: 'linear-gradient(135deg, rgba(0,212,255,0.07) 0%, rgba(12,15,22,0.98) 60%)', border: '1px solid rgba(0,212,255,0.22)', borderLeft: '3px solid #00E5FF', borderRadius: '6px', padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 38ms both' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '4px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00E5FF', boxShadow: '0 0 8px #00E5FF', animation: 'blink-alert 6s ease-in-out infinite' }} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#00E5FF', textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>Pre-Flight</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(0,212,255,0.55)', border: '1px solid rgba(0,229,255,0.45)', padding: '1px 6px', borderRadius: '3px', letterSpacing: '0.1em' }}>STEP 1 — MARKET AWARENESS</span>
-              </div>
-              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#B0C4D8', lineHeight: 1.55, maxWidth: '500px' }}>
-                Understand current market conditions before risking capital. Awareness Score, Pressure Index, scenario readings, Regime Analysis, and Daily Intelligence Brief.
-              </div>
-            </div>
-            <a href="/app/pre-flight" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: 'rgba(0,212,255,0.10)', border: '1px solid rgba(0,212,255,0.45)', borderRadius: '4px', color: '#00E5FF', textDecoration: 'none', fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', letterSpacing: '0.15em', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.18s cubic-bezier(0.23,1,0.32,1)', boxShadow: '0 0 20px rgba(0,229,255,0.14)' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(0,212,255,0.18)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(0,212,255,0.7)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(0,212,255,0.10)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(0,212,255,0.45)'; }}
-            >
-              <span style={{ fontSize: '14px' }}>⊕</span>
-              OPEN PRE-FLIGHT
-            </a>
-          </div>
-        </div>
         {/* ── SITUATION ROOM ENTRY CARD ──────────────────────────────────── */}
         <div style={{ background: 'linear-gradient(135deg, rgba(255,170,0,0.07) 0%, rgba(12,15,22,0.98) 60%)', border: '1px solid rgba(255,170,0,0.22)', borderLeft: '3px solid #FFAA00', borderRadius: '6px', padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 42ms both' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>

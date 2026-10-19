@@ -33,6 +33,7 @@ import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
 import { forecastConfidenceDisplay } from "@shared/confidenceDisplay";
+import { SectorRotationQuestion } from "@/components/sectorRotation/SectorRotationModule";
 
 const WATCH_DEEP_PATH = "/app/watch/deep";
 
@@ -364,6 +365,8 @@ export default function Watch() {
         </section>
 
         {/* ── SECTIONS ─────────────────────────────────────────────────── */}
+
+        <SectorRotationQuestion question="watch" />
 
         <Section id="threshold-meters" index="01" eyebrow="Threshold proximity" title="How close each domain is to its alert threshold" description="Each meter shows the current pressure reading against a normalized 0–100 scale. The closer to 100, the closer the domain is to a critical threshold.">
           {developingConditions.length === 0 && <WatchUnavailable id="threshold-meters" />}

@@ -36,6 +36,7 @@ import { buildInterpretationPromptContract, createInterpretationTransaction, val
 import { buildCrossEngineSynthesis, buildCrossEngineSynthesisPromptContract } from "../crossEngineSynthesis";
 import { buildEarlyWarningPresentationPromptContract, getCurrentGovernedEarlyWarningPresentation } from "../earlyWarningPresentation";
 import { stripProbabilityPercentClaims } from "../stripProbabilityClaims";
+import { evidenceFreshnessLabel } from "../evidenceFreshness";
 
 // ── LLM timeout helper ───────────────────────────────────────
 // Wraps any promise with a 55-second timeout so the user gets a friendly
@@ -720,7 +721,7 @@ JSON schema:
   "confidenceLabel": "HIGH" | "MODERATE" | "LOW",
   "confidenceReasons": string[] (3-4 specific reasons for this confidence level),
   "currentRegime": string (one sentence describing the current market regime),
-  "dataFreshness": string (e.g. "Live — updated 2 min ago"),
+  "dataFreshness": string (server overwrites this; do not claim a source is live),
   "primaryDriver": string (one sentence — the single most important factor),
   "executiveSummary": string (2 sentences — CIO briefing style),
   "whyThisVerdict": string (3 sentences, each a distinct signal),
@@ -987,8 +988,15 @@ JSON schema:
     totalLatencyMs: Date.now() - t0,
   });
 
+  const observedAt = seismographOutput?.providerProvenance?.fred?.asOf ?? seismographOutput?.computedAt ?? null;
   return sanitize({
     ...raw,
+    dataFreshness: evidenceFreshnessLabel({
+      canonicalQuality: authoritativeState?.confidenceOrEvidenceQuality ?? null,
+      fredStatus: seismographOutput?.providerProvenance?.fred?.status ?? null,
+      observedAtMs: observedAt,
+      nowMs: Date.now(),
+    }),
     ticker,
     assetType,
     queryType,
@@ -1385,14 +1393,36 @@ Respond with a JSON object matching this exact schema:
 
   // Model prose never carries an invented probability: drop any sentence that
   // states one as a percentage (James's rule; probability contract).
+  // Verified source requires canonical quality, FRED status, FRED age, and each
+  // quote observation to be independently live. Scanner LIVE tokens are not evidence.
+  const [authoritativeState, seismographOutput] = await Promise.all([
+    getAuthoritativeCanonicalIntelligenceState().catch(() => null),
+    getLatestSeismographOutput().catch(() => null),
+  ]);
+  const discoveryEvidence = {
+    canonicalQuality: authoritativeState?.confidenceOrEvidenceQuality ?? null,
+    fredStatus: seismographOutput?.providerProvenance?.fred?.status ?? null,
+    observedAtMs: seismographOutput?.providerProvenance?.fred?.asOf ?? null,
+  };
+  const quoteByTicker = new Map(topRaw.map(item => [item.ticker.toUpperCase(), {
+    observedAtMs: item.observedAtMs,
+    sourceStatus: item.sourceStatus,
+  }]));
   const opportunities = Array.isArray(raw.topOpportunities)
-    ? (raw.topOpportunities as Record<string, unknown>[]).map(o => ({
-        ...o,
-        primaryDriver: stripProbabilityPercentClaims(o.primaryDriver),
-        thesisSummary: stripProbabilityPercentClaims(o.thesisSummary),
-        keyRisk: stripProbabilityPercentClaims(o.keyRisk),
-        nearTermCatalyst: stripProbabilityPercentClaims(o.nearTermCatalyst),
-      }))
+    ? (raw.topOpportunities as Record<string, unknown>[]).map(o => {
+        const quote = quoteByTicker.get(String(o.ticker ?? "").toUpperCase());
+        return {
+          ...o,
+          primaryDriver: stripProbabilityPercentClaims(o.primaryDriver),
+          thesisSummary: stripProbabilityPercentClaims(o.thesisSummary),
+          keyRisk: stripProbabilityPercentClaims(o.keyRisk),
+          nearTermCatalyst: stripProbabilityPercentClaims(o.nearTermCatalyst),
+          dataFreshness: evidenceFreshnessLabel({
+            ...discoveryEvidence,
+            quotes: quote ? [quote] : [],
+          }),
+        };
+      })
     : raw.topOpportunities;
 
   return sanitize({
@@ -1406,7 +1436,10 @@ Respond with a JSON object matching this exact schema:
     whyTheseRankHighest: stripProbabilityPercentClaims(raw.whyTheseRankHighest),
     portfolioPositioning: stripProbabilityPercentClaims(raw.portfolioPositioning),
     followUpChips,
-    dataFreshness: "Live — updated just now",
+    dataFreshness: evidenceFreshnessLabel({
+      ...discoveryEvidence,
+      quotes: topRaw.map(item => ({ observedAtMs: item.observedAtMs, sourceStatus: item.sourceStatus })),
+    }),
     deepDiveLinks: [
       { label: "Opportunity Radar", path: "/app/opportunities", description: "Full ranked opportunity scan with filters" },
       { label: "Ask Intelligence", path: "/app/ask", description: "Ask about any specific opportunity" },

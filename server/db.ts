@@ -6,6 +6,11 @@ import { log } from './logger';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
+/** Drops the cached connection so an isolated test can use its own database. */
+export function closeDbForTests(): void {
+  _db = null;
+}
+
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {

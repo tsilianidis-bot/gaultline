@@ -28,7 +28,8 @@ function direction(value: string): SynthesisDirection {
 
 function availability(quality: string, freshness: string, value: number | null): SynthesisAvailability {
   if (value === null || quality === "UNAVAILABLE") return "UNAVAILABLE";
-  if (/STALE|DELAYED/i.test(freshness)) return "STALE";
+  if (/STALE/i.test(freshness)) return "STALE";
+  if (/DELAYED/i.test(freshness)) return "DELAYED";
   if (quality !== "HEALTHY") return "DEGRADED";
   return "AVAILABLE";
 }
@@ -75,6 +76,7 @@ function observations(state: PublicCanonicalIntelligenceState, packet: EvidenceP
       limitations: [
         ...(status === "UNAVAILABLE" ? ["Engine unavailable; it is not treated as neutral or current evidence."] : []),
         ...(status === "STALE" ? ["Engine stale; it is excluded from current cross-engine confirmation."] : []),
+        ...(status === "DELAYED" ? ["Latest published engine evidence is delayed; it is excluded from current cross-engine confirmation."] : []),
         ...(status === "DEGRADED" ? ["Engine degraded; interpretation is quality-bounded."] : []),
       ],
     };
@@ -180,6 +182,7 @@ export function buildCrossEngineSynthesis(state: PublicCanonicalIntelligenceStat
     availableEngines: engineObservations.filter(item => item.availability === "AVAILABLE").map(item => item.engineId),
     unavailableEngines: engineObservations.filter(item => item.availability === "UNAVAILABLE").map(item => item.engineId),
     degradedEngines: engineObservations.filter(item => item.availability === "DEGRADED").map(item => item.engineId),
+    delayedEngines: engineObservations.filter(item => item.availability === "DELAYED").map(item => item.engineId),
     staleEngines: engineObservations.filter(item => item.availability === "STALE").map(item => item.engineId),
     engineObservations,
     relationships,
@@ -220,6 +223,7 @@ export function buildCrossEngineSynthesisPromptContract(synthesis: CrossEngineSy
     `Important divergences: ${synthesis.summary.importantDivergences.join(" | ") || "none"}`,
     `Conflicting evidence: ${synthesis.summary.conflictingEvidence.join(" | ") || "none"}`,
     `Unavailable engines: ${synthesis.unavailableEngines.join(", ") || "none"}`,
+    `Delayed engines: ${synthesis.delayedEngines.join(", ") || "none"}`,
     `Stale engines: ${synthesis.staleEngines.join(", ") || "none"}`,
     `Limitations: ${synthesis.limitations.join(" | ") || "none"}`,
     "Use only these structured relationships. Do not invent additional cross-engine confirmation, divergence, causality, probability, warning state, or Early Warning conclusion.",

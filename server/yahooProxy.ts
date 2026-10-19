@@ -39,6 +39,47 @@ export interface YahooQuote {
   error?: string;
 }
 
+/**
+ * Temporal classification is intentionally separate from price direction. Yahoo
+ * is delayed by contract, and a completed-session quote is historical context,
+ * never a current market claim.
+ */
+export type YahooObservationTiming = "live" | "delayed" | "completed_session" | "stale" | "unavailable";
+
+export interface YahooObservationFreshness {
+  timing: YahooObservationTiming;
+  supportsCurrentClaim: boolean;
+  detail: string;
+}
+
+const LIVE_OBSERVATION_MAX_AGE_MS = 2 * 60_000;
+const DELAYED_OBSERVATION_MAX_AGE_MS = 20 * 60_000;
+const COMPLETED_SESSION_HISTORY_MAX_AGE_MS = 96 * 60 * 60_000;
+
+/**
+ * Keeps provider-reported timing distinct from local receipt timing. The Yahoo
+ * adapter currently marks quotes as delayed, so it cannot produce a `live`
+ * classification unless a future provider explicitly supplies an undelayed
+ * observation during an active session.
+ */
+export function classifyYahooObservation(quote: Pick<YahooQuote, "price" | "observedAt" | "isDelayed" | "marketState" | "source"> | null | undefined, nowMs = Date.now()): YahooObservationFreshness {
+  if (!quote || !Number.isFinite(quote.price) || !Number.isFinite(quote.observedAt) || quote.source === "error") {
+    return { timing: "unavailable", supportsCurrentClaim: false, detail: "No usable provider observation timestamp is available." };
+  }
+  const ageMs = Math.max(0, nowMs - (quote.observedAt as number));
+  const activeSession = quote.marketState === "REGULAR" || quote.marketState === "PRE" || quote.marketState === "POST";
+  if (!quote.isDelayed && activeSession && ageMs <= LIVE_OBSERVATION_MAX_AGE_MS) {
+    return { timing: "live", supportsCurrentClaim: true, detail: "Provider-reported observation is within the live-use window during an active session." };
+  }
+  if (activeSession && ageMs <= DELAYED_OBSERVATION_MAX_AGE_MS) {
+    return { timing: "delayed", supportsCurrentClaim: true, detail: "Provider-reported delayed observation is within the active-session use window." };
+  }
+  if ((quote.marketState === "CLOSED" || quote.source === "polygon-prev") && ageMs <= COMPLETED_SESSION_HISTORY_MAX_AGE_MS) {
+    return { timing: "completed_session", supportsCurrentClaim: false, detail: "Completed-session observation is retained only as historical context." };
+  }
+  return { timing: "stale", supportsCurrentClaim: false, detail: "Provider observation exceeds its permitted current-use window." };
+}
+
 export type PolygonFallbackKind = "index" | "equity" | "proxy";
 
 export type PolygonFallbackStep = {
@@ -99,6 +140,25 @@ export interface YahooDailyBar {
 
 const dailyBarCache = new LRUCache<string, YahooDailyBar[]>(200, 60 * 60_000);
 
+/** New York exchange calendar date for a provider timestamp. */
+function newYorkDate(timestamp: number): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date(timestamp));
+  const pick = (type: string) => parts.find(part => part.type === type)?.value;
+  return `${pick("year")}-${pick("month")}-${pick("day")}`;
+}
+
+/**
+ * Yahoo daily-chart responses can contain the active US session’s evolving bar.
+ * Exclude the entire current New York calendar date rather than guessing that a
+ * close is final. This is deliberately conservative after the bell as well.
+ */
+export function completedYahooDailyBars(bars: YahooDailyBar[], nowMs = Date.now()): YahooDailyBar[] {
+  const currentSessionDate = newYorkDate(nowMs);
+  return bars.filter(bar => Number.isFinite(bar.timestamp) && newYorkDate(bar.timestamp) < currentSessionDate);
+}
+
 /**
  * Fetches completed daily bars from the same delayed Yahoo adapter used by the
  * market ticker. This avoids consuming Polygon free-tier requests for each
@@ -123,8 +183,9 @@ export async function getDailyBars(ticker: string, range: "3mo" | "6mo" | "5y" |
       close: quote.close?.[index] ?? null, open: quote.open?.[index] ?? null, high: quote.high?.[index] ?? null,
       low: quote.low?.[index] ?? null, volume: quote.volume?.[index] ?? null, timestamp: timestamp * 1000,
     })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value)));
-    dailyBarCache.set(cacheKey, bars);
-    return bars;
+    const completed = completedYahooDailyBars(bars);
+    dailyBarCache.set(cacheKey, completed);
+    return completed;
   } catch (error) {
     log.warn(`[Yahoo Proxy] Daily bars unavailable for ${ticker}: ${error instanceof Error ? error.message : String(error)}`);
     return [];
@@ -157,12 +218,79 @@ export async function getDailyBarsForPeriod(ticker: string, startDate: string, e
       close: quote.close?.[index] ?? null, open: quote.open?.[index] ?? null, high: quote.high?.[index] ?? null,
       low: quote.low?.[index] ?? null, volume: quote.volume?.[index] ?? null, timestamp: timestamp * 1000,
     })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value)));
-    dailyBarCache.set(cacheKey, bars);
-    return bars;
+    const completed = completedYahooDailyBars(bars);
+    dailyBarCache.set(cacheKey, completed);
+    return completed;
   } catch (error) {
     log.warn(`[Yahoo Proxy] Period-bounded daily bars unavailable for ${ticker}: ${error instanceof Error ? error.message : String(error)}`);
     return [];
   }
+}
+
+/**
+ * Daily chart with the provider's observation time, for the Sector Rotation
+ * layer. Same Yahoo v8 chart endpoint as getDailyBars; bars keep any finite
+ * close (index/futures volume may be absent → NaN, never 0-filled). Includes
+ * the in-progress session's bar when Yahoo reports one; callers apply the
+ * completed-bar rule. Successful charts cache 10 min; failures cache 60 s so a
+ * provider outage is not hammered. Never throws.
+ */
+export interface YahooDailyChartBar { timestamp: number; close: number; volume: number }
+export interface YahooDailyChart {
+  ticker: string;
+  bars: YahooDailyChartBar[];
+  regularMarketTime: number | null;
+  longName: string | null;
+  fetchedAt: number;
+  error: string | null;
+}
+const dailyChartCache = new LRUCache<string, YahooDailyChart>(1200, 10 * 60_000);
+const dailyChartErrorCache = new LRUCache<string, YahooDailyChart>(1200, 60_000);
+const dailyChartInFlight = new Map<string, Promise<YahooDailyChart>>();
+
+export async function getDailyChart(ticker: string, range: "3mo" | "6mo"): Promise<YahooDailyChart> {
+  const key = `${ticker.toUpperCase()}_${range}`;
+  const cached = dailyChartCache.get(key) ?? dailyChartErrorCache.get(key);
+  if (cached) return cached;
+  const existing = dailyChartInFlight.get(key);
+  if (existing) return existing;
+  const promise = (async (): Promise<YahooDailyChart> => {
+    try {
+      const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=${range}&includePrePost=false`, {
+        headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json", "Referer": "https://finance.yahoo.com/" },
+        signal: AbortSignal.timeout(8_000),
+      });
+      if (!response.ok) throw new Error(`Yahoo daily chart HTTP ${response.status}`);
+      const payload = await response.json() as { chart?: { result?: Array<{ meta?: { regularMarketTime?: number; longName?: string; shortName?: string }; timestamp?: number[]; indicators?: { quote?: Array<{ close?: Array<number | null>; volume?: Array<number | null> }> } }> } };
+      const result = payload.chart?.result?.[0];
+      const quote = result?.indicators?.quote?.[0];
+      const timestamps = result?.timestamp ?? [];
+      if (!quote || timestamps.length === 0) throw new Error("Yahoo daily chart returned no bars");
+      const bars = timestamps.map((timestamp, index) => ({
+        timestamp: timestamp * 1000,
+        close: quote.close?.[index] ?? Number.NaN,
+        volume: quote.volume?.[index] ?? Number.NaN,
+      })).filter(bar => typeof bar.close === "number" && Number.isFinite(bar.close) && bar.close > 0) as YahooDailyChartBar[];
+      const meta = result?.meta;
+      const chart: YahooDailyChart = {
+        ticker: ticker.toUpperCase(), bars,
+        regularMarketTime: typeof meta?.regularMarketTime === "number" ? meta.regularMarketTime * 1000 : null,
+        longName: meta?.longName ?? meta?.shortName ?? null,
+        fetchedAt: Date.now(), error: null,
+      };
+      dailyChartCache.set(key, chart);
+      return chart;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const failed: YahooDailyChart = { ticker: ticker.toUpperCase(), bars: [], regularMarketTime: null, longName: null, fetchedAt: Date.now(), error: message };
+      dailyChartErrorCache.set(key, failed);
+      return failed;
+    } finally {
+      dailyChartInFlight.delete(key);
+    }
+  })();
+  dailyChartInFlight.set(key, promise);
+  return promise;
 }
 
 // ── Yahoo fetcher ─────────────────────────────────────────────

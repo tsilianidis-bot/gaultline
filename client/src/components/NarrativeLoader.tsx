@@ -67,7 +67,7 @@ const NARRATIVES: Record<NarrativeLoaderProps["variant"], string[]> = {
     "Analyzing bull/bear probability...",
     "Running regime classification...",
     "Generating market awareness score...",
-    "Building pre-flight briefing...",
+    "Building market briefing...",
     "Finalizing market awareness report...",
   ],
   "generic": [

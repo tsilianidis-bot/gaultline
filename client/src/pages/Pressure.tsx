@@ -14,7 +14,6 @@ import { AlertTriangle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap, BarChar
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner";
-import { PreflightTrigger } from "@/components/MarketPreflight";
 import { useLocation } from "wouter";
 import Scores from "./Scores";
 import Charts from "./Charts";
@@ -1126,7 +1125,6 @@ export default function Pressure() {
           subtitle="Systemic risk pressure across credit, rates, liquidity, and macro domains, built from published FRED data. Each reading shows its as-of time; a higher score means more stress in the system."
           badge={customerPressureBadge(integrityLabel)}
           badgeColor={customerIntegrityBadgeColor(integrityLabel)}
-          rightSlot={<PreflightTrigger currentPage="pressure" regimeLabel={data.regime} actionKey="viewed_pressure" />}
         />
         <div style={{ padding: '0 16px' }}>
           <SeismographNarrativeBanner context="pressure" defaultExpanded={false} />

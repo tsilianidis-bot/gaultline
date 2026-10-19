@@ -3,7 +3,7 @@ import type { EvidenceStrength } from "./evidenceContract";
 
 export const CROSS_ENGINE_SYNTHESIS_CONTRACT_VERSION = "phase5-cross-engine-synthesis-v1" as const;
 
-export type SynthesisAvailability = "AVAILABLE" | "DEGRADED" | "STALE" | "UNAVAILABLE";
+export type SynthesisAvailability = "AVAILABLE" | "DELAYED" | "DEGRADED" | "STALE" | "UNAVAILABLE";
 export type SynthesisDirection = "IMPROVING" | "DETERIORATING" | "STABLE" | "UNAVAILABLE";
 export type EvidenceIndependence = "INDEPENDENT" | "PARTIALLY_OVERLAPPING" | "HIGHLY_OVERLAPPING" | "UNKNOWN";
 export type SynthesisConclusion = "ALIGNED" | "MIXED" | "CONFLICTED" | "INSUFFICIENT_CROSS_ENGINE_EVIDENCE" | "NO_MATERIAL_CROSS_ENGINE_ALIGNMENT";
@@ -91,6 +91,8 @@ export interface CrossEngineSynthesis {
   availableEngines: string[];
   unavailableEngines: string[];
   degradedEngines: string[];
+  /** Latest published evidence is within allowed source lag, but excluded from current confirmation. */
+  delayedEngines: string[];
   staleEngines: string[];
   engineObservations: CrossEngineObservation[];
   relationships: CrossEngineRelationship[];

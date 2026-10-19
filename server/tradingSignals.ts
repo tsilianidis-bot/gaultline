@@ -117,6 +117,8 @@ export interface TradingSignalResult {
   regimeAlignment: "Aligned" | "Neutral" | "Counter-Trend";
   regimeAlignmentScore: number; // 0–10
   computedAt: number;          // Unix ms
+  /** False when completed daily bars were not available. No indicator conclusion is then emitted. */
+  indicatorsAvailable: boolean;
 }
 
 export interface TradingSignalsInput {
@@ -571,6 +573,37 @@ function computeMomentumScore(sparkline: number[], rsi: number, relativeStrength
   return Math.round(Math.max(0, Math.min(100, blended)));
 }
 
+const INSUFFICIENT_BARS_RATIONALE = "Insufficient completed historical bars; trading indicators are unavailable.";
+
+function insufficientCompletedBarsSignal(input: TradingSignalsInput): TradingSignalResult {
+  return {
+    ticker: input.ticker,
+    assetClass: "STOCK",
+    action: "WATCH",
+    actionLabel: "Unavailable",
+    confidence: 30,
+    strength: "Weak",
+    timeframe: "Watch",
+    rationale: INSUFFICIENT_BARS_RATIONALE,
+    technicals: {
+      rsiEstimate: 0,
+      rsiLabel: "Neutral",
+      rsiIsTrue: false,
+      trend: "Sideways",
+      volumeSignal: "Normal",
+      momentumScore: 0,
+      smaSignal: "Neutral",
+      smaIsTrue: false,
+      macd: null,
+    },
+    priceLevels: computePriceLevels(input.price, input.high, input.low, "WATCH"),
+    regimeAlignment: "Neutral",
+    regimeAlignmentScore: 0,
+    computedAt: Date.now(),
+    indicatorsAvailable: false,
+  };
+}
+
 // ── Core signal computation ───────────────────────────────────
 
 export function computeTradingSignal(
@@ -588,6 +621,11 @@ export function computeTradingSignal(
   // ── Determine data quality path ───────────────────────────
   const closes = dailyBars?.map(b => b.close) ?? [];
   const hasDailyBars = closes.length >= 15;
+  if (!hasDailyBars) {
+    const unavailable = insufficientCompletedBarsSignal(input);
+    signalCache.set(cacheKey, { result: unavailable, computedAt: Date.now() });
+    return unavailable;
+  }
 
   // ── RSI ───────────────────────────────────────────────────
   let rsiEstimate: number;
@@ -611,10 +649,10 @@ export function computeTradingSignal(
 
   if (hasDailyBars) {
     const smaResult = computeSMACrossover(closes);
-    smaSignal = smaResult.signal;
     smaIsTrue = smaResult.isTrue;
+    smaSignal = smaIsTrue ? smaResult.signal : "Neutral";
   } else {
-    smaSignal = smaCrossoverFallback(sparkline);
+    smaSignal = "Neutral";
     smaIsTrue = false;
   }
 
@@ -712,10 +750,15 @@ export function computeTradingSignal(
 
   // ── Rationale ─────────────────────────────────────────────
   const macdNote = macd ? ` MACD ${macd.signal.toLowerCase()}.` : "";
-  const rsiNote = rsiIsTrue ? `RSI(14) at ${rsiEstimate.toFixed(0)}` : `RSI~ ${rsiEstimate.toFixed(0)}`;
+  const rsiNote = rsiIsTrue ? `RSI(14) at ${rsiEstimate.toFixed(0)}` : "completed-bar momentum";
+  const crossoverNote = smaIsTrue && smaSignal === "Golden Cross"
+    ? "golden cross"
+    : smaIsTrue && smaSignal === "Death Cross"
+      ? "death cross"
+      : null;
   const rationaleMap: Record<TradingAction, string> = {
-    BUY: `${trend === "Uptrend" ? "Uptrend intact" : "Oversold conditions"} — ${rsiNote}, ${smaSignal === "Golden Cross" ? "golden cross" : "positive momentum"}${volSignal === "Surge" ? ", volume surge" : ""}.${macdNote}`,
-    SELL: `${trend === "Downtrend" ? "Downtrend confirmed" : "Overbought conditions"} — ${rsiNote}, ${smaSignal === "Death Cross" ? "death cross" : "negative momentum"}${volSignal === "Surge" ? ", elevated volume" : ""}.${macdNote}`,
+    BUY: `${trend === "Uptrend" ? "Uptrend intact" : "Oversold conditions"} — ${rsiNote}${crossoverNote ? `, ${crossoverNote}` : ", positive momentum"}${volSignal === "Surge" ? ", volume surge" : ""}.${macdNote}`,
+    SELL: `${trend === "Downtrend" ? "Downtrend confirmed" : "Overbought conditions"} — ${rsiNote}${crossoverNote ? `, ${crossoverNote}` : ", negative momentum"}${volSignal === "Surge" ? ", elevated volume" : ""}.${macdNote}`,
     HOLD: `Mixed technicals — ${trend} trend, ${rsiNote}; await clearer directional signal.${macdNote}`,
     WATCH: `Insufficient conviction — monitor for breakout above resistance or breakdown below support.`,
   };
@@ -751,6 +794,7 @@ export function computeTradingSignal(
     regimeAlignment,
     regimeAlignmentScore,
     computedAt: Date.now(),
+    indicatorsAvailable: true,
   };
 
   signalCache.set(cacheKey, { result, computedAt: Date.now() });

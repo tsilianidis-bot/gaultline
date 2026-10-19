@@ -28,8 +28,6 @@ import { ViewModeSelector } from "@/components/ViewModeSelector";
 import PulseMode from "@/components/dashboard/PulseMode";
 import SignalsMode from "@/components/dashboard/SignalsMode";
 import IntelligenceMode from "@/components/dashboard/IntelligenceMode";
-import { AwarenessDashboardCard, MarketPreflightModal } from "@/components/MarketPreflight";
-import PreflightGate from "@/components/PreflightGate";
 import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
 import HomepageBriefingPanel from "@/components/HomepageBriefingPanel";
 import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner";
@@ -532,24 +530,6 @@ function MetricCardItem({ metric, index }: { metric: MetricCard; index: number }
   );
 }
 
-// ── Awareness Section ─────────────────────────────────────────
-function DashboardAwarenessSection() {
-  const [open, setOpen] = useState(false);
-  const { output } = useEngine();
-  const regimeLabel = output?.regime?.label ?? "Unknown";
-  return (
-    <>
-      <AwarenessDashboardCard onOpen={() => setOpen(true)} />
-      <MarketPreflightModal
-        open={open}
-        onClose={() => setOpen(false)}
-        currentPage="dashboard"
-        regimeLabel={regimeLabel}
-      />
-    </>
-  );
-}
-
 // ── Upgrade prompt ────────────────────────────────────────────
 function DashboardUpgradePrompt() {
   const { user } = useAuth();
@@ -571,7 +551,7 @@ function DashboardUpgradePrompt() {
       <div>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(0,229,255,0.65)', marginBottom: '2px' }}>{tier === 'core' ? 'UPGRADE TO PRO' : 'UPGRADE TO CORE'}</div>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#C0D0E0' }}>
-          {tier === 'core' ? 'Situation Room · Market Preflight · Institutional dashboards · Historical analogs' : 'Unlimited Ask Intelligence · Symbol Intelligence · Full Signal Outlook · Portfolio tracker'}
+          {tier === 'core' ? 'Situation Room · Institutional dashboards · Historical analogs' : 'Unlimited Ask Intelligence · Symbol Intelligence · Full Signal Outlook · Portfolio tracker'}
         </div>
       </div>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: '#00E5FF', flexShrink: 0, marginLeft: '12px' }}>UPGRADE →</div>
@@ -720,8 +700,6 @@ export default function SeismographicDash() {
 
   return (
     <div data-regime={regimeAttr} style={{ background: '#080A0F', minHeight: '100vh', position: 'relative' }} className="ambient-bg">
-      {/* Market Preflight Gate */}
-      <PreflightGate />
       {/* SEO H1 */}
       <h1 style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}>
         FAULTLINE — Macroeconomic &amp; Market Risk Intelligence Platform
@@ -847,13 +825,13 @@ export default function SeismographicDash() {
         <HomepageBriefingPanel />
         <MarketSynthesisPanel context="dashboard" />
         <ViewModeSelector mode={dashMode} onChange={handleModeChange} />
+        {/* SIGNALS: movers-first hierarchy lives in SignalsMode (compact integrity secondary; Pre-Flight removed). */}
         {dashMode === "pulse" && <PulseMode />}
         {dashMode === "signals" && <SignalsMode />}
         {dashMode === "intelligence" && <IntelligenceMode />}
         {/* Quick Actions bar */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 100ms both' }}>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 100ms both' }} data-dashboard-quick-actions="true">
           {([
-            { label: 'Pre-Flight',      path: '/app/pre-flight',              color: '#00E5FF' },
             { label: 'Decision Engine', path: '/app/decision-engine',          color: '#FF9500' },
             { label: 'Day Trade',       path: '/app/day-trade-intelligence',  color: '#00FF88' },
             { label: 'Signal Outlook',  path: '/app/signal-outlook',          color: '#C084FC' },
@@ -867,8 +845,9 @@ export default function SeismographicDash() {
             </a>
           ))}
         </div>
-        <DataIntegrity />
-        <DashboardAwarenessSection />
+        {/* Signals mode owns compact integrity inside SignalsMode (#66). Pre-Flight removed (#67). */}
+        {dashMode !== "signals" && <DataIntegrity />}
+
       </div>
 
 

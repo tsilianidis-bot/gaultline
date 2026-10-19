@@ -4,18 +4,21 @@
    Designed to be instantly interpretable: one glance = full context.
    ============================================================ */
 import { useEffect, useRef, useState } from "react";
+import { PRESSURE_BANDS, pressureBand } from "@shared/pressureBands";
 
-// ── Pressure zone definitions ─────────────────────────────────
-const ZONES = [
-  { min: 0,  max: 20,  label: "Very Low",  sublabel: "Stable / Recovery",     color: "#00C896", glow: "rgba(0,200,150,0.5)" },
-  { min: 20, max: 40,  label: "Low",        sublabel: "Constructive",           color: "#4ADE80", glow: "rgba(74,222,128,0.4)" },
-  { min: 40, max: 60,  label: "Moderate",   sublabel: "Neutral / Caution",      color: "#FFAA00", glow: "rgba(255,170,0,0.5)" },
-  { min: 60, max: 80,  label: "High",       sublabel: "Elevated Risk",          color: "#FF6B35", glow: "rgba(255,107,53,0.5)" },
-  { min: 80, max: 100, label: "Extreme",    sublabel: "Crisis Conditions",      color: "#FF2D55", glow: "rgba(255,45,85,0.6)" },
-] as const;
+// ── Pressure zone definitions — canonical shared/pressureBands ─
+const ZONES = PRESSURE_BANDS.map((band) => ({
+  min: band.min,
+  max: band.max,
+  label: band.shortLabel,
+  sublabel: band.regime,
+  color: band.color,
+  glow: `${band.color}80`,
+}));
 
 function getZone(score: number) {
-  return ZONES.find(z => score >= z.min && score <= z.max) ?? ZONES[4];
+  const band = pressureBand(score);
+  return ZONES.find(z => z.min === band.min) ?? ZONES[ZONES.length - 1];
 }
 
 // ── SVG arc helpers ───────────────────────────────────────────

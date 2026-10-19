@@ -89,7 +89,7 @@ FAULTLINE's Alt Season Indicator tracks all of these conditions as new data is p
         },
         {
           question: "Is FAULTLINE's alt season data free?",
-          answer: "The public Pressure Index is free to read without an account, and signed-in access starts with a free account. Paid plans are not on sale.",
+          answer: "The public Pressure Index is free to read without an account, and full intelligence is offered through FAULTLINE Standard at $99/month or FAULTLINE Lifetime at $1,500 one-time.",
         },
         {
           question: "What is the difference between alt season and a crypto bull market?",

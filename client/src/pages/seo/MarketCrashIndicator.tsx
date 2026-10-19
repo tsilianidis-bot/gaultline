@@ -73,7 +73,7 @@ Note: Past readings do not guarantee future results. The Pressure Index is a ris
         },
         {
           question: "Is the crash indicator available for free?",
-          answer: "Yes. The FAULTLINE Pressure Index — the core of the crash indicator — is available for free at /pressure-index. No login required. The full vector breakdown, historical data, and regime analysis are signed-in tools. Signed-in tools start with a free account; paid plans are not on sale.",
+          answer: "Yes. The FAULTLINE Pressure Index — the core of the crash indicator — is available for free at /pressure-index. No login required. The full vector breakdown, historical data, and regime analysis are signed-in tools. Full intelligence is offered through FAULTLINE Standard at $99/month or FAULTLINE Lifetime at $1,500 one-time.",
         },
         {
           question: "How often does the crash indicator update?",

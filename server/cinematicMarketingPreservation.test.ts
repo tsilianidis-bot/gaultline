@@ -22,9 +22,9 @@ const TOUCHED = {
 } as const;
 
 describe("cinematic + marketing preservation plan", () => {
-  it("keeps Lifetime internally available:false and does not advertise it publicly", () => {
-    expect(PRICING_PLANS.lifetime.available).toBe(false);
-    expect(PRICING_PLANS.lifetime.amountCents).toBe(29900);
+  it("offers Lifetime only at $1,500 one-time and never the retired $299 founding lifetime", () => {
+    expect(PRICING_PLANS.lifetime.available).toBe(true);
+    expect(PRICING_PLANS.lifetime.amountCents).toBe(150000);
 
     for (const [name, source] of Object.entries({
       marketing: TOUCHED.marketing,
@@ -48,15 +48,13 @@ describe("cinematic + marketing preservation plan", () => {
     expect(TOUCHED.app).not.toContain("createCheckout");
   });
 
-  it("shared plan cards show no prices while paid plans are not on sale", () => {
-    const trader = MARKETING_TIER_CARDS.find((card) => card.tier === "core");
-    const power = MARKETING_TIER_CARDS.find((card) => card.tier === "premium");
-    const founding = MARKETING_TIER_CARDS.find((card) => card.tier === "founding");
-    expect(trader?.price).toBe("Not on sale yet");
-    expect(power?.price).toBe("Not on sale yet");
-    expect(founding?.price).toBe("Not on sale yet");
+  it("shared plan cards show only Standard $99/month and Lifetime $1,500 one-time", () => {
+    expect(MARKETING_TIER_CARDS.map((card) => [card.planId, card.price])).toEqual([
+      ["premium", "$99/month"],
+      ["lifetime", "$1,500 one-time"],
+    ]);
+    expect(MARKETING_TIER_CARDS.find((card) => card.tier === "core")).toBeUndefined();
 
-    expect(TOUCHED.marketing).toContain("Checkout is not offered on this page.");
     expect(TOUCHED.marketing).not.toContain("MARKETING_TIER_CARDS");
     expect(TOUCHED.marketing).not.toContain("TIER_META.free");
     expect(TOUCHED.marketing).not.toContain("trader.marketingName");
@@ -64,12 +62,7 @@ describe("cinematic + marketing preservation plan", () => {
     expect(TOUCHED.marketing).not.toContain("founding.marketingName");
     expect(TOUCHED.marketing).not.toContain("Observer");
     expect(TOUCHED.marketing).not.toContain("Everything in Pro");
-    expect(TOUCHED.productExperience).toContain("id: 'free'");
-    expect(TOUCHED.productExperience).toContain("id: 'trader'");
-    expect(TOUCHED.productExperience).toContain("id: 'power'");
-    expect(TOUCHED.productExperience).toContain("id: 'founding'");
-    expect(TOUCHED.productExperience).not.toMatch(/price: '\$(49|59|99)'/);
-    expect(TOUCHED.productExperience).toContain("price: 'Not on sale yet'");
+    expect(TOUCHED.productExperience).not.toMatch(/price: '\$(49|59|299)'/);
   });
 
   it("does not mount ProductExperience on first-run and preserves the source module", () => {

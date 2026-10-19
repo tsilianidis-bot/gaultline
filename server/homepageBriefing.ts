@@ -14,6 +14,7 @@
 import { computeHistoricalContext } from "./historicalContextEngine";
 import { reconcileHistoricalContextPercentile } from "./historicalPercentileGuard";
 import { getPressureHistory, getRecentPressureRuns } from "./db";
+import { pressureRegimeLabel } from "../shared/pressureBands";
 import { invokeLLM } from "./_core/llm";
 import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 import {
@@ -89,9 +90,11 @@ export interface HomepageBriefingResult {
 
   // ── Section 4: Market Evolution Timeline ─────────────────────────────────
   timeline: Array<{
-    label: string; // "Today", "1d ago", "7d ago", etc.
+    label: string; // actual observation date in ET, e.g. "Oct 11, 2026" (never "Today" for an older record)
     pressure: number;
-    regime: string;
+    regime: string; // canonical band label for `pressure` (stored legacy labels are not re-used)
+    observedAt?: string; // ISO timestamp of the observation
+    source?: "pressure-run" | "canonical-state";
   }>;
   timelineCaption: string;
 
@@ -454,15 +457,35 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
 
   // ── Section 4: Market Evolution Timeline ──────────────────────────────────
   // Use pressureRuns for recent readings (up to 8 most recent)
-  const timelineRuns = recentRuns.slice(0, 8).reverse();
-  const timeline = timelineRuns.map((run, i) => {
-    const isToday = i === timelineRuns.length - 1;
-    const ageHrs = Math.round((Date.now() - new Date(run.computedAt).getTime()) / 3600000);
+  // Phase 2 #5 (2026-10-13): every point is labelled with its ACTUAL observation
+  // date (ET). An older audit row is never labelled "Today". The newest point is
+  // the canonical state that drives the headline, so headline and timeline agree.
+  // Band labels are derived from the score via canonical pressureBand(); stored
+  // legacy regime strings are left untouched in the DB.
+  const fmtObserved = (iso: string) => new Date(iso).toLocaleDateString("en-US", {
+    timeZone: "America/New_York", month: "short", day: "numeric", year: "numeric",
+  });
+  const canonicalObservedAt = canonical.generatedAt;
+  const timelineRuns = recentRuns
+    .filter(run => run.computedAt && new Date(run.computedAt).getTime() < new Date(canonicalObservedAt).getTime())
+    .slice(0, 7)
+    .reverse();
+  const timeline: HomepageBriefingResult["timeline"] = timelineRuns.map(run => {
+    const observedAt = new Date(run.computedAt).toISOString();
     return {
-      label: isToday ? "Today" : ageHrs < 24 ? `${ageHrs}h ago` : `${Math.floor(ageHrs / 24)}d ago`,
+      label: fmtObserved(observedAt),
       pressure: run.overallPressure,
-      regime: run.regime,
+      regime: pressureRegimeLabel(run.overallPressure),
+      observedAt,
+      source: "pressure-run" as const,
     };
+  });
+  timeline.push({
+    label: fmtObserved(canonicalObservedAt),
+    pressure: pressure.overallPressure,
+    regime: pressureRegimeLabel(pressure.overallPressure),
+    observedAt: canonicalObservedAt,
+    source: "canonical-state",
   });
 
   // Timeline caption

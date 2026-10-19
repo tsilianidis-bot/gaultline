@@ -6,6 +6,7 @@
  * not market data: they must never be rendered as a reading or sent to PLATO as context.
  * Only canonical values bind, and no confidence is sent unless a real one exists.
  */
+import { pressureBandColor, pressureRegimeLabel } from "@shared/pressureBands";
 import type { EngineOutput } from "@/lib/engine";
 import type { BrowserMarketMode } from "@/lib/marketStateProjection";
 import { formatCanonicalScore } from "@shared/marketMetrics";
@@ -53,17 +54,12 @@ export function isCanonicalMarketMode(mode: BrowserMarketMode | undefined | null
 }
 
 export function briefingPressureColor(score10: number): string {
-  if (score10 >= 7) return "#FF3B5C";
-  if (score10 >= 5.5) return "#FF9500";
-  if (score10 >= 4) return "#FFD700";
-  return "#00FF99";
+  return pressureBandColor(score10 * 10);
 }
 
 export function briefingPressureLabel(score10: number): string {
-  if (score10 >= 7) return "CRITICAL";
-  if (score10 >= 5.5) return "ELEVATED";
-  if (score10 >= 4) return "MODERATE RISK";
-  return "STABLE";
+  // Briefing historically took a 0–10 engine score; map via canonical 0–100 bands.
+  return pressureRegimeLabel(score10 * 10);
 }
 
 function nonEmpty(value: string | null | undefined): string | undefined {
@@ -205,7 +201,7 @@ export interface IntelligenceCenterMarketState {
 
 /**
  * The market state the Intelligence Center shows and sends to PLATO. Only a canonical reading binds
- * (the demo baseline never does). Pressure is canonical 0-100 with bands at 70 and 45; a missing
+ * (the demo baseline never does). Pressure is canonical 0-100 with bands from shared/pressureBands; a missing
  * reading is null and renders in the neutral colour.
  */
 export function buildIntelligenceCenterMarketState(

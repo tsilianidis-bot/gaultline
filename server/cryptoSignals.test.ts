@@ -62,7 +62,7 @@ describe("computeCryptoSignal", () => {
     expect(result.rationale).toBeTruthy();
   });
 
-  it("returns SELL for a strongly bearish scenario", () => {
+  it("withholds a directional crypto action without completed daily bars, even in a strongly bearish scenario", () => {
     const market = makeMockMarket({
       priceChangePercent24h: -8.0,
       priceChangePercent7d: -18.0,
@@ -72,7 +72,8 @@ describe("computeCryptoSignal", () => {
       athChangePercent: -40.0,
     });
     const result = computeCryptoSignal({ market, btcDominance: 60, regime: { label: "HIGH RISK", score: 7.5 } });
-    expect(["SELL", "HOLD"]).toContain(result.action);
+    expect(result.technicals.rsiIsTrue).toBe(false);
+    expect(result.action).toBe("WATCH");
   });
 
   it("returns BUY for a strongly bullish scenario", () => {
@@ -147,7 +148,7 @@ describe("computeCryptoSignal", () => {
   it("computes MACD when OHLC bars are provided", () => {
     const market = makeMockMarket();
     const ohlcBars = Array.from({ length: 30 }, (_, i) => ({
-      timestamp: Date.now() - (29 - i) * 86400000,
+      timestamp: Date.now() - (30 - i) * 86400000,
       open: 65000 + i * 100,
       high: 65500 + i * 100,
       low: 64500 + i * 100,

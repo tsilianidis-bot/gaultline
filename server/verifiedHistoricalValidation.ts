@@ -1,3 +1,4 @@
+import { pressureRegimeLabel } from "../shared/pressureBands";
 import { createHash } from "node:crypto";
 import { eq } from "drizzle-orm";
 import {
@@ -73,11 +74,7 @@ function linearMap(value: number, inMin: number, inMax: number, outMin: number, 
 }
 
 function classifyRegime(pressure: number): string {
-  if (pressure >= 80) return "SYSTEMIC CRISIS";
-  if (pressure >= 65) return "HIGH STRESS";
-  if (pressure >= 45) return "ELEVATED RISK";
-  if (pressure >= 25) return "MODERATE RISK";
-  return "LOW RISK";
+  return pressureRegimeLabel(pressure);
 }
 
 /** Exact frozen V1 score calculation. It only accepts complete historical inputs. */

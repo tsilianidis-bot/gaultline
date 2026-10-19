@@ -68,8 +68,8 @@ Each asset is scored for momentum, macro alignment, liquidity sensitivity, and s
           answer: "FAULTLINE monitors BTC dominance (the percentage of total crypto market cap held in Bitcoin), ETH/BTC ratio, altcoin volume relative to BTC volume, and sector-level momentum across Layer-1, DeFi, AI tokens, and meme coins. When BTC dominance falls below key thresholds and altcoin momentum accelerates across multiple sectors simultaneously, the Alt Season Indicator activates.",
         },
         {
-          question: "Are crypto signals available on the free tier?",
-          answer: "FAULTLINE offers limited crypto signal previews on the free tier. All tracked assets, altcoin rotation intelligence, and macro-aligned signals are signed-in tools. Signed-in tools start with a free account; paid plans are not on sale.",
+          question: "Are crypto signals available without a membership?",
+          answer: "FAULTLINE offers limited public crypto signal previews. All tracked assets, altcoin rotation intelligence, and macro-aligned signals are signed-in tools. Full intelligence is offered through FAULTLINE Standard at $99/month or FAULTLINE Lifetime at $1,500 one-time.",
         },
         {
           question: "How does FAULTLINE handle crypto market volatility?",

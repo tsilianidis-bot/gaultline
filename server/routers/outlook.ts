@@ -15,7 +15,6 @@ import {
   type FullOutlookResult,
   type OutlookHistoryPoint,
 } from "../signalOutlook";
-import { calculateFaultlinePressure } from "../pressure/engine";
 import { runFMOSPipelineFast } from "../fmos/pipeline";
 import { invokeLLM } from "../_core/llm";
 import { getQuote } from "../yahooProxy";
@@ -332,22 +331,45 @@ export const outlookRouter = router({
   getTodaysStory: publicProcedure
     .query(async () => {
       try {
+        // Today's Story is a current-market claim. It is never generated from a
+        // fallback pressure calculation, an unbound FMOS recomputation, or a
+        // fabricated default opportunity when the canonical state is absent.
+        const canonicalState = await getAuthoritativeCanonicalIntelligenceState();
+        if (
+          !canonicalState
+          || canonicalState.confidenceOrEvidenceQuality !== "HEALTHY"
+          || canonicalState.provenance.coherenceStatus !== "COHERENT"
+          || !Number.isFinite(canonicalState.pressureIndex)
+          || !canonicalState.regime
+        ) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Today's Story is unavailable until a healthy canonical MarketState is available." });
+        }
         const [fmosResult, topOpp] = await Promise.allSettled([
           runFMOSPipelineFast(),
           getTopOpportunities(),
         ]);
         const fmos = fmosResult.status === "fulfilled" ? fmosResult.value : null;
-        const pressure = fmos?.pressure ?? await calculateFaultlinePressure();
-        const topOppData = topOpp.status === "fulfilled" ? topOpp.value : { stocks: [], crypto: [] };
-
+        const topOppData = topOpp.status === "fulfilled" ? topOpp.value : null;
+        const pressure = fmos?.pressure ?? null;
+        const fmosRegime = fmos?.regime?.currentRegime ?? null;
+        const topOpportunity = topOppData?.stocks[0] ?? topOppData?.crypto[0] ?? null;
+        if (
+          !pressure
+          || !topOppData
+          || !Number.isFinite(pressure.overallPressure)
+          || pressure.overallPressure !== canonicalState.pressureIndex
+          || fmosRegime !== canonicalState.regime
+          || !topOpportunity
+        ) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Today's Story is unavailable because its current evidence is incomplete or does not match the canonical MarketState." });
+        }
         const topStocks = topOppData.stocks.slice(0, 3).map(s => `${s.symbol} (score: ${s.outlookScore}, ${s.direction})`).join(", ");
         const topCrypto = topOppData.crypto.slice(0, 3).map(s => `${s.symbol} (score: ${s.outlookScore}, ${s.direction})`).join(", ");
         const topVectors = pressure.vectors.slice(0, 5).map(v => `${v.label}: ${v.score}/100 (${v.driver})`).join("; ");
-
-        const topOpportunityTicker = topOppData.stocks[0]?.symbol || topOppData.crypto[0]?.symbol || "SPY";
-        const topOpportunityName = topOppData.stocks[0]?.name || topOppData.crypto[0]?.name || "S&P 500 ETF";
-        const topOpportunityScore = topOppData.stocks[0]?.outlookScore || topOppData.crypto[0]?.outlookScore || 50;
-        const topOpportunityDir = topOppData.stocks[0]?.direction || topOppData.crypto[0]?.direction || "WATCH";
+        const topOpportunityTicker = topOpportunity.symbol;
+        const topOpportunityName = topOpportunity.name;
+        const topOpportunityScore = topOpportunity.outlookScore;
+        const topOpportunityDir = topOpportunity.direction;
 
         const prompt = `You are FAULTLINE — an elite institutional market intelligence system operating as a Chief Investment Strategist.
 Write today's market story using the STORY INTELLIGENCE 2.0 format. Be specific, data-driven, and institutional in tone.
@@ -424,8 +446,8 @@ Write exactly this JSON structure:
         recordHorizonObservation("daily_story", `daily-story:${new Date().toISOString().slice(0, 10)}`, forecastMetadata);
         return sanitizeNumbers({
           ...story,
-          pressureIndex: pressure.overallPressure,
-          regime: pressure.regime,
+          pressureIndex: canonicalState.pressureIndex,
+          regime: canonicalState.regime,
           regimeLevel: pressure.level,
           topAnalog: pressure.topAnalog,
           dataSource: pressure.dataSource,
@@ -472,6 +494,7 @@ Write exactly this JSON structure:
           topOpportunityReason?: string;
         };
       } catch (err) {
+        if (err instanceof TRPCError) throw err;
         console.error("[outlook.getTodaysStory] Error:", err);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Today's Story unavailable. Market data may be temporarily unavailable." });
       }

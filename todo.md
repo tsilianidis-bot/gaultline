@@ -5362,3 +5362,25 @@
 - [x] Create the approved FAULTLINE-branded responsive maintenance screen with no navigation, login prompt, technical detail, countdown, or ETA
 - [x] Validate healthy HTTP delivery and no application/database side effects in local domains
 - [ ] Save the temporary maintenance checkpoint and report apex/www status
+
+
+## 2026-10-17 — Controlled Production-Readiness Remediation
+
+- [ ] Reconcile the Intelligence Core Phase 1.1 and Phase 2 work against `release/2026-10-05-ux-r3`, the deployed production lineage; do not treat `main` as production or modify the existing pricing work.
+- [ ] Guard scheduled Seismograph execution for valid NYSE sessions at 4:15 PM America/New_York, accounting for DST, full-day NYSE holidays, and early closes without changing the live host schedule.
+- [ ] Derive MarketState freshness from persisted source observation time and authoritative canonical quality, not the presentation-cache refresh timestamp; represent latest-published macro data as delayed rather than a provider outage.
+- [ ] Isolate each cross-engine domain's quality to its actual inputs; keep delayed evidence out of current confirmation, keep static AI Bubble evidence degraded, and retain all Integrity Gate restrictions.
+- [ ] Propagate CoinGecko's documented provider timestamp only; never use local receipt time as an observation timestamp, and preserve unavailable behavior for missing or invalid timestamps.
+- [ ] Add focused regression coverage for stale persisted output, source outage, delayed macro publication, cross-engine isolation, DST transitions, NYSE holiday/early-close gates, and CoinGecko timestamp absence.
+- [ ] Preserve the Pressure Index methodology, billing and pricing, existing product flows, append-only ledgers, Scenario C restrictions, feature flags, production data, and live schedule; make no production deployment.
+- [ ] Publish reviewable draft PRs from release-based branches, attach a verification report, and identify the sole owner-only Railway connector action required for the final production-readiness check.
+
+
+## 2026-10-17 — Rebased Intelligence Core Phase 1 Evidence Pipeline
+
+- [x] Rebase the already-validated Phase 1.1 evidence pipeline from `feature/intelligence-core-phase1-evidence-clean` onto the current release-readiness remediation baseline; preserve both the new MarketState source-age integrity controls and existing non-Core product behavior.
+- [x] Build a server-side, read-only evidence pipeline from the existing canonical MarketState and current Yahoo, FRED, and CoinGecko adapters. Reuse their caches, in-flight deduplication, request timeouts, and configured fallbacks; do not create a duplicate market-state pipeline or alter Pressure Index, MarketState calculations, trading tools, Daily Briefs, pricing, or Stripe.
+- [x] Map returned inputs to `IntelligenceEvidence`, preserving provider identity, provider observation time, ingestion time, observed-versus-modeled classification, freshness policy, validation status, and model version for modeled outputs. Never use ingestion time as observation time.
+- [x] Apply the Integrity Gate at the canonical evidence boundary. Reject NaN/infinite values, missing/invalid timestamps, unidentified sources, unhealthy providers, stale current-use claims, and modeled outputs without model version. Retain last verified observations only as explicitly historical.
+- [x] Keep the authenticated evidence interface and collector disabled by default and server-side only. Do not activate visual nodes, an activity stream, feature flags, provider credentials, production data, migrations, or a deployment.
+- [ ] Re-run complete validation and publish the dedicated rebased Phase 1 review branch and pull request without merging or deploying.

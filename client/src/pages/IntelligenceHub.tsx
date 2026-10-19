@@ -7,6 +7,7 @@
    ============================================================ */
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
+import { CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 import {
   Zap, TrendingUp, TrendingDown, AlertTriangle, Shield,
   BarChart2, ChevronRight, RefreshCw, Clock, Activity,
@@ -362,7 +363,7 @@ Updated: ${updatedAgo}`;
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
             <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: isLive ? ACCENT.green : ACCENT.amber, boxShadow: isLive ? `0 0 8px ${ACCENT.green}` : `0 0 8px ${ACCENT.amber}` }} />
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", letterSpacing: "0.12em" }}>{isLive ? "LIVE" : "CACHED"} · {updatedAgo}</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", letterSpacing: "0.12em" }}>{isLive ? "LIVE" : "NOT LIVE"} · {updatedAgo}</span>
           </div>
           <button
             onClick={() => forceRefresh()}
@@ -442,7 +443,7 @@ Updated: ${updatedAgo}`;
 
             {/* Stat grid */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "8px", marginBottom: "16px" }}>
-              <StatCard label="Market Verdict" value={verdictLabel} color={color} onClick={() => navigate("/app/pre-flight")} />
+              <StatCard label="Market Verdict" value={verdictLabel} color={color} onClick={() => navigate(CANONICAL_DESTINATION_BY_ID.act.path)} />
               <StatCard label="Pressure Index" value={`${overall.score.toFixed(1)}/10`} color={color} onClick={() => navigate("/app/pressure")} />
               <StatCard label="Confidence" value={`${fmosData?.confidence?.score ?? "—"}/100`} color={fmosData?.confidence?.score != null && fmosData.confidence.score >= 60 ? ACCENT.green : ACCENT.amber} />
               <StatCard label="Evidence Diversity" value={`${fmosData?.evidence?.diversityScore ?? "—"}`} sub="0=single source · 4=all families" color={fmosData?.evidence?.diversityScore != null && fmosData.evidence.diversityScore >= 3 ? ACCENT.green : ACCENT.amber} />

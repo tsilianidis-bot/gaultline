@@ -1,6 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { ENV } from "./_core/env";
-import { analyticsRouter, blogRouter, billingRouter, adminRouter, outlookRouter, organicContentRouter, smartDiscoveryRouter, fmosRouter, dailyBriefRouter, intelligenceValidationRouter, marketIntelligenceRouter, conversationIntelligenceRouter, seismographRouter, ashaMemoryRouter, promoRouter, gscRouter, marketStateRouter, timeMachineRouter, marketsRouter, institutionalMemoryRouter, systemicRegimeRouter } from "./routers/index";
+import { analyticsRouter, blogRouter, billingRouter, adminRouter, outlookRouter, organicContentRouter, smartDiscoveryRouter, fmosRouter, dailyBriefRouter, intelligenceValidationRouter, marketIntelligenceRouter, conversationIntelligenceRouter, seismographRouter, ashaMemoryRouter, promoRouter, gscRouter, marketStateRouter, timeMachineRouter, marketsRouter, institutionalMemoryRouter, systemicRegimeRouter, sectorRotationRouter, intelligenceEvidenceRouter } from "./routers/index";
+import { intelligenceAccountabilityRouter } from "./routers/intelligenceAccountability";
 import { notifyOwner } from "./_core/notification";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -8,7 +9,7 @@ import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { classifyTicker, clearClassCache, getClassCacheStats } from "./signalsClassifier";
-import { calculateFaultlinePressure } from "./pressure/engine";
+import { calculateFaultlinePressure, PressureInputsUnavailableError } from "./pressure/engine";
 import { runV3HShadow } from "./pressure/shadowEngine";
 import { computeHistoricalContext } from "./historicalContextEngine";
 import { computeHomepageBriefing } from "./homepageBriefing";
@@ -64,7 +65,7 @@ import {
   calcGoalProgress, generateOwnerJournal, getOptimalAction, OBJECTIVE_TYPES,
   buildStockOpportunity, buildCryptoOpportunity,
 } from './ownerSimulation';
-import { getInsiderRadar, getInsiderCompany, getInsiderAlertsForTicker } from './insiderIntelligence';
+import type { ConvictionBand, InsiderCompanyOutput, InsiderRadarOutput } from "./insiderIntelligence";
 import { dayTradeScanner, dayTradeSymbolSetup, getDayTradeFavorability, clearDayTradeCache } from './dayTradeEngine';
 import { fetchDailyBars } from './signalsProxy';
 import { saveDayTradeSnapshot, loadDayTradeSnapshot, getPipelineHealthLogs, getPipelineHealthSummary } from './db';
@@ -119,6 +120,9 @@ export const appRouter = router({
   markets: marketsRouter,
   institutionalMemory: institutionalMemoryRouter,
   systemicRegime: systemicRegimeRouter,
+  sectorRotation: sectorRotationRouter,
+  intelligenceEvidence: intelligenceEvidenceRouter,
+  intelligenceAccountability: intelligenceAccountabilityRouter,
 
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
@@ -316,34 +320,19 @@ export const appRouter = router({
         }
         const result = await calculateFaultlinePressure();
 
-        // Fetch the most recent prior run to compute a true "current vs prior" delta.
-        // We look up the last run BEFORE inserting the new one so we get the previous reading.
+        // READ-ONLY (Phase 2 #7, 2026-10-13): this public query never writes.
+        // pressureRuns audit rows and the V3-H shadow reading are persisted only
+        // by the scheduled/admin Seismograph pipeline (server/scheduledSeismograph.ts).
         const priorRuns = await getRecentPressureRuns(1).catch(() => []);
         if (priorRuns.length >= 1) {
           result.priorPressure = priorRuns[0].overallPressure;
         }
-
-        // Fire-and-forget audit insert — never blocks the response
-        insertPressureRun({
-          overallPressure: result.overallPressure,
-          regime: result.regime,
-          level: result.level,
-          dataSource: result.dataSource,
-          vectorsJson: JSON.stringify(result.vectors),
-          alertsJson: JSON.stringify(result.alerts),
-          topAnalogJson: JSON.stringify(result.topAnalog),
-          rawInputsJson: JSON.stringify(
-            result.vectors.reduce((acc, v) => ({ ...acc, [v.id]: v.rawInputs }), {})
-          ),
-          engineVersion: "1.0.0",
-        }).catch(err => {
-          // Non-fatal: audit failure must never break the pressure response
-          console.warn("[Pressure Audit] Failed to write run record", err);
-        });
-        // V3-H shadow — fire-and-forget
-        result && runV3HShadow(result).catch(() => {});
         return result;
       } catch (err) {
+        if (err instanceof TRPCError) throw err;
+        if (err instanceof PressureInputsUnavailableError) {
+          throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Pressure Index withheld: required inputs could not be verified.", cause: err });
+        }
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Pressure engine failed", cause: err });
       }
     }),
@@ -1662,33 +1651,28 @@ export const appRouter = router({
     }),
   }),
 
-  // ── Insider Intelligence ──────────────────────────────────
+  // ── Insider Intelligence — containment until SEC verification ──
+  // Output types keep the client compiling. The bodies still throw, so the
+  // synthetic generator is never called.
   insider: router({
-    radar: protectedProcedure
-      .query(async () => {
-        try {
-          return await getInsiderRadar();
-        } catch (err) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Insider radar failed", cause: err });
-        }
-      }),
+    radar: protectedProcedure.query((): InsiderRadarOutput => {
+      throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Insider Intelligence unavailable: source verification required." });
+    }),
     company: protectedProcedure
       .input(z.object({ ticker: z.string().min(1).max(10) }))
-      .query(async ({ input }) => {
-        try {
-          return await getInsiderCompany(input.ticker);
-        } catch (err) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Insider company profile failed", cause: err });
-        }
+      .query((): InsiderCompanyOutput => {
+        throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Insider Intelligence unavailable: source verification required." });
       }),
     tickerAlert: protectedProcedure
       .input(z.object({ ticker: z.string().min(1).max(10) }))
-      .query(async ({ input }) => {
-        try {
-          return await getInsiderAlertsForTicker(input.ticker);
-        } catch (err) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Insider ticker alert failed", cause: err });
-        }
+      .query((): {
+        convictionScore: number;
+        convictionBand: ConvictionBand;
+        impactPoints: number;
+        recentActivity: string;
+        aiSummary: string;
+      } => {
+        throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Insider Intelligence unavailable: source verification required." });
       }),
   }),
 

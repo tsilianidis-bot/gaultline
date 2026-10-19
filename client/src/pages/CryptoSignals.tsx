@@ -11,6 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
 import { useEngine } from "@/contexts/EngineContext";
 import { canonicalRegimeDisplayColor } from "@/lib/marketStateProjection";
+import { cryptoScreenerStatus } from "@/lib/cryptoScreenerStatus";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Link } from "wouter";
 import { RecoveryStatusBadge, AftershockRiskInline } from "@/components/RecoveryStatus";
@@ -327,9 +328,15 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
         </div>
       )}
 
-      {/* RSI bar */}
+      {/* RSI is shown only when backed by completed daily provider bars. */}
       <div style={{ marginBottom: "8px" }}>
-        <RSIBar value={sig.technicals.rsiEstimate} label={sig.technicals.rsiLabel} />
+        {sig.technicals.rsiIsTrue ? (
+          <RSIBar value={sig.technicals.rsiEstimate} label={sig.technicals.rsiLabel} />
+        ) : (
+          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.55)" }}>
+            <span>RSI (14)</span><span>UNAVAILABLE — COMPLETED DAILY BARS REQUIRED</span>
+          </div>
+        )}
       </div>
 
       {/* Key metrics row */}
@@ -401,7 +408,7 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
           {/* Technical indicators */}
           <div style={{ marginBottom: "10px", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px" }}>
             {[
-              { label: sig.technicals.rsiIsTrue ? "RSI(14)" : "RSI~", value: `${sig.technicals.rsiEstimate.toFixed(0)} ${sig.technicals.rsiLabel.toUpperCase()}`, color: sig.technicals.rsiLabel === "Overbought" ? "#FF2D55" : sig.technicals.rsiLabel === "Oversold" ? "#00D4FF" : "#94A3B8", badge: sig.technicals.rsiIsTrue ? "TRUE" : undefined },
+              { label: sig.technicals.rsiIsTrue ? "RSI(14)" : "RSI (14)", value: sig.technicals.rsiIsTrue ? `${sig.technicals.rsiEstimate.toFixed(0)} ${sig.technicals.rsiLabel.toUpperCase()}` : "UNAVAILABLE", color: sig.technicals.rsiIsTrue ? (sig.technicals.rsiLabel === "Overbought" ? "#FF2D55" : sig.technicals.rsiLabel === "Oversold" ? "#00D4FF" : "#94A3B8") : "#94A3B8", badge: sig.technicals.rsiIsTrue ? "TRUE" : undefined },
               { label: sig.technicals.smaIsTrue ? "SMA CROSS" : "SMA~", value: sig.technicals.smaSignal.toUpperCase(), color: sig.technicals.smaSignal === "Golden Cross" ? "#00D4FF" : sig.technicals.smaSignal === "Death Cross" ? "#FF2D55" : "#94A3B8", badge: sig.technicals.smaIsTrue ? "TRUE" : undefined },
               { label: "VOLUME", value: sig.technicals.volumeSignal.toUpperCase(), color: sig.technicals.volumeSignal === "Surge" ? "#FFD700" : sig.technicals.volumeSignal === "Low" ? "#FF2D55" : "#94A3B8", badge: undefined },
             ].map(({ label, value, color, badge }) => (
@@ -827,6 +834,11 @@ function CryptoSignalsInner() {
   );
 
   const screenerData = screenerQuery.data as ScreenerResponse | undefined;
+  const screenerStatus = cryptoScreenerStatus({
+    hasData: Boolean(screenerData),
+    hasError: Boolean(screenerQuery.error),
+    isFetching: screenerQuery.isFetching,
+  });
 
   useEffect(() => {
     if (screenerData) setLastRefresh(new Date(screenerData.computedAt).toLocaleTimeString());
@@ -951,11 +963,11 @@ function CryptoSignalsInner() {
 
         {/* Data freshness */}
         <div style={{ marginTop: "10px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", gap: "6px" }}>
-          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: screenerQuery.isFetching ? "#FFD700" : "#00D4FF", boxShadow: `0 0 6px ${screenerQuery.isFetching ? "#FFD700" : "#00D4FF"}`, animation: "fl-pulse 5s ease-in-out infinite" }} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.1em", color: screenerQuery.isFetching ? "#FFD700" : "#00D4FF" }}>
-            {screenerQuery.isFetching ? "REFRESHING..." : "COINGECKO LIVE"}
+          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: screenerStatus.color, boxShadow: `0 0 6px ${screenerStatus.color}`, animation: "fl-pulse 5s ease-in-out infinite" }} />
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.1em", color: screenerStatus.color }}>
+            {screenerStatus.label}
           </span>
-          {lastRefresh && (
+          {screenerStatus.available && lastRefresh && (
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>UPDATED: {lastRefresh}</span>
           )}
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>· AUTO-REFRESH 90s</span>
@@ -1105,9 +1117,8 @@ function CryptoSignalsInner() {
       {/* ── Data Source Panel ─────────────────────────── */}
       <div style={{ margin: "24px 16px 0", padding: "12px", background: "rgba(0,212,255,0.03)", border: "1px solid rgba(0,212,255,0.08)", borderRadius: "4px" }}>
         <div style={{ fontSize: "8px", letterSpacing: "0.12em", color: "rgba(100,116,139,0.5)", lineHeight: 1.6 }}>
-          <span style={{ color: "#00D4FF" }}>LIVE DATA</span> — CoinGecko market data via secure backend proxy.
-          {screenerData && <> Assets: <span style={{ color: "rgba(100,116,139,0.7)" }}>{screenerData.signals.length}</span> · BTC Dominance: <span style={{ color: "rgba(100,116,139,0.7)" }}>{screenerData.btcDominance.toFixed(1)}%</span></>}
-          {" "}· <span style={{ color: "#00D4FF" }}>TRADING SIGNALS</span> — FAULTLINE Engine · RSI, SMA, MACD, regime pressure. Refreshes every 90 seconds.
+          <span style={{ color: screenerStatus.color }}>{screenerStatus.available ? "MARKET DATA" : "MARKET DATA UNAVAILABLE"}</span> — {screenerStatus.available ? "CoinGecko market data via secure backend proxy." : "No qualified CoinGecko screener response is available."}
+          {screenerStatus.available && screenerData && <> Assets: <span style={{ color: "rgba(100,116,139,0.7)" }}>{screenerData.signals.length}</span> · BTC Dominance: <span style={{ color: "rgba(100,116,139,0.7)" }}>{screenerData.btcDominance.toFixed(1)}%</span>{" "}· <span style={{ color: "#00D4FF" }}>TRADING SIGNALS</span> — FAULTLINE Engine · RSI, SMA, MACD, regime pressure. Refreshes every 90 seconds.</>}
         </div>
       </div>
 

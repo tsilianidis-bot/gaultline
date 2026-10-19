@@ -829,7 +829,6 @@ export default function AnalyticsDashboard() {
                 { name: "Signals Engine", path: "/app/signals", status: "live", color: CYAN },
                 { name: "Situation Room", path: "/app/situation-room", status: "live", color: CYAN },
                 { name: "Insider Intelligence", path: "/app/insider-intelligence", status: "live", color: CYAN },
-                { name: "Market Preflight", path: "/app/dashboard", status: "live", color: CYAN },
                 { name: "Track Record", path: "/app/track-record", status: "live", color: CYAN },
                 { name: "Watchlist", path: "/app/watchlist", status: "live", color: CYAN },
                 { name: "Crypto Intelligence", path: "/app/dashboard", status: "live", color: CYAN },

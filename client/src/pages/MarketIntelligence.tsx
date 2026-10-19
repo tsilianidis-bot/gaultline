@@ -142,7 +142,7 @@ export default function MarketIntelligence() {
   const { user } = useAuth();
   const { data, isLoading, error, refetch, isFetching } = trpc.marketIntelligence.getAll.useQuery(
     undefined,
-    { refetchInterval: 10 * 60 * 1000 }
+    { refetchInterval: 10 * 60 * 1000, trpc: { context: { skipBatch: true } } }
   );
   const { data: persistedAlerts, isLoading: alertsLoading } = trpc.marketIntelligence.getRecentAlerts.useQuery(
     { limit: 10 },

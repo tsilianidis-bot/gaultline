@@ -138,7 +138,7 @@ const US_MARKET_HOLIDAYS = new Set([
 ]);
 
 /** Returns true if the given YYYY-MM-DD date is a US market holiday or weekend */
-function isNonTradingDay(dateStr: string): boolean {
+export function isNonTradingDay(dateStr: string): boolean {
   const d = new Date(dateStr + 'T12:00:00Z');
   const dow = d.getUTCDay();
   return dow === 0 || dow === 6 || US_MARKET_HOLIDAYS.has(dateStr);
@@ -502,9 +502,20 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
     };
   });
 
-  // Use today's date when Yahoo succeeded (live data), otherwise use Polygon's trade date
-  const effectiveTradeDate = yahooSucceeded ? today : tradeDate;
+  // Yahoo availability is not a LIVE proof: closed-market Yahoo quotes are explicitly
+  // delayed. Only a returned live or extended quote may use today's session label.
+  const effectiveTradeDate = selectEffectiveTradeDate(quotes, today, tradeDate);
   return { quotes, tradeDate: effectiveTradeDate };
+}
+
+export function selectEffectiveTradeDate(
+  quotes: readonly Pick<QuoteResult, "isLive" | "marketStatus">[],
+  currentDate: string,
+  completedTradeDate: string,
+): string {
+  return quotes.some(quote => quote.isLive && (quote.marketStatus === "open" || quote.marketStatus === "extended"))
+    ? currentDate
+    : completedTradeDate;
 }
 
 // ── Per-ticker cache ─────────────────────────────────────────
@@ -657,6 +668,9 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
     effectiveTradeDate = tradeDate;
   }
 
+  const isLive = marketStatus === "open" || marketStatus === "extended";
+  effectiveTradeDate = selectEffectiveTradeDate([{ isLive, marketStatus }], new Date().toISOString().slice(0, 10), tradeDate);
+
   return {
     ticker: symbol,
     name,
@@ -675,7 +689,7 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
     sparkline,
     tradeDate: effectiveTradeDate,
     marketStatus,
-    isLive: marketStatus === "open" || marketStatus === "extended",
+    isLive,
     isDelayed: true,
     source: "live",
   };

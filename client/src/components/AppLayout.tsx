@@ -115,9 +115,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { isOpen: cmdOpen, open: openCmd, close: closeCmd } = useCommandSearch();
   // Market regime intelligence — 10-min cache, non-blocking
+  // Own HTTP request (skipBatch → splitLink in main.tsx): a cold getAll (12–25 s) must never
+  // hold the batch carrying marketState.canonicalCurrent / marketState.current.
   const { data: miData } = trpc.marketIntelligence.getAll.useQuery(undefined, {
     staleTime: 10 * 60 * 1000,
     retry: false,
+    trpc: { context: { skipBatch: true } },
   });
   const isMobile = useIsMobile();
 
@@ -189,7 +192,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         top: 0,
         zIndex: 50,
       }}>
-        <AppMarketHeader items={liveTickerItems} intelligence={miData} isMobile={isMobile} />
+        <AppMarketHeader items={liveTickerItems} intelligence={miData} canonicalAvailable={canonicalState !== null} isMobile={isMobile} />
         <GlobalMarketTicker />
 
         {/* Logo row + status */}

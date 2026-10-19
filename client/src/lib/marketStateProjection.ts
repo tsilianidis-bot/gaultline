@@ -1,3 +1,4 @@
+import { pressureBand, pressureBandColor, pressureRiskLevel, regimeToRiskLevel } from "@shared/pressureBands";
 import type { CanonicalMarketState } from "@shared/marketState";
 import { normalizeCanonicalMetric } from "@shared/marketMetrics";
 import {
@@ -82,27 +83,23 @@ function withProbabilityContract(
 export type BrowserMarketMode = "canonical" | "simulation" | "deterministic-fallback";
 
 function riskLevel(score: number): DomainScore["riskLevel"] {
-  if (score >= 8.5) return "critical";
-  if (score >= 7) return "high";
-  if (score >= 5) return "elevated";
-  if (score >= 3) return "moderate";
-  return "low";
+  // Engine domain scores are 0–10; map via canonical 0–100 bands.
+  return pressureRiskLevel(score * 10);
 }
 
 function regimeCode(score: number): RegimeOutput["code"] {
-  if (score >= 85) return "CRITICAL_SYSTEMIC";
-  if (score >= 70) return "LATE_CYCLE_FRAGILITY";
-  if (score >= 50) return "ELEVATED_STRESS";
-  if (score >= 30) return "MODERATE_RISK";
-  return "LOW_RISK";
+  // `score` is 0–100 canonical pressure (call sites pass canonicalScore).
+  switch (pressureBand(score).id) {
+    case "crisis": return "CRITICAL_SYSTEMIC";
+    case "high": return "LATE_CYCLE_FRAGILITY";
+    case "elevated": return "ELEVATED_STRESS";
+    case "moderate": return "MODERATE_RISK";
+    default: return "LOW_RISK";
+  }
 }
 
 function regimeColor(score: number): string {
-  if (score >= 85) return "#ff2d55";
-  if (score >= 70) return "#ff6b35";
-  if (score >= 50) return "#ffb020";
-  if (score >= 30) return "#00d4ff";
-  return "#00e599";
+  return pressureBandColor(score);
 }
 
 export function projectCanonicalMarketState(
@@ -243,13 +240,17 @@ function finitePressure100(value: unknown): number | null {
 
 /** Canonical regime label → the risk band healthy mode would show for it. */
 function regimeLabelRiskLevel(regime: string | null | undefined): DisplayRiskLevel | null {
-  switch ((regime ?? "").trim().toUpperCase()) {
-    case "LOW RISK": return "low";
-    case "MODERATE RISK": return "moderate";
-    case "ELEVATED RISK": return "elevated";
-    case "HIGH STRESS": return "high";
-    case "SYSTEMIC CRISIS": return "critical";
-    default: return null;
+  const key = (regime ?? "").trim().toUpperCase();
+  if (!key) return null;
+  switch (key) {
+    case "LOW RISK":
+    case "MODERATE RISK":
+    case "ELEVATED RISK":
+    case "HIGH STRESS":
+    case "SYSTEMIC CRISIS":
+      return regimeToRiskLevel(key);
+    default:
+      return null;
   }
 }
 

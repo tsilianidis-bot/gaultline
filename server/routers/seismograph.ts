@@ -22,11 +22,13 @@ import {
 } from "../../drizzle/schema";
 import { desc, eq, and, notLike } from "drizzle-orm";
 import { getLatestSeismographOutput, runSeismographPipeline } from "../scheduledSeismograph";
+import { resolveRunContext } from "../forwardRunProvenance";
 import { runSeismographBackfill, RECONSTRUCTED_RECORD_CLASS } from "../seismographBackfill";
 import { getUnifiedSeismographIntelligence } from "../seismographUnified";
 import { overlayAssembledSeismographOutput, overlayUnifiedSeismographIntelligence } from "../probabilityContract";
 import type { CanonicalProbabilityContract } from "../../shared/probabilityContract";
 import { applySeismographDisplayContext, type CanonicalDataQualityInput } from "../seismographDisplayContext";
+import { isHiddenSessionMemoryKey } from "../scheduledSessionClaim";
 
 /**
  * The stateId-bound probability contract from the authoritative canonical
@@ -145,6 +147,13 @@ export const seismographRouter = router({
     return db
       .select()
       .from(marketMemory)
+      // Sector Rotation snapshots (append-only, served by sectorRotation.current) are not Market Memory entries.
+      .where(and(
+        notLike(marketMemory.memoryKey, "sector-rotation:%"),
+        notLike(marketMemory.memoryKey, "sector-rotation-claim:%"),
+        notLike(marketMemory.memoryKey, "seismograph-scheduled-session:%"),
+        notLike(marketMemory.memoryKey, "seismograph-scheduled-outcome:%"),
+      ))
       .orderBy(desc(marketMemory.updatedAt));
   }),
 
@@ -154,6 +163,7 @@ export const seismographRouter = router({
   getMemoryKey: publicProcedure
     .input(z.object({ key: z.string() }))
     .query(async ({ input }) => {
+      if (isHiddenSessionMemoryKey(input.key)) return null;
       return memoryGet(input.key);
     }),
 
@@ -182,7 +192,8 @@ export const seismographRouter = router({
    * This is the same pipeline the Heartbeat job runs daily at market close.
    */
   seedNow: adminProcedure.mutation(async () => {
-    const output = await runSeismographPipeline();
+    // MANUAL run: recorded as its own state; never captures Champion provenance/outcomes.
+    const output = await runSeismographPipeline({ runContext: resolveRunContext("admin-seedNow") });
     return {
       success: true,
       pressureScore: output.pressureScore,

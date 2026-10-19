@@ -4,6 +4,7 @@
  * Full article view for a single Daily Intelligence Brief.
  * Full SEO: Article JSON-LD schema, Open Graph, canonical URL.
  */
+import { pressureBandColor, pressureShortLabel } from "@shared/pressureBands";
 import { useParams, Link } from "wouter";
 import DOMPurify from "dompurify";
 import { trpc } from "@/lib/trpc";
@@ -21,17 +22,12 @@ function formatDate(d: Date | string | null | undefined): string {
 
 function getPressureColor(score: number | null): string {
   if (score == null) return "#6B7280";
-  if (score >= 70) return "#FF4444";
-  if (score >= 45) return "#FF9500";
-  return "#00FF88";
+  return pressureBandColor(score);
 }
 
 function getPressureLabel(score: number | null): string {
   if (score == null) return "Unknown";
-  if (score >= 70) return "CRISIS";
-  if (score >= 45) return "ELEVATED";
-  if (score >= 25) return "MODERATE";
-  return "MINIMAL";
+  return pressureShortLabel(score);
 }
 
 export default function DailyBriefPost() {

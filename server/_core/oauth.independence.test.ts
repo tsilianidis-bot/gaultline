@@ -342,7 +342,6 @@ describe("OAuth independence Option 1+2", () => {
     expect(post).toHaveBeenCalled();
 
     vi.spyOn(db, "getUserByOpenId")
-      .mockResolvedValueOnce(undefined)
       .mockResolvedValue({
         id: 7,
         openId: "oid-complete",
@@ -380,8 +379,8 @@ describe("OAuth independence Option 1+2", () => {
       email: null,
     });
     vi.spyOn(sdk, "createSessionToken").mockResolvedValue("session-jwt");
-    vi.spyOn(db, "getUserByOpenId").mockResolvedValue(undefined);
-    vi.spyOn(db, "upsertUser").mockResolvedValue(undefined as any);
+    const findUser = vi.spyOn(db, "getUserByOpenId").mockResolvedValue({ id: 7, openId: "oid-complete", accessTier: "premium" } as any);
+    const upsert = vi.spyOn(db, "upsertUser").mockResolvedValue(undefined as any);
 
     await withCallbackApp(async origin => {
       const state = btoa(`${origin}/api/oauth/callback`);
@@ -393,6 +392,15 @@ describe("OAuth independence Option 1+2", () => {
       expect(response.headers.get("location")).toBe("/app");
     });
 
+    findUser.mockResolvedValue(undefined);
+    upsert.mockClear();
+    await withCallbackApp(async origin => {
+      const response = await fetch(`${origin}/api/oauth/callback?code=auth-code&state=${encodeURIComponent(btoa(`${origin}/api/oauth/callback`))}`, { redirect: "manual" });
+      expect(response.status).toBe(302);
+      expect(response.headers.get("location")).toBe("/pricing");
+      expect(response.headers.get("set-cookie")).toBeNull();
+    });
+    expect(upsert).not.toHaveBeenCalled();
     traps.assertNoManusHttp();
   });
 

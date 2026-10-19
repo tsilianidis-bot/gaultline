@@ -16,6 +16,7 @@
  * auth, routing, and analytics.
  * ============================================================
  */
+import { pressureBandColor, pressureShortLabel } from "@shared/pressureBands";
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { CRASH_RISK_DISPLAY_TEXT, contractScenarioText } from "@/lib/contractProbabilityText";
@@ -166,18 +167,10 @@ function getPersonalizationPriorities(
 
 // ── Pressure level helpers ────────────────────────────────────
 function pressureLabel(score: number): string {
-  if (score >= 80) return "Critical Stress";
-  if (score >= 65) return "High Stress";
-  if (score >= 45) return "Elevated Stress";
-  if (score >= 25) return "Moderate";
-  return "Low Risk";
+  return pressureShortLabel(score);
 }
 function pressureColor(score: number): string {
-  if (score >= 80) return "#FF2D55";
-  if (score >= 65) return "#FF4444";
-  if (score >= 45) return "#FF9500";
-  if (score >= 25) return "#FFD700";
-  return "#00FF88";
+  return pressureBandColor(score);
 }
 function trendArrow(trend: string): string {
   if (trend === "rising") return "↑";
