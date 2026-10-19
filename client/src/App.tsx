@@ -256,8 +256,8 @@ function CanonicalDestinationRoutes() {
 
 // ── RootRoute — / serves marketing site for guests, redirects auth users to home ──
 function RootRoute() {
-  const { user, loading } = useAuth();
-  if (loading) return null;
+  const { user } = useAuth();
+  // The public presentation does not wait for a session lookup or expose product data.
   if (user) return <Redirect to={CANONICAL_HOME} />;
   return (
     <ErrorBoundary>
@@ -855,6 +855,8 @@ function shouldShowCinematic(): boolean {
   try {
     if (isDemoPath()) return false;
     const path = window.location.pathname;
+    // Marketing arrival is immediate; preserve cinematic/product onboarding on /app.
+    if (path === '/') return false;
     // SEO/blog/public pages never trigger the cinematic
     const publicPaths = ['/blog', '/daily-brief', '/intelligence-library', '/analysis',
       '/intelligence', '/intel-archive', '/methodology', '/pressure-index', '/legal',

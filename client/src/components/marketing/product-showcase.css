@@ -1,0 +1,482 @@
+.product-showcase {
+  --ps-ink: #070b10;
+  --ps-panel: #0d141b;
+  --ps-cyan: #65d6e5;
+  --ps-gold: #d2ac63;
+  --ps-muted: #aebdca;
+  position: relative;
+  overflow: hidden;
+  border-block: 1px solid rgba(101, 214, 229, 0.16);
+  background:
+    radial-gradient(
+      circle at 88% 14%,
+      rgba(0, 212, 255, 0.1),
+      transparent 29rem
+    ),
+    linear-gradient(135deg, #06090d 0%, var(--ps-ink) 48%, #0a1118 100%);
+  color: #f5f6f5;
+}
+
+.product-showcase::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(101, 214, 229, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(101, 214, 229, 0.04) 1px, transparent 1px);
+  background-size: 4rem 4rem;
+  content: "";
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    black 30%,
+    black 70%,
+    transparent
+  );
+}
+
+.product-showcase__shell {
+  position: relative;
+  width: min(100% - 2.5rem, 80rem);
+  margin: 0 auto;
+  padding: clamp(4.5rem, 8vw, 8rem) 0;
+  font-family:
+    "Space Grotesk", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+.product-showcase__intro {
+  display: grid;
+  max-width: 48rem;
+  gap: 1.25rem;
+}
+
+.product-showcase__kicker,
+.product-showcase__eyebrow,
+.product-showcase__requirements-title,
+.product-showcase__placeholder-label {
+  margin: 0;
+  color: var(--ps-cyan);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  line-height: 1.4;
+}
+
+.product-showcase__intro h2 {
+  max-width: 46rem;
+  margin: 0;
+  font-size: clamp(2.2rem, 5vw, 4.85rem);
+  font-weight: 600;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.product-showcase__intro > p:last-child {
+  max-width: 42rem;
+  margin: 0;
+  color: #c3cdd6;
+  font-size: clamp(1rem, 1.5vw, 1.125rem);
+  line-height: 1.75;
+}
+
+.product-showcase__layout {
+  display: grid;
+  grid-template-columns: minmax(13rem, 0.37fr) minmax(0, 1fr);
+  gap: clamp(1.5rem, 4vw, 4rem);
+  align-items: start;
+  margin-top: clamp(2.5rem, 6vw, 5rem);
+}
+
+.product-showcase__choices {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.product-showcase__choice {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: center;
+  width: 100%;
+  min-height: 3.9rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid transparent;
+  border-radius: 0.7rem;
+  background: transparent;
+  color: #b9c5d0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-align: left;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.product-showcase__choice:hover {
+  background: rgba(101, 214, 229, 0.06);
+  color: #fff;
+}
+
+.product-showcase__choice.is-selected {
+  border-color: rgba(101, 214, 229, 0.42);
+  background: linear-gradient(
+    90deg,
+    rgba(101, 214, 229, 0.14),
+    rgba(101, 214, 229, 0.025)
+  );
+  color: #fff;
+}
+
+.product-showcase__choice.is-selected svg {
+  color: var(--ps-cyan);
+}
+
+.product-showcase__choice-index {
+  color: var(--ps-gold);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+}
+
+.product-showcase__stage {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(151, 182, 198, 0.22);
+  border-radius: 1.1rem;
+  background: linear-gradient(
+    145deg,
+    rgba(18, 28, 37, 0.96),
+    rgba(7, 12, 17, 0.98)
+  );
+  box-shadow:
+    0 1.8rem 5rem rgba(0, 0, 0, 0.28),
+    inset 0 1px rgba(255, 255, 255, 0.035);
+}
+
+.product-showcase__stage-head {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: clamp(1.25rem, 3vw, 2rem) clamp(1.25rem, 3vw, 2.25rem);
+  border-bottom: 1px solid rgba(151, 182, 198, 0.15);
+}
+
+.product-showcase__stage-head h3 {
+  margin: 0.38rem 0 0;
+  font-size: clamp(1.35rem, 2.5vw, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.product-showcase__status {
+  flex: 0 0 auto;
+  margin-top: 0.08rem;
+  padding: 0.36rem 0.55rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  line-height: 1.1;
+}
+
+.product-showcase__status.is-pending {
+  color: var(--ps-gold);
+}
+.product-showcase__status.is-verified {
+  color: var(--ps-cyan);
+}
+
+.product-showcase__placeholder {
+  position: relative;
+  display: grid;
+  align-content: center;
+  min-height: clamp(23rem, 49vw, 35rem);
+  padding: clamp(1.8rem, 6vw, 5.2rem);
+  overflow: hidden;
+  background:
+    radial-gradient(
+      ellipse at 18% 12%,
+      rgba(101, 214, 229, 0.13),
+      transparent 31%
+    ),
+    radial-gradient(
+      ellipse at 88% 100%,
+      rgba(210, 172, 99, 0.08),
+      transparent 30%
+    ),
+    #091018;
+}
+
+.product-showcase__placeholder::after {
+  position: absolute;
+  inset: 1rem;
+  border: 1px dashed rgba(101, 214, 229, 0.23);
+  border-radius: 0.55rem;
+  content: "";
+  pointer-events: none;
+}
+
+.product-showcase__placeholder > * {
+  position: relative;
+  z-index: 1;
+}
+
+.product-showcase__placeholder-mark {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(101, 214, 229, 0.6);
+  border-radius: 50%;
+  color: var(--ps-cyan);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.product-showcase__placeholder-label {
+  color: var(--ps-gold);
+}
+
+.product-showcase__placeholder h4 {
+  max-width: 35rem;
+  margin: 0.85rem 0 0;
+  font-size: clamp(1.75rem, 4vw, 3.4rem);
+  font-weight: 500;
+  letter-spacing: -0.05em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+.product-showcase__placeholder p:not(.product-showcase__placeholder-label) {
+  max-width: 35rem;
+  margin: 1.25rem 0 0;
+  color: #c3cdd6;
+  font-size: clamp(0.93rem, 1.5vw, 1.08rem);
+  line-height: 1.7;
+}
+
+.product-showcase__placeholder .product-showcase__intent {
+  max-width: 38rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid rgba(151, 182, 198, 0.18);
+  color: #94a7b8;
+  font-size: 0.82rem;
+}
+
+.product-showcase__intent strong {
+  color: var(--ps-gold);
+}
+
+.product-showcase__capture {
+  position: relative;
+  min-height: 0;
+  aspect-ratio: 16 / 10;
+  background: #05080b;
+}
+
+.product-showcase__capture > img,
+.product-showcase__dialog > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.product-showcase__expand {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.68rem 0.82rem;
+  border: 1px solid rgba(101, 214, 229, 0.55);
+  border-radius: 0.45rem;
+  background: rgba(4, 8, 12, 0.9);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.035em;
+}
+
+.product-showcase__expand:hover {
+  background: rgba(101, 214, 229, 0.16);
+}
+
+.product-showcase__stage-footer {
+  display: flex;
+  gap: 1.5rem;
+  align-items: end;
+  justify-content: space-between;
+  padding: clamp(1.25rem, 3vw, 2rem) clamp(1.25rem, 3vw, 2.25rem);
+  border-top: 1px solid rgba(151, 182, 198, 0.15);
+}
+
+.product-showcase__requirements-title {
+  color: #aebdca;
+  font-size: 0.62rem;
+}
+
+.product-showcase__requirements {
+  display: grid;
+  gap: 0.42rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  color: #cbd5dd;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  list-style: none;
+}
+
+.product-showcase__requirements li {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+}
+
+.product-showcase__requirements svg {
+  flex: 0 0 auto;
+  margin-top: 0.05rem;
+  color: var(--ps-cyan);
+}
+
+.product-showcase__cta {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 0.55rem;
+  align-items: center;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid rgba(101, 214, 229, 0.58);
+  color: var(--ps-cyan);
+  font-size: 0.77rem;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.product-showcase__cta:hover {
+  color: #a7eff7;
+}
+
+.product-showcase__note {
+  max-width: 52rem;
+  margin: 1.4rem 0 0 auto;
+  color: #8fa2b2;
+  font-size: 0.74rem;
+  line-height: 1.65;
+  text-align: right;
+}
+
+.product-showcase__dialog {
+  max-width: min(94vw, 75rem) !important;
+  max-height: 92vh;
+  overflow: auto;
+  border-color: rgba(101, 214, 229, 0.35) !important;
+  background: #080d12 !important;
+  color: #fff;
+}
+
+.product-showcase__dialog > img {
+  height: auto;
+  max-height: 72vh;
+}
+
+@supports (animation-timeline: view()) {
+  .product-showcase__reveal {
+    animation: product-showcase-reveal linear both;
+    animation-range: entry 8% cover 32%;
+    animation-timeline: view();
+  }
+
+  @keyframes product-showcase-reveal {
+    from {
+      opacity: 0.55;
+      transform: translateY(1.2rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@media (max-width: 780px) {
+  .product-showcase__shell {
+    width: min(100% - 2rem, 80rem);
+  }
+
+  .product-showcase__layout {
+    grid-template-columns: 1fr;
+    gap: 1.35rem;
+  }
+
+  .product-showcase__choices {
+    grid-template-columns: repeat(5, minmax(8.5rem, 1fr));
+    padding-bottom: 0.35rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .product-showcase__choice {
+    min-height: 3.55rem;
+  }
+  .product-showcase__choice-index,
+  .product-showcase__choice svg {
+    display: none;
+  }
+
+  .product-showcase__stage-footer {
+    display: grid;
+    align-items: start;
+  }
+
+  .product-showcase__cta {
+    width: fit-content;
+  }
+  .product-showcase__note {
+    margin-left: 0;
+    text-align: left;
+  }
+}
+
+@media (max-width: 480px) {
+  .product-showcase__stage-head {
+    display: grid;
+  }
+  .product-showcase__status {
+    width: fit-content;
+  }
+  .product-showcase__placeholder {
+    min-height: 28rem;
+  }
+  .product-showcase__placeholder h4 {
+    font-size: 2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-showcase *,
+  .product-showcase *::before,
+  .product-showcase *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

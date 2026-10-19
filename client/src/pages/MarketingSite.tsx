@@ -3,9 +3,6 @@ import { Link } from "wouter";
 import { getLoginUrl, handleLoginCtaClick } from "@/const";
 import { useSEO } from "@/hooks/useSEO";
 import { trackStartFreeClicked } from "@/hooks/useAnalytics";
-import SeismicUnderlay from "@/components/landing/SeismicUnderlay";
-import AmberSeismograph from "@/components/landing/AmberSeismograph";
-import MarketTicker from "@/components/landing/ticker/MarketTicker";
 import HeroProof from "@/components/landing/HeroProof";
 import PentagonalThesis from "@/components/landing/PentagonalThesis";
 import HistoricalContext from "@/components/landing/HistoricalContext";
@@ -14,13 +11,8 @@ import { PRESSURE_VECTOR_DISPLAY } from "@shared/pressureVectorLabels";
 import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 import MembershipOffer from "@/components/MembershipOffer";
-
-const HERO_BACKGROUND = "/faultline_hero_bg_7d6aaf14.jpg";
-const HERO_BACKGROUND_WIDTHS = [640, 1280, 1920, 2560] as const;
-const HERO_BACKGROUND_SRCSET = {
-  avif: HERO_BACKGROUND_WIDTHS.map(w => `/faultline_hero_bg_7d6aaf14-${w}.avif ${w}w`).join(", "),
-  webp: HERO_BACKGROUND_WIDTHS.map(w => `/faultline_hero_bg_7d6aaf14-${w}.webp ${w}w`).join(", "),
-};
+import MarketingIntelligenceHero from "@/components/marketing/MarketingIntelligenceHero";
+import ProductShowcase from "@/components/marketing/ProductShowcase";
 
 const EXPLORE_HREF = "/pressure-index";
 const METHOD_HREF = "/methodology";
@@ -31,17 +23,13 @@ const PRICING_HREF = "/pricing";
 
 const PAGE_TITLE = "FAULTLINE | Structural Market Intelligence";
 const PAGE_DESCRIPTION =
-  "FAULTLINE reads high-yield credit, SOFR, the Treasury curve, macro conditions, equities, and crypto to show where systemic pressure is building.";
+  "Understand market pressure, its drivers and what to watch. FAULTLINE connects cross-market context with evidence-led intelligence for self-directed investors.";
 
 const navItems = [
-  { label: "Thesis", href: "#thesis" },
-  { label: "Pressure Index", href: "#pressure" },
-  { label: "History", href: "#analogs" },
-  { label: "PLATO", href: "#plato" },
-  { label: "Methodology", href: METHOD_HREF },
-  { label: "Brief", href: DAILY_BRIEF_HREF },
-  { label: "Blog", href: BLOG_HREF },
-  { label: "Pricing", href: PRICING_HREF },
+  { label: "Intelligence", href: "#product-showcase" },
+  { label: "Methodology", href: "#thesis" },
+  { label: "Evidence", href: "#pressure" },
+  { label: "Membership", href: "#access" },
 ];
 
 
@@ -142,78 +130,20 @@ function Header() {
   );
 }
 
-function Ctas({ primaryTrack }: { primaryTrack?: boolean }) {
-  return (
-    <div className="flex flex-col gap-3 sm:flex-row">
-      <a
-        href={EXPLORE_HREF}
-        onClick={primaryTrack ? () => trackStartFreeClicked("marketing_rebuild_hero") : undefined}
-        className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[#65D6E5] px-7 py-4 text-center text-[12px] font-[inherit] font-semibold tracking-[0.06em] text-[#050608] transition hover:bg-[#6EE7FF] ${focusRing}`}
-      >
-        EXPLORE FAULTLINE <Arrow />
-      </a>
-      <a href={METHOD_HREF} className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-[#00D4FF]/40 bg-[#0A0D12]/70 px-7 py-4 text-center text-[12px] font-[inherit] font-bold tracking-[0.06em] text-[#65D6E5] transition hover:border-[#00D4FF]/70 hover:bg-[#65D6E5]/10 ${focusRing}`}>
-        VIEW METHODOLOGY
-      </a>
-    </div>
-  );
-}
-
-function setHeroBackgroundSrc(img: HTMLImageElement | null) {
-  if (img && !img.getAttribute("src")) img.src = HERO_BACKGROUND;
-}
-
 function Hero() {
+  return <MarketingIntelligenceHero />;
+}
+
+function PublicReadingProof() {
   return (
-    <section className="relative isolate overflow-hidden border-b border-[#00D4FF]/10 bg-[#0A0D12]">
-      {/* Restored original hero background (faultline_hero_bg_7d6aaf14.jpg), same treatment as before
-          07f06ac: full-bleed cover, centred, 35% opacity, under the existing overlays. Responsive
-          AVIF/WebP derivatives; the recovered original is the final fallback. Decorative, no animation. */}
-      <picture aria-hidden="true">
-        <source type="image/avif" srcSet={HERO_BACKGROUND_SRCSET.avif} sizes="100vw" />
-        <source type="image/webp" srcSet={HERO_BACKGROUND_SRCSET.webp} sizes="100vw" />
-        {/* src is set from the ref, i.e. once the <img> is inside the <picture> in the document.
-            React sets props on the detached element, and WebKit then fetches the jpg fallback as
-            well as the selected source. Same frame as the commit, so the request (and LCP) is not
-            deferred, unlike loading="lazy". */}
-        <img
-          ref={setHeroBackgroundSrc}
-          alt=""
-          decoding="async"
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center opacity-35"
-        />
-      </picture>
-      <SeismicUnderlay className="pointer-events-none absolute inset-0 h-full w-full [mask-image:linear-gradient(180deg,transparent_0%,transparent_42%,#000_68%)] lg:[mask-image:linear-gradient(90deg,transparent_0%,transparent_38%,rgba(0,0,0,0.4)_54%,#000_72%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,8,0.94)_0%,rgba(5,6,8,0.9)_48%,rgba(5,6,8,0.45)_72%,rgba(5,6,8,0.12)_100%)] lg:bg-[linear-gradient(90deg,rgba(5,6,8,0.96)_0%,rgba(5,6,8,0.92)_42%,rgba(5,6,8,0.55)_62%,rgba(5,6,8,0.08)_100%)]" aria-hidden="true" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#0A0D12] to-transparent" aria-hidden="true" />
-      <AmberSeismograph className="absolute inset-x-0 bottom-10 h-28 sm:bottom-16 sm:h-36" />
-      <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-5 pb-16 pt-10 sm:px-8 sm:pt-16 lg:min-h-[calc(100svh-88px)] lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)] lg:gap-12 lg:py-12 xl:py-24">
-        <div className="max-w-4xl">
-          <h1 className="max-w-5xl">
-            <span className="block font-[inherit] text-[2.65rem] font-semibold leading-[1] tracking-[0.06em] text-white sm:text-7xl sm:tracking-[0.06em] lg:text-[4.5rem] xl:text-[6.25rem]">
-              FAULTLINE
-            </span>
-            <span className="mt-4 block h-px w-16 bg-[#65D6E5] sm:mt-6 sm:w-24" aria-hidden="true" />
-            <span className="mt-4 block max-w-4xl text-[1.85rem] font-bold leading-[1.08] tracking-[-0.04em] text-white sm:mt-6 sm:text-5xl lg:text-[2.75rem] xl:text-6xl">
-              See the pressure before the break.
-            </span>
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-[1.75] text-[#E3E5E8] sm:text-xl lg:mt-5 lg:text-lg xl:text-xl">
-            FAULTLINE monitors credit, liquidity, rates, macro conditions, equities and crypto together to show where systemic pressure is building.
-          </p>
-          <p className="mt-4 max-w-2xl text-base leading-[1.75] text-[#B7C1CD]">
-            Built on the <a href="#thesis" className={`font-semibold text-white underline decoration-[#65D6E5]/60 underline-offset-4 hover:decoration-[#65D6E5] ${focusRing}`}>Pentagonal Thesis™</a>: what is happening, why, what could come next, what to watch, and how to frame a decision. It does not claim to know that a crash will happen.
-          </p>
-          <div className="mt-7 sm:mt-9 lg:mt-7 xl:mt-9">
-            <Ctas primaryTrack />
-          </div>
-          <p className="mt-4 text-[12px] leading-[1.75] text-[#A8B4C2]">
-            Explore opens the public Pressure Index. No account is required.
-          </p>
+    <section className="mp-proof-band" aria-label="Canonical public product evidence">
+      <div className="mp-proof-layout">
+        <div className="mp-proof-intro">
+          <p className="mp-eyebrow">EVIDENCE, NOT ANIMATION</p>
+          <h2>A real reading.<br />Its source status, in view.</h2>
+          <p>The visualization above explains the architecture. This separate public reading uses the existing canonical snapshot, with its own date and freshness. When the source is unavailable, no score is substituted.</p>
         </div>
-        <div className="w-full max-w-md lg:justify-self-end">
-          <HeroProof />
-        </div>
+        <HeroProof />
       </div>
     </section>
   );
@@ -437,11 +367,13 @@ function TrustTeaser() {
 function FinalCta() {
   return (
     <section id="access" className="relative isolate scroll-mt-24 overflow-hidden border-t border-white/[0.06] bg-[#0A0D12] py-24 sm:py-32">
-      <SeismicUnderlay intensity={0.72} />
+      {/* Existing underlay remains available in source; no decorative market motion in membership. */}
       <div className="pointer-events-none absolute inset-0 bg-[#0A0D12]/72" aria-hidden="true" />
       <div className="relative mx-auto max-w-4xl px-5 text-center sm:px-8">
+        <p className="mp-membership-kicker">MEMBERSHIP / BUILT FOR SELF-DIRECTED INVESTORS</p>
         <h2 className="text-3xl font-semibold leading-tight tracking-[-0.04em] text-white sm:text-5xl">
-          THE MARKET IS A SYSTEM. UNDERSTAND THE PRESSURE BUILDING BENEATH IT.
+          Less noise. More context.
+          A clearer view of the market.
         </h2>
         <div className="mt-10"><MembershipOffer /></div>
         <p className="mx-auto mt-6 max-w-2xl text-sm leading-[1.75] text-[#C9D4E0]">
@@ -496,24 +428,20 @@ export default function MarketingSite({ initialSection }: { initialSection?: Mar
   useEffect(() => {
     if (!initialSection) return;
     const targetSection = initialSection === "pricing" ? "access" : initialSection;
-    const timer = window.setTimeout(() => document.getElementById(targetSection)?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
+    const timer = window.setTimeout(() => document.getElementById(targetSection)?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }), 250);
     return () => window.clearTimeout(timer);
   }, [initialSection]);
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#0A0D12] text-[#F4F2ED]" style={{ fontFamily: '"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+    <div className="mp-site min-h-screen overflow-x-hidden bg-[#0A0D12] text-[#F4F2ED]" style={{ fontFamily: '"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
       <a href="#main" className={`absolute left-4 top-4 z-[60] -translate-y-24 rounded bg-[#65D6E5] px-3 py-2 text-sm font-semibold text-[#050608] focus:translate-y-0 ${focusRing}`}>
         Skip to content
       </a>
-      <MarketTicker />
-      <div className="border-b border-[#00D4FF]/15 bg-[#0A0D12] px-4 py-2 text-center">
-        <p className="text-[12px] font-[inherit] tracking-[0.06em] text-[#65D6E5] sm:text-[12px] sm:tracking-[0.06em]">
-          FAULTLINE STRUCTURAL MARKET INTELLIGENCE <span className="mx-2 text-white/30">/</span> SYSTEMIC PRESSURE AND INTERPRETATION
-        </p>
-      </div>
       <Header />
       <main id="main">
         <Hero />
+        <PublicReadingProof />
+        <ProductShowcase />
         <PentagonalThesis />
         <Pressure />
         <HistoricalContext />

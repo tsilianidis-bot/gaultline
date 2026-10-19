@@ -71,7 +71,7 @@ describe("cinematic + marketing preservation plan", () => {
     expect(TOUCHED.productExperience).toContain("export default function ProductExperience");
   });
 
-  it("plays ~12.1s cinematic then MarketingSite, with skip, mute, and fl_cinematic_completed_v1", () => {
+  it("preserves the product cinematic and makes public homepage arrival immediate", () => {
     expect(TOUCHED.cinematic).toContain("12100");
     expect(TOUCHED.cinematic).toContain("SKIP INTRO");
     expect(TOUCHED.cinematic).toContain("TAP FOR SOUND");
@@ -81,6 +81,7 @@ describe("cinematic + marketing preservation plan", () => {
     expect(TOUCHED.app).toContain("fl_cinematic_completed_v1");
     expect(TOUCHED.app).toContain("<MarketingSite />");
     expect(TOUCHED.app).toContain("isProductPath");
+    expect(TOUCHED.app).toContain("if (path === '/') return false;");
     expect(TOUCHED.app).toContain("showAuthGate");
     expect(TOUCHED.app).toContain("showPlatoBriefing");
   });
