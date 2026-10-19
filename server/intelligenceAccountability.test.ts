@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { registryCanonicalJson, type StressBenchmarkRegistry } from "../shared/stressBenchmarkRegistry";
 import { capturesForwardEvidence } from "./forwardRunProvenance";
 import { assessmentToResearchRecord, intelligenceTrackRecordFlagEnabled } from "./intelligenceAccountability";
+import { CUSTOMER_SEARCH_ITEMS, TOOLS_HOME_CONTEXTUAL_SECTION } from "../shared/navigationHierarchy";
 import {
   AccountabilityImmutabilityError,
   AccountabilityLedger,
@@ -555,8 +556,9 @@ describe("accountability surface does not join the five-question navigation", ()
     expect(page).toContain("Insufficient evidence");
     expect(page).toContain("import.meta.env.DEV");
     expect(page).not.toMatch(/Pre-Flight|crash probability|predictive/i);
-    expect(nav).toContain("intelligence-track-record");
-    expect(nav).toContain('item.id !== "intelligence-track-record" || showAccountability');
+    expect(nav).toContain("NAVIGATION_HIERARCHY");
+    expect(CUSTOMER_SEARCH_ITEMS.some(item => item.path.includes("intelligence-track-record"))).toBe(false);
+    expect(TOOLS_HOME_CONTEXTUAL_SECTION.items.some(item => item.path.includes("intelligence-track-record"))).toBe(false);
     expect(registry).not.toContain("intelligence-track-record");
     expect(server).not.toMatch(/pressure\/engine|stripe|marketStateService|pressure\/v2/);
     expect(server).not.toMatch(/\.update\(|\.delete\(/);
