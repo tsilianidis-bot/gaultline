@@ -664,7 +664,8 @@ describe("Signals quote freshness follows the feed (QA D1, strip says DELAYED)",
 
   it("server: Yahoo quotes carry isDelayed, the stale cache is served not-live, quote time is market time", () => {
     const s = src("server/signalsProxy.ts");
-    expect(s).toMatch(/isLive: true,\s*isDelayed: yahooQ\.isDelayed \?\? true,/);
+    expect(s).toMatch(/quoteFreshnessFlags\(\{\s*delayed: yahooQ\.isDelayed !== false,/);
+    expect(s).not.toMatch(/isLive: true,\s*isDelayed: yahooQ\.isDelayed \?\? true,/);
     expect(s).toMatch(/quotes: quotesCache\.quotes\.map\(q => \(\{ \.\.\.q, isLive: false \}\)\),\s*timestamp: new Date\(quotesCache\.fetchedAt\)\.toISOString\(\),\s*marketStatus: quotesCache\.marketStatus,\s*tradeDate: quotesCache\.tradeDate,\s*source: "stale"/);
     // QA D2: no quote is stamped with the fetch time.
     expect(s).not.toMatch(/^\s+timestamp: Date\.now\(\),$/m);

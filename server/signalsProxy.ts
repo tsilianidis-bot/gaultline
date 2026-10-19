@@ -438,6 +438,7 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
   }
 
   // ── Assemble quotes — Yahoo prices when live, Polygon as fallback ──
+  const sessionMarks: Array<Pick<QuoteResult, "isLive" | "marketStatus">> = [];
   const quotes: QuoteResult[] = PRIORITY_TICKERS.map(ticker => {
     const bar = barMap.get(ticker);
     const prevBar = prevBarMap.get(ticker);
@@ -468,6 +469,11 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
         marketStatus = "closed";
       }
 
+      const freshness = quoteFreshnessFlags({
+        delayed: yahooQ.isDelayed !== false,
+        sessionOpen: marketStatus === "open" || marketStatus === "extended",
+      });
+      sessionMarks.push({ isLive: true, marketStatus });
       return {
         ticker,
         price: parseFloat(price.toFixed(2)),
@@ -479,8 +485,8 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
         volumeMillions,
         timestamp: yahooQ.observedAt ?? null,
         marketStatus,
-        isLive: true,
-        isDelayed: yahooQ.isDelayed ?? true,
+        isLive: freshness.isLive,
+        isDelayed: freshness.isDelayed,
         sparkline: sparklineCache.get(ticker) ?? [],
       };
     }
@@ -492,6 +498,8 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
       const changePercent = resolveSignalChangePercent(yahooQ.changePercent, price, prevClose);
       const { volume: volumeRaw, volumeMillions } = resolveSignalVolume(yahooQ.volume, bar?.v);
 
+      const freshness = quoteFreshnessFlags({ delayed: true, sessionOpen: false });
+      sessionMarks.push({ isLive: false, marketStatus: "closed" });
       return {
         ticker,
         price: parseFloat(price.toFixed(2)),
@@ -503,8 +511,8 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
         volumeMillions,
         timestamp: yahooQ.observedAt ?? null,
         marketStatus: "closed",
-        isLive: false,
-        isDelayed: true,
+        isLive: freshness.isLive,
+        isDelayed: freshness.isDelayed,
         sparkline: sparklineCache.get(ticker) ?? [],
       };
     }
@@ -517,6 +525,9 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
         const prevClose = finiteQuoteNumber(yahooQ.prevClose);
         const changePercent = resolveSignalChangePercent(yahooQ.changePercent, price, prevClose);
         const { volume: volumeRaw, volumeMillions } = resolveSignalVolume(yahooQ.volume);
+        const marketStatus = deriveMarketStatus(today) as QuoteResult["marketStatus"];
+        const freshness = quoteFreshnessFlags({ delayed: true, sessionOpen: false });
+        sessionMarks.push({ isLive: false, marketStatus });
         return {
           ticker,
           price: parseFloat(price.toFixed(2)),
@@ -527,16 +538,20 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
           volume: volumeRaw,
           volumeMillions,
           timestamp: yahooQ.observedAt ?? null,
-          marketStatus: deriveMarketStatus(today) as QuoteResult["marketStatus"],
-          isLive: false,
-          isDelayed: true,
+          marketStatus,
+          isLive: freshness.isLive,
+          isDelayed: freshness.isDelayed,
           sparkline: sparklineCache.get(ticker) ?? [],
         };
       }
+      sessionMarks.push({ isLive: false, marketStatus: "unknown" });
       return missingPriorityQuote(ticker);
     }
 
     const assembled = assemblePolygonBarQuote(bar, prevBar?.c);
+    const marketStatus = deriveMarketStatus(tradeDate);
+    const freshness = quoteFreshnessFlags({ delayed: true, sessionOpen: false });
+    sessionMarks.push({ isLive: false, marketStatus });
     return {
       ticker,
       price: assembled.price,
@@ -547,17 +562,24 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
       volume: assembled.volume,
       volumeMillions: assembled.volumeMillions,
       timestamp: bar.t ?? null,
-      marketStatus: deriveMarketStatus(tradeDate),
-      isLive: false,
-      isDelayed: true,
+      marketStatus,
+      isLive: freshness.isLive,
+      isDelayed: freshness.isDelayed,
       sparkline: sparklineCache.get(ticker) ?? [],
     };
   });
 
   // Yahoo availability is not a LIVE proof: closed-market Yahoo quotes are explicitly
   // delayed. Only a returned live or extended quote may use today's session label.
-  const effectiveTradeDate = selectEffectiveTradeDate(quotes, today, tradeDate);
+  const effectiveTradeDate = selectEffectiveTradeDate(sessionMarks, today, tradeDate);
   return { quotes, tradeDate: effectiveTradeDate };
+}
+
+/** Delayed and live are exclusive. A delayed source is never live, including during an open session. */
+export function quoteFreshnessFlags(input: { delayed: boolean; sessionOpen: boolean }): { isLive: boolean; isDelayed: boolean } {
+  if (input.delayed) return { isLive: false, isDelayed: true };
+  if (input.sessionOpen) return { isLive: true, isDelayed: false };
+  return { isLive: false, isDelayed: false };
 }
 
 export function selectEffectiveTradeDate(
@@ -734,8 +756,9 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
     effectiveTradeDate = tradeDate;
   }
 
-  const isLive = marketStatus === "open" || marketStatus === "extended";
-  effectiveTradeDate = selectEffectiveTradeDate([{ isLive, marketStatus }], new Date().toISOString().slice(0, 10), tradeDate);
+  const sessionOpen = marketStatus === "open" || marketStatus === "extended";
+  const freshness = quoteFreshnessFlags({ delayed: true, sessionOpen });
+  effectiveTradeDate = selectEffectiveTradeDate([{ isLive: sessionOpen, marketStatus }], new Date().toISOString().slice(0, 10), tradeDate);
 
   return {
     ticker: symbol,
@@ -755,8 +778,8 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
     sparkline,
     tradeDate: effectiveTradeDate,
     marketStatus,
-    isLive,
-    isDelayed: true,
+    isLive: freshness.isLive,
+    isDelayed: freshness.isDelayed,
     source: "live",
   };
 }
@@ -1084,8 +1107,10 @@ export function registerSignalsProxy(app: Express) {
         sparkline: sparklineCache.get(raw) ?? [],
         tradeDate: fullBarMapTradeDate,
         marketStatus,
-        isLive: marketStatus === "open" || marketStatus === "extended",
-        isDelayed: true,
+        ...quoteFreshnessFlags({
+          delayed: true,
+          sessionOpen: marketStatus === "open" || marketStatus === "extended",
+        }),
         source: "live" as const,
       };
       tickerCache.set(raw, { profile, fetchedAt: Date.now() });
