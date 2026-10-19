@@ -1933,7 +1933,7 @@ function opportunityToTopItem(opp: TradeOpportunity, pressure: FaultlinePressure
     name: opp.name,
     sector: opp.sector,
     assetType: opp.assetType,
-    favorabilityScore: opp.compositeScore!,
+    favorabilityScore: opp.compositeScore,
     riskRating,
     timeframeAlignment,
     rationale: opp.whyNow,
@@ -2039,9 +2039,7 @@ function computeHotSectorPicks(
     // Map tickers to their opportunities, filter to LONG/WATCH, sort by compositeScore desc
     const sectorOpps: HotSectorTicker[] = tickers
       .map(t => oppByTicker.get(t))
-      .filter((o): o is TradeOpportunity & { momentumScore: number; compositeScore: number } =>
-        !!o && (o.direction === "LONG" || o.direction === "WATCH")
-        && typeof o.momentumScore === "number" && typeof o.compositeScore === "number")
+      .filter((o): o is TradeOpportunity => !!o && (o.direction === "LONG" || o.direction === "WATCH"))
       .sort((a, b) => b.compositeScore - a.compositeScore)
       .slice(0, 4)
       .map(o => ({
@@ -2213,20 +2211,20 @@ async function computeRecommendedMoves(
     // Top stocks: LONG direction (or SHORT if reducing), sorted by composite score, top 5
     const stockDirection = isReduceMove ? "SHORT" : "LONG";
     const topStockOpps = allOpps
-      .filter(o => o.assetType === "stock" && (o.direction === stockDirection || o.direction === "LONG") && typeof o.compositeScore === "number")
+      .filter(o => o.assetType === "stock" && (o.direction === stockDirection || o.direction === "LONG"))
       .slice(0, isCryptoExposure ? 3 : 5);
 
     // Top crypto: LONG direction (or SHORT if reducing), sorted by composite score, top 5
     const cryptoDirection = isReduceMove ? "SHORT" : "LONG";
     const topCryptoOpps = allOpps
-      .filter(o => o.assetType === "crypto" && (o.direction === cryptoDirection || o.direction === "LONG") && typeof o.compositeScore === "number")
+      .filter(o => o.assetType === "crypto" && (o.direction === cryptoDirection || o.direction === "LONG"))
       .slice(0, isCryptoExposure ? 5 : 3);
 
     // Better alternatives: if user's move has low favorability and a specific ticker,
     // show top alternatives excluding their ticker
     const betterAlternativeOpps = favorability < 50 && ticker
       ? allOpps
-          .filter(o => o.ticker.toUpperCase() !== ticker.toUpperCase() && o.direction === "LONG" && typeof o.compositeScore === "number")
+          .filter(o => o.ticker.toUpperCase() !== ticker.toUpperCase() && o.direction === "LONG")
           .slice(0, 3)
       : [];
 
@@ -2475,7 +2473,6 @@ function computeRecommendedVehicles(
       const upside = targetOne - basePrice;
       const downside = basePrice - stopLoss;
       const riskRewardRatio = downside > 0 ? Math.round((upside / downside) * 10) / 10 : 2.0;
-      if (opp.compositeScore == null) return null;
       const conviction = Math.round(opp.compositeScore * 0.7 + (100 - p) * 0.3);
 
       return {

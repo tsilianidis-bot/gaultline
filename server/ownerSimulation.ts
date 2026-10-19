@@ -73,10 +73,10 @@ export interface TradeOpportunity {
   suggestedPositionSizeUsd: number;   // in dollars
   riskAmountUsd: number;              // max loss if stop hit
   // Scoring
-  faultlineConfidence: number | null;
-  compositeScore: number | null;
-  momentumScore: number | null;
-  macroFit: number | null;
+  faultlineConfidence: number;
+  compositeScore: number;
+  momentumScore: number;
+  macroFit: number;
   // Objective fit
   objectiveFit: boolean;
   objectiveFitReason: string;
@@ -465,13 +465,14 @@ export async function buildStockOpportunity(
     const regime = { label: pressure.regime, score: pressure.overallPressure / 10 };
     const signal = computeTradingSignal(signalInput, regime);
     const domains = extractDomainScores(pressure);
-    const confidence = typeof signal.confidence === "number" ? signal.confidence : null;
+    const confidence = signal.confidence;
     const momentumScore = signal.technicals.momentumScore;
-    const indicatorsScored = confidence != null && momentumScore != null;
+    // Missing RSI must not become momentum 0 or a ranked composite.
+    if (confidence == null || momentumScore == null) return null;
 
     // Determine direction
     let direction: OpportunityDirection = "WATCH";
-    if (signal.action === "BUY" && confidence != null && confidence >= 50) direction = "LONG";
+    if (signal.action === "BUY" && confidence >= 50) direction = "LONG";
     else if (signal.action === "SELL") direction = "AVOID";
     else if (pressure.overallPressure >= 70) direction = "DEFENSIVE";
 
@@ -490,14 +491,13 @@ export async function buildStockOpportunity(
     // Sizing
     const sizing = calcPositionSize(accountValue, price, stopLoss, objective, pressure);
 
-    // Composite score is withheld when RSI or confidence was not computed.
-    const macroFit = indicatorsScored ? Math.max(0, 100 - pressure.overallPressure + confidence / 2) : null;
-    const compositeScore = indicatorsScored && macroFit != null ? Math.round(
+    const macroFit = Math.max(0, 100 - pressure.overallPressure + confidence / 2);
+    const compositeScore = Math.round(
       (confidence * 0.35) +
       (macroFit * 0.25) +
       (Math.min(rrRatio * 15, 30) * 0.20) +
       ((direction === "LONG" ? 80 : direction === "WATCH" ? 50 : 20) * 0.20)
-    ) : null;
+    );
 
     // Objective fit
     const objFit = scoreObjectiveFit(objective, ticker, "stock", signal, pressure);
@@ -540,7 +540,7 @@ export async function buildStockOpportunity(
       faultlineConfidence: confidence,
       compositeScore,
       momentumScore,
-      macroFit: macroFit == null ? null : Math.round(macroFit),
+      macroFit: Math.round(macroFit),
       objectiveFit: objFit.fits,
       objectiveFitReason: objFit.reason,
       whyNow: rationale.whyNow,
@@ -625,13 +625,13 @@ export async function buildCryptoOpportunity(
     const cryptoSignal = computeCryptoSignal(cryptoSignalInput);
     const priceLevels = cryptoSignal.priceLevels;
     const domains = extractDomainScores(pressure);
-    const confidence = typeof cryptoSignal.confidence === "number" ? cryptoSignal.confidence : null;
+    const confidence = cryptoSignal.confidence;
     const momentumScore = cryptoSignal.technicals.momentumScore;
-    const indicatorsScored = confidence != null && momentumScore != null;
+    if (confidence == null || momentumScore == null) return null;
 
     // Determine direction from crypto signal
     let direction: OpportunityDirection = "WATCH";
-    if (cryptoSignal.action === "BUY" && confidence != null && confidence >= 50) direction = "LONG";
+    if (cryptoSignal.action === "BUY" && confidence >= 50) direction = "LONG";
     else if (cryptoSignal.action === "SELL") direction = "AVOID";
     else if (pressure.overallPressure >= 70) direction = "DEFENSIVE";
 
@@ -654,13 +654,13 @@ export async function buildCryptoOpportunity(
     const rrRatio = downside > 0 ? Math.round((upside / downside) * 10) / 10 : 2.0;
 
     const sizing = calcPositionSize(accountValue, price, stopLoss, objective, pressure);
-    const macroFit = indicatorsScored ? Math.max(0, 100 - pressure.overallPressure + confidence / 2) : null;
-    const compositeScore = indicatorsScored && macroFit != null ? Math.round(
+    const macroFit = Math.max(0, 100 - pressure.overallPressure + confidence / 2);
+    const compositeScore = Math.round(
       (confidence * 0.35) +
       (macroFit * 0.25) +
       (Math.min(rrRatio * 15, 30) * 0.20) +
       ((direction === "LONG" ? 80 : direction === "WATCH" ? 50 : 20) * 0.20)
-    ) : null;
+    );
 
     // Build a signal-compatible object for objective scoring and rationale
     const signalForObjFit = {
@@ -717,7 +717,7 @@ export async function buildCryptoOpportunity(
       faultlineConfidence: confidence,
       compositeScore,
       momentumScore,
-      macroFit: macroFit == null ? null : Math.round(macroFit),
+      macroFit: Math.round(macroFit),
       objectiveFit: objFit.fits,
       objectiveFitReason: objFit.reason,
       whyNow: rationale.whyNow,

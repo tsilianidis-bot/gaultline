@@ -19,7 +19,18 @@ const ticker = (o: Partial<TradingSignalsInput> = {}): TradingSignalsInput => ({
 
 describe("signal confidence response boundary", () => {
   it("engine still computes a number internally; the boundary sends null and keeps every other field", () => {
-    const raw = computeTradingSignal(ticker(), REGIME);
+    const dailyBars = Array.from({ length: 20 }, (_, index) => ({
+      timestamp: 1_700_000_000_000 + index * 86_400_000,
+      open: 100 + index,
+      high: 102 + index,
+      low: 99 + index,
+      close: 101 + index,
+      volume: 1_000_000,
+    }));
+    const withheld = computeTradingSignal(ticker(), REGIME);
+    expect(withheld.confidence).toBeNull();
+    expect(withheld.technicals.momentumScore).toBeNull();
+    const raw = computeTradingSignal(ticker({ dailyBars }), REGIME);
     expect(typeof raw.confidence).toBe("number");
     const out = withholdSignalConfidence(raw);
     expect(out.confidence).toBeNull();

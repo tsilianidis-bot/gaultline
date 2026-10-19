@@ -309,16 +309,16 @@ describe("Part 4 — Precise signal language", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("Part 11 — Data consistency", () => {
-  it("stock signal confidence is between 0 and 100", () => {
+  it("stock signal confidence is null without completed bars", () => {
     const result = computeTradingSignal(makeStockInput(), neutralRegime);
-    expect(result.confidence).toBeGreaterThanOrEqual(0);
-    expect(result.confidence).toBeLessThanOrEqual(100);
+    expect(result.confidence).toBeNull();
+    expect(result.technicals.momentumScore).toBeNull();
   });
 
-  it("crypto signal confidence is between 0 and 100", () => {
+  it("crypto signal confidence is null without completed bars", () => {
     const result = computeCryptoSignal(makeCryptoInput());
-    expect(result.confidence).toBeGreaterThanOrEqual(0);
-    expect(result.confidence).toBeLessThanOrEqual(100);
+    expect(result.confidence).toBeNull();
+    expect(result.technicals.momentumScore).toBeNull();
   });
 
   it("stock signal has required fields: ticker, action, confidence, assetClass, actionLabel", () => {
