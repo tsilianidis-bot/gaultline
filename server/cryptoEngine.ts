@@ -83,12 +83,12 @@ export interface CryptoSystemicRisk {
   score:              number;   // 0–10
   level:              CryptoRiskLevel;
   btcDominance:       number | null;
-  stablecoinLiquidity: "Expanding" | "Stable" | "Tightening" | "Contracting";
+  stablecoinLiquidity: "Expanding" | "Stable" | "Tightening" | "Contracting" | "Unavailable";
   volatilityRegime:   "Low" | "Normal" | "Elevated" | "Extreme";
   leverageConditions: "Low" | "Normal" | "Elevated" | "Extreme";
   marketBreadth:      "Strong" | "Moderate" | "Weak" | "Deteriorating";
   macroLiquidity:     "Expanding" | "Neutral" | "Tightening" | "Contracting";
-  speculativeIntensity: "Low" | "Moderate" | "High" | "Extreme";
+  speculativeIntensity: "Low" | "Moderate" | "High" | "Extreme" | "Unavailable";
   breakdown:          CryptoSignalVector[];
   regime:             string;
   regimeColor:        string;
@@ -170,10 +170,14 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
     : lerp(btcDom, 40, 55, 1, 3);
   const dominanceWeight = btcDomScore == null ? 0 : 0.15;
 
-  // 2. Market cap change 24h — large negative = systemic stress
-  const mcChange = globalS?.marketCapChangePercent24h ?? 0;
-  const mcScore = mcChange < -8 ? 9 : mcChange < -5 ? 7 : mcChange < -3 ? 5 :
-                  mcChange < -1 ? 3 : mcChange > 3 ? 1 : 2;
+  // 2. Market cap change 24h — large negative = systemic stress.
+  //    A missing change is withheld. An observed 0 stays on the prior score path.
+  const mcChange = typeof globalS?.marketCapChangePercent24h === "number" && Number.isFinite(globalS.marketCapChangePercent24h)
+    ? globalS.marketCapChangePercent24h
+    : null;
+  const mcScore = mcChange == null ? null
+    : mcChange < -8 ? 9 : mcChange < -5 ? 7 : mcChange < -3 ? 5 :
+      mcChange < -1 ? 3 : mcChange > 3 ? 1 : 2;
 
   // 3. Volatility — average 24h range of top 20
   const avgVol24h = top20.length > 0
@@ -190,28 +194,52 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
   const breadthScore = downCount > 15 ? 9 : downCount > 10 ? 7 : downCount > 6 ? 5 :
                        downCount > 3  ? 3 : 1;
 
-  // 6. Stablecoin liquidity proxy — volume / market cap ratio of top stables
-  // Higher ratio = more active trading = potential stress
-  const stableVolumeRatio = globalS
-    ? (globalS.totalVolume24h / Math.max(globalS.totalMarketCap, 1)) * 100
-    : 5;
-  const stableScore = stableVolumeRatio > 15 ? 8 : stableVolumeRatio > 10 ? 6 :
-                      stableVolumeRatio > 6  ? 4 : 2;
+  // 6. Stablecoin liquidity proxy — volume / market cap ratio of top stables.
+  // Higher ratio = more active trading = potential stress.
+  // A missing total market cap or 24h volume is withheld instead of scored as 0 or 5.
+  const totalMarketCap = typeof globalS?.totalMarketCap === "number" && Number.isFinite(globalS.totalMarketCap)
+    ? globalS.totalMarketCap
+    : null;
+  const totalVolume24h = typeof globalS?.totalVolume24h === "number" && Number.isFinite(globalS.totalVolume24h)
+    ? globalS.totalVolume24h
+    : null;
+  const stableVolumeRatio = totalMarketCap == null || totalVolume24h == null
+    ? null
+    : (totalVolume24h / Math.max(totalMarketCap, 1)) * 100;
+  const stableScore = stableVolumeRatio == null ? null
+    : stableVolumeRatio > 15 ? 8 : stableVolumeRatio > 10 ? 6 :
+      stableVolumeRatio > 6  ? 4 : 2;
 
-  // Weighted composite. When dominance is missing its 0.15 weight is removed
-  // from both sides, so the remaining observations keep the same relative weights.
-  const composite = (
-    (btcDomScore ?? 0) * dominanceWeight +
-    mcScore      * 0.25 +
-    volScore     * 0.20 +
-    macroScore   * 0.20 +
-    breadthScore * 0.15 +
-    stableScore  * 0.05
-  ) / (dominanceWeight + 0.85);
+  // Weighted composite. When dominance, market-cap change, or the volume ratio
+  // is missing, that weight is removed from both sides. Present inputs keep the
+  // prior formula, including the dominanceWeight + 0.85 divisor.
+  const composite = mcScore != null && stableScore != null
+    ? (
+      (btcDomScore ?? 0) * dominanceWeight +
+      mcScore      * 0.25 +
+      volScore     * 0.20 +
+      macroScore   * 0.20 +
+      breadthScore * 0.15 +
+      stableScore  * 0.05
+    ) / (dominanceWeight + 0.85)
+    : (
+      (btcDomScore ?? 0) * dominanceWeight +
+      (mcScore ?? 0) * (mcScore == null ? 0 : 0.25) +
+      volScore     * 0.20 +
+      macroScore   * 0.20 +
+      breadthScore * 0.15 +
+      (stableScore ?? 0) * (stableScore == null ? 0 : 0.05)
+    ) / (
+      dominanceWeight +
+      (mcScore == null ? 0 : 0.25) +
+      0.55 +
+      (stableScore == null ? 0 : 0.05)
+    );
   const finalScore = clamp(composite, 0, 10);
 
   // Qualitative labels
   const stablecoinLiquidity: CryptoSystemicRisk["stablecoinLiquidity"] =
+    stableVolumeRatio == null ? "Unavailable" :
     stableVolumeRatio > 12 ? "Contracting" :
     stableVolumeRatio > 8  ? "Tightening"  :
     stableVolumeRatio > 4  ? "Stable"      : "Expanding";
@@ -233,6 +261,7 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
     macroScore > 3 ? "Neutral"     : "Expanding";
 
   const speculativeIntensity: CryptoSystemicRisk["speculativeIntensity"] =
+    stableVolumeRatio == null ? "Unavailable" :
     stableVolumeRatio > 12 ? "Extreme" : stableVolumeRatio > 8 ? "High" :
     stableVolumeRatio > 5  ? "Moderate" : "Low";
 
@@ -267,11 +296,11 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
     speculativeIntensity,
     breakdown: [
       ...(btcDom == null || btcDomScore == null ? [] : [{ label: "BTC Dominance", score: btcDomScore * 10, direction: btcDomScore > 5 ? "negative" as const : "positive" as const, description: `BTC dominance at ${btcDom.toFixed(1)}%` }]),
-      { label: "Market Cap Momentum", score: mcScore      * 10, direction: mcScore      > 5 ? "negative" : "positive", description: `24h market cap change: ${mcChange.toFixed(1)}%` },
+      ...(mcChange == null || mcScore == null ? [] : [{ label: "Market Cap Momentum", score: mcScore * 10, direction: mcScore > 5 ? "negative" as const : "positive" as const, description: `24h market cap change: ${mcChange.toFixed(1)}%` }]),
       { label: "Volatility",          score: volScore     * 10, direction: volScore     > 5 ? "negative" : "positive", description: `Avg 24h range: ${avgVol24h.toFixed(1)}%` },
       { label: "Macro Pressure",      score: macroScore   * 10, direction: macroScore   > 5 ? "negative" : "positive", description: `FAULTLINE macro score: ${(macroScore * 10).toFixed(0)}` },
       { label: "Market Breadth",      score: breadthScore * 10, direction: breadthScore > 5 ? "negative" : "positive", description: `${downCount}/20 top assets down >5%` },
-      { label: "Stablecoin Flow",     score: stableScore  * 10, direction: stableScore  > 5 ? "negative" : "positive", description: `Volume/MCap ratio: ${stableVolumeRatio.toFixed(1)}%` },
+      ...(stableVolumeRatio == null || stableScore == null ? [] : [{ label: "Stablecoin Flow", score: stableScore * 10, direction: stableScore > 5 ? "negative" as const : "positive" as const, description: `Volume/MCap ratio: ${stableVolumeRatio.toFixed(1)}%` }]),
     ],
     regime,
     regimeColor,

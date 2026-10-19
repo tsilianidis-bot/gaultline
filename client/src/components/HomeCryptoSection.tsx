@@ -36,9 +36,9 @@ interface CryptoAssetIntelligence {
 
 interface CryptoSystemicRisk {
   score: number; level: CryptoRiskLevel; btcDominance: number | null;
-  stablecoinLiquidity: "Expanding" | "Stable" | "Tightening" | "Contracting";
+  stablecoinLiquidity: "Expanding" | "Stable" | "Tightening" | "Contracting" | "Unavailable";
   volatilityRegime: "Low" | "Normal" | "Elevated" | "Extreme";
-  speculativeIntensity: "Low" | "Moderate" | "High" | "Extreme";
+  speculativeIntensity: "Low" | "Moderate" | "High" | "Extreme" | "Unavailable";
   regime: string; regimeColor: string; summary: string;
 }
 

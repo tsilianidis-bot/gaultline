@@ -106,19 +106,22 @@ describe("Signal calculation / methodology untouched", () => {
     }
     const named = execSync(`git diff ${base} -- ${frozenEngines.join(" ")}`, { cwd: root, encoding: "utf8" });
     expect(named.trim()).toBe("");
-    // James authorized one cryptoEngine change: missing BTC dominance is withheld
-    // instead of substituted with 55. The other scoring fallbacks in that file stay.
+    // James authorized cryptoEngine null handling for a missing BTC dominance
+    // (withheld, not 55) and for a missing total market cap, 24h volume, or
+    // 24h market-cap change (withheld from the systemic score, not scored as 0 or 5).
+    // Present inputs keep the prior weighted formula. Other scoring fallbacks stay.
     const cryptoDiff = execSync(`git diff ${base} -- server/cryptoEngine.ts`, { cwd: root, encoding: "utf8" });
     const added = cryptoDiff.split("\n").filter(line => line.startsWith("+") && !line.startsWith("+++"));
     expect(cryptoDiff).toContain("btcDominance ?? 55");
     const addedText = added.join("\n");
     expect(addedText).not.toContain("?? 55");
-    expect(addedText).not.toMatch(/marketCapChangePercent24h \?\?/);
-    expect(addedText).not.toMatch(/stableVolumeRatio =/);
     expect(addedText).not.toMatch(/macroScore =/);
     expect(cryptoDiff).toContain("dominanceWeight");
     const cryptoEngineSource = read("server/cryptoEngine.ts");
     expect(cryptoEngineSource).not.toMatch(/\?\? 55/);
+    expect(cryptoEngineSource).not.toMatch(/marketCapChangePercent24h \?\? 0/);
+    expect(cryptoEngineSource).not.toMatch(/stableVolumeRatio = globalS/);
+    expect(cryptoEngineSource).toContain("totalMarketCap == null || totalVolume24h == null");
     expect(cryptoEngineSource).toContain("btcDominance:       number | null");
     const trading = read("server/tradingSignals.ts");
     const crypto = read("server/cryptoSignals.ts");

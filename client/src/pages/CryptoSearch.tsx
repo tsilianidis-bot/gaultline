@@ -56,7 +56,7 @@ interface CryptoAssetIntelligence {
 
 interface CryptoSystemicRisk {
   score: number; level: CryptoRiskLevel; btcDominance: number | null;
-  stablecoinLiquidity: "Expanding" | "Stable" | "Tightening" | "Contracting";
+  stablecoinLiquidity: "Expanding" | "Stable" | "Tightening" | "Contracting" | "Unavailable";
   volatilityRegime: "Low" | "Normal" | "Elevated" | "Extreme";
   leverageConditions: "Low" | "Normal" | "Elevated" | "Extreme";
   marketBreadth: "Strong" | "Moderate" | "Weak" | "Deteriorating";
@@ -108,6 +108,16 @@ function fmt(n: number, decimals = 2): string {
 
 function fmtPct(n: number): string {
   return `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
+}
+
+function fmtObserved(n: number | null | undefined, decimals = 2): string {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "Unavailable";
+  return fmt(n, decimals);
+}
+
+function fmtPctObserved(n: number | null | undefined): string {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "Unavailable";
+  return fmtPct(n);
 }
 
 function fmtSupply(n: number, symbol: string): string {
@@ -588,7 +598,7 @@ function CryptoSearchInner() {
       fetch("/api/crypto/global", { signal: AbortSignal.timeout(8000) })
         .then(res => (res.ok ? res.json() : null))
         .then(payload => {
-          if (!cancelled && payload && typeof payload.totalMarketCap === "number") setRestGlobal(payload);
+          if (!cancelled && payload && typeof payload === "object" && typeof payload.fetchedAt === "number") setRestGlobal(payload);
         })
         .catch(() => {
           if (!cancelled) setRestGlobal(null);
@@ -662,10 +672,10 @@ function CryptoSearchInner() {
           {resolvedGlobal && (
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginBottom: "16px" }}>
               {[
-                { label: "Total Market Cap",  value: fmt(resolvedGlobal.totalMarketCap),                                                    color: resolvedGlobal.marketCapChangePercent24h >= 0 ? "#00FF88" : "#FF2D55" },
-                { label: "24h Volume",        value: fmt(resolvedGlobal.totalVolume24h),                                                     color: "#00D4FF" },
+                { label: "Total Market Cap",  value: fmtObserved(resolvedGlobal.totalMarketCap),                                                    color: typeof resolvedGlobal.marketCapChangePercent24h === "number" && resolvedGlobal.marketCapChangePercent24h < 0 ? "#FF2D55" : typeof resolvedGlobal.marketCapChangePercent24h === "number" ? "#00FF88" : "#94A3B8" },
+                { label: "24h Volume",        value: fmtObserved(resolvedGlobal.totalVolume24h),                                                     color: "#00D4FF" },
                 { label: "BTC Dominance",     value: formatObservedFixed(resolvedGlobal.btcDominance, 1, "%"),                                           color: typeof resolvedGlobal.btcDominance === "number" && resolvedGlobal.btcDominance > 60 ? "#FF9500" : typeof resolvedGlobal.btcDominance === "number" ? "#00D4FF" : "#94A3B8" },
-                { label: "Market Cap Δ 24h",  value: fmtPct(resolvedGlobal.marketCapChangePercent24h),                                       color: resolvedGlobal.marketCapChangePercent24h >= 0 ? "#00FF88" : "#FF2D55" },
+                { label: "Market Cap Δ 24h",  value: fmtPctObserved(resolvedGlobal.marketCapChangePercent24h),                                       color: typeof resolvedGlobal.marketCapChangePercent24h === "number" && resolvedGlobal.marketCapChangePercent24h < 0 ? "#FF2D55" : typeof resolvedGlobal.marketCapChangePercent24h === "number" ? "#00FF88" : "#94A3B8" },
               ].map(({ label, value, color }) => (
                 <div key={label} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#374151", letterSpacing: "0.1em" }}>{label.toUpperCase()}</span>

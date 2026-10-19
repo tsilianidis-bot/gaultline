@@ -7,6 +7,7 @@
 
 import { useState, useMemo, useCallback, useRef } from "react";
 import { score100Value } from "@/lib/displayFallbacks";
+import { formatObservedFixed } from "@/lib/nullableFormat";
 import { trpc } from "@/lib/trpc";
 import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
 import { evidenceStatusLabel } from "../../../shared/evidenceStatus";
@@ -84,8 +85,8 @@ interface ScreenerResponse {
   signals: CryptoSignalResult[];
   regime: { label: string; score: number };
   btcDominance: number | null;
-  totalMarketCap: number;
-  marketCapChange24h: number;
+  totalMarketCap: number | null;
+  marketCapChange24h: number | null;
   marketObservedAtMs?: number | null;
   computedAt: number;
 }
@@ -1007,9 +1008,11 @@ function CryptoSignalsInner() {
           {screenerData && (
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <span style={{ fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>TOTAL MCAP:</span>
-              <span style={{ fontSize: "9px", color: "#94A3B8" }}>{fmtCap(screenerData.totalMarketCap)}</span>
-              <span style={{ fontSize: "9px", color: screenerData.marketCapChange24h >= 0 ? "#00D4FF" : "#FF2D55" }}>
-                {screenerData.marketCapChange24h >= 0 ? "+" : ""}{screenerData.marketCapChange24h.toFixed(2)}%
+              <span style={{ fontSize: "9px", color: "#94A3B8" }}>{typeof screenerData.totalMarketCap === "number" ? fmtCap(screenerData.totalMarketCap) : "Unavailable"}</span>
+              <span style={{ fontSize: "9px", color: typeof screenerData.marketCapChange24h === "number" && screenerData.marketCapChange24h < 0 ? "#FF2D55" : "#00D4FF" }}>
+                {typeof screenerData.marketCapChange24h === "number"
+                  ? `${screenerData.marketCapChange24h >= 0 ? "+" : ""}${formatObservedFixed(screenerData.marketCapChange24h, 2, "%")}`
+                  : formatObservedFixed(screenerData.marketCapChange24h, 2, "%")}
               </span>
             </div>
           )}

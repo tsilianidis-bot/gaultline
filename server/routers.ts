@@ -915,8 +915,8 @@ export const appRouter = router({
             signals: withholdScreenerConfidence(results),
             regime,
             btcDominance,
-            totalMarketCap: globalStats?.totalMarketCap ?? 0,
-            marketCapChange24h: globalStats?.marketCapChangePercent24h ?? 0,
+            totalMarketCap: globalStats?.totalMarketCap ?? null,
+            marketCapChange24h: globalStats?.marketCapChangePercent24h ?? null,
             marketObservedAtMs: globalStats?.observedAt ?? null,
             computedAt: Date.now(),
           };

@@ -85,11 +85,11 @@ export interface CoinMarketData {
 }
 
 export interface GlobalStats {
-  totalMarketCap: number;
-  totalVolume24h: number;
+  totalMarketCap: number | null;
+  totalVolume24h: number | null;
   btcDominance: number | null;
   ethDominance: number;
-  marketCapChangePercent24h: number;
+  marketCapChangePercent24h: number | null;
   activeCryptocurrencies: number;
   markets: number;
   /** CoinGecko `data.updated_at`, in Unix milliseconds; null when absent or invalid. */
@@ -498,14 +498,16 @@ export async function getGlobalStats(): Promise<GlobalStats | null> {
     const updatedAtSeconds = typeof d.updated_at === "number" && Number.isFinite(d.updated_at) && d.updated_at > 0
       ? d.updated_at
       : null;
+    const finite = (value: unknown): number | null =>
+      typeof value === "number" && Number.isFinite(value) ? value : null;
     const stats: GlobalStats = {
-      totalMarketCap:            d.total_market_cap?.usd ?? 0,
-      totalVolume24h:            d.total_volume?.usd ?? 0,
+      totalMarketCap:            finite(d.total_market_cap?.usd),
+      totalVolume24h:            finite(d.total_volume?.usd),
       btcDominance:              typeof d.market_cap_percentage?.btc === "number" && Number.isFinite(d.market_cap_percentage.btc)
         ? d.market_cap_percentage.btc
         : null,
       ethDominance:              d.market_cap_percentage?.eth ?? 0,
-      marketCapChangePercent24h: d.market_cap_change_percentage_24h_usd ?? 0,
+      marketCapChangePercent24h: finite(d.market_cap_change_percentage_24h_usd),
       activeCryptocurrencies:    d.active_cryptocurrencies ?? 0,
       markets:                   d.markets ?? 0,
       observedAt:                updatedAtSeconds === null ? null : updatedAtSeconds * 1000,
