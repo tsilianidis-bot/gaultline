@@ -28,6 +28,7 @@ import { getUnifiedSeismographIntelligence } from "../seismographUnified";
 import { overlayAssembledSeismographOutput, overlayUnifiedSeismographIntelligence } from "../probabilityContract";
 import type { CanonicalProbabilityContract } from "../../shared/probabilityContract";
 import { applySeismographDisplayContext, type CanonicalDataQualityInput } from "../seismographDisplayContext";
+import { isHiddenSessionMemoryKey } from "../scheduledSessionClaim";
 
 /**
  * The stateId-bound probability contract from the authoritative canonical
@@ -147,7 +148,12 @@ export const seismographRouter = router({
       .select()
       .from(marketMemory)
       // Sector Rotation snapshots (append-only, served by sectorRotation.current) are not Market Memory entries.
-      .where(and(notLike(marketMemory.memoryKey, "sector-rotation:%"), notLike(marketMemory.memoryKey, "sector-rotation-claim:%")))
+      .where(and(
+        notLike(marketMemory.memoryKey, "sector-rotation:%"),
+        notLike(marketMemory.memoryKey, "sector-rotation-claim:%"),
+        notLike(marketMemory.memoryKey, "seismograph-scheduled-session:%"),
+        notLike(marketMemory.memoryKey, "seismograph-scheduled-outcome:%"),
+      ))
       .orderBy(desc(marketMemory.updatedAt));
   }),
 
@@ -157,6 +163,7 @@ export const seismographRouter = router({
   getMemoryKey: publicProcedure
     .input(z.object({ key: z.string() }))
     .query(async ({ input }) => {
+      if (isHiddenSessionMemoryKey(input.key)) return null;
       return memoryGet(input.key);
     }),
 

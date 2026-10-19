@@ -96,20 +96,29 @@ describe("false LIVE remediation", () => {
 
 describe("Smart Discovery freshness label", () => {
   it("uses verified, delayed, or unavailable evidence and never a fixed live sentence", () => {
-    expect(evidenceFreshnessLabel({ quoteFreshness: ["LIVE", "LIVE"] })).toBe("Verified source");
-    expect(evidenceFreshnessLabel({ quoteFreshness: ["LIVE", "DELAYED"] })).toBe("Delayed");
+    expect(evidenceFreshnessLabel({ quoteFreshness: ["LIVE", "LIVE"] })).toBe("Unavailable");
+    expect(evidenceFreshnessLabel({ quoteFreshness: ["LIVE", "DELAYED"] })).toBe("Unavailable");
     expect(evidenceFreshnessLabel({ quoteFreshness: [] })).toBe("Unavailable");
+    expect(evidenceFreshnessLabel({
+      canonicalQuality: "HEALTHY",
+      fredStatus: "live",
+      observedAtMs: fresh,
+      nowMs: now,
+      quotes: [{ observedAtMs: fresh, sourceStatus: "live" }],
+    })).toBe("Verified source");
     expect(evidenceFreshnessLabel({
       canonicalQuality: "DEGRADED",
       fredStatus: "fallback",
       observedAtMs: fresh,
       nowMs: now,
+      quotes: [{ observedAtMs: fresh, sourceStatus: "live" }],
     })).toBe("Delayed");
     expect(evidenceFreshnessLabel({
       canonicalQuality: null,
       fredStatus: "live",
       observedAtMs: fresh,
       nowMs: now,
+      quotes: [{ observedAtMs: fresh, sourceStatus: "live" }],
     })).toBe("Delayed");
     const server = readFileSync(path.resolve("server/routers/smartDiscovery.ts"), "utf8");
     const client = readFileSync(path.resolve("client/src/pages/SmartDiscovery.tsx"), "utf8");
