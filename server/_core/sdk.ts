@@ -363,7 +363,11 @@ export class SDKServer {
       lastSignedIn: signedInAt,
     });
 
-    return user;
+    // Issue #111: temporary VIP guest access is resolved at request time from
+    // its separate entitlement. This keeps all existing tier gates truthful
+    // without persisting a promotional tier onto the user's billing record.
+    const effectiveTier = await db.getUserTier(user.id);
+    return { ...user, accessTier: effectiveTier };
   }
 }
 

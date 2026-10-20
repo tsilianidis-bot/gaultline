@@ -4,6 +4,20 @@ import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { isOAuthConfigured, OAuthInactiveError, sdk } from "./sdk";
+import { getActiveVipInvitationClaim } from "../vipInvitations";
+
+/** Closed registration may be bypassed only by a current server-validated VIP
+ * claim and an email supplied by the existing identity provider. */
+export function canRegisterWithVipInvitation(
+  invitationClaim: { invitationId: number } | null,
+  providerEmail: string | null | undefined
+): boolean {
+  return Boolean(
+    invitationClaim &&
+      typeof providerEmail === "string" &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(providerEmail.trim())
+  );
+}
 
 export const OAUTH_CALLBACK_ERROR_CODES = [
   "token_exchange_failed",
@@ -13,10 +27,12 @@ export const OAUTH_CALLBACK_ERROR_CODES = [
   "callback_failed",
 ] as const;
 
-export type OAuthCallbackErrorCode = (typeof OAUTH_CALLBACK_ERROR_CODES)[number];
+export type OAuthCallbackErrorCode =
+  (typeof OAUTH_CALLBACK_ERROR_CODES)[number];
 
 const SAFE_OAUTH_CALLBACK_MESSAGES: Record<OAuthCallbackErrorCode, string> = {
-  token_exchange_failed: "Authorization code could not be exchanged for a token.",
+  token_exchange_failed:
+    "Authorization code could not be exchanged for a token.",
   userinfo_failed: "User info could not be loaded after token exchange.",
   db_failed: "Signed-in user could not be saved.",
   session_failed: "Session could not be created.",
@@ -48,7 +64,9 @@ export function publicOAuthCallbackFailure(errorCode: OAuthCallbackErrorCode): {
   };
 }
 
-export function resolveOAuthCallbackErrorCode(error: unknown): OAuthCallbackErrorCode {
+export function resolveOAuthCallbackErrorCode(
+  error: unknown
+): OAuthCallbackErrorCode {
   if (error instanceof OAuthCallbackStepError) {
     return error.errorCode;
   }
@@ -57,7 +75,7 @@ export function resolveOAuthCallbackErrorCode(error: unknown): OAuthCallbackErro
 
 async function runOAuthStep<T>(
   errorCode: OAuthCallbackErrorCode,
-  fn: () => Promise<T>,
+  fn: () => Promise<T>
 ): Promise<T> {
   try {
     return await fn();
@@ -68,7 +86,9 @@ async function runOAuthStep<T>(
 
 /** Browser-facing callback failure: a static page with a way back to sign-in (no raw JSON dead end).
  * Clears the post-auth flag so "Sign in again" at /app shows the sign-in gate rather than guest mode. */
-export function renderOAuthCallbackFailurePage(errorCode: OAuthCallbackErrorCode): string {
+export function renderOAuthCallbackFailurePage(
+  errorCode: OAuthCallbackErrorCode
+): string {
   const message = SAFE_OAUTH_CALLBACK_MESSAGES[errorCode];
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -84,7 +104,11 @@ export function renderOAuthCallbackFailurePage(errorCode: OAuthCallbackErrorCode
 </body></html>`;
 }
 
-function respondOAuthCallbackFailure(req: Request, res: Response, error: unknown): void {
+function respondOAuthCallbackFailure(
+  req: Request,
+  res: Response,
+  error: unknown
+): void {
   const errorCode = resolveOAuthCallbackErrorCode(error);
   console.error(`[OAuth] Callback failed (${errorCode})`, error);
   res.status(500).set("Cache-Control", "no-store");
@@ -112,16 +136,23 @@ export function registerOAuthRoutes(app: Express) {
     }
 
     if (!isOAuthConfigured()) {
-      respondOAuthCallbackFailure(req, res, new OAuthCallbackStepError("token_exchange_failed", new OAuthInactiveError()));
+      respondOAuthCallbackFailure(
+        req,
+        res,
+        new OAuthCallbackStepError(
+          "token_exchange_failed",
+          new OAuthInactiveError()
+        )
+      );
       return;
     }
 
     try {
       const tokenResponse = await runOAuthStep("token_exchange_failed", () =>
-        sdk.exchangeCodeForToken(code, state),
+        sdk.exchangeCodeForToken(code, state)
       );
       const userInfo = await runOAuthStep("userinfo_failed", () =>
-        sdk.getUserInfo(tokenResponse.accessToken),
+        sdk.getUserInfo(tokenResponse.accessToken)
       );
 
       if (!userInfo.openId) {
@@ -129,8 +160,24 @@ export function registerOAuthRoutes(app: Express) {
         return;
       }
 
-      const existingUser = await runOAuthStep("db_failed", () => db.getUserByOpenId(userInfo.openId));
-      if (!existingUser && !OPEN_REGISTRATION) {
+      const existingUser = await runOAuthStep("db_failed", () =>
+        db.getUserByOpenId(userInfo.openId)
+      );
+      // Issue #111: registration remains closed globally. A new account is
+      // allowed only when this browser holds a current, signed, server-validated
+      // private invitation claim and the identity provider supplied an email.
+      const vipInvitationClaim = await runOAuthStep("db_failed", () =>
+        getActiveVipInvitationClaim(req)
+      );
+      const canProvisionVipInviteAccount = canRegisterWithVipInvitation(
+        vipInvitationClaim,
+        userInfo.email
+      );
+      if (
+        !existingUser &&
+        !OPEN_REGISTRATION &&
+        !canProvisionVipInviteAccount
+      ) {
         res.redirect(302, "/pricing");
         return;
       }
@@ -142,22 +189,26 @@ export function registerOAuthRoutes(app: Express) {
           email: userInfo.email ?? null,
           loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
           lastSignedIn: new Date(),
-        }),
+        })
       );
 
       // Auto-grant founding tier if this email has an approved founding access request
       if (userInfo.email) {
         try {
           const userByEmail = await db.getUserByEmail(userInfo.email);
-          if (userByEmail && userByEmail.accessTier === 'free') {
-            const hasApproval = await db.hasApprovedFoundingRequest(userInfo.email);
+          if (userByEmail && userByEmail.accessTier === "free") {
+            const hasApproval = await db.hasApprovedFoundingRequest(
+              userInfo.email
+            );
             if (hasApproval) {
-              await db.updateUserTier(userByEmail.id, 'founding');
-              console.log(`[OAuth] Auto-granted founding tier to ${userInfo.email}`);
+              await db.updateUserTier(userByEmail.id, "founding");
+              console.log(
+                `[OAuth] Auto-granted founding tier to ${userInfo.email}`
+              );
             }
           }
         } catch (e) {
-          console.warn('[OAuth] Could not check founding access request', e);
+          console.warn("[OAuth] Could not check founding access request", e);
         }
       }
 
@@ -165,13 +216,18 @@ export function registerOAuthRoutes(app: Express) {
         sdk.createSessionToken(userInfo.openId, {
           name: userInfo.name || "",
           expiresInMs: ONE_YEAR_MS,
-        }),
+        })
       );
 
       const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      res.cookie(COOKIE_NAME, sessionToken, {
+        ...cookieOptions,
+        maxAge: ONE_YEAR_MS,
+      });
 
-      res.redirect(302, "/app");
+      // Keep the raw invitation token out of OAuth state, referrers, and the
+      // redirect URL. The HttpOnly signed claim is consumed by /invite after login.
+      res.redirect(302, vipInvitationClaim ? "/invite" : "/app");
     } catch (error) {
       respondOAuthCallbackFailure(req, res, error);
     }
