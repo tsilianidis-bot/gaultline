@@ -721,6 +721,41 @@ export async function getPressureHistory(opts: {
   return query;
 }
 
+export function pressureHistoryStatsFromRow(stats: {
+  totalMonths?: unknown;
+  avgPressure?: unknown;
+  maxPressure?: unknown;
+  minPressure?: unknown;
+  criticalMonths?: unknown;
+  highRiskMonths?: unknown;
+  elevatedMonths?: unknown;
+  moderateMonths?: unknown;
+  lowMonths?: unknown;
+} | undefined) {
+  const totalMonths = Number(stats?.totalMonths ?? 0);
+  const metric = (value: unknown, round = false): number | null => {
+    if (!Number.isFinite(totalMonths) || totalMonths <= 0) return null;
+    const n = Number(value);
+    if (!Number.isFinite(n)) return null;
+    return round ? Math.round(n) : n;
+  };
+  const count = (value: unknown) => {
+    const n = Number(value ?? 0);
+    return Number.isFinite(n) ? n : 0;
+  };
+  return {
+    totalMonths: Number.isFinite(totalMonths) ? totalMonths : 0,
+    avgPressure: metric(stats?.avgPressure, true),
+    maxPressure: metric(stats?.maxPressure),
+    minPressure: metric(stats?.minPressure),
+    criticalMonths: count(stats?.criticalMonths),
+    highRiskMonths: count(stats?.highRiskMonths),
+    elevatedMonths: count(stats?.elevatedMonths),
+    moderateMonths: count(stats?.moderateMonths),
+    lowMonths: count(stats?.lowMonths),
+  };
+}
+
 export async function getPressureHistoryStats() {
   const db = await getDb();
   if (!db) return null;
@@ -735,17 +770,7 @@ export async function getPressureHistoryStats() {
     moderateMonths: sql<number>`sum(case when ${pressureHistory.regime} = 'MODERATE RISK' then 1 else 0 end)`,
     lowMonths: sql<number>`sum(case when ${pressureHistory.regime} = 'LOW RISK' then 1 else 0 end)`,
   }).from(pressureHistory);
-  return {
-    totalMonths: Number(stats?.totalMonths ?? 0),
-    avgPressure: Math.round(Number(stats?.avgPressure ?? 0)),
-    maxPressure: Number(stats?.maxPressure ?? 0),
-    minPressure: Number(stats?.minPressure ?? 0),
-    criticalMonths: Number(stats?.criticalMonths ?? 0),
-    highRiskMonths: Number(stats?.highRiskMonths ?? 0),
-    elevatedMonths: Number(stats?.elevatedMonths ?? 0),
-    moderateMonths: Number(stats?.moderateMonths ?? 0),
-    lowMonths: Number(stats?.lowMonths ?? 0),
-  };
+  return pressureHistoryStatsFromRow(stats);
 }
 
 // ── Mobile Watchlist helpers ──────────────────────────────────

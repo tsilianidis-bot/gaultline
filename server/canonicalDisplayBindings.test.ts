@@ -104,7 +104,7 @@ describe("getAssembledOutput display context (seismographCore context blocks)", 
     expect(fredProvenanceFromDataQuality(delayedQuality, 0).status).toBe("delayed");
     expect(fredProvenanceFromDataQuality(null, 0).status).toBe("unavailable");
     const fresh = dataFreshnessFromDataQuality(delayedQuality);
-    expect(fresh.freshness).toBe("recent");
+    expect(fresh.freshness).toBe("delayed");
     expect(fresh.text).toBe("PARTIAL (5 delayed inputs) · canonical state Oct 2, 2:01 PM ET");
   });
 

@@ -13,6 +13,7 @@
  *   unavailable — an input has no usable value (unavailableInputs).
  */
 import type { CanonicalDirection } from "./canonicalIntelligenceState";
+import { AI_CONCENTRATION_STATIC_BASELINE_INPUT_ID } from "./pressureVectorLabels";
 
 export interface EvidenceSnapshotLike {
   staleInputs?: readonly string[] | null;
@@ -51,7 +52,7 @@ export function snapshotEvidenceCounts(snapshot: EvidenceSnapshotLike | null | u
   };
 }
 
-export type EngineEvidenceStatus = "UNAVAILABLE" | "STALE" | "FALLBACK" | "DELAYED" | "CURRENT";
+export type EngineEvidenceStatus = "UNAVAILABLE" | "STALE" | "FALLBACK" | "DELAYED" | "STATIC" | "CURRENT";
 
 /** Per-engine freshness from the same input lists. Priority: unavailable > stale > fallback > delayed > current. */
 export function engineEvidenceStatus(
@@ -111,7 +112,9 @@ export function canonicalEngineEvidence(
   engine: { sourceInputIds?: readonly string[] | null; freshnessStatus?: string | null },
   state: EvidenceSnapshotLike,
 ): EngineEvidenceStatus | string {
-  const status = engineEvidenceStatus(engine.sourceInputIds ?? [], {
+  const sourceInputIds = engine.sourceInputIds ?? [];
+  if (sourceInputIds.length > 0 && sourceInputIds.every(id => id === AI_CONCENTRATION_STATIC_BASELINE_INPUT_ID)) return "STATIC";
+  const status = engineEvidenceStatus(sourceInputIds, {
     stale: state.staleInputs ?? undefined,
     delayed: state.delayedInputs ?? undefined,
     fallback: state.fallbackInputs ?? undefined,

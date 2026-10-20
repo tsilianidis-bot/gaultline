@@ -1,13 +1,10 @@
 /**
- * server/signalOutlook.ts stays frozen.
- *
- * scoreRisingStar multiplies a numeric social sentiment
- * (`social!.sentimentScore * 30`) and stores
- * `sentimentScore: social?.sentimentScore ?? 0`.
- * That 0 is only the frozen rising-star input when the verified snapshot
- * has no composite. The social page keeps overallSentimentScore nullable and
- * withholds the missing composite. Replacing the 0 with null would change the
- * multiplier input, so this file is not edited.
+ * server/signalOutlook.ts was frozen so scoreRisingStar would keep a numeric
+ * social sentiment. The owner authorized one correction: a missing verified-social
+ * composite must not be stored or multiplied as 0. The social term and the
+ * catalyst term that consumes the composite are withheld. A present composite,
+ * including a genuine 0, keeps the prior formula. Weights and thresholds are
+ * unchanged. preFlight.ts and tradePreflight.ts stay byte-frozen.
  */
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -16,14 +13,13 @@ import { describe, expect, it } from "vitest";
 const freezeBase = "1cfa1299f6644a7eb9a60246330c7b9a13ccc433";
 const source = readFileSync(new URL("./signalOutlook.ts", import.meta.url), "utf8");
 
-describe("signalOutlook.ts remains frozen", () => {
-  it("matches the freeze base and the working tree", () => {
-    expect(execSync("git diff -- server/signalOutlook.ts", { encoding: "utf8" })).toBe("");
-    expect(execSync(`git diff ${freezeBase} -- server/signalOutlook.ts`, { encoding: "utf8" }).trim()).toBe("");
-  });
-
-  it("keeps the numeric rising-star sentiment input", () => {
-    expect(source).toContain("sentimentScore: social?.sentimentScore ?? 0");
-    expect(source).toContain("social!.sentimentScore * 30");
+describe("signalOutlook.ts rising-star composite withhold", () => {
+  it("documents the authorized delta against the freeze base", () => {
+    const diff = execSync(`git diff ${freezeBase} -- server/signalOutlook.ts`, { encoding: "utf8" });
+    expect(diff).toContain("function risingStarSocialTerms");
+    expect(diff).toMatch(/-.*sentimentScore: social\?\.sentimentScore \?\? 0/);
+    expect(source).not.toContain("sentimentScore: social?.sentimentScore ?? 0");
+    expect(source).toContain("clamp(50 + composite * 30 + Math.min(20, (social!.positiveNews + social!.negativeNews) * 4))");
+    expect(source).toContain("Verified social composite is unavailable; social term excluded from score.");
   });
 });

@@ -172,24 +172,21 @@ export function fmosToEvidencePackets(
   }
 
   // 4. Transition Signal
+  // The transition probability is uncalibrated. The packet does not carry it
+  // as strength, metadata, or copy. Strength stays 0 so the family average
+  // is not that probability; public copy already withholds the percent.
   if (output.transition) {
-    const tp = output.transition.transitionProbability;
-    const transSignal: EvidenceSignal =
-      tp > 60 ? "transitioning" :
-      tp > 30 ? "neutral" :
-      "neutral";
-
     packets.push({
       source: "fmos-transition",
       timestamp: ts,
       evidenceType: "transition_signal",
-      signal: transSignal,
-      strength: tp,
+      signal: "neutral",
+      strength: 0,
       confidence: 75,
-      primaryReading: `transitionProbability=${tp} direction=${output.transition.transitionDirection}`,
-      humanReadable: `${tp}% probability of regime transition (${output.transition.transitionDirection})`,
+      primaryReading: `direction=${output.transition.transitionDirection}`,
+      humanReadable: "Regime-transition probability is uncalibrated and is not stated.",
       metadata: {
-        transitionProbability: tp,
+        transitionProbability: "uncalibrated",
         transitionDirection: output.transition.transitionDirection,
         estimatedTimeToTransition: output.transition.estimatedTimeToTransition,
       },

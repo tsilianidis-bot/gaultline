@@ -92,8 +92,10 @@ describe("Signal calculation / methodology untouched", () => {
   // admission withholds BUY/SELL, RSI, and crossover wording when fewer than 15
   // verified closes exist. cryptoSignals.ts no longer scores a 7-day sparkline.
   // Pressure Index formulas are not in this list and stay unchanged.
+  // signalOutlook.ts is no longer byte-frozen: the owner authorized withholding a
+  // missing verified-social composite instead of storing it as 0. That delta is
+  // checked below. preFlight.ts and tradePreflight.ts stay byte-frozen.
   const frozenEngines = [
-    "server/signalOutlook.ts",
     "server/preFlight.ts",
     "server/tradePreflight.ts",
   ];
@@ -106,6 +108,13 @@ describe("Signal calculation / methodology untouched", () => {
     }
     const named = execSync(`git diff ${base} -- ${frozenEngines.join(" ")}`, { cwd: root, encoding: "utf8" });
     expect(named.trim()).toBe("");
+    const outlook = execSync(`git diff ${base} -- server/signalOutlook.ts`, { cwd: root, encoding: "utf8" });
+    expect(outlook).toContain("risingStarSocialTerms");
+    expect(outlook).toMatch(/-.*sentimentScore: social\?\.sentimentScore \?\? 0/);
+    const outlookAdded = outlook.split("\n").filter(line => line.startsWith("+") && !line.startsWith("+++")).join("\n");
+    expect(outlookAdded).toContain("Verified social composite is unavailable");
+    expect(outlookAdded).not.toMatch(/weight:\s*0\./);
+    expect(outlookAdded).not.toMatch(/sentimentScore:.*\?\? 0/);
     // James authorized cryptoEngine null handling for a missing BTC dominance
     // (withheld, not 55), a missing total market cap, 24h volume, or 24h
     // market-cap change, a missing coin price, 24h range, volume, or market

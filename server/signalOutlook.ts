@@ -29,7 +29,7 @@ import { getDailyBars as getYahooDailyBars, getQuote } from "./yahooProxy";
 import { getCoinMarketData, getCoinOHLC } from "./coingeckoProxy";
 import { computeCalculatedLevels, type CalculatedLevels } from "./priceLevels";
 import { getCachedVerifiedSocialSnapshot } from "./socialIntelligence";
-import { scoreRisingStar, type ConfidenceBand, type RisingStarResult } from "./risingStars";
+import { scoreRisingStar, type ConfidenceBand, type RisingStarResult, type SocialDiscoveryInput } from "./risingStars";
 import { fetchDailyBars } from "./signalsProxy";
 import { MAGNIFICENT_SEVEN, classifyListingAge, classifyMarketCap, deriveFaultlineThemes, deriveSector, getPublicCompanyProfile, marketCapLabel, type ListingAgeCategory, type MarketCapCategory } from "./risingStarsDiscovery";
 import { recordRisingStarObservation } from "./risingStarsHistory";
@@ -2315,6 +2315,56 @@ function buildRisingStarTechnical(bars: DailyBar[]) {
   };
 }
 
+/**
+ * Rising-star social and catalyst terms from a verified snapshot.
+ * A missing composite is withheld. A present composite, including a genuine 0,
+ * keeps the prior catalyst formula and the social term.
+ */
+export function risingStarSocialTerms(social: {
+  sourceCount: number;
+  socialVolume: number;
+  newsCount: number;
+  sentimentScore: number | null;
+  positiveNews: number;
+  negativeNews: number;
+  extremeAttentionDetected: boolean;
+  fetchedAt: number;
+} | null): { catalyst: { available: boolean; score?: number; note: string }; social: SocialDiscoveryInput } {
+  const composite = social?.sentimentScore;
+  const compositeKnown = typeof composite === "number" && Number.isFinite(composite);
+  const sourceCount = social?.sourceCount ?? 0;
+  const newsAvailable = (social?.newsCount ?? 0) >= 2;
+  const socialTermAvailable = sourceCount >= 2 && compositeKnown;
+  return {
+    catalyst: newsAvailable && compositeKnown
+      ? {
+          available: true,
+          score: clamp(50 + composite * 30 + Math.min(20, (social!.positiveNews + social!.negativeNews) * 4)),
+          note: `${social!.positiveNews + social!.negativeNews} directionally classified recent public-news items.`,
+        }
+      : {
+          available: false,
+          note: newsAvailable
+            ? "Verified social composite is unavailable; catalyst term excluded from score."
+            : "Insufficient recent public-news coverage; excluded from score.",
+        },
+    social: {
+      available: socialTermAvailable,
+      sourceCount,
+      socialVolume: social?.socialVolume ?? 0,
+      sentimentScore: compositeKnown ? composite : null,
+      positiveNews: social?.positiveNews ?? 0,
+      negativeNews: social?.negativeNews ?? 0,
+      memeHypeDetected: social?.extremeAttentionDetected ?? false,
+      note: socialTermAvailable
+        ? `${social!.sourceCount} social/news sources available; data refreshed ${new Date(social!.fetchedAt).toLocaleTimeString()}.`
+        : sourceCount >= 2
+          ? "Verified social composite is unavailable; social term excluded from score."
+          : "No cached multi-source social snapshot is available; excluded from score.",
+    },
+  };
+}
+
 async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<RisingStarItem[]> {
   const apiKey = process.env.POLYGON_API_KEY;
   if (!apiKey) return [];
@@ -2341,34 +2391,18 @@ async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<Risi
         : null;
 
       const newsAvailable = (social?.newsCount ?? 0) >= 2;
+      const socialTerms = risingStarSocialTerms(social);
       const result = scoreRisingStar({
         ticker: candidate.symbol,
         name: profile.name,
         technical,
-        catalyst: newsAvailable
-          ? {
-              available: true,
-              score: clamp(50 + social!.sentimentScore * 30 + Math.min(20, (social!.positiveNews + social!.negativeNews) * 4)),
-              note: `${social!.positiveNews + social!.negativeNews} directionally classified recent public-news items.`,
-            }
-          : { available: false, note: "Insufficient recent public-news coverage; excluded from score." },
+        catalyst: socialTerms.catalyst,
         macroAlignment: {
           score: clamp(100 - pressure.overallPressure * 0.75),
           note: `Current FAULTLINE pressure is ${pressure.overallPressure}/100 (${pressure.regime}).`,
         },
         sectorTailwind: { available: false, note: "No source-backed sector/theme flow feed is connected; excluded from score." },
-        social: {
-          available: (social?.sourceCount ?? 0) >= 2,
-          sourceCount: social?.sourceCount ?? 0,
-          socialVolume: social?.socialVolume ?? 0,
-          sentimentScore: social?.sentimentScore ?? 0,
-          positiveNews: social?.positiveNews ?? 0,
-          negativeNews: social?.negativeNews ?? 0,
-          memeHypeDetected: social?.extremeAttentionDetected ?? false,
-          note: (social?.sourceCount ?? 0) >= 2
-            ? `${social!.sourceCount} social/news sources available; data refreshed ${new Date(social!.fetchedAt).toLocaleTimeString()}.`
-            : "No cached multi-source social snapshot is available; excluded from score.",
-        },
+        social: socialTerms.social,
         // The current insider module is deterministic synthetic data, so it is deliberately excluded.
         insider: { available: false, note: "Existing Insider Intelligence is not yet backed by live public filings; excluded from score." },
         // No source-backed options-flow engine currently exists in this project.

@@ -8,6 +8,7 @@
  */
 
 import { pressureLevelWord } from "../shared/pressureBands";
+import { AI_CONCENTRATION_STATIC_BASELINE_INPUT_ID } from "../shared/pressureVectorLabels";
 import type { CanonicalIntelligenceState } from "../shared/canonicalIntelligenceState";
 import type { FaultlinePressureOutput, PressureLevel, RiskVector } from "./pressure/engine";
 
@@ -69,6 +70,8 @@ export function projectPressureFromCanonical(
         : engine.direction === "Deteriorating"
           ? "rising"
           : "stable";
+      const staticOnly = (engine.sourceInputIds ?? []).length > 0
+        && engine.sourceInputIds.every(id => id === AI_CONCENTRATION_STATIC_BASELINE_INPUT_ID);
       return {
         id: engine.engineId,
         label: ENGINE_LABELS[engine.engineId] ?? engine.engineName,
@@ -79,16 +82,19 @@ export function projectPressureFromCanonical(
         trend,
         weight: ENGINE_WEIGHTS[engine.engineId] ?? 0,
         rawInputs: {},
-        dataStatus: engine.freshnessStatus === "CURRENT"
-          ? "live"
-          : engine.freshnessStatus === "STALE"
-            ? "stale"
-            : engine.fallbackStatus === "ACTIVE"
-              ? "fallback"
-              : engine.freshnessStatus === "DELAYED"
-                ? "delayed"
-                : "cached",
+        dataStatus: staticOnly || engine.freshnessStatus === "STATIC"
+          ? "static"
+          : engine.freshnessStatus === "CURRENT"
+            ? "live"
+            : engine.freshnessStatus === "STALE"
+              ? "stale"
+              : engine.fallbackStatus === "ACTIVE"
+                ? "fallback"
+                : engine.freshnessStatus === "DELAYED"
+                  ? "delayed"
+                  : "cached",
         source: "canonical-intelligence-state",
+        observedAt: engine.observedAt,
       } satisfies RiskVector;
     });
 

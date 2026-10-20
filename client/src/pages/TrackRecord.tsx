@@ -386,11 +386,11 @@ export default function TrackRecord() {
               <div className="text-sm text-zinc-400 mt-0.5">HIGH RISK + CRITICAL Months</div>
             </div>
             <div className="p-4 rounded-lg border border-zinc-800 bg-zinc-900/40">
-              <div className="text-2xl font-bold text-white">{stats.avgPressure}</div>
+              <div className="text-2xl font-bold text-white">{stats.avgPressure == null ? "Unavailable" : stats.avgPressure}</div>
               <div className="text-sm text-zinc-400 mt-0.5">Average Pressure Score</div>
             </div>
             <div className="p-4 rounded-lg border border-orange-900/50 bg-orange-950/20">
-              <div className="text-2xl font-bold text-orange-400">{stats.maxPressure}</div>
+              <div className="text-2xl font-bold text-orange-400">{stats.maxPressure == null ? "Unavailable" : stats.maxPressure}</div>
               <div className="text-sm text-zinc-400 mt-0.5">Peak Score (Oct–Nov 2008)</div>
             </div>
           </div>

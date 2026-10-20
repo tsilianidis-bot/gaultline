@@ -62,14 +62,14 @@ interface SeismographOutput {
   stressLevel: string;
   direction: "Improving" | "Stable" | "Deteriorating" | "Accelerating";
   probabilities: { bull: number; neutral: number; bear: number; primaryDriver: string; confidence: number };
-  historicalPercentile: number;
+  historicalPercentile: number | null;
   topAnalog: SeismographAnalog | null;
   activePatterns: SeismographPattern[];
   patternsSummary: string;
   transitionProbabilities: SeismographTransitionProbabilities;
   marketMemory: SeismographMarketMemory;
   evidenceConsensus: "strong" | "moderate" | "weak" | "divergent";
-  dataFreshness: "live" | "recent" | "stale";
+  dataFreshness: "live" | "recent" | "delayed" | "stale";
   computedAt: number;
   forDashboard: {
     pressureScore: number;
@@ -82,7 +82,7 @@ interface SeismographOutput {
     transitionProbabilities: SeismographTransitionProbabilities;
     marketMemory: SeismographMarketMemory;
     lastUpdated: number;
-    dataFreshness: "live" | "recent" | "stale";
+    dataFreshness: "live" | "recent" | "delayed" | "stale";
   };
 }
 
@@ -115,7 +115,8 @@ function getStreakLabel(memory: SeismographMarketMemory): string {
   const dir = memory.streakDirection === "rising" ? "rising" : memory.streakDirection === "falling" ? "falling" : "stable";
   return `${memory.streakDays}d ${dir} streak`;
 }
-function getHistoricalPercentileLabel(pct: number): string {
+function getHistoricalPercentileLabel(pct: number | null): string {
+  if (pct == null || !Number.isFinite(pct)) return "historical percentile unavailable";
   if (pct >= 90) return `top ${100 - pct}% most stressed in history`;
   if (pct >= 75) return `more stressed than ${pct}% of historical days`;
   if (pct >= 50) return `above median historical stress`;
@@ -365,7 +366,11 @@ export default function SeismographNarrativeBanner({
         <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.3)", borderRadius: "4px", borderLeft: "2px solid rgba(0,229,255,0.45)" }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(0,212,255,0.7)", letterSpacing: "0.15em", marginBottom: "5px" }}>HOW THIS COMPARES TO HISTORY</div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>
-            This reading is at the <strong style={{ color: "#E2E8F0" }}>{formatOrdinal(output.historicalPercentile)} percentile</strong> — {getHistoricalPercentileLabel(output.historicalPercentile)}.
+            {output.historicalPercentile == null ? (
+              <>Historical percentile is unavailable (insufficient data).</>
+            ) : (
+              <>This reading is at the <strong style={{ color: "#E2E8F0" }}>{formatOrdinal(output.historicalPercentile)} percentile</strong> — {getHistoricalPercentileLabel(output.historicalPercentile)}.</>
+            )}
           </div>
         </div>
 

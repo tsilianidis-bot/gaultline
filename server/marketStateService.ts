@@ -214,6 +214,7 @@ export function deriveMarketStateFreshness(
     || fredStatus === "stale"
   ) return "stale";
   const observationCurrent = snapshotAgeMs <= MARKET_STATE_LIVE_MAX_AGE_MS && fredAgeMs <= MARKET_STATE_LIVE_MAX_AGE_MS;
+  if (fredStatus === "delayed" || source.dataFreshness === "delayed") return "delayed";
   if (
     options.canonicalQuality === "HEALTHY"
     && source.dataFreshness === "live"
@@ -251,7 +252,9 @@ function buildSourceHealth(
         ? "Serving the last known-good Seismograph state while the current refresh is unavailable."
         : freshness === "recent"
           ? "The latest verified Seismograph output is recent, not live; cache refresh time does not change its source observation time."
-          : "Unified Seismograph synthesis is current and available.",
+          : freshness === "delayed"
+            ? "Inputs are delayed (latest published release, within publication lag). This is not a live or recent reading."
+            : "Unified Seismograph synthesis is current and available.",
     },
     {
       id: "historical-memory",
@@ -360,7 +363,9 @@ export function assembleCanonicalMarketState(
       regime: source.currentRegime,
       stressLevel: source.currentStressLevel,
       direction: source.currentDirection,
-      historicalPercentile: normalizeCanonicalMetric(source.currentPercentile),
+      historicalPercentile: typeof source.currentPercentile === "number" && Number.isFinite(source.currentPercentile)
+        ? normalizeCanonicalMetric(source.currentPercentile)
+        : null,
       headline: `${source.currentStressLevel} stress in a ${source.currentRegime} regime; pressure is ${source.currentDirection.toLowerCase()}.`,
       topDrivers,
       threats: classified.threats,

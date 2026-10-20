@@ -136,6 +136,8 @@ export interface SeismographMarketMemory {
 // ── Distribution Payloads ─────────────────────────────────────
 
 /** Pre-formatted context block injected into every ASHA query */
+export type SeismographDataFreshness = "live" | "recent" | "delayed" | "stale";
+
 export interface ASHAContextBlock {
   systemPromptBlock: string;
   pressureScore: number;
@@ -145,7 +147,7 @@ export interface ASHAContextBlock {
   topAnalog: string;
   activePatterns: string[];
   marketMemoryHighlights: string[];
-  dataFreshness: "live" | "recent" | "stale";
+  dataFreshness: SeismographDataFreshness;
 }
 
 /** Context used to generate the Daily Brief */
@@ -178,7 +180,7 @@ export interface DashboardPayload {
   transitionProbabilities: SeismographTransitionProbabilities;
   marketMemory: SeismographMarketMemory;
   lastUpdated: number;
-  dataFreshness: "live" | "recent" | "stale";
+  dataFreshness: SeismographDataFreshness;
 }
 
 /** Macro context block consumed by stock and crypto pages */
@@ -192,7 +194,7 @@ export interface MacroContextBlock {
   macroTailwinds: string[];
   regimeImplication: string;
   historicalContext: string;
-  dataFreshness: "live" | "recent" | "stale";
+  dataFreshness: SeismographDataFreshness;
 }
 
 /** Context for alert evaluation */
@@ -233,7 +235,7 @@ export interface SeismographOutput {
   // ── Identity ──────────────────────────────────────────────
   version: string;
   computedAt: number;
-  dataFreshness: "live" | "recent" | "stale";
+  dataFreshness: SeismographDataFreshness;
 
   // ── Core Market Assessment ────────────────────────────────
   pressureScore: number;
@@ -251,7 +253,7 @@ export interface SeismographOutput {
   };
 
   // ── Historical Context ────────────────────────────────────
-  historicalPercentile: number;
+  historicalPercentile: number | null;
   analogMatches: SeismographAnalog[];
   topAnalog: SeismographAnalog | null;
 
@@ -417,6 +419,10 @@ function evidenceTypeToFamily(type: EvidenceType): string {
   return map[type] ?? "Other";
 }
 
+function finitePercentile(value: number | null): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
 function getDominantSignal(signals: EvidenceSignal[]): EvidenceSignal {
   const counts: Record<string, number> = {};
   for (const s of signals) {
@@ -442,6 +448,9 @@ export function buildASHAContextBlock(
   const topAnalog = analogMatches[0];
   const patternNames = activePatterns.slice(0, 3).map((p) => p.name);
   const memoryHighlights = marketMemory.keyMemoryPoints.slice(0, 4);
+  const percentileText = finitePercentile(output.historicalPercentile)
+    ? `${formatOrdinal(output.historicalPercentile)} (${describeHistoricalPercentile(output.historicalPercentile)})`
+    : "Insufficient data";
 
   const systemPromptBlock = `
 ## FAULTLINE SEISMOGRAPH™ — Current Market State
@@ -453,7 +462,7 @@ export function buildASHAContextBlock(
 - Strongest evidence family: ${probabilities.primaryDriver}
 
 **Historical Context:**
-- Percentile: ${formatOrdinal(output.historicalPercentile)} (${describeHistoricalPercentile(output.historicalPercentile)})
+- Percentile: ${percentileText}
 - Closest Analog: ${topAnalog ? `${topAnalog.label} (${topAnalog.similarity}% similarity)` : "No close analog"}
 - Market Streak: ${marketMemory.streakDays} days ${marketMemory.streakDirection}
 
@@ -520,7 +529,9 @@ ${output.topAnalog ? `The closest historical analog is ${output.topAnalog.label}
       bear: output.probabilities.bear,
     },
     evidenceSummary: output.evidenceFamilies
-      .map((f) => `${f.name}: ${f.signal} (${f.strength}%)`)
+      .map((f) => f.name === "Regime Transition"
+        ? `${f.name}: ${f.signal} (probability not stated)`
+        : `${f.name}: ${f.signal} (${f.strength}%)`)
       .join("; "),
     topAnalog: output.topAnalog,
     activePatterns: output.activePatterns,
@@ -552,7 +563,9 @@ export function buildMacroContextBlock(output: SeismographOutput): MacroContextB
 
   const historicalContext = output.topAnalog
     ? `Current conditions most closely resemble ${output.topAnalog.label} (${output.topAnalog.similarity}% similarity). ${output.topAnalog.description}`
-    : `At the ${formatOrdinal(output.historicalPercentile)} historical percentile, current conditions are ${describeHistoricalPercentile(output.historicalPercentile)}.`;
+    : finitePercentile(output.historicalPercentile)
+      ? `At the ${formatOrdinal(output.historicalPercentile)} historical percentile, current conditions are ${describeHistoricalPercentile(output.historicalPercentile)}.`
+      : "Historical percentile is unavailable (insufficient data).";
 
   return {
     pressureScore: output.pressureScore,
@@ -657,7 +670,7 @@ export function assembleSeismographOutput(
     regime: string;
     stressLevel: string;
     direction: string;
-    historicalPercentile: number;
+    historicalPercentile: number | null;
     analogMatches: SeismographAnalog[];
     activePatterns: SeismographPattern[];
     transitionProbabilities: SeismographTransitionProbabilities;
@@ -703,7 +716,7 @@ export function assembleSeismographOutput(
       ? `${state.activePatterns.length} active pattern${state.activePatterns.length > 1 ? "s" : ""}: ${state.activePatterns.map((p) => p.name).join(", ")}`
       : "No significant patterns detected";
 
-  const dataFreshness: "live" | "recent" | "stale" =
+  const dataFreshness: SeismographDataFreshness =
     packets.length >= 5 ? "live" : packets.length >= 2 ? "recent" : "stale";
 
   const computedAt = Date.now();

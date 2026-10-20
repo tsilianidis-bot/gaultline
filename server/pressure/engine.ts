@@ -70,6 +70,8 @@ export interface RiskVector {
   fallbackReason?: string;
   /** FRED observation date behind each raw input (Phase 1 provenance) */
   observationDates?: Record<string, string | null>;
+  /** Earliest observation behind this vector. Null when none was recorded. */
+  observedAt?: string | null;
 }
 
 export interface HistoricalAnalog {
@@ -350,6 +352,164 @@ function scoreAIBubble(
   const trend: "rising" | "falling" | "stable" = "rising"; // secular trend
 
   return { score: clamp(score, 0, 100), driver, trend };
+}
+
+/**
+ * Inputs available to check a stored sub-score. Unknown inputs are omitted.
+ * Missing inputs are NOT replaced with the engine's fallback constants: those
+ * constants are substitutes, not evidence of a floor.
+ */
+export interface StoredVectorInputs {
+  hySpreadBps?: number | null;
+  sofr?: number | null;
+  tsy10y?: number | null;
+  tsy2y?: number | null;
+  unemployment?: number | null;
+  cpiYoy?: number | null;
+  ppiYoy?: number | null;
+  fedFunds?: number | null;
+}
+
+export type StoredSubScoreKey = "liquidity" | "credit" | "volatility" | "macro" | "breadth" | "aiBubble";
+
+export type StoredSubScoreStatus = "observed" | "missing" | "sentinel" | "unverifiable";
+
+export interface StoredSubScoreAssessment {
+  status: StoredSubScoreStatus;
+  /** Present only when status is "observed". */
+  value: number | null;
+  reason: string;
+}
+
+function finiteInput(value: number | null | undefined): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/** Minimum Math.round over a continuous score range whose lower end is `minSum`. */
+function roundedFloor(minSum: number): number {
+  return Math.floor(minSum + 0.5);
+}
+
+/**
+ * Classify a stored 0 only. A non-zero stored score is returned by the caller
+ * unchanged; this recompute must not withhold it or replace it.
+ */
+function assessStoredZero(
+  minSum: number,
+  exactSum: number | null,
+  evidence: string,
+): StoredSubScoreAssessment {
+  const exact = exactSum == null ? null : Math.round(exactSum);
+  if (exact != null) {
+    if (exact === 0) {
+      return { status: "observed", value: 0, reason: `Stored 0 matches the recomputed floor. ${evidence}` };
+    }
+    return {
+      status: "sentinel",
+      value: null,
+      reason: `Stored 0 is not the recomputed score ${exact}. ${evidence}`,
+    };
+  }
+  const floor = roundedFloor(minSum);
+  if (floor > 0) {
+    return {
+      status: "sentinel",
+      value: null,
+      reason: `Stored 0 is below the score these inputs can produce (at least ${floor}). ${evidence}`,
+    };
+  }
+  return {
+    status: "unverifiable",
+    value: null,
+    reason: `Stored 0 is inside the range these inputs allow, but the floor is not confirmed. Withheld as unverifiable. ${evidence}`,
+  };
+}
+
+/**
+ * Classify one stored sub-score from the inputs that are actually available.
+ * The recompute classifies a stored 0 only: a genuine floor stays, a 0 the
+ * inputs rule out is a sentinel, and a 0 the inputs cannot decide is
+ * unverifiable. A stored non-zero is kept even when it differs from the
+ * recompute. Null, undefined, and non-finite values are missing.
+ */
+export function assessStoredSubScore(
+  key: StoredSubScoreKey,
+  raw: number | null | undefined,
+  inputs: StoredVectorInputs,
+  evidence = "No confirming observation is available.",
+): StoredSubScoreAssessment {
+  if (typeof raw !== "number" || !Number.isFinite(raw)) {
+    return { status: "missing", value: null, reason: "No finite stored sub-score." };
+  }
+  if (raw !== 0) {
+    return {
+      status: "observed",
+      value: raw,
+      reason: `Stored ${raw} is kept. A fixture recompute classifies a stored 0 only and does not replace a non-zero score.`,
+    };
+  }
+  const hy = finiteInput(inputs.hySpreadBps);
+  const sofr = finiteInput(inputs.sofr);
+  const tsy10 = finiteInput(inputs.tsy10y);
+  const tsy2 = finiteInput(inputs.tsy2y);
+  const unemployment = finiteInput(inputs.unemployment);
+  const cpi = finiteInput(inputs.cpiYoy);
+  const ppi = finiteInput(inputs.ppiYoy);
+  const fedFunds = finiteInput(inputs.fedFunds);
+
+  if (key === "liquidity") {
+    const hyScore = hy == null ? null : linearMap(hy, 200, 800, 0, 100);
+    const sofrScore = sofr == null ? null : linearMap(sofr, 2, 6, 0, 60);
+    const exact = hyScore != null && sofrScore != null ? hyScore * 0.65 + sofrScore * 0.35 : null;
+    const min = (hyScore ?? 0) * 0.65 + (sofrScore ?? 0) * 0.35;
+    return assessStoredZero(min, exact, evidence);
+  }
+  if (key === "credit") {
+    const spread = hy == null ? null : linearMap(hy, 200, 700, 0, 80);
+    const rate = tsy10 == null ? null : linearMap(tsy10, 2, 6, 0, 50);
+    const labor = unemployment == null ? null : linearMap(unemployment, 3.5, 7, 0, 60);
+    const exact = spread != null && rate != null && labor != null ? spread * 0.5 + rate * 0.25 + labor * 0.25 : null;
+    const min = (spread ?? 0) * 0.5 + (rate ?? 0) * 0.25 + (labor ?? 0) * 0.25;
+    return assessStoredZero(min, exact, evidence);
+  }
+  if (key === "macro") {
+    const cpiScore = cpi == null ? null : linearMap(cpi, 1.5, 7, 0, 80);
+    const ppiScore = ppi == null ? null : linearMap(ppi, 0, 10, 0, 70);
+    const rateScore = fedFunds == null ? null : linearMap(fedFunds, 1, 6, 0, 80);
+    const exact = cpiScore != null && ppiScore != null && rateScore != null
+      ? cpiScore * 0.35 + ppiScore * 0.25 + rateScore * 0.4
+      : null;
+    const min = (cpiScore ?? 0) * 0.35 + (ppiScore ?? 0) * 0.25 + (rateScore ?? 0) * 0.4;
+    return assessStoredZero(min, exact, evidence);
+  }
+  if (key === "breadth") {
+    const labor = unemployment == null ? null : linearMap(unemployment, 3.5, 7, 0, 80);
+    const rate = tsy10 == null ? null : linearMap(tsy10, 2, 6, 0, 60);
+    const exact = labor != null && rate != null ? labor * 0.6 + rate * 0.4 : null;
+    const min = (labor ?? 0) * 0.6 + (rate ?? 0) * 0.4;
+    return assessStoredZero(min, exact, evidence);
+  }
+  if (key === "volatility") {
+    const spread = tsy10 != null && tsy2 != null ? tsy10 - tsy2 : null;
+    let spreadExact: number | null = null;
+    if (spread != null) {
+      if (spread < -1) spreadExact = 90;
+      else if (spread < -0.5) spreadExact = 75;
+      else if (spread < 0) spreadExact = 60;
+      else if (spread < 0.5) spreadExact = 40;
+      else spreadExact = 20;
+    }
+    const rate = tsy10 == null ? null : linearMap(tsy10, 2.5, 6, 0, 50);
+    const spreadMin = spreadExact ?? 20;
+    const exact = spreadExact != null && rate != null ? spreadExact * 0.6 + rate * 0.4 : null;
+    const min = spreadMin * 0.6 + (rate ?? 0) * 0.4;
+    return assessStoredZero(min, exact, evidence);
+  }
+  const rate = tsy10 == null ? null : linearMap(tsy10, 2, 6, 0, 40);
+  const spread = hy == null ? null : linearMap(hy, 200, 600, 0, 30);
+  const exact = rate != null && spread != null ? 65 * 0.5 + rate * 0.3 + spread * 0.2 : null;
+  const min = 65 * 0.5 + (rate ?? 0) * 0.3 + (spread ?? 0) * 0.2;
+  return assessStoredZero(min, exact, evidence);
 }
 
 // ── Regime classification ─────────────────────────────────────
@@ -802,6 +962,10 @@ export function computePressureFromVerifiedInputs(
   for (const v of vectors) {
     if (!Number.isFinite(v.score)) throw new PressureInputsUnavailableError([`${v.id} score not finite`]);
     v.observationDates = Object.fromEntries(Object.keys(v.rawInputs).map(k => [k, obsDates[k] ?? null]));
+    const observed = Object.values(v.observationDates)
+      .map(date => typeof date === "string" ? Date.parse(`${date}T00:00:00.000Z`) : Number.NaN)
+      .filter(time => Number.isFinite(time));
+    v.observedAt = observed.length > 0 ? new Date(Math.min(...observed)).toISOString() : null;
   }
 
   const now = nowDate.toISOString();

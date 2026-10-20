@@ -69,7 +69,7 @@ function adjustForEvidence(
 
 // ── Primary Driver ────────────────────────────────────────────
 
-function identifyPrimaryDriver(
+export function identifyPrimaryDriver(
   pressure: FaultlinePressureOutput,
   evidence: FMOSEvidenceOutput
 ): string {
@@ -87,6 +87,10 @@ function identifyPrimaryDriver(
   if (p >= 45) {
     return `Elevated pressure at ${p}/100 — ${topVector.label} elevated, monitoring for escalation`;
   }
+  // MODERATE RISK is 25–44. That band is not a low-pressure, supportive reading.
+  if (p >= 25) {
+    return `Moderate systemic pressure at ${p}/100 — ${topVector.label} is the primary contributor`;
+  }
 
   // Check evidence families for primary driver
   const strongestFamily = evidence.families
@@ -102,15 +106,15 @@ function identifyPrimaryDriver(
 
 // ── Bull Evidence ─────────────────────────────────────────────
 
-function buildBullEvidence(
+export function buildBullEvidence(
   pressure: FaultlinePressureOutput,
   evidence: FMOSEvidenceOutput
 ): string[] {
   const p = pressure.overallPressure;
   const bullEvidence: string[] = [];
 
-  // Pressure-based bull evidence
-  if (p < 40) {
+  // LOW RISK is below 25, the same band as the regime classifier and identifyPrimaryDriver.
+  if (p < 25) {
     bullEvidence.push(`Low systemic pressure (${p}/100) — no major stress vectors elevated`);
   }
 

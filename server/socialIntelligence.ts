@@ -48,9 +48,36 @@ export interface TrendingTicker {
   marketCap: number | null;
   marketState: string | null;
   sentiment: "bullish" | "bearish" | "neutral" | "unknown";
-  buzzScore: number;
-  newsCount: number;
+  /** Null when the quote is missing and there is no observed article count. A real zero stays 0. */
+  buzzScore: number | null;
+  newsCount: number | null;
   latestHeadline: string | null;
+}
+
+/**
+ * Buzz and news count for a trending row. A missing quote with no articles is
+ * not stored as buzz 0 / news 0. A present quote with no articles stays 0.
+ */
+export function attentionForTrendingQuote(input: {
+  price: number | null;
+  articleCount: number | null;
+  bullish: number;
+  bearish: number;
+}): { newsCount: number | null; buzzScore: number | null; sentiment: TrendingTicker["sentiment"] } {
+  const articlesObserved = typeof input.articleCount === "number" && Number.isFinite(input.articleCount) ? input.articleCount : null;
+  if (input.price == null && (articlesObserved == null || articlesObserved === 0)) {
+    return { newsCount: null, buzzScore: null, sentiment: "unknown" };
+  }
+  const newsCount = articlesObserved ?? 0;
+  let sentiment: TrendingTicker["sentiment"] = "unknown";
+  if (newsCount > 0) {
+    if (input.bullish > input.bearish * 1.3) sentiment = "bullish";
+    else if (input.bearish > input.bullish * 1.3) sentiment = "bearish";
+    else sentiment = "neutral";
+  }
+  const sentimentIntensity = newsCount > 0 ? Math.abs(input.bullish - input.bearish) / newsCount : 0;
+  const buzzScore = Math.min(100, Math.round(Math.log1p(newsCount) * 20 + sentimentIntensity * 30));
+  return { newsCount, buzzScore, sentiment };
 }
 
 export interface SentimentSummary {
@@ -210,8 +237,8 @@ export interface VerifiedSocialSnapshot {
   sourceCount: number;
   socialVolume: number;
   newsCount: number;
-  /** Numeric because the frozen rising-star engine multiplies this field. A missing composite is 0 there; the social page uses the nullable composite instead. */
-  sentimentScore: number;
+  /** Null when no source contributes a composite. Rising stars must not treat that as 0. */
+  sentimentScore: number | null;
   positiveNews: number;
   negativeNews: number;
   extremeAttentionDetected: boolean;
@@ -871,62 +898,50 @@ export async function getSocialIntelligenceData(): Promise<SocialIntelligenceDat
   const trendingTickers: TrendingTicker[] = trendingSymbols.slice(0, 15).map((symbol) => {
     const q = trendingQuotes.get(symbol);
     const sent = sentimentMap.get(symbol);
-    const newsCount = sent?.articles ?? 0;
-    const bullish = sent?.bullish ?? 0;
-    const bearish = sent?.bearish ?? 0;
-
-    let sentiment: TrendingTicker["sentiment"] = "unknown";
-    if (newsCount > 0) {
-      if (bullish > bearish * 1.3) sentiment = "bullish";
-      else if (bearish > bullish * 1.3) sentiment = "bearish";
-      else sentiment = "neutral";
-    }
-
-    const sentimentIntensity = newsCount > 0 ? Math.abs(bullish - bearish) / newsCount : 0;
-    const buzzScore = Math.min(100, Math.round(Math.log1p(newsCount) * 20 + sentimentIntensity * 30));
+    const price = q?.regularMarketPrice ?? null;
+    const attention = attentionForTrendingQuote({
+      price,
+      articleCount: sent ? sent.articles : null,
+      bullish: sent?.bullish ?? 0,
+      bearish: sent?.bearish ?? 0,
+    });
 
     return {
       symbol,
       name: q?.shortName ?? q?.longName ?? symbol,
-      price: q?.regularMarketPrice ?? null,
+      price,
       changePercent: q?.regularMarketChangePercent ?? null,
       volume: q?.regularMarketVolume ?? null,
       marketCap: q?.marketCap ?? null,
       marketState: q?.marketState ?? null,
-      sentiment,
-      buzzScore,
-      newsCount,
+      sentiment: attention.sentiment,
+      buzzScore: attention.buzzScore,
+      newsCount: attention.newsCount,
       latestHeadline: sent?.latestHeadline ?? null,
     };
   });
 
   const mostActive: TrendingTicker[] = mostActiveRaw.slice(0, 12).map((q) => {
     const sent = sentimentMap.get(q.symbol);
-    const newsCount = sent?.articles ?? 0;
-    const bullish = sent?.bullish ?? 0;
-    const bearish = sent?.bearish ?? 0;
-
-    let sentiment: TrendingTicker["sentiment"] = "unknown";
-    if (newsCount > 0) {
-      if (bullish > bearish * 1.3) sentiment = "bullish";
-      else if (bearish > bullish * 1.3) sentiment = "bearish";
-      else sentiment = "neutral";
-    }
-
-    const sentimentIntensity = newsCount > 0 ? Math.abs(bullish - bearish) / newsCount : 0;
-    const buzzScore = Math.min(100, Math.round(Math.log1p(newsCount) * 20 + sentimentIntensity * 30));
+    const price = q.regularMarketPrice ?? null;
+    const attention = attentionForTrendingQuote({
+      price,
+      articleCount: sent ? sent.articles : null,
+      bullish: sent?.bullish ?? 0,
+      bearish: sent?.bearish ?? 0,
+    });
 
     return {
       symbol: q.symbol,
       name: q.shortName ?? q.longName ?? q.symbol,
-      price: q.regularMarketPrice ?? null,
+      price,
       changePercent: q.regularMarketChangePercent ?? null,
       volume: q.regularMarketVolume ?? null,
       marketCap: q.marketCap ?? null,
       marketState: q.marketState ?? null,
-      sentiment,
-      buzzScore,
-      newsCount,
+      sentiment: attention.sentiment,
+      buzzScore: attention.buzzScore,
+      newsCount: attention.newsCount,
       latestHeadline: sent?.latestHeadline ?? null,
     };
   });
@@ -1098,7 +1113,7 @@ export async function getVerifiedSocialSnapshot(
     sourceCount,
     socialVolume,
     newsCount: news.length,
-    sentimentScore: composite.overallSentimentScore ?? 0,
+    sentimentScore: composite.overallSentimentScore,
     positiveNews: news.filter(article => article.sentiment === "positive").length,
     negativeNews: news.filter(article => article.sentiment === "negative").length,
     extremeAttentionDetected: sourceCount >= 2 && socialVolume >= 75 && (composite.overallSentimentScore ?? -1) >= 0.7,

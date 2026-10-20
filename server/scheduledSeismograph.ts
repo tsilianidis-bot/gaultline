@@ -31,6 +31,7 @@ import {
   runPatternAnalysis,
   getSeismographState,
   memorySetJson,
+  patternHistoricalOutcome,
   type SeismographState,
 } from "./seismographEngine";
 import { collectAllEvidence } from "./seismographAdapters";
@@ -603,9 +604,7 @@ export function buildStateForAssembly(
         description: p.description,
         confidence: p.confidence,
         daysActive: 0,
-        historicalOutcome: p.outcomeDistribution
-          ? `${p.outcomeDistribution.bullishContinuation}% bullish / ${p.outcomeDistribution.correction}% correction`
-          : undefined,
+        historicalOutcome: patternHistoricalOutcome(p.outcomeDistribution),
       });
     }
   }
@@ -658,8 +657,10 @@ export function buildStateForAssembly(
       ? "Improving"
       : "Stable";
 
-  // Historical percentile
-  const historicalPercentile = todayState?.historicalPercentile ?? 50;
+  // Historical percentile. A missing reading is withheld; it is not the 50th percentile.
+  const historicalPercentile = typeof todayState?.historicalPercentile === "number" && Number.isFinite(todayState.historicalPercentile)
+    ? todayState.historicalPercentile
+    : null;
 
   return {
     pressureScore,
