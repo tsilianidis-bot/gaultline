@@ -10,7 +10,8 @@
  * for macro, credit, and breadth is not a floor of the v1 formula.
  *
  * This is not a month switch. Each cell is assessed from whatever observations
- * fall on or before that month.
+ * fall on or before that month. The recompute classifies a stored 0 only.
+ * A stored non-zero is kept, and a row's own inputs win over this fixture.
  */
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";

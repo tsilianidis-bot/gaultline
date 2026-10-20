@@ -263,17 +263,14 @@ const PATTERN_SPECS: PatternSpec[] = [
   {
     type: "pressure_acceleration",
     name: "Accelerating Pressure Build",
-    detect: (r) => {
-      if (r.length < 10) return false;
-      const recent = r.slice(0, 5).map((x) => x.pressureScore);
-      const prior = r.slice(5, 10).map((x) => x.pressureScore);
-      const avgRecent = recent.reduce((a, b) => a + b, 0) / recent.length;
-      const avgPrior = prior.reduce((a, b) => a + b, 0) / prior.length;
-      return avgRecent - avgPrior >= 8;
-    },
+    detect: (r) => detectsPressureAcceleration(r),
     describe: (r) => {
-      const delta =
-        (r[0]?.pressureScore ?? 0) - (r[9]?.pressureScore ?? r[0]?.pressureScore ?? 0);
+      const latest = patternDetectionPressureScore(r[0]?.pressureScore);
+      const older = patternDetectionPressureScore(r[9]?.pressureScore);
+      if (latest == null || older == null) {
+        return "Pressure acceleration is detected from finite scores only. A missing score is not counted as 0, and the point change is not stated.";
+      }
+      const delta = latest - older;
       return `Pressure has accelerated by approximately ${delta} points over the past 10 recorded days. Acceleration patterns historically resolve within 3–6 weeks through either a sharp correction or a policy-driven reversal.`;
     },
     frequency: "uncommon",
@@ -352,6 +349,30 @@ function finitePatternScores(readings: Array<{ pressureScore?: number | null }>)
     .slice(0, 10)
     .map(reading => patternDetectionPressureScore(reading.pressureScore))
     .filter((score): score is number => score != null);
+}
+
+/**
+ * Mean of the finite scores in a window. A missing score is left out of both
+ * the sum and the count. It is not added as 0.
+ */
+function finiteWindowAverage(readings: Array<{ pressureScore?: number | null }>): number | null {
+  const scores = readings
+    .map(reading => patternDetectionPressureScore(reading.pressureScore))
+    .filter((score): score is number => score != null);
+  if (scores.length === 0) return null;
+  return scores.reduce((sum, score) => sum + score, 0) / scores.length;
+}
+
+/**
+ * Acceleration compares the mean of the latest five finite scores with the
+ * mean of the five before them. A missing score does not enter either average.
+ */
+export function detectsPressureAcceleration(readings: Array<{ pressureScore?: number | null }>): boolean {
+  if (readings.length < 10) return false;
+  const recent = finiteWindowAverage(readings.slice(0, 5));
+  const prior = finiteWindowAverage(readings.slice(5, 10));
+  if (recent == null || prior == null) return false;
+  return recent - prior >= 8;
 }
 
 /** Regime-transition pattern requires a finite latest score. Regime labels alone do not publish it. */

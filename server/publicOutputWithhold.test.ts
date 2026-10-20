@@ -23,12 +23,13 @@ import { canonicalEngineEvidence } from "../shared/snapshotEvidence";
 import { fmosToEvidencePackets } from "./seismographAdapters";
 import { buildBullEvidence, identifyPrimaryDriver } from "./fmos/engines/probability";
 import {
+  detectsPressureAcceleration,
   detectsPressureReliefPattern,
   detectsRegimeTransitionPattern,
   patternDetectionPressureScore,
   patternHistoricalOutcome,
 } from "./seismographEngine";
-import { highScoreTransitionEvidence } from "./seismographUnified";
+import { detectActivePatterns, highScoreTransitionEvidence, type HistoricalMonth } from "./seismographUnified";
 
 const delayedQuality: CanonicalDataQualityInput = {
   generatedAt: "2026-10-20T20:20:26.444Z",
@@ -196,6 +197,57 @@ describe("live-capture public output", () => {
     );
     expect(assembledPatterns.activePatterns[0]?.historicalOutcome).toBeUndefined();
     expect(JSON.stringify(assembledPatterns.activePatterns)).not.toContain("40% bullish");
+  });
+
+  it("does not count a missing score as 0 in the acceleration average", () => {
+    const scores = (values: Array<number | null>) => values.map(pressureScore => ({ pressureScore }));
+    expect(detectsPressureAcceleration(scores([
+      20, 20, 20, 20, 20,
+      15, 15, 15, 15, null,
+    ]))).toBe(false);
+    expect(detectsPressureAcceleration(scores([
+      20, 20, 20, 20, 20,
+      15, 15, 15, 15, 0,
+    ]))).toBe(true);
+    expect(detectsPressureAcceleration(scores([
+      30, 30, 30, 30, null,
+      20, 20, 20, 20, 20,
+    ]))).toBe(true);
+  });
+
+  it("drops numeric outcome splits from the monthly unified pattern payload", () => {
+    const history: HistoricalMonth[] = Array.from({ length: 12 }, (_, index) => ({
+      month: `2025-${String(index + 1).padStart(2, "0")}`,
+      score: 60,
+      regime: "ELEVATED RISK",
+      liquidity: 30,
+      credit: 60,
+      volatility: 40,
+      macro: 44,
+      breadth: 40,
+      aiBubble: 40,
+      baaSpread: null,
+      hySpread: null,
+      tsy10y: null,
+      tsy2y: null,
+      fedfunds: null,
+      cpiYoy: null,
+      unemployment: null,
+      sp500: null,
+    }));
+    const patterns = detectActivePatterns(history, 60, "ELEVATED RISK");
+    expect(patterns.map(pattern => pattern.name)).toEqual([
+      "Sustained Elevated Pressure",
+      "Credit-Liquidity Divergence",
+      "Regime Persistence",
+    ]);
+    for (const pattern of patterns) {
+      expect(pattern.outcomeDistribution).toEqual({ calibrated: false });
+      expect(JSON.stringify(pattern.outcomeDistribution)).not.toMatch(/\d/);
+      expect(pattern.outcomeDistribution).not.toHaveProperty("bullish");
+      expect(pattern.outcomeDistribution).not.toHaveProperty("sideways");
+      expect(pattern.outcomeDistribution).not.toHaveProperty("correction");
+    }
   });
 
   it("does not substitute 50 when history or today's percentile is missing", () => {

@@ -176,7 +176,7 @@ function source(overrides: Partial<CanonicalMarketStateSource> = {}): CanonicalM
       confidence: 79,
       daysActive: 21,
       historicalFrequency: "14 prior episodes",
-      outcomeDistribution: { bullish: 15, sideways: 35, correction: 50 },
+      outcomeDistribution: { calibrated: false },
       avgReturn1m: -2,
       avgReturn3m: -4,
       avgReturn6m: 2,

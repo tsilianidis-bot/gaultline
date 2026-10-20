@@ -280,7 +280,8 @@ export interface UnifiedSeismographIntelligence {
     confidence: number;
     daysActive: number;
     historicalFrequency: string;
-    outcomeDistribution: { bullish: number; sideways: number; correction: number };
+    /** Uncalibrated. No bullish / sideways / correction percents. */
+    outcomeDistribution: { calibrated: false };
     avgReturn1m: number;
     avgReturn3m: number;
     avgReturn6m: number;
@@ -475,11 +476,11 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
   ]);
 
   // ── 2. Normalize history ──────────────────────────────────────
-  // Each stored sub-score is checked against the inputs available for that
-  // month (FRED fixture observations on or before the month, then the row's
-  // own raw fields). A recomputed 0 stays. A 0 the inputs rule out is a
-  // sentinel. A 0 the inputs cannot decide is unverifiable. Neither sentinel
-  // nor unverifiable is shown as 0 or filled from the previous row.
+  // The row's own raw fields win. The FRED fixture fills only gaps, including
+  // PPI and SOFR, which the row does not store. A recompute classifies a
+  // stored 0 only. A stored non-zero is kept even when it differs from that
+  // recompute. A 0 the inputs rule out is a sentinel. A 0 they cannot decide
+  // is unverifiable. Neither is shown as 0 or filled from the previous row.
   const assessedHistory = allHistory.map((r) => {
     const evidence = historySubScoreEvidence(r);
     const cell = (key: StoredSubScoreKey, raw: number | null) =>
@@ -795,6 +796,7 @@ export const YIELD_CURVE_FAMILY_NAME = pressureVectorLabel("volatility-regime");
  * Stored sub-score. Null, undefined, and non-finite values are missing.
  * A finite 0 is kept by this parser. History rows still pass that 0 through
  * assessStoredSubScore, which may withhold it as a sentinel or as unverifiable.
+ * A stored non-zero is not withheld because a fixture recompute differs.
  */
 export function normalizeStoredSubScore(raw: number | null | undefined): number | null {
   return typeof raw === "number" && Number.isFinite(raw) ? raw : null;
@@ -811,7 +813,7 @@ function rowNumber(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function historySubScoreEvidence(row: {
+export function historySubScoreEvidence(row: {
   month: string;
   hySpreadProxy: unknown;
   tsy10y: unknown;
@@ -821,20 +823,29 @@ function historySubScoreEvidence(row: {
   unemployment: unknown;
 }): { inputs: StoredVectorInputs; evidence: string } {
   const fixture = fredFixtureInputsForMonth(row.month);
-  const pick = (fromFixture: number | null | undefined, fromRow: unknown): number | null =>
-    fromFixture != null ? fromFixture : rowNumber(fromRow);
+  const notes: string[] = [];
+  const fill = (label: string, fromRow: unknown, fromFixture: number | null | undefined): number | null => {
+    const rowValue = rowNumber(fromRow);
+    if (rowValue != null) {
+      if (fromFixture != null && fromFixture !== rowValue) {
+        notes.push(`${label} is the stored row value ${rowValue}; the fixture value ${fromFixture} is not used.`);
+      }
+      return rowValue;
+    }
+    return fromFixture ?? null;
+  };
   return {
     inputs: {
-      hySpreadBps: pick(fixture.inputs.hySpreadBps, row.hySpreadProxy),
+      hySpreadBps: fill("HY spread", row.hySpreadProxy, fixture.inputs.hySpreadBps),
       sofr: fixture.inputs.sofr ?? null,
-      tsy10y: pick(fixture.inputs.tsy10y, row.tsy10y),
-      tsy2y: pick(fixture.inputs.tsy2y, row.tsy2y),
-      fedFunds: pick(fixture.inputs.fedFunds, row.fedfunds),
-      unemployment: pick(fixture.inputs.unemployment, row.unemployment),
-      cpiYoy: pick(fixture.inputs.cpiYoy, row.cpiYoy),
+      tsy10y: fill("10Y", row.tsy10y, fixture.inputs.tsy10y),
+      tsy2y: fill("2Y", row.tsy2y, fixture.inputs.tsy2y),
+      fedFunds: fill("Fed Funds", row.fedfunds, fixture.inputs.fedFunds),
+      unemployment: fill("unemployment", row.unemployment, fixture.inputs.unemployment),
+      cpiYoy: fill("CPI YoY", row.cpiYoy, fixture.inputs.cpiYoy),
       ppiYoy: fixture.inputs.ppiYoy ?? null,
     },
-    evidence: fixture.evidence,
+    evidence: [fixture.evidence, ...notes].join(" "),
   };
 }
 
@@ -1504,7 +1515,7 @@ function computeProbabilities(
 
 // ─── Active patterns ──────────────────────────────────────────────────────────
 
-function detectActivePatterns(
+export function detectActivePatterns(
   history: HistoricalMonth[],
   currentScore: number,
   currentRegime: string
@@ -1520,15 +1531,6 @@ function detectActivePatterns(
       if (i < 5) return false;
       return history.slice(i - 5, i + 1).every((h) => h.score >= 50);
     }).length;
-    const outcomes = history
-      .filter((_, i) => {
-        if (i < 5 || i >= history.length - 3) return false;
-        return history.slice(i - 5, i + 1).every((h) => h.score >= 50);
-      })
-      .map((_, i) => history[i + 3]?.score ?? currentScore);
-    const bullishOutcomes = outcomes.filter((s) => s < currentScore - 5).length;
-    const bearishOutcomes = outcomes.filter((s) => s > currentScore + 5).length;
-    const sidewaysOutcomes = outcomes.length - bullishOutcomes - bearishOutcomes;
 
     patterns.push({
       name: "Sustained Elevated Pressure",
@@ -1536,11 +1538,7 @@ function detectActivePatterns(
       confidence: 78,
       daysActive: 6 * 30,
       historicalFrequency: `Occurred ${historicalCount} times in the ${history.length}-month dataset`,
-      outcomeDistribution: {
-        bullish: outcomes.length > 0 ? Math.round((bullishOutcomes / outcomes.length) * 100) : 30,
-        sideways: outcomes.length > 0 ? Math.round((sidewaysOutcomes / outcomes.length) * 100) : 40,
-        correction: outcomes.length > 0 ? Math.round((bearishOutcomes / outcomes.length) * 100) : 30,
-      },
+      outcomeDistribution: { calibrated: false },
       avgReturn1m: -1.2,
       avgReturn3m: -2.8,
       avgReturn6m: 1.5,
@@ -1565,7 +1563,7 @@ function detectActivePatterns(
       confidence: 72,
       daysActive: 4 * 30,
       historicalFrequency: "Observed in approximately 15% of historical months",
-      outcomeDistribution: { bullish: 35, sideways: 30, correction: 35 },
+      outcomeDistribution: { calibrated: false },
       avgReturn1m: -0.8,
       avgReturn3m: 1.2,
       avgReturn6m: 3.5,
@@ -1583,7 +1581,7 @@ function detectActivePatterns(
       confidence: 65,
       daysActive: regimeCount * 30,
       historicalFrequency: `${regimeCount}-month regime persistence occurs in approximately 20% of historical cycles`,
-      outcomeDistribution: { bullish: 40, sideways: 35, correction: 25 },
+      outcomeDistribution: { calibrated: false },
       avgReturn1m: 0.5,
       avgReturn3m: 2.1,
       avgReturn6m: 4.8,

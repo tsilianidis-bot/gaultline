@@ -9,7 +9,9 @@
  * switch. CPI, PPI, and Fed Funds recompute macro to 48. Unemployment 4.3 keeps
  * credit at least 3 and breadth at least 11 even with HY and the 10Y at their
  * formula floors. HY and SOFR in that fixture begin 2026-07-17, so liquidity 0
- * for May 2026 is unverifiable.
+ * for May 2026 is unverifiable. That recompute classifies a stored 0 only.
+ * May macro 44, April macro 44, and August liquidity 29 stay as stored.
+ * A row's own inputs win over the fixture.
  */
 import { describe, expect, it } from "vitest";
 import { assessStoredSubScore } from "./pressure/engine";
@@ -17,6 +19,7 @@ import { fredFixtureInputsForMonth, fredFixtureSeriesStart } from "./pressure/fr
 import {
   buildEvidenceFamilies,
   carryForwardMissingSubScore,
+  historySubScoreEvidence,
   normalizeStoredSubScore,
   type HistoricalMonth,
 } from "./seismographUnified";
@@ -80,6 +83,60 @@ describe("stored sub-score evidence", () => {
     expect(carryForwardMissingSubScore({ status: "missing", value: null, reason: "No finite stored sub-score." }, 29)).toBe(29);
     expect(assessStoredSubScore("macro", 48, may.inputs, may.evidence)).toMatchObject({ status: "observed", value: 48 });
     expect(assessStoredSubScore("liquidity", 22, may.inputs, may.evidence)).toMatchObject({ status: "observed", value: 22 });
+  });
+
+  it("keeps stored non-zero scores that differ from the fixture recompute", () => {
+    const april = fredFixtureInputsForMonth("2026-04");
+    const august = fredFixtureInputsForMonth("2026-08");
+    expect(assessStoredSubScore("macro", 0, may.inputs, may.evidence).reason).toContain("48");
+    expect(assessStoredSubScore("macro", 44, may.inputs, may.evidence)).toMatchObject({ status: "observed", value: 44 });
+    expect(assessStoredSubScore("macro", 0, april.inputs, april.evidence).status).not.toBe("observed");
+    expect(assessStoredSubScore("macro", 44, april.inputs, april.evidence)).toMatchObject({ status: "observed", value: 44 });
+    expect(assessStoredSubScore("liquidity", 0, august.inputs, august.evidence).value).not.toBe(29);
+    expect(assessStoredSubScore("liquidity", 29, august.inputs, august.evidence)).toMatchObject({ status: "observed", value: 29 });
+  });
+
+  it("lets the row's own inputs win over the fixture", () => {
+    const may = fredFixtureInputsForMonth("2026-05");
+    const august = fredFixtureInputsForMonth("2026-08");
+    expect(may.inputs.unemployment).toBe(4.3);
+    const mayRow = historySubScoreEvidence({
+      month: "2026-05",
+      hySpreadProxy: null,
+      tsy10y: 3.1,
+      tsy2y: null,
+      fedfunds: null,
+      cpiYoy: null,
+      unemployment: 9.9,
+    });
+    expect(mayRow.inputs.unemployment).toBe(9.9);
+    expect(mayRow.inputs.tsy10y).toBe(3.1);
+    expect(mayRow.evidence).toContain("stored row value 9.9");
+    expect(mayRow.inputs.ppiYoy).toBe(may.inputs.ppiYoy);
+    const rowHy = august.inputs.hySpreadBps == null ? 250 : august.inputs.hySpreadBps + 50;
+    const augustRow = historySubScoreEvidence({
+      month: "2026-08",
+      hySpreadProxy: rowHy,
+      tsy10y: null,
+      tsy2y: null,
+      fedfunds: null,
+      cpiYoy: null,
+      unemployment: null,
+    });
+    expect(augustRow.inputs.hySpreadBps).toBe(rowHy);
+    expect(augustRow.inputs.hySpreadBps).not.toBe(august.inputs.hySpreadBps);
+    const gap = historySubScoreEvidence({
+      month: "2026-05",
+      hySpreadProxy: null,
+      tsy10y: null,
+      tsy2y: null,
+      fedfunds: null,
+      cpiYoy: null,
+      unemployment: null,
+    });
+    expect(gap.inputs.unemployment).toBe(4.3);
+    expect(gap.inputs.fedFunds).toBe(may.inputs.fedFunds);
+    expect(gap.inputs.hySpreadBps).toBeNull();
   });
 });
 

@@ -390,58 +390,47 @@ function roundedFloor(minSum: number): number {
   return Math.floor(minSum + 0.5);
 }
 
-function assessFromRange(
-  raw: number,
+/**
+ * Classify a stored 0 only. A non-zero stored score is returned by the caller
+ * unchanged; this recompute must not withhold it or replace it.
+ */
+function assessStoredZero(
   minSum: number,
   exactSum: number | null,
   evidence: string,
 ): StoredSubScoreAssessment {
   const exact = exactSum == null ? null : Math.round(exactSum);
   if (exact != null) {
-    if (exact === raw) {
-      return {
-        status: "observed",
-        value: raw,
-        reason: raw === 0
-          ? `Stored 0 matches the recomputed floor. ${evidence}`
-          : `Stored ${raw} matches the recomputed score. ${evidence}`,
-      };
+    if (exact === 0) {
+      return { status: "observed", value: 0, reason: `Stored 0 matches the recomputed floor. ${evidence}` };
     }
     return {
       status: "sentinel",
       value: null,
-      reason: `Stored ${raw} is not the recomputed score ${exact}. ${evidence}`,
+      reason: `Stored 0 is not the recomputed score ${exact}. ${evidence}`,
     };
   }
   const floor = roundedFloor(minSum);
-  if (floor > raw) {
+  if (floor > 0) {
     return {
       status: "sentinel",
       value: null,
-      reason: `Stored ${raw} is below the score these inputs can produce (at least ${floor}). ${evidence}`,
-    };
-  }
-  if (raw === 0) {
-    return {
-      status: "unverifiable",
-      value: null,
-      reason: `Stored 0 is inside the range these inputs allow, but the floor is not confirmed. Withheld as unverifiable. ${evidence}`,
+      reason: `Stored 0 is below the score these inputs can produce (at least ${floor}). ${evidence}`,
     };
   }
   return {
-    status: "observed",
-    value: raw,
-    reason: `Stored ${raw} is inside the range of the available inputs. ${evidence}`,
+    status: "unverifiable",
+    value: null,
+    reason: `Stored 0 is inside the range these inputs allow, but the floor is not confirmed. Withheld as unverifiable. ${evidence}`,
   };
 }
 
 /**
  * Classify one stored sub-score from the inputs that are actually available.
- * A finite 0 is a floor only when the v1 formula recomputes to 0. If the
- * inputs prove 0 is impossible, the cell is a sentinel and is withheld. If
- * the inputs cannot decide, the cell is unverifiable and is withheld with
- * the reason — it is not shown as 0 and it is not treated as a silent null.
- * Null, undefined, and non-finite values are missing.
+ * The recompute classifies a stored 0 only: a genuine floor stays, a 0 the
+ * inputs rule out is a sentinel, and a 0 the inputs cannot decide is
+ * unverifiable. A stored non-zero is kept even when it differs from the
+ * recompute. Null, undefined, and non-finite values are missing.
  */
 export function assessStoredSubScore(
   key: StoredSubScoreKey,
@@ -451,6 +440,13 @@ export function assessStoredSubScore(
 ): StoredSubScoreAssessment {
   if (typeof raw !== "number" || !Number.isFinite(raw)) {
     return { status: "missing", value: null, reason: "No finite stored sub-score." };
+  }
+  if (raw !== 0) {
+    return {
+      status: "observed",
+      value: raw,
+      reason: `Stored ${raw} is kept. A fixture recompute classifies a stored 0 only and does not replace a non-zero score.`,
+    };
   }
   const hy = finiteInput(inputs.hySpreadBps);
   const sofr = finiteInput(inputs.sofr);
@@ -466,7 +462,7 @@ export function assessStoredSubScore(
     const sofrScore = sofr == null ? null : linearMap(sofr, 2, 6, 0, 60);
     const exact = hyScore != null && sofrScore != null ? hyScore * 0.65 + sofrScore * 0.35 : null;
     const min = (hyScore ?? 0) * 0.65 + (sofrScore ?? 0) * 0.35;
-    return assessFromRange(raw, min, exact, evidence);
+    return assessStoredZero(min, exact, evidence);
   }
   if (key === "credit") {
     const spread = hy == null ? null : linearMap(hy, 200, 700, 0, 80);
@@ -474,7 +470,7 @@ export function assessStoredSubScore(
     const labor = unemployment == null ? null : linearMap(unemployment, 3.5, 7, 0, 60);
     const exact = spread != null && rate != null && labor != null ? spread * 0.5 + rate * 0.25 + labor * 0.25 : null;
     const min = (spread ?? 0) * 0.5 + (rate ?? 0) * 0.25 + (labor ?? 0) * 0.25;
-    return assessFromRange(raw, min, exact, evidence);
+    return assessStoredZero(min, exact, evidence);
   }
   if (key === "macro") {
     const cpiScore = cpi == null ? null : linearMap(cpi, 1.5, 7, 0, 80);
@@ -484,14 +480,14 @@ export function assessStoredSubScore(
       ? cpiScore * 0.35 + ppiScore * 0.25 + rateScore * 0.4
       : null;
     const min = (cpiScore ?? 0) * 0.35 + (ppiScore ?? 0) * 0.25 + (rateScore ?? 0) * 0.4;
-    return assessFromRange(raw, min, exact, evidence);
+    return assessStoredZero(min, exact, evidence);
   }
   if (key === "breadth") {
     const labor = unemployment == null ? null : linearMap(unemployment, 3.5, 7, 0, 80);
     const rate = tsy10 == null ? null : linearMap(tsy10, 2, 6, 0, 60);
     const exact = labor != null && rate != null ? labor * 0.6 + rate * 0.4 : null;
     const min = (labor ?? 0) * 0.6 + (rate ?? 0) * 0.4;
-    return assessFromRange(raw, min, exact, evidence);
+    return assessStoredZero(min, exact, evidence);
   }
   if (key === "volatility") {
     const spread = tsy10 != null && tsy2 != null ? tsy10 - tsy2 : null;
@@ -507,13 +503,13 @@ export function assessStoredSubScore(
     const spreadMin = spreadExact ?? 20;
     const exact = spreadExact != null && rate != null ? spreadExact * 0.6 + rate * 0.4 : null;
     const min = spreadMin * 0.6 + (rate ?? 0) * 0.4;
-    return assessFromRange(raw, min, exact, evidence);
+    return assessStoredZero(min, exact, evidence);
   }
   const rate = tsy10 == null ? null : linearMap(tsy10, 2, 6, 0, 40);
   const spread = hy == null ? null : linearMap(hy, 200, 600, 0, 30);
   const exact = rate != null && spread != null ? 65 * 0.5 + rate * 0.3 + spread * 0.2 : null;
   const min = 65 * 0.5 + (rate ?? 0) * 0.3 + (spread ?? 0) * 0.2;
-  return assessFromRange(raw, min, exact, evidence);
+  return assessStoredZero(min, exact, evidence);
 }
 
 // ── Regime classification ─────────────────────────────────────
