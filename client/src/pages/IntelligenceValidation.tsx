@@ -128,7 +128,8 @@ export default function IntelligenceValidation() {
   const { data: leaderboard } = trpc.intelligenceValidation.symbolLeaderboard.useQuery(undefined, { enabled: !!user });
   const { data: lessons } = trpc.intelligenceValidation.getImprovementLessons.useQuery({ limit: 20 }, { enabled: !!user });
   const { data: patternTags } = trpc.intelligenceValidation.getPatternTagFrequency.useQuery(undefined, { enabled: !!user });
-  const { data: reports } = trpc.intelligenceValidation.getAiImprovementReports.useQuery({ limit: 8 }, { enabled: user?.role === "admin" });
+  const canReadAiReports = user?.isOwnerOrAdmin === true;
+  const { data: reports } = trpc.intelligenceValidation.getAiImprovementReports.useQuery({ limit: 8 }, { enabled: canReadAiReports });
 
   if (!user) {
     return (
@@ -623,7 +624,7 @@ export default function IntelligenceValidation() {
         )}
 
         {/* ── Section 13: Weekly AI Improvement Reports ───────── */}
-        {user.role === "admin" && <section>
+        {canReadAiReports && <section>
           <SectionHeader title="Weekly AI Improvement Reports" subtitle="LLM-synthesized weekly performance analysis and recommendations" icon={Brain} />
           <div className="space-y-3">
             {(reports ?? []).length > 0 ? (reports ?? []).map((report, i) => (

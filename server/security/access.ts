@@ -34,13 +34,18 @@ type PrivateAuthField = "adminNotes" | "stripeCustomerId" | "stripeSubscriptionI
 /** Drops internal notes and Stripe identifiers before auth.me leaves the server. */
 export function toPublicAuthUser<T extends object | null | undefined>(
   user: T,
-): T extends object ? Omit<T, PrivateAuthField> : T {
-  if (!user) return user as T extends object ? Omit<T, PrivateAuthField> : T;
+): T extends object ? Omit<T, PrivateAuthField> & { isOwnerOrAdmin: boolean } : T {
+  if (!user) return user as T extends object ? Omit<T, PrivateAuthField> & { isOwnerOrAdmin: boolean } : T;
   const copy = { ...(user as Record<string, unknown>) };
   delete copy.adminNotes;
   delete copy.stripeCustomerId;
   delete copy.stripeSubscriptionId;
-  return copy as T extends object ? Omit<T, PrivateAuthField> : T;
+  copy.isOwnerOrAdmin = isOwnerOrAdmin({
+    role: typeof copy.role === "string" ? copy.role : null,
+    openId: typeof copy.openId === "string" ? copy.openId : null,
+    isCron: copy.isCron === true,
+  });
+  return copy as T extends object ? Omit<T, PrivateAuthField> & { isOwnerOrAdmin: boolean } : T;
 }
 
 export interface CheckoutSessionClaim {

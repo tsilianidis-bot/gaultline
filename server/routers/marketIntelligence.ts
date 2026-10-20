@@ -1,7 +1,7 @@
 /**
  * Market Intelligence Router
  */
-import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { router, publicProcedure, ownerOrAdminProcedure } from "../_core/trpc";
 import { notifyOwner } from "../_core/notification";
 import { computeStockMarketRegime, clearStockRegimeCache } from "../stockRegimeEngine";
 import { computeCryptoMarketRegime, clearCryptoRegimeCache } from "../cryptoRegimeEngine";
@@ -65,7 +65,7 @@ export const marketIntelligenceRouter = router({
     };
   }),
 
-  clearCache: protectedProcedure.mutation(async () => {
+  clearCache: ownerOrAdminProcedure.mutation(async () => {
     clearStockRegimeCache();
     clearCryptoRegimeCache();
     clearCrossMarketCache();

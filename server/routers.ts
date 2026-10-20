@@ -53,7 +53,7 @@ import {
   getTodaySnapshot, hasTodaySnapshot, getSnapshotRange, getLatestSnapshot,
   upsertTodaySnapshot, getTimeframeReading, computeOutcomeSupport, getReadingHistorySummary,
 } from "./readingHistory";
-import { protectedProcedure, coreProcedure } from "./_core/trpc";
+import { protectedProcedure, coreProcedure, ownerOrAdminProcedure } from "./_core/trpc";
 import { generateXPosts } from './xPostGenerator';
 import { sendEmail, buildApprovalEmail, buildFoundingRequestNotification } from './email';
 import { postTweet, postThread, parseThread } from './xPoster';
@@ -208,7 +208,7 @@ export const appRouter = router({
       }),
 
     // Clear the classification cache (admin utility)
-    clearCache: protectedProcedure.mutation(() => {
+    clearCache: ownerOrAdminProcedure.mutation(() => {
       clearClassCache();
       return { success: true };
     }),
@@ -391,7 +391,7 @@ export const appRouter = router({
       }),
 
     // Clear diagnostic cache
-    clearCache: protectedProcedure.mutation(() => {
+    clearCache: ownerOrAdminProcedure.mutation(() => {
       clearDiagnosticCache();
       return { success: true };
     }),
@@ -412,7 +412,7 @@ export const appRouter = router({
       }),
 
     // Clear guidance cache
-    clearCache: protectedProcedure.mutation(() => {
+    clearCache: ownerOrAdminProcedure.mutation(() => {
       clearGuidanceCache();
       return { success: true };
     }),
@@ -943,7 +943,7 @@ export const appRouter = router({
       }),
 
     // Clear all crypto caches
-    clearCache: protectedProcedure.mutation(() => {
+    clearCache: ownerOrAdminProcedure.mutation(() => {
       clearCryptoCache();
       clearCryptoEngineCache();
       clearCryptoSignalCache();
@@ -1015,7 +1015,7 @@ export const appRouter = router({
       }),
 
     // Clear the aftershock engine cache
-    clearCache: protectedProcedure
+    clearCache: ownerOrAdminProcedure
       .mutation(async () => {
         clearAftershockCache();
         return { success: true };
@@ -1086,7 +1086,7 @@ export const appRouter = router({
       }),
 
     // Clear the recovery engine cache
-    clearCache: protectedProcedure
+    clearCache: ownerOrAdminProcedure
       .mutation(async () => {
         clearRecoveryCache();
         return { success: true };
@@ -1386,7 +1386,7 @@ export const appRouter = router({
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Alt rotation data unavailable.' });
       }
     }),
-    clearCache: protectedProcedure.mutation(() => {
+    clearCache: ownerOrAdminProcedure.mutation(() => {
       clearAltRotationCache();
       return { cleared: true };
     }),
@@ -2577,7 +2577,7 @@ export const appRouter = router({
         }
       }),
 
-    clearCache: protectedProcedure
+    clearCache: ownerOrAdminProcedure
       .mutation(async () => {
         const { clearSocialIntelligenceCache, clearTickerSocialCache } = await import('./socialIntelligence');
         clearSocialIntelligenceCache();
@@ -2960,7 +2960,7 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         return { watchlisted: await isDayTradeWatchlisted(ctx.user.id, input.symbol.toUpperCase()) };
       }),
-        clearCache: protectedProcedure.mutation(() => {
+        clearCache: ownerOrAdminProcedure.mutation(() => {
       clearDayTradeCache();
       return { success: true };
     }),
