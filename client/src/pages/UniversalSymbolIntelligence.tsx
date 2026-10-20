@@ -58,11 +58,11 @@ type DayTradeReport = {
   symbol: string;
   name: string;
   assetType: AssetType;
-  currentPrice: number;
+  currentPrice: number | null;
   changePercent: number;
   setupType: string;
   direction: "bullish" | "bearish";
-  confidence: number;
+  confidence: number | null;
   executionScore: number;
   executionGrade: "A" | "B" | "C" | "D" | "F";
   riskRewardRatio: number;
@@ -107,8 +107,10 @@ type DayTradeReport = {
 };
 
 // ── Helpers ───────────────────────────────────────────────────
-const fmt = (n: number, dec = 2) =>
-  n >= 1000 ? `$${n.toLocaleString("en-US", { maximumFractionDigits: dec })}` : `$${n.toFixed(dec)}`;
+const fmt = (n: number | null | undefined, dec = 2) => {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "Unavailable";
+  return n >= 1000 ? `$${n.toLocaleString("en-US", { maximumFractionDigits: dec })}` : `$${n.toFixed(dec)}`;
+};
 
 const pct = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
 

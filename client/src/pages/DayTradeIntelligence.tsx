@@ -62,7 +62,7 @@ type DayTradeSetup = {
   symbol: string;
   name: string;
   assetType: "stock" | "crypto";
-  currentPrice: number;
+  currentPrice: number | null;
   changePercent: number | null;
   volume: number;
   relativeVolume: number | null;
@@ -77,7 +77,7 @@ type DayTradeSetup = {
   stopLoss: number;
   invalidationLevel: number;
   expectedHoldMinutes: number;
-  confidence: number;
+  confidence: number | null;
   probabilityRating: number;
   riskRewardRatio: number;
   riskLevel: "Low" | "Medium" | "High" | "Very High";
@@ -1086,7 +1086,7 @@ function ActiveSetupsTab({ onSearch }: { onSearch: (sym: string, type: "stock" |
               { label: "OPEN", count: setups.length, color: "#00FF88", icon: <CheckCircle size={11} /> },
               { label: "BULLISH", count: setups.filter(s => s.direction === "bullish").length, color: "#00FF88", icon: <TrendingUp size={11} /> },
               { label: "BEARISH", count: setups.filter(s => s.direction === "bearish").length, color: "#FF6B6B", icon: <TrendingDown size={11} /> },
-              { label: "HIGH CONF", count: setups.filter(s => s.confidence >= 75).length, color: "#FFD700", icon: <Zap size={11} /> },
+              { label: "HIGH CONF", count: setups.filter(s => typeof s.confidence === "number" && s.confidence >= 75).length, color: "#FFD700", icon: <Zap size={11} /> },
             ].map(stat => (
               <div key={stat.label} style={{
                 ...CARD,
