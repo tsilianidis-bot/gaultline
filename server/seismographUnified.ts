@@ -40,6 +40,13 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 import { pressureRegimeLabel } from "../shared/pressureBands";
+import {
+  assessStoredSubScore,
+  type StoredSubScoreAssessment,
+  type StoredSubScoreKey,
+  type StoredVectorInputs,
+} from "./pressure/engine";
+import { fredFixtureInputsForMonth } from "./pressure/fredFixtureEvidence";
 import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 import { readCachedPriorComponents } from "./pressure/priorComponents";
 import { classifyCondition, isBroadRecoveryVerified, DIRECTION_MIN_CHANGE, type ConditionState } from "../shared/conditionDirection";
@@ -159,6 +166,12 @@ export interface UnifiedSeismographIntelligence {
 
   // ── Evidence Families ──────────────────────────────────────
   evidenceFamilies: EvidenceFamily[];
+  /**
+   * Latest-row sub-scores that are not observations. Sentinel: the available
+   * inputs prove the stored number is not a v1 score. Unverifiable: the inputs
+   * cannot confirm or reject it. Both are withheld with the reason.
+   */
+  withheldSubScores: Array<{ key: StoredSubScoreKey; status: "sentinel" | "unverifiable"; reason: string }>;
   evidenceConsensus: "strong" | "moderate" | "weak" | "divergent";
   enginesAgreeing: string[];
   enginesDisagreeing: string[];
@@ -462,22 +475,38 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
   ]);
 
   // ── 2. Normalize history ──────────────────────────────────────
-  // A finite stored score, including 0, is an observation. Liquidity at the
-  // HY/SOFR floor and macro at the low end both compute to 0. Only
-  // null, undefined, and non-finite values are missing. The May 2026 row is
-  // the one historical row that stored 0 as a missing-data sentinel, and
-  // that row is recognized by its month, not by the value 0.
-  const history: HistoricalMonth[] = allHistory.map((r) => ({
+  // Each stored sub-score is checked against the inputs available for that
+  // month (FRED fixture observations on or before the month, then the row's
+  // own raw fields). A recomputed 0 stays. A 0 the inputs rule out is a
+  // sentinel. A 0 the inputs cannot decide is unverifiable. Neither sentinel
+  // nor unverifiable is shown as 0 or filled from the previous row.
+  const assessedHistory = allHistory.map((r) => {
+    const evidence = historySubScoreEvidence(r);
+    const cell = (key: StoredSubScoreKey, raw: number | null) =>
+      assessStoredSubScore(key, raw, evidence.inputs, evidence.evidence);
+    return {
+      row: r,
+      cells: {
+        liquidity: cell("liquidity", r.liquidityStress),
+        credit: cell("credit", r.creditContagion),
+        volatility: cell("volatility", r.volatilityRegime),
+        macro: cell("macro", r.macroSensitivity),
+        breadth: cell("breadth", r.marketBreadth),
+        aiBubble: cell("aiBubble", r.aiBubble),
+      },
+    };
+  });
+  const history: HistoricalMonth[] = assessedHistory.map(({ row: r, cells }) => ({
     month: r.month,
     score: r.overallPressure,
     // Canonical band from the stored score (stored legacy regime labels are not rewritten).
     regime: pressureRegimeLabel(r.overallPressure),
-    liquidity: normalizeHistorySubScore(r.liquidityStress, r.month, "liquidity"),
-    credit: normalizeHistorySubScore(r.creditContagion, r.month, "credit"),
-    volatility: normalizeHistorySubScore(r.volatilityRegime, r.month, "volatility"),
-    macro: normalizeHistorySubScore(r.macroSensitivity, r.month, "macro"),
-    breadth: normalizeHistorySubScore(r.marketBreadth, r.month, "breadth"),
-    aiBubble: normalizeHistorySubScore(r.aiBubble, r.month, "aiBubble"),
+    liquidity: cells.liquidity.value,
+    credit: cells.credit.value,
+    volatility: cells.volatility.value,
+    macro: cells.macro.value,
+    breadth: cells.breadth.value,
+    aiBubble: cells.aiBubble.value,
     baaSpread: r.baaSpread !== null ? Number(r.baaSpread) : null,
     hySpread: r.hySpreadProxy !== null ? Number(r.hySpreadProxy) : null,
     tsy10y: r.tsy10y !== null ? Number(r.tsy10y) : null,
@@ -504,20 +533,29 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
   const currentPercentile = historicalPercentileRank(currentScore, history.map((h) => h.score));
 
   // ── 4. Evidence families from sub-scores ─────────────────
-  // If the latest row's sub-score is missing, carry the previous row's observed
-  // value. A stored 0 is an observation and is not carried forward. A missing
-  // previous value stays null and the family is omitted. This never writes 50.
+  // Carry a prior observation only when the latest cell is missing (null /
+  // non-finite). A confirmed 0 stays. A sentinel or unverifiable 0 stays
+  // withheld and keeps its reason; it is not replaced by the previous row.
   const prev = history.length >= 2 ? history[history.length - 2] : null;
-  const latestForFamilies: typeof latest = prev
+  const latestCells = assessedHistory[assessedHistory.length - 1]?.cells;
+  const latestForFamilies: typeof latest = prev && latestCells
     ? {
         ...latest,
-        liquidity: carryForwardMissingSubScore(latest.liquidity, prev.liquidity),
-        credit: carryForwardMissingSubScore(latest.credit, prev.credit),
-        volatility: carryForwardMissingSubScore(latest.volatility, prev.volatility),
-        macro: carryForwardMissingSubScore(latest.macro, prev.macro),
-        breadth: carryForwardMissingSubScore(latest.breadth, prev.breadth),
+        liquidity: carryForwardMissingSubScore(latestCells.liquidity, prev.liquidity),
+        credit: carryForwardMissingSubScore(latestCells.credit, prev.credit),
+        volatility: carryForwardMissingSubScore(latestCells.volatility, prev.volatility),
+        macro: carryForwardMissingSubScore(latestCells.macro, prev.macro),
+        breadth: carryForwardMissingSubScore(latestCells.breadth, prev.breadth),
       }
     : latest;
+  const withheldSubScores = latestCells
+    ? (Object.entries(latestCells) as Array<[StoredSubScoreKey, StoredSubScoreAssessment]>)
+      .flatMap(([key, cell]) =>
+        cell.status === "sentinel" || cell.status === "unverifiable"
+          ? [{ key, status: cell.status, reason: cell.reason }]
+          : [],
+      )
+    : [];
   // Request path: cached priors only (computed by the scheduled pipeline); never fetches FRED.
   const canonicalForDirection = await getAuthoritativeCanonicalIntelligenceState().catch(() => null);
   const priorForDirection = await readCachedPriorComponents(canonicalForDirection?.generatedAt ?? null).catch(() => null);
@@ -646,6 +684,7 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
     whyThisRegime,
     probabilities,
     evidenceFamilies,
+    withheldSubScores,
     evidenceConsensus,
     enginesAgreeing,
     enginesDisagreeing,
@@ -752,44 +791,51 @@ export const LABOR_RATES_FAMILY_NAME = pressureVectorLabel("market-breadth");
  */
 export const YIELD_CURVE_FAMILY_NAME = pressureVectorLabel("volatility-regime");
 
-/** The May 2026 pressureHistory row. Its documented zero sub-scores are missing data. */
-export const MAY_2026_SENTINEL_MONTH = "2026-05";
-
-const MAY_2026_SENTINEL_KEYS = new Set<HistorySubScoreKey>(["liquidity", "credit", "macro", "breadth"]);
-
-export type HistorySubScoreKey = "liquidity" | "credit" | "volatility" | "macro" | "breadth" | "aiBubble";
-
-export function isMay2026SentinelMonth(month: string | null | undefined): boolean {
-  return month === MAY_2026_SENTINEL_MONTH;
-}
-
 /**
  * Stored sub-score. Null, undefined, and non-finite values are missing.
- * A finite 0 is a computed floor (liquidity when HY <= 200 and SOFR <= 2,
- * macro at the low end) and is kept. Never a neutral 50.
+ * A finite 0 is kept by this parser. History rows still pass that 0 through
+ * assessStoredSubScore, which may withhold it as a sentinel or as unverifiable.
  */
 export function normalizeStoredSubScore(raw: number | null | undefined): number | null {
   return typeof raw === "number" && Number.isFinite(raw) ? raw : null;
 }
 
-/**
- * History-row sub-score. Every month keeps a finite 0. The May 2026 row is
- * the exception, and only for the four columns that batch stored as 0 instead
- * of null: liquidity, credit, macro, and breadth. Volatility and AI bubble
- * are not part of that sentinel.
- */
-export function normalizeHistorySubScore(
-  raw: number | null | undefined,
-  month: string,
-  key: HistorySubScoreKey,
-): number | null {
-  if (isMay2026SentinelMonth(month) && raw === 0 && MAY_2026_SENTINEL_KEYS.has(key)) return null;
-  return normalizeStoredSubScore(raw);
+/** Copy a prior observation only when the latest cell is missing. */
+export function carryForwardMissingSubScore(cell: StoredSubScoreAssessment, previous: number | null): number | null {
+  return cell.status === "missing" ? previous : cell.value;
 }
 
-/** Copy a prior observation only when the latest value is missing. A stored 0 stays. */
-export function carryForwardMissingSubScore(latest: number | null, previous: number | null): number | null {
-  return latest == null ? previous : latest;
+function rowNumber(value: unknown): number | null {
+  if (value == null || value === "") return null;
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function historySubScoreEvidence(row: {
+  month: string;
+  hySpreadProxy: unknown;
+  tsy10y: unknown;
+  tsy2y: unknown;
+  fedfunds: unknown;
+  cpiYoy: unknown;
+  unemployment: unknown;
+}): { inputs: StoredVectorInputs; evidence: string } {
+  const fixture = fredFixtureInputsForMonth(row.month);
+  const pick = (fromFixture: number | null | undefined, fromRow: unknown): number | null =>
+    fromFixture != null ? fromFixture : rowNumber(fromRow);
+  return {
+    inputs: {
+      hySpreadBps: pick(fixture.inputs.hySpreadBps, row.hySpreadProxy),
+      sofr: fixture.inputs.sofr ?? null,
+      tsy10y: pick(fixture.inputs.tsy10y, row.tsy10y),
+      tsy2y: pick(fixture.inputs.tsy2y, row.tsy2y),
+      fedFunds: pick(fixture.inputs.fedFunds, row.fedfunds),
+      unemployment: pick(fixture.inputs.unemployment, row.unemployment),
+      cpiYoy: pick(fixture.inputs.cpiYoy, row.cpiYoy),
+      ppiYoy: fixture.inputs.ppiYoy ?? null,
+    },
+    evidence: fixture.evidence,
+  };
 }
 
 /**

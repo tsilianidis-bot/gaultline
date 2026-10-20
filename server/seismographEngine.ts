@@ -282,11 +282,7 @@ const PATTERN_SPECS: PatternSpec[] = [
   {
     type: "regime_transition_warning",
     name: "Regime Transition Warning",
-    detect: (r) => {
-      if (r.length < 3) return false;
-      const regimes = r.slice(0, 3).map((x) => x.regime);
-      return new Set(regimes).size >= 2;
-    },
+    detect: (r) => detectsRegimeTransitionPattern(r),
     describe: (r) => {
       const regimes = Array.from(new Set(r.slice(0, 5).map((x) => x.regime)));
       return `The system has detected regime instability across recent readings: ${regimes.join(" → ")}. Regime transitions are historically associated with elevated volatility and a higher probability of directional moves in either direction.`;
@@ -314,18 +310,14 @@ const PATTERN_SPECS: PatternSpec[] = [
   {
     type: "pressure_relief",
     name: "Pressure Relief Pattern",
-    detect: (r) => {
-      if (r.length < 5) return false;
-      const current = r[0]?.pressureScore ?? 0;
-      const peak = Math.max(...r.slice(0, 10).map((x) => x.pressureScore));
-      return peak >= 65 && current <= peak - 12;
-    },
+    detect: (r) => detectsPressureReliefPattern(r),
     describe: (r) => {
-      const current = r[0]?.pressureScore ?? 0;
-      const peak = Math.max(...r.slice(0, 10).map((x) => x.pressureScore));
+      const current = patternDetectionPressureScore(r[0]?.pressureScore);
+      const peak = finitePatternScores(r).reduce((max, score) => Math.max(max, score), Number.NEGATIVE_INFINITY);
+      if (current == null || !Number.isFinite(peak)) return "Pressure relief is not described because the latest score is missing.";
       return `Pressure has declined from a recent peak of ${peak} to ${current}, a reduction of ${
         peak - current
-      } points. Historical relief patterns of this magnitude have been followed by stabilization in approximately 60% of cases and re-escalation in approximately 40%.`;
+      } points. What follows a relief move of this size has not been validated in FAULTLINE's record.`;
     },
     frequency: "typical",
     invalidation: "Pressure re-accelerates above the prior peak.",
@@ -353,6 +345,46 @@ interface InsertablePattern {
  */
 export function patternDetectionPressureScore(pressureScore: number | null | undefined): number | null {
   return typeof pressureScore === "number" && Number.isFinite(pressureScore) ? pressureScore : null;
+}
+
+function finitePatternScores(readings: Array<{ pressureScore?: number | null }>): number[] {
+  return readings
+    .slice(0, 10)
+    .map(reading => patternDetectionPressureScore(reading.pressureScore))
+    .filter((score): score is number => score != null);
+}
+
+/** Regime-transition pattern requires a finite latest score. Regime labels alone do not publish it. */
+export function detectsRegimeTransitionPattern(readings: Array<{ regime?: string | null; pressureScore?: number | null }>): boolean {
+  if (readings.length < 3) return false;
+  if (patternDetectionPressureScore(readings[0]?.pressureScore) == null) return false;
+  const regimes = readings.slice(0, 3).map(reading => reading.regime);
+  return new Set(regimes).size >= 2;
+}
+
+/**
+ * Relief requires a finite latest score. A missing score is not a drop to 0.
+ * A computed 0 can still be a relief from a peak of at least 65.
+ */
+export function detectsPressureReliefPattern(readings: Array<{ pressureScore?: number | null }>): boolean {
+  if (readings.length < 5) return false;
+  const current = patternDetectionPressureScore(readings[0]?.pressureScore);
+  if (current == null) return false;
+  const scores = finitePatternScores(readings);
+  if (scores.length === 0) return false;
+  const peak = Math.max(...scores);
+  return peak >= 65 && current <= peak - 12;
+}
+
+/**
+ * Public pattern outcome text. Empty-analog defaults (40/35/25) and the other
+ * canned outcome splits are uncalibrated, so no percent is stated.
+ */
+export function patternHistoricalOutcome(
+  distribution: { sampleSize?: number | null } | null | undefined,
+): string | undefined {
+  if (!distribution || !distribution.sampleSize) return undefined;
+  return "Historical outcome distribution is uncalibrated and is not stated.";
 }
 
 async function detectActivePatterns(
@@ -384,7 +416,9 @@ async function detectActivePatterns(
         frequency: spec.frequency,
         historicalCount,
         analogMatchesJson: JSON.stringify(analogs),
-        outcomeDistributionJson: JSON.stringify(outcomes),
+        outcomeDistributionJson: JSON.stringify(outcomes
+          ? { sampleSize: outcomes.sampleSize, calibrated: false }
+          : { sampleSize: 0, calibrated: false }),
         invalidationConditions: spec.invalidation,
         isActive: true,
       });
@@ -461,19 +495,10 @@ function buildSimilarityExplanation(
   return parts.join(", ") + ".";
 }
 
-function computeOutcomeDistribution(analogs: AnalogMatch[]): OutcomeDistribution {
-  if (analogs.length === 0) {
-    return {
-      bullishContinuation: 40,
-      sideways: 35,
-      correction: 25,
-      avgReturn1w: 0,
-      avgReturn1m: 0,
-      avgReturn3m: 0,
-      avgReturn6m: 0,
-      sampleSize: 0,
-    };
-  }
+function computeOutcomeDistribution(analogs: AnalogMatch[]): OutcomeDistribution | null {
+  // No analogs: do not invent the 40/35/25 split. That split was published as
+  // "40% bullish / 25% correction" when the score was missing.
+  if (analogs.length === 0) return null;
   const avgScore = analogs.reduce((a, b) => a + b.pressureScore, 0) / analogs.length;
   const isHighStress = avgScore >= 65;
   const isCritical = avgScore >= 80;

@@ -31,6 +31,7 @@ import {
   runPatternAnalysis,
   getSeismographState,
   memorySetJson,
+  patternHistoricalOutcome,
   type SeismographState,
 } from "./seismographEngine";
 import { collectAllEvidence } from "./seismographAdapters";
@@ -603,9 +604,7 @@ export function buildStateForAssembly(
         description: p.description,
         confidence: p.confidence,
         daysActive: 0,
-        historicalOutcome: p.outcomeDistribution
-          ? `${p.outcomeDistribution.bullishContinuation}% bullish / ${p.outcomeDistribution.correction}% correction`
-          : undefined,
+        historicalOutcome: patternHistoricalOutcome(p.outcomeDistribution),
       });
     }
   }

@@ -22,7 +22,12 @@ import { attentionForTrendingQuote } from "./socialIntelligence";
 import { canonicalEngineEvidence } from "../shared/snapshotEvidence";
 import { fmosToEvidencePackets } from "./seismographAdapters";
 import { buildBullEvidence, identifyPrimaryDriver } from "./fmos/engines/probability";
-import { patternDetectionPressureScore } from "./seismographEngine";
+import {
+  detectsPressureReliefPattern,
+  detectsRegimeTransitionPattern,
+  patternDetectionPressureScore,
+  patternHistoricalOutcome,
+} from "./seismographEngine";
 import { highScoreTransitionEvidence } from "./seismographUnified";
 
 const delayedQuality: CanonicalDataQualityInput = {
@@ -157,6 +162,40 @@ describe("live-capture public output", () => {
     expect(patternDetectionPressureScore(undefined)).toBeNull();
     expect(patternDetectionPressureScore(null)).toBeNull();
     expect(patternDetectionPressureScore(Number.NaN)).toBeNull();
+    const missingScore = [
+      { pressureScore: null, regime: "HIGH STRESS" },
+      { pressureScore: 80, regime: "MODERATE RISK" },
+      { pressureScore: 78, regime: "MODERATE RISK" },
+      { pressureScore: 76, regime: "ELEVATED RISK" },
+      { pressureScore: 74, regime: "ELEVATED RISK" },
+    ];
+    expect(detectsPressureReliefPattern(missingScore)).toBe(false);
+    expect(detectsRegimeTransitionPattern(missingScore)).toBe(false);
+    expect(detectsPressureReliefPattern([
+      { pressureScore: 0 },
+      { pressureScore: 80 },
+      { pressureScore: 80 },
+      { pressureScore: 78 },
+      { pressureScore: 70 },
+    ])).toBe(true);
+    expect(detectsRegimeTransitionPattern([
+      { pressureScore: 70, regime: "HIGH STRESS" },
+      { pressureScore: 40, regime: "MODERATE RISK" },
+      { pressureScore: 20, regime: "LOW RISK" },
+    ])).toBe(true);
+    const emptyDefault = { bullishContinuation: 40, sideways: 35, correction: 25, sampleSize: 0 };
+    expect(patternHistoricalOutcome(emptyDefault)).toBeUndefined();
+    const uncalibrated = patternHistoricalOutcome({ sampleSize: 4, calibrated: false });
+    expect(uncalibrated).toBe("Historical outcome distribution is uncalibrated and is not stated.");
+    expect(uncalibrated).not.toMatch(/\d+%/);
+    expect(`${emptyDefault.bullishContinuation}% bullish / ${emptyDefault.correction}% correction`).not.toBe(uncalibrated);
+    const assembledPatterns = buildStateForAssembly(
+      { overallPressure: 33, regime: "MODERATE RISK", level: "Moderate", vectors: [], analogs: [] } as any,
+      null,
+      { activePatterns: [{ patternType: "pressure_relief", patternName: "Pressure Relief Pattern", description: "d", confidence: 1, frequency: "typical", historicalCount: 0, analogs: [], outcomeDistribution: emptyDefault, invalidationConditions: "" }] } as any,
+    );
+    expect(assembledPatterns.activePatterns[0]?.historicalOutcome).toBeUndefined();
+    expect(JSON.stringify(assembledPatterns.activePatterns)).not.toContain("40% bullish");
   });
 
   it("does not substitute 50 when history or today's percentile is missing", () => {
