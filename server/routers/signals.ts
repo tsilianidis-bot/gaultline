@@ -303,7 +303,7 @@ export const signalsRouter = router({
       };
     }),
   // Clear the trading signal cache
-  clearSignalCache: protectedProcedure.mutation(() => {
+  clearSignalCache: ownerOrAdminProcedure.mutation(() => {
     clearSignalCache();
     return { success: true };
   }),

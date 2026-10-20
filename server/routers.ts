@@ -301,7 +301,7 @@ export const appRouter = router({
       .query(({ input }) => getSignalVisualDetailPayload(input.symbol)),
 
     // Clear the trading signal cache
-    clearSignalCache: protectedProcedure.mutation(() => {
+    clearSignalCache: ownerOrAdminProcedure.mutation(() => {
       clearSignalCache();
       return { success: true };
     }),
