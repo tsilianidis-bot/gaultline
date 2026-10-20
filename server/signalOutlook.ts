@@ -2340,15 +2340,16 @@ async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<Risi
         ? ((latest.close - prior.close) / prior.close) * 100
         : null;
 
-      const newsAvailable = (social?.newsCount ?? 0) >= 2;
+      const sentiment = typeof social?.sentimentScore === "number" ? social.sentimentScore : null;
+      const newsAvailable = sentiment !== null && (social?.newsCount ?? 0) >= 2;
       const result = scoreRisingStar({
         ticker: candidate.symbol,
         name: profile.name,
         technical,
-        catalyst: newsAvailable
+        catalyst: newsAvailable && sentiment !== null
           ? {
               available: true,
-              score: clamp(50 + social!.sentimentScore * 30 + Math.min(20, (social!.positiveNews + social!.negativeNews) * 4)),
+              score: clamp(50 + sentiment * 30 + Math.min(20, (social!.positiveNews + social!.negativeNews) * 4)),
               note: `${social!.positiveNews + social!.negativeNews} directionally classified recent public-news items.`,
             }
           : { available: false, note: "Insufficient recent public-news coverage; excluded from score." },
@@ -2358,10 +2359,10 @@ async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<Risi
         },
         sectorTailwind: { available: false, note: "No source-backed sector/theme flow feed is connected; excluded from score." },
         social: {
-          available: (social?.sourceCount ?? 0) >= 2,
+          available: (social?.sourceCount ?? 0) >= 2 && sentiment !== null,
           sourceCount: social?.sourceCount ?? 0,
           socialVolume: social?.socialVolume ?? 0,
-          sentimentScore: social?.sentimentScore ?? 0,
+          sentimentScore: sentiment ?? 0,
           positiveNews: social?.positiveNews ?? 0,
           negativeNews: social?.negativeNews ?? 0,
           memeHypeDetected: social?.extremeAttentionDetected ?? false,

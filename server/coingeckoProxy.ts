@@ -16,6 +16,7 @@ import type { Express, Request, Response } from "express";
 import { coinGeckoOhlcPeriodMs, isCryptoCandleComplete } from "../shared/completedBars";
 import { LRUCache } from "./lruCache";
 import { log } from "./logger";
+import { allowOwnerOrAdmin } from "./security/access";
 
 const COINGECKO_BASE = "https://api.coingecko.com/api/v3";
 
@@ -88,7 +89,7 @@ export interface GlobalStats {
   totalMarketCap: number | null;
   totalVolume24h: number | null;
   btcDominance: number | null;
-  ethDominance: number;
+  ethDominance: number | null;
   marketCapChangePercent24h: number | null;
   activeCryptocurrencies: number;
   markets: number;
@@ -535,7 +536,9 @@ export async function getGlobalStats(): Promise<GlobalStats | null> {
       btcDominance:              typeof d.market_cap_percentage?.btc === "number" && Number.isFinite(d.market_cap_percentage.btc)
         ? d.market_cap_percentage.btc
         : null,
-      ethDominance:              d.market_cap_percentage?.eth ?? 0,
+      ethDominance:              typeof d.market_cap_percentage?.eth === "number" && Number.isFinite(d.market_cap_percentage.eth)
+        ? d.market_cap_percentage.eth
+        : null,
       marketCapChangePercent24h: finite(d.market_cap_change_percentage_24h_usd),
       activeCryptocurrencies:    d.active_cryptocurrencies ?? 0,
       markets:                   d.markets ?? 0,
@@ -774,8 +777,9 @@ export function registerCoinGeckoProxy(app: Express) {
     }
   });
 
-  // Clear cache
-  app.post("/api/crypto/clear-cache", (_req: Request, res: Response) => {
+  // Clear cache — owner/admin only
+  app.post("/api/crypto/clear-cache", async (req: Request, res: Response) => {
+    if (!(await allowOwnerOrAdmin(req, res))) return;
     clearCoinGeckoCache();
     res.json({ success: true });
   });

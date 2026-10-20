@@ -6,6 +6,7 @@ import { notifyOwner } from "./_core/notification";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
+import { toPublicAuthUser } from "./security/access";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { classifyTicker, clearClassCache, getClassCacheStats } from "./signalsClassifier";
@@ -125,7 +126,7 @@ export const appRouter = router({
   intelligenceAccountability: intelligenceAccountabilityRouter,
 
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query(opts => toPublicAuthUser(opts.ctx.user)),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });

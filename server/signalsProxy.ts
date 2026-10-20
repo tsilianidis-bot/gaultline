@@ -22,6 +22,7 @@ import { log } from "./logger";
 import { captureError } from "./errorTracking";
 import type { Express, Request, Response } from "express";
 import { getQuote as getYahooQuote, getQuotes as getYahooQuotes } from "./yahooProxy";
+import { allowOwnerOrAdmin } from "./security/access";
 
 const POLYGON_BASE = "https://api.polygon.io";
 
@@ -957,8 +958,9 @@ export function registerSignalsProxy(app: Express) {
     });
   });
 
-  // POST /api/signals/clear-cache — clear quote cache
-  app.post("/api/signals/clear-cache", (_req: Request, res: Response) => {
+  // POST /api/signals/clear-cache — owner/admin only
+  app.post("/api/signals/clear-cache", async (req: Request, res: Response) => {
+    if (!(await allowOwnerOrAdmin(req, res))) return;
     quotesCache = null;
     sparklineCache.clear();
     sparklineFetchedAt = null;
