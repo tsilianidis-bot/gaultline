@@ -172,7 +172,7 @@ export default function MarketIntelligence() {
                 <Clock className="w-3 h-3" />{new Date(data.fetchedAt).toLocaleTimeString()}
               </span>
             )}
-            {user && (
+            {user?.isOwnerOrAdmin === true && (
               <Button variant="outline" size="sm" onClick={() => clearCache.mutate()}
                 disabled={clearCache.isPending || isFetching}
                 className="h-7 px-2 text-xs border-white/20 bg-transparent hover:bg-white/10">

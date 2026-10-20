@@ -50,7 +50,7 @@ const MONO_SM: React.CSSProperties = { ...MONO, fontSize: "11px", letterSpacing:
 
 interface EvidenceScore {
   category: string;
-  score: number;
+  score: number | null;
   signal: "bullish" | "bearish" | "neutral";
   explanation: string;
 }
@@ -58,7 +58,7 @@ interface EvidenceScore {
 interface FaultlineAnswer {
   verdict: string;
   verdictColor: "green" | "yellow" | "red" | "blue";
-  opportunityScore: number;
+  opportunityScore: number | null;
   /** QA r11 B9: the integrity validator withholds model confidence (null). */
   confidence: number | null;
   confidenceLabel: string;
@@ -186,7 +186,7 @@ interface RankedOpportunityItem {
 
 interface SectorRating {
   sector: string;
-  rating: 1 | 2 | 3 | 4 | 5;
+  rating: number | null;
   bias: "bullish" | "bearish" | "neutral";
   reason: string;
 }
@@ -427,7 +427,7 @@ function EvidenceEngineGrid({ scores }: { scores: EvidenceScore[] }) {
         {scores.map((s, i) => (
           <div
             key={i}
-            title={`${s.category}: ${s.signal} (${s.score}/100) — ${s.explanation}`}
+            title={`${s.category}: ${s.signal} (${typeof s.score === "number" ? `${s.score}/100` : "unavailable"}) — ${s.explanation}`}
             style={{
               width: "24px",
               height: "24px",
@@ -445,7 +445,7 @@ function EvidenceEngineGrid({ scores }: { scores: EvidenceScore[] }) {
               height: "8px",
               borderRadius: "50%",
               background: signalColor(s.signal),
-              opacity: 0.7 + (s.score / 333),
+              opacity: typeof s.score === "number" ? 0.7 + (s.score / 333) : 0.45,
             }} />
           </div>
         ))}
@@ -475,10 +475,12 @@ function EvidenceEngineGrid({ scores }: { scores: EvidenceScore[] }) {
                 <div style={{
                   width: "32px",
                   height: "3px",
-                  background: `linear-gradient(90deg, ${signalColor(s.signal)} ${s.score}%, rgba(255,255,255,0.08) ${s.score}%)`,
+                  background: typeof s.score === "number"
+                    ? `linear-gradient(90deg, ${signalColor(s.signal)} ${s.score}%, rgba(255,255,255,0.08) ${s.score}%)`
+                    : "rgba(255,255,255,0.08)",
                   borderRadius: "2px",
                 }} />
-                <span style={{ ...MONO_SM, color: signalColor(s.signal), fontSize: "10px", fontWeight: 700 }}>{s.score}</span>
+                <span style={{ ...MONO_SM, color: signalColor(s.signal), fontSize: "10px", fontWeight: 700 }}>{typeof s.score === "number" ? s.score : "N/A"}</span>
               </div>
             </div>
           ))}
@@ -698,7 +700,7 @@ function EvidenceTransparency({ scores }: { scores: EvidenceScore[] }) {
   const [expanded, setExpanded] = useState(false);
   if (!scores || scores.length === 0) return null;
   const usedEvidence = scores
-    .filter(s => !(s.signal === 'neutral' && s.score === 50))
+    .filter((s): s is EvidenceScore & { score: number } => typeof s.score === "number" && !(s.signal === "neutral" && s.score === 50))
     .map(s => ({ label: s.category, signal: s.signal, score: s.score }))
     .sort((a, b) => Math.abs(b.score - 50) - Math.abs(a.score - 50));
   return (
@@ -1133,7 +1135,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
   const confidenceBorder = confidenceLabelNorm === "HIGH" ? "rgba(0,255,136,0.2)"
     : confidenceLabelNorm === "MODERATE" ? "rgba(255,215,0,0.2)"
     : "rgba(255,68,68,0.2)";
-  const opportunityColor = answer.opportunityScore >= 65 ? "#00FF88" : answer.opportunityScore >= 40 ? "#FFD700" : "#FF4444";
+  const opportunityColor = typeof answer.opportunityScore !== "number" ? "#94A3B8" : answer.opportunityScore >= 65 ? "#00FF88" : answer.opportunityScore >= 40 ? "#FFD700" : "#FF4444";
 
   // Determine if this is a WAIT/HOLD verdict
   const isWaitHold = ["WAIT", "HOLD", "LOW CONVICTION"].includes(answer.verdict);
@@ -1241,7 +1243,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
         <EngineCard
           icon={<Target size={9} />}
           label="Opportunity"
-          value={`${answer.opportunityScore}/100`}
+          value={typeof answer.opportunityScore === "number" ? `${answer.opportunityScore}/100` : "Unavailable"}
           color={opportunityColor}
         />
         <EngineCard
@@ -2055,16 +2057,20 @@ function OpportunityRankingCard({ answer, onAskFollowUp, onDeepDive, onSelectAss
           {showSectors && (
             <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: "6px" }}>
               {answer.sectorLeaderboard.map((s, i) => {
-                const starColor = STAR_COLORS[s.rating] ?? "#FFD700";
+                const rated = typeof s.rating === "number" && Number.isFinite(s.rating);
+                const starColor = rated ? (STAR_COLORS[s.rating as number] ?? "#FFD700") : "#94A3B8";
                 const biasColor = BIAS_COLORS[s.bias] ?? "#FFD700";
                 return (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", background: "rgba(255,255,255,0.02)", border: `1px solid ${BORDER}`, borderRadius: "5px" }}>
-                    {/* Stars */}
-                    <div style={{ display: "flex", gap: "2px", flexShrink: 0 }}>
-                      {[1, 2, 3, 4, 5].map(n => (
-                        <Star key={n} size={9} style={{ color: n <= s.rating ? starColor : "rgba(255,255,255,0.12)", fill: n <= s.rating ? starColor : "none" }} />
-                      ))}
-                    </div>
+                    {rated ? (
+                      <div style={{ display: "flex", gap: "2px", flexShrink: 0 }}>
+                        {[1, 2, 3, 4, 5].map(n => (
+                          <Star key={n} size={9} style={{ color: n <= (s.rating as number) ? starColor : "rgba(255,255,255,0.12)", fill: n <= (s.rating as number) ? starColor : "none" }} />
+                        ))}
+                      </div>
+                    ) : (
+                      <span style={{ ...MONO_SM, fontSize: "9px", color: "#94A3B8", flexShrink: 0 }}>Unavailable</span>
+                    )}
                     {/* Sector name */}
                     <span style={{ ...MONO_SM, fontSize: "11px", color: "#E8EDF5", fontWeight: 600, flex: 1, minWidth: 0 }}>{s.sector}</span>
                     {/* Bias badge */}

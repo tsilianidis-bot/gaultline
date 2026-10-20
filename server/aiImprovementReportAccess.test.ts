@@ -19,7 +19,8 @@ describe("weekly AI improvement reports stay off the member page", () => {
     expect(source).toContain("if (!canReadAiImprovementReports(ctx.user)) return [];");
     expect(source).not.toContain("ctx: _ctx");
     const page = read("client/src/pages/IntelligenceValidation.tsx");
-    expect(page).toContain('user.role === "admin"');
-    expect(page).toMatch(/getAiImprovementReports\.useQuery\(\{ limit: 8 \}, \{ enabled: user\?\.role === "admin" \}\)/);
+    expect(page).toContain("user?.isOwnerOrAdmin === true");
+    expect(page).toMatch(/getAiImprovementReports\.useQuery\(\{ limit: 8 \}, \{ enabled: canReadAiReports \}\)/);
+    expect(page).toContain("{canReadAiReports && <section>");
   });
 });

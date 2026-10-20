@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ENV } from "../_core/env";
 import { checkoutReceiptForCaller, isOwnerOrAdmin, toPublicAuthUser } from "./access";
 
 const owner = "owner-open-id";
@@ -24,13 +25,23 @@ describe("auth.me public user", () => {
     expect(toPublicAuthUser(null)).toBeNull();
     for (const principal of [userA, userB, admin, ownerUser]) {
       const published = toPublicAuthUser(principal);
-      expect(published).toMatchObject({ id: principal.id, email: principal.email, role: principal.role });
+      expect(published).toMatchObject({
+        id: principal.id,
+        email: principal.email,
+        role: principal.role,
+        isOwnerOrAdmin: principal.role === "admin",
+      });
       expect(published).not.toHaveProperty("adminNotes");
       expect(published).not.toHaveProperty("stripeCustomerId");
       expect(published).not.toHaveProperty("stripeSubscriptionId");
       expect(JSON.stringify(published)).not.toContain(principal.adminNotes);
     }
     expect(toPublicAuthUser(userA)).not.toMatchObject({ email: userB.email });
+    ENV.ownerOpenId = owner;
+    expect(toPublicAuthUser(ownerUser).isOwnerOrAdmin).toBe(true);
+    expect(toPublicAuthUser(userA).isOwnerOrAdmin).toBe(false);
+    expect(toPublicAuthUser({ ...admin, isCron: true }).isOwnerOrAdmin).toBe(false);
+    ENV.ownerOpenId = "";
   });
 });
 
