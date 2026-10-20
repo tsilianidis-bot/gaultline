@@ -128,7 +128,7 @@ export default function IntelligenceValidation() {
   const { data: leaderboard } = trpc.intelligenceValidation.symbolLeaderboard.useQuery(undefined, { enabled: !!user });
   const { data: lessons } = trpc.intelligenceValidation.getImprovementLessons.useQuery({ limit: 20 }, { enabled: !!user });
   const { data: patternTags } = trpc.intelligenceValidation.getPatternTagFrequency.useQuery(undefined, { enabled: !!user });
-  const { data: reports } = trpc.intelligenceValidation.getAiImprovementReports.useQuery({ limit: 8 }, { enabled: !!user });
+  const { data: reports } = trpc.intelligenceValidation.getAiImprovementReports.useQuery({ limit: 8 }, { enabled: user?.role === "admin" });
 
   if (!user) {
     return (
@@ -623,7 +623,7 @@ export default function IntelligenceValidation() {
         )}
 
         {/* ── Section 13: Weekly AI Improvement Reports ───────── */}
-        <section>
+        {user.role === "admin" && <section>
           <SectionHeader title="Weekly AI Improvement Reports" subtitle="LLM-synthesized weekly performance analysis and recommendations" icon={Brain} />
           <div className="space-y-3">
             {(reports ?? []).length > 0 ? (reports ?? []).map((report, i) => (
@@ -669,7 +669,7 @@ export default function IntelligenceValidation() {
               </Card>
             )}
           </div>
-        </section>
+        </section>}
 
         {/* ── Section 14: Methodology & Disclaimer ────────────── */}
         <section>
