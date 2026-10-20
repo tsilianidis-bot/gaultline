@@ -16,7 +16,7 @@ import { invokeLLM } from "../_core/llm";
 import { resolveIntent, detectQuestionIntent, QuestionIntent } from "../intentResolver";
 import { getDb, incrementAskUsage, getAskUsageToday } from "../db";
 import { decisionLedger, DecisionLedgerEntry } from "../../drizzle/schema";
-import { eq, desc } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
 import { getQuote } from "../yahooProxy";
 import { getCoinMarketData } from "../coingeckoProxy";
 import { scanOpportunities } from "../ownerSimulation";
@@ -1672,7 +1672,7 @@ export const smartDiscoveryRouter = router({
           autoEvaluated: false,
           resolvedAt: input.outcome !== "pending" ? new Date() : null,
         })
-        .where(eq(decisionLedger.id, input.id));
+        .where(and(eq(decisionLedger.id, input.id), eq(decisionLedger.userId, ctx.user.id)));
       return { success: true };
     }),
 
