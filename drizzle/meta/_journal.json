@@ -519,6 +519,13 @@
       "when": 1791864000000,
       "tag": "0073_pressure_v2_shadow",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "5",
+      "when": 1792479000000,
+      "tag": "0074_vip_guest_invitations",
+      "breakpoints": true
     }
   ]
 }

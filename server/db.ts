@@ -1,8 +1,9 @@
-import { eq, and, desc, count, sql, like, or, gte } from "drizzle-orm";
+import { eq, and, desc, count, sql, like, or, gte, gt, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport, mobileUsage, dayTradeWatchlist, InsertDayTradeWatchlistItem, tradeJournal, InsertTradeJournalEntry, chatbotSessions, chatbotMessages, chatbotLeads, InsertChatbotSession, InsertChatbotMessage, InsertChatbotLead, ChatbotSession, dayTradeSnapshot, pipelineHealthLog, onboardingEmailSequence } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
+import { vipGuestEntitlements, vipGuestInvitations } from "../drizzle/schema";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -228,7 +229,22 @@ export async function getUserTier(userId: number): Promise<'free' | 'core' | 'pr
   if (!db) return 'free';
   const result = await db.select({ accessTier: users.accessTier })
     .from(users).where(eq(users.id, userId)).limit(1);
-  return result[0]?.accessTier ?? 'free';
+  const baseTier = result[0]?.accessTier ?? 'free';
+  if (baseTier === 'premium' || baseTier === 'founding') return baseTier;
+
+  // Issue #111: active VIP access is a separate, expiring entitlement. It never
+  // writes users.accessTier or touches paid billing state, and owner revocation
+  // immediately makes the grant ineligible through the invitation join.
+  const activeVip = await db.select({ id: vipGuestEntitlements.id })
+    .from(vipGuestEntitlements)
+    .innerJoin(vipGuestInvitations, eq(vipGuestEntitlements.invitationId, vipGuestInvitations.id))
+    .where(and(
+      eq(vipGuestEntitlements.userId, userId),
+      gt(vipGuestEntitlements.expiresAt, new Date()),
+      isNull(vipGuestInvitations.revokedAt),
+    ))
+    .limit(1);
+  return activeVip.length > 0 ? 'premium' : baseTier;
 }
 
 export async function setUserTier(

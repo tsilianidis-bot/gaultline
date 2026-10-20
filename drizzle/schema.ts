@@ -2758,6 +2758,48 @@ export const marketMemory = mysqlTable("marketMemory", {
 export type MarketMemory = typeof marketMemory.$inferSelect;
 export type InsertMarketMemory = typeof marketMemory.$inferInsert;
 
+// ── VIP Guest Invitations (Issue #111) ───────────────────────
+/**
+ * Owner-created, single-use invitations. The raw bearer token is never stored;
+ * tokenHash is a SHA-256 digest. Expiry controls only pre-redemption link use.
+ */
+export const vipGuestInvitations = mysqlTable("vipGuestInvitations", {
+  id:               int("id").autoincrement().primaryKey(),
+  tokenHash:        varchar("tokenHash", { length: 64 }).notNull().unique(),
+  createdByUserId:  int("createdByUserId").notNull().references(() => users.id),
+  label:            varchar("label", { length: 120 }),
+  expiresAt:        timestamp("expiresAt").notNull(),
+  revokedAt:        timestamp("revokedAt"),
+  revokedByUserId:  int("revokedByUserId").references(() => users.id),
+  redeemedAt:       timestamp("redeemedAt"),
+  redeemedByUserId: int("redeemedByUserId").references(() => users.id),
+  redeemedByEmail:  varchar("redeemedByEmail", { length: 320 }),
+  createdAt:        timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  activeIdx:  index("vip_guest_invites_active_idx").on(t.expiresAt, t.redeemedAt, t.revokedAt),
+  creatorIdx: index("vip_guest_invites_creator_idx").on(t.createdByUserId, t.createdAt),
+}));
+export type VipGuestInvitation = typeof vipGuestInvitations.$inferSelect;
+export type InsertVipGuestInvitation = typeof vipGuestInvitations.$inferInsert;
+
+/**
+ * A separate expiring entitlement issued only after an invitation is redeemed.
+ * It intentionally does not alter the permanent users.accessTier or any billing state.
+ */
+export const vipGuestEntitlements = mysqlTable("vipGuestEntitlements", {
+  id:           int("id").autoincrement().primaryKey(),
+  invitationId: int("invitationId").notNull().references(() => vipGuestInvitations.id),
+  userId:       int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  grantedAt:    timestamp("grantedAt").notNull(),
+  expiresAt:    timestamp("expiresAt").notNull(),
+  createdAt:    timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  invitationUniq: uniqueIndex("vip_guest_entitlements_invite_uniq").on(t.invitationId),
+  userExpiryIdx:  index("vip_guest_entitlements_user_exp_idx").on(t.userId, t.expiresAt),
+}));
+export type VipGuestEntitlement = typeof vipGuestEntitlements.$inferSelect;
+export type InsertVipGuestEntitlement = typeof vipGuestEntitlements.$inferInsert;
+
 // ── Promotional Campaigns ────────────────────────────────────
 /**
  * Stores promotional campaign configurations.

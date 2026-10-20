@@ -6,6 +6,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import rateLimit from "express-rate-limit";
 import { canonicalBrowserHost } from "./canonicalHost";
 import { registerOAuthRoutes } from "./oauth";
+import { registerVipInvitationRoutes } from "./vipInvitationRoutes";
 import { registerStorageProxy } from "./storageProxy";
 import { registerFredProxy } from "../fredProxy";
 import { SORO_FEATURED_IMAGE_CSP_SOURCE } from "../soroBlogFeed";
@@ -178,6 +179,7 @@ async function startServer() {
   app.use("/api/crypto", signalsLimiter);
 
   registerStorageProxy(app);
+  registerVipInvitationRoutes(app);
   registerOAuthRoutes(app);
   registerFredProxy(app);
   registerSignalsProxy(app);

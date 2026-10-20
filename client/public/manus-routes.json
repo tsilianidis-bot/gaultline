@@ -557,6 +557,10 @@
       "title": "Publication-gated contextual access"
     },
     {
+      "path": "/invite",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
       "path": "/is-now-good-time-to-buy-stocks",
       "title": "Preserved direct route and existing contextual links"
     },

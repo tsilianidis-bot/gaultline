@@ -105,6 +105,11 @@
     "redirect": null
   },
   {
+    "path": "/app/admin/invitations",
+    "component": "AdminVipInvitations",
+    "redirect": null
+  },
+  {
     "path": "/app/admin/publishing",
     "component": "AdminPublishing",
     "redirect": null
@@ -766,6 +771,11 @@
   },
   {
     "path": "/intelligence-track-record",
+    "component": "PageLoader",
+    "redirect": null
+  },
+  {
+    "path": "/invite",
     "component": "PageLoader",
     "redirect": null
   },

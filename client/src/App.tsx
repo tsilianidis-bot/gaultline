@@ -178,6 +178,8 @@ const About = lazy(() => import("./pages/About"));
 const TrustCenter = lazy(() => import("./pages/TrustCenter"));
 const PromoRedeem = lazy(() => import("./pages/PromoRedeem"));
 const AdminPromoDashboard = lazy(() => import("./pages/AdminPromoDashboard"));
+const VipInviteRedeem = lazy(() => import("./pages/VipInviteRedeem"));
+const AdminVipInvitations = lazy(() => import("./pages/AdminVipInvitations"));
 const Roadmap             = lazy(() => import("./pages/Roadmap"));
 const ChatInbox           = lazy(() => import("./pages/admin/ChatInbox"));
 const SeismographIntelligence = lazy(() => import("./pages/SeismographIntelligence"));
@@ -692,6 +694,14 @@ function Router() {
            The cinematic render gate (first-time visitors) still intercepts before
            Router() runs, so this only affects returning unauthenticated visitors. */}
       <Route path="/"><RootRoute /></Route>
+      {/* Private VIP invitation redemption — token is stripped server-side before this route. */}
+      <Route path="/invite">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <VipInviteRedeem />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
       {/* Promo campaign redemption — public, no AppLayout */}
       <Route path="/promo/:code">
         <ErrorBoundary>
@@ -791,6 +801,7 @@ function Router() {
               <Route path="/app/admin/chat-inbox">
                 <ErrorBoundary><Suspense fallback={<PageLoader />}><ChatInbox /></Suspense></ErrorBoundary>
               </Route>
+              <Route path="/app/admin/invitations" component={AdminVipInvitations} />
               <Route path="/app/tools">
                 <ErrorBoundary><Suspense fallback={<PageLoader />}><ToolsHome /></Suspense></ErrorBoundary>
               </Route>
@@ -859,7 +870,7 @@ function shouldShowCinematic(): boolean {
     const publicPaths = ['/blog', '/daily-brief', '/intelligence-library', '/analysis',
       '/intelligence', '/intel-archive', '/methodology', '/pressure-index', '/legal',
       '/contact', '/press', '/about', '/platform', '/phoenix-systems', '/glossary',
-      '/pricing', '/r/', '/mobile', '/public-', '/market-crash', '/alt-season',
+      '/pricing', '/invite', '/r/', '/mobile', '/public-', '/market-crash', '/alt-season',
       '/bitcoin-', '/ethereum-', '/nvda-', '/pltr-', '/tao-', '/tsla-', '/meta-',
       '/amd-', '/ai-stocks', '/market-regime', '/market-crash-indicator',
       '/recession-', '/federal-reserve', '/liquidity-', '/volatility-', '/ai-bubble',

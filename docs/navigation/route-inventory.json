@@ -189,6 +189,15 @@
     "note": "Router mount, component, parameters, and access logic unchanged."
   },
   {
+    "path": "/app/admin/invitations",
+    "component": "AdminVipInvitations",
+    "redirect": null,
+    "treatment": "7. Authorized internal or administrative destination",
+    "access": "Existing owner/admin checks unchanged",
+    "navigation": "Owner portal only; excluded from member navigation and search",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
     "path": "/app/admin/publishing",
     "component": "AdminPublishing",
     "redirect": null,
@@ -1384,6 +1393,15 @@
     "access": "Existing public or standalone boundary unchanged",
     "navigation": "Publication-gated contextual access",
     "note": "Router mount, component, parameters, and access logic unchanged. Default-off publication flag unchanged; not activated."
+  },
+  {
+    "path": "/invite",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
   },
   {
     "path": "/is-now-good-time-to-buy-stocks",
