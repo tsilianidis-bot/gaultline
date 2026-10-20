@@ -106,15 +106,15 @@ export function identifyPrimaryDriver(
 
 // ── Bull Evidence ─────────────────────────────────────────────
 
-function buildBullEvidence(
+export function buildBullEvidence(
   pressure: FaultlinePressureOutput,
   evidence: FMOSEvidenceOutput
 ): string[] {
   const p = pressure.overallPressure;
   const bullEvidence: string[] = [];
 
-  // Pressure-based bull evidence
-  if (p < 40) {
+  // LOW RISK is below 25, the same band as the regime classifier and identifyPrimaryDriver.
+  if (p < 25) {
     bullEvidence.push(`Low systemic pressure (${p}/100) — no major stress vectors elevated`);
   }
 

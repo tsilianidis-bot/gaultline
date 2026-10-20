@@ -173,10 +173,10 @@ describe("Labor & Rates (engine id market-breadth)", () => {
     expect(LABOR_RATES_FAMILY_NAME).not.toMatch(/breadth/i);
   });
 
-  it("missing / 0-sentinel scores stay null — never a neutral 50", () => {
+  it("missing scores stay null and an observed 0 is kept — never a neutral 50", () => {
     expect(normalizeLaborRatesScore(null)).toBeNull();
     expect(normalizeLaborRatesScore(undefined)).toBeNull();
-    expect(normalizeLaborRatesScore(0)).toBeNull();
+    expect(normalizeLaborRatesScore(0)).toBe(0);
     expect(normalizeLaborRatesScore(Number.NaN)).toBeNull();
     expect(normalizeLaborRatesScore(45)).toBe(45);
   });

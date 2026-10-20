@@ -37,15 +37,16 @@ function month(overrides: Partial<HistoricalMonth> = {}): HistoricalMonth {
   };
 }
 
-/** The pre-correction similarity formula: missing sub-scores compared as 50. */
+/** The pre-correction similarity formula: missing sub-scores compared as 50. A stored 0 is observed. */
 function legacySimilarity(a: HistoricalMonth, b: HistoricalMonth): number {
+  const observed = (value: number | null) => value ?? 50;
   const scoreSimil = Math.max(0, 100 - Math.abs(a.score - b.score) * 2);
   const subDiff = [
-    Math.abs((a.liquidity || 50) - (b.liquidity || 50)),
-    Math.abs((a.credit || 50) - (b.credit || 50)),
-    Math.abs((a.volatility || 50) - (b.volatility || 50)),
-    Math.abs((a.macro || 50) - (b.macro || 50)),
-    Math.abs((a.breadth || 50) - (b.breadth || 50)),
+    Math.abs(observed(a.liquidity) - observed(b.liquidity)),
+    Math.abs(observed(a.credit) - observed(b.credit)),
+    Math.abs(observed(a.volatility) - observed(b.volatility)),
+    Math.abs(observed(a.macro) - observed(b.macro)),
+    Math.abs(observed(a.breadth) - observed(b.breadth)),
   ].reduce((sum, value) => sum + value, 0);
   const subSimil = Math.max(0, 100 - subDiff / 5);
   const macroSimil = a.tsy10y !== null && b.tsy10y !== null
@@ -79,6 +80,16 @@ describe("complete inputs stay on the prior formulas", () => {
     const actual = computeSimilarity(left, right);
     expect(actual).toBe(legacySimilarity(left, right));
     expect(String(actual)).toBe(String(legacySimilarity(left, right)));
+  });
+
+  it("keeps an observed sub-score of 0 in the similarity mean", () => {
+    const left = month({ liquidity: 0, macro: 0 });
+    const right = month({ liquidity: 10, macro: 0 });
+    expect(computeSimilarity(left, right)).toBe(legacySimilarity(left, right));
+    const substituted = Math.abs((0 || 50) - 10);
+    const kept = Math.abs(0 - 10);
+    expect(kept).not.toBe(substituted);
+    expect(computeSimilarity(left, right)).toBeLessThan(100);
   });
 
   it("evidence-family text is unchanged when the latest score and the six-month window are complete", () => {

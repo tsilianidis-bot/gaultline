@@ -346,6 +346,15 @@ interface InsertablePattern {
   isActive: boolean;
 }
 
+/**
+ * Pressure score used to match analogs for a detected pattern.
+ * A missing or non-finite score is withheld. It is not replaced with 50.
+ * A computed 0 is kept.
+ */
+export function patternDetectionPressureScore(pressureScore: number | null | undefined): number | null {
+  return typeof pressureScore === "number" && Number.isFinite(pressureScore) ? pressureScore : null;
+}
+
 async function detectActivePatterns(
   readings: SeismographReadingRow[],
   history: HistoryEntry[]
@@ -356,11 +365,10 @@ async function detectActivePatterns(
   for (const spec of PATTERN_SPECS) {
     if (spec.detect(readings, history)) {
       const description = spec.describe(readings);
-      const analogs = computeAnalogs(
-        readings[0]?.pressureScore ?? 50,
-        readings[0]?.regime ?? "",
-        history
-      );
+      const observedPressure = patternDetectionPressureScore(readings[0]?.pressureScore);
+      const analogs = observedPressure == null
+        ? []
+        : computeAnalogs(observedPressure, readings[0]?.regime ?? "", history);
       const outcomes = computeOutcomeDistribution(analogs);
       const historicalCount = Math.floor(
         history.length *

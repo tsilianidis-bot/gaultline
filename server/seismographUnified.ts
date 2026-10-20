@@ -462,23 +462,22 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
   ]);
 
   // ── 2. Normalize history ──────────────────────────────────────
-  // A stored 0 is "not computed", not zero stress. Genuine low-stress readings
-  // are about 20–30. Missing sub-scores stay null and are excluded later.
-  // Raw values of the last two rows still drive the prior-row carry-forward
-  // below, which copies an observed prior score and never invents 50.
-  const rawLatest = allHistory[allHistory.length - 1];
-  const rawPrev = allHistory.length >= 2 ? allHistory[allHistory.length - 2] : null;
+  // A finite stored score, including 0, is an observation. Liquidity at the
+  // HY/SOFR floor and macro at the low end both compute to 0. Only
+  // null, undefined, and non-finite values are missing. The May 2026 row is
+  // the one historical row that stored 0 as a missing-data sentinel, and
+  // that row is recognized by its month, not by the value 0.
   const history: HistoricalMonth[] = allHistory.map((r) => ({
     month: r.month,
     score: r.overallPressure,
     // Canonical band from the stored score (stored legacy regime labels are not rewritten).
     regime: pressureRegimeLabel(r.overallPressure),
-    liquidity: normalizeStoredSubScore(r.liquidityStress),
-    credit: normalizeStoredSubScore(r.creditContagion),
-    volatility: normalizeStoredSubScore(r.volatilityRegime),
-    macro: normalizeStoredSubScore(r.macroSensitivity),
-    breadth: normalizeLaborRatesScore(r.marketBreadth),
-    aiBubble: normalizeStoredSubScore(r.aiBubble),
+    liquidity: normalizeHistorySubScore(r.liquidityStress, r.month, "liquidity"),
+    credit: normalizeHistorySubScore(r.creditContagion, r.month, "credit"),
+    volatility: normalizeHistorySubScore(r.volatilityRegime, r.month, "volatility"),
+    macro: normalizeHistorySubScore(r.macroSensitivity, r.month, "macro"),
+    breadth: normalizeHistorySubScore(r.marketBreadth, r.month, "breadth"),
+    aiBubble: normalizeHistorySubScore(r.aiBubble, r.month, "aiBubble"),
     baaSpread: r.baaSpread !== null ? Number(r.baaSpread) : null,
     hySpread: r.hySpreadProxy !== null ? Number(r.hySpreadProxy) : null,
     tsy10y: r.tsy10y !== null ? Number(r.tsy10y) : null,
@@ -505,18 +504,18 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
   const currentPercentile = historicalPercentileRank(currentScore, history.map((h) => h.score));
 
   // ── 4. Evidence families from sub-scores ─────────────────
-  // Guard: if the latest DB row did not compute a sub-score, carry the previous
-  // row's observed value. A missing previous value stays null and the family is
-  // omitted. This never writes a neutral 50.
+  // If the latest row's sub-score is missing, carry the previous row's observed
+  // value. A stored 0 is an observation and is not carried forward. A missing
+  // previous value stays null and the family is omitted. This never writes 50.
   const prev = history.length >= 2 ? history[history.length - 2] : null;
-  const latestForFamilies: typeof latest = (rawLatest && rawPrev && prev)
+  const latestForFamilies: typeof latest = prev
     ? {
         ...latest,
-        liquidity: (rawLatest.liquidityStress === 0 || rawLatest.liquidityStress === null) ? prev.liquidity : latest.liquidity,
-        credit:    (rawLatest.creditContagion  === 0 || rawLatest.creditContagion  === null) ? prev.credit    : latest.credit,
-        volatility:(rawLatest.volatilityRegime === 0 || rawLatest.volatilityRegime === null) ? prev.volatility: latest.volatility,
-        macro:     (rawLatest.macroSensitivity === 0 || rawLatest.macroSensitivity === null) ? prev.macro     : latest.macro,
-        breadth:   (rawLatest.marketBreadth    === 0 || rawLatest.marketBreadth    === null) ? prev.breadth   : latest.breadth,
+        liquidity: carryForwardMissingSubScore(latest.liquidity, prev.liquidity),
+        credit: carryForwardMissingSubScore(latest.credit, prev.credit),
+        volatility: carryForwardMissingSubScore(latest.volatility, prev.volatility),
+        macro: carryForwardMissingSubScore(latest.macro, prev.macro),
+        breadth: carryForwardMissingSubScore(latest.breadth, prev.breadth),
       }
     : latest;
   // Request path: cached priors only (computed by the scheduled pipeline); never fetches FRED.
@@ -753,12 +752,44 @@ export const LABOR_RATES_FAMILY_NAME = pressureVectorLabel("market-breadth");
  */
 export const YIELD_CURVE_FAMILY_NAME = pressureVectorLabel("volatility-regime");
 
+/** The May 2026 pressureHistory row. Its documented zero sub-scores are missing data. */
+export const MAY_2026_SENTINEL_MONTH = "2026-05";
+
+const MAY_2026_SENTINEL_KEYS = new Set<HistorySubScoreKey>(["liquidity", "credit", "macro", "breadth"]);
+
+export type HistorySubScoreKey = "liquidity" | "credit" | "volatility" | "macro" | "breadth" | "aiBubble";
+
+export function isMay2026SentinelMonth(month: string | null | undefined): boolean {
+  return month === MAY_2026_SENTINEL_MONTH;
+}
+
 /**
- * Stored sub-score: null/undefined/non-finite or the 0 "not computed" sentinel
- * stays null. A genuine low reading (about 20–30) is kept. Never a neutral 50.
+ * Stored sub-score. Null, undefined, and non-finite values are missing.
+ * A finite 0 is a computed floor (liquidity when HY <= 200 and SOFR <= 2,
+ * macro at the low end) and is kept. Never a neutral 50.
  */
 export function normalizeStoredSubScore(raw: number | null | undefined): number | null {
-  return typeof raw === "number" && Number.isFinite(raw) && raw !== 0 ? raw : null;
+  return typeof raw === "number" && Number.isFinite(raw) ? raw : null;
+}
+
+/**
+ * History-row sub-score. Every month keeps a finite 0. The May 2026 row is
+ * the exception, and only for the four columns that batch stored as 0 instead
+ * of null: liquidity, credit, macro, and breadth. Volatility and AI bubble
+ * are not part of that sentinel.
+ */
+export function normalizeHistorySubScore(
+  raw: number | null | undefined,
+  month: string,
+  key: HistorySubScoreKey,
+): number | null {
+  if (isMay2026SentinelMonth(month) && raw === 0 && MAY_2026_SENTINEL_KEYS.has(key)) return null;
+  return normalizeStoredSubScore(raw);
+}
+
+/** Copy a prior observation only when the latest value is missing. A stored 0 stays. */
+export function carryForwardMissingSubScore(latest: number | null, previous: number | null): number | null {
+  return latest == null ? previous : latest;
 }
 
 /**
@@ -1085,6 +1116,12 @@ function detectRegimeTransitions(history: HistoricalMonth[]): RegimeTransition[]
 
 // ─── Transition probabilities ─────────────────────────────────────────────────
 
+/** Public copy for a score at or above 70. The rate is uncalibrated, so no percent is stated. */
+export function highScoreTransitionEvidence(currentScore: number): string | null {
+  if (currentScore >= 70) return "Score above 70 — regime-transition probability is uncalibrated and is not stated.";
+  return null;
+}
+
 function computeTransitionProbabilities(
   currentScore: number,
   currentRegime: string,
@@ -1095,7 +1132,6 @@ function computeTransitionProbabilities(
   const sampleSize = similar.length;
 
   // Among similar periods, how often did regime change in the next 3 months?
-  let transitionCount = 0;
   let toCrisisCount = 0;
   let toElevatedCount = 0;
   let toLowCount = 0;
@@ -1105,16 +1141,12 @@ function computeTransitionProbabilities(
     const future = history.slice(i + 1, i + 4);
     const regimeChanged = future.some((f) => f.regime !== history[i].regime);
     if (regimeChanged) {
-      transitionCount++;
       const nextRegime = future.find((f) => f.regime !== history[i].regime)?.regime ?? "";
       if (nextRegime.includes("CRITICAL") || nextRegime.includes("CRISIS")) toCrisisCount++;
       else if (nextRegime.includes("HIGH") || nextRegime.includes("ELEVATED")) toElevatedCount++;
       else toLowCount++;
     }
   }
-
-  const transitionRate = sampleSize > 0 ? transitionCount / sampleSize : 0.3;
-  const remainRate = 1 - transitionRate;
 
   const toCrisis = sampleSize > 0 ? Math.round((toCrisisCount / sampleSize) * 100) : 5;
   const toElevated = sampleSize > 0 ? Math.round((toElevatedCount / sampleSize) * 100) : 15;
@@ -1124,8 +1156,8 @@ function computeTransitionProbabilities(
   const confidence = Math.min(90, 40 + Math.floor(sampleSize / 3));
 
   const evidence: string[] = [];
-  if (currentScore >= 70)
-    evidence.push(`Score above 70 — historically ${Math.round(transitionRate * 100)}% of similar periods saw regime change within 3 months`);
+  const highScoreEvidence = highScoreTransitionEvidence(currentScore);
+  if (highScoreEvidence) evidence.push(highScoreEvidence);
   if (currentScore <= 35)
     evidence.push(`Low pressure environment — regime persistence historically high at this level`);
   evidence.push(`Based on ${sampleSize} historical months with similar pressure (±10 points)`);

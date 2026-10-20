@@ -21,7 +21,9 @@ import {
 import { attentionForTrendingQuote } from "./socialIntelligence";
 import { canonicalEngineEvidence } from "../shared/snapshotEvidence";
 import { fmosToEvidencePackets } from "./seismographAdapters";
-import { identifyPrimaryDriver } from "./fmos/engines/probability";
+import { buildBullEvidence, identifyPrimaryDriver } from "./fmos/engines/probability";
+import { patternDetectionPressureScore } from "./seismographEngine";
+import { highScoreTransitionEvidence } from "./seismographUnified";
 
 const delayedQuality: CanonicalDataQualityInput = {
   generatedAt: "2026-10-20T20:20:26.444Z",
@@ -126,12 +128,35 @@ describe("live-capture public output", () => {
       regime: { currentRegime: "MODERATE", pressureLevel: "Moderate", confidence: 10, description: "d" },
       probability: { bull: 40, neutral: 40, bear: 20, confidence: 10, primaryDriver: "Credit" },
       analogs: [{ label: "Fed Pivot Rally", similarity: 91, year: 2019, outcome: "o" }],
-      transition: { transitionProbability: 0, transitionDirection: "stable" },
+      transition: { transitionProbability: 82, transitionDirection: "elevated", estimatedTimeToTransition: "unknown" },
       confidence: { score: 10 },
     } as any);
+    const transition = packets.find(packet => packet.evidenceType === "transition_signal")!;
     const text = packets.map(packet => packet.humanReadable).join(" ");
     expect(text).not.toMatch(/%\s*probability of regime transition/);
     expect(text).toContain("Closest historical analog: Fed Pivot Rally (91% similarity)");
+    expect(transition.humanReadable).toBe("Regime-transition probability is uncalibrated and is not stated.");
+    expect(transition.strength).toBe(0);
+    expect(transition.metadata?.transitionProbability).toBe("uncalibrated");
+    expect(transition.primaryReading).toBe("direction=elevated");
+    expect(`${transition.strength} ${transition.primaryReading} ${transition.humanReadable} ${JSON.stringify(transition.metadata)}`).not.toMatch(/82|%/);
+    expect(highScoreTransitionEvidence(70)).toBe("Score above 70 — regime-transition probability is uncalibrated and is not stated.");
+    expect(highScoreTransitionEvidence(70)).not.toMatch(/\d+%/);
+    expect(highScoreTransitionEvidence(69)).toBeNull();
+  });
+
+  it("uses the low-risk band for bull evidence and withholds a missing pattern score", () => {
+    const emptyEvidence = { families: [], bullishFamilies: 0, bearishFamilies: 0, diversityScore: 0 } as any;
+    const atFloor = buildBullEvidence({ overallPressure: 0, vectors: [] } as any, emptyEvidence);
+    const low = buildBullEvidence({ overallPressure: 24, vectors: [] } as any, emptyEvidence);
+    const moderate = buildBullEvidence({ overallPressure: 33, vectors: [] } as any, emptyEvidence);
+    expect(atFloor.join(" ")).toContain("Low systemic pressure (0/100)");
+    expect(low.join(" ")).toContain("Low systemic pressure (24/100)");
+    expect(moderate.join(" ")).not.toMatch(/low systemic pressure/i);
+    expect(patternDetectionPressureScore(0)).toBe(0);
+    expect(patternDetectionPressureScore(undefined)).toBeNull();
+    expect(patternDetectionPressureScore(null)).toBeNull();
+    expect(patternDetectionPressureScore(Number.NaN)).toBeNull();
   });
 
   it("does not substitute 50 when history or today's percentile is missing", () => {
@@ -174,17 +199,20 @@ describe("live-capture public output", () => {
       inputQuality: [
         { inputId: "hy_credit_spread", freshnessStatus: "LIVE", contributesTo: ["liquidity-stress"], observedAt: "2026-10-17T00:00:00.000Z" },
         { inputId: "secured_overnight_financing_rate", freshnessStatus: "LIVE", contributesTo: ["liquidity-stress"], observedAt: "2026-10-16T00:00:00.000Z" },
+        { inputId: "ten_year_treasury_yield", freshnessStatus: "DELAYED", contributesTo: ["volatility-regime"], observedAt: "2026-10-14T00:00:00.000Z" },
         { inputId: "ai_concentration_static_baseline", freshnessStatus: "LIVE", contributesTo: ["ai-bubble"], observedAt: null, availabilityStatus: "STATIC_MODEL_INPUT" },
       ],
     });
     const liquidity = state.engines.find(engine => engine.engineId === "liquidity-stress");
     const ai = state.engines.find(engine => engine.engineId === "ai-bubble");
     expect(liquidity?.observedAt).toBe("2026-10-16T00:00:00.000Z");
-    expect(ai?.observedAt).toBeNull();
+    expect(ai?.observedAt).toBe("2026-10-14T00:00:00.000Z");
+    expect(ai?.sourceInputIds).toEqual(["ai_concentration_static_baseline"]);
     expect(ai?.freshnessStatus).toBe("STATIC");
     expect(canonicalEngineEvidence({ sourceInputIds: ["ai_concentration_static_baseline"], freshnessStatus: "CURRENT" }, state)).toBe("STATIC");
     const projected = projectPressureFromCanonical(state);
     expect(projected?.vectors.find(vector => vector.id === "ai-bubble")?.dataStatus).toBe("static");
+    expect(projected?.vectors.find(vector => vector.id === "ai-bubble")?.observedAt).toBe("2026-10-14T00:00:00.000Z");
     expect(projected?.vectors.find(vector => vector.id === "liquidity-stress")?.dataStatus).toBe("live");
     expect(projected?.vectors.find(vector => vector.id === "liquidity-stress")?.observedAt).toBe("2026-10-16T00:00:00.000Z");
   });
