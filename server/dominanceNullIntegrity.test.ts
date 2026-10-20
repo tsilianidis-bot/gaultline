@@ -158,6 +158,20 @@ describe("crypto dominance display does not use 55", () => {
     const { getGlobalStats } = await import("./coingeckoProxy");
     const stats = await getGlobalStats();
     expect(stats?.btcDominance).toBeNull();
+    expect(stats?.ethDominance).toBeCloseTo(17.1, 1);
+  });
+
+  it("propagates a missing CoinGecko ETH dominance as null", async () => {
+    const data = makeGlobalData();
+    delete (data.data.market_cap_percentage as { eth?: number }).eth;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(mockOk(data)));
+    vi.doMock("./logger", () => ({ log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
+    const { clearCoinGeckoCache, getGlobalStats } = await import("./coingeckoProxy");
+    clearCoinGeckoCache();
+    const stats = await getGlobalStats();
+    expect(stats?.btcDominance).toBeCloseTo(55.2, 1);
+    expect(stats?.ethDominance).toBeNull();
+    expect(JSON.stringify(stats)).not.toMatch(/"ethDominance":0/);
   });
 
   it("does not let a missing dominance reading enter the systemic score", async () => {

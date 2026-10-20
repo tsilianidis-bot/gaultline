@@ -16,6 +16,7 @@ import type { Express, Request, Response } from "express";
 import { coinGeckoOhlcPeriodMs, isCryptoCandleComplete } from "../shared/completedBars";
 import { LRUCache } from "./lruCache";
 import { log } from "./logger";
+import { allowOwnerOrAdmin } from "./security/access";
 
 const COINGECKO_BASE = "https://api.coingecko.com/api/v3";
 
@@ -57,26 +58,26 @@ export interface CoinMarketData {
   image: string;
   currentPrice: number | null;
   marketCap: number | null;
-  marketCapRank: number;
+  marketCapRank: number | null;
   fullyDilutedValuation: number | null;
   totalVolume: number | null;
   high24h: number | null;
   low24h: number | null;
-  priceChange24h: number;
+  priceChange24h: number | null;
   priceChangePercent24h: number | null;
   /** Display only: null when CoinGecko supplied no 24h change. */
   priceChangePercent24hDisplay?: number | null;
   priceChangePercent7d: number | null;
   priceChangePercent30d: number | null;
-  marketCapChange24h: number;
-  marketCapChangePercent24h: number;
-  circulatingSupply: number;
+  marketCapChange24h: number | null;
+  marketCapChangePercent24h: number | null;
+  circulatingSupply: number | null;
   totalSupply: number | null;
   maxSupply: number | null;
   ath: number | null;
-  athChangePercent: number;
-  atl: number;
-  atlChangePercent: number;
+  athChangePercent: number | null;
+  atl: number | null;
+  atlChangePercent: number | null;
   sparkline7d: number[];
   lastUpdated: string;
   // Computed volatility metrics
@@ -88,10 +89,10 @@ export interface GlobalStats {
   totalMarketCap: number | null;
   totalVolume24h: number | null;
   btcDominance: number | null;
-  ethDominance: number;
+  ethDominance: number | null;
   marketCapChangePercent24h: number | null;
-  activeCryptocurrencies: number;
-  markets: number;
+  activeCryptocurrencies: number | null;
+  markets: number | null;
   /** CoinGecko `data.updated_at`, in Unix milliseconds; null when absent or invalid. */
   observedAt: number | null;
   /** Local receipt time. This is never used as a provider observation time. */
@@ -383,25 +384,25 @@ export function mapRawCoin(c: Record<string, unknown>): CoinMarketData {
     image:                    (c.image as string) ?? "",
     currentPrice:             price,
     marketCap,
-    marketCapRank:            (c.market_cap_rank as number) ?? 0,
-    fullyDilutedValuation:    (c.fully_diluted_valuation as number | null) ?? null,
+    marketCapRank:            finiteCoinNumber(c.market_cap_rank),
+    fullyDilutedValuation:    finiteCoinNumber(c.fully_diluted_valuation),
     totalVolume,
     high24h:                  high,
     low24h:                   low,
-    priceChange24h:           (c.price_change_24h as number) ?? 0,
+    priceChange24h:           finiteCoinNumber(c.price_change_24h),
     priceChangePercent24h:    finiteCoinNumber(c.price_change_percentage_24h),
     priceChangePercent24hDisplay: typeof c.price_change_percentage_24h === "number" && Number.isFinite(c.price_change_percentage_24h) ? c.price_change_percentage_24h : null,
-    priceChangePercent7d:     (c.price_change_percentage_7d_in_currency as number | null) ?? null,
-    priceChangePercent30d:    (c.price_change_percentage_30d_in_currency as number | null) ?? null,
-    marketCapChange24h:       (c.market_cap_change_24h as number) ?? 0,
-    marketCapChangePercent24h:(c.market_cap_change_percentage_24h as number) ?? 0,
-    circulatingSupply:        (c.circulating_supply as number) ?? 0,
-    totalSupply:              (c.total_supply as number | null) ?? null,
-    maxSupply:                (c.max_supply as number | null) ?? null,
+    priceChangePercent7d:     finiteCoinNumber(c.price_change_percentage_7d_in_currency),
+    priceChangePercent30d:    finiteCoinNumber(c.price_change_percentage_30d_in_currency),
+    marketCapChange24h:       finiteCoinNumber(c.market_cap_change_24h),
+    marketCapChangePercent24h: finiteCoinNumber(c.market_cap_change_percentage_24h),
+    circulatingSupply:        finiteCoinNumber(c.circulating_supply),
+    totalSupply:              finiteCoinNumber(c.total_supply),
+    maxSupply:                finiteCoinNumber(c.max_supply),
     ath:                      ath,
-    athChangePercent:         (c.ath_change_percentage as number) ?? 0,
-    atl:                      (c.atl as number) ?? 0,
-    atlChangePercent:         (c.atl_change_percentage as number) ?? 0,
+    athChangePercent:         finiteCoinNumber(c.ath_change_percentage),
+    atl:                      finiteCoinNumber(c.atl),
+    atlChangePercent:         finiteCoinNumber(c.atl_change_percentage),
     sparkline7d:              sparkRaw.slice(-48),  // last 48 data points (~2 days)
     lastUpdated:              (c.last_updated as string) ?? "",
     volatility24h:            high == null || low == null ? null : low > 0 ? ((high - low) / low) * 100 : 0,
@@ -535,10 +536,12 @@ export async function getGlobalStats(): Promise<GlobalStats | null> {
       btcDominance:              typeof d.market_cap_percentage?.btc === "number" && Number.isFinite(d.market_cap_percentage.btc)
         ? d.market_cap_percentage.btc
         : null,
-      ethDominance:              d.market_cap_percentage?.eth ?? 0,
+      ethDominance:              typeof d.market_cap_percentage?.eth === "number" && Number.isFinite(d.market_cap_percentage.eth)
+        ? d.market_cap_percentage.eth
+        : null,
       marketCapChangePercent24h: finite(d.market_cap_change_percentage_24h_usd),
-      activeCryptocurrencies:    d.active_cryptocurrencies ?? 0,
-      markets:                   d.markets ?? 0,
+      activeCryptocurrencies:    finite(d.active_cryptocurrencies),
+      markets:                   finite(d.markets),
       observedAt:                updatedAtSeconds === null ? null : updatedAtSeconds * 1000,
       fetchedAt:                 Date.now(),
     };
@@ -774,8 +777,9 @@ export function registerCoinGeckoProxy(app: Express) {
     }
   });
 
-  // Clear cache
-  app.post("/api/crypto/clear-cache", (_req: Request, res: Response) => {
+  // Clear cache — owner/admin only
+  app.post("/api/crypto/clear-cache", async (req: Request, res: Response) => {
+    if (!(await allowOwnerOrAdmin(req, res))) return;
     clearCoinGeckoCache();
     res.json({ success: true });
   });

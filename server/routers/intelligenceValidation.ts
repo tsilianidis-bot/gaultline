@@ -17,6 +17,7 @@
 import { z } from "zod";
 import { ENV } from "../_core/env";
 import { router, protectedProcedure } from "../_core/trpc";
+import { isOwnerOrAdmin } from "../security/access";
 import { getDb } from "../db";
 import { decisionLedger, improvementLessons, aiImprovementReports, DecisionLedgerEntry } from "../../drizzle/schema";
 import { eq, desc, and, gte, lte, isNotNull, sql } from "drizzle-orm";
@@ -32,12 +33,10 @@ import { eq, desc, and, gte, lte, isNotNull, sql } from "drizzle-orm";
  * There is no per-user key, so a member must not receive the rows.
  */
 export function canReadAiImprovementReports(
-  user: { role?: string | null; openId?: string | null } | null | undefined,
+  user: { role?: string | null; openId?: string | null; isCron?: boolean | null } | null | undefined,
   ownerOpenId: string = ENV.ownerOpenId,
 ): boolean {
-  if (!user) return false;
-  if (user.role === "admin") return true;
-  return ownerOpenId.length > 0 && user.openId === ownerOpenId;
+  return isOwnerOrAdmin(user, ownerOpenId);
 }
 
 function computeAccuracy(entries: DecisionLedgerEntry[]) {

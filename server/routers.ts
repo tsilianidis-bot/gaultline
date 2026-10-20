@@ -6,6 +6,7 @@ import { notifyOwner } from "./_core/notification";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
+import { toPublicAuthUser } from "./security/access";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { classifyTicker, clearClassCache, getClassCacheStats } from "./signalsClassifier";
@@ -53,7 +54,8 @@ import {
   getTodaySnapshot, hasTodaySnapshot, getSnapshotRange, getLatestSnapshot,
   upsertTodaySnapshot, getTimeframeReading, computeOutcomeSupport, getReadingHistorySummary,
 } from "./readingHistory";
-import { protectedProcedure, coreProcedure } from "./_core/trpc";
+import { protectedProcedure, coreProcedure, ownerOrAdminProcedure } from "./_core/trpc";
+import { withholdNonFiniteNumbers } from "./displayNumbers";
 import { generateXPosts } from './xPostGenerator';
 import { sendEmail, buildApprovalEmail, buildFoundingRequestNotification } from './email';
 import { postTweet, postThread, parseThread } from './xPoster';
@@ -125,7 +127,7 @@ export const appRouter = router({
   intelligenceAccountability: intelligenceAccountabilityRouter,
 
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query(opts => toPublicAuthUser(opts.ctx.user)),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -210,7 +212,7 @@ export const appRouter = router({
       }),
 
     // Clear the classification cache (admin utility)
-    clearCache: protectedProcedure.mutation(() => {
+    clearCache: ownerOrAdminProcedure.mutation(() => {
       clearClassCache();
       return { success: true };
     }),
@@ -303,7 +305,7 @@ export const appRouter = router({
       .query(({ input }) => getSignalVisualDetailPayload(input.symbol)),
 
     // Clear the trading signal cache
-    clearSignalCache: protectedProcedure.mutation(() => {
+    clearSignalCache: ownerOrAdminProcedure.mutation(() => {
       clearSignalCache();
       return { success: true };
     }),
@@ -393,7 +395,7 @@ export const appRouter = router({
       }),
 
     // Clear diagnostic cache
-    clearCache: protectedProcedure.mutation(() => {
+    clearCache: ownerOrAdminProcedure.mutation(() => {
       clearDiagnosticCache();
       return { success: true };
     }),
@@ -414,7 +416,7 @@ export const appRouter = router({
       }),
 
     // Clear guidance cache
-    clearCache: protectedProcedure.mutation(() => {
+    clearCache: ownerOrAdminProcedure.mutation(() => {
       clearGuidanceCache();
       return { success: true };
     }),
@@ -870,16 +872,10 @@ export const appRouter = router({
             btcDominance: globalStats?.btcDominance ?? null,
             regime: { label: pressure.regime, score: pressure.overallPressure },
           });
-          const sanitizeNumbers = (v: unknown): unknown => {
-            if (typeof v === 'number') return (isFinite(v) && !isNaN(v)) ? v : 0;
-            if (v === null || v === undefined) return v;
-            if (Array.isArray(v)) return v.map(sanitizeNumbers);
-            if (typeof v === 'object') return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNumbers(val)]));
-            return v;
-          };
           // Launch fix-up: formula confidence is withheld at the response boundary.
+          // A non-finite number is unavailable. It is not displayed as 0.
           const withheld = withholdSignalConfidence(result);
-          return sanitizeNumbers(withheld) as typeof withheld;
+          return withholdNonFiniteNumbers(withheld) as typeof withheld;
         } catch (err) {
           if (err instanceof TRPCError) throw err;
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Crypto signal computation failed", cause: err });
@@ -903,13 +899,6 @@ export const appRouter = router({
           const results = computeCryptoSignals(
             markets.map(m => ({ market: m, btcDominance, regime }))
           );
-          const sanitizeNums = (v: unknown): unknown => {
-            if (typeof v === 'number') return (isFinite(v) && !isNaN(v)) ? v : 0;
-            if (v === null || v === undefined) return v;
-            if (Array.isArray(v)) return v.map(sanitizeNums);
-            if (typeof v === 'object') return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNums(val)]));
-            return v;
-          };
           const screenerResult = {
             // Launch fix-up: formula confidence is withheld at the response boundary.
             signals: withholdScreenerConfidence(results),
@@ -920,7 +909,7 @@ export const appRouter = router({
             marketObservedAtMs: globalStats?.observedAt ?? null,
             computedAt: Date.now(),
           };
-          return sanitizeNums(screenerResult) as typeof screenerResult;
+          return withholdNonFiniteNumbers(screenerResult) as typeof screenerResult;
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Crypto screener failed", cause: err });
         }
@@ -946,7 +935,7 @@ export const appRouter = router({
       }),
 
     // Clear all crypto caches
-    clearCache: protectedProcedure.mutation(() => {
+    clearCache: ownerOrAdminProcedure.mutation(() => {
       clearCryptoCache();
       clearCryptoEngineCache();
       clearCryptoSignalCache();
@@ -1018,7 +1007,7 @@ export const appRouter = router({
       }),
 
     // Clear the aftershock engine cache
-    clearCache: protectedProcedure
+    clearCache: ownerOrAdminProcedure
       .mutation(async () => {
         clearAftershockCache();
         return { success: true };
@@ -1089,7 +1078,7 @@ export const appRouter = router({
       }),
 
     // Clear the recovery engine cache
-    clearCache: protectedProcedure
+    clearCache: ownerOrAdminProcedure
       .mutation(async () => {
         clearRecoveryCache();
         return { success: true };
@@ -1377,19 +1366,12 @@ export const appRouter = router({
       try {
         const apiKey = process.env.COINGECKO_API_KEY;
         const result = await computeAltRotation(apiKey);
-        const sanitize = (v: unknown): unknown => {
-          if (typeof v === 'number') return (isFinite(v) && !isNaN(v)) ? v : 0;
-          if (v === null || v === undefined) return v;
-          if (Array.isArray(v)) return v.map(sanitize);
-          if (typeof v === 'object') return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitize(val)]));
-          return v;
-        };
-        return sanitize(result) as typeof result;
+        return withholdNonFiniteNumbers(result) as typeof result;
       } catch (err) {
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Alt rotation data unavailable.' });
       }
     }),
-    clearCache: protectedProcedure.mutation(() => {
+    clearCache: ownerOrAdminProcedure.mutation(() => {
       clearAltRotationCache();
       return { cleared: true };
     }),
@@ -2578,7 +2560,7 @@ export const appRouter = router({
         }
       }),
 
-    clearCache: protectedProcedure
+    clearCache: ownerOrAdminProcedure
       .mutation(async () => {
         const { clearSocialIntelligenceCache, clearTickerSocialCache } = await import('./socialIntelligence');
         clearSocialIntelligenceCache();
@@ -2738,18 +2720,7 @@ export const appRouter = router({
   dayTrade: router({
     getFavorability: coreProcedure.query(async () => {
       const result = await getDayTradeFavorability();
-      const sanitizeNumbers = (v: unknown): unknown => {
-        if (typeof v === 'number') return (isFinite(v) && !isNaN(v)) ? v : 0;
-        if (v === null || v === undefined) return v;
-        if (Array.isArray(v)) return v.map(sanitizeNumbers);
-        if (typeof v === 'object') {
-          return Object.fromEntries(
-            Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNumbers(val)])
-          );
-        }
-        return v;
-      };
-      return sanitizeNumbers(result) as typeof result;
+      return withholdNonFiniteNumbers(result) as typeof result;
     }),
     scan: coreProcedure
       .input(z.object({
@@ -2760,17 +2731,7 @@ export const appRouter = router({
         maxResults: z.number().min(1).max(30).default(12),
       }))
       .query(async ({ input }) => {
-        const sanitizeNumbers = (v: unknown): unknown => {
-          if (typeof v === 'number') return (isFinite(v) && !isNaN(v)) ? v : 0;
-          if (v === null || v === undefined) return v;
-          if (Array.isArray(v)) return v.map(sanitizeNumbers);
-          if (typeof v === 'object') {
-            return Object.fromEntries(
-              Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNumbers(val)])
-            );
-          }
-          return v;
-        };
+        const sanitizeNumbers = withholdNonFiniteNumbers;
         const cacheKey = `scan:${input.assetType}:${input.capBucket}:${input.direction}:${input.riskProfile}:${input.maxResults}`;
         const t0 = Date.now();
         // ── Tier 1: Live data ──────────────────────────────────────────────────
@@ -2824,20 +2785,7 @@ export const appRouter = router({
       .query(async ({ input }) => {
         try {
           const result = await dayTradeSymbolSetup(input.symbol, input.assetType, input.direction);
-          // Sanitize all numeric fields to prevent NaN/Infinity from causing SuperJSON
-          // "Unable to transform response from server" errors on the client
-          const sanitizeNumbers = (v: unknown): unknown => {
-            if (typeof v === 'number') return (isFinite(v) && !isNaN(v)) ? v : 0;
-            if (v === null || v === undefined) return v;
-            if (Array.isArray(v)) return v.map(sanitizeNumbers);
-            if (typeof v === 'object') {
-              return Object.fromEntries(
-                Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNumbers(val)])
-              );
-            }
-            return v;
-          };
-          return sanitizeNumbers(result) as typeof result;
+          return withholdNonFiniteNumbers(result) as typeof result;
         } catch (err) {
           console.error('[symbolSetup] Error for', input.symbol, err);
           // Return a degraded report instead of throwing — the page must always render
@@ -2846,7 +2794,7 @@ export const appRouter = router({
             symbol: input.symbol.toUpperCase(),
             name: input.symbol.toUpperCase(),
             assetType: input.assetType,
-            currentPrice: 0,
+            currentPrice: null,
             changePercent: 0,
             volume: 0,
             relativeVolume: null,
@@ -2856,7 +2804,7 @@ export const appRouter = router({
             direction: 'bullish',
             entryZoneLow: 0, entryZoneHigh: 0, target1: 0, target2: 0,
             stopLoss: 0, invalidationLevel: 0, expectedHoldMinutes: 0,
-            confidence: 0, probabilityRating: 0, riskRewardRatio: 0,
+            confidence: null, probabilityRating: 0, riskRewardRatio: 0,
             riskLevel: 'Very High', liquidityRating: 'Low',
             executionScore: 0, executionGrade: 'F',
             catalyst: 'N/A', whyToday: 'N/A', reasonForRecommendation: 'N/A',
@@ -2961,7 +2909,7 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         return { watchlisted: await isDayTradeWatchlisted(ctx.user.id, input.symbol.toUpperCase()) };
       }),
-        clearCache: protectedProcedure.mutation(() => {
+        clearCache: ownerOrAdminProcedure.mutation(() => {
       clearDayTradeCache();
       return { success: true };
     }),

@@ -22,7 +22,7 @@ import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Types (mirrored from server) ──────────────────────────────
 type SentimentLabel =
-  | "STRONGLY BULLISH" | "BULLISH" | "NEUTRAL" | "BEARISH" | "STRONGLY BEARISH";
+  | "STRONGLY BULLISH" | "BULLISH" | "NEUTRAL" | "BEARISH" | "STRONGLY BEARISH" | "UNAVAILABLE";
 
 type TickerSentiment = "bullish" | "bearish" | "neutral" | "unknown";
 type NarrativeSentiment = "bullish" | "bearish" | "neutral";
@@ -152,23 +152,23 @@ interface RedditPost {
 interface MultiSourceSocialData {
   symbol: string;
   assetType: "stock" | "crypto";
-  socialIntelligenceScore: number;
+  socialIntelligenceScore: number | null;
   overallSentiment: SentimentLabel;
-  overallSentimentScore: number;
-  overallBullishPct: number;
-  overallBearishPct: number;
+  overallSentimentScore: number | null;
+  overallBullishPct: number | null;
+  overallBearishPct: number | null;
   sources: SourceSentiment[];
   socialVolume: number;
-  socialMomentum: "rising" | "falling" | "stable";
+  socialMomentum: "rising" | "falling" | "stable" | "unknown";
   discussionVelocity: string;
   sentimentTrends: SentimentTrend[];
   topBullishArguments: string[];
   topBearishArguments: string[];
   keyTopics: string[];
   influencerMentions: string[];
-  retailInterestScore: number;
-  crowdConvictionScore: number;
-  contrarianSignalScore: number;
+  retailInterestScore: number | null;
+  crowdConvictionScore: number | null;
+  contrarianSignalScore: number | null;
   memeHypeDetected: boolean;
   memeHypeDescription: string;
   socialRiskWarnings: string[];
@@ -182,6 +182,7 @@ interface MultiSourceSocialData {
 
 // ── Color helpers ─────────────────────────────────────────────
 function sentimentColor(s: TickerSentiment | ArticleSentiment | NarrativeSentiment | SentimentLabel): string {
+  if (s === "UNAVAILABLE") return "#94A3B8";
   if (s === "bullish" || s === "positive" || s === "BULLISH" || s === "STRONGLY BULLISH") return "#00FF88";
   if (s === "bearish" || s === "negative" || s === "BEARISH" || s === "STRONGLY BEARISH") return "#FF2D55";
   return "#FF9500";
@@ -609,10 +610,10 @@ function StockTwitsCard({ msg }: { msg: StockTwitsMessage }) {
 }
 
 // ── Score Gauge ──────────────────────────────────────────────
-function ScoreGauge({ score, label, color }: { score: number; label: string; color: string }) {
+function ScoreGauge({ score, label, color }: { score: number | null; label: string; color: string }) {
   const radius = 28;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (score / 100) * circumference;
+  const offset = score == null ? circumference : circumference - (score / 100) * circumference;
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
       <svg width={72} height={72} viewBox="0 0 72 72">
@@ -623,7 +624,7 @@ function ScoreGauge({ score, label, color }: { score: number; label: string; col
           strokeLinecap="round" transform="rotate(-90 36 36)"
           style={{ transition: "stroke-dashoffset 0.8s ease" }}
         />
-        <text x={36} y={40} textAnchor="middle" fill={color} fontSize={14} fontWeight={700} fontFamily="monospace">{score}</text>
+        <text x={36} y={40} textAnchor="middle" fill={score == null ? "#94A3B8" : color} fontSize={score == null ? 10 : 14} fontWeight={700} fontFamily="monospace">{score == null ? "N/A" : score}</text>
       </svg>
       <span style={{ fontSize: 10, color: "var(--fl-text-muted)", textAlign: "center", letterSpacing: "0.05em" }}>{label}</span>
     </div>
@@ -851,11 +852,11 @@ function TickerSearchPanel() {
             <ScoreGauge score={data.contrarianSignalScore} label="CONTRARIAN SIGNAL" color="#FF2D55" />
             <div style={{ flex: 1, minWidth: 160, display: "flex", flexDirection: "column", justifyContent: "center", gap: 8 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                <span style={{ fontSize: 10, color: "#00FF88", fontWeight: 700 }}>▲ {data.overallBullishPct}% Bull</span>
-                <span style={{ fontSize: 10, color: "#FF2D55", fontWeight: 700 }}>{data.overallBearishPct}% Bear ▼</span>
+                <span style={{ fontSize: 10, color: "#00FF88", fontWeight: 700 }}>{data.overallBullishPct == null ? "Bullish mix unavailable" : `▲ ${data.overallBullishPct}% Bull`}</span>
+                <span style={{ fontSize: 10, color: "#FF2D55", fontWeight: 700 }}>{data.overallBearishPct == null ? "" : `${data.overallBearishPct}% Bear ▼`}</span>
               </div>
               <div style={{ height: 8, borderRadius: 4, background: "rgba(255,45,85,0.3)", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${data.overallBullishPct}%`, background: "#00FF88", borderRadius: 4, transition: "width 0.4s" }} />
+                <div style={{ height: "100%", width: `${data.overallBullishPct ?? 0}%`, background: "#00FF88", borderRadius: 4, transition: "width 0.4s" }} />
               </div>
               <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
                 <div>
@@ -864,8 +865,8 @@ function TickerSearchPanel() {
                 </div>
                 <div>
                   <div style={{ fontSize: 10, color: "var(--fl-text-muted)" }}>MOMENTUM</div>
-                  <div style={{ fontSize: 12, fontFamily: "monospace", color: data.socialMomentum === "rising" ? "#00FF88" : data.socialMomentum === "falling" ? "#FF2D55" : "#FF9500" }}>
-                    {data.socialMomentum === "rising" ? "↑ Rising" : data.socialMomentum === "falling" ? "↓ Falling" : "→ Stable"}
+                  <div style={{ fontSize: 12, fontFamily: "monospace", color: data.socialMomentum === "rising" ? "#00FF88" : data.socialMomentum === "falling" ? "#FF2D55" : data.socialMomentum === "stable" ? "#FF9500" : "#94A3B8" }}>
+                    {data.socialMomentum === "rising" ? "↑ Rising" : data.socialMomentum === "falling" ? "↓ Falling" : data.socialMomentum === "stable" ? "→ Stable" : "Unavailable"}
                   </div>
                 </div>
                 <div>

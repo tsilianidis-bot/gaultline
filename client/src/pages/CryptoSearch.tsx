@@ -42,7 +42,7 @@ interface CryptoAssetIntelligence {
   id: string; symbol: string; name: string; image: string;
   currentPrice: number | null; priceChangePercent24h: number | null; priceChangePercent24hDisplay?: number | null; priceChangePercent7d: number | null;
   marketCap: number | null; totalVolume: number | null; high24h: number | null; low24h: number | null;
-  circulatingSupply: number; ath: number | null; athChangePercent: number;
+  circulatingSupply: number | null; ath: number | null; athChangePercent: number | null;
   sparkline7d: number[]; volatility24h: number | null; distanceFromAth: number | null;
   signalBias: CryptoSignalBias; signalScore: number | null;
   riskLevel: CryptoRiskLevel | "Unavailable"; riskScore: number | null;
@@ -122,7 +122,8 @@ function fmtPctObserved(n: number | null | undefined): string {
   return fmtPct(n);
 }
 
-function fmtSupply(n: number, symbol: string): string {
+function fmtSupply(n: number | null, symbol: string): string {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "Unavailable";
   if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B ${symbol}`;
   if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M ${symbol}`;
   return `${n.toLocaleString()} ${symbol}`;
@@ -228,7 +229,7 @@ function SignalBar({ label, score, color }: { label: string; score: number; colo
 }
 
 // ── Heatmap cell ──────────────────────────────────────────────
-function HeatCell({ symbol, change, price, rank }: { symbol: string; change: number | null; price: number | null; rank: number }) {
+function HeatCell({ symbol, change, price, rank }: { symbol: string; change: number | null; price: number | null; rank: number | null }) {
   const intensity = change === null ? 0 : Math.min(Math.abs(change) / 15, 1);
   const color = change24hColor(change);
   const alpha = Math.round(intensity * 200).toString(16).padStart(2, "0");
@@ -242,7 +243,7 @@ function HeatCell({ symbol, change, price, rank }: { symbol: string; change: num
       cursor: "default",
       transition: "all 0.2s ease",
     }}>
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#94A3B8", marginBottom: "2px" }}>#{rank}</div>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#94A3B8", marginBottom: "2px" }}>{rank == null ? "Unavailable" : `#${rank}`}</div>
       <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "11px", color: "#F0F4FF" }}>{symbol}</div>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color, fontWeight: 600 }}>{change24hText(change)}</div>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#64748B", marginTop: "1px" }}>{fmtObserved(price, typeof price === "number" && price < 1 ? 4 : 2)}</div>
@@ -388,6 +389,8 @@ function AssetCard({ asset, risk }: { asset: CryptoAssetIntelligence; risk: Cryp
             { label: "24h Low",      value: fmtObserved(asset.low24h, typeof asset.low24h === "number" && asset.low24h < 1 ? 4 : 2) },
             { label: "ATH",          value: fmtObserved(asset.ath, typeof asset.ath === "number" && asset.ath < 1 ? 4 : 2) },
             { label: "From ATH",     value: formatObservedFixed(asset.distanceFromAth, 1, "%") },
+            { label: "ATH Change",   value: formatObservedFixed(asset.athChangePercent, 1, "%") },
+            { label: "Circ. Supply", value: fmtSupply(asset.circulatingSupply, asset.symbol) },
           ].map(({ label, value }) => (
             <div key={label}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#374151", letterSpacing: "0.1em", marginBottom: "3px" }}>{label.toUpperCase()}</div>
@@ -685,6 +688,8 @@ function CryptoSearchInner() {
                 { label: "24h Volume",        value: fmtObserved(resolvedGlobal.totalVolume24h),                                                     color: "#00D4FF" },
                 { label: "BTC Dominance",     value: formatObservedFixed(resolvedGlobal.btcDominance, 1, "%"),                                           color: typeof resolvedGlobal.btcDominance === "number" && resolvedGlobal.btcDominance > 60 ? "#FF9500" : typeof resolvedGlobal.btcDominance === "number" ? "#00D4FF" : "#94A3B8" },
                 { label: "Market Cap Δ 24h",  value: fmtPctObserved(resolvedGlobal.marketCapChangePercent24h),                                       color: typeof resolvedGlobal.marketCapChangePercent24h === "number" && resolvedGlobal.marketCapChangePercent24h < 0 ? "#FF2D55" : typeof resolvedGlobal.marketCapChangePercent24h === "number" ? "#00FF88" : "#94A3B8" },
+                { label: "Active Assets",     value: formatObservedFixed(resolvedGlobal.activeCryptocurrencies, 0),                                  color: "#94A3B8" },
+                { label: "Markets",           value: formatObservedFixed(resolvedGlobal.markets, 0),                                                color: "#94A3B8" },
               ].map(({ label, value, color }) => (
                 <div key={label} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#374151", letterSpacing: "0.1em" }}>{label.toUpperCase()}</span>

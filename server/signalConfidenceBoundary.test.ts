@@ -77,7 +77,7 @@ describe("routers.ts applies the boundary on every mounted signal procedure", ()
     expect(src).not.toMatch(/return computeTradingSignals?\(/);
   });
   it("crypto.getSignal / crypto.getScreener", () => {
-    expect(src).toMatch(/const withheld = withholdSignalConfidence\(result\);\s*return sanitizeNumbers\(withheld\) as typeof withheld;/);
+    expect(src).toMatch(/const withheld = withholdSignalConfidence\(result\);\s*return withholdNonFiniteNumbers\(withheld\) as typeof withheld;/);
     expect(src).toContain("signals: withholdScreenerConfidence(results),");
     expect(src).not.toMatch(/signals: results,/);
   });
