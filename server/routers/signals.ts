@@ -4,7 +4,7 @@
  */
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, publicProcedure, protectedProcedure, coreProcedure } from "../_core/trpc";
+import { router, publicProcedure, protectedProcedure, coreProcedure, ownerOrAdminProcedure } from "../_core/trpc";
 import { classifyTicker, clearClassCache, getClassCacheStats } from "../signalsClassifier";
 import { computeTradingSignals, computeTradingSignal, clearSignalCache } from "../tradingSignals";
 import { getDailyBars, getQuote } from "../yahooProxy";
@@ -90,7 +90,7 @@ export const signalsRouter = router({
       }
     }),
   // Clear the classification cache (admin utility)
-  clearCache: protectedProcedure.mutation(() => {
+  clearCache: ownerOrAdminProcedure.mutation(() => {
     clearClassCache();
     return { success: true };
   }),
@@ -303,7 +303,7 @@ export const signalsRouter = router({
       };
     }),
   // Clear the trading signal cache
-  clearSignalCache: protectedProcedure.mutation(() => {
+  clearSignalCache: ownerOrAdminProcedure.mutation(() => {
     clearSignalCache();
     return { success: true };
   }),

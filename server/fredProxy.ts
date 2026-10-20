@@ -12,6 +12,7 @@
 // ============================================================
 
 import type { Express, Request, Response } from "express";
+import { allowOwnerOrAdmin } from "./security/access";
 import { fetchFredSeries, fetchFredBulk, clearFredCache } from "./fredClient";
 import { log } from "./logger";
 import { captureError } from "./errorTracking";
@@ -67,7 +68,8 @@ export function registerFredProxy(app: Express) {
   });
 
   // ── POST /api/fred/clear-cache ─────────────────────────────
-  app.post("/api/fred/clear-cache", (_req: Request, res: Response) => {
+  app.post("/api/fred/clear-cache", async (req: Request, res: Response) => {
+    if (!(await allowOwnerOrAdmin(req, res))) return;
     clearFredCache();
     res.json({ success: true, message: "FRED cache cleared" });
   });

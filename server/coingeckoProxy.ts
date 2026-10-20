@@ -13,6 +13,7 @@
 //   POST /api/crypto/clear-cache           — clear all caches
 // ============================================================
 import type { Express, Request, Response } from "express";
+import { allowOwnerOrAdmin } from "./security/access";
 import { LRUCache } from "./lruCache";
 import { log } from "./logger";
 
@@ -713,7 +714,8 @@ export function registerCoinGeckoProxy(app: Express) {
   });
 
   // Clear cache
-  app.post("/api/crypto/clear-cache", (_req: Request, res: Response) => {
+  app.post("/api/crypto/clear-cache", async (req: Request, res: Response) => {
+    if (!(await allowOwnerOrAdmin(req, res))) return;
     clearCoinGeckoCache();
     res.json({ success: true });
   });

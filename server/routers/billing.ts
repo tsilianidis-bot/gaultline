@@ -7,6 +7,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { stripe } from "../stripe/client";
+import { checkoutReceiptForCaller } from "../security/access";
 import { PLANS, verifyStripePlanConfiguration } from "../stripe/products";
 import { getLifetimeMemberCount } from "../db";
 import { PRICING_PLANS, PAID_PLANS_ON_SALE, CHECKOUT_ENABLED, type StripePlanId } from "../../shared/tiers";
@@ -77,22 +78,22 @@ export const billingRouter = router({
 
   verifyCheckoutSession: publicProcedure
     .input(z.object({ sessionId: z.string() }))
-    .query(async ({ input }) => {
-      if (!stripe) {
-        return null;
-      }
+    .query(async ({ ctx, input }) => {
+      if (!ctx.user || !stripe) return null;
       try {
         const session = await stripe.checkout.sessions.retrieve(input.sessionId, {
           expand: ['line_items'],
         });
-        return {
-          status: session.status,
-          paymentStatus: session.payment_status,
-          amountTotal: session.amount_total,
-          currency: session.currency,
+        return checkoutReceiptForCaller(ctx.user, {
+          clientReferenceId: session.client_reference_id ?? null,
+          metadataUserId: session.metadata?.user_id ?? null,
+          status: session.status ?? null,
+          paymentStatus: session.payment_status ?? null,
+          amountTotal: session.amount_total ?? null,
+          currency: session.currency ?? null,
           planId: session.metadata?.plan_id ?? null,
           customerEmail: session.customer_email ?? session.metadata?.customer_email ?? null,
-        };
+        });
       } catch {
         return null;
       }

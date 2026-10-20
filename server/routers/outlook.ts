@@ -4,7 +4,7 @@
 // ============================================================
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { router, publicProcedure, ownerOrAdminProcedure } from "../_core/trpc";
 import {
   getFullOutlook,
   getQuickOutlook,
@@ -477,14 +477,9 @@ Write exactly this JSON structure:
       }
     }),
 
-  /**
-   * Admin: clear all outlook caches (forces fresh computation on next request).
-   */
-  clearCaches: protectedProcedure
-    .mutation(async ({ ctx }) => {
-      if (ctx.user.role !== "admin") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Admin only" });
-      }
+  /** Owner or admin: clear all outlook caches (forces fresh computation on next request). */
+  clearCaches: ownerOrAdminProcedure
+    .mutation(() => {
       clearOutlookCaches();
       return { success: true };
     }),

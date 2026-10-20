@@ -3,6 +3,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
 import { getUserTier } from "../db";
+import { isOwnerOrAdmin } from "../security/access";
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
@@ -77,6 +78,24 @@ const requirePremium = t.middleware(async opts => {
 });
 
 export const premiumProcedure = t.procedure.use(requirePremium);
+
+export const ownerOrAdminProcedure = t.procedure.use(
+  t.middleware(async opts => {
+    const { ctx, next } = opts;
+    if (!ctx.user) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+    }
+    if (ctx.user.isQaSession || !isOwnerOrAdmin(ctx.user)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Owner or admin only" });
+    }
+    return next({
+      ctx: {
+        ...ctx,
+        user: ctx.user,
+      },
+    });
+  }),
+);
 
 export const adminProcedure = t.procedure.use(
   t.middleware(async opts => {

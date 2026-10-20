@@ -15,12 +15,25 @@
  * and ai_improvement_reports tables.
  */
 import { z } from "zod";
+import { ENV } from "../_core/env";
 import { router, protectedProcedure } from "../_core/trpc";
+import { isOwnerOrAdmin } from "../security/access";
 import { getDb } from "../db";
 import { decisionLedger, improvementLessons, aiImprovementReports, DecisionLedgerEntry } from "../../drizzle/schema";
 import { eq, desc, and, gte, lte, isNotNull, sql } from "drizzle-orm";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+/**
+ * The weekly report is one global synthesis of every user's ledger and lessons.
+ * There is no per-user key, so a member must not receive the rows.
+ */
+export function canReadAiImprovementReports(
+  user: { role?: string | null; openId?: string | null; isCron?: boolean | null } | null | undefined,
+  ownerOpenId: string = ENV.ownerOpenId,
+): boolean {
+  return isOwnerOrAdmin(user, ownerOpenId);
+}
 
 /**
  * Compute accuracy metrics from a set of resolved entries.
@@ -421,8 +434,9 @@ export const intelligenceValidationRouter = router({
     .input(z.object({
       limit: z.number().min(1).max(52).default(12),
     }))
-    .query(async ({ ctx: _ctx, input }) => {
+    .query(async ({ ctx, input }) => {
       try {
+      if (!canReadAiImprovementReports(ctx.user)) return [];
       const db = await getDb();
       if (!db) return [];
 
