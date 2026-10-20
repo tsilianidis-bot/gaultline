@@ -67,13 +67,21 @@ async function loadCanonicalForDisplay(): Promise<{
   }
 }
 
-/** True only when the canonical outlook (MarketState) has a top analog. Fail closed: false. */
-async function canonicalTopAnalogAvailable(): Promise<boolean> {
+/**
+ * Canonical outlook facts for the assembled response. Fail closed: no analog,
+ * and a null percentile (insufficient) rather than a stored 50.
+ */
+async function canonicalOutlookFacts(): Promise<{ topAnalogAvailable: boolean; historicalPercentile: number | null }> {
   try {
     const { getCanonicalMarketState } = await import("../marketStateService");
-    return (await getCanonicalMarketState()).outlook.topAnalog != null;
+    const state = await getCanonicalMarketState();
+    const percentile = state.now.historicalPercentile;
+    return {
+      topAnalogAvailable: state.outlook.topAnalog != null,
+      historicalPercentile: typeof percentile === "number" && Number.isFinite(percentile) ? percentile : null,
+    };
   } catch {
-    return false;
+    return { topAnalogAvailable: false, historicalPercentile: null };
   }
 }
 
@@ -178,11 +186,15 @@ export const seismographRouter = router({
     // Display context (FRED status and freshness from canonical data quality;
     // analog only when the canonical outlook has one), then the probability
     // contract overlay (null unless AVAILABLE). Calculation is unchanged.
-    const [{ contract, dataQuality }, topAnalogAvailable] = await Promise.all([
+    const [{ contract, dataQuality }, outlook] = await Promise.all([
       loadCanonicalForDisplay(),
-      canonicalTopAnalogAvailable(),
+      canonicalOutlookFacts(),
     ]);
-    const display = applySeismographDisplayContext(output, { dataQuality, canonicalTopAnalogAvailable: topAnalogAvailable });
+    const display = applySeismographDisplayContext(output, {
+      dataQuality,
+      canonicalTopAnalogAvailable: outlook.topAnalogAvailable,
+      canonicalHistoricalPercentile: outlook.historicalPercentile,
+    });
     return overlayAssembledSeismographOutput(display, contract);
   }),
 

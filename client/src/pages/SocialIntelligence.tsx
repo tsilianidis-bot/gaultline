@@ -37,8 +37,8 @@ interface TrendingTicker {
   marketCap: number | null;
   marketState: string | null;
   sentiment: TickerSentiment;
-  buzzScore: number;
-  newsCount: number;
+  buzzScore: number | null;
+  newsCount: number | null;
   latestHeadline: string | null;
 }
 
@@ -234,7 +234,10 @@ function timeAgo(utc: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function BuzzBar({ score }: { score: number }) {
+function BuzzBar({ score }: { score: number | null }) {
+  if (score == null) {
+    return <span style={{ fontSize: 11, color: "#94A3B8", fontFamily: "monospace" }}>Unavailable</span>;
+  }
   const color = score >= 70 ? "#FF2D55" : score >= 40 ? "#FF9500" : "#00D4FF";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -309,7 +312,7 @@ function TrendingCard({ t }: { t: TrendingTicker }) {
                 </span>
               </TooltipTrigger>
               <TooltipContent>
-                Sentiment derived from {t.newsCount} Polygon.io news articles with AI-generated insights
+                Sentiment derived from {t.newsCount == null ? "an unavailable" : t.newsCount} Polygon.io news article count
               </TooltipContent>
             </Tooltip>
           </div>
@@ -338,7 +341,7 @@ function TrendingCard({ t }: { t: TrendingTicker }) {
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            Buzz score = log-scaled news volume × sentiment intensity. Range 0–100. Based on {t.newsCount} article{t.newsCount !== 1 ? "s" : ""} in the last 24h.
+            Buzz score = log-scaled news volume × sentiment intensity. Range 0–100. Based on {t.newsCount == null ? "an unavailable article count" : `${t.newsCount} article${t.newsCount !== 1 ? "s" : ""}`} in the last 24h.
           </TooltipContent>
         </Tooltip>
       </div>
@@ -352,7 +355,7 @@ function TrendingCard({ t }: { t: TrendingTicker }) {
             </div>
             <div>
               <div style={{ fontSize: 10, color: "var(--fl-text-muted)", marginBottom: 2 }}>NEWS COUNT</div>
-              <div style={{ fontSize: 12, color: "var(--fl-text-primary)", fontFamily: "monospace" }}>{t.newsCount}</div>
+              <div style={{ fontSize: 12, color: "var(--fl-text-primary)", fontFamily: "monospace" }}>{t.newsCount == null ? "Unavailable" : t.newsCount}</div>
             </div>
             <div>
               <div style={{ fontSize: 10, color: "var(--fl-text-muted)", marginBottom: 2 }}>MARKET STATE</div>

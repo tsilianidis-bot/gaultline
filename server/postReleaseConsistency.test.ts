@@ -94,7 +94,7 @@ describe("one definition of fallback / stale / delayed (shared/snapshotEvidence.
     const statuses = state.engines.map(engine => [engine.engineId, canonicalEngineEvidence(engine, state)]);
     expect(Object.fromEntries(statuses)).toEqual({
       "liquidity-stress": "CURRENT", "credit-contagion": "DELAYED", "volatility-regime": "DELAYED",
-      "macro-sensitivity": "DELAYED", "market-breadth": "DELAYED", "ai-bubble": "CURRENT",
+      "macro-sensitivity": "DELAYED", "market-breadth": "DELAYED", "ai-bubble": "STATIC",
     });
   });
 

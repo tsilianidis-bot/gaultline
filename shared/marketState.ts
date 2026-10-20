@@ -1,5 +1,5 @@
 import type { CanonicalProbabilityContract } from "./probabilityContract";
-export type MarketStateFreshness = "live" | "recent" | "stale";
+export type MarketStateFreshness = "live" | "recent" | "delayed" | "stale";
 export type MarketStateCacheStatus = "fresh-cache" | "refreshed" | "stale-if-error";
 export type MarketStateSourceStatus = "healthy" | "degraded" | "unavailable";
 

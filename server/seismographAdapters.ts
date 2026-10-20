@@ -187,7 +187,7 @@ export function fmosToEvidencePackets(
       strength: tp,
       confidence: 75,
       primaryReading: `transitionProbability=${tp} direction=${output.transition.transitionDirection}`,
-      humanReadable: `${tp}% probability of regime transition (${output.transition.transitionDirection})`,
+      humanReadable: "Regime-transition probability is uncalibrated and is not stated.",
       metadata: {
         transitionProbability: tp,
         transitionDirection: output.transition.transitionDirection,

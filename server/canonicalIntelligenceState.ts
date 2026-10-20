@@ -11,6 +11,7 @@ import {
 } from "../shared/canonicalIntelligenceState";
 import { getDb } from "./db";
 import { buildCanonicalProbabilityContract, withholdUndisplayedClaimValues } from "./probabilityContract";
+import { AI_CONCENTRATION_STATIC_BASELINE_INPUT_ID } from "../shared/pressureVectorLabels";
 import { compositePressureDirection, engineEvidenceStatus, stressTrendDirection } from "../shared/snapshotEvidence";
 import type { IntelligenceEvidence } from "../shared/intelligenceIntegrity";
 
@@ -63,6 +64,15 @@ function coherence(manifest: StoredManifest): CanonicalIntelligenceState["proven
   return "UNAVAILABLE";
 }
 
+/** Earliest contributing observation. A vector with no observation time stays null. */
+function earliestObservedAt(inputs: Array<{ observedAt?: unknown }>): string | null {
+  const times = inputs
+    .map(input => typeof input.observedAt === "string" ? Date.parse(input.observedAt) : Number.NaN)
+    .filter(time => Number.isFinite(time));
+  if (times.length === 0) return null;
+  return new Date(Math.min(...times)).toISOString();
+}
+
 export interface CanonicalStateBuildOptions {
   /** Composite Pressure Index of the prior comparable manifest (about a day earlier), if any. */
   priorPressureIndex?: number | null;
@@ -113,6 +123,12 @@ export function buildCanonicalIntelligenceState(manifest: StoredManifest, option
       fallback: [...fallbackInputs, ...byStatus("FALLBACK")],
       delayed: [...delayedInputs, ...byStatus("DELAYED")],
     });
+    const staticOnly = engineInputs.length > 0 && engineInputs.every((input: any) =>
+      input.inputId === AI_CONCENTRATION_STATIC_BASELINE_INPUT_ID
+      || input.availabilityStatus === "STATIC_MODEL_INPUT"
+      || String(input.freshnessStatus ?? "").toUpperCase() === "STATIC",
+    );
+    const freshnessStatus = staticOnly ? "STATIC" : evidence;
     const engineUnavailable = evidence === "UNAVAILABLE";
     const engineStale = evidence === "STALE" || evidence === "DELAYED";
     const engineFallback = evidence === "FALLBACK" || engineInputs.some((input: any) => fallbackInputs.includes(input.inputId) || input.freshnessStatus === "FALLBACK");
@@ -128,9 +144,9 @@ export function buildCanonicalIntelligenceState(manifest: StoredManifest, option
     return {
       engineId, engineName: engineId, value: typeof value === "number" ? value : null, unit: "score_0_to_100",
       classification: null, direction: direction(manifest.engineDirections?.[engineId], engineId), acceleration: null, persistence: null,
-      observedAt: null, calculatedAt: manifest.generatedAt ?? null,
+      observedAt: earliestObservedAt(engineInputs), calculatedAt: manifest.generatedAt ?? null,
       sourceInputIds,
-      qualityStatus: engineQuality, freshnessStatus: evidence,
+      qualityStatus: engineQuality, freshnessStatus,
       fallbackStatus: engineFallback ? "ACTIVE" : "NONE", modelVersion: manifest.championVersion,
       calculationVersion: manifest.scoringVersion, contributionToComposite: true,
     };

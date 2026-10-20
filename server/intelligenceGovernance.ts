@@ -36,7 +36,7 @@ export interface LiveInputQualityManifestEntry {
   fetchedAt: string;
   expectedUpdateFrequency: "daily" | "monthly" | "static";
   maxAgeHours: number | null;
-  freshnessStatus: "LIVE" | "CURRENT" | "DELAYED" | "STALE" | "UNAVAILABLE" | "UNKNOWN";
+  freshnessStatus: "LIVE" | "CURRENT" | "DELAYED" | "STALE" | "STATIC" | "UNAVAILABLE" | "UNKNOWN";
   availabilityStatus: "AVAILABLE" | "FALLBACK_ACTIVE" | "UNAVAILABLE" | "STATIC_MODEL_INPUT";
   fallbackUsed: boolean;
   fallbackType: string | null;
@@ -141,7 +141,7 @@ function translateQuality(status: DataStatus, hasValue: boolean) {
   if (status === "fallback") return { freshnessStatus: "STALE" as const, availabilityStatus: "FALLBACK_ACTIVE" as const, fallbackUsed: true, confidenceImpact: "MATERIAL" as const };
   if (status === "stale" || status === "cached") return { freshnessStatus: "STALE" as const, availabilityStatus: "AVAILABLE" as const, fallbackUsed: false, confidenceImpact: "QUALIFIED" as const };
   if (status === "delayed") return { freshnessStatus: "DELAYED" as const, availabilityStatus: "AVAILABLE" as const, fallbackUsed: false, confidenceImpact: "QUALIFIED" as const };
-  if (status === "static") return { freshnessStatus: "CURRENT" as const, availabilityStatus: "STATIC_MODEL_INPUT" as const, fallbackUsed: false, confidenceImpact: "QUALIFIED" as const };
+  if (status === "static") return { freshnessStatus: "STATIC" as const, availabilityStatus: "STATIC_MODEL_INPUT" as const, fallbackUsed: false, confidenceImpact: "QUALIFIED" as const };
   return { freshnessStatus: "LIVE" as const, availabilityStatus: "AVAILABLE" as const, fallbackUsed: false, confidenceImpact: "NONE" as const };
 }
 
@@ -180,7 +180,7 @@ export function buildLiveInputQualityManifest(pressure: FaultlinePressureOutput)
     fetchedAt,
     expectedUpdateFrequency: "static",
     maxAgeHours: null,
-    freshnessStatus: "CURRENT",
+    freshnessStatus: "STATIC",
     availabilityStatus: "STATIC_MODEL_INPUT",
     fallbackUsed: false,
     fallbackType: null,

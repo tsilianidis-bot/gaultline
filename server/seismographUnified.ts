@@ -30,6 +30,7 @@ import { desc, asc, sql } from "drizzle-orm";
 import { getLatestSeismographOutput } from "./scheduledSeismograph";
 import type { SeismographProviderProvenance } from "./seismographCore";
 import { describeHistoricalPercentile, formatOrdinal } from "../shared/historicalPercentile";
+import type { SeismographDataFreshness } from "./seismographCore";
 import {
   buildWhatIsHappeningCopy,
   buildWhyThisRegimeCopy,
@@ -135,7 +136,7 @@ export interface UnifiedSeismographIntelligence {
   currentDirection: "Improving" | "Stable" | "Deteriorating" | "Accelerating";
   /** null when the current score cannot be ranked. Never a neutral 50. */
   currentPercentile: number | null;
-  dataFreshness: "live" | "recent" | "stale";
+  dataFreshness: SeismographDataFreshness;
   lastUpdated: string;
   providerProvenance: SeismographProviderProvenance;
 
@@ -424,11 +425,11 @@ const RECENT_OBSERVATION_MAX_AGE_MS = 18 * 60 * 60 * 1000;
 export function freshnessFromAssembledSnapshot(
   latest: {
     computedAt: number;
-    dataFreshness?: "live" | "recent" | "stale";
+    dataFreshness?: SeismographDataFreshness;
     providerProvenance?: { fred?: { status?: string; asOf?: number } };
   } | null,
   options: { recentRunCount: number; now?: number },
-): "live" | "recent" | "stale" {
+): SeismographDataFreshness {
   const now = options.now ?? Date.now();
   if (!latest) return options.recentRunCount > 0 ? "recent" : "stale";
   const fred = latest.providerProvenance?.fred;
@@ -438,6 +439,7 @@ export function freshnessFromAssembledSnapshot(
   const observationAgeMs = Math.max(0, now - observedAt);
   const snapshotAgeMs = Math.max(0, now - latest.computedAt);
   if (observationAgeMs > RECENT_OBSERVATION_MAX_AGE_MS || snapshotAgeMs > RECENT_OBSERVATION_MAX_AGE_MS) return "stale";
+  if (fred.status === "delayed" || latest.dataFreshness === "delayed") return "delayed";
   if (
     fred.status === "live"
     && latest.dataFreshness === "live"

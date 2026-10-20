@@ -56,7 +56,7 @@ export interface SeismographState {
     direction: "rising" | "falling" | "stable";
     deltaFromPrior: number;
     streakDays: number;
-    historicalPercentile: number;
+    historicalPercentile: number | null;
     pressureDrivers: string[];
   };
   transitionProbabilities: {
@@ -211,8 +211,9 @@ async function getRecentDailyReadings(days = 60): Promise<SeismographReadingRow[
 
 // ─── Core analytics ───────────────────────────────────────────────────────────
 
-function computePercentile(score: number, allScores: number[]): number {
-  if (allScores.length === 0) return 50;
+/** Rank against recorded scores. An empty history is insufficient, not the 50th percentile. */
+export function historicalPercentileFromScores(score: number, allScores: number[]): number | null {
+  if (!Number.isFinite(score) || allScores.length === 0) return null;
   const below = allScores.filter((s) => s < score).length;
   return Math.round((below / allScores.length) * 100);
 }
@@ -748,7 +749,7 @@ export async function recordSeismographReading(params: {
 
   const history = await getPressureHistoryMonths(300);
   const allScores = history.map((h) => h.score);
-  const historicalPercentile = computePercentile(pressureScore, allScores);
+  const historicalPercentile = historicalPercentileFromScores(pressureScore, allScores);
 
   const db = await requireDb();
   await db
@@ -920,7 +921,9 @@ export async function getSeismographState(): Promise<SeismographState | null> {
       direction: (latest.direction as "rising" | "falling" | "stable") ?? "stable",
       deltaFromPrior: latest.deltaFromPrior ?? 0,
       streakDays: latest.streakDays ?? 0,
-      historicalPercentile: latest.historicalPercentile ?? 50,
+      historicalPercentile: typeof latest.historicalPercentile === "number" && Number.isFinite(latest.historicalPercentile)
+        ? latest.historicalPercentile
+        : null,
       pressureDrivers: JSON.parse(latest.pressureDriversJson ?? "[]") as string[],
     },
     transitionProbabilities: transitionProbs,
@@ -951,19 +954,14 @@ export async function buildSeismographPromptBlock(): Promise<string> {
   return `
 ──SEISMOGRAPH INTELLIGENCE ENGINE──
 Observations recorded: ${marketMemorySummary.observationCount} days
-Current reading: ${today.pressureScore} (${today.stressLevel}) — ${formatOrdinal(today.historicalPercentile)} historical percentile
+Current reading: ${today.pressureScore} (${today.stressLevel}) — ${typeof today.historicalPercentile === "number" ? `${formatOrdinal(today.historicalPercentile)} historical percentile` : "historical percentile unavailable (insufficient data)"}
 Direction: ${today.direction} | Streak: ${today.streakDays} days | Delta: ${
     today.deltaFromPrior > 0 ? "+" : ""
   }${today.deltaFromPrior} pts
 Regime: ${today.regime}
 ${marketMemorySummary.lastMajorShift ? `Last regime shift: ${marketMemorySummary.lastMajorShift}` : ""}
 
-Regime Transition Probabilities (historical base rates, not predictions):
-  Remain in current regime: ${transitionProbabilities.remainInRegime}%
-  Transition to elevated stress: ${transitionProbabilities.transitionToElevated}%
-  Transition to low stress: ${transitionProbabilities.transitionToLow}%
-  Transition to crisis: ${transitionProbabilities.transitionToCrisis}%
-  Confidence: ${transitionProbabilities.confidence}% | ${transitionProbabilities.historicalBasis}
+Transition risk: uncalibrated and not stated as a probability.
   Current evidence: ${transitionProbabilities.currentEvidence.join("; ") || "None significant"}
 
 Active Patterns:

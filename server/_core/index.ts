@@ -214,7 +214,8 @@ async function startServer() {
   app.get("/api/publishing/status", requireCron, handlePublishingStatus);
   app.post("/api/publishing/toggle-active", requireCron, handleToggleActive);
   app.post("/api/publishing/publish-draft/:id", requireCron, handlePublishDraft);
-  // RSS feed
+  // RSS feed. /api/rss is the public path; without it the SPA shell returns HTML.
+  app.get("/api/rss", handleRssFeed);
   app.get("/api/rss.xml", handleRssFeed);
   // Independent-runtime health — 200 { ok, commit, buildTime }. Registered under /api
   // so the public HTML maintenance gate never intercepts it.

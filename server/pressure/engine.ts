@@ -70,6 +70,8 @@ export interface RiskVector {
   fallbackReason?: string;
   /** FRED observation date behind each raw input (Phase 1 provenance) */
   observationDates?: Record<string, string | null>;
+  /** Earliest observation behind this vector. Null when none was recorded. */
+  observedAt?: string | null;
 }
 
 export interface HistoricalAnalog {
@@ -802,6 +804,10 @@ export function computePressureFromVerifiedInputs(
   for (const v of vectors) {
     if (!Number.isFinite(v.score)) throw new PressureInputsUnavailableError([`${v.id} score not finite`]);
     v.observationDates = Object.fromEntries(Object.keys(v.rawInputs).map(k => [k, obsDates[k] ?? null]));
+    const observed = Object.values(v.observationDates)
+      .map(date => typeof date === "string" ? Date.parse(`${date}T00:00:00.000Z`) : Number.NaN)
+      .filter(time => Number.isFinite(time));
+    v.observedAt = observed.length > 0 ? new Date(Math.min(...observed)).toISOString() : null;
   }
 
   const now = nowDate.toISOString();

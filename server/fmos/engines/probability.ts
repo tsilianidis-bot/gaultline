@@ -69,7 +69,7 @@ function adjustForEvidence(
 
 // ── Primary Driver ────────────────────────────────────────────
 
-function identifyPrimaryDriver(
+export function identifyPrimaryDriver(
   pressure: FaultlinePressureOutput,
   evidence: FMOSEvidenceOutput
 ): string {
@@ -86,6 +86,10 @@ function identifyPrimaryDriver(
   }
   if (p >= 45) {
     return `Elevated pressure at ${p}/100 — ${topVector.label} elevated, monitoring for escalation`;
+  }
+  // MODERATE RISK is 25–44. That band is not a low-pressure, supportive reading.
+  if (p >= 25) {
+    return `Moderate systemic pressure at ${p}/100 — ${topVector.label} is the primary contributor`;
   }
 
   // Check evidence families for primary driver

@@ -39,6 +39,11 @@ export interface SeismographDisplayContext {
   dataQuality: CanonicalDataQualityInput | null;
   /** True only when the canonical outlook has a top analog. */
   canonicalTopAnalogAvailable: boolean;
+  /**
+   * Canonical historical percentile. Omit the property to leave a finite stored
+   * percentile unchanged. Null withholds it (insufficient / not the canonical reading).
+   */
+  canonicalHistoricalPercentile?: number | null;
 }
 
 /** Inputs that are not FRED observations. */
@@ -88,9 +93,49 @@ export function dataFreshnessFromDataQuality(quality: CanonicalDataQualityInput 
   const text = `${status}${parts.length ? ` (${parts.join(", ")} inputs)` : ""}${asOf ? ` · canonical state ${asOf}` : ""}`;
   const freshness: SeismographOutput["dataFreshness"] =
     quality.unavailableInputs.length || quality.staleInputs.length ? "stale"
-      : quality.delayedInputs.length || quality.fallbackInputs.length || status !== "COMPLETE" ? "recent"
-        : "live";
+      : quality.delayedInputs.length ? "delayed"
+        : quality.fallbackInputs.length || status !== "COMPLETE" ? "recent"
+          : "live";
   return { freshness, text };
+}
+
+const ANALOG_CLAIM = /Closest historical analog:\s*[^.]*(?:\.|$)/gi;
+const TRANSITION_PROBABILITY_CLAIM = /\d+(?:\.\d+)?%\s*probability of regime transition(?:\s*\([^)]*\))?/gi;
+const LOW_PRESSURE_SUPPORTIVE = /Low systemic pressure at (\d+)\/100 — conditions broadly supportive/g;
+
+/**
+ * Public evidence-family prose. Missing analogs, uncalibrated transitions, and
+ * a moderate regime do not keep a sentence that was built from a sentinel.
+ * A summary that contains none of those claims is returned unchanged.
+ */
+export function sanitizePublicEvidenceSummary(
+  summary: string,
+  options: { analogsAvailable: boolean; regime: string },
+): string {
+  let text = summary;
+  if (!options.analogsAvailable) {
+    text = text.replace(ANALOG_CLAIM, "Closest historical analog unavailable.");
+  }
+  text = text.replace(TRANSITION_PROBABILITY_CLAIM, "Regime-transition probability is uncalibrated and is not stated");
+  if (/\bmoderate\b/i.test(options.regime)) {
+    text = text.replace(LOW_PRESSURE_SUPPORTIVE, "Moderate systemic pressure at $1/100");
+  }
+  return text;
+}
+
+/**
+ * The assembled percentile is shown only when it is the canonical percentile.
+ * A missing canonical percentile (insufficient history) is null, never 50.
+ * When no canonical percentile was supplied, a finite stored value is kept.
+ */
+export function reconcileAssembledHistoricalPercentile(
+  stored: number | null,
+  canonical: number | null | undefined,
+): number | null {
+  if (canonical === undefined) return typeof stored === "number" && Number.isFinite(stored) ? stored : null;
+  if (canonical === null || !Number.isFinite(canonical)) return null;
+  if (typeof stored === "number" && Number.isFinite(stored) && Math.round(stored) === Math.round(canonical)) return stored;
+  return null;
 }
 
 /**
@@ -102,19 +147,29 @@ export function applySeismographDisplayContext(
   context: SeismographDisplayContext,
 ): SeismographOutput {
   const { freshness, text } = dataFreshnessFromDataQuality(context.dataQuality);
+  const analogsAvailable = context.canonicalTopAnalogAvailable;
+  const evidenceFamilies = output.evidenceFamilies.map(family => ({
+    ...family,
+    summary: sanitizePublicEvidenceSummary(family.summary, { analogsAvailable, regime: output.regime }),
+  }));
   const gated: SeismographOutput = {
     ...output,
     dataFreshness: freshness,
+    historicalPercentile: "canonicalHistoricalPercentile" in context
+      ? reconcileAssembledHistoricalPercentile(output.historicalPercentile, context.canonicalHistoricalPercentile)
+      : output.historicalPercentile,
+    evidenceFamilies,
     providerProvenance: {
       ...(output.providerProvenance ?? {}),
       fred: fredProvenanceFromDataQuality(context.dataQuality, output.computedAt),
     },
-    ...(context.canonicalTopAnalogAvailable ? {} : { topAnalog: null, analogMatches: [] }),
+    ...(analogsAvailable ? {} : { topAnalog: null, analogMatches: [] }),
   };
   gated.forDashboard = {
     ...output.forDashboard,
     dataFreshness: freshness,
-    ...(context.canonicalTopAnalogAvailable ? {} : { topAnalog: null }),
+    evidenceFamilies,
+    ...(analogsAvailable ? {} : { topAnalog: null }),
   };
   gated.forASHA = buildASHAContextBlock(gated, { dataFreshnessText: text });
   gated.forDailyBrief = buildDailyBriefContext(gated);
