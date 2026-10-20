@@ -72,6 +72,18 @@ function scoreColor(score: number): string {
   return "#FF2D55";
 }
 
+function usdQuote(value: number | null | undefined): string {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "Unavailable";
+  return value < 1
+    ? `$${value.toFixed(4)}`
+    : `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function pctQuote(value: number | null | undefined, digits: number, leadingPlus = false): string {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "Unavailable";
+  return `${leadingPlus ? "+" : ""}${value.toFixed(digits)}%`;
+}
+
 function directionIcon(d: OutlookDirection) {
   switch (d) {
     case "Bullish": return <TrendingUp size={14} color="#00FF88" />;
@@ -200,8 +212,9 @@ function Section({
 }
 
 // ── Score bar ─────────────────────────────────────────────────
-function ScoreBar({ score, label, weight, note }: { score: number; label: string; weight: number; note: string }) {
-  const color = scoreColor(score);
+function ScoreBar({ score, label, weight, note }: { score: number | null; label: string; weight: number; note: string }) {
+  const finite = typeof score === "number" && Number.isFinite(score) ? score : null;
+  const color = finite == null ? "#94A3B8" : scoreColor(finite);
   return (
     <Tooltip text={note}>
       <div style={{ marginBottom: "8px", cursor: "help" }}>
@@ -217,7 +230,7 @@ function ScoreBar({ score, label, weight, note }: { score: number; label: string
         <div style={{ height: "3px", background: "rgba(255,255,255,0.06)", borderRadius: "2px", overflow: "hidden" }}>
           <div style={{
             height: "100%",
-            width: `${score}%`,
+            width: finite == null ? "0%" : `${finite}%`,
             background: color,
             borderRadius: "2px",
             boxShadow: `0 0 6px ${color}60`,
@@ -648,9 +661,9 @@ function FullOutlookView({
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", fontWeight: 700, color: "#E2E8F0", letterSpacing: "0.06em" }}>CALCULATED PRICE LEVELS</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                {d.calculatedLevels.atrPct != null && (
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563" }}>ATR {d.calculatedLevels.atrPct}%</span>
-                )}
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563" }}>
+                  ATR {typeof d.calculatedLevels.atrPct === "number" && Number.isFinite(d.calculatedLevels.atrPct) ? `${d.calculatedLevels.atrPct}%` : "Unavailable"}
+                </span>
                 <span style={{
                   fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px",
                   color: d.calculatedLevels.dataQuality === "full" ? "#00FF88" : d.calculatedLevels.dataQuality === "partial" ? "#FFD700" : "#FF9500",
@@ -665,15 +678,15 @@ function FullOutlookView({
             <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: "8px" }}>
                 {[
-                  { label: "CURRENT PRICE", value: d.calculatedLevels.currentPrice != null ? `$${d.calculatedLevels.currentPrice < 1 ? d.calculatedLevels.currentPrice.toFixed(4) : d.calculatedLevels.currentPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—", color: "#F1F5F9" },
-                  { label: "PIVOT POINT", value: d.calculatedLevels.pivotPoint != null ? `$${d.calculatedLevels.pivotPoint < 1 ? d.calculatedLevels.pivotPoint.toFixed(4) : d.calculatedLevels.pivotPoint.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—", color: "#94A3B8" },
-                  { label: "SMA-20", value: d.calculatedLevels.sma20 != null ? `$${d.calculatedLevels.sma20 < 1 ? d.calculatedLevels.sma20.toFixed(4) : d.calculatedLevels.sma20.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—", color: d.calculatedLevels.sma20 != null && d.calculatedLevels.currentPrice != null ? (d.calculatedLevels.currentPrice > d.calculatedLevels.sma20 ? "#00FF88" : "#FF2D55") : "#94A3B8" },
-                  { label: "SMA-50", value: d.calculatedLevels.sma50 != null ? `$${d.calculatedLevels.sma50 < 1 ? d.calculatedLevels.sma50.toFixed(4) : d.calculatedLevels.sma50.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—", color: d.calculatedLevels.sma50 != null && d.calculatedLevels.currentPrice != null ? (d.calculatedLevels.currentPrice > d.calculatedLevels.sma50 ? "#00FF88" : "#FF2D55") : "#94A3B8" },
-                  { label: "SMA-200", value: d.calculatedLevels.sma200 != null ? `$${d.calculatedLevels.sma200 < 1 ? d.calculatedLevels.sma200.toFixed(4) : d.calculatedLevels.sma200.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—", color: d.calculatedLevels.sma200 != null && d.calculatedLevels.currentPrice != null ? (d.calculatedLevels.currentPrice > d.calculatedLevels.sma200 ? "#00FF88" : "#FF2D55") : "#94A3B8" },
-                  { label: "52W HIGH", value: d.calculatedLevels.weekHigh52 != null ? `$${d.calculatedLevels.weekHigh52 < 1 ? d.calculatedLevels.weekHigh52.toFixed(4) : d.calculatedLevels.weekHigh52.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—", color: "#FF9500" },
-                  { label: "52W LOW", value: d.calculatedLevels.weekLow52 != null ? `$${d.calculatedLevels.weekLow52 < 1 ? d.calculatedLevels.weekLow52.toFixed(4) : d.calculatedLevels.weekLow52.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—", color: "#64B5F6" },
-                  { label: "BOLL UPPER", value: d.calculatedLevels.bollingerUpper != null ? `$${d.calculatedLevels.bollingerUpper < 1 ? d.calculatedLevels.bollingerUpper.toFixed(4) : d.calculatedLevels.bollingerUpper.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—", color: "#A78BFA" },
-                  { label: "BOLL LOWER", value: d.calculatedLevels.bollingerLower != null ? `$${d.calculatedLevels.bollingerLower < 1 ? d.calculatedLevels.bollingerLower.toFixed(4) : d.calculatedLevels.bollingerLower.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—", color: "#A78BFA" },
+                  { label: "CURRENT PRICE", value: usdQuote(d.calculatedLevels.currentPrice), color: "#F1F5F9" },
+                  { label: "PIVOT POINT", value: usdQuote(d.calculatedLevels.pivotPoint), color: "#94A3B8" },
+                  { label: "SMA-20", value: usdQuote(d.calculatedLevels.sma20), color: d.calculatedLevels.sma20 != null && d.calculatedLevels.currentPrice != null ? (d.calculatedLevels.currentPrice > d.calculatedLevels.sma20 ? "#00FF88" : "#FF2D55") : "#94A3B8" },
+                  { label: "SMA-50", value: usdQuote(d.calculatedLevels.sma50), color: d.calculatedLevels.sma50 != null && d.calculatedLevels.currentPrice != null ? (d.calculatedLevels.currentPrice > d.calculatedLevels.sma50 ? "#00FF88" : "#FF2D55") : "#94A3B8" },
+                  { label: "SMA-200", value: usdQuote(d.calculatedLevels.sma200), color: d.calculatedLevels.sma200 != null && d.calculatedLevels.currentPrice != null ? (d.calculatedLevels.currentPrice > d.calculatedLevels.sma200 ? "#00FF88" : "#FF2D55") : "#94A3B8" },
+                  { label: "52W HIGH", value: usdQuote(d.calculatedLevels.weekHigh52), color: "#FF9500" },
+                  { label: "52W LOW", value: usdQuote(d.calculatedLevels.weekLow52), color: "#64B5F6" },
+                  { label: "BOLL UPPER", value: usdQuote(d.calculatedLevels.bollingerUpper), color: "#A78BFA" },
+                  { label: "BOLL LOWER", value: usdQuote(d.calculatedLevels.bollingerLower), color: "#A78BFA" },
                 ].map(item => (
                   <div key={item.label} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "6px", padding: "8px 10px" }}>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", letterSpacing: "0.08em", marginBottom: "3px" }}>{item.label}</div>
@@ -699,10 +712,10 @@ function FullOutlookView({
                   <div key={key} style={{ marginBottom: "8px" }} title={level.description}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00FF8880", letterSpacing: "0.06em" }}>{key} · {level.method}</span>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00FF8899" }}>{level.pctFromCurrent.toFixed(1)}%</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00FF8899" }}>{pctQuote(level.pctFromCurrent, 1)}</span>
                     </div>
                     <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#00FF88" }}>
-                      ${level.price < 1 ? level.price.toFixed(4) : level.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {usdQuote(level.price)}
                     </div>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", marginTop: "1px" }}>{level.description}</div>
                   </div>
@@ -727,10 +740,10 @@ function FullOutlookView({
                   <div key={key} style={{ marginBottom: "8px" }} title={level.description}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#FF2D5580", letterSpacing: "0.06em" }}>{key} · {level.method}</span>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF2D5599" }}>+{level.pctFromCurrent.toFixed(1)}%</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF2D5599" }}>{pctQuote(level.pctFromCurrent, 1, true)}</span>
                     </div>
                     <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#FF2D55" }}>
-                      ${level.price < 1 ? level.price.toFixed(4) : level.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {usdQuote(level.price)}
                     </div>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", marginTop: "1px" }}>{level.description}</div>
                   </div>
@@ -757,12 +770,12 @@ function FullOutlookView({
                   <div key={item.label} style={{ background: item.bg, border: `1px solid ${item.border}`, borderRadius: "8px", padding: "10px 12px" }} title={item.level.description}>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: item.color, letterSpacing: "0.08em", marginBottom: "4px" }}>{item.label}</div>
                     <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: item.color }}>
-                      ${item.level.price < 1 ? item.level.price.toFixed(4) : item.level.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {usdQuote(item.level.price)}
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2px" }}>
                       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563" }}>{item.level.method}</span>
                       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: item.color + "99" }}>
-                        {item.level.pctFromCurrent > 0 ? "+" : ""}{item.level.pctFromCurrent.toFixed(1)}%
+                        {pctQuote(item.level.pctFromCurrent, 1, typeof item.level.pctFromCurrent === "number" && item.level.pctFromCurrent > 0)}
                       </span>
                     </div>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151", marginTop: "3px", lineHeight: 1.4 }}>{item.level.description}</div>
@@ -810,12 +823,12 @@ function FullOutlookView({
                       <div key={item.label} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${item.color}25`, borderRadius: "6px", padding: "8px 10px" }} title={item.level.description}>
                         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: item.color + "99", letterSpacing: "0.08em", marginBottom: "3px" }}>{item.label}</div>
                         <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color: item.color }}>
-                          ${item.level.price < 1 ? item.level.price.toFixed(4) : item.level.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {usdQuote(item.level.price)}
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2px" }}>
                           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151" }}>{item.level.method}</span>
                           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: item.color + "88" }}>
-                            {item.level.pctFromCurrent > 0 ? "+" : ""}{item.level.pctFromCurrent.toFixed(1)}%
+                            {pctQuote(item.level.pctFromCurrent, 1, typeof item.level.pctFromCurrent === "number" && item.level.pctFromCurrent > 0)}
                           </span>
                         </div>
                       </div>
@@ -1242,13 +1255,9 @@ function FullOutlookView({
               <div style={{ background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.15)", borderRadius: "6px", padding: "10px 12px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00FF88", letterSpacing: "0.08em" }}>ENTRY ZONE</div>
-                  {d.tradeFramework.entryZone.price != null && (
-                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#00FF88" }}>
-                      ${d.tradeFramework.entryZone.price < 1
-                        ? d.tradeFramework.entryZone.price.toFixed(4)
-                        : d.tradeFramework.entryZone.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                  )}
+                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#00FF88" }}>
+                    {usdQuote(d.tradeFramework.entryZone.price)}
+                  </div>
                 </div>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#E2E8F0", lineHeight: 1.5 }}>{d.tradeFramework.entryZone.description}</div>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#6B7280", marginTop: "4px" }}>{d.tradeFramework.entryZone.rationale}</div>
@@ -1266,20 +1275,14 @@ function FullOutlookView({
                 <div key={item.label} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid rgba(255,255,255,0.06)`, borderLeft: `3px solid ${item.color}40`, borderRadius: "0 6px 6px 0", padding: "8px 10px" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "3px" }}>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: item.color, letterSpacing: "0.08em" }}>{item.label}</div>
-                    {item.level.price != null && (
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        {item.level.pctFromEntry != null && (
-                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: item.color + "CC" }}>
-                            {item.level.pctFromEntry > 0 ? "+" : ""}{item.level.pctFromEntry.toFixed(1)}%
-                          </span>
-                        )}
-                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: item.color }}>
-                          ${item.level.price < 1
-                            ? item.level.price.toFixed(4)
-                            : item.level.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: item.color + "CC" }}>
+                        {pctQuote(item.level.pctFromEntry, 1, typeof item.level.pctFromEntry === "number" && item.level.pctFromEntry > 0)}
+                      </span>
+                      <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: item.color }}>
+                        {usdQuote(item.level.price)}
+                      </span>
+                    </div>
                   </div>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#CBD5E1", lineHeight: 1.5 }}>{item.level.description}</div>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#6B7280", marginTop: "3px" }}>{item.level.rationale}</div>
@@ -1295,20 +1298,14 @@ function FullOutlookView({
                   <div key={tp.tier} style={{ background: "rgba(0,212,255,0.03)", border: "1px solid rgba(0,212,255,0.1)", borderRadius: "6px", padding: "8px 10px" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "3px" }}>
                       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00D4FF", letterSpacing: "0.08em" }}>TP {tp.tier}</div>
-                      {tp.price != null && (
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          {tp.pctFromEntry != null && (
-                            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00D4FFCC" }}>
-                              +{tp.pctFromEntry.toFixed(1)}%
-                            </span>
-                          )}
-                          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#00D4FF" }}>
-                            ${tp.price < 1
-                              ? tp.price.toFixed(4)
-                              : tp.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                      )}
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00D4FFCC" }}>
+                          {pctQuote(tp.pctFromEntry, 1, true)}
+                        </span>
+                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#00D4FF" }}>
+                          {usdQuote(tp.price)}
+                        </span>
+                      </div>
                     </div>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#CBD5E1", lineHeight: 1.5 }}>{tp.description}</div>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#6B7280", marginTop: "3px" }}>{tp.rationale}</div>

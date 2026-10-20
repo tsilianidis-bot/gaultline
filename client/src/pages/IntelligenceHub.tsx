@@ -321,8 +321,8 @@ PRESSURE INDEX: ${overall.score.toFixed(1)}/10
 PROBABILITY DISTRIBUTION:
 Bull ${p.bullProbability}% · Neutral ${p.softLandingProbability ?? 5}% · Bear ${p.crashProbability}%
 
-CONFIDENCE: ${fmosData?.confidence?.score ?? "—"}/100
-EVIDENCE DIVERSITY: ${fmosData?.evidence?.diversityScore ?? "—"}
+CONFIDENCE: ${fmosData?.confidence?.score ?? "Unavailable"}/100
+EVIDENCE DIVERSITY: ${fmosData?.evidence?.diversityScore ?? "Unavailable"}
 
 TOP THREAT: ${topThreat?.label ?? "—"} (${topThreat?.score?.toFixed(1) ?? "—"}/10)
 TOP STABILIZER: ${topStabilizer?.label ?? "—"} (${topStabilizer?.score?.toFixed(1) ?? "—"}/10)
@@ -396,8 +396,8 @@ Updated: ${updatedAgo}`;
         <div style={{ width: "1px", height: "16px", background: "rgba(255,255,255,0.08)" }} />
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(148,163,184,0.5)", letterSpacing: "0.15em" }}>CONFIDENCE</span>
-          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: fmosData?.confidence?.score != null && fmosData.confidence.score >= 60 ? ACCENT.green : fmosData?.confidence?.score != null && fmosData.confidence.score >= 40 ? ACCENT.amber : ACCENT.red, letterSpacing: "0.06em" }}>
-            {fmosData?.confidence?.score ?? "—"}/100
+          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: fmosData?.confidence?.score == null ? "#94A3B8" : fmosData.confidence.score >= 60 ? ACCENT.green : fmosData.confidence.score >= 40 ? ACCENT.amber : ACCENT.red, letterSpacing: "0.06em" }}>
+            {fmosData?.confidence?.score ?? "Unavailable"}/100
           </span>
         </div>
         <div style={{ width: "1px", height: "16px", background: "rgba(255,255,255,0.08)" }} />
@@ -445,8 +445,8 @@ Updated: ${updatedAgo}`;
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "8px", marginBottom: "16px" }}>
               <StatCard label="Market Verdict" value={verdictLabel} color={color} onClick={() => navigate(CANONICAL_DESTINATION_BY_ID.act.path)} />
               <StatCard label="Pressure Index" value={`${overall.score.toFixed(1)}/10`} color={color} onClick={() => navigate("/app/pressure")} />
-              <StatCard label="Confidence" value={`${fmosData?.confidence?.score ?? "—"}/100`} color={fmosData?.confidence?.score != null && fmosData.confidence.score >= 60 ? ACCENT.green : ACCENT.amber} />
-              <StatCard label="Evidence Diversity" value={`${fmosData?.evidence?.diversityScore ?? "—"}`} sub="0=single source · 4=all families" color={fmosData?.evidence?.diversityScore != null && fmosData.evidence.diversityScore >= 3 ? ACCENT.green : ACCENT.amber} />
+              <StatCard label="Confidence" value={`${fmosData?.confidence?.score ?? "Unavailable"}/100`} color={fmosData?.confidence?.score != null && fmosData.confidence.score >= 60 ? ACCENT.green : ACCENT.amber} />
+              <StatCard label="Evidence Diversity" value={`${fmosData?.evidence?.diversityScore ?? "Unavailable"}`} sub="0=single source · 4=all families" color={fmosData?.evidence?.diversityScore != null && fmosData.evidence.diversityScore >= 3 ? ACCENT.green : ACCENT.amber} />
             </div>
 
             {/* Probability distribution */}
@@ -497,7 +497,7 @@ Updated: ${updatedAgo}`;
                 <SectionHeader label="FMOS Decision Engine" color={ACCENT.purple} />
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                   <StatCard label="Verdict" value={fmosData.decision.verdict ?? "WATCH"} color={fmosData.decision.verdict === "BUY" || fmosData.decision.verdict === "ACCUMULATE" ? ACCENT.green : fmosData.decision.verdict === "SELL" || fmosData.decision.verdict === "REDUCE" ? ACCENT.red : ACCENT.amber} />
-                  <StatCard label="Conviction" value={fmosData.decision.conviction != null ? String(fmosData.decision.conviction) : "—"} color={ACCENT.purple} />
+                  <StatCard label="Conviction" value={fmosData.decision.conviction != null ? String(fmosData.decision.conviction) : "Unavailable"} color={ACCENT.purple} />
                 </div>
                 {fmosData.decision.primaryReason && (
                   <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.7)", lineHeight: 1.7, margin: "10px 0 0" }}>{fmosData.decision.primaryReason}</p>
@@ -811,8 +811,8 @@ Updated: ${updatedAgo}`;
                 <SectionHeader label="Signal Confidence Details" color={ACCENT.cyan} />
                 <div style={{ background: "rgba(255,255,255,0.008)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "4px", padding: "14px 16px" }}>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "8px" }}>
-                    <StatCard label="Overall Confidence" value={`${fmosData.confidence?.score ?? "—"}/100`} color={ACCENT.cyan} />
-                    <StatCard label="Evidence Diversity" value={`${fmosData.evidence.diversityScore ?? "—"}/4`} color={fmosData.evidence.diversityScore >= 3 ? ACCENT.green : ACCENT.amber} />
+                    <StatCard label="Overall Confidence" value={`${fmosData.confidence?.score ?? "Unavailable"}/100`} color={ACCENT.cyan} />
+                    <StatCard label="Evidence Diversity" value={`${fmosData.evidence.diversityScore ?? "Unavailable"}/4`} color={fmosData.evidence.diversityScore != null && fmosData.evidence.diversityScore >= 3 ? ACCENT.green : ACCENT.amber} />
                     <StatCard label="Data Freshness" value={fmosData.complete ? "COMPLETE" : "PARTIAL"} color={fmosData.complete ? ACCENT.green : ACCENT.amber} />
                     <StatCard label="Engine Version" value={fmosData.engineVersion ?? "—"} color={ACCENT.purple} />
                   </div>

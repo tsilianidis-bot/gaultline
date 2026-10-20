@@ -2,6 +2,7 @@
 export function withholdNonFiniteNumbers(value: unknown): unknown {
   if (typeof value === "number") return Number.isFinite(value) ? value : null;
   if (value === null || value === undefined) return value;
+  if (value instanceof Date) return value.toISOString();
   if (Array.isArray(value)) return value.map(withholdNonFiniteNumbers);
   if (typeof value === "object") {
     return Object.fromEntries(

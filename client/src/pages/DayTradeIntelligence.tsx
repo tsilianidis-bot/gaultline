@@ -168,8 +168,14 @@ const dirColor = (d: string) =>
   d === "bullish" ? "#00FF88" : d === "bearish" ? "#FF6B6B" : "#6B7280";
 const isNoTrade = (s: AnySetup): s is NoTradeResult =>
   s.setupType === "NO_TRADE";
-const fmtHold = (mins: number) =>
-  mins < 60 ? `${mins} min` : `${(mins / 60).toFixed(1)}h`;
+const fmtHold = (mins: number | null | undefined) => {
+  if (typeof mins !== "number" || !Number.isFinite(mins)) return "Unavailable";
+  return mins < 60 ? `${mins} min` : `${(mins / 60).toFixed(1)}h`;
+};
+const ratioText = (n: number | null | undefined) =>
+  typeof n === "number" && Number.isFinite(n) ? `${n.toFixed(1)}:1` : "Unavailable";
+const relVolText = (n: number | null | undefined) =>
+  typeof n === "number" && Number.isFinite(n) ? `${n.toFixed(1)}x` : "Unavailable";
 const DirIcon = ({ d }: { d: string }) =>
   d === "bullish" ? <TrendingUp size={12} style={{ color: "#00FF88" }} /> :
   d === "bearish" ? <TrendingDown size={12} style={{ color: "#FF6B6B" }} /> :
@@ -311,7 +317,7 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
         </span>
         {ds && (
           <>
-            <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>R/R: <strong style={{ color: "#F0F4FF" }}>{ds.riskRewardRatio.toFixed(1)}:1</strong></span>
+            <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>R/R: <strong style={{ color: "#F0F4FF" }}>{ratioText(ds.riskRewardRatio)}</strong></span>
             <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>Hold: <strong style={{ color: "#F0F4FF" }}>{fmtHold(ds.expectedHoldMinutes)}</strong></span>
             <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>Risk: <strong style={{ color: riskColor(ds.riskLevel) }}>{ds.riskLevel}</strong></span>
             {/* Launch fix-up: probabilityRating is confidence × 0.9 + momentum × 0.1, not a probability. */}
@@ -351,7 +357,7 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
               </div>
               <div>
                 <div style={LABEL}>Rel. Volume</div>
-                <div style={VALUE}>{ds.relativeVolume != null ? `${ds.relativeVolume.toFixed(1)}x` : "N/A"}</div>
+                <div style={VALUE}>{relVolText(ds.relativeVolume)}</div>
               </div>
             </div>
           ) : null}
@@ -1712,7 +1718,7 @@ function Top10RankedTab({ onSearch }: { onSearch: (sym: string, type: "stock" | 
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
                     <div style={{ ...MONO_SM, fontSize: "9px", color: "#374151" }}>R/R</div>
-                    <div style={{ ...MONO_SM, fontWeight: 600, color: "#F0F4FF", fontSize: "11px" }}>{s.riskRewardRatio.toFixed(1)}:1</div>
+                    <div style={{ ...MONO_SM, fontWeight: 600, color: "#F0F4FF", fontSize: "11px" }}>{ratioText(s.riskRewardRatio)}</div>
                   </div>
                   <button onClick={() => onSearch(s.symbol, s.assetType)} style={{ padding: "4px 10px", background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.2)", borderRadius: "3px", color: "#00D4FF", ...MONO_SM, fontSize: "9px", cursor: "pointer", flexShrink: 0 }}>Report</button>
                 </div>
@@ -1725,7 +1731,7 @@ function Top10RankedTab({ onSearch }: { onSearch: (sym: string, type: "stock" | 
                     // Launch fix-up: probabilityRating is a blend of heuristic scores, not a probability.
                     { label: "PROB",    value: "Not established", color: "#94A3B8" },
                     { label: "RISK",    value: s.riskLevel,               color: riskColor(s.riskLevel) },
-                    { label: "REL-VOL", value: s.relativeVolume != null ? `${s.relativeVolume.toFixed(1)}x` : "N/A", color: s.relativeVolume != null && s.relativeVolume >= 1.5 ? "#00FF88" : "#94A3B8" },
+                    { label: "REL-VOL", value: relVolText(s.relativeVolume), color: typeof s.relativeVolume === "number" && s.relativeVolume >= 1.5 ? "#00FF88" : "#94A3B8" },
                   ].map(kv => (
                     <div key={kv.label} style={{ flex: 1, padding: "5px 8px", borderRight: "1px solid rgba(255,255,255,0.04)", minWidth: "60px" }}>
                       <div style={{ ...MONO_SM, fontSize: "8px", color: "#374151", marginBottom: "1px" }}>{kv.label}</div>

@@ -5,6 +5,7 @@ import { appRouter } from "./routers";
 
 const CLEAR_CACHE = [
   "signals.clearCache",
+  "signals.clearSignalCache",
   "diagnostic.clearCache",
   "guidance.clearCache",
   "crypto.clearCache",
@@ -14,6 +15,8 @@ const CLEAR_CACHE = [
   "social.clearCache",
   "dayTrade.clearCache",
   "marketIntelligence.clearCache",
+  "outlook.clearCaches",
+  "fmos.clearCaches",
 ] as const;
 
 const ownerOpenId = "owner-open-id";
@@ -64,9 +67,17 @@ describe("tRPC clearCache is owner or admin only", () => {
   });
 
   it("does not leave a member-callable clearCache procedure in the routers", () => {
-    for (const file of ["server/routers.ts", "server/routers/marketIntelligence.ts", "server/routers/signals.ts"]) {
+    for (const file of [
+      "server/routers.ts",
+      "server/routers/marketIntelligence.ts",
+      "server/routers/signals.ts",
+      "server/routers/outlook.ts",
+      "server/routers/fmos.ts",
+    ]) {
       const source = readFileSync(file, "utf8");
       expect(source, file).not.toMatch(/clearCache:\s*protectedProcedure/);
+      expect(source, file).not.toMatch(/clearSignalCache:\s*protectedProcedure/);
+      expect(source, file).not.toMatch(/clearCaches:\s*protectedProcedure/);
       expect(source, file).toContain("ownerOrAdminProcedure");
     }
     const page = readFileSync("client/src/pages/MarketIntelligence.tsx", "utf8");

@@ -305,7 +305,7 @@ export const appRouter = router({
       .query(({ input }) => getSignalVisualDetailPayload(input.symbol)),
 
     // Clear the trading signal cache
-    clearSignalCache: protectedProcedure.mutation(() => {
+    clearSignalCache: ownerOrAdminProcedure.mutation(() => {
       clearSignalCache();
       return { success: true };
     }),
@@ -2720,18 +2720,7 @@ export const appRouter = router({
   dayTrade: router({
     getFavorability: coreProcedure.query(async () => {
       const result = await getDayTradeFavorability();
-      const sanitizeNumbers = (v: unknown): unknown => {
-        if (typeof v === 'number') return (isFinite(v) && !isNaN(v)) ? v : 0;
-        if (v === null || v === undefined) return v;
-        if (Array.isArray(v)) return v.map(sanitizeNumbers);
-        if (typeof v === 'object') {
-          return Object.fromEntries(
-            Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNumbers(val)])
-          );
-        }
-        return v;
-      };
-      return sanitizeNumbers(result) as typeof result;
+      return withholdNonFiniteNumbers(result) as typeof result;
     }),
     scan: coreProcedure
       .input(z.object({
@@ -2742,17 +2731,7 @@ export const appRouter = router({
         maxResults: z.number().min(1).max(30).default(12),
       }))
       .query(async ({ input }) => {
-        const sanitizeNumbers = (v: unknown): unknown => {
-          if (typeof v === 'number') return (isFinite(v) && !isNaN(v)) ? v : 0;
-          if (v === null || v === undefined) return v;
-          if (Array.isArray(v)) return v.map(sanitizeNumbers);
-          if (typeof v === 'object') {
-            return Object.fromEntries(
-              Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNumbers(val)])
-            );
-          }
-          return v;
-        };
+        const sanitizeNumbers = withholdNonFiniteNumbers;
         const cacheKey = `scan:${input.assetType}:${input.capBucket}:${input.direction}:${input.riskProfile}:${input.maxResults}`;
         const t0 = Date.now();
         // ── Tier 1: Live data ──────────────────────────────────────────────────
@@ -2806,20 +2785,7 @@ export const appRouter = router({
       .query(async ({ input }) => {
         try {
           const result = await dayTradeSymbolSetup(input.symbol, input.assetType, input.direction);
-          // Sanitize all numeric fields to prevent NaN/Infinity from causing SuperJSON
-          // "Unable to transform response from server" errors on the client
-          const sanitizeNumbers = (v: unknown): unknown => {
-            if (typeof v === 'number') return (isFinite(v) && !isNaN(v)) ? v : 0;
-            if (v === null || v === undefined) return v;
-            if (Array.isArray(v)) return v.map(sanitizeNumbers);
-            if (typeof v === 'object') {
-              return Object.fromEntries(
-                Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNumbers(val)])
-              );
-            }
-            return v;
-          };
-          return sanitizeNumbers(result) as typeof result;
+          return withholdNonFiniteNumbers(result) as typeof result;
         } catch (err) {
           console.error('[symbolSetup] Error for', input.symbol, err);
           // Return a degraded report instead of throwing — the page must always render

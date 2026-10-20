@@ -23,14 +23,15 @@ describe("formatFactorScore — display rounding only", () => {
     expect(formatFactorScore(72)).toBe("72");
     expect(formatFactorScore(0)).toBe("0");
     expect(formatFactorScore(100)).toBe("100");
-    expect(formatFactorScore(Number.NaN)).toBe("—");
+    expect(formatFactorScore(Number.NaN)).toBe("Unavailable");
+    expect(formatFactorScore(null)).toBe("Unavailable");
   });
   it("ScoreBar renders the formatted value; the bar width still uses the raw score", () => {
     const src = read("../client/src/pages/SignalOutlookCenter.tsx");
     const bar = src.slice(src.indexOf("function ScoreBar("), src.indexOf("function ScoreBar(") + 2000);
     expect(bar).toContain("{formatFactorScore(score)}</span>");
     expect(bar).not.toMatch(/color \}\}>\{score\}<\/span>/);
-    expect(bar).toMatch(/width: `\$\{score\}%`/);
+    expect(bar).toMatch(/width: finite == null \? "0%" : `\$\{finite\}%`/);
   });
 });
 

@@ -4,7 +4,8 @@
 // ============================================================
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { router, publicProcedure, ownerOrAdminProcedure } from "../_core/trpc";
+import { withholdNonFiniteNumbers } from "../displayNumbers";
 import {
   getFullOutlook,
   getQuickOutlook,
@@ -28,19 +29,11 @@ const timeframeSchema = z.enum(["day", "short", "swing", "long"]).default("swing
 const assetTypeSchema = z.enum(["stock", "crypto"]);
 
 /**
- * Recursively replace NaN and Infinity with 0 so SuperJSON never throws
- * "Unable to transform response from server" on the client.
+ * A non-finite outlook number is unavailable. Scoring stays in signalOutlook.ts.
+ * Null serializes; it is not shown as 0.
  */
-function sanitizeNumbers(v: unknown): unknown {
-  if (typeof v === "number") return isFinite(v) && !isNaN(v) ? v : 0;
-  if (v === null || v === undefined) return v;
-  if (Array.isArray(v)) return v.map(sanitizeNumbers);
-  if (typeof v === "object") {
-    return Object.fromEntries(
-      Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNumbers(val)])
-    );
-  }
-  return v;
+export function sanitizeNumbers(v: unknown): unknown {
+  return withholdNonFiniteNumbers(v);
 }
 
 /**
@@ -500,14 +493,9 @@ Write exactly this JSON structure:
       }
     }),
 
-  /**
-   * Admin: clear all outlook caches (forces fresh computation on next request).
-   */
-  clearCaches: protectedProcedure
-    .mutation(async ({ ctx }) => {
-      if (ctx.user.role !== "admin") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Admin only" });
-      }
+  /** Owner or admin: clear all outlook caches (forces fresh computation on next request). */
+  clearCaches: ownerOrAdminProcedure
+    .mutation(() => {
       clearOutlookCaches();
       return { success: true };
     }),
