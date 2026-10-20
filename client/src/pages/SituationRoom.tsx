@@ -724,7 +724,7 @@ export default function SituationRoom() {
           {/* Score Explainers */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
             {pressureScore != null ? (
-              <ScoreExplainer scoreKey="pressureIndex" value={pressureScore} trend={marketState?.now.direction === "Deteriorating" || marketState?.now.direction === "Accelerating" ? "rising" : marketState?.now.direction === "Improving" ? "falling" : "stable"} historicalPercentile={marketState?.now.historicalPercentile ?? pressureScore} compact />
+              <ScoreExplainer scoreKey="pressureIndex" value={pressureScore} trend={marketState?.now.direction === "Deteriorating" || marketState?.now.direction === "Accelerating" ? "rising" : marketState?.now.direction === "Improving" ? "falling" : "stable"} historicalPercentile={typeof marketState?.now.historicalPercentile === "number" ? marketState.now.historicalPercentile : undefined} compact />
             ) : (
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#64748B" }}>Pressure Index UNAVAILABLE — withheld</div>
             )}

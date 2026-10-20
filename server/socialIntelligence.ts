@@ -210,8 +210,8 @@ export interface VerifiedSocialSnapshot {
   sourceCount: number;
   socialVolume: number;
   newsCount: number;
-  /** Numeric because the frozen rising-star engine multiplies this field. A missing composite is 0 there; the social page uses the nullable composite instead. */
-  sentimentScore: number;
+  /** Null when no source contributes a composite. Rising stars must not treat that as 0. */
+  sentimentScore: number | null;
   positiveNews: number;
   negativeNews: number;
   extremeAttentionDetected: boolean;
@@ -1098,7 +1098,7 @@ export async function getVerifiedSocialSnapshot(
     sourceCount,
     socialVolume,
     newsCount: news.length,
-    sentimentScore: composite.overallSentimentScore ?? 0,
+    sentimentScore: composite.overallSentimentScore,
     positiveNews: news.filter(article => article.sentiment === "positive").length,
     negativeNews: news.filter(article => article.sentiment === "negative").length,
     extremeAttentionDetected: sourceCount >= 2 && socialVolume >= 75 && (composite.overallSentimentScore ?? -1) >= 0.7,

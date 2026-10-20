@@ -360,7 +360,9 @@ export function assembleCanonicalMarketState(
       regime: source.currentRegime,
       stressLevel: source.currentStressLevel,
       direction: source.currentDirection,
-      historicalPercentile: normalizeCanonicalMetric(source.currentPercentile),
+      historicalPercentile: typeof source.currentPercentile === "number" && Number.isFinite(source.currentPercentile)
+        ? normalizeCanonicalMetric(source.currentPercentile)
+        : null,
       headline: `${source.currentStressLevel} stress in a ${source.currentRegime} regime; pressure is ${source.currentDirection.toLowerCase()}.`,
       topDrivers,
       threats: classified.threats,

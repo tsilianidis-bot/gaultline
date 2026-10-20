@@ -640,7 +640,7 @@ export default function SeismographicDash() {
   const currentRegime = intel?.currentRegime ?? "";
   const currentDirection = intel?.currentDirection ?? "";
   const currentStressLevel = intel?.currentStressLevel ?? "";
-  const currentPercentile = intel?.currentPercentile ?? 0;
+  const currentPercentile = typeof intel?.currentPercentile === "number" ? intel.currentPercentile : null;
   const todayStory = intel?.todayStory ?? "";
   const keyDevelopments = intel?.keyDevelopments ?? [];
   const whyThisScore = intel?.whyThisScore ?? "";
@@ -792,7 +792,7 @@ export default function SeismographicDash() {
                   {currentDirection}
                 </div>
                 <div style={{ ...seismoMono, fontSize: "8px", color: "rgba(6,182,212,0.3)", letterSpacing: "0.06em" }}>
-                  P{currentPercentile}
+                  {currentPercentile == null ? "P unavailable" : `P${currentPercentile}`}
                 </div>
               </div>
               {/* Waveform */}

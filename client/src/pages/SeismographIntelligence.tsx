@@ -631,7 +631,7 @@ export default function SeismographIntelligence() {
     transitionProbability: intel?.transitionProbabilities?.transitionToElevated ?? undefined,
     additionalContext: {
       stressLevel: intel?.currentStressLevel ?? "",
-      percentile: intel?.currentPercentile ?? 0,
+      percentile: typeof intel?.currentPercentile === "number" ? intel.currentPercentile : null,
       enginesAgreeing: intel?.enginesAgreeing ?? [],
       enginesDisagreeing: intel?.enginesDisagreeing ?? [],
       dataFreshness: intel?.dataFreshness,
@@ -752,7 +752,7 @@ export default function SeismographIntelligence() {
                 <span style={{ ...mono, fontSize: "9px", color: "rgba(6,182,212,0.35)" }}>·</span>
                 <span style={{ ...mono, fontSize: "10px", color: directionColor(currentDirection) }}>{currentDirection.toUpperCase()}</span>
                 <span style={{ ...mono, fontSize: "9px", color: "rgba(6,182,212,0.35)" }}>·</span>
-                <span style={{ ...mono, fontSize: "10px", color: "rgba(6,182,212,0.5)" }}>{currentPercentile}th PCTILE</span>
+                <span style={{ ...mono, fontSize: "10px", color: "rgba(6,182,212,0.5)" }}>{typeof currentPercentile === "number" ? `${currentPercentile}th PCTILE` : "PCTILE UNAVAILABLE"}</span>
               </div>
             </div>
           </div>
@@ -841,7 +841,7 @@ export default function SeismographIntelligence() {
                   {[
                     { label: "PRESSURE INDEX", value: `${currentScore}`, color: scoreColor },
                     { label: "STRESS LEVEL", value: currentStressLevel, color: stressColor(currentStressLevel) },
-                    { label: "HISTORICAL PERCENTILE", value: formatOrdinal(currentPercentile), color: scoreColor },
+                    { label: "HISTORICAL PERCENTILE", value: typeof currentPercentile === "number" ? formatOrdinal(currentPercentile) : "Unavailable", color: scoreColor },
                     { label: "TODAY'S CHANGE", value: currentDirection, color: directionColor(currentDirection) },
                   ].map(({ label, value, color }) => (
                     <div key={label}>

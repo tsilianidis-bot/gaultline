@@ -41,7 +41,8 @@ export interface CanonicalMarketState {
     stressLevel: "Low" | "Moderate" | "Elevated" | "High" | "Critical" | "Crisis";
     /** "Unavailable" when the canonical composite direction cannot be derived (no prior comparable reading). */
     direction: "Improving" | "Stable" | "Deteriorating" | "Accelerating" | "Unavailable";
-    historicalPercentile: number;
+    /** null when the current score cannot be ranked against stored history. */
+    historicalPercentile: number | null;
     headline: string;
     /** Strongest evidence families by strength. Ordering only — NOT a threat/support classification. */
     topDrivers: string[];
