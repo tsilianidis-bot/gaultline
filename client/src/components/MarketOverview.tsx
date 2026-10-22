@@ -10,34 +10,41 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Search, TrendingUp, TrendingDown, Minus, Activity, Star, ChevronRight, Zap } from "lucide-react";
+import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
 
 // ── Color helpers ─────────────────────────────────────────────
-function changeColor(pct: number): string {
+function changeColor(pct: number | null): string {
+  if (pct == null || !Number.isFinite(pct)) return "#64748B";
   if (pct > 0) return "#00FF88";
   if (pct < 0) return "#FF2D55";
   return "#64748B";
 }
-function changeBg(pct: number): string {
+function changeBg(pct: number | null): string {
+  if (pct == null || !Number.isFinite(pct)) return "transparent";
   if (pct > 0) return "rgba(0,255,136,0.07)";
   if (pct < 0) return "rgba(255,45,85,0.07)";
   return "transparent";
 }
-function fmtPct(v: number): string {
+function fmtPct(v: number | null): string {
+  if (typeof v !== "number" || !Number.isFinite(v)) return "Unavailable";
   const sign = v >= 0 ? "+" : "";
   return `${sign}${v.toFixed(2)}%`;
 }
-function fmtPrice(v: number): string {
+function fmtPrice(v: number | null): string {
+  if (typeof v !== "number" || !Number.isFinite(v)) return "Unavailable";
   if (v >= 1000) return `$${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   if (v >= 1) return `$${v.toFixed(2)}`;
   return `$${v.toFixed(4)}`;
 }
-function fmtVol(v: number): string {
+function fmtVol(v: number | null): string {
+  if (typeof v !== "number" || !Number.isFinite(v)) return "Unavailable";
   if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(2)}B`;
   if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
   if (v >= 1_000) return `${(v / 1_000).toFixed(0)}K`;
   return String(v);
 }
 function fmtMktCap(v: number | null): string {
+  if (v == null) return "Unavailable";
   if (!v) return "—";
   if (v >= 1e12) return `$${(v / 1e12).toFixed(2)}T`;
   if (v >= 1e9) return `$${(v / 1e9).toFixed(1)}B`;
@@ -264,8 +271,8 @@ function SnapshotTile({ label, price, changePct, sub }: { label: string; price: 
 
 // ── Mover row ─────────────────────────────────────────────────
 function MoverRow({ ticker, name, price, changePct, volume, marketCap, rank }: {
-  ticker: string; name: string; price: number; changePct: number;
-  volume?: number; marketCap?: number | null; rank?: number;
+  ticker: string; name: string; price: number | null; changePct: number | null;
+  volume?: number | null; marketCap?: number | null; rank?: number;
 }) {
   const color = changeColor(changePct);
   return (
@@ -314,10 +321,10 @@ function MoverRow({ ticker, name, price, changePct, volume, marketCap, rank }: {
 
 // ── Crypto row ────────────────────────────────────────────────
 function CryptoRow({ rank, symbol, name, price, changePct24h, volume, marketCap }: {
-  rank: number; symbol: string; name: string; price: number; changePct24h: number;
-  volume: number; marketCap: number;
+  rank: number; symbol: string; name: string; price: number | null; changePct24h: number | null;
+  volume: number | null; marketCap: number | null;
 }) {
-  const color = changeColor(changePct24h);
+  const color = change24hColor(changePct24h, "#00FF88", "#FF2D55");
   return (
     <a
       href={`/app/crypto?coin=${symbol.toLowerCase()}`}
@@ -347,13 +354,13 @@ function CryptoRow({ rank, symbol, name, price, changePct24h, volume, marketCap 
         <span style={{
           display: "inline-block",
           padding: "2px 5px",
-          background: changeBg(changePct24h),
+          background: changePct24h === null ? "transparent" : changeBg(changePct24h),
           borderRadius: "3px",
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: "9px",
           color,
           fontWeight: 700,
-        }}>{fmtPct(changePct24h)}</span>
+        }}>{change24hText(changePct24h)}</span>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.4)", marginTop: "2px" }}>{fmtMktCap(marketCap)}</div>
       </div>
     </a>
@@ -615,7 +622,7 @@ export default function MarketOverview() {
                 symbol={c.symbol}
                 name={c.name}
                 price={c.currentPrice}
-                changePct24h={c.priceChangePercent24h}
+                changePct24h={displayChange24h(c)}
                 volume={c.totalVolume}
                 marketCap={c.marketCap}
               />

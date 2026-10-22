@@ -18,7 +18,7 @@
 
 import { invokeLLM } from "./_core/llm";
 import { calculateFaultlinePressure, type FaultlinePressureOutput } from "./pressure/engine";
-import { getDiagnosticReport, pressureToActionBias, classifyRegimeLabel } from "./diagnosticAI";
+import { getDiagnosticReport, pressureToActionBias } from "./diagnosticAI";
 import { getPreFlightData } from "./preFlight";
 import { LRUCache } from "./lruCache";
 import { getDb } from "./db";
@@ -29,7 +29,7 @@ import { getDailyBars as getYahooDailyBars, getQuote } from "./yahooProxy";
 import { getCoinMarketData, getCoinOHLC } from "./coingeckoProxy";
 import { computeCalculatedLevels, type CalculatedLevels } from "./priceLevels";
 import { getCachedVerifiedSocialSnapshot } from "./socialIntelligence";
-import { scoreRisingStar, type ConfidenceBand, type RisingStarResult } from "./risingStars";
+import { scoreRisingStar, type ConfidenceBand, type RisingStarResult, type SocialDiscoveryInput } from "./risingStars";
 import { fetchDailyBars } from "./signalsProxy";
 import { MAGNIFICENT_SEVEN, classifyListingAge, classifyMarketCap, deriveFaultlineThemes, deriveSector, getPublicCompanyProfile, marketCapLabel, type ListingAgeCategory, type MarketCapCategory } from "./risingStarsDiscovery";
 import { recordRisingStarObservation } from "./risingStarsHistory";
@@ -59,8 +59,13 @@ export interface FaultlineEnvironmentContext {
   pressureIndex: number;
   pressureTrend: "Rising" | "Falling" | "Stable";
   regimeLabel: string;
-  bullProbability: number;    // 0–100
-  bearProbability: number;    // 0–100
+  /**
+   * Withheld (faultline-probability-contract-v1): the former values were
+   * 100 − 0.85·P and 0.75·P, fixed formulas over the Pressure Index, not a
+   * governed or calibrated model. Always null; render "Not offered".
+   */
+  bullProbability: null;
+  bearProbability: null;
   environmentImpact: string;  // AI-generated plain-English explanation
 }
 
@@ -106,7 +111,7 @@ export interface DiagnosticAI2Integration {
   sensitiveTrigger: string;
   macroPath: string;
   historicalAnalog: string;
-  confidence: number;
+  confidence: number | null;
 }
 
 export interface PreflightImpact {
@@ -333,13 +338,11 @@ function scoreToDirection(score: number): OutlookDirection {
   return "Avoid";
 }
 
-function pressureToBullProb(pressure: number): number {
-  // Inverse relationship: high pressure = low bull probability
-  return clamp(Math.round(100 - pressure * 0.85));
-}
-
-function pressureToBearProb(pressure: number): number {
-  return clamp(Math.round(pressure * 0.75));
+// Retired: pressureToBullProb (100 − 0.85·P) and pressureToBearProb (0.75·P)
+// were displayed as "Bull/Bear Probability". No governed model exists, so the
+// environment fields are null (probability contract).
+function retiredPressureProbability(): null {
+  return null;
 }
 
 function timeframeLabel(tf: OutlookTimeframe): string {
@@ -410,7 +413,7 @@ function scoreStockFactors(
   // Signal 12: Volatility Compression (very low vol = coil before breakout)
   const volCompressionScore = clamp(getVec("volatility_regime") < 35 ? 85 : getVec("volatility_regime") < 50 ? 65 : 40);
 
-  // Signal 13: News Catalyst Probability (macro sensitivity + AI bubble = catalyst-rich environment)
+  // Signal 13: News Catalyst score, a 0–100 heuristic (macro sensitivity + AI bubble = catalyst-rich environment); not a probability
   const newsCatalystScore = clamp(100 - (getVec("macro_sensitivity") * 0.4 + getVec("ai_bubble") * 0.3 + p * 0.3));
 
   // Signal 14: Technical Breakout (trend + breadth + low vol = breakout conditions)
@@ -429,7 +432,7 @@ function scoreStockFactors(
     { name: "Momentum Beginning",         score: clamp(momentumBeginScore * tfMultiplier),  weight: 0.06, label: scoreToLabel(momentumBeginScore),  note: `${momentumBeginScore > 65 ? "Early momentum inflection — trend change underway" : momentumBeginScore > 40 ? "Momentum building" : "No momentum signal"}` },
     { name: "Institutional Accumulation", score: clamp(instAccumScore * tfMultiplier),      weight: 0.06, label: scoreToLabel(instAccumScore),      note: `${instAccumScore > 65 ? "Institutional window open — low stress environment" : instAccumScore > 40 ? "Moderate institutional activity" : "Institutional caution — stress elevated"}` },
     { name: "Volatility Compression",     score: clamp(volCompressionScore * tfMultiplier), weight: 0.04, label: scoreToLabel(volCompressionScore), note: `${volCompressionScore > 70 ? "Volatility coil — breakout imminent" : volCompressionScore > 50 ? "Moderate compression" : "No compression signal"}` },
-    { name: "News Catalyst Probability",  score: clamp(newsCatalystScore * tfMultiplier),   weight: 0.04, label: scoreToLabel(newsCatalystScore),   note: `${newsCatalystScore > 65 ? "High catalyst probability — macro + AI events converging" : newsCatalystScore > 40 ? "Moderate catalyst environment" : "Low catalyst probability"}` },
+    { name: "News Catalyst score (0–100 heuristic, not a probability)",  score: clamp(newsCatalystScore * tfMultiplier),   weight: 0.04, label: scoreToLabel(newsCatalystScore),   note: `${newsCatalystScore > 65 ? "High catalyst activity — macro + AI events converging" : newsCatalystScore > 40 ? "Moderate catalyst environment" : "Low catalyst activity"}` },
     { name: "Technical Breakout",         score: clamp(technicalBreakoutScore),             weight: 0.02, label: scoreToLabel(technicalBreakoutScore), note: `${technicalBreakoutScore > 70 ? "Breakout conditions present — trend + breadth + vol aligned" : technicalBreakoutScore > 50 ? "Partial breakout setup" : "No breakout signal"}` },
   ];
 
@@ -1172,7 +1175,7 @@ async function generateOutlookInterpretation(
   environmentImpact: string;
 }> {
   const p = pressure.overallPressure;
-  const regimeLabel = classifyRegimeLabel(p);
+  const regimeLabel = pressure.regime; // canonical regime vocabulary ("MODERATE RISK"), not the legacy diagnostic scale
   const topFactors = [...scoreBreakdown.factors].sort((a, b) => b.score - a.score);
   const bottomFactors = [...scoreBreakdown.factors].sort((a, b) => a.score - b.score);
 
@@ -1182,7 +1185,7 @@ async function generateOutlookInterpretation(
 - Seismograph Evidence Consensus: ${seismographOutput.evidenceConsensus}
 - Active Historical Analog: ${seismographOutput.analogMatches[0]?.label ?? 'None'} (${seismographOutput.analogMatches[0]?.similarity ?? 0}% similarity)
 - Market Direction: ${seismographOutput.direction} for ${seismographOutput.marketMemory.streakDays} days
-- Transition Probability (stay in regime): ${seismographOutput.transitionProbabilities.remainInRegime}%` : '';
+- Regime transition: not offered as a probability (the transition claim is unavailable)` : '';
   const prompt = `You are FAULTLINE's Signal Outlook AI. Provide plain-English market intelligence for ${symbol} (${assetType.toUpperCase()}).
 
 CURRENT DATA:
@@ -1278,7 +1281,8 @@ Respond with JSON matching this exact schema:
         sensitiveTrigger: parsed.sensitiveTrigger,
         macroPath: parsed.macroPath,
         historicalAnalog: parsed.historicalAnalog,
-        confidence: clamp(parsed.diagnosticConfidence ?? 60),
+        // QA r13 B12: no "?? 60" default; an absent model value stays absent.
+        confidence: typeof parsed.diagnosticConfidence === "number" ? clamp(parsed.diagnosticConfidence) : null,
       },
     };
   } catch {
@@ -1304,7 +1308,7 @@ Respond with JSON matching this exact schema:
         sensitiveTrigger: "Significant change in FAULTLINE Pressure Index",
         macroPath: `Pressure trend: ${pressure.regime}`,
         historicalAnalog: "No clear analog available",
-        confidence: 55,
+        confidence: null, // QA r13 B12: no hard-coded 55
       },
     };
   }
@@ -1431,9 +1435,9 @@ export async function getFullOutlook(
   const environment: FaultlineEnvironmentContext = {
     pressureIndex: p,
     pressureTrend: pressure.vectors.find(v => v.trend === "rising") ? "Rising" : pressure.vectors.find(v => v.trend === "falling") ? "Falling" : "Stable",
-    regimeLabel: classifyRegimeLabel(p),
-    bullProbability: pressureToBullProb(p),
-    bearProbability: pressureToBearProb(p),
+    regimeLabel: pressure.regime,
+    bullProbability: retiredPressureProbability(),
+    bearProbability: retiredPressureProbability(),
     environmentImpact: "", // filled by AI
   };
 
@@ -1723,7 +1727,7 @@ export interface DiscoveryItem {
   institutionalConviction: "Low" | "Moderate" | "High" | "Very High";
   macroAlignment: number;         // 0–100
   riskRewardRatio: string;        // e.g. "2.5:1"
-  confidenceLevel: number;        // 0–100
+  confidenceLevel: number | null; // QA confidence sweep: withheld (was score × 0.85 + band, a formula)
   topCatalyst: string;
   actionBias: "BUY" | "WATCH" | "HOLD" | "REDUCE" | "AVOID";
 }
@@ -2311,6 +2315,56 @@ function buildRisingStarTechnical(bars: DailyBar[]) {
   };
 }
 
+/**
+ * Rising-star social and catalyst terms from a verified snapshot.
+ * A missing composite is withheld. A present composite, including a genuine 0,
+ * keeps the prior catalyst formula and the social term.
+ */
+export function risingStarSocialTerms(social: {
+  sourceCount: number;
+  socialVolume: number;
+  newsCount: number;
+  sentimentScore: number | null;
+  positiveNews: number;
+  negativeNews: number;
+  extremeAttentionDetected: boolean;
+  fetchedAt: number;
+} | null): { catalyst: { available: boolean; score?: number; note: string }; social: SocialDiscoveryInput } {
+  const composite = social?.sentimentScore;
+  const compositeKnown = typeof composite === "number" && Number.isFinite(composite);
+  const sourceCount = social?.sourceCount ?? 0;
+  const newsAvailable = (social?.newsCount ?? 0) >= 2;
+  const socialTermAvailable = sourceCount >= 2 && compositeKnown;
+  return {
+    catalyst: newsAvailable && compositeKnown
+      ? {
+          available: true,
+          score: clamp(50 + composite * 30 + Math.min(20, (social!.positiveNews + social!.negativeNews) * 4)),
+          note: `${social!.positiveNews + social!.negativeNews} directionally classified recent public-news items.`,
+        }
+      : {
+          available: false,
+          note: newsAvailable
+            ? "Verified social composite is unavailable; catalyst term excluded from score."
+            : "Insufficient recent public-news coverage; excluded from score.",
+        },
+    social: {
+      available: socialTermAvailable,
+      sourceCount,
+      socialVolume: social?.socialVolume ?? 0,
+      sentimentScore: compositeKnown ? composite : null,
+      positiveNews: social?.positiveNews ?? 0,
+      negativeNews: social?.negativeNews ?? 0,
+      memeHypeDetected: social?.extremeAttentionDetected ?? false,
+      note: socialTermAvailable
+        ? `${social!.sourceCount} social/news sources available; data refreshed ${new Date(social!.fetchedAt).toLocaleTimeString()}.`
+        : sourceCount >= 2
+          ? "Verified social composite is unavailable; social term excluded from score."
+          : "No cached multi-source social snapshot is available; excluded from score.",
+    },
+  };
+}
+
 async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<RisingStarItem[]> {
   const apiKey = process.env.POLYGON_API_KEY;
   if (!apiKey) return [];
@@ -2337,34 +2391,18 @@ async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<Risi
         : null;
 
       const newsAvailable = (social?.newsCount ?? 0) >= 2;
+      const socialTerms = risingStarSocialTerms(social);
       const result = scoreRisingStar({
         ticker: candidate.symbol,
         name: profile.name,
         technical,
-        catalyst: newsAvailable
-          ? {
-              available: true,
-              score: clamp(50 + social!.sentimentScore * 30 + Math.min(20, (social!.positiveNews + social!.negativeNews) * 4)),
-              note: `${social!.positiveNews + social!.negativeNews} directionally classified recent public-news items.`,
-            }
-          : { available: false, note: "Insufficient recent public-news coverage; excluded from score." },
+        catalyst: socialTerms.catalyst,
         macroAlignment: {
           score: clamp(100 - pressure.overallPressure * 0.75),
           note: `Current FAULTLINE pressure is ${pressure.overallPressure}/100 (${pressure.regime}).`,
         },
         sectorTailwind: { available: false, note: "No source-backed sector/theme flow feed is connected; excluded from score." },
-        social: {
-          available: (social?.sourceCount ?? 0) >= 2,
-          sourceCount: social?.sourceCount ?? 0,
-          socialVolume: social?.socialVolume ?? 0,
-          sentimentScore: social?.sentimentScore ?? 0,
-          positiveNews: social?.positiveNews ?? 0,
-          negativeNews: social?.negativeNews ?? 0,
-          memeHypeDetected: social?.extremeAttentionDetected ?? false,
-          note: (social?.sourceCount ?? 0) >= 2
-            ? `${social!.sourceCount} social/news sources available; data refreshed ${new Date(social!.fetchedAt).toLocaleTimeString()}.`
-            : "No cached multi-source social snapshot is available; excluded from score.",
-        },
+        social: socialTerms.social,
         // The current insider module is deterministic synthetic data, so it is deliberately excluded.
         insider: { available: false, note: "Existing Insider Intelligence is not yet backed by live public filings; excluded from score." },
         // No source-backed options-flow engine currently exists in this project.
@@ -2464,7 +2502,9 @@ export async function getOpportunityDiscovery(options: { forceRefresh?: boolean;
         institutionalConviction: discoveryInstitutionalConviction(score, category),
         macroAlignment,
         riskRewardRatio: rr,
-        confidenceLevel: Math.round(score * 0.85 + (p < 40 ? 10 : p < 60 ? 5 : 0)),
+        // QA confidence sweep: was Math.round(score × 0.85 + pressure band), a formula
+        // restating the score, not a calibrated confidence. Withheld at the source.
+        confidenceLevel: null,
         topCatalyst: discoveryCatalyst(category, score),
         actionBias: discoveryActionBias(score, p),
       };

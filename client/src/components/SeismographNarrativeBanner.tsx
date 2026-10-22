@@ -1,3 +1,4 @@
+import { CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 /* ============================================================
    SeismographNarrativeBanner — The cohesion thread
    Answers the 7 understanding questions on every major page:
@@ -18,6 +19,7 @@ import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { formatCanonicalScore } from "@shared/marketMetrics";
 import { formatOrdinal } from "@shared/historicalPercentile";
+import { PROBABILITY_DISPLAY_TEXT, probabilityPercent, probabilityText } from "@shared/probabilityContract";
 import { useEngine } from "@/contexts/EngineContext";
 import { customerIntegrityChipLevel, customerIntegrityColor } from "@shared/customerIntegrityLabels";
 
@@ -60,14 +62,14 @@ interface SeismographOutput {
   stressLevel: string;
   direction: "Improving" | "Stable" | "Deteriorating" | "Accelerating";
   probabilities: { bull: number; neutral: number; bear: number; primaryDriver: string; confidence: number };
-  historicalPercentile: number;
+  historicalPercentile: number | null;
   topAnalog: SeismographAnalog | null;
   activePatterns: SeismographPattern[];
   patternsSummary: string;
   transitionProbabilities: SeismographTransitionProbabilities;
   marketMemory: SeismographMarketMemory;
   evidenceConsensus: "strong" | "moderate" | "weak" | "divergent";
-  dataFreshness: "live" | "recent" | "stale";
+  dataFreshness: "live" | "recent" | "delayed" | "stale";
   computedAt: number;
   forDashboard: {
     pressureScore: number;
@@ -80,7 +82,7 @@ interface SeismographOutput {
     transitionProbabilities: SeismographTransitionProbabilities;
     marketMemory: SeismographMarketMemory;
     lastUpdated: number;
-    dataFreshness: "live" | "recent" | "stale";
+    dataFreshness: "live" | "recent" | "delayed" | "stale";
   };
 }
 
@@ -113,7 +115,8 @@ function getStreakLabel(memory: SeismographMarketMemory): string {
   const dir = memory.streakDirection === "rising" ? "rising" : memory.streakDirection === "falling" ? "falling" : "stable";
   return `${memory.streakDays}d ${dir} streak`;
 }
-function getHistoricalPercentileLabel(pct: number): string {
+function getHistoricalPercentileLabel(pct: number | null): string {
+  if (pct == null || !Number.isFinite(pct)) return "historical percentile unavailable";
   if (pct >= 90) return `top ${100 - pct}% most stressed in history`;
   if (pct >= 75) return `more stressed than ${pct}% of historical days`;
   if (pct >= 50) return `above median historical stress`;
@@ -136,7 +139,7 @@ const NEXT_STEPS: Record<string, { label: string; path: string }> = {
   dashboard:    { label: "Explore the Pressure Index →", path: "/app/pressure" },
   pressure:     { label: "See the Regime Analysis →", path: "/app/market-intelligence" },
   regime:       { label: "Check the Situation Room →", path: "/app/situation-room" },
-  signals:      { label: "Run a Pre-Flight Check →", path: "/app/pre-flight" },
+  signals:      { label: "Review what to watch next →", path: CANONICAL_DESTINATION_BY_ID.watch.path },
   situation:    { label: "Ask PLATO about this environment →", path: "/app/discover" },
   "daily-brief":{ label: "See what signals are active →", path: "/app/signals" },
   seismograph:  { label: "Ask PLATO about this reading →", path: "/app/discover" },
@@ -294,8 +297,9 @@ export default function SeismographNarrativeBanner({
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: stressColor, letterSpacing: "0.15em", marginBottom: "5px" }}>WHAT IS HAPPENING</div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#E2E8F0", lineHeight: 1.6 }}>
             The market is in a <strong style={{ color: stressColor }}>{output.stressLevel}</strong> stress regime — <strong style={{ color: "#E2E8F0" }}>{output.regime}</strong>.
-            {" "}Conditions are <strong style={{ color: dirColor }}>{output.direction.toLowerCase()}</strong> with a {output.probabilities.bull}% probability of a bullish outcome
-            and {output.probabilities.bear}% probability of a bearish outcome.
+            {" "}Conditions are <strong style={{ color: dirColor }}>{output.direction.toLowerCase()}</strong>.
+            {/* Probability contract: bull/bear weights render only the contract display text. */}
+            {" "}Bull / bear scenario weights: <strong style={{ color: "#E2E8F0" }}>{output.probabilityContract?.scenarioSet.display.text ?? PROBABILITY_DISPLAY_TEXT.UNAVAILABLE}</strong>.
             {output.evidenceConsensus === "strong" && " Evidence across all measurement systems is in strong agreement."}
             {output.evidenceConsensus === "divergent" && " Evidence is divergent — different measurement systems are sending conflicting signals."}
           </div>
@@ -332,7 +336,8 @@ export default function SeismographNarrativeBanner({
                 <div key={p.patternId} style={{ padding: "4px 8px", background: "rgba(255,149,0,0.06)", border: "1px solid rgba(255,149,0,0.15)", borderRadius: "3px" }}>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF9500", marginBottom: "2px" }}>{p.name}</div>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(148,163,184,0.7)" }}>
-                    {p.daysActive}d active · {Math.round(p.confidence * 100)}% confidence
+                    {/* Launch fix-up: pattern confidence is a sample-size heuristic (seismographEngine computePatternConfidence), not calibrated. */}
+                    {p.daysActive}d active · <span data-confidence-status="not-established">confidence not established</span>
                     {p.historicalOutcome && <> · Hist: {p.historicalOutcome}</>}
                   </div>
                 </div>
@@ -348,7 +353,7 @@ export default function SeismographNarrativeBanner({
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>
               <strong style={{ color: "#E2E8F0" }}>{output.topAnalog.label}</strong>
               {output.topAnalog.period && <> ({output.topAnalog.period})</>}
-              {" "}— {Math.round(output.topAnalog.similarity * 100)}% similarity.
+              {" "}— {Math.round(output.topAnalog.similarity)}% similarity.
               {" "}{output.topAnalog.description}
               {output.topAnalog.outcome && (
                 <> Historical outcome: <strong style={{ color: "#E2E8F0" }}>{output.topAnalog.outcome}</strong>.</>
@@ -361,7 +366,11 @@ export default function SeismographNarrativeBanner({
         <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.3)", borderRadius: "4px", borderLeft: "2px solid rgba(0,229,255,0.45)" }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(0,212,255,0.7)", letterSpacing: "0.15em", marginBottom: "5px" }}>HOW THIS COMPARES TO HISTORY</div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>
-            This reading is at the <strong style={{ color: "#E2E8F0" }}>{formatOrdinal(output.historicalPercentile)} percentile</strong> — {getHistoricalPercentileLabel(output.historicalPercentile)}.
+            {output.historicalPercentile == null ? (
+              <>Historical percentile is unavailable (insufficient data).</>
+            ) : (
+              <>This reading is at the <strong style={{ color: "#E2E8F0" }}>{formatOrdinal(output.historicalPercentile)} percentile</strong> — {getHistoricalPercentileLabel(output.historicalPercentile)}.</>
+            )}
           </div>
         </div>
 
@@ -369,9 +378,14 @@ export default function SeismographNarrativeBanner({
         <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.3)", borderRadius: "4px", borderLeft: "2px solid rgba(0,229,255,0.45)" }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(0,212,255,0.7)", letterSpacing: "0.15em", marginBottom: "5px" }}>WHAT TO MONITOR NEXT</div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>
-            {output.transitionProbabilities.transitionToCrisis > 20 && (
-              <><strong style={{ color: "#FF2D55" }}>Crisis transition risk: {output.transitionProbabilities.transitionToCrisis}%.</strong>{" "}</>
-            )}
+            {/* Probability contract: only an AVAILABLE contract claim is quoted, via its display text. */}
+            {(() => {
+              const crisisClaim = output.probabilityContract?.transitions.find(c => c.scenario.scenarioId === "transitionToCrisis") ?? null;
+              const crisisPct = probabilityPercent(crisisClaim);
+              return crisisPct != null && crisisPct > 20
+                ? <><strong style={{ color: "#FF2D55" }}>Crisis transition frequency: {probabilityText(crisisClaim)}.</strong>{" "}</>
+                : null;
+            })()}
             {output.marketMemory.keyMemoryPoints.slice(0, 2).map((pt, i) => (
               <span key={i}>{pt}{i < 1 ? " · " : ""}</span>
             ))}

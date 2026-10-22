@@ -100,7 +100,10 @@ export async function getSignalVisualDetailPayload(symbol: string) {
     symbol,
     quote,
     bars,
-    signal,
+    // QA r13 B14: the signal "confidence" is min(95, 55 + |score| × 5), a formula,
+    // not a calibrated value; withheld from the payload. Action, strength,
+    // score inputs and levels are unchanged.
+    signal: signal ? { ...signal, confidence: null } : null,
     regime,
     relativeStrength,
     avgVolume,

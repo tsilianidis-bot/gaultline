@@ -7,7 +7,8 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { router, publicProcedure, ownerOrAdminProcedure } from "../_core/trpc";
+import { withholdNonFiniteNumbers } from "../displayNumbers";
 import {
   runFMOSPipeline,
   runFMOSPipelineFast,
@@ -28,18 +29,9 @@ import { desc, gte, sql } from "drizzle-orm";
 
 // ── Helpers ───────────────────────────────────────────────────
 
-function sanitizeNumbers(v: unknown): unknown {
-  if (typeof v === "number") return isFinite(v) && !isNaN(v) ? v : 0;
-  if (v === null || v === undefined) return v;
-  // Preserve Date objects as ISO strings (Object.entries on Date returns {})
-  if (v instanceof Date) return v.toISOString();
-  if (Array.isArray(v)) return v.map(sanitizeNumbers);
-  if (typeof v === "object") {
-    return Object.fromEntries(
-      Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNumbers(val)])
-    );
-  }
-  return v;
+/** A non-finite FMOS response number is unavailable. Pipeline scoring is unchanged. */
+export function sanitizeNumbers(v: unknown): unknown {
+  return withholdNonFiniteNumbers(v);
 }
 
 // ── Router ────────────────────────────────────────────────────
@@ -320,14 +312,9 @@ export const fmosRouter = router({
       }
     }),
 
-  /**
-   * Admin: clear FMOS caches (forces fresh computation on next request).
-   */
-  clearCaches: protectedProcedure
-    .mutation(async ({ ctx }) => {
-      if (ctx.user.role !== "admin") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Admin only" });
-      }
+  /** Owner or admin: clear FMOS caches (forces fresh computation on next request). */
+  clearCaches: ownerOrAdminProcedure
+    .mutation(() => {
       // Pipeline is stateless — no caches to clear currently
       return { success: true, message: "FMOS pipeline is stateless; no caches to clear." };
     }),

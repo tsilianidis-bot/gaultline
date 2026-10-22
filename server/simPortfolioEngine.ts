@@ -44,7 +44,7 @@ export interface SimTradeRationale {
   domainNarrative: string;
 
   // Dimension 3: Technical Indicators
-  rsi: number;
+  rsi: number | null;
   rsiLabel: string;
   macdSignal: string;
   smaSignal: string;
@@ -258,12 +258,12 @@ DOMAIN SCORES (higher = more stress):
 ${domainStr}
 
 TECHNICAL ANALYSIS:
-- RSI: ${signal.technicals.rsiEstimate.toFixed(1)} (${signal.technicals.rsiLabel})
+- RSI: ${signal.technicals.rsiEstimate == null ? "unavailable" : signal.technicals.rsiEstimate.toFixed(1)} (${signal.technicals.rsiLabel})
 - MACD: ${signal.technicals.macd?.signal ?? "Neutral"}
 - SMA: ${signal.technicals.smaSignal}
 - Trend: ${signal.technicals.trend}
 - Volume: ${signal.technicals.volumeSignal}
-- Signal Confidence: ${signal.confidence}/100
+- Signal Confidence: confidence not established
 - Regime Alignment: ${signal.regimeAlignment}
 
 ASYMMETRY:
@@ -321,7 +321,7 @@ Respond with a JSON object with these exact fields:
   } catch (err) {
     log.warn("[SimPortfolio] LLM rationale generation failed", { err: err as Error });
     return {
-      fullNarrative: `${action} ${ticker} at $${price.toFixed(2)}. FAULTLINE pressure: ${pressure.overallPressure}/100 (${pressure.regime}). RSI: ${signal.technicals.rsiEstimate.toFixed(1)}, MACD: ${signal.technicals.macd?.signal ?? "N/A"}, Asymmetry: ${asym.ratio}:1.`,
+      fullNarrative: `${action} ${ticker} at $${price.toFixed(2)}. FAULTLINE pressure: ${pressure.overallPressure}/100 (${pressure.regime}). RSI: ${signal.technicals.rsiEstimate == null ? "unavailable" : signal.technicals.rsiEstimate.toFixed(1)}, MACD: ${signal.technicals.macd?.signal ?? "N/A"}, Asymmetry: ${asym.ratio}:1.`,
       catalyst: `${signal.technicals.trend} momentum with ${signal.technicals.volumeSignal.toLowerCase()} volume confirmation.`,
       riskFactors: ["Market regime shift", "Technical breakdown below support", "Macro deterioration"],
       invalidation: `Price closes below $${asym.downsideRisk} or FAULTLINE pressure exceeds 65/100.`,
@@ -355,7 +355,7 @@ async function buildRationale(
     `AI bubble risk (${domains.aiBubble}/100) ${domains.aiBubble >= 60 ? "is elevated — tech concentration risk is real" : "remains contained"}.`;
 
   // Technical narrative
-  const techNarrative = `RSI at ${signal.technicals.rsiEstimate.toFixed(1)} is ${signal.technicals.rsiLabel.toLowerCase()}. ` +
+  const techNarrative = `RSI at ${signal.technicals.rsiEstimate == null ? "unavailable" : signal.technicals.rsiEstimate.toFixed(1)} is ${signal.technicals.rsiLabel.toLowerCase()}. ` +
     `MACD histogram is ${signal.technicals.macd ? (signal.technicals.macd.histogram > 0 ? "positive (bullish momentum)" : "negative (bearish momentum)") : "unavailable"}. ` +
     `SMA alignment: ${signal.technicals.smaSignal}. Overall trend: ${signal.technicals.trend}.`;
 
@@ -418,7 +418,7 @@ export async function evaluateStockCandidate(
 ): Promise<SimPositionDecision | null> {
   try {
     const quote = await getQuote(ticker);
-    if (!quote.price || quote.source === "error") return null;
+    if (!quote.price || quote.source === "error" || quote.changePercent == null || quote.volume == null) return null;
 
     const signalInput: TradingSignalsInput = {
       ticker,
@@ -426,15 +426,16 @@ export async function evaluateStockCandidate(
       open: quote.open ?? quote.price,
       high: quote.high ?? quote.price * 1.02,
       low: quote.low ?? quote.price * 0.98,
-      changePercent: quote.changePercent ?? 0,
-      volumeMillions: (quote.volume ?? 0) / 1e6,
-      avgVolume: (quote.volume ?? 0) / 1e6,
+      changePercent: quote.changePercent,
+      volumeMillions: quote.volume / 1e6,
+      avgVolume: quote.volume / 1e6,
       sparkline: [],
       relativeStrength: 50,
     };
 
     const regime = { label: pressure.regime, score: pressure.overallPressure / 10 };
     const signal = computeTradingSignal(signalInput, regime);
+    if (signal.confidence == null || signal.technicals.momentumScore == null) return null;
 
     // Determine action based on signal + pressure
     let action: "BUY" | "SELL" | "HOLD" | "WATCH" = signal.action;
@@ -451,7 +452,7 @@ export async function evaluateStockCandidate(
     const rationale = await buildRationale(
       action as "BUY" | "SELL" | "HOLD",
       ticker, name, "stock",
-      quote.price, quote.changePercent ?? 0,
+      quote.price, quote.changePercent,
       pressure, signal, conviction,
     );
 
@@ -506,6 +507,7 @@ export async function evaluateCryptoCandidate(
 
     const regime = { label: pressure.regime, score: pressure.overallPressure / 10 };
     const signal = computeTradingSignal(signalInput, regime);
+    if (signal.confidence == null || signal.technicals.momentumScore == null) return null;
 
     let action: "BUY" | "SELL" | "HOLD" | "WATCH" = signal.action;
     let conviction: "HIGH" | "MODERATE" | "SPECULATIVE" = "MODERATE";

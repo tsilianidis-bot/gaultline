@@ -9,6 +9,8 @@ import {
   useState, useRef, useEffect, useCallback, useMemo,
 } from 'react';
 import { trpc } from '@/lib/trpc';
+import { signalQuoteBadge } from '@/lib/signalQuoteView';
+import { formatUsdQuote } from '@/lib/nullableFormat';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { RiskFramework, type RiskLevels } from '@/components/RiskFramework';
 import { trackSignalSearch, trackWatchlistAction } from '@/hooks/useAnalytics';
@@ -17,13 +19,13 @@ import { trackSignalSearch, trackWatchlistAction } from '@/hooks/useAnalytics';
 interface TickerProfile {
   ticker: string;
   name: string;
-  price: number;
-  open: number;
-  high: number;
-  low: number;
-  changePercent: number;
-  volume: number;
-  volumeMillions: number;
+  price: number | null;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  changePercent: number | null;
+  volume: number | null;
+  volumeMillions: number | null;
   avgVolume: number | null;
   marketCap: number | null;
   sector: string | null;
@@ -33,6 +35,8 @@ interface TickerProfile {
   tradeDate: string;
   marketStatus: 'open' | 'closed' | 'extended' | 'unknown';
   isLive: boolean;
+  /** Server delay flag (Yahoo ~15-min delayed / Polygon prior close). */
+  isDelayed?: boolean;
   source: 'live' | 'stale' | 'fallback';
   cached?: boolean;
   error?: string;
@@ -45,14 +49,14 @@ interface ClassificationResult {
   bullishFactors: string[];
   bearishFactors: string[];
   whyThisSignal: string;
-  regimeFit: number;
-  regimeFitLabel: string;
+  regimeFit: number | null;
+  regimeFitLabel: string | null;
   aiExposure: 'High' | 'Medium' | 'Low' | 'None';
   debtRisk: 'High' | 'Medium' | 'Low' | 'None';
   recessionSensitivity: 'High' | 'Medium' | 'Low';
   liquidityRisk: 'High' | 'Medium' | 'Low' | 'None';
-  momentumScore: number;
-  volatilityLabel: 'Very High' | 'High' | 'Moderate' | 'Low';
+  momentumScore: number | null;
+  volatilityLabel: 'Very High' | 'High' | 'Moderate' | 'Low' | null;
   macroSensitivity: string;
   cached?: boolean;
 }
@@ -196,7 +200,10 @@ function Sparkline({ data, positive }: { data: number[]; positive: boolean }) {
 }
 
 // ── Momentum Bar ──────────────────────────────────────────────
-function MomentumBar({ score }: { score: number }) {
+function MomentumBar({ score }: { score: number | null }) {
+  if (score == null || !Number.isFinite(score)) {
+    return <span style={{ fontSize: '12px', fontFamily: "'IBM Plex Mono', monospace", color: '#94A3B8' }}>Unavailable</span>;
+  }
   const color = score >= 70 ? '#00D4FF' : score >= 40 ? '#FFD700' : '#FF2D55';
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -209,7 +216,17 @@ function MomentumBar({ score }: { score: number }) {
 }
 
 // ── Regime Fit Gauge ──────────────────────────────────────────
-function RegimeFitGauge({ score, label }: { score: number; label: string }) {
+function RegimeFitGauge({ score, label }: { score: number | null; label: string | null }) {
+  if (score == null || label == null) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.75)', textTransform: 'uppercase' }}>Regime Fit</span>
+          <span style={{ fontSize: '13px', fontFamily: "'IBM Plex Mono', monospace", color: '#94A3B8', fontWeight: 700 }}>not supplied</span>
+        </div>
+      </div>
+    );
+  }
   const color = regimeFitColor(label);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -237,7 +254,7 @@ interface PriceLevels {
 }
 interface TradingSignalData {
   action: string;
-  confidence: number;
+  confidence: number | null;
   priceLevels: PriceLevels;
 }
 
@@ -265,7 +282,7 @@ function StockIntelligenceCard({
 }) {
   const [showWhy, setShowWhy] = useState(false);
   const [showDesc, setShowDesc] = useState(false);
-  const positive = profile.changePercent >= 0;
+  const positive = typeof profile.changePercent === "number" && profile.changePercent >= 0;
   const accentColor = positive ? '#00D4FF' : '#FF2D55';
   const primarySignal = classification?.primarySignal ?? 'Neutral / Watch';
   const signalColor = getSignalColor(primarySignal);
@@ -303,24 +320,23 @@ function StockIntelligenceCard({
                 fontWeight: 700, fontSize: '22px',
                 color: '#F0F4FF', letterSpacing: '0.06em',
               }}>{profile.ticker}</span>
-              {profile.isLive && (
-                <span style={{
-                  fontSize: '11px', letterSpacing: '0.1em',
-                  color: '#00D4FF', background: 'rgba(0,212,255,0.08)',
-                  padding: '2px 5px', borderRadius: '2px',
-                  border: '1px solid rgba(0,212,255,0.15)',
-                  fontFamily: "'IBM Plex Mono', monospace",
-                }}>LIVE</span>
-              )}
-              {profile.source === 'stale' && (
-                <span style={{
-                  fontSize: '11px', letterSpacing: '0.1em',
-                  color: '#FF9500', background: 'rgba(255,149,0,0.08)',
-                  padding: '2px 5px', borderRadius: '2px',
-                  border: '1px solid rgba(255,149,0,0.15)',
-                  fontFamily: "'IBM Plex Mono', monospace",
-                }}>STALE</span>
-              )}
+              {/* One freshness badge from the quote AND its response source:
+                  stale → STALE, fallback → UNAVAILABLE, delayed → DELAYED, closed → LAST CLOSE. */}
+              {(() => {
+                const badge = signalQuoteBadge(profile, profile.source);
+                const live = badge === 'LIVE';
+                const stale = badge === 'STALE';
+                return (
+                  <span data-ticker-freshness={badge} style={{
+                    fontSize: '11px', letterSpacing: '0.1em',
+                    color: live ? '#00D4FF' : stale ? '#FF9500' : '#94A3B8',
+                    background: live ? 'rgba(0,212,255,0.08)' : stale ? 'rgba(255,149,0,0.08)' : 'rgba(255,255,255,0.04)',
+                    padding: '2px 5px', borderRadius: '2px',
+                    border: `1px solid ${live ? 'rgba(0,212,255,0.15)' : stale ? 'rgba(255,149,0,0.15)' : 'rgba(255,255,255,0.1)'}`,
+                    fontFamily: "'IBM Plex Mono', monospace",
+                  }}>{badge}</span>
+                );
+              })()}
               <span style={{
                 fontSize: '11px', letterSpacing: '0.08em',
                 color: 'rgba(100,116,139,0.75)',
@@ -345,13 +361,13 @@ function StockIntelligenceCard({
               fontFamily: "'Rajdhani', sans-serif",
               fontWeight: 700, fontSize: '24px',
               color: '#F0F4FF',
-            }}>${profile.price.toFixed(2)}</div>
+            }}>{profile.price == null ? "Unavailable" : `$${profile.price.toFixed(2)}`}</div>
             <div style={{
               fontSize: '13px', fontWeight: 700,
               fontFamily: "'IBM Plex Mono', monospace",
-              color: accentColor,
+              color: profile.changePercent == null ? "#64748B" : accentColor,
             }}>
-              {positive ? '+' : ''}{profile.changePercent.toFixed(2)}%
+              {profile.changePercent == null ? "Unavailable" : `${positive ? "+" : ""}${profile.changePercent.toFixed(2)}%`}
             </div>
             {/* Save button */}
             <button
@@ -381,10 +397,10 @@ function StockIntelligenceCard({
 
         {/* ── Metrics Row ────────────────────────────────── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '12px' }}>
-          <Chip label="Open" value={`$${profile.open.toFixed(2)}`} />
-          <Chip label="High" value={`$${profile.high.toFixed(2)}`} color="#34D399" />
-          <Chip label="Low" value={`$${profile.low.toFixed(2)}`} color="#FF2D55" />
-          <Chip label="Volume" value={`${profile.volumeMillions.toFixed(1)}M`} />
+          <Chip label="Open" value={formatUsdQuote(profile.open)} />
+          <Chip label="High" value={formatUsdQuote(profile.high)} color="#34D399" />
+          <Chip label="Low" value={formatUsdQuote(profile.low)} color="#FF2D55" />
+          <Chip label="Volume" value={profile.volumeMillions == null ? "Unavailable" : `${profile.volumeMillions.toFixed(1)}M`} />
           {profile.marketCap && (
             <Chip label="Mkt Cap" value={fmtCap(profile.marketCap)} color="#FFD700" />
           )}
@@ -426,7 +442,7 @@ function StockIntelligenceCard({
               <Chip label="AI Exposure" value={classification.aiExposure} color={riskColor(classification.aiExposure)} />
               <Chip label="Debt Risk" value={classification.debtRisk} color={riskColor(classification.debtRisk)} />
               <Chip label="Recession Sens." value={classification.recessionSensitivity} color={riskColor(classification.recessionSensitivity)} />
-              <Chip label="Volatility" value={classification.volatilityLabel} color={riskColor(classification.volatilityLabel)} />
+              <Chip label="Volatility" value={classification.volatilityLabel == null ? "not supplied" : classification.volatilityLabel} color={classification.volatilityLabel == null ? "#94A3B8" : riskColor(classification.volatilityLabel)} />
             </div>
 
             {/* Bullish / Bearish Factors */}
@@ -765,7 +781,8 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
       setHistory(newHistory);
       saveHistory(newHistory);
 
-      // Trigger trading signal computation (price levels)
+      if (data.price != null && data.changePercent != null && data.volume != null && data.volumeMillions != null && data.open != null && data.high != null && data.low != null) {
+      // A missing price, change, or volume is shown on the card and is not scored.
       tradingSignalMutation.mutate({
         ticker: t,
         price: data.price,
@@ -806,6 +823,7 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
           source: data.source,
         },
       });
+      }
     } catch (err) {
       setProfileError(err instanceof Error ? err.message : 'Network error. Please try again.');
     } finally {

@@ -3,6 +3,7 @@
  * MarketPreflight — the modal, score ring, checklist, and interpretation panel.
  */
 
+import { engineProbabilityText } from "@/lib/marketStateProjection";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -155,15 +156,22 @@ interface MarketScenario {
   watchNext: string[];
 }
 
-function buildMarketScenarios(output: EngineOutput): MarketScenario[] {
-  const { probability, overall, domains } = output;
-  const score = overall.score;
+function buildMarketScenarios(output: EngineOutput, degraded: boolean, canonicalPressure100: number | null | undefined): MarketScenario[] {
+  // Without MarketState (degraded) the engine output is the demo baseline: the canonical
+  // pressure is used instead (or "unavailable") and no demo domain is named.
+  const rawPressure100 = degraded ? canonicalPressure100 : output.overall.score * 10;
+  const pressure100 = typeof rawPressure100 === "number" && Number.isFinite(rawPressure100) ? rawPressure100 : null;
+  const domains = degraded ? [] : output.domains;
 
-  const bullConf = probability.bullProbability > 50 ? "Elevated" : probability.bullProbability > 30 ? "Moderate" : "Low";
-  const bearConf = probability.crashProbability > 40 ? "Elevated" : probability.crashProbability > 20 ? "Moderate" : "Low";
-  const systemicConf = score >= 7.0 ? "Elevated" : "Low";
+  // Probability contract: bull/crash numbers are withheld, so no scenario
+  // likelihood rating is derived from them.
+  const bullConf = "Uncalibrated";
+  const bearConf = "Uncalibrated";
+  const systemicConf = pressure100 === null ? "Unavailable" : pressure100 >= 70 ? "Elevated" : "Low";
 
   const confColor = (c: string) => {
+    if (c === "Uncalibrated") return "#94A3B8";
+    if (c === "Unavailable") return "#64748B";
     if (c === "Elevated") return "#FF9500";
     if (c === "Moderate") return "#FFD700";
     if (c === "High") return "#FF2D55";
@@ -234,9 +242,9 @@ function buildMarketScenarios(output: EngineOutput): MarketScenario[] {
       color: confColor(bearConf),
       description: "Risk conditions deteriorate. Pressure readings rise. Defensive positioning becomes more relevant.",
       supporting: [
-        `Current regime with Pressure Index at ${score.toFixed(1)} / 10`,
+        pressure100 === null ? "Current Pressure Index unavailable" : `Current regime with Pressure Index at ${Math.round(pressure100)} / 100`,
         topDomains.length > 0 ? `Elevated readings in: ${topDomains.join(", ")}` : "One or more domains at elevated or high risk levels",
-        `Recession probability at ${probability.recessionProbability.toFixed(0)}% — above baseline`,
+        `Recession risk: ${engineProbabilityText(output, "recessionProbability")} (no governed recession model)`,
       ],
       confirmation: [
         "FAULTLINE Pressure Index rising above current level",
@@ -261,7 +269,7 @@ function buildMarketScenarios(output: EngineOutput): MarketScenario[] {
       color: confColor(systemicConf),
       description: "Multiple fault lines escalate simultaneously. Systemic risk becomes the primary concern.",
       supporting: [
-        score >= 7.0 ? "Current score already in late-cycle fragility range" : "Escalation of multiple domain scores simultaneously",
+        pressure100 !== null && pressure100 >= 70 ? "Current score already in late-cycle fragility range" : "Escalation of multiple domain scores simultaneously",
         "Liquidity stress and credit contagion risk both elevated",
         "Historical analog patterns matching prior stress episodes",
       ],
@@ -285,7 +293,7 @@ function buildMarketScenarios(output: EngineOutput): MarketScenario[] {
 }
 
 // ── Score Ring ───────────────────────────────────────────────
-function ScoreRing({ score, color, size = 120 }: { score: number; color: string; size?: number }) {
+function ScoreRing({ score, color, size = 120, caption = "PRE-FLIGHT" }: { score: number; color: string; size?: number; caption?: string }) {
   const [anim, setAnim] = useState(0);
   useEffect(() => {
     const t = setTimeout(() => setAnim(score), 200);
@@ -295,9 +303,11 @@ function ScoreRing({ score, color, size = 120 }: { score: number; color: string;
   const r = (size / 2) - 10;
   const circ = 2 * Math.PI * r;
   const dash = (anim / 100) * circ;
+  // Explicit preflight scale — never presentable as Pressure Index / market intelligence.
+  const scaleLabel = size >= 64 ? "PRE-FLIGHT /100" : "/100";
 
   return (
-    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }} data-preflight-score-ring="true" aria-label={`Pre-Flight Completion ${score} of 100`}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
         {/* Track */}
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={8} />
@@ -313,8 +323,8 @@ function ScoreRing({ score, color, size = 120 }: { score: number; color: string;
         />
       </svg>
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: size > 100 ? "28px" : "22px", color, lineHeight: 1 }}>{score}</span>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.8)", letterSpacing: "0.1em", marginTop: "2px" }}>/ 100</span>
+        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: size > 100 ? "28px" : size >= 64 ? "18px" : "14px", color, lineHeight: 1 }} data-preflight-score-value={score}>{score}</span>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: size >= 64 ? "8px" : "7px", color: "rgba(100,116,139,0.85)", letterSpacing: "0.06em", marginTop: "2px", textAlign: "center", maxWidth: size - 8 }} data-preflight-score-caption={caption}>{scaleLabel}</span>
       </div>
     </div>
   );
@@ -326,7 +336,7 @@ export function AwarenessScoreBadge({ score, color, label }: { score: number; co
     <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 12px", background: `${color}10`, border: `1px solid ${color}30`, borderRadius: "4px" }}>
       <ScoreRing score={score} color={color} size={36} />
       <div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color, letterSpacing: "0.12em", textTransform: "uppercase" }}>Market Awareness</div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color, letterSpacing: "0.12em", textTransform: "uppercase" }}>PRE-FLIGHT COMPLETION</div>
         <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "rgba(148,163,184,0.8)" }}>{label}</div>
       </div>
     </div>
@@ -334,7 +344,7 @@ export function AwarenessScoreBadge({ score, color, label }: { score: number; co
 }
 
 // ── Dashboard Card ───────────────────────────────────────────
-export function AwarenessDashboardCard({ onOpen }: { onOpen: () => void }) {
+export function AwarenessDashboardCard({ onOpen, variant = "full" }: { onOpen: () => void; variant?: "full" | "compact" }) {
   const { user } = useAuth();
   const { data: scoreData, isLoading } = trpc.awareness.getScore.useQuery(undefined, {
     enabled: !!user,
@@ -365,6 +375,8 @@ export function AwarenessDashboardCard({ onOpen }: { onOpen: () => void }) {
   const label = scoreData?.rating.label ?? "Loading...";
   const completed = scoreData?.completedKeys.length ?? 0;
   const total = 13; // number of checklist items with points > 0
+  const completionLabel = `PRE-FLIGHT COMPLETION · ${score}/100`;
+  const checkpointLabel = `MARKET AWARENESS CHECK · ${completed}/${total} COMPLETED`;
 
   // Format last preflight timestamp — subtle, no gamification
   const lastPreflightLabel = (() => {
@@ -379,24 +391,32 @@ export function AwarenessDashboardCard({ onOpen }: { onOpen: () => void }) {
     return `Last preflight: Today at ${h12}:${mins} ${ampm}`;
   })();
 
-  // Minimal Reminders: compact score + button only
-  if (mode === "minimal_reminders") {
+  // Compact secondary banner (SIGNALS hierarchy) — never dominates movers, never reads as Pressure Index.
+  if (variant === "compact" || mode === "minimal_reminders") {
     return (
       <div
-        style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", marginBottom: "10px", background: "rgba(255,255,255,0.02)", border: `1px solid ${color}25`, borderRadius: "6px", cursor: "pointer" }}
+        style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 12px", marginBottom: "8px", background: "rgba(255,255,255,0.02)", border: `1px solid ${color}28`, borderRadius: "6px", cursor: "pointer" }}
         onClick={onOpen}
         role="button"
-        aria-label="Open Market Preflight"
+        aria-label="Open Market Preflight checklist"
+        data-preflight-card="compact"
+        data-preflight-score-label={completionLabel}
       >
-        <ScoreRing score={score} color={color} size={36} />
-        <div style={{ flex: 1 }}>
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color, letterSpacing: "0.12em", textTransform: "uppercase" }}>
-            Market Awareness: {score}/100
-          </span>
+        <ScoreRing score={score} color={color} size={40} caption="PRE-FLIGHT" />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+            {completionLabel}
+          </div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.7)", letterSpacing: "0.06em", marginTop: 2 }}>
+            {checkpointLabel}
+          </div>
+          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "rgba(148,163,184,0.55)", marginTop: 2 }}>
+            Checklist only — not Pressure Index / market intelligence.
+          </div>
         </div>
         <button
           onClick={(e) => { e.stopPropagation(); onOpen(); }}
-          style={{ padding: "5px 12px", background: `${color}15`, border: `1px solid ${color}40`, borderRadius: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}
+          style={{ padding: "5px 10px", background: `${color}15`, border: `1px solid ${color}40`, borderRadius: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer", whiteSpace: "nowrap" }}
         >
           Run Preflight
         </button>
@@ -417,11 +437,13 @@ export function AwarenessDashboardCard({ onOpen }: { onOpen: () => void }) {
       onClick={onOpen}
       role="button"
       aria-label="Open Market Preflight Checklist"
+      data-preflight-card="full"
+      data-preflight-score-label={completionLabel}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: color, boxShadow: `0 0 8px ${color}`, animation: score >= 80 ? "blink-alert 6s ease-in-out infinite" : undefined }} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color, textTransform: "uppercase", letterSpacing: "0.18em", fontWeight: 600 }}>Complete Market Awareness™</span>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color, textTransform: "uppercase", letterSpacing: "0.14em", fontWeight: 600 }}>Market Awareness Check</span>
         </div>
         <div style={{ padding: "2px 8px", background: `${color}15`, border: `1px solid ${color}35`, borderRadius: "3px" }}>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color, letterSpacing: "0.12em" }}>
@@ -434,14 +456,17 @@ export function AwarenessDashboardCard({ onOpen }: { onOpen: () => void }) {
         {isLoading ? (
           <div style={{ width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.04)", animation: "pulse 2s ease-in-out infinite" }} />
         ) : (
-          <ScoreRing score={score} color={color} size={80} />
+          <ScoreRing score={score} color={color} size={80} caption="PRE-FLIGHT" />
         )}
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#F0F4FF", marginBottom: "4px" }}>
-            {isLoading ? "Calculating..." : label}
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: "13px", color: "#F0F4FF", marginBottom: "4px", letterSpacing: "0.08em" }} data-preflight-score-headline="true">
+            {completionLabel}
+          </div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: color, marginBottom: "4px", letterSpacing: "0.06em" }}>
+            {checkpointLabel}
           </div>
           <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", marginBottom: "8px" }}>
-            {isLoading ? "Loading your daily context score..." : `${completed} of ${total} context checkpoints completed today`}
+            {isLoading ? "Loading your daily checklist score..." : `${label}. Checklist completion only — not the Pressure Index.`}
           </div>
           {/* Progress bar */}
           <div style={{ height: "4px", background: "rgba(255,255,255,0.06)", borderRadius: "2px", overflow: "hidden" }}>
@@ -499,7 +524,10 @@ export function MarketPreflightModal({
     enabled: !!user && open,
     staleTime: 60_000,
   });
-  const { output } = useEngine();
+  const { output, marketMode } = useEngine();
+  const degraded = marketMode === "deterministic-fallback";
+  // A caller's regime label comes from the engine output: demo without MarketState.
+  const displayRegimeLabel = degraded ? (canonicalState?.regime ?? "Unavailable") : regimeLabel;
   const { data: scoreData, isLoading, refetch } = trpc.awareness.getScore.useQuery(undefined, {
     enabled: !!user && open,
     staleTime: 5_000,
@@ -509,8 +537,6 @@ export function MarketPreflightModal({
     onSuccess: () => refetch(),
   });
   const completeSession = trpc.awareness.completePreflightSession.useMutation();
-
-  if (open && !canonicalState) return null;
 
   const handleComplete = useCallback(async () => {
     setCompletingPreflight(true);
@@ -531,12 +557,16 @@ export function MarketPreflightModal({
     navigate(page);
   }, [logAction, currentPage, onClose, navigate]);
 
+  const outcomes = useMemo(() => buildMarketScenarios(output, degraded, canonicalState?.pressureIndex), [output, degraded, canonicalState?.pressureIndex]);
+
+  // Early returns only after every hook above (same hook count on every render;
+  // React #310 otherwise). Closed, or open without a canonical state: nothing.
   if (!open) return null;
+  if (!canonicalState) return null;
 
   const score = scoreData?.score ?? 0;
   const color = scoreData?.rating.color ?? "#00D4FF";
   const completedKeys = new Set(scoreData?.completedKeys ?? []);
-  const outcomes = useMemo(() => buildMarketScenarios(output), [output]);
 
   return (
     <div
@@ -764,7 +794,7 @@ export function MarketPreflightModal({
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.6)", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "6px" }}>
                   Current Market Regime
                 </div>
-                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#F0F4FF" }}>{regimeLabel || "Unknown"}</div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#F0F4FF" }}>{displayRegimeLabel || "Unknown"}</div>
                 <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", marginTop: "4px" }}>
                   Awareness score is reset daily at midnight UTC. Complete the checklist each trading day for consistent situational awareness.
                 </div>
@@ -870,7 +900,7 @@ export function MarketPreflightModal({
           {activeTab === "outcomes" && (
             <div>
               <div style={{ marginBottom: "14px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", lineHeight: 1.65 }}>
-                Based on your current awareness score of <strong style={{ color }}>{score}/100</strong> and the <strong style={{ color: "#F0F4FF" }}>{regimeLabel}</strong> regime, here are the likely decision-making outcomes:
+                Based on your current awareness score of <strong style={{ color }}>{score}/100</strong> and the <strong style={{ color: "#F0F4FF" }}>{displayRegimeLabel}</strong> regime, here are the likely decision-making outcomes:
               </div>
               {outcomes.map((outcome: MarketScenario, i: number) => (
                 <div
@@ -1043,7 +1073,7 @@ export function PreflightTrigger({
     <>
       <button
         onClick={handleOpen}
-        title={`Market Awareness: ${score}/100 — ${scoreData?.rating.label ?? "Run preflight"}`}
+        title={`PRE-FLIGHT COMPLETION · ${score}/100 — ${scoreData?.rating.label ?? "Run preflight"}`}
         style={{
           display: "flex",
           alignItems: "center",

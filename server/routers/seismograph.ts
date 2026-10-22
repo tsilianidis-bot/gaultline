@@ -3,7 +3,7 @@
  * Exposes the FAULTLINE Seismograph Intelligence Engine to the frontend.
  */
 
-import { publicProcedure, router } from "../_core/trpc";
+import { adminProcedure, publicProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
@@ -20,10 +20,70 @@ import {
   seismographTransitions,
   marketMemory,
 } from "../../drizzle/schema";
-import { desc, eq, and } from "drizzle-orm";
+import { desc, eq, and, notLike } from "drizzle-orm";
 import { getLatestSeismographOutput, runSeismographPipeline } from "../scheduledSeismograph";
-import { runSeismographBackfill } from "../seismographBackfill";
+import { resolveRunContext } from "../forwardRunProvenance";
+import { runSeismographBackfill, RECONSTRUCTED_RECORD_CLASS } from "../seismographBackfill";
 import { getUnifiedSeismographIntelligence } from "../seismographUnified";
+import { overlayAssembledSeismographOutput, overlayUnifiedSeismographIntelligence } from "../probabilityContract";
+import type { CanonicalProbabilityContract } from "../../shared/probabilityContract";
+import { applySeismographDisplayContext, type CanonicalDataQualityInput } from "../seismographDisplayContext";
+import { isHiddenSessionMemoryKey } from "../scheduledSessionClaim";
+
+/**
+ * The stateId-bound probability contract from the authoritative canonical
+ * state. Any failure returns null, which withholds every number (fail closed).
+ */
+async function loadProbabilityContract(): Promise<CanonicalProbabilityContract | null> {
+  return (await loadCanonicalForDisplay()).contract;
+}
+
+/**
+ * One read of the authoritative canonical state for the response overlays:
+ * the probability contract and the input data quality. Fail closed: null.
+ */
+async function loadCanonicalForDisplay(): Promise<{
+  contract: CanonicalProbabilityContract | null;
+  dataQuality: CanonicalDataQualityInput | null;
+}> {
+  try {
+    const { getAuthoritativeCanonicalIntelligenceState } = await import("../canonicalIntelligenceState");
+    const state = await getAuthoritativeCanonicalIntelligenceState();
+    if (!state) return { contract: null, dataQuality: null };
+    return {
+      contract: state.probabilityContract ?? null,
+      dataQuality: {
+        generatedAt: state.generatedAt ?? null,
+        confidenceOrEvidenceQuality: state.confidenceOrEvidenceQuality ?? null,
+        delayedInputs: state.delayedInputs ?? [],
+        staleInputs: state.staleInputs ?? [],
+        unavailableInputs: state.unavailableInputs ?? [],
+        fallbackInputs: state.fallbackInputs ?? [],
+        engineInputIds: Array.from(new Set(state.engines.flatMap(engine => engine.sourceInputIds ?? []))),
+      },
+    };
+  } catch {
+    return { contract: null, dataQuality: null };
+  }
+}
+
+/**
+ * Canonical outlook facts for the assembled response. Fail closed: no analog,
+ * and a null percentile (insufficient) rather than a stored 50.
+ */
+async function canonicalOutlookFacts(): Promise<{ topAnalogAvailable: boolean; historicalPercentile: number | null }> {
+  try {
+    const { getCanonicalMarketState } = await import("../marketStateService");
+    const state = await getCanonicalMarketState();
+    const percentile = state.now.historicalPercentile;
+    return {
+      topAnalogAvailable: state.outlook.topAnalog != null,
+      historicalPercentile: typeof percentile === "number" && Number.isFinite(percentile) ? percentile : null,
+    };
+  } catch {
+    return { topAnalogAvailable: false, historicalPercentile: null };
+  }
+}
 
 export const seismographRouter = router({
   /**
@@ -42,9 +102,12 @@ export const seismographRouter = router({
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) return [];
+      // Live daily readings only: rows reconstructed by the admin backfill are
+      // tagged in subScoresJson and never presented as readings made at the time.
       return db
         .select()
         .from(seismographReadings)
+        .where(notLike(seismographReadings.subScoresJson, `%${RECONSTRUCTED_RECORD_CLASS}%`))
         .orderBy(desc(seismographReadings.readingDate))
         .limit(input.days);
     }),
@@ -92,6 +155,13 @@ export const seismographRouter = router({
     return db
       .select()
       .from(marketMemory)
+      // Sector Rotation snapshots (append-only, served by sectorRotation.current) are not Market Memory entries.
+      .where(and(
+        notLike(marketMemory.memoryKey, "sector-rotation:%"),
+        notLike(marketMemory.memoryKey, "sector-rotation-claim:%"),
+        notLike(marketMemory.memoryKey, "seismograph-scheduled-session:%"),
+        notLike(marketMemory.memoryKey, "seismograph-scheduled-outcome:%"),
+      ))
       .orderBy(desc(marketMemory.updatedAt));
   }),
 
@@ -101,6 +171,7 @@ export const seismographRouter = router({
   getMemoryKey: publicProcedure
     .input(z.object({ key: z.string() }))
     .query(async ({ input }) => {
+      if (isHiddenSessionMemoryKey(input.key)) return null;
       return memoryGet(input.key);
     }),
 
@@ -110,7 +181,21 @@ export const seismographRouter = router({
    * Returns null if no daily job has run yet.
    */
   getAssembledOutput: publicProcedure.query(async () => {
-    return getLatestSeismographOutput();
+    const output = await getLatestSeismographOutput();
+    if (!output) return null;
+    // Display context (FRED status and freshness from canonical data quality;
+    // analog only when the canonical outlook has one), then the probability
+    // contract overlay (null unless AVAILABLE). Calculation is unchanged.
+    const [{ contract, dataQuality }, outlook] = await Promise.all([
+      loadCanonicalForDisplay(),
+      canonicalOutlookFacts(),
+    ]);
+    const display = applySeismographDisplayContext(output, {
+      dataQuality,
+      canonicalTopAnalogAvailable: outlook.topAnalogAvailable,
+      canonicalHistoricalPercentile: outlook.historicalPercentile,
+    });
+    return overlayAssembledSeismographOutput(display, contract);
   }),
 
   /**
@@ -118,8 +203,9 @@ export const seismographRouter = router({
    * Use this when no daily readings exist yet (first run / new deployment).
    * This is the same pipeline the Heartbeat job runs daily at market close.
    */
-  seedNow: publicProcedure.mutation(async () => {
-    const output = await runSeismographPipeline();
+  seedNow: adminProcedure.mutation(async () => {
+    // MANUAL run: recorded as its own state; never captures Champion provenance/outcomes.
+    const output = await runSeismographPipeline({ runContext: resolveRunContext("admin-seedNow") });
     return {
       success: true,
       pressureScore: output.pressureScore,
@@ -135,7 +221,7 @@ export const seismographRouter = router({
    * Backfill seismograph readings from pressureHistory (317 months of data).
    * Safe to call multiple times — uses ON DUPLICATE KEY UPDATE.
    */
-  backfillHistory: publicProcedure.mutation(async () => {
+  backfillHistory: adminProcedure.mutation(async () => {
     const result = await runSeismographBackfill();
     return result;
   }),
@@ -149,7 +235,11 @@ export const seismographRouter = router({
    */
   getUnifiedIntelligence: publicProcedure.query(async () => {
     try {
-      return await getUnifiedSeismographIntelligence();
+      const intel = await getUnifiedSeismographIntelligence();
+      // Probability contract: bull/neutral/bear, the retired 5-way split and the
+      // transition components are overlaid before returning (null unless the
+      // contract claim is AVAILABLE). How they are calculated is unchanged.
+      return overlayUnifiedSeismographIntelligence(intel, await loadProbabilityContract());
     } catch (err) {
       // Return null so the client renders an empty-state instead of crashing
       console.warn('[SeismographRouter] getUnifiedIntelligence failed — no historical data yet:', err);
@@ -160,7 +250,7 @@ export const seismographRouter = router({
   /**
    * Manually trigger a pattern analysis run (admin use).
    */
-  triggerPatternAnalysis: publicProcedure.mutation(async () => {
+  triggerPatternAnalysis: adminProcedure.mutation(async () => {
     try {
       await runPatternAnalysis();
       return { success: true };

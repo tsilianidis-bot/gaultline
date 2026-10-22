@@ -1,12 +1,13 @@
 /* ============================================================
    FAULTLINE — Trade Preflight Simulator
    Stress-tests a user's intended market move against current
-   market regime conditions and returns a probability-weighted
+   market regime conditions and returns a heuristic (uncalibrated)
    risk/favorability reading.
    ============================================================ */
 import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
+import { engineProbabilityText, UNAVAILABLE_DISPLAY_COLOR } from "@/lib/marketStateProjection";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { AlertTriangle, CheckCircle, XCircle, Target, Zap, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Activity, Shield, BarChart2, RefreshCw } from "lucide-react";
@@ -101,15 +102,15 @@ function ScoreRing({ score, color, size = 120, label }: { score: number; color: 
   );
 }
 
-// ── Probability bar ───────────────────────────────────────────
-function ProbBar({ value, color, label }: { value: number; color: string; label: string }) {
+// ── Score bar (heuristic 0–100 score, not a probability) ──────
+function ScoreBar({ value, color, label }: { value: number; color: string; label: string }) {
   const [anim, setAnim] = useState(0);
   useEffect(() => { const t = setTimeout(() => setAnim(value), 400); return () => clearTimeout(t); }, [value]);
   return (
     <div style={{ flex: 1 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.8)", textTransform: "uppercase", letterSpacing: "0.1em" }}>{label}</span>
-        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color }}>{value}%</span>
+        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color }}>{value}/100</span>
       </div>
       <div style={{ height: "5px", background: "rgba(255,255,255,0.05)", borderRadius: "3px", overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${anim}%`, background: `linear-gradient(90deg, ${color}60, ${color})`, borderRadius: "3px", boxShadow: `0 0 8px ${color}60`, transition: "width 1.4s cubic-bezier(0.23,1,0.32,1)" }} />
@@ -153,7 +154,7 @@ function ListItem({ text, color, icon }: { text: string; color: string; icon: Re
 // ── Main component ────────────────────────────────────────────
 export default function TradePreflight() {
   useSEO(PAGE_SEO.diagnostic); // reuse diagnostic SEO until tradePreflight entry is added
-  const { output } = useEngine();
+  const { output, marketMode, canonicalState } = useEngine();
 
   const [selectedMove, setSelectedMove] = useState<MoveType | null>(null);
   const [selectedTimeframe, setSelectedTimeframe] = useState<SimulatorTimeframe>("today");
@@ -200,7 +201,14 @@ export default function TradePreflight() {
 
   const result = simulate.data;
   const isLoading = simulate.isPending;
-  const color = pressureColor(output.overall.score * 10);
+  // Without MarketState the engine output is the demo baseline: the canonical
+  // pressure/regime are shown instead, or "Unavailable"; no demo domain chips.
+  const degraded = marketMode === "deterministic-fallback";
+  const rawPressure100 = degraded ? canonicalState?.pressureIndex : output.overall.score * 10;
+  const pressure100 = typeof rawPressure100 === "number" && Number.isFinite(rawPressure100) ? rawPressure100 : null;
+  const regimeLabel = degraded ? (canonicalState?.regime ?? "Unavailable") : output.regime.label;
+  const conditionDomains = degraded ? [] : output.domains;
+  const color = pressure100 === null ? UNAVAILABLE_DISPLAY_COLOR : pressureColor(pressure100);
 
   return (
     <div style={{ background: "#050608", minHeight: "100vh", paddingBottom: "60px" }}>
@@ -225,8 +233,10 @@ export default function TradePreflight() {
                   moveFavorabilityScore: result.moveFavorabilityScore,
                   riskLevel: result.riskLevel,
                   confidenceLevel: result.confidenceLevel,
-                  favorableSetupProbability: result.favorableSetupProbability,
-                  adversePressureProbability: result.adversePressureProbability,
+                  // QA r12 (B11): share-snapshot keys are scores, not probabilities
+                  // (API field names unchanged; rename is post-launch).
+                  favorableSetupScore: result.favorableSetupProbability,
+                  adversePressureScore: result.adversePressureProbability,
                 }}
                 size="sm"
               />
@@ -251,31 +261,32 @@ export default function TradePreflight() {
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: color, boxShadow: `0 0 8px ${color}`, animation: "blink-alert 6s ease-in-out infinite" }} />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.7)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Equity Pressure Index</span>
-              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color, textShadow: `0 0 14px ${color}70` }}>{Math.round(output.overall.score * 10)}</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.5)" }}>/100</span>
+              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color, textShadow: `0 0 14px ${color}70` }} data-preflight-pressure={pressure100 === null ? "unavailable" : Math.round(pressure100)}>{pressure100 === null ? "Unavailable" : Math.round(pressure100)}</span>
+              {pressure100 !== null && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.5)" }}>/100</span>}
             </div>
             <div style={{ padding: "3px 10px", background: `${color}12`, border: `1px solid ${color}30`, borderRadius: "3px" }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color, textTransform: "uppercase", letterSpacing: "0.12em" }}>{output.regime.label}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color, textTransform: "uppercase", letterSpacing: "0.12em" }}>{regimeLabel}</span>
             </div>
           </div>
 
-          {/* Bull/Crash probabilities */}
+          {/* Bull scenario / crash risk: contract text only */}
           <div style={{ display: "flex", gap: "16px", marginBottom: "14px", flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <TrendingUp size={13} color="#00FF88" />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.7)" }}>Bull</span>
-              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#00FF88" }}>{output.probability.bullProbability}%</span>
+              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#00FF88" }}>{engineProbabilityText(output, "bullProbability")}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <TrendingDown size={13} color="#FF2D55" />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.7)" }}>Crash</span>
-              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#FF2D55" }}>{output.probability.crashProbability}%</span>
+              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#FF2D55" }}>{engineProbabilityText(output, "crashProbability")}</span>
             </div>
           </div>
 
           {/* Condition chips grid */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-            {output.domains.map(d => {
+            {conditionDomains.length === 0 && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#64748B" }}>Domain conditions unavailable</span>}
+            {conditionDomains.map(d => {
               const chipLabel = d.label.split(" ")[0];
               const chipLevel = d.riskLevel === "low" ? "Low" : d.riskLevel === "moderate" ? "Moderate" : d.riskLevel === "elevated" ? "Elevated" : "Critical";
               return <ConditionChip key={d.id} label={chipLabel} value={chipLevel} />;
@@ -479,8 +490,8 @@ export default function TradePreflight() {
               </div>
 
               <div style={{ flex: 1, minWidth: "200px", display: "flex", flexDirection: "column", gap: "14px" }}>
-                <ProbBar value={result.favorableSetupProbability} color="#00FF88" label="Favorable Setup" />
-                <ProbBar value={result.adversePressureProbability} color="#FF2D55" label="Adverse Pressure" />
+                <ScoreBar value={result.favorableSetupProbability} color="#00FF88" label="Favorable Setup score" />
+                <ScoreBar value={result.adversePressureProbability} color="#FF2D55" label="Adverse Pressure score" />
 
                 {/* Risk + Confidence badges */}
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
@@ -641,7 +652,7 @@ export default function TradePreflight() {
             }}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", lineHeight: 1.6, textAlign: "center", letterSpacing: "0.04em" }}>
                 FAULTLINE simulations are market-regime guidance, not personalized financial advice or guaranteed predictions.
-                All readings are probability-weighted estimates derived from macroeconomic data and should not be the sole basis for any investment decision.
+                All readings are model-derived estimates (not probabilities) from macroeconomic data and should not be the sole basis for any investment decision.
               </div>
             </div>
           </div>

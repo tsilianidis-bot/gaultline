@@ -7,15 +7,15 @@
    - Static assets (JS/CSS/fonts/images): Network-First with
      cache fallback (ensures users always get latest bundles)
    - HTML navigation: Network-First (always fresh shell)
-   - Offline fallback: /mobile (PWA shell)
+   - Offline fallback: /mobile/pulse (PWA shell)
    ============================================================ */
 
-const CACHE_NAME = "faultline-core-v6";
-const STATIC_CACHE = "faultline-static-v6";
+const CACHE_NAME = "faultline-core-v7";
+const STATIC_CACHE = "faultline-static-v7";
 
 // Assets to precache on install
 const PRECACHE_URLS = [
-  "/mobile",
+  "/mobile/pulse",
   "/manifest.json",
 ];
 
@@ -39,12 +39,12 @@ self.addEventListener("activate", (event) => {
         cacheNames
           .filter((name) => !CURRENT_CACHES.includes(name))
           .map((name) => {
-            console.log("[SW v6] Deleting stale cache:", name);
+            console.log("[SW v7] Deleting stale cache:", name);
             return caches.delete(name);
           })
       )
     ).then(() => {
-      console.log("[SW v6] Activated — all stale caches cleared");
+      console.log("[SW v7] Activated — all stale caches cleared");
       return self.clients.claim();
     })
   );
@@ -87,7 +87,7 @@ self.addEventListener("fetch", (event) => {
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request).catch(() =>
-        caches.match("/mobile").then((cached) => cached || new Response("Offline", { status: 503 }))
+        caches.match("/mobile/pulse").then((cached) => cached || new Response("Offline", { status: 503 }))
       )
     );
     return;

@@ -39,7 +39,7 @@ Schedules below are **comments in handlers**, not a live Forge export. Owner mus
 | `POST /api/scheduled/ledger-evaluation` | Comment: **every 6 hours** | `requireCron` only | `{ ok, evaluated, skipped, errors, results }` max 100; never overwrites user outcomes | 500 + stack | `decision_ledger` auto-eval flags |
 | `POST /api/scheduled/weekly-improvement-report` | Comment: **Monday 06:00 UTC**. File comment still says `/weeklyImprovementReport` (**path drift**) | `requireCron` + SDK in handler | Idempotent skip if week exists; else LLM report row | Auth fail / LLM / DB | `ai_improvement_reports` |
 | `POST /api/scheduled/drip-email` | Comment: **hourly** | `requireCron` + cron/admin SDK | `{ sent1, sent2, sent3 }` (handler continues per-user on send fail) | 403; SendGrid 401 historically | `onboardingEmailSequence`; **not WORKING** until SendGrid live |
-| `POST /api/scheduled/seismograph-daily` | Comment: **`0 0 18 * * *`** 18:00 UTC | `requireCron` only | `{ ok, date, pressureScore, regime, … }` | **500 if Pressure engine fails** (`cannot proceed without core data`); cache not invalidated | Market memory `seismograph:latest_output`; `invalidateCanonicalMarketStateCache`; EngineContext refresh |
+| `POST /api/scheduled/seismograph-daily` | **Admission window:** 16:15–16:45 America/New_York on valid NYSE sessions (`shared/nyseSession.ts`). **Preferred crontab:** `15 16 * * 1-5` with timezone `America/New_York`. Railway cron, verified from docs.railway.com/cron-jobs on 2026-10-18, is UTC only and the config-as-code `cronSchedule` field has no timezone. **Railway-compatible schedule:** `15 20,21 * * 1-5` (UTC). Exactly one of those fires is 16:15 ET (20:15 UTC in EDT, 21:15 UTC in EST); the handler skips the other. Do not store `15 20,21` with an Eastern timezone. Production cron is not changed by this document. | `requireCron` only | `{ ok, date, pressureScore, regime, … }`, `{ ok:true, skipped:"outside_nyse_post_close_window" }`, `{ ok:true, skipped:"session_already_claimed" }`, or 503 `session_claim_unavailable` | **500 if Pressure engine fails**; out-of-window and duplicate-session callbacks do not run the pipeline; a missing database claim fails closed and does not capture forward records | In-process guard plus `marketMemory` claim `seismograph-scheduled-session:YYYY-MM-DD` (leased, then completed or failed). A failed or expired lease can be recovered only inside that session's NYSE window, only for SCHEDULED_CRON, and only when insert-only `seismograph-scheduled-outcome:YYYY-MM-DD` is absent. Recovery is one compare-and-swap and stops after that single recovery (`exhausted`). A crash after the outcome insert and before the score write is reconciled once inside the NYSE window when evidence is still verified; otherwise the outcome is `skipped: unrecoverable`. Reconcile does not capture a second forward record. The out-of-window `15 20,21` fire, and the next session's in-window fire, finalize stale pending or scoring rows for sessions outside the NYSE window as `skipped: unrecoverable`. That step does not write a late score, does not capture a forward record, and does not run the pipeline. Production cron is unchanged. |
 | `POST /api/scheduled/shadow-forward-outcomes` | Owner (shadow eval) | `requireCron` only | `{ ok, collected }` or `{ ok:false, error:"DB unavailable" }` **200 even on no DB** | 500 `{ ok:false, error:"Failed" }` | `shadowForwardOutcomes.collectedAt` |
 | `POST /api/scheduled/shadow-daily-summary` | Owner daily | `requireCron` only | Summary row or `{ message:"No readings today" }` | 500 | `shadowDailySummaries` |
 | `POST /api/scheduled/rising-stars-continuity` | Owner daily | `requireCron` only | `{ ok, historyClass:"live_verified", … }` | 500 `rising_stars_daily_continuity_failed` | `risingStarHistoryJobs` |
@@ -75,7 +75,17 @@ curl -sS -X POST "$PREVIEW_URL/api/scheduled/ping" \
 # expect {"ok":true}
 
 # 3) Do NOT retarget production Heartbeat URLs to preview
-# 4) Seismograph fire is BLOCKED-OWNER (RV-7). Confirm Forge job path + cron + lastExecutedAt in UI.
+# 4) Preferred seismograph crontab is `15 16 * * 1-5` in America/New_York.
+#    Railway cron does not accept that timezone (UTC only; see the registry row).
+#    On Railway use `15 20,21 * * 1-5` and leave the 16:15–16:45 ET handler in place.
+#    This file does not change the live production cron.
+#    A second process is stopped by the marketMemory unique claim
+#    `seismograph-scheduled-session:<ET date>`. A live lease, a completed claim,
+#    or an existing outcome row blocks another run. A failed or expired lease can
+#    be recovered only inside that same NYSE window, only as SCHEDULED_CRON, and
+#    only by winning one compare-and-swap while the outcome row is absent.
+#    If the claim cannot be recorded, the handler returns 503 and does not
+#    capture forward evidence. This file does not change the live production cron.
 ```
 
 There is **no** in-repo proof any job has `lastExecutedAt`. Treat all schedules as **UNVERIFIED** until the owner screenshot/export of Forge jobs.

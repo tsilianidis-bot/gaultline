@@ -4,10 +4,13 @@
    for the main Dashboard. Matches Palantir Noir aesthetic.
    ============================================================ */
 import { useState, useCallback } from "react";
+import { score100Value } from "@/lib/displayFallbacks";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { TickerChip } from "@/components/TickerActionMenu";
+import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
+import { formatCryptoPrice, formatObservedFixed } from "@/lib/nullableFormat";
 
 // ── Types (mirrored from server/cryptoEngine.ts) ─────────────
 type CryptoSignalLabel =
@@ -19,11 +22,11 @@ type CryptoRiskLevel = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
 
 interface CryptoAssetIntelligence {
   id: string; symbol: string; name: string; image: string;
-  currentPrice: number; priceChangePercent24h: number;
-  marketCap: number; totalVolume: number;
+  currentPrice: number | null; priceChangePercent24h: number | null; priceChangePercent24hDisplay?: number | null;
+  marketCap: number | null; totalVolume: number | null;
   signalBias: "Bullish" | "Neutral" | "Bearish";
   signalScore: number; riskLevel: CryptoRiskLevel; riskScore: number;
-  momentum: "Accelerating" | "Stable" | "Decelerating" | "Reversing";
+  momentum: "Accelerating" | "Stable" | "Decelerating" | "Reversing" | "Unavailable";
   primaryLabel: CryptoSignalLabel; secondaryLabels: CryptoSignalLabel[];
   liquiditySensitivity: "Low" | "Moderate" | "High" | "Extreme";
   speculativeIntensity: "Low" | "Moderate" | "High" | "Extreme";
@@ -32,10 +35,10 @@ interface CryptoAssetIntelligence {
 }
 
 interface CryptoSystemicRisk {
-  score: number; level: CryptoRiskLevel; btcDominance: number;
-  stablecoinLiquidity: "Expanding" | "Stable" | "Tightening" | "Contracting";
+  score: number; level: CryptoRiskLevel; btcDominance: number | null;
+  stablecoinLiquidity: "Expanding" | "Stable" | "Tightening" | "Contracting" | "Unavailable";
   volatilityRegime: "Low" | "Normal" | "Elevated" | "Extreme";
-  speculativeIntensity: "Low" | "Moderate" | "High" | "Extreme";
+  speculativeIntensity: "Low" | "Moderate" | "High" | "Extreme" | "Unavailable";
   regime: string; regimeColor: string; summary: string;
 }
 
@@ -64,7 +67,7 @@ const EXAMPLE_SYMBOLS = ["BTC", "ETH", "SOL", "RNDR", "SEI", "HYPE"];
 
 const FEATURE_BLOCKS = [
   { icon: "⬡", label: "Search Any Cryptocurrency", desc: "Analyze any digital asset through FAULTLINE's systemic-risk framework." },
-  { icon: "◈", label: "Crypto Systemic Risk Engine", desc: "0–10 risk score derived from stablecoin liquidity, leverage, breadth, and macro conditions." },
+  { icon: "◈", label: "Crypto Systemic Risk Engine", desc: "0–100 risk score derived from stablecoin liquidity, leverage, breadth, and macro conditions." },
   { icon: "◉", label: "Stablecoin Liquidity Monitoring", desc: "Track USDT/USDC supply expansion and contraction as a leading liquidity signal." },
   { icon: "◆", label: "Bitcoin Macro Correlation", desc: "Connect BTC price action to Fed policy, DXY strength, and Treasury yield regimes." },
   { icon: "◇", label: "AI Token Speculation Monitoring", desc: "Identify elevated speculative intensity in AI-narrative tokens before conditions shift." },
@@ -91,7 +94,7 @@ function LabelBadge({ label }: { label: CryptoSignalLabel }) {
 function MiniAssetCard({ asset }: { asset: CryptoAssetIntelligence }) {
   const biasColor = BIAS_COLORS[asset.signalBias];
   const riskColor = RISK_COLORS[asset.riskLevel];
-  const priceUp = asset.priceChangePercent24h >= 0;
+  const change24h = displayChange24h(asset);
 
   return (
     <div style={{
@@ -115,14 +118,10 @@ function MiniAssetCard({ asset }: { asset: CryptoAssetIntelligence }) {
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontFamily: MONO, fontSize: '11px', color: '#E2E8F0' }}>
-            ${asset.currentPrice >= 1000
-              ? asset.currentPrice.toLocaleString('en-US', { maximumFractionDigits: 0 })
-              : asset.currentPrice >= 1
-                ? asset.currentPrice.toFixed(2)
-                : asset.currentPrice.toFixed(4)}
+            {formatCryptoPrice(asset.currentPrice)}
           </div>
-          <div style={{ fontFamily: MONO, fontSize: '13px', color: priceUp ? '#00FF88' : '#FF2D55' }}>
-            {priceUp ? '+' : ''}{asset.priceChangePercent24h.toFixed(2)}%
+          <div style={{ fontFamily: MONO, fontSize: '13px', color: change24hColor(change24h) }}>
+            {change24hText(change24h)}
           </div>
         </div>
       </div>
@@ -185,17 +184,17 @@ function SystemicRiskMini({ risk }: { risk: CryptoSystemicRisk }) {
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '10px' }}>
         <span style={{ fontFamily: RAJDHANI, fontWeight: 700, fontSize: '28px', color, textShadow: `0 0 16px ${color}60` }}>
-          {risk.score.toFixed(1)}
+          {score100Value(risk.score)}
         </span>
-        <span style={{ fontFamily: MONO, fontSize: '10px', color: '#4B5563' }}>/10</span>
+        <span style={{ fontFamily: MONO, fontSize: '10px', color: '#4B5563' }}>/100</span>
         <span style={{ fontFamily: MONO, fontSize: '13px', color, marginLeft: '4px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
           {risk.level}
         </span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {[
-          { label: "Crypto Risk Score", value: `${risk.score.toFixed(1)} / 10` },
-          { label: "BTC Dominance", value: `${risk.btcDominance.toFixed(1)}%` },
+          { label: "Crypto Risk Score", value: `${score100Value(risk.score)}/100` },
+          { label: "BTC Dominance", value: formatObservedFixed(risk.btcDominance, 1, "%") },
           { label: "Stablecoin Liquidity", value: risk.stablecoinLiquidity },
           { label: "AI Token Speculation", value: risk.speculativeIntensity },
           { label: "Volatility Regime", value: risk.volatilityRegime },
@@ -376,14 +375,14 @@ export default function HomeCryptoSection() {
             Top Digital Assets
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '5px' }}>
-            {(topMarkets ?? []).slice(0, 6).map((coin: { id: string; symbol: string; name: string; priceChangePercent24h: number }) => {
-              const pct = coin.priceChangePercent24h;
-              const up = pct >= 0;
-              const intensity = Math.min(Math.abs(pct) / 10, 1);
-              const bg = up
+            {(topMarkets ?? []).slice(0, 6).map((coin: { id: string; symbol: string; name: string; priceChangePercent24h: number | null; priceChangePercent24hDisplay?: number | null }) => {
+              const pct = displayChange24h(coin);
+              const up = pct !== null && pct >= 0;
+              const intensity = pct === null ? 0 : Math.min(Math.abs(pct) / 10, 1);
+              const bg = pct === null ? 'rgba(100,116,139,0.06)' : up
                 ? `rgba(0,255,136,${0.06 + intensity * 0.18})`
                 : `rgba(255,45,85,${0.06 + intensity * 0.18})`;
-              const border = up ? `rgba(0,255,136,${0.15 + intensity * 0.25})` : `rgba(255,45,85,${0.15 + intensity * 0.25})`;
+              const border = pct === null ? 'rgba(100,116,139,0.15)' : up ? `rgba(0,255,136,${0.15 + intensity * 0.25})` : `rgba(255,45,85,${0.15 + intensity * 0.25})`;
               return (
                 <div
                   key={coin.id}
@@ -397,8 +396,8 @@ export default function HomeCryptoSection() {
                   onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
                 >
                   <div style={{ fontFamily: RAJDHANI, fontWeight: 700, fontSize: '11px', color: '#D1D5DB' }}>{coin.symbol}</div>
-                  <div style={{ fontFamily: MONO, fontSize: '12px', color: up ? '#00FF88' : '#FF2D55' }}>
-                    {up ? '+' : ''}{pct.toFixed(1)}%
+                  <div style={{ fontFamily: MONO, fontSize: '12px', color: change24hColor(pct) }}>
+                    {change24hText(pct, 1)}
                   </div>
                 </div>
               );

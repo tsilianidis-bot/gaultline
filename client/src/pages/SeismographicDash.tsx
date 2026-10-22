@@ -12,12 +12,12 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { TrendingUp, TrendingDown, Minus, Share2, HelpCircle, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { metrics, MetricCard } from "@/lib/data";
 import { useEngine } from "@/contexts/EngineContext";
+import { evidenceStatusFromIntegrity } from "../../../shared/evidenceStatus";
 import { getRiskColor } from "@/components/RiskBadge";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import DataIntegrity from "@/components/DataIntegrity";
 import HomeCryptoSection from "@/components/HomeCryptoSection";
 import WaitlistSection from "@/components/WaitlistSection";
-import HomeStockIntelSection from "@/components/HomeStockIntelSection";
 import { CryptoPorchPanel, StockPorchPanel } from "@/components/DashboardSearchPanels";
 import { OpportunityDiscoveryPanel } from "@/components/OpportunityDiscoveryPanel";
 import Onboarding from "@/components/Onboarding";
@@ -29,8 +29,6 @@ import { ViewModeSelector } from "@/components/ViewModeSelector";
 import PulseMode from "@/components/dashboard/PulseMode";
 import SignalsMode from "@/components/dashboard/SignalsMode";
 import IntelligenceMode from "@/components/dashboard/IntelligenceMode";
-import { AwarenessDashboardCard, MarketPreflightModal } from "@/components/MarketPreflight";
-import PreflightGate from "@/components/PreflightGate";
 import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
 import HomepageBriefingPanel from "@/components/HomepageBriefingPanel";
 import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner";
@@ -533,24 +531,6 @@ function MetricCardItem({ metric, index }: { metric: MetricCard; index: number }
   );
 }
 
-// ── Awareness Section ─────────────────────────────────────────
-function DashboardAwarenessSection() {
-  const [open, setOpen] = useState(false);
-  const { output } = useEngine();
-  const regimeLabel = output?.regime?.label ?? "Unknown";
-  return (
-    <>
-      <AwarenessDashboardCard onOpen={() => setOpen(true)} />
-      <MarketPreflightModal
-        open={open}
-        onClose={() => setOpen(false)}
-        currentPage="dashboard"
-        regimeLabel={regimeLabel}
-      />
-    </>
-  );
-}
-
 // ── Upgrade prompt ────────────────────────────────────────────
 function DashboardUpgradePrompt() {
   const { user } = useAuth();
@@ -572,7 +552,7 @@ function DashboardUpgradePrompt() {
       <div>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(0,229,255,0.65)', marginBottom: '2px' }}>{tier === 'core' ? 'UPGRADE TO PRO' : 'UPGRADE TO CORE'}</div>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#C0D0E0' }}>
-          {tier === 'core' ? 'Situation Room · Market Preflight · Institutional dashboards · Historical analogs' : 'Unlimited Ask Intelligence · Symbol Intelligence · Full Signal Outlook · Portfolio tracker'}
+          {tier === 'core' ? 'Situation Room · Institutional dashboards · Historical analogs' : 'Unlimited Ask Intelligence · Symbol Intelligence · Full Signal Outlook · Portfolio tracker'}
         </div>
       </div>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: '#00E5FF', flexShrink: 0, marginLeft: '12px' }}>UPGRADE →</div>
@@ -588,7 +568,8 @@ export default function SeismographicDash() {
   useSEO(PAGE_SEO.home);
 
   // ── Dashboard data ──────────────────────────────────────────
-  const { output, rawFred, indicators, isLoading: dashLoading, isLive, lastUpdated, isSimulating } = useEngine();
+  const { output, rawFred, indicators, isLoading: dashLoading, isLive, lastUpdated, isSimulating, integrityLabel } = useEngine();
+  const dashStatus = evidenceStatusFromIntegrity(integrityLabel);
   const { overall, domains, regime, probability, analogs, narrative } = output;
   const [showShare, setShowShare] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -659,7 +640,7 @@ export default function SeismographicDash() {
   const currentRegime = intel?.currentRegime ?? "";
   const currentDirection = intel?.currentDirection ?? "";
   const currentStressLevel = intel?.currentStressLevel ?? "";
-  const currentPercentile = intel?.currentPercentile ?? 0;
+  const currentPercentile = typeof intel?.currentPercentile === "number" ? intel.currentPercentile : null;
   const todayStory = intel?.todayStory ?? "";
   const keyDevelopments = intel?.keyDevelopments ?? [];
   const whyThisScore = intel?.whyThisScore ?? "";
@@ -671,7 +652,7 @@ export default function SeismographicDash() {
   const enginesDisagreeing = intel?.enginesDisagreeing ?? [];
   const seismoAnalogs = intel?.analogs ?? [];
   const analogSummary = intel?.analogSummary ?? "";
-  const transitionProbabilities = intel?.transitionProbabilities ?? { remainInRegime: 0, transitionToElevated: 0, transitionToLow: 0, transitionToCrisis: 0, historicalBasis: "" };
+  const transitionProbabilities = intel?.transitionProbabilities ?? { remainInRegime: null, transitionToElevated: null, transitionToLow: null, transitionToCrisis: null, historicalBasis: "" };
   const evolution = intel?.evolution ?? { whatChanged: [], whatToWatch: [], invalidationConditions: [], sparkline90d: [] };
   const memory = intel?.memory ?? { observationCount: 0, datasetSpan: "", historicalStats: { avgPressure: 0, maxPressure: 0, criticalMonths: 0, highRiskMonths: 0 } };
   const regimeProbabilities5way = intel?.regimeProbabilities5way ?? { deepBull: 0, bull: 0, neutral: 0, bear: 0, crisis: 0 };
@@ -699,8 +680,9 @@ export default function SeismographicDash() {
     narrative: todayStory,
     trend: currentDirection,
     keyDrivers: keyDevelopments?.slice(0, 3),
-    historicalAnalog: seismoAnalogs?.[0] ? `${seismoAnalogs[0].period} (similarity: ${(seismoAnalogs[0].similarity * 100).toFixed(0)}%)` : undefined,
-    transitionProbability: transitionProbabilities?.transitionToElevated,
+    // similarity is already 0–100 (never ×100).
+    historicalAnalog: seismoAnalogs?.[0] ? `${seismoAnalogs[0].period} (similarity: ${Math.round(seismoAnalogs[0].similarity)}%)` : undefined,
+    transitionProbability: transitionProbabilities?.transitionToElevated ?? undefined,
     additionalContext: { stressLevel: currentStressLevel, percentile: currentPercentile, enginesAgreeing, enginesDisagreeing },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [currentScore, currentRegime, todayStory, currentDirection, currentStressLevel, currentPercentile, transitionProbabilities?.transitionToElevated]);
@@ -720,8 +702,6 @@ export default function SeismographicDash() {
 
   return (
     <div data-regime={regimeAttr} style={{ background: '#080A0F', minHeight: '100vh', position: 'relative' }} className="ambient-bg">
-      {/* Market Preflight Gate */}
-      <PreflightGate />
       {/* SEO H1 */}
       <h1 style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}>
         FAULTLINE — Macroeconomic &amp; Market Risk Intelligence Platform
@@ -742,7 +722,7 @@ export default function SeismographicDash() {
         { label: 'TOP THREAT', value: topThreat?.label?.split(' ')[0] ?? '—', color: '#FF2D55' },
         { label: 'ANALOG', value: analogs[0]?.era?.split(' ').slice(0, 2).join(' ') ?? '—', color: '#00E5FF' },
         { label: 'DELTA', value: `${overall.delta >= 0 ? '+' : ''}${overall.delta.toFixed(1)}`, color },
-        { label: 'STATUS', value: isLive ? 'LIVE FEED' : 'SIMULATED', color: isLive ? '#00FF88' : '#FF9500' },
+        { label: 'STATUS', value: dashStatus, color: dashStatus === 'LIVE' ? '#00FF88' : dashStatus === 'STALE' || dashStatus === 'UNAVAILABLE' ? '#94A3B8' : '#FF9500' },
       ]} />
       {/* Onboarding */}
       <Onboarding forceOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
@@ -776,7 +756,7 @@ export default function SeismographicDash() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px 6px", borderBottom: `1px solid ${scoreColor}14` }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <Activity size={12} style={{ color: scoreColor, opacity: 0.7 }} />
-                <span style={{ ...seismoMono, fontSize: "8px", letterSpacing: "0.14em", color: "rgba(6,182,212,0.45)" }}>LIVE SEISMOGRAPH</span>
+                <span style={{ ...seismoMono, fontSize: "8px", letterSpacing: "0.14em", color: "rgba(6,182,212,0.45)" }}>{dashStatus} SEISMOGRAPH</span>
                 {!prefersReducedMotion() && (
                   <span style={{ display: "inline-block", width: "5px", height: "5px", borderRadius: "50%", background: scoreColor, animation: "pulse-dot 1.4s ease-in-out infinite" }} />
                 )}
@@ -812,7 +792,7 @@ export default function SeismographicDash() {
                   {currentDirection}
                 </div>
                 <div style={{ ...seismoMono, fontSize: "8px", color: "rgba(6,182,212,0.3)", letterSpacing: "0.06em" }}>
-                  P{currentPercentile}
+                  {currentPercentile == null ? "P unavailable" : `P${currentPercentile}`}
                 </div>
               </div>
               {/* Waveform */}
@@ -847,13 +827,13 @@ export default function SeismographicDash() {
         <HomepageBriefingPanel />
         <MarketSynthesisPanel context="dashboard" />
         <ViewModeSelector mode={dashMode} onChange={handleModeChange} />
+        {/* SIGNALS: movers-first hierarchy lives in SignalsMode (compact integrity secondary; Pre-Flight removed). */}
         {dashMode === "pulse" && <PulseMode />}
         {dashMode === "signals" && <SignalsMode />}
         {dashMode === "intelligence" && <IntelligenceMode />}
         {/* Quick Actions bar */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 100ms both' }}>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 100ms both' }} data-dashboard-quick-actions="true">
           {([
-            { label: 'Pre-Flight',      path: '/app/pre-flight',              color: '#00E5FF' },
             { label: 'Decision Engine', path: '/app/decision-engine',          color: '#FF9500' },
             { label: 'Day Trade',       path: '/app/day-trade-intelligence',  color: '#00FF88' },
             { label: 'Signal Outlook',  path: '/app/signal-outlook',          color: '#C084FC' },
@@ -867,8 +847,9 @@ export default function SeismographicDash() {
             </a>
           ))}
         </div>
-        <DataIntegrity />
-        <DashboardAwarenessSection />
+        {/* Signals mode owns compact integrity inside SignalsMode (#66). Pre-Flight removed (#67). */}
+        {dashMode !== "signals" && <DataIntegrity />}
+
       </div>
 
 
@@ -992,10 +973,17 @@ export default function SeismographicDash() {
             )}
             <div style={{ marginBottom: "20px" }}>
               <div style={{ ...seismoMono, fontSize: "8px", letterSpacing: "0.1em", color: "rgba(6,182,212,0.38)", fontWeight: 700, marginBottom: "10px" }}>REGIME TRANSITION PROBABILITIES</div>
-              <AnimProbBar label="REMAIN IN REGIME" value={transitionProbabilities.remainInRegime} color="#06b6d4" width="140px" />
-              <AnimProbBar label="TRANSITION ELEVATED" value={transitionProbabilities.transitionToElevated} color="#f97316" width="140px" revealDelay={100} />
-              <AnimProbBar label="TRANSITION LOW" value={transitionProbabilities.transitionToLow} color="#22c55e" width="140px" revealDelay={200} />
-              <AnimProbBar label="TRANSITION CRISIS" value={transitionProbabilities.transitionToCrisis} color="#ef4444" width="140px" revealDelay={300} />
+              {/* Probability contract: transition components are withheld (null unless AVAILABLE). */}
+              {([
+                ["REMAIN IN REGIME", transitionProbabilities.remainInRegime, "#06b6d4"],
+                ["TRANSITION ELEVATED", transitionProbabilities.transitionToElevated, "#f97316"],
+                ["TRANSITION LOW", transitionProbabilities.transitionToLow, "#22c55e"],
+                ["TRANSITION CRISIS", transitionProbabilities.transitionToCrisis, "#ef4444"],
+              ] as Array<[string, number | null, string]>).map(([label, value, color], i) => value == null ? (
+                <div key={label} style={{ ...seismoMono, fontSize: "9px", color: "rgba(6,182,212,0.55)", marginBottom: "8px" }}>{label}: <span style={{ color }}>Unavailable</span></div>
+              ) : (
+                <AnimProbBar key={label} label={label} value={value} color={color} width="140px" revealDelay={i * 100} />
+              ))}
             </div>
             {transitionProbabilities.historicalBasis && (
               <div style={{ marginBottom: "20px", padding: "10px 14px", background: "rgba(6,182,212,0.02)", borderRadius: "5px", borderLeft: "2px solid rgba(6,182,212,0.2)" }}>
@@ -1018,7 +1006,7 @@ export default function SeismographicDash() {
                   <div key={i} style={{ marginBottom: "14px", padding: "12px 14px", background: "rgba(6,182,212,0.02)", borderRadius: "6px", border: "1px solid rgba(6,182,212,0.08)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
                       <div style={{ ...seismoMono, fontSize: "11px", fontWeight: 700, color: "rgba(6,182,212,0.75)" }}>{a.period}</div>
-                      <div style={{ ...seismoMono, fontSize: "9px", color: "rgba(6,182,212,0.4)" }}>SIM: {(a.similarity * 100).toFixed(0)}%</div>
+                      <div style={{ ...seismoMono, fontSize: "9px", color: "rgba(6,182,212,0.4)" }}>SIM: {Math.round(a.similarity)}%</div>
                     </div>
                     <p style={{ fontSize: "12px", color: "rgba(226,232,240,0.65)", lineHeight: 1.55, margin: "0 0 10px", fontFamily: "'IBM Plex Sans',system-ui,sans-serif" }}>{a.description}</p>
                     <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
@@ -1216,9 +1204,7 @@ export default function SeismographicDash() {
         <SectionErrorBoundary label="Opportunity Discovery">
           <OpportunityDiscoveryPanel />
         </SectionErrorBoundary>
-        <SectionErrorBoundary label="Home Stock Intel">
-          <HomeStockIntelSection />
-        </SectionErrorBoundary>
+        {/* QA r13 B13: static "LIVE SIGNAL PREVIEW" demo rows are not mounted in the app. */}
         <SectionErrorBoundary label="Home Crypto">
           <HomeCryptoSection />
         </SectionErrorBoundary>

@@ -98,17 +98,17 @@ export interface TradingSignalResult {
   assetClass: "STOCK" | "CRYPTO" | "ETF";  // asset class for UI labeling
   action: TradingAction;
   actionLabel: string;         // human-readable precision label (e.g. "Accumulation Zone")
-  confidence: number;          // 0–100
+  confidence: number | null;   // null when completed bars or RSI are withheld
   strength: "Strong" | "Moderate" | "Weak";
   timeframe: "Short-Term" | "Swing" | "Watch";
   rationale: string;           // 1-sentence reason
   technicals: {
-    rsiEstimate: number;       // 0–100 RSI (true 14-period when bars available)
+    rsiEstimate: number | null; // null when completed bars are insufficient
     rsiLabel: "Overbought" | "Neutral" | "Oversold";
     rsiIsTrue: boolean;        // true = Wilder's 14-period; false = sparkline approx
     trend: "Uptrend" | "Downtrend" | "Sideways";
     volumeSignal: "Surge" | "Normal" | "Low";
-    momentumScore: number;     // 0–100
+    momentumScore: number | null; // null when RSI is withheld
     smaSignal: "Golden Cross" | "Death Cross" | "Neutral";
     smaIsTrue: boolean;        // true = real 50/200-day SMA; false = sparkline proxy
     macd: MACDResult | null;   // null when daily bars not available
@@ -117,6 +117,8 @@ export interface TradingSignalResult {
   regimeAlignment: "Aligned" | "Neutral" | "Counter-Trend";
   regimeAlignmentScore: number; // 0–10
   computedAt: number;          // Unix ms
+  /** False when completed daily bars were not available. No indicator conclusion is then emitted. */
+  indicatorsAvailable: boolean;
 }
 
 export interface TradingSignalsInput {
@@ -172,11 +174,18 @@ export function computeEMA(values: number[], period: number): number[] {
  * Requires at least 15 values (14 changes).
  * Returns the most recent RSI value.
  */
-export function computeWildersRSI(closes: number[], period = 14): number {
-  if (closes.length < period + 1) {
-    // Fallback: simple average gain/loss RSI
-    return approximateRSIFromCloses(closes);
-  }
+/** Wilder RSI needs 14 changes, which is 15 completed closes. */
+export const RSI_MIN_COMPLETED_BARS = 15;
+/**
+ * Default MACD(12/26/9) needs 26 + 9 completed closes. A 40-bar fixture is
+ * only a sample length: 35 completed closes produce MACD and 34 do not.
+ * 39 completed closes are valid.
+ */
+export const MACD_MIN_COMPLETED_BARS = 35;
+
+export function computeWildersRSI(closes: number[], period = 14): number | null {
+  const minimum = Math.max(period + 1, RSI_MIN_COMPLETED_BARS);
+  if (closes.length < minimum) return null;
 
   const changes: number[] = [];
   for (let i = 1; i < closes.length; i++) {
@@ -201,25 +210,9 @@ export function computeWildersRSI(closes: number[], period = 14): number {
     avgLoss = (avgLoss * (period - 1) + loss) / period;
   }
 
-  if (avgLoss === 0) return 100;
-  const rs = avgGain / avgLoss;
-  return parseFloat((100 - 100 / (1 + rs)).toFixed(1));
-}
-
-/**
- * Simple RSI approximation from a short series of close prices.
- * Used as fallback when fewer than 15 bars are available.
- */
-function approximateRSIFromCloses(closes: number[]): number {
-  if (closes.length < 2) return 50;
-  const changes: number[] = [];
-  for (let i = 1; i < closes.length; i++) {
-    changes.push(closes[i] - closes[i - 1]);
-  }
-  const gains = changes.filter(c => c > 0);
-  const losses = changes.filter(c => c < 0).map(Math.abs);
-  const avgGain = gains.length > 0 ? gains.reduce((s, v) => s + v, 0) / changes.length : 0;
-  const avgLoss = losses.length > 0 ? losses.reduce((s, v) => s + v, 0) / changes.length : 0;
+  // A flat series has no gain and no loss. That is withheld, not RSI 100.
+  // A genuine all-gain series (loss is zero and gain is positive) stays 100.
+  if (avgGain === 0 && avgLoss === 0) return null;
   if (avgLoss === 0) return 100;
   const rs = avgGain / avgLoss;
   return parseFloat((100 - 100 / (1 + rs)).toFixed(1));
@@ -233,7 +226,8 @@ function approximateRSIFromCloses(closes: number[]): number {
  * Requires at least 35 values (26 + 9) for reliable output.
  */
 export function computeMACD(closes: number[], fast = 12, slow = 26, signal = 9): MACDResult | null {
-  if (closes.length < slow + signal) return null;
+  const minimum = fast === 12 && slow === 26 && signal === 9 ? MACD_MIN_COMPLETED_BARS : slow + signal;
+  if (closes.length < minimum) return null;
 
   const ema12 = computeEMA(closes, fast);
   const ema26 = computeEMA(closes, slow);
@@ -310,38 +304,6 @@ export function computeSMACrossover(closes: number[]): {
   const diff = (shortSMA - longSMA) / longSMA * 100;
   const signal = diff > 0.5 ? "Golden Cross" : diff < -0.5 ? "Death Cross" : "Neutral";
   return { signal, isTrue: false, sma50: null, sma200: null };
-}
-
-// ── Fallback helpers (sparkline-based) ───────────────────────
-
-/**
- * Approximate RSI from a series of % change values (sparkline).
- */
-function approximateRSI(changes: number[]): number {
-  if (changes.length < 2) return 50;
-  const gains: number[] = [];
-  const losses: number[] = [];
-  for (const c of changes) {
-    if (c > 0) { gains.push(c); losses.push(0); }
-    else { gains.push(0); losses.push(Math.abs(c)); }
-  }
-  const avgGain = gains.reduce((s, v) => s + v, 0) / gains.length;
-  const avgLoss = losses.reduce((s, v) => s + v, 0) / losses.length;
-  if (avgLoss === 0) return 100;
-  const rs = avgGain / avgLoss;
-  return parseFloat((100 - 100 / (1 + rs)).toFixed(1));
-}
-
-/**
- * Derive daily % changes from a sparkline (% from first close).
- */
-function sparklineToDailyChanges(sparkline: number[]): number[] {
-  if (sparkline.length < 2) return [];
-  const changes: number[] = [];
-  for (let i = 1; i < sparkline.length; i++) {
-    changes.push(sparkline[i] - sparkline[i - 1]);
-  }
-  return changes;
 }
 
 /**
@@ -571,6 +533,37 @@ function computeMomentumScore(sparkline: number[], rsi: number, relativeStrength
   return Math.round(Math.max(0, Math.min(100, blended)));
 }
 
+const INSUFFICIENT_BARS_RATIONALE = "Insufficient completed historical bars; trading indicators are unavailable.";
+
+function insufficientCompletedBarsSignal(input: TradingSignalsInput): TradingSignalResult {
+  return {
+    ticker: input.ticker,
+    assetClass: "STOCK",
+    action: "WATCH",
+    actionLabel: "Unavailable",
+    confidence: null,
+    strength: "Weak",
+    timeframe: "Watch",
+    rationale: INSUFFICIENT_BARS_RATIONALE,
+    technicals: {
+      rsiEstimate: null,
+      rsiLabel: "Neutral",
+      rsiIsTrue: false,
+      trend: "Sideways",
+      volumeSignal: "Normal",
+      momentumScore: null,
+      smaSignal: "Neutral",
+      smaIsTrue: false,
+      macd: null,
+    },
+    priceLevels: computePriceLevels(input.price, input.high, input.low, "WATCH"),
+    regimeAlignment: "Neutral",
+    regimeAlignmentScore: 0,
+    computedAt: Date.now(),
+    indicatorsAvailable: false,
+  };
+}
+
 // ── Core signal computation ───────────────────────────────────
 
 export function computeTradingSignal(
@@ -587,19 +580,20 @@ export function computeTradingSignal(
 
   // ── Determine data quality path ───────────────────────────
   const closes = dailyBars?.map(b => b.close) ?? [];
-  const hasDailyBars = closes.length >= 15;
+  const hasDailyBars = closes.length >= RSI_MIN_COMPLETED_BARS;
+  if (!hasDailyBars) {
+    const unavailable = insufficientCompletedBarsSignal(input);
+    signalCache.set(cacheKey, { result: unavailable, computedAt: Date.now() });
+    return unavailable;
+  }
 
   // ── RSI ───────────────────────────────────────────────────
-  let rsiEstimate: number;
-  let rsiIsTrue: boolean;
-
-  if (hasDailyBars) {
-    rsiEstimate = computeWildersRSI(closes, 14);
-    rsiIsTrue = true;
-  } else {
-    const dailyChanges = sparklineToDailyChanges(sparkline);
-    rsiEstimate = approximateRSI(dailyChanges.length > 0 ? dailyChanges : [changePercent]);
-    rsiIsTrue = false;
+  const rsiEstimate = computeWildersRSI(closes, 14);
+  const rsiIsTrue = true;
+  if (rsiEstimate == null) {
+    const unavailable = insufficientCompletedBarsSignal(input);
+    signalCache.set(cacheKey, { result: unavailable, computedAt: Date.now() });
+    return unavailable;
   }
 
   const rsiLabel: "Overbought" | "Neutral" | "Oversold" =
@@ -611,10 +605,10 @@ export function computeTradingSignal(
 
   if (hasDailyBars) {
     const smaResult = computeSMACrossover(closes);
-    smaSignal = smaResult.signal;
     smaIsTrue = smaResult.isTrue;
+    smaSignal = smaIsTrue ? smaResult.signal : "Neutral";
   } else {
-    smaSignal = smaCrossoverFallback(sparkline);
+    smaSignal = "Neutral";
     smaIsTrue = false;
   }
 
@@ -712,10 +706,15 @@ export function computeTradingSignal(
 
   // ── Rationale ─────────────────────────────────────────────
   const macdNote = macd ? ` MACD ${macd.signal.toLowerCase()}.` : "";
-  const rsiNote = rsiIsTrue ? `RSI(14) at ${rsiEstimate.toFixed(0)}` : `RSI~ ${rsiEstimate.toFixed(0)}`;
+  const rsiNote = rsiIsTrue ? `RSI(14) at ${rsiEstimate.toFixed(0)}` : "completed-bar momentum";
+  const crossoverNote = smaIsTrue && smaSignal === "Golden Cross"
+    ? "golden cross"
+    : smaIsTrue && smaSignal === "Death Cross"
+      ? "death cross"
+      : null;
   const rationaleMap: Record<TradingAction, string> = {
-    BUY: `${trend === "Uptrend" ? "Uptrend intact" : "Oversold conditions"} — ${rsiNote}, ${smaSignal === "Golden Cross" ? "golden cross" : "positive momentum"}${volSignal === "Surge" ? ", volume surge" : ""}.${macdNote}`,
-    SELL: `${trend === "Downtrend" ? "Downtrend confirmed" : "Overbought conditions"} — ${rsiNote}, ${smaSignal === "Death Cross" ? "death cross" : "negative momentum"}${volSignal === "Surge" ? ", elevated volume" : ""}.${macdNote}`,
+    BUY: `${trend === "Uptrend" ? "Uptrend intact" : "Oversold conditions"} — ${rsiNote}${crossoverNote ? `, ${crossoverNote}` : ", positive momentum"}${volSignal === "Surge" ? ", volume surge" : ""}.${macdNote}`,
+    SELL: `${trend === "Downtrend" ? "Downtrend confirmed" : "Overbought conditions"} — ${rsiNote}${crossoverNote ? `, ${crossoverNote}` : ", negative momentum"}${volSignal === "Surge" ? ", elevated volume" : ""}.${macdNote}`,
     HOLD: `Mixed technicals — ${trend} trend, ${rsiNote}; await clearer directional signal.${macdNote}`,
     WATCH: `Insufficient conviction — monitor for breakout above resistance or breakdown below support.`,
   };
@@ -751,6 +750,7 @@ export function computeTradingSignal(
     regimeAlignment,
     regimeAlignmentScore,
     computedAt: Date.now(),
+    indicatorsAvailable: true,
   };
 
   signalCache.set(cacheKey, { result, computedAt: Date.now() });

@@ -4,6 +4,7 @@
    Design: Palantir Noir — void black, neon accents, scanlines.
    ============================================================ */
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { score100Value } from "@/lib/displayFallbacks";
 import { useLocation } from "wouter";
 import { Search, X, TrendingUp, TrendingDown, Minus, AlertTriangle, Zap, Activity, BarChart2, Shield, RefreshCw, Bookmark, BookmarkCheck } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -12,6 +13,8 @@ import { RecoveryStatusCard, RecoveryStatusBadge } from "@/components/RecoverySt
 import { TickerChip } from "@/components/TickerActionMenu";
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import { change24hColor, change24hText, displayChange24h } from "@/lib/change24h";
+import { formatObservedFixed } from "@/lib/nullableFormat";
 // ── Inline types (mirrored from server/cryptoEngine.ts) ─────────
 type CryptoSignalLabel =
   | "Speculative Acceleration"
@@ -24,9 +27,9 @@ type CryptoSignalLabel =
   | "Risk-Off Vulnerable"
   | "Neutral / Watch";
 
-type CryptoSignalBias = "Bullish" | "Neutral" | "Bearish";
+type CryptoSignalBias = "Bullish" | "Neutral" | "Bearish" | "Unavailable";
 type CryptoRiskLevel  = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
-type MomentumDir      = "Accelerating" | "Stable" | "Decelerating" | "Reversing";
+type MomentumDir      = "Accelerating" | "Stable" | "Decelerating" | "Reversing" | "Unavailable";
 
 interface CryptoSignalVector {
   label: string;
@@ -37,28 +40,28 @@ interface CryptoSignalVector {
 
 interface CryptoAssetIntelligence {
   id: string; symbol: string; name: string; image: string;
-  currentPrice: number; priceChangePercent24h: number; priceChangePercent7d: number | null;
-  marketCap: number; totalVolume: number; high24h: number; low24h: number;
-  circulatingSupply: number; ath: number; athChangePercent: number;
-  sparkline7d: number[]; volatility24h: number; distanceFromAth: number;
-  signalBias: CryptoSignalBias; signalScore: number;
-  riskLevel: CryptoRiskLevel; riskScore: number;
+  currentPrice: number | null; priceChangePercent24h: number | null; priceChangePercent24hDisplay?: number | null; priceChangePercent7d: number | null;
+  marketCap: number | null; totalVolume: number | null; high24h: number | null; low24h: number | null;
+  circulatingSupply: number | null; ath: number | null; athChangePercent: number | null;
+  sparkline7d: number[]; volatility24h: number | null; distanceFromAth: number | null;
+  signalBias: CryptoSignalBias; signalScore: number | null;
+  riskLevel: CryptoRiskLevel | "Unavailable"; riskScore: number | null;
   momentum: MomentumDir; primaryLabel: CryptoSignalLabel;
   secondaryLabels: CryptoSignalLabel[]; vectors: CryptoSignalVector[];
-  macroAlignment: "Aligned" | "Diverging" | "Neutral";
-  liquiditySensitivity: "Low" | "Moderate" | "High" | "Extreme";
-  speculativeIntensity: "Low" | "Moderate" | "High" | "Extreme";
+  macroAlignment: "Aligned" | "Diverging" | "Neutral" | "Unavailable";
+  liquiditySensitivity: "Low" | "Moderate" | "High" | "Extreme" | "Unavailable";
+  speculativeIntensity: "Low" | "Moderate" | "High" | "Extreme" | "Unavailable";
   regimeNote: string; keyInsights: string[]; generatedAt: number;
 }
 
 interface CryptoSystemicRisk {
-  score: number; level: CryptoRiskLevel; btcDominance: number;
-  stablecoinLiquidity: "Expanding" | "Stable" | "Tightening" | "Contracting";
-  volatilityRegime: "Low" | "Normal" | "Elevated" | "Extreme";
-  leverageConditions: "Low" | "Normal" | "Elevated" | "Extreme";
-  marketBreadth: "Strong" | "Moderate" | "Weak" | "Deteriorating";
-  macroLiquidity: "Expanding" | "Neutral" | "Tightening" | "Contracting";
-  speculativeIntensity: "Low" | "Moderate" | "High" | "Extreme";
+  score: number | null; level: CryptoRiskLevel | "Unavailable"; btcDominance: number | null;
+  stablecoinLiquidity: "Expanding" | "Stable" | "Tightening" | "Contracting" | "Unavailable";
+  volatilityRegime: "Low" | "Normal" | "Elevated" | "Extreme" | "Unavailable";
+  leverageConditions: "Low" | "Normal" | "Elevated" | "Extreme" | "Unavailable";
+  marketBreadth: "Strong" | "Moderate" | "Weak" | "Deteriorating" | "Unavailable";
+  macroLiquidity: "Expanding" | "Neutral" | "Tightening" | "Contracting" | "Unavailable";
+  speculativeIntensity: "Low" | "Moderate" | "High" | "Extreme" | "Unavailable";
   breakdown: CryptoSignalVector[]; regime: string; regimeColor: string;
   summary: string; fetchedAt: number;
 }
@@ -83,6 +86,7 @@ const BIAS_COLORS = {
   Bullish: "#00FF88",
   Neutral: "#00D4FF",
   Bearish: "#FF2D55",
+  Unavailable: "#64748B",
 };
 
 const RISK_COLORS = {
@@ -91,6 +95,7 @@ const RISK_COLORS = {
   Elevated: "#FFD700",
   High:     "#FF9500",
   Critical: "#FF2D55",
+  Unavailable: "#64748B",
 };
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -107,7 +112,18 @@ function fmtPct(n: number): string {
   return `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
 }
 
-function fmtSupply(n: number, symbol: string): string {
+function fmtObserved(n: number | null | undefined, decimals = 2): string {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "Unavailable";
+  return fmt(n, decimals);
+}
+
+function fmtPctObserved(n: number | null | undefined): string {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "Unavailable";
+  return fmtPct(n);
+}
+
+function fmtSupply(n: number | null, symbol: string): string {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "Unavailable";
   if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B ${symbol}`;
   if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M ${symbol}`;
   return `${n.toLocaleString()} ${symbol}`;
@@ -164,7 +180,14 @@ function Sparkline({ data, color, height = 40 }: { data: number[]; color: string
 }
 
 // ── Risk gauge arc ────────────────────────────────────────────
-function RiskGauge({ score, size = 80 }: { score: number; size: number }) {
+function RiskGauge({ score, size = 80 }: { score: number | null; size: number }) {
+  if (score == null || !Number.isFinite(score)) {
+    return (
+      <div style={{ width: size, height: size, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#64748B", letterSpacing: "0.08em", textAlign: "center" }}>Unavailable</span>
+      </div>
+    );
+  }
   const level = score >= 8 ? "Critical" : score >= 6.5 ? "High" : score >= 5 ? "Elevated" : score >= 3 ? "Moderate" : "Low";
   const color = RISK_COLORS[level as keyof typeof RISK_COLORS];
   const [anim, setAnim] = useState(0);
@@ -181,8 +204,8 @@ function RiskGauge({ score, size = 80 }: { score: number; size: number }) {
           style={{ transition: "stroke-dasharray 1.4s cubic-bezier(0.23,1,0.32,1)", filter: `drop-shadow(0 0 6px ${color}80)` }} />
       </svg>
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: size > 70 ? "22px" : "16px", color, lineHeight: 1 }}>{anim.toFixed(1)}</span>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(255,255,255,0.3)", letterSpacing: "0.06em" }}>/10</span>
+        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: size > 70 ? "22px" : "16px", color, lineHeight: 1 }}>{score100Value(anim)}</span>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(255,255,255,0.3)", letterSpacing: "0.06em" }}>/100</span>
       </div>
     </div>
   );
@@ -206,9 +229,9 @@ function SignalBar({ label, score, color }: { label: string; score: number; colo
 }
 
 // ── Heatmap cell ──────────────────────────────────────────────
-function HeatCell({ symbol, change, price, rank }: { symbol: string; change: number; price: number; rank: number }) {
-  const intensity = Math.min(Math.abs(change) / 15, 1);
-  const color = change >= 0 ? "#00FF88" : "#FF2D55";
+function HeatCell({ symbol, change, price, rank }: { symbol: string; change: number | null; price: number | null; rank: number | null }) {
+  const intensity = change === null ? 0 : Math.min(Math.abs(change) / 15, 1);
+  const color = change24hColor(change);
   const alpha = Math.round(intensity * 200).toString(16).padStart(2, "0");
   return (
     <div style={{
@@ -220,10 +243,10 @@ function HeatCell({ symbol, change, price, rank }: { symbol: string; change: num
       cursor: "default",
       transition: "all 0.2s ease",
     }}>
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#94A3B8", marginBottom: "2px" }}>#{rank}</div>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#94A3B8", marginBottom: "2px" }}>{rank == null ? "Unavailable" : `#${rank}`}</div>
       <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "11px", color: "#F0F4FF" }}>{symbol}</div>
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color, fontWeight: 600 }}>{fmtPct(change)}</div>
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#64748B", marginTop: "1px" }}>{fmt(price, price < 1 ? 4 : 2)}</div>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color, fontWeight: 600 }}>{change24hText(change)}</div>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#64748B", marginTop: "1px" }}>{fmtObserved(price, typeof price === "number" && price < 1 ? 4 : 2)}</div>
     </div>
   );
 }
@@ -268,7 +291,7 @@ function SystemicRiskPanel({ risk }: { risk: CryptoSystemicRisk }) {
         {/* Metrics grid */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginBottom: "12px" }}>
           {[
-            { label: "BTC Dominance",       value: `${risk.btcDominance.toFixed(1)}%`,  color: risk.btcDominance > 60 ? "#FF9500" : "#00FF88" },
+            { label: "BTC Dominance",       value: formatObservedFixed(risk.btcDominance, 1, "%"),  color: typeof risk.btcDominance === "number" && risk.btcDominance > 60 ? "#FF9500" : typeof risk.btcDominance === "number" ? "#00FF88" : "#94A3B8" },
             { label: "Stablecoin Liq.",     value: risk.stablecoinLiquidity,             color: risk.stablecoinLiquidity === "Expanding" ? "#00FF88" : risk.stablecoinLiquidity === "Contracting" ? "#FF2D55" : "#FFD700" },
             { label: "Volatility Regime",   value: risk.volatilityRegime,               color: risk.volatilityRegime === "Low" ? "#00FF88" : risk.volatilityRegime === "Extreme" ? "#FF2D55" : "#FFD700" },
             { label: "Market Breadth",      value: risk.marketBreadth,                  color: risk.marketBreadth === "Strong" ? "#00FF88" : risk.marketBreadth === "Deteriorating" ? "#FF2D55" : "#FFD700" },
@@ -296,9 +319,9 @@ function AssetCard({ asset, risk }: { asset: CryptoAssetIntelligence; risk: Cryp
   const biasColor  = BIAS_COLORS[asset.signalBias];
   const riskColor  = RISK_COLORS[asset.riskLevel];
   const labelColor = SIGNAL_COLORS[asset.primaryLabel];
-  const change24h  = asset.priceChangePercent24h;
-  const priceColor = change24h >= 0 ? "#00FF88" : "#FF2D55";
-  const TrendIcon  = change24h > 0 ? TrendingUp : change24h < 0 ? TrendingDown : Minus;
+  const change24h  = displayChange24h(asset);
+  const priceColor = change24hColor(change24h);
+  const TrendIcon  = change24h === null ? null : change24h > 0 ? TrendingUp : change24h < 0 ? TrendingDown : Minus;
 
   return (
     <div style={{
@@ -325,10 +348,10 @@ function AssetCard({ asset, risk }: { asset: CryptoAssetIntelligence; risk: Cryp
               </div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "20px", color: "#F0F4FF", lineHeight: 1 }}>{fmt(asset.currentPrice, asset.currentPrice < 1 ? 4 : 2)}</div>
+              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "20px", color: "#F0F4FF", lineHeight: 1 }}>{fmtObserved(asset.currentPrice, typeof asset.currentPrice === "number" && asset.currentPrice < 1 ? 4 : 2)}</div>
               <div style={{ display: "flex", alignItems: "center", gap: "4px", justifyContent: "flex-end", marginTop: "3px" }}>
-                <TrendIcon size={10} style={{ color: priceColor }} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: priceColor, fontWeight: 600 }}>{fmtPct(change24h)}</span>
+                {TrendIcon ? <TrendIcon size={10} style={{ color: priceColor }} /> : null}
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: priceColor, fontWeight: 600 }}>{change24hText(change24h)}</span>
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#374151" }}>24h</span>
               </div>
             </div>
@@ -360,12 +383,14 @@ function AssetCard({ asset, risk }: { asset: CryptoAssetIntelligence; risk: Cryp
         {/* Market metrics */}
         <div style={{ padding: "12px 16px", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
           {[
-            { label: "Market Cap",   value: fmt(asset.marketCap) },
-            { label: "24h Volume",   value: fmt(asset.totalVolume) },
-            { label: "24h High",     value: fmt(asset.high24h, asset.high24h < 1 ? 4 : 2) },
-            { label: "24h Low",      value: fmt(asset.low24h,  asset.low24h  < 1 ? 4 : 2) },
-            { label: "ATH",          value: fmt(asset.ath, asset.ath < 1 ? 4 : 2) },
-            { label: "From ATH",     value: `${asset.distanceFromAth.toFixed(1)}%` },
+            { label: "Market Cap",   value: fmtObserved(asset.marketCap) },
+            { label: "24h Volume",   value: fmtObserved(asset.totalVolume) },
+            { label: "24h High",     value: fmtObserved(asset.high24h, typeof asset.high24h === "number" && asset.high24h < 1 ? 4 : 2) },
+            { label: "24h Low",      value: fmtObserved(asset.low24h, typeof asset.low24h === "number" && asset.low24h < 1 ? 4 : 2) },
+            { label: "ATH",          value: fmtObserved(asset.ath, typeof asset.ath === "number" && asset.ath < 1 ? 4 : 2) },
+            { label: "From ATH",     value: formatObservedFixed(asset.distanceFromAth, 1, "%") },
+            { label: "ATH Change",   value: formatObservedFixed(asset.athChangePercent, 1, "%") },
+            { label: "Circ. Supply", value: fmtSupply(asset.circulatingSupply, asset.symbol) },
           ].map(({ label, value }) => (
             <div key={label}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#374151", letterSpacing: "0.1em", marginBottom: "3px" }}>{label.toUpperCase()}</div>
@@ -585,7 +610,7 @@ function CryptoSearchInner() {
       fetch("/api/crypto/global", { signal: AbortSignal.timeout(8000) })
         .then(res => (res.ok ? res.json() : null))
         .then(payload => {
-          if (!cancelled && payload && typeof payload.totalMarketCap === "number") setRestGlobal(payload);
+          if (!cancelled && payload && typeof payload === "object" && typeof payload.fetchedAt === "number") setRestGlobal(payload);
         })
         .catch(() => {
           if (!cancelled) setRestGlobal(null);
@@ -659,10 +684,12 @@ function CryptoSearchInner() {
           {resolvedGlobal && (
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginBottom: "16px" }}>
               {[
-                { label: "Total Market Cap",  value: fmt(resolvedGlobal.totalMarketCap),                                                    color: resolvedGlobal.marketCapChangePercent24h >= 0 ? "#00FF88" : "#FF2D55" },
-                { label: "24h Volume",        value: fmt(resolvedGlobal.totalVolume24h),                                                     color: "#00D4FF" },
-                { label: "BTC Dominance",     value: `${resolvedGlobal.btcDominance.toFixed(1)}%`,                                           color: resolvedGlobal.btcDominance > 60 ? "#FF9500" : "#00D4FF" },
-                { label: "Market Cap Δ 24h",  value: fmtPct(resolvedGlobal.marketCapChangePercent24h),                                       color: resolvedGlobal.marketCapChangePercent24h >= 0 ? "#00FF88" : "#FF2D55" },
+                { label: "Total Market Cap",  value: fmtObserved(resolvedGlobal.totalMarketCap),                                                    color: typeof resolvedGlobal.marketCapChangePercent24h === "number" && resolvedGlobal.marketCapChangePercent24h < 0 ? "#FF2D55" : typeof resolvedGlobal.marketCapChangePercent24h === "number" ? "#00FF88" : "#94A3B8" },
+                { label: "24h Volume",        value: fmtObserved(resolvedGlobal.totalVolume24h),                                                     color: "#00D4FF" },
+                { label: "BTC Dominance",     value: formatObservedFixed(resolvedGlobal.btcDominance, 1, "%"),                                           color: typeof resolvedGlobal.btcDominance === "number" && resolvedGlobal.btcDominance > 60 ? "#FF9500" : typeof resolvedGlobal.btcDominance === "number" ? "#00D4FF" : "#94A3B8" },
+                { label: "Market Cap Δ 24h",  value: fmtPctObserved(resolvedGlobal.marketCapChangePercent24h),                                       color: typeof resolvedGlobal.marketCapChangePercent24h === "number" && resolvedGlobal.marketCapChangePercent24h < 0 ? "#FF2D55" : typeof resolvedGlobal.marketCapChangePercent24h === "number" ? "#00FF88" : "#94A3B8" },
+                { label: "Active Assets",     value: formatObservedFixed(resolvedGlobal.activeCryptocurrencies, 0),                                  color: "#94A3B8" },
+                { label: "Markets",           value: formatObservedFixed(resolvedGlobal.markets, 0),                                                color: "#94A3B8" },
               ].map(({ label, value, color }) => (
                 <div key={label} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#374151", letterSpacing: "0.1em" }}>{label.toUpperCase()}</span>
@@ -853,7 +880,7 @@ function CryptoSearchInner() {
                 <div key={coin.id} onClick={() => handleSearch(coin.id)} style={{ cursor: "pointer" }}>
                   <HeatCell
                     symbol={coin.symbol}
-                    change={coin.priceChangePercent24h}
+                    change={displayChange24h(coin)}
                     price={coin.currentPrice}
                     rank={coin.marketCapRank}
                   />

@@ -29,12 +29,20 @@ def train(
         raise RuntimeError("No training rows after feature engineering")
     fill = training_fill_values(features)
     filled = apply_fill(features, fill)
-    selected = n_states or CHOSEN_N_STATES
-    comparison = None
+    if n_states is not None and n_states != CHOSEN_N_STATES:
+        raise ValueError(
+            f"Production Systemic Regime training is locked to exactly "
+            f"{CHOSEN_N_STATES} states; received {n_states}."
+        )
+    selected = CHOSEN_N_STATES
+    comparison = {
+        "chosenNStates": CHOSEN_N_STATES,
+        "productionConstraint": "exactly-two-states",
+    }
     if compare_states:
-        by_n = {n: evaluate_n_states(features, panel, n) for n in (2, 3, 4)}
-        comparison = choose_architecture(by_n)
-        selected = comparison["chosenNStates"]
+        # Production-approved bundles remain two-state. Architecture comparison
+        # cannot override the accepted production constraint.
+        comparison["comparisonSkipped"] = "two-state-production-lock"
     pca_model, pc1 = fit_systemic_pca(filled, fill)
     hmm_model, _, _ = fit_hmm(pc1, filled, n_states=selected)
     extra = {
@@ -65,7 +73,7 @@ def main() -> None:
     parser.add_argument("--from-json")
     parser.add_argument("--from-csv")
     parser.add_argument("--model-dir", required=True)
-    parser.add_argument("--n-states", type=int, choices=(2, 3, 4))
+    parser.add_argument("--n-states", type=int, choices=(CHOSEN_N_STATES,))
     parser.add_argument("--skip-compare", action="store_true")
     args = parser.parse_args()
     panel = load_panel(from_json=args.from_json, from_csv=args.from_csv)

@@ -15,10 +15,11 @@
 
 import { invokeLLM } from "./_core/llm";
 import { getQuote, getTopStockPerformers, getTopStockLosers, getTopStockByVolume, getMostVolatileStocks, getSmallCapRunners } from "./yahooProxy";
-import { getTopMarkets, getCoinMarketData, type CoinMarketData } from "./coingeckoProxy";
+import { getTopMarkets, getCoinMarketData, getCoinOHLC, type CoinMarketData } from "./coingeckoProxy";
 import { fetchDailyBars } from "./signalsProxy";
 import { log } from "./logger";
 import { LRUCache } from "./lruCache";
+import { RSI_MIN_COMPLETED_BARS } from "./tradingSignals";
 
 // ── Constants ─────────────────────────────────────────────────
 const MIN_CONFIDENCE = 55;   // Below this → NO_TRADE
@@ -55,8 +56,8 @@ export interface DayTradeSetup {
   name: string;
   assetType: "stock" | "crypto";
   currentPrice: number;
-  changePercent: number;
-  volume: number;
+  changePercent: number | null;
+  volume: number | null;
   relativeVolume: number | null;       // volume / avg volume
   marketCap: number | null;
   capBucket: CapBucket;
@@ -97,8 +98,8 @@ export interface DayTradeReport extends DayTradeSetup {
   marketContext: string;
   vwapStatus: "Above VWAP" | "Below VWAP" | "At VWAP" | "Unknown";
   momentumRating: number;              // 0–100
-  supportLevel: number;
-  resistanceLevel: number;
+  supportLevel: number | null;
+  resistanceLevel: number | null;
   whyTradeExists: string;
   whatCancelsThisTrade: string;
   confidenceReasoning: string;
@@ -200,6 +201,26 @@ function classifyCapBucket(marketCap: number | null): CapBucket {
   return "large";                               // > $10B
 }
 
+/** Observed market fields for a degraded crypto report. Missing prints stay null. */
+export function degradedCryptoMarketFields(coin: {
+  priceChangePercent24h: number | null;
+  totalVolume: number | null;
+  low24h: number | null;
+  high24h: number | null;
+}): {
+  changePercent: number | null;
+  volume: number | null;
+  supportLevel: number | null;
+  resistanceLevel: number | null;
+} {
+  return {
+    changePercent: typeof coin.priceChangePercent24h === "number" ? coin.priceChangePercent24h : null,
+    volume: typeof coin.totalVolume === "number" ? coin.totalVolume : null,
+    supportLevel: typeof coin.low24h === "number" ? coin.low24h : null,
+    resistanceLevel: typeof coin.high24h === "number" ? coin.high24h : null,
+  };
+}
+
 /** Estimate VWAP from OHLC (simplified intraday proxy) */
 function estimateVwap(open: number, high: number, low: number, close: number): number {
   return (high + low + close) / 3;
@@ -226,9 +247,18 @@ function computeAtr(bars: Array<{ high: number; low: number; close: number }>, p
   return recent.reduce((s, v) => s + v, 0) / recent.length;
 }
 
-/** Compute RSI-14 from close prices */
-function computeRsi(closes: number[], period = 14): number {
-  if (closes.length < period + 1) return 50;
+/**
+ * Day trade scores RSI from completed closes and does not compute MACD.
+ * Equities and crypto use MACD_MIN_COMPLETED_BARS (35). A flat series
+ * (no gain and no loss across the completed closes) is withheld here and
+ * inside computeWildersRSI. A genuine all-gain series remains RSI 100.
+ */
+export const DAY_TRADE_MIN_COMPLETED_BARS = RSI_MIN_COMPLETED_BARS;
+export const DAY_TRADE_INSUFFICIENT_BARS = "Insufficient completed historical bars; trading indicators are unavailable.";
+
+/** RSI-14 from completed closes. Short series return null — never a manufactured 50. */
+function computeRsi(closes: number[], period = 14): number | null {
+  if (closes.length < period + 1) return null;
   let gains = 0, losses = 0;
   for (let i = closes.length - period; i < closes.length; i++) {
     const diff = closes[i] - closes[i - 1];
@@ -237,9 +267,101 @@ function computeRsi(closes: number[], period = 14): number {
   }
   const avgGain = gains / period;
   const avgLoss = losses / period;
+  if (avgGain === 0 && avgLoss === 0) return null;
   if (avgLoss === 0) return 100;
   const rs = avgGain / avgLoss;
   return roundTo(100 - 100 / (1 + rs), 1);
+}
+
+/** Completed-bar gate shared by the scanner and the symbol report. */
+export function dayTradeIndicatorGate(closes: number[]): { available: boolean; rsi: number | null } {
+  const completed = closes.filter(close => typeof close === "number" && Number.isFinite(close));
+  if (completed.length < DAY_TRADE_MIN_COMPLETED_BARS) return { available: false, rsi: null };
+  const rsi = computeRsi(completed);
+  if (rsi == null) return { available: false, rsi: null };
+  return { available: true, rsi };
+}
+
+function unavailableDayTradeSetup(input: {
+  symbol: string;
+  name: string;
+  assetType: "stock" | "crypto";
+  price: number;
+  changePercent: number;
+  volume: number;
+  marketCap: number | null;
+  capBucket: CapBucket;
+}): DayTradeSetup {
+  return {
+    symbol: input.symbol,
+    name: input.name,
+    assetType: input.assetType,
+    currentPrice: input.price,
+    changePercent: roundTo(input.changePercent, 2),
+    volume: input.volume,
+    relativeVolume: null,
+    marketCap: input.marketCap,
+    capBucket: input.capBucket,
+    setupType: "NO_TRADE",
+    direction: "bullish",
+    entryZoneLow: 0,
+    entryZoneHigh: 0,
+    target1: 0,
+    target2: 0,
+    stopLoss: 0,
+    invalidationLevel: 0,
+    expectedHoldMinutes: 0,
+    confidence: 0,
+    probabilityRating: 0,
+    riskRewardRatio: 0,
+    riskLevel: "Very High",
+    liquidityRating: "Low",
+    executionScore: 0,
+    executionGrade: "F",
+    catalyst: "Unavailable",
+    whyToday: "Unavailable",
+    reasonForRecommendation: DAY_TRADE_INSUFFICIENT_BARS,
+    regimeImpact: "Unavailable",
+    sectorStrength: null,
+    generatedAt: Date.now(),
+  };
+}
+
+function withheldDayTradeReport(setup: DayTradeSetup): DayTradeReport {
+  return {
+    ...setup,
+    intradayTrend: "Neutral",
+    marketContext: DAY_TRADE_INSUFFICIENT_BARS,
+    vwapStatus: "Unknown",
+    momentumRating: 0,
+    supportLevel: 0,
+    resistanceLevel: 0,
+    whyTradeExists: "Unavailable",
+    whatCancelsThisTrade: "Unavailable",
+    confidenceReasoning: DAY_TRADE_INSUFFICIENT_BARS,
+    catalystSummary: "Unavailable",
+    noTradeReason: DAY_TRADE_INSUFFICIENT_BARS,
+    executionScoreBreakdown: {
+      macroCondition: 0, technicalStructure: 0, liquidityScore: 0,
+      volatilityScore: 0, momentumScore: 0, riskRewardScore: 0,
+    },
+    bullCase: "Unavailable",
+    bearCase: "Unavailable",
+    primaryCatalyst: "Unavailable",
+    largestRisk: "Unavailable",
+    mostLikelyPath: "Unavailable",
+    alternativePath: "Unavailable",
+    recommendedTimeframe: "Unavailable",
+    bestStrategy: "Unavailable",
+    _providerHealth: {
+      price: "unavailable",
+      technicals: "unavailable",
+      regime: "unavailable",
+      aiEnrichment: "unavailable",
+      fundamentals: "not_applicable",
+    },
+    _intelligenceConfidence: "UNAVAILABLE",
+  };
 }
 
 /** Determine momentum direction from price action */
@@ -549,7 +671,7 @@ Relative Volume: ${relVol !== null ? relVol.toFixed(2) + "x" : "Unknown"}
 RSI-14: ${rsi}
 Setup Type: ${setupType}
 Direction: ${direction.toUpperCase()}
-Confidence: ${confidence}/100
+Confidence: confidence not established (the setup score is a rule-based heuristic, not a calibrated confidence)
 Risk/Reward: ${rr}:1
 FAULTLINE Regime: ${regime} (Pressure: ${regimePressure}/100)
 Is NO_TRADE: ${isNoTrade}
@@ -690,8 +812,21 @@ async function buildStockSetup(
   } catch { /* non-fatal */ }
 
   const closes = bars.map(b => b.close);
-  const rsi = computeRsi(closes.length > 0 ? [...closes, price] : [price]);
-  const atr = computeAtr(bars.length > 0 ? bars : [{ high, low, close: price }]);
+  const gate = dayTradeIndicatorGate(closes);
+  if (!gate.available || gate.rsi == null) {
+    return unavailableDayTradeSetup({
+      symbol: ticker,
+      name,
+      assetType: "stock",
+      price,
+      changePercent,
+      volume,
+      marketCap: marketCap ? marketCap / 1_000_000 : null,
+      capBucket: classifyCapBucket(marketCap ? marketCap / 1_000_000 : null),
+    });
+  }
+  const rsi = gate.rsi;
+  const atr = computeAtr(bars);
   const relVol = computeRelVol(volume, avgVolume);
   const capBucket = classifyCapBucket(marketCap ? marketCap / 1_000_000 : null);
 
@@ -770,15 +905,37 @@ async function buildCryptoSetup(
   const volume = coin.totalVolume;
   const marketCap = coin.marketCap;
 
-  if (!price || price <= 0) return null;
+  if (
+    typeof price !== "number" || price <= 0 ||
+    typeof changePercent !== "number" ||
+    typeof coin.high24h !== "number" || typeof coin.low24h !== "number" ||
+    typeof volume !== "number" || typeof marketCap !== "number" ||
+    typeof coin.volatility24h !== "number"
+  ) return null;
 
-  // Estimate ATR from 24h range
+  let ohlcCloses: number[] = [];
+  try {
+    const bars = await getCoinOHLC(coin.id, 30);
+    ohlcCloses = bars.map(bar => bar.close);
+  } catch { /* completed history unavailable */ }
+  const gate = dayTradeIndicatorGate(ohlcCloses);
+  if (!gate.available || gate.rsi == null) {
+    return unavailableDayTradeSetup({
+      symbol: coin.symbol,
+      name: coin.name,
+      assetType: "crypto",
+      price,
+      changePercent,
+      volume,
+      marketCap: marketCap ? marketCap / 1_000_000 : null,
+      capBucket: classifyCapBucket(marketCap / 1_000_000),
+    });
+  }
+  const rsi = gate.rsi;
+
+  // ATR still uses the reported 24h range; it is not an RSI or a trade signal.
   const range = coin.high24h - coin.low24h;
   const atr = range > 0 ? range * 0.3 : price * 0.02;
-
-  // Estimate RSI from sparkline
-  const closes = coin.sparkline7d ?? [];
-  const rsi = computeRsi(closes.length > 1 ? closes : [price]);
 
   // Relative volume: use volatility as proxy
   const relVol = coin.volatility24h > 3 ? 2.0 : coin.volatility24h > 1.5 ? 1.5 : 1.0;
@@ -904,12 +1061,15 @@ export async function dayTradeScanner(input: ScannerInput): Promise<DayTradeSetu
       for (let i = 0; i < Math.min(filtered.length, 20); i += BATCH) {
         const batch = filtered.slice(i, i + BATCH);
         const setups = await Promise.all(
-          batch.map(p => buildStockSetup(
-            p.ticker, p.name, p.price, p.changePercent,
-            p.volume, p.avgVolume, p.marketCap,
-            p.price * 0.995, p.price * 1.02, p.price * 0.98, // open/high/low proxy
-            input.direction, input.riskProfile, regime, regimePressure
-          ).catch(() => null))
+          batch.map(p => {
+            if (p.price == null || p.changePercent == null || p.volume == null) return null;
+            return buildStockSetup(
+              p.ticker, p.name, p.price, p.changePercent,
+              p.volume, p.avgVolume, p.marketCap,
+              p.price * 0.995, p.price * 1.02, p.price * 0.98, // open/high/low proxy
+              input.direction, input.riskProfile, regime, regimePressure
+            ).catch(() => null);
+          })
         );
         for (const s of setups) {
           if (s && s.setupType !== "NO_TRADE" && s.confidence >= MIN_CONFIDENCE) {
@@ -927,7 +1087,9 @@ export async function dayTradeScanner(input: ScannerInput): Promise<DayTradeSetu
   if (input.assetType === "crypto" || input.assetType === "both") {
     try {
       const coins = await getTopMarkets(50);
-      const sorted = [...coins].sort((a, b) => Math.abs(b.priceChangePercent24h) - Math.abs(a.priceChangePercent24h));
+      const sorted = coins
+        .filter((coin): coin is typeof coin & { priceChangePercent24h: number } => typeof coin.priceChangePercent24h === "number")
+        .sort((a, b) => Math.abs(b.priceChangePercent24h) - Math.abs(a.priceChangePercent24h));
 
       const BATCH = 5;
       for (let i = 0; i < Math.min(sorted.length, 20); i += BATCH) {
@@ -1054,8 +1216,7 @@ export async function dayTradeSymbolSetup(
       log.warn("[DayTradeSymbolSetup] Crypto setup unavailable, returning degraded report", { symbol });
       return {
         symbol: symbol.toUpperCase(), name: symbol.toUpperCase(), assetType: "crypto" as const,
-        currentPrice: coin.currentPrice, changePercent: coin.priceChangePercent24h ?? 0,
-        volume: coin.totalVolume ?? 0, relativeVolume: null, marketCap: coin.marketCap ?? null,
+        currentPrice: coin.currentPrice, ...degradedCryptoMarketFields(coin), relativeVolume: null, marketCap: coin.marketCap ?? null,
         capBucket: "mixed" as const, setupType: "NO_TRADE", direction: "bullish" as const,
         entryZoneLow: 0, entryZoneHigh: 0, target1: 0, target2: 0, stopLoss: 0,
         invalidationLevel: 0, expectedHoldMinutes: 0, confidence: 0, probabilityRating: 0,
@@ -1064,8 +1225,7 @@ export async function dayTradeSymbolSetup(
         catalyst: "N/A", whyToday: "N/A", reasonForRecommendation: "N/A",
         regimeImpact: "N/A", sectorStrength: "N/A", intradayTrend: "Neutral",
         marketContext: "Setup calculation temporarily unavailable. Price data retrieved successfully.",
-        vwapStatus: "Unknown", momentumRating: 0, supportLevel: coin.low24h ?? 0,
-        resistanceLevel: coin.high24h ?? 0, whyTradeExists: "N/A", whatCancelsThisTrade: "N/A",
+        vwapStatus: "Unknown", momentumRating: 0, whyTradeExists: "N/A", whatCancelsThisTrade: "N/A",
         confidenceReasoning: "N/A", catalystSummary: "N/A",
         noTradeReason: "Trade setup calculation temporarily unavailable. Price data was retrieved successfully but the setup engine encountered an error.",
         executionScoreBreakdown: emptyBreakdown, bullCase: "N/A", bearCase: "N/A",
@@ -1077,13 +1237,28 @@ export async function dayTradeSymbolSetup(
     }
 
     const price = coin.currentPrice;
-    const closes = coin.sparkline7d ?? [];
-    const rsi = computeRsi(closes.length > 1 ? closes : [price]);
-    const vwap = estimateVwap(price * 0.99, coin.high24h, coin.low24h, price);
+    const ohlc = await getCoinOHLC(coin.id, 30).catch(() => []);
+    const gate = dayTradeIndicatorGate(ohlc.map(bar => bar.close));
+    if (setup.reasonForRecommendation === DAY_TRADE_INSUFFICIENT_BARS || !gate.available || gate.rsi == null) {
+      const withheld = withheldDayTradeReport(setup);
+      reportCache.set(cacheKey, withheld);
+      return withheld;
+    }
+    const rsi = gate.rsi;
+    const high = coin.high24h;
+    const low = coin.low24h;
+    const volume = coin.totalVolume;
+    const changePercent = coin.priceChangePercent24h;
+    if (typeof price !== "number" || typeof high !== "number" || typeof low !== "number" || typeof volume !== "number" || typeof changePercent !== "number") {
+      const withheld = withheldDayTradeReport(setup);
+      reportCache.set(cacheKey, withheld);
+      return withheld;
+    }
+    const vwap = estimateVwap(price * 0.99, high, low, price);
 
     const enrichment = await enrichWithLLM(
-      setup.symbol, setup.name, "crypto", price, coin.priceChangePercent24h,
-      coin.totalVolume, setup.relativeVolume, rsi,
+      setup.symbol, setup.name, "crypto", price, changePercent,
+      volume, setup.relativeVolume, rsi,
       setup.setupType, setup.direction,
       setup.confidence, regime, regimePressure, setup.riskRewardRatio,
       setup.setupType === "NO_TRADE"
@@ -1101,7 +1276,7 @@ export async function dayTradeSymbolSetup(
 
     const { breakdown: executionScoreBreakdown } = computeExecutionScore(
       regimePressure, rsi, setup.setupType, setup.relativeVolume, setup.liquidityRating,
-      coin.priceChangePercent24h, setup.riskRewardRatio, setup.confidence,
+      changePercent, setup.riskRewardRatio, setup.confidence,
       setup.setupType === "NO_TRADE"
     );
 
@@ -1110,9 +1285,9 @@ export async function dayTradeSymbolSetup(
       intradayTrend: enrichmentCrypto.intradayTrend,
       marketContext: enrichmentCrypto.marketContext,
       vwapStatus: price > vwap ? "Above VWAP" : price < vwap ? "Below VWAP" : "At VWAP",
-      momentumRating: assessMomentum(coin.priceChangePercent24h, setup.relativeVolume, rsi),
-      supportLevel: roundTo(coin.low24h, 4),
-      resistanceLevel: roundTo(coin.high24h, 4),
+      momentumRating: assessMomentum(changePercent, setup.relativeVolume, rsi),
+      supportLevel: roundTo(low, 4),
+      resistanceLevel: roundTo(high, 4),
       whyTradeExists: enrichmentCrypto.whyTradeExists,
       whatCancelsThisTrade: enrichmentCrypto.whatCancelsThisTrade,
       confidenceReasoning: enrichmentCrypto.confidenceReasoning,
@@ -1144,7 +1319,7 @@ export async function dayTradeSymbolSetup(
 
   // ── Stock report ──
   const quote = await getQuote(symbol);
-  if (!quote || !quote.price || quote.source === "error") {
+  if (!quote || !quote.price || quote.source === "error" || quote.changePercent == null || quote.volume == null) {
     const noTradeReport: DayTradeReport = {
       symbol: symbol.toUpperCase(),
       name: symbol.toUpperCase(),
@@ -1202,8 +1377,8 @@ export async function dayTradeSymbolSetup(
   }
 
   const price = quote.price;
-  const changePercent = quote.changePercent ?? 0;
-  const volume = quote.volume ?? 0;
+  const changePercent = quote.changePercent;
+  const volume = quote.volume;
   const open = quote.open ?? price;
   const high = quote.high ?? price * 1.01;
   const low = quote.low ?? price * 0.99;
@@ -1216,7 +1391,8 @@ export async function dayTradeSymbolSetup(
   } catch { /* non-fatal */ }
 
   const closes = bars.map(b => b.close);
-  const rsi = computeRsi(closes.length > 0 ? [...closes, price] : [price]);
+  const gate = dayTradeIndicatorGate(closes);
+  const rsi = gate.rsi;
   const atr = computeAtr(bars.length > 0 ? bars : [{ high, low, close: price }]);
   const vwap = estimateVwap(open, high, low, price);
 
@@ -1252,6 +1428,12 @@ export async function dayTradeSymbolSetup(
       generatedAt: Date.now(),
       _degradedSources: ["setup-engine"],
     } as DayTradeReport;
+  }
+
+  if (setup.reasonForRecommendation === DAY_TRADE_INSUFFICIENT_BARS || rsi == null) {
+    const withheld = withheldDayTradeReport(setup);
+    reportCache.set(cacheKey, withheld);
+    return withheld;
   }
 
   const enrichment = await enrichWithLLM(
@@ -1345,21 +1527,24 @@ export async function getDayTradeFavorability(): Promise<MarketFavorability> {
       getTopMarkets(10).catch(() => []),
     ]);
 
-    bullishCount = gainers.filter(g => g.changePercent > 2).length;
-    bearishCount = losers.filter(l => l.changePercent < -2).length;
-    highConfCount = gainers.filter(g => g.changePercent > 3 && (g.avgVolume ? g.volume / g.avgVolume > 1.5 : false)).length;
+    bullishCount = gainers.filter(g => g.changePercent != null && g.changePercent > 2).length;
+    bearishCount = losers.filter(l => l.changePercent != null && l.changePercent < -2).length;
+    highConfCount = gainers.filter(g => g.changePercent != null && g.volume != null && g.changePercent > 3 && (g.avgVolume ? g.volume / g.avgVolume > 1.5 : false)).length;
 
     topMovers = [
-      ...gainers.slice(0, 3).map(g => ({ symbol: g.ticker, name: g.name, changePercent: g.changePercent, assetType: "stock" as const })),
-      ...coins.slice(0, 3).map(c => ({ symbol: c.symbol.toUpperCase(), name: c.name, changePercent: c.priceChangePercent24h, assetType: "crypto" as const })),
+      ...gainers.flatMap(g => (g.changePercent == null ? [] : [{ symbol: g.ticker, name: g.name, changePercent: g.changePercent, assetType: "stock" as const }])).slice(0, 3),
+      ...coins.flatMap(c => (typeof c.priceChangePercent24h === "number" ? [{ symbol: c.symbol.toUpperCase(), name: c.name, changePercent: c.priceChangePercent24h, assetType: "crypto" as const }] : [])).slice(0, 3),
     ].sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent)).slice(0, 6);
 
-    topRelVol = byVol.slice(0, 5).map(s => ({
-      symbol: s.ticker,
-      name: s.name,
-      relVol: s.avgVolume ? roundTo(s.volume / s.avgVolume, 2) : 1.0,
-      assetType: "stock" as const,
-    }));
+    topRelVol = byVol.flatMap(s => {
+      if (s.volume == null) return [];
+      return [{
+        symbol: s.ticker,
+        name: s.name,
+        relVol: s.avgVolume ? roundTo(s.volume / s.avgVolume, 2) : 1.0,
+        assetType: "stock" as const,
+      }];
+    }).slice(0, 5);
   } catch { /* non-fatal */ }
 
   // Compute overall score

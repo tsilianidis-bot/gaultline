@@ -45,7 +45,7 @@ function buildFallbackInterpretation(
   );
 
   return {
-    headline: `${regime.currentRegime} — ${probability.bull > probability.bear ? "Bullish" : "Bearish"} bias with ${decision.conviction}% conviction`,
+    headline: `${regime.currentRegime} — ${probability.bull > probability.bear ? "Bullish" : "Bearish"} bias`,
     whyNow: `Systemic pressure at ${p}/100 with ${topVector.label} as the primary driver. ${regime.description}`,
     supportingEvidence: probability.bullEvidence.slice(0, 2).join(". "),
     contradictingEvidence: probability.bearEvidence.slice(0, 2).join(". "),
@@ -82,19 +82,19 @@ function buildInterpretationPrompt(
 ## Current FMOS Engine Outputs
 
 **Pressure Index:** ${p}/100
-**Regime:** ${regime.currentRegime} (confidence: ${regime.confidence}%, stability: ${regime.stability}%)
-**Transition Risk:** ${regime.transitionRisk}% (30-day transition probability: ${regime.transitionProbability30d}%)
-**Market DNA:** ${dna.currentDNA} (${dna.confidence}% confidence)
+**Regime:** ${regime.currentRegime} (confidence not established, stability: ${regime.stability}%)
+**Transition Risk:** not offered as a probability (uncalibrated)
+**Market DNA:** ${dna.currentDNA} (confidence not established)
 
 **Top Risk Vectors:** ${topVectors}
 
-**Probability Distribution:** Bull ${probability.bull}% / Neutral ${probability.neutral}% / Bear ${probability.bear}%
+**Scenario weights:** uncalibrated (not offered as probabilities). FAULTLINE does not offer a crash probability; state no probability percentage.
 **Primary Driver:** ${probability.primaryDriver}
 
-**Decision:** ${decision.verdict} (conviction: ${decision.conviction}%)
+**Decision:** ${decision.verdict} (conviction not established)
 **Action Bias:** ${decision.actionBias}
 
-**Confidence:** ${confidence.label} (${confidence.score}/100)
+**Confidence:** confidence not established
 ${confidence.contradictions.length > 0 ? `**Contradictions:** ${confidence.contradictions.join("; ")}` : ""}
 
 **Closest Historical Analog:** ${topAnalog.label} (${topAnalog.similarity}% similarity)
@@ -202,7 +202,7 @@ export function computeQuickInterpretation(
 ): Pick<FMOSAIInterpretation, "headline" | "whyNow" | "portfolioImplications"> {
   const p = pressure.overallPressure;
 
-  const headline = `${regime.currentRegime} — ${decision.verdict} (${probability.bull}% bull / ${probability.bear}% bear)`;
+  const headline = `${regime.currentRegime} — ${decision.verdict}`;
   const whyNow = decision.primaryReason;
   const portfolioImplications = decision.positionSizing;
 

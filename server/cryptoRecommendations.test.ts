@@ -88,6 +88,8 @@ vi.mock("./coingeckoProxy", () => {
       };
       return Promise.resolve(assets[coinId] ?? null);
     }),
+    completedCoinDailyBars: (bars: Array<{ timestamp: number }>, nowMs = Date.now()) =>
+      bars.filter(bar => Number.isFinite(bar.timestamp) && bar.timestamp <= nowMs - 35 * 60 * 1000),
     getCoinOHLC: vi.fn().mockImplementation((coinId: string) => {
       const ohlcData: Record<string, ReturnType<typeof makeMockOHLC>> = {
         "fetch-ai":       makeMockOHLC(1.42,   0.085),

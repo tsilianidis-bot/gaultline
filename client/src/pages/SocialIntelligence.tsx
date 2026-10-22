@@ -1,6 +1,6 @@
 /* ============================================================
    FAULTLINE — Social Intelligence™
-   Real-time market narrative tracking, sentiment analysis,
+   Regularly refreshed market narrative tracking, sentiment analysis,
    and social buzz monitoring powered by Polygon.io News API
    and Yahoo Finance trending/screener data.
    ============================================================ */
@@ -17,11 +17,12 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TickerChip } from "@/components/TickerActionMenu";
+import { evidenceStatusLabel } from "../../../shared/evidenceStatus";
 import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Types (mirrored from server) ──────────────────────────────
 type SentimentLabel =
-  | "STRONGLY BULLISH" | "BULLISH" | "NEUTRAL" | "BEARISH" | "STRONGLY BEARISH";
+  | "STRONGLY BULLISH" | "BULLISH" | "NEUTRAL" | "BEARISH" | "STRONGLY BEARISH" | "UNAVAILABLE";
 
 type TickerSentiment = "bullish" | "bearish" | "neutral" | "unknown";
 type NarrativeSentiment = "bullish" | "bearish" | "neutral";
@@ -36,8 +37,8 @@ interface TrendingTicker {
   marketCap: number | null;
   marketState: string | null;
   sentiment: TickerSentiment;
-  buzzScore: number;
-  newsCount: number;
+  buzzScore: number | null;
+  newsCount: number | null;
   latestHeadline: string | null;
 }
 
@@ -151,23 +152,23 @@ interface RedditPost {
 interface MultiSourceSocialData {
   symbol: string;
   assetType: "stock" | "crypto";
-  socialIntelligenceScore: number;
+  socialIntelligenceScore: number | null;
   overallSentiment: SentimentLabel;
-  overallSentimentScore: number;
-  overallBullishPct: number;
-  overallBearishPct: number;
+  overallSentimentScore: number | null;
+  overallBullishPct: number | null;
+  overallBearishPct: number | null;
   sources: SourceSentiment[];
   socialVolume: number;
-  socialMomentum: "rising" | "falling" | "stable";
+  socialMomentum: "rising" | "falling" | "stable" | "unknown";
   discussionVelocity: string;
   sentimentTrends: SentimentTrend[];
   topBullishArguments: string[];
   topBearishArguments: string[];
   keyTopics: string[];
   influencerMentions: string[];
-  retailInterestScore: number;
-  crowdConvictionScore: number;
-  contrarianSignalScore: number;
+  retailInterestScore: number | null;
+  crowdConvictionScore: number | null;
+  contrarianSignalScore: number | null;
   memeHypeDetected: boolean;
   memeHypeDescription: string;
   socialRiskWarnings: string[];
@@ -181,6 +182,7 @@ interface MultiSourceSocialData {
 
 // ── Color helpers ─────────────────────────────────────────────
 function sentimentColor(s: TickerSentiment | ArticleSentiment | NarrativeSentiment | SentimentLabel): string {
+  if (s === "UNAVAILABLE") return "#94A3B8";
   if (s === "bullish" || s === "positive" || s === "BULLISH" || s === "STRONGLY BULLISH") return "#00FF88";
   if (s === "bearish" || s === "negative" || s === "BEARISH" || s === "STRONGLY BEARISH") return "#FF2D55";
   return "#FF9500";
@@ -232,7 +234,10 @@ function timeAgo(utc: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function BuzzBar({ score }: { score: number }) {
+function BuzzBar({ score }: { score: number | null }) {
+  if (score == null) {
+    return <span style={{ fontSize: 11, color: "#94A3B8", fontFamily: "monospace" }}>Unavailable</span>;
+  }
   const color = score >= 70 ? "#FF2D55" : score >= 40 ? "#FF9500" : "#00D4FF";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -307,7 +312,7 @@ function TrendingCard({ t }: { t: TrendingTicker }) {
                 </span>
               </TooltipTrigger>
               <TooltipContent>
-                Sentiment derived from {t.newsCount} Polygon.io news articles with AI-generated insights
+                Sentiment derived from {t.newsCount == null ? "an unavailable" : t.newsCount} Polygon.io news article count
               </TooltipContent>
             </Tooltip>
           </div>
@@ -336,7 +341,7 @@ function TrendingCard({ t }: { t: TrendingTicker }) {
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            Buzz score = log-scaled news volume × sentiment intensity. Range 0–100. Based on {t.newsCount} article{t.newsCount !== 1 ? "s" : ""} in the last 24h.
+            Buzz score = log-scaled news volume × sentiment intensity. Range 0–100. Based on {t.newsCount == null ? "an unavailable article count" : `${t.newsCount} article${t.newsCount !== 1 ? "s" : ""}`} in the last 24h.
           </TooltipContent>
         </Tooltip>
       </div>
@@ -350,7 +355,7 @@ function TrendingCard({ t }: { t: TrendingTicker }) {
             </div>
             <div>
               <div style={{ fontSize: 10, color: "var(--fl-text-muted)", marginBottom: 2 }}>NEWS COUNT</div>
-              <div style={{ fontSize: 12, color: "var(--fl-text-primary)", fontFamily: "monospace" }}>{t.newsCount}</div>
+              <div style={{ fontSize: 12, color: "var(--fl-text-primary)", fontFamily: "monospace" }}>{t.newsCount == null ? "Unavailable" : t.newsCount}</div>
             </div>
             <div>
               <div style={{ fontSize: 10, color: "var(--fl-text-muted)", marginBottom: 2 }}>MARKET STATE</div>
@@ -608,10 +613,10 @@ function StockTwitsCard({ msg }: { msg: StockTwitsMessage }) {
 }
 
 // ── Score Gauge ──────────────────────────────────────────────
-function ScoreGauge({ score, label, color }: { score: number; label: string; color: string }) {
+function ScoreGauge({ score, label, color }: { score: number | null; label: string; color: string }) {
   const radius = 28;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (score / 100) * circumference;
+  const offset = score == null ? circumference : circumference - (score / 100) * circumference;
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
       <svg width={72} height={72} viewBox="0 0 72 72">
@@ -622,7 +627,7 @@ function ScoreGauge({ score, label, color }: { score: number; label: string; col
           strokeLinecap="round" transform="rotate(-90 36 36)"
           style={{ transition: "stroke-dashoffset 0.8s ease" }}
         />
-        <text x={36} y={40} textAnchor="middle" fill={color} fontSize={14} fontWeight={700} fontFamily="monospace">{score}</text>
+        <text x={36} y={40} textAnchor="middle" fill={score == null ? "#94A3B8" : color} fontSize={score == null ? 10 : 14} fontWeight={700} fontFamily="monospace">{score == null ? "N/A" : score}</text>
       </svg>
       <span style={{ fontSize: 10, color: "var(--fl-text-muted)", textAlign: "center", letterSpacing: "0.05em" }}>{label}</span>
     </div>
@@ -850,11 +855,11 @@ function TickerSearchPanel() {
             <ScoreGauge score={data.contrarianSignalScore} label="CONTRARIAN SIGNAL" color="#FF2D55" />
             <div style={{ flex: 1, minWidth: 160, display: "flex", flexDirection: "column", justifyContent: "center", gap: 8 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                <span style={{ fontSize: 10, color: "#00FF88", fontWeight: 700 }}>▲ {data.overallBullishPct}% Bull</span>
-                <span style={{ fontSize: 10, color: "#FF2D55", fontWeight: 700 }}>{data.overallBearishPct}% Bear ▼</span>
+                <span style={{ fontSize: 10, color: "#00FF88", fontWeight: 700 }}>{data.overallBullishPct == null ? "Bullish mix unavailable" : `▲ ${data.overallBullishPct}% Bull`}</span>
+                <span style={{ fontSize: 10, color: "#FF2D55", fontWeight: 700 }}>{data.overallBearishPct == null ? "" : `${data.overallBearishPct}% Bear ▼`}</span>
               </div>
               <div style={{ height: 8, borderRadius: 4, background: "rgba(255,45,85,0.3)", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${data.overallBullishPct}%`, background: "#00FF88", borderRadius: 4, transition: "width 0.4s" }} />
+                <div style={{ height: "100%", width: `${data.overallBullishPct ?? 0}%`, background: "#00FF88", borderRadius: 4, transition: "width 0.4s" }} />
               </div>
               <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
                 <div>
@@ -863,8 +868,8 @@ function TickerSearchPanel() {
                 </div>
                 <div>
                   <div style={{ fontSize: 10, color: "var(--fl-text-muted)" }}>MOMENTUM</div>
-                  <div style={{ fontSize: 12, fontFamily: "monospace", color: data.socialMomentum === "rising" ? "#00FF88" : data.socialMomentum === "falling" ? "#FF2D55" : "#FF9500" }}>
-                    {data.socialMomentum === "rising" ? "↑ Rising" : data.socialMomentum === "falling" ? "↓ Falling" : "→ Stable"}
+                  <div style={{ fontSize: 12, fontFamily: "monospace", color: data.socialMomentum === "rising" ? "#00FF88" : data.socialMomentum === "falling" ? "#FF2D55" : data.socialMomentum === "stable" ? "#FF9500" : "#94A3B8" }}>
+                    {data.socialMomentum === "rising" ? "↑ Rising" : data.socialMomentum === "falling" ? "↓ Falling" : data.socialMomentum === "stable" ? "→ Stable" : "Unavailable"}
                   </div>
                 </div>
                 <div>
@@ -1126,7 +1131,7 @@ function TickerSearchPanel() {
 function SocialIntelligenceInner() {
   useSEO({
     title: "Social Intelligence | FAULTLINE",
-    description: "Real-time market narrative tracking, sentiment analysis, and social buzz monitoring.",
+    description: "Market narrative tracking, sentiment analysis, and social buzz monitoring.",
   });
 
   const [activeTab, setActiveTab] = useState<"trending" | "sentiment" | "news" | "narratives" | "active" | "search">("search");
@@ -1136,6 +1141,10 @@ function SocialIntelligenceInner() {
     staleTime: 4 * 60 * 1000, // 4 minutes
     refetchInterval: 5 * 60 * 1000, // auto-refresh every 5 minutes
   });
+  const socialFeedStatus = data
+    ? evidenceStatusLabel({ observedAtMs: data.fetchedAt, hasObservation: Number.isFinite(data.fetchedAt), liveEligible: false })
+    : isLoading ? "LOADING" : "UNAVAILABLE";
+  const socialFeedColor = socialFeedStatus === "LIVE" ? "#00FF88" : socialFeedStatus === "RECENT" || socialFeedStatus === "DELAYED" ? "#FFD700" : "#94A3B8";
 
   const filteredNews = useMemo(() => {
     if (!data?.latestNews) return [];
@@ -1157,7 +1166,7 @@ function SocialIntelligenceInner() {
     <div style={{ minHeight: "100vh", background: "var(--fl-void)", color: "var(--fl-text-primary)" }}>
       <PageHeader
         title="Social Intelligence"
-        subtitle="Real-time narrative tracking, sentiment analysis, and social buzz monitoring"
+        subtitle="Narrative tracking, sentiment analysis, and social buzz monitoring, refreshed every 5 minutes"
       />
 
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 16px 40px" }}>
@@ -1173,12 +1182,12 @@ function SocialIntelligenceInner() {
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <div style={{
                 width: 7, height: 7, borderRadius: "50%",
-                background: data ? "#00FF88" : "#FF9500",
-                boxShadow: data ? "0 0 6px #00FF88" : "0 0 6px #FF9500",
+                background: socialFeedColor,
+                boxShadow: socialFeedStatus === "UNAVAILABLE" || socialFeedStatus === "STALE" ? "none" : `0 0 6px ${socialFeedColor}`,
                 animation: "fl-pulse 5s infinite",
               }} />
               <span style={{ fontSize: 11, color: "var(--fl-text-secondary)", fontFamily: "monospace" }}>
-                {data ? "LIVE" : isLoading ? "LOADING" : "OFFLINE"}
+                {socialFeedStatus}
               </span>
             </div>
             {data && (

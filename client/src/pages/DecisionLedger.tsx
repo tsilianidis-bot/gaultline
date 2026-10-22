@@ -1,7 +1,9 @@
 /**
  * FAULTLINE — Decision Ledger
- * Tracks every Ask Intelligence recommendation with verdict, confidence,
- * and outcome tracking. Supports manual user review AND automated evaluation
+ * Tracks every Ask Intelligence recommendation with verdict and outcome
+ * tracking. QA r12: no confidence or opportunity score is shown — the logged
+ * values are client defaults (confidence ?? 50, opportunityScore ?? 5), not
+ * model output, and the server withholds them. Supports manual user review AND automated evaluation
  * via the scheduled heartbeat engine.
  *
  * Intelligence Contract v2 (NOT implemented): future stage rows
@@ -36,8 +38,10 @@ interface LedgerEntry {
   ticker: string | null;
   assetType: "stock" | "crypto" | null;
   verdict: string;
-  opportunityScore: number;
-  confidence: number;
+  /** QA r12: withheld by the server (null); never displayed. */
+  opportunityScore?: number | null;
+  /** QA r12: withheld by the server (null); never displayed. */
+  confidence?: number | null;
   primaryDriver: string;
   expectedTimeframe: string;
   queryType: string;
@@ -246,18 +250,6 @@ function LedgerRow({ entry, onUpdateOutcome }: {
               <div style={{ ...MONO, fontSize: "11px", fontWeight: 700, color: delta.color }}>{delta.pct}</div>
             </div>
           )}
-          <div style={{ textAlign: "center" }}>
-            <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "8px" }}>OPP</div>
-            <div style={{ ...MONO, fontSize: "11px", fontWeight: 700, color: entry.opportunityScore >= 65 ? "#00FF88" : entry.opportunityScore >= 40 ? "#FFD700" : "#FF4444" }}>
-              {entry.opportunityScore}
-            </div>
-          </div>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "8px" }}>CONF</div>
-            <div style={{ ...MONO, fontSize: "11px", fontWeight: 700, color: entry.confidence >= 70 ? "#00FF88" : entry.confidence >= 45 ? "#FFD700" : "#FF4444" }}>
-              {entry.confidence}%
-            </div>
-          </div>
         </div>
 
         {/* Expand toggle */}

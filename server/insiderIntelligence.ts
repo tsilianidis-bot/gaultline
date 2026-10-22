@@ -108,6 +108,8 @@ export interface InsiderRadarOutput {
     clusterCount: number;
   };
   lastUpdated: string;
+  recordClass: "synthetic_generator";
+  genuineSecFiling: false;
 }
 
 export interface InsiderCompanyOutput {
@@ -125,6 +127,8 @@ export interface InsiderCompanyOutput {
     subsequentReturn: number;
     wasCorrect: boolean;
   }>;
+  recordClass: "synthetic_generator";
+  genuineSecFiling: false;
 }
 
 // ── Deterministic seed helpers ────────────────────────────────
@@ -679,6 +683,8 @@ export async function getInsiderRadar(): Promise<InsiderRadarOutput> {
       clusterCount: clusterAlerts.length,
     },
     lastUpdated: new Date().toISOString(),
+    recordClass: "synthetic_generator",
+    genuineSecFiling: false,
   };
 }
 
@@ -688,7 +694,7 @@ export async function getInsiderCompany(ticker: string): Promise<InsiderCompanyO
   const timeline = buildTimeline(ticker.toUpperCase(), dateStr);
   const accuracyHistory = buildAccuracyHistory(ticker.toUpperCase());
 
-  return { profile, timeline, accuracyHistory };
+  return { profile, timeline, accuracyHistory, recordClass: "synthetic_generator", genuineSecFiling: false };
 }
 
 export async function getInsiderAlertsForTicker(ticker: string): Promise<{
@@ -697,6 +703,8 @@ export async function getInsiderAlertsForTicker(ticker: string): Promise<{
   impactPoints: number;
   recentActivity: string;
   aiSummary: string;
+  recordClass: "synthetic_generator";
+  genuineSecFiling: false;
 }> {
   const dateStr = new Date().toISOString().split("T")[0];
   const profile = await buildCompanyProfile(ticker.toUpperCase(), dateStr);
@@ -725,5 +733,7 @@ export async function getInsiderAlertsForTicker(ticker: string): Promise<{
     impactPoints: profile.impactPoints,
     recentActivity,
     aiSummary: profile.aiInterpretation,
+    recordClass: "synthetic_generator",
+    genuineSecFiling: false,
   };
 }

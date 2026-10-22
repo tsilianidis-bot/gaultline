@@ -6,6 +6,12 @@ import {
   getAshaContextProvenance,
   invokeAshaGateway,
 } from "./ashaGateway";
+import { readPlatoConfig, type PlatoConfig } from "./plato/config";
+import { PlatoUnavailableError } from "./plato/errors";
+
+function testConfig(models: string[]): PlatoConfig {
+  return { ...readPlatoConfig({}), models, retryBaseDelayMs: 0 };
+}
 
 const marketState = {
   version: "1.0",
@@ -111,53 +117,44 @@ describe("ASHA canonical context gateway", () => {
     expect(block).not.toContain("Change 7");
   });
 
-  it("fails over to the next live model and records the boundary trace", async () => {
+  it("routes through the PLATO model chain and records the fallback in the boundary trace", async () => {
     const invokeModel = vi.fn()
-      .mockRejectedValueOnce(new Error("primary unavailable"))
+      .mockRejectedValueOnce(new Error("LLM invoke failed: 429 Too Many Requests – RESOURCE_EXHAUSTED"))
       .mockResolvedValueOnce({
         id: "response-1",
         created: 1,
-        model: "gpt-5",
+        model: "gemini-3.1-flash-lite",
         choices: [{ index: 0, message: { role: "assistant", content: "{}" }, finish_reason: "stop" }],
       });
 
     const result = await invokeAshaGateway(
       { messages: [{ role: "user", content: "What is happening?" }] },
-      {
-        resolveModels: async () => ({ candidates: ["claude-sonnet-4-6", "gpt-5"], source: "live-catalog", resolvedAt: "2026-07-23T13:00:00.000Z" }),
-        invokeModel,
-      },
+      { invokeModel, config: testConfig(["gemini-3-flash-preview", "gemini-3.1-flash-lite"]), sleep: async () => {} },
     );
 
-    expect(result.trace).toEqual({
-      selectedModel: "gpt-5",
-      attemptedModels: ["claude-sonnet-4-6", "gpt-5"],
-      resolutionSource: "live-catalog",
-      resolvedAt: "2026-07-23T13:00:00.000Z",
+    expect(result.trace).toMatchObject({
+      selectedModel: "gemini-3.1-flash-lite",
+      attemptedModels: ["gemini-3-flash-preview", "gemini-3.1-flash-lite"],
+      resolutionSource: "router-default",
     });
+    expect(invokeModel.mock.calls.map(([params]) => params.model)).toEqual([
+      "gemini-3-flash-preview",
+      "gemini-3.1-flash-lite",
+    ]);
   });
 
-  it("fails explicitly after every resolved model candidate rejects", async () => {
+  it("throws a typed PlatoUnavailableError after every model in the chain fails", async () => {
     const invokeModel = vi.fn()
-      .mockRejectedValueOnce(new Error("primary unavailable"))
-      .mockRejectedValueOnce(new Error("secondary unavailable"));
+      .mockRejectedValueOnce(new Error("LLM invoke failed: 429 Too Many Requests – RESOURCE_EXHAUSTED"))
+      .mockRejectedValueOnce(new Error("LLM invoke failed: 429 Too Many Requests – RESOURCE_EXHAUSTED"));
 
-    await expect(invokeAshaGateway(
+    const failure = await invokeAshaGateway(
       { messages: [{ role: "user", content: "What is happening?" }] },
-      {
-        resolveModels: async () => ({
-          candidates: ["claude-sonnet-4-6", "gpt-5"],
-          source: "live-catalog",
-          resolvedAt: "2026-07-23T13:00:00.000Z",
-        }),
-        invokeModel,
-      },
-    )).rejects.toThrow("ASHA model gateway failed after 2 attempt(s): secondary unavailable");
+      { invokeModel, config: testConfig(["gemini-3-flash-preview", "gemini-3.1-flash-lite"]), sleep: async () => {} },
+    ).catch(error => error);
 
-    expect(invokeModel.mock.calls.map(([params]) => params.model)).toEqual([
-      "claude-sonnet-4-6",
-      "gpt-5",
-    ]);
+    expect(failure).toBeInstanceOf(PlatoUnavailableError);
+    expect(failure).toMatchObject({ reason: "quota", attemptedModels: ["gemini-3-flash-preview", "gemini-3.1-flash-lite"] });
   });
 
   it("propagates canonical MarketState acquisition failures before invoking a model", async () => {

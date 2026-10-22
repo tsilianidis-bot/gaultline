@@ -7,6 +7,7 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import type { MarketQuoteItem, GlobalSession } from "../../../server/routers/markets";
 import { hideBlankMarketQuoteDuplicates } from "@shared/customerIntegrityLabels";
+import { formatEt } from "@shared/credibilityLabels";
 
 type TickerFilter = "ALL" | "US" | "EUROPE" | "ASIA" | "RATES" | "FX" | "COMMODITIES" | "CRYPTO";
 
@@ -65,7 +66,7 @@ function humanState(item: MarketQuoteItem) {
 
 function observedTime(item: MarketQuoteItem) {
   if (item.observedAt == null) return "AS OF —";
-  return `AS OF ${new Date(item.observedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  return `AS OF ${formatEt(item.observedAt) ?? "—"}`;
 }
 
 function TickerQuote({ item, onOpen }: { item: MarketQuoteItem; onOpen: () => void }) {

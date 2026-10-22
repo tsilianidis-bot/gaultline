@@ -5,9 +5,14 @@
 // row → summary bar → category tabs → filter panel → screener grid
 // ============================================================
 
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
+import { score100Value } from "@/lib/displayFallbacks";
+import { formatObservedFixed } from "@/lib/nullableFormat";
 import { trpc } from "@/lib/trpc";
+import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
+import { evidenceStatusLabel } from "../../../shared/evidenceStatus";
 import { useEngine } from "@/contexts/EngineContext";
+import { canonicalRegimeDisplayColor } from "@/lib/marketStateProjection";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Link } from "wouter";
 import { RecoveryStatusBadge, AftershockRiskInline } from "@/components/RecoveryStatus";
@@ -34,22 +39,25 @@ interface CryptoSignalResult {
   cryptoRegime?: "Bullish" | "Neutral" | "Defensive" | "Risk-Off";
   regimeConflict?: boolean;
   regimeConflictExplanation?: string | null;
-  confidence: number;
+  // Launch fix-up: the server withholds the formula confidence (always null).
+  confidence: number | null;
+  // Ordinal ordering position from the screener (1 = first). Never displayed.
+  strengthRank?: number;
   strength: "Strong" | "Moderate" | "Weak";
   timeframe: "Short-Term" | "Swing" | "Watch";
   rationale: string;
   technicals: {
-    rsiEstimate: number;
+    rsiEstimate: number | null;
     rsiLabel: "Overbought" | "Neutral" | "Oversold";
     rsiIsTrue: boolean;
     trend: "Uptrend" | "Downtrend" | "Sideways";
-    volumeSignal: "Surge" | "Normal" | "Low";
-    momentumScore: number;
+    volumeSignal: "Surge" | "Normal" | "Low" | "Unavailable";
+    momentumScore: number | null;
     smaSignal: "Golden Cross" | "Death Cross" | "Neutral";
     smaIsTrue: boolean;
     macd: { macdLine: number; signalLine: number; histogram: number; signal: "Bullish" | "Bearish" | "Neutral" } | null;
-    volatility24h: number;
-    distanceFromAth: number;
+    volatility24h: number | null;
+    distanceFromAth: number | null;
     priceChange7d: number | null;
     priceChange30d: number | null;
   };
@@ -65,10 +73,10 @@ interface CryptoSignalResult {
   regimeAlignment: "Aligned" | "Neutral" | "Counter-Trend";
   regimeAlignmentScore: number;
   cryptoFactors: {
-    btcDominanceEffect: "Headwind" | "Neutral" | "Tailwind";
-    volatilityRegime: "High" | "Normal" | "Low";
-    athProximity: "Near ATH" | "Mid-Range" | "Deep Discount";
-    liquidityScore: number;
+    btcDominanceEffect: "Headwind" | "Neutral" | "Tailwind" | "Unavailable";
+    volatilityRegime: "High" | "Normal" | "Low" | "Unavailable";
+    athProximity: "Near ATH" | "Mid-Range" | "Deep Discount" | "Unavailable";
+    liquidityScore: number | null;
   };
   computedAt: number;
 }
@@ -76,10 +84,64 @@ interface CryptoSignalResult {
 interface ScreenerResponse {
   signals: CryptoSignalResult[];
   regime: { label: string; score: number };
-  btcDominance: number;
-  totalMarketCap: number;
-  marketCapChange24h: number;
+  btcDominance: number | null;
+  totalMarketCap: number | null;
+  marketCapChange24h: number | null;
+  marketObservedAtMs?: number | null;
   computedAt: number;
+}
+
+/** Header and footer dominance figure. A missing observation renders Unavailable. */
+export function BtcDominanceReadout({ btcDominance }: { btcDominance: number | null | undefined }) {
+  const dominance = btcDominance;
+  const text = typeof dominance === "number" && Number.isFinite(dominance) ? `${dominance.toFixed(1)}%` : "Unavailable";
+  return <span data-btc-dominance={text === "Unavailable" ? "unavailable" : "value"}>{text}</span>;
+}
+
+/** Finite momentum scores sort descending. Missing scores stay in `unavailable` and never become the leader. */
+export function rankMomentumSignals<T extends { symbol: string; technicals: { momentumScore: number | null } }>(signals: T[]) {
+  const ranked: T[] = [];
+  const unavailable: T[] = [];
+  for (const signal of signals) {
+    const score = signal.technicals.momentumScore;
+    if (typeof score === "number" && Number.isFinite(score)) ranked.push(signal);
+    else unavailable.push(signal);
+  }
+  ranked.sort((a, b) => (b.technicals.momentumScore as number) - (a.technicals.momentumScore as number));
+  return { leader: ranked[0] ?? null, ranked, unavailable };
+}
+
+export function MomentumLeaderReadout({
+  signal,
+}: {
+  signal: { symbol: string; technicals: { momentumScore: number | null } } | null;
+}) {
+  if (!signal || signal.technicals.momentumScore == null || !Number.isFinite(signal.technicals.momentumScore)) {
+    return <span data-momentum-leader="unavailable">Unavailable</span>;
+  }
+  return <span data-momentum-leader={signal.symbol}>{signal.symbol}</span>;
+}
+
+export function CryptoScreenerFreshnessBadge({
+  observedAtMs,
+  nowMs,
+  sourceStatus,
+  refreshing,
+}: {
+  observedAtMs?: number | null;
+  nowMs?: number;
+  sourceStatus?: string | null;
+  refreshing?: boolean;
+}) {
+  if (refreshing) return <span data-crypto-screener-status="REFRESHING">REFRESHING...</span>;
+  const hasObservation = typeof observedAtMs === "number" && Number.isFinite(observedAtMs);
+  const label = evidenceStatusLabel({
+    observedAtMs,
+    nowMs,
+    sourceStatus: sourceStatus ?? (hasObservation ? "live" : "unavailable"),
+    hasObservation,
+  });
+  return <span data-crypto-screener-status={label}>{label}</span>;
 }
 
 // ── Constants ─────────────────────────────────────────────────
@@ -97,6 +159,8 @@ const TREND_COLORS: Record<string, string> = {
   Sideways:  "#FFD700",
 };
 
+const UNAVAILABLE_CRYPTO_CONTEXT = { headline: "REGIME UNAVAILABLE", description: "The canonical market state is unavailable, so crypto regime context is withheld.", bullish: "Unavailable", bearish: "Unavailable" };
+
 const REGIME_CRYPTO_CONTEXT: Record<string, { headline: string; description: string; bullish: string; bearish: string }> = {
   "LOW RISK":      { headline: "RISK-ON CONDITIONS", description: "Liquidity expanding, volatility compressed. Conditions favour momentum and altcoin exposure.", bullish: "BTC, ETH, high-beta alts, DeFi", bearish: "Stablecoins, cash" },
   "MODERATE RISK": { headline: "MIXED CONDITIONS", description: "Macro pressure moderate. BTC dominance and liquidity signals are key. Selective exposure warranted.", bullish: "BTC, large-cap alts", bearish: "High-risk micro-caps, leverage" },
@@ -108,6 +172,12 @@ const CRYPTO_CATEGORIES = ["All", "Large Cap", "Mid Cap", "DeFi", "Layer-1", "La
 type CryptoCategory = typeof CRYPTO_CATEGORIES[number];
 
 // ── Helpers ───────────────────────────────────────────────────
+
+// Launch fix-up: screener rows are ordered by the server's ordinal
+// strengthRank (1 = first); rows without a rank keep their server order.
+function byStrengthRank(a: CryptoSignalResult, b: CryptoSignalResult): number {
+  return (a.strengthRank ?? Number.MAX_SAFE_INTEGER) - (b.strengthRank ?? Number.MAX_SAFE_INTEGER);
+}
 
 function fmt(n: number, decimals = 2): string {
   if (n === 0) return "0.00";
@@ -202,6 +272,27 @@ function ActionBadge({ action, strength, actionLabel }: { action: TradingAction;
 }
 
 // ── RSI Bar ───────────────────────────────────────────────────
+
+export function CryptoRsiReadout({
+  rsiEstimate,
+  rsiLabel,
+  rsiIsTrue,
+  actionLabel,
+}: {
+  rsiEstimate: number | null;
+  rsiLabel: string;
+  rsiIsTrue: boolean;
+  actionLabel: string;
+}) {
+  if (actionLabel === "Unavailable" || rsiEstimate == null || !rsiIsTrue) return null;
+  return (
+    <div data-crypto-rsi="shown">
+      <RSIBar value={rsiEstimate} label={rsiLabel} />
+      <span>RSI(14)</span>
+      <span>{rsiEstimate.toFixed(0)}</span>
+    </div>
+  );
+}
 
 function RSIBar({ value, label }: { value: number; label: string }) {
   const color = label === "Overbought" ? "#FF2D55" : label === "Oversold" ? "#00D4FF" : "#FFD700";
@@ -313,17 +404,22 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
         </div>
       )}
 
-      {/* RSI bar */}
       <div style={{ marginBottom: "8px" }}>
-        <RSIBar value={sig.technicals.rsiEstimate} label={sig.technicals.rsiLabel} />
+        <CryptoRsiReadout
+          rsiEstimate={sig.technicals.rsiEstimate}
+          rsiLabel={sig.technicals.rsiLabel}
+          rsiIsTrue={sig.technicals.rsiIsTrue}
+          actionLabel={sig.actionLabel ?? "Unavailable"}
+        />
       </div>
 
       {/* Key metrics row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px", marginBottom: "8px" }}>
         {[
           { label: "TREND", value: sig.technicals.trend.toUpperCase(), color: TREND_COLORS[sig.technicals.trend] },
-          { label: "MOMENTUM", value: `${sig.technicals.momentumScore}`, color: sig.technicals.momentumScore >= 60 ? "#00D4FF" : sig.technicals.momentumScore <= 40 ? "#FF2D55" : "#FFD700" },
-          { label: "CONFIDENCE", value: `${sig.confidence}%`, color: sig.confidence >= 70 ? "#00D4FF" : sig.confidence >= 50 ? "#FFD700" : "#94A3B8" },
+          { label: "MOMENTUM", value: sig.technicals.momentumScore == null ? "Unavailable" : `${sig.technicals.momentumScore}`, color: sig.technicals.momentumScore == null ? "#94A3B8" : sig.technicals.momentumScore >= 60 ? "#00D4FF" : sig.technicals.momentumScore <= 40 ? "#FF2D55" : "#FFD700" },
+          // QA r13 B14: signal "confidence" is min(95, 55 + |score| × 5) — a formula, not calibrated.
+          { label: "CONFIDENCE", value: CONFIDENCE_NOT_ESTABLISHED, color: "#94A3B8" },
         ].map(({ label, value, color }) => (
           <div key={label} style={{ background: "rgba(255,255,255,0.02)", borderRadius: "2px", padding: "4px 6px" }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "6px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em", marginBottom: "2px" }}>{label}</div>
@@ -334,7 +430,7 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
 
       {/* Regime alignment */}
       <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.08em" }}>REGIME:</span>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.08em" }}>REGIME ALIGNMENT:</span>
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", fontWeight: 700, color: regimeAlignColor }}>{sig.regimeAlignment.toUpperCase()}</span>
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.4)" }}>({sig.regimeAlignmentScore}/10)</span>
       </div>
@@ -386,7 +482,7 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
           {/* Technical indicators */}
           <div style={{ marginBottom: "10px", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px" }}>
             {[
-              { label: sig.technicals.rsiIsTrue ? "RSI(14)" : "RSI~", value: `${sig.technicals.rsiEstimate.toFixed(0)} ${sig.technicals.rsiLabel.toUpperCase()}`, color: sig.technicals.rsiLabel === "Overbought" ? "#FF2D55" : sig.technicals.rsiLabel === "Oversold" ? "#00D4FF" : "#94A3B8", badge: sig.technicals.rsiIsTrue ? "TRUE" : undefined },
+              ...(sig.technicals.rsiEstimate == null || !sig.technicals.rsiIsTrue ? [] : [{ label: "RSI(14)", value: `${sig.technicals.rsiEstimate.toFixed(0)} ${sig.technicals.rsiLabel.toUpperCase()}`, color: sig.technicals.rsiLabel === "Overbought" ? "#FF2D55" : sig.technicals.rsiLabel === "Oversold" ? "#00D4FF" : "#94A3B8", badge: "TRUE" as string | undefined }]),
               { label: sig.technicals.smaIsTrue ? "SMA CROSS" : "SMA~", value: sig.technicals.smaSignal.toUpperCase(), color: sig.technicals.smaSignal === "Golden Cross" ? "#00D4FF" : sig.technicals.smaSignal === "Death Cross" ? "#FF2D55" : "#94A3B8", badge: sig.technicals.smaIsTrue ? "TRUE" : undefined },
               { label: "VOLUME", value: sig.technicals.volumeSignal.toUpperCase(), color: sig.technicals.volumeSignal === "Surge" ? "#FFD700" : sig.technicals.volumeSignal === "Low" ? "#FF2D55" : "#94A3B8", badge: undefined },
             ].map(({ label, value, color, badge }) => (
@@ -429,7 +525,7 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
                 { label: "BTC DOMINANCE", value: sig.cryptoFactors.btcDominanceEffect, color: sig.cryptoFactors.btcDominanceEffect === "Tailwind" ? "#00D4FF" : sig.cryptoFactors.btcDominanceEffect === "Headwind" ? "#FF2D55" : "#94A3B8" },
                 { label: "VOLATILITY", value: sig.cryptoFactors.volatilityRegime, color: sig.cryptoFactors.volatilityRegime === "High" ? "#FF9500" : sig.cryptoFactors.volatilityRegime === "Low" ? "#00D4FF" : "#94A3B8" },
                 { label: "ATH PROXIMITY", value: sig.cryptoFactors.athProximity, color: sig.cryptoFactors.athProximity === "Near ATH" ? "#FF9500" : sig.cryptoFactors.athProximity === "Deep Discount" ? "#00D4FF" : "#94A3B8" },
-                { label: "LIQUIDITY SCORE", value: `${sig.cryptoFactors.liquidityScore.toFixed(1)}/10`, color: sig.cryptoFactors.liquidityScore >= 7 ? "#00D4FF" : sig.cryptoFactors.liquidityScore >= 4 ? "#FFD700" : "#FF2D55" },
+                { label: "ASSET VOLUME LIQUIDITY", value: typeof sig.cryptoFactors.liquidityScore === "number" ? `${sig.cryptoFactors.liquidityScore.toFixed(1)}/10` : "Unavailable", color: typeof sig.cryptoFactors.liquidityScore === "number" && sig.cryptoFactors.liquidityScore >= 7 ? "#00D4FF" : typeof sig.cryptoFactors.liquidityScore === "number" && sig.cryptoFactors.liquidityScore >= 4 ? "#FFD700" : "#FF2D55" },
               ].map(({ label, value, color }) => (
                 <div key={label}>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>{label}</div>
@@ -442,8 +538,8 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
           {/* Additional price metrics */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginBottom: "8px" }}>
             {[
-              { label: "ATH DISTANCE", value: `${sig.technicals.distanceFromAth.toFixed(1)}%` },
-              { label: "VOLATILITY 24H", value: `${sig.technicals.volatility24h.toFixed(2)}%` },
+              { label: "ATH DISTANCE", value: formatObservedFixed(sig.technicals.distanceFromAth, 1, "%") },
+              { label: "VOLATILITY 24H", value: formatObservedFixed(sig.technicals.volatility24h, 2, "%") },
               ...(sig.technicals.priceChange30d !== null ? [{ label: "30D CHANGE", value: `${sig.technicals.priceChange30d > 0 ? "+" : ""}${sig.technicals.priceChange30d.toFixed(2)}%` }] : []),
               { label: "TIMEFRAME", value: sig.timeframe },
             ].map(({ label, value }) => (
@@ -622,7 +718,6 @@ function SignalsSummaryBar({ signals }: { signals: CryptoSignalResult[] }) {
 
   const strongBuys  = signals.filter(s => s.action === "BUY"  && s.strength === "Strong").length;
   const strongSells = signals.filter(s => s.action === "SELL" && s.strength === "Strong").length;
-  const avgConf = Math.round(signals.reduce((s, v) => s + v.confidence, 0) / signals.length);
 
   const sentiment = counts.BUY > counts.SELL + counts.HOLD
     ? { label: "BULLISH BIAS", color: "#00D4FF" }
@@ -641,7 +736,7 @@ function SignalsSummaryBar({ signals }: { signals: CryptoSignalResult[] }) {
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.2em", color: "rgba(100,116,139,0.5)" }}>CRYPTO SIGNALS</span>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", fontWeight: 700, color: sentiment.color, letterSpacing: "0.1em" }}>{sentiment.label}</span>
         </div>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>AVG CONFIDENCE: <span style={{ color: "#94A3B8" }}>{avgConf}%</span></span>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>CONFIDENCE: <span style={{ color: "#94A3B8" }}>{CONFIDENCE_NOT_ESTABLISHED}</span></span>
       </div>
       <div style={{ display: "flex", gap: "8px", marginBottom: "10px", flexWrap: "wrap" }}>
         {(["BUY","SELL","HOLD","WATCH"] as TradingAction[]).map(action => {
@@ -779,14 +874,25 @@ function CryptoSignalsInner() {
   const engine = useEngine();
   const { user } = useAuth();
 
-  const regimeKey = useMemo(() => mapRegimeToKey(engine?.output?.regime?.label ?? "MODERATE RISK"), [engine?.output?.regime?.label]);
-  const regimeCtx = REGIME_CRYPTO_CONTEXT[regimeKey];
-  const regimeColor = engine?.output?.regime?.color ?? "#00D4FF";
+  // Without MarketState the engine regime/score are the demo baseline: the canonical
+  // regime and pressure are used instead, or the context reads "Unavailable".
+  const degraded = engine?.marketMode === "deterministic-fallback";
+  const canonicalPressure = engine?.canonicalState?.pressureIndex;
+  const canonicalPressure100 = typeof canonicalPressure === "number" && Number.isFinite(canonicalPressure) ? canonicalPressure : null;
+  const regimeSourceLabel = degraded ? (engine?.canonicalState?.regime ?? null) : (engine?.output?.regime?.label ?? "MODERATE RISK");
+  const regimeKey = useMemo(() => (regimeSourceLabel ? mapRegimeToKey(regimeSourceLabel) : null), [regimeSourceLabel]);
+  const regimeCtx = regimeKey ? REGIME_CRYPTO_CONTEXT[regimeKey] : UNAVAILABLE_CRYPTO_CONTEXT;
+  const regimeColor = degraded
+    ? canonicalRegimeDisplayColor(canonicalPressure100, engine?.canonicalState?.regime)
+    : (engine?.output?.regime?.color ?? "#00D4FF");
+  // REGIME SCORE on 0–100: the canonical Pressure Index when degraded, else the engine composite.
+  const regimeScoreText = degraded
+    ? (canonicalPressure100 === null ? score100Value(null) : String(Math.round(canonicalPressure100)))
+    : score100Value(engine?.output?.overall?.score);
 
   const [activeCategory, setActiveCategory] = useState<CryptoCategory>("All");
   const [filterAction, setFilterAction] = useState<TradingAction | "All">("All");
   const [screenerLimit] = useState(30);
-  const [lastRefresh, setLastRefresh] = useState<string | null>(null);
 
   // ── BTC market recovery (compact panel in regime banner) ──
   const { data: btcRecovery } = trpc.recovery.getMarketRecovery.useQuery(
@@ -802,11 +908,9 @@ function CryptoSignalsInner() {
 
   const screenerData = screenerQuery.data as ScreenerResponse | undefined;
 
-  useEffect(() => {
-    if (screenerData) setLastRefresh(new Date(screenerData.computedAt).toLocaleTimeString());
-  }, [screenerData]);
-
   // ── Filter and sort ────────────────────────────────────────
+  // Launch fix-up: rows keep the screener's ordinal strengthRank order (the
+  // confidence number itself is no longer sent).
   const displayedSignals = useMemo(() => {
     if (!screenerData?.signals) return [];
     return screenerData.signals
@@ -815,21 +919,21 @@ function CryptoSignalsInner() {
         if (filterAction !== "All" && sig.action !== filterAction) return false;
         return true;
       })
-      .sort((a, b) => b.confidence - a.confidence);
+      .sort(byStrengthRank);
   }, [screenerData, activeCategory, filterAction]);
 
   // ── Top signals ────────────────────────────────────────────
   const topSignals = useMemo(() => {
     if (!screenerData?.signals || screenerData.signals.length === 0) return null;
     const sigs = screenerData.signals;
-    const buys  = sigs.filter(s => s.action === "BUY").sort((a, b) => b.confidence - a.confidence);
-    const sells = sigs.filter(s => s.action === "SELL").sort((a, b) => b.confidence - a.confidence);
-    const momentum = [...sigs].sort((a, b) => b.technicals.momentumScore - a.technicals.momentumScore);
-    const volatile = [...sigs].sort((a, b) => b.technicals.volatility24h - a.technicals.volatility24h);
+    const buys  = sigs.filter(s => s.action === "BUY").sort(byStrengthRank);
+    const sells = sigs.filter(s => s.action === "SELL").sort(byStrengthRank);
+    const momentum = rankMomentumSignals(sigs);
+    const volatile = [...sigs].sort((a, b) => (b.technicals.volatility24h ?? -1) - (a.technicals.volatility24h ?? -1));
     return {
       topBullish: buys[0] ?? sigs[0],
       topBearish: sells[0] ?? sigs[sigs.length - 1],
-      highestMomentum: momentum[0] ?? sigs[0],
+      highestMomentum: momentum.leader,
       mostVolatile: volatile[0] ?? sigs[0],
     };
   }, [screenerData]);
@@ -864,13 +968,13 @@ function CryptoSignalsInner() {
                   regime: regimeCtx.headline,
                   btcDominance: screenerData.btcDominance,
                   totalMarketCap: screenerData.totalMarketCap,
-                  signals: screenerData.signals?.slice(0, 15).map((s: { symbol: string; action: string; actionLabel?: string; cryptoRegime?: string; regimeConflict?: boolean; confidence?: number }) => ({
+                  signals: screenerData.signals?.slice(0, 15).map((s: { symbol: string; action: string; actionLabel?: string; cryptoRegime?: string; regimeConflict?: boolean }) => ({
                     symbol: s.symbol,
                     action: s.action,
                     actionLabel: s.actionLabel,
                     cryptoRegime: s.cryptoRegime,
                     regimeConflict: s.regimeConflict,
-                    confidence: s.confidence,
+                    // QA r13 B14: no signal confidence in new share snapshots.
                   }))
                 }}
                 size="sm"
@@ -880,7 +984,7 @@ function CryptoSignalsInner() {
             <div>
               <div style={{ fontSize: "8px", color: "rgba(100,116,139,0.5)", marginBottom: "2px" }}>REGIME SCORE</div>
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color: regimeColor }}>
-                {engine?.output?.overall?.score?.toFixed(1) ?? "—"}<span style={{ fontSize: "12px", color: "rgba(100,116,139,0.5)" }}>/10</span>
+                {regimeScoreText}<span style={{ fontSize: "12px", color: "rgba(100,116,139,0.5)" }}>/100</span>
               </div>
             </div>
           </div>
@@ -898,15 +1002,17 @@ function CryptoSignalsInner() {
           {screenerData && (
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <span style={{ fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>BTC DOM:</span>
-              <span style={{ fontSize: "9px", color: "#FFD700" }}>{screenerData.btcDominance.toFixed(1)}%</span>
+              <span style={{ fontSize: "9px", color: "#FFD700" }}><BtcDominanceReadout btcDominance={screenerData.btcDominance} /></span>
             </div>
           )}
           {screenerData && (
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <span style={{ fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>TOTAL MCAP:</span>
-              <span style={{ fontSize: "9px", color: "#94A3B8" }}>{fmtCap(screenerData.totalMarketCap)}</span>
-              <span style={{ fontSize: "9px", color: screenerData.marketCapChange24h >= 0 ? "#00D4FF" : "#FF2D55" }}>
-                {screenerData.marketCapChange24h >= 0 ? "+" : ""}{screenerData.marketCapChange24h.toFixed(2)}%
+              <span style={{ fontSize: "9px", color: "#94A3B8" }}>{typeof screenerData.totalMarketCap === "number" ? fmtCap(screenerData.totalMarketCap) : "Unavailable"}</span>
+              <span style={{ fontSize: "9px", color: typeof screenerData.marketCapChange24h === "number" && screenerData.marketCapChange24h < 0 ? "#FF2D55" : "#00D4FF" }}>
+                {typeof screenerData.marketCapChange24h === "number"
+                  ? `${screenerData.marketCapChange24h >= 0 ? "+" : ""}${formatObservedFixed(screenerData.marketCapChange24h, 2, "%")}`
+                  : formatObservedFixed(screenerData.marketCapChange24h, 2, "%")}
               </span>
             </div>
           )}
@@ -924,12 +1030,16 @@ function CryptoSignalsInner() {
         {/* Data freshness */}
         <div style={{ marginTop: "10px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", gap: "6px" }}>
           <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: screenerQuery.isFetching ? "#FFD700" : "#00D4FF", boxShadow: `0 0 6px ${screenerQuery.isFetching ? "#FFD700" : "#00D4FF"}`, animation: "fl-pulse 5s ease-in-out infinite" }} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.1em", color: screenerQuery.isFetching ? "#FFD700" : "#00D4FF" }}>
-            {screenerQuery.isFetching ? "REFRESHING..." : "COINGECKO LIVE"}
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.1em", color: "#00D4FF" }}>
+            <CryptoScreenerFreshnessBadge
+              refreshing={screenerQuery.isFetching}
+              observedAtMs={screenerData?.marketObservedAtMs}
+              sourceStatus={screenerData?.marketObservedAtMs != null ? "live" : "unavailable"}
+            />
           </span>
-          {lastRefresh && (
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>UPDATED: {lastRefresh}</span>
-          )}
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>
+            {screenerData?.marketObservedAtMs != null ? `AS OF ${new Date(screenerData.marketObservedAtMs).toISOString()}` : "AS OF UNAVAILABLE"}
+          </span>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)" }}>· AUTO-REFRESH 90s</span>
         </div>
       </div>
@@ -950,7 +1060,9 @@ function CryptoSignalsInner() {
           <div style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "4px" }}>
             <TopSignalCard label="Top Bullish" sig={topSignals.topBullish} color="#00D4FF" icon="▲" />
             <TopSignalCard label="Top Bearish" sig={topSignals.topBearish} color="#FF2D55" icon="▼" />
-            <TopSignalCard label="Momentum" sig={topSignals.highestMomentum} color="#FFD700" icon="⚡" />
+            {topSignals.highestMomentum
+              ? <TopSignalCard label="Momentum" sig={topSignals.highestMomentum} color="#FFD700" icon="⚡" />
+              : <MomentumLeaderReadout signal={null} />}
             <TopSignalCard label="Most Volatile" sig={topSignals.mostVolatile} color="#FF9500" icon="⚠" />
           </div>
         </div>
@@ -1077,8 +1189,8 @@ function CryptoSignalsInner() {
       {/* ── Data Source Panel ─────────────────────────── */}
       <div style={{ margin: "24px 16px 0", padding: "12px", background: "rgba(0,212,255,0.03)", border: "1px solid rgba(0,212,255,0.08)", borderRadius: "4px" }}>
         <div style={{ fontSize: "8px", letterSpacing: "0.12em", color: "rgba(100,116,139,0.5)", lineHeight: 1.6 }}>
-          <span style={{ color: "#00D4FF" }}>LIVE DATA</span> — CoinGecko market data via secure backend proxy.
-          {screenerData && <> Assets: <span style={{ color: "rgba(100,116,139,0.7)" }}>{screenerData.signals.length}</span> · BTC Dominance: <span style={{ color: "rgba(100,116,139,0.7)" }}>{screenerData.btcDominance.toFixed(1)}%</span></>}
+          <CryptoScreenerFreshnessBadge observedAtMs={screenerData?.marketObservedAtMs} sourceStatus={screenerData?.marketObservedAtMs != null ? "live" : "unavailable"} /> — CoinGecko market data via secure backend proxy.
+          {screenerData && <> Assets: <span style={{ color: "rgba(100,116,139,0.7)" }}>{screenerData.signals.length}</span> · BTC Dominance: <span style={{ color: "rgba(100,116,139,0.7)" }}><BtcDominanceReadout btcDominance={screenerData.btcDominance} /></span></>}
           {" "}· <span style={{ color: "#00D4FF" }}>TRADING SIGNALS</span> — FAULTLINE Engine · RSI, SMA, MACD, regime pressure. Refreshes every 90 seconds.
         </div>
       </div>

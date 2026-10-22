@@ -16,6 +16,7 @@ import {
 import { useEngine } from "@/contexts/EngineContext";
 import { getRiskColor } from "@/components/RiskBadge";
 import { trpc } from "@/lib/trpc";
+import { CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 import { useAuth } from "@/_core/hooks/useAuth";
 import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
 import { useTickerStore } from "@/contexts/TickerStore";
@@ -318,6 +319,7 @@ function MarketCommandCenterInner() {
   const { data: miData } = trpc.marketIntelligence.getAll.useQuery(undefined, {
     staleTime: 10 * 60 * 1000,
     retry: false,
+    trpc: { context: { skipBatch: true } }, // never batched with marketState (head-of-line block)
   });
 
   // Map riskLevel → regime attribute for ambient lighting
@@ -334,7 +336,7 @@ function MarketCommandCenterInner() {
       value: verdict,
       color: verdictColor,
       sub: riskLevel === "low" ? "Risk-on window open" : riskLevel === "moderate" ? "High-conviction only" : riskLevel === "elevated" ? "Trim & protect" : "Capital preservation",
-      href: "/app/pre-flight",
+      href: CANONICAL_DESTINATION_BY_ID.act.path,
     },
     {
       label: "RISK REGIME",
@@ -465,7 +467,7 @@ function MarketCommandCenterInner() {
         value: topAnalog?.era?.split(" ").slice(0, 2).join(" ") ?? "FED POLICY",
         sub: topAnalog ? `${topAnalog.similarity}% analog match · ${topAnalog.year?.slice(0, 4) ?? ""}` : "Watch FOMC + CPI",
         color: "#C084FC",
-        href: "/app/pre-flight",
+        href: CANONICAL_DESTINATION_BY_ID.watch.path,
         icon: Zap,
       },
     ];
@@ -639,7 +641,6 @@ function MarketCommandCenterInner() {
         }}>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.2em", color: "rgba(100,116,139,0.6)", textTransform: "uppercase", marginBottom: "4px" }}>QUICK ACTIONS</span>
           {[
-            { label: "Run Pre-Flight Check", icon: Shield, href: "/app/pre-flight", color: "#00D4FF" },
             { label: "Open Decision Engine", icon: Crosshair, href: "/app/decision-engine", color: "#00D4FF" },
             { label: "View Opportunities", icon: Sparkles, href: "/app/opportunities", color: "#00FF88" },
             { label: "Analyze a Symbol", icon: Eye, href: "/app/symbol-intelligence", color: "#C084FC" },

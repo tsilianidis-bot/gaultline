@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip as UITooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useEngine } from "@/contexts/EngineContext";
+import { evidenceStatusFromIntegrity } from "../../../shared/evidenceStatus";
 import SystemicRegimeChart from "@/components/SystemicRegimeChart";
 import {
   BarChart,
@@ -126,12 +127,12 @@ const INSTITUTIONAL_METRICS = [
   { id: 'transition_prec',  label: 'Transition Precision',       category: 'Regime',       value: '40.0%',  target: '> 60%',  status: 'bad',   tooltip: 'When the engine signals a regime transition, it is correct 40% of the time. High false-positive rate requires improvement in the transition detection algorithm.' },
   { id: 'transition_recall',label: 'Transition Recall',          category: 'Regime',       value: '25.0%',  target: '> 50%',  status: 'bad',   tooltip: 'The engine detects only 25% of actual regime transitions. Most transitions are missed, which is the primary calibration challenge for FMOS v1.' },
   { id: 'avg_lead_time',    label: 'Avg Lead Time',              category: 'Regime',       value: '11.6d',  target: '> 14d',  status: 'warn',  tooltip: 'Average number of days before a regime transition that the engine first signals the change. 11.6 days provides meaningful advance warning for portfolio positioning.' },
-  { id: 'backtest_obs',     label: 'Backtest Observations',      category: 'Coverage',     value: '1,902',  target: '> 1,000',status: 'good',  tooltip: '36 years of weekly observations (1990-2026) covering 6 major market crises: 1990 recession, Dot-com bubble, 2008 GFC, 2011 EU crisis, 2020 COVID, 2022 rate shock.' },
-  { id: 'regime_coverage',  label: 'Regime Coverage',            category: 'Coverage',     value: '3/5',    target: '5/5',    status: 'warn',  tooltip: 'Only 3 of 5 regime states were triggered in 36 years of backtesting. HIGH RISK and CRITICAL RISK thresholds were never breached, indicating the pressure model needs recalibration.' },
+  { id: 'backtest_obs',     label: 'Backtest Observations',      category: 'Coverage',     value: '1,902',  target: '> 1,000',status: 'good',  tooltip: 'Static Phase-2 demo: 1,902 displayed observations. The date span and values are reference data, not a verified backtest of the live engine.' },
+  { id: 'regime_coverage',  label: 'Regime Coverage',            category: 'Coverage',     value: '3/5',    target: '5/5',    status: 'warn',  tooltip: 'Only 3 of 5 regime states were triggered in the static Phase-2 demo snapshot. HIGH RISK and CRITICAL RISK thresholds were never breached, indicating the pressure model needs recalibration.' },
   { id: 'data_coverage',    label: 'Data Coverage',              category: 'Data Quality', value: '99.8%',  target: '> 95%',  status: 'good',  tooltip: 'Percentage of weekly observations with complete macro data from FRED. 99.8% coverage across 1,902 weeks demonstrates robust data pipeline reliability.' },
   { id: 'credit_coverage',  label: 'Credit Stress Coverage',     category: 'Data Quality', value: '8.1%',   target: '> 90%',  status: 'bad',   tooltip: 'CRITICAL: HY credit spread data only available for 8.1% of the backtest period due to a unit mismatch bug. FRED returns % values but the formula expects basis points, causing credit_stress scores to compute as 0 for 91.9% of observations.' },
-  { id: 'evidence_families',label: 'Evidence Families',          category: 'Architecture', value: '14',     target: '14',     status: 'good',  tooltip: '14 independent evidence families covering: yield curve, credit stress, volatility, rate level, labor market, sentiment, monetary policy, fiscal policy, geopolitical risk, sector rotation, earnings quality, liquidity conditions, AI concentration, and global macro.' },
-  { id: 'engine_count',     label: 'Active Engines',             category: 'Architecture', value: '14',     target: '14',     status: 'good',  tooltip: '14 FMOS engines compiled with 0 TypeScript errors: Data Acquisition, Market DNA, Market Weather, Regime, Transition, Evidence, Probability, Confidence, Historical Analog, Decision, AI Interpretation, Calibration, Learning, Universal Pipeline.' },
+  { id: 'evidence_families',label: 'Evidence Families',          category: 'Architecture', value: '6',      target: '6',      status: 'good',  tooltip: 'The FMOS Evidence engine groups evidence into 6 families: macro, liquidity, technical, fundamental, sentiment, and cross-asset. Diminishing returns apply when items in the same family agree.' },
+  { id: 'engine_count',     label: 'Engine Registry',            category: 'Architecture', value: 'Listed', target: 'Listed', status: 'good',  tooltip: 'The FMOS engines are listed in the Engine Registry tab, read from fmos.getVersion. A registry entry is not by itself evidence that an engine ran on a given day.' },
 ];
 
 const METRIC_STATUS_COLORS: Record<string, string> = { good: '#00FF88', warn: '#FF9500', bad: '#FF2D55' };
@@ -140,7 +141,8 @@ const METRIC_STATUS_LABELS: Record<string, string> = { good: 'On Target', warn: 
 export default function ValidationLab() {
   const [days, setDays] = useState(90);
   const [activeTab, setActiveTab] = useState("overview");
-  const { fetchStatuses, successCount, failCount, isLive, isLoading: engineLoading, lastUpdated, forceRefresh: engineRefresh } = useEngine();
+  const { fetchStatuses, successCount, failCount, isLive, isLoading: engineLoading, lastUpdated, forceRefresh: engineRefresh, integrityLabel } = useEngine();
+  const labStatus = evidenceStatusFromIntegrity(integrityLabel);
 
   const { data: version } = trpc.fmos.getVersion.useQuery();
   const { data: _runStats, isLoading: statsLoading } = trpc.fmos.getRunStats.useQuery({ days });
@@ -178,7 +180,7 @@ export default function ValidationLab() {
             <div>
               <h1 className="text-lg font-bold tracking-tight">Validation Lab</h1>
               <p className="text-xs text-muted-foreground">
-                FMOS {version?.version ?? "—"} · {version?.engineCount ?? 14} engines · Prediction accuracy & calibration
+                FMOS {version?.version ?? "—"} · {version?.engines ? `${version.engines.length} listed engines` : "engine registry"} · Prediction accuracy & calibration
               </p>
             </div>
           </div>
@@ -243,7 +245,7 @@ export default function ValidationLab() {
         {/* STATIC REFERENCE CARDS banner */}
         <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200 mb-4">
           <span className="font-semibold text-amber-300">STATIC REFERENCE CARDS</span>
-          {" — "}Phase-2 research snapshot metrics. Not live FMOS output and not governed MODEL_PROBABILITY.
+          {" — "}Phase-2 research snapshot metrics. Not live FMOS output, not independently validated backtesting, and not governed MODEL_PROBABILITY.
           Data class: {INSTITUTIONAL_METRICS_DATA_CLASS}.
         </div>
 
@@ -401,7 +403,7 @@ export default function ValidationLab() {
             <div className="flex items-center justify-between mb-2">
               <div>
                 <p className="text-sm font-semibold">14 Institutional Performance Metrics</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Hover any metric for a detailed explanation. Based on 1,902 weekly backtest observations (1990-2026).</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Hover any metric for a detailed explanation. Static Phase-2 demo: 1,902 displayed observations, not independently validated live-engine results.</p>
               </div>
               <div className="flex items-center gap-3 text-xs">
                 {(['good','warn','bad'] as const).map(s => (
@@ -459,19 +461,19 @@ export default function ValidationLab() {
             <div
               className="flex items-center justify-between p-4 rounded-xl border"
               style={{
-                background: isLive ? 'rgba(0,255,136,0.05)' : 'rgba(255,149,0,0.05)',
-                borderColor: isLive ? 'rgba(0,255,136,0.2)' : 'rgba(255,149,0,0.2)',
+                background: labStatus === 'LIVE' ? 'rgba(0,255,136,0.05)' : 'rgba(255,149,0,0.05)',
+                borderColor: labStatus === 'LIVE' ? 'rgba(0,255,136,0.2)' : 'rgba(255,149,0,0.2)',
               }}
             >
               <div className="flex items-center gap-3">
                 <div style={{
                   width: 10, height: 10, borderRadius: '50%',
-                  background: isLive ? '#00FF88' : '#FF9500',
-                  boxShadow: `0 0 8px ${isLive ? '#00FF88' : '#FF9500'}88`,
+                  background: labStatus === 'LIVE' ? '#00FF88' : '#FF9500',
+                  boxShadow: `0 0 8px ${labStatus === 'LIVE' ? '#00FF88' : '#FF9500'}88`,
                 }} />
                 <div>
-                  <p className="text-sm font-semibold" style={{ color: isLive ? '#00FF88' : '#FF9500' }}>
-                    {engineLoading ? 'Connecting...' : isLive ? 'All Systems Live' : 'Partial Data - Fallback Active'}
+                  <p className="text-sm font-semibold" style={{ color: labStatus === 'LIVE' ? '#00FF88' : '#FF9500' }}>
+                    {engineLoading ? 'Connecting...' : labStatus}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {successCount} of {successCount + failCount} data feeds active
@@ -491,7 +493,7 @@ export default function ValidationLab() {
               {[
                 { label: 'Live Feeds', value: `${successCount}/${successCount + failCount}`, icon: Wifi, color: isLive ? 'text-emerald-400' : 'text-yellow-400' },
                 { label: 'Failed Feeds', value: failCount.toString(), icon: WifiOff, color: failCount === 0 ? 'text-emerald-400' : 'text-red-400' },
-                { label: 'Active Engines', value: '14', icon: Cpu, color: 'text-cyan-400' },
+                { label: 'Listed Engines', value: version?.engines ? String(version.engines.length) : '—', icon: Cpu, color: 'text-cyan-400' },
                 { label: 'Last Refresh', value: lastUpdated ? `${Math.round((Date.now() - lastUpdated.getTime()) / 60000)}m ago` : '--', icon: Clock, color: 'text-slate-400' },
               ].map(kpi => {
                 const Icon = kpi.icon;
@@ -518,7 +520,7 @@ export default function ValidationLab() {
                   <Shield className="w-4 h-4 text-primary" />
                   FRED Data Feed Status
                 </CardTitle>
-                <CardDescription className="text-xs">Real-time status of all macro data feeds powering FMOS</CardDescription>
+                <CardDescription className="text-xs">Current status of all macro data feeds powering FMOS</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -547,7 +549,7 @@ export default function ValidationLab() {
                             color: feed.status === 'ok' ? '#00FF88' : feed.status === 'pending' ? '#6B7280' : '#FF9500',
                           }}
                         >
-                          {feed.status === 'ok' ? (feed.cached ? 'CACHED' : 'LIVE') : feed.status === 'pending' ? 'LOADING' : 'ERROR'}
+                          {feed.status === 'ok' ? (feed.cached ? 'RECENT' : labStatus) : feed.status === 'pending' ? 'LOADING' : 'UNAVAILABLE'}
                         </Badge>
                       </div>
                     </div>
@@ -561,7 +563,7 @@ export default function ValidationLab() {
                   <Cpu className="w-4 h-4 text-primary" />
                   FMOS Engine Pipeline Health
                 </CardTitle>
-                <CardDescription className="text-xs">All 14 engines compiled and operational - 0 TypeScript errors</CardDescription>
+                <CardDescription className="text-xs">Engines listed in the FMOS registry (fmos.getVersion)</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -814,7 +816,7 @@ export default function ValidationLab() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold">FMOS Engine Registry</CardTitle>
                 <CardDescription className="text-xs">
-                  All 14 engines in the Universal Intelligence Pipeline — version {version?.version ?? "—"}
+                  Engines listed in the Universal Intelligence Pipeline — version {version?.version ?? "—"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -826,7 +828,7 @@ export default function ValidationLab() {
                       MarketWeather: "Daily tactical conditions: breadth, momentum, volatility",
                       Regime: "Regime classification with transition risk scoring",
                       Transition: "Detects regime transition signals and warning indicators",
-                      Evidence: "Organizes evidence into 8 independent families with diminishing returns",
+                      Evidence: "Organizes evidence into 6 families (macro, liquidity, technical, fundamental, sentiment, cross-asset) with diminishing returns",
                       Probability: "Canonical bull/neutral/bear probability distribution",
                       Confidence: "Assesses overall confidence from evidence strength and diversity",
                       HistoricalAnalog: "Finds closest historical analogs using 5-dimensional vector matching",
@@ -834,7 +836,7 @@ export default function ValidationLab() {
                       AIInterpretation: "LLM-powered narrative explaining current conditions",
                       Calibration: "Brier score, calibration error, accuracy metrics",
                       Learning: "Systematic bias detection and improvement suggestions",
-                      UniversalPipeline: "Orchestrates all 13 engines in sequence",
+                      UniversalPipeline: "Orchestrates the other listed engines in sequence",
                     };
                     return (
                       <div key={engine} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border border-border/30">

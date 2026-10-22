@@ -24,6 +24,8 @@ import { getCoinMarketData, getCoinOHLC, getGlobalStats } from "./coingeckoProxy
 import { getQuote } from "./yahooProxy";
 import { invokeLLM } from "./_core/llm";
 import { log } from "./logger";
+import { providerRowFreshness } from "./evidenceFreshness";
+import type { EvidenceStatusLabel } from "../shared/evidenceStatus";
 
 // ── Constants ─────────────────────────────────────────────────
 const CG_BASE = "https://api.coingecko.com/api/v3";
@@ -44,7 +46,7 @@ export type ObjectiveType = typeof OBJECTIVE_TYPES[number]["id"];
 
 // ── Opportunity types ─────────────────────────────────────────
 export type OpportunityDirection = "LONG" | "AVOID" | "WATCH" | "TRIM" | "DEFENSIVE";
-export type DataFreshness = "LIVE" | "DELAYED" | "STALE" | "UNAVAILABLE";
+export type DataFreshness = EvidenceStatusLabel;
 
 export interface TradeOpportunity {
   id: string;                    // unique key for this opportunity
@@ -56,7 +58,7 @@ export interface TradeOpportunity {
   // Price data
   currentPrice: number;
   changePercent: number;
-  volume: number;
+  volume: number | null;
   marketCap: number | null;
   dataFreshness: DataFreshness;
   // Trade levels
@@ -71,8 +73,8 @@ export interface TradeOpportunity {
   suggestedPositionSizeUsd: number;   // in dollars
   riskAmountUsd: number;              // max loss if stop hit
   // Scoring
-  faultlineConfidence: number;        // 0–100
-  compositeScore: number;             // 0–100 overall ranking score
+  faultlineConfidence: number;
+  compositeScore: number;
   momentumScore: number;
   macroFit: number;
   // Objective fit
@@ -88,7 +90,12 @@ export interface TradeOpportunity {
   fetchedAt: number;
   // Data provenance — displayed on every recommendation card
   dataSource?: string;     // e.g. "CoinGecko", "Yahoo Finance"
-  priceTimestamp?: string; // ISO timestamp of the live price fetch
+  /** Provider observation time. Absent when the provider did not report one. */
+  priceTimestamp?: string;
+  /** Provider observation epoch ms. Smart Discovery classifies from this, not from a LIVE token. */
+  observedAtMs?: number | null;
+  /** Provider status passed to the evidence classifier (delayed, polygon-prev, live, unavailable). */
+  sourceStatus?: string | null;
 }
 
 // ── Stock candidates ──────────────────────────────────────────
@@ -271,17 +278,19 @@ function scoreObjectiveFit(
   if (assetPref === "crypto" && assetType === "stock") return { fits: false, reason: "Objective set to crypto only" };
 
   switch (objType) {
-    case "short_swing":
-      if (signal.technicals.rsiEstimate > 40 && signal.technicals.rsiEstimate < 70 && signal.technicals.trend === "Uptrend")
+    case "short_swing": {
+      const confidence = typeof signal.confidence === "number" ? signal.confidence : null;
+      if (typeof signal.technicals.rsiEstimate === "number" && signal.technicals.rsiEstimate > 40 && signal.technicals.rsiEstimate < 70 && signal.technicals.trend === "Uptrend")
         return { fits: true, reason: "RSI in momentum zone with uptrend — ideal for swing entry" };
-      return { fits: signal.confidence > 55, reason: signal.confidence > 55 ? "Moderate confidence swing setup" : "Low confidence for short-term swing" };
+      return { fits: confidence != null && confidence > 55, reason: confidence != null && confidence > 55 ? "Moderate confidence swing setup" : "Low confidence for short-term swing" };
+    }
     case "long_position":
       if (pressure.overallPressure < 50 && signal.regimeAlignment === "Aligned")
         return { fits: true, reason: "Low-stress regime with regime alignment — suitable for long-term build" };
       return { fits: pressure.overallPressure < 65, reason: pressure.overallPressure < 65 ? "Acceptable pressure for position build" : "High pressure — wait for regime improvement" };
     case "crypto_momentum":
       if (assetType !== "crypto") return { fits: false, reason: "Crypto momentum objective — stocks excluded" };
-      return { fits: signal.action === "BUY" && signal.confidence > 50, reason: signal.confidence > 50 ? "Crypto with buy signal" : "Weak crypto signal" };
+      return { fits: signal.action === "BUY" && typeof signal.confidence === "number" && signal.confidence > 50, reason: typeof signal.confidence === "number" && signal.confidence > 50 ? "Crypto with buy signal" : "Weak crypto signal" };
     case "defensive":
       if (["SPY", "QQQ", "BTC", "ETH"].includes(ticker) && pressure.overallPressure < 60)
         return { fits: true, reason: "Core asset in moderate-stress regime — defensive hold" };
@@ -289,7 +298,7 @@ function scoreObjectiveFit(
     case "ai_tech_momentum":
       const aiTickers = ["NVDA", "AMD", "PLTR", "META", "MSFT", "IONQ", "SOUN", "RGTI", "QUBT"];
       if (!aiTickers.includes(ticker)) return { fits: false, reason: "Not in AI/tech universe for this objective" };
-      return { fits: signal.action === "BUY" && signal.confidence > 55, reason: "AI/tech ticker with buy signal" };
+      return { fits: signal.action === "BUY" && typeof signal.confidence === "number" && signal.confidence > 55, reason: "AI/tech ticker with buy signal" };
     case "custom":
       return { fits: true, reason: "Custom objective — all opportunities shown" };
     default:
@@ -366,12 +375,12 @@ FAULTLINE CONTEXT:
 DOMAIN SCORES (higher = more stress): ${domainStr}
 
 TECHNICALS:
-- RSI: ${signal.technicals.rsiEstimate.toFixed(1)} (${signal.technicals.rsiLabel})
-- MACD: ${signal.technicals.macd?.signal ?? "Neutral"}
-- SMA: ${signal.technicals.smaSignal}
+- RSI: ${signal.technicals.rsiEstimate == null ? "unavailable" : signal.technicals.rsiEstimate.toFixed(1)} (${signal.technicals.rsiLabel})
+- MACD: ${signal.technicals.macd ? signal.technicals.macd.signal : "unavailable"}
+- SMA: ${signal.technicals.smaIsTrue ? signal.technicals.smaSignal : "unavailable"}
 - Trend: ${signal.technicals.trend}
 - Volume: ${signal.technicals.volumeSignal}
-- Signal: ${signal.action} (${signal.confidence}/100 confidence)
+- Signal: ${signal.action} (confidence not established)
 - Regime Alignment: ${signal.regimeAlignment}
 
 Respond with JSON:
@@ -417,7 +426,8 @@ Labels must be chosen from: ["AI Bubble Exposure", "Momentum Breakout", "Oversol
     log.warn(`[OwnerSim] LLM rationale failed for ${ticker}`, { err: err as Error });
   }
   return {
-    whyNow: `${ticker} shows ${signal.action} signal with ${signal.confidence}/100 confidence under ${pressure.regime} regime.`,
+    // The signal confidence is a heuristic, not calibrated: no figure in this customer-visible text.
+    whyNow: `${ticker} shows ${signal.action} signal under ${pressure.regime} regime (confidence not established).`,
     invalidation: `Break below stop-loss level invalidates the thesis.`,
     keyRisks: ["Market regime shift", "Liquidity deterioration", "Macro surprise"],
     labels: [signal.action === "BUY" ? "Momentum Breakout" : "Regime Aligned"],
@@ -435,10 +445,10 @@ export async function buildStockOpportunity(
 ): Promise<TradeOpportunity | null> {
   try {
     const quote = await getQuote(ticker);
-    if (!quote.price || quote.source === "error") return null;
+    if (!quote.price || quote.source === "error" || quote.changePercent == null || quote.volume == null) return null;
 
     const price = quote.price;
-    const changePercent = quote.changePercent ?? 0;
+    const changePercent = quote.changePercent;
 
     const signalInput: TradingSignalsInput = {
       ticker,
@@ -447,18 +457,22 @@ export async function buildStockOpportunity(
       high: quote.high ?? price * 1.02,
       low: quote.low ?? price * 0.98,
       changePercent,
-      volumeMillions: (quote.volume ?? 0) / 1e6,
-      avgVolume: (quote.volume ?? 0) / 1e6,
+      volumeMillions: quote.volume / 1e6,
+      avgVolume: quote.volume / 1e6,
       sparkline: [],
       relativeStrength: 50,
     };
     const regime = { label: pressure.regime, score: pressure.overallPressure / 10 };
     const signal = computeTradingSignal(signalInput, regime);
     const domains = extractDomainScores(pressure);
+    const confidence = signal.confidence;
+    const momentumScore = signal.technicals.momentumScore;
+    // Missing RSI must not become momentum 0 or a ranked composite.
+    if (confidence == null || momentumScore == null) return null;
 
     // Determine direction
     let direction: OpportunityDirection = "WATCH";
-    if (signal.action === "BUY" && signal.confidence >= 50) direction = "LONG";
+    if (signal.action === "BUY" && confidence >= 50) direction = "LONG";
     else if (signal.action === "SELL") direction = "AVOID";
     else if (pressure.overallPressure >= 70) direction = "DEFENSIVE";
 
@@ -477,10 +491,9 @@ export async function buildStockOpportunity(
     // Sizing
     const sizing = calcPositionSize(accountValue, price, stopLoss, objective, pressure);
 
-    // Composite score
-    const macroFit = Math.max(0, 100 - pressure.overallPressure + signal.confidence / 2);
+    const macroFit = Math.max(0, 100 - pressure.overallPressure + confidence / 2);
     const compositeScore = Math.round(
-      (signal.confidence * 0.35) +
+      (confidence * 0.35) +
       (macroFit * 0.25) +
       (Math.min(rrRatio * 15, 30) * 0.20) +
       ((direction === "LONG" ? 80 : direction === "WATCH" ? 50 : 20) * 0.20)
@@ -495,7 +508,9 @@ export async function buildStockOpportunity(
       ticker, name, "stock", direction, price, changePercent, pressure, domains, signal, objectiveLabel
     );
 
-    const freshness: DataFreshness = quote.source === "yahoo" ? "LIVE" : quote.source === "polygon-prev" ? "DELAYED" : "STALE";
+    const observedAtMs = typeof quote.observedAt === "number" && Number.isFinite(quote.observedAt) ? quote.observedAt : null;
+    const sourceStatus = quote.source === "polygon-prev" ? "polygon-prev" : quote.source === "yahoo" ? "delayed" : "unavailable";
+    const freshness = providerRowFreshness({ observedAtMs, provider: quote.source });
 
     return {
       id: `stock-${ticker}-${Date.now()}`,
@@ -509,6 +524,10 @@ export async function buildStockOpportunity(
       volume: quote.volume ?? 0,
       marketCap: null,
       dataFreshness: freshness,
+      dataSource: quote.source === "polygon-prev" ? "Polygon previous close" : "Yahoo Finance",
+      priceTimestamp: observedAtMs != null ? new Date(observedAtMs).toISOString() : undefined,
+      observedAtMs,
+      sourceStatus,
       entryZoneLow: Math.round(entryLow * 100) / 100,
       entryZoneHigh: Math.round(entryHigh * 100) / 100,
       stopLoss: Math.round(stopLoss * 100) / 100,
@@ -518,9 +537,9 @@ export async function buildStockOpportunity(
       suggestedPositionSizePct: sizing.pct,
       suggestedPositionSizeUsd: sizing.usd,
       riskAmountUsd: sizing.riskUsd,
-      faultlineConfidence: signal.confidence,
+      faultlineConfidence: confidence,
       compositeScore,
-      momentumScore: Math.round(signal.technicals.rsiEstimate),
+      momentumScore,
       macroFit: Math.round(macroFit),
       objectiveFit: objFit.fits,
       objectiveFitReason: objFit.reason,
@@ -541,7 +560,7 @@ export async function buildCryptoOpportunity(
   ticker: string,
   coinId: string,
   name: string,
-  rawPrice: { usd: number; usd_24h_change: number; usd_24h_vol: number; usd_market_cap: number } | undefined,
+  rawPrice: { usd: number; usd_24h_change: number; usd_24h_vol: number | null; usd_market_cap: number | null } | undefined,
   pressure: FaultlinePressureOutput,
   objective: OwnerSimulationObjective | null,
   accountValue: number,
@@ -550,8 +569,8 @@ export async function buildCryptoOpportunity(
   try {
     const price = rawPrice.usd;
     const changePercent = rawPrice.usd_24h_change ?? 0;
-    const volume = rawPrice.usd_24h_vol ?? 0;
-    const marketCap = rawPrice.usd_market_cap ?? null;
+    const volume = rawPrice.usd_24h_vol;
+    const marketCap = rawPrice.usd_market_cap;
 
     // Fetch full CoinGecko market data and 30-day OHLC for ATR-based levels
     // These calls are cached (90s TTL) so they don't add latency on repeat calls
@@ -571,7 +590,7 @@ export async function buildCryptoOpportunity(
         name,
         image: "",
         currentPrice: price,
-        marketCap: marketCap ?? 0,
+        marketCap,
         marketCapRank: 999,
         fullyDilutedValuation: null,
         totalVolume: volume,
@@ -591,12 +610,12 @@ export async function buildCryptoOpportunity(
         atl: price * 0.05,
         atlChangePercent: 1900,
         sparkline7d: [],
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: "",
         volatility24h: Math.abs(price * 0.03 - price * (-0.03)) / price * 100,
         distanceFromAth: -75,
       },
       ohlcBars: ohlcBars.length > 0 ? ohlcBars : undefined,
-      btcDominance: globalStats?.btcDominance ?? 55,
+      btcDominance: globalStats?.btcDominance ?? null,
       regime: {
         label: pressure.regime as "Bullish" | "Neutral" | "Defensive" | "Risk-Off",
         score: pressure.overallPressure / 10,
@@ -606,10 +625,13 @@ export async function buildCryptoOpportunity(
     const cryptoSignal = computeCryptoSignal(cryptoSignalInput);
     const priceLevels = cryptoSignal.priceLevels;
     const domains = extractDomainScores(pressure);
+    const confidence = cryptoSignal.confidence;
+    const momentumScore = cryptoSignal.technicals.momentumScore;
+    if (confidence == null || momentumScore == null) return null;
 
     // Determine direction from crypto signal
     let direction: OpportunityDirection = "WATCH";
-    if (cryptoSignal.action === "BUY" && cryptoSignal.confidence >= 50) direction = "LONG";
+    if (cryptoSignal.action === "BUY" && confidence >= 50) direction = "LONG";
     else if (cryptoSignal.action === "SELL") direction = "AVOID";
     else if (pressure.overallPressure >= 70) direction = "DEFENSIVE";
 
@@ -632,9 +654,9 @@ export async function buildCryptoOpportunity(
     const rrRatio = downside > 0 ? Math.round((upside / downside) * 10) / 10 : 2.0;
 
     const sizing = calcPositionSize(accountValue, price, stopLoss, objective, pressure);
-    const macroFit = Math.max(0, 100 - pressure.overallPressure + cryptoSignal.confidence / 2);
+    const macroFit = Math.max(0, 100 - pressure.overallPressure + confidence / 2);
     const compositeScore = Math.round(
-      (cryptoSignal.confidence * 0.35) +
+      (confidence * 0.35) +
       (macroFit * 0.25) +
       (Math.min(rrRatio * 15, 30) * 0.20) +
       ((direction === "LONG" ? 80 : direction === "WATCH" ? 50 : 20) * 0.20)
@@ -663,8 +685,9 @@ export async function buildCryptoOpportunity(
     const universeEntry = CRYPTO_UNIVERSE.find(c => c.ticker === ticker);
     const sector = universeEntry?.sector ?? "Crypto";
 
-    // Get the timestamp from CoinGecko market data for provenance display
-    const lastUpdated = marketData?.lastUpdated ?? new Date().toISOString();
+    const parsedUpdated = Date.parse(marketData?.lastUpdated ?? "");
+    const observedAtMs = Number.isFinite(parsedUpdated) ? parsedUpdated : null;
+    const freshness = providerRowFreshness({ observedAtMs, provider: "coingecko" });
 
     return {
       id: `crypto-${ticker}-${Date.now()}`,
@@ -677,9 +700,11 @@ export async function buildCryptoOpportunity(
       changePercent,
       volume,
       marketCap,
-      dataFreshness: "LIVE",
+      dataFreshness: freshness,
       dataSource: "CoinGecko",
-      priceTimestamp: lastUpdated,
+      priceTimestamp: observedAtMs != null ? new Date(observedAtMs).toISOString() : undefined,
+      observedAtMs,
+      sourceStatus: observedAtMs != null ? "live" : "unavailable",
       entryZoneLow: entryLow,
       entryZoneHigh: entryHigh,
       stopLoss,
@@ -689,9 +714,9 @@ export async function buildCryptoOpportunity(
       suggestedPositionSizePct: sizing.pct,
       suggestedPositionSizeUsd: sizing.usd,
       riskAmountUsd: sizing.riskUsd,
-      faultlineConfidence: cryptoSignal.confidence,
+      faultlineConfidence: confidence,
       compositeScore,
-      momentumScore: cryptoSignal.technicals.momentumScore,
+      momentumScore,
       macroFit: Math.round(macroFit),
       objectiveFit: objFit.fits,
       objectiveFitReason: objFit.reason,
@@ -744,6 +769,9 @@ export async function scanOpportunities(
   return results.sort((a, b) => {
     if (a.objectiveFit && !b.objectiveFit) return -1;
     if (!a.objectiveFit && b.objectiveFit) return 1;
+    if (a.compositeScore == null && b.compositeScore == null) return 0;
+    if (a.compositeScore == null) return 1;
+    if (b.compositeScore == null) return -1;
     return b.compositeScore - a.compositeScore;
   });
 }

@@ -4,6 +4,7 @@ import path from "path";
 const templateRoot = path.resolve(import.meta.dirname);
 
 export default defineConfig({
+  esbuild: { jsx: "automatic" },
   root: templateRoot,
   cacheDir: "/tmp/vite-cache-faultline",
   resolve: {
@@ -15,7 +16,7 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["server/**/*.test.ts", "server/**/*.spec.ts"],
+    include: ["server/**/*.test.ts", "server/**/*.spec.ts", "shared/nyseSession.test.ts"],
     testTimeout: 30000,
   },
 });

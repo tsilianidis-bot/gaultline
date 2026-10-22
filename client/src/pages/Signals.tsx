@@ -5,9 +5,10 @@
    ============================================================ */
 import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { signalQuoteView, signalsFeedLabel, hasUsableSignalQuote, signalsPriceBadge, catalogQuotes, signalsFooter, signalsSubtitle } from "@/lib/signalQuoteView";
 import { useEngine } from '@/contexts/EngineContext';
+import { UNAVAILABLE_DISPLAY_COLOR } from '@/lib/marketStateProjection';
 import { useAuth } from '@/_core/hooks/useAuth';
-import { customerPressureBadge } from '@shared/customerIntegrityLabels';
 import { trpc } from '@/lib/trpc';
 import { TickerSearch } from '@/components/TickerSearch';
 import {
@@ -24,7 +25,6 @@ import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner";
-import { PreflightTrigger } from "@/components/MarketPreflight";
 import { ShareReportButton } from "@/components/ShareReportButton";
 import { SizingCalculator } from "@/components/SizingCalculator";
 import { trackStockSignalViewed } from "@/hooks/useAnalytics";
@@ -33,20 +33,26 @@ import FaultlineTerm from "@/components/FaultlineTerm";
 import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
 import ScoreExplainer from "@/components/ScoreExplainer";
 import RisingStarsPanel, { type RisingStarItem } from "@/components/RisingStarsPanel";
+import { formatEt } from "@shared/credibilityLabels";
 
 // ── Live Quote Types ──────────────────────────────────────────
 interface LiveQuote {
   ticker: string;
-  price: number;
+  price: number | null;
   open: number;
   high: number;
   low: number;
-  changePercent: number;
-  volume: number;
-  volumeMillions: number;
-  timestamp: number;
+  changePercent: number | null;
+  volume: number | null;
+  volumeMillions: number | null;
+  /** Market time of the quote (ms); null when the server has none — the as-of is then omitted. */
+  timestamp: number | null;
   marketStatus: 'open' | 'closed' | 'extended' | 'unknown';
   isLive: boolean;
+  /** Server delay flag (Yahoo ~15-min delayed): a delayed quote is DELAYED, never LIVE. */
+  isDelayed?: boolean;
+  /** Response source stamped on by the page (see quoteMap). */
+  feedSource?: 'live' | 'stale' | 'fallback' | null;
   sparkline: number[];
 }
 
@@ -78,17 +84,17 @@ interface TradingSignalResult {
   assetClass?: 'STOCK' | 'CRYPTO' | 'ETF';
   action: TradingAction;
   actionLabel?: string;        // precision label e.g. "Accumulation Zone"
-  confidence: number;
+  confidence: number | null;
   strength: 'Strong' | 'Moderate' | 'Weak';
   timeframe: 'Short-Term' | 'Swing' | 'Watch';
   rationale: string;
   technicals: {
-    rsiEstimate: number;
+    rsiEstimate: number | null;
     rsiIsTrue?: boolean;          // true = real Wilder's RSI from daily bars
     rsiLabel: 'Overbought' | 'Neutral' | 'Oversold';
     trend: 'Uptrend' | 'Downtrend' | 'Sideways';
     volumeSignal: 'Surge' | 'Normal' | 'Low';
-    momentumScore: number;
+    momentumScore: number | null;
     smaSignal: 'Golden Cross' | 'Death Cross' | 'Neutral';
     smaIsTrue?: boolean;          // true = real 50/200-day SMA from daily bars
     macd?: {
@@ -116,21 +122,20 @@ interface TradingSignalResult {
 function fmt(n: number, decimals = 2) {
   return n.toFixed(decimals);
 }
-function fmtCap(billions: number) {
-  if (billions >= 1000) return `$${(billions / 1000).toFixed(1)}T`;
-  if (billions >= 1) return `$${billions.toFixed(1)}B`;
-  return `$${(billions * 1000).toFixed(0)}M`;
-}
-function volumeSurge(s: SignalStock, liveVol?: number) {
-  const vol = liveVol !== undefined ? liveVol : s.volume;
-  return (vol / s.avgVolume).toFixed(1);
-}
+/** Feed fetch time, in ET with its label (never an unlabelled browser-local time). */
 function fmtTimestamp(ts: string | null): string {
-  if (!ts) return '—';
-  try {
-    const d = new Date(ts);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } catch { return '—'; }
+  return formatEt(ts) ?? '—';
+}
+
+/**
+ * Source + as-of line for computed price levels. Levels exist only as the
+ * server signal engine's ATR-based output over the card's own current/delayed
+ * quote; there is no static fallback.
+ */
+export function priceLevelsBasis(quote: LiveQuote | undefined, badge: string): string {
+  const asOf = quote ? formatEt(quote.timestamp) : null;
+  // As-of is the quote's market time; omitted (never the fetch time) when unknown.
+  return `Computed from ${badge} Signals quote${asOf ? ` · as of ${asOf}` : ''}`;
 }
 
 // ── Trading Action Colors ─────────────────────────────────────
@@ -145,7 +150,7 @@ const ACTION_COLORS: Record<TradingAction, { bg: string; text: string; glow: str
 function TradingSignalBadge({ action, actionLabel, confidence, strength, assetClass }: {
   action: TradingAction;
   actionLabel?: string;
-  confidence: number;
+  confidence?: number | null;
   strength: 'Strong' | 'Moderate' | 'Weak';
   assetClass?: 'STOCK' | 'CRYPTO' | 'ETF';
 }) {
@@ -184,52 +189,41 @@ function TradingSignalBadge({ action, actionLabel, confidence, strength, assetCl
   );
 }
 
-// ── Confidence Bar ────────────────────────────────────────────
-function ConfidenceBar({ confidence, action }: { confidence: number; action: TradingAction }) {
-  const c = ACTION_COLORS[action];
+// ── Confidence ────────────────────────────────────────────
+// QA Signals confidence (B14): the signal "confidence" is a formula,
+// min(95, 55 + |score| × 5) (tradingSignals.ts), not a calibrated value.
+// It is shown as "Not established": no %, no bar, no colour band.
+const SIGNAL_CONFIDENCE_NOT_ESTABLISHED = 'Not established';
+function ConfidenceBar(_props: { confidence?: number | null; action: TradingAction }) {
   return (
-    <div>
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        marginBottom: '3px',
-      }}>
-        <span style={{
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: '11px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em',
-        }}>CONFIDENCE</span>
-        <span style={{
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: '12px', fontWeight: 700, color: c.text,
-        }}>{confidence}%</span>
-      </div>
-      <div style={{
-        height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px',
-        overflow: 'hidden',
-      }}>
-        <div style={{
-          height: '100%',
-          width: `${confidence}%`,
-          background: `linear-gradient(90deg, ${c.text}80, ${c.text})`,
-          boxShadow: `0 0 6px ${c.glow}`,
-          borderRadius: '2px',
-          transition: 'width 0.6s cubic-bezier(0.23,1,0.32,1)',
-        }} />
-      </div>
+    <div data-confidence-status="not-established" style={{
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      marginBottom: '3px',
+    }}>
+      <span style={{
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: '11px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em',
+      }}>CONFIDENCE</span>
+      <span style={{
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: '12px', fontWeight: 700, color: '#94A3B8',
+      }}>{SIGNAL_CONFIDENCE_NOT_ESTABLISHED}</span>
     </div>
   );
 }
 
 // ── Regime Alignment Badge ────────────────────────────────────
-function RegimeAlignmentBadge({ alignment, score }: {
+// Label only. The server's regimeAlignmentScore is a fixed tier (2 / 5 / 6 / 9)
+// that just restates the alignment label, so it is not shown as a score.
+function RegimeAlignmentBadge({ alignment }: {
   alignment: 'Aligned' | 'Neutral' | 'Counter-Trend';
-  score: number;
 }) {
   const color = alignment === 'Aligned' ? '#00D4FF'
     : alignment === 'Counter-Trend' ? '#FF2D55'
     : '#FFD700';
   const icon = alignment === 'Aligned' ? '✓' : alignment === 'Counter-Trend' ? '✗' : '~';
   return (
-    <span style={{
+    <span data-regime-alignment={alignment} style={{
       display: 'inline-flex', alignItems: 'center', gap: '3px',
       fontFamily: "'IBM Plex Mono', monospace",
       fontSize: '11px', letterSpacing: '0.08em',
@@ -238,12 +232,22 @@ function RegimeAlignmentBadge({ alignment, score }: {
       border: `1px solid ${color}25`,
       borderRadius: '2px',
     }}>
-      {icon} {alignment === 'Counter-Trend' ? 'COUNTER' : alignment.toUpperCase()} {score.toFixed(0)}/10
+      {icon} {alignment === 'Counter-Trend' ? 'COUNTER' : alignment.toUpperCase()}
     </span>
   );
 }
 
 // ── Signal Tag ────────────────────────────────────────────────
+/** Static catalog tags (signalsData.ts) are descriptors, not signals computed from the quote. */
+function CatalogTagsLabel() {
+  return (
+    <span data-catalog-tags-label style={{
+      fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.1em',
+      color: 'rgba(100,116,139,0.75)', textTransform: 'uppercase',
+    }}>Catalog tag · static</span>
+  );
+}
+
 function SignalTag({ signal }: { signal: FaultlineSignal }) {
   const c = SIGNAL_COLORS[signal];
   return (
@@ -318,7 +322,8 @@ function SkeletonCard() {
 // ── Stock Card ────────────────────────────────────────────────
 function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked }: {
   stock: SignalStock;
-  regimeScore: number;
+  /** null = no quote or no canonical regime: the bar is not drawn. */
+  regimeScore: number | null;
   liveQuote?: LiveQuote;
   tradingSignal?: TradingSignalResult;
   signalBlocked?: boolean;
@@ -336,20 +341,19 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
     { enabled: infoOpen, staleTime: 30 * 60 * 1000 }
   );
 
-  const price = liveQuote?.price && liveQuote.price > 0 ? liveQuote.price : stock.price;
-  const changePercent = liveQuote?.price && liveQuote.price > 0 ? liveQuote.changePercent : stock.changePercent;
-  const volumeMillions = liveQuote?.volumeMillions ?? stock.volume;
-  const sparklineData = liveQuote?.sparkline && liveQuote.sparkline.length > 0 ? liveQuote.sparkline : stock.sparkline;
-  const isLiveData = !!(liveQuote?.price && liveQuote.price > 0);
+  // Price, change, sparkline and volume come ONLY from the server quote. No
+  // quote → "—" + UNAVAILABLE; the static signalsData reference values are never shown as a quote.
+  const quote = signalQuoteView(liveQuote);
+  const changePercent = quote.changePercent;
+  const sparklineData = quote.sparkline;
+  const isLiveData = quote.available;
 
-  const positive = changePercent >= 0;
-  const surge = parseFloat(volumeSurge(stock, liveQuote?.volumeMillions));
-  const highSurge = surge >= 1.5;
+  const positive = typeof changePercent === "number" && changePercent >= 0;
 
   // Trading signal colors for card border
   const actionColor = tradingSignal
     ? ACTION_COLORS[tradingSignal.action].text
-    : positive ? '#00D4FF' : '#FF2D55';
+    : !quote.available ? '#64748B' : positive ? '#00D4FF' : '#FF2D55';
   const actionBorderOpacity = tradingSignal ? '0.25' : '0.12';
 
   return (
@@ -384,7 +388,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
       }}
     >
       {/* Regime score bar */}
-      <div style={{
+      {regimeScore != null && <div style={{
         position: 'absolute', top: 0, left: 0,
         height: '2px',
         width: `${regimeScore}%`,
@@ -392,7 +396,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
           ? `linear-gradient(90deg, ${ACTION_COLORS[tradingSignal.action].text}, ${ACTION_COLORS[tradingSignal.action].glow})`
           : `linear-gradient(90deg, #00D4FF, #FFD700)`,
         opacity: 0.7,
-      }} />
+      }} />}
 
       {/* Header row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
@@ -410,24 +414,15 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
               background: 'rgba(255,255,255,0.04)',
               padding: '1px 5px', borderRadius: '2px',
             }}>{stock.marketCap}</span>
-            {isLiveData && (
-              <span style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '11px', letterSpacing: '0.08em',
-                color: '#00D4FF', background: 'rgba(0,212,255,0.08)',
-                padding: '1px 4px', borderRadius: '2px',
-                border: '1px solid rgba(0,212,255,0.15)',
-              }}>LIVE</span>
-            )}
-            {stock.earningsDaysAway !== undefined && stock.earningsDaysAway <= 14 && (
-              <span style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '12px', letterSpacing: '0.08em',
-                color: '#FFD700', background: 'rgba(255,215,0,0.1)',
-                padding: '1px 5px', borderRadius: '2px',
-                border: '1px solid rgba(255,215,0,0.2)',
-              }}>EARN {stock.earningsDaysAway}d</span>
-            )}
+            <span data-quote-badge={quote.badge} style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '11px', letterSpacing: '0.08em',
+              color: quote.badge === 'LIVE' ? '#00D4FF' : quote.badge === 'UNAVAILABLE' ? '#F59E0B' : '#94A3B8',
+              background: quote.badge === 'LIVE' ? 'rgba(0,212,255,0.08)' : 'rgba(255,255,255,0.04)',
+              padding: '1px 4px', borderRadius: '2px',
+              border: `1px solid ${quote.badge === 'LIVE' ? 'rgba(0,212,255,0.15)' : 'rgba(255,255,255,0.1)'}`,
+            }}>{quote.badge}</span>
+            {/* No "EARN nd" badge: earningsDaysAway is a static catalog count with no as-of date. */}
           </div>
           <div style={{
             fontFamily: "'IBM Plex Mono', monospace",
@@ -443,12 +438,12 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             fontFamily: "'IBM Plex Mono', monospace",
             fontWeight: 700, fontSize: '14px',
             color: '#F0F4FF',
-          }}>${fmt(price)}</div>
+          }} data-quote-price>{quote.priceText}</div>
           <div style={{
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: '11px', fontWeight: 700,
-            color: positive ? '#00D4FF' : '#FF2D55',
-          }}>{positive ? '+' : ''}{fmt(changePercent)}%</div>
+            color: !quote.available ? '#64748B' : positive ? '#00D4FF' : '#FF2D55',
+          }} data-quote-change>{quote.changeText}</div>
         </div>
       </div>
 
@@ -476,12 +471,9 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
               strength={tradingSignal.strength}
               assetClass="STOCK"
             />
-            <RegimeAlignmentBadge
-              alignment={tradingSignal.regimeAlignment}
-              score={tradingSignal.regimeAlignmentScore}
-            />
+            <RegimeAlignmentBadge alignment={tradingSignal.regimeAlignment} />
           </div>
-          <ConfidenceBar confidence={tradingSignal.confidence} action={tradingSignal.action} />
+          <ConfidenceBar action={tradingSignal.action} />
           <div style={{
             marginTop: '5px',
             fontFamily: "'IBM Plex Mono', monospace",
@@ -493,7 +485,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
 
       {/* Sparkline */}
       <div style={{ marginBottom: '8px' }}>
-        <MiniSparkline data={sparklineData} positive={positive} />
+        {sparklineData.length > 0 ? <MiniSparkline data={sparklineData} positive={positive} /> : <div style={{ height: '36px' }} />}
       </div>
 
       {/* Stats row */}
@@ -502,8 +494,11 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
         gap: '4px', marginBottom: '8px',
       }}>
         {[
-          { label: tradingSignal?.technicals.rsiIsTrue ? 'RSI(14)' : 'RSI~', value: tradingSignal ? tradingSignal.technicals.rsiEstimate.toFixed(0) : stock.relativeStrength.toString(), color: (tradingSignal?.technicals.rsiEstimate ?? stock.relativeStrength) > 70 ? '#FF2D55' : (tradingSignal?.technicals.rsiEstimate ?? stock.relativeStrength) < 30 ? '#00D4FF' : '#94A3B8' },
-          { label: 'VOL', value: `${surge}x`, color: highSurge ? '#FFD700' : '#94A3B8' },
+          // RSI only from a computed trading signal. The static signalsData
+          // relativeStrength catalog value is never shown as an RSI reading.
+          { label: tradingSignal?.technicals.rsiIsTrue && tradingSignal.technicals.rsiEstimate != null ? 'RSI(14)' : 'INDICATOR', value: tradingSignal?.technicals.rsiIsTrue && tradingSignal.technicals.rsiEstimate != null ? tradingSignal.technicals.rsiEstimate.toFixed(0) : 'UNAVAILABLE', color: tradingSignal?.technicals.rsiIsTrue && tradingSignal.technicals.rsiEstimate != null ? (tradingSignal.technicals.rsiEstimate > 70 ? '#FF2D55' : tradingSignal.technicals.rsiEstimate < 30 ? '#00D4FF' : '#94A3B8') : '#64748B' },
+          // Quote volume itself; no ratio against the static catalog average volume.
+          { label: 'VOL', value: quote.volumeMillions != null ? `${quote.volumeMillions.toFixed(1)}M` : '—', color: '#94A3B8' },
           { label: tradingSignal ? 'TREND' : 'SECTOR', value: tradingSignal ? tradingSignal.technicals.trend.split('trend')[0].toUpperCase() || tradingSignal.technicals.trend.toUpperCase() : stock.sector.split(' ')[0], color: tradingSignal?.technicals.trend === 'Uptrend' ? '#00D4FF' : tradingSignal?.technicals.trend === 'Downtrend' ? '#FF2D55' : '#94A3B8' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{
@@ -537,11 +532,15 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', fontWeight: 700, color }}>{value}</div>
             </div>
           ))}
+          <div data-price-levels-basis style={{ gridColumn: '1 / -1', fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.7)', letterSpacing: '0.06em' }}>{priceLevelsBasis(liveQuote, quote.badge)}</div>
         </div>
       )}
 
-      {/* Signal tags */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: expanded ? '8px' : 0 }}>
+      {/* Signal tags — static catalog descriptors; withheld when there is no quote
+          so an UNAVAILABLE card never shows momentum/breakout-style tags, and
+          labelled static so they never read as a signal computed from the live price. */}
+      {quote.available && <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px', marginBottom: expanded ? '8px' : 0 }}>
+        <CatalogTagsLabel />
         {stock.signals.slice(0, 2).map(sig => (
           <SignalTag key={sig} signal={sig} />
         ))}
@@ -552,7 +551,23 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             padding: '2px 6px',
           }}>+{stock.signals.length - 2}</span>
         )}
-      </div>
+      </div>}
+
+      {/* Details toggle: the expanded panel (KEY PRICE LEVELS, catalog notes) is
+          reachable without leaving the card; the card body still opens the ticker page. */}
+      <button
+        type="button"
+        data-card-details-toggle
+        aria-expanded={expanded}
+        onClick={e => { e.stopPropagation(); setExpanded(x => !x); }}
+        onKeyDown={e => e.stopPropagation()}
+        style={{
+          marginTop: '6px', padding: '2px 6px', cursor: 'pointer',
+          fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.12em',
+          color: 'rgba(148,163,184,0.85)', background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.08)', borderRadius: '2px',
+        }}
+      >{expanded ? 'HIDE DETAILS ▴' : 'DETAILS ▾'}</button>
 
       {/* Expanded details */}
       {expanded && (
@@ -607,6 +622,15 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
               </a>
             </div>
           )}
+          {/* No computed signal (guest, no quote, no canonical regime): levels are Unavailable — never a static value. */}
+          {!tradingSignal && !signalBlocked && (
+            <div data-price-levels-unavailable style={{ marginBottom: '10px', padding: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '3px' }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', letterSpacing: '0.15em', color: 'rgba(100,116,139,0.75)', marginBottom: '4px' }}>KEY PRICE LEVELS · UNAVAILABLE</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(148,163,184,0.75)', lineHeight: 1.5 }}>
+                Support, resistance, entry, stop and target are shown only when they are computed from a current or delayed quote for {stock.ticker}.
+              </div>
+            </div>
+          )}
           {/* Key Price Levels (only when trading signal available) */}
           {tradingSignal && (
             <div style={{
@@ -649,6 +673,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
                   </div>
                 ))}
               </div>
+              <div data-price-levels-basis style={{ marginTop: '6px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.7)', letterSpacing: '0.06em' }}>{priceLevelsBasis(liveQuote, quote.badge)} · ATR-based</div>
             </div>
           )}
 
@@ -659,7 +684,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
               display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px',
             }}>
               {[
-                { label: tradingSignal.technicals.rsiIsTrue ? 'RSI(14)' : 'RSI~', value: `${tradingSignal.technicals.rsiEstimate.toFixed(0)} ${tradingSignal.technicals.rsiLabel.toUpperCase()}`, color: tradingSignal.technicals.rsiLabel === 'Overbought' ? '#FF2D55' : tradingSignal.technicals.rsiLabel === 'Oversold' ? '#00D4FF' : '#94A3B8', badge: tradingSignal.technicals.rsiIsTrue ? 'TRUE' : undefined },
+                { label: tradingSignal.technicals.rsiIsTrue && tradingSignal.technicals.rsiEstimate != null ? 'RSI(14)' : 'INDICATOR', value: tradingSignal.technicals.rsiIsTrue && tradingSignal.technicals.rsiEstimate != null ? `${tradingSignal.technicals.rsiEstimate.toFixed(0)} ${tradingSignal.technicals.rsiLabel.toUpperCase()}` : 'UNAVAILABLE', color: tradingSignal.technicals.rsiIsTrue ? (tradingSignal.technicals.rsiLabel === 'Overbought' ? '#FF2D55' : tradingSignal.technicals.rsiLabel === 'Oversold' ? '#00D4FF' : '#94A3B8') : '#64748B', badge: tradingSignal.technicals.rsiIsTrue && tradingSignal.technicals.rsiEstimate != null ? 'TRUE' : undefined },
                 { label: tradingSignal.technicals.smaIsTrue ? 'SMA(50/200)' : 'SMA~', value: tradingSignal.technicals.smaSignal.toUpperCase(), color: tradingSignal.technicals.smaSignal === 'Golden Cross' ? '#00D4FF' : tradingSignal.technicals.smaSignal === 'Death Cross' ? '#FF2D55' : '#94A3B8', badge: tradingSignal.technicals.smaIsTrue ? 'TRUE' : undefined },
                 { label: 'VOLUME', value: tradingSignal.technicals.volumeSignal.toUpperCase(), color: tradingSignal.technicals.volumeSignal === 'Surge' ? '#FFD700' : tradingSignal.technicals.volumeSignal === 'Low' ? '#FF2D55' : '#94A3B8', badge: undefined },
               ].map(({ label, value, color, badge }) => (
@@ -696,18 +721,25 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             </div>
           )}
 
-          {/* Fundamentals grid */}
+          {/* Fundamentals grid. Market cap, short interest, debt/equity and average
+              volume in signalsData.ts are static catalog figures with no source or
+              as-of date, so they are shown as Unavailable (never as current figures).
+              AI exposure / recession sensitivity are catalog descriptors, labelled static.
+              Day open / high / low come from this card's Signals quote, with its badge. */}
+          <div data-fundamentals-basis style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.7)', letterSpacing: '0.06em', marginBottom: '4px' }}>
+            FUNDAMENTALS · NO CURRENT SOURCE CONNECTED · descriptors are catalog · static
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '8px' }}>
             {[
-              { label: 'Market Cap', value: fmtCap(stock.marketCapValue) },
-              { label: 'Short Interest', value: stock.shortInterest ? `${stock.shortInterest}%` : 'N/A' },
-              { label: 'Debt/Equity', value: stock.debtToEquity !== undefined ? stock.debtToEquity.toFixed(1) : 'N/A' },
-              { label: 'Avg Volume', value: `${stock.avgVolume.toFixed(1)}M` },
-              { label: 'AI Exposure', value: stock.aiExposure },
-              { label: 'Recession Sens.', value: stock.recessionSensitivity },
-              ...(liveQuote?.price && liveQuote.price > 0 ? [
-                { label: 'Day Open', value: `$${fmt(liveQuote.open)}` },
-                { label: 'Day High/Low', value: `$${fmt(liveQuote.high)} / $${fmt(liveQuote.low)}` },
+              { label: 'Market Cap', value: 'Unavailable' },
+              { label: 'Short Interest', value: 'Unavailable' },
+              { label: 'Debt/Equity', value: 'Unavailable' },
+              { label: 'Avg Volume', value: 'Unavailable' },
+              { label: 'AI Exposure · static', value: stock.aiExposure },
+              { label: 'Recession Sens. · static', value: stock.recessionSensitivity },
+              ...(quote.available && liveQuote ? [
+                { label: `Day Open · ${quote.badge}`, value: `$${fmt(liveQuote.open)}` },
+                { label: `Day High/Low · ${quote.badge}`, value: `$${fmt(liveQuote.high)} / $${fmt(liveQuote.low)}` },
               ] : []),
             ].map(({ label, value }) => (
               <div key={label}>
@@ -825,24 +857,24 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
               color: '#00D4FF',
               border: '1px solid rgba(0,212,255,0.15)',
             }}>{stock.timeframe.toUpperCase()}</span>
-            {/* Momentum */}
-            <span style={{
+            {/* Momentum — static catalog score (signalsData.ts), not computed from the quote */}
+            <span data-catalog-static-chip="momentum" style={{
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: '9px', letterSpacing: '0.1em',
               padding: '2px 6px', borderRadius: '2px',
               background: 'rgba(100,116,139,0.06)',
               color: stock.momentum >= 70 ? '#00D4FF' : stock.momentum >= 50 ? '#FBB724' : '#FF2D55',
               border: '1px solid rgba(255,255,255,0.06)',
-            }}>MOM: {stock.momentum}</span>
-            {/* Bias */}
-            <span style={{
+            }}>Catalog · static · MOM {stock.momentum}</span>
+            {/* Bias — static catalog descriptor, not a current call */}
+            <span data-catalog-static-chip="bias" style={{
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: '9px', letterSpacing: '0.1em',
               padding: '2px 6px', borderRadius: '2px',
               background: stock.bias === 'Bullish' ? 'rgba(0,212,255,0.08)' : stock.bias === 'Bearish' ? 'rgba(255,45,85,0.08)' : 'rgba(255,215,0,0.08)',
               color: stock.bias === 'Bullish' ? '#00D4FF' : stock.bias === 'Bearish' ? '#FF2D55' : '#FFD700',
               border: `1px solid ${stock.bias === 'Bullish' ? 'rgba(0,212,255,0.2)' : stock.bias === 'Bearish' ? 'rgba(255,45,85,0.2)' : 'rgba(255,215,0,0.2)'}`,
-            }}>{stock.bias.toUpperCase()}</span>
+            }}>Catalog · static · {stock.bias.toUpperCase()}</span>
           </div>
 
           {/* Bull / Bear / Invalidation / Why FAULTLINE Likes It */}
@@ -862,7 +894,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(200,220,200,0.85)', lineHeight: 1.5 }}>
                   {tradingSignal.action === 'BUY' || tradingSignal.action === 'HOLD'
                     ? `${stock.name} shows ${tradingSignal.technicals.smaSignal === 'Golden Cross' ? 'golden cross formation' : 'positive momentum'} with regime alignment at ${tradingSignal.regimeAlignmentScore}. ${tradingSignal.technicals.volumeSignal === 'Surge' ? 'Volume surge confirms institutional interest.' : 'Momentum supports continuation.'}`
-                    : `Counter-trend bounce from $${tradingSignal.priceLevels.support.toFixed(2)} support. RSI ${tradingSignal.technicals.rsiEstimate.toFixed(0)} approaching oversold territory.`
+                    : `Counter-trend bounce from $${tradingSignal.priceLevels.support.toFixed(2)} support. ${typeof tradingSignal.technicals.rsiEstimate === "number" && tradingSignal.technicals.rsiIsTrue ? `RSI ${tradingSignal.technicals.rsiEstimate.toFixed(0)} approaching oversold territory.` : "Completed-bar RSI is unavailable."}`
                   }
                 </div>
               </div>
@@ -909,30 +941,20 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
           )}
 
           {/* ── Institutional Signal Data (Phase 3.5) ─────────────────────── */}
-          {(stock.opportunityScore !== undefined || stock.entryZone || stock.support || stock.catalysts?.length) && (
+          {(stock.opportunityScore !== undefined || stock.catalysts?.length) && (
             <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '4px' }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(100,116,139,0.6)', marginBottom: '8px' }}>INSTITUTIONAL SIGNAL DATA</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(100,116,139,0.6)', marginBottom: '8px' }}>CATALOG NOTES · STATIC REFERENCE, NOT MARKET DATA</div>
 
-              {/* Row 1: Opportunity Score + R:R + Confidence + Macro Alignment */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '6px' }}>
+              {/* Row 1: Opportunity Score + Macro Alignment (static catalog notes).
+                  No static R:R, entry, support, resistance, stop or targets: price levels live only in KEY PRICE LEVELS. */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '6px' }}>
                 {stock.opportunityScore !== undefined && (
                   <div style={{ textAlign: 'center', padding: '6px', background: 'rgba(0,212,255,0.05)', border: '1px solid rgba(0,212,255,0.12)', borderRadius: '3px' }}>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(0,212,255,0.5)', letterSpacing: '0.1em', marginBottom: '2px' }}>OPP SCORE</div>
                     <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: stock.opportunityScore >= 80 ? '#00FF88' : stock.opportunityScore >= 60 ? '#00D4FF' : '#FF9500', lineHeight: 1 }}>{stock.opportunityScore}</div>
                   </div>
                 )}
-                {stock.riskReward && (
-                  <div style={{ textAlign: 'center', padding: '6px', background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,255,136,0.1)', borderRadius: '3px' }}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(0,255,136,0.5)', letterSpacing: '0.1em', marginBottom: '2px' }}>R:R RATIO</div>
-                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '16px', color: '#00FF88', lineHeight: 1 }}>{stock.riskReward}</div>
-                  </div>
-                )}
-                {stock.confidence !== undefined && (
-                  <div style={{ textAlign: 'center', padding: '6px', background: 'rgba(192,132,252,0.04)', border: '1px solid rgba(192,132,252,0.1)', borderRadius: '3px' }}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(192,132,252,0.5)', letterSpacing: '0.1em', marginBottom: '2px' }}>CONFIDENCE</div>
-                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#C084FC', lineHeight: 1 }}>{stock.confidence}%</div>
-                  </div>
-                )}
+                {/* QA Signals confidence (B14): the static catalog "confidence" is not shown. */}
                 {stock.macroAlignment && (
                   <div style={{ textAlign: 'center', padding: '6px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '3px' }}>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em', marginBottom: '2px' }}>MACRO</div>
@@ -940,50 +962,6 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
                   </div>
                 )}
               </div>
-
-              {/* Row 2: Entry Zone + Support + Resistance + Stop Loss */}
-              {(stock.entryZone || stock.support || stock.resistance || stock.stopLoss) && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '6px' }}>
-                  {stock.entryZone && (
-                    <div style={{ padding: '5px 7px', background: 'rgba(0,212,255,0.04)', border: '1px solid rgba(0,212,255,0.1)', borderRadius: '3px' }}>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(0,212,255,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>ENTRY ZONE</div>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(148,163,184,0.8)', lineHeight: 1.3 }}>{stock.entryZone}</div>
-                    </div>
-                  )}
-                  {stock.support && (
-                    <div style={{ padding: '5px 7px', background: 'rgba(0,255,136,0.03)', border: '1px solid rgba(0,255,136,0.08)', borderRadius: '3px' }}>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(0,255,136,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>SUPPORT</div>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(148,163,184,0.8)', lineHeight: 1.3 }}>{stock.support}</div>
-                    </div>
-                  )}
-                  {stock.resistance && (
-                    <div style={{ padding: '5px 7px', background: 'rgba(255,45,85,0.03)', border: '1px solid rgba(255,45,85,0.08)', borderRadius: '3px' }}>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(255,45,85,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>RESISTANCE</div>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(148,163,184,0.8)', lineHeight: 1.3 }}>{stock.resistance}</div>
-                    </div>
-                  )}
-                  {stock.stopLoss && (
-                    <div style={{ padding: '5px 7px', background: 'rgba(255,45,85,0.04)', border: '1px solid rgba(255,45,85,0.12)', borderRadius: '3px' }}>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(255,45,85,0.6)', letterSpacing: '0.08em', marginBottom: '2px' }}>STOP LOSS</div>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(255,45,85,0.8)', fontWeight: 700, lineHeight: 1.3 }}>{stock.stopLoss}</div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Row 3: Profit Targets */}
-              {stock.profitTargets && stock.profitTargets.length > 0 && (
-                <div style={{ marginBottom: '6px', padding: '6px 8px', background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,255,136,0.1)', borderRadius: '3px' }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(0,255,136,0.5)', letterSpacing: '0.1em', marginBottom: '4px' }}>PROFIT TARGETS</div>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {stock.profitTargets.map((t, i) => (
-                      <span key={t} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#00FF88', fontWeight: 700, padding: '2px 6px', background: 'rgba(0,255,136,0.08)', borderRadius: '2px', border: '1px solid rgba(0,255,136,0.2)' }}>
-                        T{i + 1}: {t}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Row 4: Catalysts + Threats */}
               {(stock.catalysts?.length || stock.threats?.length) && (
@@ -1033,8 +1011,9 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             </div>
           )}
 
-          {/* All signals */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+          {/* All signals — static catalog tags, labelled as such (not computed from the quote) */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px' }}>
+            <CatalogTagsLabel />
             {stock.signals.map(sig => <SignalTag key={sig} signal={sig} />)}
           </div>
 
@@ -1120,7 +1099,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             fontSize: '11px', color: 'rgba(55,65,81,0.6)',
             letterSpacing: '0.08em',
           }}>
-            {isLiveData ? 'SOURCE: YAHOO FINANCE · /api/signals/quotes' : `API: ${stock.apiSources.quote}`}
+            {isLiveData ? `SOURCE: YAHOO FINANCE · /api/signals/quotes · ${quote.badge}` : 'QUOTE: UNAVAILABLE — no server quote for this ticker'}
             {tradingSignal && ' · SIGNALS: FAULTLINE ENGINE'}
           </div>
         </div>
@@ -1130,9 +1109,10 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
 }
 
 // ── Top Signal Card ───────────────────────────────────────────
-function TopSignalCard({ label, stock, color, icon, liveQuote }: { label: string; stock: SignalStock; color: string; icon: string; liveQuote?: LiveQuote }) {
-  const changePercent = liveQuote?.price && liveQuote.price > 0 ? liveQuote.changePercent : stock.changePercent;
-  const positive = changePercent >= 0;
+function TopSignalCard({ label, stock, color, icon, liveQuote }: { label: string; stock: SignalStock | null; color: string; icon: string; liveQuote?: LiveQuote }) {
+  // Server quote only; no quote → "—" + UNAVAILABLE (never signalsData reference values).
+  const quote = signalQuoteView(liveQuote);
+  const positive = typeof quote.changePercent === "number" && quote.changePercent >= 0;
   return (
     <div style={{
       background: 'rgba(8,10,14,0.9)',
@@ -1153,31 +1133,33 @@ function TopSignalCard({ label, stock, color, icon, liveQuote }: { label: string
         fontWeight: 700, fontSize: '18px',
         color: '#F0F4FF', letterSpacing: '0.05em',
         marginBottom: '2px',
-      }}><TickerChip ticker={stock.ticker} name={stock.name} /></div>
+      }}>{stock ? <TickerChip ticker={stock.ticker} name={stock.name} /> : '—'}</div>
       <div style={{
         fontFamily: "'IBM Plex Mono', monospace",
         fontSize: '13px', color: 'rgba(100,116,139,0.7)',
         marginBottom: '4px',
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-      }}>{stock.name}</div>
+      }}>{stock ? stock.name : 'No quoted ticker available'}</div>
       <div style={{
         fontFamily: "'IBM Plex Mono', monospace",
         fontSize: '12px', fontWeight: 700,
-        color: positive ? '#00D4FF' : '#FF2D55',
-      }}>{positive ? '+' : ''}{fmt(changePercent)}%</div>
+        color: !quote.available ? '#64748B' : positive ? '#00D4FF' : '#FF2D55',
+      }} data-quote-change>{quote.changeText}{' '}<span data-quote-badge={quote.badge} style={{ fontSize: '10px', fontWeight: 400, letterSpacing: '0.08em', color: quote.badge === 'UNAVAILABLE' ? '#F59E0B' : '#94A3B8' }}>{quote.badge}</span></div>
       <div style={{ marginTop: '6px' }}>
-        <MiniSparkline data={liveQuote?.sparkline?.length ? liveQuote.sparkline : stock.sparkline} positive={positive} />
+        {quote.sparkline.length > 0 ? <MiniSparkline data={quote.sparkline} positive={positive} /> : <div style={{ height: '36px' }} />}
       </div>
     </div>
   );
 }
 
 // ── API Health Badge ──────────────────────────────────────────
-function ApiHealthBadge({ source, tradeDate, lastUpdated, isLoading }: {
+function ApiHealthBadge({ source, tradeDate, lastUpdated, isLoading, quotes, tickerCount }: {
   source: 'live' | 'stale' | 'fallback' | null;
   tradeDate?: string;
   lastUpdated: string | null;
   isLoading: boolean;
+  quotes: readonly LiveQuote[];
+  tickerCount: number;
 }) {
   if (isLoading) {
     return (
@@ -1197,12 +1179,14 @@ function ApiHealthBadge({ source, tradeDate, lastUpdated, isLoading }: {
     );
   }
 
-  const isLive = source === 'live';
-  const isStale = source === 'stale';
-  const isFallback = source === 'fallback' || source === null;
+  // "YAHOO FINANCE LIVE" only when a quote is actually live in an open session.
+  const feed = signalsFeedLabel({ source, quotes, tickerCount });
+  const isLive = feed.label === 'YAHOO FINANCE LIVE';
+  const isStale = feed.label === 'STALE CACHE';
+  const isFallback = feed.label === 'FALLBACK MODE';
 
-  const color = isLive ? '#00D4FF' : isStale ? '#FFD700' : '#FF2D55';
-  const label = isLive ? 'YAHOO FINANCE LIVE' : isStale ? 'STALE CACHE' : 'FALLBACK MODE';
+  const color = isLive ? '#00D4FF' : isStale ? '#FFD700' : isFallback ? '#FF2D55' : '#94A3B8';
+  const label = feed.label;
   const dot = isLive ? 'fl-pulse 5s ease-in-out infinite' : 'none';
 
   return (
@@ -1230,6 +1214,7 @@ function ApiHealthBadge({ source, tradeDate, lastUpdated, isLoading }: {
           UPDATED: {fmtTimestamp(lastUpdated)}
         </span>
       )}
+      <span data-quote-coverage style={{ color: 'rgba(100,116,139,0.65)' }}>{feed.coverage}</span>
       {isFallback && (
         <span style={{ color: '#FF2D55' }}>· MARKET DATA UNAVAILABLE</span>
       )}
@@ -1250,9 +1235,6 @@ function TradingSignalsSummaryBar({ signals }: { signals: TradingSignalResult[] 
 
   const strongBuys = signals.filter(s => s.action === 'BUY' && s.strength === 'Strong').length;
   const strongSells = signals.filter(s => s.action === 'SELL' && s.strength === 'Strong').length;
-  const avgConf = signals.length > 0
-    ? Math.round(signals.reduce((s, v) => s + v.confidence, 0) / signals.length)
-    : 0;
 
   const sentiment = counts.BUY > counts.SELL + counts.HOLD
     ? { label: 'BULLISH BIAS', color: '#00D4FF' }
@@ -1291,7 +1273,7 @@ function TradingSignalsSummaryBar({ signals }: { signals: TradingSignalResult[] 
         <span style={{
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: '12px', color: 'rgba(100,116,139,0.65)',
-        }}>AVG CONFIDENCE: <span style={{ color: '#94A3B8' }}>{avgConf}%</span></span>
+        }}>CONFIDENCE: <span style={{ color: '#94A3B8' }}>{SIGNAL_CONFIDENCE_NOT_ESTABLISHED}</span></span>
       </div>
 
       {/* Signal count row */}
@@ -1460,8 +1442,9 @@ function SignalsInner() {
 
   const quoteMap = useMemo(() => {
     const map = new Map<string, LiveQuote>();
+    // Each quote carries the response source, so a stale-cache quote is never badged LIVE.
     for (const q of quotesData?.quotes ?? []) {
-      map.set(q.ticker, q);
+      map.set(q.ticker, { ...q, feedSource: quotesData?.source ?? null });
     }
     return map;
   }, [quotesData]);
@@ -1469,26 +1452,39 @@ function SignalsInner() {
   const enrichedStocks = useMemo((): SignalStock[] => {
     return SIGNAL_STOCKS.map(s => {
       const q = quoteMap.get(s.ticker);
-      if (!q || q.price === 0) return s;
+      if (!q || q.price == null || q.price === 0 || q.changePercent == null) return s;
       return {
         ...s,
         price: q.price,
         changePercent: q.changePercent,
-        volume: q.volumeMillions,
+        volume: q.volumeMillions ?? s.volume,
         sparkline: q.sparkline.length > 0 ? q.sparkline : s.sparkline,
       };
     });
   }, [quoteMap]);
 
   // ── Regime context ─────────────────────────────────────────
-  const regimeCode = useMemo(() => mapRegimeToCode(engine?.output?.regime?.label ?? 'MODERATE RISK'), [engine?.output?.regime?.label]);
-  const regimeCtx = REGIME_CONTEXT[regimeCode];
-  const priorityCats = REGIME_PRIORITY_CATEGORIES[regimeCode];
+  // Canonical regime only: no 'MODERATE RISK' default. Outside canonical mode
+  // there is no regime code, so no regime context or priority highlighting.
+  const canonicalRegimeLabel = engine?.marketMode === 'canonical' ? (engine?.output?.regime?.label ?? null) : null;
+  const regimeCode = useMemo(() => (canonicalRegimeLabel ? mapRegimeToCode(canonicalRegimeLabel) : null), [canonicalRegimeLabel]);
+  const regimeCtx = regimeCode ? REGIME_CONTEXT[regimeCode] : null;
+  const priorityCats: readonly ScreeningCategory[] = regimeCode ? REGIME_PRIORITY_CATEGORIES[regimeCode] : [];
 
-  const regimeForSignals = useMemo(() => ({
-    label: engine?.output?.regime?.label ?? 'MODERATE RISK',
-    score: engine?.output?.overall?.score ?? 5,
-  }), [engine?.output?.regime?.label, engine?.output?.overall?.score]);
+  // Regime sent to signal computation / ticker analysis must be the canonical
+  // regime. Outside canonical mode (marketState unavailable) the browser engine
+  // runs on DEFAULT_INDICATORS demo inputs, so no regime is sent or displayed.
+  const canonicalRegimeAvailable = engine?.marketMode === 'canonical';
+  // Shown on the same 0–100 scale as NOW / Pressure / the header strip.
+  const rawCanonicalPressure = engine?.canonicalState?.pressureIndex;
+  const canonicalPressureIndex = canonicalRegimeAvailable && typeof rawCanonicalPressure === 'number' && Number.isFinite(rawCanonicalPressure)
+    ? rawCanonicalPressure
+    : null;
+  const regimeForSignals = useMemo(() => (
+    canonicalRegimeAvailable && engine?.output?.regime?.label && Number.isFinite(engine?.output?.overall?.score)
+      ? { label: engine.output.regime.label, score: engine.output.overall.score }
+      : null
+  ), [canonicalRegimeAvailable, engine?.output?.regime?.label, engine?.output?.overall?.score]);
 
   // ── Filters state ──────────────────────────────────────────
   const [filters, setFilters] = useState<SignalFilters>(DEFAULT_FILTERS);
@@ -1531,36 +1527,53 @@ function SignalsInner() {
   // ── Scored and filtered stocks ─────────────────────────────
   const displayedStocks = useMemo(() => {
     const filtersWithCat: SignalFilters = { ...filters, category: activeCategory };
-    const filtered = filterStocks(enrichedStocks, filtersWithCat);
+    // Unquoted tickers keep only static catalog price/change/volume/RS/tags
+    // (signalsData.ts). Those are never treated as market readings: when a
+    // market-value filter is active they are excluded, they are not scored, and
+    // they sort after quoted tickers.
+    const isQuoted = (t: string) => hasUsableSignalQuote(quoteMap.get(t));
+    const marketFilterActive =
+      filters.minChange !== DEFAULT_FILTERS.minChange ||
+      filters.maxChange !== DEFAULT_FILTERS.maxChange ||
+      filters.minRS !== DEFAULT_FILTERS.minRS ||
+      filters.minVolumeSurge !== DEFAULT_FILTERS.minVolumeSurge ||
+      filters.minMomentum !== DEFAULT_FILTERS.minMomentum ||
+      filters.signal !== DEFAULT_FILTERS.signal;
+    const filtered = filterStocks(enrichedStocks, filtersWithCat)
+      .filter(s => !marketFilterActive || isQuoted(s.ticker));
     return filtered.map(s => ({
       stock: s,
-      score: scoreStockForRegime(s, regimeCode),
-    })).sort((a, b) => b.score - a.score);
-  }, [filters, activeCategory, regimeCode, enrichedStocks]);
+      score: regimeForSignals && regimeCode && isQuoted(s.ticker) ? scoreStockForRegime(s, regimeCode) : null,
+    })).sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+  }, [filters, activeCategory, regimeCode, enrichedStocks, quoteMap, regimeForSignals]);
 
   // ── Trading signals query ──────────────────────────────────
   // Build input for tRPC query — stable reference via useMemo
-  // Use real OHLC from live quote map when available; fall back to catalog estimates
+  // Fail-closed: only tickers with a usable server quote are sent, and every price
+  // field comes from that quote. Static catalog prices (signalsData.ts) are never
+  // used as market inputs; unquoted tickers simply get no trading signal.
   const tradingSignalsInput = useMemo(() => ({
-    tickers: displayedStocks.map(({ stock }) => {
+    tickers: displayedStocks.flatMap(({ stock }) => {
       const lq = quoteMap.get(stock.ticker);
-      const hasLive = !!(lq && lq.price > 0);
-      return {
+      if (!lq || !hasUsableSignalQuote(lq)) return [];
+      if (lq.volumeMillions == null) return [];
+      if (lq.open == null || lq.high == null || lq.low == null) return [];
+      return [{
         ticker: stock.ticker,
-        price: hasLive ? lq!.price : stock.price,
-        open: hasLive ? lq!.open : stock.price * 0.995,
-        high: hasLive ? lq!.high : stock.price * 1.02,
-        low: hasLive ? lq!.low : stock.price * 0.98,
-        changePercent: hasLive ? lq!.changePercent : stock.changePercent,
-        volumeMillions: hasLive ? lq!.volumeMillions : stock.volume,
+        price: lq.price,
+        open: lq.open,
+        high: lq.high,
+        low: lq.low,
+        changePercent: lq.changePercent,
+        volumeMillions: lq.volumeMillions,
         avgVolume: stock.avgVolume,
-        sparkline: (hasLive && lq!.sparkline.length > 0) ? lq!.sparkline : stock.sparkline,
+        sparkline: lq.sparkline,
         relativeStrength: stock.relativeStrength,
         // Pass real daily bars when available — engine uses them for true RSI/SMA/MACD
         ...(dailyBarsMap[stock.ticker]?.length >= 14 ? { dailyBars: dailyBarsMap[stock.ticker] } : {}),
-      };
+      }];
     }),
-    regime: regimeForSignals,
+    regime: regimeForSignals ?? { label: 'UNAVAILABLE', score: Number.NaN },
   }), [displayedStocks, quoteMap, dailyBarsMap, regimeForSignals]);
 
   const [tradingSignalsData, setTradingSignalsData] = useState<TradingSignalResult[]>([]);
@@ -1587,6 +1600,8 @@ function SignalsInner() {
       setSignalBlocked(false);
       return;
     }
+    if (tradingSignalsInput.tickers.length === 0) return; // nothing quoted → no signals, no fabricated inputs
+    if (!regimeForSignals) return; // no canonical regime → never compute against a demo regime
     const key = JSON.stringify(tradingSignalsInput) + ':' + signalsRefreshCounter;
     if (key === signalsInputRef.current) return;
     signalsInputRef.current = key;
@@ -1604,13 +1619,40 @@ function SignalsInner() {
   }, [tradingSignalsData]);
 
   // ── Today's top signals ────────────────────────────────────
-  const topSignals = useMemo(() => getTodaysTopSignals(regimeCode, enrichedStocks.length > 0 ? enrichedStocks : undefined), [regimeCode, enrichedStocks]);
+  // Top cards rank only tickers with a server quote, so a static signalsData
+  // changePercent can never make a ticker "Top Bearish" etc.
+  const topSignals = useMemo(() => {
+    const quoted = enrichedStocks.filter(s => hasUsableSignalQuote(quoteMap.get(s.ticker)));
+    return quoted.length > 0 && regimeForSignals && regimeCode ? getTodaysTopSignals(regimeCode, quoted) : null;
+  }, [regimeCode, enrichedStocks, quoteMap, regimeForSignals]);
+
+  // Header (ApiHealthBadge) and footer read the SAME catalog-scoped quotes and feed label.
+  const catalogQuoteList = useMemo(
+    () => catalogQuotes(quotesData?.quotes, SIGNAL_STOCKS.map(s => s.ticker)),
+    [quotesData?.quotes],
+  );
+  const feedLabel = useMemo(
+    () => signalsFeedLabel({ source: quotesData?.source ?? null, quotes: catalogQuoteList, tickerCount: SIGNAL_STOCKS.length }),
+    [quotesData?.source, catalogQuoteList],
+  );
+  const footer = useMemo(() => signalsFooter(feedLabel), [feedLabel]);
+  // Subtitle wording follows the same feed label (never "live prices" unless a quote is live).
+  const subtitle = useMemo(
+    () => signalsSubtitle(feedLabel, { loading: quotesLoading && !quotesData }),
+    [feedLabel, quotesLoading, quotesData],
+  );
+
+  // Header badge reflects quote freshness, never the pressure-engine integrity.
+  const pricesBadge = useMemo(() => signalsPriceBadge(quotesData?.quotes, quotesData?.source ?? null), [quotesData?.quotes, quotesData?.source]);
 
   // ── Regime color ───────────────────────────────────────────
+  // Outside canonical mode the engine regime colour is the demo engine's: neutral instead
+  // (regime and pressure are withheld on this page then).
   const regimeColor = useMemo(() => {
+    if (!canonicalRegimeAvailable) return UNAVAILABLE_DISPLAY_COLOR;
     if (!engine?.output?.regime) return '#00D4FF';
     return engine.output.regime.color ?? '#00D4FF';
-  }, [engine?.output?.regime]);
+  }, [canonicalRegimeAvailable, engine?.output?.regime]);
 
   return (
     <div style={{
@@ -1622,17 +1664,17 @@ function SignalsInner() {
 
       <PageHeader
         title="Signals"
-        subtitle="Macro-regime-aware market scanner — live prices, trading signals, and regime-fit scores for 30+ tickers."
-        badge={engine?.integrityLabel === 'LIVE' ? 'LIVE PRICES' : customerPressureBadge(engine?.integrityLabel ?? 'UNAVAILABLE')}
-        badgeColor={engine?.integrityLabel === 'LIVE' ? 'green' : engine?.integrityLabel === 'UNAVAILABLE' ? 'gray' : 'amber'}
+        subtitle={subtitle}
+        badge={pricesBadge.label}
+        badgeColor={pricesBadge.color}
         rightSlot={
           <div className="flex items-center gap-2">
             {tradingSignalsData.length > 0 && (
               <ShareReportButton
                 reportType="stock_intelligence"
-                subject={`Stock Signals — ${tradingSignalsData.length} tickers · ${regimeForSignals.label}`}
+                subject={`Stock Signals — ${tradingSignalsData.length} tickers · ${regimeForSignals?.label ?? 'Regime unavailable'}`}
                 snapshotData={{
-                  regime: regimeForSignals.label,
+                  regime: regimeForSignals?.label ?? null,
                   signalCount: tradingSignalsData.length,
                   signals: tradingSignalsData.slice(0, 20).map(s => ({
                     ticker: s.ticker,
@@ -1640,7 +1682,7 @@ function SignalsInner() {
                     actionLabel: s.actionLabel,
                     assetClass: s.assetClass,
                     strength: s.strength,
-                    confidence: s.confidence,
+                    // QA Signals confidence (B14): no signal confidence in new share snapshots.
                     entryZone: s.priceLevels?.entryZone,
                     stopLoss: s.priceLevels?.stopLoss,
                     targetPrice: s.priceLevels?.targetPrice,
@@ -1648,7 +1690,6 @@ function SignalsInner() {
                 }}
               />
             )}
-            <PreflightTrigger currentPage="signals" regimeLabel={regimeForSignals.label} actionKey="viewed_signals" />
           </div>
         }
       />
@@ -1656,10 +1697,14 @@ function SignalsInner() {
       {/* ── Signals Module Sub-Nav: navigate between Stocks, Crypto, Signal Outlook ── */}
       <SignalsSubNav />
 
-      {/* ── Seismograph Narrative Banner ── */}
-      <div style={{ padding: '0 16px', marginTop: '8px' }}>
-        <SeismographNarrativeBanner context="signals" defaultExpanded={false} />
-      </div>
+      {/* ── Seismograph Narrative Banner ── (only with a canonical regime; during a
+          canonical outage it would repeat a regime/pressure line beside
+          'CANONICAL REGIME UNAVAILABLE') */}
+      {regimeForSignals && (
+        <div style={{ padding: '0 16px', marginTop: '8px' }}>
+          <SeismographNarrativeBanner context="signals" defaultExpanded={false} />
+        </div>
+      )}
       {/* ── What does this mean? synthesis panel ── */}
       <div style={{ padding: '0 16px', marginBottom: '8px' }}>
         <MarketSynthesisPanel context="signals" />
@@ -1704,8 +1749,8 @@ function SignalsInner() {
           isLoading={asymLoading}
           onRefresh={() => asymRefetch()}
           regimeColor="#A855F7"
-          regimeLabel={engine?.output?.regime?.label ?? 'MODERATE RISK'}
-          pressureIndex={engine?.output?.overall?.score ?? 5}
+          regimeLabel={regimeForSignals?.label ?? 'UNAVAILABLE'}
+          pressureIndex={regimeForSignals?.score ?? Number.NaN}
         />
       )}
 
@@ -1761,12 +1806,12 @@ function SignalsInner() {
                 fontWeight: 700, fontSize: '13px',
                 color: regimeColor, letterSpacing: '0.1em',
                 textTransform: 'uppercase',
-              }}>SIGNALS — {regimeCtx.headline}</span>
+              }}>SIGNALS — {regimeForSignals && regimeCtx ? regimeCtx.headline : 'CANONICAL REGIME UNAVAILABLE'}</span>
             </div>
             <p style={{
               fontSize: '10px', color: 'rgba(100,116,139,0.8)',
               lineHeight: 1.5, margin: 0, maxWidth: '500px',
-            }}>{regimeCtx.description}</p>
+            }}>{regimeForSignals && regimeCtx ? regimeCtx.description : 'The canonical market state is unavailable, so regime context, favors/avoids and signal computation are withheld rather than derived from simulated inputs.'}</p>
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
             <div style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)', marginBottom: '2px' }}><FaultlineTerm id="regime-score" /></div>
@@ -1774,11 +1819,11 @@ function SignalsInner() {
               fontFamily: "'Rajdhani', sans-serif",
               fontWeight: 700, fontSize: '22px',
               color: regimeColor,
-            }}>{engine?.output?.overall?.score?.toFixed(1) ?? '—'}<span style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)' }}>/10</span></div>
+            }} data-canonical-pressure={canonicalPressureIndex ?? 'unavailable'}>{canonicalPressureIndex != null ? Math.round(canonicalPressureIndex) : '—'}<span style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)' }}>/100</span></div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', marginTop: '10px', flexWrap: 'wrap' }}>
+        {regimeForSignals && regimeCtx && <div style={{ display: 'flex', gap: '12px', marginTop: '10px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em' }}>FAVORS:</span>
             <span style={{ fontSize: '13px', color: '#00D4FF' }}>{regimeCtx.bullish}</span>
@@ -1787,7 +1832,7 @@ function SignalsInner() {
             <span style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em' }}>AVOIDS:</span>
             <span style={{ fontSize: '13px', color: '#FF2D55' }}>{regimeCtx.bearish}</span>
           </div>
-        </div>
+        </div>}
 
         <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
           <ApiHealthBadge
@@ -1795,19 +1840,27 @@ function SignalsInner() {
             tradeDate={quotesData?.tradeDate}
             lastUpdated={quotesData?.timestamp ?? null}
             isLoading={quotesLoading}
+            quotes={catalogQuoteList}
+            tickerCount={SIGNAL_STOCKS.length}
           />
         </div>
       </div>
 
       {/* ── Ticker Intelligence Search ──────────────────── */}
       <div style={{ padding: '16px 16px 0' }}>
-        <TickerSearch
-          regime={{
-            label: engine?.output?.regime?.label ?? 'MODERATE RISK',
-            score: engine?.output?.overall?.score ?? 5,
-            description: engine?.output?.regime?.description,
-          }}
-        />
+        {regimeForSignals ? (
+          <TickerSearch
+            regime={{
+              label: regimeForSignals.label,
+              score: regimeForSignals.score,
+              description: engine?.output?.regime?.description,
+            }}
+          />
+        ) : (
+          <div style={{ fontSize: '11px', color: 'rgba(148,163,184,0.85)' }}>
+            Ticker analysis is unavailable while the canonical market state is unavailable.
+          </div>
+        )}
       </div>
 
       <div style={{ margin: '4px 16px 0', height: '1px', background: 'rgba(255,255,255,0.04)' }} />
@@ -1821,11 +1874,11 @@ function SignalsInner() {
           textTransform: 'uppercase', marginBottom: '10px',
         }}>TODAY'S TOP SIGNALS</div>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-          <TopSignalCard label="Top Bullish" stock={topSignals.topBullish} color="#00D4FF" icon="▲" liveQuote={quoteMap.get(topSignals.topBullish.ticker)} />
-          <TopSignalCard label="Top Bearish" stock={topSignals.topBearish} color="#FF2D55" icon="▼" liveQuote={quoteMap.get(topSignals.topBearish.ticker)} />
-          <TopSignalCard label="Volume Breakout" stock={topSignals.highestVolume} color="#FFD700" icon="⚡" liveQuote={quoteMap.get(topSignals.highestVolume.ticker)} />
-          <TopSignalCard label="Macro Risk" stock={topSignals.highestMacroRisk} color="#FF9500" icon="⚠" liveQuote={quoteMap.get(topSignals.highestMacroRisk.ticker)} />
-          <TopSignalCard label="AI Momentum" stock={topSignals.strongestAI} color="#A855F7" icon="◈" liveQuote={quoteMap.get(topSignals.strongestAI.ticker)} />
+          <TopSignalCard label="Top Bullish" stock={topSignals?.topBullish ?? null} color="#00D4FF" icon="▲" liveQuote={topSignals ? quoteMap.get(topSignals.topBullish.ticker) : undefined} />
+          <TopSignalCard label="Top Bearish" stock={topSignals?.topBearish ?? null} color="#FF2D55" icon="▼" liveQuote={topSignals ? quoteMap.get(topSignals.topBearish.ticker) : undefined} />
+          <TopSignalCard label="Volume Breakout" stock={topSignals?.highestVolume ?? null} color="#FFD700" icon="⚡" liveQuote={topSignals ? quoteMap.get(topSignals.highestVolume.ticker) : undefined} />
+          <TopSignalCard label="Macro Risk" stock={topSignals?.highestMacroRisk ?? null} color="#FF9500" icon="⚠" liveQuote={topSignals ? quoteMap.get(topSignals.highestMacroRisk.ticker) : undefined} />
+          <TopSignalCard label="AI Momentum" stock={topSignals?.strongestAI ?? null} color="#A855F7" icon="◈" liveQuote={topSignals ? quoteMap.get(topSignals.strongestAI.ticker) : undefined} />
         </div>
       </div>
 
@@ -2030,11 +2083,12 @@ function SignalsInner() {
       </div>
 
       {/* ── Data Source Panel ─────────────────────────────── */}
-      <div style={{
+      {/* Same signalsFeedLabel() input/result as the header badge (ApiHealthBadge). */}
+      <div data-signals-footer={footer.title} style={{
         margin: '24px 16px 0',
         padding: '12px',
-        background: quotesData?.source === 'live' ? 'rgba(0,212,255,0.03)' : 'rgba(255,45,85,0.03)',
-        border: `1px solid ${quotesData?.source === 'live' ? 'rgba(0,212,255,0.08)' : 'rgba(255,45,85,0.08)'}`,
+        background: footer.tone === 'live' ? 'rgba(0,212,255,0.03)' : footer.tone === 'alert' ? 'rgba(255,45,85,0.03)' : 'rgba(148,163,184,0.03)',
+        border: `1px solid ${footer.tone === 'live' ? 'rgba(0,212,255,0.08)' : footer.tone === 'alert' ? 'rgba(255,45,85,0.08)' : 'rgba(148,163,184,0.08)'}`,
         borderRadius: '4px',
       }}>
         <div style={{
@@ -2042,19 +2096,10 @@ function SignalsInner() {
           color: 'rgba(100,116,139,0.75)',
           lineHeight: 1.6,
         }}>
-          {quotesData?.source === 'live' ? (
-            <>
-              <span style={{ color: '#00D4FF' }}>LIVE DATA</span> — Yahoo Finance intraday prices (market hours) · Polygon.io sparklines via secure backend proxy.
-              Session: <span style={{ color: 'rgba(100,116,139,0.7)' }}>{quotesData.tradeDate ?? '—'}</span> ·
-              Quotes: <span style={{ color: 'rgba(100,116,139,0.7)' }}>{quotesData.count ?? 0}/42 tickers</span> ·
-              Refreshes every 5 minutes.
-            </>
-          ) : (
-            <>
-              <span style={{ color: '#FF2D55' }}>CATALOG DATA</span> — Live market data unavailable.
-              Showing static catalog prices. Live prices load automatically during market hours.
-            </>
-          )}
+          <span style={{ color: footer.tone === 'live' ? '#00D4FF' : footer.tone === 'alert' ? '#FF2D55' : '#F59E0B' }}>{footer.title}</span> — {footer.detail}{' '}
+          Session: <span style={{ color: 'rgba(100,116,139,0.7)' }}>{quotesData?.tradeDate ?? '—'}</span> ·
+          Quotes: <span style={{ color: 'rgba(100,116,139,0.7)' }}>{footer.coverage}</span> ·
+          Refreshes every 5 minutes.
           {tradingSignalsData && (
             <> · <span style={{ color: '#00D4FF' }}>TRADING SIGNALS</span> — FAULTLINE Engine · {tradingSignalsData.length} signals computed.</>
           )}

@@ -5,7 +5,7 @@ import { nanoid } from "nanoid";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
-import { injectPageMeta, injectPageMetaAsync } from "../seoMeta";
+import { renderSpaPage } from "../publicContentSsr";
 
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
@@ -41,15 +41,20 @@ export async function setupVite(app: Express, server: Server) {
       );
       const page = await vite.transformIndexHtml(url, template);
       // Inject per-page metadata so crawlers get unique titles/descriptions
-      // without requiring JavaScript execution
-      const pageWithMeta = await injectPageMetaAsync(page, url);
-      res.status(200).set({ "Content-Type": "text/html" }).end(pageWithMeta);
+      // without requiring JavaScript execution. Published articles and Daily
+      // Briefs get their own metadata/content; missing slugs return 404.
+      const rendered = await renderSpaPage(page, url);
+      res.status(rendered.status).set({ "Content-Type": "text/html", ...rendered.headers }).end(rendered.html);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);
     }
   });
 }
+
+/** Paths that look like static files; never served the SPA shell. */
+export const STATIC_ASSET_PATH =
+  /\.(?:png|jpe?g|gif|webp|avif|svg|ico|bmp|woff2?|ttf|otf|eot|css|js|mjs|map)$/i;
 
 export function serveStatic(app: Express) {
   const distPath =
@@ -64,6 +69,15 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath));
 
+  // A request for a static asset (image, icon, font, script, stylesheet)
+  // that express.static did not find must not fall through to the SPA
+  // shell: returning index.html as text/html under an image URL breaks
+  // link-preview cards and favicons. Answer with a plain 404 instead.
+  app.use((req, res, next) => {
+    if (!STATIC_ASSET_PATH.test(req.path)) return next();
+    res.status(404).type("text/plain").send("Not Found");
+  });
+
   // fall through to index.html if the file doesn't exist
   // Inject per-page metadata server-side so every public SEO page returns
   // unique title/description/OG/Twitter/canonical without JavaScript execution
@@ -71,9 +85,11 @@ export function serveStatic(app: Express) {
     try {
       const indexPath = path.resolve(distPath, "index.html");
       const html = await fs.promises.readFile(indexPath, "utf-8");
-      const htmlWithMeta = await injectPageMetaAsync(html, req.originalUrl);
+      const rendered = await renderSpaPage(html, req.originalUrl);
+      res.status(rendered.status);
+      res.set(rendered.headers);
       res.setHeader("Content-Type", "text/html; charset=utf-8");
-      res.send(htmlWithMeta);
+      res.send(rendered.html);
     } catch (err) {
       res.status(500).send("Internal Server Error");
     }

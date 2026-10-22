@@ -18,7 +18,6 @@ import {
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import { CINEMATIC_SEEN_KEY } from "../components/CinematicIntro";
 import PageHeader from "@/components/PageHeader";
-import { PreflightTrigger } from "@/components/MarketPreflight";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -115,9 +114,9 @@ const SECTIONS: Section[] = [
         </Panel>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
-            { icon: Database, label: "Live FRED Data", desc: "10+ Federal Reserve economic series updated in real-time: yields, spreads, inflation, unemployment, SOFR, and more." },
-            { icon: Cpu, label: "AI Regime Engine", desc: "A proprietary macro regime classifier that continuously evaluates systemic risk across 6 stress domains and assigns a 0–10 pressure score." },
-            { icon: Target, label: "S.O.B.™ Framework", desc: "Signals of Breakdown — FAULTLINE's proprietary framework measuring the accumulation of market stress across 6 independent pillars. Not a crash prediction system. A structured awareness tool." },
+            { icon: Database, label: "Live FRED Data", desc: "10+ Federal Reserve economic series, updated as FRED publishes them: yields, spreads, inflation, unemployment, SOFR, and more." },
+            { icon: Cpu, label: "AI Regime Engine", desc: "A proprietary macro regime classifier that continuously evaluates systemic risk across 6 stress domains and assigns a 0–100 pressure score." },
+            { icon: Target, label: "S.O.B.™ Framework", desc: "Signals of Breakdown — FAULTLINE's proprietary framework measuring the accumulation of market stress across 6 weighted pillars with shared inputs. Not a crash prediction system. A structured awareness tool." },
           ].map(({ icon: Icon, label, desc }) => (
             <Panel key={label} accentColor="rgba(0,212,255,0.2)">
               <Icon className="w-4 h-4 text-cyan-400 mb-2" />
@@ -144,7 +143,7 @@ const SECTIONS: Section[] = [
       <div className="space-y-4">
         <Panel accentColor="rgba(255,68,68,0.3)">
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            The <span className="text-red-400">Pressure Tab</span> is the core heart of FAULTLINE. It displays the <strong className="text-white">FAULTLINE Pressure Index</strong> — a composite 0–100 score representing the current level of systemic financial stress. The score is derived from 6 independent risk vectors, each weighted and normalised from live FRED economic data.
+            The <span className="text-red-400">Pressure Tab</span> is the core heart of FAULTLINE. It displays the <strong className="text-white">FAULTLINE Pressure Index</strong> — a composite 0–100 score representing the current level of systemic financial stress. The score is derived from 6 weighted risk vectors built from FRED economic data and a static AI concentration baseline; several vectors share inputs.
           </p>
         </Panel>
 
@@ -171,12 +170,12 @@ const SECTIONS: Section[] = [
           <p className="text-[10px] font-mono text-white/40 tracking-widest uppercase">Risk Vectors</p>
           <div className="space-y-1">
             {[
-              { name: "Liquidity Stress", desc: "Measures tightness in short-term funding markets. Derived from SOFR rate, HY credit spread (BAMLH0A0HYM2), and NFCI (National Financial Conditions Index). High values indicate banks and funds are struggling to access cash." },
-              { name: "Credit Contagion Risk", desc: "Tracks the risk of credit stress spreading across the financial system. Uses HY spread, 10Y Treasury yield (DGS10), and the yield curve slope. Elevated when credit markets price in widespread default risk." },
-              { name: "Volatility Regime", desc: "Assesses whether markets are in a calm or turbulent volatility regime. Derived from the VIX proxy (VIXCLS) and recent equity market behaviour. High values signal fear and uncertainty are dominant." },
-              { name: "Macro Sensitivity", desc: "How sensitive the current environment is to macro surprises. Uses CPI inflation (CPIAUCSL), unemployment (UNRATE), and the 10Y yield. High sensitivity means small data misses can cause outsized market moves." },
-              { name: "Market Breadth", desc: "Measures the health of market participation. Derived from equity market conditions and the spread between growth and value. Narrow breadth (few stocks leading) is a classic late-cycle warning sign." },
-              { name: "AI / Speculative Bubble Exposure", desc: "Tracks the degree to which speculative and AI-driven assets are inflating systemic risk. Uses equity valuations and sector concentration data. High values indicate bubble dynamics are contributing to overall pressure." },
+              { name: "Liquidity Stress", desc: "Measures tightness in short-term funding markets. Uses SOFR and the HY credit spread (BAMLH0A0HYM2). These are funding and credit proxies; they do not establish that banks or funds cannot access cash." },
+              { name: "Credit Contagion Risk", desc: "Tracks the risk of credit stress spreading across the financial system. Uses HY spread, 10Y Treasury yield (DGS10), and unemployment (UNRATE). Elevated when credit markets price in widespread default risk." },
+              { name: "Yield Curve (10Y–2Y) & 10Y Level", desc: "Scores the shape of the Treasury curve: the 10Y minus 2Y spread (DGS10 − DGS2) in inversion and flatness bands, blended with the 10Y yield level. Formerly labelled Volatility Regime; it does not read VIX or realized volatility." },
+              { name: "Macro Sensitivity", desc: "How sensitive the current environment is to macro surprises. Uses CPI (CPIAUCSL) and PPI (PPIACO) year-over-year changes plus the effective federal funds rate (FEDFUNDS)." },
+              { name: "Labor & Rates (Unemployment, 10Y)", desc: "Blends the unemployment rate (UNRATE) with the 10Y Treasury yield (DGS10). Formerly labelled Market Breadth; it is not an advance/decline or market-participation measure." },
+              { name: "AI / Speculation (Static Baseline)", desc: "Starts from a static reference value for AI mega-cap concentration (~32.4% of the S&P 500) — not a live measurement — and adjusts it with the live 10Y yield and high-yield spread. It does not read live valuations or market-cap data." },
             ].map(({ name, desc }) => (
               <Panel key={name} className="!p-3">
                 <p className="text-[11px] font-mono text-cyan-400 font-bold mb-1">{name}</p>
@@ -207,16 +206,16 @@ const SECTIONS: Section[] = [
       <div className="space-y-4">
         <Panel>
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            The <span className="text-cyan-400">Dashboard</span> is the primary macro overview screen. It shows the current regime, live FRED data, probability distributions, and a risk domain heatmap — all updating in real-time as new data arrives from the Federal Reserve.
+            The <span className="text-cyan-400">Dashboard</span> is the primary macro overview screen. It shows the current regime, live FRED data, probability distributions, and a risk domain heatmap — all updating as new data is published as new data arrives from the Federal Reserve.
           </p>
         </Panel>
         <div className="space-y-2">
           <p className="text-[10px] font-mono text-white/40 tracking-widest uppercase">Dashboard Sections</p>
           <div className="space-y-1">
             {[
-              { name: "Regime Banner", desc: "Shows the current macro regime label (e.g. 'Late Cycle Stress', 'Expansion', 'Crisis Mode') with a 0–10 systemic risk score and a colour-coded severity indicator. The regime is recalculated every time FRED data refreshes." },
-              { name: "Live FRED Ticker", desc: "A scrolling marquee at the top of the screen showing real-time values for 10Y yield, 30Y yield, HY spread, CPI, SOFR, and unemployment rate. Values update automatically." },
-              { name: "Bull vs Crash Probability", desc: "A probability gauge showing the engine's current estimate of bullish continuation vs systemic crash risk, expressed as a percentage split. Derived from the composite regime score." },
+              { name: "Regime Banner", desc: "Shows the current macro regime label (e.g. 'Late Cycle Stress', 'Expansion', 'Crisis Mode') with a 0–100 systemic pressure score and a colour-coded severity indicator. The regime is recalculated every time FRED data refreshes." },
+              { name: "Live FRED Ticker", desc: "A scrolling marquee at the top of the screen showing the latest available values for 10Y yield, 30Y yield, HY spread, CPI, SOFR, and unemployment rate. Values update automatically." },
+              { name: "Scenario Readings", desc: "Bull/neutral/bear scenario weights are evidence-vote shares with no defined event, horizon, or calibration record, so they show as Uncalibrated. Crash, recession, stagflation, and soft-landing probabilities are Not offered." },
               { name: "Risk Domain Heatmap", desc: "A 6-cell grid showing the stress level for each domain: Treasury Stress, Inflation Pressure, Credit Risk, AI Bubble Risk, Liquidity Stress, and Recession Risk. Each cell is colour-coded from green (low) to red (critical)." },
               { name: "AI Intelligence Narrative", desc: "A live AI-generated paragraph summarising the current macro environment in institutional language. Updates with the regime engine on each data refresh." },
               { name: "Top Signals Today", desc: "A curated list of the highest-scoring tickers from the Signals screener given the current regime, surfaced automatically by the engine." },
@@ -241,7 +240,7 @@ const SECTIONS: Section[] = [
       <div className="space-y-4">
         <Panel accentColor="rgba(167,139,250,0.3)">
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            The <span className="text-purple-400">Scores Tab</span> provides a granular breakdown of each of the 6 risk domains with individual 0–10 scores, trend direction indicators, and supporting FRED data points. This is the analytical layer beneath the Dashboard's heatmap.
+            The <span className="text-purple-400">Scores Tab</span> provides a granular breakdown of each of the 6 risk domains with individual 0–100 scores, trend direction indicators, and supporting FRED data points. This is the analytical layer beneath the Dashboard's heatmap.
           </p>
         </Panel>
         <div className="space-y-1">
@@ -249,7 +248,7 @@ const SECTIONS: Section[] = [
             { name: "Treasury Stress Score", fred: "DGS10, DGS30", desc: "Measures stress in the US Treasury market. Elevated when the 10Y yield is rising rapidly or when the yield curve inverts (long rates below short rates), signalling recession expectations." },
             { name: "Inflation Pressure Score", fred: "CPIAUCSL", desc: "Tracks the degree to which inflation is above or below the Fed's 2% target. High scores indicate the Fed is likely to maintain or increase restrictive monetary policy." },
             { name: "Credit Risk Score", fred: "BAMLH0A0HYM2", desc: "Derived from the ICE BofA High Yield OAS spread. When this spread widens, it means credit markets are pricing in higher default risk — a classic leading indicator of financial stress." },
-            { name: "AI Bubble Risk Score", fred: "Equity valuations + sector data", desc: "A proprietary score estimating the degree to which AI and speculative technology valuations are stretched relative to fundamentals. High scores indicate bubble dynamics." },
+            { name: "AI Bubble Risk Score", fred: "Static AI-concentration baseline", desc: "The engine's AI-concentration vector (ai-bubble), scored 0–100. It reads a static AI-concentration baseline, not live equity valuations or sector data, so it changes only when that baseline is revised." },
             { name: "Liquidity Stress Score", fred: "SOFR, NFCI, BAMLH0A0HYM2", desc: "Composite score measuring tightness in short-term funding markets. Elevated SOFR, wide HY spreads, and a tight NFCI all contribute to a high liquidity stress score." },
             { name: "Recession Risk Score", fred: "UNRATE, yield curve, FRED composite", desc: "Probability-weighted recession risk score. Incorporates unemployment trends, yield curve inversion depth, and leading indicator deterioration." },
           ].map(({ name, fred, desc }) => (
@@ -305,19 +304,19 @@ const SECTIONS: Section[] = [
     id: "ai-watch",
     icon: Brain,
     title: "AI Watch Tab",
-    subtitle: "Real-time AI surveillance of macro and market intelligence",
+    subtitle: "Regularly refreshed AI, macro and market intelligence",
     color: "#F472B6",
     content: (
       <div className="space-y-4">
         <Panel accentColor="rgba(244,114,182,0.3)">
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            The <span className="text-pink-400">AI Watch Tab</span> is FAULTLINE's live intelligence feed. It monitors AI and technology sector risk in real-time, tracking AI capital expenditure, bubble risk indicators, and curated macro news — all synthesised through the regime engine.
+            The <span className="text-pink-400">AI Watch Tab</span> is FAULTLINE's live intelligence feed. It monitors AI and technology sector risk as new data is published, tracking AI capital expenditure, bubble risk indicators, and curated macro news — all synthesised through the regime engine.
           </p>
         </Panel>
         <div className="space-y-1">
           {[
-            { name: "AI Capex Tracker", desc: "Tracks the aggregate capital expenditure commitments from major AI infrastructure players (Microsoft, Google, Amazon, Meta, NVIDIA). Currently tracking $214B+ in announced AI capex. High capex concentration is a leading indicator of AI bubble risk." },
-            { name: "AI Bubble Risk Score", desc: "A 0–10 score updated by the engine estimating the current degree of AI-sector overvaluation. Scores above 7 indicate bubble dynamics; scores above 9 indicate critical bubble risk." },
+            { name: "AI Concentration Baseline", desc: "FAULTLINE uses a static AI-concentration baseline as an input to the AI-concentration vector. It does not ingest AI capital-expenditure data and does not track announced capex totals." },
+            { name: "AI Bubble Risk Score", desc: "The engine's AI-concentration vector (ai-bubble), scored 0–100 on the same scale as the other pressure vectors. Its input is a static AI-concentration baseline, not a live feed, so the score changes only when that baseline is revised; it does not measure live AI-sector valuations." },
             { name: "Live Intelligence Feed", desc: "A curated stream of macro and AI-sector news items, each tagged with a relevance score and regime impact assessment. Items are filtered for systemic relevance — not noise." },
             { name: "Sector Concentration Monitor", desc: "Tracks the degree to which the S&P 500 and Nasdaq are concentrated in AI and technology names. High concentration amplifies systemic risk when sentiment reverses." },
             { name: "Regime Narrative", desc: "An AI-generated paragraph updated with each engine cycle that contextualises the current AI/tech environment within the broader macro regime. Written in institutional language." },
@@ -354,7 +353,7 @@ const SECTIONS: Section[] = [
             <div className="space-y-2">
               {[
                 { step: 1, title: "Enter any ticker symbol", desc: "Type any valid US stock ticker (e.g. NVDA, TSLA, BRK.B, SPY) into the search bar at the top of the Signals tab. Press Enter or click ANALYZE." },
-                { step: 2, title: "Live data fetch", desc: "FAULTLINE fetches real-time intraday prices from Yahoo Finance (during market hours) and 5-day sparklines from Polygon.io. This takes 1–3 seconds." },
+                { step: 2, title: "Live data fetch", desc: "FAULTLINE fetches 15-minute delayed intraday prices from Yahoo Finance (during market hours) and 5-day sparklines from Polygon.io. This takes 1–3 seconds." },
                 { step: 3, title: "AI classification", desc: "The LLM classifier receives the ticker profile and current macro regime context, then assigns FAULTLINE signal labels, a regime fit score, and a full intelligence briefing. This takes 5–15 seconds." },
                 { step: 4, title: "Stock Intelligence Card", desc: "The full card renders with all data sections. You can save the ticker to your watchlist or expand the 'Why This Signal?' panel for the AI's full reasoning." },
               ].map(({ step, title, desc }) => (
@@ -487,7 +486,7 @@ const SECTIONS: Section[] = [
         </Panel>
         <div className="space-y-1">
           {[
-            { name: "Scenario Library", desc: "A curated set of named scenarios (e.g. 'Fed Pivot', 'Credit Crunch', 'AI Bubble Pop', 'Soft Landing', 'Stagflation Return'). Each scenario has a probability estimate derived from the current regime score." },
+            { name: "Scenario Library", desc: "A curated set of named scenarios (e.g. 'Fed Pivot', 'Credit Crunch', 'AI Bubble Pop', 'Soft Landing', 'Stagflation Return'). Scenario probabilities are not offered: FAULTLINE's scenario likelihoods are uncalibrated, so each scenario is described qualitatively rather than given a probability." },
             { name: "Domain Impact Radar", desc: "A radar chart for each scenario showing how it would affect each of the 6 risk domains. Allows you to quickly see which scenarios are most dangerous for specific areas of the market." },
             { name: "Probability Ranking", desc: "Scenarios are ranked by current probability. The most likely scenario is shown first. Probabilities update as the regime engine recalculates." },
             { name: "Scenario Detail", desc: "Expand any scenario to see the full narrative, the specific FRED conditions that would trigger it, and the expected market impact across asset classes." },
@@ -559,7 +558,7 @@ const SECTIONS: Section[] = [
       <div className="space-y-4">
         <Panel accentColor="rgba(234,179,8,0.3)">
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            The <span className="text-yellow-400">Simulate Tab</span> is FAULTLINE's flagship interactive feature. Drag sliders to manually override any FRED indicator and watch the entire engine — regime score, domain scores, probability gauges, and radar chart — react in real-time.
+            The <span className="text-yellow-400">Simulate Tab</span> is FAULTLINE's flagship interactive feature. Drag sliders to manually override any FRED indicator and watch the entire engine — regime score, domain scores, probability gauges, and radar chart — react instantly.
           </p>
         </Panel>
         <div className="space-y-2">
@@ -666,217 +665,6 @@ const SECTIONS: Section[] = [
       </div>
     ),
   },
-  {
-    id: "market-preflight",
-    icon: Shield,
-    title: "Complete Market Awareness™",
-    subtitle: "Market Preflight, awareness scoring, and the pre-decision review process",
-    color: "#00FF88",
-    keywords: [
-      "preflight",
-      "market preflight",
-      "awareness score",
-      "complete market awareness",
-      "daily review",
-      "decision checklist",
-      "risk review",
-      "before acting",
-      "market checklist",
-    ],
-    content: (
-      <div className="space-y-4">
-        <Panel accentColor="rgba(0,255,136,0.2)">
-          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            <span className="text-emerald-400 font-bold">Market Preflight</span> is FAULTLINE's pre-decision review process. It helps users check the current FAULTLINE reading, market stress level, regime, pressure drivers, alerts, signal context, data quality, and possible future outcomes before making financial decisions.
-          </p>
-        </Panel>
-
-        <div className="space-y-3">
-          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">Complete Market Awareness™</h3>
-          <Panel accentColor="rgba(0,255,136,0.15)">
-            <p className="text-[11px] text-white/70 leading-relaxed font-mono mb-3">
-              Complete Market Awareness™ is a daily situational awareness framework built into FAULTLINE. Before making any financial decision, the system guides users through reviewing the full risk picture: the Pressure Index, market regime, active alerts, signal context, data quality, and possible future outcomes.
-            </p>
-            <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-              The system tracks which platform sections you have reviewed today and computes a <span className="text-emerald-400">Complete Market Awareness Score</span> from 0–100. This score reflects how thoroughly you have reviewed the available context — it is not a market prediction or a signal to act.
-            </p>
-          </Panel>
-        </div>
-
-        <div className="space-y-3">
-          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">Complete Market Awareness Score</h3>
-          <Panel accentColor="rgba(0,255,136,0.15)">
-            <p className="text-[11px] text-white/70 leading-relaxed font-mono mb-3">
-              The score is calculated from completed review steps across the platform. Each step corresponds to a section of the FAULTLINE risk picture.
-            </p>
-            <div className="space-y-1.5">
-              {[
-                { range: "90–100", label: "Complete Market Awareness", color: "#00FF88" },
-                { range: "75–89", label: "Strong Market Awareness", color: "#00D4FF" },
-                { range: "60–74", label: "Developing Awareness", color: "#FFD700" },
-                { range: "40–59", label: "Partial Awareness", color: "#FF9500" },
-                { range: "0–39",  label: "Limited Awareness", color: "#FF2D55" },
-              ].map(({ range, label, color }) => (
-                <div key={range} className="flex items-center gap-3 py-1.5 border-b border-white/5 last:border-0">
-                  <span className="text-[10px] font-mono w-16 shrink-0" style={{ color }}>{ range }</span>
-                  <span className="text-[10px] font-mono text-white/70">{ label }</span>
-                </div>
-              ))}
-            </div>
-          </Panel>
-        </div>
-
-        <div className="space-y-3">
-          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">Market Preflight Checklist</h3>
-          <Panel accentColor="rgba(0,255,136,0.15)">
-            <p className="text-[11px] text-white/70 leading-relaxed font-mono mb-3">
-              The checklist covers 10 review steps across the platform. Completing each step contributes points to your awareness score for the day.
-            </p>
-            <div className="space-y-1.5">
-              {[
-                "Current FAULTLINE reading reviewed",
-                "Market stress level understood",
-                "Current regime reviewed",
-                "Pressure drivers reviewed",
-                "Crash/bull probability context reviewed",
-                "Active alerts checked",
-                "Signal context reviewed",
-                "Data status confirmed",
-                "Possible future outcomes reviewed",
-                "Watchlist/portfolio impact considered",
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-2 py-1 border-b border-white/5 last:border-0">
-                  <span className="text-[10px] font-mono text-emerald-400/60 w-4 shrink-0 mt-0.5">{i + 1}.</span>
-                  <span className="text-[10px] font-mono text-white/70">{ item }</span>
-                </div>
-              ))}
-            </div>
-          </Panel>
-        </div>
-
-        <div className="space-y-3">
-          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">Daily Market Preflight</h3>
-          <Panel accentColor="rgba(0,255,136,0.15)">
-            <p className="text-[11px] text-white/70 leading-relaxed font-mono mb-2">
-              The Market Preflight resets daily. Each day you start with a fresh score. Your review history is stored and never deleted — turning off the prompts does not clear your history.
-            </p>
-            <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-              The "Run Market Preflight" button is available on the Dashboard, Market Signals, Watchlist, Portfolio Monitor, Pressure Simulator, Daily Market Briefing, and this page. You can also access it at any time from <span className="text-emerald-400">Profile → Account Preferences → Market Preflight Prompts</span>.
-            </p>
-          </Panel>
-        </div>
-
-        <div className="space-y-3">
-          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">What the Score Measures</h3>
-          <Panel accentColor="rgba(0,255,136,0.15)">
-            <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-              The score measures <span className="text-white/90">platform usage and risk-review behaviour</span> — specifically, how many of the available context sections you have reviewed today. A higher score means you have reviewed more of the available FAULTLINE risk picture before acting.
-            </p>
-          </Panel>
-        </div>
-
-        <div className="space-y-3">
-          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">What the Score Does Not Measure</h3>
-          <Panel accentColor="rgba(0,255,136,0.15)">
-            <div className="space-y-1.5">
-              {[
-                "It does not measure the quality of your investment decisions.",
-                "It does not predict market outcomes or investment results.",
-                "It does not reduce risk or guarantee better performance.",
-                "It does not reflect your knowledge, experience, or skill.",
-                "It is not a trading signal or recommendation to act.",
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-2 py-1 border-b border-white/5 last:border-0">
-                  <span className="text-[10px] font-mono text-white/30 shrink-0 mt-0.5">—</span>
-                  <span className="text-[10px] font-mono text-white/60">{ item }</span>
-                </div>
-              ))}
-            </div>
-          </Panel>
-        </div>
-
-        <div className="space-y-3">
-          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">Preference Controls</h3>
-          <Panel accentColor="rgba(0,255,136,0.15)">
-            <p className="text-[11px] text-white/70 leading-relaxed font-mono mb-3">
-              You can control how prominently Market Preflight surfaces itself from <span className="text-emerald-400">Profile → Account Preferences → Market Preflight Prompts</span>.
-            </p>
-            <div className="space-y-2">
-              {[
-                { mode: "Full Guidance", desc: "Shows the full dashboard card, missing checks list, checklist CTA, and page-level triggers on all relevant pages." },
-                { mode: "Minimal Reminders", desc: "Shows only a compact score ring and \"Run Market Preflight\" button. No missing-checks list or detailed prompts." },
-                { mode: "Off", desc: "Hides all page-level prompts and the dashboard card. The feature remains accessible from this page and from Profile. Tracking history is preserved." },
-              ].map(({ mode, desc }) => (
-                <div key={mode} className="p-2.5 border border-white/8 bg-white/3 rounded-sm">
-                  <p className="text-[10px] font-mono text-emerald-400 font-bold mb-1">{ mode }</p>
-                  <p className="text-[10px] font-mono text-white/50 leading-relaxed">{ desc }</p>
-                </div>
-              ))}
-            </div>
-          </Panel>
-        </div>
-
-        <div className="space-y-3">
-          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">Timeframe Awareness</h3>
-          <Panel accentColor="rgba(0,255,136,0.15)">
-            <p className="text-[11px] text-white/70 leading-relaxed font-mono mb-3">
-              A single reading shows current conditions. <span className="text-white/90">Timeframe Awareness</span> helps users understand whether market pressure is temporary, building, or becoming structural.
-            </p>
-            <p className="text-[11px] text-white/70 leading-relaxed font-mono mb-3">
-              The Market Preflight modal includes a <span className="text-emerald-400">Timeframes</span> tab that shows the current FAULTLINE reading across Today, This Week, This Month, and This Year. For each timeframe it shows: what changed, whether pressure is improving, stable, or deteriorating, the main driver, the most supported scenario, and what to watch next.
-            </p>
-            <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-              Timeframe readings are not predictions. They reflect historical FAULTLINE platform data only. Past readings do not indicate future market conditions.
-            </p>
-          </Panel>
-        </div>
-
-        <div className="space-y-3">
-          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">Reading History</h3>
-          <Panel accentColor="rgba(0,255,136,0.15)">
-            <p className="text-[11px] text-white/70 leading-relaxed font-mono mb-3">
-              <span className="text-white/90">Reading History</span> is a dedicated page (<span className="text-emerald-400">Market Stress → Reading History</span>) that shows daily FAULTLINE snapshots across all four timeframes. It also includes the <span className="text-white/90">Outcome Support Engine</span> — a view of how current readings align with four possible market scenarios.
-            </p>
-            <div className="space-y-1.5">
-              {[
-                { tab: "Today", desc: "Current score, stress level, main driver, and scenario support." },
-                { tab: "Week", desc: "7-day view. Whether pressure has moved up, down, or held steady." },
-                { tab: "Month", desc: "30-day view. Useful for identifying temporary vs. structural pressure." },
-                { tab: "Year", desc: "365-day view. Regime changes, peak stress periods, and yearly trajectory." },
-                { tab: "Outcomes", desc: "Live Outcome Support Engine: how current readings align with four possible scenarios." },
-              ].map(({ tab, desc }) => (
-                <div key={tab} className="flex items-start gap-2 py-1 border-b border-white/5 last:border-0">
-                  <span className="text-[10px] font-mono text-emerald-400 w-16 shrink-0 mt-0.5">{tab}</span>
-                  <span className="text-[10px] font-mono text-white/60">{desc}</span>
-                </div>
-              ))}
-            </div>
-          </Panel>
-        </div>
-
-        <div className="space-y-3">
-          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">Run Market Preflight</h3>
-          <Panel accentColor="rgba(0,255,136,0.15)">
-            <p className="text-[11px] text-white/70 leading-relaxed font-mono mb-4">
-              Click the button below to open the Market Preflight panel and review the current FAULTLINE risk picture.
-            </p>
-            <PreflightTrigger
-              currentPage="guide"
-              actionKey="viewed_guide"
-            />
-          </Panel>
-        </div>
-
-        <Panel accentColor="rgba(255,149,0,0.2)">
-          <p className="text-[10px] font-mono text-white/40 leading-relaxed">
-            <span className="text-amber-400/70 font-bold">Disclaimer: </span>
-            Market Preflight reflects platform usage and risk-review behavior only. It does not predict investment results, reduce risk, or provide personalized financial advice.
-          </p>
-        </Panel>
-      </div>
-    ),
-  },
-
   // ─── MARKET OPERATING SYSTEM ─────────────────────────────────────────────
   {
     id: "market-os",
@@ -902,7 +690,7 @@ const SECTIONS: Section[] = [
               { name: "Historical Analog Engine", role: "Matches the current environment to historical crisis eras. Feeds the best-match analog and similarity score." },
               { name: "Aftershock Engine", role: "Analyses post-transition market behaviour. Feeds recovery and continuation patterns." },
               { name: "Cross-Market Intelligence", role: "Monitors correlations and divergences across equities, bonds, crypto, and commodities." },
-              { name: "SOB Framework", role: "Signals of Breakdown — tracks accumulation of stress across 6 independent pillars." },
+              { name: "SOB Framework", role: "Signals of Breakdown — tracks accumulation of stress across 6 weighted pillars with shared inputs." },
             ].map(({ name, role }) => (
               <Panel key={name} className="!p-3">
                 <p className="text-[11px] font-mono text-cyan-400 font-bold mb-1">{name}</p>
@@ -1027,19 +815,19 @@ const SECTIONS: Section[] = [
     id: "command-center",
     icon: Command,
     title: "Command Center",
-    subtitle: "Real-time macro command view — all critical indicators in one screen",
+    subtitle: "Macro command view — all critical indicators in one screen",
     color: "#00D4FF",
-    keywords: ["command", "command center", "macro", "live", "real-time", "indicators"],
+    keywords: ["command", "command center", "macro", "live", "refresh", "indicators"],
     content: (
       <div className="space-y-4">
         <Panel>
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            The <span className="text-cyan-400 font-bold">Command Center</span> is a dense, real-time macro overview designed for users who want all critical indicators visible simultaneously without navigating between sections. It is the operator's view of the market — everything important on one screen.
+            The <span className="text-cyan-400 font-bold">Command Center</span> is a dense, regularly refreshed macro overview designed for users who want all critical indicators visible simultaneously without navigating between sections. It is the operator's view of the market — everything important on one screen.
           </p>
         </Panel>
         <div className="space-y-1">
           {[
-            { name: "Live Ticker Strip", desc: "A scrolling marquee showing real-time values for 10Y yield, HY spread, VIX, DXY, BTC dominance, Fed cut probability, market breadth, and Fear & Greed Index." },
+            { name: "Live Ticker Strip", desc: "A scrolling marquee showing the latest available values for 10Y yield, HY spread, VIX, DXY, BTC dominance, Fed cut probability, market breadth, and Fear & Greed Index." },
             { name: "Regime & Pressure Panel", desc: "Current regime label, pressure score, and probability distribution — the three core outputs of the FMOS pipeline." },
             { name: "Risk Domain Grid", desc: "All 6 risk domains displayed simultaneously with colour-coded severity and trend direction." },
             { name: "Cross-Market Snapshot", desc: "Key readings across equities, bonds, crypto, and commodities — showing whether markets are moving in concert or diverging." },
@@ -1153,26 +941,26 @@ const SECTIONS: Section[] = [
     ),
   },
   // ─── INSIDER INTELLIGENCE ────────────────────────────────────────────────
-  {
-    id: "insider-intel",
-    icon: TrendingDown,
-    title: "Insider Intelligence",
-    subtitle: "Institutional and insider activity — who is buying and selling",
-    color: "#F87171",
+	{
+	  id: "insider-intel",
+	  icon: TrendingDown,
+	  title: "Insider Intelligence — Unavailable",
+	  subtitle: "Insider data unavailable — SEC source verification pending",
+	  color: "#F87171",
     keywords: ["insider", "institutional", "buying", "selling", "insider intelligence", "smart money"],
     content: (
-      <div className="space-y-4">
-        <Panel accentColor="rgba(248,113,113,0.3)">
-          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            <span className="text-red-400 font-bold">Insider Intelligence</span> tracks reported insider transactions and institutional positioning changes to identify when smart money is accumulating or distributing. It is a confirmation and divergence tool — most powerful when insider activity diverges from price action.
-          </p>
-        </Panel>
-        <div className="space-y-1">
-          {[
-            { name: "Insider Transaction Tracking", desc: "Monitors SEC Form 4 filings for significant insider buys and sells across key tickers. Flags clusters of insider activity that historically precede price moves." },
-            { name: "Institutional Flow Analysis", desc: "Tracks changes in institutional ownership and positioning. Large increases or decreases in institutional ownership relative to the prior quarter are flagged." },
-            { name: "Regime Context", desc: "Insider activity is interpreted in the context of the current macro regime. Insider buying during a high-pressure regime is a stronger contrarian signal than the same activity during an expansion." },
-          ].map(({ name, desc }) => (
+	      <div className="space-y-4">
+	        <Panel accentColor="rgba(248,113,113,0.3)">
+	          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+	            <span className="text-red-400 font-bold">Insider data unavailable</span> — SEC source verification pending. No verified insider or institutional-flow source is connected to this feature.
+	          </p>
+	        </Panel>
+	        <div className="space-y-1">
+	          {[
+	            { name: "Source Status", desc: "SEC source verification is pending; filing monitoring is not currently available." },
+	            { name: "Data Availability", desc: "No insider transaction, institutional-flow, or cluster-alert data is displayed until a verified source is connected." },
+	            { name: "Release Safeguard", desc: "The feature remains unavailable rather than presenting unverified or model-generated insider intelligence." },
+	          ].map(({ name, desc }) => (
             <Panel key={name} className="!p-3">
               <p className="text-[11px] font-mono text-red-400 font-bold mb-1">{name}</p>
               <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
@@ -1487,7 +1275,7 @@ const SECTIONS: Section[] = [
             { name: "Trade Logging", desc: "Log any trade — entry, exit, size, and notes — with the current FAULTLINE macro context automatically attached." },
             { name: "Macro Context Snapshot", desc: "Each journal entry automatically captures the regime, pressure score, Seismograph direction, and active alerts at the time of the trade." },
             { name: "Performance Review", desc: "Review your trade history filtered by regime — see which macro environments your decisions have performed best and worst in." },
-            { name: "Decision Quality Analysis", desc: "Over time, the journal helps you identify whether your best trades were made with high Complete Market Awareness scores and whether poor trades correlated with low awareness." },
+            { name: "Decision Quality Analysis", desc: "Over time, the journal helps you identify patterns between preparation quality and outcomes — without implying any checklist score predicts results." },
           ].map(({ name, desc }) => (
             <Panel key={name} className="!p-3">
               <p className="text-[11px] font-mono text-blue-400 font-bold mb-1">{name}</p>
@@ -1665,10 +1453,6 @@ export default function Guide() {
               <RotateCcw className="w-3 h-3" />
               Understanding FAULTLINE
             </button>
-            <PreflightTrigger
-              currentPage="guide"
-              actionKey="viewed_guide"
-            />
           </div>
         }
       />

@@ -1,4 +1,5 @@
 // ============================================================
+import { pressureLevelWord, pressureRegimeLabel } from "../../shared/pressureBands";
 // FMOS — Shared Utility Functions  (server/fmos/utils.ts)
 //
 // Single canonical implementations of utility functions that
@@ -119,11 +120,7 @@ export type PressureLevel = "Low" | "Moderate" | "Elevated" | "High" | "Critical
  * Canonical replacement for the pressure/engine.ts classifyRegime() function.
  */
 export function classifyPressureLevel(pressure: number): PressureLevel {
-  if (pressure >= 80) return "Critical";
-  if (pressure >= 65) return "High";
-  if (pressure >= 45) return "Elevated";
-  if (pressure >= 25) return "Moderate";
-  return "Low";
+  return pressureLevelWord(pressure);
 }
 
 /**
@@ -131,11 +128,7 @@ export function classifyPressureLevel(pressure: number): PressureLevel {
  * Canonical replacement for both classifyRegime() and classifyRegimeLabel().
  */
 export function classifyRegimeLabel(pressure: number): string {
-  if (pressure >= 80) return "SYSTEMIC CRISIS";
-  if (pressure >= 65) return "HIGH STRESS";
-  if (pressure >= 45) return "ELEVATED RISK";
-  if (pressure >= 25) return "MODERATE RISK";
-  return "LOW RISK";
+  return pressureRegimeLabel(pressure);
 }
 
 /**

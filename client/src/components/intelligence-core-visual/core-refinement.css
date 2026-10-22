@@ -1,0 +1,827 @@
+.fic {
+  --fic-bg: #080c12;
+  --fic-surface: #0d151f;
+  --fic-line: #283744;
+  --fic-text: #eaf0f4;
+  --fic-muted: #a3b2be;
+  --fic-cyan: #a5dfdf;
+  --fic-amber: #e3be85;
+}
+.fic-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.fic-experience {
+  background:
+    radial-gradient(ellipse at 32% 23%, #12222a66, transparent 36%),
+    var(--fic-bg);
+}
+.fic h1 {
+  font-weight: 500;
+  letter-spacing: -1.7px;
+}
+.fic-page-heading {
+  padding-bottom: 26px;
+}
+.fic-eyebrow {
+  font-size: 10px;
+  letter-spacing: 1.6px;
+}
+.fic-outline-button {
+  border-radius: 2px;
+  background: linear-gradient(125deg, #1b2a3430, #0b131c);
+}
+.fic-observation-bar {
+  padding: 15px 0;
+}
+.fic-observation-bar strong {
+  color: #d5e2ea;
+  font-variant-numeric: tabular-nums;
+}
+.fic-core-layout {
+  border-bottom: 1px solid var(--fic-line);
+}
+.fic-topology-section {
+  padding: 20px 28px 26px 0;
+}
+.fic-topology {
+  min-height: 620px;
+}
+.fic-topology-svg {
+  overflow: hidden;
+}
+.fic-topology-coordinate {
+  inset: 12px 2px auto;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  letter-spacing: 1.4px;
+  color: #a2b5c2;
+}
+.fic-topology-coordinate > span:last-child {
+  color: #8da1af;
+  font-size: 8px;
+}
+.fic-core-halo {
+  opacity: 1;
+}
+.fic-calibration-axis {
+  fill: none;
+  stroke: #516c79;
+  stroke-width: 1;
+}
+.fic-calibration-orbit {
+  fill: none;
+  stroke: #283e4a;
+  stroke-width: 1;
+}
+.fic-calibration-orbit--inner {
+  stroke: #243743;
+  stroke-dasharray: 1 8;
+}
+.fic-calibration-tick {
+  stroke: #485b68;
+  stroke-width: 1;
+}
+.fic-calibration-tick--major {
+  stroke: #a0bdc6;
+  stroke-width: 1.4;
+}
+.fic-core-foundation {
+  fill: #03080d88;
+}
+.fic-core-shell {
+  stroke-width: 1.4;
+}
+.fic-core-machined-rim {
+  fill: none;
+  stroke: #294754;
+  stroke-width: 4;
+}
+.fic-availability-segment {
+  fill: none;
+  stroke-width: 3;
+  stroke: #596b78;
+}
+.fic-availability-segment--current {
+  stroke: #aadbdc;
+}
+.fic-availability-segment--delayed {
+  stroke: #c9ab75;
+}
+.fic-availability-segment--recent {
+  stroke: #aebc7c;
+  stroke-dasharray: 8 3 2 3 2 325;
+}
+.fic-availability-segment--stale {
+  stroke: #977f79;
+  stroke-dasharray: 4 3 4 3 4 3 4 3 4 328;
+}
+.fic-availability-segment--static {
+  stroke: #a395ba;
+}
+.fic-availability-segment--degraded {
+  stroke: #ac8375;
+  stroke-dasharray: 3 3 3 3 3 3 3 3 3 333;
+}
+.fic-availability-segment--unavailable {
+  stroke: #384956;
+  opacity: 0.7;
+}
+.fic-core-inset {
+  fill: none;
+  stroke: #08131b;
+  stroke-width: 7;
+}
+.fic-pressure-track {
+  stroke: #263d49;
+  stroke-width: 2.5;
+}
+.fic-pressure-value {
+  stroke-width: 3.2;
+  stroke: #b6e5e1;
+}
+.fic-pressure-value--delayed {
+  stroke: #d9b782;
+}
+.fic-core-face {
+  stroke: #263f4b;
+  stroke-width: 1;
+}
+.fic-core-reflection {
+  fill: none;
+  stroke: #8eafbc;
+  stroke-width: 0.7;
+  opacity: 0.38;
+}
+.fic-core-readout {
+  gap: 9px;
+}
+.fic-core-name {
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 1.9px;
+  color: #c4dce2;
+  margin-bottom: 5px;
+}
+.fic-core-readout > .fic-micro {
+  font-size: 9px;
+  color: #99adb9;
+  letter-spacing: 1.5px;
+}
+.fic-pressure-number {
+  font-size: clamp(58px, 5.5vw, 82px);
+  font-weight: 500;
+  line-height: 0.98;
+  letter-spacing: -4.8px;
+  color: #edf5f7;
+  text-shadow: 0 2px 12px #08121b;
+}
+.fic-pressure-number > span {
+  margin-top: 11px;
+  color: #adbec8;
+  font-size: 10px;
+  letter-spacing: 1.8px;
+}
+.fic-core-regime {
+  max-width: 200px;
+  font-size: 13px;
+  line-height: 1.45;
+  margin-top: 2px;
+  color: #e0eaf0;
+}
+.fic-core-readout .fic-status {
+  font-size: 9px;
+  margin-top: 2px;
+}
+.fic-domain {
+  width: 27%;
+  min-height: 116px;
+  border-radius: 2px;
+  background: linear-gradient(130deg, #182731cc, #101a2499 50%, #0c141dbb);
+  border-color: #334653;
+  padding: 16px 13px;
+  gap: 11px;
+  box-shadow: 0 8px 18px #02070b2b;
+}
+.fic-domain::before {
+  position: absolute;
+  content: "";
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: #55717f;
+  opacity: 0.9;
+}
+.fic-domain--current::before {
+  background: #a4dcda;
+}
+.fic-domain--delayed::before {
+  background: #d4b078;
+}
+.fic-domain--recent::before {
+  background: #b5c681;
+}
+.fic-domain--stale::before {
+  background: #a58b81;
+}
+.fic-domain--static::before {
+  background: #a69ac2;
+}
+.fic-domain--degraded::before {
+  background: #b68d7c;
+}
+.fic-domain--unavailable::before {
+  background: #4d606d;
+  opacity: 0.55;
+}
+.fic-domain--unavailable {
+  background: #0b121bbb;
+  border-color: #293b48;
+}
+.fic-domain--left-top,
+.fic-domain--right-top {
+  top: 12%;
+}
+.fic-domain--left-mid,
+.fic-domain--right-mid {
+  top: 43%;
+}
+.fic-domain--left-bottom,
+.fic-domain--right-bottom {
+  top: 74%;
+}
+.fic-domain-icon {
+  color: #b3c9d3;
+  gap: 13px;
+}
+.fic-domain--unavailable .fic-domain-icon {
+  color: #80939f;
+}
+.fic-domain-number {
+  font-size: 9px;
+}
+.fic-domain-body {
+  gap: 7px;
+}
+.fic-domain-label {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -0.15px;
+  color: #e0eaf0;
+}
+.fic-domain .fic-status {
+  font-size: 9px;
+}
+.fic-domain-assessment {
+  font-size: 10px;
+  line-height: 1.45;
+  color: #b1c1cc;
+}
+.fic-domain-observed {
+  display: block;
+  font:
+    8px "IBM Plex Mono",
+    monospace;
+  line-height: 1.5;
+  color: #9aadb9;
+  font-variant-numeric: tabular-nums;
+}
+.fic-domain-direction {
+  color: #bbd5dd;
+}
+.fic-domain:hover,
+.fic-domain--selected {
+  border-color: #8cbdc5;
+  background: linear-gradient(130deg, #1d3642, #142632 70%);
+}
+.fic-domain--focused,
+.fic-domain:focus-visible {
+  outline: 2px solid #b8e8e4;
+  outline-offset: 4px;
+  background: #1a303c;
+}
+.fic-connection--organization {
+  stroke: #4b6775;
+  stroke-width: 1.2;
+  stroke-dasharray: 3 5;
+}
+.fic-domain-port {
+  fill: #182c38;
+  stroke: #728d9d;
+  stroke-width: 1.2;
+}
+.fic-path-group--current .fic-connection {
+  stroke: #83adb9;
+  stroke-width: 1.7;
+  stroke-dasharray: 3 5;
+}
+.fic-path-group--current .fic-domain-port {
+  fill: #b4e3e1;
+  stroke: #d3f1ed;
+}
+.fic-path-group--delayed .fic-connection {
+  stroke: #a88f67;
+  stroke-dasharray: 7 6;
+}
+.fic-path-group--recent .fic-connection {
+  stroke: #889565;
+  stroke-dasharray: 5 5 1 5;
+}
+.fic-path-group--stale .fic-connection {
+  stroke: #756c6e;
+  stroke-dasharray: 1 7;
+}
+.fic-path-group--static .fic-connection {
+  stroke: #897e9d;
+  stroke-dasharray: 7 4 1 4;
+}
+.fic-path-group--degraded .fic-connection {
+  stroke: #8d7167;
+  stroke-dasharray: 2 8;
+}
+.fic-path-group--unavailable .fic-connection {
+  stroke: #334654;
+  stroke-dasharray: 1 11;
+  opacity: 0.55;
+}
+.fic-path-group--unavailable .fic-domain-port {
+  fill: #101a24;
+  stroke: #465969;
+}
+.fic-path-group--selected .fic-connection {
+  stroke: #c0e5e5;
+  stroke-width: 2;
+}
+.fic-supported-relationship {
+  stroke: #b5c7df;
+  stroke-width: 1.6;
+  opacity: 0.9;
+}
+.fic-supported-relationship--association {
+  stroke-dasharray: 9 6;
+}
+.fic-supported-relationship--causal {
+  stroke: #dfc494;
+  stroke-dasharray: none;
+}
+.fic-topology-note {
+  bottom: 0;
+  font-size: 10px;
+  color: #b2c0cb;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  padding-top: 14px;
+}
+.fic-organization-key {
+  display: inline-block;
+  width: 21px;
+  height: 1px;
+  border-top: 1px dashed #94aab9;
+}
+.fic-relationship-key {
+  color: #aebfd1;
+}
+.fic-status-legend {
+  padding-top: 15px;
+  gap: 11px 16px;
+}
+.fic-classification-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.fic-classification-count > small {
+  font:
+    9px "IBM Plex Mono",
+    monospace;
+  color: #a1b5c1;
+}
+.fic-interpretation {
+  width: 296px;
+  padding: 29px 0 25px 28px;
+  background: linear-gradient(100deg, #14212a44, transparent 70%);
+}
+.fic-interpretation h2 {
+  font-size: 25px;
+  letter-spacing: -0.9px;
+  line-height: 1.25;
+  margin-top: 16px;
+}
+.fic-interpretation-lead {
+  font-size: 12px;
+  line-height: 1.85;
+  color: #c3d0d8;
+}
+.fic-rail-rule {
+  margin: 20px 0;
+  background: linear-gradient(90deg, #3a4e5c, transparent);
+}
+.fic-coverage-number {
+  font-size: 31px;
+  font-variant-numeric: tabular-nums;
+}
+.fic-support-domains {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+}
+.fic-support-domain {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 0;
+  background: transparent;
+  padding: 9px 0;
+  min-height: 44px;
+  font-size: 11px !important;
+  color: #d3e3ea;
+  text-align: left;
+  border-bottom: 1px solid #233541;
+}
+.fic-support-domain:hover {
+  color: #bef1e9;
+}
+.fic-change-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.fic-change-heading > span {
+  font:
+    8px "IBM Plex Mono",
+    monospace;
+  color: #a4bbc7;
+  letter-spacing: 0.8px;
+}
+.fic-change-record {
+  margin-top: 9px;
+}
+.fic-change-record ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fic-change-record li {
+  padding: 7px 0 7px 12px;
+  border-left: 1px solid #6c98a7;
+  font-size: 11px;
+  line-height: 1.7;
+  color: #cadbe3;
+}
+.fic-change-record li + li {
+  margin-top: 5px;
+}
+.fic-thesis {
+  border-top: 0;
+  padding: 24px 0;
+  gap: 30px;
+}
+.fic-thesis-title > span:last-child {
+  color: #a4b7c4;
+}
+.fic-thesis-steps a {
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  min-height: 48px;
+}
+.fic-thesis-steps a > span:not(.fic-step-number) {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.fic-thesis-steps small {
+  font:
+    10px "Space Grotesk",
+    system-ui,
+    sans-serif;
+  color: #a3b6c3;
+  letter-spacing: 0;
+}
+.fic-system-footer {
+  padding-top: 22px;
+  color: #a3b4c0;
+}
+.fic-topology[data-integrity="unavailable"] .fic-core-halo,
+.fic-topology[data-integrity="degraded"] .fic-core-halo {
+  opacity: 0.3;
+}
+.fic-topology[data-integrity="unavailable"] .fic-core-name,
+.fic-topology[data-integrity="degraded"] .fic-core-name {
+  color: #a5b6c3;
+}
+.fic-topology[data-integrity="unavailable"] .fic-core-reflection,
+.fic-topology[data-integrity="degraded"] .fic-core-reflection {
+  opacity: 0.17;
+}
+.fic-core-change-ring {
+  fill: none;
+  stroke: #b0e4de;
+  stroke-width: 1.5;
+  animation: fic-core-state-change 1050ms ease-out 1 both;
+}
+.fic-domain--admitted {
+  animation: fic-domain-admission 1100ms ease-out 1;
+}
+.fic-domain--expired {
+  animation: fic-observation-expired 900ms ease-out 1;
+}
+.fic-path-group--admitted .fic-domain-port,
+.fic-supported-relationship--admitted {
+  animation: fic-link-admission 1000ms ease-out 1;
+}
+@keyframes fic-core-state-change {
+  from {
+    opacity: 0.85;
+    stroke-width: 3;
+  }
+  to {
+    opacity: 0;
+    stroke-width: 1;
+  }
+}
+@keyframes fic-domain-admission {
+  0% {
+    border-color: #c4f2e9;
+    background-color: #213d45;
+  }
+  100% {
+    border-color: #334653;
+  }
+}
+@keyframes fic-observation-expired {
+  0% {
+    border-color: #c2ab8b;
+  }
+  100% {
+    border-color: #334653;
+  }
+}
+@keyframes fic-link-admission {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (min-width: 1500px) {
+  .fic-topology {
+    min-height: 650px;
+  }
+  .fic-interpretation {
+    width: 312px;
+  }
+  .fic-domain {
+    padding: 17px 15px;
+    min-height: 121px;
+  }
+  .fic-domain-label {
+    font-size: 13px;
+  }
+  .fic-domain .fic-status {
+    font-size: 10px;
+  }
+  .fic-domain-observed {
+    font-size: 9px;
+  }
+}
+@media (max-width: 1150px) {
+  .fic-interpretation {
+    width: 100%;
+    border-left: 0;
+    padding: 27px 0;
+    background: transparent;
+  }
+  .fic-topology-section {
+    padding-right: 0;
+  }
+  .fic-topology {
+    min-height: 600px;
+  }
+  .fic-interpretation h2 {
+    font-size: 27px;
+  }
+  .fic-support-domains {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 24px;
+  }
+  .fic-support-domains li {
+    min-width: 180px;
+    flex: 1;
+  }
+  .fic-thesis-steps {
+    gap: 12px;
+  }
+}
+@media (max-width: 700px) {
+  .fic-experience {
+    padding: 24px 20px;
+    background:
+      radial-gradient(ellipse at 50% 16%, #172e3744, transparent 24%),
+      var(--fic-bg);
+  }
+  .fic h1 {
+    font-size: 32px;
+    letter-spacing: -1.2px;
+  }
+  .fic-topology-section {
+    padding: 0 0 23px;
+  }
+  .fic-topology {
+    min-height: 0;
+    padding-top: 350px;
+  }
+  .fic-topology-svg {
+    height: 350px;
+    overflow: hidden;
+  }
+  .fic-topology-svg .fic-path-group,
+  .fic-topology-svg .fic-supported-relationship {
+    display: none;
+  }
+  .fic-topology-coordinate {
+    top: 14px;
+    font-size: 8px;
+    letter-spacing: 1px;
+  }
+  .fic-topology-coordinate > span:last-child {
+    display: none;
+  }
+  .fic-core-readout {
+    height: 350px;
+    gap: 7px;
+  }
+  .fic-core-name {
+    font-size: 8px;
+    letter-spacing: 1.2px;
+    margin-bottom: 1px;
+  }
+  .fic-core-readout > .fic-micro {
+    font-size: 8px;
+  }
+  .fic-pressure-number {
+    font-size: 55px;
+    letter-spacing: -3px;
+  }
+  .fic-pressure-number > span {
+    font-size: 9px;
+    margin-top: 8px;
+  }
+  .fic-core-readout .fic-core-regime {
+    font-size: 12px;
+    max-width: 155px;
+  }
+  .fic-core-readout .fic-status {
+    font-size: 8px;
+  }
+  .fic-domain-matrix {
+    gap: 12px;
+  }
+  .fic-domain {
+    width: auto;
+    position: relative;
+    inset: auto;
+    min-height: 149px;
+    padding: 14px 10px;
+    gap: 8px;
+  }
+  .fic-domain-icon {
+    gap: 13px;
+  }
+  .fic-domain-label {
+    font-size: 12px;
+    line-height: 1.35;
+  }
+  .fic-domain .fic-status {
+    font-size: 9px;
+    white-space: normal;
+  }
+  .fic-domain-assessment {
+    font-size: 10px;
+    line-height: 1.5;
+  }
+  .fic-domain-observed {
+    font-size: 8px;
+    line-height: 1.65;
+  }
+  .fic-domain-body {
+    gap: 7px;
+  }
+  .fic-topology-note {
+    position: static;
+    justify-content: flex-start;
+    text-align: left;
+    font-size: 10px;
+    padding: 20px 2px 0;
+  }
+  .fic-status-legend {
+    margin-top: 17px;
+    gap: 12px 14px;
+  }
+  .fic-status-legend .fic-status {
+    font-size: 9px;
+  }
+  .fic-interpretation {
+    padding: 25px 0;
+  }
+  .fic-interpretation h2 {
+    font-size: 26px;
+  }
+  .fic-interpretation-lead {
+    font-size: 13px;
+  }
+  .fic-rail-small {
+    font-size: 12px;
+  }
+  .fic-support-domains {
+    display: block;
+  }
+  .fic-support-domain {
+    font-size: 12px !important;
+    padding: 11px 0;
+  }
+  .fic-change-record li {
+    font-size: 12px;
+  }
+  .fic-thesis {
+    gap: 16px;
+    padding: 22px 0;
+  }
+  .fic-thesis-steps {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .fic-thesis-steps a {
+    font-size: 10px;
+    gap: 7px;
+  }
+  .fic-thesis-steps small {
+    font-size: 11px;
+  }
+}
+@media (max-width: 375px) {
+  .fic-experience {
+    padding-inline: 16px;
+  }
+  .fic-domain {
+    padding: 13px 9px;
+    gap: 6px;
+  }
+  .fic-domain-label {
+    font-size: 11px;
+  }
+  .fic-domain .fic-status {
+    font-size: 8px;
+  }
+  .fic-core-name {
+    font-size: 7px;
+  }
+  .fic-pressure-number {
+    font-size: 49px;
+  }
+  .fic-core-readout .fic-core-regime {
+    max-width: 139px;
+    font-size: 11px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fic,
+  .fic *,
+  .fic *::before,
+  .fic *::after,
+  .fic-drawer-overlay {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.fic-supported-relationship--historical {
+  stroke: #7b8997;
+  opacity: 0.6;
+  stroke-dasharray: 2 7;
+}
+
+.fic-topology[data-readout-current="false"] .fic-core-halo {
+  opacity: 0.3;
+}
+.fic-topology[data-readout-current="false"] .fic-core-reflection {
+  opacity: 0.17;
+}

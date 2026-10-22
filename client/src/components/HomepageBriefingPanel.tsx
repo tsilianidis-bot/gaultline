@@ -13,6 +13,8 @@
 
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
+import { formatEt } from "@shared/credibilityLabels";
+import { formatOrdinal } from "@shared/historicalPercentile";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -173,7 +175,7 @@ export default function HomepageBriefingPanel() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#475569", letterSpacing: "0.08em" }}>
-              {new Date(data.computedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} · CANONICAL{data.canonicalStateId ? ` · ${data.canonicalStateId}` : ""}
+              {formatEt(data.computedAt) ?? "Time unavailable"} · CANONICAL
             </span>
             <button
               onClick={() => navigate("/app/pressure?tab=context")}
@@ -211,8 +213,9 @@ export default function HomepageBriefingPanel() {
           {[
             { label: "PRESSURE", value: pressureValue !== null ? `${pressureValue}/100` : "UNAVAILABLE", color: pressureValue == null ? "#64748B" : pressureValue >= 65 ? "#FF2D55" : pressureValue >= 45 ? "#FF9500" : "#00FF88" },
             { label: "REGIME", value: metrics.regime ?? "UNAVAILABLE", color: "#00E5FF" },
-            { label: "BULL CONTINUATION", value: bullValue !== null ? `${bullValue}%` : "UNAVAILABLE", color: "#00FF88" },
-            { label: "CRASH / DRAWDOWN", value: crashValue !== null ? `${crashValue}%` : "UNAVAILABLE", color: "#FF2D55" },
+            // Probability contract: render only the contract display text.
+            { label: "BULL CONTINUATION", value: bullValue !== null ? `${bullValue}%` : (metrics.bullProbabilityText ?? "Unavailable"), color: "#00FF88" },
+            { label: "CRASH / DRAWDOWN", value: crashValue !== null ? `${crashValue}%` : (metrics.crashProbabilityText ?? "Not offered"), color: "#FF2D55" },
           ].map(m => (
             <div key={m.label} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#475569", letterSpacing: "0.12em" }}>{m.label}</span>
@@ -229,12 +232,11 @@ export default function HomepageBriefingPanel() {
               />
             </div>
           )}
-          {metrics.pressureIndex.historicalPercentile !== null && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#475569", letterSpacing: "0.12em" }}>PERCENTILE</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#C084FC", fontWeight: 600 }}>{metrics.pressureIndex.historicalPercentile}th</span>
-            </div>
-          )}
+          {/* Canonical percentile only; null renders Unavailable (no history-row fallback). */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#475569", letterSpacing: "0.12em" }}>PERCENTILE</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: metrics.pressureIndex.historicalPercentile !== null ? "#C084FC" : "#64748B", fontWeight: 600 }}>{metrics.pressureIndex.historicalPercentile !== null ? formatOrdinal(metrics.pressureIndex.historicalPercentile) : "Unavailable"}</span>
+          </div>
         </div>
       </div>
 
@@ -333,7 +335,7 @@ export default function HomepageBriefingPanel() {
             <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#475569", letterSpacing: "0.12em" }}>HISTORICAL PERCENTILE</span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "16px", color: "#C084FC", fontWeight: 700 }}>
-                {historySays.historicalPercentile}th
+                {historySays.historicalPercentile !== null ? formatOrdinal(historySays.historicalPercentile) : "Unavailable"}
               </span>
               <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "10px", color: "#64748B" }}>
                 {historySays.percentileLabel}

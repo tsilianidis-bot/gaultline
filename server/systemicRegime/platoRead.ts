@@ -1,5 +1,6 @@
 import type { SystemicRegimeReading } from "../../shared/systemicRegime";
 import type { SignalConvergenceSnapshot } from "../../shared/systemicRegime";
+import { PLATO_SCENARIO_WITHHELD, withholdScenarioPercents } from "../plato/scenarioWithholding";
 
 /**
  * Thin PLATO read of persisted Systemic Regime + Signal Convergence.
@@ -22,9 +23,10 @@ export function buildSystemicRegimePromptContract(
     JSON.stringify({
       currentRegime: reading.currentRegime,
       systemicRiskScore: reading.systemicRiskScore,
-      crisisProbability: reading.crisisProbability,
-      transitionProbability: reading.transitionProbability,
-      regimeConfidence: reading.regimeConfidence,
+      // Probabilities and confidence are withheld (owner rule: none has an AVAILABLE contract status).
+      crisisProbability: PLATO_SCENARIO_WITHHELD,
+      transitionProbability: PLATO_SCENARIO_WITHHELD,
+      regimeConfidence: PLATO_SCENARIO_WITHHELD,
       creditStressZ: reading.creditStressZ,
       volStressZ: reading.volStressZ,
       ratesStressZ: reading.ratesStressZ,
@@ -36,9 +38,10 @@ export function buildSystemicRegimePromptContract(
       contributesToPressureIndex: false,
     }),
     "Use only these persisted fields. Do not retrain, rescore, or call this AI.",
+    `crisisProbability, transitionProbability and regimeConfidence are ${PLATO_SCENARIO_WITHHELD}: do not state, estimate or imply a value for them.`,
     "This engine is independent of the Champion Pressure Index and is not a Pressure weight.",
     convergence
-      ? `SIGNAL CONVERGENCE (N of M independent votes, not an average): ${convergence.summary}`
+      ? `SIGNAL CONVERGENCE (N of M independent votes, not an average): ${withholdScenarioPercents(convergence.summary)}`
       : "SIGNAL CONVERGENCE: unavailable.",
   ].join("\n");
 }

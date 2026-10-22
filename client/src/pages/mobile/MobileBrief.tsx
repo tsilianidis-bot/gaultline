@@ -5,6 +5,8 @@
    ============================================================ */
 import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { CRASH_RISK_DISPLAY_TEXT, contractScenarioClaim, contractScenarioText, contractTransitionClaim, probabilityText } from "@/lib/contractProbabilityText";
+import { formatObservedFixed } from "@/lib/nullableFormat";
 import { TrendingUp, Zap, Shield, RotateCcw, ChevronRight, Clock } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -83,7 +85,7 @@ export default function MobileBrief() {
   // Top rotation note
   const topSector = useMemo(() => {
     if (!rotation?.sectors?.length) return null;
-    return [...rotation.sectors].sort((a, b) => Math.abs(b.avgChange24h) - Math.abs(a.avgChange24h))[0];
+    return [...rotation.sectors].sort((a, b) => Math.abs(b.avgChange24h ?? 0) - Math.abs(a.avgChange24h ?? 0))[0];
   }, [rotation?.sectors]);
 
   const isLoading = canonicalLoading;
@@ -113,9 +115,13 @@ export default function MobileBrief() {
 
   const pressureScore = canonicalState.pressureIndex;
   const withheld = canonicalState.confidenceOrEvidenceQuality === "UNAVAILABLE" || pressureScore == null;
-  const bullProb = canonicalState.scenarioOutputs.bull ?? canonicalState.scenarioOutputs.softLanding ?? null;
-  const crashProb = canonicalState.scenarioOutputs.crash ?? canonicalState.scenarioOutputs.bear ?? null;
-  const regimeHold = canonicalState.scenarioOutputs.neutral ?? canonicalState.scenarioOutputs.remainInRegime ?? null;
+  // Probability contract: bull / regime-hold render the contract's display
+  // text; crash risk is not offered (the bear weight is not a crash probability).
+  const contract = canonicalState.probabilityContract;
+  const bullText = withheld ? "UNAVAILABLE" : contractScenarioText(contract, "bull");
+  const crashText = CRASH_RISK_DISPLAY_TEXT;
+  const regimeHoldClaim = contractScenarioClaim(contract, "neutral") ?? contractTransitionClaim(contract, "remainInRegime");
+  const regimeHoldText = withheld ? "UNAVAILABLE" : probabilityText(regimeHoldClaim);
 
   return (
     <div className="px-4 py-4 pb-6 space-y-4">
@@ -157,18 +163,18 @@ export default function MobileBrief() {
         <div className="flex gap-4 mt-3">
           <div>
             <div className="text-[8px] font-mono text-[#64748B] mb-0.5">BULL CONTINUATION</div>
-            <div className="text-sm font-mono font-bold text-[#34D399]">{bullProb == null ? "UNAVAILABLE" : `${Math.round(bullProb)}%`}</div>
+            <div data-mobile-bull className="text-sm font-mono font-bold text-[#34D399]">{bullText}</div>
           </div>
           <div>
             <div className="text-[8px] font-mono text-[#64748B] mb-0.5">CRASH RISK</div>
-            <div className="text-sm font-mono font-bold text-[#FF2D55]">
-              {crashProb == null ? "UNAVAILABLE" : `${Math.round(crashProb)}%`}
+            <div data-mobile-crash className="text-sm font-mono font-bold text-[#94A3B8]">
+              {crashText}
             </div>
           </div>
           <div>
             <div className="text-[8px] font-mono text-[#64748B] mb-0.5">REGIME HOLD</div>
             <div className="text-sm font-mono font-bold text-[#FFD700]">
-              {regimeHold == null ? "UNAVAILABLE" : `${Math.round(regimeHold)}%`}
+              {regimeHoldText}
             </div>
           </div>
         </div>
@@ -200,11 +206,11 @@ export default function MobileBrief() {
         <BriefCard
           icon={<RotateCcw size={12} />}
           label="ROTATION NOTE"
-          title={`${topSector.name} ${topSector.avgChange24h >= 0 ? "Leading" : "Lagging"}`}
-          body={`${topSector.name} is showing ${Math.abs(topSector.avgChange24h).toFixed(1)}% 24h momentum. ${
+          title={`${topSector.name} ${topSector.avgChange24h == null ? "Unavailable" : topSector.avgChange24h >= 0 ? "Leading" : "Lagging"}`}
+          body={`${topSector.name} is showing ${topSector.avgChange24h == null ? "Unavailable" : `${Math.abs(topSector.avgChange24h).toFixed(1)}%`} 24h momentum. ${
             rotation?.aiCommentary
               ? rotation.aiCommentary.split(".")[0] + "."
-              : topSector.avgChange24h >= 0
+              : topSector.avgChange24h != null && topSector.avgChange24h >= 0
               ? "Risk-on rotation detected in this sector."
               : "Risk-off pressure weighing on this sector."
           }`}
@@ -217,9 +223,11 @@ export default function MobileBrief() {
         <BriefCard
           icon={<TrendingUp size={12} />}
           label="CRYPTO BRIEF"
-          title={`BTC Dominance: ${rotation.btcDominance.current.toFixed(1)}%`}
+          title={`BTC Dominance: ${formatObservedFixed(rotation.btcDominance.current, 1, "%")}`}
           body={`${rotation.regime}. ${
-            rotation.btcDominance.trend === "rising"
+            rotation.btcDominance.current == null
+              ? "Dominance unavailable. This is not an all-clear signal."
+              : rotation.btcDominance.trend === "rising"
               ? "Bitcoin is absorbing capital — altcoin rotation is limited."
               : rotation.btcDominance.trend === "falling"
               ? "BTC dominance declining — altcoin rotation window is open."

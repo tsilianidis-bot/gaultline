@@ -1,0 +1,1982 @@
+[
+  {
+    "path": "/",
+    "component": "RootRoute",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/404",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/about",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/admin/promo",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "7. Authorized internal or administrative destination",
+    "access": "Existing owner/admin checks unchanged",
+    "navigation": "Owner portal only; excluded from member navigation and search",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/ai-bubble-monitor",
+    "component": null,
+    "redirect": "/ai-bubble-risk-tracker",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/ai-bubble-risk-tracker",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/ai-bubble-risk-tracker",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/ai-stock-signals",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/ai-stocks-dashboard",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/alt-season-indicator",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/altcoin-season-index",
+    "component": null,
+    "redirect": "/alt-season-indicator",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/alt-season-indicator",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/analogs",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/analysis",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app",
+    "component": null,
+    "redirect": "/app/now",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/now",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/account",
+    "component": "UserAccount",
+    "redirect": null,
+    "treatment": "5. Secondary / More destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "MORE / Account",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/act",
+    "component": "Act",
+    "redirect": null,
+    "treatment": "1. Primary Five Questions destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "ACT",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/act/deep",
+    "component": "SmartDiscovery",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged. Same component as Signal Outlook / Smart Discovery respectively; no duplicate primary menu entry."
+  },
+  {
+    "path": "/app/admin",
+    "component": "AdminPortal",
+    "redirect": null,
+    "treatment": "7. Authorized internal or administrative destination",
+    "access": "Existing owner/admin checks unchanged",
+    "navigation": "Owner portal only; excluded from member navigation and search",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/admin/blog",
+    "component": "AdminBlog",
+    "redirect": null,
+    "treatment": "7. Authorized internal or administrative destination",
+    "access": "Existing owner/admin checks unchanged",
+    "navigation": "Owner portal only; excluded from member navigation and search",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/admin/chat-inbox",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "7. Authorized internal or administrative destination",
+    "access": "Existing owner/admin checks unchanged",
+    "navigation": "Owner portal only; excluded from member navigation and search",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/admin/conversation-intelligence",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "7. Authorized internal or administrative destination",
+    "access": "Existing owner/admin checks unchanged",
+    "navigation": "Owner portal only; excluded from member navigation and search",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/admin/engineering",
+    "component": "EngineeringDiagnostics",
+    "redirect": null,
+    "treatment": "7. Authorized internal or administrative destination",
+    "access": "Existing owner/admin checks unchanged",
+    "navigation": "Owner portal only; excluded from member navigation and search",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/admin/publishing",
+    "component": "AdminPublishing",
+    "redirect": null,
+    "treatment": "7. Authorized internal or administrative destination",
+    "access": "Existing owner/admin checks unchanged",
+    "navigation": "Owner portal only; excluded from member navigation and search",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/admin/shadow-monitor",
+    "component": "ShadowMonitor",
+    "redirect": null,
+    "treatment": "7. Authorized internal or administrative destination",
+    "access": "Existing owner/admin checks unchanged",
+    "navigation": "Owner portal only; excluded from member navigation and search",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/admin/users",
+    "component": "AdminUsers",
+    "redirect": null,
+    "treatment": "7. Authorized internal or administrative destination",
+    "access": "Existing owner/admin checks unchanged",
+    "navigation": "Owner portal only; excluded from member navigation and search",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/aftershock",
+    "component": null,
+    "redirect": "/app/outlook/deep",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/outlook/deep",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/ai-diagnostic",
+    "component": null,
+    "redirect": "/app/now/deep",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/now/deep",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/ai-watch",
+    "component": null,
+    "redirect": "/app/watch",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/watch",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/alerts",
+    "component": "Alerts",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/alt-rotation",
+    "component": null,
+    "redirect": "/app/why/deep",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/why/deep",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/analogs",
+    "component": null,
+    "redirect": "/app/historical-analogs",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/historical-analogs",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/analytics",
+    "component": "AnalyticsDashboard",
+    "redirect": null,
+    "treatment": "7. Authorized internal or administrative destination",
+    "access": "Existing owner/admin checks unchanged",
+    "navigation": "Owner portal only; excluded from member navigation and search",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/asha",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/asha-intelligence",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "7. Authorized internal or administrative destination",
+    "access": "Existing owner/admin checks unchanged",
+    "navigation": "Owner portal only; excluded from member navigation and search",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/ask-asha",
+    "component": null,
+    "redirect": "/app/asha",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/asha",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/blog",
+    "component": "Blog",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/blog/:slug",
+    "component": "BlogPost",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/charts",
+    "component": null,
+    "redirect": "/app/now/deep",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/now/deep",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/command",
+    "component": null,
+    "redirect": "/app/now/deep",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/now/deep",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/command-center",
+    "component": null,
+    "redirect": "/app/now/deep",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/now/deep",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/crypto",
+    "component": "CryptoHub",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/crypto-regime",
+    "component": null,
+    "redirect": "/app/outlook/deep",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/outlook/deep",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/crypto-search",
+    "component": "CryptoSearch",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/crypto-signals",
+    "component": "CryptoSignals",
+    "redirect": null,
+    "treatment": "3. Trading Tools child",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "TRADING TOOLS / Crypto Signals",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/crypto-watchlist",
+    "component": "CryptoWatchlist",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/daily-briefing",
+    "component": null,
+    "redirect": "/app/now",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/now",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/dashboard",
+    "component": null,
+    "redirect": "/app/now",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/now",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/day-trade-intelligence",
+    "component": "DayTradeIntelligence",
+    "redirect": null,
+    "treatment": "3. Trading Tools child",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "TRADING TOOLS / Day Trade Intelligence",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/day-trade-intelligence/:symbol",
+    "component": "DayTradeDetail",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/decision-engine",
+    "component": "DecisionEngine",
+    "redirect": null,
+    "treatment": "3. Trading Tools child",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "TRADING TOOLS / Decision Engine",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/decision-ledger",
+    "component": "DecisionLedger",
+    "redirect": null,
+    "treatment": "3. Trading Tools child",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "TRADING TOOLS / Decision Ledger",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/diagnostic",
+    "component": null,
+    "redirect": "/app/now/deep",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/now/deep",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/discover",
+    "component": "SmartDiscovery",
+    "redirect": null,
+    "treatment": "3. Trading Tools child",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "TRADING TOOLS / Top Opportunities / Smart Discovery",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/early-warning",
+    "component": "EarlyWarningDetail",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/fmos-health",
+    "component": "FmosHealthDashboard",
+    "redirect": null,
+    "treatment": "7. Authorized internal or administrative destination",
+    "access": "Existing owner/admin checks unchanged",
+    "navigation": "Owner portal only; excluded from member navigation and search",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/glossary",
+    "component": "Glossary",
+    "redirect": null,
+    "treatment": "5. Secondary / More destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "MORE / Glossary",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/guide",
+    "component": "Guide",
+    "redirect": null,
+    "treatment": "5. Secondary / More destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "MORE / Platform Guide",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/historical-analogs",
+    "component": "HistoricalAnalogs",
+    "redirect": null,
+    "treatment": "2. Intelligence Dashboards child",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "INTELLIGENCE DASHBOARDS / Historical Analogs",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/insider-intelligence",
+    "component": "InsiderIntelligence",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/intelligence-hub",
+    "component": null,
+    "redirect": "/app/now/deep",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/now/deep",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/intelligence-track-record",
+    "component": "IntelligenceTrackRecord",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Publication-gated contextual access",
+    "note": "Router mount, component, parameters, and access logic unchanged. Default-off publication flag unchanged; not activated."
+  },
+  {
+    "path": "/app/intelligence-validation",
+    "component": null,
+    "redirect": "/app/validation",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/validation",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/market-intelligence",
+    "component": null,
+    "redirect": "/app/now/deep",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/now/deep",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/market-movers",
+    "component": "MarketMovers",
+    "redirect": null,
+    "treatment": "3. Trading Tools child",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "TRADING TOOLS / Market Movers",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/markets",
+    "component": "Markets",
+    "redirect": null,
+    "treatment": "2. Intelligence Dashboards child",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "INTELLIGENCE DASHBOARDS / Global Markets",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/now",
+    "component": "Now",
+    "redirect": null,
+    "treatment": "1. Primary Five Questions destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "NOW",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/now/deep",
+    "component": "Dashboard",
+    "redirect": null,
+    "treatment": "2. Intelligence Dashboards child",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "INTELLIGENCE DASHBOARDS / Seismograph Deep Dashboard",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/opportunities",
+    "component": null,
+    "redirect": "/app/act/deep",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/act/deep",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/outlook",
+    "component": "Outlook",
+    "redirect": null,
+    "treatment": "1. Primary Five Questions destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "OUTLOOK",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/outlook/deep",
+    "component": "SignalOutlookCenter",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged. Same component as Signal Outlook / Smart Discovery respectively; no duplicate primary menu entry."
+  },
+  {
+    "path": "/app/portfolio",
+    "component": "Portfolio",
+    "redirect": null,
+    "treatment": "3. Trading Tools child",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "TRADING TOOLS / Portfolio",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/pre-flight",
+    "component": null,
+    "redirect": "/app/now/deep",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/now/deep",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/pressure",
+    "component": "Pressure",
+    "redirect": null,
+    "treatment": "2. Intelligence Dashboards child",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "INTELLIGENCE DASHBOARDS / Pressure Index",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/pressure-history",
+    "component": "PressureHistory",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/pressure-index",
+    "component": null,
+    "redirect": "/app/now?view=pressure",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/now?view=pressure",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/reading-history",
+    "component": "ReadingHistory",
+    "redirect": null,
+    "treatment": "5. Secondary / More destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "MORE / Reading History",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/report",
+    "component": null,
+    "redirect": "/app/now/deep",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/now/deep",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/rising-stars",
+    "component": "RisingStars",
+    "redirect": null,
+    "treatment": "3. Trading Tools child",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "TRADING TOOLS / Rising Stars",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/rising-stars/:ticker",
+    "component": "RisingStarDetail",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/roadmap",
+    "component": "Roadmap",
+    "redirect": null,
+    "treatment": "5. Secondary / More destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "MORE / Roadmap",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/scenarios",
+    "component": null,
+    "redirect": "/app/outlook/deep",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/outlook/deep",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/scores",
+    "component": null,
+    "redirect": "/app/pressure?tab=scores",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/pressure?tab=scores",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/seismograph",
+    "component": null,
+    "redirect": "/app/now/deep",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/now/deep",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/seismograph-command-center",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "NOW → Seismograph Intelligence contextual link",
+    "note": "Router mount, component, parameters, and access logic unchanged. Distinct existing Seismograph Intelligence page retained; single Deep Dashboard menu entry points to /app/now/deep."
+  },
+  {
+    "path": "/app/seismograph-legacy",
+    "component": null,
+    "redirect": "/app/now/deep",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/now/deep",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/seo-optimizer",
+    "component": "SeoOptimizer",
+    "redirect": null,
+    "treatment": "7. Authorized internal or administrative destination",
+    "access": "Existing owner/admin checks unchanged",
+    "navigation": "Owner portal only; excluded from member navigation and search",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/signal-outlook",
+    "component": "SignalOutlookCenter",
+    "redirect": null,
+    "treatment": "3. Trading Tools child",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "TRADING TOOLS / Signal Outlook",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/signals",
+    "component": "Signals",
+    "redirect": null,
+    "treatment": "3. Trading Tools child",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "TRADING TOOLS / Signals",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/signals/:symbol",
+    "component": "SignalDetail",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/sim-portfolio",
+    "component": "SimPortfolio",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/simulate",
+    "component": null,
+    "redirect": "/app/simulate-pressure",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/simulate-pressure",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/simulate-pressure",
+    "component": "SimulatePressure",
+    "redirect": null,
+    "treatment": "2. Intelligence Dashboards child",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "INTELLIGENCE DASHBOARDS / Simulate Pressure",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/situation-room",
+    "component": null,
+    "redirect": "/app/now/deep",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/now/deep",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/social-intelligence",
+    "component": "SocialIntelligence",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/stock-heatmap",
+    "component": null,
+    "redirect": "/app/now/deep",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/now/deep",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/symbol-intelligence",
+    "component": "UniversalSymbolIntelligence",
+    "redirect": null,
+    "treatment": "3. Trading Tools child",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "TRADING TOOLS / Symbol Intelligence",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/time-machine",
+    "component": "TimeMachine",
+    "redirect": null,
+    "treatment": "2. Intelligence Dashboards child",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "INTELLIGENCE DASHBOARDS / Time Machine",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/todays-story",
+    "component": null,
+    "redirect": "/app/now",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/now",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/tools",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/track-record",
+    "component": "TrackRecord",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/trade-journal",
+    "component": "TradeJournal",
+    "redirect": null,
+    "treatment": "3. Trading Tools child",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "TRADING TOOLS / Trade Journal",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/trade-preflight",
+    "component": null,
+    "redirect": "/app/decision-engine#trade-preflight",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/decision-engine#trade-preflight",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/app/validation",
+    "component": "IntelligenceValidation",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/validation-lab",
+    "component": "ValidationLab",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/watch",
+    "component": "Watch",
+    "redirect": null,
+    "treatment": "1. Primary Five Questions destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "WATCH",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/watch/deep",
+    "component": "AIWatch",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/watchlist",
+    "component": "Watchlist",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/why",
+    "component": "Why",
+    "redirect": null,
+    "treatment": "1. Primary Five Questions destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "WHY",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/why/deep",
+    "component": "TodaysStory",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/x-post-queue",
+    "component": "XPostQueue",
+    "redirect": null,
+    "treatment": "7. Authorized internal or administrative destination",
+    "access": "Existing owner/admin checks unchanged",
+    "navigation": "Owner portal only; excluded from member navigation and search",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/app/x-posts",
+    "component": "XPostGenerator",
+    "redirect": null,
+    "treatment": "7. Authorized internal or administrative destination",
+    "access": "Existing owner/admin checks unchanged",
+    "navigation": "Owner portal only; excluded from member navigation and search",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/best-market-risk-indicators",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/best-stock-market-risk-dashboard",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/bitcoin-risk-dashboard",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/bitcoin-vs-stock-market",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/blog",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/blog/:slug",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/bull-bear-conditions",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/bull-or-bear-market",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/checkout/success",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/contact",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/credit-market-stress",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/crypto-bull-or-bear",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/crypto-market-regime",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/crypto-market-risk-dashboard",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/crypto-signals",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/crypto-signals-intelligence",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/crypto/:symbol",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/crypto/tao",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/daily-brief",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "4. Daily Brief or historical child",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "DAILY BRIEF",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/daily-brief/:slug",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "4. Daily Brief or historical child",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Contextual historical access through DAILY BRIEF",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/demo",
+    "component": null,
+    "redirect": "/app/discover",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/app/discover",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/demo/:rest*",
+    "component": null,
+    "redirect": "/app/discover",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/app/discover",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/demo/crypto",
+    "component": null,
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/demo/dashboard",
+    "component": null,
+    "redirect": "/app/now",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/app/now",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/demo/day-trade-intelligence",
+    "component": null,
+    "redirect": "/app/day-trade-intelligence",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/app/day-trade-intelligence",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/demo/decision-engine",
+    "component": null,
+    "redirect": "/app/decision-engine",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/app/decision-engine",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/demo/diagnostic",
+    "component": null,
+    "redirect": "/app/now/deep",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/app/now/deep",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/demo/discover",
+    "component": null,
+    "redirect": "/app/discover",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/app/discover",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/demo/insider-intelligence",
+    "component": null,
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/demo/opportunities",
+    "component": null,
+    "redirect": "/app/act",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/app/act",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/demo/portfolio",
+    "component": null,
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/demo/pressure",
+    "component": null,
+    "redirect": "/app/pressure",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/app/pressure",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/demo/signal-outlook",
+    "component": null,
+    "redirect": "/app/signal-outlook",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/app/signal-outlook",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/demo/signals",
+    "component": null,
+    "redirect": "/app/watch",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/app/watch",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/demo/social-intelligence",
+    "component": null,
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/demo/watchlist",
+    "component": null,
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/diagnostic-ai",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/ethereum-risk-dashboard",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/federal-reserve-tracker",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/intel-archive",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "4. Daily Brief or historical child",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Contextual historical access through DAILY BRIEF",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/intelligence",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "4. Daily Brief or historical child",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Contextual historical access through DAILY BRIEF",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/intelligence-library",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "4. Daily Brief or historical child",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Contextual historical access through DAILY BRIEF",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/intelligence-library/:slug",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "4. Daily Brief or historical child",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Contextual historical access through DAILY BRIEF",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/intelligence-track-record",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Publication-gated contextual access",
+    "note": "Router mount, component, parameters, and access logic unchanged. Default-off publication flag unchanged; not activated."
+  },
+  {
+    "path": "/is-now-good-time-to-buy-stocks",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/learn/bull-and-bear-markets",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/learn/credit-spreads",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/learn/crypto-cycles",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/learn/fed-policy",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/learn/how-to-read-stock-market",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/learn/inflation-and-stocks",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/learn/macro-investing",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/learn/risk-on-or-risk-off",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/learn/treasury-yields",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/learn/what-causes-market-crash",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/learn/what-is-liquidity",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/learn/what-is-market-regime",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/legal",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/liquidity-monitor",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/market-briefing",
+    "component": null,
+    "redirect": "/app/now",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/app/now",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/market-crash-indicator",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/market-crash-probability-2026",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/market-regime-tracker",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/methodology",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "5. Secondary / More destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "MORE / Methodology",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/mobile",
+    "component": null,
+    "redirect": "/mobile/pulse",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/mobile/pulse",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging. Standalone PWA layout is preserved; it is not mounted alongside the app mobile navigation. Explicit outer-router mount takes precedence over older registry alias metadata."
+  },
+  {
+    "path": "/mobile/",
+    "component": null,
+    "redirect": "/mobile/pulse",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/mobile/pulse",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging. Standalone PWA layout is preserved; it is not mounted alongside the app mobile navigation. Explicit outer-router mount takes precedence over older registry alias metadata."
+  },
+  {
+    "path": "/mobile/:tab*",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged. Standalone PWA layout is preserved; it is not mounted alongside the app mobile navigation."
+  },
+  {
+    "path": "/mobile/account",
+    "component": "MobileAccount",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged. Standalone PWA layout is preserved; it is not mounted alongside the app mobile navigation."
+  },
+  {
+    "path": "/mobile/brief",
+    "component": "MobileBrief",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged. Standalone PWA layout is preserved; it is not mounted alongside the app mobile navigation."
+  },
+  {
+    "path": "/mobile/crypto",
+    "component": "MobileCrypto",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged. Standalone PWA layout is preserved; it is not mounted alongside the app mobile navigation."
+  },
+  {
+    "path": "/mobile/pulse",
+    "component": "MobilePulse",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged. Standalone PWA layout is preserved; it is not mounted alongside the app mobile navigation."
+  },
+  {
+    "path": "/mobile/rotation",
+    "component": "MobileRotation",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged. Standalone PWA layout is preserved; it is not mounted alongside the app mobile navigation."
+  },
+  {
+    "path": "/mobile/signals",
+    "component": "MobileSignals",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged. Standalone PWA layout is preserved; it is not mounted alongside the app mobile navigation."
+  },
+  {
+    "path": "/mobile/upgrade",
+    "component": "MobileUpgrade",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged. Standalone PWA layout is preserved; it is not mounted alongside the app mobile navigation."
+  },
+  {
+    "path": "/mobile/watchlist",
+    "component": "MobileWatchlist",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged. Standalone PWA layout is preserved; it is not mounted alongside the app mobile navigation."
+  },
+  {
+    "path": "/owner/simulation",
+    "component": "OwnerSimulation",
+    "redirect": null,
+    "treatment": "7. Authorized internal or administrative destination",
+    "access": "Existing owner/admin checks unchanged",
+    "navigation": "Owner portal only; excluded from member navigation and search",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/phoenix-systems",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/press",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/pressure-index",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/pricing",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged. Explicit outer-router mount takes precedence over older registry alias metadata."
+  },
+  {
+    "path": "/promo/:code",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/qa-access",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/r/:publicShareId",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/recession-probability",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/signals",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/situation-room",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/stock-market-risk-dashboard",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/stock-market-risk-today",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/stock-market-today",
+    "component": null,
+    "redirect": "/stock-market-risk-today",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/stock-market-risk-today",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
+    "path": "/stock/:symbol",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/stock/aapl",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/stock/amd",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/stock/amzn",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/stock/dia",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/stock/iwm",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/stock/meta",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/stock/msft",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/stock/nvda",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/stock/pltr",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/stock/qqq",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/stock/spy",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/stock/tsla",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/track-record",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/treasury-yield-stress",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/trust",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/volatility-dashboard",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/vs/bloomberg",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/vs/finviz",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/vs/koyfin",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/vs/tradingview",
+    "component": "PageLoader",
+    "redirect": null,
+    "treatment": "6. Contextual-only destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "Preserved direct route and existing contextual links",
+    "note": "Router mount, component, parameters, and access logic unchanged."
+  }
+]

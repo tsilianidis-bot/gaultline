@@ -78,7 +78,7 @@ describe("homepage briefing canonical bind", () => {
     expect(briefing.marketStoryHeadline).toContain("UNAVAILABLE");
   });
 
-  it("uses canonical pressure and separate scenario probabilities", async () => {
+  it("uses canonical pressure; scenario numbers render only through the probability contract", async () => {
     vi.mocked(getAuthoritativeCanonicalIntelligenceState).mockResolvedValue(
       buildCanonicalIntelligenceState(manifest()),
     );
@@ -88,8 +88,14 @@ describe("homepage briefing canonical bind", () => {
     expect(briefing.canonicalStateId).toBe("state:briefing-test");
     expect(briefing.metrics.pressureIndex.current).toBe(41);
     expect(briefing.metrics.regime).toBe("MODERATE RISK");
-    expect(briefing.metrics.bullProbability).toBe(52);
-    expect(briefing.metrics.crashProbability).toBe(17);
+    // The stored 52/31/17 evidence-vote weights are uncalibrated: no number, contract text only.
+    expect(briefing.metrics.bullProbability).toBeNull();
+    expect(briefing.metrics.crashProbability).toBeNull();
+    expect(briefing.metrics.bullProbabilityText).toBe("Uncalibrated");
+    expect(briefing.metrics.crashProbabilityText).toBe("Not offered");
+    expect(briefing.whyTodayIsDifferent.bullProbDelta.current).toBe("Uncalibrated");
+    expect(briefing.whyTodayIsDifferent.crashProbDelta.current).toBe("Not offered");
+    expect(JSON.stringify(briefing.metrics)).not.toMatch(/\b(52|17)%/);
     expect(briefing.metrics.opportunityScore).toBeNull();
   });
 
@@ -101,7 +107,7 @@ describe("homepage briefing canonical bind", () => {
     expect(briefing.availability).toBe("AVAILABLE");
     expect(briefing.metrics.bullProbability).toBeNull();
     expect(briefing.metrics.crashProbability).toBeNull();
-    expect(briefing.whyTodayIsDifferent.bullProbDelta.current).toBe("UNAVAILABLE");
-    expect(briefing.whyTodayIsDifferent.crashProbDelta.current).toBe("UNAVAILABLE");
+    expect(briefing.whyTodayIsDifferent.bullProbDelta.current).toBe("Unavailable");
+    expect(briefing.whyTodayIsDifferent.crashProbDelta.current).toBe("Not offered");
   });
 });

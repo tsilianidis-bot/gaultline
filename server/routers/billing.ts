@@ -9,19 +9,20 @@ import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { stripe } from "../stripe/client";
 import { PLANS, verifyStripePlanConfiguration } from "../stripe/products";
 import { getLifetimeMemberCount } from "../db";
-import { PRICING_PLANS, type StripePlanId } from "../../shared/tiers";
+import { PRICING_PLANS, PAID_PLANS_ON_SALE, CHECKOUT_ENABLED, type StripePlanId } from "../../shared/tiers";
+import { checkoutReceiptForCaller } from "../security/access";
 
-/** Maximum founding lifetime spots available at the $299 promotional price. */
+/** Legacy founding-lifetime counter (retained for existing entitlements; not a public offer). */
 const LIFETIME_FOUNDING_LIMIT = 100;
 
 /** Public/checkout availability: product lock AND a configured Stripe price. */
 export function isPlanAvailableForPurchase(planId: StripePlanId, priceId: string | null | undefined): boolean {
-  return PRICING_PLANS[planId].available && !!priceId;
+  return CHECKOUT_ENABLED && PAID_PLANS_ON_SALE && PRICING_PLANS[planId].available && !!priceId;
 }
 
 export const billingRouter = router({
   getPlans: publicProcedure.query(() => {
-    return Object.values(PLANS).map(p => ({
+    return Object.values(PLANS).filter(p => PRICING_PLANS[p.id].available).map(p => ({
       id: p.id,
       name: p.name,
       description: p.description,
@@ -77,22 +78,22 @@ export const billingRouter = router({
 
   verifyCheckoutSession: publicProcedure
     .input(z.object({ sessionId: z.string() }))
-    .query(async ({ input }) => {
-      if (!stripe) {
-        return null;
-      }
+    .query(async ({ ctx, input }) => {
+      if (!ctx.user || !stripe) return null;
       try {
         const session = await stripe.checkout.sessions.retrieve(input.sessionId, {
           expand: ['line_items'],
         });
-        return {
-          status: session.status,
-          paymentStatus: session.payment_status,
-          amountTotal: session.amount_total,
-          currency: session.currency,
+        return checkoutReceiptForCaller(ctx.user, {
+          clientReferenceId: session.client_reference_id ?? null,
+          metadataUserId: session.metadata?.user_id ?? null,
+          status: session.status ?? null,
+          paymentStatus: session.payment_status ?? null,
+          amountTotal: session.amount_total ?? null,
+          currency: session.currency ?? null,
           planId: session.metadata?.plan_id ?? null,
           customerEmail: session.customer_email ?? session.metadata?.customer_email ?? null,
-        };
+        });
       } catch {
         return null;
       }

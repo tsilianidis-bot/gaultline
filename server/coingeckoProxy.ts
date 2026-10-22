@@ -13,8 +13,10 @@
 //   POST /api/crypto/clear-cache           — clear all caches
 // ============================================================
 import type { Express, Request, Response } from "express";
+import { coinGeckoOhlcPeriodMs, isCryptoCandleComplete } from "../shared/completedBars";
 import { LRUCache } from "./lruCache";
 import { log } from "./logger";
+import { allowOwnerOrAdmin } from "./security/access";
 
 const COINGECKO_BASE = "https://api.coingecko.com/api/v3";
 
@@ -54,41 +56,46 @@ export interface CoinMarketData {
   symbol: string;
   name: string;
   image: string;
-  currentPrice: number;
-  marketCap: number;
-  marketCapRank: number;
+  currentPrice: number | null;
+  marketCap: number | null;
+  marketCapRank: number | null;
   fullyDilutedValuation: number | null;
-  totalVolume: number;
-  high24h: number;
-  low24h: number;
-  priceChange24h: number;
-  priceChangePercent24h: number;
+  totalVolume: number | null;
+  high24h: number | null;
+  low24h: number | null;
+  priceChange24h: number | null;
+  priceChangePercent24h: number | null;
+  /** Display only: null when CoinGecko supplied no 24h change. */
+  priceChangePercent24hDisplay?: number | null;
   priceChangePercent7d: number | null;
   priceChangePercent30d: number | null;
-  marketCapChange24h: number;
-  marketCapChangePercent24h: number;
-  circulatingSupply: number;
+  marketCapChange24h: number | null;
+  marketCapChangePercent24h: number | null;
+  circulatingSupply: number | null;
   totalSupply: number | null;
   maxSupply: number | null;
-  ath: number;
-  athChangePercent: number;
-  atl: number;
-  atlChangePercent: number;
+  ath: number | null;
+  athChangePercent: number | null;
+  atl: number | null;
+  atlChangePercent: number | null;
   sparkline7d: number[];
   lastUpdated: string;
   // Computed volatility metrics
-  volatility24h: number;   // (high-low)/low * 100
-  distanceFromAth: number; // % below ATH
+  volatility24h: number | null;   // (high-low)/low * 100; null when the 24h range was not supplied
+  distanceFromAth: number | null; // % below ATH; null when price was not supplied
 }
 
 export interface GlobalStats {
-  totalMarketCap: number;
-  totalVolume24h: number;
-  btcDominance: number;
-  ethDominance: number;
-  marketCapChangePercent24h: number;
-  activeCryptocurrencies: number;
-  markets: number;
+  totalMarketCap: number | null;
+  totalVolume24h: number | null;
+  btcDominance: number | null;
+  ethDominance: number | null;
+  marketCapChangePercent24h: number | null;
+  activeCryptocurrencies: number | null;
+  markets: number | null;
+  /** CoinGecko `data.updated_at`, in Unix milliseconds; null when absent or invalid. */
+  observedAt: number | null;
+  /** Local receipt time. This is never used as a provider observation time. */
   fetchedAt: number;
 }
 
@@ -336,11 +343,39 @@ function resolveCgId(query: string): string {
   return SYMBOL_MAP[upper] ?? NAME_MAP[upper] ?? query.toLowerCase().trim();
 }
 
-function mapRawCoin(c: Record<string, unknown>): CoinMarketData {
-  const high = (c.high_24h as number) ?? 0;
-  const low  = (c.low_24h  as number) ?? 0;
-  const ath  = (c.ath      as number) ?? 0;
-  const price = (c.current_price as number) ?? 0;
+/**
+ * CoinGecko global volume in USD only. Other currency keys are not summed.
+ * A print above $10T, or above 10× a known USD market cap, is withheld.
+ * An observed zero stays zero.
+ */
+export function observedGlobalUsdVolume(totalVolume: unknown, totalMarketCap: number | null): number | null {
+  let usd: number | null = null;
+  if (typeof totalVolume === "number" && Number.isFinite(totalVolume)) {
+    usd = totalVolume;
+  } else if (totalVolume != null && typeof totalVolume === "object" && "usd" in totalVolume) {
+    const raw = (totalVolume as { usd?: unknown }).usd;
+    usd = typeof raw === "number" && Number.isFinite(raw) ? raw : null;
+  }
+  if (usd == null) return null;
+  if (usd > 1e13) return null;
+  if (typeof totalMarketCap === "number" && Number.isFinite(totalMarketCap) && totalMarketCap > 0 && usd > totalMarketCap * 10) {
+    return null;
+  }
+  return usd;
+}
+
+function finiteCoinNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+export function mapRawCoin(c: Record<string, unknown>): CoinMarketData {
+  const high = finiteCoinNumber(c.high_24h);
+  const low  = finiteCoinNumber(c.low_24h);
+  const athRaw = finiteCoinNumber(c.ath);
+  const ath = athRaw != null && athRaw > 0 ? athRaw : null;
+  const price = finiteCoinNumber(c.current_price);
+  const marketCap = finiteCoinNumber(c.market_cap);
+  const totalVolume = finiteCoinNumber(c.total_volume);
   const sparkRaw = (c.sparkline_in_7d as { price?: number[] })?.price ?? [];
   return {
     id:                       c.id as string,
@@ -348,29 +383,30 @@ function mapRawCoin(c: Record<string, unknown>): CoinMarketData {
     name:                     c.name as string,
     image:                    (c.image as string) ?? "",
     currentPrice:             price,
-    marketCap:                (c.market_cap as number) ?? 0,
-    marketCapRank:            (c.market_cap_rank as number) ?? 0,
-    fullyDilutedValuation:    (c.fully_diluted_valuation as number | null) ?? null,
-    totalVolume:              (c.total_volume as number) ?? 0,
+    marketCap,
+    marketCapRank:            finiteCoinNumber(c.market_cap_rank),
+    fullyDilutedValuation:    finiteCoinNumber(c.fully_diluted_valuation),
+    totalVolume,
     high24h:                  high,
     low24h:                   low,
-    priceChange24h:           (c.price_change_24h as number) ?? 0,
-    priceChangePercent24h:    (c.price_change_percentage_24h as number) ?? 0,
-    priceChangePercent7d:     (c.price_change_percentage_7d_in_currency as number | null) ?? null,
-    priceChangePercent30d:    (c.price_change_percentage_30d_in_currency as number | null) ?? null,
-    marketCapChange24h:       (c.market_cap_change_24h as number) ?? 0,
-    marketCapChangePercent24h:(c.market_cap_change_percentage_24h as number) ?? 0,
-    circulatingSupply:        (c.circulating_supply as number) ?? 0,
-    totalSupply:              (c.total_supply as number | null) ?? null,
-    maxSupply:                (c.max_supply as number | null) ?? null,
+    priceChange24h:           finiteCoinNumber(c.price_change_24h),
+    priceChangePercent24h:    finiteCoinNumber(c.price_change_percentage_24h),
+    priceChangePercent24hDisplay: typeof c.price_change_percentage_24h === "number" && Number.isFinite(c.price_change_percentage_24h) ? c.price_change_percentage_24h : null,
+    priceChangePercent7d:     finiteCoinNumber(c.price_change_percentage_7d_in_currency),
+    priceChangePercent30d:    finiteCoinNumber(c.price_change_percentage_30d_in_currency),
+    marketCapChange24h:       finiteCoinNumber(c.market_cap_change_24h),
+    marketCapChangePercent24h: finiteCoinNumber(c.market_cap_change_percentage_24h),
+    circulatingSupply:        finiteCoinNumber(c.circulating_supply),
+    totalSupply:              finiteCoinNumber(c.total_supply),
+    maxSupply:                finiteCoinNumber(c.max_supply),
     ath:                      ath,
-    athChangePercent:         (c.ath_change_percentage as number) ?? 0,
-    atl:                      (c.atl as number) ?? 0,
-    atlChangePercent:         (c.atl_change_percentage as number) ?? 0,
+    athChangePercent:         finiteCoinNumber(c.ath_change_percentage),
+    atl:                      finiteCoinNumber(c.atl),
+    atlChangePercent:         finiteCoinNumber(c.atl_change_percentage),
     sparkline7d:              sparkRaw.slice(-48),  // last 48 data points (~2 days)
     lastUpdated:              (c.last_updated as string) ?? "",
-    volatility24h:            low > 0 ? ((high - low) / low) * 100 : 0,
-    distanceFromAth:          ath > 0 ? ((price - ath) / ath) * 100 : 0,
+    volatility24h:            high == null || low == null ? null : low > 0 ? ((high - low) / low) * 100 : 0,
+    distanceFromAth:          price == null || ath == null ? null : ((price - ath) / ath) * 100,
   };
 }
 
@@ -483,18 +519,30 @@ export async function getGlobalStats(): Promise<GlobalStats | null> {
         market_cap_change_percentage_24h_usd: number;
         active_cryptocurrencies: number;
         markets: number;
+        updated_at?: number | null;
       };
     }
     const data = await cgFetch<GlobalResponse>("/global");
     const d = data.data;
+    const updatedAtSeconds = typeof d.updated_at === "number" && Number.isFinite(d.updated_at) && d.updated_at > 0
+      ? d.updated_at
+      : null;
+    const finite = (value: unknown): number | null =>
+      typeof value === "number" && Number.isFinite(value) ? value : null;
+    const totalMarketCap = finite(d.total_market_cap?.usd);
     const stats: GlobalStats = {
-      totalMarketCap:            d.total_market_cap?.usd ?? 0,
-      totalVolume24h:            d.total_volume?.usd ?? 0,
-      btcDominance:              d.market_cap_percentage?.btc ?? 0,
-      ethDominance:              d.market_cap_percentage?.eth ?? 0,
-      marketCapChangePercent24h: d.market_cap_change_percentage_24h_usd ?? 0,
-      activeCryptocurrencies:    d.active_cryptocurrencies ?? 0,
-      markets:                   d.markets ?? 0,
+      totalMarketCap,
+      totalVolume24h:            observedGlobalUsdVolume(d.total_volume, totalMarketCap),
+      btcDominance:              typeof d.market_cap_percentage?.btc === "number" && Number.isFinite(d.market_cap_percentage.btc)
+        ? d.market_cap_percentage.btc
+        : null,
+      ethDominance:              typeof d.market_cap_percentage?.eth === "number" && Number.isFinite(d.market_cap_percentage.eth)
+        ? d.market_cap_percentage.eth
+        : null,
+      marketCapChangePercent24h: finite(d.market_cap_change_percentage_24h_usd),
+      activeCryptocurrencies:    finite(d.active_cryptocurrencies),
+      markets:                   finite(d.markets),
+      observedAt:                updatedAtSeconds === null ? null : updatedAtSeconds * 1000,
       fetchedAt:                 Date.now(),
     };
     globalCache.set("global", stats);
@@ -506,9 +554,10 @@ export async function getGlobalStats(): Promise<GlobalStats | null> {
   }
 }
 
-// ── OHLC daily bars (for true RSI/MACD/SMA on crypto) ────────
+// ── Completed daily OHLC bars (for true RSI/MACD/SMA on crypto) ────────
 export interface CoinOHLCBar {
-  timestamp: number;  // Unix ms
+  /** CoinGecko provider timestamp: the documented close time of this candle, in Unix ms. */
+  timestamp: number;
   open: number;
   high: number;
   low: number;
@@ -518,27 +567,46 @@ export interface CoinOHLCBar {
 const ohlcCache = new LRUCache<string, CoinOHLCBar[]>(200, 5 * 60 * 1000); // 5 min TTL
 
 /**
- * Fetch daily OHLC bars for a coin from CoinGecko.
- * Uses /coins/{id}/ohlc?vs_currency=usd&days=30 (returns ~30 daily bars).
+ * CoinGecko documents OHLC timestamps as candle close times and makes a completed
+ * UTC daily candle available at approximately 00:35 UTC. Keep a 35-minute buffer:
+ * a row at or after this cutoff is not a completed daily observation.
+ */
+export const COINGECKO_DAILY_CLOSE_BUFFER_MS = 35 * 60 * 1000;
+
+export function completedCoinDailyBars(bars: CoinOHLCBar[], nowMs = Date.now()): CoinOHLCBar[] {
+  const cutoff = nowMs - COINGECKO_DAILY_CLOSE_BUFFER_MS;
+  return bars.filter(bar =>
+    Number.isFinite(bar.timestamp)
+    && bar.timestamp <= cutoff
+    && [bar.open, bar.high, bar.low, bar.close].every(value => Number.isFinite(value)),
+  );
+}
+
+/**
+ * Fetch completed daily OHLC bars for a coin from CoinGecko.
+ * `interval=daily` is deliberate: CoinGecko auto-granularity would otherwise
+ * return 4-hour bars for a 30-day request. If the configured provider plan does
+ * not support daily candles, this fails closed as an empty series.
  */
 export async function getCoinOHLC(idOrSymbol: string, days = 30): Promise<CoinOHLCBar[]> {
   const upper = idOrSymbol.toUpperCase();
   const cgId = SYMBOL_MAP[upper] ?? idOrSymbol.toLowerCase();
-  const key = `${cgId}:${days}`;
+  const key = `${cgId}:${days}:daily`;
   const cached = ohlcCache.peek(key);
   if (cached) return cached.value;
 
   return dedupe<CoinOHLCBar[]>(`ohlc:${key}`, async () => {
     try {
-      // CoinGecko returns array of [timestamp, open, high, low, close]
-      const raw = await cgFetch<number[][]>(`/coins/${cgId}/ohlc?vs_currency=usd&days=${days}`);
-      const bars: CoinOHLCBar[] = (raw ?? []).map(([ts, o, h, l, c]) => ({
+      // CoinGecko returns [timestamp, open, high, low, close]. Its timestamp is
+      // the candle close time, not the time this service received the response.
+      const raw = await cgFetch<number[][]>(`/coins/${cgId}/ohlc?vs_currency=usd&days=${days}&interval=daily`);
+      const bars = completedCoinDailyBars((raw ?? []).map(([ts, o, h, l, c]) => ({
         timestamp: ts,
         open: o,
         high: h,
         low: l,
         close: c,
-      }));
+      })));
       ohlcCache.set(key, bars);
       return bars;
     } catch (err) {
@@ -709,8 +777,9 @@ export function registerCoinGeckoProxy(app: Express) {
     }
   });
 
-  // Clear cache
-  app.post("/api/crypto/clear-cache", (_req: Request, res: Response) => {
+  // Clear cache — owner/admin only
+  app.post("/api/crypto/clear-cache", async (req: Request, res: Response) => {
+    if (!(await allowOwnerOrAdmin(req, res))) return;
     clearCoinGeckoCache();
     res.json({ success: true });
   });

@@ -1,0 +1,820 @@
+{
+  "routes": [
+    {
+      "path": "/",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/about",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/ai-bubble-monitor",
+      "title": "/ai-bubble-risk-tracker"
+    },
+    {
+      "path": "/ai-bubble-risk-tracker",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/ai-stock-signals",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/ai-stocks-dashboard",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/alt-season-indicator",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/altcoin-season-index",
+      "title": "/alt-season-indicator"
+    },
+    {
+      "path": "/analogs",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/analysis",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app",
+      "title": "/app/now"
+    },
+    {
+      "path": "/app/account",
+      "title": "MORE / Account"
+    },
+    {
+      "path": "/app/act",
+      "title": "ACT"
+    },
+    {
+      "path": "/app/act/deep",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/aftershock",
+      "title": "/app/outlook/deep"
+    },
+    {
+      "path": "/app/ai-diagnostic",
+      "title": "/app/now/deep"
+    },
+    {
+      "path": "/app/ai-watch",
+      "title": "/app/watch"
+    },
+    {
+      "path": "/app/alerts",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/alt-rotation",
+      "title": "/app/why/deep"
+    },
+    {
+      "path": "/app/analogs",
+      "title": "/app/historical-analogs"
+    },
+    {
+      "path": "/app/asha",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/asha-intelligence",
+      "title": "Owner portal only; excluded from member navigation and search"
+    },
+    {
+      "path": "/app/ask-asha",
+      "title": "/app/asha"
+    },
+    {
+      "path": "/app/blog",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/blog/:slug",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/charts",
+      "title": "/app/now/deep"
+    },
+    {
+      "path": "/app/command",
+      "title": "/app/now/deep"
+    },
+    {
+      "path": "/app/command-center",
+      "title": "/app/now/deep"
+    },
+    {
+      "path": "/app/crypto",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/crypto-regime",
+      "title": "/app/outlook/deep"
+    },
+    {
+      "path": "/app/crypto-search",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/crypto-signals",
+      "title": "TRADING TOOLS / Crypto Signals"
+    },
+    {
+      "path": "/app/crypto-watchlist",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/daily-briefing",
+      "title": "/app/now"
+    },
+    {
+      "path": "/app/dashboard",
+      "title": "/app/now"
+    },
+    {
+      "path": "/app/day-trade-intelligence",
+      "title": "TRADING TOOLS / Day Trade Intelligence"
+    },
+    {
+      "path": "/app/day-trade-intelligence/:symbol",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/decision-engine",
+      "title": "TRADING TOOLS / Decision Engine"
+    },
+    {
+      "path": "/app/decision-ledger",
+      "title": "TRADING TOOLS / Decision Ledger"
+    },
+    {
+      "path": "/app/diagnostic",
+      "title": "/app/now/deep"
+    },
+    {
+      "path": "/app/discover",
+      "title": "TRADING TOOLS / Top Opportunities / Smart Discovery"
+    },
+    {
+      "path": "/app/early-warning",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/glossary",
+      "title": "MORE / Glossary"
+    },
+    {
+      "path": "/app/guide",
+      "title": "MORE / Platform Guide"
+    },
+    {
+      "path": "/app/historical-analogs",
+      "title": "INTELLIGENCE DASHBOARDS / Historical Analogs"
+    },
+    {
+      "path": "/app/insider-intelligence",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/intelligence-hub",
+      "title": "/app/now/deep"
+    },
+    {
+      "path": "/app/intelligence-track-record",
+      "title": "Publication-gated contextual access"
+    },
+    {
+      "path": "/app/intelligence-validation",
+      "title": "/app/validation"
+    },
+    {
+      "path": "/app/market-intelligence",
+      "title": "/app/now/deep"
+    },
+    {
+      "path": "/app/market-movers",
+      "title": "TRADING TOOLS / Market Movers"
+    },
+    {
+      "path": "/app/markets",
+      "title": "INTELLIGENCE DASHBOARDS / Global Markets"
+    },
+    {
+      "path": "/app/now",
+      "title": "NOW"
+    },
+    {
+      "path": "/app/now/deep",
+      "title": "INTELLIGENCE DASHBOARDS / Seismograph Deep Dashboard"
+    },
+    {
+      "path": "/app/opportunities",
+      "title": "/app/act/deep"
+    },
+    {
+      "path": "/app/outlook",
+      "title": "OUTLOOK"
+    },
+    {
+      "path": "/app/outlook/deep",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/portfolio",
+      "title": "TRADING TOOLS / Portfolio"
+    },
+    {
+      "path": "/app/pre-flight",
+      "title": "/app/now/deep"
+    },
+    {
+      "path": "/app/pressure",
+      "title": "INTELLIGENCE DASHBOARDS / Pressure Index"
+    },
+    {
+      "path": "/app/pressure-history",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/pressure-index",
+      "title": "/app/now?view=pressure"
+    },
+    {
+      "path": "/app/reading-history",
+      "title": "MORE / Reading History"
+    },
+    {
+      "path": "/app/report",
+      "title": "/app/now/deep"
+    },
+    {
+      "path": "/app/rising-stars",
+      "title": "TRADING TOOLS / Rising Stars"
+    },
+    {
+      "path": "/app/rising-stars/:ticker",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/roadmap",
+      "title": "MORE / Roadmap"
+    },
+    {
+      "path": "/app/scenarios",
+      "title": "/app/outlook/deep"
+    },
+    {
+      "path": "/app/scores",
+      "title": "/app/pressure?tab=scores"
+    },
+    {
+      "path": "/app/seismograph",
+      "title": "/app/now/deep"
+    },
+    {
+      "path": "/app/seismograph-command-center",
+      "title": "NOW → Seismograph Intelligence contextual link"
+    },
+    {
+      "path": "/app/seismograph-legacy",
+      "title": "/app/now/deep"
+    },
+    {
+      "path": "/app/signal-outlook",
+      "title": "TRADING TOOLS / Signal Outlook"
+    },
+    {
+      "path": "/app/signals",
+      "title": "TRADING TOOLS / Signals"
+    },
+    {
+      "path": "/app/signals/:symbol",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/sim-portfolio",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/simulate",
+      "title": "/app/simulate-pressure"
+    },
+    {
+      "path": "/app/simulate-pressure",
+      "title": "INTELLIGENCE DASHBOARDS / Simulate Pressure"
+    },
+    {
+      "path": "/app/situation-room",
+      "title": "/app/now/deep"
+    },
+    {
+      "path": "/app/social-intelligence",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/stock-heatmap",
+      "title": "/app/now/deep"
+    },
+    {
+      "path": "/app/symbol-intelligence",
+      "title": "TRADING TOOLS / Symbol Intelligence"
+    },
+    {
+      "path": "/app/time-machine",
+      "title": "INTELLIGENCE DASHBOARDS / Time Machine"
+    },
+    {
+      "path": "/app/todays-story",
+      "title": "/app/now"
+    },
+    {
+      "path": "/app/tools",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/track-record",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/trade-journal",
+      "title": "TRADING TOOLS / Trade Journal"
+    },
+    {
+      "path": "/app/trade-preflight",
+      "title": "/app/decision-engine#trade-preflight"
+    },
+    {
+      "path": "/app/validation",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/validation-lab",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/watch",
+      "title": "WATCH"
+    },
+    {
+      "path": "/app/watch/deep",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/watchlist",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/app/why",
+      "title": "WHY"
+    },
+    {
+      "path": "/app/why/deep",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/best-market-risk-indicators",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/best-stock-market-risk-dashboard",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/bitcoin-risk-dashboard",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/bitcoin-vs-stock-market",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/blog",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/blog/:slug",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/bull-bear-conditions",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/bull-or-bear-market",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/checkout/success",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/contact",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/credit-market-stress",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/crypto-bull-or-bear",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/crypto-market-regime",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/crypto-market-risk-dashboard",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/crypto-signals",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/crypto-signals-intelligence",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/crypto/:symbol",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/crypto/tao",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/daily-brief",
+      "title": "DAILY BRIEF"
+    },
+    {
+      "path": "/daily-brief/:slug",
+      "title": "Contextual historical access through DAILY BRIEF"
+    },
+    {
+      "path": "/demo",
+      "title": "/app/discover"
+    },
+    {
+      "path": "/demo/:rest*",
+      "title": "/app/discover"
+    },
+    {
+      "path": "/demo/crypto",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/demo/dashboard",
+      "title": "/app/now"
+    },
+    {
+      "path": "/demo/day-trade-intelligence",
+      "title": "/app/day-trade-intelligence"
+    },
+    {
+      "path": "/demo/decision-engine",
+      "title": "/app/decision-engine"
+    },
+    {
+      "path": "/demo/diagnostic",
+      "title": "/app/now/deep"
+    },
+    {
+      "path": "/demo/discover",
+      "title": "/app/discover"
+    },
+    {
+      "path": "/demo/insider-intelligence",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/demo/opportunities",
+      "title": "/app/act"
+    },
+    {
+      "path": "/demo/portfolio",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/demo/pressure",
+      "title": "/app/pressure"
+    },
+    {
+      "path": "/demo/signal-outlook",
+      "title": "/app/signal-outlook"
+    },
+    {
+      "path": "/demo/signals",
+      "title": "/app/watch"
+    },
+    {
+      "path": "/demo/social-intelligence",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/demo/watchlist",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/diagnostic-ai",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/ethereum-risk-dashboard",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/federal-reserve-tracker",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/intel-archive",
+      "title": "Contextual historical access through DAILY BRIEF"
+    },
+    {
+      "path": "/intelligence",
+      "title": "Contextual historical access through DAILY BRIEF"
+    },
+    {
+      "path": "/intelligence-library",
+      "title": "Contextual historical access through DAILY BRIEF"
+    },
+    {
+      "path": "/intelligence-library/:slug",
+      "title": "Contextual historical access through DAILY BRIEF"
+    },
+    {
+      "path": "/intelligence-track-record",
+      "title": "Publication-gated contextual access"
+    },
+    {
+      "path": "/is-now-good-time-to-buy-stocks",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/learn/bull-and-bear-markets",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/learn/credit-spreads",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/learn/crypto-cycles",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/learn/fed-policy",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/learn/how-to-read-stock-market",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/learn/inflation-and-stocks",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/learn/macro-investing",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/learn/risk-on-or-risk-off",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/learn/treasury-yields",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/learn/what-causes-market-crash",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/learn/what-is-liquidity",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/learn/what-is-market-regime",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/legal",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/liquidity-monitor",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/market-briefing",
+      "title": "/app/now"
+    },
+    {
+      "path": "/market-crash-indicator",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/market-crash-probability-2026",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/market-regime-tracker",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/methodology",
+      "title": "MORE / Methodology"
+    },
+    {
+      "path": "/mobile",
+      "title": "/mobile/pulse"
+    },
+    {
+      "path": "/mobile/",
+      "title": "/mobile/pulse"
+    },
+    {
+      "path": "/mobile/:tab*",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/mobile/account",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/mobile/brief",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/mobile/crypto",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/mobile/pulse",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/mobile/rotation",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/mobile/signals",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/mobile/upgrade",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/mobile/watchlist",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/phoenix-systems",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/press",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/pressure-index",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/pricing",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/promo/:code",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/qa-access",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/r/:publicShareId",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/recession-probability",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/signals",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/situation-room",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/stock-market-risk-dashboard",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/stock-market-risk-today",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/stock-market-today",
+      "title": "/stock-market-risk-today"
+    },
+    {
+      "path": "/stock/:symbol",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/stock/aapl",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/stock/amd",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/stock/amzn",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/stock/dia",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/stock/iwm",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/stock/meta",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/stock/msft",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/stock/nvda",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/stock/pltr",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/stock/qqq",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/stock/spy",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/stock/tsla",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/track-record",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/treasury-yield-stress",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/trust",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/volatility-dashboard",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/vs/bloomberg",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/vs/finviz",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/vs/koyfin",
+      "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/vs/tradingview",
+      "title": "Preserved direct route and existing contextual links"
+    }
+  ]
+}

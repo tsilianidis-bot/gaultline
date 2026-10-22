@@ -27,11 +27,15 @@ describe("legacy current-truth bypasses", () => {
     expect(mobileBrief).toContain("marketState.canonicalCurrent");
     expect(mobileBrief).not.toContain("pressure.getCurrentPressure");
     expect(mobileBrief).not.toContain("pressureScore * 0.7");
-    expect(mobileBrief).toContain("scenarioOutputs");
+    // Probabilities come from the canonical contract, not raw scenarioOutputs (QA r9).
+    expect(mobileBrief).toContain("canonicalState.probabilityContract");
+    expect(mobileBrief).not.toContain("scenarioOutputs");
   });
 
   it("binds public Pressure Index to canonical state and never seeds placeholder vector scores", () => {
-    expect(pressureIndex).toContain("marketState.canonicalCurrent");
+    // The page reads canonicalCurrent through the shared single-snapshot hook.
+    expect(pressureIndex).toContain("usePressureSnapshot()");
+    expect(source("client/src/hooks/usePressureSnapshot.ts")).toContain("marketState.canonicalCurrent");
     expect(pressureIndex).not.toContain("pressure.getCurrentPressure");
     expect(pressureIndex).not.toContain("[42, 58, 35, 27, 61]");
     expect(pressureIndex).toContain("RISK VECTORS UNAVAILABLE — WITHHELD");

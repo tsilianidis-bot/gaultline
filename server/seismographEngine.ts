@@ -56,7 +56,7 @@ export interface SeismographState {
     direction: "rising" | "falling" | "stable";
     deltaFromPrior: number;
     streakDays: number;
-    historicalPercentile: number;
+    historicalPercentile: number | null;
     pressureDrivers: string[];
   };
   transitionProbabilities: {
@@ -211,8 +211,9 @@ async function getRecentDailyReadings(days = 60): Promise<SeismographReadingRow[
 
 // ─── Core analytics ───────────────────────────────────────────────────────────
 
-function computePercentile(score: number, allScores: number[]): number {
-  if (allScores.length === 0) return 50;
+/** Rank against recorded scores. An empty history is insufficient, not the 50th percentile. */
+export function historicalPercentileFromScores(score: number, allScores: number[]): number | null {
+  if (!Number.isFinite(score) || allScores.length === 0) return null;
   const below = allScores.filter((s) => s < score).length;
   return Math.round((below / allScores.length) * 100);
 }
@@ -254,7 +255,7 @@ const PATTERN_SPECS: PatternSpec[] = [
     detect: (r) => r.slice(0, 10).filter((x) => x.pressureScore >= 60).length >= 8,
     describe: (r) => {
       const days = r.filter((x) => x.pressureScore >= 60).length;
-      return `Pressure has remained at or above 60 for ${days} of the last ${r.length} recorded days. Sustained elevated pressure historically precedes either a resolution rally or an acceleration into higher-stress territory.`;
+      return `Pressure has remained at or above 60 for ${days} of the last ${r.length} recorded days. What follows sustained elevated pressure has not been validated in FAULTLINE's record.`;
     },
     frequency: "uncommon",
     invalidation: "Pressure drops below 50 for 5 or more consecutive days.",
@@ -262,17 +263,14 @@ const PATTERN_SPECS: PatternSpec[] = [
   {
     type: "pressure_acceleration",
     name: "Accelerating Pressure Build",
-    detect: (r) => {
-      if (r.length < 10) return false;
-      const recent = r.slice(0, 5).map((x) => x.pressureScore);
-      const prior = r.slice(5, 10).map((x) => x.pressureScore);
-      const avgRecent = recent.reduce((a, b) => a + b, 0) / recent.length;
-      const avgPrior = prior.reduce((a, b) => a + b, 0) / prior.length;
-      return avgRecent - avgPrior >= 8;
-    },
+    detect: (r) => detectsPressureAcceleration(r),
     describe: (r) => {
-      const delta =
-        (r[0]?.pressureScore ?? 0) - (r[9]?.pressureScore ?? r[0]?.pressureScore ?? 0);
+      const latest = patternDetectionPressureScore(r[0]?.pressureScore);
+      const older = patternDetectionPressureScore(r[9]?.pressureScore);
+      if (latest == null || older == null) {
+        return "Pressure acceleration is detected from finite scores only. A missing score is not counted as 0, and the point change is not stated.";
+      }
+      const delta = latest - older;
       return `Pressure has accelerated by approximately ${delta} points over the past 10 recorded days. Acceleration patterns historically resolve within 3–6 weeks through either a sharp correction or a policy-driven reversal.`;
     },
     frequency: "uncommon",
@@ -281,11 +279,7 @@ const PATTERN_SPECS: PatternSpec[] = [
   {
     type: "regime_transition_warning",
     name: "Regime Transition Warning",
-    detect: (r) => {
-      if (r.length < 3) return false;
-      const regimes = r.slice(0, 3).map((x) => x.regime);
-      return new Set(regimes).size >= 2;
-    },
+    detect: (r) => detectsRegimeTransitionPattern(r),
     describe: (r) => {
       const regimes = Array.from(new Set(r.slice(0, 5).map((x) => x.regime)));
       return `The system has detected regime instability across recent readings: ${regimes.join(" → ")}. Regime transitions are historically associated with elevated volatility and a higher probability of directional moves in either direction.`;
@@ -313,18 +307,14 @@ const PATTERN_SPECS: PatternSpec[] = [
   {
     type: "pressure_relief",
     name: "Pressure Relief Pattern",
-    detect: (r) => {
-      if (r.length < 5) return false;
-      const current = r[0]?.pressureScore ?? 0;
-      const peak = Math.max(...r.slice(0, 10).map((x) => x.pressureScore));
-      return peak >= 65 && current <= peak - 12;
-    },
+    detect: (r) => detectsPressureReliefPattern(r),
     describe: (r) => {
-      const current = r[0]?.pressureScore ?? 0;
-      const peak = Math.max(...r.slice(0, 10).map((x) => x.pressureScore));
+      const current = patternDetectionPressureScore(r[0]?.pressureScore);
+      const peak = finitePatternScores(r).reduce((max, score) => Math.max(max, score), Number.NEGATIVE_INFINITY);
+      if (current == null || !Number.isFinite(peak)) return "Pressure relief is not described because the latest score is missing.";
       return `Pressure has declined from a recent peak of ${peak} to ${current}, a reduction of ${
         peak - current
-      } points. Historical relief patterns of this magnitude have been followed by stabilization in approximately 60% of cases and re-escalation in approximately 40%.`;
+      } points. What follows a relief move of this size has not been validated in FAULTLINE's record.`;
     },
     frequency: "typical",
     invalidation: "Pressure re-accelerates above the prior peak.",
@@ -345,6 +335,79 @@ interface InsertablePattern {
   isActive: boolean;
 }
 
+/**
+ * Pressure score used to match analogs for a detected pattern.
+ * A missing or non-finite score is withheld. It is not replaced with 50.
+ * A computed 0 is kept.
+ */
+export function patternDetectionPressureScore(pressureScore: number | null | undefined): number | null {
+  return typeof pressureScore === "number" && Number.isFinite(pressureScore) ? pressureScore : null;
+}
+
+function finitePatternScores(readings: Array<{ pressureScore?: number | null }>): number[] {
+  return readings
+    .slice(0, 10)
+    .map(reading => patternDetectionPressureScore(reading.pressureScore))
+    .filter((score): score is number => score != null);
+}
+
+/**
+ * Mean of the finite scores in a window. A missing score is left out of both
+ * the sum and the count. It is not added as 0.
+ */
+function finiteWindowAverage(readings: Array<{ pressureScore?: number | null }>): number | null {
+  const scores = readings
+    .map(reading => patternDetectionPressureScore(reading.pressureScore))
+    .filter((score): score is number => score != null);
+  if (scores.length === 0) return null;
+  return scores.reduce((sum, score) => sum + score, 0) / scores.length;
+}
+
+/**
+ * Acceleration compares the mean of the latest five finite scores with the
+ * mean of the five before them. A missing score does not enter either average.
+ */
+export function detectsPressureAcceleration(readings: Array<{ pressureScore?: number | null }>): boolean {
+  if (readings.length < 10) return false;
+  const recent = finiteWindowAverage(readings.slice(0, 5));
+  const prior = finiteWindowAverage(readings.slice(5, 10));
+  if (recent == null || prior == null) return false;
+  return recent - prior >= 8;
+}
+
+/** Regime-transition pattern requires a finite latest score. Regime labels alone do not publish it. */
+export function detectsRegimeTransitionPattern(readings: Array<{ regime?: string | null; pressureScore?: number | null }>): boolean {
+  if (readings.length < 3) return false;
+  if (patternDetectionPressureScore(readings[0]?.pressureScore) == null) return false;
+  const regimes = readings.slice(0, 3).map(reading => reading.regime);
+  return new Set(regimes).size >= 2;
+}
+
+/**
+ * Relief requires a finite latest score. A missing score is not a drop to 0.
+ * A computed 0 can still be a relief from a peak of at least 65.
+ */
+export function detectsPressureReliefPattern(readings: Array<{ pressureScore?: number | null }>): boolean {
+  if (readings.length < 5) return false;
+  const current = patternDetectionPressureScore(readings[0]?.pressureScore);
+  if (current == null) return false;
+  const scores = finitePatternScores(readings);
+  if (scores.length === 0) return false;
+  const peak = Math.max(...scores);
+  return peak >= 65 && current <= peak - 12;
+}
+
+/**
+ * Public pattern outcome text. Empty-analog defaults (40/35/25) and the other
+ * canned outcome splits are uncalibrated, so no percent is stated.
+ */
+export function patternHistoricalOutcome(
+  distribution: { sampleSize?: number | null } | null | undefined,
+): string | undefined {
+  if (!distribution || !distribution.sampleSize) return undefined;
+  return "Historical outcome distribution is uncalibrated and is not stated.";
+}
+
 async function detectActivePatterns(
   readings: SeismographReadingRow[],
   history: HistoryEntry[]
@@ -355,11 +418,10 @@ async function detectActivePatterns(
   for (const spec of PATTERN_SPECS) {
     if (spec.detect(readings, history)) {
       const description = spec.describe(readings);
-      const analogs = computeAnalogs(
-        readings[0]?.pressureScore ?? 50,
-        readings[0]?.regime ?? "",
-        history
-      );
+      const observedPressure = patternDetectionPressureScore(readings[0]?.pressureScore);
+      const analogs = observedPressure == null
+        ? []
+        : computeAnalogs(observedPressure, readings[0]?.regime ?? "", history);
       const outcomes = computeOutcomeDistribution(analogs);
       const historicalCount = Math.floor(
         history.length *
@@ -375,7 +437,9 @@ async function detectActivePatterns(
         frequency: spec.frequency,
         historicalCount,
         analogMatchesJson: JSON.stringify(analogs),
-        outcomeDistributionJson: JSON.stringify(outcomes),
+        outcomeDistributionJson: JSON.stringify(outcomes
+          ? { sampleSize: outcomes.sampleSize, calibrated: false }
+          : { sampleSize: 0, calibrated: false }),
         invalidationConditions: spec.invalidation,
         isActive: true,
       });
@@ -452,19 +516,10 @@ function buildSimilarityExplanation(
   return parts.join(", ") + ".";
 }
 
-function computeOutcomeDistribution(analogs: AnalogMatch[]): OutcomeDistribution {
-  if (analogs.length === 0) {
-    return {
-      bullishContinuation: 40,
-      sideways: 35,
-      correction: 25,
-      avgReturn1w: 0,
-      avgReturn1m: 0,
-      avgReturn3m: 0,
-      avgReturn6m: 0,
-      sampleSize: 0,
-    };
-  }
+function computeOutcomeDistribution(analogs: AnalogMatch[]): OutcomeDistribution | null {
+  // No analogs: do not invent the 40/35/25 split. That split was published as
+  // "40% bullish / 25% correction" when the score was missing.
+  if (analogs.length === 0) return null;
   const avgScore = analogs.reduce((a, b) => a + b.pressureScore, 0) / analogs.length;
   const isHighStress = avgScore >= 65;
   const isCritical = avgScore >= 80;
@@ -605,8 +660,10 @@ function computeEvolution(readings: SeismographReadingRow[]): SeismographState["
   const sevenDayDelta = avg7 - avgPrior7;
   const thirtyDayDelta = avg7 - avg30;
 
-  const sevenDayTrend =
-    sevenDayDelta >= 5
+  // Fail closed: without a prior-week window there is no comparison to call "Stable".
+  const sevenDayTrend = prior7.length === 0
+    ? "Unavailable (no prior-week reading)"
+    : sevenDayDelta >= 5
       ? `Rising (+${sevenDayDelta.toFixed(1)} pts)`
       : sevenDayDelta <= -5
       ? `Declining (${sevenDayDelta.toFixed(1)} pts)`
@@ -746,7 +803,7 @@ export async function recordSeismographReading(params: {
 
   const history = await getPressureHistoryMonths(300);
   const allScores = history.map((h) => h.score);
-  const historicalPercentile = computePercentile(pressureScore, allScores);
+  const historicalPercentile = historicalPercentileFromScores(pressureScore, allScores);
 
   const db = await requireDb();
   await db
@@ -918,7 +975,9 @@ export async function getSeismographState(): Promise<SeismographState | null> {
       direction: (latest.direction as "rising" | "falling" | "stable") ?? "stable",
       deltaFromPrior: latest.deltaFromPrior ?? 0,
       streakDays: latest.streakDays ?? 0,
-      historicalPercentile: latest.historicalPercentile ?? 50,
+      historicalPercentile: typeof latest.historicalPercentile === "number" && Number.isFinite(latest.historicalPercentile)
+        ? latest.historicalPercentile
+        : null,
       pressureDrivers: JSON.parse(latest.pressureDriversJson ?? "[]") as string[],
     },
     transitionProbabilities: transitionProbs,
@@ -949,19 +1008,14 @@ export async function buildSeismographPromptBlock(): Promise<string> {
   return `
 ──SEISMOGRAPH INTELLIGENCE ENGINE──
 Observations recorded: ${marketMemorySummary.observationCount} days
-Current reading: ${today.pressureScore} (${today.stressLevel}) — ${formatOrdinal(today.historicalPercentile)} historical percentile
+Current reading: ${today.pressureScore} (${today.stressLevel}) — ${typeof today.historicalPercentile === "number" ? `${formatOrdinal(today.historicalPercentile)} historical percentile` : "historical percentile unavailable (insufficient data)"}
 Direction: ${today.direction} | Streak: ${today.streakDays} days | Delta: ${
     today.deltaFromPrior > 0 ? "+" : ""
   }${today.deltaFromPrior} pts
 Regime: ${today.regime}
 ${marketMemorySummary.lastMajorShift ? `Last regime shift: ${marketMemorySummary.lastMajorShift}` : ""}
 
-Regime Transition Probabilities (historical base rates, not predictions):
-  Remain in current regime: ${transitionProbabilities.remainInRegime}%
-  Transition to elevated stress: ${transitionProbabilities.transitionToElevated}%
-  Transition to low stress: ${transitionProbabilities.transitionToLow}%
-  Transition to crisis: ${transitionProbabilities.transitionToCrisis}%
-  Confidence: ${transitionProbabilities.confidence}% | ${transitionProbabilities.historicalBasis}
+Transition risk: uncalibrated and not stated as a probability.
   Current evidence: ${transitionProbabilities.currentEvidence.join("; ") || "None significant"}
 
 Active Patterns:

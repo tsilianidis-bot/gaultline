@@ -1,90 +1,61 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  resetAshaModelResolutionCache,
-  resolveAshaModelCandidates,
-} from "./ashaModelPolicy";
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import { canonicalChatModelId, isKnownNonChatModel } from "./ashaModelPolicy";
+import { PLATO_DEFAULT_FAST_MODEL, resolvePlatoModelChain } from "./plato/config";
 
-beforeEach(() => {
-  resetAshaModelResolutionCache();
-});
-
-describe("resolveAshaModelCandidates", () => {
-  it("selects only currently available models in institutional preference order", async () => {
-    const resolution = await resolveAshaModelCandidates({
-      now: () => Date.parse("2026-07-23T13:00:00.000Z"),
-      fetchCatalog: async () => ({
-        data: [
-          { id: "gemini-3-flash-preview" },
-          { id: "gpt-5" },
-          { id: "claude-sonnet-4-6" },
-        ],
-      }),
-    });
-
-    expect(resolution).toMatchObject({
-      candidates: ["claude-sonnet-4-6", "gpt-5", "gemini-3-flash-preview"],
-      source: "live-catalog",
-    });
+describe("PLATO chat-model guard (TTS path removed)", () => {
+  it("rejects every TTS, embedding, image, transcription and live-audio id the production Gemini catalog lists", () => {
+    for (const id of [
+      "models/gemini-2.5-flash-preview-tts",
+      "models/gemini-2.5-pro-preview-tts",
+      "models/gemini-3.1-flash-tts-preview",
+      "models/gemini-3.8-flash-tts",
+      "models/gemini-3.8-flash-lite-tts",
+      "models/gemini-embedding-001",
+      "models/imagen-4.0-generate-001",
+      "models/gemini-3.5-transcribe",
+      "models/gemini-2.5-flash-native-audio-preview",
+      "models/gemini-live-2.5-flash",
+      "models/veo-3.0-generate-001",
+    ]) {
+      expect(isKnownNonChatModel(id), id).toBe(true);
+    }
   });
 
-  it("uses the catalog itself when preferred model families change", async () => {
-    const resolution = await resolveAshaModelCandidates({
-      fetchCatalog: async () => ({ data: [{ id: "future-model-a" }, { id: "future-model-b" }] }),
-    });
-
-    expect(resolution.candidates).toEqual(["future-model-a", "future-model-b"]);
-    expect(resolution.source).toBe("live-catalog");
+  it("accepts the chat models in the PLATO chain", () => {
+    for (const id of ["gemini-3-flash-preview", "models/gemini-3.1-flash-lite", "gemini-3.5-flash-lite", "claude-sonnet-4-6"]) {
+      expect(isKnownNonChatModel(id), id).toBe(false);
+    }
+    expect(canonicalChatModelId("models/gemini-3-flash-preview")).toBe("gemini-3-flash-preview");
   });
 
-  it("falls back explicitly when live catalog discovery fails", async () => {
-    const resolution = await resolveAshaModelCandidates({
-      fetchCatalog: async () => {
-        throw new Error("catalog unavailable");
-      },
+  it("drops a TTS model even when it is configured as the primary or a fallback", () => {
+    const chain = resolvePlatoModelChain({
+      PLATO_FAST_MODEL: "models/gemini-2.5-flash-preview-tts",
+      PLATO_FALLBACK_MODELS: "gemini-3.8-flash-tts, models/gemini-3.1-flash-lite",
     });
-
-    expect(resolution).toMatchObject({
-      candidates: ["gemini-3-flash-preview"],
-      source: "transport-fallback",
-    });
+    expect(chain.models).toEqual(["gemini-3-flash-preview", "gemini-3.1-flash-lite"]);
+    expect(chain.models.some(isKnownNonChatModel)).toBe(false);
+    expect(chain.primaryConfigured).toBe(false);
   });
 
-  it("caches catalog resolution within the bounded TTL", async () => {
-    const fetchCatalog = vi.fn().mockResolvedValue({ data: [{ id: "gpt-5" }] });
-    let nowMs = Date.parse("2026-07-23T13:00:00.000Z");
-
-    await resolveAshaModelCandidates({ fetchCatalog, now: () => nowMs });
-    nowMs += 5 * 60 * 1000;
-    await resolveAshaModelCandidates({ fetchCatalog, now: () => nowMs });
-
-    expect(fetchCatalog).toHaveBeenCalledTimes(1);
+  it("no longer picks arbitrary catalog ids: the policy has no catalog lookup at all", () => {
+    const source = readFileSync(new URL("./ashaModelPolicy.ts", import.meta.url), "utf8");
+    expect(source).not.toMatch(/listLLMModels|fetchCatalog|slice\(0,\s*3\)/);
+    const gateway = readFileSync(new URL("./ashaGateway.ts", import.meta.url), "utf8");
+    expect(gateway).not.toContain("resolveAshaModelCandidates");
   });
 
-  it("refreshes the bounded cache on demand and adopts the latest live catalogue", async () => {
-    const fetchCatalog = vi.fn()
-      .mockResolvedValueOnce({ data: [{ id: "gpt-5" }] })
-      .mockResolvedValueOnce({ data: [{ id: "claude-sonnet-4-6" }] });
-    let nowMs = Date.parse("2026-07-23T13:00:00.000Z");
-
-    const first = await resolveAshaModelCandidates({ fetchCatalog, now: () => nowMs });
-    nowMs += 60_000;
-    const refreshed = await resolveAshaModelCandidates({ fetchCatalog, now: () => nowMs, forceRefresh: true });
-
-    expect(first.candidates).toEqual(["gpt-5"]);
-    expect(refreshed.candidates).toEqual(["claude-sonnet-4-6"]);
-    expect(fetchCatalog).toHaveBeenCalledTimes(2);
+  it("defaults to the approved primary plus same-provider fallbacks", () => {
+    const chain = resolvePlatoModelChain({});
+    expect(chain.models[0]).toBe(PLATO_DEFAULT_FAST_MODEL);
+    expect(chain.models).toEqual(["gemini-3-flash-preview", "gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]);
   });
 
-  it("uses the explicit transport fallback when the live catalogue is empty", async () => {
-    const resolution = await resolveAshaModelCandidates({
-      fetchCatalog: async () => ({ data: [] }),
-      now: () => Date.parse("2026-07-23T13:00:00.000Z"),
-    });
-
-    expect(resolution).toEqual({
-      candidates: ["gemini-3-flash-preview"],
-      source: "transport-fallback",
-      resolvedAt: "2026-07-23T13:00:00.000Z",
-    });
+  it("honours explicit overrides in order and de-duplicates", () => {
+    expect(resolvePlatoModelChain({
+      FAULTLINE_PLATO_MODEL: "models/gemini-3.1-pro-preview",
+      PLATO_FALLBACK_MODEL: "gemini-3.1-pro-preview",
+    })).toEqual({ models: ["gemini-3.1-pro-preview"], primaryConfigured: true });
   });
 });

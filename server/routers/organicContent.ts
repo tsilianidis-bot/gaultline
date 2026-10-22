@@ -84,12 +84,22 @@ export const organicContentRouter = router({
         .where(eq(dailyBriefSnapshots.snapshotId, item.briefSnapshotId))
         .limit(1);
 
+      const inputFreshness = snapshot
+        ? JSON.parse(snapshot.inputFreshnessJson) as Array<{ freshness?: string }>
+        : [];
+      const validation = snapshot
+        ? JSON.parse(snapshot.validationJson) as { errors?: string[] }
+        : null;
+      const isStaleSnapshot = inputFreshness.some(input => input.freshness === "stale")
+        || Boolean(validation?.errors?.includes("canonical-snapshot-unexpectedly-stale"));
+
       return {
         ...item,
         briefSnapshot: snapshot ? {
           ...snapshot,
-          inputFreshness: JSON.parse(snapshot.inputFreshnessJson),
-          validation: JSON.parse(snapshot.validationJson),
+          inputFreshness,
+          validation,
+          isStale: isStaleSnapshot,
           archiveSemantics: "ARCHIVED_GENERATED_SNAPSHOT",
           canonicalOriginStatus: snapshot.originatingStateId ? "linked" : "unavailable",
         } : null,
@@ -108,7 +118,9 @@ export const organicContentRouter = router({
         .where(eq(signalPages.symbol, input.symbol.toUpperCase()))
         .limit(1);
 
-      return page ?? null;
+      // Launch fix-up: confidenceScore is an LLM-generated integer
+      // (organicContentEngine.ts), not a calibrated value. Withheld publicly.
+      return page ? { ...page, confidenceScore: null } : null;
     }),
 
   // ── Public: list all signal pages ─────────────────────────────────────────
@@ -125,7 +137,7 @@ export const organicContentRouter = router({
         conditions.push(eq(signalPages.assetType, input.assetType));
       }
 
-      return db.select({
+      const rows = await db.select({
         symbol: signalPages.symbol,
         assetType: signalPages.assetType,
         name: signalPages.name,
@@ -139,6 +151,8 @@ export const organicContentRouter = router({
         .from(signalPages)
         .where(conditions.length > 0 ? and(...conditions) : undefined)
         .orderBy(signalPages.assetType, signalPages.symbol);
+      // Launch fix-up: LLM-generated confidenceScore is withheld publicly.
+      return rows.map(row => ({ ...row, confidenceScore: null }));
     }),
 
   // ── Public: track CTA click ────────────────────────────────────────────────

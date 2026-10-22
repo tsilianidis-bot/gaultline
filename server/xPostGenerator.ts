@@ -5,6 +5,7 @@
 // ============================================================
 
 import { invokeLLM } from "./_core/llm";
+import { stripProbabilityPercentClaims } from "./stripProbabilityClaims";
 import type { FaultlinePressureOutput } from "./pressure/engine";
 
 export type PostType = "premarket" | "midday" | "closing" | "breaking";
@@ -49,17 +50,13 @@ function buildPressureContext(pressure: FaultlinePressureOutput): string {
 
   const topAlerts = pressure.alerts.slice(0, 3);
 
-  const bullProb = Math.max(5, Math.round(100 - pressure.overallPressure));
-  const crashProb = Math.min(95, Math.round(pressure.overallPressure * 0.6));
-
   return `
 FAULTLINE PRESSURE INDEX: ${pressure.overallPressure}/100
 REGIME: ${pressure.regime}
 LEVEL: ${pressure.level}
 DATA SOURCE: ${pressure.dataSource === "live" ? "Live FRED data" : "Baseline estimates"}
 
-BULL PROBABILITY: ~${bullProb}%
-CRASH/RISK-OFF PROBABILITY: ~${crashProb}%
+SCENARIOS: FAULTLINE does not offer a crash probability, does not offer a recession probability, and its bull/bear scenario weights are uncalibrated. Never state a probability or odds.
 
 TOP RISK VECTORS:
 ${topVectors.map(v => `- ${v.label}: ${v.score}/100 (${v.level}) — ${v.driver}`).join("\n")}
@@ -94,7 +91,8 @@ STYLE RULES:
 - NO generic finance commentary. NO hype. NO emojis.
 - Always interpret the HIDDEN macro implications — not just surface price action.
 - Always include breadth analysis: is participation broad or narrow? Are indexes masking weakness?
-- Always include: current market tone, FAULTLINE risk level, bull probability, crash/risk-off probability, key takeaway, what to monitor next, and getfaultline.live
+- Always include: current market tone, FAULTLINE risk level, key takeaway, what to monitor next, and getfaultline.live
+- NEVER state a probability, odds or chance as a number (no bull, bear, crash or recession percentages). FAULTLINE does not offer a crash probability and does not offer a recession probability.
 - End every post with getfaultline.live
 
 TONE GUIDANCE: ${tone}
@@ -125,18 +123,40 @@ Tweet 1: Hook — the key pressure signal
 Tweet 2: Breadth analysis — is participation confirming or diverging?
 Tweet 3: The hidden macro implication most traders are missing
 Tweet 4: What to watch next — specific indicators
-Tweet 5: FAULTLINE risk level + bull/crash probabilities + getfaultline.live
+Tweet 5: FAULTLINE risk level (no probabilities) + getfaultline.live
 
 3. FOUNDER (key: "founder")
 Personal founder voice. 2–3 sentences. Direct, confident, slightly contrarian. Sounds like a macro practitioner sharing a real insight, not a bot. Include getfaultline.live
 
 4. INSTITUTIONAL (key: "institutional")
-Formal institutional tone. 3–4 sentences. References specific pressure vectors and probabilities. Reads like a risk desk note. Include getfaultline.live
+Formal institutional tone. 3–4 sentences. References specific pressure vectors (no probabilities). Reads like a risk desk note. Include getfaultline.live
 
 5. BREAKING ALERT (key: "breaking")
 Urgent alert format. Start with "⚠️ FAULTLINE ALERT:" then explain the systemic implication in 2–3 sharp sentences. Include risk level and getfaultline.live
 
 Return ONLY valid JSON. No markdown, no explanation, no code blocks.`;
+}
+
+/**
+ * James's rule: generated posts never carry a probability %. Strips any
+ * probability-% sentence the model writes anyway, line by line so thread
+ * formatting ("1/5 …") survives. Copy only; no scoring input.
+ */
+export function withoutPostProbabilities(posts: XPostVariants): XPostVariants {
+  const clean = (text: unknown) => typeof text === "string"
+    ? text.split("\n").flatMap(line => {
+        if (line.trim() === "") return [line];
+        const kept = String(stripProbabilityPercentClaims(line));
+        return kept === "" ? [] : [kept];
+      }).join("\n").trim()
+    : text;
+  return {
+    short: clean(posts.short) as string,
+    thread: clean(posts.thread) as string,
+    founder: clean(posts.founder) as string,
+    institutional: clean(posts.institutional) as string,
+    breaking: clean(posts.breaking) as string,
+  };
 }
 
 // ── Main export ───────────────────────────────────────────────
@@ -181,5 +201,5 @@ export async function generateXPosts(input: GenerateXPostInput): Promise<XPostVa
   if (!raw) throw new Error("LLM returned empty response");
 
   const parsed = JSON.parse(raw) as XPostVariants;
-  return parsed;
+  return withoutPostProbabilities(parsed);
 }

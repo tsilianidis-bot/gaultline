@@ -13,7 +13,11 @@ import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
 import { useAshaContext } from "@/contexts/AshaContext";
 import { useLocation } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { navigateToLogin } from "@/const";
+import { CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 import AshaOrb from "@/components/AshaOrb";
+import { buildIntelligenceCenterMarketState } from "@/lib/ashaBriefingContext";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -124,11 +128,63 @@ function IntelCard({ children, accent }: { children: React.ReactNode; accent?: s
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
+/**
+ * Auth gate. Every ashaMemory.* query below is a protected procedure; mounting
+ * them for a guest returned UNAUTHORIZED, which tripped the global login
+ * redirect in main.tsx and bounced guests straight to the OAuth portal. The
+ * workspace (and its queries) now mounts only for a signed-in user; a guest gets
+ * an in-page sign-in prompt. main.tsx / navigateToLogin are unchanged (Auth).
+ */
 export default function AshaIntelligenceCenter() {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <main style={{ minHeight: "70vh", background: "#070910", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", letterSpacing: "0.18em", color: "#64748B" }}>LOADING PLATO…</span>
+      </main>
+    );
+  }
+  if (!user) return <AshaGuestSignIn />;
+  return <AshaIntelligenceWorkspace />;
+}
+
+function AshaGuestSignIn() {
   const [, navigate] = useLocation();
-  const { output } = useEngine();
+  // navigateToLogin() returns false when no sign-in portal URL is configured
+  // (PR #54); the button must not silently do nothing.
+  const [signInUnavailable, setSignInUnavailable] = useState(false);
+  return (
+    <main data-plato-guest-gate style={{ minHeight: "70vh", background: "#070910", color: "#F0F6FF", display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 20px" }}>
+      <div style={{ maxWidth: "460px", width: "100%", border: "1px solid rgba(0,229,255,0.18)", background: "rgba(0,229,255,0.03)", borderRadius: "6px", padding: "28px 24px", textAlign: "center" }}>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", letterSpacing: "0.18em", color: "#00E5FF", textTransform: "uppercase" }}>PLATO Intelligence Center</div>
+        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "26px", margin: "12px 0 8px" }}>Sign in to use PLATO</h1>
+        <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", lineHeight: 1.6, color: "#94A3B8", margin: "0 0 20px" }}>
+          PLATO conversations, memory and thesis history are tied to your account. Guest access does not include PLATO.
+        </p>
+        <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+          <button type="button" onClick={() => { setSignInUnavailable(!navigateToLogin()); }} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", letterSpacing: "0.1em", padding: "10px 18px", background: "#00E5FF", color: "#041016", border: "none", borderRadius: "3px", cursor: "pointer", fontWeight: 700 }}>
+            SIGN IN
+          </button>
+          <button type="button" onClick={() => navigate(CANONICAL_DESTINATION_BY_ID.now.path)} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", letterSpacing: "0.1em", padding: "10px 18px", background: "transparent", color: "#94A3B8", border: "1px solid rgba(148,163,184,0.3)", borderRadius: "3px", cursor: "pointer" }}>
+            BACK TO NOW
+          </button>
+        </div>
+        {signInUnavailable && (
+          <p role="status" data-plato-signin-unavailable style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#F59E0B", margin: "14px 0 0" }}>
+            Sign-in is unavailable right now. Please try again later.
+          </p>
+        )}
+      </div>
+    </main>
+  );
+}
+
+function AshaIntelligenceWorkspace() {
+  const [, navigate] = useLocation();
+  const { output, marketMode } = useEngine();
   const { threadMessages, clearThread } = useAshaContext();
-  const { overall, regime } = output;
+  // QA r13 B10: canonical pressure (0-100) and regime only; never the demo baseline.
+  const marketState = buildIntelligenceCenterMarketState(output, marketMode);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedConv, setExpandedConv] = useState<number | null>(null);
   const [workspacePrompt, setWorkspacePrompt] = useState("");
@@ -141,14 +197,14 @@ export default function AshaIntelligenceCenter() {
   const { data: thesis, isLoading: loadingThesis } = trpc.ashaMemory.synthesizeMarketThesis.useQuery();
   const { data: followUps, isLoading: loadingFollowUps } = trpc.ashaMemory.getFollowUpQuestions.useQuery();
   const { data: whatChanged } = trpc.ashaMemory.getWhatChangedSummary.useQuery({
-    currentPressureScore: overall.score,
-    currentRegime: regime.label,
+    currentPressureScore: marketState.pressure100,
+    currentRegime: marketState.regime,
   });
   const { data: stats } = trpc.ashaMemory.getSessionStats.useQuery();
 
-  // Regime color
-  const color = overall.score >= 7 ? "#FF2D55" : overall.score >= 4.5 ? "#FF9500" : "#00E5FF";
-  const regimeState = overall.score >= 7 ? "critical" : overall.score >= 4.5 ? "rising" : "calm";
+  // Pressure colour: canonical 0-100 bands (70 / 45); neutral when there is no canonical reading.
+  const color = marketState.color;
+  const regimeState = marketState.orbState;
 
   function copyText(text: string, id: string) {
     navigator.clipboard.writeText(text).then(() => {
@@ -220,6 +276,14 @@ export default function AshaIntelligenceCenter() {
       <div style={{ padding: "20px", maxWidth: "680px", margin: "0 auto" }}>
 
         {/* ── What Changed Since Your Last Visit ── */}
+        {!whatChanged?.summary && whatChanged?.unavailable && (
+          <IntelCard accent="#00E5FF">
+            <SectionLabel text="What Changed Since Your Last Visit" />
+            <div data-plato-unavailable="what-changed" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "rgba(100,116,139,0.6)", padding: "4px 0" }}>
+              Summary unavailable.
+            </div>
+          </IntelCard>
+        )}
         {whatChanged?.summary && (
           <IntelCard accent="#00E5FF">
             <SectionLabel text="What Changed Since Your Last Visit" />
@@ -364,6 +428,10 @@ export default function AshaIntelligenceCenter() {
                 </button>
               </div>
             </>
+          ) : thesis?.unavailable ? (
+            <div data-plato-unavailable="thesis" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "rgba(100,116,139,0.6)", padding: "12px 0" }}>
+              Thesis unavailable.
+            </div>
           ) : (
             <EmptyState
               icon="🧠"
@@ -452,10 +520,9 @@ export default function AshaIntelligenceCenter() {
                             </div>
                             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.4)", marginTop: "4px" }}>
                               {formatTime(msg.timestamp)}
-                              {msg.confidenceScore != null && msg.role === "assistant" && (
-                                <span style={{ marginLeft: "8px", color: msg.confidenceScore >= 70 ? "#00FF88" : msg.confidenceScore >= 40 ? "#FF9500" : "#FF2D55" }}>
-                                  {Math.round(msg.confidenceScore)}% confidence
-                                </span>
+                              {/* Launch fix-up: the logged confidenceScore is answer.confidence ?? opportunityScore (smartDiscovery.ts), not calibrated: no figure. */}
+                              {msg.role === "assistant" && (
+                                <span data-confidence-status="not-established" style={{ marginLeft: "8px", color: "#94A3B8" }}>Confidence not established</span>
                               )}
                             </div>
                           </div>
@@ -538,6 +605,10 @@ export default function AshaIntelligenceCenter() {
                   <div style={{ flexShrink: 0, color: "rgba(0,229,255,0.4)", fontSize: "11px", marginLeft: "auto" }}>→</div>
                 </button>
               ))}
+            </div>
+          ) : followUps?.unavailable ? (
+            <div data-plato-unavailable="follow-ups" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "rgba(100,116,139,0.6)", padding: "8px 0" }}>
+              Follow-up questions unavailable.
             </div>
           ) : (
             <EmptyState

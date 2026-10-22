@@ -11,7 +11,8 @@ import { navigateToLogin } from '@/const';
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import { toast } from 'sonner';
 import { useSearch } from 'wouter';
-import { TIER_META, PRICING_PLANS, type AccessTier } from '../../../shared/tiers';
+import MembershipOffer from '@/components/MembershipOffer';
+import { TIER_META, PRICING_PLANS, PAID_PLANS_ON_SALE, PAID_PLANS_NOT_ON_SALE_COPY, type AccessTier } from '../../../shared/tiers';
 
 // Icon map for tiers (React nodes cannot live in shared/)
 const TIER_ICONS: Record<AccessTier, React.ReactNode> = {
@@ -82,15 +83,15 @@ const TIER_CONFIG = {
   },
   founding: {
     label: 'FOUNDING',
-    sublabel: 'Rate Locked for Life',
+    sublabel: 'Founding Access',
     color: '#FFD700',
     glow: 'rgba(255,215,0,0.2)',
     border: 'rgba(255,215,0,0.4)',
     icon: <Crown size={18} />,
-    description: 'Everything in Pro at the founding rate. Locked forever. Never increases. Limited cohort.',
+    description: 'Everything in Pro. Founding membership is not on sale yet.',
     features: [
       { label: 'Everything in Pro', available: true },
-      { label: 'Founding rate locked at $49/mo forever', available: true },
+      { label: 'Founding membership — not on sale yet', available: true },
       { label: 'Founding member badge', available: true },
       { label: 'Future feature grandfathering', available: true },
       { label: 'Roadmap previews & early beta', available: true },
@@ -348,105 +349,6 @@ function StartupPageCard() {
                 </div>
                 <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#6B7280', lineHeight: 1.5 }}>
                   {opt.description}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Market Preflight Preference Card ─────────────────────────
-type PreflightMode = 'full_guidance' | 'minimal_reminders' | 'off';
-
-const PREFLIGHT_MODES: { value: PreflightMode; label: string; description: string }[] = [
-  {
-    value: 'full_guidance',
-    label: 'Full Guidance',
-    description: 'Show dashboard card, checklist CTA, missing checks, and helper prompts on relevant pages.',
-  },
-  {
-    value: 'minimal_reminders',
-    label: 'Minimal Reminders',
-    description: 'Show only a compact score and "Run Market Preflight" button. No helper prompts.',
-  },
-  {
-    value: 'off',
-    label: 'Off',
-    description: 'Hide page-level prompts and checklist reminders. Feature remains accessible from Profile and How to Use FAULTLINE.',
-  },
-];
-
-function PreflightPreferenceCard() {
-  const { user } = useAuth();
-  const { data: modeData, isLoading } = trpc.awareness.getPreflightMode.useQuery(undefined, {
-    enabled: !!user,
-    staleTime: 60_000,
-  });
-  const setMode = trpc.awareness.setPreflightMode.useMutation({
-    onSuccess: () => {
-      utils.awareness.getPreflightMode.invalidate();
-      toast.success('Preference saved');
-    },
-    onError: (err) => toast.error('Could not save preference', { description: err.message }),
-  });
-  const utils = trpc.useUtils();
-  if (!user) return null;
-  const currentMode = (modeData?.mode ?? 'full_guidance') as PreflightMode;
-  return (
-    <div style={{
-      marginTop: '24px',
-      background: 'rgba(0,212,255,0.02)',
-      border: '1px solid rgba(0,212,255,0.12)',
-      borderRadius: '12px',
-      padding: '24px',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00D4FF', boxShadow: '0 0 6px #00D4FF' }} />
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#00D4FF', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-          Market Preflight Prompts
-        </span>
-      </div>
-      <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#9CA3AF', lineHeight: 1.6, marginBottom: '18px', marginTop: '6px' }}>
-        Control how and where the Complete Market Awareness™ checklist appears. Your tracking history is preserved regardless of this setting.
-      </p>
-      {isLoading ? (
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#4B5563', letterSpacing: '0.1em' }}>LOADING…</div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {PREFLIGHT_MODES.map((m) => (
-            <button
-              key={m.value}
-              onClick={() => setMode.mutate({ mode: m.value })}
-              disabled={setMode.isPending}
-              style={{
-                display: 'flex', alignItems: 'flex-start', gap: '12px',
-                padding: '14px 16px',
-                background: currentMode === m.value ? 'rgba(0,212,255,0.08)' : 'rgba(255,255,255,0.02)',
-                border: currentMode === m.value ? '1px solid rgba(0,212,255,0.35)' : '1px solid rgba(255,255,255,0.07)',
-                borderRadius: '8px',
-                cursor: setMode.isPending ? 'not-allowed' : 'pointer',
-                textAlign: 'left',
-                transition: 'all 0.15s ease-out',
-                opacity: setMode.isPending ? 0.7 : 1,
-              }}
-            >
-              <div style={{
-                width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, marginTop: '2px',
-                border: currentMode === m.value ? '2px solid #00D4FF' : '2px solid rgba(255,255,255,0.2)',
-                background: currentMode === m.value ? 'rgba(0,212,255,0.25)' : 'transparent',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {currentMode === m.value && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00D4FF' }} />}
-              </div>
-              <div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: currentMode === m.value ? '#F0F4FF' : '#9CA3AF', letterSpacing: '0.06em', marginBottom: '4px' }}>
-                  {m.label}
-                </div>
-                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#6B7280', lineHeight: 1.5 }}>
-                  {m.description}
                 </div>
               </div>
             </button>
@@ -730,214 +632,9 @@ export default function UserAccount() {
 
       {/* ── Startup Page Preference ── */}
       <StartupPageCard />
+{/* Membership offer; existing subscription details stay above. */}
+      {!isPremium && <div style={{ marginTop: '24px' }}><MembershipOffer /></div>}
 
-      {/* ── Market Preflight Prompts Preference ── */}
-      <PreflightPreferenceCard />
-
-      {/* ── Upgrade section (only for free tier) ── */}
-      {!isPremium && !isCore && (
-        <div style={{
-          marginTop: '24px',
-          background: 'rgba(255,215,0,0.03)',
-          border: '1px solid rgba(255,215,0,0.15)',
-          borderRadius: '12px',
-          padding: '28px',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-            <Crown size={18} style={{ color: '#FFD700' }} />
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#FFD700', letterSpacing: '0.12em' }}>
-              REQUEST FOUNDING ACCESS
-            </div>
-          </div>
-          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#9CA3AF', lineHeight: 1.6, marginBottom: '24px' }}>
-            FAULTLINE Founding Access is reserved for a limited cohort of institutional analysts, portfolio managers, and sophisticated investors. 
-            Founding members receive lifetime pricing, early feature access, and the full intelligence platform.
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '24px' }}>
-            {[
-              { label: 'Full Intelligence Platform', icon: <Zap size={13} /> },
-              { label: 'Aftershock Engine™', icon: <Shield size={13} /> },
-              { label: 'Founding Member Badge', icon: <Crown size={13} /> },
-              { label: 'Lifetime Pricing Lock', icon: <CheckCircle size={13} /> },
-            ].map((item, i) => (
-              <div key={i} style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '10px 14px',
-                background: 'rgba(255,215,0,0.05)',
-                border: '1px solid rgba(255,215,0,0.1)',
-                borderRadius: '8px',
-                color: '#FFD700',
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '10px', letterSpacing: '0.08em',
-              }}>
-                {item.icon}
-                {item.label}
-              </div>
-            ))}
-          </div>
-
-          {/* Quick upgrade via Stripe */}
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => checkoutMutation.mutate({ planId: 'core', origin: window.location.origin })}
-              disabled={checkoutMutation.isPending}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '12px 20px',
-                background: 'rgba(34,211,238,0.12)',
-                border: '1px solid rgba(34,211,238,0.4)',
-                borderRadius: '8px',
-                color: '#22D3EE',
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '11px', letterSpacing: '0.08em',
-                cursor: checkoutMutation.isPending ? 'not-allowed' : 'pointer',
-                opacity: checkoutMutation.isPending ? 0.6 : 1,
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <Zap size={13} />
-              {checkoutMutation.isPending ? 'LOADING...' : `CORE — ${PRICING_PLANS.core.priceLabel.toUpperCase()}`}
-            </button>
-            <button
-              onClick={() => checkoutMutation.mutate({ planId: 'premium', origin: window.location.origin })}
-              disabled={checkoutMutation.isPending}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '12px 20px',
-                background: 'rgba(6,182,212,0.12)',
-                border: '1px solid rgba(6,182,212,0.4)',
-                borderRadius: '8px',
-                color: '#06B6D4',
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '11px', letterSpacing: '0.08em',
-                cursor: checkoutMutation.isPending ? 'not-allowed' : 'pointer',
-                opacity: checkoutMutation.isPending ? 0.6 : 1,
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <CreditCard size={13} />
-              {checkoutMutation.isPending ? 'LOADING...' : `UPGRADE — ${PRICING_PLANS.premium.priceLabel.toUpperCase()}`}
-            </button>
-            <button
-              onClick={() => checkoutMutation.mutate({ planId: 'founding', origin: window.location.origin })}
-              disabled={checkoutMutation.isPending}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '12px 20px',
-                background: 'rgba(255,215,0,0.1)',
-                border: '1px solid rgba(255,215,0,0.35)',
-                borderRadius: '8px',
-                color: '#FFD700',
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '11px', letterSpacing: '0.08em',
-                cursor: checkoutMutation.isPending ? 'not-allowed' : 'pointer',
-                opacity: checkoutMutation.isPending ? 0.6 : 1,
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <Crown size={13} />
-              {checkoutMutation.isPending ? 'LOADING...' : `FOUNDING — ${PRICING_PLANS.founding.priceLabel.toUpperCase()}`}
-            </button>
-            <button
-              onClick={() => checkoutMutation.mutate({ planId: 'lifetime', origin: window.location.origin })}
-              disabled={checkoutMutation.isPending || lifetimeStatus?.isSoldOut}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '12px 20px',
-                background: lifetimeStatus?.isSoldOut ? 'rgba(107,114,128,0.05)' : 'rgba(255,215,0,0.05)',
-                border: `1px solid ${lifetimeStatus?.isSoldOut ? 'rgba(107,114,128,0.2)' : 'rgba(255,215,0,0.2)'}`,
-                borderRadius: '8px',
-                color: lifetimeStatus?.isSoldOut ? '#6B7280' : '#FFD700',
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '11px', letterSpacing: '0.08em',
-                cursor: (checkoutMutation.isPending || lifetimeStatus?.isSoldOut) ? 'not-allowed' : 'pointer',
-                opacity: (checkoutMutation.isPending || lifetimeStatus?.isSoldOut) ? 0.6 : 1,
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <Crown size={13} />
-              {checkoutMutation.isPending
-                ? 'LOADING...'
-                : lifetimeStatus?.isSoldOut
-                  ? 'LIFETIME — SOLD OUT'
-                  : `LIFETIME — ${PRICING_PLANS.lifetime.priceLabel.toUpperCase()}`}
-            </button>
-          </div>
-          {/* Lifetime spots disclaimer — real-time */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '10px 14px',
-            background: lifetimeStatus?.isSoldOut ? 'rgba(107,114,128,0.04)' : 'rgba(255,215,0,0.04)',
-            border: `1px solid ${lifetimeStatus?.isSoldOut ? 'rgba(107,114,128,0.15)' : 'rgba(255,215,0,0.15)'}`,
-            borderRadius: '8px',
-            marginBottom: '16px',
-          }}>
-            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: lifetimeStatus?.isSoldOut ? '#6B7280' : '#FFD700', flexShrink: 0 }} />
-            <span style={{
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: '9px', letterSpacing: '0.12em',
-              color: lifetimeStatus?.isSoldOut ? 'rgba(107,114,128,0.7)' : 'rgba(255,215,0,0.55)',
-            }}>
-              {lifetimeStatus?.isSoldOut
-                ? 'LIFETIME FOUNDING COHORT IS FULL — ALL 100 SPOTS CLAIMED'
-                : lifetimeStatus
-                  ? `${lifetimeStatus.remaining} OF ${lifetimeStatus.limit} FOUNDING LIFETIME SPOTS REMAINING — PRICE LOCKS AT SIGNUP`
-                  : 'FOUNDING COHORT IS LIMITED — SPOTS CLOSE WITHOUT NOTICE — PRICE LOCKS AT SIGNUP'}
-            </span>
-          </div>
-
-          <FoundingAccessForm userEmail={profile?.email ?? user?.email} />
-        </div>
-      )}
-
-      {/* ── Premium tier: upgrade prompt ── */}
-      {tier === 'premium' && (
-        <div style={{
-          marginTop: '24px',
-          background: 'rgba(255,215,0,0.03)',
-          border: '1px solid rgba(255,215,0,0.12)',
-          borderRadius: '12px',
-          padding: '24px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
-          flexWrap: 'wrap',
-        }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <Crown size={16} style={{ color: '#FFD700' }} />
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#FFD700', letterSpacing: '0.1em' }}>
-                UPGRADE TO FOUNDING
-              </span>
-            </div>
-            <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#9CA3AF', margin: 0 }}>
-              Lock in founding member pricing and get early access to all future features.
-            </p>
-          </div>
-          <button
-            onClick={() => {
-              const el = document.getElementById('founding-form');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              padding: '10px 18px',
-              background: 'rgba(255,215,0,0.1)',
-              border: '1px solid rgba(255,215,0,0.3)',
-              borderRadius: '8px',
-              color: '#FFD700',
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: '10px', letterSpacing: '0.1em',
-              cursor: 'pointer',
-              flexShrink: 0,
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,215,0,0.18)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,215,0,0.1)')}
-          >
-            REQUEST FOUNDING ACCESS <ChevronRight size={12} />
-          </button>
-        </div>
-      )}
 
       {/* ── Founding tier: confirmation ── */}
       {tier === 'founding' && (

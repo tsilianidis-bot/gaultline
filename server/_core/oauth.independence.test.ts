@@ -32,6 +32,7 @@ const ORIGINAL = {
   NODE_ENV: process.env.NODE_ENV,
   FAULTLINE_MANAGED_PREVIEW: process.env.FAULTLINE_MANAGED_PREVIEW,
   QA_ACCESS_SECRET: process.env.QA_ACCESS_SECRET,
+  QA_ACCESS_HOST: process.env.QA_ACCESS_HOST,
 };
 
 function restoreEnv() {
@@ -47,6 +48,8 @@ function restoreEnv() {
   }
   if (ORIGINAL.QA_ACCESS_SECRET === undefined) delete process.env.QA_ACCESS_SECRET;
   else process.env.QA_ACCESS_SECRET = ORIGINAL.QA_ACCESS_SECRET;
+  if (ORIGINAL.QA_ACCESS_HOST === undefined) delete process.env.QA_ACCESS_HOST;
+  else process.env.QA_ACCESS_HOST = ORIGINAL.QA_ACCESS_HOST;
 }
 
 function describeRequest(input: unknown): string {
@@ -339,7 +342,6 @@ describe("OAuth independence Option 1+2", () => {
     expect(post).toHaveBeenCalled();
 
     vi.spyOn(db, "getUserByOpenId")
-      .mockResolvedValueOnce(undefined)
       .mockResolvedValue({
         id: 7,
         openId: "oid-complete",
@@ -377,8 +379,8 @@ describe("OAuth independence Option 1+2", () => {
       email: null,
     });
     vi.spyOn(sdk, "createSessionToken").mockResolvedValue("session-jwt");
-    vi.spyOn(db, "getUserByOpenId").mockResolvedValue(undefined);
-    vi.spyOn(db, "upsertUser").mockResolvedValue(undefined as any);
+    const findUser = vi.spyOn(db, "getUserByOpenId").mockResolvedValue({ id: 7, openId: "oid-complete", accessTier: "premium" } as any);
+    const upsert = vi.spyOn(db, "upsertUser").mockResolvedValue(undefined as any);
 
     await withCallbackApp(async origin => {
       const state = btoa(`${origin}/api/oauth/callback`);
@@ -390,6 +392,15 @@ describe("OAuth independence Option 1+2", () => {
       expect(response.headers.get("location")).toBe("/app");
     });
 
+    findUser.mockResolvedValue(undefined);
+    upsert.mockClear();
+    await withCallbackApp(async origin => {
+      const response = await fetch(`${origin}/api/oauth/callback?code=auth-code&state=${encodeURIComponent(btoa(`${origin}/api/oauth/callback`))}`, { redirect: "manual" });
+      expect(response.status).toBe(302);
+      expect(response.headers.get("location")).toBe("/pricing");
+      expect(response.headers.get("set-cookie")).toBeNull();
+    });
+    expect(upsert).not.toHaveBeenCalled();
     traps.assertNoManusHttp();
   });
 
@@ -403,6 +414,7 @@ describe("OAuth independence Option 1+2", () => {
     process.env.NODE_ENV = "production";
     delete process.env.FAULTLINE_MANAGED_PREVIEW;
     process.env.QA_ACCESS_SECRET = "independent-staging-qa-secret";
+    process.env.QA_ACCESS_HOST = "staging.up.railway.app";
     const resState: {
       status?: number;
       body?: unknown;

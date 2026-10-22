@@ -23,10 +23,38 @@ interface CinematicAuthGateProps {
   onAuthenticated: () => void;
 }
 
+/** The gate never stays in REDIRECTING: after this long it returns to SIGN IN with an error. */
+export const SIGN_IN_REDIRECT_TIMEOUT_MS = 15_000;
+
+const SIGN_IN_UNAVAILABLE_MSG = "Sign-in is unavailable right now. Please try again later or continue as guest.";
+const SIGN_IN_TIMEOUT_MSG = "Sign-in is taking longer than expected. Please try again.";
+
 export default function CinematicAuthGate({ onAuthenticated }: CinematicAuthGateProps) {
-  const { user, loading } = useAuth();
+  // offline: auth.me got no server answer, so identity is unknown (not "signed out").
+  const { user, loading, offline, refresh } = useAuth();
   const [visible, setVisible] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
+  const [signInError, setSignInError] = useState<string | null>(null);
+
+  // A started redirect that has not left the page times out back to SIGN IN.
+  useEffect(() => {
+    if (!signingIn) return;
+    const t = setTimeout(() => {
+      setSigningIn(false);
+      setSignInError(SIGN_IN_TIMEOUT_MSG);
+    }, SIGN_IN_REDIRECT_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [signingIn]);
+
+  // Back from the provider can restore this page from the back/forward cache
+  // with signingIn still true; return to the SIGN IN state instead.
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) setSigningIn(false);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   // Fade in
   useEffect(() => {
@@ -43,13 +71,21 @@ export default function CinematicAuthGate({ onAuthenticated }: CinematicAuthGate
   }, [loading, user, onAuthenticated]);
 
   const handleSignIn = () => {
-    setSigningIn(true);
+    setSignInError(null);
     // Store a flag so after OAuth redirect we skip the cinematic
     // and go straight to PLATO greeting
     try {
       sessionStorage.setItem("fl_post_auth_asha", "1");
     } catch {}
-    navigateToLogin();
+    if (!navigateToLogin()) {
+      // No portal URL (OAuth env missing): nothing will navigate, so never show REDIRECTING.
+      try {
+        sessionStorage.removeItem("fl_post_auth_asha");
+      } catch {}
+      setSignInError(SIGN_IN_UNAVAILABLE_MSG);
+      return;
+    }
+    setSigningIn(true);
   };
 
   return (
@@ -107,21 +143,30 @@ export default function CinematicAuthGate({ onAuthenticated }: CinematicAuthGate
         }}>FAULTLINE</div>
 
         {/* Message */}
-        <div style={{
+        <div role={offline ? "status" : undefined} style={{
           fontFamily: "'IBM Plex Sans', sans-serif",
           fontSize: "clamp(14px, 2vw, 16px)",
           lineHeight: 1.7,
           color: "rgba(255,255,255,0.65)",
           textAlign: "center",
         }}>
-          Sign in to continue.<br />
-          PLATO will greet you once your identity is confirmed.
+          {offline ? (
+            <>
+              You're offline.<br />
+              FAULTLINE can't reach the server. It will reconnect when your connection returns.
+            </>
+          ) : (
+            <>
+              Sign in to continue.<br />
+              PLATO will greet you once your identity is confirmed.
+            </>
+          )}
         </div>
 
-        {/* Sign in button */}
+        {/* Sign in button (RETRY while offline) */}
         <button
-          onClick={handleSignIn}
-          disabled={signingIn || loading}
+          onClick={offline ? () => { void refresh(); } : handleSignIn}
+          disabled={!offline && (signingIn || loading)}
           style={{
             background: "transparent",
             border: "1px solid rgba(0,229,255,0.5)",
@@ -147,8 +192,23 @@ export default function CinematicAuthGate({ onAuthenticated }: CinematicAuthGate
             (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.5)";
           }}
         >
-          {signingIn ? "REDIRECTING…" : loading ? "CHECKING…" : "SIGN IN / SIGN UP"}
+          {offline ? "RETRY" : signingIn ? "REDIRECTING…" : loading ? "CHECKING…" : "MEMBER SIGN IN"}
         </button>
+
+        {signInError && (
+          <div
+            role="alert"
+            style={{
+              fontFamily: "'IBM Plex Sans', sans-serif",
+              fontSize: "13px",
+              lineHeight: 1.5,
+              color: "rgba(255,170,0,0.85)",
+              textAlign: "center",
+            }}
+          >
+            {signInError}
+          </div>
+        )}
 
         {/* Divider */}
         <div style={{
@@ -183,7 +243,7 @@ export default function CinematicAuthGate({ onAuthenticated }: CinematicAuthGate
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.5)"; }}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.25)"; }}
         >
-          CONTINUE AS GUEST →
+          {offline ? "CONTINUE OFFLINE →" : "CONTINUE AS GUEST →"}
         </button>
 
         {/* Status line */}

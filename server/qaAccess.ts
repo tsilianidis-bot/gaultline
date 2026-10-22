@@ -5,41 +5,47 @@ export const QA_ACCESS_COOKIE = "faultline_qa_access";
 const QA_PRINCIPAL_ID = -9_001;
 const COOKIE_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1_000;
 
-function configuredSecret() {
-  const secret = process.env.QA_ACCESS_SECRET ?? "";
-  return secret.trim();
+function configuredSecret(): string {
+  return (process.env.QA_ACCESS_SECRET ?? "").trim();
 }
 
-function secureFor(req: Request) {
+/** A QA session is valid only on this exact configured host, with no wildcards. */
+export function configuredQaAccessHost(): string {
+  return (process.env.QA_ACCESS_HOST ?? "").trim().toLowerCase();
+}
+
+export function isExactQaAccessHost(req: Request): boolean {
+  const expected = configuredQaAccessHost();
+  const actual = String(req.headers.host ?? "").trim().toLowerCase();
+  return Boolean(expected) && actual === expected;
+}
+
+function secureFor(req: Request): boolean {
   return req.protocol === "https" || req.headers["x-forwarded-proto"] === "https";
 }
 
-/** Explicit staging opt-in. Never default-on. Do not set on production. */
-export function isManagedPreviewFlagEnabled() {
+/** Explicit staging opt-in. It remains constrained to the exact QA host. */
+export function isManagedPreviewFlagEnabled(): boolean {
   return process.env.FAULTLINE_MANAGED_PREVIEW === "true";
 }
 
-export function isManagedPreview(req: Request) {
-  // Independent staging hosts have no *.manus.computer name. Only an explicit env
-  // enables auto-QA there. Production-like hosts stay secret-gated unless this is set.
-  if (isManagedPreviewFlagEnabled()) return true;
-  const host = String(req.headers.host ?? "").split(":")[0].toLowerCase();
-  return process.env.NODE_ENV === "development" && (host.endsWith(".manus.computer") || host === "localhost" || host === "127.0.0.1");
+export function isManagedPreview(req: Request): boolean {
+  return isManagedPreviewFlagEnabled() && isExactQaAccessHost(req);
 }
 
-function signature(secret: string) {
+function signature(secret: string): string {
   return createHmac("sha256", secret).update("faultline-owner-qa-v1").digest("base64url");
 }
 
-function sameSecret(candidate: string, expected: string) {
+function sameSecret(candidate: string, expected: string): boolean {
   const left = Buffer.from(candidate);
   const right = Buffer.from(expected);
   return left.length === right.length && timingSafeEqual(left, right);
 }
 
-export function isQaSession(req: Request) {
-  // Local and Manus preview hosts are controlled QA environments. Production
-  // hosts always require the owner-secret-created HttpOnly cookie below.
+export function isQaSession(req: Request): boolean {
+  // No QA session may be used from an unconfigured, wildcard, or alternate host.
+  if (!isExactQaAccessHost(req)) return false;
   if (isManagedPreview(req)) return true;
   const secret = configuredSecret();
   if (!secret) return false;
@@ -74,9 +80,17 @@ export function qaPrincipal() {
   };
 }
 
+function rejectUnexpectedQaHost(res: Response): void {
+  res.status(403).json({ ok: false, error: "qa_access_host_not_allowed" });
+}
+
 /** Permanent owner-only entry. It issues an HttpOnly signed QA cookie and never
  * touches user rows, subscriptions, entitlement state, or application data. */
 export function handleQaAccess(req: Request, res: Response) {
+  if (!isExactQaAccessHost(req)) {
+    rejectUnexpectedQaHost(res);
+    return;
+  }
   const secret = configuredSecret();
   const provided = typeof req.body?.secret === "string" ? req.body.secret : "";
   if (!secret || !provided || !sameSecret(provided, secret)) {
@@ -93,6 +107,10 @@ export function handleQaAccess(req: Request, res: Response) {
 }
 
 export function handleQaAccessLogout(req: Request, res: Response) {
+  if (!isExactQaAccessHost(req)) {
+    rejectUnexpectedQaHost(res);
+    return;
+  }
   res.clearCookie(QA_ACCESS_COOKIE, { httpOnly: true, secure: secureFor(req), sameSite: "lax", path: "/" });
   return res.json({ ok: true });
 }

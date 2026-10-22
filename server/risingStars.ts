@@ -26,7 +26,8 @@ export interface SocialDiscoveryInput {
   available: boolean;
   sourceCount: number;
   socialVolume: number;
-  sentimentScore: number; // -1 to +1, computed from source data
+  /** Null when the verified composite is missing. Never substitute 0. */
+  sentimentScore: number | null;
   positiveNews: number;
   negativeNews: number;
   memeHypeDetected: boolean;
@@ -92,7 +93,8 @@ function socialDiscoveryScore(input: SocialDiscoveryInput): {
   crowdingRisk: CrowdingRisk;
   note: string;
 } {
-  if (!input.available || input.sourceCount < 2) {
+  const sentimentScore = input.sentimentScore;
+  if (!input.available || input.sourceCount < 2 || typeof sentimentScore !== "number" || !Number.isFinite(sentimentScore)) {
     return {
       score: null,
       stage: "UNAVAILABLE",
@@ -101,7 +103,7 @@ function socialDiscoveryScore(input: SocialDiscoveryInput): {
     };
   }
 
-  const sentiment = clamp(50 + input.sentimentScore * 50);
+  const sentiment = clamp(50 + sentimentScore * 50);
   const sourceBreadth = clamp(Math.min(100, input.sourceCount * 40));
   const coverage = clamp(Math.min(100, input.socialVolume * 4));
   const balancedAttention = input.socialVolume >= 5 && input.socialVolume <= 75 ? 85 : input.socialVolume < 5 ? 45 : 35;

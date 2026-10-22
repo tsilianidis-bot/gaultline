@@ -14,6 +14,7 @@ import { captureError } from "./errorTracking";
 // ============================================================
 
 import { LRUCache } from "./lruCache";
+import { isEquityDailyBarComplete } from "../shared/completedBars";
 import { log } from "./logger";
 
 const CACHE_TTL_MS = 60_000; // 60 seconds
@@ -37,6 +38,47 @@ export interface YahooQuote {
   observedAt?: number | null;
   fetchedAt: number;
   error?: string;
+}
+
+/**
+ * Temporal classification is intentionally separate from price direction. Yahoo
+ * is delayed by contract, and a completed-session quote is historical context,
+ * never a current market claim.
+ */
+export type YahooObservationTiming = "live" | "delayed" | "completed_session" | "stale" | "unavailable";
+
+export interface YahooObservationFreshness {
+  timing: YahooObservationTiming;
+  supportsCurrentClaim: boolean;
+  detail: string;
+}
+
+const LIVE_OBSERVATION_MAX_AGE_MS = 2 * 60_000;
+const DELAYED_OBSERVATION_MAX_AGE_MS = 20 * 60_000;
+const COMPLETED_SESSION_HISTORY_MAX_AGE_MS = 96 * 60 * 60_000;
+
+/**
+ * Keeps provider-reported timing distinct from local receipt timing. The Yahoo
+ * adapter currently marks quotes as delayed, so it cannot produce a `live`
+ * classification unless a future provider explicitly supplies an undelayed
+ * observation during an active session.
+ */
+export function classifyYahooObservation(quote: Pick<YahooQuote, "price" | "observedAt" | "isDelayed" | "marketState" | "source"> | null | undefined, nowMs = Date.now()): YahooObservationFreshness {
+  if (!quote || !Number.isFinite(quote.price) || !Number.isFinite(quote.observedAt) || quote.source === "error") {
+    return { timing: "unavailable", supportsCurrentClaim: false, detail: "No usable provider observation timestamp is available." };
+  }
+  const ageMs = Math.max(0, nowMs - (quote.observedAt as number));
+  const activeSession = quote.marketState === "REGULAR" || quote.marketState === "PRE" || quote.marketState === "POST";
+  if (!quote.isDelayed && activeSession && ageMs <= LIVE_OBSERVATION_MAX_AGE_MS) {
+    return { timing: "live", supportsCurrentClaim: true, detail: "Provider-reported observation is within the live-use window during an active session." };
+  }
+  if (activeSession && ageMs <= DELAYED_OBSERVATION_MAX_AGE_MS) {
+    return { timing: "delayed", supportsCurrentClaim: true, detail: "Provider-reported delayed observation is within the active-session use window." };
+  }
+  if ((quote.marketState === "CLOSED" || quote.source === "polygon-prev") && ageMs <= COMPLETED_SESSION_HISTORY_MAX_AGE_MS) {
+    return { timing: "completed_session", supportsCurrentClaim: false, detail: "Completed-session observation is retained only as historical context." };
+  }
+  return { timing: "stale", supportsCurrentClaim: false, detail: "Provider observation exceeds its permitted current-use window." };
 }
 
 export type PolygonFallbackKind = "index" | "equity" | "proxy";
@@ -100,6 +142,14 @@ export interface YahooDailyBar {
 const dailyBarCache = new LRUCache<string, YahooDailyBar[]>(200, 60 * 60_000);
 
 /**
+ * A bar dated today counts once that NYSE session has closed, including an early close.
+ * The same calendar date is dropped while the session is still open.
+ */
+export function completedYahooDailyBars(bars: YahooDailyBar[], nowMs = Date.now()): YahooDailyBar[] {
+  return bars.filter(bar => Number.isFinite(bar.timestamp) && isEquityDailyBarComplete(bar.timestamp, nowMs));
+}
+
+/**
  * Fetches completed daily bars from the same delayed Yahoo adapter used by the
  * market ticker. This avoids consuming Polygon free-tier requests for each
  * discovery candidate while preserving a source-backed technical history.
@@ -119,10 +169,12 @@ export async function getDailyBars(ticker: string, range: "3mo" | "6mo" | "5y" |
     const quote = result?.indicators?.quote?.[0];
     const timestamps = result?.timestamp ?? [];
     if (!quote || timestamps.length === 0) return [];
+    const nowMs = Date.now();
     const bars = timestamps.map((timestamp, index) => ({
       close: quote.close?.[index] ?? null, open: quote.open?.[index] ?? null, high: quote.high?.[index] ?? null,
       low: quote.low?.[index] ?? null, volume: quote.volume?.[index] ?? null, timestamp: timestamp * 1000,
-    })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value)));
+    })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value)))
+      .filter(bar => isEquityDailyBarComplete(bar.timestamp, nowMs));
     dailyBarCache.set(cacheKey, bars);
     return bars;
   } catch (error) {
@@ -153,16 +205,84 @@ export async function getDailyBarsForPeriod(ticker: string, startDate: string, e
     const quote = result?.indicators?.quote?.[0];
     const timestamps = result?.timestamp ?? [];
     if (!quote || timestamps.length === 0) return [];
+    const nowMs = Date.now();
     const bars = timestamps.map((timestamp, index) => ({
       close: quote.close?.[index] ?? null, open: quote.open?.[index] ?? null, high: quote.high?.[index] ?? null,
       low: quote.low?.[index] ?? null, volume: quote.volume?.[index] ?? null, timestamp: timestamp * 1000,
-    })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value)));
+    })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value)))
+      .filter(bar => isEquityDailyBarComplete(bar.timestamp, nowMs));
     dailyBarCache.set(cacheKey, bars);
     return bars;
   } catch (error) {
     log.warn(`[Yahoo Proxy] Period-bounded daily bars unavailable for ${ticker}: ${error instanceof Error ? error.message : String(error)}`);
     return [];
   }
+}
+
+/**
+ * Daily chart with the provider's observation time, for the Sector Rotation
+ * layer. Same Yahoo v8 chart endpoint as getDailyBars; bars keep any finite
+ * close (index/futures volume may be absent → NaN, never 0-filled). Includes
+ * the in-progress session's bar when Yahoo reports one; callers apply the
+ * completed-bar rule. Successful charts cache 10 min; failures cache 60 s so a
+ * provider outage is not hammered. Never throws.
+ */
+export interface YahooDailyChartBar { timestamp: number; close: number; volume: number }
+export interface YahooDailyChart {
+  ticker: string;
+  bars: YahooDailyChartBar[];
+  regularMarketTime: number | null;
+  longName: string | null;
+  fetchedAt: number;
+  error: string | null;
+}
+const dailyChartCache = new LRUCache<string, YahooDailyChart>(1200, 10 * 60_000);
+const dailyChartErrorCache = new LRUCache<string, YahooDailyChart>(1200, 60_000);
+const dailyChartInFlight = new Map<string, Promise<YahooDailyChart>>();
+
+export async function getDailyChart(ticker: string, range: "3mo" | "6mo"): Promise<YahooDailyChart> {
+  const key = `${ticker.toUpperCase()}_${range}`;
+  const cached = dailyChartCache.get(key) ?? dailyChartErrorCache.get(key);
+  if (cached) return cached;
+  const existing = dailyChartInFlight.get(key);
+  if (existing) return existing;
+  const promise = (async (): Promise<YahooDailyChart> => {
+    try {
+      const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=${range}&includePrePost=false`, {
+        headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json", "Referer": "https://finance.yahoo.com/" },
+        signal: AbortSignal.timeout(8_000),
+      });
+      if (!response.ok) throw new Error(`Yahoo daily chart HTTP ${response.status}`);
+      const payload = await response.json() as { chart?: { result?: Array<{ meta?: { regularMarketTime?: number; longName?: string; shortName?: string }; timestamp?: number[]; indicators?: { quote?: Array<{ close?: Array<number | null>; volume?: Array<number | null> }> } }> } };
+      const result = payload.chart?.result?.[0];
+      const quote = result?.indicators?.quote?.[0];
+      const timestamps = result?.timestamp ?? [];
+      if (!quote || timestamps.length === 0) throw new Error("Yahoo daily chart returned no bars");
+      const bars = timestamps.map((timestamp, index) => ({
+        timestamp: timestamp * 1000,
+        close: quote.close?.[index] ?? Number.NaN,
+        volume: quote.volume?.[index] ?? Number.NaN,
+      })).filter(bar => typeof bar.close === "number" && Number.isFinite(bar.close) && bar.close > 0) as YahooDailyChartBar[];
+      const meta = result?.meta;
+      const chart: YahooDailyChart = {
+        ticker: ticker.toUpperCase(), bars,
+        regularMarketTime: typeof meta?.regularMarketTime === "number" ? meta.regularMarketTime * 1000 : null,
+        longName: meta?.longName ?? meta?.shortName ?? null,
+        fetchedAt: Date.now(), error: null,
+      };
+      dailyChartCache.set(key, chart);
+      return chart;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const failed: YahooDailyChart = { ticker: ticker.toUpperCase(), bars: [], regularMarketTime: null, longName: null, fetchedAt: Date.now(), error: message };
+      dailyChartErrorCache.set(key, failed);
+      return failed;
+    } finally {
+      dailyChartInFlight.delete(key);
+    }
+  })();
+  dailyChartInFlight.set(key, promise);
+  return promise;
 }
 
 // ── Yahoo fetcher ─────────────────────────────────────────────
@@ -398,13 +518,82 @@ export function getQuoteCacheStats(): { size: number; tickers: string[] } {
 
 // ── Top Stock Performers (Daily Gainers Screener) ─────────────
 
+/**
+ * Intraday range used to rank the volatile screener.
+ * High and low must both be present. The open denominator keeps the prior
+ * fallback (open, then price, then 1) only after those two prints exist.
+ */
+export function volatileRangePercent(q: {
+  regularMarketDayHigh?: unknown;
+  regularMarketDayLow?: unknown;
+  regularMarketOpen?: unknown;
+  regularMarketPrice?: unknown;
+}): number | null {
+  const high = finiteQuoteNumber(q.regularMarketDayHigh);
+  const low = finiteQuoteNumber(q.regularMarketDayLow);
+  if (high == null || low == null) return null;
+  const open = (q.regularMarketOpen ?? q.regularMarketPrice ?? 1) as number;
+  return open > 0 ? ((high - low) / open) * 100 : 0;
+}
+
+export function finiteQuoteNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/** A present screener number, including 0, is returned unchanged. A missing one stays null. */
+export function screenerQuoteFields(q: {
+  regularMarketPrice?: unknown;
+  regularMarketChange?: unknown;
+  regularMarketChangePercent?: unknown;
+  regularMarketVolume?: unknown;
+}): { price: number | null; change: number | null; changePercent: number | null; volume: number | null } {
+  return {
+    price: finiteQuoteNumber(q.regularMarketPrice),
+    change: finiteQuoteNumber(q.regularMarketChange),
+    changePercent: finiteQuoteNumber(q.regularMarketChangePercent),
+    volume: finiteQuoteNumber(q.regularMarketVolume),
+  };
+}
+
+/**
+ * Polygon snapshot quote. When both closes are present, change is close - previous close.
+ * A missing close, change, or volume stays null. `day` uses only today's close as the price.
+ */
+export function polygonSnapshotQuoteFields(
+  t: { day?: { c?: unknown; v?: unknown } | null; prevDay?: { c?: unknown } | null; todaysChangePerc?: unknown },
+  priceMode: "day-or-prev" | "day" = "day-or-prev",
+): { price: number | null; change: number | null; changePercent: number | null; volume: number | null } {
+  const close = finiteQuoteNumber(t.day?.c);
+  const prev = finiteQuoteNumber(t.prevDay?.c);
+  return {
+    price: priceMode === "day" ? close : (close ?? prev),
+    change: close != null && prev != null ? close - prev : null,
+    changePercent: finiteQuoteNumber(t.todaysChangePerc),
+    volume: finiteQuoteNumber(t.day?.v),
+  };
+}
+
+export function compareNullableDesc(a: number | null, b: number | null): number {
+  if (typeof a === "number" && typeof b === "number") return b - a;
+  if (typeof a === "number") return -1;
+  if (typeof b === "number") return 1;
+  return 0;
+}
+
+export function compareNullableAsc(a: number | null, b: number | null): number {
+  if (typeof a === "number" && typeof b === "number") return a - b;
+  if (typeof a === "number") return -1;
+  if (typeof b === "number") return 1;
+  return 0;
+}
+
 export interface StockPerformer {
   ticker: string;
   name: string;
-  price: number;
-  change: number;
-  changePercent: number;
-  volume: number;
+  price: number | null;
+  change: number | null;
+  changePercent: number | null;
+  volume: number | null;
   marketCap: number | null;
   sector: string | null;
   avgVolume: number | null;
@@ -454,17 +643,14 @@ export async function getTopStockPerformers(limit = 100): Promise<StockPerformer
       .map((q: any) => ({
         ticker:        q.symbol,
         name:          q.shortName ?? q.longName ?? q.symbol,
-        price:         q.regularMarketPrice ?? 0,
-        change:        q.regularMarketChange ?? 0,
-        changePercent: q.regularMarketChangePercent ?? 0,
-        volume:        q.regularMarketVolume ?? 0,
+        ...screenerQuoteFields(q),
         marketCap:     q.marketCap ?? null,
         sector:        q.sector ?? null,
         avgVolume:     q.averageDailyVolume3Month ?? null,
         source:        "yahoo-screener" as const,
         fetchedAt:     Date.now(),
       }))
-      .sort((a, b) => b.changePercent - a.changePercent);
+      .sort((a, b) => compareNullableDesc(a.changePercent, b.changePercent));
 
     performersCache.set(cacheKey, performers);
     log.info(`[Yahoo Proxy] Top ${performers.length} stock performers fetched`);
@@ -500,17 +686,14 @@ async function getPolygonTopGainers(limit: number): Promise<StockPerformer[]> {
       .map((t: any) => ({
         ticker:        t.ticker,
         name:          t.ticker,
-        price:         t.day?.c ?? t.prevDay?.c ?? 0,
-        change:        (t.day?.c ?? 0) - (t.prevDay?.c ?? 0),
-        changePercent: (t.todaysChangePerc ?? 0),
-        volume:        t.day?.v ?? 0,
+        ...polygonSnapshotQuoteFields(t),
         marketCap:     null,
         sector:        null,
         avgVolume:     null,
         source:        "yahoo-screener" as const,
         fetchedAt:     Date.now(),
       }))
-      .sort((a, b) => b.changePercent - a.changePercent);
+      .sort((a, b) => compareNullableDesc(a.changePercent, b.changePercent));
 
   } catch (err: any) {
     log.warn(`[Yahoo Proxy] Polygon gainers fallback also failed: ${err?.message}`);
@@ -548,17 +731,14 @@ export async function getTopStockLosers(limit = 100): Promise<StockPerformer[]> 
       .map((q: any) => ({
         ticker:        q.symbol,
         name:          q.shortName ?? q.longName ?? q.symbol,
-        price:         q.regularMarketPrice ?? 0,
-        change:        q.regularMarketChange ?? 0,
-        changePercent: q.regularMarketChangePercent ?? 0,
-        volume:        q.regularMarketVolume ?? 0,
+        ...screenerQuoteFields(q),
         marketCap:     q.marketCap ?? null,
         sector:        q.sector ?? null,
         avgVolume:     q.averageDailyVolume3Month ?? null,
         source:        "yahoo-screener" as const,
         fetchedAt:     Date.now(),
       }))
-      .sort((a, b) => a.changePercent - b.changePercent);
+      .sort((a, b) => compareNullableAsc(a.changePercent, b.changePercent));
     performersCache.set(cacheKey, losers);
     log.info(`[Yahoo Proxy] Top ${losers.length} stock losers fetched`);
     return losers;
@@ -599,17 +779,14 @@ export async function getTopStockByVolume(limit = 100): Promise<StockPerformer[]
       .map((q: any) => ({
         ticker:        q.symbol,
         name:          q.shortName ?? q.longName ?? q.symbol,
-        price:         q.regularMarketPrice ?? 0,
-        change:        q.regularMarketChange ?? 0,
-        changePercent: q.regularMarketChangePercent ?? 0,
-        volume:        q.regularMarketVolume ?? 0,
+        ...screenerQuoteFields(q),
         marketCap:     q.marketCap ?? null,
         sector:        q.sector ?? null,
         avgVolume:     q.averageDailyVolume3Month ?? null,
         source:        "yahoo-screener" as const,
         fetchedAt:     Date.now(),
       }))
-      .sort((a, b) => b.volume - a.volume);
+      .sort((a, b) => compareNullableDesc(a.volume, b.volume));
     performersCache.set(cacheKey, byVolume);
     log.info(`[Yahoo Proxy] Top ${byVolume.length} stocks by volume fetched`);
     return byVolume;
@@ -633,16 +810,13 @@ async function getPolygonTopLosers(limit: number): Promise<StockPerformer[]> {
     return tickers.slice(0, limit).map((t: any) => ({
       ticker:        t.ticker,
       name:          t.ticker,
-      price:         t.day?.c ?? t.prevDay?.c ?? 0,
-      change:        (t.day?.c ?? 0) - (t.prevDay?.c ?? 0),
-      changePercent: t.todaysChangePerc ?? 0,
-      volume:        t.day?.v ?? 0,
+      ...polygonSnapshotQuoteFields(t),
       marketCap:     null,
       sector:        null,
       avgVolume:     null,
       source:        "yahoo-screener" as const,
       fetchedAt:     Date.now(),
-    })).sort((a, b) => a.changePercent - b.changePercent);
+    })).sort((a, b) => compareNullableAsc(a.changePercent, b.changePercent));
   } catch (err: any) {
     log.warn(`[Yahoo Proxy] Polygon losers fallback failed: ${err?.message}`);
     return [];
@@ -666,17 +840,14 @@ async function getPolygonMostActive(limit: number): Promise<StockPerformer[]> {
       .map((t: any) => ({
         ticker:        t.ticker,
         name:          t.ticker,
-        price:         t.day?.c ?? 0,
-        change:        (t.day?.c ?? 0) - (t.prevDay?.c ?? 0),
-        changePercent: t.todaysChangePerc ?? 0,
-        volume:        t.day?.v ?? 0,
+        ...polygonSnapshotQuoteFields(t, "day"),
         marketCap:     null,
         sector:        null,
         avgVolume:     null,
         source:        "yahoo-screener" as const,
         fetchedAt:     Date.now(),
       }))
-      .sort((a, b) => b.volume - a.volume)
+      .sort((a, b) => compareNullableDesc(a.volume, b.volume))
       .slice(0, limit);
   } catch (err: any) {
     log.warn(`[Yahoo Proxy] Polygon most-active fallback failed: ${err?.message}`);
@@ -717,10 +888,7 @@ export async function getTopNear52WeekHigh(limit = 100): Promise<StockPerformer[
       .map((q: any) => ({
         ticker:        q.symbol,
         name:          q.shortName ?? q.longName ?? q.symbol,
-        price:         q.regularMarketPrice ?? 0,
-        change:        q.regularMarketChange ?? 0,
-        changePercent: q.regularMarketChangePercent ?? 0,
-        volume:        q.regularMarketVolume ?? 0,
+        ...screenerQuoteFields(q),
         marketCap:     q.marketCap ?? null,
         sector:        q.sector ?? null,
         avgVolume:     q.averageDailyVolume3Month ?? null,
@@ -776,10 +944,7 @@ export async function getTopNear52WeekLow(limit = 100): Promise<StockPerformer[]
       .map((q: any) => ({
         ticker:        q.symbol,
         name:          q.shortName ?? q.longName ?? q.symbol,
-        price:         q.regularMarketPrice ?? 0,
-        change:        q.regularMarketChange ?? 0,
-        changePercent: q.regularMarketChangePercent ?? 0,
-        volume:        q.regularMarketVolume ?? 0,
+        ...screenerQuoteFields(q),
         marketCap:     q.marketCap ?? null,
         sector:        q.sector ?? null,
         avgVolume:     q.averageDailyVolume3Month ?? null,
@@ -833,25 +998,20 @@ export async function getMostVolatileStocks(limit = 100): Promise<StockPerformer
     const results: StockPerformer[] = quotes
       .filter((q: any) => q.symbol && q.regularMarketPrice != null)
       .slice(0, count)
-      .map((q: any) => {
-        const high = q.regularMarketDayHigh ?? q.regularMarketPrice ?? 0;
-        const low  = q.regularMarketDayLow  ?? q.regularMarketPrice ?? 0;
-        const open = q.regularMarketOpen    ?? q.regularMarketPrice ?? 1;
-        const intradayRange = open > 0 ? ((high - low) / open) * 100 : 0;
-        return {
+      .flatMap((q: any) => {
+        const intradayRange = volatileRangePercent(q);
+        if (intradayRange == null) return [];
+        return [{
           ticker:        q.symbol,
           name:          q.shortName ?? q.longName ?? q.symbol,
-          price:         q.regularMarketPrice ?? 0,
-          change:        q.regularMarketChange ?? 0,
-          changePercent: q.regularMarketChangePercent ?? 0,
-          volume:        q.regularMarketVolume ?? 0,
+          ...screenerQuoteFields(q),
           marketCap:     q.marketCap ?? null,
           sector:        q.sector ?? null,
           avgVolume:     q.averageDailyVolume3Month ?? null,
           intradayRange,
           source:        "yahoo-screener" as const,
           fetchedAt:     Date.now(),
-        };
+        }];
       })
       .sort((a: any, b: any) => b.intradayRange - a.intradayRange);
     performersCache.set(cacheKey, results);
@@ -894,17 +1054,14 @@ export async function getSmallCapRunners(limit = 100): Promise<StockPerformer[]>
       .map((q: any) => ({
         ticker:        q.symbol,
         name:          q.shortName ?? q.longName ?? q.symbol,
-        price:         q.regularMarketPrice ?? 0,
-        change:        q.regularMarketChange ?? 0,
-        changePercent: q.regularMarketChangePercent ?? 0,
-        volume:        q.regularMarketVolume ?? 0,
+        ...screenerQuoteFields(q),
         marketCap:     q.marketCap ?? null,
         sector:        q.sector ?? null,
         avgVolume:     q.averageDailyVolume3Month ?? null,
         source:        "yahoo-screener" as const,
         fetchedAt:     Date.now(),
       }))
-      .sort((a, b) => b.changePercent - a.changePercent);
+      .sort((a, b) => compareNullableDesc(a.changePercent, b.changePercent));
     performersCache.set(cacheKey, results);
     log.info(`[Yahoo Proxy] Top ${results.length} small-cap runners fetched`);
     return results;

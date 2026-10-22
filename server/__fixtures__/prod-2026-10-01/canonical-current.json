@@ -1,0 +1,207 @@
+{
+ "schemaVersion": "phase2-canonical-state-v1",
+ "stateId": "state:2026-10-01T18:00:34.034Z:2ec8d9c1d8f6e278",
+ "generatedAt": "2026-10-01T18:00:34.034Z",
+ "effectiveAt": "2026-10-01T18:00:34.034Z",
+ "calculationStartedAt": null,
+ "calculationCompletedAt": "2026-10-01T18:00:34.034Z",
+ "championVersion": "champion-v1-frozen",
+ "modelVersion": "2.0",
+ "scoringVersion": "faultline-pressure-v1-frozen",
+ "configurationVersion": "phase1b-governance-v1",
+ "inputSnapshotId": "input:af87a9b504cd5bb592e9ad9077bdd761",
+ "stateHash": "2ec8d9c1d8f6e278e4a6d0bd8cc9c841fefa1b0fcd135e01920cfa34610cef90",
+ "regime": "MODERATE RISK",
+ "pressureIndex": 33,
+ "pressureLevel": "MODERATE RISK",
+ "pressureDirection": "Stable",
+ "pressureAcceleration": null,
+ "pressurePersistence": null,
+ "engines": [
+  {
+   "engineId": "liquidity-stress",
+   "engineName": "liquidity-stress",
+   "value": 22,
+   "unit": "score_0_to_100",
+   "classification": null,
+   "direction": "Stable",
+   "acceleration": null,
+   "persistence": null,
+   "observedAt": null,
+   "calculatedAt": "2026-10-01T18:00:34.034Z",
+   "sourceInputIds": [
+    "hy_credit_spread",
+    "secured_overnight_financing_rate"
+   ],
+   "qualityStatus": "PARTIAL",
+   "freshnessStatus": "CURRENT",
+   "fallbackStatus": "NONE",
+   "modelVersion": "champion-v1-frozen",
+   "calculationVersion": "faultline-pressure-v1-frozen",
+   "contributionToComposite": true
+  },
+  {
+   "engineId": "credit-contagion",
+   "engineName": "credit-contagion",
+   "value": 22,
+   "unit": "score_0_to_100",
+   "classification": null,
+   "direction": "Stable",
+   "acceleration": null,
+   "persistence": null,
+   "observedAt": null,
+   "calculatedAt": "2026-10-01T18:00:34.034Z",
+   "sourceInputIds": [
+    "hy_credit_spread",
+    "ten_year_treasury_yield",
+    "unemployment_rate"
+   ],
+   "qualityStatus": "PARTIAL",
+   "freshnessStatus": "DELAYED",
+   "fallbackStatus": "NONE",
+   "modelVersion": "champion-v1-frozen",
+   "calculationVersion": "faultline-pressure-v1-frozen",
+   "contributionToComposite": true
+  },
+  {
+   "engineId": "volatility-regime",
+   "engineName": "volatility-regime",
+   "value": 40,
+   "unit": "score_0_to_100",
+   "classification": null,
+   "direction": "Stable",
+   "acceleration": null,
+   "persistence": null,
+   "observedAt": null,
+   "calculatedAt": "2026-10-01T18:00:34.034Z",
+   "sourceInputIds": [
+    "ten_year_treasury_yield",
+    "two_year_treasury_yield"
+   ],
+   "qualityStatus": "PARTIAL",
+   "freshnessStatus": "DELAYED",
+   "fallbackStatus": "NONE",
+   "modelVersion": "champion-v1-frozen",
+   "calculationVersion": "faultline-pressure-v1-frozen",
+   "contributionToComposite": true
+  },
+  {
+   "engineId": "macro-sensitivity",
+   "engineName": "macro-sensitivity",
+   "value": 43,
+   "unit": "score_0_to_100",
+   "classification": null,
+   "direction": "Stable",
+   "acceleration": null,
+   "persistence": null,
+   "observedAt": null,
+   "calculatedAt": "2026-10-01T18:00:34.034Z",
+   "sourceInputIds": [
+    "consumer_price_index_yoy",
+    "producer_price_index_yoy",
+    "federal_funds_rate"
+   ],
+   "qualityStatus": "PARTIAL",
+   "freshnessStatus": "DELAYED",
+   "fallbackStatus": "NONE",
+   "modelVersion": "champion-v1-frozen",
+   "calculationVersion": "faultline-pressure-v1-frozen",
+   "contributionToComposite": true
+  },
+  {
+   "engineId": "market-breadth",
+   "engineName": "market-breadth",
+   "value": 28,
+   "unit": "score_0_to_100",
+   "classification": null,
+   "direction": "Stable",
+   "acceleration": null,
+   "persistence": null,
+   "observedAt": null,
+   "calculatedAt": "2026-10-01T18:00:34.034Z",
+   "sourceInputIds": [
+    "ten_year_treasury_yield",
+    "unemployment_rate"
+   ],
+   "qualityStatus": "PARTIAL",
+   "freshnessStatus": "DELAYED",
+   "fallbackStatus": "NONE",
+   "modelVersion": "champion-v1-frozen",
+   "calculationVersion": "faultline-pressure-v1-frozen",
+   "contributionToComposite": true
+  },
+  {
+   "engineId": "ai-bubble",
+   "engineName": "ai-bubble",
+   "value": 44,
+   "unit": "score_0_to_100",
+   "classification": null,
+   "direction": "Unknown",
+   "acceleration": null,
+   "persistence": null,
+   "observedAt": null,
+   "calculatedAt": "2026-10-01T18:00:34.034Z",
+   "sourceInputIds": [
+    "ai_concentration_static_baseline"
+   ],
+   "qualityStatus": "PARTIAL",
+   "freshnessStatus": "CURRENT",
+   "fallbackStatus": "NONE",
+   "modelVersion": "champion-v1-frozen",
+   "calculationVersion": "faultline-pressure-v1-frozen",
+   "contributionToComposite": true
+  }
+ ],
+ "scenarioOutputs": {
+  "bull": 43,
+  "neutral": 43,
+  "bear": 14
+ },
+ "probabilityClaimIds": [
+  "seismograph.scenario.bull",
+  "seismograph.scenario.neutral",
+  "seismograph.scenario.bear",
+  "seismograph.transition.remainInRegime",
+  "seismograph.transition.transitionToElevated",
+  "seismograph.transition.transitionToLow",
+  "seismograph.transition.transitionToCrisis"
+ ],
+ "analogClaimIds": [
+  "seismograph.analog.0.fed-pivot-rally",
+  "seismograph.analog.1.soft-landing-rally",
+  "seismograph.analog.2.dot-com-bubble"
+ ],
+ "historicalContext": {
+  "canonicalLiveHistory": "intelligenceStateManifests append-only operational snapshots only",
+  "reconstructedResearch": "reconstructed-champion-v1-2000-2026-research-only",
+  "historicalAnalogOutput": "governed analog claim references only",
+  "patternResolution": "governedResearchResolutions append-only later outcomes"
+ },
+ "confidenceOrEvidenceQuality": "PARTIAL",
+ "staleInputs": [],
+ "delayedInputs": [
+  "ten_year_treasury_yield",
+  "consumer_price_index_yoy",
+  "producer_price_index_yoy",
+  "federal_funds_rate",
+  "unemployment_rate"
+ ],
+ "unavailableInputs": [],
+ "fallbackInputs": [],
+ "warnings": [],
+ "conflicts": [],
+ "historicalDatasetVersion": "legacy-317-unreconciled",
+ "researchDatasetVersion": "reconstructed-champion-v1-2000-2026-research-only",
+ "provenance": {
+  "manifestSource": "intelligenceStateManifests",
+  "governanceVersion": "phase1b-governance-v1",
+  "coherenceStatus": "COHERENT"
+ },
+ "dataQualitySummary": {
+  "status": "PARTIAL",
+  "staleInputCount": 0,
+  "delayedInputCount": 5,
+  "unavailableInputCount": 0,
+  "fallbackInputCount": 0
+ }
+}

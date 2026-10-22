@@ -44,7 +44,13 @@ describe("Track Record DB helpers", () => {
     expect(stats).toHaveProperty("criticalMonths");
     expect(stats).toHaveProperty("highRiskMonths");
     expect(typeof stats.totalMonths).toBe("number");
-    expect(typeof stats.avgPressure).toBe("number");
+    if (stats.totalMonths === 0) {
+      expect(stats.avgPressure).toBeNull();
+      expect(stats.maxPressure).toBeNull();
+      expect(stats.minPressure).toBeNull();
+    } else {
+      expect(typeof stats.avgPressure).toBe("number");
+    }
   });
 
   it("getPressureHistoryStats totalMonths >= 300 if DB available", async () => {

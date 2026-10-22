@@ -30,8 +30,9 @@ describe("Pentagonal Thesis canonical identity", () => {
 
   it("presents PLATO as the customer-visible intelligence layer, not a separate product", () => {
     const marketing = source("client/src/pages/MarketingSite.tsx");
-    expect(marketing).toContain("Pentagonal Thesis");
     expect(marketing).toContain("PLATO market explanation");
+    expect(marketing).toContain("FAULTLINE detects the signals. PLATO helps explain what they mean.");
+    expect(marketing).not.toContain("ASHA");
     expect(marketing).not.toContain("ASHA market explanation");
   });
 });

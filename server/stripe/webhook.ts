@@ -2,9 +2,20 @@ import type { Request, Response } from 'express';
 import { stripe } from './client';
 import { ENV } from '../_core/env';
 import { getPlanByPriceId } from './products';
-import { updateUserStripe, getUserByStripeCustomerId, getUserTier, recordStripeWebhookEvent, writeEntitlementAudit } from '../db';
+import { updateUserStripe, getUserByStripeCustomerId, getUserTier, recordStripeWebhookEvent, releaseStripeWebhookEvent, writeEntitlementAudit } from '../db';
 import type { AccessTier } from '../../shared/tiers';
 import { sendEmail, buildSubscriptionConfirmationEmail } from '../email';
+
+/**
+ * Thrown when a paid checkout cannot be mapped to a configured paid plan.
+ * We must not infer a tier from a missing, unreadable, or unknown price.
+ */
+export class UnresolvedPlanError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'UnresolvedPlanError';
+  }
+}
 
 /**
  * Resolve the access tier for a completed checkout session.
@@ -13,23 +24,18 @@ import { sendEmail, buildSubscriptionConfirmationEmail } from '../email';
  */
 async function resolveTierFromSession(sessionId: string): Promise<Exclude<AccessTier, 'free'>> {
   if (!stripe) {
-    console.warn('[Stripe Webhook] Stripe is not configured — defaulting checkout tier to core');
-    return 'core';
+    throw new Error('Stripe is not configured — cannot resolve checkout tier');
   }
-  try {
-    const lineItems = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 1 });
-    const priceId = lineItems.data[0]?.price?.id;
-    if (priceId) {
-      const plan = getPlanByPriceId(priceId);
-      if (plan && plan.tier !== 'free') return plan.tier;
-    }
-  } catch (err: any) {
-    console.warn('[Stripe Webhook] Could not fetch line items for session', sessionId, '—', err.message);
+  const lineItems = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 1 });
+  const priceId = lineItems.data[0]?.price?.id;
+  if (!priceId) {
+    throw new UnresolvedPlanError(`Session ${sessionId} has no line-item price — no entitlement granted`);
   }
-  // Safe fallback — default to 'core' (lowest paid tier) so we never accidentally
-  // grant premium access to a user who paid for core.
-  console.warn('[Stripe Webhook] Could not determine tier from line items — defaulting to core (safe minimum)');
-  return 'core';
+  const plan = getPlanByPriceId(priceId);
+  if (!plan || plan.tier === 'free') {
+    throw new UnresolvedPlanError(`Session ${sessionId} price ${priceId} does not match any configured paid plan — no entitlement granted`);
+  }
+  return plan.tier;
 }
 
 /**
@@ -67,19 +73,6 @@ function tierToPlanName(tier: string): string {
 export async function handleStripeWebhook(req: Request, res: Response) {
   const sig = req.headers['stripe-signature'] as string;
 
-  // Stripe/Manus webhook verification events use the evt_test_ prefix and must
-  // short-circuit before signature construction.
-  try {
-    const rawBody = req.body instanceof Buffer ? req.body.toString('utf8') : String(req.body);
-    const testEvent = JSON.parse(rawBody) as { id?: unknown };
-    if (typeof testEvent.id === 'string' && testEvent.id.startsWith('evt_test_')) {
-      console.log('[Webhook] Test event detected, returning verification response');
-      return res.json({ verified: true });
-    }
-  } catch {
-    // Let the normal signature-verification path handle malformed live payloads.
-  }
-
   // ── Signature verification bypass (dev/test only) ───────────────────────────
   const skipVerification = process.env.STRIPE_SKIP_VERIFICATION === 'true' && process.env.NODE_ENV !== 'production';
   if (skipVerification) {
@@ -104,14 +97,21 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     event = stripe.webhooks.constructEvent(req.body, sig, ENV.stripeWebhookSecret);
   } catch (err: any) {
     console.error('[Stripe Webhook] Signature verification failed:', err.message);
-    return res.status(200).json({ error: 'Signature verification failed', verified: false });
+    return res.status(400).json({ error: 'Signature verification failed', verified: false });
   }
 
   console.log(`[Stripe Webhook] Event: ${event.type} | ID: ${event.id}`);
 
   // ── Idempotency guard ──────────────────────────────────────────────────────
-  // Record the event ID before processing. Duplicate key = already processed.
-  const isNew = await recordStripeWebhookEvent(event.id, event.type);
+  // Claim the event ID before processing. A duplicate is already claimed/processed;
+  // a claim is released below if handling fails so Stripe can retry safely.
+  let isNew: boolean;
+  try {
+    isNew = await recordStripeWebhookEvent(event.id, event.type);
+  } catch (err) {
+    console.error(`[Stripe Webhook] Could not record event ${event.id} — answering 500 so Stripe retries:`, err);
+    return res.status(500).json({ error: 'Webhook processing failed' });
+  }
   if (!isNew) {
     console.log(`[Stripe Webhook] Duplicate event ${event.id} (${event.type}) — skipping`);
     return res.json({ received: true, duplicate: true });
@@ -310,8 +310,19 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
     }
   } catch (err) {
-    console.error('[Stripe Webhook] Error processing event:', err);
-    return res.status(500).json({ error: 'Webhook processing failed' });
+    if (err instanceof UnresolvedPlanError) {
+      console.error(`[Stripe Webhook][BILLING-ALERT] ${event.type} ${event.id}: ${err.message}. No access granted; answering 500 so Stripe retries.`);
+    } else {
+      console.error('[Stripe Webhook] Error processing event:', err);
+    }
+    try {
+      await releaseStripeWebhookEvent(event.id);
+    } catch (releaseErr) {
+      console.error(`[Stripe Webhook][BILLING-ALERT] Failed to release idempotency claim for ${event.id}; replay may be required:`, releaseErr);
+    }
+    return res.status(500).json({
+      error: err instanceof UnresolvedPlanError ? 'Unrecognized plan — entitlement not granted' : 'Webhook processing failed',
+    });
   }
 
   res.json({ received: true });

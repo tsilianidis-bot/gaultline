@@ -6,6 +6,7 @@
 import { useMemo } from "react";
 import { RefreshCw, TrendingUp, TrendingDown, AlertTriangle, Zap, ArrowRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { CRASH_RISK_DISPLAY_TEXT, contractScenarioText } from "@/lib/contractProbabilityText";
 
 // ── Helpers ───────────────────────────────────────────────────
 function getRegimeColor(regime: string): string {
@@ -40,14 +41,18 @@ function getRegimeLabel(regime: string): string {
 
 // ── Main Component ────────────────────────────────────────────
 export default function MobilePulse() {
-  const { data: canonicalState, isLoading: canonicalLoading, refetch, isFetching } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+  const { data: canonicalState, isLoading: canonicalLoading, refetch, isFetching, fetchStatus } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
 
   const regimeColor = useMemo(() => getRegimeColor(canonicalState?.regime ?? ""), [canonicalState?.regime]);
 
-  if (canonicalLoading) {
+  // Offline: react-query pauses the fetch and isLoading would stay true forever.
+  // Fail closed to the unavailable state instead of an endless LOADING spinner.
+  const offlinePaused = canonicalLoading && fetchStatus === "paused";
+
+  if (canonicalLoading && !offlinePaused) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <div className="w-10 h-10 rounded-full border-2 border-[#00D4FF]/30 border-t-[#00D4FF] animate-spin" />
@@ -59,8 +64,9 @@ export default function MobilePulse() {
   if (!canonicalState) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
-        <span className="text-[10px] font-mono tracking-widest text-[#64748B]">CANONICAL STATE UNAVAILABLE</span>
-        <p className="text-xs text-[#A8B8CC]">Current mobile pulse is withheld. No default, fixture, or live pressure recalculation is shown as current intelligence.</p>
+        <span data-mobile-pulse-unavailable={offlinePaused ? "offline" : "unavailable"} className="text-[10px] font-mono tracking-widest text-[#64748B]">{offlinePaused ? "OFFLINE · " : ""}CANONICAL STATE UNAVAILABLE</span>
+        <p className="text-xs text-[#A8B8CC]">{offlinePaused ? "No network connection. " : ""}Current mobile pulse is withheld. No default, fixture, or live pressure recalculation is shown as current intelligence.</p>
+        <button type="button" onClick={() => { void refetch(); }} className="mt-2 text-[10px] font-mono tracking-widest text-[#00D4FF] border border-[#00D4FF]/30 rounded px-3 py-1.5">RETRY</button>
       </div>
     );
   }
@@ -70,8 +76,10 @@ export default function MobilePulse() {
   const withheld = quality === "UNAVAILABLE" || score == null;
   const verdict = getCanonicalAnswer(quality, canonicalState.regime);
   const regimeLabel = withheld ? "UNAVAILABLE" : getRegimeLabel(canonicalState.regime ?? "Unavailable");
-  const bullProb = canonicalState.scenarioOutputs.bull ?? canonicalState.scenarioOutputs.softLanding ?? null;
-  const crashProb = canonicalState.scenarioOutputs.crash ?? canonicalState.scenarioOutputs.bear ?? null;
+  // Probability contract: bull renders the contract's display text; crash risk
+  // is not offered (the bear scenario weight is not a crash probability).
+  const bullText = withheld ? "UNAVAILABLE" : contractScenarioText(canonicalState.probabilityContract, "bull");
+  const crashText = CRASH_RISK_DISPLAY_TEXT;
 
   const riskVectors = [...canonicalState.engines]
     .filter(engine => engine.value != null && engine.qualityStatus !== "UNAVAILABLE")
@@ -161,22 +169,22 @@ export default function MobilePulse() {
           >
             <div className="flex items-center gap-1.5">
               <TrendingUp size={10} className="text-[#34D399]" />
-              <span className="text-[8px] font-mono tracking-widest text-[#34D399]/70">BULL PROB</span>
+              <span className="text-[8px] font-mono tracking-widest text-[#34D399]/70">BULL SCENARIO</span>
             </div>
-            <div className="text-xl font-black font-mono text-[#34D399]">{bullProb == null ? "UNAVAILABLE" : `${Math.round(bullProb)}%`}</div>
+            <div data-mobile-bull className="text-xl font-black font-mono text-[#34D399]">{bullText}</div>
           </div>
           <div
             className="rounded-xl p-3 flex flex-col gap-1"
             style={{
-              background: crashProb != null && crashProb >= 50 ? "rgba(255,45,85,0.06)" : "rgba(255,149,0,0.06)",
-              border: `1px solid ${crashProb != null && crashProb >= 50 ? "rgba(255,45,85,0.2)" : "rgba(255,149,0,0.2)"}`,
+              background: "rgba(148,163,184,0.06)",
+              border: "1px solid rgba(148,163,184,0.2)",
             }}
           >
             <div className="flex items-center gap-1.5">
-              <TrendingDown size={10} style={{ color: crashProb != null && crashProb >= 50 ? "#FF2D55" : "#FF9500" }} />
-              <span className="text-[8px] font-mono tracking-widest" style={{ color: crashProb != null && crashProb >= 50 ? "rgba(255,45,85,0.7)" : "rgba(255,149,0,0.7)" }}>CRASH RISK</span>
+              <TrendingDown size={10} style={{ color: "#94A3B8" }} />
+              <span className="text-[8px] font-mono tracking-widest" style={{ color: "rgba(148,163,184,0.7)" }}>CRASH RISK</span>
             </div>
-            <div className="text-xl font-black font-mono" style={{ color: crashProb != null && crashProb >= 50 ? "#FF2D55" : "#FF9500" }}>{crashProb == null ? "UNAVAILABLE" : `${Math.round(crashProb)}%`}</div>
+            <div data-mobile-crash className="text-xl font-black font-mono" style={{ color: "#94A3B8" }}>{crashText}</div>
           </div>
         </div>
       </div>

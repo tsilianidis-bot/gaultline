@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { EVALUATION_PLAN, LEDGER_SCHEMA_VERSION, STATE_HASH_RECIPE, type RunContext, type RunSource, type RunTrigger } from "./forwardRunProvenance";
 import { asc, eq } from "drizzle-orm";
 import {
   governedIntelligenceClaims,
@@ -9,6 +10,13 @@ import {
 import { getDb } from "./db";
 import type { FaultlinePressureOutput, DataStatus, RiskVector } from "./pressure/engine";
 import type { SeismographOutput } from "./seismographCore";
+import {
+  PROBABILITY_CONTRACT_VERSION,
+  SCENARIO_DEFINITIONS,
+  TRANSITION_DEFINITIONS,
+  TRANSITION_MODEL,
+  scenarioModelForSeismographVersion,
+} from "../shared/probabilityContract";
 
 export const PHASE_1B_GOVERNANCE_VERSION = "phase1b-governance-v1";
 export const CHAMPION_V1_GOVERNANCE_VERSION = "champion-v1-frozen";
@@ -28,7 +36,7 @@ export interface LiveInputQualityManifestEntry {
   fetchedAt: string;
   expectedUpdateFrequency: "daily" | "monthly" | "static";
   maxAgeHours: number | null;
-  freshnessStatus: "LIVE" | "CURRENT" | "DELAYED" | "STALE" | "UNAVAILABLE" | "UNKNOWN";
+  freshnessStatus: "LIVE" | "CURRENT" | "DELAYED" | "STALE" | "STATIC" | "UNAVAILABLE" | "UNKNOWN";
   availabilityStatus: "AVAILABLE" | "FALLBACK_ACTIVE" | "UNAVAILABLE" | "STATIC_MODEL_INPUT";
   fallbackUsed: boolean;
   fallbackType: string | null;
@@ -61,6 +69,7 @@ export interface GovernedClaimRecord {
 
 export interface AtomicIntelligenceStateManifest {
   stateId: string;
+  originatingRunId: string;
   generatedAt: string;
   championVersion: string;
   modelVersion: string;
@@ -132,7 +141,7 @@ function translateQuality(status: DataStatus, hasValue: boolean) {
   if (status === "fallback") return { freshnessStatus: "STALE" as const, availabilityStatus: "FALLBACK_ACTIVE" as const, fallbackUsed: true, confidenceImpact: "MATERIAL" as const };
   if (status === "stale" || status === "cached") return { freshnessStatus: "STALE" as const, availabilityStatus: "AVAILABLE" as const, fallbackUsed: false, confidenceImpact: "QUALIFIED" as const };
   if (status === "delayed") return { freshnessStatus: "DELAYED" as const, availabilityStatus: "AVAILABLE" as const, fallbackUsed: false, confidenceImpact: "QUALIFIED" as const };
-  if (status === "static") return { freshnessStatus: "CURRENT" as const, availabilityStatus: "STATIC_MODEL_INPUT" as const, fallbackUsed: false, confidenceImpact: "QUALIFIED" as const };
+  if (status === "static") return { freshnessStatus: "STATIC" as const, availabilityStatus: "STATIC_MODEL_INPUT" as const, fallbackUsed: false, confidenceImpact: "QUALIFIED" as const };
   return { freshnessStatus: "LIVE" as const, availabilityStatus: "AVAILABLE" as const, fallbackUsed: false, confidenceImpact: "NONE" as const };
 }
 
@@ -144,9 +153,11 @@ export function buildLiveInputQualityManifest(pressure: FaultlinePressureOutput)
     const value = vectors.map(vector => vector.rawInputs[rawKey]).find((candidate): candidate is number => typeof candidate === "number") ?? null;
     const quality = translateQuality(sourceStatus, value !== null);
     const fallbackReason = vectors.find(vector => vector.fallbackReason)?.fallbackReason ?? null;
+    // Phase 1 (2026-10-13): the FRED observation date behind the value (fail-closed loader provenance).
+    const observedDate = vectors.map(vector => vector.observationDates?.[rawKey]).find((d): d is string => typeof d === "string") ?? null;
     return {
       ...spec,
-      observedAt: null,
+      observedAt: observedDate ? `${observedDate}T00:00:00.000Z` : null,
       fetchedAt,
       value,
       contributesTo: vectors.map(vector => vector.id),
@@ -169,7 +180,7 @@ export function buildLiveInputQualityManifest(pressure: FaultlinePressureOutput)
     fetchedAt,
     expectedUpdateFrequency: "static",
     maxAgeHours: null,
-    freshnessStatus: "CURRENT",
+    freshnessStatus: "STATIC",
     availabilityStatus: "STATIC_MODEL_INPUT",
     fallbackUsed: false,
     fallbackType: null,
@@ -200,32 +211,47 @@ function claimBase(generatedAt: string): Pick<GovernedClaimRecord, "sourceModel"
 export function buildGovernedClaims(seismograph: SeismographOutput | null, generatedAt: string): GovernedClaimRecord[] {
   if (!seismograph) return [];
   const base = claimBase(generatedAt);
-  const scenarioClaims: GovernedClaimRecord[] = [
-    ["bull", seismograph.probabilities.bull],
-    ["neutral", seismograph.probabilities.neutral],
-    ["bear", seismograph.probabilities.bear],
-  ].map(([label, value]) => ({
+  // Probability contract (faultline-probability-contract-v1): each scenario and
+  // transition claim carries its own versioned model, a HorizonBucket and an
+  // explicit definition. claimId and the claim modelVersion
+  // ("seismograph-core-v1") are unchanged; the contract model reference is
+  // carried in metadata only. Existing rows are never rewritten.
+  const scenarioModel = scenarioModelForSeismographVersion(seismograph.version);
+  const contractMetadata = (modelId: string, contractModelVersion: string, resolvable: boolean) => ({
+    contractVersion: PROBABILITY_CONTRACT_VERSION,
+    modelId,
+    contractModelVersion,
+    horizonBucket: "NOT_ESTABLISHED",
+    horizonMinDays: null,
+    horizonMaxDays: null,
+    resolvable,
+    calibrationStatus: "UNCALIBRATED",
+  });
+  const scenarioClaims: GovernedClaimRecord[] = (["bull", "neutral", "bear"] as const).map(label => ({
     ...base,
     claimId: `seismograph.scenario.${label}`,
     claimType: "DERIVED_SCENARIO_SCORE",
-    eventDefinition: null,
-    timeHorizon: null,
-    value: Number(value),
+    eventDefinition: SCENARIO_DEFINITIONS[label].definition,
+    timeHorizon: "NOT_ESTABLISHED",
+    value: Number(seismograph.probabilities[label]),
     unit: "score_percent",
-    metadata: { label, primaryDriver: seismograph.probabilities.primaryDriver, rule: "Not a calibrated probability; predictive presentation suppressed." },
+    metadata: { label, primaryDriver: seismograph.probabilities.primaryDriver, rule: "Not a calibrated probability; predictive presentation suppressed.", ...contractMetadata(scenarioModel.modelId, scenarioModel.modelVersion, SCENARIO_DEFINITIONS[label].resolvable) },
   }));
   const transitionClaims: GovernedClaimRecord[] = Object.entries(seismograph.transitionProbabilities)
     .filter(([key, value]) => key !== "primaryDriver" && typeof value === "number")
-    .map(([label, value]) => ({
-      ...base,
-      claimId: `seismograph.transition.${label}`,
-      claimType: "DERIVED_SCENARIO_COMPONENT",
-      eventDefinition: null,
-      timeHorizon: null,
-      value: Number(value),
-      unit: "component_percent",
-      metadata: { label, primaryDriver: seismograph.transitionProbabilities.primaryDriver, rule: "Component is not a complete mutually exclusive or calibrated forecast distribution." },
-    }));
+    .map(([label, value]) => {
+      const definition = TRANSITION_DEFINITIONS[label as keyof typeof TRANSITION_DEFINITIONS];
+      return {
+        ...base,
+        claimId: `seismograph.transition.${label}`,
+        claimType: "DERIVED_SCENARIO_COMPONENT",
+        eventDefinition: definition?.definition ?? null,
+        timeHorizon: "NOT_ESTABLISHED",
+        value: Number(value),
+        unit: "component_percent",
+        metadata: { label, primaryDriver: seismograph.transitionProbabilities.primaryDriver, rule: "Component is not a complete mutually exclusive or calibrated forecast distribution.", ...contractMetadata(TRANSITION_MODEL.modelId, TRANSITION_MODEL.modelVersion, false) },
+      };
+    });
   const analogClaims = seismograph.analogMatches.map((analog, index): GovernedClaimRecord => ({
     claimId: `seismograph.analog.${index}.${analog.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
     claimType: "ANALOG_SIMILARITY",
@@ -265,7 +291,56 @@ export function buildGovernedClaims(seismograph: SeismographOutput | null, gener
   return [...scenarioClaims, ...transitionClaims, ...analogClaims, ...patternClaims];
 }
 
-export function buildAtomicIntelligenceStateManifest({ pressure, seismograph, generatedAt = new Date().toISOString(), persistedHooks }: { pressure: FaultlinePressureOutput; seismograph: SeismographOutput | null; generatedAt?: string; persistedHooks?: { systemicRegime?: unknown; signalConvergence?: unknown } }): { manifest: AtomicIntelligenceStateManifest; claims: GovernedClaimRecord[]; inputQuality: LiveInputQualityManifestEntry[] } {
+/**
+ * Forward-evidence provenance stored inside the existing manifestJson column
+ * (no migration). Kept OUTSIDE the stateHash core so state identity semantics
+ * are unchanged. Records written by the live scheduled run are forward
+ * records (made at the time); corrections are new append-only rows that point
+ * at the original via `correctionOf`, never in-place edits.
+ */
+export interface ManifestRunProvenance {
+  recordClass: "LIVE_FORWARD_RECORD" | "LIVE_FORWARD_CORRECTION";
+  recordedAt: string;
+  originatingRunId: string;
+  codeVersion: string | null;
+  methodology: {
+    championVersion: string;
+    seismographModelVersion: string;
+    scoringVersion: string;
+    configurationVersion: string;
+    systemicRegimeModelVersion: string | null;
+    systemicRegimeModelType: string | null;
+    systemicRegimeDataAsOf: string | null;
+  };
+  inputSnapshotId: string;
+  /** Per-series provider observation dates are not exposed by the pressure engine yet. */
+  inputObservationDatesCaptured: false;
+  writePolicy: "APPEND_ONLY_INSERT_IF_ABSENT";
+  correctionOf: { stateId: string; reason: string } | null;
+  // ── Forward-ledger additions (A1–A4). Outside the stateHash core; the hash recipe is unchanged. ──
+  /** What started this run. Absent on rows written before this field existed. */
+  trigger?: RunTrigger;
+  triggerSource?: RunSource;
+  runStartedAt?: string;
+  /** true only inside the NYSE post-close window (16:15–16:45 America/New_York). Historical rows may still reflect the retired 18:00 UTC classifier. */
+  scheduledWindow?: boolean;
+  ledgerSchemaVersion?: typeof LEDGER_SCHEMA_VERSION;
+  hashRecipe?: typeof STATE_HASH_RECIPE;
+  evaluationPlan?: typeof EVALUATION_PLAN;
+  /** Exact link to the Champion provenance row (and v2 outcomes) this run created, if any. */
+  outcomeLink?: Record<string, unknown>;
+}
+
+function regimeHookField(hook: unknown, key: "modelVersion" | "modelType" | "dataAsOf"): string | null {
+  if (!hook || typeof hook !== "object") return null;
+  const value = (hook as Record<string, unknown>)[key];
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+export function buildAtomicIntelligenceStateManifest({ pressure, seismograph, originatingRunId, generatedAt = new Date().toISOString(), persistedHooks, codeVersion = null, correctionOf = null, runContext, outcomeLink }: { pressure: FaultlinePressureOutput; seismograph: SeismographOutput | null; originatingRunId: string; generatedAt?: string; persistedHooks?: { systemicRegime?: unknown; signalConvergence?: unknown }; codeVersion?: string | null; correctionOf?: { stateId: string; reason: string } | null; runContext?: RunContext; outcomeLink?: Record<string, unknown> }): { manifest: AtomicIntelligenceStateManifest; claims: GovernedClaimRecord[]; inputQuality: LiveInputQualityManifestEntry[]; runProvenance: ManifestRunProvenance } {
+  if (!originatingRunId.trim()) {
+    throw new Error("Canonical intelligence manifests require an originatingRunId");
+  }
   const inputQuality = buildLiveInputQualityManifest(pressure);
   const inputSnapshotId = `input:${sha256(inputQuality).slice(0, 32)}`;
   const claims = buildGovernedClaims(seismograph, generatedAt);
@@ -282,6 +357,7 @@ export function buildAtomicIntelligenceStateManifest({ pressure, seismograph, ge
   const engineDirections = Object.fromEntries(pressure.vectors.map(vector => [vector.id, vector.trend]));
   const scenarioOutputs: Record<string, number> = seismograph ? { bull: seismograph.probabilities.bull, neutral: seismograph.probabilities.neutral, bear: seismograph.probabilities.bear } : {};
   const core = {
+    originatingRunId,
     championVersion: CHAMPION_V1_GOVERNANCE_VERSION,
     modelVersion: seismograph?.version ?? "seismograph-unavailable",
     scoringVersion: "faultline-pressure-v1-frozen",
@@ -327,7 +403,36 @@ export function buildAtomicIntelligenceStateManifest({ pressure, seismograph, ge
     ...core,
     stateHash,
   };
-  return { manifest, claims, inputQuality };
+  const runProvenance: ManifestRunProvenance = {
+    recordClass: correctionOf ? "LIVE_FORWARD_CORRECTION" : "LIVE_FORWARD_RECORD",
+    recordedAt: generatedAt,
+    originatingRunId,
+    codeVersion: codeVersion && codeVersion.trim() ? codeVersion.trim() : null,
+    methodology: {
+      championVersion: core.championVersion,
+      seismographModelVersion: core.modelVersion,
+      scoringVersion: core.scoringVersion,
+      configurationVersion: core.configurationVersion,
+      systemicRegimeModelVersion: regimeHookField(persistedHooks?.systemicRegime, "modelVersion"),
+      systemicRegimeModelType: regimeHookField(persistedHooks?.systemicRegime, "modelType"),
+      systemicRegimeDataAsOf: regimeHookField(persistedHooks?.systemicRegime, "dataAsOf"),
+    },
+    inputSnapshotId,
+    inputObservationDatesCaptured: false,
+    writePolicy: "APPEND_ONLY_INSERT_IF_ABSENT",
+    correctionOf: correctionOf ?? null,
+    ...(runContext ? {
+      trigger: runContext.trigger,
+      triggerSource: runContext.triggerSource,
+      runStartedAt: runContext.runStartedAt,
+      scheduledWindow: runContext.scheduledWindow,
+      ledgerSchemaVersion: LEDGER_SCHEMA_VERSION,
+      hashRecipe: STATE_HASH_RECIPE,
+      evaluationPlan: EVALUATION_PLAN,
+      outcomeLink: outcomeLink ?? { status: "NOT_RECORDED" },
+    } : {}),
+  };
+  return { manifest, claims, inputQuality, runProvenance };
 }
 
 export async function persistAtomicIntelligenceStateManifest(result: ReturnType<typeof buildAtomicIntelligenceStateManifest>): Promise<{ stateId: string; created: boolean; claimsCreated: number }> {
@@ -337,6 +442,7 @@ export async function persistAtomicIntelligenceStateManifest(result: ReturnType<
   if (existing[0]) return { stateId: result.manifest.stateId, created: false, claimsCreated: 0 };
   await db.insert(intelligenceStateManifests).values({
     stateId: result.manifest.stateId,
+    originatingRunId: result.manifest.originatingRunId,
     generatedAt: new Date(result.manifest.generatedAt),
     championVersion: result.manifest.championVersion,
     modelVersion: result.manifest.modelVersion,
@@ -345,7 +451,7 @@ export async function persistAtomicIntelligenceStateManifest(result: ReturnType<
     inputSnapshotId: result.manifest.inputSnapshotId,
     stateHash: result.manifest.stateHash,
     coherenceStatus: result.manifest.coherenceStatus,
-    manifestJson: JSON.stringify({ ...result.manifest, inputQuality: result.inputQuality }),
+    manifestJson: JSON.stringify({ ...result.manifest, inputQuality: result.inputQuality, ...(result.runProvenance ? { runProvenance: result.runProvenance } : {}) }),
   });
   if (result.claims.length) {
     await db.insert(governedIntelligenceClaims).values(result.claims.map(claim => ({

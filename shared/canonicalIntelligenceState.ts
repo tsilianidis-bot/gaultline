@@ -1,3 +1,5 @@
+import type { CanonicalProbabilityContract } from "./probabilityContract";
+
 export const CANONICAL_STATE_SCHEMA_VERSION = "phase2-canonical-state-v1" as const;
 
 export type CanonicalCoherenceStatus = "COHERENT" | "DEGRADED" | "MIXED_FRESHNESS" | "STALE" | "INVALID" | "UNAVAILABLE";
@@ -60,6 +62,12 @@ export interface CanonicalIntelligenceState {
   scenarioOutputs: Record<string, number>;
   probabilityClaimIds: string[];
   analogClaimIds: string[];
+  /**
+   * Versioned scenario-probability contract built from this state's manifest
+   * (server/probabilityContract.ts). Every user-facing probability renders
+   * `claim.display.text`; absent on states built before the contract existed.
+   */
+  probabilityContract?: CanonicalProbabilityContract;
   historicalContext: {
     canonicalLiveHistory: string;
     reconstructedResearch: string;

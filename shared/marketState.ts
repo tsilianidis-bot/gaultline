@@ -1,4 +1,5 @@
-export type MarketStateFreshness = "live" | "recent" | "stale";
+import type { CanonicalProbabilityContract } from "./probabilityContract";
+export type MarketStateFreshness = "live" | "recent" | "delayed" | "stale";
 export type MarketStateCacheStatus = "fresh-cache" | "refreshed" | "stale-if-error";
 export type MarketStateSourceStatus = "healthy" | "degraded" | "unavailable";
 
@@ -36,11 +37,19 @@ export interface CanonicalMarketState {
   now: {
     pressureScore: number;
     regime: string;
-    stressLevel: "Low" | "Elevated" | "High" | "Crisis";
-    direction: "Improving" | "Stable" | "Deteriorating" | "Accelerating";
-    historicalPercentile: number;
+    /** Legacy seismograph labels, or the engine band level ("Moderate", "Critical") once projected from canonical state. */
+    stressLevel: "Low" | "Moderate" | "Elevated" | "High" | "Critical" | "Crisis";
+    /** "Unavailable" when the canonical composite direction cannot be derived (no prior comparable reading). */
+    direction: "Improving" | "Stable" | "Deteriorating" | "Accelerating" | "Unavailable";
+    /** null when the current score cannot be ranked against stored history. */
+    historicalPercentile: number | null;
     headline: string;
+    /** Strongest evidence families by strength. Ordering only — NOT a threat/support classification. */
     topDrivers: string[];
+    /** Families whose own signal is bearish/stressed (shared/canonicalReadout classifyEvidenceFamilies). */
+    threats: string[];
+    /** Families whose own signal is bullish/recovering (same classifier). */
+    supports: string[];
   };
   why: {
     story: string;
@@ -63,6 +72,12 @@ export interface CanonicalMarketState {
       whyItMatters: string;
     }>;
     evidenceConsensus: "strong" | "moderate" | "weak" | "divergent";
+    /**
+     * Month ("YYYY-MM") of the pressure-history record the evidence families are
+     * read from. They are a MONTHLY record, not the current canonical run
+     * (canonicalCurrent.engines), so the same label can carry a different value.
+     */
+    evidenceAsOfMonth?: string | null;
   };
   outlook: {
     probabilities: MarketStateProbabilityDistribution;
@@ -83,6 +98,13 @@ export interface CanonicalMarketState {
       currentEvidence: string[];
     };
     highestProbabilityPath: string;
+    /**
+     * The canonical probability contract for this state. Every number in
+     * probabilities / transitionProbabilities is NaN unless its claim here is
+     * AVAILABLE; render probabilityText(claim) instead. regimeProbabilities is a
+     * retired generator and is always NaN (NOT_OFFERED).
+     */
+    probabilityContract?: CanonicalProbabilityContract | null;
     invalidationConditions: string[];
     topAnalog: {
       period: string;

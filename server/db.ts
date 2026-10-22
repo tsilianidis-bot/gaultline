@@ -6,6 +6,11 @@ import { log } from './logger';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
+/** Drops the cached connection so an isolated test can use its own database. */
+export function closeDbForTests(): void {
+  _db = null;
+}
+
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
@@ -716,6 +721,41 @@ export async function getPressureHistory(opts: {
   return query;
 }
 
+export function pressureHistoryStatsFromRow(stats: {
+  totalMonths?: unknown;
+  avgPressure?: unknown;
+  maxPressure?: unknown;
+  minPressure?: unknown;
+  criticalMonths?: unknown;
+  highRiskMonths?: unknown;
+  elevatedMonths?: unknown;
+  moderateMonths?: unknown;
+  lowMonths?: unknown;
+} | undefined) {
+  const totalMonths = Number(stats?.totalMonths ?? 0);
+  const metric = (value: unknown, round = false): number | null => {
+    if (!Number.isFinite(totalMonths) || totalMonths <= 0) return null;
+    const n = Number(value);
+    if (!Number.isFinite(n)) return null;
+    return round ? Math.round(n) : n;
+  };
+  const count = (value: unknown) => {
+    const n = Number(value ?? 0);
+    return Number.isFinite(n) ? n : 0;
+  };
+  return {
+    totalMonths: Number.isFinite(totalMonths) ? totalMonths : 0,
+    avgPressure: metric(stats?.avgPressure, true),
+    maxPressure: metric(stats?.maxPressure),
+    minPressure: metric(stats?.minPressure),
+    criticalMonths: count(stats?.criticalMonths),
+    highRiskMonths: count(stats?.highRiskMonths),
+    elevatedMonths: count(stats?.elevatedMonths),
+    moderateMonths: count(stats?.moderateMonths),
+    lowMonths: count(stats?.lowMonths),
+  };
+}
+
 export async function getPressureHistoryStats() {
   const db = await getDb();
   if (!db) return null;
@@ -730,17 +770,7 @@ export async function getPressureHistoryStats() {
     moderateMonths: sql<number>`sum(case when ${pressureHistory.regime} = 'MODERATE RISK' then 1 else 0 end)`,
     lowMonths: sql<number>`sum(case when ${pressureHistory.regime} = 'LOW RISK' then 1 else 0 end)`,
   }).from(pressureHistory);
-  return {
-    totalMonths: Number(stats?.totalMonths ?? 0),
-    avgPressure: Math.round(Number(stats?.avgPressure ?? 0)),
-    maxPressure: Number(stats?.maxPressure ?? 0),
-    minPressure: Number(stats?.minPressure ?? 0),
-    criticalMonths: Number(stats?.criticalMonths ?? 0),
-    highRiskMonths: Number(stats?.highRiskMonths ?? 0),
-    elevatedMonths: Number(stats?.elevatedMonths ?? 0),
-    moderateMonths: Number(stats?.moderateMonths ?? 0),
-    lowMonths: Number(stats?.lowMonths ?? 0),
-  };
+  return pressureHistoryStatsFromRow(stats);
 }
 
 // ── Mobile Watchlist helpers ──────────────────────────────────
@@ -1487,32 +1517,66 @@ export async function getUsersPendingDripStep(step: number, minAgeMs: number): P
       sql`${users.email} IS NOT NULL`,
     ));
   if (allUsers.length === 0) return [];
+  const acceptedRows = await db.select({ email: foundingAccessRequests.email })
+    .from(foundingAccessRequests)
+    .where(eq(foundingAccessRequests.status, "approved"));
+  const acceptedEmails = new Set(
+    acceptedRows.map(row => row.email.toLowerCase().trim()),
+  );
   // Get user IDs that already received this step
   const sentRows = await db.select({ userId: onboardingEmailSequence.userId })
     .from(onboardingEmailSequence)
     .where(eq(onboardingEmailSequence.step, step));
   const sentSet = new Set(sentRows.map(r => r.userId));
-  return allUsers.filter(u => !sentSet.has(u.id));
+  return allUsers.filter(user => (
+    !sentSet.has(user.id)
+    && Boolean(user.email)
+    && acceptedEmails.has(user.email!.toLowerCase().trim())
+  ));
 }
 
 // ── Stripe webhook idempotency ────────────────────────────────────────────────
 import { stripeWebhookEvents, entitlementAuditLog } from '../drizzle/schema';
 
+/** True only for a MySQL unique-constraint violation, including a Drizzle-wrapped cause. */
+function isDuplicateKeyError(error: unknown): boolean {
+  const dbError = error as {
+    code?: string;
+    errno?: number;
+    message?: string;
+    cause?: { code?: string; errno?: number; message?: string };
+  } | null | undefined;
+  return (
+    dbError?.code === 'ER_DUP_ENTRY' ||
+    dbError?.errno === 1062 ||
+    dbError?.cause?.code === 'ER_DUP_ENTRY' ||
+    dbError?.cause?.errno === 1062 ||
+    /Duplicate entry/i.test(`${dbError?.message ?? ''} ${dbError?.cause?.message ?? ''}`)
+  );
+}
+
 /**
- * Attempt to record a Stripe event ID for idempotency.
- * Returns true if the event is new (should be processed).
- * Returns false if the event was already processed (skip it).
+ * Attempt to claim a Stripe event ID for idempotency.
+ * Returns false only for a genuine duplicate key; other claim failures rethrow so
+ * the webhook returns 5xx and Stripe retries instead of silently dropping events.
  */
 export async function recordStripeWebhookEvent(eventId: string, eventType: string): Promise<boolean> {
   const db = await getDb();
-  if (!db) return true; // If DB is unavailable, allow processing (fail open)
+  if (!db) throw new Error('Database unavailable: cannot claim Stripe webhook event');
   try {
     await db.insert(stripeWebhookEvents).values({ eventId, eventType });
     return true; // Insert succeeded — event is new
-  } catch {
-    // Unique constraint violation — event already processed
-    return false;
+  } catch (err) {
+    if (isDuplicateKeyError(err)) return false;
+    throw err;
   }
+}
+
+/** Release a failed processing claim so the next Stripe delivery can be processed. */
+export async function releaseStripeWebhookEvent(eventId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(stripeWebhookEvents).where(eq(stripeWebhookEvents.eventId, eventId));
 }
 
 // ── Entitlement audit log ─────────────────────────────────────────────────────

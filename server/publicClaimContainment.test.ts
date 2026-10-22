@@ -33,14 +33,15 @@ describe("critical public claim containment", () => {
   const outlookRouter = readFileSync(outlookRouterPath, "utf8");
 
   it("does not call the six-vector Pressure Index a crash probability", () => {
-    expect(page).toContain("not a calibrated crash probability");
+    expect(page).toContain("FAULTLINE does not offer a crash probability");
+    expect(page).not.toContain("not a calibrated crash probability");
     expect(page).not.toContain("single 0-100 crash probability score");
     expect(page).not.toContain("core crash probability indicator");
   });
 
   it("does not misstate VIX, seven vectors, intraday updating, or historical FAULTLINE warnings", () => {
     expect(page).toContain("six-vector methodology");
-    expect(page).toContain("it is not a live VIX input");
+    expect(page).toContain("it is not a VIX input");
     expect(page).not.toContain("seven independent risk vectors");
     expect(page).not.toContain("updated continuously throughout the trading day");
     expect(page).toContain("does not support the claim that FAULTLINE historically issued warnings");

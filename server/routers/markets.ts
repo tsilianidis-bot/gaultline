@@ -280,7 +280,13 @@ export async function getGlobalMarketSnapshot(force = false): Promise<GlobalMark
   if (curve) items.push(derivedCurveItem(curve, twoYear, tenYear, fetchedAt));
   const totalCap = GLOBAL_INSTRUMENTS.find(item => item.symbol === "CG:TOTAL_MC");
   const btcDom = GLOBAL_INSTRUMENTS.find(item => item.symbol === "CG:BTC_DOM");
-  if (totalCap) items.push(cryptoGlobalItem(totalCap, global ? global.totalMarketCap / 1_000_000_000_000 : null, global?.marketCapChangePercent24h ?? null, global?.fetchedAt ?? fetchedAt));
+  const totalMarketCapTrillions = typeof global?.totalMarketCap === "number" && Number.isFinite(global.totalMarketCap)
+    ? global.totalMarketCap / 1_000_000_000_000
+    : null;
+  const marketCapChange = typeof global?.marketCapChangePercent24h === "number" && Number.isFinite(global.marketCapChangePercent24h)
+    ? global.marketCapChangePercent24h
+    : null;
+  if (totalCap) items.push(cryptoGlobalItem(totalCap, totalMarketCapTrillions, marketCapChange, global?.fetchedAt ?? fetchedAt));
   if (btcDom) items.push(cryptoGlobalItem(btcDom, global?.btcDominance ?? null, null, global?.fetchedAt ?? fetchedAt));
 
   const rankable = items.filter(item => isFiniteNumber(item.changePercent) && !["rates", "volatility"].includes(item.category) && item.freshnessState !== "STALE");

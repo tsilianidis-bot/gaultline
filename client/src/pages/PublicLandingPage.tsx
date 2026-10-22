@@ -10,6 +10,7 @@ import { useSEO } from "@/hooks/useSEO";
 import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
 import { trackStartFreeClicked } from "@/hooks/useAnalytics";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const PLATFORM_URL = "/app";
 
@@ -57,7 +58,7 @@ export default function PublicLandingPage({
           </a>
           <div className="flex items-center gap-3">
             <a
-              href={getLoginUrl()}
+              href="/pricing"
               className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-white transition-colors px-4 py-2 border border-[rgba(168,184,204,0.25)] hover:border-[rgba(168,184,204,0.55)] rounded"
             >
               MEMBER LOGIN
@@ -67,7 +68,7 @@ export default function PublicLandingPage({
               onClick={() => trackStartFreeClicked("public_landing")}
               className="text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 transition-colors px-4 py-2 rounded font-bold"
             >
-              ENTER FREE
+              VIEW MEMBERSHIP
             </a>
           </div>
         </div>
@@ -134,10 +135,10 @@ export default function PublicLandingPage({
       <section className="py-20 px-6">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-white mb-4">
-            Move before the market does.
+            See the pressure before the break.
           </h2>
           <p className="text-[#A8B8CC] mb-8">
-            Free access. No credit card required. Upgrade when you need more.
+            FAULTLINE Standard $99/month · FAULTLINE Lifetime $1,500 one-time.
           </p>
           <a
             href={ctaHref}
@@ -145,7 +146,7 @@ export default function PublicLandingPage({
             className="inline-flex items-center justify-center gap-2 text-[13px] font-mono tracking-widest text-[#050608] font-bold px-10 py-4 rounded"
             style={{ background: accentColor }}
           >
-            START FREE →
+            VIEW MEMBERSHIP →
           </a>
         </div>
       </section>
@@ -165,7 +166,7 @@ export default function PublicLandingPage({
             <a href="/legal" className="hover:text-[#00D4FF] transition-colors">LEGAL</a>
           </div>
           <div className="text-[10px] font-mono text-[#374151]">
-            © {new Date().getFullYear()} FAULTLINE. Not financial advice.
+            © {new Date().getFullYear()} FAULTLINE. {PUBLIC_DISCLAIMER}
           </div>
         </div>
       </footer>

@@ -99,9 +99,8 @@ export async function runSystemicRegimeTrainJob(): Promise<Record<string, unknow
   } catch (error) {
     return { ok: false, error: `FRED export failed: ${String(error)}` };
   }
-  const nStates = process.env.SYSTEMIC_REGIME_N_STATES === "3" ? "3" : "2";
   const result = await runPython(
-    ["train.py", "--from-json", PANEL_JSON, "--model-dir", MODEL_DIR, "--n-states", nStates, "--skip-compare"],
+    ["train.py", "--from-json", PANEL_JSON, "--model-dir", MODEL_DIR, "--n-states", "2", "--skip-compare"],
     10 * 60_000,
   );
   if (!result.ok) return { ok: false, error: result.stderr || result.skipped || "train failed", stdout: result.stdout };
@@ -128,16 +127,6 @@ export async function handleScheduledSystemicRegimeInfer(_req: Request, res: Res
     res.json(result);
   } catch (error) {
     log.error("[SystemicRegime] Infer job failed", { err: error as Error });
-    res.status(500).json({ ok: false, error: "Failed" });
-  }
-}
-
-export async function handleScheduledSystemicRegimeTrain(_req: Request, res: Response): Promise<void> {
-  try {
-    const result = await runSystemicRegimeTrainJob();
-    res.status(result.ok ? 200 : 500).json(result);
-  } catch (error) {
-    log.error("[SystemicRegime] Train job failed", { err: error as Error });
     res.status(500).json({ ok: false, error: "Failed" });
   }
 }

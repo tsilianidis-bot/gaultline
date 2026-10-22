@@ -130,7 +130,7 @@ export function fmosToEvidencePackets(
     strength: Math.max(output.probability.bull, output.probability.bear),
     confidence: output.probability.confidence,
     primaryReading: `bull=${output.probability.bull} neutral=${output.probability.neutral} bear=${output.probability.bear}`,
-    humanReadable: `${output.probability.bull}% bull / ${output.probability.neutral}% neutral / ${output.probability.bear}% bear — ${output.probability.primaryDriver}`,
+    humanReadable: `Scenario weights uncalibrated (not offered as probabilities) — ${output.probability.primaryDriver}`,
     subScores: {
       bull: output.probability.bull,
       neutral: output.probability.neutral,
@@ -172,24 +172,21 @@ export function fmosToEvidencePackets(
   }
 
   // 4. Transition Signal
+  // The transition probability is uncalibrated. The packet does not carry it
+  // as strength, metadata, or copy. Strength stays 0 so the family average
+  // is not that probability; public copy already withholds the percent.
   if (output.transition) {
-    const tp = output.transition.transitionProbability;
-    const transSignal: EvidenceSignal =
-      tp > 60 ? "transitioning" :
-      tp > 30 ? "neutral" :
-      "neutral";
-
     packets.push({
       source: "fmos-transition",
       timestamp: ts,
       evidenceType: "transition_signal",
-      signal: transSignal,
-      strength: tp,
+      signal: "neutral",
+      strength: 0,
       confidence: 75,
-      primaryReading: `transitionProbability=${tp} direction=${output.transition.transitionDirection}`,
-      humanReadable: `${tp}% probability of regime transition (${output.transition.transitionDirection})`,
+      primaryReading: `direction=${output.transition.transitionDirection}`,
+      humanReadable: "Regime-transition probability is uncalibrated and is not stated.",
       metadata: {
-        transitionProbability: tp,
+        transitionProbability: "uncalibrated",
         transitionDirection: output.transition.transitionDirection,
         estimatedTimeToTransition: output.transition.estimatedTimeToTransition,
       },
@@ -235,6 +232,11 @@ export function crossMarketToEvidencePacket(
 }
 
 // ── SOB Engine Adapter ────────────────────────────────────────
+
+/** S.O.B. may feed the seismograph only with COMPLETE pillar coverage. */
+export function isSOBEvidenceEligible(output: Pick<SOBResult, "coverage">): boolean {
+  return output.coverage === "COMPLETE";
+}
 
 /**
  * Convert SOBResult → EvidencePacket (breakdown_signals)
@@ -313,7 +315,10 @@ export async function collectAllEvidence(params: {
   }
 
   try {
-    if (params.sobOutput) {
+    // Fail-closed: S.O.B. evidence is only fed when every pillar had valid input.
+    // A PARTIAL/UNAVAILABLE result (e.g. "Insufficient data" from null inputs)
+    // must never enter the seismograph as bullish "Breakdown Signals" evidence.
+    if (params.sobOutput && isSOBEvidenceEligible(params.sobOutput)) {
       packets.push(sobToEvidencePacket(params.sobOutput));
     }
   } catch (e) {

@@ -1,7 +1,7 @@
 // recoveryEngine.test.ts
 // Vitest tests for the FAULTLINE Recovery Confirmation System
-import { describe, it, expect } from "vitest";
-import { getRecoveryAnalysis } from "./recoveryEngine";
+import { beforeEach, describe, it, expect } from "vitest";
+import { clearRecoveryCache, getRecoveryAnalysis } from "./recoveryEngine";
 import type { CoinMarketData } from "./coingeckoProxy";
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -25,18 +25,26 @@ function makeMarket(overrides: Partial<CoinMarketData> = {}): CoinMarketData {
 }
 
 function makeOHLC(count: number, trend: "up" | "down" | "flat" = "flat") {
-  const bars: [number, number, number, number, number][] = [];
+  const bars = [];
   let price = 60000;
   for (let i = 0; i < count; i++) {
     const delta = trend === "up" ? 200 : trend === "down" ? -200 : 0;
-    price += delta + (Math.random() - 0.5) * 100;
-    bars.push([Date.now() - (count - i) * 86400000, price * 1.01, price * 0.99, price, price]);
+    price += delta;
+    if (trend === "down" && i === count - 2) price *= 0.85;
+    bars.push({
+      timestamp: Date.now() - (count - i) * 86400000,
+      open: price * 0.99,
+      high: price * 1.01,
+      low: price * 0.98,
+      close: price,
+    });
   }
   return bars;
 }
 
 // ── Tests ─────────────────────────────────────────────────────
 describe("getRecoveryAnalysis", () => {
+  beforeEach(() => clearRecoveryCache());
   it("returns a valid RecoveryAnalysis object with all required fields", () => {
     const result = getRecoveryAnalysis({
       symbol: "BTC",

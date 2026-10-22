@@ -18,6 +18,9 @@ import PageHeader from "@/components/PageHeader";
 import SystemicAlertsPanel from "@/components/SystemicAlerts";
 import { trpc } from "@/lib/trpc";
 import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
+import { useLiveIndicatorReadings } from "@/hooks/useLiveIndicatorReadings";
+import { evaluableIndicatorValues, type IndicatorReading } from "@/lib/liveIndicatorReadings";
+import { institutionalOutcomeStatusText, isVerifiedInstitutionalOutcome, type InstitutionalHorizonStatus } from "@shared/institutionalOutcomeDisplay";
 
 type ArchivedEvent = {
   id: number;
@@ -36,7 +39,8 @@ type ArchivedEvent = {
   previousStateJson: string | null;
   newStateJson: string;
   supportingStateJson: string;
-  outcomes?: Array<{ horizonTradingDays: number; outcomeJson: string; observedAt: Date | string }>;
+  outcomes?: Array<{ outcomeKey: string; horizonTradingDays: number; outcomeJson: string; observedAt: Date | string }>;
+  outcomeStatus?: InstitutionalHorizonStatus[];
 };
 
 function archivedSeverityColor(severity: ArchivedEvent["severity"]) {
@@ -47,15 +51,17 @@ function InstitutionalEventCard({ event, index, selectedEventId, onSelect }: { e
   const expanded = selectedEventId === event.id;
   const color = archivedSeverityColor(event.severity);
   const eventAt = new Date(event.eventAt);
-  const outcomes = (event.outcomes ?? []).flatMap((outcome) => {
+  // Only corrected v2 completed-session rows are valid outcomes (the server already drops the rest).
+  const outcomes = (event.outcomes ?? []).filter(isVerifiedInstitutionalOutcome).flatMap((outcome) => {
     try { return [{ horizon: outcome.horizonTradingDays, data: JSON.parse(outcome.outcomeJson) as any }]; } catch { return []; }
   });
+  const unverified = (event.outcomeStatus ?? []).filter((entry) => entry.status !== "VERIFIED" && !outcomes.some((outcome) => outcome.horizon === entry.horizonTradingDays));
   return (
     <article onClick={() => onSelect(expanded ? null : event.id)} style={{ background: expanded ? `${color}0c` : "rgba(10,12,16,0.92)", border: `1px solid ${expanded ? color : `${color}30`}`, borderLeft: `3px solid ${color}`, borderRadius: "6px", padding: "12px", cursor: "pointer", animation: `fade-slide-up 0.35s cubic-bezier(0.23, 1, 0.32, 1) ${index * 35}ms both` }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start" }}>
         <div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color, letterSpacing: "0.12em", marginBottom: "4px" }}>
-            LIVE VERIFIED EVENT · {event.sourceEngine.replace(/_/g, " ").toUpperCase()}
+            VERIFIED EVENT · {event.sourceEngine.replace(/_/g, " ").toUpperCase()}
           </div>
           <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color: "#F0F4FF" }}>{event.headline}</div>
         </div>
@@ -72,7 +78,8 @@ function InstitutionalEventCard({ event, index, selectedEventId, onSelect }: { e
         <div style={{ marginTop: "11px", borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "10px", display: "grid", gap: "9px" }}>
           <div><div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color, letterSpacing: "0.1em" }}>WHY IT CHANGED</div><div style={{ color: "#B8C2D4", fontSize: "12px", lineHeight: 1.6, marginTop: "3px" }}>{event.explanation}</div></div>
           <div><div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#6B7280", letterSpacing: "0.1em" }}>EVIDENCE BOUNDARY</div><div style={{ color: "#8792A5", fontSize: "11px", lineHeight: 1.5, marginTop: "3px" }}>Original observation preserved at source time. Later outcomes, if collected, are appended separately and never modify this event.</div></div>
-          {outcomes.length > 0 && <div><div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00D4FF", letterSpacing: "0.1em" }}>APPENDED BROAD-MARKET OUTCOMES · LIVE VERIFIED</div><div style={{ display: "grid", gap: "6px", marginTop: "5px" }}>{outcomes.map(({ horizon, data }) => <div key={horizon} style={{ display: "grid", gridTemplateColumns: "42px repeat(4, minmax(0, 1fr))", gap: "6px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#AAB6C8" }}><span style={{ color: "#00D4FF" }}>{horizon}TD</span><span>SPY {typeof data.spy?.returnPercent === "number" ? `${data.spy.returnPercent >= 0 ? "+" : ""}${data.spy.returnPercent.toFixed(2)}%` : "—"}</span><span>10Y {typeof data.tenYearTreasury?.changeBasisPoints === "number" ? `${data.tenYearTreasury.changeBasisPoints >= 0 ? "+" : ""}${data.tenYearTreasury.changeBasisPoints.toFixed(1)}bp` : "—"}</span><span>PI {typeof data.pressureIndex?.change === "number" ? `${data.pressureIndex.change >= 0 ? "+" : ""}${data.pressureIndex.change.toFixed(1)}` : "—"}</span><span>{data.regime?.target ?? "—"}</span></div>)}</div></div>}
+          {outcomes.length > 0 && <div><div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00D4FF", letterSpacing: "0.1em" }}>APPENDED BROAD-MARKET OUTCOMES · VERIFIED</div><div style={{ display: "grid", gap: "6px", marginTop: "5px" }}>{outcomes.map(({ horizon, data }) => <div key={horizon} style={{ display: "grid", gridTemplateColumns: "42px repeat(4, minmax(0, 1fr))", gap: "6px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#AAB6C8" }}><span style={{ color: "#00D4FF" }}>{horizon}TD</span><span>SPY {typeof data.spy?.returnPercent === "number" ? `${data.spy.returnPercent >= 0 ? "+" : ""}${data.spy.returnPercent.toFixed(2)}%` : "—"}</span><span>10Y {typeof data.tenYearTreasury?.changeBasisPoints === "number" ? `${data.tenYearTreasury.changeBasisPoints >= 0 ? "+" : ""}${data.tenYearTreasury.changeBasisPoints.toFixed(1)}bp` : "—"}</span><span>PI {typeof data.pressureIndex?.change === "number" ? `${data.pressureIndex.change >= 0 ? "+" : ""}${data.pressureIndex.change.toFixed(1)}` : "—"}</span><span>{data.regime?.target ?? "—"}</span></div>)}</div></div>}
+          {unverified.length > 0 && <div><div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#6B7280", letterSpacing: "0.1em" }}>BROAD-MARKET OUTCOMES · NOT YET VERIFIED</div><div style={{ display: "grid", gap: "4px", marginTop: "5px" }}>{unverified.map((entry) => <div key={entry.horizonTradingDays} data-outcome-status={entry.status} style={{ display: "grid", gridTemplateColumns: "42px minmax(0, 1fr)", gap: "6px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#8792A5" }}><span>{entry.horizonTradingDays}TD</span><span>{institutionalOutcomeStatusText(entry.status)}</span></div>)}</div></div>}
         </div>
       )}
     </article>
@@ -247,8 +254,11 @@ function AlertCard({
 }
 
 // ── Threshold rule card ────────────────────────────────────────
-function ThresholdCard({ rule, indicators }: { rule: typeof THRESHOLD_RULES[0]; indicators: Record<string, number> }) {
-  const value = indicators[rule.metric] ?? null;
+function ThresholdCard({ rule, reading }: { rule: typeof THRESHOLD_RULES[0]; reading: IndicatorReading | undefined }) {
+  // Real reading only (FRED / markets snapshot). Missing → UNAVAILABLE; a STALE
+  // reading is shown but never evaluated as a breach.
+  const evaluable = reading != null && reading.stateLabel !== 'STALE';
+  const value = evaluable ? reading.value : null;
   const breached = value !== null && (rule.direction === 'above' ? value > rule.threshold : value < rule.threshold);
   const proximity = value !== null
     ? rule.direction === 'above'
@@ -269,9 +279,9 @@ function ThresholdCard({ rule, indicators }: { rule: typeof THRESHOLD_RULES[0]; 
           {rule.label}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {value !== null && (
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: breached ? rule.color : '#6B7280' }}>
-              {value.toFixed(rule.metric === 'auctionBidCover' ? 2 : 1)}
+          {reading != null && (
+            <span title={reading.source} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: breached ? rule.color : '#6B7280' }}>
+              {reading.value.toFixed(rule.metric === 'auctionBidCover' ? 2 : 1)}{reading.stateLabel ? ` · ${reading.stateLabel}` : ''}
             </span>
           )}
           <span style={{
@@ -281,7 +291,7 @@ function ThresholdCard({ rule, indicators }: { rule: typeof THRESHOLD_RULES[0]; 
             border: `1px solid ${breached ? rule.color + '30' : 'rgba(255,255,255,0.06)'}`,
             borderRadius: '2px', padding: '1px 5px',
           }}>
-            {breached ? 'BREACHED' : 'WATCHING'}
+            {reading == null ? 'UNAVAILABLE' : breached ? 'BREACHED' : 'WATCHING'}
           </span>
         </div>
       </div>
@@ -302,8 +312,13 @@ function ThresholdCard({ rule, indicators }: { rule: typeof THRESHOLD_RULES[0]; 
 // ── Main Alerts page ──────────────────────────────────────────
 function AlertsInner() {
   useSEO(PAGE_SEO.alerts);
-  const { output, indicators, integrityLabel } = useEngine();
-  const { overall, domains, regime, alertPressure } = output;
+  const { output, integrityLabel, marketMode } = useEngine();
+  const { overall, domains, regime } = output;
+  // Fail closed: without the canonical state the browser engine runs on its
+  // DEFAULT_INDICATORS demo baseline, so no regime, gauge or alert is derived.
+  const canonicalAvailable = marketMode === 'canonical';
+  const { readings } = useLiveIndicatorReadings();
+  const evaluableIndicators = useMemo(() => evaluableIndicatorValues(readings), [readings]);
   const [archiveSeverity, setArchiveSeverity] = useState<"all" | ArchivedEvent["severity"]>("all");
   const [archiveDirection, setArchiveDirection] = useState<"all" | ArchivedEvent["direction"]>("all");
   const [archiveSearch, setArchiveSearch] = useState("");
@@ -352,6 +367,9 @@ function AlertsInner() {
 
   // Generate alerts when engine output changes
   useEffect(() => {
+    // Baseline and change detection use the canonical state only, never the
+    // demo-baseline output shown while the canonical state is loading/unavailable.
+    if (!canonicalAvailable) return;
     if (!initialized.current) {
       // On first load, just record baseline state without generating alerts
       prevRegimeCode.current = output.regime.code;
@@ -362,7 +380,7 @@ function AlertsInner() {
 
     const newAlerts = generateAlerts(
       output,
-      indicators,
+      evaluableIndicators,
       prevRegimeCode.current,
       prevDomainScores.current,
     );
@@ -377,7 +395,7 @@ function AlertsInner() {
 
     prevRegimeCode.current = output.regime.code;
     prevDomainScores.current = Object.fromEntries(output.domains.map(d => [d.id, d.score]));
-  }, [output, indicators]);
+  }, [output, evaluableIndicators, canonicalAvailable]);
 
   const handleAcknowledge = (id: string) => {
     setAlertHistory(prev => {
@@ -415,14 +433,12 @@ function AlertsInner() {
   // Pressure gauge colors
   const gaugeColor = (v: number) => v >= 7 ? '#FF2D55' : v >= 5 ? '#FF9500' : v >= 3 ? '#FFD700' : '#00D4FF';
 
-  // Indicators as plain object for threshold cards
-  const indicatorMap = indicators as unknown as Record<string, number>;
 
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', paddingBottom: '100px' }}>
       <PageHeader
         title="Alert Monitor"
-        subtitle="Regime shift alerts fire automatically when macro stress thresholds are crossed. Unread alerts are highlighted in real time."
+        subtitle="Regime shift alerts fire automatically when macro stress thresholds are crossed. Unread alerts are highlighted as they arrive."
         badge={integrityLabel}
         badgeColor={integrityLabel === 'LIVE' ? 'green' : integrityLabel === 'UNAVAILABLE' ? 'gray' : 'amber'}
         rightSlot={
@@ -443,6 +459,11 @@ function AlertsInner() {
 	  <div style={{ padding: '16px' }}>
 	    <EarlyWarningPresentationPanel mode="compact" />
 
+	  {!canonicalAvailable ? (
+	    <div data-alerts-canonical="unavailable" style={{ background: 'rgba(10,12,16,0.9)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '14px', marginBottom: '16px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#94A3B8', lineHeight: 1.6 }}>
+	      CURRENT CANONICAL STATE UNAVAILABLE — regime, pressure gauges and systemic alerts are withheld until one authoritative state is available.
+	    </div>
+	  ) : (<>
 	  {/* Regime status banner */}
       <div style={{
         background: `linear-gradient(135deg, ${regime.color}12, rgba(10,12,16,0.95))`,
@@ -474,13 +495,9 @@ function AlertsInner() {
       {/* Pressure gauges */}
       <div style={{ background: 'rgba(10,12,16,0.9)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.1em', marginBottom: '12px' }}>
-          LIVE PRESSURE GAUGES
+          DOMAIN PRESSURE GAUGES · 0–10 · LATEST MONTHLY RECORD
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: '8px' }}>
-          <PressureGauge label="Treasury" value={alertPressure.treasury} color={gaugeColor(alertPressure.treasury)} />
-          <PressureGauge label="Credit" value={alertPressure.credit} color={gaugeColor(alertPressure.credit)} />
-          <PressureGauge label="AI Risk" value={alertPressure.aiRisk} color={gaugeColor(alertPressure.aiRisk)} />
-          <PressureGauge label="Liquidity" value={alertPressure.liquidity} color={gaugeColor(alertPressure.liquidity)} />
           {domains.slice(0, 4).map(d => (
             <PressureGauge key={d.id} label={d.label.split(' ')[0]} value={d.score} color={gaugeColor(d.score)} />
           ))}
@@ -489,6 +506,8 @@ function AlertsInner() {
 
       {/* ── Systemic Alert Engine ─────────────────────────── */}
       <SystemicAlertsPanel />
+
+	  </>)}
 
       {/* Threshold watchlist toggle */}
       <div style={{ marginBottom: '12px' }}>
@@ -512,7 +531,7 @@ function AlertsInner() {
         {showThresholds && (
           <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {THRESHOLD_RULES.map(rule => (
-              <ThresholdCard key={rule.id} rule={rule} indicators={indicatorMap} />
+              <ThresholdCard key={rule.id} rule={rule} reading={readings[rule.metric as keyof typeof readings]} />
             ))}
           </div>
         )}

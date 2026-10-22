@@ -9,7 +9,10 @@
  * - SEO landing pages included in sitemap
  */
 import type { Express } from "express";
-import { getEvergreenPosts } from "./db";
+import { and, desc, eq, lte } from "drizzle-orm";
+import { organicContent } from "../drizzle/schema";
+import { getDb, getEvergreenPosts } from "./db";
+import { getSoroArticles } from "./soroBlogFeed";
 
 const BASE_URL = "https://getfaultline.live";
 
@@ -17,6 +20,7 @@ const BASE_URL = "https://getfaultline.live";
 const STATIC_ROUTES = [
   { path: "/",                              changefreq: "weekly",  priority: "1.0" },
   { path: "/blog",                          changefreq: "daily",   priority: "0.9" },
+  { path: "/daily-brief",                   changefreq: "daily",   priority: "0.8" },
   { path: "/analysis",                       changefreq: "weekly",  priority: "0.9" },
   { path: "/intelligence",                   changefreq: "daily",   priority: "0.7" },
   { path: "/intel-archive",                  changefreq: "daily",   priority: "0.7" },
@@ -55,9 +59,32 @@ const STATIC_ROUTES = [
   { path: "/legal",                         changefreq: "yearly",  priority: "0.2" },
 ];
 
+function escapeXml(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+}
+
+/**
+ * Published Daily Briefs for the sitemap. Same public gate as organicContent.getBySlug
+ * (status = "published") plus publishedAt <= now, so drafts/rejected/scheduled rows
+ * are never listed. These are the URLs server/publicContentSsr.ts renders with 200.
+ */
+export async function getSitemapDailyBriefs(limit = 50): Promise<Array<{ slug: string; publishedAt: Date | null }>> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({ slug: organicContent.slug, publishedAt: organicContent.publishedAt })
+    .from(organicContent)
+    .where(and(
+      eq(organicContent.status, "published"),
+      eq(organicContent.contentType, "daily_market_brief"),
+      lte(organicContent.publishedAt, new Date()),
+    ))
+    .orderBy(desc(organicContent.publishedAt))
+    .limit(limit);
+}
+
 function buildUrl(path: string, lastmod: string, changefreq: string, priority: string): string {
   return `  <url>
-    <loc>${BASE_URL}${path}</loc>
+    <loc>${escapeXml(`${BASE_URL}${path}`)}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>${changefreq}</changefreq>
     <priority>${priority}</priority>
@@ -141,14 +168,42 @@ export function registerSEORoutes(app: Express): void {
         const lastmod = post.publishedAt
           ? new Date(post.publishedAt).toISOString().split("T")[0]
           : today;
-        return buildUrl(`/blog/${post.slug}`, lastmod, "monthly", "0.8");
+        return buildUrl(`/blog/${encodeURIComponent(post.slug)}`, lastmod, "monthly", "0.8");
       });
     } catch (err) {
       // Non-fatal: sitemap still works without blog posts
       console.error("[SEO] Failed to fetch evergreen posts for sitemap:", err);
     }
 
-    const allEntries = [...staticEntries, ...blogEntries].join("\n");
+    // Published Daily Briefs (indexable; rendered server-side at /daily-brief/:slug)
+    let briefEntries: string[] = [];
+    try {
+      const briefs = await getSitemapDailyBriefs(50);
+      briefEntries = briefs.map((b) => buildUrl(
+        `/daily-brief/${encodeURIComponent(b.slug)}`,
+        b.publishedAt ? new Date(b.publishedAt).toISOString().split("T")[0] : today,
+        "monthly",
+        "0.6",
+      ));
+    } catch (err) {
+      console.error("[SEO] Failed to fetch daily briefs for sitemap:", err);
+    }
+
+    // Published Soro blog articles (deep-linked at /blog?post=:slug, the Soro canonical form)
+    let soroEntries: string[] = [];
+    try {
+      const soroArticles = (await getSoroArticles()) ?? [];
+      soroEntries = soroArticles.map((a) => buildUrl(
+        `/blog?post=${encodeURIComponent(a.slug)}`,
+        new Date(a.isoDate).toISOString().split("T")[0],
+        "monthly",
+        "0.8",
+      ));
+    } catch (err) {
+      console.error("[SEO] Failed to read Soro articles for sitemap:", err);
+    }
+
+    const allEntries = [...staticEntries, ...blogEntries, ...soroEntries, ...briefEntries].join("\n");
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"

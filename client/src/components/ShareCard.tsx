@@ -7,34 +7,40 @@
 import { useState } from "react";
 import { Share2, Copy, Check, X } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
+import { engineProbabilityPercent, engineProbabilityText } from "@/lib/marketStateProjection";
+import { evidenceStatusFromIntegrity } from "@shared/evidenceStatus";
 
 interface ShareCardProps {
   onClose: () => void;
 }
 
 export default function ShareCard({ onClose }: ShareCardProps) {
-  const { output, isLive } = useEngine();
-  const { overall, regime, probability, analogs, narrative } = output;
+  const { output, integrityLabel } = useEngine();
+  const feedStatus = evidenceStatusFromIntegrity(integrityLabel);
+  const { overall, regime, analogs, narrative } = output;
+  // Probability contract: share text and card render contract display text only.
+  const pText = (key: Parameters<typeof engineProbabilityText>[1]) => engineProbabilityText(output, key);
+  const bullPct = engineProbabilityPercent(output, 'bullProbability');
   const [copied, setCopied] = useState(false);
 
-  const topAnalog = analogs[0];
+  const topAnalog = analogs[0] ?? null;
   const date = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   const shareText = [
     `📊 FAULTLINE Macro Intelligence — ${date}`,
     ``,
-    `Systemic Risk: ${overall.score.toFixed(1)}/10 — ${regime.label}`,
+    `Systemic Risk: ${Math.round(overall.score * 10)}/100 — ${regime.label}`,
     `${regime.sublabel}`,
     ``,
-    `Bull Scenario Score: ${probability.bullProbability}%`,
-    `Bear-Stress Scenario Score: ${probability.crashProbability}%`,
-    `Recession Scenario Score: ${probability.recessionProbability}%`,
+    `Bull Scenario: ${pText('bullProbability')}`,
+    `Crash risk: ${pText('crashProbability')}`,
+    `Recession risk: ${pText('recessionProbability')}`,
     ``,
-    `Closest Historical Analog: ${topAnalog.era} ${topAnalog.year} (${topAnalog.similarity}% match)`,
+    topAnalog ? `Closest Historical Analog: ${topAnalog.era} ${topAnalog.year} (${topAnalog.similarity}% match)` : `Closest Historical Analog: Unavailable`,
     ``,
     `${narrative.summary.slice(0, 200)}...`,
     ``,
-    `${isLive ? '📡 Current source-status context' : '📊 Source-status qualification required'}`,
+    `📡 Source status: ${feedStatus}`,
     `⚠️ Derived scenario context, not a calibrated forecast. Not financial advice.`,
   ].join('\n');
 
@@ -123,21 +129,18 @@ export default function ShareCard({ onClose }: ShareCardProps) {
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '14px', color: '#F0F4FF', letterSpacing: '0.1em' }}>FAULTLINE</div>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.1em' }}>MACRO INTELLIGENCE · {date}</div>
             </div>
-            {isLive && (
-              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '4px', padding: '2px 6px', background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.2)', borderRadius: '2px' }}>
-                <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#00FF88', animation: 'pulse-gold 2s ease-in-out infinite' }} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#00FF88', letterSpacing: '0.1em' }}>LIVE</span>
-              </div>
-            )}
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '4px', padding: '2px 6px', background: 'rgba(148,163,184,0.08)', border: '1px solid rgba(148,163,184,0.2)', borderRadius: '2px' }}>
+              <span data-share-card-status={feedStatus} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: feedStatus === 'LIVE' ? '#00FF88' : '#94A3B8', letterSpacing: '0.1em' }}>{feedStatus}</span>
+            </div>
           </div>
 
           {/* Score + Regime */}
           <div style={{ marginBottom: '14px' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
               <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '40px', color: scoreColor, textShadow: `0 0 24px ${scoreColor}60`, lineHeight: 1 }}>
-                {overall.score.toFixed(1)}
+                {Math.round(overall.score * 10)}
               </span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#6B7280' }}>/10</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#6B7280' }}>/100</span>
             </div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: scoreColor, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
               {regime.label}
@@ -150,21 +153,22 @@ export default function ShareCard({ onClose }: ShareCardProps) {
           {/* Probability bar */}
           <div style={{ marginBottom: '14px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#00FF88' }}>{probability.bullProbability}% BULL SCENARIO</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#FF2D55' }}>{probability.crashProbability}% BEAR-STRESS</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#00FF88' }}>BULL SCENARIO: {pText('bullProbability')}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#94A3B8' }}>CRASH: {pText('crashProbability')}</span>
             </div>
-            <div style={{ height: '4px', borderRadius: '2px', overflow: 'hidden', display: 'flex', gap: '1px' }}>
-              <div style={{ flex: probability.bullProbability, background: 'linear-gradient(90deg, #00FF88, #00CC6A)', boxShadow: '0 0 6px rgba(0,255,136,0.4)' }} />
-              <div style={{ flex: probability.crashProbability, background: 'linear-gradient(90deg, #FF9500, #FF2D55)', boxShadow: '0 0 6px rgba(255,45,85,0.4)' }} />
-            </div>
+            {bullPct !== null && (
+              <div style={{ height: '4px', borderRadius: '2px', overflow: 'hidden', background: 'rgba(255,255,255,0.06)' }}>
+                <div style={{ width: `${bullPct}%`, height: '100%', background: 'linear-gradient(90deg, #00FF88, #00CC6A)', boxShadow: '0 0 6px rgba(0,255,136,0.4)' }} />
+              </div>
+            )}
           </div>
 
           {/* Key metrics row */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '14px' }}>
             {[
-              { label: 'Recession Scenario', value: `${probability.recessionProbability}%`, color: '#FF9500' },
-              { label: 'Stagflation Scenario', value: `${probability.stagflationProbability}%`, color: '#FFD700' },
-              { label: 'Soft Landing Scenario', value: `${probability.softLandingProbability}%`, color: '#00D4FF' },
+              { label: 'Recession risk', value: pText('recessionProbability'), color: '#94A3B8' },
+              { label: 'Stagflation Probability', value: pText('stagflationProbability'), color: '#94A3B8' },
+              { label: 'Soft Landing Probability', value: pText('softLandingProbability'), color: '#94A3B8' },
             ].map(m => (
               <div key={m.label} style={{ textAlign: 'center', padding: '6px', background: 'rgba(255,255,255,0.02)', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.04)' }}>
                 <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '16px', color: m.color }}>{m.value}</div>
@@ -173,14 +177,16 @@ export default function ShareCard({ onClose }: ShareCardProps) {
             ))}
           </div>
 
-          {/* Analog */}
-          <div style={{ padding: '8px', background: 'rgba(255,255,255,0.02)', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.04)' }}>
+          {/* Analog: only when a canonical analog exists (none is rendered otherwise) */}
+          {topAnalog && (
+          <div data-share-analog style={{ padding: '8px', background: 'rgba(255,255,255,0.02)', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.04)' }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '3px' }}>Closest Historical Analog</div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: '12px', color: '#D1D5DB' }}>{topAnalog.era} {topAnalog.year}</span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#00D4FF' }}>{topAnalog.similarity}%</span>
             </div>
           </div>
+          )}
 
           {/* Footer */}
           <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

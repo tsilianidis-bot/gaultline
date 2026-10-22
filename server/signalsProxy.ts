@@ -17,10 +17,12 @@
 //   GET /api/signals/health          — health/cache status
 //   POST /api/signals/clear-cache    — clear quote cache
 // ============================================================
+import { lastCompletedEquitySessionDate } from "../shared/completedBars";
 import { log } from "./logger";
 import { captureError } from "./errorTracking";
 import type { Express, Request, Response } from "express";
 import { getQuote as getYahooQuote, getQuotes as getYahooQuotes } from "./yahooProxy";
+import { allowOwnerOrAdmin } from "./security/access";
 
 const POLYGON_BASE = "https://api.polygon.io";
 
@@ -49,16 +51,18 @@ const PRIORITY_TICKERS = [
 // ── Types ─────────────────────────────────────────────────────
 export interface QuoteResult {
   ticker: string;
-  price: number;           // latest close price
-  open: number;            // day open
-  high: number;            // day high
-  low: number;             // day low
-  changePercent: number;   // % change vs prior close
-  volume: number;          // shares (raw)
-  volumeMillions: number;  // volume in millions for display
-  timestamp: number;       // Unix ms of the bar
+  price: number | null;           // latest close price; null when the feed omitted it
+  open: number | null;     // day open; null when the source omitted it
+  high: number | null;     // day high
+  low: number | null;      // day low
+  changePercent: number | null;   // % change vs prior close; null when it cannot be observed
+  volume: number | null;          // shares (raw); null when the feed omitted it
+  volumeMillions: number | null;  // volume in millions for display
+  timestamp: number | null; // Unix ms of the quote/bar market time (Yahoo regularMarketTime, Polygon bar t); null when unknown — never the fetch time
   marketStatus: "open" | "closed" | "extended" | "unknown";
   isLive: boolean;
+  /** Provider delay flag. Yahoo's chart feed is ~15-min delayed (yahooProxy isDelayed); Polygon bars are prior closes. */
+  isDelayed?: boolean;
   sparkline: number[];     // 5-day close prices normalized to % change from first
 }
 
@@ -136,7 +140,7 @@ const US_MARKET_HOLIDAYS = new Set([
 ]);
 
 /** Returns true if the given YYYY-MM-DD date is a US market holiday or weekend */
-function isNonTradingDay(dateStr: string): boolean {
+export function isNonTradingDay(dateStr: string): boolean {
   const d = new Date(dateStr + 'T12:00:00Z');
   const dow = d.getUTCDay();
   return dow === 0 || dow === 6 || US_MARKET_HOLIDAYS.has(dateStr);
@@ -147,15 +151,14 @@ function isNonTradingDay(dateStr: string): boolean {
  * Skips weekends AND US market holidays.
  */
 function getLastTradingDate(): string {
-  const now = new Date();
-  const d = new Date(now.getTime());
-  // Always go back at least 1 day to get a completed session
+  const completed = lastCompletedEquitySessionDate(Date.now());
+  if (completed) return completed;
+  const d = new Date();
   d.setUTCDate(d.getUTCDate() - 1);
-  // Skip weekends and US holidays
   while (isNonTradingDay(d.toISOString().slice(0, 10))) {
     d.setUTCDate(d.getUTCDate() - 1);
   }
-  return d.toISOString().slice(0, 10); // YYYY-MM-DD
+  return d.toISOString().slice(0, 10);
 }
 
 /** Get date N trading days before a given date string */
@@ -267,18 +270,94 @@ async function fetchSparklinesBg(apiKey: string, tradeDate: string): Promise<voi
   }
 }
 
+/** Two-decimal quote level. A missing or non-finite print stays null, including no zero fill. */
+export function fixedQuoteLevel(value: unknown): number | null {
+  const n = finiteQuoteNumber(value);
+  return n == null ? null : parseFloat(n.toFixed(2));
+}
+
+/** Session levels come only from the source. Price is not a stand-in for open, high, or low. */
+export function equitySessionLevels(quote: {
+  price?: number | null;
+  open?: unknown;
+  high?: unknown;
+  low?: unknown;
+}): { open: number | null; high: number | null; low: number | null } {
+  return {
+    open: fixedQuoteLevel(quote.open),
+    high: fixedQuoteLevel(quote.high),
+    low: fixedQuoteLevel(quote.low),
+  };
+}
+
+export function finiteQuoteNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/**
+ * Present change is rounded to 3 decimals, matching the prior quote assembly.
+ * An observed non-positive anchor still yields 0. A missing price or anchor yields null.
+ */
+export function resolveSignalChangePercent(
+  explicit: unknown,
+  price: number | null,
+  anchor: number | null,
+): number | null {
+  const stated = finiteQuoteNumber(explicit);
+  if (stated != null) return parseFloat(stated.toFixed(3));
+  if (price != null && anchor != null) {
+    if (anchor > 0) return parseFloat((((price - anchor) / anchor) * 100).toFixed(3));
+    return 0;
+  }
+  return null;
+}
+
+export function resolveSignalVolume(
+  primary: unknown,
+  fallback?: unknown,
+): { volume: number | null; volumeMillions: number | null } {
+  const volume = finiteQuoteNumber(primary) ?? (fallback === undefined ? null : finiteQuoteNumber(fallback));
+  if (volume == null) return { volume: null, volumeMillions: null };
+  return { volume, volumeMillions: parseFloat((volume / 1_000_000).toFixed(2)) };
+}
+
+/** Change uses the raw close. The returned price is the prior 2-decimal print. */
+export function assemblePolygonBarQuote(
+  bar: { c?: unknown; o?: unknown; v?: unknown },
+  prevCloseRaw: unknown,
+): { price: number | null; changePercent: number | null; volume: number | null; volumeMillions: number | null } {
+  const raw = finiteQuoteNumber(bar.c);
+  const anchor = finiteQuoteNumber(prevCloseRaw) ?? finiteQuoteNumber(bar.o) ?? raw;
+  const { volume, volumeMillions } = resolveSignalVolume(bar.v);
+  return {
+    price: raw == null ? null : parseFloat(raw.toFixed(2)),
+    changePercent: resolveSignalChangePercent(undefined, raw, anchor),
+    volume,
+    volumeMillions,
+  };
+}
+
+function missingPriorityQuote(ticker: string): QuoteResult {
+  return {
+    ticker,
+    price: null,
+    open: null,
+    high: null,
+    low: null,
+    changePercent: null,
+    volume: null,
+    volumeMillions: null,
+    timestamp: null,
+    marketStatus: "unknown",
+    isLive: false,
+    isDelayed: true,
+    sparkline: sparklineCache.get(ticker) ?? [],
+  };
+}
+
 // ── Fallback data ─────────────────────────────────────────────
 function buildFallbackQuotes(): QuoteResult[] {
-  return PRIORITY_TICKERS.map(ticker => ({
-    ticker,
-    price: 0, open: 0, high: 0, low: 0,
-    changePercent: 0,
-    volume: 0, volumeMillions: 0,
-    timestamp: Date.now(),
-    marketStatus: "unknown" as const,
-    isLive: false,
-    sparkline: sparklineCache.get(ticker) ?? [],
-  }));
+  return PRIORITY_TICKERS.map(ticker => missingPriorityQuote(ticker));
 }
 
 // ── Core fetch logic (Phase 1 only — prices + volume) ────────
@@ -360,6 +439,7 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
   }
 
   // ── Assemble quotes — Yahoo prices when live, Polygon as fallback ──
+  const sessionMarks: Array<Pick<QuoteResult, "isLive" | "marketStatus">> = [];
   const quotes: QuoteResult[] = PRIORITY_TICKERS.map(ticker => {
     const bar = barMap.get(ticker);
     const prevBar = prevBarMap.get(ticker);
@@ -375,11 +455,9 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
     if (yahooIsLive && yahooQ && yahooQ.price !== null) {
       // ── Yahoo live path ──
       const price = yahooQ.price;
-      const prevClose = yahooQ.prevClose ?? bar?.c ?? 0;
-      const changePercent = yahooQ.changePercent ??
-        (prevClose > 0 ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(3)) : 0);
-      const volumeRaw = yahooQ.volume ?? bar?.v ?? 0;
-      const volumeMillions = parseFloat((volumeRaw / 1_000_000).toFixed(2));
+      const prevClose = finiteQuoteNumber(yahooQ.prevClose) ?? finiteQuoteNumber(bar?.c);
+      const changePercent = resolveSignalChangePercent(yahooQ.changePercent, price, prevClose);
+      const { volume: volumeRaw, volumeMillions } = resolveSignalVolume(yahooQ.volume, bar?.v);
 
       // Map Yahoo marketState → QuoteResult marketStatus
       let marketStatus: QuoteResult["marketStatus"];
@@ -392,18 +470,24 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
         marketStatus = "closed";
       }
 
+      const freshness = quoteFreshnessFlags({
+        delayed: yahooQ.isDelayed !== false,
+        sessionOpen: marketStatus === "open" || marketStatus === "extended",
+      });
+      sessionMarks.push({ isLive: true, marketStatus });
       return {
         ticker,
         price: parseFloat(price.toFixed(2)),
-        open: parseFloat((yahooQ.open ?? bar?.o ?? 0).toFixed(2)),
-        high: parseFloat((yahooQ.high ?? bar?.h ?? 0).toFixed(2)),
-        low: parseFloat((yahooQ.low ?? bar?.l ?? 0).toFixed(2)),
-        changePercent: parseFloat(changePercent.toFixed(3)),
+        open: fixedQuoteLevel(yahooQ.open ?? bar?.o),
+        high: fixedQuoteLevel(yahooQ.high ?? bar?.h),
+        low: fixedQuoteLevel(yahooQ.low ?? bar?.l),
+        changePercent,
         volume: volumeRaw,
         volumeMillions,
-        timestamp: Date.now(),
+        timestamp: yahooQ.observedAt ?? null,
         marketStatus,
-        isLive: true,
+        isLive: freshness.isLive,
+        isDelayed: freshness.isDelayed,
         sparkline: sparklineCache.get(ticker) ?? [],
       };
     }
@@ -411,24 +495,25 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
     // ── Yahoo closed-market path (price available but market is closed) ──
     if (yahooQ && yahooQ.price !== null && yahooQ.marketState === "CLOSED") {
       const price = yahooQ.price;
-      const prevClose = yahooQ.prevClose ?? bar?.c ?? 0;
-      const changePercent = yahooQ.changePercent ??
-        (prevClose > 0 ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(3)) : 0);
-      const volumeRaw = yahooQ.volume ?? bar?.v ?? 0;
-      const volumeMillions = parseFloat((volumeRaw / 1_000_000).toFixed(2));
+      const prevClose = finiteQuoteNumber(yahooQ.prevClose) ?? finiteQuoteNumber(bar?.c);
+      const changePercent = resolveSignalChangePercent(yahooQ.changePercent, price, prevClose);
+      const { volume: volumeRaw, volumeMillions } = resolveSignalVolume(yahooQ.volume, bar?.v);
 
+      const freshness = quoteFreshnessFlags({ delayed: true, sessionOpen: false });
+      sessionMarks.push({ isLive: false, marketStatus: "closed" });
       return {
         ticker,
         price: parseFloat(price.toFixed(2)),
-        open: parseFloat((yahooQ.open ?? bar?.o ?? 0).toFixed(2)),
-        high: parseFloat((yahooQ.high ?? bar?.h ?? 0).toFixed(2)),
-        low: parseFloat((yahooQ.low ?? bar?.l ?? 0).toFixed(2)),
-        changePercent: parseFloat(changePercent.toFixed(3)),
+        open: fixedQuoteLevel(yahooQ.open ?? bar?.o),
+        high: fixedQuoteLevel(yahooQ.high ?? bar?.h),
+        low: fixedQuoteLevel(yahooQ.low ?? bar?.l),
+        changePercent,
         volume: volumeRaw,
         volumeMillions,
-        timestamp: Date.now(),
+        timestamp: yahooQ.observedAt ?? null,
         marketStatus: "closed",
-        isLive: false,
+        isLive: freshness.isLive,
+        isDelayed: freshness.isDelayed,
         sparkline: sparklineCache.get(ticker) ?? [],
       };
     }
@@ -438,78 +523,87 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
       // If Yahoo has any price at all (even UNKNOWN state), use it
       if (yahooQ && yahooQ.price !== null) {
         const price = yahooQ.price;
-        const prevClose = yahooQ.prevClose ?? 0;
-        const changePercent = yahooQ.changePercent ??
-          (prevClose > 0 ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(3)) : 0);
-        const volumeRaw = yahooQ.volume ?? 0;
+        const prevClose = finiteQuoteNumber(yahooQ.prevClose);
+        const changePercent = resolveSignalChangePercent(yahooQ.changePercent, price, prevClose);
+        const { volume: volumeRaw, volumeMillions } = resolveSignalVolume(yahooQ.volume);
+        const marketStatus = deriveMarketStatus(today) as QuoteResult["marketStatus"];
+        const freshness = quoteFreshnessFlags({ delayed: true, sessionOpen: false });
+        sessionMarks.push({ isLive: false, marketStatus });
         return {
           ticker,
           price: parseFloat(price.toFixed(2)),
-          open: parseFloat((yahooQ.open ?? 0).toFixed(2)),
-          high: parseFloat((yahooQ.high ?? 0).toFixed(2)),
-          low: parseFloat((yahooQ.low ?? 0).toFixed(2)),
-          changePercent: parseFloat(changePercent.toFixed(3)),
+          open: fixedQuoteLevel(yahooQ.open),
+          high: fixedQuoteLevel(yahooQ.high),
+          low: fixedQuoteLevel(yahooQ.low),
+          changePercent,
           volume: volumeRaw,
-          volumeMillions: parseFloat((volumeRaw / 1_000_000).toFixed(2)),
-          timestamp: Date.now(),
-          marketStatus: deriveMarketStatus(today) as QuoteResult["marketStatus"],
-          isLive: false,
+          volumeMillions,
+          timestamp: yahooQ.observedAt ?? null,
+          marketStatus,
+          isLive: freshness.isLive,
+          isDelayed: freshness.isDelayed,
           sparkline: sparklineCache.get(ticker) ?? [],
         };
       }
-      return {
-        ticker,
-        price: 0, open: 0, high: 0, low: 0,
-        changePercent: 0,
-        volume: 0, volumeMillions: 0,
-        timestamp: Date.now(),
-        marketStatus: "unknown" as const,
-        isLive: false,
-        sparkline: sparklineCache.get(ticker) ?? [],
-      };
+      sessionMarks.push({ isLive: false, marketStatus: "unknown" });
+      return missingPriorityQuote(ticker);
     }
 
-    const price = bar.c ?? 0;
-    const prevClose = prevBar?.c ?? bar.o ?? price;
-    const changePercent = prevClose > 0
-      ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(3))
-      : 0;
-
-    const volumeRaw = bar.v ?? 0;
-    const volumeMillions = parseFloat((volumeRaw / 1_000_000).toFixed(2));
-
+    const assembled = assemblePolygonBarQuote(bar, prevBar?.c);
+    const marketStatus = deriveMarketStatus(tradeDate);
+    const freshness = quoteFreshnessFlags({ delayed: true, sessionOpen: false });
+    sessionMarks.push({ isLive: false, marketStatus });
     return {
       ticker,
-      price: parseFloat(price.toFixed(2)),
-      open: parseFloat((bar.o ?? 0).toFixed(2)),
-      high: parseFloat((bar.h ?? 0).toFixed(2)),
-      low: parseFloat((bar.l ?? 0).toFixed(2)),
-      changePercent,
-      volume: volumeRaw,
-      volumeMillions,
-      timestamp: bar.t ?? Date.now(),
-      marketStatus: deriveMarketStatus(tradeDate),
-      isLive: false,
+      price: assembled.price,
+      open: fixedQuoteLevel(bar.o),
+      high: fixedQuoteLevel(bar.h),
+      low: fixedQuoteLevel(bar.l),
+      changePercent: assembled.changePercent,
+      volume: assembled.volume,
+      volumeMillions: assembled.volumeMillions,
+      timestamp: bar.t ?? null,
+      marketStatus,
+      isLive: freshness.isLive,
+      isDelayed: freshness.isDelayed,
       sparkline: sparklineCache.get(ticker) ?? [],
     };
   });
 
-  // Use today's date when Yahoo succeeded (live data), otherwise use Polygon's trade date
-  const effectiveTradeDate = yahooSucceeded ? today : tradeDate;
+  // Yahoo availability is not a LIVE proof: closed-market Yahoo quotes are explicitly
+  // delayed. Only a returned live or extended quote may use today's session label.
+  const effectiveTradeDate = selectEffectiveTradeDate(sessionMarks, today, tradeDate);
   return { quotes, tradeDate: effectiveTradeDate };
+}
+
+/** Delayed and live are exclusive. A delayed source is never live, including during an open session. */
+export function quoteFreshnessFlags(input: { delayed: boolean; sessionOpen: boolean }): { isLive: boolean; isDelayed: boolean } {
+  if (input.delayed) return { isLive: false, isDelayed: true };
+  if (input.sessionOpen) return { isLive: true, isDelayed: false };
+  return { isLive: false, isDelayed: false };
+}
+
+export function selectEffectiveTradeDate(
+  quotes: readonly Pick<QuoteResult, "isLive" | "marketStatus">[],
+  currentDate: string,
+  completedTradeDate: string,
+): string {
+  return quotes.some(quote => quote.isLive && (quote.marketStatus === "open" || quote.marketStatus === "extended"))
+    ? currentDate
+    : completedTradeDate;
 }
 
 // ── Per-ticker cache ─────────────────────────────────────────
 export interface TickerProfile {
   ticker: string;
   name: string;
-  price: number;
-  open: number;
-  high: number;
-  low: number;
-  changePercent: number;
-  volume: number;
-  volumeMillions: number;
+  price: number | null;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  changePercent: number | null;
+  volume: number | null;
+  volumeMillions: number | null;
   avgVolume: number | null;      // from reference endpoint if available
   marketCap: number | null;      // in millions
   sector: string | null;
@@ -519,6 +613,8 @@ export interface TickerProfile {
   tradeDate: string;
   marketStatus: QuoteResult["marketStatus"];
   isLive: boolean;
+  /** Yahoo (~15-min delayed) and Polygon prior-close data are both delayed; never shown as LIVE. */
+  isDelayed?: boolean;
   source: "live" | "stale" | "fallback";
 }
 
@@ -536,7 +632,11 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
   const sparklineFrom = getNTradingDaysBefore(tradeDate, 5);
 
   // 1. Try Yahoo Finance first — real-time 15-min delayed price, same source as Portfolio
-  let price = 0, open = 0, high = 0, low = 0, volumeRaw = 0, volumeMillions = 0, changePercent = 0;
+  let price: number | null = null;
+  let open: number | null = null, high: number | null = null, low: number | null = null;
+  let volumeRaw: number | null = null;
+  let volumeMillions: number | null = null;
+  let changePercent: number | null = null;
   let yahooSucceeded = false;
   let yahooMarketState: string | null = null;
   let yahooTradeDate: string | null = null;
@@ -544,19 +644,24 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
     const yahooQuote = await getYahooQuote(symbol);
     if (yahooQuote.price != null && yahooQuote.price > 0) {
       price = parseFloat((yahooQuote.price).toFixed(2));
-      open = parseFloat((yahooQuote.open ?? yahooQuote.price).toFixed(2));
-      high = parseFloat((yahooQuote.high ?? yahooQuote.price).toFixed(2));
-      low = parseFloat((yahooQuote.low ?? yahooQuote.price).toFixed(2));
-      volumeRaw = yahooQuote.volume ?? 0;
-      volumeMillions = parseFloat((volumeRaw / 1_000_000).toFixed(2));
-      changePercent = yahooQuote.changePercent != null
-        ? parseFloat(yahooQuote.changePercent.toFixed(3))
-        : (open > 0 ? parseFloat(((price - open) / open * 100).toFixed(3)) : 0);
+      const levels = equitySessionLevels(yahooQuote);
+      open = levels.open;
+      high = levels.high;
+      low = levels.low;
+      const quotedVolume = resolveSignalVolume(yahooQuote.volume);
+      volumeRaw = quotedVolume.volume;
+      volumeMillions = quotedVolume.volumeMillions;
+      changePercent = resolveSignalChangePercent(
+        yahooQuote.changePercent,
+        price,
+        yahooQuote.open == null ? null : open,
+      );
       yahooMarketState = yahooQuote.marketState ?? null;
       // When Yahoo succeeds, the price is from today's session
       yahooTradeDate = new Date().toISOString().slice(0, 10);
       yahooSucceeded = true;
-      log.info(`[Signals Proxy] Yahoo Finance price for ${symbol}: $${price} (${changePercent > 0 ? '+' : ''}${changePercent}%) state=${yahooMarketState}`);
+      const changeText = changePercent == null ? "unavailable" : `${changePercent > 0 ? "+" : ""}${changePercent}%`;
+      log.info(`[Signals Proxy] Yahoo Finance price for ${symbol}: $${price} (${changeText}) state=${yahooMarketState}`);
     }
   } catch (yahooErr: any) {
     log.warn(`[Signals Proxy] Yahoo Finance failed for ${symbol}: ${yahooErr?.message} — falling back to Polygon`);
@@ -571,13 +676,18 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
     if (!bar) {
       throw new Error(`No data found for ticker ${symbol}`);
     }
-    price = parseFloat((bar.c ?? 0).toFixed(2));
-    open = parseFloat((bar.o ?? 0).toFixed(2));
-    high = parseFloat((bar.h ?? 0).toFixed(2));
-    low = parseFloat((bar.l ?? 0).toFixed(2));
-    volumeRaw = bar.v ?? 0;
-    volumeMillions = parseFloat((volumeRaw / 1_000_000).toFixed(2));
-    changePercent = open > 0 ? parseFloat(((price - open) / open * 100).toFixed(3)) : 0;
+    const rawClose = finiteQuoteNumber(bar.c);
+    const rawOpen = finiteQuoteNumber(bar.o);
+    price = rawClose == null ? null : parseFloat(rawClose.toFixed(2));
+    open = fixedQuoteLevel(rawOpen);
+    high = fixedQuoteLevel(bar.h);
+    low = fixedQuoteLevel(bar.l);
+    const polygonVolume = resolveSignalVolume(bar.v);
+    volumeRaw = polygonVolume.volume;
+    volumeMillions = polygonVolume.volumeMillions;
+    changePercent = rawClose == null || rawOpen == null || price == null
+      ? null
+      : resolveSignalChangePercent(undefined, price, open);
   }
 
   // 2. Fetch 5-day sparkline (separate call — rate limit aware)
@@ -647,6 +757,10 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
     effectiveTradeDate = tradeDate;
   }
 
+  const sessionOpen = marketStatus === "open" || marketStatus === "extended";
+  const freshness = quoteFreshnessFlags({ delayed: true, sessionOpen });
+  effectiveTradeDate = selectEffectiveTradeDate([{ isLive: sessionOpen, marketStatus }], new Date().toISOString().slice(0, 10), tradeDate);
+
   return {
     ticker: symbol,
     name,
@@ -665,7 +779,8 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
     sparkline,
     tradeDate: effectiveTradeDate,
     marketStatus,
-    isLive: marketStatus === "open" || marketStatus === "extended",
+    isLive: freshness.isLive,
+    isDelayed: freshness.isDelayed,
     source: "live",
   };
 }
@@ -795,7 +910,8 @@ export function registerSignalsProxy(app: Express) {
       if (quotesCache) {
         res.setHeader("X-Cache", "STALE");
         res.json({
-          quotes: quotesCache.quotes,
+          // A stale-cache quote is not live, whatever it was when it was cached.
+          quotes: quotesCache.quotes.map(q => ({ ...q, isLive: false })),
           timestamp: new Date(quotesCache.fetchedAt).toISOString(),
           marketStatus: quotesCache.marketStatus,
           tradeDate: quotesCache.tradeDate,
@@ -842,8 +958,9 @@ export function registerSignalsProxy(app: Express) {
     });
   });
 
-  // POST /api/signals/clear-cache — clear quote cache
-  app.post("/api/signals/clear-cache", (_req: Request, res: Response) => {
+  // POST /api/signals/clear-cache — owner/admin only
+  app.post("/api/signals/clear-cache", async (req: Request, res: Response) => {
+    if (!(await allowOwnerOrAdmin(req, res))) return;
     quotesCache = null;
     sparklineCache.clear();
     sparklineFetchedAt = null;
@@ -939,6 +1056,7 @@ export function registerSignalsProxy(app: Express) {
           tradeDate: quotesCache.tradeDate,
           marketStatus: qr.marketStatus,
           isLive: qr.isLive,
+          isDelayed: qr.isDelayed ?? true,
           source: "live" as const,
         };
         tickerCache.set(raw, { profile, fetchedAt: Date.now() });
@@ -967,23 +1085,22 @@ export function registerSignalsProxy(app: Express) {
       // Fallback: serve from Polygon grouped bar (yesterday's close)
       const bar = fullBarMap.get(raw)!;
       const prevBar = fullPrevBarMap?.get(raw);
-      const price = parseFloat((bar.c ?? 0).toFixed(2));
-      const prevClose = prevBar?.c ?? bar.o ?? price;
-      const changePercent = prevClose > 0
-        ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(3))
-        : 0;
-      const volumeRaw = bar.v ?? 0;
+      const rawClose = finiteQuoteNumber(bar.c);
+      const price = rawClose == null ? null : parseFloat(rawClose.toFixed(2));
+      const anchor = finiteQuoteNumber(prevBar?.c) ?? finiteQuoteNumber(bar.o) ?? price;
+      const changePercent = price == null ? null : resolveSignalChangePercent(undefined, price, anchor);
+      const groupedVolume = resolveSignalVolume(bar.v);
       const marketStatus = deriveMarketStatus(fullBarMapTradeDate);
       const profile: TickerProfile = {
         ticker: raw,
         name: raw,
         price,
-        open: parseFloat((bar.o ?? 0).toFixed(2)),
-        high: parseFloat((bar.h ?? 0).toFixed(2)),
-        low: parseFloat((bar.l ?? 0).toFixed(2)),
+        open: fixedQuoteLevel(bar.o),
+        high: fixedQuoteLevel(bar.h),
+        low: fixedQuoteLevel(bar.l),
         changePercent,
-        volume: volumeRaw,
-        volumeMillions: parseFloat((volumeRaw / 1_000_000).toFixed(2)),
+        volume: groupedVolume.volume,
+        volumeMillions: groupedVolume.volumeMillions,
         avgVolume: null,
         marketCap: null,
         sector: null,
@@ -992,7 +1109,10 @@ export function registerSignalsProxy(app: Express) {
         sparkline: sparklineCache.get(raw) ?? [],
         tradeDate: fullBarMapTradeDate,
         marketStatus,
-        isLive: marketStatus === "open" || marketStatus === "extended",
+        ...quoteFreshnessFlags({
+          delayed: true,
+          sessionOpen: marketStatus === "open" || marketStatus === "extended",
+        }),
         source: "live" as const,
       };
       tickerCache.set(raw, { profile, fetchedAt: Date.now() });

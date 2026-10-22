@@ -4,6 +4,9 @@
    7 tabs: Overview · Scanner · Stocks · Crypto · Symbol · Active · Watchlist
    ============================================================ */
 import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { withholdConfidenceFigures } from "@/lib/confidenceDisplay";
+import { finiteOrNull, score100Value } from "@/lib/displayFallbacks";
+import { evidenceStatusFromFailureStats, evidenceStatusFromIntegrity } from "../../../shared/evidenceStatus";
 import { trpc } from "@/lib/trpc";
 import { useLocation, useSearch } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -20,6 +23,7 @@ import { toast } from "sonner";
 import DataFreshnessBadge from "@/components/DataFreshnessBadge";
 import FaultlineTerm from "@/components/FaultlineTerm";
 import { useEngine } from "@/contexts/EngineContext";
+import { canonicalRegimeDisplayColor, engineProbabilityText } from "@/lib/marketStateProjection";
 import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── DataSourceBanner: shown when data is from snapshot or fallback ────────────
@@ -58,8 +62,8 @@ type DayTradeSetup = {
   symbol: string;
   name: string;
   assetType: "stock" | "crypto";
-  currentPrice: number;
-  changePercent: number;
+  currentPrice: number | null;
+  changePercent: number | null;
   volume: number;
   relativeVolume: number | null;
   marketCap: number | null;
@@ -73,7 +77,7 @@ type DayTradeSetup = {
   stopLoss: number;
   invalidationLevel: number;
   expectedHoldMinutes: number;
-  confidence: number;
+  confidence: number | null;
   probabilityRating: number;
   riskRewardRatio: number;
   riskLevel: "Low" | "Medium" | "High" | "Very High";
@@ -91,8 +95,8 @@ type DayTradeSetup = {
   marketContext?: string;
   vwapStatus?: string;
   momentumRating?: number;
-  supportLevel?: number;
-  resistanceLevel?: number;
+  supportLevel?: number | null;
+  resistanceLevel?: number | null;
   whyTradeExists?: string;
   whatCancelsThisTrade?: string;
   confidenceReasoning?: string;
@@ -145,10 +149,15 @@ type MarketFavorability = {
 };
 
 // ── Helpers ───────────────────────────────────────────────────
-const fmt = (n: number, dec = 2) =>
-  n >= 1000 ? `$${n.toLocaleString("en-US", { maximumFractionDigits: dec })}` : `$${n.toFixed(dec)}`;
+const fmt = (n: number | null | undefined, dec = 2) => {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "Unavailable";
+  return n >= 1000 ? `$${n.toLocaleString("en-US", { maximumFractionDigits: dec })}` : `$${n.toFixed(dec)}`;
+};
 
-const pct = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
+const pct = (n: number | null | undefined) => {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "Unavailable";
+  return `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
+};
 
 const confColor = (c: number) =>
   c >= 75 ? "#00FF88" : c >= 55 ? "#FFD700" : "#FF6B6B";
@@ -159,8 +168,14 @@ const dirColor = (d: string) =>
   d === "bullish" ? "#00FF88" : d === "bearish" ? "#FF6B6B" : "#6B7280";
 const isNoTrade = (s: AnySetup): s is NoTradeResult =>
   s.setupType === "NO_TRADE";
-const fmtHold = (mins: number) =>
-  mins < 60 ? `${mins} min` : `${(mins / 60).toFixed(1)}h`;
+const fmtHold = (mins: number | null | undefined) => {
+  if (typeof mins !== "number" || !Number.isFinite(mins)) return "Unavailable";
+  return mins < 60 ? `${mins} min` : `${(mins / 60).toFixed(1)}h`;
+};
+const ratioText = (n: number | null | undefined) =>
+  typeof n === "number" && Number.isFinite(n) ? `${n.toFixed(1)}:1` : "Unavailable";
+const relVolText = (n: number | null | undefined) =>
+  typeof n === "number" && Number.isFinite(n) ? `${n.toFixed(1)}x` : "Unavailable";
 const DirIcon = ({ d }: { d: string }) =>
   d === "bullish" ? <TrendingUp size={12} style={{ color: "#00FF88" }} /> :
   d === "bearish" ? <TrendingDown size={12} style={{ color: "#FF6B6B" }} /> :
@@ -254,7 +269,7 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
           {ds && (
             <div style={{ textAlign: "right" }}>
               <div style={{ ...MONO_SM, color: "#F0F4FF", fontWeight: 600 }}>{fmt(ds.currentPrice)}</div>
-              <div style={{ ...MONO_SM, fontSize: "10px", color: ds.changePercent >= 0 ? "#00FF88" : "#FF6B6B" }}>
+              <div style={{ ...MONO_SM, fontSize: "10px", color: ds.changePercent == null ? "#6B7280" : ds.changePercent >= 0 ? "#00FF88" : "#FF6B6B" }}>
                 {pct(ds.changePercent)}
               </div>
             </div>
@@ -262,7 +277,8 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
           {ds && (
             <div style={{ textAlign: "center" }}>
               <div style={{ ...MONO_SM, fontSize: "10px", color: "#6B7280" }}>CONF</div>
-              <div style={{ ...MONO_SM, fontWeight: 700, color: confColor(ds.confidence) }}>{ds.confidence}</div>
+              {/* Launch fix-up: day-trade confidence is a heuristic (dayTradeEngine computeConfidence), not calibrated. */}
+              <div data-confidence-status="not-established" style={{ ...MONO_SM, fontWeight: 700, color: "#94A3B8" }}>Not established</div>
             </div>
           )}
           {ds && (
@@ -301,10 +317,11 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
         </span>
         {ds && (
           <>
-            <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>R/R: <strong style={{ color: "#F0F4FF" }}>{ds.riskRewardRatio.toFixed(1)}:1</strong></span>
+            <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>R/R: <strong style={{ color: "#F0F4FF" }}>{ratioText(ds.riskRewardRatio)}</strong></span>
             <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>Hold: <strong style={{ color: "#F0F4FF" }}>{fmtHold(ds.expectedHoldMinutes)}</strong></span>
             <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>Risk: <strong style={{ color: riskColor(ds.riskLevel) }}>{ds.riskLevel}</strong></span>
-            <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>Prob: <strong style={{ color: confColor(ds.probabilityRating) }}>{ds.probabilityRating}%</strong></span>
+            {/* Launch fix-up: probabilityRating is confidence × 0.9 + momentum × 0.1, not a probability. */}
+            <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>Prob: <strong data-probability-status="not-established" style={{ color: "#94A3B8" }}>Not established</strong></span>
           </>
         )}
       </div>
@@ -314,7 +331,7 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "12px" }}>
                     {noTrade ? (
             <div style={{ ...MONO_SM, color: "#FF6B6B", lineHeight: 1.6 }}>
-              <strong style={{ color: "#FF6B6B" }}>NO TRADE</strong> — {(s as NoTradeResult).noTradeReason ?? "No valid intraday setup detected for this symbol."}
+              <strong style={{ color: "#FF6B6B" }}>NO TRADE</strong> — {withholdConfidenceFigures((s as NoTradeResult).noTradeReason) ?? "No valid intraday setup detected for this symbol."}
             </div>
           ) : ds ? (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "12px" }}>
@@ -340,7 +357,7 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
               </div>
               <div>
                 <div style={LABEL}>Rel. Volume</div>
-                <div style={VALUE}>{ds.relativeVolume != null ? `${ds.relativeVolume.toFixed(1)}x` : "N/A"}</div>
+                <div style={VALUE}>{relVolText(ds.relativeVolume)}</div>
               </div>
             </div>
           ) : null}
@@ -390,7 +407,7 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
               )}
               <div>
                 <div style={LABEL}>Why This Trade</div>
-                <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.5 }}>{ds.whyTradeExists ?? ds.reasonForRecommendation}</div>
+                <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.5 }}>{withholdConfidenceFigures(ds.whyTradeExists ?? ds.reasonForRecommendation)}</div>
               </div>
               {ds.whatCancelsThisTrade && (
                 <div>
@@ -402,12 +419,7 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
                 <div style={LABEL}>Regime Impact</div>
                 <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.5 }}>{ds.regimeImpact}</div>
               </div>
-              {ds.confidenceReasoning && (
-                <div>
-                  <div style={LABEL}>Confidence Reasoning</div>
-                  <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.5 }}>{ds.confidenceReasoning}</div>
-                </div>
-              )}
+              {/* Launch fix-up: the confidence reasoning restates the heuristic score; not shown. */}
             </div>
           )}
 
@@ -1074,7 +1086,7 @@ function ActiveSetupsTab({ onSearch }: { onSearch: (sym: string, type: "stock" |
               { label: "OPEN", count: setups.length, color: "#00FF88", icon: <CheckCircle size={11} /> },
               { label: "BULLISH", count: setups.filter(s => s.direction === "bullish").length, color: "#00FF88", icon: <TrendingUp size={11} /> },
               { label: "BEARISH", count: setups.filter(s => s.direction === "bearish").length, color: "#FF6B6B", icon: <TrendingDown size={11} /> },
-              { label: "HIGH CONF", count: setups.filter(s => s.confidence >= 75).length, color: "#FFD700", icon: <Zap size={11} /> },
+              { label: "HIGH CONF", count: setups.filter(s => typeof s.confidence === "number" && s.confidence >= 75).length, color: "#FFD700", icon: <Zap size={11} /> },
             ].map(stat => (
               <div key={stat.label} style={{
                 ...CARD,
@@ -1334,7 +1346,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
       </div>
       <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>
         {isDataFail
-          ? "Live market data pipelines are temporarily offline. FAULTLINE requires real-time data to generate reliable intraday setups — no analysis will be shown until data is restored."
+          ? "Live market data pipelines are temporarily offline. FAULTLINE requires current market data to generate reliable intraday setups — no analysis will be shown until data is restored."
           : "The intelligence engine encountered an issue. This is typically resolved within seconds."}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -1400,7 +1412,7 @@ function EmptyState({ icon: _icon, title, message }: { icon: React.ReactNode; ti
 }
 
 function InstitutionalFallback({ message, onRetry }: { message: string; onRetry: () => void }) {
-  const { output, isLive, lastUpdated } = useEngine();
+  const { output, isLive, lastUpdated, marketMode, canonicalState } = useEngine();
   const [showSectors, setShowSectors] = useState(true);
   const [showPlaybook, setShowPlaybook] = useState(true);
   const [showWatchlist, setShowWatchlist] = useState(true);
@@ -1418,10 +1430,16 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
     );
   }
 
-  const regimeLabel = output?.regime?.label ?? "Unknown";
-  const regimeColor = output?.regime?.color ?? "#94A3B8";
-  const pressure = output?.overall?.score ?? 0;
-  const bullProb = output?.probability?.bullProbability ?? 50;
+  // Without MarketState the engine output is the demo baseline: canonical regime and
+  // pressure instead (healthy-mode colour mapping), or "Unavailable" / neutral.
+  const degraded = marketMode === "deterministic-fallback";
+  const canonicalPressure = finiteOrNull(canonicalState?.pressureIndex);
+  const regimeLabel = degraded ? (canonicalState?.regime ?? "Unavailable") : (output?.regime?.label ?? "Unknown");
+  const regimeColor = degraded ? canonicalRegimeDisplayColor(canonicalPressure, canonicalState?.regime) : (output?.regime?.color ?? "#94A3B8");
+  // Missing pressure stays null and renders "—" (never 0).
+  const pressure = degraded ? (canonicalPressure === null ? null : canonicalPressure / 10) : finiteOrNull(output?.overall?.score);
+  // Probability contract: contract display text, never a 50 default or `NaN%`.
+  const bullText = output ? engineProbabilityText(output, "bullProbability") : "Unavailable";
   const lastUpdatedStr = lastUpdated ? lastUpdated.toLocaleTimeString() : "Not available";
 
   const SECTORS_DATA = [
@@ -1437,7 +1455,7 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
     { rule: "Wait for data confirmation", detail: "Never enter a position without confirmed live price and volume data." },
     { rule: "Reduce position size by 50%", detail: "During data outages, cut all position sizes in half to manage unknown risk." },
     { rule: "Widen stops by 1.5x",         detail: "Spread widens during data gaps. Use 1.5x normal stop distance." },
-    { rule: "Avoid momentum setups",        detail: "Momentum trades require real-time tape reading. Skip until data restores." },
+    { rule: "Avoid momentum setups",        detail: "Momentum trades require live tape reading. Skip until data restores." },
     { rule: "Focus on mean-reversion",      detail: "If you must trade, mean-reversion setups are less data-dependent." },
     { rule: "Check pre-market levels",      detail: "Use last known support/resistance levels from prior session as reference." },
   ];
@@ -1462,9 +1480,9 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
 
   const MACRO_DATA = [
     { label: "Market Regime",    value: regimeLabel,                       color: regimeColor },
-    { label: "Pressure Score",   value: `${pressure.toFixed(1)}/10`,       color: pressure >= 6.5 ? "#FF6B6B" : pressure >= 4.0 ? "#FFD700" : "#00FF88" },
-    { label: "Bull Probability", value: `${bullProb}%`,                    color: bullProb >= 60 ? "#00FF88" : bullProb >= 40 ? "#FFD700" : "#FF6B6B" },
-    { label: "Data Source",      value: isLive ? "LIVE (FRED)" : "CACHED", color: isLive ? "#00FF88" : "#FFD700" },
+    { label: "Pressure Score",   value: pressure === null ? "—" : `${score100Value(pressure)}/100`, color: pressure === null ? "#94A3B8" : pressure >= 6.5 ? "#FF6B6B" : pressure >= 4.0 ? "#FFD700" : "#00FF88" },
+    { label: "Bull Scenario",    value: bullText,                          color: "#94A3B8" },
+    { label: "Data Source",      value: isLive ? "LIVE (FRED)" : "NOT LIVE", color: isLive ? "#00FF88" : "#FFD700" },
     { label: "Last Updated",     value: lastUpdatedStr,                    color: "#94A3B8" },
   ];
 
@@ -1476,7 +1494,7 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
             <WifiOff size={16} style={{ color: "#FFA500", flexShrink: 0 }} />
             <div>
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color: "#FFA500" }}>LIVE DAY TRADE DATA TEMPORARILY UNAVAILABLE</div>
-              <div style={{ ...MONO_SM, color: "#94A3B8", fontSize: "10px", marginTop: "2px" }}>FAULTLINE requires real-time market data to generate reliable intraday setups. Institutional guidance below remains valid.</div>
+              <div style={{ ...MONO_SM, color: "#94A3B8", fontSize: "10px", marginTop: "2px" }}>FAULTLINE requires current market data to generate reliable intraday setups. Institutional guidance below remains valid.</div>
             </div>
           </div>
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
@@ -1608,7 +1626,7 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
             { label: "Market Price Feed",  status: "OFFLINE",                      color: "#FF6B6B" },
             { label: "Volume Data",         status: "OFFLINE",                      color: "#FF6B6B" },
             { label: "Options Flow",        status: "OFFLINE",                      color: "#FF6B6B" },
-            { label: "FRED Macro Data",     status: isLive ? "ONLINE" : "CACHED",   color: isLive ? "#00FF88" : "#FFD700" },
+            { label: "FRED Macro Data",     status: isLive ? "ONLINE" : "NOT LIVE",   color: isLive ? "#00FF88" : "#FFD700" },
             { label: "AI Analysis Engine",  status: "STANDBY",                      color: "#FFD700" },
           ].map(item => (
             <div key={item.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 8px", background: "rgba(255,255,255,0.01)", borderRadius: "3px" }}>
@@ -1687,19 +1705,20 @@ function Top10RankedTab({ onSearch }: { onSearch: (sym: string, type: "stock" | 
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
                     <div style={{ ...MONO_SM, fontWeight: 600, color: "#F0F4FF", fontSize: "12px" }}>{fmt(s.currentPrice)}</div>
-                    <div style={{ ...MONO_SM, fontSize: "10px", color: s.changePercent >= 0 ? "#00FF88" : "#FF6B6B" }}>{pct(s.changePercent)}</div>
+                    <div style={{ ...MONO_SM, fontSize: "10px", color: s.changePercent == null ? "#6B7280" : s.changePercent >= 0 ? "#00FF88" : "#FF6B6B" }}>{pct(s.changePercent)}</div>
                   </div>
                   <div style={{ flexShrink: 0 }}><DirIcon d={s.direction} /></div>
                   <div style={{ textAlign: "center", flexShrink: 0 }}>
                     <div style={{ ...MONO_SM, fontSize: "9px", color: "#374151" }}>CONF</div>
-                    <div style={{ ...MONO_SM, fontWeight: 700, color: confColor(s.confidence), fontSize: "13px" }}>{s.confidence}</div>
+                    {/* Launch fix-up: heuristic confidence, not calibrated. */}
+                    <div data-confidence-status="not-established" style={{ ...MONO_SM, fontWeight: 700, color: "#94A3B8", fontSize: "11px" }}>Not established</div>
                   </div>
                   <div style={{ width: "26px", height: "26px", borderRadius: "3px", background: `${gradeColor}15`, border: `1px solid ${gradeColor}35`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "13px", color: gradeColor }}>{s.executionGrade}</span>
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
                     <div style={{ ...MONO_SM, fontSize: "9px", color: "#374151" }}>R/R</div>
-                    <div style={{ ...MONO_SM, fontWeight: 600, color: "#F0F4FF", fontSize: "11px" }}>{s.riskRewardRatio.toFixed(1)}:1</div>
+                    <div style={{ ...MONO_SM, fontWeight: 600, color: "#F0F4FF", fontSize: "11px" }}>{ratioText(s.riskRewardRatio)}</div>
                   </div>
                   <button onClick={() => onSearch(s.symbol, s.assetType)} style={{ padding: "4px 10px", background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.2)", borderRadius: "3px", color: "#00D4FF", ...MONO_SM, fontSize: "9px", cursor: "pointer", flexShrink: 0 }}>Report</button>
                 </div>
@@ -1709,9 +1728,10 @@ function Top10RankedTab({ onSearch }: { onSearch: (sym: string, type: "stock" | 
                     { label: "T1",      value: fmt(s.target1),            color: "#00FF88" },
                     { label: "T2",      value: fmt(s.target2),            color: "#7CFF7C" },
                     { label: "STOP",    value: fmt(s.stopLoss),           color: "#FF6B6B" },
-                    { label: "PROB",    value: `${s.probabilityRating}%`, color: confColor(s.probabilityRating) },
+                    // Launch fix-up: probabilityRating is a blend of heuristic scores, not a probability.
+                    { label: "PROB",    value: "Not established", color: "#94A3B8" },
                     { label: "RISK",    value: s.riskLevel,               color: riskColor(s.riskLevel) },
-                    { label: "REL-VOL", value: s.relativeVolume != null ? `${s.relativeVolume.toFixed(1)}x` : "N/A", color: s.relativeVolume != null && s.relativeVolume >= 1.5 ? "#00FF88" : "#94A3B8" },
+                    { label: "REL-VOL", value: relVolText(s.relativeVolume), color: typeof s.relativeVolume === "number" && s.relativeVolume >= 1.5 ? "#00FF88" : "#94A3B8" },
                   ].map(kv => (
                     <div key={kv.label} style={{ flex: 1, padding: "5px 8px", borderRight: "1px solid rgba(255,255,255,0.04)", minWidth: "60px" }}>
                       <div style={{ ...MONO_SM, fontSize: "8px", color: "#374151", marginBottom: "1px" }}>{kv.label}</div>
@@ -1779,10 +1799,9 @@ function PipelineHealthTab() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px' }}>
         {PROVIDERS.map(p => {
           const s = (stats as Record<string, { total: number; failures: number; avgLatency: number | null; lastFailure: number | null }>)[p];
-          const failRate = s && s.total > 0 ? ((s.failures / s.total) * 100).toFixed(0) : '0';
-          const isHealthy = !s || s.failures === 0;
-          const isWarning = s && s.failures > 0 && s.failures / s.total < 0.2;
-          const color = isHealthy ? '#00FF88' : isWarning ? '#FFD700' : '#FF6B6B';
+          const failRate = s && s.total > 0 ? ((s.failures / s.total) * 100).toFixed(0) : '—';
+          const providerStatus = evidenceStatusFromFailureStats(s);
+          const color = providerStatus === 'RECENT' ? '#FFD700' : providerStatus === 'DELAYED' ? '#FFD700' : providerStatus === 'STALE' ? '#FF6B6B' : '#94A3B8';
           return (
             <div key={p} style={{ ...CARD, padding: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -1790,7 +1809,7 @@ function PipelineHealthTab() {
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}` }} />
               </div>
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '20px', color }}>
-                {isHealthy ? 'LIVE' : isWarning ? 'DEGRADED' : 'DOWN'}
+                {providerStatus}
               </div>
               {s && (
                 <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -1818,7 +1837,7 @@ function PipelineHealthTab() {
         {isLoading ? (
           <LoadingState label="Loading pipeline events..." />
         ) : logs.length === 0 ? (
-          <EmptyState icon={<CheckCircle size={28} style={{ color: '#00FF88' }} />} title="All Systems Operational" message="No pipeline failures recorded in the last 50 events. Live data is flowing normally." />
+          <EmptyState icon={<CheckCircle size={28} style={{ color: '#00FF88' }} />} title="All Systems Operational" message="No pipeline failures recorded in the last 50 events. An empty failure log is not a market observation." />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {logs.map((log: { id: number; provider: string; endpoint: string; failureReason: string | null; responseCode: number | null; latencyMs: number | null; retryAttempts: number; recoveryStatus: string | null; resolutionTimeMs: number | null; autoRecovered: boolean; createdAt: Date }) => {
@@ -1875,6 +1894,8 @@ const TABS = [
 // ── Main Page ─────────────────────────────────────────────────
 function DayTradeIntelligenceInner() {
   const { user, loading: authLoading } = useAuth();
+  const { integrityLabel } = useEngine();
+  const headerStatus = evidenceStatusFromIntegrity(integrityLabel);
   void authLoading; // used below
   const searchStr = useSearch();
   const urlParams = useMemo(() => new URLSearchParams(searchStr), [searchStr]);
@@ -2004,7 +2025,7 @@ function DayTradeIntelligenceInner() {
               boxShadow: "0 0 6px #00FF88",
               animation: "pulse 2s infinite",
             }} />
-            <span style={{ ...MONO_SM, fontSize: "10px", color: "#00FF88" }}>LIVE</span>
+            <span style={{ ...MONO_SM, fontSize: "10px", color: headerStatus === "LIVE" ? "#00FF88" : "#94A3B8" }}>{headerStatus}</span>
           </div>
         </div>
 

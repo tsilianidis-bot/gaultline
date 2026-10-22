@@ -1,4 +1,5 @@
 import { Activity, AlertTriangle, ChevronRight, Eye, Sparkles, TrendingUp } from "lucide-react";
+import { finiteOrNull } from "@/lib/displayFallbacks";
 
 export interface RisingStarItem {
   ticker: string;
@@ -54,7 +55,7 @@ function Metric({ label, value, tone = "#B0C4D8", title }: { label: string; valu
 }
 
 function ComponentScore({ label, component }: { label: string; component: { status: "live" | "unavailable"; score: number | null; note: string } }) {
-  const value = component.status === "live" && component.score != null ? `${(component.score / 10).toFixed(1)}/10` : "NOT CONNECTED";
+  const value = component.status === "live" && finiteOrNull(component.score) !== null ? `${Math.round(component.score as number)}/100` : "NOT CONNECTED";
   return <Metric label={label} value={value} tone={component.status === "live" ? "#00D4FF" : "#64748B"} title={component.note} />;
 }
 

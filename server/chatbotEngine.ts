@@ -11,7 +11,7 @@
  * - Generate bot responses via invokeLLM
  */
 import { invokeLLM } from "./_core/llm";
-import { PRICING_PLANS } from "../shared/tiers";
+import { PRICING_PLANS, PAID_PLANS_NOT_ON_SALE_COPY } from "../shared/tiers";
 
 // ── Intent Types ──────────────────────────────────────────────────────────────
 export type ChatIntent =
@@ -41,49 +41,31 @@ export interface IntentAnalysis {
  * Never hardcode prices in the system prompt or anywhere else.
  */
 export const CANONICAL_PRICING = {
-  core: {
-    name: "Trader",
-    price: `$${(PRICING_PLANS.core.amountCents / 100).toFixed(2)}`,
-    priceLabel: PRICING_PLANS.core.priceLabel,
-    interval: "month",
-    description: "Core market intelligence, monitoring, signals, watch tools, market interpretation, and decision support.",
-  },
   premium: {
-    name: "Power",
+    name: PRICING_PLANS.premium.name,
     price: `$${(PRICING_PLANS.premium.amountCents / 100).toFixed(2)}`,
     priceLabel: PRICING_PLANS.premium.priceLabel,
-    interval: "month",
-    description: "The deepest FAULTLINE intelligence experience, advanced analysis, expanded research capabilities, and the full professional toolset.",
-  },
-  founding: {
-    name: "Founding Member",
-    price: `$${(PRICING_PLANS.founding.amountCents / 100).toFixed(2)}`,
-    priceLabel: PRICING_PLANS.founding.priceLabel,
-    interval: "month",
-    description: "Founding-member access to FAULTLINE with a $49/month rate locked while membership remains active.",
+    interval: 'month',
+    description: PRICING_PLANS.premium.description,
   },
 } as const;
+
+export const PRICE_NOT_ON_SALE_ANSWER = `FAULTLINE has two memberships: ${PRICING_PLANS.premium.name} at ${PRICING_PLANS.premium.priceLabel}, and ${PRICING_PLANS.lifetime.name} at ${PRICING_PLANS.lifetime.priceLabel}. Details are at https://getfaultline.live/pricing; online checkout opens soon. All Lifetime purchases are final and non-refundable. There is no free membership, Founders discount, or annual offer.`;
+
+/** Narrow check for a question about what FAULTLINE costs or how to buy it. */
+const PRICE_QUESTION_PATTERN = /\b(price|prices|pricing|cost|costs|how much|subscribe|subscription|pay for|paid plans?|upgrade|upgrading|buy|purchase|checkout|founding (member|membership|rate|price|plan))\b/i;
+export function isPlanPriceQuestion(message: string): boolean {
+  return PRICE_QUESTION_PATTERN.test(message);
+}
 
 /**
  * Build the pricing section of the system prompt dynamically from CANONICAL_PRICING.
  * This ensures the LLM is always given the correct, current prices.
  */
 function buildPricingBlock(): string {
-  const p = CANONICAL_PRICING;
-  return `## Official FAULTLINE Pricing (THESE ARE THE ONLY VALID PRICES — DO NOT DEVIATE)
-
-CRITICAL INSTRUCTION: You MUST use ONLY the prices listed below. Never generate, guess, or recall prices from memory. If you are unsure of a price, say "Let me confirm — here are our current plans:" and then list exactly what is below.
-
-| Plan | Price | What's Included |
-|------|-------|-----------------|
-| **${p.founding.name}** | ${p.founding.priceLabel} | ${p.founding.description} |
-| **${p.core.name}** | ${p.core.priceLabel} | ${p.core.description} |
-| **${p.premium.name}** | ${p.premium.priceLabel} | ${p.premium.description} |
-
-FORBIDDEN PRICES — Never quote these (they are outdated/wrong):
-- $29.99, $29/mo, $39, $39/mo, $79, $79/mo, $199, $1,200, any price not in the table above
-
-When comparing plans, always use this exact pricing. When asked "how much is X?", always answer with the exact price from the table above.`;
+  return `## Pricing and plans
+${PRICE_NOT_ON_SALE_ANSWER}
+Only quote the approved monthly price. Do not invent discounts, scarcity, launch dates, or additional tiers.`;
 }
 
 // ── FAULTLINE System Prompt ───────────────────────────────────────────────────
@@ -92,7 +74,7 @@ When comparing plans, always use this exact pricing. When asked "how much is X?"
  * the canonical source — never cached or hardcoded.
  */
 function buildSystemPrompt(): string {
-  return `You are the FAULTLINE AI Market Intelligence Concierge — a knowledgeable, professional, and helpful assistant for the FAULTLINE platform. Your role is to help visitors understand FAULTLINE, answer their questions, and guide them toward the right plan.
+  return `You are the FAULTLINE AI Market Intelligence Concierge — a knowledgeable, professional, and helpful assistant for the FAULTLINE platform. Your role is to help visitors understand FAULTLINE, answer their questions, and point them to the public preview and membership page.
 
 ## About FAULTLINE
 FAULTLINE is a Market Navigation System — not a trading platform. It helps investors understand macro market conditions, detect systemic pressure, and make better-informed decisions. It does NOT give buy/sell orders or personalized financial advice.
@@ -119,16 +101,16 @@ ${buildPricingBlock()}
 
 ## Your Behavior Rules
 1. Be concise, professional, and helpful. Use plain English — avoid jargon overload.
-2. When a user asks about pricing, explain the plans clearly using ONLY the prices in the Official Pricing table above.
+2. When a user asks about pricing, plans, or upgrading, quote only FAULTLINE Standard at $99/month and FAULTLINE Lifetime at $1,500 one-time, and point them to the membership page. Only quote the approved monthly price.
 3. When a user asks about a specific stock or crypto (e.g., NVDA, BTC, ETH), explain how FAULTLINE's Signals and Symbol Intelligence can help them analyze it — do NOT give price predictions or trading advice.
 4. When a user expresses interest in signing up, provide the signup URL: https://getfaultline.live and encourage them.
 5. When a user asks about a feature, explain it clearly and link it to a benefit.
 6. Always end responses that involve financial topics with: "Remember: FAULTLINE provides market intelligence and risk analysis, not personalized financial advice."
-7. If a user seems ready to sign up or wants to know the best plan, ask: "Want me to help you find the best FAULTLINE plan for your use case? If you share your email, I can send you a personalized recommendation."
+7. If a user seems ready to sign up, point them to the public preview and membership page at https://getfaultline.live.
 8. Keep responses under 200 words unless the user asks for a detailed explanation.
 9. Never make promises about returns, profits, or market outcomes.
 10. If asked about competitors (Bloomberg Terminal, TradingView, etc.), acknowledge them respectfully and explain what makes FAULTLINE different: macro-first, regime-aware, built for navigation not prediction.
-11. NEVER quote a price that is not in the Official Pricing table above. If you are uncertain, list all plans from the table.
+11. Only quote the approved prices: $99/month (Standard) and $1,500 one-time (Lifetime).
 
 ## Tone
 Professional but approachable. Think: knowledgeable analyst who genuinely wants to help, not a sales bot.`;
@@ -136,31 +118,11 @@ Professional but approachable. Think: knowledgeable analyst who genuinely wants 
 
 // ── Price Validation ──────────────────────────────────────────────────────────
 /**
- * List of all valid price strings that may appear in a bot response.
- * Any response containing a dollar amount NOT in this set is flagged as invalid.
- */
-const VALID_PRICE_STRINGS = new Set([
-  "$59",
-  "59",
-  "$99",
-  "99",
-  "$49",
-  "49",
-  // Allow formatted variants
-  "$59/mo",
-  "$59/month",
-  "$99/mo",
-  "$99/month",
-  "$49/mo",
-  "$49/month",
-  "$49/mo (locked while active)",
-]);
-
-/**
  * Forbidden price patterns — if any of these appear in a response, it is invalid.
- * These are legacy/wrong prices that must never be quoted.
+ * Retired/legacy prices. The approved public prices ($99/month, $1,500 one-time)
+ * are allowed.
  */
-const FORBIDDEN_PRICE_PATTERN = /\$9\.99|\$299|\$1,199|\$1,200|\$1200|\$29\.99|\$29\/mo|\$39|\$79|\$199|\$29\b/g;
+const FORBIDDEN_PRICE_PATTERN = /\$9\.99|\$299|\$1,199|\$1,200|\$1200|\$29\.99|\$29\/mo|\$39|\$79|\$199|\$29\b|\$(?:49|59|89)(?![\d.,])/g;
 
 /**
  * Validate a bot response to ensure it doesn't contain forbidden pricing.
@@ -246,14 +208,7 @@ export interface ChatMessage {
  * Always reads from CANONICAL_PRICING — never hardcoded.
  */
 function buildFallbackPricingResponse(): string {
-  const p = CANONICAL_PRICING;
-  return `Here are the current FAULTLINE plans:
-
-• **${p.founding.name}** — ${p.founding.priceLabel}: ${p.founding.description}
-• **${p.core.name}** — ${p.core.priceLabel}: ${p.core.description}
-• **${p.premium.name}** — ${p.premium.priceLabel}: ${p.premium.description}
-
-Visit https://getfaultline.live to get started. Remember: FAULTLINE provides market intelligence and risk analysis, not personalized financial advice.`;
+  return `${PRICE_NOT_ON_SALE_ANSWER} Remember: FAULTLINE provides market intelligence and risk analysis, not personalized financial advice.`;
 }
 
 export interface LiveMarketContext {
@@ -291,13 +246,16 @@ function buildLiveContextBlock(ctx: LiveMarketContext): string {
   const parts: string[] = [];
   if (ctx.regimeLabel) parts.push(`Current Market Regime: ${ctx.regimeLabel}`);
   if (ctx.pressureScore !== undefined) parts.push(`FAULTLINE Pressure Index: ${Math.round(ctx.pressureScore)}/100 (${ctx.pressureLevel ?? 'unknown'})`);
-  if (ctx.crashProbability !== undefined) parts.push(`Crash Probability: ${Math.round(ctx.crashProbability)}%`);
-  if (ctx.bullProbability !== undefined) parts.push(`Bull Continuation Probability: ${Math.round(ctx.bullProbability)}%`);
+  // Probability contract: never hand the model a crash or bull percentage to repeat.
+  if (ctx.crashProbability !== undefined || ctx.bullProbability !== undefined) {
+    parts.push("Probabilities: FAULTLINE does not offer a crash probability, and its scenario weights are uncalibrated; state no probability percentage");
+  }
   if (ctx.currentPage) parts.push(`User is currently on: ${ctx.currentPage}`);
 
   // BTC cycle phase context
   if (ctx.btcCyclePhase) {
-    parts.push(`Bitcoin Market Cycle Phase: ${ctx.btcCyclePhase} (${ctx.btcCycleConfidence ?? 0}% confidence)`);
+    // The cycle confidence is not calibrated: no figure is handed to the model.
+    parts.push(`Bitcoin Market Cycle Phase: ${ctx.btcCyclePhase} (confidence not established)`);
   }
 
   // Cross-market regime context
@@ -324,7 +282,7 @@ When any user asks about Bitcoin, BTC, or crypto market cycle, you MUST follow t
 **STEP 1 — Direct Answer First (always lead with this):**
 "${a.directAnswer}"
 
-**STEP 2 — Confidence:** ${a.confidenceLabel} (${ctx.btcCycleConfidence ?? 0}%)
+**STEP 2 — Confidence:** confidence not established (state no confidence figure)
 
 **STEP 3 — Key Evidence (cite 3–5 of these):**
 ${a.keyEvidence.map(e => `- ${e}`).join('\n')}
@@ -370,6 +328,11 @@ export async function generateBotResponse(
   // Add the new user message
   messages.push({ role: "user", content: newUserMessage });
 
+  // Paid plans are not on sale: answer price/upgrade questions deterministically.
+  if (isPlanPriceQuestion(newUserMessage)) {
+    return buildFallbackPricingResponse();
+  }
+
   try {
     const response = await invokeLLM({ messages });
     const content = response?.choices?.[0]?.message?.content;
@@ -387,7 +350,7 @@ export async function generateBotResponse(
           ...messages.slice(1),
           {
             role: "system",
-            content: `CORRECTION REQUIRED: Your previous response contained incorrect pricing. You MUST use ONLY these prices: Free=$0, Mobile=${CANONICAL_PRICING.core.priceLabel}/mo, Trader=${CANONICAL_PRICING.premium.priceLabel}/mo, Founding Member=${CANONICAL_PRICING.founding.priceLabel}, Lifetime=${PRICING_PLANS.lifetime.priceLabel}. Please restate your answer using only these prices.`,
+            content: `CORRECTION REQUIRED: Your previous response used retired pricing. Restate your answer using only the approved prices ($99/month or $1,500 one-time); if pricing comes up, say: "${PRICE_NOT_ON_SALE_ANSWER}"`,
           },
         ];
 

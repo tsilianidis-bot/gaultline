@@ -36,7 +36,6 @@ import {
   ArrowRight, Info, Minus
 } from "lucide-react";
 import { PremiumGateFull } from "@/components/PremiumGate";
-import ScoreExplainer from "@/components/ScoreExplainer";
 
 // ── Types (mirrored from server) ──────────────────────────────
 
@@ -358,7 +357,9 @@ function Skeleton({ h = "20px", w = "100%", mb = "0" }: { h?: string; w?: string
 // ── Main page ─────────────────────────────────────────────────
 
 function PreFlightInner() {
-  useSEO(PAGE_SEO.preFlight);
+  // Route /app/pre-flight redirects to /app/now/deep (#67). Keep SEO pointed at the destination
+  // without restoring a customer-facing Pre-Flight PAGE_SEO entry.
+  useSEO({ title: "FAULTLINE — Now (Deep)", description: "Current market conditions and pressure reading.", canonical: "/app/now/deep" });
 
   const { data, isLoading, error, refetch, isFetching } = trpc.preFlight.getAwarenessData.useQuery(undefined, {
     staleTime: 5 * 60 * 1000,
@@ -600,40 +601,15 @@ function PreFlightInner() {
                 icon={<BarChart3 size={13} style={{ color: "#888" }} />}
                 accent="rgba(255,255,255,0.1)"
               >
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingTop: "4px" }}>
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
-                      <span style={{ fontSize: "11px", color: "#00D464" }}>BULL</span>
-                      <span style={{ fontSize: "13px", fontWeight: "700", color: "#00D464" }}>{data.bullProbability}%</span>
+                {/* Probability contract: preFlight returns no bull/bear/recession/crash
+                    probabilities (null) — no governed model produces them. */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingTop: "4px" }}>
+                  {(["BULL", "BEAR", "RECESSION", "CRASH"] as const).map(label => (
+                    <div key={label} style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: "11px", color: "#888" }}>{label}</span>
+                      <span style={{ fontSize: "13px", fontWeight: "700", color: "#888" }}>Not offered</span>
                     </div>
-                    <ScoreBar value={data.bullProbability} color="#00D464" />
-                  </div>
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
-                      <span style={{ fontSize: "11px", color: "#FF3C3C" }}>BEAR</span>
-                      <span style={{ fontSize: "13px", fontWeight: "700", color: "#FF3C3C" }}>{data.bearProbability}%</span>
-                    </div>
-                    <ScoreBar value={data.bearProbability} color="#FF3C3C" />
-                  </div>
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
-                      <span style={{ fontSize: "11px", color: "#FF6B00" }}>RECESSION</span>
-                      <span style={{ fontSize: "13px", fontWeight: "700", color: "#FF6B00" }}>{data.recessionProbability}%</span>
-                    </div>
-                    <ScoreBar value={data.recessionProbability} color="#FF6B00" />
-                  </div>
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
-                      <span style={{ fontSize: "11px", color: "#FF0000" }}>CRASH</span>
-                      <span style={{ fontSize: "13px", fontWeight: "700", color: "#FF0000" }}>{data.crashProbability}%</span>
-                    </div>
-                    <ScoreBar value={data.crashProbability} color="#FF0000" />
-                  </div>
-                  {/* Score Explainers */}
-                  <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <ScoreExplainer scoreKey="bullProbability" value={data.bullProbability} trend="stable" compact />
-                    <ScoreExplainer scoreKey="crashRisk" value={data.crashProbability} trend="stable" compact />
-                  </div>
+                  ))}
                 </div>
               </PanelCard>
             </div>

@@ -49,8 +49,9 @@ interface WatchlistItemCardProps {
 
 function WatchlistItemCard({ id, symbol, name, type, price, changePercent, signal, onRemove }: WatchlistItemCardProps) {
   const signalColor = getSignalColor(signal ?? "HOLD");
-  const changeColor = (changePercent ?? 0) >= 0 ? "#34D399" : "#FF2D55";
-  const riskLabel = getRiskLabel(changePercent ?? 0);
+  const changeKnown = typeof changePercent === "number" && Number.isFinite(changePercent);
+  const changeColor = changeKnown && changePercent >= 0 ? "#34D399" : changeKnown ? "#FF2D55" : "#64748B";
+  const riskLabel = changeKnown ? getRiskLabel(changePercent) : "Unavailable";
   const riskColor = getRiskColor(riskLabel);
 
   return (
@@ -89,11 +90,13 @@ function WatchlistItemCard({ id, symbol, name, type, price, changePercent, signa
         </div>
         <div className="flex items-center gap-2 mt-0.5">
           <span className="text-[10px] font-mono text-[#64748B] truncate">{name}</span>
-          {changePercent !== undefined && (
+          {typeof changePercent === "number" ? (
             <span className="text-[9px] font-mono font-bold" style={{ color: changeColor }}>
               {changePercent >= 0 ? "+" : ""}{changePercent.toFixed(2)}%
             </span>
-          )}
+          ) : changePercent === null ? (
+            <span className="text-[9px] font-mono text-[#64748B]">Unavailable</span>
+          ) : null}
           <span className="text-[8px] font-mono" style={{ color: riskColor }}>{riskLabel}</span>
         </div>
       </div>

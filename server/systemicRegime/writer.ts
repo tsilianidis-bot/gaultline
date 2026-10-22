@@ -5,6 +5,7 @@ import { signalConvergenceReadings, systemicRegimeModels, systemicRegimeReadings
 import { getDb } from "../db";
 import type { HistoryClass, SignalConvergenceSnapshot, SystemicRegimeHistoryPoint, SystemicRegimeReading } from "../../shared/systemicRegime";
 import { log } from "../logger";
+import { hasApprovedSystemicRegimeIdentity } from "./identity";
 
 function decimal(value: number | null | undefined): string | null {
   if (value == null || !Number.isFinite(value)) return null;
@@ -18,6 +19,10 @@ export async function persistSystemicRegimeReading(
   const db = await getDb();
   if (!db) return { ok: false };
   if (!reading.currentRegime || !reading.dataAsOf) return { ok: false };
+  if (historyClass === "LIVE_INFERENCE" && !hasApprovedSystemicRegimeIdentity(reading)) {
+    log.warn("[SystemicRegime] Refusing to persist LIVE reading from an unapproved identity");
+    return { ok: false };
+  }
   const [result] = await db.insert(systemicRegimeReadings).values({
     dataAsOf: reading.dataAsOf,
     computedAt: reading.computedAt ? new Date(reading.computedAt) : new Date(),
@@ -97,6 +102,16 @@ export async function persistApprovedModelRegistry(registry: Record<string, unkn
   if (!db) return;
   const modelVersion = String(registry.modelVersion ?? "unknown");
   const payload: Record<string, unknown> = { ...registry, approved: true };
+  const identity = {
+    modelVersion,
+    modelType: String(payload.modelType ?? ""),
+    pcaMethod: String((payload.pca as { pcaMethod?: string } | undefined)?.pcaMethod ?? payload.pcaMethod ?? ""),
+    nStates: Number(payload.nStates ?? 0),
+  };
+  if (!hasApprovedSystemicRegimeIdentity(identity)) {
+    log.warn("[SystemicRegime] Refusing to persist an unapproved model registry identity", { modelVersion });
+    return;
+  }
   if (modelDir) {
     const joblib = resolve(modelDir, "approved.joblib");
     if (existsSync(joblib)) {
@@ -107,9 +122,9 @@ export async function persistApprovedModelRegistry(registry: Record<string, unkn
   try {
     await db.insert(systemicRegimeModels).values({
       modelVersion,
-      modelType: String(payload.modelType ?? "gaussian-hmm-2state"),
-      pcaMethod: String(pca?.pcaMethod ?? payload.pcaMethod ?? "standard_scaler_pca"),
-      nStates: Number(payload.nStates ?? 2),
+      modelType: identity.modelType,
+      pcaMethod: identity.pcaMethod,
+      nStates: identity.nStates,
       featureSchemaVersion: String(payload.featureSchemaVersion ?? "sre-features-v1"),
       trainingStart: pca?.trainingStart ?? null,
       trainingEnd: pca?.trainingEnd ?? null,
@@ -117,8 +132,8 @@ export async function persistApprovedModelRegistry(registry: Record<string, unkn
       registryJson: JSON.stringify(payload),
     }).onDuplicateKeyUpdate({
       set: {
-        modelType: String(payload.modelType ?? "gaussian-hmm-2state"),
-        nStates: Number(payload.nStates ?? 2),
+        modelType: identity.modelType,
+        nStates: identity.nStates,
         approved: true,
         registryJson: JSON.stringify(payload),
       },
@@ -140,7 +155,23 @@ export async function restoreApprovedModelFromDb(modelDir: string): Promise<bool
     .limit(1);
   if (!row) return false;
   try {
-    const parsed = JSON.parse(row.registryJson) as { artifactBase64?: string };
+    const parsed = JSON.parse(row.registryJson) as { artifactBase64?: string; modelVersion?: string; modelType?: string; pcaMethod?: string; nStates?: number; pca?: { pcaMethod?: string } };
+    const identity = {
+      modelVersion: row.modelVersion,
+      modelType: row.modelType,
+      pcaMethod: row.pcaMethod,
+      nStates: row.nStates,
+    };
+    const artifactIdentity = {
+      modelVersion: String(parsed.modelVersion ?? ""),
+      modelType: String(parsed.modelType ?? ""),
+      pcaMethod: String(parsed.pca?.pcaMethod ?? parsed.pcaMethod ?? ""),
+      nStates: Number(parsed.nStates ?? 0),
+    };
+    if (!hasApprovedSystemicRegimeIdentity(identity) || !hasApprovedSystemicRegimeIdentity(artifactIdentity)) {
+      log.warn("[SystemicRegime] Approved model restore rejected: identity mismatch");
+      return false;
+    }
     if (!parsed.artifactBase64) return false;
     mkdirSync(modelDir, { recursive: true });
     writeFileSync(resolve(modelDir, "approved.joblib"), Buffer.from(parsed.artifactBase64, "base64"));

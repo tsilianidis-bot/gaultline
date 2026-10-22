@@ -50,23 +50,40 @@ describe("Phase 1B intelligence governance", () => {
 
   it("governs scenario scores and analog similarity with different semantics", () => {
     const claims = buildGovernedClaims(seismograph, "2026-08-20T16:00:00.000Z");
-    expect(claims.find(claim => claim.claimId === "seismograph.scenario.bull")).toMatchObject({ claimType: "DERIVED_SCENARIO_SCORE", displayStatus: "SUPPRESS_PREDICTIVE_PRESENTATION", timeHorizon: null });
+    expect(claims.find(claim => claim.claimId === "seismograph.scenario.bull")).toMatchObject({ claimType: "DERIVED_SCENARIO_SCORE", displayStatus: "SUPPRESS_PREDICTIVE_PRESENTATION", timeHorizon: "NOT_ESTABLISHED", modelVersion: "seismograph-core-v1" });
+    // The claim modelVersion is unchanged; the contract model reference rides in metadata.
+    expect(claims.find(claim => claim.claimId === "seismograph.scenario.bull")?.metadata).toMatchObject({ contractModelVersion: "seismograph-evidence-vote-v1", calibrationStatus: "UNCALIBRATED" });
     expect(claims.find(claim => claim.claimType === "ANALOG_SIMILARITY")).toMatchObject({ displayStatus: "DISPLAY_WITH_QUALIFICATION", evidenceStatus: "UNVERIFIED" });
     expect(claims.find(claim => claim.claimType === "UNSUPPORTED")).toMatchObject({ displayStatus: "SUPPRESS_PREDICTIVE_PRESENTATION" });
   });
 
   it("creates a deterministic coherent manifest for an identical input snapshot", () => {
-    const first = buildAtomicIntelligenceStateManifest({ pressure, seismograph, generatedAt: "2026-08-20T16:00:00.000Z" });
-    const second = buildAtomicIntelligenceStateManifest({ pressure, seismograph, generatedAt: "2026-08-20T16:00:00.000Z" });
+    const originatingRunId = "seismograph:test-run";
+    const first = buildAtomicIntelligenceStateManifest({ pressure, seismograph, originatingRunId, generatedAt: "2026-08-20T16:00:00.000Z" });
+    const second = buildAtomicIntelligenceStateManifest({ pressure, seismograph, originatingRunId, generatedAt: "2026-08-20T16:00:00.000Z" });
     expect(first.manifest.coherenceStatus).toBe("COHERENT");
+    expect(first.manifest.originatingRunId).toBe(originatingRunId);
     expect(first.manifest.stateHash).toBe(second.manifest.stateHash);
     expect(first.manifest.inputSnapshotId).toBe(second.manifest.inputSnapshotId);
     expect(first.manifest.probabilityClaimIds).toEqual(expect.arrayContaining(["seismograph.scenario.bull"]));
   });
 
   it("records a score disagreement as an explicit mismatch rather than silently mixing outputs", () => {
-    const mismatched = buildAtomicIntelligenceStateManifest({ pressure, seismograph: { ...seismograph, pressureScore: 31 }, generatedAt: "2026-08-20T16:00:00.000Z" });
+    const mismatched = buildAtomicIntelligenceStateManifest({ pressure, seismograph: { ...seismograph, pressureScore: 31 }, originatingRunId: "seismograph:mismatch", generatedAt: "2026-08-20T16:00:00.000Z" });
     expect(mismatched.manifest.coherenceStatus).toBe("EXPLICIT_MISMATCH");
     expect(mismatched.manifest.coherenceNotes.join(" ")).toContain("pressure-score-mismatch");
+  });
+  it("records run trigger provenance outside the stateHash core (A1)", () => {
+    const base = { pressure, seismograph, originatingRunId: "seismograph:trigger-run", generatedAt: "2026-08-20T18:00:05.000Z" };
+    const plain = buildAtomicIntelligenceStateManifest(base);
+    const runContext = { trigger: "SCHEDULED_CRON" as const, triggerSource: "cron-endpoint" as const, runStartedAt: "2026-08-20T18:00:01.000Z", scheduledWindow: true };
+    const outcomeLink = { status: "CAPTURED", championProvenanceKey: "champion-forward:2026-08-20:v1-forward-provenance-2026-08-19", championProvenanceId: 5, championProvenanceCreatedByThisRun: true, outcomeKeyVersion: "v2" };
+    const withCtx = buildAtomicIntelligenceStateManifest({ ...base, runContext, outcomeLink });
+    expect(withCtx.manifest.stateHash).toBe(plain.manifest.stateHash);
+    expect(withCtx.manifest.stateId).toBe(plain.manifest.stateId);
+    expect(withCtx.runProvenance).toMatchObject({ trigger: "SCHEDULED_CRON", triggerSource: "cron-endpoint", runStartedAt: "2026-08-20T18:00:01.000Z", scheduledWindow: true, ledgerSchemaVersion: "vf-ledger-v1", hashRecipe: "core-with-runId-v2", outcomeLink });
+    expect(withCtx.runProvenance.evaluationPlan).toMatchObject({ horizonsTradingDays: [1, 5, 20, 60], outcomeKeyVersion: "v2" });
+    expect(plain.runProvenance).not.toHaveProperty("trigger");
+    expect(plain.runProvenance).not.toHaveProperty("outcomeLink");
   });
 });

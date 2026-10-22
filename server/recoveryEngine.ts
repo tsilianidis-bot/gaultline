@@ -46,6 +46,8 @@ export interface ConfirmationRule {
   label: string;
   description: string;
   passed: boolean;
+  /** Missing observation. Reported, never passed, and excluded from both sides of the score. */
+  withheld?: boolean;
   weight: number;      // contribution to confidence score
   detail: string;      // specific reason why it passed or failed
 }
@@ -86,7 +88,7 @@ export interface RecoveryInput {
   name: string;
   market: CoinMarketData;
   ohlcBars?: CoinOHLCBar[];
-  btcDominance?: number;
+  btcDominance?: number | null;
   pressure?: FaultlinePressureOutput | null;
   isCrypto?: boolean;
 }
@@ -172,21 +174,27 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
   const isBitcoin = symbol.toUpperCase() === "BTC";
 
   // ── Extract price series ──────────────────────────────────
-  const closes: number[] = ohlcBars && ohlcBars.length >= 5
+  const closes: number[] = ohlcBars && ohlcBars.length >= 15
     ? ohlcBars.map(b => b.close)
-    : market.sparkline7d.length >= 10
-      ? market.sparkline7d
-      : [];
+    : [];
 
   const currentPrice = market.currentPrice;
+  const priceKnown = typeof currentPrice === "number" && Number.isFinite(currentPrice);
   const change24h = market.priceChangePercent24h;
-  const change7d = market.priceChangePercent7d ?? change24h * 3;
-  const change30d = market.priceChangePercent30d ?? change24h * 10;
+  const change7d = typeof market.priceChangePercent7d === "number" && Number.isFinite(market.priceChangePercent7d)
+    ? market.priceChangePercent7d
+    : null;
+  const change30d = typeof market.priceChangePercent30d === "number" && Number.isFinite(market.priceChangePercent30d)
+    ? market.priceChangePercent30d
+    : null;
   const volatility24h = market.volatility24h;
+  const volatilityKnown = typeof volatility24h === "number" && Number.isFinite(volatility24h);
   const distanceFromAth = market.distanceFromAth; // negative = below ATH
 
   // ── Macro pressure context ────────────────────────────────
-  const macroPressure = pressure?.overallPressure ?? 50;
+  const macroPressure = typeof pressure?.overallPressure === "number" && Number.isFinite(pressure.overallPressure)
+    ? pressure.overallPressure
+    : null;
   const macroLevel = pressure?.level ?? "Moderate";
   const macroWorsening = pressure?.vectors?.some(v => v.trend === "rising" && v.score > 60) ?? false;
 
@@ -200,9 +208,6 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
       closes,
       closes[Math.max(0, closes.length - requiredConsecutiveCloses - 1)]
     );
-  } else {
-    // Fallback: use 24h change as a single-bar proxy
-    consecutiveGreenCloses = change24h > 0 ? 1 : 0;
   }
 
   // ── Breakdown level reclamation ───────────────────────────
@@ -211,37 +216,37 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
   // ── Moving average context ────────────────────────────────
   const sma10 = sma(closes, 10);
   const sma20 = sma(closes, 20);
-  const aboveSma10 = sma10 !== null && currentPrice > sma10;
-  const aboveSma20 = sma20 !== null && currentPrice > sma20;
+  const aboveSma10 = priceKnown && sma10 !== null && (currentPrice as number) > sma10;
+  const aboveSma20 = priceKnown && sma20 !== null && (currentPrice as number) > sma20;
   const aboveAnyMa = aboveSma10 || aboveSma20;
 
   // ── Volume confirmation ───────────────────────────────────
-  const volumeToMcap = market.marketCap > 0
-    ? (market.totalVolume / market.marketCap) * 100
+  const volumeKnown = typeof market.marketCap === "number" && typeof market.totalVolume === "number";
+  const volumeToMcap = volumeKnown && (market.marketCap as number) > 0
+    ? ((market.totalVolume as number) / (market.marketCap as number)) * 100
     : 0;
-  const volumeConfirmed = volumeToMcap > 1.5; // >1.5% volume/mcap ratio = meaningful volume
+  const volumeConfirmed = volumeKnown && volumeToMcap > 1.5; // >1.5% volume/mcap ratio = meaningful volume
 
   // ── Volatility cooling ────────────────────────────────────
   const volatilityCV = estimateVolatility(closes);
-  const volatilityCooling = volatility24h < 4.0 && volatilityCV < 5.0;
+  const volatilityCooling = volatilityKnown && volatility24h < 4.0 && volatilityCV < 5.0;
 
   // ── 7d and 14d trend improvement ─────────────────────────
-  const trendImproving7d = change7d > -5; // not still in freefall
-  const trendImproving14d = change30d > -15; // 30d used as proxy for 14d
+  const trendImproving7d = change7d != null && change7d > -5; // not still in freefall
+  const trendImproving14d = change30d != null && change30d > -15; // 30d used as proxy for 14d
 
   // ── BTC dominance (altcoin breadth proxy) ─────────────────
-  const btcDom = btcDominance ?? 55;
-  const altcoinsBreadthOk = isBitcoin
-    ? true // BTC doesn't need altcoin confirmation
-    : btcDom < 58; // altcoins confirm when BTC dom is not surging
+  // A missing reading is withheld. It is not treated as 55 and does not pass.
+  const observedDominance = typeof btcDominance === "number" && Number.isFinite(btcDominance) ? btcDominance : null;
+  const altcoinsBreadthOk = observedDominance != null && (isBitcoin || observedDominance < 58);
 
   // ── Recent selloff detection ──────────────────────────────
   const hadRecentSelloff = closes.length >= 3
     ? detectRecentSelloff(closes)
-    : change7d < -10 || change30d < -20;
+    : (change7d != null && change7d < -10) || (change30d != null && change30d < -20);
 
   // ── Macro pressure not worsening ─────────────────────────
-  const macroNotWorsening = !macroWorsening && macroPressure < 70;
+  const macroNotWorsening = macroPressure != null && !macroWorsening && macroPressure < 70;
 
   // ── Build confirmation rules ──────────────────────────────
   const confirmationRules: ConfirmationRule[] = [
@@ -272,48 +277,63 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
       label: "7-Day Trend Improving",
       description: "7-day price change must not be in freefall (> -5%)",
       passed: trendImproving7d,
+      withheld: change7d == null,
       weight: 12,
-      detail: trendImproving7d
-        ? `7d change: ${change7d.toFixed(1)}% — trend stabilizing`
-        : `7d change: ${change7d.toFixed(1)}% — still in downtrend`,
+      detail: change7d == null
+        ? "7d change unavailable"
+        : trendImproving7d
+          ? `7d change: ${change7d.toFixed(1)}% — trend stabilizing`
+          : `7d change: ${change7d.toFixed(1)}% — still in downtrend`,
     },
     {
       id: "trend_14d",
       label: "14-Day Trend Not Deteriorating",
       description: "Medium-term trend must show signs of stabilization",
       passed: trendImproving14d,
+      withheld: change30d == null,
       weight: 10,
-      detail: trendImproving14d
-        ? `30d change: ${change30d.toFixed(1)}% — medium-term stabilizing`
-        : `30d change: ${change30d.toFixed(1)}% — medium-term still weak`,
+      detail: change30d == null
+        ? "30d change unavailable"
+        : trendImproving14d
+          ? `30d change: ${change30d.toFixed(1)}% — medium-term stabilizing`
+          : `30d change: ${change30d.toFixed(1)}% — medium-term still weak`,
     },
     {
       id: "volume_confirmation",
       label: "Volume Supports the Move",
       description: "Volume must be meaningful relative to market cap",
       passed: volumeConfirmed,
+      withheld: !volumeKnown,
       weight: 12,
-      detail: volumeConfirmed
-        ? `Volume/MCap ratio: ${volumeToMcap.toFixed(2)}% — volume confirming`
-        : `Volume/MCap ratio: ${volumeToMcap.toFixed(2)}% — volume too thin`,
+      detail: !volumeKnown
+        ? "Volume or market cap unavailable"
+        : volumeConfirmed
+          ? `Volume/MCap ratio: ${volumeToMcap.toFixed(2)}% — volume confirming`
+          : `Volume/MCap ratio: ${volumeToMcap.toFixed(2)}% — volume too thin`,
     },
     {
       id: "volatility_cooling",
       label: "Volatility Cooling",
       description: "Intraday volatility must begin decreasing",
       passed: volatilityCooling,
+      withheld: !volatilityKnown,
       weight: 10,
-      detail: volatilityCooling
-        ? `24h volatility: ${volatility24h.toFixed(1)}% — cooling`
-        : `24h volatility: ${volatility24h.toFixed(1)}% — still elevated`,
+      detail: !volatilityKnown
+        ? "24h volatility unavailable"
+        : volatilityCooling
+          ? `24h volatility: ${volatility24h.toFixed(1)}% — cooling`
+          : `24h volatility: ${volatility24h.toFixed(1)}% — still elevated`,
     },
     {
       id: "above_ma",
       label: "Price Above Key Moving Averages",
       description: "Price must be above at least one key moving average",
       passed: aboveAnyMa,
+      withheld: !priceKnown,
       weight: 10,
-      detail: aboveAnyMa
+      detail: !priceKnown
+        ? "Price unavailable"
+        : aboveAnyMa
         ? `Price above ${aboveSma10 ? "10-period" : "20-period"} MA`
         : "Price still below key moving averages",
     },
@@ -321,28 +341,35 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
       id: "macro_not_worsening",
       label: "Macro Pressure Not Worsening",
       description: "FAULTLINE Pressure Index must not be escalating",
-      passed: macroNotWorsening,
+      passed: macroPressure != null && macroNotWorsening,
+      withheld: macroPressure == null,
       weight: 8,
-      detail: macroNotWorsening
-        ? `Macro pressure: ${macroLevel} (${macroPressure.toFixed(0)}/100) — not escalating`
-        : `Macro pressure: ${macroLevel} (${macroPressure.toFixed(0)}/100) — still worsening`,
+      detail: macroPressure == null
+        ? "Macro pressure unavailable"
+        : macroNotWorsening
+          ? `Macro pressure: ${macroLevel} (${macroPressure.toFixed(0)}/100) — not escalating`
+          : `Macro pressure: ${macroLevel} (${macroPressure.toFixed(0)}/100) — still worsening`,
     },
     ...(isCrypto ? [{
       id: "altcoin_breadth",
       label: "Crypto Breadth Confirming",
       description: "Altcoins must participate in the recovery (BTC dominance not surging)",
-      passed: altcoinsBreadthOk,
+      passed: observedDominance != null && altcoinsBreadthOk,
+      withheld: observedDominance == null,
       weight: 8,
-      detail: altcoinsBreadthOk
-        ? `BTC dominance: ${btcDom.toFixed(1)}% — altcoins participating`
-        : `BTC dominance: ${btcDom.toFixed(1)}% — altcoins not confirming`,
+      detail: observedDominance == null
+        ? "BTC dominance unavailable"
+        : altcoinsBreadthOk
+          ? `BTC dominance: ${observedDominance.toFixed(1)}% — altcoins participating`
+          : `BTC dominance: ${observedDominance.toFixed(1)}% — altcoins not confirming`,
     }] : []),
   ];
 
-  const totalWeight = confirmationRules.reduce((s, r) => s + r.weight, 0);
-  const passedWeight = confirmationRules.filter(r => r.passed).reduce((s, r) => s + r.weight, 0);
-  const confirmationsPassed = confirmationRules.filter(r => r.passed).length;
-  const confirmationsRequired = confirmationRules.length;
+  const scoredRules = confirmationRules.filter(r => !r.withheld);
+  const totalWeight = scoredRules.reduce((s, r) => s + r.weight, 0);
+  const passedWeight = scoredRules.filter(r => r.passed).reduce((s, r) => s + r.weight, 0);
+  const confirmationsPassed = scoredRules.filter(r => r.passed).length;
+  const confirmationsRequired = scoredRules.length;
 
   // ── Recovery Confidence Score (0–100) ─────────────────────
   // Base score from confirmation rules
@@ -350,7 +377,7 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
 
   // Asymmetric decay: penalize heavily if recent selloff with weak bounce
   if (hadRecentSelloff) {
-    const bounceMagnitude = Math.max(0, change24h); // positive = bounced
+    const bounceMagnitude = Math.max(0, typeof change24h === "number" ? change24h : 0); // positive = bounced
     const bounceQuality = clamp(bounceMagnitude / 5, 0, 1); // normalize: 5%+ bounce = full quality
     rawConfidence = rawConfidence * (0.4 + 0.6 * bounceQuality);
   }
@@ -361,7 +388,7 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
   }
 
   // Penalize if still well below ATH (deep discount = more downside risk)
-  if (distanceFromAth < -40) {
+  if (typeof distanceFromAth === "number" && distanceFromAth < -40) {
     rawConfidence *= 0.85;
   }
 
@@ -382,24 +409,24 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
   if (hadRecentSelloff) aftershockRiskScore += 35;
 
   // Weak bounce (small recovery after large drop)
-  if (hadRecentSelloff && change24h < 3) aftershockRiskScore += 20;
+  if (hadRecentSelloff && typeof change24h === "number" && change24h < 3) aftershockRiskScore += 20;
 
   // Failed to reclaim breakdown levels
   if (!reclaimedBreakdown) aftershockRiskScore += 15;
 
   // Volatility still high
-  if (volatility24h > 5) aftershockRiskScore += 10;
-  else if (volatility24h > 3) aftershockRiskScore += 5;
+  if (volatilityKnown && volatility24h > 5) aftershockRiskScore += 10;
+  else if (volatilityKnown && volatility24h > 3) aftershockRiskScore += 5;
 
   // Macro pressure elevated
-  if (macroPressure > 70) aftershockRiskScore += 10;
-  else if (macroPressure > 50) aftershockRiskScore += 5;
+  if (macroPressure != null && macroPressure > 70) aftershockRiskScore += 10;
+  else if (macroPressure != null && macroPressure > 50) aftershockRiskScore += 5;
 
   // Risk assets weak (price still below MAs)
   if (!aboveAnyMa) aftershockRiskScore += 8;
 
   // Crypto breadth poor
-  if (isCrypto && !altcoinsBreadthOk) aftershockRiskScore += 7;
+  if (isCrypto && observedDominance != null && !altcoinsBreadthOk) aftershockRiskScore += 7;
 
   // Asymmetric: reduce risk only if multiple confirmations passed
   if (confirmationsPassed >= Math.ceil(confirmationsRequired * 0.75)) {
@@ -425,7 +452,7 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
     status = "Stabilizing";
   } else if (recoveryConfidence >= 26) {
     status = "Recovery Attempt";
-  } else if (change24h > 1 && hadRecentSelloff) {
+  } else if (typeof change24h === "number" && change24h > 1 && hadRecentSelloff) {
     // Small bounce after selloff = relief bounce
     status = "Relief Bounce";
   } else {
@@ -450,7 +477,7 @@ export function computeRecoveryAnalysis(input: RecoveryInput): RecoveryAnalysis 
   else trendBias = "Bearish";
 
   // ── Market Regime ─────────────────────────────────────────
-  const marketRegime = pressure?.regime ?? (macroPressure > 65 ? "ELEVATED RISK" : "MODERATE RISK");
+  const marketRegime = pressure?.regime ?? ((macroPressure != null && macroPressure > 65) ? "ELEVATED RISK" : "MODERATE RISK");
 
   // ── Key Reasoning ─────────────────────────────────────────
   let keyReasoning: string;

@@ -16,7 +16,7 @@ import { invokeLLM } from "../_core/llm";
 import { resolveIntent, detectQuestionIntent, QuestionIntent } from "../intentResolver";
 import { getDb, incrementAskUsage, getAskUsageToday } from "../db";
 import { decisionLedger, DecisionLedgerEntry } from "../../drizzle/schema";
-import { eq, desc } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
 import { getQuote } from "../yahooProxy";
 import { getCoinMarketData } from "../coingeckoProxy";
 import { scanOpportunities } from "../ownerSimulation";
@@ -35,6 +35,8 @@ import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligen
 import { buildInterpretationPromptContract, createInterpretationTransaction, validateInterpretationOutput, type InterpretationTransaction, type InterpretationValidationResult } from "../../shared/interpretationIntegrity";
 import { buildCrossEngineSynthesis, buildCrossEngineSynthesisPromptContract } from "../crossEngineSynthesis";
 import { buildEarlyWarningPresentationPromptContract, getCurrentGovernedEarlyWarningPresentation } from "../earlyWarningPresentation";
+import { stripProbabilityPercentClaims } from "../stripProbabilityClaims";
+import { evidenceFreshnessLabel, fredObservationMs } from "../evidenceFreshness";
 
 // ── LLM timeout helper ───────────────────────────────────────
 // Wraps any promise with a 55-second timeout so the user gets a friendly
@@ -59,7 +61,7 @@ async function withLLMTimeout<T>(p: Promise<T>): Promise<T> {
 
 export interface EvidenceScore {
   category: string;
-  score: number;        // 0–100
+  score: number | null;
   signal: "bullish" | "bearish" | "neutral";
   explanation: string;  // one-line
 }
@@ -68,8 +70,8 @@ export interface FaultlineAnswer {
   // Core verdict
   verdict: "STRONG BUY" | "BUY" | "ACCUMULATE" | "WAIT" | "HOLD" | "REDUCE" | "STRONG REDUCE" | "SELL" | "HIGH RISK" | "LOW CONVICTION" | "MACRO ANSWER";
   verdictColor: "green" | "yellow" | "red" | "blue";
-  opportunityScore: number;       // 0–100
-  confidence: number;             // 0–100
+  opportunityScore: number | null;
+  confidence: number | null;
   confidenceLabel: string;        // "HIGH" | "MODERATE" | "LOW"
   confidenceReasons: string[];    // 3-5 specific reasons for the confidence level
 
@@ -140,12 +142,12 @@ export interface FaultlineAnswer {
   executiveSummary: string;       // 2 sentences — the strategist's opening statement
   whyThisVerdict: string;         // The reasoning chain
 
-  // Bull / Bear with probabilities (Sections 7-8)
+  // Bull / Bear cases (Sections 7-8). Qualitative only: no model probability
+  // numbers (James's rule). Scenario text on screen comes from the canonical
+  // probability contract, never from the model.
   bullCase: string;
-  bullProbability: number;        // 0–100
   bullKeyDrivers: string[];       // 2-3 items
   bearCase: string;
-  bearProbability: number;        // 0–100
   bearKeyDrivers: string[];       // 2-3 items
 
   catalysts: string[];
@@ -187,8 +189,7 @@ export interface FaultlineAnswer {
   // ── FINAL VERDICT — mandatory closing section ─────────────────────────────
   // The definitive institutional verdict that closes every response.
   finalVerdictAction: "BUY" | "ACCUMULATE" | "HOLD" | "WATCH" | "REDUCE" | "SELL" | "AVOID";
-  finalVerdictProbability: number;   // 0–100 — probability the verdict plays out
-  finalVerdictConfidence: number;    // 0–100 — confidence in the verdict
+  finalVerdictConfidence: number | null;
   finalVerdictRiskLevel: "LOW" | "MODERATE" | "HIGH" | "EXTREME";
   finalVerdictTimeHorizon: string;   // e.g. "1–3 days", "1–3 weeks", "1–3 months"
   finalVerdictRationale: string;     // 1–2 sentences — why this verdict
@@ -344,14 +345,20 @@ async function orchestrateAnswer(
     // Fetch live price + OHLV so the LLM can generate accurate price targets
     ticker
       ? (assetType === "crypto"
-          ? getCoinMarketData(ticker).then(d => d ? ({
-              price: d.currentPrice,
-              change: d.priceChangePercent24h,
-              high: d.high24h,
-              low: d.low24h,
-              volume: d.totalVolume,
-              open: null,
-            }) : null)
+          ? getCoinMarketData(ticker).then(d => {
+              if (!d) return null;
+              const observedAtMs = Number.isFinite(Date.parse(d.lastUpdated)) ? Date.parse(d.lastUpdated) : null;
+              return {
+                price: d.currentPrice,
+                change: d.priceChangePercent24h,
+                high: d.high24h,
+                low: d.low24h,
+                volume: d.totalVolume,
+                open: null,
+                observedAtMs,
+                sourceStatus: observedAtMs != null ? "live" : "unavailable",
+              };
+            })
           : getQuote(ticker).then(q => ({
               price: q.price,
               change: q.changePercent,
@@ -359,6 +366,8 @@ async function orchestrateAnswer(
               low: q.low,
               volume: q.volume,
               open: q.open,
+              observedAtMs: typeof q.observedAt === "number" && Number.isFinite(q.observedAt) ? q.observedAt : null,
+              sourceStatus: q.source === "yahoo" ? "delayed" : q.source === "polygon-prev" ? "polygon-prev" : "unavailable",
             }))
         ).catch(() => null)
       : Promise.resolve(null),
@@ -384,8 +393,10 @@ async function orchestrateAnswer(
 
   // 3. Build context for LLM
   const regimeLabel = fmos?.regime?.currentRegime ?? pressureData?.regime ?? "UNCERTAIN";
-  const pressureScore = pressureData ? (pressureData.overallPressure / 10) : 5;
-  const regimeColor: "green" | "yellow" | "red" = pressureScore <= 3 ? "green" : pressureScore <= 6 ? "yellow" : "red";
+  // Canonical 0–100 Pressure Index; null when missing (no invented default of 5/10).
+  // Color bands unchanged: <=30 green (was <=3/10), <=60 yellow (was <=6/10); missing → yellow (as the old default).
+  const pressureIndex = pressureData && Number.isFinite(pressureData.overallPressure) ? pressureData.overallPressure : null;
+  const regimeColor: "green" | "yellow" | "red" = pressureIndex === null ? "yellow" : pressureIndex <= 30 ? "green" : pressureIndex <= 60 ? "yellow" : "red";
 
   // Extract FMOS evidence families for context
   const evidenceFamilies = fmos?.evidence?.families ?? [];
@@ -410,7 +421,6 @@ async function orchestrateAnswer(
   const outlookSummary = outlookData ? `
 Symbol: ${ticker}
 Direction: ${outlookData.direction}
-Confidence: ${outlookData.confidence}%
 Risk Level: ${outlookData.riskLevel}
 Outlook Score: ${outlookData.outlookScore}
 Data Status: ${outlookData.dataStatus}
@@ -549,7 +559,7 @@ BANNED OPENING PHRASES — NEVER use these:
   ✗ "Before I answer..."
 
 INSTEAD, open with the verdict. Examples:
-  ✓ "RKT is FAVORABLE for day trading today. Bull probability: 64%."
+  ✓ "RKT is FAVORABLE for day trading today. Momentum and liquidity both support the setup."
   ✓ "NVDA is a BUY at current levels. The AI infrastructure cycle remains intact."
   ✓ "Bitcoin is in a Bull Market Continuation phase. Momentum is accelerating."
   ✓ "SPY is a HOLD. Current evidence does not support adding exposure here."
@@ -565,11 +575,9 @@ Every response MUST contain ALL of the following sections in this exact order:
   1. DIRECT ANSWER (executiveSummary) — State the verdict immediately. Asset name + verdict + primary reason.
      Format: "[ASSET] is [VERDICT]. [Primary reason in one sentence]."
 
-  2. PROBABILITY ENGINE (bullProbability / bearProbability / confidence)
-     - Bull Probability: X%
-     - Bear Probability: Y%  
-     - Confidence: Z%
-     These must be specific to the asset asked about. Never use generic market probabilities for a specific ticker.
+  2. BULL / BEAR BALANCE (bullCase / bearCase)
+     A qualitative balance only, in words. Never state a probability, odds or percentage chance.
+     FAULTLINE does not offer a crash probability; its scenario weights are uncalibrated.
 
   3. SUGGESTED BIAS (suggestedBias / suggestedBiasCondition)
      One clear directional stance. Example: "LONG ONLY while price holds above the 20-day moving average."
@@ -590,11 +598,10 @@ Every response MUST contain ALL of the following sections in this exact order:
      Example: "Similar to NVDA in Q4 2022 before the AI infrastructure breakout."
      If no relevant analog exists, set to null.
 
-  8. FINAL VERDICT (finalVerdictAction + finalVerdictProbability + finalVerdictConfidence + finalVerdictRiskLevel + finalVerdictTimeHorizon + finalVerdictRationale)
+  8. FINAL VERDICT (finalVerdictAction + finalVerdictConfidence + finalVerdictRiskLevel + finalVerdictTimeHorizon + finalVerdictRationale)
      MANDATORY. Every response ends with a Final Verdict.
      - Action: BUY | ACCUMULATE | HOLD | WATCH | REDUCE | SELL | AVOID
-     - Probability: X% (probability the verdict plays out)
-     - Confidence: X% (confidence in the verdict)
+     - Confidence is not established. Do not state a confidence percentage.
      - Risk Level: LOW | MODERATE | HIGH | EXTREME
      - Time Horizon: e.g. "1–3 days", "1–3 weeks", "1–3 months"
      - Rationale: 1–2 sentences explaining the verdict
@@ -607,10 +614,10 @@ Every response MUST contain ALL of the following sections in this exact order:
 ══════════════════════════════════════════════════════════════════════
 INTENT ROUTING RULES
 ══════════════════════════════════════════════════════════════════════
-1. If the user asks about a specific ticker (e.g. "Should I buy NVDA?", "I want to day trade RKT"), answer about THAT ticker ONLY. All probabilities, drivers, risks, and price levels must be specific to that ticker.
+1. If the user asks about a specific ticker (e.g. "Should I buy NVDA?", "I want to day trade RKT"), answer about THAT ticker ONLY. All drivers, risks, and price levels must be specific to that ticker.
 2. If the user asks a broad market question, do NOT default to the active ticker. Answer the broad question.
 3. The active symbol is context only — never assume it is the subject unless the user explicitly refers to it.
-4. Never refuse ordinary market questions. Provide probability-based, evidence-backed intelligence.
+4. Never refuse ordinary market questions. Provide evidence-backed intelligence without probability numbers.
 5. For normal investing/trading questions, NEVER respond with generic AI disclaimers. Provide the analysis.
 
 ══════════════════════════════════════════════════════════════════════
@@ -625,7 +632,7 @@ USE INSTITUTIONAL LANGUAGE INSTEAD:
   ✓ "Current assessment:" not "Here are some insights:"
   ✓ "Based on live intelligence..." not "Based on available information..."
   ✓ "Current evidence suggests..." not "It seems like..."
-  ✓ "Our highest probability scenario is..." not "It's possible that..."
+  ✓ "The evidence favors..." not "It's possible that..."
   ✓ "The thesis holds while..." not "This could work if..."
   ✓ Declarative statements. "Liquidity supports risk assets." Not "Liquidity may support risk assets."
 
@@ -641,7 +648,7 @@ FIELD RULES
 - bullKeyDrivers / bearKeyDrivers: EXACTLY 3 items each. One clause per item.
 - catalysts / threats: EXACTLY 3 items each. Near-term and asset-specific.
 - confidenceReasons: EXACTLY 3 items. Each explains WHY confidence is at this level.
-- evidenceScores: EXACTLY 14 items. Each score 0-100, one-line explanation with a number or condition.
+- evidenceScores: EXACTLY 14 items. score is null. Do not invent a 0-100 score or use 50 as neutral. One-line explanation with a supplied number or condition, or "Not applicable".
 - whyNotBuy: If verdict is WAIT/HOLD, provide 3 specific reasons. Otherwise null.
 - whyNotSell: If verdict is WAIT/HOLD, provide 3 specific reasons. Otherwise null.
 - watchCatalysts: EXACTLY 4-5 conditions. Format: "If [condition], then [implication]."
@@ -652,8 +659,7 @@ FIELD RULES
 - historicalAnalog: One sentence naming a specific historical analog. Null if no relevant analog exists.
 - historicalAnalogOutcome: One sentence describing what happened in that analog. Null if historicalAnalog is null.
 - finalVerdictAction: BUY | ACCUMULATE | HOLD | WATCH | REDUCE | SELL | AVOID
-- finalVerdictProbability: 0–100 (probability the verdict plays out)
-- finalVerdictConfidence: 0–100 (confidence in the verdict)
+- finalVerdictConfidence: null. Model confidence is not established.
 - finalVerdictRiskLevel: LOW | MODERATE | HIGH | EXTREME
 - finalVerdictTimeHorizon: e.g. "1–3 days", "1–3 weeks", "1–3 months"
 - finalVerdictRationale: 1–2 sentences. Why this verdict. What must hold for it to play out.
@@ -662,20 +668,20 @@ FIELD RULES
 
 DISCLAIMER: All output is for informational and educational purposes only. Nothing constitutes financial advice.
 
-Current Market Regime: ${regimeLabel} (Pressure Score: ${pressureScore}/10)
+Current Market Regime: ${regimeLabel} (Pressure Index: ${pressureIndex === null ? "unavailable" : `${pressureIndex}/100`})
 ${crossMarket ? `
 ── MARKET REGIME INTELLIGENCE ──
-Stock Market Regime: ${crossMarket.stockRegime.regime} | Risk: ${crossMarket.stockRegime.riskLevel} | Confidence: ${crossMarket.stockRegime.confidence}% | Trend: ${crossMarket.stockRegime.trend}
-Crypto Market Regime: ${crossMarket.cryptoRegime.regime} | Risk: ${crossMarket.cryptoRegime.riskLevel} | Confidence: ${crossMarket.cryptoRegime.confidence}% | Trend: ${crossMarket.cryptoRegime.trend}
+Stock Market Regime: ${crossMarket.stockRegime.regime} | Risk: ${crossMarket.stockRegime.riskLevel} | confidence not established | Trend: ${crossMarket.stockRegime.trend}
+Crypto Market Regime: ${crossMarket.cryptoRegime.regime} | Risk: ${crossMarket.cryptoRegime.riskLevel} | confidence not established | Trend: ${crossMarket.cryptoRegime.trend}
 Cross-Market Alignment: ${crossMarket.alignmentStatus} (Score: ${crossMarket.alignmentScore}/100)
 Forward Bias: ${crossMarket.forwardBias}
 Market Summary: ${crossMarket.plainEnglishSummary}
 Key Insights: ${crossMarket.keyInsights.slice(0, 3).join(" | ")}
 ${crossMarket.regimeChangeAlerts.length > 0 ? `ACTIVE REGIME ALERTS: ${crossMarket.regimeChangeAlerts.map(a => `${a.asset} regime changed from ${a.previous} to ${a.current}`).join("; ")}` : ""}` : ""}
-${fmos ? `Action Bias: ${fmos.decision.actionBias}\nFMOS Decision: ${fmos.decision.verdict} (conviction: ${fmos.decision.conviction}%)\nBull Probability: ${fmos.probability.bull}%\nBear Probability: ${fmos.probability.bear}%\nNeutral Probability: ${fmos.probability.neutral}%\nConfidence: ${fmos.confidence.label} (${fmos.confidence.score}/100)\nTransition Risk: ${fmos.transition.transitionProbability}%\nPrimary Driver: ${fmos.probability.primaryDriver}` : ""}
-${seismographOutput ? `\n${seismographOutput.forASHA.systemPromptBlock}` : seismographState ? `\n── SEISMOGRAPH INTELLIGENCE (PERSISTENT MARKET MEMORY) ──\nCurrent Pressure Score: ${seismographState.today.pressureScore} | Regime: ${seismographState.today.regime} | Stress Level: ${seismographState.today.stressLevel}\nDirection: ${seismographState.today.direction} for ${seismographState.today.streakDays} consecutive days | Historical Percentile: ${formatOrdinal(seismographState.today.historicalPercentile)}\n7-Day Trend: ${seismographState.evolution.sevenDayTrend} | 30-Day Trend: ${seismographState.evolution.thirtyDayTrend}${seismographState.evolution.accelerating ? " | ACCELERATING" : ""}\nRegime Transition Probabilities: Remain=${seismographState.transitionProbabilities.remainInRegime}% | Elevated=${seismographState.transitionProbabilities.transitionToElevated}% | Low=${seismographState.transitionProbabilities.transitionToLow}% | Crisis=${seismographState.transitionProbabilities.transitionToCrisis}%\nActive Patterns: ${seismographState.activePatterns.length > 0 ? seismographState.activePatterns.map((p: { patternName: string }) => p.patternName).join(", ") : "None detected"}\nMarket Memory: ${seismographState.marketMemorySummary.observationCount} observations | ${seismographState.marketMemorySummary.currentStreakDescription}\nNote: Seismograph probabilities are historical base rates, not predictions.` : ""}
+${fmos ? `Action Bias: ${fmos.decision.actionBias}\nFMOS Decision: ${fmos.decision.verdict} (conviction not established)\nScenario weights: uncalibrated (not offered as probabilities)\nConfidence: ${fmos.confidence.label}\nTransition Risk: not offered as a probability\nPrimary Driver: ${fmos.probability.primaryDriver}` : ""}
+${seismographOutput ? `\n${seismographOutput.forASHA.systemPromptBlock}` : seismographState ? `\n── SEISMOGRAPH INTELLIGENCE (PERSISTENT MARKET MEMORY) ──\nCurrent Pressure Score: ${seismographState.today.pressureScore} | Regime: ${seismographState.today.regime} | Stress Level: ${seismographState.today.stressLevel}\nDirection: ${seismographState.today.direction} for ${seismographState.today.streakDays} consecutive days | Historical Percentile: ${typeof seismographState.today.historicalPercentile === "number" ? formatOrdinal(seismographState.today.historicalPercentile) : "Insufficient data"}\n7-Day Trend: ${seismographState.evolution.sevenDayTrend} | 30-Day Trend: ${seismographState.evolution.thirtyDayTrend}${seismographState.evolution.accelerating ? " | ACCELERATING" : ""}\nTransition risk: uncalibrated and not stated as a probability\nActive Patterns: ${seismographState.activePatterns.length > 0 ? seismographState.activePatterns.map((p: { patternName: string }) => p.patternName).join(", ") : "None detected"}\nMarket Memory: ${seismographState.marketMemorySummary.observationCount} observations | ${seismographState.marketMemorySummary.currentStreakDescription}\nNote: Seismograph probabilities are historical base rates, not predictions.` : ""}
 	${evidenceContext}
-${outlookSummary}${livePriceContext}${historicalIntelligence ? historicalIntelligence.promptBlock : ""}`;  // ← Historical Intelligence injected here
+${outlookSummary}${livePriceContext}${historicalIntelligence ? historicalPromptBlockForModel(historicalIntelligence.promptBlock) : ""}`;  // ← Historical Intelligence injected here
 
   const systemPrompt = `You are PLATO, FAULTLINE's evidence-bound market interpretation layer.
 ${forecastHorizonPromptContract()}
@@ -697,8 +703,8 @@ RESPONSE RULES:
 
   // Explicit global mode instruction when no symbol context
   const globalModeInstruction = !ticker
-    ? `\nCONTEXT: This is a GLOBAL MARKET question. Do NOT focus on any specific security. Answer for the broad market, macro environment, or the specific asset class mentioned. Use "MARKET" as the verdict context. For bull/bear probabilities, use broad market probabilities.`
-    : `\nCONTEXT: This analysis is focused on ${ticker} (${assetType}). All verdicts, probabilities, and price levels must be specific to ${ticker}.`;
+    ? `\nCONTEXT: This is a GLOBAL MARKET question. Do NOT focus on any specific security. Answer for the broad market, macro environment, or the specific asset class mentioned. Use "MARKET" as the verdict context. Describe the bull/bear balance qualitatively; never state a probability.`
+    : `\nCONTEXT: This analysis is focused on ${ticker} (${assetType}). All verdicts and price levels must be specific to ${ticker}. Never state a probability.`;
 
   const userPrompt = `${conversationContext}
 User question: "${query}"
@@ -712,30 +718,28 @@ The 14 evidenceScores categories MUST be exactly:
 "Institutional Positioning", "Historical Analog", "Sentiment", "ETF Flows",
 "Dollar Index", "Treasury Yields", "Credit Markets", "Stablecoin Growth", "On-chain Activity"
 
-For non-crypto assets, set "Stablecoin Growth" and "On-chain Activity" to neutral with score 50 and note "Not applicable for this asset class."
+For non-crypto assets, set "Stablecoin Growth" and "On-chain Activity" to signal "neutral", score null, and explanation "Not applicable for this asset class." Never fill a missing category with 50.
 
 JSON schema:
 {
   "verdict": "STRONG BUY" | "BUY" | "ACCUMULATE" | "WAIT" | "HOLD" | "REDUCE" | "STRONG REDUCE" | "SELL" | "HIGH RISK" | "LOW CONVICTION" | "MACRO ANSWER",
   "verdictColor": "green" | "yellow" | "red" | "blue",
-  "opportunityScore": number (0-100),
-  "confidence": number (0-100),
+  "opportunityScore": null,
+  "confidence": null,
   "confidenceLabel": "HIGH" | "MODERATE" | "LOW",
   "confidenceReasons": string[] (3-4 specific reasons for this confidence level),
   "currentRegime": string (one sentence describing the current market regime),
-  "dataFreshness": string (e.g. "Live — updated 2 min ago"),
+  "dataFreshness": string (server overwrites this; do not claim a source is live),
   "primaryDriver": string (one sentence — the single most important factor),
   "executiveSummary": string (2 sentences — CIO briefing style),
   "whyThisVerdict": string (3 sentences, each a distinct signal),
   "bullCase": string (2 sentences — strongest argument FOR),
-  "bullProbability": number (0-100),
   "bullKeyDrivers": string[] (exactly 3 items),
   "bearCase": string (2 sentences — strongest argument AGAINST),
-  "bearProbability": number (0-100),
   "bearKeyDrivers": string[] (exactly 3 items),
   "catalysts": string[] (exactly 3 near-term catalysts),
   "threats": string[] (exactly 3 near-term threats),
-  "evidenceScores": Array of { "category": string, "score": number (0-100), "signal": "bullish"|"bearish"|"neutral", "explanation": string (one line) },
+  "evidenceScores": Array of { "category": string, "score": null, "signal": "bullish"|"bearish"|"neutral", "explanation": string (one line) },
   "whyNotBuy": string[] | null (3 reasons BUY was rejected if WAIT/HOLD, else null),
   "whyNotSell": string[] | null (3 reasons SELL was rejected if WAIT/HOLD, else null),
   "watchCatalysts": string[] (4-5 specific events that would change the recommendation),
@@ -788,8 +792,7 @@ JSON schema:
 
   // NEW REQUIRED FIELDS — FINAL VERDICT + INSTITUTIONAL INTELLIGENCE
   "finalVerdictAction": "BUY" | "ACCUMULATE" | "HOLD" | "WATCH" | "REDUCE" | "SELL" | "AVOID",
-  "finalVerdictProbability": number (0-100, probability the verdict plays out),
-  "finalVerdictConfidence": number (0-100, confidence in the verdict),
+  "finalVerdictConfidence": null,
   "finalVerdictRiskLevel": "LOW" | "MODERATE" | "HIGH" | "EXTREME",
   "finalVerdictTimeHorizon": string (e.g. "1-3 days", "1-3 weeks", "1-3 months"),
   "finalVerdictRationale": string (1-2 sentences — why this verdict, what must hold for it to play out),
@@ -818,8 +821,8 @@ JSON schema:
           properties: {
             verdict: { type: "string" },
             verdictColor: { type: "string" },
-            opportunityScore: { type: "number" },
-            confidence: { type: "number" },
+            opportunityScore: { type: ["number", "null"] },
+            confidence: { type: ["number", "null"] },
             confidenceLabel: { type: "string" },
             confidenceReasons: { type: "array", items: { type: "string" } },
             currentRegime: { type: "string" },
@@ -828,10 +831,8 @@ JSON schema:
             executiveSummary: { type: "string" },
             whyThisVerdict: { type: "string" },
             bullCase: { type: "string" },
-            bullProbability: { type: "number" },
             bullKeyDrivers: { type: "array", items: { type: "string" } },
             bearCase: { type: "string" },
-            bearProbability: { type: "number" },
             bearKeyDrivers: { type: "array", items: { type: "string" } },
             catalysts: { type: "array", items: { type: "string" } },
             threats: { type: "array", items: { type: "string" } },
@@ -841,7 +842,7 @@ JSON schema:
                 type: "object",
                 properties: {
                   category: { type: "string" },
-                  score: { type: "number" },
+                  score: { type: ["number", "null"] },
                   signal: { type: "string" },
                   explanation: { type: "string" },
                 },
@@ -899,8 +900,7 @@ JSON schema:
             followUpChips: { type: "array", items: { type: "string" } },
             // New fields — Final Verdict + Institutional Intelligence
             finalVerdictAction: { type: "string" },
-            finalVerdictProbability: { type: "number" },
-            finalVerdictConfidence: { type: "number" },
+            finalVerdictConfidence: { type: ["number", "null"] },
             finalVerdictRiskLevel: { type: "string" },
             finalVerdictTimeHorizon: { type: "string" },
             finalVerdictRationale: { type: "string" },
@@ -928,8 +928,8 @@ JSON schema:
             "verdict","verdictColor","opportunityScore","confidence","confidenceLabel",
             "confidenceReasons","currentRegime","dataFreshness","primaryDriver",
             "executiveSummary","whyThisVerdict",
-            "bullCase","bullProbability","bullKeyDrivers",
-            "bearCase","bearProbability","bearKeyDrivers",
+            "bullCase","bullKeyDrivers",
+            "bearCase","bearKeyDrivers",
             "catalysts","threats","evidenceScores",
             "whyNotBuy","whyNotSell","watchCatalysts",
             "support","resistance","entryZone","profitTargets","stopLevel",
@@ -942,7 +942,7 @@ JSON schema:
             "invalidationPrice","invalidationConditions","invalidationWhatHappens",
             "riskRating","riskSummary","riskFactors","riskRewardRatio","maxDrawdownEstimate",
             "followUpChips","collectiveReading",
-            "finalVerdictAction","finalVerdictProbability","finalVerdictConfidence",
+            "finalVerdictAction","finalVerdictConfidence",
             "finalVerdictRiskLevel","finalVerdictTimeHorizon","finalVerdictRationale",
             "suggestedBias","suggestedBiasCondition",
             "historicalAnalog","historicalAnalogOutcome",
@@ -975,7 +975,7 @@ JSON schema:
   }
 
   const integrityValidation = validateInterpretationOutput(raw, transaction);
-  raw = integrityValidation.normalizedOutput;
+  raw = withholdUnsupportedAskScores(withoutModelProbabilities(integrityValidation.normalizedOutput));
 
   // Ensure collectiveReading is always present with a fallback
   const rawCollective = raw.collectiveReading as Record<string, unknown> | null | undefined;
@@ -996,8 +996,23 @@ JSON schema:
     totalLatencyMs: Date.now() - t0,
   });
 
+  const observedAt = fredObservationMs(seismographOutput?.providerProvenance?.fred?.asOf);
+  const askQuote = ticker
+    ? [{
+        observedAtMs: livePrice?.observedAtMs ?? null,
+        sourceStatus: livePrice?.sourceStatus ?? "unavailable",
+      }]
+    : undefined;
   return sanitize({
     ...raw,
+    dataFreshness: evidenceFreshnessLabel({
+      scope: ticker ? "ticker" : "macro",
+      canonicalQuality: authoritativeState?.confidenceOrEvidenceQuality ?? null,
+      fredStatus: seismographOutput?.providerProvenance?.fred?.status ?? null,
+      observedAtMs: observedAt,
+      nowMs: Date.now(),
+      quotes: askQuote,
+    }),
     ticker,
     assetType,
     queryType,
@@ -1019,6 +1034,109 @@ JSON schema:
   }) as FaultlineAnswer;
 }
 
+/**
+ * Ask prompt: the historical outcome split ("Bullish continuation / Sideways / Correction N%") is an
+ * uncalibrated scenario frequency that #58's strip does not catch, so it is withheld before the model
+ * (the sample-size line keeps N and drops its "Confidence: LABEL", which could read as statistical confidence).
+ * Prompt text only: the engine's outcomeDistribution (and the answer's historicalIntelligence) is unchanged.
+ */
+const HISTORICAL_OUTCOME_SPLIT = /^ {2}Bullish continuation: [^\n]*\n {2}Sideways: [^\n]*\n {2}Correction: [^\n]*\n {2}Sample size: N=(\d+)[^\n]*$/m;
+export function historicalPromptBlockForModel(block: string): string {
+  return block.replace(HISTORICAL_OUTCOME_SPLIT, "  Outcome distribution: frequency withheld (uncalibrated)\n  Sample size: N=$1 similar setups");
+}
+
+/** Model-written prose fields of an ASHA answer (top level and collectiveReading). */
+export const ANSWER_PROSE_FIELDS = [
+  "executiveSummary", "whyThisVerdict", "primaryDriver", "currentRegime", "bullCase", "bearCase",
+  "finalVerdictRationale", "suggestedAction", "suggestedBias", "suggestedBiasCondition", "whatChangesThesis",
+  "historicalAnalog", "historicalAnalogOutcome", "riskSummary", "actionVerdictReason",
+] as const;
+export const ANSWER_PROSE_LIST_FIELDS = [
+  "bullKeyDrivers", "bearKeyDrivers", "catalysts", "threats", "confidenceReasons", "keyDrivers", "risks",
+  "watchCatalysts", "whyNotBuy", "whyNotSell", "riskFactors", "keyFindings", "supportingEvidence", "limitations",
+] as const;
+const MODEL_PROBABILITY_FIELDS = ["bullProbability", "bearProbability", "neutralProbability", "finalVerdictProbability"] as const;
+
+/**
+ * James's rule: LLM narratives never produce invented probabilities. Drops any
+ * probability-number field the model returns anyway, and every probability-%
+ * sentence from the model's prose. Display only; no scoring input.
+ */
+/**
+ * The ask prompt used to demand confidence percentages and a neutral evidence
+ * score of 50 while the system prompt forbids invented scores. Those numbers
+ * are discarded. Category text can remain; the score cannot.
+ */
+export function withholdUnsupportedAskScores(answer: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...answer };
+  out.confidence = null;
+  out.opportunityScore = null;
+  out.finalVerdictConfidence = null;
+  if (Array.isArray(out.evidenceScores)) {
+    out.evidenceScores = out.evidenceScores.map(row => {
+      if (!row || typeof row !== "object") return row;
+      return { ...(row as Record<string, unknown>), score: null };
+    });
+  }
+  return out;
+}
+
+/**
+ * A ranking row is kept only when the deterministic scan scored that ticker.
+ * The displayed score is the scan composite. Model confidence is null.
+ * A ticker the model added on its own is dropped.
+ */
+/** Sector stars were an LLM 1–5 score. The scan does not produce that score, so it is withheld. */
+export function withholdInventedSectorRatings(rows: unknown): Array<Record<string, unknown>> {
+  if (!Array.isArray(rows)) return [];
+  return rows.flatMap(row => {
+    if (!row || typeof row !== "object") return [];
+    return [{ ...(row as Record<string, unknown>), rating: null }];
+  });
+}
+
+export function bindRankedOpportunitiesToScan(
+  opportunities: unknown,
+  scan: ReadonlyArray<{ ticker: string; compositeScore: number }>,
+): Record<string, unknown>[] {
+  if (!Array.isArray(opportunities)) return [];
+  const scores = new Map<string, number>();
+  for (const item of scan) {
+    if (typeof item.compositeScore === "number" && Number.isFinite(item.compositeScore)) {
+      scores.set(item.ticker.toUpperCase(), item.compositeScore);
+    }
+  }
+  const bound: Record<string, unknown>[] = [];
+  for (const item of opportunities) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as Record<string, unknown>;
+    const ticker = String(row.ticker ?? "").toUpperCase();
+    if (!scores.has(ticker)) continue;
+    bound.push({ ...row, convictionScore: scores.get(ticker), confidencePercent: null });
+  }
+  return bound;
+}
+
+export function withoutModelProbabilities(answer: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...answer };
+  for (const key of MODEL_PROBABILITY_FIELDS) delete out[key];
+  for (const key of ANSWER_PROSE_FIELDS) if (typeof out[key] === "string") out[key] = stripProbabilityPercentClaims(out[key]);
+  for (const key of ANSWER_PROSE_LIST_FIELDS) {
+    if (Array.isArray(out[key])) {
+      out[key] = (out[key] as unknown[]).map(item => stripProbabilityPercentClaims(item)).filter(item => item !== "");
+    }
+  }
+  const collective = out.collectiveReading;
+  if (collective && typeof collective === "object" && !Array.isArray(collective)) {
+    const c = { ...(collective as Record<string, unknown>) };
+    for (const key of ["summary", "strongestReason", "practicalAction", "invalidation"]) {
+      if (typeof c[key] === "string") c[key] = stripProbabilityPercentClaims(c[key]);
+    }
+    out.collectiveReading = c;
+  }
+  return out;
+}
+
 // ── Opportunity Ranking Types ───────────────────────────────
 
 export interface RankedOpportunityItem {
@@ -1028,8 +1146,8 @@ export interface RankedOpportunityItem {
   sector: string;
   assetType: "stock" | "crypto";
   action: "BUY" | "ACCUMULATE" | "WATCH" | "HOLD" | "AVOID";
-  convictionScore: number;        // 0–100
-  confidencePercent: number;      // 0–100
+  convictionScore: number;        // scanner composite, 0–100
+  confidencePercent: number | null;
   timeHorizon: string;            // e.g. "1–3 weeks"
   expectedReward: string;         // e.g. "+8–12%"
   riskLevel: "Low" | "Medium" | "High" | "Extreme";
@@ -1054,7 +1172,7 @@ export interface RankedOpportunityItem {
 
 export interface SectorRating {
   sector: string;
-  rating: 1 | 2 | 3 | 4 | 5;    // 1=Avoid, 5=Strong Buy
+  rating: number | null;
   bias: "bullish" | "bearish" | "neutral";
   reason: string;                 // one sentence
 }
@@ -1084,8 +1202,10 @@ async function orchestrateOpportunityRanking(
   const fmos = fmosResult ?? null;
   const pressureData = fmos?.pressure ?? null;
   const regimeLabel = fmos?.regime?.currentRegime ?? pressureData?.regime ?? "UNCERTAIN";
-  const pressureScore = pressureData ? (pressureData.overallPressure / 10) : 5;
-  const regimeColor: "green" | "yellow" | "red" = pressureScore <= 3 ? "green" : pressureScore <= 6 ? "yellow" : "red";
+  // Canonical 0–100 Pressure Index; null when missing (no invented default of 5/10).
+  // Color bands unchanged: <=30 green (was <=3/10), <=60 yellow (was <=6/10); missing → yellow (as the old default).
+  const pressureIndex = pressureData && Number.isFinite(pressureData.overallPressure) ? pressureData.overallPressure : null;
+  const regimeColor: "green" | "yellow" | "red" = pressureIndex === null ? "yellow" : pressureIndex <= 30 ? "green" : pressureIndex <= 60 ? "yellow" : "red";
 
   // 2. Scan the full investment universe (top 30 by composite score)
   const rawOpportunities = await scanOpportunities(null, 100000, "both").catch(() => []);
@@ -1094,7 +1214,7 @@ async function orchestrateOpportunityRanking(
 
   // 3. Build compact context for LLM
   const universeContext = topRaw.map((o, i) =>
-    `${i + 1}. ${o.ticker} (${o.name}) — ${o.sector} — ${o.assetType} — Score: ${o.compositeScore}/100 — Direction: ${o.direction} — Macro Fit: ${o.macroFit}/100 — Momentum: ${o.momentumScore}/100 — R/R: ${o.riskRewardRatio.toFixed(1)} — Confidence: ${o.faultlineConfidence}% — Why: ${o.whyNow}`
+    `${i + 1}. ${o.ticker} (${o.name}) — ${o.sector} — ${o.assetType} — Score: ${o.compositeScore}/100 — Direction: ${o.direction} — Macro Fit: ${o.macroFit}/100 — Momentum: ${o.momentumScore}/100 — R/R: ${o.riskRewardRatio.toFixed(1)} — Confidence: confidence not established — Why: ${o.whyNow}`
   ).join("\n");
 
   const avoidContext = avoidRaw.map(o =>
@@ -1112,8 +1232,7 @@ You are a Chief Investment Strategist presenting a ranked opportunity scan to an
 CORE MANDATE — READ FIRST
 ========================
 The Opportunity Scan is a RANKING ENGINE. Its sole purpose is to answer: "What are the BEST opportunities RIGHT NOW?"
-You MUST always rank at least 5 opportunities. NEVER return "0 assets scored" or leave topOpportunities empty.
-Institutional portfolio managers ALWAYS rank opportunities — even during bear markets. There is ALWAYS a best opportunity relative to current conditions.
+Rank only tickers present in the supplied universe scan. If that scan is empty, return an empty topOpportunities array and say the scored universe is unavailable. Do not invent tickers, scores, or a default list.
 
 INTENT ROUTING RULES (MUST follow):
 1. Answer the user's ACTUAL question — not the question implied by any currently selected symbol.
@@ -1122,32 +1241,29 @@ INTENT ROUTING RULES (MUST follow):
 4. If the question specifies a category (e.g. "best AI stocks", "best dividend stocks"), filter the universe to that category.
 5. Always answer the broad question first. If an active symbol is relevant, note its rank in the list.
 
-Current Market Regime: ${regimeLabel} (Pressure Score: ${pressureScore}/10)
-${fmos ? `Bull Probability: ${fmos.probability.bull}% | Bear Probability: ${fmos.probability.bear}% | Primary Driver: ${fmos.probability.primaryDriver}` : ""}
+Current Market Regime: ${regimeLabel} (Pressure Index: ${pressureIndex === null ? "unavailable" : `${pressureIndex}/100`})
+Bull/bear balance: describe it qualitatively only. FAULTLINE does not offer a crash probability, does not offer a recession probability, and its bull/bear scenario weights are uncalibrated, so never state any probability, odds or percentage chance.${fmos?.probability?.primaryDriver ? ` Primary Driver: ${fmos.probability.primaryDriver}` : ""}
 
 ========================
 IF NO BUY OPPORTUNITIES EXIST
 ========================
-Never stop. Display the Highest Conviction WATCH List instead.
-Example fallback: NVDA (WATCH, 86), MSFT (WATCH, 84), BTC (WATCH, 81), Gold (HOLD, 78), Cash/T-Bills (BUY Defensive, 76).
-There is ALWAYS a best opportunity relative to current conditions.
-If no BUY exists, explain: "There are currently no BUY-rated opportunities because the market regime is reducing conviction across risk assets. The assets below are still the strongest candidates and should be monitored for confirmation."
+If the supplied scan has no BUY, keep the scanned names and explain that conviction is lower. Do not add names that are absent from the scan, and do not attach an example score such as 86.
 
 ========================
 OPPORTUNITY SCAN STRUCTURE (ALL SECTIONS REQUIRED)
 ========================
 
-1. MARKET SUMMARY — Current Regime, Pressure Index, Opportunity Level, Bull/Bear Probability, Confidence. Briefly explain WHY this environment exists.
+1. MARKET SUMMARY — Current Regime, Pressure Index, Opportunity Level, and a qualitative bull/bear balance (words only, no percentages or probabilities). Briefly explain WHY this environment exists.
 
-2. TOP OPPORTUNITIES — ALWAYS at least 5 ranked assets. Each must include:
+2. TOP OPPORTUNITIES — only assets from the supplied scan. Each must include:
    • Asset + Current Rating (BUY/ACCUMULATE/WATCH/HOLD/AVOID)
-   • Conviction Score (0–100) + Confidence % + Time Horizon
+   • The scanner composite is the only score. Confidence is not established. Do not add a confidence percent.
    • Expected Risk + Expected Reward + Current Trend
    • Bull Drivers + Bear Drivers + Macro Alignment + Sector Strength + Liquidity Impact + Valuation + Momentum + Catalysts + Historical Analog
    • Upgrade Triggers + Downgrade Triggers
    • WHY this asset outranks others
 
-3. ALWAYS RANK SOMETHING — Top Stocks, Top ETFs, Top Crypto, Top Defensive Assets, Top Sectors. Even if every recommendation is WATCH.
+3. RANK ONLY THE SCAN — Top names stay inside the supplied universe. A WATCH is allowed. If the scan is empty, return no opportunities and no substitute list.
 
 4. PORTFOLIO POSITIONING RECOMMENDATION — End every scan with one of: "Remain fully invested" / "Increase exposure gradually" / "Wait for confirmation" / "Favor quality over speculation" / "Increase defensive allocations" / "Raise cash" / "Reduce leverage" / "Rotate into defensive sectors"
 
@@ -1159,9 +1275,9 @@ WRITING STYLE:
 - Use declarative statements. Write like a CIO briefing an investment committee.
 
 FIELD RULES:
-- topOpportunities: Select the 5-8 highest-conviction ideas from the universe scan. Rank by conviction score descending. MINIMUM 5 items — use defensive assets if needed.
+- topOpportunities: Use only tickers from the universe scan, at most 8. If the scan is empty, return [].
 - For each opportunity: primaryDriver = one sentence, nearTermCatalyst = one sentence, keyRisk = one sentence, thesisSummary = exactly 2 sentences.
-- confidencePercent: 0–100 integer representing LLM confidence in this ranking.
+- confidencePercent: null. Model confidence is not established.
 - timeHorizon: e.g. "1–3 weeks", "1–3 months", "3–6 months".
 - expectedReward: e.g. "+8–12%", "+15–25%", "Defensive preservation".
 - bullDrivers: array of 2–4 specific bull driver strings.
@@ -1173,7 +1289,7 @@ FIELD RULES:
 - momentum: "Bullish" | "Neutral" | "Bearish" | "Recovering".
 - historicalAnalog: one sentence referencing a historical period or analog.
 - avoidList: 3-5 assets to avoid right now with a specific one-sentence reason each.
-- sectorLeaderboard: Rate 8-10 sectors on a 1-5 scale (1=Avoid, 5=Strong Buy) with one-sentence reason.
+- sectorLeaderboard: Name sectors that appear in the scan, with bias and one-sentence reason. rating is null. Do not invent a 1-5 score.
 - whyTheseRankHighest: 3-4 sentences explaining the macro logic behind the top-ranked opportunities.
 - portfolioPositioning: One of the positioning recommendations listed above.
 - followUpChips: 4-5 natural follow-up questions the user might want to ask next.
@@ -1183,12 +1299,12 @@ DISCLAIMER INSTRUCTION: All output is for informational and educational purposes
 User question: "${query}"
 
 Universe scan results (sorted by composite score):
-${universeContext || "No universe scan data available — use your knowledge of current market conditions to rank the top 5 opportunities. Default to: NVDA, MSFT, BTC, GLD, T-Bills as a defensive fallback if needed."}
+${universeContext || "No universe scan data available. Return an empty topOpportunities array. Do not substitute well-known tickers or scores."}
 
 Avoid candidates:
 ${avoidContext || "None identified."}
 
-IMPORTANT: You MUST return at least 5 items in topOpportunities. If the universe scan is empty or has fewer than 5 items, supplement with well-known assets appropriate to the current regime.
+Return only tickers from the universe scan. If that scan is empty, topOpportunities is []. Do not add names to reach a minimum count.
 
 Respond with a JSON object matching this exact schema:
 {
@@ -1200,8 +1316,8 @@ Respond with a JSON object matching this exact schema:
     "sector": string,
     "assetType": "stock" | "crypto",
     "action": "BUY" | "ACCUMULATE" | "WATCH" | "HOLD" | "AVOID",
-    "convictionScore": number (0-100),
-    "confidencePercent": number (0-100),
+    "convictionScore": number (copy the universe scan Score for this ticker; do not invent a different number),
+    "confidencePercent": null,
     "timeHorizon": string (e.g. "1-3 weeks"),
     "expectedReward": string (e.g. "+8-12%"),
     "riskLevel": "Low" | "Medium" | "High" | "Extreme",
@@ -1224,7 +1340,7 @@ Respond with a JSON object matching this exact schema:
     "dataFreshness": string
   },
   "avoidList": Array of { "ticker": string, "name": string, "reason": string (one sentence) },
-  "sectorLeaderboard": Array of { "sector": string, "rating": 1|2|3|4|5, "bias": "bullish"|"bearish"|"neutral", "reason": string },
+  "sectorLeaderboard": Array of { "sector": string, "rating": null, "bias": "bullish"|"bearish"|"neutral", "reason": string },
   "whyTheseRankHighest": string (3-4 sentences),
   "portfolioPositioning": string (one of the positioning recommendations),
   "followUpChips": string[] (4-5 follow-up questions)
@@ -1256,7 +1372,7 @@ Respond with a JSON object matching this exact schema:
                   assetType: { type: "string" },
                   action: { type: "string" },
                   convictionScore: { type: "number" },
-                  confidencePercent: { type: "number" },
+                  confidencePercent: { type: ["number", "null"] },
                   timeHorizon: { type: "string" },
                   expectedReward: { type: "string" },
                   riskLevel: { type: "string" },
@@ -1301,7 +1417,7 @@ Respond with a JSON object matching this exact schema:
                 type: "object",
                 properties: {
                   sector: { type: "string" },
-                  rating: { type: "number" },
+                  rating: { type: ["number", "null"] },
                   bias: { type: "string" },
                   reason: { type: "string" },
                 },
@@ -1342,18 +1458,55 @@ Respond with a JSON object matching this exact schema:
     "What are the highest conviction setups?",
   ];
 
+  // Model prose never carries an invented probability: drop any sentence that
+  // states one as a percentage (James's rule; probability contract).
+  // Verified source requires canonical quality, FRED status, FRED age, and each
+  // quote observation to be independently live. Scanner LIVE tokens are not evidence.
+  const [authoritativeState, seismographOutput] = await Promise.all([
+    getAuthoritativeCanonicalIntelligenceState().catch(() => null),
+    getLatestSeismographOutput().catch(() => null),
+  ]);
+  const discoveryEvidence = {
+    canonicalQuality: authoritativeState?.confidenceOrEvidenceQuality ?? null,
+    fredStatus: seismographOutput?.providerProvenance?.fred?.status ?? null,
+    observedAtMs: seismographOutput?.providerProvenance?.fred?.asOf ?? null,
+  };
+  const quoteByTicker = new Map(topRaw.map(item => [item.ticker.toUpperCase(), {
+    observedAtMs: item.observedAtMs,
+    sourceStatus: item.sourceStatus,
+  }]));
+  const opportunities = bindRankedOpportunitiesToScan(raw.topOpportunities, topRaw).map(o => {
+    const quote = quoteByTicker.get(String(o.ticker ?? "").toUpperCase());
+    return {
+      ...o,
+      primaryDriver: stripProbabilityPercentClaims(o.primaryDriver),
+      thesisSummary: stripProbabilityPercentClaims(o.thesisSummary),
+      keyRisk: stripProbabilityPercentClaims(o.keyRisk),
+      nearTermCatalyst: stripProbabilityPercentClaims(o.nearTermCatalyst),
+      dataFreshness: evidenceFreshnessLabel({
+        ...discoveryEvidence,
+        scope: "ticker",
+        quotes: quote ? [quote] : [],
+      }),
+    };
+  });
+
   return sanitize({
     queryType: "opportunity" as const,
-    macroContext: raw.macroContext,
+    macroContext: stripProbabilityPercentClaims(raw.macroContext),
     regimeLabel,
     regimeColor,
-    topOpportunities: raw.topOpportunities,
+    topOpportunities: opportunities,
     avoidList: raw.avoidList,
-    sectorLeaderboard: raw.sectorLeaderboard,
-    whyTheseRankHighest: raw.whyTheseRankHighest,
-    portfolioPositioning: raw.portfolioPositioning,
+    sectorLeaderboard: withholdInventedSectorRatings(raw.sectorLeaderboard),
+    whyTheseRankHighest: stripProbabilityPercentClaims(raw.whyTheseRankHighest),
+    portfolioPositioning: stripProbabilityPercentClaims(raw.portfolioPositioning),
     followUpChips,
-    dataFreshness: "Live — updated just now",
+    dataFreshness: evidenceFreshnessLabel({
+      ...discoveryEvidence,
+      scope: "ticker",
+      quotes: topRaw.map(item => ({ observedAtMs: item.observedAtMs, sourceStatus: item.sourceStatus })),
+    }),
     deepDiveLinks: [
       { label: "Opportunity Radar", path: "/app/opportunities", description: "Full ranked opportunity scan with filters" },
       { label: "Ask Intelligence", path: "/app/ask", description: "Ask about any specific opportunity" },
@@ -1405,6 +1558,16 @@ async function orchestrateWithRouting(
 }
 
 // ── Router ────────────────────────────────────────────────────
+
+/**
+ * QA r12 (B9b): decision_ledger.confidence / opportunityScore are NOT NULL
+ * columns filled with client defaults (confidence ?? 50 — the validator always
+ * withholds model confidence — and opportunityScore ?? 5). They are not model
+ * output, so they never leave the server. Writes are unchanged (no migration).
+ */
+export function withoutLedgerFabricatedScores<T extends Record<string, unknown>>(entries: T[]): Array<Omit<T, "confidence" | "opportunityScore"> & { confidence: null; opportunityScore: null }> {
+  return entries.map(entry => ({ ...entry, confidence: null, opportunityScore: null }));
+}
 
 export const smartDiscoveryRouter = router({
   /**
@@ -1585,7 +1748,7 @@ export const smartDiscoveryRouter = router({
         .where(eq(decisionLedger.userId, ctx.user.id))
         .orderBy(desc(decisionLedger.createdAt))
         .limit(input.limit);
-      return entries;
+      return withoutLedgerFabricatedScores(entries);
     }),
 
   /**
@@ -1609,7 +1772,7 @@ export const smartDiscoveryRouter = router({
           autoEvaluated: false,
           resolvedAt: input.outcome !== "pending" ? new Date() : null,
         })
-        .where(eq(decisionLedger.id, input.id));
+        .where(and(eq(decisionLedger.id, input.id), eq(decisionLedger.userId, ctx.user.id)));
       return { success: true };
     }),
 
@@ -1624,49 +1787,55 @@ export const smartDiscoveryRouter = router({
       .from(decisionLedger)
       .where(eq(decisionLedger.userId, ctx.user.id));
 
-    const resolved = entries.filter((e: DecisionLedgerEntry) => e.outcome !== "pending");
-    const correct = resolved.filter((e: DecisionLedgerEntry) => e.outcome === "correct");
-    const partiallyCorrect = resolved.filter((e: DecisionLedgerEntry) => e.outcome === "partially_correct");
-    const stillActive = resolved.filter((e: DecisionLedgerEntry) => e.outcome === "still_active");
-    // Win rate: correct = 1pt, partially_correct = 0.5pt, incorrect/still_active = 0pt
+    // Only final truth outcomes are scorable. `still_active` represents an
+    // unresolved/ambiguous assessment that may be revisited, not a zero-score
+    // outcome; keep it as inventory below without placing it in any denominator.
+    const scorable = entries.filter((e: DecisionLedgerEntry) =>
+      e.outcome === "correct" || e.outcome === "incorrect" || e.outcome === "partially_correct"
+    );
+    const correct = scorable.filter((e: DecisionLedgerEntry) => e.outcome === "correct");
+    const partiallyCorrect = scorable.filter((e: DecisionLedgerEntry) => e.outcome === "partially_correct");
+    const stillActive = entries.filter((e: DecisionLedgerEntry) => e.outcome === "still_active");
+    // Declared scoring policy: correct = 1 point, partially_correct = 0.5 point, incorrect = 0 points.
     const winPoints = correct.length + partiallyCorrect.length * 0.5;
-    const winRate = resolved.length > 0 ? Math.round((winPoints / resolved.length) * 100) : null;
+    const winRate = scorable.length > 0 ? Math.round((winPoints / scorable.length) * 100) : null;
 
-    // Accuracy by asset class
-    const byAsset: Record<string, { correct: number; total: number }> = {};
-    for (const e of resolved) {
+    // Group accuracy uses the same partial-outcome credit as the headline.
+    const byAsset: Record<string, { points: number; total: number }> = {};
+    for (const e of scorable) {
       const key = e.assetType ?? "macro";
-      if (!byAsset[key]) byAsset[key] = { correct: 0, total: 0 };
+      if (!byAsset[key]) byAsset[key] = { points: 0, total: 0 };
       byAsset[key].total++;
-      if (e.outcome === "correct") byAsset[key].correct++;
+      if (e.outcome === "correct") byAsset[key].points += 1;
+      if (e.outcome === "partially_correct") byAsset[key].points += 0.5;
     }
 
-    // Accuracy by verdict
-    const byVerdict: Record<string, { correct: number; total: number }> = {};
-    for (const e of resolved) {
+    const byVerdict: Record<string, { points: number; total: number }> = {};
+    for (const e of scorable) {
       const key = e.verdict;
-      if (!byVerdict[key]) byVerdict[key] = { correct: 0, total: 0 };
+      if (!byVerdict[key]) byVerdict[key] = { points: 0, total: 0 };
       byVerdict[key].total++;
-      if (e.outcome === "correct") byVerdict[key].correct++;
+      if (e.outcome === "correct") byVerdict[key].points += 1;
+      if (e.outcome === "partially_correct") byVerdict[key].points += 0.5;
     }
 
     return {
       total: entries.length,
-      resolved: resolved.length,
+      resolved: scorable.length,
       pending: entries.filter((e: DecisionLedgerEntry) => e.outcome === "pending").length,
       correct: correct.length,
       partiallyCorrect: partiallyCorrect.length,
       stillActive: stillActive.length,
-      incorrect: resolved.filter((e: DecisionLedgerEntry) => e.outcome === "incorrect").length,
+      incorrect: scorable.filter((e: DecisionLedgerEntry) => e.outcome === "incorrect").length,
       winRate,
       byAsset: Object.entries(byAsset).map(([asset, stats]) => ({
         asset,
-        accuracy: Math.round((stats.correct / stats.total) * 100),
+        accuracy: Math.round((stats.points / stats.total) * 100),
         total: stats.total,
       })),
       byVerdict: Object.entries(byVerdict).map(([verdict, stats]) => ({
         verdict,
-        accuracy: Math.round((stats.correct / stats.total) * 100),
+        accuracy: Math.round((stats.points / stats.total) * 100),
         total: stats.total,
       })),
     };

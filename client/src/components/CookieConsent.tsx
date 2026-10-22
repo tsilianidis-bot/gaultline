@@ -6,12 +6,13 @@
    Persists user choice in localStorage.
    Shows on first visit; hides permanently after accept/decline.
    ============================================================ */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'wouter';
 import { getConsentChoice, setConsentChoice } from '@/lib/analyticsConsent';
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
+  const bannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -30,6 +31,20 @@ export default function CookieConsent() {
     setVisible(false);
   }
 
+  // While the banner is shown, reserve its height at the bottom of the page so
+  // no page content (CTAs, footer links) can end up trapped underneath it.
+  useEffect(() => {
+    const el = bannerRef.current;
+    if (!visible || !el) return;
+    const body = document.body;
+    const previous = body.style.paddingBottom;
+    const apply = () => { body.style.paddingBottom = `${el.offsetHeight}px`; };
+    apply();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(apply) : null;
+    ro?.observe(el);
+    return () => { ro?.disconnect(); body.style.paddingBottom = previous; };
+  }, [visible]);
+
   if (!visible) return null;
 
   return (
@@ -39,8 +54,20 @@ export default function CookieConsent() {
           from { transform: translateY(100%); opacity: 0; }
           to   { transform: translateY(0);    opacity: 1; }
         }
+        /* Mobile: compact two-row sheet (copy, then choices) so it stays
+           clear of the hero CTA. Buttons keep 44px targets; the inline
+           Privacy Policy link gets a padded (~35px) hit area. */
+        @media (max-width: 639px) {
+          .fl-cookie-inner { padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px)) !important; gap: 12px 8px !important; }
+          .fl-cookie-icon { display: none !important; }
+          .fl-cookie-text { flex-basis: 100% !important; line-height: 1.45 !important; }
+          .fl-cookie-link { display: inline !important; min-height: 0 !important; padding: 10px 0; white-space: nowrap; border-bottom: 0 !important; text-decoration: underline; text-decoration-color: rgba(0,212,255,0.3); text-underline-offset: 3px; }
+          .fl-cookie-actions { width: 100%; flex-wrap: nowrap !important; }
+          .fl-cookie-actions > button { flex: 1 1 0; justify-content: center; }
+        }
       `}</style>
       <div
+        ref={bannerRef}
         role="dialog"
         aria-label="Cookie consent"
         style={{
@@ -64,7 +91,7 @@ export default function CookieConsent() {
         }} />
 
         {/* Inner layout — horizontal on desktop, stacked on mobile */}
-        <div style={{
+        <div className="fl-cookie-inner" style={{
           maxWidth: '1200px',
           margin: '0 auto',
           padding: '10px 20px',
@@ -74,7 +101,7 @@ export default function CookieConsent() {
           flexWrap: 'wrap',
         }}>
           {/* Icon */}
-          <div style={{
+          <div className="fl-cookie-icon" style={{
             width: '24px', height: '24px', borderRadius: '50%', flexShrink: 0,
             background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.18)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -83,7 +110,7 @@ export default function CookieConsent() {
           </div>
 
           {/* Text */}
-          <p style={{
+          <p className="fl-cookie-text" style={{
             fontFamily: "'IBM Plex Sans', sans-serif",
             fontSize: '12px',
             color: '#94A3B8',
@@ -93,13 +120,13 @@ export default function CookieConsent() {
             minWidth: 0,
           }}>
             FAULTLINE uses analytics cookies to understand platform usage and improve the experience. No personal data is sold.{' '}
-            <Link href="/legal" style={{ color: '#00D4FF', textDecoration: 'none', borderBottom: '1px solid rgba(0,212,255,0.3)' }}>
+            <Link href="/legal" className="fl-cookie-link" style={{ color: '#00D4FF', textDecoration: 'none', borderBottom: '1px solid rgba(0,212,255,0.3)' }}>
               Privacy Policy
             </Link>
           </p>
 
           {/* Buttons */}
-          <div style={{ display: 'flex', gap: '8px', flexShrink: 0, flexWrap: 'wrap' }}>
+          <div className="fl-cookie-actions" style={{ display: 'flex', gap: '8px', flexShrink: 0, flexWrap: 'wrap' }}>
             <button
               onClick={handleAccept}
               style={{

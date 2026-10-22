@@ -26,7 +26,7 @@ export interface AshaGatewayContext {
 export interface AshaModelTrace {
   selectedModel: string;
   attemptedModels: string[];
-  resolutionSource: "live-catalog" | "transport-fallback";
+  resolutionSource: "live-catalog" | "transport-fallback" | "configured" | "router-default";
   resolvedAt: string;
 }
 

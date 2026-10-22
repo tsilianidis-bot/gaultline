@@ -4,6 +4,7 @@
    Uses /api/signals/quotes for live data + trpc.signals.getTradingSignals
    ============================================================ */
 import { useState, useEffect, useMemo } from "react";
+import { formatObservedFixed } from "@/lib/nullableFormat";
 import { trpc } from "@/lib/trpc";
 import { TrendingUp, TrendingDown, Minus, Lock, RefreshCw, ChevronRight } from "lucide-react";
 
@@ -52,7 +53,8 @@ interface SignalCardProps {
 
 function SignalCard({ ticker, price, changePercent, signal, riskLabel, momentum, loading }: SignalCardProps) {
   const signalColor = getSignalColor(signal ?? "HOLD");
-  const changeColor = (changePercent ?? 0) >= 0 ? "#34D399" : "#FF2D55";
+  const changeKnown = typeof changePercent === "number" && Number.isFinite(changePercent);
+  const changeColor = changeKnown && changePercent >= 0 ? "#34D399" : changeKnown ? "#FF2D55" : "#64748B";
 
   if (loading) {
     return (
@@ -99,14 +101,18 @@ function SignalCard({ ticker, price, changePercent, signal, riskLabel, momentum,
           )}
         </div>
         <div className="flex items-center gap-2 mt-0.5">
-          {price !== undefined && (
+          {typeof price === "number" ? (
             <span className="text-[11px] font-mono text-[#A8B8CC]">${price.toFixed(2)}</span>
-          )}
-          {changePercent !== undefined && (
+          ) : price === null ? (
+            <span className="text-[11px] font-mono text-[#64748B]">Unavailable</span>
+          ) : null}
+          {typeof changePercent === "number" ? (
             <span className="text-[10px] font-mono font-bold" style={{ color: changeColor }}>
               {formatChange(changePercent)}
             </span>
-          )}
+          ) : changePercent === null ? (
+            <span className="text-[10px] font-mono text-[#64748B]">Unavailable</span>
+          ) : null}
           {riskLabel && (
             <span className="text-[9px] font-mono text-[#64748B]">{riskLabel}</span>
           )}
@@ -163,7 +169,8 @@ interface CryptoSignalCardProps {
 
 function CryptoSignalCard({ id, name, price, changePercent, signal, loading }: CryptoSignalCardProps) {
   const signalColor = getSignalColor(signal ?? "HOLD");
-  const changeColor = (changePercent ?? 0) >= 0 ? "#34D399" : "#FF2D55";
+  const changeKnown = typeof changePercent === "number" && Number.isFinite(changePercent);
+  const changeColor = changeKnown && changePercent >= 0 ? "#34D399" : changeKnown ? "#FF2D55" : "#64748B";
   const symbol = id.slice(0, 3).toUpperCase();
 
   if (loading) {
@@ -206,14 +213,18 @@ function CryptoSignalCard({ id, name, price, changePercent, signal, loading }: C
           )}
         </div>
         <div className="flex items-center gap-2 mt-0.5">
-          {price !== undefined && (
+          {typeof price === "number" ? (
             <span className="text-[11px] font-mono text-[#A8B8CC]">${price.toLocaleString()}</span>
-          )}
-          {changePercent !== undefined && (
+          ) : price === null ? (
+            <span className="text-[11px] font-mono text-[#64748B]">Unavailable</span>
+          ) : null}
+          {typeof changePercent === "number" ? (
             <span className="text-[10px] font-mono font-bold" style={{ color: changeColor }}>
               {formatChange(changePercent)}
             </span>
-          )}
+          ) : changePercent === null ? (
+            <span className="text-[10px] font-mono text-[#64748B]">Unavailable</span>
+          ) : null}
         </div>
       </div>
     </div>
@@ -224,21 +235,34 @@ function CryptoSignalCard({ id, name, price, changePercent, signal, loading }: C
 export default function MobileSignals() {
   const [tab, setTab] = useState<"stocks" | "crypto">("stocks");
   const [quotes, setQuotes] = useState<Record<string, { price: number; changePercent: number; open: number; high: number; low: number; volumeMillions: number; avgVolume: number; sparkline: number[] }>>({});
-  const [quotesLoading, setQuotesLoading] = useState(true);
+  const [quoteState, setQuoteState] = useState<"loading" | "available" | "unavailable">("loading");
   const [cryptoData, setCryptoData] = useState<Record<string, { price: number; changePercent: number }>>({});
+  const quotesLoading = quoteState === "loading";
 
   // Fetch stock quotes from the signals proxy
   useEffect(() => {
-    setQuotesLoading(true);
-    fetch("/api/signals/quotes")
-      .then(r => r.json())
+    const controller = new AbortController();
+    setQuoteState("loading");
+    fetch("/api/signals/quotes", { signal: controller.signal })
+      .then(async response => {
+        if (!response.ok) throw new Error(`Quote response unavailable: ${response.status}`);
+        return response.json() as Promise<{ quotes?: { ticker: string; price: number; changePercent: number; open: number; high: number; low: number; volumeMillions: number; avgVolume: number; sparkline: number[] }[] }>;
+      })
       .then((data: { quotes?: { ticker: string; price: number; changePercent: number; open: number; high: number; low: number; volumeMillions: number; avgVolume: number; sparkline: number[] }[] }) => {
         const map: Record<string, { price: number; changePercent: number; open: number; high: number; low: number; volumeMillions: number; avgVolume: number; sparkline: number[] }> = {};
         (data.quotes ?? []).forEach(q => { map[q.ticker] = q; });
+        if (!CORE_TICKERS.every(ticker => map[ticker])) {
+          throw new Error("Quote response is incomplete");
+        }
         setQuotes(map);
+        setQuoteState("available");
       })
-      .catch(() => {})
-      .finally(() => setQuotesLoading(false));
+      .catch(error => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setQuotes({});
+        setQuoteState("unavailable");
+      });
+    return () => controller.abort();
   }, []);
 
   // Fetch crypto prices from CoinGecko via existing endpoint
@@ -302,6 +326,22 @@ export default function MobileSignals() {
     }).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [coreQuoteInputs.length, regime.label]);
+
+  if (quoteState === "unavailable") {
+    return (
+      <div className="px-4 py-8 text-center">
+        <div className="text-[10px] font-mono tracking-widest text-[#FBBF24]">SIGNALS UNAVAILABLE</div>
+      </div>
+    );
+  }
+
+  if (quoteState === "loading") {
+    return (
+      <div className="px-4 py-8 text-center">
+        <div className="text-[10px] font-mono tracking-widest text-[#64748B]">LOADING SIGNALS</div>
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 py-4 pb-6 space-y-4">
@@ -415,16 +455,18 @@ export default function MobileSignals() {
           </div>
 
           {/* BTC dominance */}
-          {globalStats?.btcDominance !== undefined && (
+          {globalStats && (
             <div
               className="rounded-xl p-4"
               style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
             >
               <div className="text-[9px] font-mono tracking-widest text-[#64748B] mb-2">BTC DOMINANCE</div>
               <div className="flex items-center gap-3">
-                <span className="text-2xl font-bold font-mono text-[#F59E0B]">{globalStats.btcDominance.toFixed(1)}%</span>
+                <span className="text-2xl font-bold font-mono text-[#F59E0B]">{formatObservedFixed(globalStats.btcDominance, 1, "%")}</span>
                 <span className="text-[10px] font-mono text-[#64748B]">
-                  {globalStats.btcDominance > 55 ? "Bitcoin Dominance Regime" : globalStats.btcDominance > 45 ? "Early Rotation Watch" : "Alt Expansion Phase"}
+                  {typeof globalStats.btcDominance === "number" && Number.isFinite(globalStats.btcDominance)
+                    ? (globalStats.btcDominance > 55 ? "Bitcoin Dominance Regime" : globalStats.btcDominance > 45 ? "Early Rotation Watch" : "Alt Expansion Phase")
+                    : "Unavailable"}
                 </span>
               </div>
             </div>

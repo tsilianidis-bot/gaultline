@@ -118,7 +118,7 @@ export async function getRisingStarVisualDetail(ticker: string, range: RisingSta
       events,
       startedAt: snapshots[0]?.observedAt ?? null,
       boundaryNote: snapshots.length
-        ? "LIVE VERIFIED HISTORY begins at the first stored FAULTLINE observation. Earlier chart data is market history only and carries no implied FAULTLINE detection."
+        ? "VERIFIED HISTORY begins at the first stored FAULTLINE observation. Earlier chart data is market history only and carries no implied FAULTLINE detection."
         : "No live verified Rising Stars observations have been stored for this asset yet. Historical chart data is market history only, not a reconstructed FAULTLINE signal.",
     },
     signalWindow: computeRecordedSignalWindow(detectionPrice, detectionAt, bars, item.latestPrice),

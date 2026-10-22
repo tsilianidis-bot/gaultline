@@ -18,7 +18,7 @@ const COMING_SOON_FEATURES = [
       "Personalized macro risk score for your portfolio",
       "Concentration and sector exposure analysis",
       "Historical vulnerability mapping against past regimes",
-      "Portfolio health dashboard updated in real time",
+      "Portfolio health dashboard updated regularly",
     ],
     color: "#00D4FF",
   },

@@ -217,7 +217,7 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
   }, [phase, onComplete]);
 
   // Typewriter for tagline
-  const tagline = 'DETECTING HIDDEN SYSTEMIC PRESSURE IN REAL TIME';
+  const tagline = 'DETECTING HIDDEN SYSTEMIC PRESSURE';
   const { displayed: taglineText, done: taglineDone } = useTypewriter(
     tagline, 28, phase === 'subtitle' || phase === 'loading' || phase === 'ready',
   );
@@ -301,7 +301,7 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
               textTransform: 'uppercase',
               animation: 'fl-fade-up 0.8s ease-out 1s both',
             }}>
-              MACROECONOMIC RISK INTELLIGENCE
+              STRUCTURAL MARKET INTELLIGENCE
             </div>
           </div>
         )}

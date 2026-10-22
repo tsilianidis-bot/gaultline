@@ -1,125 +1,162 @@
 /**
- * Tests for the false-zero sub-score fallback logic in seismographUnified.ts.
+ * A stored sub-score is an observation only when the available inputs support it.
+ * A finite 0 that recomputes to the v1 floor stays. A 0 the inputs rule out is a
+ * sentinel. A 0 the inputs cannot decide is unverifiable and is withheld with
+ * the reason. Null and non-finite values are missing. Carry-forward runs only
+ * for a missing cell.
  *
- * Root cause: the pressureHistory DB stores 0 (not null) for sub-scores that
- * were not computed in a partial live-run row. Before the fix, `?? 50` did not
- * catch zero, so evidenceFamilies.strength displayed as 0/100 on the WHY page.
- *
- * The fix uses `|| 50` in history normalization AND a second-layer patch that
- * replaces zero raw-DB values in the latest row with the previous row's values.
+ * May 2026 evidence is the FRED fixture fred-2026-10-12-deep.json, not a month
+ * switch. CPI, PPI, and Fed Funds recompute macro to 48. Unemployment 4.3 keeps
+ * credit at least 3 and breadth at least 11 even with HY and the 10Y at their
+ * formula floors. HY and SOFR in that fixture begin 2026-07-17, so liquidity 0
+ * for May 2026 is unverifiable. That recompute classifies a stored 0 only.
+ * May macro 44, April macro 44, and August liquidity 29 stay as stored.
+ * A row's own inputs win over the fixture.
  */
+import { describe, expect, it } from "vitest";
+import { assessStoredSubScore } from "./pressure/engine";
+import { fredFixtureInputsForMonth, fredFixtureSeriesStart } from "./pressure/fredFixtureEvidence";
+import {
+  buildEvidenceFamilies,
+  carryForwardMissingSubScore,
+  historySubScoreEvidence,
+  normalizeStoredSubScore,
+  type HistoricalMonth,
+} from "./seismographUnified";
 
-import { describe, it, expect } from "vitest";
-
-// ─── Helpers extracted from seismographUnified.ts logic ─────────────────────
-
-/** Mirrors the history normalization: `|| 50` catches both null and 0. */
-function normalizeSubScore(raw: number | null | undefined): number {
-  return raw || 50;
-}
-
-/**
- * Mirrors the second-layer patch that replaces missing latest-row sub-scores
- * with the previous row's values, detected via the raw DB value.
- */
-function patchLatestRow(
-  rawLatest: { liquidity: number | null; credit: number | null; volatility: number | null; macro: number | null; breadth: number | null },
-  normalizedLatest: { liquidity: number; credit: number; volatility: number; macro: number; breadth: number },
-  normalizedPrev: { liquidity: number; credit: number; volatility: number; macro: number; breadth: number },
-) {
+function month(overrides: Partial<HistoricalMonth> = {}): HistoricalMonth {
   return {
-    liquidity:  (rawLatest.liquidity  === 0 || rawLatest.liquidity  === null) ? normalizedPrev.liquidity  : normalizedLatest.liquidity,
-    credit:     (rawLatest.credit     === 0 || rawLatest.credit     === null) ? normalizedPrev.credit     : normalizedLatest.credit,
-    volatility: (rawLatest.volatility === 0 || rawLatest.volatility === null) ? normalizedPrev.volatility : normalizedLatest.volatility,
-    macro:      (rawLatest.macro      === 0 || rawLatest.macro      === null) ? normalizedPrev.macro      : normalizedLatest.macro,
-    breadth:    (rawLatest.breadth    === 0 || rawLatest.breadth    === null) ? normalizedPrev.breadth    : normalizedLatest.breadth,
+    month: "2026-09", score: 33, regime: "MODERATE RISK",
+    liquidity: 29, credit: 25, volatility: 28, macro: 44, breadth: 22, aiBubble: 30,
+    baaSpread: null, hySpread: null, tsy10y: null, tsy2y: null, fedfunds: null, cpiYoy: null,
+    unemployment: null, sp500: null,
+    ...overrides,
   };
 }
 
-// ─── Tests ───────────────────────────────────────────────────────────────────
-
-describe("normalizeSubScore — || 50 fallback", () => {
-  it("returns the value when non-zero", () => {
-    expect(normalizeSubScore(29)).toBe(29);
-    expect(normalizeSubScore(44)).toBe(44);
-    expect(normalizeSubScore(30)).toBe(30);
-  });
-
-  it("returns 50 when raw value is 0 (missing DB row)", () => {
-    expect(normalizeSubScore(0)).toBe(50);
-  });
-
-  it("returns 50 when raw value is null", () => {
-    expect(normalizeSubScore(null)).toBe(50);
-  });
-
-  it("returns 50 when raw value is undefined", () => {
-    expect(normalizeSubScore(undefined)).toBe(50);
-  });
-
-  it("does NOT return 50 for genuine low-stress readings (e.g. 20)", () => {
-    expect(normalizeSubScore(20)).toBe(20);
-    expect(normalizeSubScore(15)).toBe(15);
+describe("normalizeStoredSubScore", () => {
+  it("keeps a finite reading, including 0, and withholds null and non-finite values", () => {
+    expect(normalizeStoredSubScore(0)).toBe(0);
+    expect(normalizeStoredSubScore(29)).toBe(29);
+    expect(normalizeStoredSubScore(null)).toBeNull();
+    expect(normalizeStoredSubScore(undefined)).toBeNull();
+    expect(normalizeStoredSubScore(Number.NaN)).toBeNull();
   });
 });
 
-describe("patchLatestRow — second-layer fallback to previous row", () => {
-  const prev = { liquidity: 29, credit: 25, volatility: 28, macro: 44, breadth: 22 };
+describe("stored sub-score evidence", () => {
+  const may = fredFixtureInputsForMonth("2026-05");
 
-  it("uses previous row values when latest raw DB values are 0 (May 2026 scenario)", () => {
-    const rawLatest = { liquidity: 0, credit: 0, volatility: 30, macro: 0, breadth: 0 };
-    const normalizedLatest = { liquidity: 50, credit: 50, volatility: 30, macro: 50, breadth: 50 };
-
-    const patched = patchLatestRow(rawLatest, normalizedLatest, prev);
-
-    expect(patched.liquidity).toBe(29);   // from prev, not 50
-    expect(patched.credit).toBe(25);      // from prev, not 50
-    expect(patched.volatility).toBe(30);  // kept from latest (non-zero raw)
-    expect(patched.macro).toBe(44);       // from prev, not 50
-    expect(patched.breadth).toBe(22);     // from prev, not 50
+  it("documents that HY and SOFR evidence starts on 2026-07-17", () => {
+    expect(fredFixtureSeriesStart("BAMLH0A0HYM2")).toBe("2026-07-17");
+    expect(fredFixtureSeriesStart("SOFR")).toBe("2026-07-17");
+    expect(may.evidence).toContain("2026-07-17");
+    expect(may.inputs.hySpreadBps).toBeNull();
+    expect(may.inputs.sofr).toBeNull();
+    expect(may.inputs.unemployment).toBe(4.3);
+    expect(may.inputs.fedFunds).toBe(3.63);
   });
 
-  it("keeps latest values when all sub-scores are present (normal row)", () => {
-    const rawLatest = { liquidity: 35, credit: 28, volatility: 42, macro: 38, breadth: 30 };
-    const normalizedLatest = { liquidity: 35, credit: 28, volatility: 42, macro: 38, breadth: 30 };
-
-    const patched = patchLatestRow(rawLatest, normalizedLatest, prev);
-
-    expect(patched.liquidity).toBe(35);
-    expect(patched.credit).toBe(28);
-    expect(patched.volatility).toBe(42);
-    expect(patched.macro).toBe(38);
-    expect(patched.breadth).toBe(30);
+  it("treats May 2026 credit, macro, and breadth zeros as sentinels and liquidity 0 as unverifiable", () => {
+    const macro = assessStoredSubScore("macro", 0, may.inputs, may.evidence);
+    const credit = assessStoredSubScore("credit", 0, may.inputs, may.evidence);
+    const breadth = assessStoredSubScore("breadth", 0, may.inputs, may.evidence);
+    const liquidity = assessStoredSubScore("liquidity", 0, may.inputs, may.evidence);
+    expect(macro).toMatchObject({ status: "sentinel", value: null });
+    expect(macro.reason).toContain("48");
+    expect(credit).toMatchObject({ status: "sentinel", value: null });
+    expect(credit.reason).toContain("at least 3");
+    expect(breadth).toMatchObject({ status: "sentinel", value: null });
+    expect(breadth.reason).toContain("at least 11");
+    expect(liquidity).toMatchObject({ status: "unverifiable", value: null });
+    expect(liquidity.reason).toContain("unverifiable");
+    expect(liquidity.reason).toContain("2026-07-17");
   });
 
-  it("uses previous row values when latest raw DB values are null", () => {
-    const rawLatest = { liquidity: null, credit: null, volatility: null, macro: null, breadth: null };
-    const normalizedLatest = { liquidity: 50, credit: 50, volatility: 50, macro: 50, breadth: 50 };
+  it("keeps a liquidity 0 that the HY and SOFR floors recompute, and does not carry an unverifiable 0", () => {
+    const floor = assessStoredSubScore("liquidity", 0, { hySpreadBps: 180, sofr: 1.5 }, "HY and SOFR at the floor.");
+    expect(floor).toMatchObject({ status: "observed", value: 0 });
+    const unverifiable = assessStoredSubScore("liquidity", 0, {}, "No HY or SOFR observation.");
+    expect(unverifiable.status).toBe("unverifiable");
+    expect(carryForwardMissingSubScore(floor, 29)).toBe(0);
+    expect(carryForwardMissingSubScore(unverifiable, 29)).toBeNull();
+    expect(carryForwardMissingSubScore({ status: "missing", value: null, reason: "No finite stored sub-score." }, 29)).toBe(29);
+    expect(assessStoredSubScore("macro", 48, may.inputs, may.evidence)).toMatchObject({ status: "observed", value: 48 });
+    expect(assessStoredSubScore("liquidity", 22, may.inputs, may.evidence)).toMatchObject({ status: "observed", value: 22 });
+  });
 
-    const patched = patchLatestRow(rawLatest, normalizedLatest, prev);
+  it("keeps stored non-zero scores that differ from the fixture recompute", () => {
+    const april = fredFixtureInputsForMonth("2026-04");
+    const august = fredFixtureInputsForMonth("2026-08");
+    expect(assessStoredSubScore("macro", 0, may.inputs, may.evidence).reason).toContain("48");
+    expect(assessStoredSubScore("macro", 44, may.inputs, may.evidence)).toMatchObject({ status: "observed", value: 44 });
+    expect(assessStoredSubScore("macro", 0, april.inputs, april.evidence).status).not.toBe("observed");
+    expect(assessStoredSubScore("macro", 44, april.inputs, april.evidence)).toMatchObject({ status: "observed", value: 44 });
+    expect(assessStoredSubScore("liquidity", 0, august.inputs, august.evidence).value).not.toBe(29);
+    expect(assessStoredSubScore("liquidity", 29, august.inputs, august.evidence)).toMatchObject({ status: "observed", value: 29 });
+  });
 
-    expect(patched.liquidity).toBe(29);
-    expect(patched.credit).toBe(25);
-    expect(patched.volatility).toBe(28);
-    expect(patched.macro).toBe(44);
-    expect(patched.breadth).toBe(22);
+  it("lets the row's own inputs win over the fixture", () => {
+    const may = fredFixtureInputsForMonth("2026-05");
+    const august = fredFixtureInputsForMonth("2026-08");
+    expect(may.inputs.unemployment).toBe(4.3);
+    const mayRow = historySubScoreEvidence({
+      month: "2026-05",
+      hySpreadProxy: null,
+      tsy10y: 3.1,
+      tsy2y: null,
+      fedfunds: null,
+      cpiYoy: null,
+      unemployment: 9.9,
+    });
+    expect(mayRow.inputs.unemployment).toBe(9.9);
+    expect(mayRow.inputs.tsy10y).toBe(3.1);
+    expect(mayRow.evidence).toContain("stored row value 9.9");
+    expect(mayRow.inputs.ppiYoy).toBe(may.inputs.ppiYoy);
+    const rowHy = august.inputs.hySpreadBps == null ? 250 : august.inputs.hySpreadBps + 50;
+    const augustRow = historySubScoreEvidence({
+      month: "2026-08",
+      hySpreadProxy: rowHy,
+      tsy10y: null,
+      tsy2y: null,
+      fedfunds: null,
+      cpiYoy: null,
+      unemployment: null,
+    });
+    expect(augustRow.inputs.hySpreadBps).toBe(rowHy);
+    expect(augustRow.inputs.hySpreadBps).not.toBe(august.inputs.hySpreadBps);
+    const gap = historySubScoreEvidence({
+      month: "2026-05",
+      hySpreadProxy: null,
+      tsy10y: null,
+      tsy2y: null,
+      fedfunds: null,
+      cpiYoy: null,
+      unemployment: null,
+    });
+    expect(gap.inputs.unemployment).toBe(4.3);
+    expect(gap.inputs.fedFunds).toBe(may.inputs.fedFunds);
+    expect(gap.inputs.hySpreadBps).toBeNull();
   });
 });
 
-describe("false-zero regression: WHY page evidence families must never show 0/100", () => {
-  it("strength is never 0 after normalization for any realistic DB row", () => {
-    const dbRows = [
-      { liquidity: 0, credit: 0, volatility: 30, macro: 0, breadth: 0 },   // May 2026 partial row
-      { liquidity: 29, credit: 25, volatility: 28, macro: 44, breadth: 22 }, // April 2026 full row
-      { liquidity: null, credit: null, volatility: null, macro: null, breadth: null }, // all null
-    ];
+describe("missing sub-score evidence is omitted", () => {
+  it("does not publish a 50/100 family for a missing liquidity score", () => {
+    const history = Array.from({ length: 6 }, () => month({ liquidity: null }));
+    const families = buildEvidenceFamilies(month({ liquidity: null }), history);
+    expect(families.find(family => family.name === "Liquidity Conditions")).toBeUndefined();
+  });
 
-    for (const row of dbRows) {
-      expect(normalizeSubScore(row.liquidity)).toBeGreaterThan(0);
-      expect(normalizeSubScore(row.credit)).toBeGreaterThan(0);
-      expect(normalizeSubScore(row.volatility)).toBeGreaterThan(0);
-      expect(normalizeSubScore(row.macro)).toBeGreaterThan(0);
-      expect(normalizeSubScore(row.breadth)).toBeGreaterThan(0);
-    }
+  it("publishes a confirmed liquidity floor as 0/100", () => {
+    const history = Array.from({ length: 6 }, () => month({ liquidity: 0 }));
+    const family = buildEvidenceFamilies(month({ liquidity: 0 }), history).find(item => item.name === "Liquidity Conditions");
+    expect(family?.strength).toBe(0);
+    expect(family?.currentValue).toBe("0/100");
+  });
+
+  it("keeps an observed liquidity score", () => {
+    const history = Array.from({ length: 6 }, () => month());
+    const family = buildEvidenceFamilies(month(), history).find(item => item.name === "Liquidity Conditions");
+    expect(family?.currentValue).toBe("29/100");
   });
 });

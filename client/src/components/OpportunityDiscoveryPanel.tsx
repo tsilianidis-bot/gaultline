@@ -6,6 +6,9 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { useEngine } from "@/contexts/EngineContext";
+import { canonicalPressureLabel, canonicalPressureValue } from "@/lib/canonicalPressureDisplay";
+import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
 import {
   TrendingUp, TrendingDown, Minus, Zap, Star, Target, Cpu,
   Bitcoin, Globe, BarChart2, Flame, ChevronRight, RefreshCw,
@@ -137,7 +140,7 @@ interface DiscoveryItem {
   institutionalConviction?: string;
   macroAlignment?: number;
   riskRewardRatio?: string;
-  confidenceLevel?: number;
+  confidenceLevel?: number | null; // withheld by the server; never rendered
   topCatalyst?: string;
   actionBias?: string;
 }
@@ -282,12 +285,11 @@ function BucketCard({ bucket, onNavigate, onWatchlist }: { bucket: DiscoveryBuck
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, color: item.institutionalConviction === "Very High" || item.institutionalConviction === "High" ? "#22C55E" : item.institutionalConviction === "Moderate" ? "#FFD700" : "#94A3B8" }}>{item.institutionalConviction}</span>
                   </div>
                 )}
-                {item.confidenceLevel != null && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.08em" }}>CONFIDENCE</span>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, color: "#B0C4D8" }}>{item.confidenceLevel}%</span>
-                  </div>
-                )}
+                {/* QA confidence sweep: no calibrated confidence exists for discovery items. */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.08em" }}>CONFIDENCE</span>
+                  <span data-confidence-status="not-established" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, color: "#94A3B8" }}>{CONFIDENCE_NOT_ESTABLISHED}</span>
+                </div>
               </div>
 
               {/* Row 3: Bull / Bear cases */}
@@ -372,6 +374,11 @@ export function OpportunityDiscoveryPanel() {
     undefined,
     { staleTime: 5 * 60 * 1000, refetchOnWindowFocus: false }
   );
+  // Shown: the canonical Pressure Index (same source as the header strip); the
+  // discovery payload's pressureIndex stays a scoring input only.
+  const { canonicalState } = useEngine();
+  const displayPressure = canonicalPressureValue(canonicalState);
+  const displayPressureLabel = canonicalPressureLabel(canonicalState);
 
   function handleNavigate(ticker: string, assetType: string) {
     const type = assetType === "crypto" ? "crypto" : "stock";
@@ -451,7 +458,7 @@ export function OpportunityDiscoveryPanel() {
             </span>
             <div style={{ width: "1px", height: "12px", background: "rgba(255,255,255,0.06)" }} />
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)" }}>
-              PRESSURE: <span style={{ color: data.pressureIndex >= 70 ? "#FF2D55" : data.pressureIndex >= 50 ? "#FF9500" : "#00D4FF" }}>{data.pressureIndex.toFixed(0)}</span>
+              PRESSURE: <span style={{ color: displayPressure === null ? "rgba(100,116,139,0.5)" : displayPressure >= 70 ? "#FF2D55" : displayPressure >= 50 ? "#FF9500" : "#00D4FF" }}>{displayPressureLabel}</span>
             </span>
             <div style={{ width: "1px", height: "12px", background: "rgba(255,255,255,0.06)" }} />
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)" }}>

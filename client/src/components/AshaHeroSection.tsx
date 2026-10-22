@@ -23,6 +23,8 @@ import { useEngine } from "@/contexts/EngineContext";
 import { Link } from "wouter";
 import { formatCanonicalScore } from "@shared/marketMetrics";
 import { trpc } from "@/lib/trpc";
+import { engineProbabilityPercent, engineProbabilityText } from "@/lib/marketStateProjection";
+import type { ProbabilityOutputKey } from "@/lib/engine";
 
 // ── Instrument definitions (ticker → display label) ───────────
 // Mapped to symbols available in the existing /api/signals/quotes cache.
@@ -45,9 +47,9 @@ const MACRO_INSTRUMENTS = [
 
 interface QuoteData {
   symbol: string;
-  price: number;
-  change: number;
-  changePercent: number;
+  price: number | null;
+  change: number | null;
+  changePercent: number | null;
 }
 
 // ── Live macro ticker strip ───────────────────────────────────
@@ -65,9 +67,9 @@ function MacroTickerStrip() {
         for (const q of data.quotes) {
           map[q.ticker] = {
             symbol: q.ticker,
-            price: q.price ?? 0,
-            change: q.change ?? 0,
-            changePercent: q.changePercent ?? 0,
+            price: typeof q.price === "number" && Number.isFinite(q.price) ? q.price : null,
+            change: typeof q.change === "number" && Number.isFinite(q.change) ? q.change : null,
+            changePercent: typeof q.changePercent === "number" && Number.isFinite(q.changePercent) ? q.changePercent : null,
           };
         }
       }
@@ -98,8 +100,10 @@ function MacroTickerStrip() {
       }}>
         {MACRO_INSTRUMENTS.map((inst) => {
           const q = quotes[inst.symbol];
-          const isUp = (q?.changePercent ?? 0) >= 0;
-          const color = loading || !q
+          const changePct = q && typeof q.changePercent === "number" && Number.isFinite(q.changePercent) ? q.changePercent : null;
+          const changeKnown = changePct != null;
+          const isUp = changeKnown && changePct >= 0;
+          const color = loading || !q || !changeKnown
             ? "rgba(255,255,255,0.25)"
             : isUp ? "#00FF88" : "#FF3B5C";
 
@@ -126,8 +130,8 @@ function MacroTickerStrip() {
                 color: "rgba(255,255,255,0.88)",
                 letterSpacing: "0.03em",
               }}>
-                {loading || !q
-                  ? "—"
+                {loading || !q || q.price == null
+                  ? "Unavailable"
                   : q.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
               {q && (
@@ -137,7 +141,7 @@ function MacroTickerStrip() {
                   fontWeight: 600,
                   color,
                 }}>
-                  {isUp ? "▲" : "▼"} {Math.abs(q.changePercent).toFixed(2)}%
+                  {changePct == null ? "Unavailable" : `${isUp ? "▲" : "▼"} ${Math.abs(changePct).toFixed(2)}%`}
                 </span>
               )}
             </div>
@@ -161,7 +165,6 @@ function AshaIntelPanel() {
   const score       = (canonicalState.pressureIndex ?? 0) / 10;
   const regime      = canonicalState.regime;
   const summary     = output.narrative.summary;
-  const prob        = output.probability;
   const topAnalog   = output.analogs[0] ?? null;
 
   // Derive a verdict label from regime code
@@ -178,12 +181,14 @@ function AshaIntelPanel() {
   const verdictColor = verdict === "RISK-ON" ? "#00FF88" : verdict === "RISK-OFF" ? "#FF3B5C" : "#00E5FF";
 
   // Regime probability bars — mapped from ProbabilityOutput
-  const regimeBars = [
-    { label: "BULL",        value: prob.bullProbability,        color: "#00FF88" },
-    { label: "SOFT LAND",   value: prob.softLandingProbability, color: "#00E5FF" },
-    { label: "STAGFLATION", value: prob.stagflationProbability, color: "#FFAA00" },
-    { label: "RECESSION",   value: prob.recessionProbability,   color: "#FF6B35" },
-    { label: "CRASH",       value: prob.crashProbability,       color: "#FF3B5C" },
+  // Probability contract: values are already 0–100 (never multiply by 100);
+  // text and width come only from the contract display.
+  const regimeBars: Array<{ label: string; key: ProbabilityOutputKey; color: string }> = [
+    { label: "BULL",        key: "bullProbability",        color: "#00FF88" },
+    { label: "SOFT LAND",   key: "softLandingProbability", color: "#00E5FF" },
+    { label: "STAGFLATION", key: "stagflationProbability", color: "#FFAA00" },
+    { label: "RECESSION",   key: "recessionProbability",   color: "#FF6B35" },
+    { label: "CRASH",       key: "crashProbability",       color: "#FF3B5C" },
   ];
 
   return (
@@ -245,8 +250,8 @@ function AshaIntelPanel() {
           gap: "10px",
           flexWrap: "wrap",
         }}>
-          {regimeBars.map(({ label, value, color }) => {
-            const pct = Math.round(value * 100);
+          {regimeBars.map(({ label, key, color }) => {
+            const pct = engineProbabilityPercent(output, key);
             return (
               <div key={label} style={{ minWidth: "54px" }}>
                 <div style={{
@@ -266,7 +271,7 @@ function AshaIntelPanel() {
                 }}>
                   <div style={{
                     height: "100%",
-                    width: `${pct}%`,
+                    width: `${pct ?? 0}%`,
                     background: color,
                     borderRadius: "2px",
                     transition: "width 1s cubic-bezier(0.23,1,0.32,1)",
@@ -276,8 +281,8 @@ function AshaIntelPanel() {
                   fontFamily: "'IBM Plex Mono', monospace",
                   fontSize: "11px",
                   fontWeight: 700,
-                  color,
-                }}>{pct}%</div>
+                  color: pct !== null ? color : "rgba(255,255,255,0.45)",
+                }}>{engineProbabilityText(output, key)}</div>
               </div>
             );
           })}
@@ -374,13 +379,13 @@ function AshaIntelPanel() {
                 fontSize: "8px",
                 color: "rgba(255,255,255,0.3)",
                 letterSpacing: "0.1em",
-              }}>TRANSITION RISK </span>
+              }}>CRASH PROBABILITY </span>
               <span style={{
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: "11px",
-                color: prob.crashProbability > 0.3 ? "#FFAA00" : "rgba(255,255,255,0.55)",
+                color: "rgba(255,255,255,0.55)",
                 fontWeight: 600,
-              }}>{Math.round(prob.crashProbability * 100)}%</span>
+              }}>{engineProbabilityText(output, "crashProbability")}</span>
             </div>
           </div>
         </div>
