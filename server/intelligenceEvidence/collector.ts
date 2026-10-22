@@ -104,6 +104,7 @@ function validate(draft: EvidenceDraft, nowMs: number): ValidatedIntelligenceEvi
     value,
     unit: draft.unit,
     observedAt: integrity.observedAt,
+    sourceObservationDate: draft.sourceObservationDate ?? null,
     receivedAt: draft.receivedAt,
     maxAgeMs: draft.maxAgeMs,
     validUntil: validityDeadline(integrity.observedAt, draft.maxAgeMs),
@@ -118,6 +119,15 @@ function validate(draft: EvidenceDraft, nowMs: number): ValidatedIntelligenceEvi
     lastVerified: null,
   };
   if (!base.supportsCurrentClaim) base.historicalValue = toHistorical(base);
+  if (draft.sourceObservationDate && Date.parse(draft.sourceObservationDate) <= nowMs && draft.sourceHealthy && finite(draft.rawValue)) {
+    base.historicalValue = {
+      value: draft.rawValue,
+      observedAt: draft.sourceObservationDate,
+      provider: draft.provider,
+      validationStatus: "unavailable",
+      reason: "Source publishes a date only, not an exact observation time. Historical released context only; not eligible for current claims.",
+    };
+  }
   return base;
 }
 
@@ -167,7 +177,11 @@ function quoteDraft(id: string, label: string, quote: YahooQuote | undefined, no
 
 function fredDraft(id: string, label: string, unit: string | null, fred: FredBulkResult): EvidenceDraft {
   const result = fred.results[id];
-  const observation = result?.observations.find(item => finite(Number(item.value)));
+  const observation = result?.observations.find(item => item.value.trim() !== "" && finite(Number(item.value)));
+  const date = observation?.date ?? null;
+  const sourceDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+    Number.isFinite(Date.parse(date)) && new Date(date).toISOString().slice(0, 10) === date
+    ? date : null;
   return {
     id: `fred:${id}`,
     label,
@@ -176,14 +190,17 @@ function fredDraft(id: string, label: string, unit: string | null, fred: FredBul
     origin: "observed",
     rawValue: observation && finite(Number(observation.value)) ? Number(observation.value) : null,
     unit,
-    observedAt: observation ? new Date(`${observation.date}T00:00:00.000Z`).toISOString() : null,
+    observedAt: null,
+    sourceObservationDate: sourceDate,
     receivedAt: fred.timestamp ?? null,
     maxAgeMs: 96 * 60 * 60_000,
     modelVersion: null,
     sourceIdentifier: `fred:${id}`,
-    sourceHealthy: Boolean(observation && !result?.error),
+    sourceHealthy: Boolean(observation && sourceDate && !result?.error),
     temporalStatus: observation ? "released" : "unavailable",
-    temporalDetail: observation ? "Released macro observation; its source date is retained." : "No usable released source observation is available.",
+    temporalDetail: sourceDate
+      ? `Released macro observation dated ${sourceDate}; date precision only. Exact observation time is unavailable, so current claims are withheld.`
+      : "No usable dated released source observation is available.",
   };
 }
 
@@ -308,7 +325,7 @@ export function buildEvidenceSnapshot(inputs: EvidenceInputs, now: Date = new Da
       status: providerStatus(observations, ["fred:DGS10", "fred:DGS2", "fred:BAMLH0A0HYM2"]),
       observedAt: observations.find(item => item.id === "fred:DGS10")?.observedAt ?? null,
       checkedAt: now.toISOString(),
-      detail: "Released source observations follow their own publication cadence and are not intraday data.",
+      detail: "FRED supplies date-only observations. Source dates are preserved as historical context; exact timestamps and current-use eligibility are withheld.",
     },
     {
       id: "coingecko",

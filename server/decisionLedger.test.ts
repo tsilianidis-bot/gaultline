@@ -25,7 +25,7 @@ vi.mock("./db", () => {
     primaryDriver: string;
     expectedTimeframe: string;
     queryType: string;
-    outcome: "pending" | "correct" | "incorrect";
+    outcome: "pending" | "correct" | "incorrect" | "partially_correct" | "still_active";
     notes: string | null;
     resolvedAt: Date | null;
     createdAt: Date;
@@ -58,6 +58,10 @@ vi.mock("./db", () => {
       }),
     }),
     _rows: rows,
+    _reset: () => {
+      rows.splice(0, rows.length);
+      nextId = 1;
+    },
   };
 
   return {
@@ -93,6 +97,55 @@ function createAuthContext(userId = 1): TrpcContext {
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
     res: {} as TrpcContext["res"],
   };
+}
+
+type LedgerOutcome = "pending" | "correct" | "incorrect" | "partially_correct" | "still_active";
+type MockLedgerRow = {
+  id: number;
+  userId: number;
+  ticker: string | null;
+  assetType: "stock" | "crypto" | null;
+  verdict: string;
+  opportunityScore: number;
+  confidence: number;
+  primaryDriver: string;
+  expectedTimeframe: string;
+  queryType: string;
+  outcome: LedgerOutcome;
+  notes: string | null;
+  resolvedAt: Date | null;
+  createdAt: Date;
+};
+
+type MockLedgerDb = {
+  _rows: MockLedgerRow[];
+  _reset: () => void;
+};
+
+function ledgerRow(id: number, outcome: LedgerOutcome): MockLedgerRow {
+  return {
+    id,
+    userId: 1,
+    ticker: "NVDA",
+    assetType: "stock",
+    verdict: "BUY",
+    opportunityScore: 80,
+    confidence: 70,
+    primaryDriver: "Test assessment",
+    expectedTimeframe: "2 weeks",
+    queryType: "security",
+    outcome,
+    notes: null,
+    resolvedAt: null,
+    createdAt: new Date("2026-01-01T00:00:00.000Z"),
+  };
+}
+
+async function setLedgerRows(rows: MockLedgerRow[]) {
+  const { getDb } = await import("./db");
+  const db = await getDb() as unknown as MockLedgerDb;
+  db._reset();
+  db._rows.push(...rows);
 }
 
 // ── Tests ─────────────────────────────────────────────────────
@@ -209,5 +262,54 @@ describe("smartDiscovery.getLedgerStats", () => {
     const stats = await caller.getLedgerStats();
     // With our mock, all entries are pending so winRate should be null
     expect(typeof stats.winRate === "number" || stats.winRate === null).toBe(true);
+  });
+
+  it("does not score only still_active assessments", async () => {
+    await setLedgerRows([ledgerRow(1, "still_active")]);
+    const { smartDiscoveryRouter } = await import("./routers/smartDiscovery");
+    const stats = await smartDiscoveryRouter.createCaller(createAuthContext()).getLedgerStats();
+
+    expect(stats).toMatchObject({
+      total: 1,
+      resolved: 0,
+      pending: 0,
+      stillActive: 1,
+      winRate: null,
+    });
+    expect(stats.byAsset).toEqual([]);
+    expect(stats.byVerdict).toEqual([]);
+  });
+
+  it("keeps still_active out of headline and group denominators", async () => {
+    await setLedgerRows([
+      ledgerRow(1, "correct"),
+      ledgerRow(2, "incorrect"),
+      ledgerRow(3, "still_active"),
+    ]);
+    const { smartDiscoveryRouter } = await import("./routers/smartDiscovery");
+    const caller = smartDiscoveryRouter.createCaller(createAuthContext());
+    const mixed = await caller.getLedgerStats();
+
+    await setLedgerRows([ledgerRow(1, "correct"), ledgerRow(2, "incorrect")]);
+    const finalOnly = await caller.getLedgerStats();
+
+    expect(mixed).toMatchObject({ total: 3, resolved: 2, stillActive: 1, winRate: 50 });
+    expect(mixed.winRate).toBe(finalOnly.winRate);
+    expect(mixed.byAsset).toEqual(finalOnly.byAsset);
+    expect(mixed.byVerdict).toEqual(finalOnly.byVerdict);
+  });
+
+  it("applies half credit for partially_correct in the headline and both group metrics", async () => {
+    await setLedgerRows([
+      ledgerRow(1, "correct"),
+      ledgerRow(2, "partially_correct"),
+      ledgerRow(3, "incorrect"),
+    ]);
+    const { smartDiscoveryRouter } = await import("./routers/smartDiscovery");
+    const stats = await smartDiscoveryRouter.createCaller(createAuthContext()).getLedgerStats();
+
+    expect(stats.winRate).toBe(50); // (1 + 0.5 + 0) / 3
+    expect(stats.byAsset).toEqual([{ asset: "stock", accuracy: 50, total: 3 }]);
+    expect(stats.byVerdict).toEqual([{ verdict: "BUY", accuracy: 50, total: 3 }]);
   });
 });

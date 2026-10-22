@@ -51,8 +51,23 @@ describe("Phase 1 Intelligence Evidence collector", () => {
   it("maps actual source identity, provider timestamps, and modeled canonical outputs through the gate", () => {
     const snapshot = buildEvidenceSnapshot(inputs(), NOW);
     expect(finding(snapshot, "quote:SPY")).toMatchObject({ provider: "Yahoo Finance", validationStatus: "verified", supportsCurrentClaim: true, observedAt: "2026-10-16T14:58:00.000Z", validUntil: "2026-10-16T15:18:00.000Z" });
-    expect(finding(snapshot, "fred:DGS10")).toMatchObject({ provider: "Federal Reserve Economic Data (FRED)", validationStatus: "verified", supportsCurrentClaim: true });
+    expect(finding(snapshot, "fred:DGS10")).toMatchObject({ provider: "Federal Reserve Economic Data (FRED)", validationStatus: "unavailable", supportsCurrentClaim: false, observedAt: null, validUntil: null, sourceObservationDate: "2026-10-16", historicalValue: { value: 4.12, observedAt: "2026-10-16" } });
     expect(finding(snapshot, "canonical:credit-stress")).toMatchObject({ origin: "modeled", modelVersion: "champion-v1", validationStatus: "delayed", supportsCurrentClaim: true });
+  });
+
+  it("does not fabricate midnight or use retrieval time for date-only FRED observations", () => {
+    const snapshot = buildEvidenceSnapshot(inputs(), NOW);
+    for (const id of ["fred:DGS10", "fred:DGS2", "fred:BAMLH0A0HYM2"]) {
+      const item = finding(snapshot, id);
+      expect(item.observedAt).toBeNull();
+      expect(item.receivedAt).toBe("2026-10-16T14:59:00.000Z");
+      expect(item.sourceObservationDate).toBe("2026-10-16");
+      expect(item.supportsCurrentClaim).toBe(false);
+      expect(item.temporalDetail).toContain("date precision only");
+      expect(item.historicalValue?.reason).toContain("not eligible for current claims");
+    }
+    expect(snapshot.domains.find(domain => domain.id === "bonds_rates")?.currentObservationIds).toEqual([]);
+    expect(snapshot.domains.find(domain => domain.id === "bonds_rates")?.historicalObservationIds).toEqual(["fred:DGS10", "fred:DGS2"]);
   });
 
   it("maps a CoinGecko aggregate only when its provider observation timestamp is present", () => {

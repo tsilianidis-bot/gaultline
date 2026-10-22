@@ -1787,49 +1787,55 @@ export const smartDiscoveryRouter = router({
       .from(decisionLedger)
       .where(eq(decisionLedger.userId, ctx.user.id));
 
-    const resolved = entries.filter((e: DecisionLedgerEntry) => e.outcome !== "pending");
-    const correct = resolved.filter((e: DecisionLedgerEntry) => e.outcome === "correct");
-    const partiallyCorrect = resolved.filter((e: DecisionLedgerEntry) => e.outcome === "partially_correct");
-    const stillActive = resolved.filter((e: DecisionLedgerEntry) => e.outcome === "still_active");
-    // Win rate: correct = 1pt, partially_correct = 0.5pt, incorrect/still_active = 0pt
+    // Only final truth outcomes are scorable. `still_active` represents an
+    // unresolved/ambiguous assessment that may be revisited, not a zero-score
+    // outcome; keep it as inventory below without placing it in any denominator.
+    const scorable = entries.filter((e: DecisionLedgerEntry) =>
+      e.outcome === "correct" || e.outcome === "incorrect" || e.outcome === "partially_correct"
+    );
+    const correct = scorable.filter((e: DecisionLedgerEntry) => e.outcome === "correct");
+    const partiallyCorrect = scorable.filter((e: DecisionLedgerEntry) => e.outcome === "partially_correct");
+    const stillActive = entries.filter((e: DecisionLedgerEntry) => e.outcome === "still_active");
+    // Declared scoring policy: correct = 1 point, partially_correct = 0.5 point, incorrect = 0 points.
     const winPoints = correct.length + partiallyCorrect.length * 0.5;
-    const winRate = resolved.length > 0 ? Math.round((winPoints / resolved.length) * 100) : null;
+    const winRate = scorable.length > 0 ? Math.round((winPoints / scorable.length) * 100) : null;
 
-    // Accuracy by asset class
-    const byAsset: Record<string, { correct: number; total: number }> = {};
-    for (const e of resolved) {
+    // Group accuracy uses the same partial-outcome credit as the headline.
+    const byAsset: Record<string, { points: number; total: number }> = {};
+    for (const e of scorable) {
       const key = e.assetType ?? "macro";
-      if (!byAsset[key]) byAsset[key] = { correct: 0, total: 0 };
+      if (!byAsset[key]) byAsset[key] = { points: 0, total: 0 };
       byAsset[key].total++;
-      if (e.outcome === "correct") byAsset[key].correct++;
+      if (e.outcome === "correct") byAsset[key].points += 1;
+      if (e.outcome === "partially_correct") byAsset[key].points += 0.5;
     }
 
-    // Accuracy by verdict
-    const byVerdict: Record<string, { correct: number; total: number }> = {};
-    for (const e of resolved) {
+    const byVerdict: Record<string, { points: number; total: number }> = {};
+    for (const e of scorable) {
       const key = e.verdict;
-      if (!byVerdict[key]) byVerdict[key] = { correct: 0, total: 0 };
+      if (!byVerdict[key]) byVerdict[key] = { points: 0, total: 0 };
       byVerdict[key].total++;
-      if (e.outcome === "correct") byVerdict[key].correct++;
+      if (e.outcome === "correct") byVerdict[key].points += 1;
+      if (e.outcome === "partially_correct") byVerdict[key].points += 0.5;
     }
 
     return {
       total: entries.length,
-      resolved: resolved.length,
+      resolved: scorable.length,
       pending: entries.filter((e: DecisionLedgerEntry) => e.outcome === "pending").length,
       correct: correct.length,
       partiallyCorrect: partiallyCorrect.length,
       stillActive: stillActive.length,
-      incorrect: resolved.filter((e: DecisionLedgerEntry) => e.outcome === "incorrect").length,
+      incorrect: scorable.filter((e: DecisionLedgerEntry) => e.outcome === "incorrect").length,
       winRate,
       byAsset: Object.entries(byAsset).map(([asset, stats]) => ({
         asset,
-        accuracy: Math.round((stats.correct / stats.total) * 100),
+        accuracy: Math.round((stats.points / stats.total) * 100),
         total: stats.total,
       })),
       byVerdict: Object.entries(byVerdict).map(([verdict, stats]) => ({
         verdict,
-        accuracy: Math.round((stats.correct / stats.total) * 100),
+        accuracy: Math.round((stats.points / stats.total) * 100),
         total: stats.total,
       })),
     };

@@ -824,12 +824,12 @@ export default function AnalyticsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {[
-                { name: "FAULTLINE Pressure Index", path: "/app/dashboard", status: "live", color: CYAN },
-                { name: "Signals Engine", path: "/app/signals", status: "live", color: CYAN },
-                { name: "Situation Room", path: "/app/situation-room", status: "live", color: CYAN },
-                { name: "Insider Intelligence", path: "/app/insider-intelligence", status: "live", color: CYAN },
-                { name: "Track Record", path: "/app/track-record", status: "live", color: CYAN },
+	              {[
+	                { name: "FAULTLINE Pressure Index", path: "/app/dashboard", status: "live", color: CYAN },
+	                { name: "Signals Engine", path: "/app/signals", status: "live", color: CYAN },
+	                { name: "Situation Room", path: "/app/situation-room", status: "live", color: CYAN },
+	                { name: "Insider data unavailable — SEC source verification pending", path: "/app/insider-intelligence", status: "unavailable", color: "#F87171" },
+	                { name: "Track Record", path: "/app/track-record", status: "live", color: CYAN },
                 { name: "Watchlist", path: "/app/watchlist", status: "live", color: CYAN },
                 { name: "Crypto Intelligence", path: "/app/dashboard", status: "live", color: CYAN },
                 { name: "Diagnostic AI", path: "/app/dashboard", status: "live", color: CYAN },
@@ -845,12 +845,14 @@ export default function AnalyticsDashboard() {
               ].map((f, i) => (
                 <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-zinc-800/40 border border-zinc-800">
                   <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: f.color }} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-zinc-200 truncate">{f.name}</p>
-                    <p className="text-xs text-zinc-500 truncate">{f.path}</p>
-                  </div>
-                  <Badge variant="outline" className="text-xs border-zinc-700 text-zinc-400 flex-shrink-0">INCLUDED</Badge>
-                </div>
+	                  <div className="flex-1 min-w-0">
+	                    <p className="text-xs font-medium text-zinc-200 truncate">{f.name}</p>
+	                    <p className="text-xs text-zinc-500 truncate">{f.path}</p>
+	                  </div>
+	                  <Badge variant="outline" className={`text-xs flex-shrink-0 ${f.status === "unavailable" ? "border-red-900 text-red-400" : "border-zinc-700 text-zinc-400"}`}>
+	                    {f.status === "unavailable" ? "UNAVAILABLE" : "INCLUDED"}
+	                  </Badge>
+	                </div>
               ))}
             </div>
           </CardContent>

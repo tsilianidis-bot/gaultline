@@ -1538,21 +1538,45 @@ export async function getUsersPendingDripStep(step: number, minAgeMs: number): P
 // ── Stripe webhook idempotency ────────────────────────────────────────────────
 import { stripeWebhookEvents, entitlementAuditLog } from '../drizzle/schema';
 
+/** True only for a MySQL unique-constraint violation, including a Drizzle-wrapped cause. */
+function isDuplicateKeyError(error: unknown): boolean {
+  const dbError = error as {
+    code?: string;
+    errno?: number;
+    message?: string;
+    cause?: { code?: string; errno?: number; message?: string };
+  } | null | undefined;
+  return (
+    dbError?.code === 'ER_DUP_ENTRY' ||
+    dbError?.errno === 1062 ||
+    dbError?.cause?.code === 'ER_DUP_ENTRY' ||
+    dbError?.cause?.errno === 1062 ||
+    /Duplicate entry/i.test(`${dbError?.message ?? ''} ${dbError?.cause?.message ?? ''}`)
+  );
+}
+
 /**
- * Attempt to record a Stripe event ID for idempotency.
- * Returns true if the event is new (should be processed).
- * Returns false if the event was already processed (skip it).
+ * Attempt to claim a Stripe event ID for idempotency.
+ * Returns false only for a genuine duplicate key; other claim failures rethrow so
+ * the webhook returns 5xx and Stripe retries instead of silently dropping events.
  */
 export async function recordStripeWebhookEvent(eventId: string, eventType: string): Promise<boolean> {
   const db = await getDb();
-  if (!db) return true; // If DB is unavailable, allow processing (fail open)
+  if (!db) throw new Error('Database unavailable: cannot claim Stripe webhook event');
   try {
     await db.insert(stripeWebhookEvents).values({ eventId, eventType });
     return true; // Insert succeeded — event is new
-  } catch {
-    // Unique constraint violation — event already processed
-    return false;
+  } catch (err) {
+    if (isDuplicateKeyError(err)) return false;
+    throw err;
   }
+}
+
+/** Release a failed processing claim so the next Stripe delivery can be processed. */
+export async function releaseStripeWebhookEvent(eventId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(stripeWebhookEvents).where(eq(stripeWebhookEvents.eventId, eventId));
 }
 
 // ── Entitlement audit log ─────────────────────────────────────────────────────

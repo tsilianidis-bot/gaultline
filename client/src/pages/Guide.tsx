@@ -941,26 +941,26 @@ const SECTIONS: Section[] = [
     ),
   },
   // ─── INSIDER INTELLIGENCE ────────────────────────────────────────────────
-  {
-    id: "insider-intel",
-    icon: TrendingDown,
-    title: "Insider Intelligence",
-    subtitle: "Institutional and insider activity — who is buying and selling",
-    color: "#F87171",
+	{
+	  id: "insider-intel",
+	  icon: TrendingDown,
+	  title: "Insider Intelligence — Unavailable",
+	  subtitle: "Insider data unavailable — SEC source verification pending",
+	  color: "#F87171",
     keywords: ["insider", "institutional", "buying", "selling", "insider intelligence", "smart money"],
     content: (
-      <div className="space-y-4">
-        <Panel accentColor="rgba(248,113,113,0.3)">
-          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            <span className="text-red-400 font-bold">Insider Intelligence</span> tracks reported insider transactions and institutional positioning changes to identify when smart money is accumulating or distributing. It is a confirmation and divergence tool — most powerful when insider activity diverges from price action.
-          </p>
-        </Panel>
-        <div className="space-y-1">
-          {[
-            { name: "Insider Transaction Tracking", desc: "Monitors SEC Form 4 filings for significant insider buys and sells across key tickers. Flags clusters of insider activity that historically precede price moves." },
-            { name: "Institutional Flow Analysis", desc: "Tracks changes in institutional ownership and positioning. Large increases or decreases in institutional ownership relative to the prior quarter are flagged." },
-            { name: "Regime Context", desc: "Insider activity is interpreted in the context of the current macro regime. Insider buying during a high-pressure regime is a stronger contrarian signal than the same activity during an expansion." },
-          ].map(({ name, desc }) => (
+	      <div className="space-y-4">
+	        <Panel accentColor="rgba(248,113,113,0.3)">
+	          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+	            <span className="text-red-400 font-bold">Insider data unavailable</span> — SEC source verification pending. No verified insider or institutional-flow source is connected to this feature.
+	          </p>
+	        </Panel>
+	        <div className="space-y-1">
+	          {[
+	            { name: "Source Status", desc: "SEC source verification is pending; filing monitoring is not currently available." },
+	            { name: "Data Availability", desc: "No insider transaction, institutional-flow, or cluster-alert data is displayed until a verified source is connected." },
+	            { name: "Release Safeguard", desc: "The feature remains unavailable rather than presenting unverified or model-generated insider intelligence." },
+	          ].map(({ name, desc }) => (
             <Panel key={name} className="!p-3">
               <p className="text-[11px] font-mono text-red-400 font-bold mb-1">{name}</p>
               <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>

@@ -11,6 +11,7 @@ import { createConnection, type Connection } from "mysql2/promise";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { CanonicalIntelligenceState } from "../shared/canonicalIntelligenceState";
 import { INTELLIGENCE_EVIDENCE_METHOD_VERSION } from "../shared/intelligenceEvidence";
+import { evaluateIntelligenceEvidence } from "../shared/intelligenceIntegrity";
 import {
   AccountabilityLedger,
   AccountabilityValidationError,
@@ -22,7 +23,7 @@ import {
 import { closeDbForTests } from "./db";
 import { buildEvidenceSnapshot, IntelligenceEvidenceCollector } from "./intelligenceEvidence/collector";
 import { isIntelligenceEvidenceEnabled } from "./intelligenceEvidence/config";
-import { IntelligenceEvidenceStore } from "./intelligenceEvidence/store";
+import { IntelligenceEvidenceStore, evidenceSnapshotKey } from "./intelligenceEvidence/store";
 import {
   loadAccountabilityLedger,
   persistAccountabilityAssessment,
@@ -193,10 +194,33 @@ describe("evidence pipeline on an isolated database", () => {
     expect(() => assertIsolated("mysql://user@railway.internal/faultline")).toThrow(/production database/);
   });
 
-  it("runs gate, scheduled append, readback, and the refusal cases", async () => {
+  it("refuses date-only collection and separately exercises precise-timestamp fixture append/readback", async () => {
     const nowMs = Date.now();
     const generatedAt = new Date(nowMs).toISOString();
-    const drafted = buildEvidenceSnapshot(fixtureInputs(nowMs), new Date(nowMs));
+    const dateOnlyDraft = buildEvidenceSnapshot(fixtureInputs(nowMs), new Date(nowMs));
+    for (const id of REQUIRED_VERIFIED_EVIDENCE_IDS.filter(id => id.startsWith("fred:"))) {
+      expect(dateOnlyDraft.observations.find(item => item.id === id)).toMatchObject({
+        validationStatus: "unavailable", supportsCurrentClaim: false, value: null, observedAt: null,
+        sourceObservationDate: new Date(nowMs).toISOString().slice(0, 10),
+      });
+    }
+    // A separate, explicitly simulated provider contract with precise fixture times.
+    // These are not FRED prints: the production adapter above remains ineligible.
+    const drafted = {
+      ...dateOnlyDraft,
+      providerHealth: dateOnlyDraft.providerHealth.map(item => item.id === "fred" ? { ...item, status: "healthy" as const } : item),
+      observations: dateOnlyDraft.observations.map(item => {
+        if (!item.id.startsWith("fred:") || !item.historicalValue) return item;
+        const observedAt = new Date(nowMs - 120_000).toISOString();
+        const provider = "Isolated precise-timestamp fixture — not a FRED observation";
+        const gate = evaluateIntelligenceEvidence({ id: item.id, source: provider, origin: "observed", value: item.historicalValue.value,
+          observedAt, receivedAt: item.receivedAt, maxAgeMs: item.maxAgeMs, sourceHealthy: true }, nowMs);
+        return { ...item, provider, sourceIdentifier: `fixture:${item.id}`, sourceObservationDate: null,
+          observedAt, value: gate.displayValue, supportsCurrentClaim: gate.canSupportCurrentClaim,
+          validationStatus: gate.status, validationReason: gate.reason, historicalValue: null,
+          validUntil: new Date(Date.parse(observedAt) + item.maxAgeMs).toISOString() };
+      }),
+    };
     expect(drafted.persistence).toBe("in_memory_only");
     expect(drafted.canonicalStateId).toBe(STATE_ID);
     expect(drafted.methodVersion).toBe(INTELLIGENCE_EVIDENCE_METHOD_VERSION);
@@ -209,7 +233,7 @@ describe("evidence pipeline on an isolated database", () => {
       });
       expect(observation?.observedAt).toBeTruthy();
       expect(observation?.receivedAt).toBeTruthy();
-      expect(observation?.sourceIdentifier).toMatch(/^(yahoo|fred):/);
+      expect(observation?.sourceIdentifier).toMatch(/^(yahoo|fixture:fred):/);
     }
     expect(drafted.observations.find(item => item.id === "canonical:credit-stress")).toMatchObject({
       origin: "modeled",
@@ -308,6 +332,15 @@ describe("evidence pipeline on an isolated database", () => {
     const recorded = await collector.refresh();
     expect(recorded?.persistence).toBe("recorded");
     expect(recorded?.canonicalStateId).toBe(STATE_ID);
+    expect(selectVerifiedEvidenceReferences(recorded, Date.now())).toMatchObject({ ok: false, reason: "evidence_failed" });
+    expect(await captureTrackRecordFromScheduledRun({ ...base, run: scheduled, env: on })).toEqual({ recorded: false, reason: "evidence_failed" });
+    expect(await loadAccountabilityLedger()).toHaveLength(0);
+    // Seed only this disposable database with the independently gate-validated
+    // precise fixture, keeping its source explicitly labelled as a test fixture.
+    await admin!.query("INSERT INTO marketMemory (memoryKey, memoryValue, description, writtenBy) VALUES (?, ?, ?, ?)", [
+      `${evidenceSnapshotKey(nowMs)}:precise-test-fixture`, JSON.stringify({ ...drafted, persistence: "recorded" }),
+      "Isolated precise timestamp fixture; not live market evidence", "isolated-test-fixture",
+    ]);
     const loaded = await new IntelligenceEvidenceStore().loadLatest();
     expect(loaded?.persistence).toBe("recorded");
     expect(loaded?.canonicalStateId).toBe(STATE_ID);
@@ -325,7 +358,7 @@ describe("evidence pipeline on an isolated database", () => {
       methodVersion: loaded!.methodVersion,
     }));
     const [memoryRows] = await admin!.query("SELECT COUNT(*) AS n FROM marketMemory WHERE memoryKey LIKE 'intelligence-evidence:%'") as unknown as [Array<{ n: number }>];
-    expect(Number(memoryRows[0]?.n)).toBe(1);
+    expect(Number(memoryRows[0]?.n)).toBe(2);
 
     const appended = await captureTrackRecordFromScheduledRun({ ...base, run: scheduled, env: on });
     expect(appended).toEqual({ recorded: true, reason: "appended" });

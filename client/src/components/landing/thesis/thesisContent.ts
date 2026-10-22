@@ -79,13 +79,13 @@ export const THESIS_QUESTIONS: readonly ThesisQuestion[] = [
     tagline: "Understand the possible paths ahead.",
     body: "What happens if current conditions continue—and what happens if they change? FAULTLINE lays out the scenario paths it tracks, the evidence that would move the base case, and what could weaken it.",
     shows: [
-      "Scenario paths: bull continuation, soft landing, stagflation, recession, and crash or bear, with transition triggers and invalidation conditions. Scenario scores are arithmetic weightings of current evidence, not calibrated probabilities.",
-      "Systemic-regime state probabilities from sre-hmm2: the model's probability for its current state and its chance of leaving it. They describe the model, not the odds of a crash.",
+      "Scenario paths: bull continuation, soft landing, stagflation, recession, and crash or bear, with transition triggers and invalidation conditions where supported. Numeric scenario probabilities are withheld pending calibration.",
+      "Systemic-regime classification from sre-hmm2 is independent of the Pressure Index. Its numeric state and transition probabilities are withheld until calibration is validated; it does not state the odds of a crash.",
       "Regime transitions recorded in the seismograph history.",
       "Aftershock and contagion map: a fixed contagion graph between assets, rescored with price, volume, volatility, and pressure context.",
       "Development timelines and historical resemblance: whether a condition is emerging, developing, or fading, and which reference period today's profile most resembles.",
     ],
-    note: "Probabilities appear only where a model produces them, with their limits beside them. Nothing here forecasts a specific crash or a date.",
+    note: "Unavailable or uncalibrated probabilities are explicitly withheld. Nothing here forecasts a specific crash or a date.",
   },
   {
     id: "watch",

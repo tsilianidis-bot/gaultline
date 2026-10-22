@@ -15,11 +15,11 @@ const pts = (value: number) => (Number.isInteger(value) ? String(value) : value.
 function LiveBlock({ step, status, source, children, unavailable }: { step: string; status: LiveStatus; source?: string; children?: ReactNode; unavailable: string }) {
   return (
     <div data-example-live={step} data-live-status={status} className="rounded-2xl border border-[#65D6E5]/25 bg-[#081118] p-5 sm:p-6">
-      <p className="text-[11px] font-semibold tracking-[0.08em] text-[#8BE6F0]">LIVE · {source ?? "FROM THE PUBLIC READING"}</p>
+      <p className="text-[11px] font-semibold tracking-[0.08em] text-[#8BE6F0]">{status === "ready" ? "PUBLISHED" : status === "loading" ? "LOADING" : "UNAVAILABLE"} · {source ?? "FROM THE PUBLIC READING"}</p>
       <div className="mt-3">
         {status === "ready" ? children : (
           <div role="status">
-            <p className="text-[15px] font-semibold text-white">{status === "loading" ? "Loading the live reading…" : "Live output unavailable"}</p>
+            <p className="text-[15px] font-semibold text-white">{status === "loading" ? "Loading the published reading…" : "Public output unavailable"}</p>
             <p className="mt-1.5 text-[14px] leading-[1.65] text-[#B7C1CD]">{status === "loading" ? "Nothing is shown until the public endpoint answers." : unavailable}</p>
           </div>
         )}
@@ -69,11 +69,11 @@ export default function WorkedExampleView({ model }: { model: WorkedExampleModel
         <p className="mb-4 text-[12px] font-semibold tracking-[0.08em] text-[#65D6E5]">WORKED EXAMPLE</p>
         <h2 id="thesis-example-title" className="max-w-3xl text-3xl font-semibold leading-tight tracking-[-0.035em] text-white sm:text-5xl">One market reading, five answers.</h2>
         <p className="mt-6 max-w-3xl text-lg leading-[1.75] text-[#C9D4E0]">
-          Live values below come from one public Pressure Index reading. The systemic-regime model is the one exception, and it is labelled with its own source and date. Parts that FAULTLINE does not publish publicly are marked {ILLUSTRATIVE_LABEL} and contain no numbers.
+          Published values below come from one public Pressure Index reading, with its actual data status and as-of time. The systemic-regime model is the one exception, and it is labelled with its own source and date. Parts that FAULTLINE does not publish publicly are marked {ILLUSTRATIVE_LABEL} and contain no numbers.
         </p>
 
         <div className="mt-8 flex flex-wrap gap-2 text-[11px] font-semibold tracking-[0.08em]">
-          <span className="rounded-full border border-[#65D6E5]/40 px-3 py-1 text-[#8BE6F0]">LIVE · PUBLIC DATA</span>
+          <span className="rounded-full border border-[#65D6E5]/40 px-3 py-1 text-[#8BE6F0]">{source?.integrity ?? model.status.toUpperCase()} · PUBLIC DATA</span>
           <span className="rounded-full border border-dashed border-[#F5C16C]/50 px-3 py-1 text-[#F5C16C]">{ILLUSTRATIVE_LABEL.toUpperCase()}</span>
         </div>
 
@@ -109,7 +109,7 @@ export default function WorkedExampleView({ model }: { model: WorkedExampleModel
             </LiveBlock>
             <div className="rounded-2xl border border-white/[0.08] p-5 text-[15px] leading-[1.7] text-[#C9D4E0] sm:p-6">
               <p className={LABEL}>HOW TO READ IT</p>
-              <p className="mt-3">Everything in this step is live: the score, its band on the engine&apos;s scale, and the regime, all from the same reading. The Pressure Index measures pressure inside this framework. It is not a crash forecast.</p>
+              <p className="mt-3">The score, its band on the engine&apos;s scale, and the regime all come from the same published reading. Its freshness label applies to every value; a delayed reading is not live data. The Pressure Index measures pressure inside this framework. It is not a crash forecast.</p>
             </div>
           </Step>
 
@@ -157,7 +157,7 @@ export default function WorkedExampleView({ model }: { model: WorkedExampleModel
                   </>
                 )}
               </LiveBlock>
-              <LiveBlock step="next-model" status={next.model.status} source={`SEPARATE MODEL · ${MODEL_SOURCE}`} unavailable="The systemic-regime model has no current reading to publish. No probability is shown.">
+              <LiveBlock step="next-model" status={next.model.status} source={`SEPARATE MODEL · ${MODEL_SOURCE} · ${next.model.freshness ?? "UNAVAILABLE"}`} unavailable="The systemic-regime model has no current reading to publish. No probability is shown.">
                 {next.model.status === "ready" && (
                   <div className="grid grid-cols-2 gap-4">
                     <Stat label="MODEL STATE" value={next.model.regime} />

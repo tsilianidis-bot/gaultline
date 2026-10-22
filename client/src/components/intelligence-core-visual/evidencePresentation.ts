@@ -45,7 +45,12 @@ function isSourceTimestampCurrentOrHistorical(value: string | null): boolean {
   return parsed !== null && parsed <= Date.now();
 }
 
+function hasUsableValue(value: ValidatedIntelligenceEvidence["value"]): boolean {
+  return typeof value === "number" ? Number.isFinite(value) : typeof value === "string" && value.trim().length > 0;
+}
+
 function toVisualStatus(observation: ValidatedIntelligenceEvidence): EvidenceStatus {
+  if (!hasUsableValue(observation.value)) return "unavailable";
   if (observation.validationStatus === "stale") return "stale";
   if (observation.validationStatus === "unavailable" || observation.value === null)
     return "unavailable";
@@ -76,7 +81,7 @@ function toVisualStatus(observation: ValidatedIntelligenceEvidence): EvidenceSta
 }
 
 function formatValue(value: ValidatedIntelligenceEvidence["value"], unit: string | null): string | null {
-  if (value === null) return null;
+  if (value === null || !hasUsableValue(value)) return null;
   const rendered = typeof value === "number" ? String(value) : value.trim();
   return rendered ? (unit ? `${rendered} ${unit}` : rendered) : null;
 }
@@ -98,7 +103,7 @@ function toCoreEvidence(observation: ValidatedIntelligenceEvidence): CoreEvidenc
     status,
     value: formatValue(observation.value, observation.unit),
     explanation: `${observation.temporalDetail} ${observation.validationReason}`.trim(),
-    admitted: status !== "unavailable" && observation.validationStatus !== "unavailable" && observation.value !== null,
+    admitted: status !== "unavailable" && observation.validationStatus !== "unavailable" && hasUsableValue(observation.value),
     validUntil: observation.validUntil,
   };
 }
@@ -123,7 +128,7 @@ function domainStatus(
 function admittedCurrentSourceObservation(observation: ValidatedIntelligenceEvidence): boolean {
   return (
     observation.validationStatus !== "unavailable" &&
-    observation.value !== null &&
+    hasUsableValue(observation.value) &&
     observation.supportsCurrentClaim &&
     isSourceTimestampCurrentOrHistorical(observation.observedAt)
   );

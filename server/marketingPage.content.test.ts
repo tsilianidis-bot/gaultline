@@ -159,9 +159,10 @@ describe("Pentagonal Thesis section", () => {
     // No positioning input exists (Why.tsx states it); it is replaced by real inputs.
     expect(all).not.toMatch(/investor positioning/i);
     expect(THESIS_QUESTIONS[1].body).toContain("liquidity, funding rates, interest rates, credit stress, inflation, or the labor market");
-    // Scenario scores are arithmetic; HMM probabilities are labelled as model-internal.
-    expect(all).toContain("not calibrated probabilities");
-    expect(all).toContain("They describe the model, not the odds of a crash.");
+    // Uncalibrated scenario and HMM probabilities are not marketed as available.
+    expect(all).toContain("Numeric scenario probabilities are withheld pending calibration.");
+    expect(all).toContain("numeric state and transition probabilities are withheld until calibration is validated");
+    expect(all).toContain("it does not state the odds of a crash.");
     expect(all).not.toMatch(/evidence-backed scenarios|crash probability/i);
     expect(all).toContain("sre-hmm2");
     // ACT options and boundaries.

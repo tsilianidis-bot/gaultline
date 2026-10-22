@@ -1,9 +1,7 @@
 /* ============================================================
    FAULTLINE — Insider Intelligence™
-   Bloomberg Terminal × Hedge Fund Intelligence Desk ×
-   Military Command Center
-   Transforms raw SEC Form 4 filings into actionable
-   institutional-grade insider conviction intelligence.
+   Source verification is pending; no insider intelligence is
+   displayed until a verified SEC-backed source is connected.
    ============================================================ */
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
@@ -152,9 +150,11 @@ function InsiderUnavailable({ message }: { message: string }) {
   );
 }
 
-function CompanyProfileModal({ ticker, onClose }: { ticker: string; onClose: () => void }) {
+export function CompanyProfileModal({ ticker, onClose }: { ticker: string; onClose: () => void }) {
   const { data, isLoading, error } = trpc.insider.company.useQuery({ ticker });
   const [tab, setTab] = useState<"overview" | "timeline" | "accuracy">("overview");
+  const verifiedCompany = data && !error ? data : null;
+  const hasVerifiedCompany = Boolean(verifiedCompany);
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}
@@ -164,7 +164,7 @@ function CompanyProfileModal({ ticker, onClose }: { ticker: string; onClose: () 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
           <div>
             <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color: "#E2E8F0" }}>{ticker}</div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.15em" }}>Insider Intelligence Profile</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.15em" }}>Source verification pending</div>
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B", padding: "4px" }}>
             <X size={18} />
@@ -180,23 +180,23 @@ function CompanyProfileModal({ ticker, onClose }: { ticker: string; onClose: () 
 
         {error && <InsiderUnavailable message={error.message} />}
 
-        {data && !error && (
+        {hasVerifiedCompany && verifiedCompany && (
           <>
             {/* Score + Band */}
             <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "20px", padding: "16px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "6px" }}>
-              <ConvictionGauge score={data.profile.convictionScore} size={90} />
+              <ConvictionGauge score={verifiedCompany.profile.convictionScore} size={90} />
               <div>
-                <ConvictionBadge band={data.profile.convictionBand as ConvictionBand} />
+                <ConvictionBadge band={verifiedCompany.profile.convictionBand as ConvictionBand} />
                 <div style={{ marginTop: "8px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)" }}>
-                  Impact: <span style={{ color: data.profile.impactPoints >= 0 ? "#00FF88" : "#FF2D55", fontWeight: 700 }}>
-                    {data.profile.impactPoints >= 0 ? "+" : ""}{data.profile.impactPoints} pts
+                  Impact: <span style={{ color: verifiedCompany.profile.impactPoints >= 0 ? "#00FF88" : "#FF2D55", fontWeight: 700 }}>
+                    {verifiedCompany.profile.impactPoints >= 0 ? "+" : ""}{verifiedCompany.profile.impactPoints} pts
                   </span> on Favorability Score
                 </div>
                 <div style={{ marginTop: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)" }}>
-                  Historical Accuracy: <span style={{ color: "#00D4FF", fontWeight: 700 }}>{data.profile.historicalAccuracy}%</span>
+                  Historical Accuracy: <span style={{ color: "#00D4FF", fontWeight: 700 }}>{verifiedCompany.profile.historicalAccuracy}%</span>
                 </div>
                 <div style={{ marginTop: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)" }}>
-                  Latest Filing: <span style={{ color: "#94A3B8" }}>{data.profile.mostRecentFiling}</span>
+                  Latest Filing: <span style={{ color: "#94A3B8" }}>{verifiedCompany.profile.mostRecentFiling}</span>
                 </div>
               </div>
             </div>
@@ -205,23 +205,23 @@ function CompanyProfileModal({ ticker, onClose }: { ticker: string; onClose: () 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "16px" }}>
               <div style={{ padding: "12px", background: "rgba(0,255,136,0.05)", border: "1px solid rgba(0,255,136,0.18)", borderRadius: "5px" }}>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "4px" }}>Buying</div>
-                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color: "#00FF88" }}>{fmtDollar(data.profile.buyVsSell.buyValue)}</div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", marginTop: "2px" }}>{data.profile.buyVsSell.buyCount} transaction{data.profile.buyVsSell.buyCount !== 1 ? "s" : ""}</div>
+                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color: "#00FF88" }}>{fmtDollar(verifiedCompany.profile.buyVsSell.buyValue)}</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", marginTop: "2px" }}>{verifiedCompany.profile.buyVsSell.buyCount} transaction{verifiedCompany.profile.buyVsSell.buyCount !== 1 ? "s" : ""}</div>
               </div>
               <div style={{ padding: "12px", background: "rgba(255,45,85,0.05)", border: "1px solid rgba(255,45,85,0.18)", borderRadius: "5px" }}>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "4px" }}>Selling</div>
-                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color: "#FF2D55" }}>{fmtDollar(data.profile.buyVsSell.sellValue)}</div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", marginTop: "2px" }}>{data.profile.buyVsSell.sellCount} transaction{data.profile.buyVsSell.sellCount !== 1 ? "s" : ""}</div>
+                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color: "#FF2D55" }}>{fmtDollar(verifiedCompany.profile.buyVsSell.sellValue)}</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", marginTop: "2px" }}>{verifiedCompany.profile.buyVsSell.sellCount} transaction{verifiedCompany.profile.buyVsSell.sellCount !== 1 ? "s" : ""}</div>
               </div>
             </div>
 
             {/* Largest insider */}
-            {data.profile.largestInsider.totalBought > 0 && (
+            {verifiedCompany.profile.largestInsider.totalBought > 0 && (
               <div style={{ padding: "10px 12px", background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.15)", borderRadius: "4px", marginBottom: "16px" }}>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "3px" }}>Largest Insider</div>
                 <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#CBD5E1" }}>
-                  {data.profile.largestInsider.name} <span style={{ color: "#64748B" }}>({data.profile.largestInsider.role})</span>
-                  <span style={{ color: "#00D4FF", marginLeft: "8px", fontWeight: 600 }}>{fmtDollar(data.profile.largestInsider.totalBought)}</span>
+                  {verifiedCompany.profile.largestInsider.name} <span style={{ color: "#64748B" }}>({verifiedCompany.profile.largestInsider.role})</span>
+                  <span style={{ color: "#00D4FF", marginLeft: "8px", fontWeight: 600 }}>{fmtDollar(verifiedCompany.profile.largestInsider.totalBought)}</span>
                 </div>
               </div>
             )}
@@ -244,14 +244,14 @@ function CompanyProfileModal({ ticker, onClose }: { ticker: string; onClose: () 
                     <Brain size={11} color="#00D4FF" /> FAULTLINE Insider Analysis™
                   </div>
                   <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#94A3B8", lineHeight: 1.7 }}>
-                    {data.profile.aiInterpretation || "Generating analysis…"}
+                    {verifiedCompany.profile.aiInterpretation || "Generating analysis…"}
                   </div>
                 </div>
                 {/* Selling analysis */}
-                {data.profile.sellingAnalysis.length > 0 && (
+                {verifiedCompany.profile.sellingAnalysis.length > 0 && (
                   <div>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px" }}>Selling Analysis</div>
-                    {data.profile.sellingAnalysis.map((s, i) => {
+                    {verifiedCompany.profile.sellingAnalysis.map((s, i) => {
                       const sc = sellingColor(s.classification as SellingClassification);
                       return (
                         <div key={i} style={{ padding: "10px 12px", background: `${sc}06`, border: `1px solid ${sc}20`, borderRadius: "4px", marginBottom: "6px" }}>
@@ -273,7 +273,7 @@ function CompanyProfileModal({ ticker, onClose }: { ticker: string; onClose: () 
               <div>
                 <div style={{ position: "relative", paddingLeft: "20px" }}>
                   <div style={{ position: "absolute", left: "8px", top: 0, bottom: 0, width: "1px", background: "rgba(255,255,255,0.08)" }} />
-                  {data.timeline.map((ev, i) => {
+                  {verifiedCompany.timeline.map((ev, i) => {
                     const c = ev.type === "buy" ? "#00FF88" : "#FF2D55";
                     return (
                       <div key={i} style={{ position: "relative", marginBottom: "12px" }}>
@@ -298,7 +298,7 @@ function CompanyProfileModal({ ticker, onClose }: { ticker: string; onClose: () 
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "10px" }}>
                   Insider Accuracy Rating™ — Did insider actions precede correct market moves?
                 </div>
-                {data.accuracyHistory.map((h, i) => (
+                {verifiedCompany.accuracyHistory.map((h, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "8px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "4px", marginBottom: "6px" }}>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", minWidth: "60px" }}>{h.period}</div>
                     <div style={{ padding: "2px 8px", background: h.insiderAction === "buy" ? "rgba(0,255,136,0.08)" : "rgba(255,45,85,0.08)", border: `1px solid ${h.insiderAction === "buy" ? "rgba(0,255,136,0.25)" : "rgba(255,45,85,0.25)"}`, borderRadius: "3px" }}>
@@ -323,13 +323,15 @@ function CompanyProfileModal({ ticker, onClose }: { ticker: string; onClose: () 
 }
 
 // ── Main page ─────────────────────────────────────────────────
-function InsiderIntelligenceInner() {
+export function InsiderIntelligenceInner() {
   useSEO(PAGE_SEO.insiderIntelligence);
 
   const { data: radar, isLoading, error: radarError, refetch } = trpc.insider.radar.useQuery(undefined, {
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000,
   });
+  const hasVerifiedRadar = Boolean(radar && !radarError);
+  const verifiedRadar = radar && !radarError ? radar : null;
 
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [searchTicker, setSearchTicker] = useState("");
@@ -355,25 +357,25 @@ function InsiderIntelligenceInner() {
       <div style={{ maxWidth: "900px", margin: "0 auto", padding: "0 16px" }}>
         <PageHeader
           title="Insider Intelligence™"
-          subtitle="Track where corporate insiders show conviction before the market notices"
-          badge="INTELLIGENCE"
+          subtitle="Insider data unavailable — SEC source verification pending"
+          badge="SOURCE PENDING"
         />
 
         {/* ── TICKER SEARCH ─────────────────────────────────── */}
         <div style={{ background: "rgba(12,15,22,0.98)", border: "1px solid rgba(0,212,255,0.18)", borderRadius: "6px", padding: "16px", marginBottom: "10px" }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "10px" }}>Company Insider Profile Lookup</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "10px" }}>Insider data unavailable — SEC source verification pending</div>
           <div style={{ display: "flex", gap: "8px" }}>
             <input
               type="text"
               value={searchTicker}
               onChange={e => setSearchTicker(e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, ""))}
               onKeyDown={e => e.key === "Enter" && handleSearch()}
-              placeholder="e.g. NVDA, PLTR, TSLA"
+              placeholder="Ticker lookup unavailable pending verification"
               maxLength={10}
               style={{ flex: 1, padding: "10px 14px", background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.20)", borderRadius: "4px", color: "#E2E8F0", fontFamily: "'IBM Plex Mono', monospace", fontSize: "14px", letterSpacing: "0.12em", outline: "none" }}
             />
             <button onClick={handleSearch} style={{ padding: "10px 20px", background: "rgba(0,212,255,0.12)", border: "1px solid rgba(0,212,255,0.40)", borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", color: "#00D4FF", fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", letterSpacing: "0.12em", transition: "all 0.18s" }}>
-              <Search size={13} /> ANALYZE
+              <Search size={13} /> CHECK STATUS
             </button>
           </div>
         </div>
@@ -381,14 +383,14 @@ function InsiderIntelligenceInner() {
         {radarError && <InsiderUnavailable message={radarError.message} />}
 
         {/* ── WEEKLY STATS BAR ──────────────────────────────── */}
-        {radar && !radarError && (
+        {hasVerifiedRadar && verifiedRadar && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "6px", marginBottom: "10px" }}>
             {[
-              { label: "Total Buy Value", value: fmtDollar(radar.weeklyStats.totalBuyValue), color: "#00FF88" },
-              { label: "Total Sell Value", value: fmtDollar(radar.weeklyStats.totalSellValue), color: "#FF2D55" },
-              { label: "Net Sentiment", value: `${radar.weeklyStats.netSentiment > 0 ? "+" : ""}${radar.weeklyStats.netSentiment}`, color: radar.weeklyStats.netSentiment > 0 ? "#00FF88" : "#FF2D55" },
-              { label: "Active Tickers", value: `${radar.weeklyStats.activeTickers}`, color: "#00D4FF" },
-              { label: "Cluster Alerts", value: `${radar.weeklyStats.clusterCount}`, color: "#A78BFA" },
+              { label: "Total Buy Value", value: fmtDollar(verifiedRadar.weeklyStats.totalBuyValue), color: "#00FF88" },
+              { label: "Total Sell Value", value: fmtDollar(verifiedRadar.weeklyStats.totalSellValue), color: "#FF2D55" },
+              { label: "Net Sentiment", value: `${verifiedRadar.weeklyStats.netSentiment > 0 ? "+" : ""}${verifiedRadar.weeklyStats.netSentiment}`, color: verifiedRadar.weeklyStats.netSentiment > 0 ? "#00FF88" : "#FF2D55" },
+              { label: "Active Tickers", value: `${verifiedRadar.weeklyStats.activeTickers}`, color: "#00D4FF" },
+              { label: "Cluster Alerts", value: `${verifiedRadar.weeklyStats.clusterCount}`, color: "#A78BFA" },
             ].map(stat => (
               <div key={stat.label} style={{ padding: "10px 12px", background: "rgba(12,15,22,0.98)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "5px" }}>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "4px" }}>{stat.label}</div>
@@ -399,14 +401,15 @@ function InsiderIntelligenceInner() {
         )}
 
         {/* ── SMART MONEY RADAR ─────────────────────────────── */}
-        <CollapsiblePanel open={open.radar} onToggle={() => toggle("radar")} icon={<Eye size={14} />} title="Smart Money Radar™" color="#00D4FF" count={radar?.radar.length}>
+        {!radarError && (isLoading || hasVerifiedRadar) && (
+          <CollapsiblePanel open={open.radar} onToggle={() => toggle("radar")} icon={<Eye size={14} />} title="Smart Money Radar™" color="#00D4FF" count={hasVerifiedRadar && verifiedRadar ? verifiedRadar.radar.length : undefined}>
           {isLoading && (
             <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "20px 0" }}>
               <div style={{ width: "14px", height: "14px", border: "2px solid rgba(0,212,255,0.3)", borderTopColor: "#00D4FF", borderRadius: "50%", animation: "fl-spin 0.8s linear infinite" }} />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#64748B" }}>SCANNING INSIDER ACTIVITY…</span>
             </div>
           )}
-          {radar && !radarError && (
+          {hasVerifiedRadar && verifiedRadar && (
             <>
               {/* Column headers */}
               <div style={{ display: "grid", gridTemplateColumns: "32px 80px 1fr 90px 100px 90px 80px 60px", gap: "8px", padding: "6px 8px", marginBottom: "4px" }}>
@@ -414,7 +417,7 @@ function InsiderIntelligenceInner() {
                   <div key={h} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.45)", textTransform: "uppercase", letterSpacing: "0.1em" }}>{h}</div>
                 ))}
               </div>
-              {radar.radar.map(entry => {
+              {verifiedRadar.radar.map(entry => {
                 const cc = convictionColor(entry.convictionScore);
                 const sc = signalColor(entry.signalColor as "green" | "yellow" | "red");
                 return (
@@ -450,12 +453,14 @@ function InsiderIntelligenceInner() {
               </div>
             </>
           )}
-        </CollapsiblePanel>
+          </CollapsiblePanel>
+        )}
         <div style={{ marginBottom: "10px" }} />
 
         {/* ── CLUSTER BUY ALERTS ────────────────────────────── */}
-        <CollapsiblePanel open={open.clusters} onToggle={() => toggle("clusters")} icon={<Users size={14} />} title="Cluster Buy Alerts™" color="#00FF88" count={radar?.clusterAlerts.length}>
-          {radar?.clusterAlerts.map((alert, i) => {
+        {hasVerifiedRadar && verifiedRadar && (
+          <CollapsiblePanel open={open.clusters} onToggle={() => toggle("clusters")} icon={<Users size={14} />} title="Cluster Buy Alerts™" color="#00FF88" count={verifiedRadar.clusterAlerts.length}>
+          {verifiedRadar.clusterAlerts.map((alert, i) => {
             const sc = strengthColor(alert.strength);
             return (
               <div key={i} style={{ background: `${sc}06`, border: `1px solid ${sc}22`, borderRadius: "6px", padding: "14px", marginBottom: "8px" }}>
@@ -498,18 +503,20 @@ function InsiderIntelligenceInner() {
               </div>
             );
           })}
-          {!radarError && (!radar || radar.clusterAlerts.length === 0) && !isLoading && (
+          {verifiedRadar.clusterAlerts.length === 0 && !isLoading && (
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.45)", padding: "8px 0" }}>No cluster buy alerts detected this period.</div>
           )}
-        </CollapsiblePanel>
+          </CollapsiblePanel>
+        )}
         <div style={{ marginBottom: "10px" }} />
 
         {/* ── INSIDER SELLING ANALYZER ──────────────────────── */}
-        <CollapsiblePanel open={open.selling} onToggle={() => toggle("selling")} icon={<Shield size={14} />} title="Insider Selling Analyzer™" color="#FF9500" count={radar?.topSellingAlerts.length}>
+        {hasVerifiedRadar && verifiedRadar && (
+          <CollapsiblePanel open={open.selling} onToggle={() => toggle("selling")} icon={<Shield size={14} />} title="Insider Selling Analyzer™" color="#FF9500" count={verifiedRadar.topSellingAlerts.length}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.45)", marginBottom: "12px", lineHeight: 1.6 }}>
             Not all selling is bearish. FAULTLINE classifies each sale by context — scheduled plans, tax events, diversification, and abnormal liquidation are treated differently.
           </div>
-          {radar?.topSellingAlerts.map((alert, i) => {
+          {verifiedRadar?.topSellingAlerts.map((alert, i) => {
             const sc = sellingColor(alert.classification as SellingClassification);
             return (
               <div key={i} style={{ padding: "12px 14px", background: `${sc}05`, border: `1px solid ${sc}18`, borderRadius: "5px", marginBottom: "8px" }}>
@@ -538,21 +545,22 @@ function InsiderIntelligenceInner() {
               </div>
             );
           })}
-          {!radarError && (!radar || radar.topSellingAlerts.length === 0) && !isLoading && (
+          {verifiedRadar.topSellingAlerts.length === 0 && !isLoading && (
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.45)", padding: "8px 0" }}>No significant selling activity to analyze this period.</div>
           )}
-        </CollapsiblePanel>
-        <div style={{ marginBottom: "10px" }} />
+          </CollapsiblePanel>
+        )}
+	        <div style={{ marginBottom: "10px" }} />
 
-        {/* ── INSIDER IMPACT ENGINE ─────────────────────────── */}
-        {radar && (
-          <div style={{ background: "rgba(12,15,22,0.98)", border: "1px solid rgba(167,139,250,0.18)", borderRadius: "6px", padding: "18px", marginBottom: "10px" }}>
+	        {/* ── INSIDER IMPACT ENGINE ─────────────────────────── */}
+	        {hasVerifiedRadar && verifiedRadar && (
+	          <div style={{ background: "rgba(12,15,22,0.98)", border: "1px solid rgba(167,139,250,0.18)", borderRadius: "6px", padding: "18px", marginBottom: "10px" }}>
             <SectionLabel icon={<Zap size={14} />} title="Insider Impact Engine™" color="#A78BFA" sub="Aggregate impact of insider activity on market outlook" />
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
               {(() => {
-                const bullish = radar.radar.filter(r => r.convictionScore >= 65).length;
-                const bearish = radar.radar.filter(r => r.convictionScore < 40).length;
-                const neutral = radar.radar.length - bullish - bearish;
+                const bullish = verifiedRadar.radar.filter(r => r.convictionScore >= 65).length;
+                const bearish = verifiedRadar.radar.filter(r => r.convictionScore < 40).length;
+                const neutral = verifiedRadar.radar.length - bullish - bearish;
                 const netImpact = bullish * 3 - bearish * 3;
                 return [
                   { label: "Bullish Impact", value: bullish, color: "#00FF88", icon: <TrendingUp size={14} color="#00FF88" /> },
@@ -569,26 +577,26 @@ function InsiderIntelligenceInner() {
             </div>
             <div style={{ marginTop: "12px", padding: "10px 14px", background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.18)", borderRadius: "4px" }}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", marginBottom: "4px" }}>Net Insider Sentiment Impact on Outlook</div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color: radar.weeklyStats.netSentiment >= 0 ? "#00FF88" : "#FF2D55" }}>
-                {radar.weeklyStats.netSentiment >= 0 ? "+" : ""}{radar.weeklyStats.netSentiment}
+              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color: verifiedRadar.weeklyStats.netSentiment >= 0 ? "#00FF88" : "#FF2D55" }}>
+                {verifiedRadar.weeklyStats.netSentiment >= 0 ? "+" : ""}{verifiedRadar.weeklyStats.netSentiment}
               </div>
               <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", marginTop: "4px", lineHeight: 1.6 }}>
-                {radar.weeklyStats.netSentiment >= 20
+                {verifiedRadar.weeklyStats.netSentiment >= 20
                   ? "CEO/CFO accumulation and cluster buying dominate the current insider landscape. Insider behavior supports a constructive market interpretation."
-                  : radar.weeklyStats.netSentiment >= 0
+                  : verifiedRadar.weeklyStats.netSentiment >= 0
                   ? "Insider activity is mixed with moderate buying interest. No strong directional signal from aggregate insider behavior."
                   : "Elevated selling activity relative to buying. Aggregate insider behavior warrants caution before adding risk."}
               </div>
             </div>
           </div>
-        )}
+	        )}
 
-        {/* ── ALERTS SYSTEM ─────────────────────────────────── */}
-        {radar && (
-          <div style={{ background: "rgba(12,15,22,0.98)", border: "1px solid rgba(255,149,0,0.18)", borderRadius: "6px", padding: "18px", marginBottom: "10px" }}>
+	        {/* ── ALERTS SYSTEM ─────────────────────────────────── */}
+	        {hasVerifiedRadar && verifiedRadar && (
+	          <div style={{ background: "rgba(12,15,22,0.98)", border: "1px solid rgba(255,149,0,0.18)", borderRadius: "6px", padding: "18px", marginBottom: "10px" }}>
             <SectionLabel icon={<AlertTriangle size={14} />} title="Insider Alerts™" color="#FF9500" sub="Significant insider activity requiring attention" />
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              {radar.clusterAlerts.filter(a => a.strength !== "MODERATE").map((alert, i) => (
+              {verifiedRadar.clusterAlerts.filter(a => a.strength !== "MODERATE").map((alert, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 12px", background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.18)", borderRadius: "4px" }}>
                   <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#00FF88", boxShadow: "0 0 8px #00FF88", flexShrink: 0, animation: "blink-alert 6s ease-in-out infinite" }} />
                   <div style={{ flex: 1 }}>
@@ -600,7 +608,7 @@ function InsiderIntelligenceInner() {
                   </div>
                 </div>
               ))}
-              {radar.topSellingAlerts.filter(a => a.classification === "Aggressive" || a.classification === "Unusual").map((alert, i) => (
+              {verifiedRadar.topSellingAlerts.filter(a => a.classification === "Aggressive" || a.classification === "Unusual").map((alert, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 12px", background: "rgba(255,45,85,0.04)", border: "1px solid rgba(255,45,85,0.18)", borderRadius: "4px" }}>
                   <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#FF2D55", boxShadow: "0 0 8px #FF2D55", flexShrink: 0, animation: "blink-alert 6s ease-in-out infinite" }} />
                   <div style={{ flex: 1 }}>
@@ -614,7 +622,7 @@ function InsiderIntelligenceInner() {
                   </div>
                 </div>
               ))}
-              {radar.radar.filter(r => r.convictionScore >= 85).slice(0, 3).map((entry, i) => (
+              {verifiedRadar.radar.filter(r => r.convictionScore >= 85).slice(0, 3).map((entry, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 12px", background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.18)", borderRadius: "4px" }}>
                   <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#00D4FF", boxShadow: "0 0 8px #00D4FF", flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
@@ -630,14 +638,14 @@ function InsiderIntelligenceInner() {
               ))}
             </div>
           </div>
-        )}
+	        )}
 
-        {/* ── HISTORICAL INSIDER ACCURACY ───────────────────── */}
-        {radar && (
-          <div style={{ background: "rgba(12,15,22,0.98)", border: "1px solid rgba(245,158,11,0.18)", borderRadius: "6px", padding: "18px", marginBottom: "10px" }}>
+	        {/* ── HISTORICAL INSIDER ACCURACY ───────────────────── */}
+	        {hasVerifiedRadar && verifiedRadar && (
+	          <div style={{ background: "rgba(12,15,22,0.98)", border: "1px solid rgba(245,158,11,0.18)", borderRadius: "6px", padding: "18px", marginBottom: "10px" }}>
             <SectionLabel icon={<History size={14} />} title="Insider Accuracy Rating™" color="#F59E0B" sub="Historical accuracy of insider signals across the radar universe" />
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "8px" }}>
-              {radar.radar.slice(0, 8).map(entry => (
+              {verifiedRadar.radar.slice(0, 8).map(entry => (
                 <div key={entry.ticker} style={{ padding: "12px", background: "rgba(245,158,11,0.04)", border: "1px solid rgba(245,158,11,0.15)", borderRadius: "5px", cursor: "pointer" }}
                   onClick={() => setSelectedTicker(entry.ticker)}>
                   <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color: "#E2E8F0", marginBottom: "4px" }}>{entry.ticker}</div>
@@ -658,8 +666,7 @@ function InsiderIntelligenceInner() {
         {/* Compliance disclaimer */}
         <div style={{ padding: "12px 14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "4px" }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", lineHeight: 1.6, textAlign: "center", letterSpacing: "0.04em" }}>
-            FAULTLINE Insider Intelligence™ is derived from publicly available SEC Form 4 filings and proprietary scoring models. This is not investment advice.
-            Insider activity data is illustrative and model-generated. Do not make investment decisions based solely on insider signals.
+            Insider data unavailable — SEC source verification pending. No SEC-derived or model-generated insider intelligence is displayed. This is not investment advice.
           </div>
         </div>
       </div>

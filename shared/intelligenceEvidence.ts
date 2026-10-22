@@ -31,6 +31,8 @@ export interface ValidatedIntelligenceEvidence {
   value: number | string | null;
   unit: string | null;
   observedAt: string | null;
+  /** Date-only source metadata; never promoted to an exact timestamp or current-claim eligibility. */
+  sourceObservationDate?: string | null;
   receivedAt: string | null;
   maxAgeMs: number;
   /** Canonical Integrity Gate deadline derived server-side from observedAt + maxAgeMs. */

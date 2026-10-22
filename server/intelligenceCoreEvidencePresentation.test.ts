@@ -95,6 +95,19 @@ function canonicalEngine(
 }
 
 describe("verified evidence Core presentation", () => {
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])("withholds non-finite evidence %s even when marked verified", (invalidValue) => {
+    const value = response();
+    const snapshot = snapshotOf(value);
+    snapshot.observations[0]!.value = invalidValue;
+    const previous = structuredClone(snapshot);
+    previous.observations[0]!.observedAt = new Date(Date.now() - 180_000).toISOString();
+    const model = presentVerifiedEvidenceCore(value, canonical(), previous);
+    expect(model.integrity).toBe("unavailable");
+    expect(model.evidence.some(item => item.id === "quote:VIX" && item.admitted)).toBe(false);
+    expect(JSON.stringify(model)).not.toMatch(/NaN|Infinity/);
+    expect(model.domains.every(domain => domain.previousObservation == null)).toBe(true);
+  });
+
   it("withholds the full assessment while retaining only server-admitted direct evidence", () => {
     const model = presentVerifiedEvidenceCore(response(), canonical());
     expect(model.mode).toBe("production");

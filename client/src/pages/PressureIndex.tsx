@@ -333,7 +333,7 @@ export default function PressureIndex() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <LockedCard
                 title="SIGNALS SCREENER — CORE"
-                description="BUY / SELL / HOLD / WATCH ratings across 50+ tickers with regime-adjusted conviction scores and entry/exit zones."
+                description="Ratings and technical levels where verified quote and completed-history evidence is sufficient. Unsupported signals are withheld."
                 accentColor="#22D3EE"
               />
               <LockedCard
@@ -348,7 +348,7 @@ export default function PressureIndex() {
               />
               <LockedCard
                 title="DIAGNOSTIC AI™ — PRO"
-                description="Full diagnostic report. Identifies the top 3 systemic risks, regime probability, and actionable intelligence for the next 30 days."
+                description="Evidence-qualified risk explanations. Unavailable confidence levels, scenario probabilities, and forecast horizons are withheld."
                 accentColor="#00E5FF"
               />
               <LockedCard
@@ -387,7 +387,7 @@ export default function PressureIndex() {
             </h2>
             <p className="text-white/40 text-sm max-w-md mx-auto mb-8 leading-relaxed">
               Explore FAULTLINE Intelligence membership for NOW, WHY, OUTLOOK, WATCH and ACT.
-              The limited public preview requires no account. FAULTLINE Standard is $99/month; FAULTLINE Lifetime is $1,500 one-time.
+              The limited public preview requires no account. Paid plans are not on sale; registration and checkout settings remain unchanged.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a

@@ -240,13 +240,13 @@ export const PAGE_SEO = {
     description:
       "Stress-test your next market move against regime pressure, crash risk, liquidity, credit stress, volatility, AI speculation, and sector signals. Get an institutional MARKET VERDICT before you risk capital.",
     canonical: "/app/situation-room",
-  },
-  insiderIntelligence: {
-    title: "FAULTLINE Insider Intelligence™ — Smart Money Tracker",
-    description:
-      "Track where corporate insiders are buying and selling, from reported filings. Conviction Score, Smart Money Radar, Cluster Buy Alerts, and AI-powered insider analysis.",
-    canonical: "/app/insider-intelligence",
-  },
+	},
+	insiderIntelligence: {
+	  title: "FAULTLINE Insider Intelligence™ — Source Verification Pending",
+	  description:
+	    "Insider data unavailable — SEC source verification pending.",
+	  canonical: "/app/insider-intelligence",
+	},
   // 31 chars ✓
   legal: {
     title: "Legal — FAULTLINE Terms & Disclaimers",

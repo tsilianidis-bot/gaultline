@@ -445,7 +445,7 @@ function FinalCta() {
         </h2>
         <div className="mt-10"><MembershipOffer /></div>
         <p className="mx-auto mt-6 max-w-2xl text-sm leading-[1.75] text-[#C9D4E0]">
-          Explore the limited public preview without an account. Full intelligence is offered through FAULTLINE Standard at $99/month or FAULTLINE Lifetime at $1,500 one-time.
+          Explore the limited public preview without an account. Configured membership plans are FAULTLINE Standard at $99/month or FAULTLINE Lifetime at $1,500 one-time. Checkout remains unavailable; no payment is taken.
         </p>
         <p className="mt-3 text-sm text-[#B7C1CD]">
           Already a member? <SignInCta className={`font-semibold text-[#65D6E5] underline-offset-4 hover:underline ${focusRing}`} />

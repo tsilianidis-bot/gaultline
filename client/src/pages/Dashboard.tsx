@@ -1032,22 +1032,22 @@ export default function Dashboard() {
         <div style={{ background: 'linear-gradient(135deg, rgba(0,255,136,0.05) 0%, rgba(12,15,22,0.98) 60%)', border: '1px solid rgba(0,255,136,0.18)', borderLeft: '3px solid #00FF88', borderRadius: '6px', padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 50ms both' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '4px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00FF88', boxShadow: '0 0 8px #00FF88', animation: 'blink-alert 6s ease-in-out infinite' }} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#00FF88', textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>Insider Intelligence™</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(0,255,136,0.55)', border: '1px solid rgba(0,255,136,0.3)', padding: '1px 6px', borderRadius: '3px', letterSpacing: '0.1em' }}>SMART MONEY</span>
-              </div>
-              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#B0C4D8', lineHeight: 1.55, maxWidth: '500px' }}>
-                Track where corporate insiders show conviction before the market notices. Conviction Score, Cluster Buy Alerts, and AI-powered analysis.
-              </div>
+	              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '4px' }}>
+	                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00FF88', boxShadow: '0 0 8px #00FF88', animation: 'blink-alert 6s ease-in-out infinite' }} />
+	                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#00FF88', textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>Insider Intelligence™</span>
+	                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(0,255,136,0.55)', border: '1px solid rgba(0,255,136,0.3)', padding: '1px 6px', borderRadius: '3px', letterSpacing: '0.1em' }}>SOURCE PENDING</span>
+	              </div>
+	              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#B0C4D8', lineHeight: 1.55, maxWidth: '500px' }}>
+	                Insider data unavailable — SEC source verification pending.
+	              </div>
             </div>
             <a href="/app/insider-intelligence" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.40)', borderRadius: '4px', color: '#00FF88', textDecoration: 'none', fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', letterSpacing: '0.15em', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.18s cubic-bezier(0.23,1,0.32,1)', boxShadow: '0 0 20px rgba(0,255,136,0.06)' }}
               onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(0,255,136,0.15)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(0,255,136,0.65)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(0,255,136,0.08)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(0,255,136,0.40)'; }}
-            >
-              <span style={{ fontSize: '14px' }}>⊕</span>
-              OPEN INSIDER INTEL
-            </a>
+	            >
+	              <span style={{ fontSize: '14px' }}>⊕</span>
+	              VIEW SOURCE STATUS
+	            </a>
           </div>
         </div>
 

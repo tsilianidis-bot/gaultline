@@ -15,12 +15,15 @@ describe("insider containment", () => {
     expect(routers).not.toMatch(/return await getInsider|return getInsider/);
   });
 
-  it("shows the unavailable error instead of an empty successful radar", () => {
-    expect(page).toContain("role=\"alert\"");
-    expect(page).toContain("error: radarError");
-    expect(page).toContain("{error && <InsiderUnavailable message={error.message} />}");
-    expect(page).toContain("{radarError && <InsiderUnavailable message={radarError.message} />}");
-    expect(page).toContain("!radarError && (!radar || radar.clusterAlerts.length === 0)");
-    expect(page).toContain("!radarError && (!radar || radar.topSellingAlerts.length === 0)");
-  });
+	it("shows the unavailable error instead of an empty successful radar", () => {
+	  expect(page).toContain("role=\"alert\"");
+	  expect(page).toContain("error: radarError");
+	  expect(page).toContain("{error && <InsiderUnavailable message={error.message} />}");
+	  expect(page).toContain("{radarError && <InsiderUnavailable message={radarError.message} />}");
+	  expect(page).toContain("const hasVerifiedRadar = Boolean(radar && !radarError);");
+	  expect(page).toContain("const verifiedRadar = radar && !radarError ? radar : null;");
+	  expect(page).toContain("{hasVerifiedRadar && verifiedRadar && (");
+	  expect(page).not.toContain("radar?.clusterAlerts.map");
+	  expect(page).not.toContain("radar?.topSellingAlerts.map");
+	});
 });
