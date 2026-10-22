@@ -103,12 +103,12 @@ describe("Signal calculation / methodology untouched", () => {
   it("engine-diff is empty against branch base for signal engines", () => {
     const base = "1cfa1299f6644a7eb9a60246330c7b9a13ccc433";
     for (const file of frozenEngines) {
-      const diff = execSync(`git diff -- ${file}`, { cwd: root, encoding: "utf8" });
+      const diff = execSync(`git diff --no-color -- ${file}`, { cwd: root, encoding: "utf8" });
       expect(diff, `${file} must be unchanged`).toBe("");
     }
-    const named = execSync(`git diff ${base} -- ${frozenEngines.join(" ")}`, { cwd: root, encoding: "utf8" });
+    const named = execSync(`git diff --no-color ${base} -- ${frozenEngines.join(" ")}`, { cwd: root, encoding: "utf8" });
     expect(named.trim()).toBe("");
-    const outlook = execSync(`git diff ${base} -- server/signalOutlook.ts`, { cwd: root, encoding: "utf8" });
+    const outlook = execSync(`git diff --no-color ${base} -- server/signalOutlook.ts`, { cwd: root, encoding: "utf8" });
     expect(outlook).toContain("risingStarSocialTerms");
     expect(outlook).toMatch(/-.*sentimentScore: social\?\.sentimentScore \?\? 0/);
     const outlookAdded = outlook.split("\n").filter(line => line.startsWith("+") && !line.startsWith("+++")).join("\n");
@@ -122,7 +122,7 @@ describe("Signal calculation / methodology untouched", () => {
     // list, a missing macro-pressure reading, and a missing all-time high.
     // Those readings are withheld from the score and their weights drop.
     // Present inputs keep the prior weighted formula. Other scoring fallbacks stay.
-    const cryptoDiff = execSync(`git diff ${base} -- server/cryptoEngine.ts`, { cwd: root, encoding: "utf8" });
+    const cryptoDiff = execSync(`git diff --no-color ${base} -- server/cryptoEngine.ts`, { cwd: root, encoding: "utf8" });
     const added = cryptoDiff.split("\n").filter(line => line.startsWith("+") && !line.startsWith("+++"));
     expect(cryptoDiff).toContain("btcDominance ?? 55");
     const addedText = added.join("\n");
