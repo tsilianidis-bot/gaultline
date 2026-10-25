@@ -1556,26 +1556,95 @@ function isDuplicateKeyError(error: unknown): boolean {
 }
 
 /**
+ * Claims are inserted as `pending:<eventType>` and rewritten to the bare event
+ * type only after handling finishes. A failed release leaves the pending row in
+ * place. A later delivery must reclaim that row instead of acknowledging it as
+ * a finished duplicate, which would drop the event.
+ *
+ * Stripe's webhook timeout is about 20s. The unfinished window stays above that
+ * so a still-running attempt is not processed twice, while a release that failed
+ * after the handler returned is retried rather than acknowledged.
+ */
+export const STRIPE_WEBHOOK_CLAIM_PREFIX = 'pending:';
+export const STRIPE_WEBHOOK_UNFINISHED_CLAIM_MS = 30_000;
+
+export class UnfinishedStripeWebhookClaimError extends Error {
+  constructor(eventId: string) {
+    super(`Stripe webhook claim ${eventId} is unfinished; retry shortly`);
+    this.name = 'UnfinishedStripeWebhookClaimError';
+  }
+}
+
+export function decideDuplicateStripeClaim(
+  claim: { eventType?: string | null; processedAt?: Date | string | null } | null | undefined,
+  nowMs: number,
+): 'duplicate' | 'reclaim' | 'retry' {
+  if (!claim?.eventType?.startsWith(STRIPE_WEBHOOK_CLAIM_PREFIX)) {
+    // Missing row or a claim already marked complete. A missing row is not a
+    // finished event: the caller must retry rather than acknowledge it.
+    return claim?.eventType ? 'duplicate' : 'retry';
+  }
+  const processedAtMs = claim.processedAt instanceof Date
+    ? claim.processedAt.getTime()
+    : new Date(claim.processedAt ?? '').getTime();
+  if (!Number.isFinite(processedAtMs) || nowMs - processedAtMs < STRIPE_WEBHOOK_UNFINISHED_CLAIM_MS) {
+    return 'retry';
+  }
+  return 'reclaim';
+}
+
+/**
  * Attempt to claim a Stripe event ID for idempotency.
- * Returns false only for a genuine duplicate key; other claim failures rethrow so
- * the webhook returns 5xx and Stripe retries instead of silently dropping events.
+ * Returns false only for a finished duplicate. An unfinished pending claim is
+ * reclaimed (true) or rejected so the webhook returns 5xx and Stripe retries.
  */
 export async function recordStripeWebhookEvent(eventId: string, eventType: string): Promise<boolean> {
   const db = await getDb();
   if (!db) throw new Error('Database unavailable: cannot claim Stripe webhook event');
   try {
-    await db.insert(stripeWebhookEvents).values({ eventId, eventType });
-    return true; // Insert succeeded — event is new
+    await db.insert(stripeWebhookEvents).values({
+      eventId,
+      eventType: `${STRIPE_WEBHOOK_CLAIM_PREFIX}${eventType}`,
+    });
+    return true;
   } catch (err) {
-    if (isDuplicateKeyError(err)) return false;
-    throw err;
+    if (!isDuplicateKeyError(err)) throw err;
+    const [existing] = await db
+      .select({
+        eventType: stripeWebhookEvents.eventType,
+        processedAt: stripeWebhookEvents.processedAt,
+      })
+      .from(stripeWebhookEvents)
+      .where(eq(stripeWebhookEvents.eventId, eventId))
+      .limit(1);
+    const decision = decideDuplicateStripeClaim(existing, Date.now());
+    if (decision === 'duplicate') return false;
+    if (decision === 'retry') throw new UnfinishedStripeWebhookClaimError(eventId);
+    console.error(`[Stripe Webhook][BILLING-ALERT] Reclaiming unfinished claim ${eventId} after a failed release`);
+    await db.update(stripeWebhookEvents)
+      .set({ processedAt: new Date() })
+      .where(eq(stripeWebhookEvents.eventId, eventId));
+    return true;
   }
+}
+
+/**
+ * Mark a claimed event finished so a later delivery is a real duplicate.
+ * Throws when the database is unavailable — a 2xx must not be sent until the
+ * claim can no longer be mistaken for an unfinished release.
+ */
+export async function completeStripeWebhookEvent(eventId: string, eventType: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable: cannot complete Stripe webhook event');
+  await db.update(stripeWebhookEvents)
+    .set({ eventType })
+    .where(eq(stripeWebhookEvents.eventId, eventId));
 }
 
 /** Release a failed processing claim so the next Stripe delivery can be processed. */
 export async function releaseStripeWebhookEvent(eventId: string): Promise<void> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) throw new Error('Database unavailable: cannot release Stripe webhook event');
   await db.delete(stripeWebhookEvents).where(eq(stripeWebhookEvents.eventId, eventId));
 }
 

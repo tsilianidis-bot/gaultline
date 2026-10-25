@@ -2,19 +2,43 @@ import type { Request, Response } from 'express';
 import { stripe } from './client';
 import { ENV } from '../_core/env';
 import { getPlanByPriceId } from './products';
-import { updateUserStripe, getUserByStripeCustomerId, getUserTier, recordStripeWebhookEvent, releaseStripeWebhookEvent, writeEntitlementAudit } from '../db';
+import { updateUserStripe, getUserByStripeCustomerId, getUserTier, recordStripeWebhookEvent, releaseStripeWebhookEvent, completeStripeWebhookEvent, writeEntitlementAudit } from '../db';
 import type { AccessTier } from '../../shared/tiers';
 import { sendEmail, buildSubscriptionConfirmationEmail } from '../email';
 
 /**
- * Thrown when a paid checkout cannot be mapped to a configured paid plan.
- * We must not infer a tier from a missing, unreadable, or unknown price.
+ * Thrown when a paid checkout or subscription cannot be mapped to a configured
+ * paid plan. The claim is kept and the delivery is acknowledged so Stripe does
+ * not retry a permanent mapping failure.
  */
 export class UnresolvedPlanError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'UnresolvedPlanError';
   }
+}
+
+type SubscriptionSnapshot = {
+  status?: string | null;
+  ended_at?: number | null;
+  items?: { data?: Array<{ price?: { id?: string | null } | null } | null> | null } | null;
+};
+
+/**
+ * Live subscription state that may receive or keep a paid grant.
+ * Cancelled, ended, and incomplete subscriptions are not entitled. Any other
+ * non-active status (including past_due, unpaid, and paused) is also refused
+ * so an older event cannot resurrect access after a newer status change.
+ */
+export function subscriptionGrantDecision(
+  subscription: SubscriptionSnapshot,
+): { entitled: true } | { entitled: false; status: string } {
+  const raw = (subscription.status ?? 'unknown').toLowerCase();
+  if (subscription.ended_at || raw === 'ended') return { entitled: false, status: 'ended' };
+  if (raw === 'canceled' || raw === 'cancelled') return { entitled: false, status: 'cancelled' };
+  if (raw === 'incomplete' || raw === 'incomplete_expired') return { entitled: false, status: 'incomplete' };
+  if (raw === 'active' || raw === 'trialing') return { entitled: true };
+  return { entitled: false, status: raw };
 }
 
 /**
@@ -38,26 +62,23 @@ async function resolveTierFromSession(sessionId: string): Promise<Exclude<Access
   return plan.tier;
 }
 
-/**
- * Resolve the access tier for a subscription (used on invoice.paid renewals).
- * Looks up the price on the first subscription item.
- */
-async function resolveTierFromSubscription(subscriptionId: string): Promise<Exclude<AccessTier, 'free'> | null> {
+async function readLiveSubscription(subscriptionId: string): Promise<SubscriptionSnapshot> {
   if (!stripe) {
-    console.warn('[Stripe Webhook] Stripe is not configured — cannot resolve subscription tier');
-    return null;
+    throw new Error('Stripe is not configured — cannot confirm subscription status');
   }
-  try {
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    const priceId = subscription.items.data[0]?.price?.id;
-    if (priceId) {
-      const plan = getPlanByPriceId(priceId);
-      if (plan && plan.tier !== 'free') return plan.tier;
-    }
-  } catch (err: any) {
-    console.warn('[Stripe Webhook] Could not fetch subscription', subscriptionId, '—', err.message);
+  return stripe.subscriptions.retrieve(subscriptionId);
+}
+
+function tierFromLiveSubscription(subscriptionId: string, subscription: SubscriptionSnapshot): Exclude<AccessTier, 'free'> {
+  const priceId = subscription.items?.data?.[0]?.price?.id;
+  if (!priceId) {
+    throw new UnresolvedPlanError(`Subscription ${subscriptionId} has no price — no entitlement granted`);
   }
-  return null;
+  const plan = getPlanByPriceId(priceId);
+  if (!plan || plan.tier === 'free') {
+    throw new UnresolvedPlanError(`Subscription ${subscriptionId} price ${priceId} does not match any configured paid plan — no entitlement granted`);
+  }
+  return plan.tier;
 }
 
 /** Map an access tier to a human-readable plan name for emails. */
@@ -67,6 +88,16 @@ function tierToPlanName(tier: string): string {
     case 'premium': return 'Trader Plan';
     case 'founding': return 'Founding Member';
     default: return 'FAULTLINE Plan';
+  }
+}
+
+async function retainClaim(eventId: string, eventType: string): Promise<boolean> {
+  try {
+    await completeStripeWebhookEvent(eventId, eventType);
+    return true;
+  } catch (completeErr) {
+    console.error(`[Stripe Webhook][BILLING-ALERT] Failed to retain claim for ${eventId}; answering 500 so the event is not dropped:`, completeErr);
+    return false;
   }
 }
 
@@ -103,8 +134,10 @@ export async function handleStripeWebhook(req: Request, res: Response) {
   console.log(`[Stripe Webhook] Event: ${event.type} | ID: ${event.id}`);
 
   // ── Idempotency guard ──────────────────────────────────────────────────────
-  // Claim the event ID before processing. A duplicate is already claimed/processed;
-  // a claim is released below if handling fails so Stripe can retry safely.
+  // Claim the event ID before processing. A finished duplicate is skipped.
+  // A claim is released below only when handling fails before any entitlement
+  // write, so Stripe can retry. Unknown prices and non-entitling subscriptions
+  // keep the claim and acknowledge, so they do not retry forever.
   let isNew: boolean;
   try {
     isNew = await recordStripeWebhookEvent(event.id, event.type);
@@ -116,6 +149,9 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     console.log(`[Stripe Webhook] Duplicate event ${event.id} (${event.type}) — skipping`);
     return res.json({ received: true, duplicate: true });
   }
+
+  let ignored: 'subscription_not_entitled' | undefined;
+  let entitlementWritten = false;
 
   try {
     switch (event.type) {
@@ -131,11 +167,21 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         }
 
         const tier = await resolveTierFromSession(session.id);
-        const prevTier = await getUserTier(userId).catch(() => 'unknown');
 
         // Detect lifetime (one-time payment) purchases via session metadata
         const planId = session.metadata?.plan_id as string | undefined;
         const isLifetimePurchase = planId === 'lifetime';
+
+        if (subscriptionId) {
+          const decision = subscriptionGrantDecision(await readLiveSubscription(subscriptionId));
+          if (!decision.entitled) {
+            console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} subscription ${subscriptionId} is ${decision.status} — not granting`);
+            ignored = 'subscription_not_entitled';
+            break;
+          }
+        }
+
+        const prevTier = await getUserTier(userId).catch(() => 'unknown');
 
         await updateUserStripe(userId, {
           accessTier: tier,
@@ -143,6 +189,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
           stripeSubscriptionId: subscriptionId ?? undefined,
           ...(isLifetimePurchase ? { lifetimeAccess: true, lifetimePurchasedAt: new Date() } : {}),
         });
+        entitlementWritten = true;
 
         if (isLifetimePurchase) {
           console.log(`[Stripe Webhook] User ${userId} granted LIFETIME access (one-time payment — permanent)`);
@@ -188,14 +235,18 @@ export async function handleStripeWebhook(req: Request, res: Response) {
           break;
         }
 
-        const tier = await resolveTierFromSubscription(subscriptionId);
-        if (!tier) {
-          console.warn(`[Stripe Webhook] invoice.paid — could not resolve tier for subscription ${subscriptionId}`);
+        const subscription = await readLiveSubscription(subscriptionId);
+        const decision = subscriptionGrantDecision(subscription);
+        if (!decision.entitled) {
+          console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} subscription ${subscriptionId} is ${decision.status} — not re-granting`);
+          ignored = 'subscription_not_entitled';
           break;
         }
 
+        const tier = tierFromLiveSubscription(subscriptionId, subscription);
         const prevTier = user.accessTier;
         await updateUserStripe(user.id, { accessTier: tier, stripeSubscriptionId: subscriptionId });
+        entitlementWritten = true;
 
         await writeEntitlementAudit({
           userId: user.id,
@@ -224,6 +275,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
           }
           const prevTier = user.accessTier;
           await updateUserStripe(user.id, { accessTier: 'free', stripeSubscriptionId: null });
+          entitlementWritten = true;
 
           await writeEntitlementAudit({
             userId: user.id,
@@ -253,28 +305,29 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         }
 
         if (status === 'active' || status === 'trialing') {
-          const priceId = subscription.items?.data?.[0]?.price?.id as string | undefined;
-          if (priceId) {
-            const plan = getPlanByPriceId(priceId);
-            if (plan && plan.tier !== 'free') {
-              const prevTier = user.accessTier;
-              await updateUserStripe(user.id, { accessTier: plan.tier, stripeSubscriptionId: subscriptionId });
-
-              await writeEntitlementAudit({
-                userId: user.id,
-                fromTier: prevTier,
-                toTier: plan.tier,
-                reason: 'customer.subscription.updated',
-                stripeEventId: event.id,
-                stripeCustomerId: customerId,
-                stripeSubscriptionId: subscriptionId,
-              });
-
-              console.log(`[Stripe Webhook] User ${user.id} tier updated to ${plan.tier} via subscription update (${subscriptionId})`);
-            } else {
-              console.warn(`[Stripe Webhook] customer.subscription.updated — unknown price ${priceId} for subscription ${subscriptionId}`);
-            }
+          const live = await readLiveSubscription(subscriptionId);
+          const decision = subscriptionGrantDecision(live);
+          if (!decision.entitled) {
+            console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} subscription ${subscriptionId} is ${decision.status} — not granting`);
+            ignored = 'subscription_not_entitled';
+            break;
           }
+          const tier = tierFromLiveSubscription(subscriptionId, live);
+          const prevTier = user.accessTier;
+          await updateUserStripe(user.id, { accessTier: tier, stripeSubscriptionId: subscriptionId });
+          entitlementWritten = true;
+
+          await writeEntitlementAudit({
+            userId: user.id,
+            fromTier: prevTier,
+            toTier: tier,
+            reason: 'customer.subscription.updated',
+            stripeEventId: event.id,
+            stripeCustomerId: customerId,
+            stripeSubscriptionId: subscriptionId,
+          });
+
+          console.log(`[Stripe Webhook] User ${user.id} tier updated to ${tier} via subscription update (${subscriptionId})`);
         } else if (status === 'canceled' || status === 'unpaid' || status === 'past_due') {
           // Lifetime members are immune to subscription status changes — their access is permanent.
           if (user.lifetimeAccess) {
@@ -283,6 +336,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
           }
           const prevTier = user.accessTier;
           await updateUserStripe(user.id, { accessTier: 'free', stripeSubscriptionId: null });
+          entitlementWritten = true;
 
           await writeEntitlementAudit({
             userId: user.id,
@@ -311,19 +365,28 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     }
   } catch (err) {
     if (err instanceof UnresolvedPlanError) {
-      console.error(`[Stripe Webhook][BILLING-ALERT] ${event.type} ${event.id}: ${err.message}. No access granted; answering 500 so Stripe retries.`);
+      console.error(`[Stripe Webhook][BILLING-ALERT] ${event.type} ${event.id}: ${err.message}. No access granted. Claim retained.`);
+      if (!(await retainClaim(event.id, event.type))) {
+        return res.status(500).json({ error: 'Webhook processing failed' });
+      }
+      return res.status(200).json({ received: true, ignored: 'unresolved_plan' });
+    }
+    console.error('[Stripe Webhook] Error processing event:', err);
+    if (!entitlementWritten) {
+      try {
+        await releaseStripeWebhookEvent(event.id);
+      } catch (releaseErr) {
+        console.error(`[Stripe Webhook][BILLING-ALERT] Failed to release idempotency claim for ${event.id}; event remains claimable for retry:`, releaseErr);
+      }
     } else {
-      console.error('[Stripe Webhook] Error processing event:', err);
+      console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} failed after an entitlement write. Claim retained.`);
+      await retainClaim(event.id, event.type);
     }
-    try {
-      await releaseStripeWebhookEvent(event.id);
-    } catch (releaseErr) {
-      console.error(`[Stripe Webhook][BILLING-ALERT] Failed to release idempotency claim for ${event.id}; replay may be required:`, releaseErr);
-    }
-    return res.status(500).json({
-      error: err instanceof UnresolvedPlanError ? 'Unrecognized plan — entitlement not granted' : 'Webhook processing failed',
-    });
+    return res.status(500).json({ error: 'Webhook processing failed' });
   }
 
-  res.json({ received: true });
+  if (!(await retainClaim(event.id, event.type))) {
+    return res.status(500).json({ error: 'Webhook processing failed' });
+  }
+  return res.json(ignored ? { received: true, ignored } : { received: true });
 }
