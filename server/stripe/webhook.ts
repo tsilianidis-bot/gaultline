@@ -3,7 +3,17 @@ import type Stripe from 'stripe';
 import { stripe } from './client';
 import { ENV } from '../_core/env';
 import { getPlanByPriceId } from './products';
-import { updateUserStripe, getUserByStripeCustomerId, getUserTier, recordStripeWebhookEvent, releaseStripeWebhookEvent, completeStripeWebhookEvent, writeEntitlementAudit, entitlementAuditExists } from '../db';
+import {
+  getUserByStripeCustomerId,
+  getUserTier,
+  recordStripeWebhookEvent,
+  releaseStripeWebhookEvent,
+  completeStripeWebhookEvent,
+  entitlementAuditExists,
+  commitStripeEntitlement,
+  StaleStripeWebhookClaimError,
+  type StripeWebhookAttempt,
+} from '../db';
 import type { AccessTier } from '../../shared/tiers';
 import { sendEmail, buildSubscriptionConfirmationEmail } from '../email';
 
@@ -20,27 +30,56 @@ export class UnresolvedPlanError extends Error {
 }
 
 /**
- * Each webhook read fails fast so a sequence of Stripe calls returns before the
- * 90s claim-reclaim window. The shared client timeout is 15s; this is tighter.
+ * Worst case is this many reads, each bounded by the timeout below, with no
+ * network retry. 8 * 8s = 64s, which is under the 90s reclaim window.
+ * Revoke uses at most 6 (two subscription reads and two pages for each of
+ * active and trialing). Checkout uses at most 4.
  */
-const STRIPE_WEBHOOK_READ_TIMEOUT_MS = 8_000;
-const stripeRead: Stripe.RequestOptions = { timeout: STRIPE_WEBHOOK_READ_TIMEOUT_MS };
+export const STRIPE_WEBHOOK_MAX_READS = 8;
+export const STRIPE_WEBHOOK_READ_TIMEOUT_MS = 8_000;
+export const STRIPE_WEBHOOK_MAX_NETWORK_RETRIES = 0;
+export const STRIPE_SUBSCRIPTION_PAGE_SIZE = 100;
+export const STRIPE_SUBSCRIPTION_MAX_PAGES = 2;
+
+export function webhookStripeBudgetMs(
+  reads = STRIPE_WEBHOOK_MAX_READS,
+  timeoutMs = STRIPE_WEBHOOK_READ_TIMEOUT_MS,
+  maxNetworkRetries = STRIPE_WEBHOOK_MAX_NETWORK_RETRIES,
+): number {
+  return reads * timeoutMs * (maxNetworkRetries + 1);
+}
+
+const stripeRead: Stripe.RequestOptions = {
+  timeout: STRIPE_WEBHOOK_READ_TIMEOUT_MS,
+  maxNetworkRetries: STRIPE_WEBHOOK_MAX_NETWORK_RETRIES,
+};
 
 type IgnoredReason =
   | 'subscription_not_entitled'
   | 'payment_not_verified'
   | 'payment_not_completed'
   | 'missing_subscription'
-  | 'already_applied';
+  | 'already_applied'
+  | 'revoke_not_applied'
+  | 'zero_amount';
+
+type InvoiceSnapshot = {
+  id?: string | null;
+  status?: string | null;
+  amount_paid?: number | null;
+  total?: number | null;
+};
 
 type SubscriptionSnapshot = {
   id?: string | null;
   status?: string | null;
   ended_at?: number | null;
   items?: { data?: Array<{ price?: { id?: string | null } | null } | null> | null } | null;
+  latest_invoice?: string | InvoiceSnapshot | null;
 };
 
 type PaidTier = Exclude<AccessTier, 'free'>;
+type ReadBudget = { n: number };
 
 /**
  * Live subscription state that may receive or keep a paid grant.
@@ -59,28 +98,89 @@ export function subscriptionGrantDecision(
   return { entitled: false, status: raw };
 }
 
+export type PaymentDenial =
+  | 'unpaid'
+  | 'no_payment_required'
+  | 'payment_intent_not_succeeded'
+  | 'payment_intent_missing'
+  | 'zero_amount'
+  | 'unknown';
+
 /**
- * Checkout grants only when Stripe itself reports the session paid.
- *
- * `no_payment_required` is denied for every plan, including lifetime and a
- * 100% promotion code. Checkout does not configure a trial or a zero-price
- * plan, so a session that collected no payment is not an entitlement.
- * `unpaid` covers pending and async methods; those wait for
- * `checkout.session.async_payment_succeeded`. When a PaymentIntent is present
- * it must be `succeeded`, which is the independent check for lifetime.
+ * One-time checkout, including lifetime. `paid` with no PaymentIntent is not
+ * enough: the expanded PaymentIntent must be `succeeded` and both the session
+ * total and the intent amount must be greater than zero. `no_payment_required`
+ * (a 100% promotion, or a session that collected nothing) is denied. Checkout
+ * has no trial and no zero-price plan.
  */
-export function checkoutPaymentDecision(input: {
+export function paymentModeDecision(input: {
   paymentStatus?: string | null;
   paymentIntentStatus?: string | null;
-}): { grant: true } | { grant: false; reason: 'unpaid' | 'no_payment_required' | 'payment_intent_not_succeeded' | 'unknown' } {
+  amountTotal?: number | null;
+  paymentIntentAmount?: number | null;
+}): { grant: true } | { grant: false; reason: PaymentDenial } {
   const status = (input.paymentStatus ?? '').toLowerCase();
   if (status === 'no_payment_required') return { grant: false, reason: 'no_payment_required' };
   if (status === 'unpaid') return { grant: false, reason: 'unpaid' };
   if (status !== 'paid') return { grant: false, reason: 'unknown' };
-  if (input.paymentIntentStatus && input.paymentIntentStatus !== 'succeeded') {
-    return { grant: false, reason: 'payment_intent_not_succeeded' };
+  if (!input.paymentIntentStatus) return { grant: false, reason: 'payment_intent_missing' };
+  if (input.paymentIntentStatus !== 'succeeded') return { grant: false, reason: 'payment_intent_not_succeeded' };
+  if (!(typeof input.amountTotal === 'number' && input.amountTotal > 0)) return { grant: false, reason: 'zero_amount' };
+  if (!(typeof input.paymentIntentAmount === 'number' && input.paymentIntentAmount > 0)) {
+    return { grant: false, reason: 'zero_amount' };
   }
   return { grant: true };
+}
+
+/**
+ * Subscription grants.
+ *
+ * Trialing is entitled without a positive charge. A trial invoice is often $0
+ * and checkout can report `no_payment_required`.
+ *
+ * Active is entitled only when the latest invoice is `paid` and `amount_paid`
+ * is greater than zero. A zero-dollar `invoice.paid` or `subscription.updated`
+ * does not grant or extend a paid tier, including a 100% promotion on an
+ * active subscription. If the event states an amount and the retrieved invoice
+ * disagrees, the grant is refused.
+ */
+export function subscriptionPaymentDecision(input: {
+  subscription: SubscriptionSnapshot;
+  eventAmountPaid?: number | null;
+  eventTotal?: number | null;
+}): { grant: true } | { grant: false; reason: 'subscription_not_entitled' | 'zero_amount' | 'invoice_not_paid' | 'amount_mismatch' } {
+  const decision = subscriptionGrantDecision(input.subscription);
+  if (!decision.entitled) return { grant: false, reason: 'subscription_not_entitled' };
+  if ((input.subscription.status ?? '').toLowerCase() === 'trialing') return { grant: true };
+  const eventAmount = input.eventAmountPaid;
+  const eventTotal = input.eventTotal;
+  if (eventAmount === 0 || eventTotal === 0) return { grant: false, reason: 'zero_amount' };
+  const invoice = input.subscription.latest_invoice;
+  if (!invoice || typeof invoice === 'string') return { grant: false, reason: 'invoice_not_paid' };
+  if ((invoice.status ?? '').toLowerCase() !== 'paid') return { grant: false, reason: 'invoice_not_paid' };
+  if (!(typeof invoice.amount_paid === 'number' && invoice.amount_paid > 0)) {
+    return { grant: false, reason: 'zero_amount' };
+  }
+  if (typeof eventAmount === 'number' && eventAmount !== invoice.amount_paid) {
+    return { grant: false, reason: 'amount_mismatch' };
+  }
+  return { grant: true };
+}
+
+function deniedPaymentReason(
+  decision: { grant: true } | { grant: false; reason: string },
+): string | null {
+  return decision.grant ? null : decision.reason;
+}
+
+/** @deprecated Use paymentModeDecision. Kept so older call sites keep a name. */
+export function checkoutPaymentDecision(input: {
+  paymentStatus?: string | null;
+  paymentIntentStatus?: string | null;
+  amountTotal?: number | null;
+  paymentIntentAmount?: number | null;
+}): { grant: true } | { grant: false; reason: PaymentDenial } {
+  return paymentModeDecision(input);
 }
 
 function stripeId(value: unknown): string | null {
@@ -113,9 +213,17 @@ export function subscriptionIdFromInvoice(invoice: {
   return stripeId(invoice.subscription);
 }
 
-async function resolveTierFromSession(sessionId: string): Promise<PaidTier> {
+async function stripeCall<T>(budget: ReadBudget, run: () => Promise<T>): Promise<T> {
+  budget.n += 1;
+  if (budget.n > STRIPE_WEBHOOK_MAX_READS) {
+    throw new Error(`Stripe webhook read budget exceeded (${STRIPE_WEBHOOK_MAX_READS})`);
+  }
+  return run();
+}
+
+async function resolveTierFromSession(sessionId: string, budget: ReadBudget): Promise<PaidTier> {
   if (!stripe) throw new Error('Stripe is not configured — cannot resolve checkout tier');
-  const lineItems = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 1 }, stripeRead);
+  const lineItems = await stripeCall(budget, () => stripe!.checkout.sessions.listLineItems(sessionId, { limit: 1 }, stripeRead));
   const priceId = lineItems.data[0]?.price?.id;
   if (!priceId) {
     throw new UnresolvedPlanError(`Session ${sessionId} has no line-item price — no entitlement granted`);
@@ -127,9 +235,9 @@ async function resolveTierFromSession(sessionId: string): Promise<PaidTier> {
   return plan.tier;
 }
 
-async function readLiveSubscription(subscriptionId: string): Promise<SubscriptionSnapshot> {
+async function readLiveSubscription(subscriptionId: string, budget: ReadBudget): Promise<SubscriptionSnapshot> {
   if (!stripe) throw new Error('Stripe is not configured — cannot confirm subscription status');
-  return stripe.subscriptions.retrieve(subscriptionId, {}, stripeRead);
+  return stripeCall(budget, () => stripe!.subscriptions.retrieve(subscriptionId, { expand: ['latest_invoice'] }, stripeRead));
 }
 
 function tierFromLiveSubscription(subscriptionId: string, subscription: SubscriptionSnapshot): PaidTier {
@@ -149,33 +257,50 @@ function isStripeMissing(err: unknown): boolean {
   return error?.code === 'resource_missing' || error?.statusCode === 404;
 }
 
-async function customerHasEntitlingSubscription(customerId: string): Promise<boolean> {
+/**
+ * True when another subscription entitles the customer. `unknown` means the
+ * list was longer than the page cap or could not be advanced. Callers must
+ * not revoke on `unknown`.
+ */
+async function customerHasEntitlingSubscription(customerId: string, budget: ReadBudget): Promise<boolean | 'unknown'> {
   if (!stripe) throw new Error('Stripe is not configured — cannot list subscriptions');
   for (const status of ['active', 'trialing'] as const) {
-    const page = await stripe.subscriptions.list({ customer: customerId, status, limit: 20 }, stripeRead);
-    if (page.data.some(subscription => subscriptionGrantDecision(subscription).entitled)) return true;
+    let startingAfter: string | undefined;
+    for (let page = 0; page < STRIPE_SUBSCRIPTION_MAX_PAGES; page += 1) {
+      const result = await stripeCall(budget, () => stripe!.subscriptions.list({
+        customer: customerId,
+        status,
+        limit: STRIPE_SUBSCRIPTION_PAGE_SIZE,
+        ...(startingAfter ? { starting_after: startingAfter } : {}),
+      }, stripeRead));
+      if (result.data.some(subscription => subscriptionGrantDecision(subscription).entitled)) return true;
+      if (!result.has_more) break;
+      const lastId = result.data[result.data.length - 1]?.id;
+      if (!lastId || page === STRIPE_SUBSCRIPTION_MAX_PAGES - 1) return 'unknown';
+      startingAfter = lastId;
+    }
   }
   return false;
 }
 
-/** Revoke only when this subscription and every other subscription for the customer are not entitled. */
-async function revocationDecision(customerId: string, subscriptionId: string): Promise<'revoke' | 'keep'> {
+/** Revoke only when this subscription and every listed subscription are not entitled. */
+async function revocationDecision(customerId: string, subscriptionId: string, budget: ReadBudget): Promise<'revoke' | 'keep'> {
   let live: SubscriptionSnapshot;
   try {
-    live = await readLiveSubscription(subscriptionId);
+    live = await readLiveSubscription(subscriptionId, budget);
   } catch (err) {
     if (!isStripeMissing(err)) throw err;
     live = { id: subscriptionId, status: 'canceled', ended_at: 1 };
   }
   if (subscriptionGrantDecision(live).entitled) return 'keep';
-  if (await customerHasEntitlingSubscription(customerId)) return 'keep';
+  const others = await customerHasEntitlingSubscription(customerId, budget);
+  if (others === true || others === 'unknown') return 'keep';
   try {
-    const again = await readLiveSubscription(subscriptionId);
+    const again = await readLiveSubscription(subscriptionId, budget);
     if (subscriptionGrantDecision(again).entitled) return 'keep';
   } catch (err) {
     if (!isStripeMissing(err)) throw err;
   }
-  if (await customerHasEntitlingSubscription(customerId)) return 'keep';
   return 'revoke';
 }
 
@@ -188,29 +313,29 @@ function tierToPlanName(tier: string): string {
   }
 }
 
-async function retainClaim(eventId: string, eventType: string): Promise<boolean> {
-  try {
-    await completeStripeWebhookEvent(eventId, eventType);
-    return true;
-  } catch (completeErr) {
-    console.error(`[Stripe Webhook][BILLING-ALERT] Failed to retain claim for ${eventId}; answering 500 so the event is not dropped:`, completeErr);
-    return false;
-  }
-}
-
-async function verifiedCheckoutSession(sessionId: string) {
+async function verifiedCheckoutSession(sessionId: string, budget: ReadBudget) {
   if (!stripe) throw new Error('Stripe is not configured — cannot verify checkout payment');
-  const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ['payment_intent'] }, stripeRead);
+  const session = await stripeCall(budget, () => stripe!.checkout.sessions.retrieve(
+    sessionId,
+    { expand: ['payment_intent'] },
+    stripeRead,
+  ));
   const paymentIntent = session.payment_intent;
-  const paymentIntentStatus = paymentIntent && typeof paymentIntent === 'object'
-    ? paymentIntent.status
-    : null;
-  let retrievedIntentStatus: string | null = paymentIntentStatus;
-  if (typeof paymentIntent === 'string') {
-    const intent = await stripe.paymentIntents.retrieve(paymentIntent, {}, stripeRead);
-    retrievedIntentStatus = intent.status;
+  let paymentIntentStatus: string | null = null;
+  let paymentIntentAmount: number | null = null;
+  if (paymentIntent && typeof paymentIntent === 'object') {
+    paymentIntentStatus = paymentIntent.status;
+    paymentIntentAmount = typeof paymentIntent.amount_received === 'number'
+      ? paymentIntent.amount_received
+      : (typeof paymentIntent.amount === 'number' ? paymentIntent.amount : null);
+  } else if (typeof paymentIntent === 'string') {
+    const intent = await stripeCall(budget, () => stripe!.paymentIntents.retrieve(paymentIntent, {}, stripeRead));
+    paymentIntentStatus = intent.status;
+    paymentIntentAmount = typeof intent.amount_received === 'number'
+      ? intent.amount_received
+      : (typeof intent.amount === 'number' ? intent.amount : null);
   }
-  return { session, paymentIntentStatus: retrievedIntentStatus };
+  return { session, paymentIntentStatus, paymentIntentAmount };
 }
 
 export async function handleStripeWebhook(req: Request, res: Response) {
@@ -244,20 +369,32 @@ export async function handleStripeWebhook(req: Request, res: Response) {
 
   console.log(`[Stripe Webhook] Event: ${event.type} | ID: ${event.id}`);
 
-  let isNew: boolean;
+  let attempt: StripeWebhookAttempt;
   try {
-    isNew = await recordStripeWebhookEvent(event.id, event.type);
+    const recorded = await recordStripeWebhookEvent(event.id, event.type);
+    if (!recorded) {
+      console.log(`[Stripe Webhook] Duplicate event ${event.id} (${event.type}) — skipping`);
+      return res.json({ received: true, duplicate: true });
+    }
+    attempt = recorded;
   } catch (err) {
     console.error(`[Stripe Webhook] Could not record event ${event.id} — answering 500 so Stripe retries:`, err);
     return res.status(500).json({ error: 'Webhook processing failed' });
   }
-  if (!isNew) {
-    console.log(`[Stripe Webhook] Duplicate event ${event.id} (${event.type}) — skipping`);
-    return res.json({ received: true, duplicate: true });
-  }
 
   let ignored: IgnoredReason | undefined;
   let entitlementWritten = false;
+  const budget: ReadBudget = { n: 0 };
+
+  const retainClaim = async () => {
+    try {
+      await completeStripeWebhookEvent(event.id, event.type, attempt.attemptId);
+      return true;
+    } catch (completeErr) {
+      console.error(`[Stripe Webhook][BILLING-ALERT] Failed to retain claim for ${event.id}; answering 500 so the event is not dropped:`, completeErr);
+      return false;
+    }
+  };
 
   const finishApplied = async (reason: string) => {
     if (await entitlementAuditExists(event.id)) {
@@ -266,6 +403,29 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       return true;
     }
     return false;
+  };
+
+  const commitGrant = async (input: {
+    userId: number;
+    patch?: NonNullable<Parameters<typeof commitStripeEntitlement>[0]['patch']>;
+    revokeSubscriptionId?: string;
+    audit: Parameters<typeof commitStripeEntitlement>[0]['audit'];
+  }) => {
+    const outcome = await commitStripeEntitlement({
+      eventId: event.id,
+      eventType: event.type,
+      attemptId: attempt.attemptId,
+      userId: input.userId,
+      patch: input.patch,
+      revokeSubscriptionId: input.revokeSubscriptionId,
+      audit: input.audit,
+    });
+    if (outcome === 'claim_lost') throw new StaleStripeWebhookClaimError(event.id);
+    if (outcome === 'revoke_skipped') {
+      ignored = 'revoke_not_applied';
+      return;
+    }
+    entitlementWritten = true;
   };
 
   try {
@@ -286,64 +446,62 @@ export async function handleStripeWebhook(req: Request, res: Response) {
           ignored = 'payment_not_verified';
           break;
         }
-        const { session, paymentIntentStatus } = await verifiedCheckoutSession(sessionId);
+        const { session, paymentIntentStatus, paymentIntentAmount } = await verifiedCheckoutSession(sessionId, budget);
         const userId = session.metadata?.user_id ? parseInt(session.metadata.user_id, 10) : null;
         if (!userId) {
           console.warn(`[Stripe Webhook] ${event.type} missing user_id in metadata`);
           break;
         }
         const planId = session.metadata?.plan_id;
-        const isLifetimePurchase = planId === 'lifetime';
-        const payment = checkoutPaymentDecision({
-          paymentStatus: session.payment_status,
-          paymentIntentStatus,
-        });
-        if (!payment.grant) {
-          console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} checkout ${sessionId} payment_status ${session.payment_status} intent ${paymentIntentStatus ?? 'none'} — not granting${isLifetimePurchase ? ' lifetime' : ''}`);
-          ignored = 'payment_not_verified';
-          break;
+        const isLifetimePurchase = planId === 'lifetime' || session.mode === 'payment';
+        const subscriptionId = stripeId(session.subscription);
+        const paymentMode = isLifetimePurchase || !subscriptionId;
+        if (paymentMode) {
+          const payment = paymentModeDecision({
+            paymentStatus: session.payment_status,
+            paymentIntentStatus,
+            amountTotal: session.amount_total,
+            paymentIntentAmount,
+          });
+          if (!payment.grant) {
+            console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} checkout ${sessionId} payment_status ${session.payment_status} intent ${paymentIntentStatus ?? 'none'} amount ${session.amount_total ?? 'none'} — not granting${isLifetimePurchase ? ' lifetime' : ''}`);
+            ignored = payment.reason === 'zero_amount' ? 'zero_amount' : 'payment_not_verified';
+            break;
+          }
         }
         if (await finishApplied(event.type)) break;
 
-        const tier = await resolveTierFromSession(session.id);
+        const tier = await resolveTierFromSession(session.id, budget);
         const customerId = stripeId(session.customer);
-        const subscriptionId = stripeId(session.subscription);
-        if (subscriptionId) {
-          const decision = subscriptionGrantDecision(await readLiveSubscription(subscriptionId));
-          if (!decision.entitled) {
-            console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} subscription ${subscriptionId} is ${decision.status} — not granting`);
-            ignored = 'subscription_not_entitled';
-            break;
-          }
-          const again = subscriptionGrantDecision(await readLiveSubscription(subscriptionId));
-          if (!again.entitled) {
-            console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} subscription ${subscriptionId} is ${again.status} immediately before write — not granting`);
-            ignored = 'subscription_not_entitled';
+        if (!paymentMode && subscriptionId) {
+          const first = subscriptionPaymentDecision({ subscription: await readLiveSubscription(subscriptionId, budget) });
+          const payment = subscriptionPaymentDecision({ subscription: await readLiveSubscription(subscriptionId, budget) });
+          if (!first.grant || !payment.grant) {
+            const reason = deniedPaymentReason(payment) ?? deniedPaymentReason(first) ?? 'subscription_not_entitled';
+            console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} subscription ${subscriptionId} ${reason} — not granting`);
+            ignored = reason === 'zero_amount' ? 'zero_amount' : 'subscription_not_entitled';
             break;
           }
         }
 
         const prevTier = await getUserTier(userId).catch(() => 'unknown');
-        await updateUserStripe(userId, {
-          accessTier: tier,
-          stripeCustomerId: customerId ?? undefined,
-          stripeSubscriptionId: subscriptionId ?? undefined,
-          ...(isLifetimePurchase ? { lifetimeAccess: true, lifetimePurchasedAt: new Date() } : {}),
-        });
-        entitlementWritten = true;
-        await writeEntitlementAudit({
+        await commitGrant({
           userId,
-          fromTier: prevTier,
-          toTier: tier,
-          reason: event.type,
-          stripeEventId: event.id,
-          stripeCustomerId: customerId ?? undefined,
-          stripeSubscriptionId: subscriptionId ?? undefined,
-          strict: true,
+          patch: {
+            accessTier: tier,
+            stripeCustomerId: customerId ?? undefined,
+            stripeSubscriptionId: subscriptionId ?? undefined,
+            ...(isLifetimePurchase ? { lifetimeAccess: true, lifetimePurchasedAt: new Date() } : {}),
+          },
+          audit: {
+            fromTier: prevTier,
+            toTier: tier,
+            reason: event.type,
+            stripeCustomerId: customerId ?? undefined,
+            stripeSubscriptionId: subscriptionId ?? undefined,
+          },
         });
-        if (!(await retainClaim(event.id, event.type))) {
-          throw new Error(`claim retain failed after entitlement write for ${event.id}`);
-        }
+        if (ignored === 'revoke_not_applied') break;
         if (isLifetimePurchase) {
           console.log(`[Stripe Webhook] User ${userId} granted LIFETIME access after verified payment`);
         }
@@ -363,7 +521,12 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       }
 
       case 'invoice.paid': {
-        const invoice = event.data.object as Parameters<typeof subscriptionIdFromInvoice>[0] & { id?: string; customer?: unknown };
+        const invoice = event.data.object as Parameters<typeof subscriptionIdFromInvoice>[0] & {
+          id?: string;
+          customer?: unknown;
+          amount_paid?: number | null;
+          total?: number | null;
+        };
         const customerId = stripeId(invoice.customer);
         const subscriptionId = subscriptionIdFromInvoice(invoice);
         if (!customerId || !subscriptionId) {
@@ -377,37 +540,35 @@ export async function handleStripeWebhook(req: Request, res: Response) {
           break;
         }
         if (await finishApplied('invoice.paid')) break;
-        const subscription = await readLiveSubscription(subscriptionId);
-        const decision = subscriptionGrantDecision(subscription);
-        if (!decision.entitled) {
-          console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} subscription ${subscriptionId} is ${decision.status} — not re-granting`);
-          ignored = 'subscription_not_entitled';
-          break;
-        }
-        const confirmed = await readLiveSubscription(subscriptionId);
-        const confirmedDecision = subscriptionGrantDecision(confirmed);
-        if (!confirmedDecision.entitled) {
-          console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} subscription ${subscriptionId} is ${confirmedDecision.status} immediately before write — not re-granting`);
-          ignored = 'subscription_not_entitled';
+        const first = subscriptionPaymentDecision({
+          subscription: await readLiveSubscription(subscriptionId, budget),
+          eventAmountPaid: invoice.amount_paid,
+          eventTotal: invoice.total,
+        });
+        const confirmed = await readLiveSubscription(subscriptionId, budget);
+        const payment = subscriptionPaymentDecision({
+          subscription: confirmed,
+          eventAmountPaid: invoice.amount_paid,
+          eventTotal: invoice.total,
+        });
+        if (!first.grant || !payment.grant) {
+          const reason = deniedPaymentReason(payment) ?? deniedPaymentReason(first) ?? 'subscription_not_entitled';
+          console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} subscription ${subscriptionId} ${reason} — not re-granting`);
+          ignored = reason === 'zero_amount' || reason === 'amount_mismatch' ? 'zero_amount' : 'subscription_not_entitled';
           break;
         }
         const tier = tierFromLiveSubscription(subscriptionId, confirmed);
-        const prevTier = user.accessTier;
-        await updateUserStripe(user.id, { accessTier: tier, stripeSubscriptionId: subscriptionId });
-        entitlementWritten = true;
-        await writeEntitlementAudit({
+        await commitGrant({
           userId: user.id,
-          fromTier: prevTier,
-          toTier: tier,
-          reason: 'invoice.paid',
-          stripeEventId: event.id,
-          stripeCustomerId: customerId,
-          stripeSubscriptionId: subscriptionId,
-          strict: true,
+          patch: { accessTier: tier, stripeSubscriptionId: subscriptionId },
+          audit: {
+            fromTier: user.accessTier,
+            toTier: tier,
+            reason: 'invoice.paid',
+            stripeCustomerId: customerId,
+            stripeSubscriptionId: subscriptionId,
+          },
         });
-        if (!(await retainClaim(event.id, event.type))) {
-          throw new Error(`claim retain failed after entitlement write for ${event.id}`);
-        }
         console.log(`[Stripe Webhook] User ${user.id} re-activated to ${tier} (invoice ${invoice.id})`);
         break;
       }
@@ -419,34 +580,27 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         if (!customerId || !subscriptionId) break;
         const user = await getUserByStripeCustomerId(customerId);
         if (!user) break;
-        if (user.lifetimeAccess) {
-          console.log(`[Stripe Webhook] customer.subscription.deleted — User ${user.id} has lifetime access, skipping downgrade`);
-          break;
-        }
         if (await finishApplied('customer.subscription.deleted')) break;
-        const decision = await revocationDecision(customerId, subscriptionId);
+        const decision = await revocationDecision(customerId, subscriptionId, budget);
         if (decision === 'keep') {
           console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} subscription ${subscriptionId} still entitled or customer has another active subscription — not downgrading`);
           ignored = 'subscription_not_entitled';
           break;
         }
-        const prevTier = user.accessTier;
-        await updateUserStripe(user.id, { accessTier: 'free', stripeSubscriptionId: null });
-        entitlementWritten = true;
-        await writeEntitlementAudit({
+        await commitGrant({
           userId: user.id,
-          fromTier: prevTier,
-          toTier: 'free',
-          reason: 'customer.subscription.deleted',
-          stripeEventId: event.id,
-          stripeCustomerId: customerId,
-          stripeSubscriptionId: subscriptionId,
-          strict: true,
+          revokeSubscriptionId: subscriptionId,
+          audit: {
+            fromTier: user.accessTier,
+            toTier: 'free',
+            reason: 'customer.subscription.deleted',
+            stripeCustomerId: customerId,
+            stripeSubscriptionId: subscriptionId,
+          },
         });
-        if (!(await retainClaim(event.id, event.type))) {
-          throw new Error(`claim retain failed after entitlement write for ${event.id}`);
+        if (ignored !== 'revoke_not_applied') {
+          console.log(`[Stripe Webhook] User ${user.id} downgraded to free (subscription cancelled)`);
         }
-        console.log(`[Stripe Webhook] User ${user.id} downgraded to free (subscription cancelled)`);
         break;
       }
 
@@ -463,66 +617,49 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         }
         if (await finishApplied('customer.subscription.updated')) break;
         if (status === 'active' || status === 'trialing') {
-          const live = await readLiveSubscription(subscriptionId);
-          const decision = subscriptionGrantDecision(live);
-          if (!decision.entitled) {
-            console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} subscription ${subscriptionId} is ${decision.status} — not granting`);
-            ignored = 'subscription_not_entitled';
-            break;
-          }
-          const confirmed = await readLiveSubscription(subscriptionId);
-          const confirmedDecision = subscriptionGrantDecision(confirmed);
-          if (!confirmedDecision.entitled) {
-            console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} subscription ${subscriptionId} is ${confirmedDecision.status} immediately before write — not granting`);
-            ignored = 'subscription_not_entitled';
+          const first = subscriptionPaymentDecision({ subscription: await readLiveSubscription(subscriptionId, budget) });
+          const confirmed = await readLiveSubscription(subscriptionId, budget);
+          const payment = subscriptionPaymentDecision({ subscription: confirmed });
+          if (!first.grant || !payment.grant) {
+            const reason = deniedPaymentReason(payment) ?? deniedPaymentReason(first) ?? 'subscription_not_entitled';
+            console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} subscription ${subscriptionId} ${reason} — not granting`);
+            ignored = reason === 'zero_amount' ? 'zero_amount' : 'subscription_not_entitled';
             break;
           }
           const tier = tierFromLiveSubscription(subscriptionId, confirmed);
-          const prevTier = user.accessTier;
-          await updateUserStripe(user.id, { accessTier: tier, stripeSubscriptionId: subscriptionId });
-          entitlementWritten = true;
-          await writeEntitlementAudit({
+          await commitGrant({
             userId: user.id,
-            fromTier: prevTier,
-            toTier: tier,
-            reason: 'customer.subscription.updated',
-            stripeEventId: event.id,
-            stripeCustomerId: customerId,
-            stripeSubscriptionId: subscriptionId,
-            strict: true,
+            patch: { accessTier: tier, stripeSubscriptionId: subscriptionId },
+            audit: {
+              fromTier: user.accessTier,
+              toTier: tier,
+              reason: 'customer.subscription.updated',
+              stripeCustomerId: customerId,
+              stripeSubscriptionId: subscriptionId,
+            },
           });
-          if (!(await retainClaim(event.id, event.type))) {
-            throw new Error(`claim retain failed after entitlement write for ${event.id}`);
-          }
           console.log(`[Stripe Webhook] User ${user.id} tier updated to ${tier} via subscription update (${subscriptionId})`);
         } else if (status === 'canceled' || status === 'unpaid' || status === 'past_due') {
-          if (user.lifetimeAccess) {
-            console.log(`[Stripe Webhook] customer.subscription.updated:${status} — User ${user.id} has lifetime access, skipping downgrade`);
-            break;
-          }
-          const decision = await revocationDecision(customerId, subscriptionId);
+          const decision = await revocationDecision(customerId, subscriptionId, budget);
           if (decision === 'keep') {
             console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} subscription ${subscriptionId} status ${status} is stale — live subscription still entitled, not downgrading`);
             ignored = 'subscription_not_entitled';
             break;
           }
-          const prevTier = user.accessTier;
-          await updateUserStripe(user.id, { accessTier: 'free', stripeSubscriptionId: null });
-          entitlementWritten = true;
-          await writeEntitlementAudit({
+          await commitGrant({
             userId: user.id,
-            fromTier: prevTier,
-            toTier: 'free',
-            reason: `customer.subscription.updated:${status}`,
-            stripeEventId: event.id,
-            stripeCustomerId: customerId,
-            stripeSubscriptionId: subscriptionId,
-            strict: true,
+            revokeSubscriptionId: subscriptionId,
+            audit: {
+              fromTier: user.accessTier,
+              toTier: 'free',
+              reason: `customer.subscription.updated:${status}`,
+              stripeCustomerId: customerId,
+              stripeSubscriptionId: subscriptionId,
+            },
           });
-          if (!(await retainClaim(event.id, event.type))) {
-            throw new Error(`claim retain failed after entitlement write for ${event.id}`);
+          if (ignored !== 'revoke_not_applied') {
+            console.log(`[Stripe Webhook] User ${user.id} downgraded to free (subscription ${subscriptionId} status: ${status})`);
           }
-          console.log(`[Stripe Webhook] User ${user.id} downgraded to free (subscription ${subscriptionId} status: ${status})`);
         }
         break;
       }
@@ -538,9 +675,13 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
     }
   } catch (err) {
+    if (err instanceof StaleStripeWebhookClaimError) {
+      console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} lost the claim fence; not sealing or releasing the current attempt`);
+      return res.status(500).json({ error: 'Webhook processing failed' });
+    }
     if (err instanceof UnresolvedPlanError) {
       console.error(`[Stripe Webhook][BILLING-ALERT] ${event.type} ${event.id}: ${err.message}. No access granted. Claim retained.`);
-      if (!(await retainClaim(event.id, event.type))) {
+      if (!(await retainClaim())) {
         return res.status(500).json({ error: 'Webhook processing failed' });
       }
       return res.status(200).json({ received: true, ignored: 'unresolved_plan' });
@@ -548,18 +689,18 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     console.error('[Stripe Webhook] Error processing event:', err);
     if (!entitlementWritten) {
       try {
-        await releaseStripeWebhookEvent(event.id);
+        await releaseStripeWebhookEvent(event.id, attempt.attemptId, event.type);
       } catch (releaseErr) {
         console.error(`[Stripe Webhook][BILLING-ALERT] Failed to release idempotency claim for ${event.id}; event remains claimable for retry:`, releaseErr);
       }
     } else {
       console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} failed after an entitlement write. Claim retained so the grant is not replayed.`);
-      await retainClaim(event.id, event.type);
+      await retainClaim();
     }
     return res.status(500).json({ error: 'Webhook processing failed' });
   }
 
-  if (!(await retainClaim(event.id, event.type))) {
+  if (!(await retainClaim())) {
     return res.status(500).json({ error: 'Webhook processing failed' });
   }
   return res.json(ignored ? { received: true, ignored } : { received: true });

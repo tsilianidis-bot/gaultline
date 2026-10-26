@@ -4,6 +4,8 @@ import { permittedStripeSecretKey, resolveStripeRuntimeMode } from './mode';
 
 /** Below the 90s webhook reclaim window so a hung Stripe call cannot outlive the claim. */
 export const STRIPE_CLIENT_TIMEOUT_MS = 15_000;
+/** Webhook reads must not multiply the timeout. Checkout uses this client too. */
+export const STRIPE_CLIENT_MAX_NETWORK_RETRIES = 0;
 
 const configuredStripeSecretKey = ENV.stripeSecretKey?.trim() ?? '';
 export const stripeRuntimeMode = resolveStripeRuntimeMode(configuredStripeSecretKey);
@@ -22,6 +24,7 @@ export const stripe: Stripe | null = stripeSecretKey
       // Stay under the webhook reclaim window (90s) so a hung Stripe call cannot
       // still be writing an entitlement when a second delivery reclaims the claim.
       timeout: STRIPE_CLIENT_TIMEOUT_MS,
+      maxNetworkRetries: STRIPE_CLIENT_MAX_NETWORK_RETRIES,
     })
   : null;
 

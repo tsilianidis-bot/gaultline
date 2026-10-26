@@ -223,12 +223,25 @@ export async function getUserByEmail(email: string) {
 
 // ── Access Tier helpers ─────────────────────────────────────────────
 
+/**
+ * Lifetime buyers stay entitled even if a subscription webhook wrote accessTier
+ * to free. Founding is the paid tier those gates already accept.
+ */
+export function tierForEntitlement(
+  accessTier: string | null | undefined,
+  lifetimeAccess: boolean | null | undefined,
+): 'free' | 'core' | 'premium' | 'founding' {
+  if (lifetimeAccess) return 'founding';
+  if (accessTier === 'core' || accessTier === 'premium' || accessTier === 'founding') return accessTier;
+  return 'free';
+}
+
 export async function getUserTier(userId: number): Promise<'free' | 'core' | 'premium' | 'founding'> {
   const db = await getDb();
   if (!db) return 'free';
-  const result = await db.select({ accessTier: users.accessTier })
+  const result = await db.select({ accessTier: users.accessTier, lifetimeAccess: users.lifetimeAccess })
     .from(users).where(eq(users.id, userId)).limit(1);
-  return result[0]?.accessTier ?? 'free';
+  return tierForEntitlement(result[0]?.accessTier, result[0]?.lifetimeAccess);
 }
 
 export async function setUserTier(
@@ -1536,6 +1549,7 @@ export async function getUsersPendingDripStep(step: number, minAgeMs: number): P
 }
 
 // ── Stripe webhook idempotency ────────────────────────────────────────────────
+import { randomBytes } from "node:crypto";
 import { stripeWebhookEvents, entitlementAuditLog } from '../drizzle/schema';
 
 /** True only for a MySQL unique-constraint violation, including a Drizzle-wrapped cause. */
@@ -1568,17 +1582,31 @@ function isDuplicateKeyError(error: unknown): boolean {
 export const STRIPE_WEBHOOK_CLAIM_PREFIX = 'pending:';
 export const STRIPE_WEBHOOK_PROCESSING_PREFIX = 'processing:';
 /**
- * A second delivery may reclaim only after this age. It stays above the Stripe
- * client's 15s timeout and a webhook's sequence of 8s reads, so the attempt
- * that already owns the claim has returned before another one can process it.
+ * A second delivery may reclaim only after this age. Webhook reads are capped
+ * at 8 calls of 8s with maxNetworkRetries 0 (64s), under this window.
  */
 export const STRIPE_WEBHOOK_UNFINISHED_CLAIM_MS = 90_000;
+const STRIPE_ATTEMPT_ID_RE = /^[0-9a-f]{16}$/;
 
 export class UnfinishedStripeWebhookClaimError extends Error {
   constructor(eventId: string) {
     super(`Stripe webhook claim ${eventId} is unfinished; retry shortly`);
     this.name = 'UnfinishedStripeWebhookClaimError';
   }
+}
+
+/** The attempt no longer owns the claim row. It must not write, seal, or release. */
+export class StaleStripeWebhookClaimError extends Error {
+  constructor(eventId: string) {
+    super(`Stripe webhook claim ${eventId} is owned by a newer attempt`);
+    this.name = 'StaleStripeWebhookClaimError';
+  }
+}
+
+export type StripeWebhookAttempt = { attemptId: string };
+
+export function newStripeAttemptId(): string {
+  return randomBytes(8).toString('hex');
 }
 
 function unfinishedClaim(eventType: string | null | undefined): boolean {
@@ -1588,7 +1616,38 @@ function unfinishedClaim(eventType: string | null | undefined): boolean {
   );
 }
 
+export function storedClaimType(phase: 'pending' | 'processing', attemptId: string, eventType: string): string {
+  const stored = `${phase}:${attemptId}:${eventType}`;
+  if (stored.length > 128) throw new Error('Stripe webhook claim type exceeds 128 characters');
+  return stored;
+}
+
+/** Split a claim row. Legacy rows are `pending:<eventType>` with no attempt id. */
+export function parseStoredClaim(stored: string | null | undefined): {
+  phase: 'pending' | 'processing' | 'done';
+  attemptId: string | null;
+  eventType: string;
+} {
+  if (!stored) return { phase: 'done', attemptId: null, eventType: '' };
+  for (const phase of ['pending', 'processing'] as const) {
+    const prefix = `${phase}:`;
+    if (!stored.startsWith(prefix)) continue;
+    const rest = stored.slice(prefix.length);
+    const colon = rest.indexOf(':');
+    const attemptId = colon === 16 ? rest.slice(0, colon) : '';
+    if (STRIPE_ATTEMPT_ID_RE.test(attemptId)) {
+      return { phase, attemptId, eventType: rest.slice(colon + 1) };
+    }
+    return { phase, attemptId: null, eventType: rest };
+  }
+  return { phase: 'done', attemptId: null, eventType: stored };
+}
+
 export function processingClaimType(eventType: string): string {
+  const parsed = parseStoredClaim(eventType);
+  if (parsed.attemptId && (parsed.phase === 'pending' || parsed.phase === 'processing')) {
+    return storedClaimType('processing', parsed.attemptId, parsed.eventType);
+  }
   if (eventType.startsWith(STRIPE_WEBHOOK_CLAIM_PREFIX)) {
     return `${STRIPE_WEBHOOK_PROCESSING_PREFIX}${eventType.slice(STRIPE_WEBHOOK_CLAIM_PREFIX.length)}`;
   }
@@ -1631,15 +1690,16 @@ function affectedRows(result: unknown): number {
  * Returns false only for a finished duplicate. An unfinished pending claim is
  * reclaimed (true) or rejected so the webhook returns 5xx and Stripe retries.
  */
-export async function recordStripeWebhookEvent(eventId: string, eventType: string): Promise<boolean> {
+export async function recordStripeWebhookEvent(eventId: string, eventType: string): Promise<StripeWebhookAttempt | null> {
   const db = await getDb();
   if (!db) throw new Error('Database unavailable: cannot claim Stripe webhook event');
+  const attemptId = newStripeAttemptId();
   try {
     await db.insert(stripeWebhookEvents).values({
       eventId,
-      eventType: `${STRIPE_WEBHOOK_CLAIM_PREFIX}${eventType}`,
+      eventType: storedClaimType('pending', attemptId, eventType),
     });
-    return true;
+    return { attemptId };
   } catch (err) {
     if (!isDuplicateKeyError(err)) throw err;
   }
@@ -1654,12 +1714,15 @@ export async function recordStripeWebhookEvent(eventId: string, eventType: strin
       .limit(1)
       .for('update');
     const decision = decideDuplicateStripeClaim(existing, Date.now());
-    if (decision === 'duplicate') return false;
+    if (decision === 'duplicate') return null;
     if (decision !== 'reclaim' || !existing?.eventType || !existing.processedAt) {
       throw new UnfinishedStripeWebhookClaimError(eventId);
     }
+    const parsed = parseStoredClaim(existing.eventType);
+    const bareType = parsed.eventType || eventType;
+    const nextType = storedClaimType('processing', attemptId, bareType);
     const updated = await tx.update(stripeWebhookEvents)
-      .set({ processedAt: new Date(), eventType: processingClaimType(existing.eventType) })
+      .set({ processedAt: new Date(), eventType: nextType })
       .where(and(
         eq(stripeWebhookEvents.eventId, eventId),
         eq(stripeWebhookEvents.eventType, existing.eventType),
@@ -1667,7 +1730,7 @@ export async function recordStripeWebhookEvent(eventId: string, eventType: strin
       ));
     if (affectedRows(updated) !== 1) throw new UnfinishedStripeWebhookClaimError(eventId);
     console.error(`[Stripe Webhook][BILLING-ALERT] Reclaiming unfinished claim ${eventId} after a failed release`);
-    return true;
+    return { attemptId };
   });
 }
 
@@ -1676,7 +1739,14 @@ export async function recordStripeWebhookEvent(eventId: string, eventType: strin
  * Throws when the database is unavailable — a 2xx must not be sent until the
  * claim can no longer be mistaken for an unfinished release.
  */
-export async function completeStripeWebhookEvent(eventId: string, eventType: string): Promise<void> {
+function attemptOwnsClaim(stored: string | null | undefined, attemptId: string, eventType: string): boolean {
+  const parsed = parseStoredClaim(stored);
+  return parsed.attemptId === attemptId
+    && parsed.eventType === eventType
+    && (parsed.phase === 'pending' || parsed.phase === 'processing');
+}
+
+export async function completeStripeWebhookEvent(eventId: string, eventType: string, attemptId: string): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error('Database unavailable: cannot complete Stripe webhook event');
   const updated = await db.update(stripeWebhookEvents)
@@ -1684,8 +1754,8 @@ export async function completeStripeWebhookEvent(eventId: string, eventType: str
     .where(and(
       eq(stripeWebhookEvents.eventId, eventId),
       or(
-        eq(stripeWebhookEvents.eventType, `${STRIPE_WEBHOOK_CLAIM_PREFIX}${eventType}`),
-        eq(stripeWebhookEvents.eventType, `${STRIPE_WEBHOOK_PROCESSING_PREFIX}${eventType}`),
+        eq(stripeWebhookEvents.eventType, storedClaimType('pending', attemptId, eventType)),
+        eq(stripeWebhookEvents.eventType, storedClaimType('processing', attemptId, eventType)),
       ),
     ));
   if (affectedRows(updated) === 1) return;
@@ -1694,20 +1764,34 @@ export async function completeStripeWebhookEvent(eventId: string, eventType: str
     .where(eq(stripeWebhookEvents.eventId, eventId))
     .limit(1);
   if (row?.eventType === eventType) return;
+  if (row && !attemptOwnsClaim(row.eventType, attemptId, eventType)) {
+    throw new StaleStripeWebhookClaimError(eventId);
+  }
   throw new Error(`Stripe webhook claim ${eventId} was not retained`);
 }
 
-/** Release a failed processing claim so the next Stripe delivery can be processed. */
-export async function releaseStripeWebhookEvent(eventId: string): Promise<void> {
+/**
+ * Release only the row this attempt still owns. A newer attempt's claim is left
+ * in place. Throws when this attempt no longer owns an unfinished row.
+ */
+export async function releaseStripeWebhookEvent(eventId: string, attemptId: string, eventType: string): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error('Database unavailable: cannot release Stripe webhook event');
-  await db.delete(stripeWebhookEvents).where(and(
+  const deleted = await db.delete(stripeWebhookEvents).where(and(
     eq(stripeWebhookEvents.eventId, eventId),
     or(
-      like(stripeWebhookEvents.eventType, `${STRIPE_WEBHOOK_CLAIM_PREFIX}%`),
-      like(stripeWebhookEvents.eventType, `${STRIPE_WEBHOOK_PROCESSING_PREFIX}%`),
+      eq(stripeWebhookEvents.eventType, storedClaimType('pending', attemptId, eventType)),
+      eq(stripeWebhookEvents.eventType, storedClaimType('processing', attemptId, eventType)),
     ),
   ));
+  if (affectedRows(deleted) === 1) return;
+  const [row] = await db.select({ eventType: stripeWebhookEvents.eventType })
+    .from(stripeWebhookEvents)
+    .where(eq(stripeWebhookEvents.eventId, eventId))
+    .limit(1);
+  if (!row) return;
+  if (row.eventType === eventType) return;
+  throw new StaleStripeWebhookClaimError(eventId);
 }
 
 // ── Entitlement audit log ─────────────────────────────────────────────────────
@@ -1751,6 +1835,102 @@ export async function entitlementAuditExists(stripeEventId: string): Promise<boo
     .where(eq(entitlementAuditLog.stripeEventId, stripeEventId))
     .limit(1);
   return Boolean(row);
+}
+
+export type StripeEntitlementCommit = {
+  eventId: string;
+  eventType: string;
+  attemptId: string;
+  userId: number;
+  /** Omitted on a revoke. A revoke uses revokeSubscriptionId instead of this patch. */
+  patch?: {
+    stripeCustomerId?: string | null;
+    stripeSubscriptionId?: string | null;
+    accessTier?: 'free' | 'core' | 'premium' | 'founding';
+    lifetimeAccess?: boolean;
+    lifetimePurchasedAt?: Date | null;
+  };
+  /**
+   * Conditional downgrade. The row changes only when lifetimeAccess is still
+   * false and stripeSubscriptionId is still this subscription.
+   */
+  revokeSubscriptionId?: string;
+  audit: {
+    fromTier: string | null | undefined;
+    toTier: string;
+    reason: string;
+    stripeCustomerId?: string;
+    stripeSubscriptionId?: string;
+  };
+};
+
+/**
+ * User update, entitlement audit, and claim completion in one transaction.
+ * The claim row is locked and the attempt id must still own it. A crash rolls
+ * all three back. No new migration: the attempt id lives in eventType.
+ */
+export async function commitStripeEntitlement(
+  params: StripeEntitlementCommit,
+): Promise<'applied' | 'claim_lost' | 'revoke_skipped'> {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable: cannot commit Stripe entitlement');
+  return db.transaction(async (tx) => {
+    const [claim] = await tx.select({ eventType: stripeWebhookEvents.eventType })
+      .from(stripeWebhookEvents)
+      .where(eq(stripeWebhookEvents.eventId, params.eventId))
+      .limit(1)
+      .for('update');
+    if (!attemptOwnsClaim(claim?.eventType, params.attemptId, params.eventType)) {
+      return 'claim_lost';
+    }
+    if (params.revokeSubscriptionId) {
+      const revoked = await tx.update(users)
+        .set({ accessTier: 'free', stripeSubscriptionId: null, updatedAt: new Date() })
+        .where(and(
+          eq(users.id, params.userId),
+          eq(users.lifetimeAccess, false),
+          eq(users.stripeSubscriptionId, params.revokeSubscriptionId),
+        ));
+      if (affectedRows(revoked) !== 1) {
+        await sealStripeClaim(tx, params.eventId, params.eventType, params.attemptId);
+        return 'revoke_skipped';
+      }
+    } else {
+      if (!params.patch) throw new Error('Stripe entitlement commit is missing a user patch');
+      await tx.update(users)
+        .set({ ...params.patch, updatedAt: new Date() })
+        .where(eq(users.id, params.userId));
+    }
+    await tx.insert(entitlementAuditLog).values({
+      userId: params.userId,
+      fromTier: params.audit.fromTier ?? null,
+      toTier: params.audit.toTier,
+      reason: params.audit.reason,
+      stripeEventId: params.eventId,
+      stripeCustomerId: params.audit.stripeCustomerId ?? null,
+      stripeSubscriptionId: params.audit.stripeSubscriptionId ?? null,
+    });
+    await sealStripeClaim(tx, params.eventId, params.eventType, params.attemptId);
+    return 'applied';
+  });
+}
+
+async function sealStripeClaim(
+  tx: { update: (...args: any[]) => any },
+  eventId: string,
+  eventType: string,
+  attemptId: string,
+): Promise<void> {
+  const updated = await tx.update(stripeWebhookEvents)
+    .set({ eventType })
+    .where(and(
+      eq(stripeWebhookEvents.eventId, eventId),
+      or(
+        eq(stripeWebhookEvents.eventType, storedClaimType('pending', attemptId, eventType)),
+        eq(stripeWebhookEvents.eventType, storedClaimType('processing', attemptId, eventType)),
+      ),
+    ));
+  if (affectedRows(updated) !== 1) throw new StaleStripeWebhookClaimError(eventId);
 }
 
 export async function getEntitlementAuditHistory(userId: number, limit = 50) {
