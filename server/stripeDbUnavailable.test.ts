@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { STRIPE_CLIENT_TIMEOUT_MS } from "./stripe/client";
 import {
   closeDbForTests,
   completeStripeWebhookEvent,
@@ -28,14 +29,17 @@ describe("Stripe webhook idempotency without a database", () => {
 describe("decideDuplicateStripeClaim", () => {
   const now = 1_700_000_000_000;
 
-  it("reclaims a pending claim old enough that the failed release would otherwise drop it", () => {
+  it("reclaims a pending or processing claim old enough that the failed release would otherwise drop it", () => {
     const processedAt = new Date(now - STRIPE_WEBHOOK_UNFINISHED_CLAIM_MS);
     expect(decideDuplicateStripeClaim({ eventType: "pending:invoice.paid", processedAt }, now)).toBe("reclaim");
+    expect(decideDuplicateStripeClaim({ eventType: "processing:invoice.paid", processedAt }, now)).toBe("reclaim");
   });
 
-  it("does not treat a fresh pending claim as a finished duplicate", () => {
+  it("does not treat a fresh pending or processing claim as a finished duplicate", () => {
     const processedAt = new Date(now - (STRIPE_WEBHOOK_UNFINISHED_CLAIM_MS - 1));
     expect(decideDuplicateStripeClaim({ eventType: "pending:checkout.session.completed", processedAt }, now)).toBe("retry");
+    expect(decideDuplicateStripeClaim({ eventType: "processing:checkout.session.completed", processedAt }, now)).toBe("retry");
+    expect(STRIPE_WEBHOOK_UNFINISHED_CLAIM_MS).toBeGreaterThan(STRIPE_CLIENT_TIMEOUT_MS);
   });
 
   it("keeps a completed claim as a duplicate and retries when the row cannot be read", () => {

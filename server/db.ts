@@ -1561,12 +1561,18 @@ function isDuplicateKeyError(error: unknown): boolean {
  * place. A later delivery must reclaim that row instead of acknowledging it as
  * a finished duplicate, which would drop the event.
  *
- * Stripe's webhook timeout is about 20s. The unfinished window stays above that
- * so a still-running attempt is not processed twice, while a release that failed
- * after the handler returned is retried rather than acknowledged.
+ * The unfinished window stays above the Stripe client timeout so a delivery
+ * that still owns the claim is not processed a second time. A failed release
+ * leaves the pending row, and a later delivery reclaims it with a compare-and-swap.
  */
 export const STRIPE_WEBHOOK_CLAIM_PREFIX = 'pending:';
-export const STRIPE_WEBHOOK_UNFINISHED_CLAIM_MS = 30_000;
+export const STRIPE_WEBHOOK_PROCESSING_PREFIX = 'processing:';
+/**
+ * A second delivery may reclaim only after this age. It stays above the Stripe
+ * client's 15s timeout and a webhook's sequence of 8s reads, so the attempt
+ * that already owns the claim has returned before another one can process it.
+ */
+export const STRIPE_WEBHOOK_UNFINISHED_CLAIM_MS = 90_000;
 
 export class UnfinishedStripeWebhookClaimError extends Error {
   constructor(eventId: string) {
@@ -1575,22 +1581,49 @@ export class UnfinishedStripeWebhookClaimError extends Error {
   }
 }
 
+function unfinishedClaim(eventType: string | null | undefined): boolean {
+  return Boolean(
+    eventType?.startsWith(STRIPE_WEBHOOK_CLAIM_PREFIX) ||
+    eventType?.startsWith(STRIPE_WEBHOOK_PROCESSING_PREFIX),
+  );
+}
+
+export function processingClaimType(eventType: string): string {
+  if (eventType.startsWith(STRIPE_WEBHOOK_CLAIM_PREFIX)) {
+    return `${STRIPE_WEBHOOK_PROCESSING_PREFIX}${eventType.slice(STRIPE_WEBHOOK_CLAIM_PREFIX.length)}`;
+  }
+  if (eventType.startsWith(STRIPE_WEBHOOK_PROCESSING_PREFIX)) return eventType;
+  return `${STRIPE_WEBHOOK_PROCESSING_PREFIX}${eventType}`;
+}
+
 export function decideDuplicateStripeClaim(
   claim: { eventType?: string | null; processedAt?: Date | string | null } | null | undefined,
   nowMs: number,
 ): 'duplicate' | 'reclaim' | 'retry' {
-  if (!claim?.eventType?.startsWith(STRIPE_WEBHOOK_CLAIM_PREFIX)) {
+  if (!unfinishedClaim(claim?.eventType)) {
     // Missing row or a claim already marked complete. A missing row is not a
     // finished event: the caller must retry rather than acknowledge it.
     return claim?.eventType ? 'duplicate' : 'retry';
   }
-  const processedAtMs = claim.processedAt instanceof Date
+  const processedAtMs = claim?.processedAt instanceof Date
     ? claim.processedAt.getTime()
-    : new Date(claim.processedAt ?? '').getTime();
+    : new Date(claim?.processedAt ?? '').getTime();
   if (!Number.isFinite(processedAtMs) || nowMs - processedAtMs < STRIPE_WEBHOOK_UNFINISHED_CLAIM_MS) {
     return 'retry';
   }
   return 'reclaim';
+}
+
+function affectedRows(result: unknown): number {
+  if (Array.isArray(result)) {
+    const header = result[0] as { affectedRows?: number } | undefined;
+    if (typeof header?.affectedRows === 'number') return header.affectedRows;
+  }
+  if (result && typeof result === 'object' && 'affectedRows' in result) {
+    const rows = (result as { affectedRows?: unknown }).affectedRows;
+    if (typeof rows === 'number') return rows;
+  }
+  return 0;
 }
 
 /**
@@ -1609,23 +1642,33 @@ export async function recordStripeWebhookEvent(eventId: string, eventType: strin
     return true;
   } catch (err) {
     if (!isDuplicateKeyError(err)) throw err;
-    const [existing] = await db
+  }
+  return db.transaction(async (tx) => {
+    const [existing] = await tx
       .select({
         eventType: stripeWebhookEvents.eventType,
         processedAt: stripeWebhookEvents.processedAt,
       })
       .from(stripeWebhookEvents)
       .where(eq(stripeWebhookEvents.eventId, eventId))
-      .limit(1);
+      .limit(1)
+      .for('update');
     const decision = decideDuplicateStripeClaim(existing, Date.now());
     if (decision === 'duplicate') return false;
-    if (decision === 'retry') throw new UnfinishedStripeWebhookClaimError(eventId);
+    if (decision !== 'reclaim' || !existing?.eventType || !existing.processedAt) {
+      throw new UnfinishedStripeWebhookClaimError(eventId);
+    }
+    const updated = await tx.update(stripeWebhookEvents)
+      .set({ processedAt: new Date(), eventType: processingClaimType(existing.eventType) })
+      .where(and(
+        eq(stripeWebhookEvents.eventId, eventId),
+        eq(stripeWebhookEvents.eventType, existing.eventType),
+        eq(stripeWebhookEvents.processedAt, existing.processedAt),
+      ));
+    if (affectedRows(updated) !== 1) throw new UnfinishedStripeWebhookClaimError(eventId);
     console.error(`[Stripe Webhook][BILLING-ALERT] Reclaiming unfinished claim ${eventId} after a failed release`);
-    await db.update(stripeWebhookEvents)
-      .set({ processedAt: new Date() })
-      .where(eq(stripeWebhookEvents.eventId, eventId));
     return true;
-  }
+  });
 }
 
 /**
@@ -1636,16 +1679,35 @@ export async function recordStripeWebhookEvent(eventId: string, eventType: strin
 export async function completeStripeWebhookEvent(eventId: string, eventType: string): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error('Database unavailable: cannot complete Stripe webhook event');
-  await db.update(stripeWebhookEvents)
+  const updated = await db.update(stripeWebhookEvents)
     .set({ eventType })
-    .where(eq(stripeWebhookEvents.eventId, eventId));
+    .where(and(
+      eq(stripeWebhookEvents.eventId, eventId),
+      or(
+        eq(stripeWebhookEvents.eventType, `${STRIPE_WEBHOOK_CLAIM_PREFIX}${eventType}`),
+        eq(stripeWebhookEvents.eventType, `${STRIPE_WEBHOOK_PROCESSING_PREFIX}${eventType}`),
+      ),
+    ));
+  if (affectedRows(updated) === 1) return;
+  const [row] = await db.select({ eventType: stripeWebhookEvents.eventType })
+    .from(stripeWebhookEvents)
+    .where(eq(stripeWebhookEvents.eventId, eventId))
+    .limit(1);
+  if (row?.eventType === eventType) return;
+  throw new Error(`Stripe webhook claim ${eventId} was not retained`);
 }
 
 /** Release a failed processing claim so the next Stripe delivery can be processed. */
 export async function releaseStripeWebhookEvent(eventId: string): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error('Database unavailable: cannot release Stripe webhook event');
-  await db.delete(stripeWebhookEvents).where(eq(stripeWebhookEvents.eventId, eventId));
+  await db.delete(stripeWebhookEvents).where(and(
+    eq(stripeWebhookEvents.eventId, eventId),
+    or(
+      like(stripeWebhookEvents.eventType, `${STRIPE_WEBHOOK_CLAIM_PREFIX}%`),
+      like(stripeWebhookEvents.eventType, `${STRIPE_WEBHOOK_PROCESSING_PREFIX}%`),
+    ),
+  ));
 }
 
 // ── Entitlement audit log ─────────────────────────────────────────────────────
@@ -1657,9 +1719,14 @@ export async function writeEntitlementAudit(params: {
   stripeEventId?: string;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
+  /** Webhook grants throw so a missing audit cannot be mistaken for "never applied". */
+  strict?: boolean;
 }): Promise<void> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) {
+    if (params.strict) throw new Error('Database unavailable: cannot write entitlement audit');
+    return;
+  }
   try {
     await db.insert(entitlementAuditLog).values({
       userId: params.userId,
@@ -1671,8 +1738,19 @@ export async function writeEntitlementAudit(params: {
       stripeSubscriptionId: params.stripeSubscriptionId ?? null,
     });
   } catch (err) {
+    if (params.strict) throw err;
     console.warn('[EntitlementAudit] Failed to write audit entry:', err);
   }
+}
+
+export async function entitlementAuditExists(stripeEventId: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable: cannot read entitlement audit');
+  const [row] = await db.select({ id: entitlementAuditLog.id })
+    .from(entitlementAuditLog)
+    .where(eq(entitlementAuditLog.stripeEventId, stripeEventId))
+    .limit(1);
+  return Boolean(row);
 }
 
 export async function getEntitlementAuditHistory(userId: number, limit = 50) {

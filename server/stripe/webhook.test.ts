@@ -17,7 +17,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Request, Response } from 'express';
-import { handleStripeWebhook, subscriptionGrantDecision } from './webhook';
+import { checkoutPaymentDecision, handleStripeWebhook, subscriptionGrantDecision, subscriptionIdFromInvoice } from './webhook';
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -30,10 +30,15 @@ vi.mock('./client', () => {
     checkout: {
       sessions: {
         listLineItems: vi.fn(),
+        retrieve: vi.fn(),
       },
+    },
+    paymentIntents: {
+      retrieve: vi.fn(),
     },
     subscriptions: {
       retrieve: vi.fn(),
+      list: vi.fn(),
     },
   };
   return {
@@ -51,6 +56,7 @@ vi.mock('../db', () => ({
   releaseStripeWebhookEvent: vi.fn().mockResolvedValue(undefined),
   completeStripeWebhookEvent: vi.fn().mockResolvedValue(undefined),
   writeEntitlementAudit: vi.fn().mockResolvedValue(undefined),
+  entitlementAuditExists: vi.fn().mockResolvedValue(false),
 }));
 
 // Mock ENV
@@ -66,7 +72,7 @@ vi.mock('./products', () => ({
 }));
 
 import { stripe } from './client';
-import { updateUserStripe, getUserByStripeCustomerId, recordStripeWebhookEvent, releaseStripeWebhookEvent, completeStripeWebhookEvent, writeEntitlementAudit, getUserTier } from '../db';
+import { updateUserStripe, getUserByStripeCustomerId, recordStripeWebhookEvent, releaseStripeWebhookEvent, completeStripeWebhookEvent, writeEntitlementAudit, entitlementAuditExists, getUserTier } from '../db';
 import { getPlanByPriceId } from './products';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -100,6 +106,51 @@ function makeEvent(type: string, data: object, id = 'evt_live_123') {
   return { id, type, data: { object: data } };
 }
 
+const premiumPlan = {
+  id: 'premium', tier: 'premium' as const, name: 'Pro', amount: 5900,
+  interval: 'month' as const, description: '', priceId: 'price_premium_monthly',
+};
+
+const activeSubscription = {
+  status: 'active',
+  ended_at: null,
+  items: { data: [{ price: { id: 'price_premium_monthly' } }] },
+};
+
+function useRetrievedSession(session: object) {
+  vi.mocked(stripe.checkout.sessions.retrieve).mockResolvedValue({
+    payment_status: 'paid',
+    payment_intent: null,
+    ...session,
+  } as any);
+}
+
+function useLiveSubscription(status: string, endedAt: number | null = null) {
+  vi.mocked(stripe.subscriptions.retrieve).mockResolvedValue({
+    status,
+    ended_at: endedAt,
+    items: { data: [{ price: { id: 'price_premium_monthly' } }] },
+  } as any);
+}
+
+/** Dahlia invoice: subscription id lives on parent.subscription_details, not invoice.subscription. */
+function dahliaInvoice(subscriptionId: string, customer = 'cus_renew', id = 'in_dahlia') {
+  return {
+    id,
+    customer,
+    parent: {
+      subscription_details: { subscription: subscriptionId },
+    },
+    lines: {
+      data: [{
+        parent: {
+          subscription_item_details: { subscription: subscriptionId },
+        },
+      }],
+    },
+  };
+}
+
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('subscriptionGrantDecision', () => {
@@ -125,10 +176,15 @@ describe('handleStripeWebhook', () => {
     vi.mocked(releaseStripeWebhookEvent).mockResolvedValue(undefined);
     vi.mocked(completeStripeWebhookEvent).mockResolvedValue(undefined);
     vi.mocked(getUserTier).mockResolvedValue('free');
-    vi.mocked(stripe.subscriptions.retrieve).mockResolvedValue({
-      status: 'active',
-      ended_at: null,
-      items: { data: [{ price: { id: 'price_premium_monthly' } }] },
+    vi.mocked(entitlementAuditExists).mockResolvedValue(false);
+    vi.mocked(stripe.subscriptions.retrieve).mockResolvedValue(activeSubscription as any);
+    vi.mocked(stripe.subscriptions.list).mockResolvedValue({ data: [] } as any);
+    vi.mocked(stripe.paymentIntents.retrieve).mockResolvedValue({ id: 'pi_default', status: 'succeeded' } as any);
+    vi.mocked(stripe.checkout.sessions.retrieve).mockResolvedValue({
+      id: 'cs_default',
+      payment_status: 'unpaid',
+      payment_intent: null,
+      metadata: {},
     } as any);
   });
 
@@ -181,6 +237,7 @@ describe('handleStripeWebhook', () => {
         customer: 'cus_abc',
         subscription: 'sub_xyz',
       };
+      useRetrievedSession(session);
 
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('checkout.session.completed', session) as any
@@ -204,6 +261,18 @@ describe('handleStripeWebhook', () => {
         stripeCustomerId: 'cus_abc',
         stripeSubscriptionId: 'sub_xyz',
       });
+      expect(writeEntitlementAudit).toHaveBeenCalledWith(expect.objectContaining({
+        userId: 42,
+        toTier: 'core',
+        stripeEventId: 'evt_live_123',
+        strict: true,
+      }));
+      expect(stripe.checkout.sessions.retrieve).toHaveBeenCalledWith(
+        'cs_test_123',
+        { expand: ['payment_intent'] },
+        { timeout: 8000 },
+      );
+      expect(stripe.subscriptions.retrieve).toHaveBeenCalledWith('sub_xyz', {}, { timeout: 8000 });
       expect(res.json).toHaveBeenCalledWith({ received: true });
     });
 
@@ -214,6 +283,7 @@ describe('handleStripeWebhook', () => {
         customer: 'cus_def',
         subscription: 'sub_prem',
       };
+      useRetrievedSession(session);
 
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('checkout.session.completed', session) as any
@@ -244,6 +314,7 @@ describe('handleStripeWebhook', () => {
         customer: 'cus_ghi',
         subscription: 'sub_found',
       };
+      useRetrievedSession(session);
 
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('checkout.session.completed', session) as any
@@ -274,6 +345,7 @@ describe('handleStripeWebhook', () => {
         customer: 'cus_fallback',
         subscription: null,
       };
+      useRetrievedSession(session);
 
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('checkout.session.completed', session) as any
@@ -295,6 +367,7 @@ describe('handleStripeWebhook', () => {
 
     it('fails closed without retrying when the line item has no readable price', async () => {
       const session = { id: 'cs_test_no_price', metadata: { user_id: '5' }, customer: 'cus_no_price', subscription: null };
+      useRetrievedSession(session);
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('checkout.session.completed', session, 'evt_no_price') as any
       );
@@ -316,6 +389,7 @@ describe('handleStripeWebhook', () => {
 
     it('fails closed without retrying for an unknown configured-price mapping', async () => {
       const session = { id: 'cs_test_unknown_price', metadata: { user_id: '5' }, customer: 'cus_unknown', subscription: null };
+      useRetrievedSession(session);
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('checkout.session.completed', session, 'evt_unknown_price') as any
       );
@@ -345,6 +419,7 @@ describe('handleStripeWebhook', () => {
         customer: 'cus_noid',
         subscription: null,
       };
+      useRetrievedSession(session);
 
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('checkout.session.completed', session) as any
@@ -363,11 +438,7 @@ describe('handleStripeWebhook', () => {
   // ── invoice.paid ───────────────────────────────────────────────────────────
   describe('invoice.paid', () => {
     it('re-activates user tier on subscription renewal', async () => {
-      const invoice = {
-        id: 'in_renewal_123',
-        customer: 'cus_renew',
-        subscription: 'sub_renew',
-      };
+      const invoice = dahliaInvoice('sub_renew', 'cus_renew', 'in_renewal_123');
 
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('invoice.paid', invoice) as any
@@ -397,31 +468,32 @@ describe('handleStripeWebhook', () => {
       });
     });
 
-    it('skips processing when invoice has no subscription (one-time charge)', async () => {
+    it('alerts and does not grant when invoice.paid has no subscription id', async () => {
       const invoice = {
         id: 'in_onetime_123',
         customer: 'cus_onetime',
-        subscription: null,
+        lines: { data: [{ parent: { invoice_item_details: { subscription: null } } }] },
       };
-
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
-        makeEvent('invoice.paid', invoice) as any
+        makeEvent('invoice.paid', invoice, 'evt_onetime') as any
       );
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      const req = makeReq(invoice);
       const res = makeRes();
-
-      await handleStripeWebhook(req, res);
+      await handleStripeWebhook(makeReq(invoice), res);
 
       expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(writeEntitlementAudit).not.toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ received: true, ignored: 'missing_subscription' });
+      expect(releaseStripeWebhookEvent).not.toHaveBeenCalled();
+      expect(completeStripeWebhookEvent).toHaveBeenCalledWith('evt_onetime', 'invoice.paid');
+      expect(errorSpy.mock.calls.flat().join(' ')).toContain('[Stripe Webhook][BILLING-ALERT]');
+      errorSpy.mockRestore();
     });
 
     it('skips processing when no user found for customer ID', async () => {
-      const invoice = {
-        id: 'in_unknown_123',
-        customer: 'cus_unknown',
-        subscription: 'sub_unknown',
-      };
+      const invoice = dahliaInvoice('sub_unknown', 'cus_unknown', 'in_unknown_123');
 
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('invoice.paid', invoice) as any
@@ -451,6 +523,7 @@ describe('handleStripeWebhook', () => {
       vi.mocked(getUserByStripeCustomerId).mockResolvedValue({
         id: 22, accessTier: 'premium',
       } as any);
+      useLiveSubscription('canceled', 1_700_000_000);
       vi.mocked(updateUserStripe).mockResolvedValue(undefined as any);
 
       const req = makeReq(subscription);
@@ -517,6 +590,7 @@ describe('handleStripeWebhook', () => {
         customer: 'cus_flow',
         subscription: 'sub_flow',
       };
+      useRetrievedSession(session);
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('checkout.session.completed', session) as any
       );
@@ -536,9 +610,13 @@ describe('handleStripeWebhook', () => {
       }));
 
       vi.clearAllMocks();
+      vi.mocked(recordStripeWebhookEvent).mockResolvedValue(true);
+      vi.mocked(entitlementAuditExists).mockResolvedValue(false);
+      vi.mocked(stripe.subscriptions.list).mockResolvedValue({ data: [] } as any);
 
       // Step 2: Subscription cancelled → user downgraded to free
       const cancellation = { id: 'sub_flow', customer: 'cus_flow' };
+      useLiveSubscription('canceled', 1_700_000_000);
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('customer.subscription.deleted', cancellation) as any
       );
@@ -565,6 +643,7 @@ describe('handleStripeWebhook', () => {
     };
 
     function arrangeSuccessfulCheckout() {
+      useRetrievedSession(session);
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('checkout.session.completed', session, 'evt_idempotency') as any
       );
@@ -711,6 +790,7 @@ describe('handleStripeWebhook', () => {
         customer: 'cus_release_cancel',
         subscription: 'sub_release_cancel',
       };
+      useRetrievedSession(session);
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('checkout.session.completed', session, 'evt_release_cancel') as any
       );
@@ -728,6 +808,7 @@ describe('handleStripeWebhook', () => {
       vi.mocked(updateUserStripe).mockReset();
       vi.mocked(updateUserStripe).mockResolvedValue(undefined as any);
       vi.mocked(releaseStripeWebhookEvent).mockClear();
+      useLiveSubscription('canceled', 1_700_000_000);
       const cancellation = { id: 'sub_release_cancel', customer: 'cus_release_cancel' };
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('customer.subscription.deleted', cancellation, 'evt_cancel_after_release') as any
@@ -763,7 +844,7 @@ describe('handleStripeWebhook', () => {
     });
 
     it('does not re-grant a renewal after release, cancellation, and retry', async () => {
-      const invoice = { id: 'in_release_cancel', customer: 'cus_release_cancel', subscription: 'sub_release_cancel' };
+      const invoice = dahliaInvoice('sub_release_cancel', 'cus_release_cancel', 'in_release_cancel');
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('invoice.paid', invoice, 'evt_invoice_release_cancel') as any
       );
@@ -780,6 +861,7 @@ describe('handleStripeWebhook', () => {
 
       vi.mocked(updateUserStripe).mockResolvedValue(undefined as any);
       vi.mocked(releaseStripeWebhookEvent).mockClear();
+      useLiveSubscription('canceled', 1_700_000_000);
       const cancellation = { id: 'sub_release_cancel', customer: 'cus_release_cancel' };
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('customer.subscription.deleted', cancellation, 'evt_invoice_cancel') as any
@@ -818,6 +900,7 @@ describe('handleStripeWebhook', () => {
 
     it('does not let an older invoice or active update resurrect access after cancellation', async () => {
       const cancellation = { id: 'sub_order', customer: 'cus_order' };
+      useLiveSubscription('canceled', 1_700_000_000);
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('customer.subscription.deleted', cancellation, 'evt_order_cancel') as any
       );
@@ -833,7 +916,7 @@ describe('handleStripeWebhook', () => {
 
       vi.mocked(updateUserStripe).mockClear();
       vi.mocked(writeEntitlementAudit).mockClear();
-      const invoice = { id: 'in_older', customer: 'cus_order', subscription: 'sub_order' };
+      const invoice = dahliaInvoice('sub_order', 'cus_order', 'in_older');
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('invoice.paid', invoice, 'evt_order_invoice') as any
       );
@@ -881,6 +964,7 @@ describe('handleStripeWebhook', () => {
         customer: 'cus_blocked',
         subscription: 'sub_blocked',
       };
+      useRetrievedSession(session);
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('checkout.session.completed', session, `evt_blocked_${label}`) as any
       );
@@ -903,7 +987,7 @@ describe('handleStripeWebhook', () => {
     });
 
     it('still grants a renewal while the live subscription is trialing', async () => {
-      const invoice = { id: 'in_trial', customer: 'cus_trial', subscription: 'sub_trial' };
+      const invoice = dahliaInvoice('sub_trial', 'cus_trial', 'in_trial');
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('invoice.paid', invoice, 'evt_trial') as any
       );
@@ -931,7 +1015,7 @@ describe('handleStripeWebhook', () => {
 
   describe('unknown renewal prices', () => {
     it('logs and acknowledges an unknown invoice price without granting or releasing the claim', async () => {
-      const invoice = { id: 'in_unknown_price', customer: 'cus_unknown_price', subscription: 'sub_unknown_price' };
+      const invoice = dahliaInvoice('sub_unknown_price', 'cus_unknown_price', 'in_unknown_price');
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('invoice.paid', invoice, 'evt_invoice_unknown_price') as any
       );
@@ -991,7 +1075,7 @@ describe('handleStripeWebhook', () => {
     });
 
     it('retries a renewal when the live subscription cannot be read', async () => {
-      const invoice = { id: 'in_retrieve_fail', customer: 'cus_retrieve_fail', subscription: 'sub_retrieve_fail' };
+      const invoice = dahliaInvoice('sub_retrieve_fail', 'cus_retrieve_fail', 'in_retrieve_fail');
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
         makeEvent('invoice.paid', invoice, 'evt_retrieve_fail') as any
       );
@@ -1010,4 +1094,623 @@ describe('handleStripeWebhook', () => {
     });
   });
 
+  describe('verified checkout payment', () => {
+    const lifetimeSession = {
+      id: 'cs_lifetime',
+      metadata: { user_id: '42', plan_id: 'lifetime' },
+      customer: 'cus_life',
+      subscription: null,
+    };
+    const subscriptionSession = {
+      id: 'cs_sub_pay',
+      metadata: { user_id: '42' },
+      customer: 'cus_sub_pay',
+      subscription: 'sub_pay',
+    };
+
+    function arrangeLifetimePrice() {
+      vi.mocked(stripe.checkout.sessions.listLineItems).mockResolvedValue({
+        data: [{ price: { id: 'price_lifetime' } }],
+      } as any);
+      vi.mocked(getPlanByPriceId).mockReturnValue({
+        id: 'lifetime', tier: 'founding', name: 'Lifetime', amount: 49900,
+        interval: 'year', description: '', priceId: 'price_lifetime',
+      });
+      vi.mocked(updateUserStripe).mockResolvedValue(undefined as any);
+    }
+
+    it('grants lifetime only after the retrieved session is paid and the PaymentIntent succeeded', async () => {
+      arrangeLifetimePrice();
+      useRetrievedSession({
+        ...lifetimeSession,
+        payment_status: 'paid',
+        payment_intent: 'pi_lifetime',
+      });
+      vi.mocked(stripe.paymentIntents.retrieve).mockResolvedValue({ id: 'pi_lifetime', status: 'succeeded' } as any);
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('checkout.session.completed', { id: 'cs_lifetime', payment_status: 'unpaid' }, 'evt_lifetime_paid') as any
+      );
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq({ id: 'cs_lifetime' }), res);
+
+      expect(stripe.paymentIntents.retrieve).toHaveBeenCalledWith('pi_lifetime', {}, { timeout: 8000 });
+      expect(updateUserStripe).toHaveBeenCalledWith(42, expect.objectContaining({
+        accessTier: 'founding',
+        stripeCustomerId: 'cus_life',
+        lifetimeAccess: true,
+      }));
+      const written = vi.mocked(updateUserStripe).mock.calls[0][1] as { lifetimePurchasedAt?: Date };
+      expect(written.lifetimePurchasedAt).toBeInstanceOf(Date);
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+    });
+
+    it('does not grant lifetime when the event says paid but the retrieved session is unpaid', async () => {
+      arrangeLifetimePrice();
+      useRetrievedSession({ ...lifetimeSession, payment_status: 'unpaid' });
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('checkout.session.completed', { ...lifetimeSession, payment_status: 'paid' }, 'evt_lifetime_unpaid') as any
+      );
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(lifetimeSession), res);
+
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ received: true, ignored: 'payment_not_verified' });
+      expect(releaseStripeWebhookEvent).not.toHaveBeenCalled();
+      expect(errorSpy.mock.calls.flat().join(' ')).toContain('lifetime');
+      errorSpy.mockRestore();
+    });
+
+    it('denies no_payment_required for lifetime and for a subscription, including a 100% promotion', async () => {
+      arrangeLifetimePrice();
+      for (const [session, eventId] of [
+        [lifetimeSession, 'evt_life_nopay'],
+        [subscriptionSession, 'evt_sub_nopay'],
+      ] as const) {
+        useRetrievedSession({ ...session, payment_status: 'no_payment_required' });
+        vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+          makeEvent('checkout.session.completed', session, eventId) as any
+        );
+        vi.mocked(updateUserStripe).mockClear();
+        const res = makeRes();
+        await handleStripeWebhook(makeReq(session), res);
+        expect(updateUserStripe).not.toHaveBeenCalled();
+        expect(res.json).toHaveBeenCalledWith({ received: true, ignored: 'payment_not_verified' });
+        expect(res.status).not.toHaveBeenCalledWith(500);
+      }
+    });
+
+    it('does not grant when the PaymentIntent exists but has not succeeded', async () => {
+      arrangeLifetimePrice();
+      useRetrievedSession({
+        ...lifetimeSession,
+        payment_status: 'paid',
+        payment_intent: { id: 'pi_pending', status: 'processing' },
+      });
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('checkout.session.completed', lifetimeSession, 'evt_pi_processing') as any
+      );
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(lifetimeSession), res);
+
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(stripe.paymentIntents.retrieve).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ received: true, ignored: 'payment_not_verified' });
+    });
+
+    it('does not grant on checkout.session.completed while payment is still unpaid', async () => {
+      arrangeLifetimePrice();
+      useRetrievedSession({ ...lifetimeSession, payment_status: 'unpaid', payment_intent: { id: 'pi_async', status: 'processing' } });
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('checkout.session.completed', lifetimeSession, 'evt_async_pending') as any
+      );
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(lifetimeSession), res);
+
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ received: true, ignored: 'payment_not_verified' });
+      expect(completeStripeWebhookEvent).toHaveBeenCalledWith('evt_async_pending', 'checkout.session.completed');
+    });
+
+    it('grants on async_payment_succeeded only after a fresh retrieve shows paid', async () => {
+      arrangeLifetimePrice();
+      useRetrievedSession({
+        ...lifetimeSession,
+        payment_status: 'paid',
+        payment_intent: { id: 'pi_async_ok', status: 'succeeded' },
+      });
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('checkout.session.async_payment_succeeded', { id: 'cs_lifetime' }, 'evt_async_ok') as any
+      );
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq({ id: 'cs_lifetime' }), res);
+
+      expect(updateUserStripe).toHaveBeenCalledWith(42, expect.objectContaining({ lifetimeAccess: true }));
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+    });
+
+    it('does not grant async_payment_succeeded when the retrieved session is still unpaid', async () => {
+      arrangeLifetimePrice();
+      useRetrievedSession({ ...lifetimeSession, payment_status: 'unpaid' });
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('checkout.session.async_payment_succeeded', lifetimeSession, 'evt_async_still_unpaid') as any
+      );
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(lifetimeSession), res);
+
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ received: true, ignored: 'payment_not_verified' });
+    });
+
+    it.each(['checkout.session.async_payment_failed', 'checkout.session.expired'])('does not grant on %s', async (eventType) => {
+      arrangeLifetimePrice();
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent(eventType, { ...lifetimeSession, payment_status: 'paid' }, `evt_${eventType}`) as any
+      );
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(lifetimeSession), res);
+
+      expect(stripe.checkout.sessions.retrieve).not.toHaveBeenCalled();
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ received: true, ignored: 'payment_not_completed' });
+      expect(releaseStripeWebhookEvent).not.toHaveBeenCalled();
+      expect(errorSpy.mock.calls.flat().join(' ')).toContain('[Stripe Webhook][BILLING-ALERT]');
+      errorSpy.mockRestore();
+    });
+
+    it('does not grant a subscription checkout when the live status flips to canceled before the write', async () => {
+      useRetrievedSession(subscriptionSession);
+      vi.mocked(stripe.checkout.sessions.listLineItems).mockResolvedValue({
+        data: [{ price: { id: 'price_premium_monthly' } }],
+      } as any);
+      vi.mocked(getPlanByPriceId).mockReturnValue(premiumPlan);
+      vi.mocked(stripe.subscriptions.retrieve)
+        .mockResolvedValueOnce({ ...activeSubscription } as any)
+        .mockResolvedValueOnce({ status: 'canceled', ended_at: 1_700_000_000, items: { data: [{ price: { id: 'price_premium_monthly' } }] } } as any);
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('checkout.session.completed', subscriptionSession, 'evt_flip_checkout') as any
+      );
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(subscriptionSession), res);
+
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ received: true, ignored: 'subscription_not_entitled' });
+      expect(releaseStripeWebhookEvent).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('dahlia invoice renewals', () => {
+    it('renews from a line-item subscription id when parent.subscription_details is absent', async () => {
+      const invoice = {
+        id: 'in_line_only',
+        customer: 'cus_line',
+        lines: {
+          data: [{
+            parent: { subscription_item_details: { subscription: 'sub_from_line' } },
+          }],
+        },
+      };
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('invoice.paid', invoice, 'evt_line_only') as any
+      );
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue({ id: 12, accessTier: 'core' } as any);
+      vi.mocked(getPlanByPriceId).mockReturnValue(premiumPlan);
+      vi.mocked(updateUserStripe).mockResolvedValue(undefined as any);
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(invoice), res);
+
+      expect(stripe.subscriptions.retrieve).toHaveBeenCalledWith('sub_from_line', {}, { timeout: 8000 });
+      expect(updateUserStripe).toHaveBeenCalledWith(12, {
+        accessTier: 'premium',
+        stripeSubscriptionId: 'sub_from_line',
+      });
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+    });
+
+    it('falls back to the legacy invoice.subscription field when the Dahlia parent is absent', async () => {
+      const invoice = { id: 'in_legacy', customer: 'cus_legacy', subscription: 'sub_legacy' };
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('invoice.paid', invoice, 'evt_legacy_invoice') as any
+      );
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue({ id: 13, accessTier: 'free' } as any);
+      vi.mocked(getPlanByPriceId).mockReturnValue(premiumPlan);
+      vi.mocked(updateUserStripe).mockResolvedValue(undefined as any);
+
+      await handleStripeWebhook(makeReq(invoice), makeRes());
+
+      expect(updateUserStripe).toHaveBeenCalledWith(13, {
+        accessTier: 'premium',
+        stripeSubscriptionId: 'sub_legacy',
+      });
+    });
+
+    it('does not renew when the subscription is canceled on the read immediately before the write', async () => {
+      const invoice = dahliaInvoice('sub_flip', 'cus_flip', 'in_flip');
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('invoice.paid', invoice, 'evt_invoice_flip') as any
+      );
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue({ id: 14, accessTier: 'free' } as any);
+      vi.mocked(getPlanByPriceId).mockReturnValue(premiumPlan);
+      vi.mocked(stripe.subscriptions.retrieve)
+        .mockResolvedValueOnce({ ...activeSubscription } as any)
+        .mockResolvedValueOnce({ status: 'canceled', ended_at: 1, items: activeSubscription.items } as any);
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(invoice), res);
+
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ received: true, ignored: 'subscription_not_entitled' });
+    });
+
+    it('alerts instead of retrying when the customer id is missing', async () => {
+      const invoice = {
+        id: 'in_no_customer',
+        parent: { subscription_details: { subscription: 'sub_no_customer' } },
+      };
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('invoice.paid', invoice, 'evt_no_customer') as any
+      );
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(invoice), res);
+
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ received: true, ignored: 'missing_subscription' });
+      expect(res.status).not.toHaveBeenCalledWith(500);
+      expect(errorSpy.mock.calls.flat().join(' ')).toContain('[Stripe Webhook][BILLING-ALERT]');
+      errorSpy.mockRestore();
+    });
+  });
+
+  describe('live downgrade reconciliation', () => {
+    const user = { id: 30, accessTier: 'premium', lifetimeAccess: false };
+
+    function deletedEvent(id = 'evt_deleted_live') {
+      const subscription = { id: 'sub_live', customer: 'cus_live' };
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('customer.subscription.deleted', subscription, id) as any
+      );
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue(user as any);
+      return subscription;
+    }
+
+    it('does not downgrade a deleted event when the live subscription is still active', async () => {
+      const subscription = deletedEvent('evt_stale_deleted');
+      useLiveSubscription('active');
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(subscription), res);
+
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ received: true, ignored: 'subscription_not_entitled' });
+    });
+
+    it.each(['canceled', 'unpaid', 'past_due'])('does not downgrade subscription.updated %s when the live subscription is still entitled', async (status) => {
+      const subscription = { id: 'sub_live', customer: 'cus_live', status };
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('customer.subscription.updated', subscription, `evt_stale_${status}`) as any
+      );
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue(user as any);
+      useLiveSubscription(status === 'past_due' ? 'trialing' : 'active');
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(subscription), res);
+
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ received: true, ignored: 'subscription_not_entitled' });
+    });
+
+    it('does not downgrade when another active subscription remains', async () => {
+      const subscription = deletedEvent('evt_other_active');
+      useLiveSubscription('canceled', 1_700_000_000);
+      vi.mocked(stripe.subscriptions.list).mockImplementation(async (params: { status?: string }) => ({
+        data: params?.status === 'active' ? [{ id: 'sub_other', status: 'active' }] : [],
+      }) as any);
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(subscription), res);
+
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(stripe.subscriptions.list).toHaveBeenCalledWith(
+        { customer: 'cus_live', status: 'active', limit: 20 },
+        { timeout: 8000 },
+      );
+      expect(res.json).toHaveBeenCalledWith({ received: true, ignored: 'subscription_not_entitled' });
+    });
+
+    it('downgrades when the live subscription is canceled and no other subscription entitles the customer', async () => {
+      const subscription = deletedEvent('evt_real_deleted');
+      useLiveSubscription('canceled', 1_700_000_000);
+      vi.mocked(updateUserStripe).mockResolvedValue(undefined as any);
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(subscription), res);
+
+      expect(updateUserStripe).toHaveBeenCalledWith(30, {
+        accessTier: 'free',
+        stripeSubscriptionId: null,
+      });
+      expect(writeEntitlementAudit).toHaveBeenCalledWith(expect.objectContaining({
+        toTier: 'free',
+        reason: 'customer.subscription.deleted',
+        strict: true,
+      }));
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+    });
+
+    it.each(['canceled', 'unpaid', 'past_due'])('downgrades subscription.updated %s only after the live subscription matches', async (status) => {
+      const subscription = { id: 'sub_live', customer: 'cus_live', status };
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('customer.subscription.updated', subscription, `evt_down_${status}`) as any
+      );
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue(user as any);
+      useLiveSubscription(status === 'canceled' ? 'canceled' : status, status === 'canceled' ? 1_700_000_000 : null);
+      vi.mocked(updateUserStripe).mockResolvedValue(undefined as any);
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(subscription), res);
+
+      expect(updateUserStripe).toHaveBeenCalledWith(30, {
+        accessTier: 'free',
+        stripeSubscriptionId: null,
+      });
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+    });
+
+    it('downgrades when Stripe says the subscription no longer exists and nothing else is active', async () => {
+      const subscription = deletedEvent('evt_missing_sub');
+      vi.mocked(stripe.subscriptions.retrieve).mockRejectedValue({ code: 'resource_missing', statusCode: 404 });
+      vi.mocked(updateUserStripe).mockResolvedValue(undefined as any);
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(subscription), res);
+
+      expect(updateUserStripe).toHaveBeenCalledWith(30, {
+        accessTier: 'free',
+        stripeSubscriptionId: null,
+      });
+    });
+
+    it('does not downgrade when listing the customer subscriptions fails', async () => {
+      const subscription = deletedEvent('evt_list_fail');
+      useLiveSubscription('canceled', 1_700_000_000);
+      vi.mocked(stripe.subscriptions.list).mockRejectedValue(new Error('Stripe list failed'));
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(subscription), res);
+
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(releaseStripeWebhookEvent).toHaveBeenCalledWith('evt_list_fail');
+    });
+
+    it('keeps lifetime access on deleted and on unpaid, past_due, and canceled updates', async () => {
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue({
+        id: 31, accessTier: 'founding', lifetimeAccess: true,
+      } as any);
+      useLiveSubscription('canceled', 1_700_000_000);
+      const cases = [
+        ['customer.subscription.deleted', { id: 'sub_life', customer: 'cus_life_keep' }, 'evt_life_deleted'],
+        ['customer.subscription.updated', { id: 'sub_life', customer: 'cus_life_keep', status: 'canceled' }, 'evt_life_canceled'],
+        ['customer.subscription.updated', { id: 'sub_life', customer: 'cus_life_keep', status: 'unpaid' }, 'evt_life_unpaid'],
+        ['customer.subscription.updated', { id: 'sub_life', customer: 'cus_life_keep', status: 'past_due' }, 'evt_life_past_due'],
+      ] as const;
+      for (const [type, payload, id] of cases) {
+        vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(makeEvent(type, payload, id) as any);
+        vi.mocked(updateUserStripe).mockClear();
+        const res = makeRes();
+        await handleStripeWebhook(makeReq(payload), res);
+        expect(updateUserStripe).not.toHaveBeenCalled();
+        expect(res.json).toHaveBeenCalledWith({ received: true });
+      }
+    });
+
+    it('reactivates from subscription.updated only when the live subscription is entitled', async () => {
+      const subscription = {
+        id: 'sub_back',
+        customer: 'cus_back',
+        status: 'active',
+        items: { data: [{ price: { id: 'price_premium_monthly' } }] },
+      };
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('customer.subscription.updated', subscription, 'evt_reactivate') as any
+      );
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue({
+        id: 32, accessTier: 'free', lifetimeAccess: false,
+      } as any);
+      useLiveSubscription('active');
+      vi.mocked(getPlanByPriceId).mockReturnValue(premiumPlan);
+      vi.mocked(updateUserStripe).mockResolvedValue(undefined as any);
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(subscription), res);
+
+      expect(updateUserStripe).toHaveBeenCalledWith(32, {
+        accessTier: 'premium',
+        stripeSubscriptionId: 'sub_back',
+      });
+      expect(res.json).toHaveBeenCalledWith({ received: true });
+    });
+
+    it('renews, ignores a stale cancellation, revokes only after the live cancel, then reactivates', async () => {
+      vi.mocked(getPlanByPriceId).mockReturnValue(premiumPlan);
+      vi.mocked(updateUserStripe).mockResolvedValue(undefined as any);
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue({
+        id: 33, accessTier: 'premium', lifetimeAccess: false,
+      } as any);
+
+      const invoice = dahliaInvoice('sub_seq', 'cus_seq', 'in_seq');
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('invoice.paid', invoice, 'evt_seq_invoice') as any
+      );
+      useLiveSubscription('active');
+      await handleStripeWebhook(makeReq(invoice), makeRes());
+      expect(updateUserStripe).toHaveBeenCalledWith(33, {
+        accessTier: 'premium',
+        stripeSubscriptionId: 'sub_seq',
+      });
+
+      vi.mocked(updateUserStripe).mockClear();
+      const deleted = { id: 'sub_seq', customer: 'cus_seq' };
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('customer.subscription.deleted', deleted, 'evt_seq_stale_deleted') as any
+      );
+      const stale = makeRes();
+      await handleStripeWebhook(makeReq(deleted), stale);
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(stale.json).toHaveBeenCalledWith({ received: true, ignored: 'subscription_not_entitled' });
+
+      useLiveSubscription('canceled', 1_700_000_000);
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('customer.subscription.deleted', deleted, 'evt_seq_real_deleted') as any
+      );
+      await handleStripeWebhook(makeReq(deleted), makeRes());
+      expect(updateUserStripe).toHaveBeenCalledWith(33, {
+        accessTier: 'free',
+        stripeSubscriptionId: null,
+      });
+
+      vi.mocked(updateUserStripe).mockClear();
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue({
+        id: 33, accessTier: 'free', lifetimeAccess: false,
+      } as any);
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('invoice.paid', invoice, 'evt_seq_late_invoice') as any
+      );
+      const late = makeRes();
+      await handleStripeWebhook(makeReq(invoice), late);
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(late.json).toHaveBeenCalledWith({ received: true, ignored: 'subscription_not_entitled' });
+
+      useLiveSubscription('active');
+      const reactivated = { id: 'sub_seq', customer: 'cus_seq', status: 'active' };
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('customer.subscription.updated', reactivated, 'evt_seq_reactivated') as any
+      );
+      await handleStripeWebhook(makeReq(reactivated), makeRes());
+      expect(updateUserStripe).toHaveBeenCalledWith(33, {
+        accessTier: 'premium',
+        stripeSubscriptionId: 'sub_seq',
+      });
+    });
+  });
+
+  describe('entitlement replay after a partial write', () => {
+    const session = {
+      id: 'cs_replay',
+      metadata: { user_id: '60' },
+      customer: 'cus_replay',
+      subscription: 'sub_replay',
+    };
+
+    it('retains the claim when the audit write fails so the delivery is not released for a blind retry', async () => {
+      useRetrievedSession(session);
+      vi.mocked(stripe.checkout.sessions.listLineItems).mockResolvedValue({
+        data: [{ price: { id: 'price_premium_monthly' } }],
+      } as any);
+      vi.mocked(getPlanByPriceId).mockReturnValue(premiumPlan);
+      vi.mocked(updateUserStripe).mockResolvedValue(undefined as any);
+      vi.mocked(writeEntitlementAudit).mockRejectedValueOnce(new Error('audit failed'));
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('checkout.session.completed', session, 'evt_audit_fail') as any
+      );
+
+      const failed = makeRes();
+      await handleStripeWebhook(makeReq(session), failed);
+      expect(failed.status).toHaveBeenCalledWith(500);
+      expect(updateUserStripe).toHaveBeenCalledTimes(1);
+      expect(releaseStripeWebhookEvent).not.toHaveBeenCalled();
+      expect(completeStripeWebhookEvent).toHaveBeenCalledWith('evt_audit_fail', 'checkout.session.completed');
+    });
+
+    it('does not write the entitlement again when this event already has an audit row', async () => {
+      useRetrievedSession(session);
+      vi.mocked(stripe.checkout.sessions.listLineItems).mockResolvedValue({
+        data: [{ price: { id: 'price_premium_monthly' } }],
+      } as any);
+      vi.mocked(getPlanByPriceId).mockReturnValue(premiumPlan);
+      vi.mocked(entitlementAuditExists).mockResolvedValue(true);
+      vi.mocked(recordStripeWebhookEvent).mockResolvedValue(true);
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('checkout.session.completed', session, 'evt_audit_exists') as any
+      );
+
+      const replay = makeRes();
+      await handleStripeWebhook(makeReq(session), replay);
+
+      expect(updateUserStripe).not.toHaveBeenCalled();
+      expect(writeEntitlementAudit).not.toHaveBeenCalled();
+      expect(replay.json).toHaveBeenCalledWith({ received: true, ignored: 'already_applied' });
+      expect(releaseStripeWebhookEvent).not.toHaveBeenCalled();
+    });
+
+    it('returns 500 without releasing when the claim cannot be retained after the entitlement write', async () => {
+      useRetrievedSession(session);
+      vi.mocked(stripe.checkout.sessions.listLineItems).mockResolvedValue({
+        data: [{ price: { id: 'price_premium_monthly' } }],
+      } as any);
+      vi.mocked(getPlanByPriceId).mockReturnValue(premiumPlan);
+      vi.mocked(updateUserStripe).mockResolvedValue(undefined as any);
+      vi.mocked(completeStripeWebhookEvent).mockRejectedValue(new Error('complete failed'));
+      vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(
+        makeEvent('checkout.session.completed', session, 'evt_complete_fail') as any
+      );
+
+      const res = makeRes();
+      await handleStripeWebhook(makeReq(session), res);
+
+      expect(updateUserStripe).toHaveBeenCalledTimes(1);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(releaseStripeWebhookEvent).not.toHaveBeenCalled();
+      expect(res.json).not.toHaveBeenCalledWith({ received: true });
+    });
+  });
+
+});
+
+describe('checkout and invoice id helpers', () => {
+  it('grants only a paid session whose PaymentIntent, if present, succeeded', () => {
+    expect(checkoutPaymentDecision({ paymentStatus: 'paid' })).toEqual({ grant: true });
+    expect(checkoutPaymentDecision({ paymentStatus: 'paid', paymentIntentStatus: 'succeeded' })).toEqual({ grant: true });
+    expect(checkoutPaymentDecision({ paymentStatus: 'paid', paymentIntentStatus: 'processing' })).toEqual({
+      grant: false,
+      reason: 'payment_intent_not_succeeded',
+    });
+    expect(checkoutPaymentDecision({ paymentStatus: 'unpaid' })).toEqual({ grant: false, reason: 'unpaid' });
+    expect(checkoutPaymentDecision({ paymentStatus: 'no_payment_required' })).toEqual({
+      grant: false,
+      reason: 'no_payment_required',
+    });
+    expect(checkoutPaymentDecision({ paymentStatus: '' })).toEqual({ grant: false, reason: 'unknown' });
+  });
+
+  it('reads the Dahlia subscription id, then a line, then the legacy field', () => {
+    expect(subscriptionIdFromInvoice({
+      subscription: 'sub_legacy',
+      parent: { subscription_details: { subscription: 'sub_parent' } },
+      lines: { data: [{ parent: { subscription_item_details: { subscription: 'sub_line' } } }] },
+    })).toBe('sub_parent');
+    expect(subscriptionIdFromInvoice({
+      lines: { data: [{ parent: { invoice_item_details: { subscription: 'sub_item' } } }] },
+    })).toBe('sub_item');
+    expect(subscriptionIdFromInvoice({
+      lines: { data: [{ subscription: 'sub_line_legacy' }] },
+    })).toBe('sub_line_legacy');
+    expect(subscriptionIdFromInvoice({
+      parent: { subscription_details: { subscription: { id: 'sub_expanded' } } },
+    })).toBe('sub_expanded');
+    expect(subscriptionIdFromInvoice({ subscription: 'sub_legacy_only' })).toBe('sub_legacy_only');
+    expect(subscriptionIdFromInvoice({ customer: 'cus_only' } as { subscription?: unknown })).toBeNull();
+  });
 });
