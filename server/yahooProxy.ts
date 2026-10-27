@@ -97,6 +97,35 @@ export interface YahooDailyBar {
   timestamp: number;
 }
 
+export interface YahooChartSessionMeta {
+  gmtoffset?: number;
+  currentTradingPeriod?: { regular?: { start?: number; end?: number } };
+}
+
+/**
+ * Drops the in-progress regular-session bar so callers that describe a
+ * "latest completed daily close" do not keep today's unfinished candle.
+ * After the session end, the bar is a completed close and is kept.
+ * Midnight-UTC stamps that belong to the session are included via an 18-hour
+ * lookback from the regular-session start. Without session metadata the
+ * series is unchanged.
+ */
+export function dropOpenSessionBar<T extends { timestamp: number }>(
+  bars: T[],
+  meta: YahooChartSessionMeta | null | undefined,
+  nowMs = Date.now(),
+): T[] {
+  if (bars.length === 0) return bars;
+  const start = meta?.currentTradingPeriod?.regular?.start;
+  const end = meta?.currentTradingPeriod?.regular?.end;
+  if (typeof start !== "number" || typeof end !== "number" || !Number.isFinite(start) || !Number.isFinite(end)) return bars;
+  if (nowMs >= end * 1000) return bars;
+  const windowStart = start * 1000 - 18 * 60 * 60 * 1000;
+  const last = bars[bars.length - 1]!;
+  if (last.timestamp >= windowStart && last.timestamp < end * 1000) return bars.slice(0, -1);
+  return bars;
+}
+
 const dailyBarCache = new LRUCache<string, YahooDailyBar[]>(200, 60 * 60_000);
 
 /**
@@ -114,15 +143,15 @@ export async function getDailyBars(ticker: string, range: "3mo" | "6mo" | "5y" |
       signal: AbortSignal.timeout(8_000),
     });
     if (!response.ok) throw new Error(`Yahoo daily bars HTTP ${response.status}`);
-    const payload = await response.json() as { chart?: { result?: Array<{ timestamp?: number[]; indicators?: { quote?: Array<{ close?: Array<number | null>; open?: Array<number | null>; high?: Array<number | null>; low?: Array<number | null>; volume?: Array<number | null> }> } }> } };
+    const payload = await response.json() as { chart?: { result?: Array<{ timestamp?: number[]; meta?: YahooChartSessionMeta; indicators?: { quote?: Array<{ close?: Array<number | null>; open?: Array<number | null>; high?: Array<number | null>; low?: Array<number | null>; volume?: Array<number | null> }> } }> } };
     const result = payload.chart?.result?.[0];
     const quote = result?.indicators?.quote?.[0];
     const timestamps = result?.timestamp ?? [];
     if (!quote || timestamps.length === 0) return [];
-    const bars = timestamps.map((timestamp, index) => ({
+    const bars = dropOpenSessionBar(timestamps.map((timestamp, index) => ({
       close: quote.close?.[index] ?? null, open: quote.open?.[index] ?? null, high: quote.high?.[index] ?? null,
       low: quote.low?.[index] ?? null, volume: quote.volume?.[index] ?? null, timestamp: timestamp * 1000,
-    })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value)));
+    })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value))), result?.meta);
     dailyBarCache.set(cacheKey, bars);
     return bars;
   } catch (error) {
@@ -148,15 +177,15 @@ export async function getDailyBarsForPeriod(ticker: string, startDate: string, e
       signal: AbortSignal.timeout(30_000),
     });
     if (!response.ok) throw new Error(`Yahoo period daily bars HTTP ${response.status}`);
-    const payload = await response.json() as { chart?: { result?: Array<{ timestamp?: number[]; indicators?: { quote?: Array<{ close?: Array<number | null>; open?: Array<number | null>; high?: Array<number | null>; low?: Array<number | null>; volume?: Array<number | null> }> } }> } };
+    const payload = await response.json() as { chart?: { result?: Array<{ timestamp?: number[]; meta?: YahooChartSessionMeta; indicators?: { quote?: Array<{ close?: Array<number | null>; open?: Array<number | null>; high?: Array<number | null>; low?: Array<number | null>; volume?: Array<number | null> }> } }> } };
     const result = payload.chart?.result?.[0];
     const quote = result?.indicators?.quote?.[0];
     const timestamps = result?.timestamp ?? [];
     if (!quote || timestamps.length === 0) return [];
-    const bars = timestamps.map((timestamp, index) => ({
+    const bars = dropOpenSessionBar(timestamps.map((timestamp, index) => ({
       close: quote.close?.[index] ?? null, open: quote.open?.[index] ?? null, high: quote.high?.[index] ?? null,
       low: quote.low?.[index] ?? null, volume: quote.volume?.[index] ?? null, timestamp: timestamp * 1000,
-    })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value)));
+    })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value))), result?.meta);
     dailyBarCache.set(cacheKey, bars);
     return bars;
   } catch (error) {

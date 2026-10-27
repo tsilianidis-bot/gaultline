@@ -291,11 +291,11 @@ export default function MobileWatchlist() {
         {stockItems.length > 0 && (
           <div>
             <div className="text-[9px] font-mono tracking-widest text-[#64748B]/60 mb-2">STOCKS</div>
-            <PentagonalThesisNarrative symbol={stockItems[0]?.symbol} surface="mobile-watchlist" compact />
             <div className="space-y-2">
               {stockItems.map(item => (
+                <div key={item.id} className="space-y-2">
+                <PentagonalThesisNarrative symbol={item.symbol} surface="mobile-watchlist" compact />
                 <WatchlistItemCard
-                  key={item.id}
                   id={item.id}
                   symbol={item.symbol}
                   name={item.name}
@@ -304,6 +304,7 @@ export default function MobileWatchlist() {
                   changePercent={quotes[item.symbol]?.changePercent}
                   onRemove={handleRemove}
                 />
+                </div>
               ))}
             </div>
           </div>

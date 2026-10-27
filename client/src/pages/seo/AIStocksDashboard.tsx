@@ -7,22 +7,22 @@ export default function AIStocksDashboard() {
     <SEOLandingPage
       seo={{
         title: "AI Stocks Dashboard — Real-Time AI Stock Signals & Risk Scores | FAULTLINE",
-        description: "Track all major AI stocks in one dashboard: NVDA, PLTR, META, AMD, TSLA, MSFT, GOOGL, AMZN. Real-time macro-aligned signals, AI bubble exposure ratings, regime fit scores, and key price levels.",
+        description: "A guide to AI-exposed equities. Individual stock conclusions use the shared Pentagonal Thesis. This page does not publish regime-fit scores or trade instructions.",
         canonical: "/ai-stocks-dashboard",
       }}
       badge="AI STOCKS INTELLIGENCE"
       headline={"AI Stocks Dashboard\nAll AI Stocks. One Signal View."}
-      subheadline="FAULTLINE's AI Stocks Dashboard tracks every major AI-exposed equity in real time — from AI infrastructure (NVDA, AMD) to AI software (PLTR, MSFT) to AI-powered platforms (META, GOOGL, AMZN). One dashboard. All signals. Macro-aligned."
+      subheadline="A map of AI-exposed equities, from infrastructure (NVDA, AMD) to software (PLTR, MSFT) to platforms (META, GOOGL, AMZN). An individual stock conclusion is the shared Pentagonal Thesis. This page does not add a trade call."
       ctaLabel="VIEW AI STOCK SIGNALS"
       ctaHref="/app/signals"
       accentColor="#00D4FF"
       features={[
-        { icon: "◈", title: "AI Bubble Exposure Ratings", desc: "Every AI stock classified by its sensitivity to AI narrative momentum — from HIGH to MODERATE to LOW exposure." },
-        { icon: "◎", title: "Regime Fit Scores", desc: "How well does each AI stock fit the current macro regime? Scores from 0-10 updated continuously." },
+        { icon: "◈", title: "Exposure is a description", desc: "The essay below groups companies by how their businesses relate to AI spending. Those groups are not live scores." },
+        { icon: "◎", title: "No regime-fit score", desc: "This page does not score how an AI stock fits the macro regime, and it does not publish a numbered fit score." },
         { icon: "⬡", title: "Shared Stock Thesis", desc: "Individual AI-stock conclusions use the Pentagonal Thesis. The thesis does not issue an unsupported buy or sell call." },
-        { icon: "◈", title: "AI Concentration Risk Monitor", desc: "Track the aggregate AI concentration in the S&P 500 and the systemic risk it creates for the broader market." },
-        { icon: "◎", title: "Sector Rotation Signals", desc: "Monitor capital flows between AI infrastructure, AI software, and AI-powered platforms to identify rotation opportunities." },
-        { icon: "⬡", title: "Earnings Catalyst Tracking", desc: "AI stock earnings are the most market-moving events in the current cycle. FAULTLINE tracks upcoming catalysts and their potential impact." },
+        { icon: "◈", title: "Concentration is not a live gauge", desc: "Index concentration is discussed as background. This page does not measure it as a FAULTLINE score." },
+        { icon: "◎", title: "No sector-rotation call", desc: "A company profile sector is a classification. It is not a capital-flow or sector-rotation signal." },
+        { icon: "⬡", title: "Earnings dates need an as-of", desc: "An earnings date is not cited unless the provider supplies an as-of timestamp. A missing date stays a gap." },
       ]}
       contentSections={[
         {
@@ -43,35 +43,33 @@ AI-Adjacent (Moderate AI Exposure): Companies that benefit from AI adoption with
 
 When concentrated positions unwind, the cascade effect on index-level returns is severe. The 2000 dot-com bubble provides the historical precedent: the top 10 S&P 500 stocks in March 2000 represented approximately 25% of the index. When technology stocks began to fall, the concentration amplified the index-level decline.
 
-FAULTLINE's AI Bubble Monitor tracks this concentration risk in real time, measuring the degree to which the current market concentration resembles historical bubble periods. The AI Stocks Dashboard provides the stock-level view of this systemic risk — showing which individual stocks are most exposed and how their signals are evolving.
+This page does not measure that concentration as a live score and does not say which names to buy or sell. An individual name is read through the shared thesis, which lists missing inputs as gaps.
 
 The key insight is that AI stock analysis cannot be done in isolation from the systemic concentration risk. A stock that looks attractive on individual metrics may still be a poor risk-adjusted investment if it is part of a highly concentrated sector that is vulnerable to a systemic unwind.`,
         },
         {
           heading: "How to Use the AI Stocks Dashboard",
-          body: `FAULTLINE's AI Stocks Dashboard is designed to be used as a risk management tool, not a trading signal generator. Here is how to use it effectively:
+          body: `This page is a taxonomy of how businesses relate to AI spending. It is not a signal generator and it does not rank names.
 
-Regime Alignment First: Before looking at individual stock signals, check the FAULTLINE Pressure Index and macro regime. In HIGH STRESS environments (Pressure Index 60+), even the strongest individual AI stock signals should be treated with caution — systemic risk can overwhelm individual stock fundamentals.
+No fit score: This dashboard does not time entries with a regime-fit number. When a fresh canonical market reading exists, the shared thesis may mention it as context and still label any link to the stock as a hypothesis.
 
-AI Bubble Exposure as Risk Filter: Use the AI Bubble Exposure rating to understand each stock's sensitivity to AI narrative changes. HIGH exposure stocks (NVDA, AMD, PLTR) will amplify both upside and downside moves when AI narrative momentum shifts. MODERATE exposure stocks (META, GOOGL) have more fundamental revenue support that provides a floor during AI narrative corrections.
+No rotation call: Capital moving between AI infrastructure, software, and platforms is not inferred from a quote, a daily bar, or a company profile.
 
-Regime Fit Score as Timing Tool: The regime fit score tells you how well each stock fits the current macro environment. A stock with a high regime fit score in the current environment is better positioned than one with a low score, regardless of its individual fundamentals.
-
-Sector Rotation Signals: Monitor capital flows between AI infrastructure, AI software, and AI-powered platforms. Early rotation signals — when capital begins moving from one sub-sector to another — can provide advance warning of sector-level trend changes.`,
+No bubble rating: This page does not publish an exposure score, and it does not say which names will move first.`,
         },
       ]}
       faqs={[
         {
-          question: "What are the best AI stocks to buy in 2026?",
-          answer: "FAULTLINE does not provide investment advice or stock recommendations. The AI Stocks Dashboard provides real-time macro-aligned signal classifications (BUY, SELL, HOLD, WATCH) for all tracked AI stocks based on macro regime alignment, momentum, and technical structure. Access the live signals on the FAULTLINE Signals tab.",
+          question: "Does this page say which AI stocks to buy in 2026?",
+          answer: "No. The page does not publish buy, sell, hold, or watch classifications. An individual stock read is the shared Pentagonal Thesis, which withholds a conclusion when the inputs are missing.",
         },
         {
-          question: "Is the AI stock bubble going to burst?",
-          answer: "FAULTLINE's AI Bubble Monitor tracks the degree to which current AI stock valuations and concentration resemble historical bubble periods. The monitor provides a real-time risk assessment, not a prediction. Bubbles are only definitively identified in retrospect — the question is whether current conditions are creating structural vulnerability to a rapid valuation reset.",
+          question: "Does this page say whether an AI stock bubble will burst?",
+          answer: "No. This page does not publish a bubble score, a crash probability, or a forecast of a valuation reset. Concentration is discussed as background history, not as a live gauge.",
         },
         {
-          question: "Which AI stocks are most at risk in a market crash?",
-          answer: "AI stocks with HIGH AI Bubble Exposure ratings (NVDA, AMD, PLTR) are most sensitive to AI narrative changes and macro regime shifts. These stocks have the highest beta to both AI narrative momentum and broader market conditions. In a HIGH STRESS macro environment, high-multiple AI stocks typically experience the largest drawdowns.",
+          question: "Does this page rank which AI stocks are most at risk?",
+          answer: "No. It does not publish an exposure rating or a crash ranking. An individual name is read through the shared thesis, which leaves missing inputs as gaps.",
         },
         {
           question: "How does FAULTLINE classify AI stocks?",
@@ -88,7 +86,7 @@ Sector Rotation Signals: Monitor capital flows between AI infrastructure, AI sof
         { label: "AMD SIGNAL", href: "/stock/amd", desc: "AMD — NVIDIA's primary AI GPU competitor." },
         { label: "META SIGNAL", href: "/stock/meta", desc: "Meta — AI-powered advertising platform." },
         { label: "AI BUBBLE MONITOR", href: "/ai-bubble-risk-tracker", desc: "Systemic AI concentration risk dashboard." },
-        { label: "MARKET CRASH PROBABILITY", href: "/market-crash-probability-2026", desc: "Crash risk driven by AI concentration." },
+        { label: "MARKET STRESS RESEARCH", href: "/market-crash-probability-2026", desc: "Background reading. This dashboard does not publish a crash probability." },
       ]}
       schemaType="Article"
       datePublished="2024-06-01"

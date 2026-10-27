@@ -14,16 +14,37 @@ export function thesisContentHash(thesis: PentagonalThesis): string {
   return createHash("sha256").update(stableThesisPayload(thesis)).digest("hex");
 }
 
+/**
+ * A new thesis must append. Reusing the prior record id, keeping the same
+ * version, or dropping the supersedes link would rewrite the stored row.
+ */
+export function assertAppendOnlyPlan(
+  prior: { recordId: string; thesisVersion: number; payloadJson: string } | null,
+  plan: ThesisRecordPlan,
+): void {
+  if (!prior) return;
+  const reusesRow = plan.recordId === prior.recordId;
+  const versionNotAdvanced = plan.thesisVersion !== prior.thesisVersion + 1;
+  const dropsLink = plan.supersedesRecordId !== prior.recordId;
+  const editsStoredPayload = plan.payloadJson === prior.payloadJson && plan.thesisVersion === prior.thesisVersion;
+  if (reusesRow || versionNotAdvanced || dropsLink || editsStoredPayload) {
+    throw new Error("Refusing to rewrite a prior thesis payload.");
+  }
+}
+
 export function planAppendOnlyRecord(
   prior: { recordId: string; thesisVersion: number; payloadJson: string } | null,
   thesis: PentagonalThesis,
   recordId: string,
 ): ThesisRecordPlan {
-  const priorPayload = prior?.payloadJson;
-  const plan = nextThesisRecord(prior, thesis, recordId, thesisContentHash(thesis));
-  if (prior && prior.payloadJson !== priorPayload) {
+  const stored = prior
+    ? { recordId: prior.recordId, thesisVersion: prior.thesisVersion, payloadJson: prior.payloadJson }
+    : null;
+  const plan = nextThesisRecord(stored, thesis, recordId, thesisContentHash(thesis));
+  if (stored && prior && prior.payloadJson !== stored.payloadJson) {
     throw new Error("Refusing to rewrite a prior thesis payload.");
   }
+  assertAppendOnlyPlan(stored, plan);
   if (findThesisIntegrityViolations(thesis).length > 0) {
     throw new Error("Refusing to record a thesis that failed the integrity check.");
   }
@@ -56,11 +77,7 @@ export async function maybeAppendThesisRecord(
     .orderBy(desc(pentagonalThesisRecords.thesisVersion))
     .limit(1);
   const prior = priorRows[0] ?? null;
-  const originalPriorPayload = prior?.payloadJson;
   const plan = planAppendOnlyRecord(prior, thesis, randomUUID());
-  if (prior && prior.payloadJson !== originalPriorPayload) {
-    throw new Error("Refusing to rewrite a prior thesis payload.");
-  }
   await db.insert(pentagonalThesisRecords).values({
     recordId: plan.recordId,
     scopeKind: plan.scopeKind,
@@ -71,7 +88,6 @@ export async function maybeAppendThesisRecord(
     contentHash: plan.contentHash,
     payloadJson: plan.payloadJson,
     generatedAt: new Date(plan.generatedAt),
-    outcomeStatus: "UNSCORED",
   });
   return {
     written: true,

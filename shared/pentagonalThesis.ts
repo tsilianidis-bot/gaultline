@@ -18,6 +18,8 @@ export type ThesisScope = "stock" | "sector" | "market";
 
 export const QUOTE_FRESH_MS = 4 * 24 * 60 * 60 * 1000;
 export const BAR_FRESH_MS = 5 * 24 * 60 * 60 * 1000;
+/** Successive completed sessions farther apart than this are not one contiguous series. */
+export const MAX_SESSION_GAP_MS = 5 * 24 * 60 * 60 * 1000;
 export const MARKET_FRESH_MS = 72 * 60 * 60 * 1000;
 export const PROFILE_FRESH_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -247,11 +249,24 @@ function quoteTimestamp(quote: QuoteObservation | null): string | null {
 interface BarStats {
   freshBars: CompletedBar[];
   stale: boolean;
+  noncontiguous: boolean;
+  conflicting: boolean;
   latest: CompletedBar | null;
   momentum: { percent: number; sessions: number } | null;
   volatility: { dailyStdevPercent: number; returns: number } | null;
   range: { low: number; high: number; sessions: number } | null;
   averageVolume: { value: number; sessions: number } | null;
+}
+
+function contiguousRecent<T extends { time: number }>(parsed: T[]): { tail: T[]; noncontiguous: boolean } {
+  if (parsed.length === 0) return { tail: [], noncontiguous: false };
+  for (let i = parsed.length - 1; i > 0; i -= 1) {
+    const gap = parsed[i]!.time - parsed[i - 1]!.time;
+    if (gap <= 0 || gap > MAX_SESSION_GAP_MS) {
+      return { tail: parsed.slice(i), noncontiguous: true };
+    }
+  }
+  return { tail: parsed, noncontiguous: false };
 }
 
 function usableBars(bars: CompletedBar[], now: string): BarStats {
@@ -261,10 +276,16 @@ function usableBars(bars: CompletedBar[], now: string): BarStats {
     .filter(bar => Number.isFinite(bar.time))
     .sort((a, b) => a.time - b.time);
 
-  const latest = parsed.at(-1) ?? null;
-  const freshEnough = latest != null && isFresh(new Date(latest.time).toISOString(), now, BAR_FRESH_MS);
-  const freshBars = freshEnough ? parsed.map(({ time: _time, ...bar }) => bar) : [];
-  const stale = parsed.length > 0 && !freshEnough;
+  const conflicting = parsed.some((bar, index) => {
+    if (index === 0) return false;
+    const previous = parsed[index - 1]!;
+    return bar.time === previous.time && (bar.close !== previous.close || bar.high !== previous.high || bar.low !== previous.low);
+  });
+  const { tail, noncontiguous } = contiguousRecent(parsed);
+  const latest = tail.at(-1) ?? parsed.at(-1) ?? null;
+  const freshEnough = !conflicting && latest != null && isFresh(new Date(latest.time).toISOString(), now, BAR_FRESH_MS);
+  const freshBars = freshEnough ? tail.map(({ time: _time, ...bar }) => bar) : [];
+  const stale = parsed.length > 0 && !freshEnough && !conflicting;
 
   let momentum: BarStats["momentum"] = null;
   if (freshBars.length >= 6) {
@@ -302,7 +323,7 @@ function usableBars(bars: CompletedBar[], now: string): BarStats {
     ? { value: volumeSample.reduce((sum, value) => sum + value, 0) / volumeSample.length, sessions: volumeSample.length }
     : null;
 
-  return { freshBars, stale, latest: freshBars.at(-1) ?? null, momentum, volatility, range, averageVolume };
+  return { freshBars, stale, noncontiguous, conflicting, latest: freshBars.at(-1) ?? null, momentum, volatility, range, averageVolume };
 }
 
 function item(partial: ThesisEvidenceItem): ThesisEvidenceItem {
@@ -369,17 +390,17 @@ export function findThesisIntegrityViolations(thesis: PentagonalThesis): string[
 export function scenarioIsInvalidated(scenario: ThesisScenario, close: number | null): boolean | null {
   if (!scenario.invalidationMeasurable || !finiteNumber(close)) return null;
   if (scenario.invalidationRule === "completed_close_below" && finiteNumber(scenario.invalidationLevel)) {
-    return close < scenario.invalidationLevel;
+    return close <= scenario.invalidationLevel;
   }
   if (scenario.invalidationRule === "completed_close_above" && finiteNumber(scenario.invalidationLevel)) {
-    return close > scenario.invalidationLevel;
+    return close >= scenario.invalidationLevel;
   }
   if (
     scenario.invalidationRule === "completed_close_outside"
     && finiteNumber(scenario.invalidationLevel)
     && finiteNumber(scenario.invalidationUpper)
   ) {
-    return close < scenario.invalidationLevel || close > scenario.invalidationUpper;
+    return close <= scenario.invalidationLevel || close >= scenario.invalidationUpper;
   }
   return null;
 }
@@ -462,13 +483,19 @@ export function buildPentagonalThesis(input: PentagonalThesisInput): PentagonalT
   }
 
   const bars = usableBars(input.bars, now);
+  if (bars.conflicting) gaps.push(gap("bars", "Completed daily bars disagree on the same session. The series is not cited as a driver."));
+  if (bars.noncontiguous) gaps.push(gap("bars-contiguity", "Daily bars are not one contiguous run of recent sessions. The gapped older sessions are not cited as drivers."));
   if (bars.stale) gaps.push(gap("bars", "Completed daily bars are present but stale. They are not cited as drivers."));
   if (!bars.latest) gaps.push(gap("bars", "No fresh completed daily bars were supplied, so momentum, volatility, and technical levels are not cited as drivers."));
 
   const profileTime = input.profile?.observedAt ?? null;
   const profileFresh = input.profile != null && isFresh(profileTime, now, PROFILE_FRESH_MS);
-  if (!input.profile || !profileFresh) {
-    gaps.push(gap("profile", "No fresh company profile was supplied. Sector and fundamentals are not cited as drivers."));
+  if (!input.profile) {
+    gaps.push(gap("profile", "No company profile was supplied. Sector and fundamentals are not cited as drivers."));
+  } else if (!profileTime) {
+    gaps.push(gap("profile", "The company profile has no provider as-of timestamp, so it is unverified and is not cited as a driver."));
+  } else if (!profileFresh) {
+    gaps.push(gap("profile", "The company profile is older than the freshness window or has a future timestamp. It is not cited as a driver."));
   } else {
     if (!input.profile.sector) gaps.push(gap("sector", "The company profile did not include a sector. Sector is not cited as a driver."));
     if (!finiteNumber(input.profile.marketCap) && !finiteNumber(input.profile.trailingPe)) {
@@ -822,11 +849,11 @@ export function buildPentagonalThesis(input: PentagonalThesisInput): PentagonalT
         {
           id: "bull",
           title: "Constructive path",
-          narrative: `A constructive path would be later completed daily closes that remain above the ${bars.range.sessions}-session low of ${formatPrice(low!)}. The latest completed close is ${formatPrice(latestClose)}.${latestClose < low! ? " That close is already below the line, so this sketch is already invalidated by the latest completed bar." : ""}`,
+          narrative: `A constructive path would be later completed daily closes that stay above the ${bars.range.sessions}-session low of ${formatPrice(low!)}. The latest completed close is ${formatPrice(latestClose)}.${latestClose <= low! ? " That close is already at or below the line, so this sketch is already invalidated by the latest completed bar." : ""}`,
           evidenceIds: levelEvidence,
-          assumptions: ["The last 20 completed sessions remain the reference range.", "No earnings date, macro release, or company catalyst is assumed."],
+          assumptions: ["The last 20 completed sessions remain the reference range.", "A completed close equal to the low invalidates this sketch.", "No earnings date, macro release, or company catalyst is assumed."],
           confidence,
-          invalidation: `Invalidated by a completed daily close below ${formatPrice(low!)}.`,
+          invalidation: `Invalidated by a completed daily close at or below ${formatPrice(low!)}.`,
           invalidationMeasurable: true,
           invalidationRule: "completed_close_below",
           invalidationLevel: low,
@@ -839,7 +866,7 @@ export function buildPentagonalThesis(input: PentagonalThesisInput): PentagonalT
           evidenceIds: levelEvidence,
           assumptions: ["The high and low are the extremes of the last 20 completed sessions, not a forecast target."],
           confidence,
-          invalidation: `Invalidated by a completed daily close below ${formatPrice(low!)} or above ${formatPrice(high!)}.`,
+          invalidation: `Invalidated by a completed daily close at or below ${formatPrice(low!)} or at or above ${formatPrice(high!)}.`,
           invalidationMeasurable: true,
           invalidationRule: "completed_close_outside",
           invalidationLevel: low,
@@ -852,7 +879,7 @@ export function buildPentagonalThesis(input: PentagonalThesisInput): PentagonalT
           evidenceIds: levelEvidence,
           assumptions: ["The weaker path is a sketch of the range, not a forecast that the low will break."],
           confidence,
-          invalidation: `Invalidated by a completed daily close above ${formatPrice(high!)}.`,
+          invalidation: `Invalidated by a completed daily close at or above ${formatPrice(high!)}.`,
           invalidationMeasurable: true,
           invalidationRule: "completed_close_above",
           invalidationLevel: high,
@@ -892,7 +919,7 @@ export function buildPentagonalThesis(input: PentagonalThesisInput): PentagonalT
     watchItems.push(item({
       id: "watch:levels",
       section: "watch",
-      statement: `Watch a completed daily close below ${formatPrice(low!)} or above ${formatPrice(high!)}. Those are the edges of the last ${bars.range.sessions} completed sessions.`,
+      statement: `Watch a completed daily close at or below ${formatPrice(low!)} or at or above ${formatPrice(high!)}. Those are the edges of the last ${bars.range.sessions} completed sessions.`,
       kind: "inference",
       epistemic: "verified",
       source: "completed-daily-bars",

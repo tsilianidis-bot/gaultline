@@ -38,10 +38,12 @@ export function PentagonalThesisNarrative({
   symbol,
   surface,
   compact = false,
+  thesis: provided,
 }: {
   symbol?: string | null;
   surface: string;
   compact?: boolean;
+  thesis?: PentagonalThesis | null;
 }) {
   const store = useTickerStore();
   const [typed, setTyped] = useState("");
@@ -50,9 +52,9 @@ export function PentagonalThesisNarrative({
   const active = (symbol ?? stored ?? chosen ?? "").trim().toUpperCase();
   const query = trpc.pentagonalThesis.forSymbol.useQuery(
     { symbol: active },
-    { enabled: active.length > 0, staleTime: 60_000, refetchOnWindowFocus: false },
+    { enabled: provided == null && active.length > 0, staleTime: 60_000, refetchOnWindowFocus: false },
   );
-  const thesis = query.data as PentagonalThesis | undefined;
+  const thesis = (provided ?? query.data) as PentagonalThesis | undefined;
 
   return (
     <section
@@ -114,6 +116,11 @@ export function PentagonalThesisNarrative({
               <article key={id}>
                 <h3 style={{ margin: 0, color: "#00D4FF", fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase" }}>{part.title}</h3>
                 <p style={{ margin: "6px 0 0", fontSize: 14, lineHeight: 1.6, color: "#D5DEE8" }}>{part.summary}</p>
+                <p data-thesis-attribution={surface} style={{ margin: "6px 0 0", color: "#8EA0B5", fontSize: 10, letterSpacing: "0.04em", lineHeight: 1.45 }}>
+                  {partItems.length
+                    ? partItems.map(entry => `${entry.kind} · ${entry.epistemic} · ${entry.source} · ${stamp(entry.timestamp)}`).join(" | ")
+                    : "No attributed item"}
+                </p>
                 {id === "next" && thesis.sections.next.scenarios.map(scenario => (
                   <details key={scenario.id} style={{ marginTop: 8 }}>
                     <summary style={{ cursor: "pointer", color: "#FFD700" }}>{scenario.title} · {scenario.confidence} evidence</summary>

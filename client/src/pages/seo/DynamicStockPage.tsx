@@ -38,11 +38,11 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     relatedSymbols: ["amd", "msft", "meta", "pltr"],
     relatedCrypto: ["tao"],
     faqs: [
-      { q: "Is NVDA a buy right now?", a: "FAULTLINE evaluates NVDA through a macro regime lens. In bull regimes with low systemic pressure, NVDA tends to outperform. In elevated-pressure or crash regimes, NVDA's high beta amplifies drawdowns. Always check the current regime before entering." },
-      { q: "What is NVDA's AI risk score?", a: "FAULTLINE's AI risk score for NVDA incorporates valuation multiples, AI concentration exposure, momentum regime, and systemic market pressure. High AI concentration scores indicate elevated bubble risk." },
-      { q: "How does NVDA perform in a market crash?", a: "NVDA is a high-beta AI-concentrated stock. In historical crash scenarios (2022 bear market, COVID crash), NVDA experienced drawdowns of 60–70%. FAULTLINE's crash probability indicator is a critical input for NVDA position sizing." },
-      { q: "What are the key risks for NVDA in 2025–2026?", a: "The primary risks are: AI capex cycle deceleration, China export restrictions reducing addressable market, custom ASIC competition from hyperscalers, and valuation compression if growth slows." },
-      { q: "How does FAULTLINE track NVDA?", a: "FAULTLINE monitors NVDA's momentum score, macro regime fit, AI bubble exposure, and systemic risk alignment. Signals are updated daily and classified as Bullish, Neutral, or Risk-Off." },
+      { q: "What does the NVDA page show?", a: "The live NVDA read is the shared Pentagonal Thesis on this page. It separates observed inputs from gaps. It does not answer whether NVDA should be bought or sold." },
+      { q: "Does FAULTLINE assign NVDA a trade classification?", a: "No. This page does not classify NVDA as bullish, neutral, or risk-off, and it does not publish a confidence percentage." },
+      { q: "Where do price levels come from?", a: "Only a fresh completed-session range inside the shared thesis is shown. Static support and resistance figures are not published on this page." },
+      { q: "What are commonly discussed risks for NVDA?", a: "Company filings and news discuss AI capex cycles, export rules, competition, and valuation. Those topics are not drivers in the thesis unless a fresh sourced observation is attached." },
+      { q: "How does FAULTLINE read NVDA?", a: "The shared thesis uses the observations it actually has, such as a delayed quote and completed daily bars. Missing insider filings, a macro calendar, and sector rotation stay listed as gaps." },
     ],
   },
   pltr: {
@@ -242,11 +242,10 @@ function getSymbolData(symbol: string): SymbolData {
     relatedSymbols: ["nvda", "pltr", "tsla", "meta", "amd"],
     relatedCrypto: ["btc", "eth"],
     faqs: [
-      { q: `What is ${upper}'s current signal?`, a: `FAULTLINE generates daily signals for ${upper} based on macro regime, momentum, and systemic pressure. Sign up for FAULTLINE to access the current ${upper} signal.` },
-      { q: `How does ${upper} perform in different market regimes?`, a: `${upper}'s performance varies significantly across bull, bear, and crash regimes. FAULTLINE's regime tracker classifies current conditions to help you align ${upper} exposure appropriately.` },
-      { q: `What are the key risks for ${upper}?`, a: `Key risks include macro regime deterioration, systemic pressure elevation, sector rotation, and liquidity tightening. FAULTLINE monitors all four dimensions daily.` },
-      { q: `How does FAULTLINE track ${upper}?`, a: `FAULTLINE monitors ${upper}'s momentum score, macro regime fit, and systemic pressure alignment. Signals are updated daily and classified as Bullish, Neutral, or Risk-Off.` },
-      { q: `Should I buy ${upper} now?`, a: `FAULTLINE does not provide financial advice. We provide macro regime context, systemic risk scores, and signal intelligence to help you make informed decisions. Always check the current regime before entering any position.` },
+      { q: `What does the ${upper} page show?`, a: `The live ${upper} read is the shared Pentagonal Thesis on this page. It does not publish a separate trade instruction.` },
+      { q: `Does this page classify ${upper}?`, a: `No. The page does not label ${upper} bullish, neutral, or risk-off, and it does not publish a confidence percentage.` },
+      { q: `Where do price levels come from?`, a: `Only a fresh completed-session range inside the shared thesis is shown. This page does not invent key levels.` },
+      { q: `What is left out of the ${upper} read?`, a: `Insider filings, a macro-release calendar, and sector rotation are gaps unless a fresh sourced observation is attached. A gap is not treated as a driver.` },
     ],
   };
 }
@@ -257,11 +256,7 @@ export default function DynamicStockPage() {
   const upper = symbol.toUpperCase();
   const data = getSymbolData(symbol);
 
-  // Live signal data from DB
-  const { data: liveSignal } = trpc.organicContent.getSignalPage.useQuery(
-    { symbol: upper },
-    { retry: false, staleTime: 5 * 60 * 1000 }
-  );
+  // Stored marketing copy is not a second stock conclusion. The thesis above is the read.
 
   // CTA click tracker
   const trackCta = trpc.organicContent.trackCtaClick.useMutation();
@@ -269,14 +264,19 @@ export default function DynamicStockPage() {
     trackCta.mutate({ pageSlug: `/stock/${symbol}`, ctaType });
   }, [symbol, trackCta]);
 
-  const unsupportedFaq = /crash probability|% confidence|\bis a buy\b|drawdowns of \d/i;
+  const displayFaqs: { q: string; a: string }[] = [
+    { q: `What does the ${upper} page show?`, a: `The live ${upper} read is the shared Pentagonal Thesis on this page. It does not publish a separate trade instruction.` },
+    { q: `Does this page classify ${upper}?`, a: `No. The page does not publish a directional classification or a confidence percentage.` },
+    { q: `Where do price levels come from?`, a: `Only a fresh completed-session range inside the shared thesis is shown. This page does not print a static support or resistance figure.` },
+    { q: `What is left out of the ${upper} read?`, a: `Insider filings, a macro-release calendar, and sector rotation are gaps unless a fresh sourced observation is attached. A gap is not treated as a driver.` },
+  ];
   const schemaData = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "Article",
-        "headline": `${upper} Signal — Stock Risk Score & Analysis | FAULTLINE`,
-        "description": `Real-time ${upper} signal analysis. FAULTLINE tracks ${upper} macro regime fit, momentum score, volatility risk, and key price levels.`,
+        "headline": `${upper} — shared stock thesis | FAULTLINE`,
+        "description": `The ${upper} page shows the shared Pentagonal Thesis. It does not publish a trade instruction or a static price level.`,
         "author": { "@type": "Organization", "name": "FAULTLINE" },
         "publisher": { "@type": "Organization", "name": "FAULTLINE", "url": "https://getfaultline.live" },
         "url": `https://getfaultline.live/stock/${symbol}`,
@@ -284,21 +284,14 @@ export default function DynamicStockPage() {
       },
       {
         "@type": "FAQPage",
-        "mainEntity": (liveSignal?.faqJson ? JSON.parse(liveSignal.faqJson) : data.faqs).filter((faq: { q?: string; a?: string; question?: string; answer?: string }) => !unsupportedFaq.test(`${faq.q ?? faq.question ?? ""} ${faq.a ?? faq.answer ?? ""}`)).map((faq: { q?: string; a?: string; question?: string; answer?: string }) => ({
+        "mainEntity": displayFaqs.map(faq => ({
           "@type": "Question",
-          "name": faq.q ?? faq.question,
-          "acceptedAnswer": { "@type": "Answer", "text": faq.a ?? faq.answer },
+          "name": faq.q,
+          "acceptedAnswer": { "@type": "Answer", "text": faq.a },
         })),
       },
     ],
   };
-
-  const displayFaqs: { q: string; a: string }[] = (liveSignal?.faqJson
-    ? JSON.parse(liveSignal.faqJson).map((f: { question?: string; answer?: string; q?: string; a?: string }) => ({
-        q: f.question ?? f.q ?? "",
-        a: f.answer ?? f.a ?? "",
-      }))
-    : data.faqs).filter((faq: { q: string; a: string }) => !unsupportedFaq.test(`${faq.q} ${faq.a}`));
 
   return (
     <div className="min-h-screen bg-[#050608] text-white">
@@ -354,7 +347,7 @@ export default function DynamicStockPage() {
             <div>
               <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-2">LIVE SIGNAL</div>
               <p className="text-white font-semibold mb-1">Access the current {upper} signal</p>
-              <p className="text-[#A8B8CC] text-sm">Macro regime fit · Momentum score · Risk classification · Key levels</p>
+              <p className="text-[#A8B8CC] text-sm">The shared thesis on this page is the stock read. It does not add a separate trade call.</p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <a href="/pricing" onClick={() => handleCtaClick("pricing")} className="text-[11px] font-mono tracking-widest text-[#A8B8CC] border border-white/20 hover:border-[#00D4FF]/40 px-4 py-2.5 rounded transition-colors">
@@ -395,8 +388,8 @@ export default function DynamicStockPage() {
               <div className="text-white text-sm font-semibold group-hover:text-[#00D4FF] transition-colors">Market Regime Tracker</div>
             </Link>
             <Link href="/market-crash-probability-2026" onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-red-400/30 transition-all">
-              <div className="text-[10px] font-mono tracking-widest text-red-400 mb-2">CRASH RISK</div>
-              <div className="text-white text-sm font-semibold group-hover:text-[#00D4FF] transition-colors">Crash Probability 2026</div>
+              <div className="text-[10px] font-mono tracking-widest text-red-400 mb-2">CONTEXT</div>
+              <div className="text-white text-sm font-semibold group-hover:text-[#00D4FF] transition-colors">Market stress research</div>
             </Link>
             <Link href="/volatility-dashboard" onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-yellow-400/30 transition-all">
               <div className="text-[10px] font-mono tracking-widest text-yellow-400 mb-2">VOLATILITY</div>
@@ -410,7 +403,7 @@ export default function DynamicStockPage() {
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
               <div className="text-[10px] font-mono tracking-[0.3em] text-[#A8B8CC]/60 mb-1">FAULTLINE DEMO</div>
-              <p className="text-white font-semibold text-sm">See how FAULTLINE tracks {upper} in real-time</p>
+              <p className="text-white font-semibold text-sm">Open the app to read the same shared thesis for {upper}</p>
             </div>
             <a href={getLoginUrl()} onClick={() => handleCtaClick("demo")} className="text-[11px] font-mono tracking-widest text-[#00D4FF] border border-[#00D4FF]/30 hover:bg-[#00D4FF]/10 px-5 py-2.5 rounded font-bold transition-colors whitespace-nowrap">
               VIEW DEMO →
@@ -459,7 +452,7 @@ export default function DynamicStockPage() {
           <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-3">FAULTLINE INTELLIGENCE</div>
           <h2 className="text-2xl font-bold text-white mb-3">Get the Live {upper} Signal</h2>
           <p className="text-[#A8B8CC] text-sm mb-6 max-w-md mx-auto">
-            Access real-time {upper} signals, macro regime classification, and systemic risk scores. Updated daily by FAULTLINE's intelligence engine.
+            The live read is the shared thesis above. This page does not add a separate classification.
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <a href={getLoginUrl()} onClick={() => handleCtaClick("start_free")} className="inline-flex items-center gap-2 text-[12px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-8 py-4 rounded font-bold transition-colors">

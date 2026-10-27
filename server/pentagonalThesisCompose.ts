@@ -98,7 +98,7 @@ export async function fetchYahooProfile(symbol: string): Promise<ProfileObservat
       trailingPe: rawNumber(result.summaryDetail?.trailingPE),
       earningsDate: earningsUnix != null ? new Date(earningsUnix * 1000).toISOString() : null,
       source: "yahoo-quote-summary",
-      observedAt: new Date().toISOString(),
+      observedAt: null,
     };
     if (!profile.sector && !profile.industry && profile.marketCap == null && profile.trailingPe == null && !profile.earningsDate) return null;
     return profile;

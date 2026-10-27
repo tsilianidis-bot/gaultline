@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
@@ -9,10 +9,12 @@ import {
   thesisStatements,
   type CompletedBar,
   type PentagonalThesisInput,
+  type ThesisRecordPlan,
 } from "../shared/pentagonalThesis";
 import { composeStockPentagonalThesis } from "./pentagonalThesisCompose";
-import { maybeAppendThesisRecord, planAppendOnlyRecord, thesisRecordWritesEnabled } from "./pentagonalThesisRecord";
-import type { YahooQuote } from "./yahooProxy";
+import { assertAppendOnlyPlan, maybeAppendThesisRecord, planAppendOnlyRecord, thesisRecordWritesEnabled } from "./pentagonalThesisRecord";
+import { assertPentagonalThesisRateLimit, resetPentagonalThesisRateLimit } from "./routers/pentagonalThesis";
+import { dropOpenSessionBar, type YahooQuote } from "./yahooProxy";
 
 const root = resolve(import.meta.dirname, "..");
 const NOW = "2026-10-27T15:00:00.000Z";
@@ -57,6 +59,7 @@ const SURFACES = [
   "client/src/components/HomeStockIntelSection.tsx",
   "client/src/pages/seo/AIStocksDashboard.tsx",
   "client/src/pages/seo/DynamicStockPage.tsx",
+  "client/src/pages/seo/StockSignalPage.tsx",
   "client/src/pages/StockHeatmap.tsx",
   "client/src/pages/Now.tsx",
   "client/src/pages/Why.tsx",
@@ -112,11 +115,16 @@ describe("Pentagonal Thesis engine", () => {
     expect(bull.confidence).toBe("moderate");
     expect(bull.invalidationMeasurable).toBe(true);
     expect(scenarioIsInvalidated(bull, 89)).toBe(true);
+    expect(scenarioIsInvalidated(bull, 90)).toBe(true);
     expect(scenarioIsInvalidated(bull, 100)).toBe(false);
     expect(scenarioIsInvalidated(base, 100)).toBe(false);
+    expect(scenarioIsInvalidated(base, 90)).toBe(true);
+    expect(scenarioIsInvalidated(base, 110)).toBe(true);
     expect(scenarioIsInvalidated(base, 121)).toBe(true);
     expect(scenarioIsInvalidated(bear, 121)).toBe(true);
+    expect(scenarioIsInvalidated(bear, 110)).toBe(true);
     expect(scenarioIsInvalidated(bear, 100)).toBe(false);
+    expect(bull.invalidation.toLowerCase()).toContain("at or below");
     expect(thesis.sections.do.summary.toLowerCase()).toContain("not a recommendation to buy, sell");
   });
 
@@ -217,14 +225,111 @@ describe("Pentagonal Thesis engine", () => {
     }
     const record = readFileSync(resolve(root, "server/pentagonalThesisRecord.ts"), "utf8");
     const compose = readFileSync(resolve(root, "server/pentagonalThesisCompose.ts"), "utf8");
-    const migration = readFileSync(resolve(root, "drizzle/0072_pentagonal_thesis_records.sql"), "utf8");
+    const migration = readFileSync(resolve(root, "drizzle/0075_pentagonal_thesis_records.sql"), "utf8");
+    expect(existsSync(resolve(root, "drizzle/0072_pentagonal_thesis_records.sql"))).toBe(false);
+    const journal = JSON.parse(readFileSync(resolve(root, "drizzle/meta/_journal.json"), "utf8")) as { entries: Array<{ tag: string; when: number }> };
+    const entry = journal.entries.find(item => item.tag === "0075_pentagonal_thesis_records");
+    expect(entry?.when).toBeGreaterThan(1792100000000);
+    expect(journal.entries.some(item => item.tag.startsWith("0072_pentagonal"))).toBe(false);
     expect(record).not.toContain("db.update(");
     expect(record).not.toContain(".update(pentagonalThesisRecords");
+    expect(record).not.toContain("db.delete(");
     expect(record).toContain(".insert(");
+    expect(record).toContain("assertAppendOnlyPlan");
+    expect(migration).toContain("pentagonalThesisOutcomeScores");
+    expect(migration).toContain("BEFORE UPDATE");
+    expect(migration).toContain("BEFORE DELETE");
     expect(compose).not.toContain("calculateFaultlinePressure");
     expect(compose).not.toContain("crisisProbability");
     expect(migration).toContain("Do not apply");
     expect(readFileSync(resolve(root, ".env.example"), "utf8")).toContain("PENTAGONAL_THESIS_RECORD_WRITES=");
     expect(readFileSync(resolve(root, "client/src/pages/UniversalSymbolIntelligence.tsx"), "utf8")).toContain("not applied to crypto symbols");
+    expect(readFileSync(resolve(root, "client/src/pages/mobile/MobileWatchlist.tsx"), "utf8")).not.toContain("stockItems[0]");
+    expect(readFileSync(resolve(root, "server/pentagonalThesisCompose.ts"), "utf8")).not.toContain("observedAt: new Date()");
+    expect(readFileSync(resolve(root, "client/src/components/HomeStockIntelSection.tsx"), "utf8")).not.toContain("495+ MORE ASSETS LOCKED");
+    expect(readFileSync(resolve(root, "client/src/components/HomeStockIntelSection.tsx"), "utf8")).not.toContain("Signal Classification System");
+  });
+
+  it("rejects a mixed-age bar series and keeps only the contiguous recent tail", () => {
+    const series = bars(20);
+    series[0] = { ...series[0]!, timestamp: "2020-01-02T20:00:00.000Z" };
+    const thesis = buildPentagonalThesis(input({ bars: series }));
+    expect(thesis.gaps.some(entry => entry.field === "bars-contiguity" && entry.citedAsDriver === false)).toBe(true);
+    expect(thesis.items.some(entry => entry.id === "happening:range")).toBe(false);
+    expect(thesis.items.find(entry => entry.id === "happening:last-close")?.driver).toBe(true);
+    expect(thesis.items.find(entry => entry.id === "happening:momentum")?.driver).toBe(true);
+  });
+
+  it("treats a profile without a provider as-of as unverified", async () => {
+    const unverified = await composeStockPentagonalThesis("AAPL", {
+      now: new Date(NOW),
+      useCache: false,
+      deps: {
+        getQuote: async () => null,
+        getDailyBars: async () => [],
+        getMarket: async () => null,
+        getProfile: async () => ({
+          name: null,
+          sector: "Technology",
+          industry: "Hardware",
+          marketCap: 1_000,
+          trailingPe: 20,
+          earningsDate: NOW,
+          source: "yahoo-quote-summary",
+          observedAt: null,
+        }),
+      },
+    });
+    expect(unverified.items.some(entry => entry.id === "happening:sector")).toBe(false);
+    expect(unverified.gaps.some(entry => entry.field === "profile" && /as-of/i.test(entry.reason) && entry.citedAsDriver === false)).toBe(true);
+
+    const verified = await composeStockPentagonalThesis("AAPL", {
+      now: new Date(NOW),
+      useCache: false,
+      deps: {
+        getQuote: async () => null,
+        getDailyBars: async () => [],
+        getMarket: async () => null,
+        getProfile: async () => ({
+          name: null,
+          sector: "Technology",
+          industry: null,
+          marketCap: null,
+          trailingPe: null,
+          earningsDate: null,
+          source: "yahoo-quote-summary",
+          observedAt: NOW,
+        }),
+      },
+    });
+    expect(verified.items.find(entry => entry.id === "happening:sector")?.driver).toBe(true);
+    expect(verified.items.find(entry => entry.id === "happening:sector")?.timestamp).toBe(NOW);
+  });
+
+  it("drops an in-progress session bar and keeps a completed one", () => {
+    const start = 1_700_000_000;
+    const end = start + 6 * 60 * 60;
+    const meta = { currentTradingPeriod: { regular: { start, end } } };
+    const completed = { timestamp: (start - 20 * 60 * 60) * 1000, close: 1 };
+    const openBar = { timestamp: start * 1000, close: 2 };
+    expect(dropOpenSessionBar([completed, openBar], meta, (start + 60) * 1000)).toEqual([completed]);
+    expect(dropOpenSessionBar([completed, openBar], meta, (end + 60) * 1000)).toEqual([completed, openBar]);
+  });
+
+  it("refuses a plan that would rewrite the prior record", () => {
+    const thesis = buildPentagonalThesis(input());
+    const prior = { recordId: "prior-record", thesisVersion: 3, payloadJson: "{\"frozen\":true}" };
+    const plan = planAppendOnlyRecord(prior, thesis, "next-record");
+    expect(prior.payloadJson).toBe("{\"frozen\":true}");
+    const rewritten: ThesisRecordPlan = { ...plan, recordId: prior.recordId, thesisVersion: prior.thesisVersion, supersedesRecordId: null };
+    expect(() => assertAppendOnlyPlan(prior, rewritten)).toThrow(/rewrite/);
+  });
+
+  it("rate-limits the public thesis procedure", () => {
+    resetPentagonalThesisRateLimit();
+    for (let i = 0; i < 60; i += 1) assertPentagonalThesisRateLimit("test-ip", 1_000);
+    expect(() => assertPentagonalThesisRateLimit("test-ip", 1_000)).toThrow(/Too many thesis requests/);
+    expect(() => assertPentagonalThesisRateLimit("other-ip", 1_000)).not.toThrow();
+    resetPentagonalThesisRateLimit();
   });
 });

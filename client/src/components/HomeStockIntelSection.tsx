@@ -112,17 +112,6 @@ function MacroEnvPanel() {
   );
 }
 
-// ── Momentum Classification Legend ───────────────────────────
-const MOMENTUM_CLASSES = [
-  { label: 'Momentum Breakout',   color: '#00D4FF', desc: 'Price + volume surge above regime threshold' },
-  { label: 'AI Bubble Exposure',  color: '#FF9500', desc: 'Elevated correlation to speculative AI cycle' },
-  { label: 'Macro Beneficiary',   color: '#00FF88', desc: 'Positively aligned with current macro regime' },
-  { label: 'Macro Vulnerable',    color: '#FF2D55', desc: 'Structurally exposed to macro headwinds' },
-  { label: 'Liquidity Sensitive', color: '#FFD700', desc: 'Performance tied to funding & credit conditions' },
-  { label: 'Recession Defensive', color: '#94A3B8', desc: 'Historically resilient in contraction cycles' },
-  { label: 'Neutral / Watch',     color: '#64748B', desc: 'No dominant signal — monitor for regime shift' },
-];
-
 // ── Main Section ──────────────────────────────────────────────
 export default function HomeStockIntelSection() {
   const { isAuthenticated } = useAuth();
@@ -207,30 +196,6 @@ export default function HomeStockIntelSection() {
         {/* Macro environment panel */}
         <MacroEnvPanel />
 
-        {/* Signal classification legend */}
-        <div style={{
-          background: 'rgba(8,10,14,0.85)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: '4px',
-          padding: '12px 14px',
-          marginBottom: '14px',
-        }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '10px' }}>Signal Classification System</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {MOMENTUM_CLASSES.map(mc => (
-              <div key={mc.label} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                <span style={{
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', fontWeight: 700,
-                  letterSpacing: '0.06em', textTransform: 'uppercase',
-                  padding: '2px 7px', borderRadius: '2px', flexShrink: 0,
-                  background: `${mc.color}10`, color: mc.color, border: `1px solid ${mc.color}25`,
-                }}>{mc.label}</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(100,116,139,0.55)', lineHeight: 1.5, paddingTop: '2px' }}>{mc.desc}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Stock intelligence cards */}
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '8px' }}>
           Shared stock thesis
@@ -239,36 +204,6 @@ export default function HomeStockIntelSection() {
           {["NVDA", "XLU", "ARKK"].map(symbol => (
             <PentagonalThesisNarrative key={symbol} symbol={symbol} surface="ai-stock-intelligence" compact />
           ))}
-        </div>
-
-        {/* Lock overlay teaser */}
-        <div style={{
-          position: 'relative',
-          background: 'rgba(8,10,14,0.92)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: '4px',
-          padding: '18px 14px',
-          marginBottom: '16px',
-          overflow: 'hidden',
-          textAlign: 'center',
-        }}>
-          {/* Blurred ghost rows */}
-          <div style={{ filter: 'blur(4px)', opacity: 0.3, pointerEvents: 'none', marginBottom: '14px' }}>
-            {['MSFT', 'TSLA', 'GLD', 'TLT', 'SPY'].map(t => (
-              <div key={t} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '14px', color: '#F0F4FF' }}>{t}</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: '#00D4FF' }}>████ ██%</span>
-              </div>
-            ))}
-          </div>
-          {/* Lock overlay */}
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(5,6,8,0.75)', backdropFilter: 'blur(2px)' }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00D4FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '8px', opacity: 0.8 }}>
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: '#00D4FF', letterSpacing: '0.15em', marginBottom: '4px' }}>495+ MORE ASSETS LOCKED</div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.08em' }}>Full screener available on Core, Pro &amp; Founding</div>
-          </div>
         </div>
 
         {/* CTA */}
@@ -281,7 +216,7 @@ export default function HomeStockIntelSection() {
           marginBottom: '4px',
         }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>
-            Full Intelligence · 500+ Signals · Live Data
+            Shared stock thesis · open a symbol to read it
           </div>
           <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '16px', color: '#F0F4FF', marginBottom: '12px', letterSpacing: '0.03em' }}>
             Unlock the complete stock intelligence engine
