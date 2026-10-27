@@ -98,7 +98,7 @@ describe("Signal calculation / methodology untouched", () => {
   ];
 
   it("engine-diff is empty against branch base for signal engines", () => {
-    const base = "1cfa1299f6644a7eb9a60246330c7b9a13ccc433";
+    const base = process.env.FAULTLINE_PRESERVATION_BASE_SHA ?? "1cfa1299f6644a7eb9a60246330c7b9a13ccc433";
     for (const file of engineFiles) {
       const diff = execSync(`git diff -- ${file}`, { cwd: root, encoding: "utf8" });
       expect(diff, `${file} must be unchanged`).toBe("");

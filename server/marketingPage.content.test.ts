@@ -77,11 +77,11 @@ describe("Marketing page positioning guardrails", () => {
 describe("Landing page structure", () => {
   it("renders the sections in the agreed order", () => {
     const main = page.slice(page.indexOf('<main id="main">'), page.indexOf("</main>"));
-    const order = ["<Hero />", "<PentagonalThesis />", "<Pressure />", "<HistoricalContext />", "<Plato />", "<Capabilities />", "<TrustTeaser />", "<FinalCta />"];
-    const positions = order.map((tag) => main.indexOf(tag));
+    const order = ["Hero", "NarratedStorySection", "PentagonalThesis", "Pressure", "HistoricalContext", "Plato", "Capabilities", "TrustTeaser", "FinalCta"];
+    const positions = order.map((tag) => main.indexOf(`<${tag}`));
     expect(positions.every((pos) => pos >= 0)).toBe(true);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
-    expect((main.match(/<[A-Z][A-Za-z]+ \/>/g) ?? [])).toHaveLength(order.length);
+    expect([...main.matchAll(/<([A-Z][A-Za-z]+)\b[^>]*\/>/g)].map((match) => match[1])).toEqual(order);
   });
 
   it("keeps the landing-section ids used by App.tsx placements", () => {

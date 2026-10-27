@@ -69,12 +69,13 @@ describe("amber-gold seismograph trace", () => {
 
   it("renders behind the hero and the thesis section, leaving the cyan underlay in place", () => {
     const page = read("client/src/pages/MarketingSite.tsx");
-    const hero = page.slice(page.indexOf("function Hero()"), page.indexOf("function Pressure()"));
+    const hero = page.slice(page.indexOf("function Hero("), page.indexOf("function Pressure()"));
     expect(hero).toContain("<SeismicUnderlay");
     expect(hero).toContain("<AmberSeismograph");
     expect(read("client/src/components/landing/thesis/ThesisSection.tsx")).toContain("<AmberSeismograph");
     const main = page.slice(page.indexOf('<main id="main">'));
-    expect(main.indexOf("<Hero />")).toBeLessThan(main.indexOf("<PentagonalThesis />"));
-    expect(main.slice(main.indexOf("<Hero />"), main.indexOf("<PentagonalThesis />")).trim()).toBe("<Hero />");
+    expect(main.indexOf("<Hero ")).toBeLessThan(main.indexOf("<NarratedStorySection />"));
+    expect(main.indexOf("<NarratedStorySection />")).toBeLessThan(main.indexOf("<PentagonalThesis />"));
+    expect(main).toContain("!initialSection && <NarratedStorySection />");
   });
 });

@@ -10,8 +10,11 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { EngineProvider } from "./contexts/EngineContext";
 import AppLayout from "./components/AppLayout";
+import { StoryReplayContext } from "./contexts/StoryReplayContext";
+import WebsiteIntroBoundary from "./components/WebsiteIntroBoundary";
+import { trackIntroEvent } from "./lib/introAnalytics";
 import IntroScreen from "./components/IntroScreen";
-import CinematicIntro from "./components/CinematicIntro";
+const WebsitePressureIntro = lazy(() => import("./components/WebsitePressureIntro"));
 import FREDDebugConsole from "./components/FREDDebugConsole";
 import CookieConsent from './components/CookieConsent';
 import RouteTracker from './components/RouteTracker';
@@ -58,7 +61,8 @@ const Guide           = lazy(() => import("./pages/Guide"));
 const AdminUsers      = lazy(() => import("./pages/AdminUsers"));
 const UserAccount      = lazy(() => import("./pages/UserAccount"));
 const AdminPortal      = lazy(() => import("./pages/AdminPortal"));
-const MarketingSite    = lazy(() => import("./pages/MarketingSite"));
+const preloadMarketingSite = () => import("./pages/MarketingSite");
+const MarketingSite = lazy(preloadMarketingSite);
 const Legal            = lazy(() => import("./pages/Legal"));
 const Blog             = lazy(() => import("./pages/Blog"));
 const BlogPost         = lazy(() => import("./pages/BlogPost"));
@@ -213,6 +217,24 @@ function PageLoader() {
         LOADING MODULE…
       </span>
     </div>
+  );
+}
+
+function PressureIntroLoadingFallback({ onComplete, onFailure }: { onComplete: () => void; onFailure: () => void }) {
+  useEffect(() => {
+    const deadline = window.setTimeout(onFailure, 2500);
+    return () => window.clearTimeout(deadline);
+  }, [onFailure]);
+  return (
+    <section role="dialog" aria-modal="true" aria-label="FAULTLINE cinematic intro"
+      style={{ position: "fixed", inset: 0, zIndex: 10000, background: "#030506", color: "#e8f7fb" }}>
+      <img src="/media/brand-cinematic/cinematic-intro-poster.webp" alt=""
+        style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+      <button type="button" onClick={onComplete} aria-label="Skip intro"
+        style={{ position: "absolute", top: "max(1rem, env(safe-area-inset-top))", right: "max(1rem, env(safe-area-inset-right))", minHeight: 44, border: "1px solid #65d6e5", padding: "0.7rem 1rem", color: "#e8f7fb", background: "#030506", cursor: "pointer", fontSize: "0.7rem", letterSpacing: "0.1em" }}>
+        SKIP INTRO →
+      </button>
+    </section>
   );
 }
 
@@ -839,8 +861,8 @@ function getAshaBriefingKey(userId?: string | null): string {
 
 // ── Determine first-time status synchronously at module level ─────────────
 // This must be evaluated before ANY component renders so the initial state
-// Cinematic shows every session unless user is in demo mode or deep-linking.
-// localStorage gate removed — user can always skip with the SKIP button.
+// reuses the durable completion key and does not replay for returning visitors.
+// Existing public/deep-link and demo exclusions remain unchanged.
 function shouldShowCinematic(): boolean {
   try {
     if (isDemoPath()) return false;
@@ -862,6 +884,10 @@ function shouldShowCinematic(): boolean {
     if (path.startsWith('/app/') && path !== '/app/dashboard' && path !== '/app/') return false;
     // First-time visitor: cinematic has never been completed
     const completed = localStorage.getItem(CINEMATIC_COMPLETED_KEY);
+    if (!completed && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      localStorage.setItem(CINEMATIC_COMPLETED_KEY, '1');
+      return false;
+    }
     if (!completed) return true;
     // Returning visitor: skip cinematic entirely
     return false;
@@ -891,6 +917,8 @@ function App() {
   // cinematicDone: false until cinematic completes or is skipped.
   // First-time visitors: cinematic plays. Returning visitors: skip.
   const [cinematicDone, setCinematicDone] = useState<boolean>(() => !FIRST_TIME);
+  const [introVisible, setIntroVisible] = useState(FIRST_TIME);
+  const [storyReplay, setStoryReplay] = useState(false);
 
   // introComplete: always true for first-time users (cinematic IS the intro)
   // and always true for returning users (IntroScreen is no longer a session gate).
@@ -971,6 +999,35 @@ function App() {
     setCinematicDone(true);
   }, []);
 
+  const introActive = (introVisible && !isReturning) || storyReplay;
+  const requestStoryReplay = useCallback(() => {
+    if (location === '/' && !introActive) {
+      document.querySelector<HTMLVideoElement>('video[aria-label="Narrated presentation"]')?.pause();
+      trackIntroEvent('intro_replay', { mode: 'replay', muted: true, source: 'none' });
+      setStoryReplay(true);
+    }
+  }, [location, introActive]);
+  const revealHomepage = useCallback(() => {
+    if (!cinematicDone) handleCinematicComplete();
+  }, [cinematicDone, handleCinematicComplete]);
+  const closeStory = useCallback(() => {
+    setIntroVisible(false);
+    setStoryReplay(false);
+  }, []);
+  const failStory = useCallback(() => {
+    trackIntroEvent('intro_failed', { mode: storyReplay ? 'replay' : 'first_visit', reason: 'chunk_unavailable', source: 'none' });
+    revealHomepage();
+    closeStory();
+  }, [storyReplay, revealHomepage, closeStory]);
+  const skipLoadingStory = useCallback(() => {
+    trackIntroEvent('intro_skipped', { mode: storyReplay ? 'replay' : 'first_visit', reason: 'chunk_loading_skip', source: 'none' });
+    revealHomepage();
+    closeStory();
+  }, [storyReplay, revealHomepage, closeStory]);
+  useEffect(() => {
+    if (introActive && !isProductPath) void preloadMarketingSite().catch(() => {});
+  }, [introActive, isProductPath]);
+
   // Resolve auth gate: if auth has loaded and user is present, mark done automatically
     useEffect(() => {
     if (!authLoading && user && !authGateDone) {
@@ -1023,6 +1080,7 @@ function App() {
   }, [cinematicDone, showAuthGate, showPlatoBriefing]);
 
   const appContent = (
+    <StoryReplayContext.Provider value={requestStoryReplay}>
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">
         <EngineProvider>
@@ -1032,14 +1090,14 @@ function App() {
             {/* Demo mode banner — shown at top of every page in demo mode */}
             {isDemo && <DemoBanner />}
 
-            {/* ── RENDER GATE 1: CinematicIntro ─────────────────────────────
-                 First-time users: this is the ONLY thing that renders.
-                 Nothing below this block mounts until cinematicDone = true.
-                 No IntroScreen. No loading bar. No dashboard. No auth UI.
-                 The very first rendered frame is the opening Earth scene. */}
-            {/* First-time visitor: play cinematic */}
-            {!cinematicDone && !isReturning && (
-              <CinematicIntro onComplete={handleCinematicComplete} />
+            {/* First visit or explicit replay only. The unchanged homepage mounts
+                behind this overlay so its resources can load during the film. */}
+            {introActive && (
+              <WebsiteIntroBoundary onFailure={failStory}>
+                <Suspense fallback={<PressureIntroLoadingFallback onComplete={skipLoadingStory} onFailure={failStory} />}>
+                  <WebsitePressureIntro mode={storyReplay ? 'replay' : 'first_visit'} onReveal={revealHomepage} onComplete={closeStory} />
+                </Suspense>
+              </WebsiteIntroBoundary>
             )}
 
             {/* ProductExperience is preserved in source and is not mounted on first-run. */}
@@ -1057,9 +1115,11 @@ function App() {
                  Kept in DOM during cinematic so engine/data loads in background.
                  visibility:hidden prevents any flash of dashboard content. */}
             <div
+              inert={introActive ? true : undefined}
+              aria-hidden={introActive ? true : undefined}
               style={{
                 opacity: dashVisible ? 1 : 0,
-                transition: 'opacity 0.8s cubic-bezier(0.23,1,0.32,1)',
+                transition: isProductPath ? 'opacity 0.8s cubic-bezier(0.23,1,0.32,1)' : 'opacity 180ms ease',
                 visibility: cinematicDone ? 'visible' : 'hidden',
                 pointerEvents: cinematicDone ? 'auto' : 'none',
                 paddingTop: isDemo ? '30px' : undefined,
@@ -1080,6 +1140,7 @@ function App() {
         </EngineProvider>
       </ThemeProvider>
     </ErrorBoundary>
+    </StoryReplayContext.Provider>
   );
 
   return isDemo ? <DemoProvider>{appContent}</DemoProvider> : appContent;

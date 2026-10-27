@@ -625,8 +625,10 @@ describe("Scenario 14 — Completed overlays removed from DOM", () => {
     const { resolve } = await import("node:path");
     const root = resolve(import.meta.dirname, "..");
     const app = readFileSync(resolve(root, "client/src/App.tsx"), "utf8");
-    // CinematicIntro must be conditionally rendered (not just hidden)
-    expect(app).toMatch(/\{!cinematicDone[\s\S]{0,100}CinematicIntro/);
+    // The replay-aware opener must be conditionally removed after its short fade.
+    expect(app).toMatch(/\{introActive && \([\s\S]*?<WebsitePressureIntro/);
+    expect(app).toContain("setIntroVisible(false)");
+    expect(app).toContain("setStoryReplay(false)");
   });
 
   it("App.tsx uses conditional rendering for auth gate", async () => {
