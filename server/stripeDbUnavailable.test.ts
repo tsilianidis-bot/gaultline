@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { STRIPE_CLIENT_MAX_NETWORK_RETRIES, STRIPE_CLIENT_TIMEOUT_MS } from "./stripe/client";
-import { webhookStripeBudgetMs } from "./stripe/webhook";
+import { STRIPE_CLIENT_TIMEOUT_MS } from "./stripe/client";
+import { STRIPE_WEBHOOK_MAX_NETWORK_RETRIES, webhookStripeBudgetMs } from "./stripe/webhook";
 import {
   closeDbForTests,
   completeStripeWebhookEvent,
   decideDuplicateStripeClaim,
+  effectiveTier,
   recordStripeWebhookEvent,
   tierForEntitlement,
   releaseStripeWebhookEvent,
@@ -28,11 +29,14 @@ describe("Stripe webhook idempotency without a database", () => {
   });
 });
 
-describe("tierForEntitlement", () => {
-  it("treats lifetime access as founding even when the stored tier is free", () => {
+describe("effectiveTier", () => {
+  it("treats lifetime access as founding even when the stored tier is free or expired", () => {
     expect(tierForEntitlement("free", true)).toBe("founding");
     expect(tierForEntitlement("core", true)).toBe("founding");
-    expect(tierForEntitlement("premium", false)).toBe("premium");
+    expect(effectiveTier({ accessTier: "free", lifetimeAccess: true, accessExpiresAt: new Date(0) })).toBe("founding");
+    expect(effectiveTier({ accessTier: "premium", lifetimeAccess: false, accessExpiresAt: new Date(Date.now() + 86_400_000) })).toBe("premium");
+    expect(effectiveTier({ accessTier: "premium", lifetimeAccess: false, accessExpiresAt: new Date(Date.now() - 1000) })).toBe("free");
+    expect(effectiveTier({ accessTier: "premium", lifetimeAccess: false, accessExpiresAt: null })).toBe("premium");
     expect(tierForEntitlement("free", false)).toBe("free");
     expect(tierForEntitlement(null, false)).toBe("free");
   });
@@ -52,8 +56,9 @@ describe("decideDuplicateStripeClaim", () => {
     expect(decideDuplicateStripeClaim({ eventType: "pending:checkout.session.completed", processedAt }, now)).toBe("retry");
     expect(decideDuplicateStripeClaim({ eventType: "processing:checkout.session.completed", processedAt }, now)).toBe("retry");
     expect(STRIPE_WEBHOOK_UNFINISHED_CLAIM_MS).toBeGreaterThan(STRIPE_CLIENT_TIMEOUT_MS);
-    expect(STRIPE_CLIENT_MAX_NETWORK_RETRIES).toBe(0);
+    expect(STRIPE_WEBHOOK_MAX_NETWORK_RETRIES).toBe(1);
     expect(webhookStripeBudgetMs()).toBeLessThan(STRIPE_WEBHOOK_UNFINISHED_CLAIM_MS);
+    expect(webhookStripeBudgetMs()).toBeLessThan(60_000);
   });
 
   it("keeps a completed claim as a duplicate and retries when the row cannot be read", () => {

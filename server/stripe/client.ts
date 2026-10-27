@@ -2,10 +2,12 @@ import Stripe from 'stripe';
 import { ENV } from '../_core/env';
 import { permittedStripeSecretKey, resolveStripeRuntimeMode } from './mode';
 
-/** Below the 90s webhook reclaim window so a hung Stripe call cannot outlive the claim. */
+/** Bounds a hung checkout call. Webhook reads pass a shorter per-request timeout. */
 export const STRIPE_CLIENT_TIMEOUT_MS = 15_000;
-/** Webhook reads must not multiply the timeout. Checkout uses this client too. */
-export const STRIPE_CLIENT_MAX_NETWORK_RETRIES = 0;
+/**
+ * The shared client does not override maxNetworkRetries. Checkout keeps the
+ * SDK default. Webhook reads pass their own bounded retry count.
+ */
 
 const configuredStripeSecretKey = ENV.stripeSecretKey?.trim() ?? '';
 export const stripeRuntimeMode = resolveStripeRuntimeMode(configuredStripeSecretKey);
@@ -21,10 +23,7 @@ export const stripe: Stripe | null = stripeSecretKey
   ? new Stripe(stripeSecretKey, {
       apiVersion: '2026-04-22.dahlia' as string as NonNullable<ConstructorParameters<typeof Stripe>[1]>['apiVersion'],
       typescript: true,
-      // Stay under the webhook reclaim window (90s) so a hung Stripe call cannot
-      // still be writing an entitlement when a second delivery reclaims the claim.
       timeout: STRIPE_CLIENT_TIMEOUT_MS,
-      maxNetworkRetries: STRIPE_CLIENT_MAX_NETWORK_RETRIES,
     })
   : null;
 

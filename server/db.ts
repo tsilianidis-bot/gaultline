@@ -1,6 +1,6 @@
-import { eq, and, desc, count, sql, like, or, gte } from "drizzle-orm";
+import { eq, and, desc, count, sql, like, or, gte, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport, mobileUsage, dayTradeWatchlist, InsertDayTradeWatchlistItem, tradeJournal, InsertTradeJournalEntry, chatbotSessions, chatbotMessages, chatbotLeads, InsertChatbotSession, InsertChatbotMessage, InsertChatbotLead, ChatbotSession, dayTradeSnapshot, pipelineHealthLog, onboardingEmailSequence } from "../drizzle/schema";
+import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport, mobileUsage, dayTradeWatchlist, InsertDayTradeWatchlistItem, tradeJournal, InsertTradeJournalEntry, chatbotSessions, chatbotMessages, chatbotLeads, InsertChatbotSession, InsertChatbotMessage, InsertChatbotLead, ChatbotSession, dayTradeSnapshot, pipelineHealthLog, onboardingEmailSequence, stripeSubscriptionCancellations } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
 
@@ -224,24 +224,58 @@ export async function getUserByEmail(email: string) {
 // ── Access Tier helpers ─────────────────────────────────────────────
 
 /**
- * Lifetime buyers stay entitled even if a subscription webhook wrote accessTier
- * to free. Founding is the paid tier those gates already accept.
+ * One effective tier for every gate. Lifetime outranks the stored tier and
+ * does not expire. A subscription tier is free once accessExpiresAt is past.
+ * A null expiry keeps the stored paid tier (admin grants and rows written
+ * before a period end was recorded).
  */
+export function effectiveTier(input: {
+  accessTier?: string | null;
+  lifetimeAccess?: boolean | null;
+  accessExpiresAt?: Date | string | null;
+  nowMs?: number;
+}): 'free' | 'core' | 'premium' | 'founding' {
+  if (input.lifetimeAccess) return 'founding';
+  const tier = input.accessTier;
+  if (tier !== 'core' && tier !== 'premium' && tier !== 'founding') return 'free';
+  if (input.accessExpiresAt != null) {
+    const expiresMs = input.accessExpiresAt instanceof Date
+      ? input.accessExpiresAt.getTime()
+      : new Date(input.accessExpiresAt).getTime();
+    if (!Number.isFinite(expiresMs) || expiresMs <= (input.nowMs ?? Date.now())) return 'free';
+  }
+  return tier;
+}
+
 export function tierForEntitlement(
   accessTier: string | null | undefined,
   lifetimeAccess: boolean | null | undefined,
 ): 'free' | 'core' | 'premium' | 'founding' {
-  if (lifetimeAccess) return 'founding';
-  if (accessTier === 'core' || accessTier === 'premium' || accessTier === 'founding') return accessTier;
-  return 'free';
+  return effectiveTier({ accessTier, lifetimeAccess });
 }
 
 export async function getUserTier(userId: number): Promise<'free' | 'core' | 'premium' | 'founding'> {
   const db = await getDb();
   if (!db) return 'free';
-  const result = await db.select({ accessTier: users.accessTier, lifetimeAccess: users.lifetimeAccess })
-    .from(users).where(eq(users.id, userId)).limit(1);
-  return tierForEntitlement(result[0]?.accessTier, result[0]?.lifetimeAccess);
+  const result = await db.select({
+    accessTier: users.accessTier,
+    lifetimeAccess: users.lifetimeAccess,
+    accessExpiresAt: users.accessExpiresAt,
+  }).from(users).where(eq(users.id, userId)).limit(1);
+  return effectiveTier(result[0] ?? {});
+}
+
+export async function getEntitlementUserById(userId: number): Promise<{ id: number; name: string | null; email: string | null; accessTier: string | null; lifetimeAccess: boolean } | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const [user] = await db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    accessTier: users.accessTier,
+    lifetimeAccess: users.lifetimeAccess,
+  }).from(users).where(eq(users.id, userId)).limit(1);
+  return user ?? null;
 }
 
 export async function setUserTier(
@@ -250,8 +284,15 @@ export async function setUserTier(
 ): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
+  // Admin grants do not inherit a Stripe period. Lifetime is left unchanged
+  // so a free write cannot lock a lifetime buyer out of effectiveTier.
   await db.update(users)
-    .set({ accessTier: tier, updatedAt: new Date() })
+    .set({
+      accessTier: tier,
+      accessExpiresAt: null,
+      entitlementRevision: sql`${users.entitlementRevision} + 1`,
+      updatedAt: new Date(),
+    })
     .where(eq(users.id, userId));
 }
 
@@ -1837,24 +1878,80 @@ export async function entitlementAuditExists(stripeEventId: string): Promise<boo
   return Boolean(row);
 }
 
-export type StripeEntitlementCommit = {
+export class ZeroRowEntitlementWriteError extends Error {
+  constructor(eventId: string) {
+    super(`Stripe entitlement write for ${eventId} matched zero rows; claim was not sealed`);
+    this.name = 'ZeroRowEntitlementWriteError';
+  }
+}
+
+export type EntitlementResyncWrite = {
+  accessTier: 'free' | 'core' | 'premium' | 'founding';
+  stripeSubscriptionId: string | null;
+  grantLifetime: boolean;
+  lifetimePurchasedAt: Date | null;
+  accessExpiresAt: Date | null;
+};
+
+/**
+ * Record a cancellation or pause. The timestamp only moves forward, and this
+ * commits on its own so a later conflict can refuse to seal without forgetting
+ * the cancellation.
+ */
+export async function upsertStripeCancellationMarker(params: {
+  stripeSubscriptionId: string;
+  canceledEventCreated: number;
+  status: string;
+  sourceEventId: string;
+  userId?: number | null;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable: cannot record Stripe cancellation');
+  await db.execute(sql`
+    INSERT INTO stripeSubscriptionCancellations
+      (stripeSubscriptionId, canceledEventCreated, status, sourceEventId, userId)
+    VALUES (
+      ${params.stripeSubscriptionId},
+      ${params.canceledEventCreated},
+      ${params.status},
+      ${params.sourceEventId},
+      ${params.userId ?? null}
+    )
+    ON DUPLICATE KEY UPDATE
+      status = IF(VALUES(canceledEventCreated) >= canceledEventCreated, VALUES(status), status),
+      sourceEventId = IF(VALUES(canceledEventCreated) >= canceledEventCreated, VALUES(sourceEventId), sourceEventId),
+      userId = IF(VALUES(canceledEventCreated) >= canceledEventCreated, VALUES(userId), userId),
+      canceledEventCreated = GREATEST(canceledEventCreated, VALUES(canceledEventCreated))
+  `);
+}
+
+export async function listStripeCancellationMarkers(subscriptionIds: string[]): Promise<Array<{
+  stripeSubscriptionId: string;
+  canceledEventCreated: number;
+  status: string;
+}>> {
+  if (subscriptionIds.length === 0) return [];
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable: cannot read Stripe cancellation markers');
+  return db.select({
+    stripeSubscriptionId: stripeSubscriptionCancellations.stripeSubscriptionId,
+    canceledEventCreated: stripeSubscriptionCancellations.canceledEventCreated,
+    status: stripeSubscriptionCancellations.status,
+  }).from(stripeSubscriptionCancellations)
+    .where(inArray(stripeSubscriptionCancellations.stripeSubscriptionId, subscriptionIds));
+}
+
+/**
+ * Lock the user and the claim, write the recomputed entitlement, audit it, and
+ * seal. A zero-row update throws and rolls the seal back. Stored lifetime
+ * access is never cleared.
+ */
+export async function commitEntitlementResync(params: {
   eventId: string;
   eventType: string;
   attemptId: string;
   userId: number;
-  /** Omitted on a revoke. A revoke uses revokeSubscriptionId instead of this patch. */
-  patch?: {
-    stripeCustomerId?: string | null;
-    stripeSubscriptionId?: string | null;
-    accessTier?: 'free' | 'core' | 'premium' | 'founding';
-    lifetimeAccess?: boolean;
-    lifetimePurchasedAt?: Date | null;
-  };
-  /**
-   * Conditional downgrade. The row changes only when lifetimeAccess is still
-   * false and stripeSubscriptionId is still this subscription.
-   */
-  revokeSubscriptionId?: string;
+  desired: EntitlementResyncWrite;
   audit: {
     fromTier: string | null | undefined;
     toTier: string;
@@ -1862,16 +1959,7 @@ export type StripeEntitlementCommit = {
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
   };
-};
-
-/**
- * User update, entitlement audit, and claim completion in one transaction.
- * The claim row is locked and the attempt id must still own it. A crash rolls
- * all three back. No new migration: the attempt id lives in eventType.
- */
-export async function commitStripeEntitlement(
-  params: StripeEntitlementCommit,
-): Promise<'applied' | 'claim_lost' | 'revoke_skipped'> {
+}): Promise<'applied' | 'claim_lost'> {
   const db = await getDb();
   if (!db) throw new Error('Database unavailable: cannot commit Stripe entitlement');
   return db.transaction(async (tx) => {
@@ -1883,32 +1971,43 @@ export async function commitStripeEntitlement(
     if (!attemptOwnsClaim(claim?.eventType, params.attemptId, params.eventType)) {
       return 'claim_lost';
     }
-    if (params.revokeSubscriptionId) {
-      const revoked = await tx.update(users)
-        .set({ accessTier: 'free', stripeSubscriptionId: null, updatedAt: new Date() })
-        .where(and(
-          eq(users.id, params.userId),
-          eq(users.lifetimeAccess, false),
-          eq(users.stripeSubscriptionId, params.revokeSubscriptionId),
-        ));
-      if (affectedRows(revoked) !== 1) {
-        await sealStripeClaim(tx, params.eventId, params.eventType, params.attemptId);
-        return 'revoke_skipped';
-      }
-    } else {
-      if (!params.patch) throw new Error('Stripe entitlement commit is missing a user patch');
-      await tx.update(users)
-        .set({ ...params.patch, updatedAt: new Date() })
-        .where(eq(users.id, params.userId));
-    }
+    const [locked] = await tx.select({
+      id: users.id,
+      lifetimeAccess: users.lifetimeAccess,
+      lifetimePurchasedAt: users.lifetimePurchasedAt,
+      entitlementRevision: users.entitlementRevision,
+    }).from(users)
+      .where(eq(users.id, params.userId))
+      .limit(1)
+      .for('update');
+    if (!locked) throw new ZeroRowEntitlementWriteError(params.eventId);
+    const lifetime = Boolean(locked.lifetimeAccess) || params.desired.grantLifetime;
+    const tier = lifetime ? 'founding' : params.desired.accessTier;
+    const updated = await tx.update(users)
+      .set({
+        accessTier: tier,
+        stripeSubscriptionId: params.desired.stripeSubscriptionId,
+        lifetimeAccess: lifetime,
+        lifetimePurchasedAt: lifetime
+          ? (locked.lifetimePurchasedAt ?? params.desired.lifetimePurchasedAt ?? new Date())
+          : locked.lifetimePurchasedAt,
+        accessExpiresAt: params.desired.accessExpiresAt,
+        entitlementRevision: (locked.entitlementRevision ?? 0) + 1,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(users.id, params.userId),
+        eq(users.entitlementRevision, locked.entitlementRevision ?? 0),
+      ));
+    if (affectedRows(updated) !== 1) throw new ZeroRowEntitlementWriteError(params.eventId);
     await tx.insert(entitlementAuditLog).values({
       userId: params.userId,
       fromTier: params.audit.fromTier ?? null,
-      toTier: params.audit.toTier,
+      toTier: tier,
       reason: params.audit.reason,
       stripeEventId: params.eventId,
       stripeCustomerId: params.audit.stripeCustomerId ?? null,
-      stripeSubscriptionId: params.audit.stripeSubscriptionId ?? null,
+      stripeSubscriptionId: params.audit.stripeSubscriptionId ?? params.desired.stripeSubscriptionId,
     });
     await sealStripeClaim(tx, params.eventId, params.eventType, params.attemptId);
     return 'applied';

@@ -46,7 +46,7 @@ const requireCore = t.middleware(async opts => {
     return next({ ctx: { ...ctx, user: ctx.user } });
   }
 
-  // getUserTier returns founding when lifetimeAccess is set, including after a free-tier write.
+  // getUserTier uses effectiveTier: lifetimeAccess is founding, and a past accessExpiresAt is free.
   const tier = await getUserTier(ctx.user.id);
   if (tier !== 'core' && tier !== 'premium' && tier !== 'founding') {
     throw new TRPCError({ code: "FORBIDDEN", message: CORE_REQUIRED_ERR_MSG });
@@ -70,7 +70,7 @@ const requirePremium = t.middleware(async opts => {
     return next({ ctx: { ...ctx, user: ctx.user } });
   }
 
-  // getUserTier returns founding when lifetimeAccess is set, including after a free-tier write.
+  // getUserTier uses effectiveTier: lifetimeAccess is founding, and a past accessExpiresAt is free.
   const tier = await getUserTier(ctx.user.id);
   if (tier !== 'premium' && tier !== 'founding') {
     throw new TRPCError({ code: "FORBIDDEN", message: PREMIUM_REQUIRED_ERR_MSG });
