@@ -276,7 +276,7 @@ export async function getEntitlementRevision(userId: number): Promise<number | n
   return row.entitlementRevision ?? 0;
 }
 
-export async function getEntitlementUserById(userId: number): Promise<{ id: number; name: string | null; email: string | null; accessTier: string | null; lifetimeAccess: boolean } | null> {
+export async function getEntitlementUserById(userId: number): Promise<{ id: number; name: string | null; email: string | null; accessTier: string | null; lifetimeAccess: boolean; stripeCustomerId: string | null } | null> {
   const db = await getDb();
   if (!db) return null;
   const [user] = await db.select({
@@ -285,6 +285,7 @@ export async function getEntitlementUserById(userId: number): Promise<{ id: numb
     email: users.email,
     accessTier: users.accessTier,
     lifetimeAccess: users.lifetimeAccess,
+    stripeCustomerId: users.stripeCustomerId,
   }).from(users).where(eq(users.id, userId)).limit(1);
   return user ?? null;
 }
@@ -570,10 +571,10 @@ export async function updateDashboardMode(
     .where(eq(users.id, userId));
 }
 
-export async function getUserByStripeCustomerId(customerId: string): Promise<{ id: number; name: string | null; email: string | null; accessTier: string | null; lifetimeAccess: boolean } | null> {
+export async function getUserByStripeCustomerId(customerId: string): Promise<{ id: number; name: string | null; email: string | null; accessTier: string | null; lifetimeAccess: boolean; stripeCustomerId: string | null } | null> {
   const db = await getDb();
   if (!db) return null;
-  const [user] = await db.select({ id: users.id, name: users.name, email: users.email, accessTier: users.accessTier, lifetimeAccess: users.lifetimeAccess })
+  const [user] = await db.select({ id: users.id, name: users.name, email: users.email, accessTier: users.accessTier, lifetimeAccess: users.lifetimeAccess, stripeCustomerId: users.stripeCustomerId })
     .from(users)
     .where(eq(users.stripeCustomerId, customerId))
     .limit(1);
@@ -2014,7 +2015,7 @@ export async function commitEntitlementResync(params: {
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
   };
-}): Promise<'applied' | 'claim_lost' | 'stale_state'> {
+}): Promise<'applied' | 'claim_lost' | 'stale_state' | 'customer_conflict'> {
   const db = await getDb();
   if (!db) throw new Error('Database unavailable: cannot commit Stripe entitlement');
   return db.transaction(async (tx) => {
@@ -2055,9 +2056,23 @@ export async function commitEntitlementResync(params: {
     } else if (params.observedMarkers.length > 0) {
       return 'stale_state';
     }
+    const incomingCustomerId = params.desired.stripeCustomerId || null;
+    const storedCustomerId = locked.stripeCustomerId || null;
+    if (incomingCustomerId && storedCustomerId && incomingCustomerId !== storedCustomerId) {
+      await tx.insert(entitlementAuditLog).values({
+        userId: params.userId,
+        fromTier: params.audit.fromTier ?? null,
+        toTier: params.audit.fromTier ?? 'free',
+        reason: 'customer_conflict',
+        stripeEventId: params.eventId,
+        stripeCustomerId: incomingCustomerId,
+        stripeSubscriptionId: params.audit.stripeSubscriptionId ?? params.desired.stripeSubscriptionId,
+      });
+      return 'customer_conflict';
+    }
     const lifetime = Boolean(locked.lifetimeAccess) || params.desired.grantLifetime;
     const tier = lifetime ? 'founding' : params.desired.accessTier;
-    const stripeCustomerId = params.desired.stripeCustomerId || locked.stripeCustomerId || null;
+    const stripeCustomerId = incomingCustomerId || storedCustomerId;
     const updated = await tx.update(users)
       .set({
         accessTier: tier,

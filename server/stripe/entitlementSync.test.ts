@@ -293,10 +293,14 @@ describe("cancellation marker and incomplete lists", () => {
     })).toMatchObject({ action: "apply", accessTier: "premium", supersedeCancellation: null });
   });
 
-  it("uses the newest invoice or period timestamp as evidence", () => {
+  it("uses the period start as renewal evidence and ignores invoice.created", () => {
     expect(subscriptionEvidenceSec(subscription({
       current_period_start: 10,
-      latest_invoice: { created: 40, status_transitions: { paid_at: 30 } },
+      latest_invoice: { created: 40, status_transitions: { paid_at: 30 }, period_start: 10 },
+    }))).toBe(10);
+    expect(subscriptionEvidenceSec(subscription({
+      current_period_start: 10,
+      latest_invoice: { created: 80, status_transitions: { paid_at: 90 }, period_start: 40 },
     }))).toBe(40);
   });
 });

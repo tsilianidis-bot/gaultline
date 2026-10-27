@@ -28,6 +28,7 @@ vi.mock('../db', () => {
     commitEntitlementResync: vi.fn().mockResolvedValue('applied'),
     upsertStripeCancellationMarker: vi.fn().mockResolvedValue(undefined),
     listStripeCancellationMarkers: vi.fn().mockResolvedValue([]),
+    writeEntitlementAudit: vi.fn().mockResolvedValue(undefined),
     StaleStripeWebhookClaimError,
     ZeroRowEntitlementWriteError,
   };
@@ -51,6 +52,7 @@ import {
   commitEntitlementResync,
   upsertStripeCancellationMarker,
   listStripeCancellationMarkers,
+  writeEntitlementAudit,
   StaleStripeWebhookClaimError,
   ZeroRowEntitlementWriteError,
 } from '../db';
@@ -109,6 +111,7 @@ describe('handleStripeWebhook re-sync', () => {
     vi.mocked(completeStripeWebhookEvent).mockResolvedValue(undefined);
     vi.mocked(commitEntitlementResync).mockResolvedValue('applied');
     vi.mocked(listStripeCancellationMarkers).mockResolvedValue([]);
+    vi.mocked(writeEntitlementAudit).mockResolvedValue(undefined);
     vi.mocked(getPlanByPriceId).mockImplementation((priceId: string) => (
       priceId === 'price_premium' ? { id: 'premium', tier: 'premium', name: 'Pro', amount: 5900, interval: 'month', description: '', priceId } as never : undefined
     ));
@@ -448,6 +451,38 @@ describe('handleStripeWebhook re-sync', () => {
     expect(commitEntitlementResync).toHaveBeenCalledWith(expect.objectContaining({
       supersedeCancellation: { stripeSubscriptionId: 'sub_live', eventCreated: PERIOD_START + 30 },
       desired: expect.objectContaining({ accessTier: 'premium', stripeSubscriptionId: 'sub_live' }),
+    }));
+  });
+
+  it('does not let a second checkout customer replace a stored customer or seal free', async () => {
+    vi.mocked(getUserByStripeCustomerId).mockResolvedValue(null);
+    vi.mocked(getEntitlementUserById).mockResolvedValue({
+      id: 7, name: 'Ada', email: 'ada@example.com', accessTier: 'premium', lifetimeAccess: false, stripeCustomerId: 'cus_paid',
+    });
+    usePicture(premiumSub({ id: 'sub_new', status: 'incomplete' }));
+    const res = await post({
+      id: 'evt_second_customer',
+      type: 'checkout.session.completed',
+      created: PERIOD_START + 90,
+      data: { object: {
+        id: 'cs_second',
+        customer: 'cus_new',
+        mode: 'subscription',
+        metadata: { user_id: '7', plan_id: 'premium' },
+        client_reference_id: '7',
+      } },
+    });
+    expect(res._status).toBe(500);
+    expect(res._body).toEqual({ error: 'Webhook processing failed', conflict: 'customer_conflict' });
+    expect(commitEntitlementResync).not.toHaveBeenCalled();
+    expect(completeStripeWebhookEvent).not.toHaveBeenCalled();
+    expect(releaseStripeWebhookEvent).not.toHaveBeenCalled();
+    expect(stripe.subscriptions.list).not.toHaveBeenCalled();
+    expect(writeEntitlementAudit).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 7,
+      reason: 'customer_conflict',
+      stripeCustomerId: 'cus_new',
+      stripeEventId: 'evt_second_customer',
     }));
   });
 

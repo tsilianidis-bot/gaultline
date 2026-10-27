@@ -22,6 +22,8 @@ export type InvoiceView = {
   amount_paid?: number | null;
   total?: number | null;
   created?: number | null;
+  /** Period this invoice covers. Not a substitute for invoice.created. */
+  period_start?: number | null;
   status_transitions?: { paid_at?: number | null } | null;
   discount?: { coupon?: { id?: string | null } | null } | null;
   discounts?: Array<unknown> | null;
@@ -138,17 +140,25 @@ export function periodBounds(subscription: SubscriptionView):
   };
 }
 
+/**
+ * Renewal evidence is a period start, not an invoice timestamp.
+ * invoice.created and start_date never outrank a cancellation. paid_at counts
+ * only as proof that an invoice for a period was paid; the comparison value
+ * is that period start (the invoice's own period_start when it is at least
+ * the subscription period start). A later created timestamp on the same
+ * period does not supersede a marker.
+ */
 export function subscriptionEvidenceSec(subscription: SubscriptionView): number | null {
   const bounds = periodBounds(subscription);
+  if (!bounds.consistent) return null;
+  const periodStart = bounds.start;
   const invoice = invoiceObject(subscription.latest_invoice);
-  const candidates = [
-    bounds.consistent ? bounds.start : null,
-    invoice?.status_transitions?.paid_at,
-    invoice?.created,
-    subscription.start_date,
-  ].filter((value): value is number => typeof value === "number" && value > 0);
-  if (candidates.length === 0) return null;
-  return Math.max(...candidates);
+  const invoicePeriodStart = positive(invoice?.period_start);
+  const paidAt = positive(invoice?.status_transitions?.paid_at);
+  if (invoicePeriodStart && paidAt && (periodStart == null || invoicePeriodStart >= periodStart)) {
+    return invoicePeriodStart;
+  }
+  return periodStart;
 }
 
 export function invoiceHasDiscount(invoice: InvoiceView): boolean {
@@ -195,8 +205,7 @@ export function verifiedLifetimePayment(session: LifetimeSessionView | null | un
   const intent = session.payment_intent;
   if (!intent || typeof intent === "string") return false;
   if (intent.status !== "succeeded") return false;
-  const amount = typeof intent.amount_received === "number" ? intent.amount_received : intent.amount;
-  return typeof amount === "number" && amount > 0;
+  return typeof intent.amount_received === "number" && intent.amount_received > 0;
 }
 
 function positiveUserId(value: unknown): number | null {
@@ -318,6 +327,13 @@ export function conflictsWithMarker(
   return evidence <= marker.canceledEventCreated;
 }
 
+function priceIds(subscription: SubscriptionView): string[] {
+  return (subscription.items?.data ?? [])
+    .map(item => item?.price?.id)
+    .filter((id): id is string => typeof id === "string" && id.length > 0)
+    .sort();
+}
+
 function subscriptionsAgree(listCopy: SubscriptionView, retrieved: SubscriptionView): boolean {
   if (listCopy.id !== retrieved.id) return false;
   if ((listCopy.status ?? "") !== (retrieved.status ?? "")) return false;
@@ -326,12 +342,30 @@ function subscriptionsAgree(listCopy: SubscriptionView, retrieved: SubscriptionV
   const right = periodBounds(retrieved);
   if (!left.consistent || !right.consistent) return false;
   if (left.end !== right.end) return false;
+  if (priceIds(listCopy).join("\0") !== priceIds(retrieved).join("\0")) return false;
   const invoiceId = (subscription: SubscriptionView) => (
     typeof subscription.latest_invoice === "string"
       ? subscription.latest_invoice
       : subscription.latest_invoice?.id ?? null
   );
   return invoiceId(listCopy) === invoiceId(retrieved);
+}
+
+/** Highest known paid price on the subscription. Any unknown price is unresolved. */
+function highestEntitledPrice(
+  subscription: SubscriptionView,
+  resolveTier: (priceId: string) => PaidTier | null,
+): { tier: PaidTier; priceId: string } | { unresolved: true; priceId: string | null } {
+  const items = (subscription.items?.data ?? []).filter((item): item is SubscriptionItemView => item != null);
+  const priceIdsOnSub = items.map(item => item.price?.id).filter((id): id is string => typeof id === "string" && id.length > 0);
+  if (priceIdsOnSub.length === 0) return { unresolved: true, priceId: null };
+  let best: { tier: PaidTier; priceId: string } | null = null;
+  for (const priceId of priceIdsOnSub) {
+    const tier = resolveTier(priceId);
+    if (!tier) return { unresolved: true, priceId };
+    if (!best || TIER_RANK[tier] > TIER_RANK[best.tier]) best = { tier, priceId };
+  }
+  return best ?? { unresolved: true, priceId: null };
 }
 
 function expiryDate(subscription: SubscriptionView, nowMs: number): Date | "missing" | "past" | "inconsistent" {
@@ -392,10 +426,11 @@ export function decideEntitlement(input: {
       return { action: "conflict", reason: "invoice_unexpanded" };
     }
     if (payment.entitled !== true) continue;
-    const priceId = subscription.items?.data?.[0]?.price?.id ?? null;
-    if (!priceId) return { action: "unresolved", priceId: null, subscriptionId: subscription.id };
-    const tier = input.resolveTier(priceId);
-    if (!tier) return { action: "unresolved", priceId, subscriptionId: subscription.id };
+    const priced = highestEntitledPrice(subscription, input.resolveTier);
+    if ("unresolved" in priced) {
+      return { action: "unresolved", priceId: priced.priceId, subscriptionId: subscription.id };
+    }
+    const tier = priced.tier;
     const expires = expiryDate(subscription, nowMs);
     if (expires === "inconsistent") return { action: "conflict", reason: "inconsistent_period" };
     if (expires === "missing") return { action: "conflict", reason: "missing_expiry" };

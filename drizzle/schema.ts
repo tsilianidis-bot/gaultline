@@ -2874,12 +2874,13 @@ export type InsertStripeWebhookEvent = typeof stripeWebhookEvents.$inferInsert;
 export const stripeSubscriptionCancellations = mysqlTable("stripeSubscriptionCancellations", {
   id: int("id").autoincrement().primaryKey(),
   stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 64 }).notNull(),
-  canceledEventCreated: int("canceledEventCreated").notNull(),
+  /** Unix seconds. BIGINT so the marker stays valid past 2038. */
+  canceledEventCreated: bigint("canceledEventCreated", { mode: "number" }).notNull(),
   status: varchar("status", { length: 32 }).notNull(),
   sourceEventId: varchar("sourceEventId", { length: 128 }).notNull(),
   userId: int("userId"),
   /** Unix seconds of the resume that cleared this marker. Null while it still blocks. */
-  supersededEventCreated: int("supersededEventCreated"),
+  supersededEventCreated: bigint("supersededEventCreated", { mode: "number" }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (t) => ({

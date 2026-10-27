@@ -13,6 +13,7 @@ import {
   commitEntitlementResync,
   upsertStripeCancellationMarker,
   listStripeCancellationMarkers,
+  writeEntitlementAudit,
   StaleStripeWebhookClaimError,
   ZeroRowEntitlementWriteError,
   type EntitlementMarkerSnapshot,
@@ -79,7 +80,7 @@ const stripeRead: Stripe.RequestOptions = {
 const RELEVANT_PREFIXES = ['checkout.session.', 'customer.subscription.', 'invoice.', 'payment_intent.'];
 
 type ReadBudget = { n: number };
-type EntitlementUser = { id: number; name: string | null; email: string | null; accessTier: string | null; lifetimeAccess: boolean };
+type EntitlementUser = { id: number; name: string | null; email: string | null; accessTier: string | null; lifetimeAccess: boolean; stripeCustomerId?: string | null };
 
 function stripeId(value: unknown): string | null {
   if (typeof value === 'string' && value) return value;
@@ -350,12 +351,31 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       return res.status(500).json({ error: 'Webhook processing failed', conflict: 'missing_user' });
     }
 
+    const customerId = stripeId((event.data.object as { customer?: unknown }).customer);
+    const storedCustomerId = user.stripeCustomerId || null;
+    if (customerId && storedCustomerId && customerId !== storedCustomerId) {
+      console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} customer ${customerId} does not match stored ${storedCustomerId}; not sealing or downgrading`);
+      try {
+        await writeEntitlementAudit({
+          userId: user.id,
+          fromTier: user.accessTier,
+          toTier: user.accessTier ?? 'free',
+          reason: 'customer_conflict',
+          stripeEventId: event.id,
+          stripeCustomerId: customerId,
+          strict: true,
+        });
+      } catch (auditErr) {
+        console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} customer conflict audit failed; claim stays unfinished:`, auditErr);
+      }
+      return res.status(500).json({ error: 'Webhook processing failed', conflict: 'customer_conflict' });
+    }
+
     const marker = cancellationMarkerFromEvent(event as unknown as Parameters<typeof cancellationMarkerFromEvent>[0]);
     if (marker) {
       await upsertStripeCancellationMarker({ ...marker, userId: user.id });
     }
 
-    const customerId = stripeId((event.data.object as { customer?: unknown }).customer);
     const budget: ReadBudget = { n: 0 };
     let lifetimeVerified = false;
     let lifetimePurchasedAt: Date | null = null;
@@ -424,6 +444,10 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       outcome = await commitOf(pictured);
     }
     if (outcome === 'claim_lost') throw new StaleStripeWebhookClaimError(event.id);
+    if (outcome === 'customer_conflict') {
+      console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} refused to replace stored customer ${storedCustomerId ?? 'none'} with ${customerId ?? 'none'}`);
+      return res.status(500).json({ error: 'Webhook processing failed', conflict: 'customer_conflict' });
+    }
     if (outcome === 'stale_state') throw new EntitlementConflictError('stale_state');
     if (!isEntitlementPicture(pictured)) throw new EntitlementConflictError('stale_state');
     const decision = pictured.decision;

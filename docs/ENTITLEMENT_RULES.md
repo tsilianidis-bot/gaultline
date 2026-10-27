@@ -19,16 +19,16 @@ This is the lifecycle `server/stripe/entitlementSync.ts`, `server/stripe/webhook
 1. Subscription list for the customer (`status=all`, paginated, `latest_invoice` expanded), plus one corroborating retrieve of the winning subscription.
 2. Period bounds. API `2026-04-22.dahlia` puts `current_period_start` / `current_period_end` on subscription items. All items that have a period must agree. If no item has a period, fall back to the subscription fields, then `trial_end`. Disagreement is `inconsistent_period` and is not sealed.
 3. Cancellation markers, one row per subscription. `canceledEventCreated` only moves forward. `supersededEventCreated` records a corroborated resume newer than the marker. A newer cancellation clears the supersession.
-4. Verified lifetime checkout: `plan_id=lifetime`, mode `payment`, `payment_status=paid`, `amount_total>0`, expanded PaymentIntent `succeeded` with amount received > 0.
+4. Verified lifetime checkout: `plan_id=lifetime`, mode `payment`, `payment_status=paid`, `amount_total>0`, expanded PaymentIntent `succeeded` with `amount_received > 0`. `amount` is not a substitute.
 5. Stored `lifetimeAccess` and `entitlementRevision` on the user row.
 6. Admin `setUserTier`.
 
 ## Precedence
 
 1. **Lifetime.** Stored or newly verified lifetime forces effective founding. A subscription event cannot clear it. If no subscription entitles, `stripeSubscriptionId` is cleared and founding remains. An unverified or zero-amount lifetime checkout does not grant lifetime.
-2. **Cancellation marker.** An entitling subscription (active paid/coupon/credit, or trialing, not paused) whose own timestamps are missing or not newer than `canceledEventCreated` conflicts as `stale_active_after_cancellation`. That conflict is not sealed, so a stale `active` list cannot erase the marker. A marker that has been superseded no longer blocks.
+2. **Cancellation marker.** An entitling subscription (active paid/coupon/credit, or trialing, not paused) conflicts as `stale_active_after_cancellation` when its renewal evidence is missing or not newer than `canceledEventCreated`. Renewal evidence is the current period start, or the invoice's own `period_start` when that invoice has `paid_at` and the period start is at least the subscription period start. `invoice.created`, `start_date`, and `paid_at` itself do not outrank a marker. A corroborated resume can still supersede. A marker that has been superseded no longer blocks. `canceledEventCreated` is a BIGINT unix second so it stays valid past 2038.
 3. **Corroborated resume.** `customer.subscription.updated` with status `active` or `trialing`, `pause_collection` clear, and `event.created` newer than the marker may restore the same period. The list and the retrieve must both show the subscription entitled and unpaused. The apply sets `supersededEventCreated` in the same transaction. `invoice.paid` is not resume evidence.
-4. **Entitled subscription.** Known price, consistent period end in the future, payment accepted, list and retrieve agree. Tier is the highest entitled price. Expiry is the period end. Unknown price is unresolved: the claim is left unfinished (not acknowledged) so Stripe retries, and a cancellation marker already written on that event is kept.
+4. **Entitled subscription.** Known price, consistent period end in the future, payment accepted, list and retrieve agree on status, pause, period end, invoice id, and price ids. The tier is the highest entitled price on the subscription, not the first item. An unknown price on any item is unresolved: the claim is left unfinished (not acknowledged) so Stripe retries, and a cancellation marker already written on that event is kept. A price mismatch between the list and the retrieve is `read_disagreement` and is not sealed.
 5. **Otherwise free.**
 
 ### Invoice payment
@@ -44,7 +44,7 @@ For an active subscription the latest invoice must be expanded and `paid`:
 
 ## Identity
 
-Resolve the user by Stripe customer id, then metadata `user_id` on the checkout session, subscription, or invoice (`parent.subscription_details.metadata` included), then checkout `client_reference_id`. A successful resync stores `users.stripeCustomerId` and does not clear it when a later decision omits it. If no user can be resolved, the handler returns 500 and releases the claim. It does not acknowledge the event.
+Resolve the user by Stripe customer id, then metadata `user_id` on the checkout session, subscription, or invoice (`parent.subscription_details.metadata` included), then checkout `client_reference_id`. A successful resync stores `users.stripeCustomerId` only when that column is empty or already equal to the event customer. A different non-empty stored customer is `customer_conflict`: the user row is not changed, the claim is not sealed, and an audit row records the event. The handler returns 500. Checkout reuses `customer: storedStripeCustomerId` when one is stored (and does not also send `customer_email`). Subscription checkout copies `user_id` onto `subscription_data.metadata`. If no user can be resolved, the handler returns 500 and releases the claim. It does not acknowledge the event.
 
 ## Commit invariants
 

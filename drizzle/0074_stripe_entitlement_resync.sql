@@ -11,11 +11,11 @@ ALTER TABLE `users` ADD `entitlementRevision` int NOT NULL DEFAULT 0;
 CREATE TABLE `stripeSubscriptionCancellations` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`stripeSubscriptionId` varchar(64) NOT NULL,
-	`canceledEventCreated` int NOT NULL,
+	`canceledEventCreated` bigint NOT NULL,
 	`status` varchar(32) NOT NULL,
 	`sourceEventId` varchar(128) NOT NULL,
 	`userId` int,
-	`supersededEventCreated` int NULL,
+	`supersededEventCreated` bigint NULL,
 	`createdAt` timestamp NOT NULL DEFAULT (now()),
 	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `stripeSubscriptionCancellations_id` PRIMARY KEY(`id`),

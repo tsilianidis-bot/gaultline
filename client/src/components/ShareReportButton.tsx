@@ -48,9 +48,9 @@ export function ShareReportButton({
   const [copied, setCopied] = useState(false);
   const [expiresInDays, setExpiresInDays] = useState<string>("30");
 
-  const tier = tierQuery.data?.tier ?? user?.accessTier;
-  const isPremium = user && (
-    tier === "premium" || tier === "founding" || user.role === "admin"
+  const tier = tierQuery.isSuccess ? tierQuery.data.tier : undefined;
+  const isPremium = !!user && (
+    user.role === "admin" || tier === "premium" || tier === "founding"
   );
 
   const createMut = trpc.sharedReports.create.useMutation({

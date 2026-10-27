@@ -119,11 +119,11 @@ describe("stripe webhook claim concurrency", () => {
     await admin.query(`CREATE TABLE stripeSubscriptionCancellations (
       id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
       stripeSubscriptionId varchar(64) NOT NULL,
-      canceledEventCreated int NOT NULL,
+      canceledEventCreated bigint NOT NULL,
       status varchar(32) NOT NULL,
       sourceEventId varchar(128) NOT NULL,
       userId int NULL,
-      supersededEventCreated int NULL,
+      supersededEventCreated bigint NULL,
       createdAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updatedAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       UNIQUE KEY stripeSubscriptionCancellations_sub_uniq (stripeSubscriptionId)
@@ -444,6 +444,42 @@ describe("stripe webhook claim concurrency", () => {
     const open = sealed === "evt_race_a" ? "evt_race_b" : "evt_race_a";
     expect((await claimRow(sealed)).eventType).not.toContain(":");
     expect((await claimRow(open)).eventType).toContain(":");
+  });
+
+  it("does not overwrite a stored customer or seal a free downgrade from an unbound customer", async () => {
+    await admin!.query(
+      "INSERT INTO users (openId, accessTier, stripeCustomerId, stripeSubscriptionId, lifetimeAccess) VALUES ('bound', 'premium', 'cus_paid', 'sub_paid', 0)",
+    );
+    const [users] = await admin!.query("SELECT id FROM users WHERE openId = 'bound'") as unknown as [Array<{ id: number }>];
+    const userId = users[0].id;
+    const attempt = await recordStripeWebhookEvent("evt_second_customer", "checkout.session.completed");
+    expect(await resync({
+      eventId: "evt_second_customer",
+      eventType: "checkout.session.completed",
+      attemptId: attempt!.attemptId,
+      userId,
+      desired: {
+        accessTier: "free",
+        stripeSubscriptionId: null,
+        grantLifetime: false,
+        lifetimePurchasedAt: null,
+        accessExpiresAt: null,
+        stripeCustomerId: "cus_new",
+      },
+      audit: { fromTier: "premium", toTier: "free", reason: "checkout.session.completed", stripeCustomerId: "cus_new" },
+    })).toBe("customer_conflict");
+    const [row] = await admin!.query(
+      "SELECT accessTier, stripeCustomerId, stripeSubscriptionId, entitlementRevision FROM users WHERE id = ?",
+      [userId],
+    ) as unknown as [Array<{ accessTier: string; stripeCustomerId: string; stripeSubscriptionId: string; entitlementRevision: number }>];
+    expect(row[0]).toEqual({
+      accessTier: "premium",
+      stripeCustomerId: "cus_paid",
+      stripeSubscriptionId: "sub_paid",
+      entitlementRevision: 0,
+    });
+    expect((await claimRow("evt_second_customer")).eventType).toContain(attempt!.attemptId);
+    expect(await entitlementAuditExists("evt_second_customer")).toBe(true);
   });
 
   it("persists a customer id without clearing it on a later write that omits it", async () => {
