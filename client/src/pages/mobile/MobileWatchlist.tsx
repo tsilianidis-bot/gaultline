@@ -5,37 +5,12 @@
    ============================================================ */
 import { useState, useEffect, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
-import { Plus, Trash2, TrendingUp, TrendingDown, Minus, Star, Search, X } from "lucide-react";
+import { Plus, Trash2, Star, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { TickerChip } from "@/components/TickerActionMenu";
 import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 
 // ── Helpers ───────────────────────────────────────────────────
-function getSignalColor(signal: string): string {
-  switch (signal) {
-    case "BUY": return "#34D399";
-    case "SELL": return "#FF2D55";
-    case "HOLD": return "#FFD700";
-    case "WATCH": return "#00D4FF";
-    case "AVOID": return "#FF9500";
-    default: return "#64748B";
-  }
-}
-
-function getRiskLabel(changePercent: number): string {
-  if (changePercent <= -3) return "HIGH RISK";
-  if (changePercent <= -1) return "ELEVATED";
-  if (changePercent >= 2) return "BULLISH";
-  return "NEUTRAL";
-}
-
-function getRiskColor(label: string): string {
-  if (label === "HIGH RISK") return "#FF2D55";
-  if (label === "ELEVATED") return "#FF9500";
-  if (label === "BULLISH") return "#34D399";
-  return "#64748B";
-}
-
 // ── Watchlist item card ───────────────────────────────────────
 interface WatchlistItemCardProps {
   id: number;
@@ -48,11 +23,8 @@ interface WatchlistItemCardProps {
   onRemove: (id: number) => void;
 }
 
-function WatchlistItemCard({ id, symbol, name, type, price, changePercent, signal, onRemove }: WatchlistItemCardProps) {
-  const signalColor = getSignalColor(signal ?? "HOLD");
+function WatchlistItemCard({ id, symbol, name, type, changePercent, onRemove }: WatchlistItemCardProps) {
   const changeColor = (changePercent ?? 0) >= 0 ? "#34D399" : "#FF2D55";
-  const riskLabel = getRiskLabel(changePercent ?? 0);
-  const riskColor = getRiskColor(riskLabel);
 
   return (
     <div
@@ -62,9 +34,9 @@ function WatchlistItemCard({ id, symbol, name, type, price, changePercent, signa
       {/* Badge */}
       <div
         className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-        style={{ background: `${signalColor}15`, border: `1px solid ${signalColor}25` }}
+        style={{ background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.25)" }}
       >
-        <span className="text-[9px] font-mono font-bold" style={{ color: signalColor }}>
+        <span className="text-[9px] font-mono font-bold" style={{ color: "#00D4FF" }}>
           {symbol.slice(0, 4)}
         </span>
       </div>
@@ -79,23 +51,14 @@ function WatchlistItemCard({ id, symbol, name, type, price, changePercent, signa
           >
             {type.toUpperCase()}
           </span>
-          {signal && (
-            <span
-              className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full"
-              style={{ background: `${signalColor}15`, color: signalColor }}
-            >
-              {signal}
-            </span>
-          )}
         </div>
         <div className="flex items-center gap-2 mt-0.5">
           <span className="text-[10px] font-mono text-[#64748B] truncate">{name}</span>
-          {changePercent !== undefined && (
+          {changePercent !== undefined && Number.isFinite(changePercent) && (
             <span className="text-[9px] font-mono font-bold" style={{ color: changeColor }}>
               {changePercent >= 0 ? "+" : ""}{changePercent.toFixed(2)}%
             </span>
           )}
-          <span className="text-[8px] font-mono" style={{ color: riskColor }}>{riskLabel}</span>
         </div>
       </div>
 
