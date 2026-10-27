@@ -21,6 +21,7 @@ vi.mock('../db', () => {
   return {
     getUserByStripeCustomerId: vi.fn(),
     getEntitlementUserById: vi.fn(),
+    getEntitlementRevision: vi.fn().mockResolvedValue(0),
     recordStripeWebhookEvent: vi.fn(),
     releaseStripeWebhookEvent: vi.fn(),
     completeStripeWebhookEvent: vi.fn(),
@@ -43,6 +44,7 @@ import { stripe } from './client';
 import {
   getUserByStripeCustomerId,
   getEntitlementUserById,
+  getEntitlementRevision,
   recordStripeWebhookEvent,
   releaseStripeWebhookEvent,
   completeStripeWebhookEvent,
@@ -110,6 +112,7 @@ describe('handleStripeWebhook re-sync', () => {
     vi.mocked(getPlanByPriceId).mockImplementation((priceId: string) => (
       priceId === 'price_premium' ? { id: 'premium', tier: 'premium', name: 'Pro', amount: 5900, interval: 'month', description: '', priceId } as never : undefined
     ));
+    vi.mocked(getEntitlementRevision).mockResolvedValue(0);
     vi.mocked(getUserByStripeCustomerId).mockResolvedValue({
       id: 7, name: 'Ada', email: 'ada@example.com', accessTier: 'free', lifetimeAccess: false,
     });
@@ -210,6 +213,9 @@ describe('handleStripeWebhook re-sync', () => {
     vi.mocked(getUserByStripeCustomerId).mockResolvedValue({
       id: 7, name: 'Ada', email: 'ada@example.com', accessTier: 'founding', lifetimeAccess: true,
     });
+    vi.mocked(getEntitlementUserById).mockResolvedValue({
+      id: 7, name: 'Ada', email: 'ada@example.com', accessTier: 'founding', lifetimeAccess: true,
+    });
     usePicture(premiumSub({ status: 'canceled' }), [{
       id: 'cs_free', mode: 'payment', payment_status: 'no_payment_required', amount_total: 0,
       metadata: { plan_id: 'lifetime' }, payment_intent: null,
@@ -244,6 +250,9 @@ describe('handleStripeWebhook re-sync', () => {
 
   it('keeps lifetime beside an active subscription', async () => {
     vi.mocked(getUserByStripeCustomerId).mockResolvedValue({
+      id: 7, name: 'Ada', email: 'ada@example.com', accessTier: 'founding', lifetimeAccess: true,
+    });
+    vi.mocked(getEntitlementUserById).mockResolvedValue({
       id: 7, name: 'Ada', email: 'ada@example.com', accessTier: 'founding', lifetimeAccess: true,
     });
     const res = await post({
@@ -296,16 +305,26 @@ describe('handleStripeWebhook re-sync', () => {
     }
   });
 
-  it('retains an unknown price without writing a tier', async () => {
-    usePicture(premiumSub({ items: { data: [{ price: { id: 'price_unknown' } }] } }));
+  it('leaves an unknown price unfinished so it can be replayed, and keeps a cancellation on that event', async () => {
+    usePicture(premiumSub({
+      id: 'sub_known',
+      items: { data: [{ price: { id: 'price_unknown' } }] },
+    }));
     const res = await post({
-      id: 'evt_price', type: 'invoice.paid', created: PERIOD_START,
-      data: { object: { id: 'in_paid', customer: 'cus_a' } },
+      id: 'evt_price',
+      type: 'customer.subscription.updated',
+      created: PERIOD_START + 15,
+      data: { object: { id: 'sub_cancel', customer: 'cus_a', status: 'canceled' } },
     });
-    expect(res._status).toBe(200);
-    expect(res._body).toEqual({ received: true, ignored: 'unresolved_plan' });
+    expect(res._status).toBe(500);
+    expect(res._body).toEqual({ error: 'Webhook processing failed', conflict: 'unresolved_plan' });
+    expect(upsertStripeCancellationMarker).toHaveBeenCalledWith(expect.objectContaining({
+      stripeSubscriptionId: 'sub_cancel',
+      status: 'canceled',
+    }));
     expect(commitEntitlementResync).not.toHaveBeenCalled();
-    expect(completeStripeWebhookEvent).toHaveBeenCalled();
+    expect(completeStripeWebhookEvent).not.toHaveBeenCalled();
+    expect(releaseStripeWebhookEvent).not.toHaveBeenCalled();
   });
 
   it('does not release a lost fence', async () => {
@@ -345,5 +364,103 @@ describe('handleStripeWebhook re-sync', () => {
       expect.objectContaining({ limit: 100, status: 'all' }),
       expect.objectContaining({ timeout: 4_000, maxNetworkRetries: 1 }),
     );
+  });
+
+  it('reads the entitlement period from subscription items when the subscription object has none', async () => {
+    const itemPeriod = premiumSub({
+      current_period_start: null,
+      current_period_end: null,
+      items: { data: [{ price: { id: 'price_premium' }, current_period_start: PERIOD_START, current_period_end: PERIOD_END }] },
+    });
+    usePicture(itemPeriod);
+    const res = await post({
+      id: 'evt_items', type: 'invoice.paid', created: PERIOD_START,
+      data: { object: { id: 'in_paid', customer: 'cus_a' } },
+    });
+    expect(res._status).toBe(200);
+    expect(commitEntitlementResync).toHaveBeenCalledWith(expect.objectContaining({
+      observedRevision: 0,
+      desired: expect.objectContaining({
+        accessTier: 'premium',
+        accessExpiresAt: new Date(PERIOD_END * 1000),
+        stripeCustomerId: 'cus_a',
+      }),
+    }));
+  });
+
+  it('resolves a subscription event by metadata when the customer id is not stored yet', async () => {
+    vi.mocked(getUserByStripeCustomerId).mockResolvedValue(null);
+    const res = await post({
+      id: 'evt_meta', type: 'customer.subscription.updated', created: PERIOD_START,
+      data: { object: { id: 'sub_live', customer: 'cus_new', status: 'active', metadata: { user_id: '7' } } },
+    });
+    expect(res._status).toBe(200);
+    expect(getEntitlementUserById).toHaveBeenCalledWith(7);
+    expect(commitEntitlementResync).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 7,
+      desired: expect.objectContaining({ stripeCustomerId: 'cus_new', accessTier: 'premium' }),
+    }));
+  });
+
+  it('does not acknowledge an event whose user cannot be resolved', async () => {
+    vi.mocked(getUserByStripeCustomerId).mockResolvedValue(null);
+    vi.mocked(getEntitlementUserById).mockResolvedValue(null);
+    const res = await post({
+      id: 'evt_nouser', type: 'invoice.paid', created: PERIOD_START,
+      data: { object: { id: 'in_paid', customer: 'cus_missing' } },
+    });
+    expect(res._status).toBe(500);
+    expect(res._body).toEqual({ error: 'Webhook processing failed', conflict: 'missing_user' });
+    expect(completeStripeWebhookEvent).not.toHaveBeenCalled();
+    expect(commitEntitlementResync).not.toHaveBeenCalled();
+    expect(releaseStripeWebhookEvent).toHaveBeenCalled();
+  });
+
+  it('renews a paid invoice settled by customer credit', async () => {
+    const credit = premiumSub({
+      latest_invoice: { id: 'in_credit', status: 'paid', amount_paid: 0, total: 5900, created: PERIOD_START },
+    });
+    usePicture(credit);
+    const res = await post({
+      id: 'evt_credit', type: 'invoice.paid', created: PERIOD_START + 2,
+      data: { object: { id: 'in_credit', customer: 'cus_a', amount_paid: 0, total: 5900 } },
+    });
+    expect(res._status).toBe(200);
+    expect(commitEntitlementResync).toHaveBeenCalledWith(expect.objectContaining({
+      desired: expect.objectContaining({
+        accessTier: 'premium',
+        accessExpiresAt: new Date(PERIOD_END * 1000),
+      }),
+    }));
+  });
+
+  it('restores a same-period unpause when the resume event is newer than the marker and the live read agrees', async () => {
+    vi.mocked(listStripeCancellationMarkers).mockResolvedValue([
+      { stripeSubscriptionId: 'sub_live', canceledEventCreated: PERIOD_START + 10, status: 'paused', supersededEventCreated: null },
+    ]);
+    const resumed = premiumSub({ pause_collection: null });
+    usePicture(resumed);
+    const res = await post({
+      id: 'evt_resume', type: 'customer.subscription.updated', created: PERIOD_START + 30,
+      data: { object: { id: 'sub_live', customer: 'cus_a', status: 'active', pause_collection: null } },
+    });
+    expect(res._status).toBe(200);
+    expect(commitEntitlementResync).toHaveBeenCalledWith(expect.objectContaining({
+      supersedeCancellation: { stripeSubscriptionId: 'sub_live', eventCreated: PERIOD_START + 30 },
+      desired: expect.objectContaining({ accessTier: 'premium', stripeSubscriptionId: 'sub_live' }),
+    }));
+  });
+
+  it('recomputes instead of sealing the snapshot that lost the revision race', async () => {
+    vi.mocked(commitEntitlementResync)
+      .mockResolvedValueOnce('stale_state')
+      .mockResolvedValueOnce('applied');
+    const res = await post({
+      id: 'evt_recompute', type: 'invoice.paid', created: PERIOD_START,
+      data: { object: { id: 'in_paid', customer: 'cus_a' } },
+    });
+    expect(res._status).toBe(200);
+    expect(commitEntitlementResync).toHaveBeenCalledTimes(2);
+    expect(releaseStripeWebhookEvent).not.toHaveBeenCalled();
   });
 });

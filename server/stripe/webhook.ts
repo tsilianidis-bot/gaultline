@@ -6,6 +6,7 @@ import { getPlanByPriceId } from './products';
 import {
   getUserByStripeCustomerId,
   getEntitlementUserById,
+  getEntitlementRevision,
   recordStripeWebhookEvent,
   releaseStripeWebhookEvent,
   completeStripeWebhookEvent,
@@ -14,15 +15,20 @@ import {
   listStripeCancellationMarkers,
   StaleStripeWebhookClaimError,
   ZeroRowEntitlementWriteError,
+  type EntitlementMarkerSnapshot,
   type StripeWebhookAttempt,
 } from '../db';
 import { sendEmail, buildSubscriptionConfirmationEmail } from '../email';
 import {
   cancellationMarkerFromEvent,
   decideEntitlement,
+  linkedUserIds,
+  resumeEvidenceFromEvent,
   verifiedLifetimePayment,
+  type EntitlementApply,
   type LifetimeSessionView,
   type PaidTier,
+  type ResumeEvidence,
   type SubscriptionView,
 } from './entitlementSync';
 
@@ -41,11 +47,14 @@ export class EntitlementConflictError extends Error {
 }
 
 /**
- * Four webhook reads, each allowed one network retry (ECONNRESET) plus 1s of
- * backoff, at a 4s timeout: 4 * (4s * 2 + 1s) = 36s. That stays under the 90s
- * reclaim window. The shared Stripe client does not set maxNetworkRetries.
+ * Six webhook reads so a single-page pass (list, lifetime sessions, retrieve)
+ * can recompute once inside the same delivery. Each read allows one network
+ * retry plus 1s of backoff, at a 4s timeout: 6 * (4s * 2 + 1s) = 54s. That
+ * stays under the 90s reclaim window. The shared Stripe client does not set
+ * maxNetworkRetries. A second page plus a recompute can exhaust the budget;
+ * the handler then returns 500 without sealing.
  */
-export const STRIPE_WEBHOOK_MAX_READS = 4;
+export const STRIPE_WEBHOOK_MAX_READS = 6;
 export const STRIPE_WEBHOOK_READ_TIMEOUT_MS = 4_000;
 export const STRIPE_WEBHOOK_MAX_NETWORK_RETRIES = 1;
 export const STRIPE_WEBHOOK_RETRY_BACKOFF_MS = 1_000;
@@ -94,19 +103,22 @@ function priceTier(priceId: string): PaidTier | null {
   return plan.tier;
 }
 
+/**
+ * Customer id first, then checkout/subscription/invoice metadata, then
+ * client_reference_id. A miss is not an acknowledgement — the caller retries.
+ */
 async function resolveUser(event: { type: string; data: { object?: Record<string, unknown> | null } }): Promise<EntitlementUser | null> {
   const object = event.data.object ?? {};
-  if (event.type.startsWith('checkout.session.')) {
-    const metadata = object.metadata as { user_id?: string } | undefined;
-    const userId = metadata?.user_id ? parseInt(metadata.user_id, 10) : NaN;
-    if (Number.isInteger(userId) && userId > 0) {
-      const byId = await getEntitlementUserById(userId);
-      if (byId) return byId;
-    }
-  }
   const customerId = stripeId(object.customer);
-  if (!customerId) return null;
-  return getUserByStripeCustomerId(customerId);
+  if (customerId) {
+    const byCustomer = await getUserByStripeCustomerId(customerId);
+    if (byCustomer) return byCustomer;
+  }
+  for (const userId of linkedUserIds(object)) {
+    const byId = await getEntitlementUserById(userId);
+    if (byId) return byId;
+  }
+  return null;
 }
 
 async function loadSubscriptions(customerId: string, budget: ReadBudget): Promise<{ subscriptions: SubscriptionView[]; listIncomplete: boolean }> {
@@ -152,6 +164,113 @@ function tierToPlanName(tier: string): string {
     case 'founding': return 'Founding Member';
     default: return 'FAULTLINE Plan';
   }
+}
+
+type EntitlementPicture = {
+  subscriptions: SubscriptionView[];
+  markers: EntitlementMarkerSnapshot[];
+  revision: number;
+  decision: EntitlementApply;
+};
+
+function isEntitlementPicture(value: EntitlementPicture | { stale: true }): value is EntitlementPicture {
+  return !('stale' in value);
+}
+
+/**
+ * One full recompute. The revision is sampled before the Stripe reads and
+ * again after them. A change means this snapshot is already stale and must
+ * not be committed. Lifetime is re-read so an admin revoke is visible.
+ */
+async function computeEntitlementPicture(input: {
+  eventId: string;
+  userId: number;
+  customerId: string | null;
+  eventType: string;
+  sessionId: string | null;
+  budget: ReadBudget;
+  resume: ResumeEvidence | null;
+  lifetimeVerified: boolean;
+  lifetimePurchasedAt: Date | null;
+}): Promise<EntitlementPicture | { stale: true }> {
+  const revisionBefore = await getEntitlementRevision(input.userId);
+  if (revisionBefore == null) throw new ZeroRowEntitlementWriteError(input.eventId);
+  const user = await getEntitlementUserById(input.userId);
+  if (!user) throw new ZeroRowEntitlementWriteError(input.eventId);
+  if (input.customerId && input.budget.n >= STRIPE_WEBHOOK_MAX_READS) {
+    throw new EntitlementConflictError('stale_state');
+  }
+
+  let lifetimeVerified = input.lifetimeVerified;
+  let lifetimePurchasedAt = input.lifetimePurchasedAt;
+  let subscriptions: SubscriptionView[] = [];
+  let listIncomplete = false;
+
+  if (input.customerId) {
+    const listed = await loadSubscriptions(input.customerId, input.budget);
+    subscriptions = listed.subscriptions;
+    listIncomplete = listed.listIncomplete;
+    if (input.budget.n >= STRIPE_WEBHOOK_MAX_READS && !lifetimeVerified) {
+      throw new EntitlementConflictError('read_budget');
+    }
+    const sessions = await loadLifetimeSessions(input.customerId, input.budget);
+    const verified = sessions.find(session => verifiedLifetimePayment(session));
+    if (verified) {
+      lifetimeVerified = true;
+      if (!lifetimePurchasedAt && typeof verified.created === 'number') lifetimePurchasedAt = new Date(verified.created * 1000);
+    }
+    const checkoutAttempt = input.eventType === 'checkout.session.completed' || input.eventType === 'checkout.session.async_payment_succeeded';
+    if (input.eventType.startsWith('checkout.session.') && !lifetimeVerified && input.sessionId && checkoutAttempt && input.budget.n < STRIPE_WEBHOOK_MAX_READS) {
+      const session = await stripeCall(input.budget, () => stripe!.checkout.sessions.retrieve(input.sessionId!, { expand: ['payment_intent'] }, stripeRead)) as LifetimeSessionView;
+      if (verifiedLifetimePayment(session)) {
+        lifetimeVerified = true;
+        if (typeof session.created === 'number') lifetimePurchasedAt = new Date(session.created * 1000);
+      }
+    }
+  }
+
+  const markers = await listStripeCancellationMarkers(subscriptions.map(subscription => subscription.id));
+  const revisionAfter = await getEntitlementRevision(input.userId);
+  if (revisionAfter == null) throw new ZeroRowEntitlementWriteError(input.eventId);
+  if (revisionAfter !== revisionBefore) return { stale: true };
+
+  let decision = decideEntitlement({
+    subscriptions,
+    listIncomplete,
+    markers,
+    corroborated: null,
+    storedLifetime: Boolean(user.lifetimeAccess),
+    lifetimeVerified,
+    lifetimePurchasedAt,
+    resolveTier: priceTier,
+    resume: input.resume,
+  });
+  if (decision.action === 'needs_corroboration') {
+    if (input.budget.n >= STRIPE_WEBHOOK_MAX_READS) throw new EntitlementConflictError('single_read');
+    const subscriptionId = decision.subscriptionId;
+    const retrieved = await stripeCall(input.budget, () => stripe!.subscriptions.retrieve(
+      subscriptionId,
+      { expand: ['latest_invoice'] },
+      stripeRead,
+    )) as SubscriptionView;
+    decision = decideEntitlement({
+      subscriptions,
+      listIncomplete,
+      markers,
+      corroborated: retrieved,
+      storedLifetime: Boolean(user.lifetimeAccess),
+      lifetimeVerified,
+      lifetimePurchasedAt,
+      resolveTier: priceTier,
+      resume: input.resume,
+    });
+  }
+  if (decision.action === 'conflict') throw new EntitlementConflictError(decision.reason);
+  if (decision.action === 'needs_corroboration') throw new EntitlementConflictError('single_read');
+  if (decision.action === 'unresolved') {
+    throw new UnresolvedPlanError(`Subscription ${decision.subscriptionId} price ${decision.priceId ?? 'missing'} does not match any configured paid plan — no entitlement granted`);
+  }
+  return { subscriptions, markers, revision: revisionAfter, decision };
 }
 
 export async function handleStripeWebhook(req: Request, res: Response) {
@@ -226,9 +345,9 @@ export async function handleStripeWebhook(req: Request, res: Response) {
   try {
     const user = await resolveUser(event as unknown as Parameters<typeof resolveUser>[0]);
     if (!user) {
-      console.warn(`[Stripe Webhook] ${event.type} ${event.id} has no resolvable user — not granting`);
-      if (!(await retainClaim())) return res.status(500).json({ error: 'Webhook processing failed' });
-      return res.json({ received: true, ignored: 'missing_user' });
+      console.warn(`[Stripe Webhook] ${event.type} ${event.id} has no resolvable user — not acknowledging`);
+      await releaseClaim();
+      return res.status(500).json({ error: 'Webhook processing failed', conflict: 'missing_user' });
     }
 
     const marker = cancellationMarkerFromEvent(event as unknown as Parameters<typeof cancellationMarkerFromEvent>[0]);
@@ -240,9 +359,9 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     const budget: ReadBudget = { n: 0 };
     let lifetimeVerified = false;
     let lifetimePurchasedAt: Date | null = null;
+    const sessionId = stripeId((event.data.object as { id?: unknown }).id);
 
     if (event.type.startsWith('checkout.session.') && customerId == null) {
-      const sessionId = stripeId((event.data.object as { id?: unknown }).id);
       if (sessionId && (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded')) {
         const session = await stripeCall(budget, () => stripe!.checkout.sessions.retrieve(sessionId, { expand: ['payment_intent'] }, stripeRead)) as LifetimeSessionView;
         lifetimeVerified = verifiedLifetimePayment(session);
@@ -251,86 +370,63 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     }
 
     if (!customerId && !lifetimeVerified) {
-      if (!(await retainClaim())) return res.status(500).json({ error: 'Webhook processing failed' });
-      return res.json({ received: true, ignored: 'missing_customer' });
+      await releaseClaim();
+      return res.status(500).json({ error: 'Webhook processing failed', conflict: 'missing_customer' });
     }
 
-    let subscriptions: SubscriptionView[] = [];
-    let listIncomplete = false;
-    if (customerId) {
-      const listed = await loadSubscriptions(customerId, budget);
-      subscriptions = listed.subscriptions;
-      listIncomplete = listed.listIncomplete;
-      const sessions = await loadLifetimeSessions(customerId, budget);
-      const verified = sessions.find(session => verifiedLifetimePayment(session));
-      if (verified) {
-        lifetimeVerified = true;
-        if (!lifetimePurchasedAt && typeof verified.created === 'number') lifetimePurchasedAt = new Date(verified.created * 1000);
-      }
-      if (event.type.startsWith('checkout.session.') && !lifetimeVerified) {
-        const sessionId = stripeId((event.data.object as { id?: unknown }).id);
-        if (sessionId && budget.n < STRIPE_WEBHOOK_MAX_READS && (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded')) {
-          const session = await stripeCall(budget, () => stripe!.checkout.sessions.retrieve(sessionId, { expand: ['payment_intent'] }, stripeRead)) as LifetimeSessionView;
-          if (verifiedLifetimePayment(session)) {
-            lifetimeVerified = true;
-            if (typeof session.created === 'number') lifetimePurchasedAt = new Date(session.created * 1000);
-          }
-        }
-      }
-    }
-
-    const markers = await listStripeCancellationMarkers(subscriptions.map(subscription => subscription.id));
-    let decision = decideEntitlement({
-      subscriptions,
-      listIncomplete,
-      markers,
-      corroborated: null,
-      storedLifetime: Boolean(user.lifetimeAccess),
+    const resume = resumeEvidenceFromEvent(event as unknown as Parameters<typeof resumeEvidenceFromEvent>[0]);
+    const pictureInput = {
+      eventId: event.id,
+      userId: user.id,
+      customerId,
+      eventType: event.type,
+      sessionId,
+      budget,
+      resume,
       lifetimeVerified,
       lifetimePurchasedAt,
-      resolveTier: priceTier,
-    });
-    if (decision.action === 'needs_corroboration') {
-      if (budget.n >= STRIPE_WEBHOOK_MAX_READS) {
-        throw new EntitlementConflictError('single_read');
-      }
-      const retrieved = await stripeCall(budget, () => stripe!.subscriptions.retrieve(
-        decision.action === 'needs_corroboration' ? decision.subscriptionId : '',
-        { expand: ['latest_invoice'] },
-        stripeRead,
-      )) as SubscriptionView;
-      decision = decideEntitlement({
-        subscriptions,
-        listIncomplete,
-        markers,
-        corroborated: retrieved,
-        storedLifetime: Boolean(user.lifetimeAccess),
-        lifetimeVerified,
-        lifetimePurchasedAt,
-        resolveTier: priceTier,
-      });
+    };
+    let pictured = await computeEntitlementPicture(pictureInput);
+    if (!isEntitlementPicture(pictured)) {
+      pictured = await computeEntitlementPicture(pictureInput);
+      if (!isEntitlementPicture(pictured)) throw new EntitlementConflictError('stale_state');
     }
-    if (decision.action === 'conflict') throw new EntitlementConflictError(decision.reason);
-    if (decision.action === 'needs_corroboration') throw new EntitlementConflictError('single_read');
-    if (decision.action === 'unresolved') {
-      throw new UnresolvedPlanError(`Subscription ${decision.subscriptionId} price ${decision.priceId ?? 'missing'} does not match any configured paid plan — no entitlement granted`);
-    }
-
-    const outcome = await commitEntitlementResync({
+    const commitOf = (picture: EntitlementPicture) => commitEntitlementResync({
       eventId: event.id,
       eventType: event.type,
       attemptId: attempt.attemptId,
       userId: user.id,
-      desired: decision,
+      observedRevision: picture.revision,
+      observedMarkers: picture.markers,
+      markerSubscriptionIds: picture.subscriptions.map(subscription => subscription.id),
+      supersedeCancellation: picture.decision.supersedeCancellation,
+      desired: {
+        accessTier: picture.decision.accessTier,
+        stripeSubscriptionId: picture.decision.stripeSubscriptionId,
+        grantLifetime: picture.decision.grantLifetime,
+        lifetimePurchasedAt: picture.decision.lifetimePurchasedAt,
+        accessExpiresAt: picture.decision.accessExpiresAt,
+        stripeCustomerId: customerId,
+      },
       audit: {
         fromTier: user.accessTier,
-        toTier: decision.accessTier,
+        toTier: picture.decision.accessTier,
         reason: event.type,
         stripeCustomerId: customerId ?? undefined,
-        stripeSubscriptionId: decision.stripeSubscriptionId ?? undefined,
+        stripeSubscriptionId: picture.decision.stripeSubscriptionId ?? undefined,
       },
     });
+    let outcome = await commitOf(pictured);
+    if (outcome === 'stale_state') {
+      const recomputed = await computeEntitlementPicture(pictureInput);
+      if (!isEntitlementPicture(recomputed)) throw new EntitlementConflictError('stale_state');
+      pictured = recomputed;
+      outcome = await commitOf(pictured);
+    }
     if (outcome === 'claim_lost') throw new StaleStripeWebhookClaimError(event.id);
+    if (outcome === 'stale_state') throw new EntitlementConflictError('stale_state');
+    if (!isEntitlementPicture(pictured)) throw new EntitlementConflictError('stale_state');
+    const decision = pictured.decision;
     entitlementWritten = true;
     console.log(`[Stripe Webhook] User ${user.id} entitlement resynced to ${decision.accessTier} (${event.type} ${event.id})`);
 
@@ -364,9 +460,8 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       return res.status(500).json({ error: 'Webhook processing failed' });
     }
     if (err instanceof UnresolvedPlanError) {
-      console.error(`[Stripe Webhook][BILLING-ALERT] ${event.type} ${event.id}: ${err.message}. No access granted. Claim retained.`);
-      if (!(await retainClaim())) return res.status(500).json({ error: 'Webhook processing failed' });
-      return res.status(200).json({ received: true, ignored: 'unresolved_plan' });
+      console.error(`[Stripe Webhook][BILLING-ALERT] ${event.type} ${event.id}: ${err.message}. Claim left unfinished so it can be replayed. A cancellation marker on this event is kept.`);
+      return res.status(500).json({ error: 'Webhook processing failed', conflict: 'unresolved_plan' });
     }
     console.error('[Stripe Webhook] Error processing event:', err);
     if (!entitlementWritten) await releaseClaim();

@@ -50,10 +50,11 @@ export const adminRouter = router({
     .input(z.object({
       userId: z.number().int().positive(),
       tier: z.enum(["free", "core", "premium", "founding"]),
+      lifetimeAccess: z.boolean().optional(),
     }))
     .mutation(async ({ input }) => {
       try {
-        await setUserTier(input.userId, input.tier);
+        await setUserTier(input.userId, input.tier, input.lifetimeAccess);
         const tier = await getUserTier(input.userId);
         return { success: true, tier };
       } catch (err) {

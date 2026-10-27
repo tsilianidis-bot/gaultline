@@ -14,16 +14,31 @@ import {
   commitEntitlementResync,
   completeStripeWebhookEvent,
   entitlementAuditExists,
+  getAllUsersWithTier,
   getUserTier,
   listStripeCancellationMarkers,
   recordStripeWebhookEvent,
   releaseStripeWebhookEvent,
+  setUserTier,
   StaleStripeWebhookClaimError,
   UnfinishedStripeWebhookClaimError,
   upsertStripeCancellationMarker,
   writeEntitlementAudit,
   ZeroRowEntitlementWriteError,
 } from "./db";
+
+type ResyncParams = Parameters<typeof commitEntitlementResync>[0];
+function resync(
+  overrides: Omit<ResyncParams, "observedRevision" | "observedMarkers" | "markerSubscriptionIds"> &
+    Partial<Pick<ResyncParams, "observedRevision" | "observedMarkers" | "markerSubscriptionIds">>,
+) {
+  return commitEntitlementResync({
+    observedRevision: 0,
+    observedMarkers: [],
+    markerSubscriptionIds: [],
+    ...overrides,
+  });
+}
 
 const PRODUCTION_URL = /prod|railway|getfaultline|amazonaws|planetscale/i;
 const PORT = 3311;
@@ -94,6 +109,11 @@ describe("stripe webhook claim concurrency", () => {
       lifetimePurchasedAt timestamp NULL,
       accessExpiresAt timestamp NULL,
       entitlementRevision int NOT NULL DEFAULT 0,
+      name text NULL,
+      email varchar(320) NULL,
+      role enum('user','admin') NOT NULL DEFAULT 'user',
+      createdAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      lastSignedIn timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updatedAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`);
     await admin.query(`CREATE TABLE stripeSubscriptionCancellations (
@@ -103,6 +123,7 @@ describe("stripe webhook claim concurrency", () => {
       status varchar(32) NOT NULL,
       sourceEventId varchar(128) NOT NULL,
       userId int NULL,
+      supersededEventCreated int NULL,
       createdAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updatedAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       UNIQUE KEY stripeSubscriptionCancellations_sub_uniq (stripeSubscriptionId)
@@ -236,7 +257,7 @@ describe("stripe webhook claim concurrency", () => {
       .rejects.toBeInstanceOf(StaleStripeWebhookClaimError);
     expect((await claimRow("evt_stale_fence")).eventType).toContain(reclaimed!.attemptId);
 
-    const lost = await commitEntitlementResync({
+    const lost = await resync({
       eventId: "evt_stale_fence",
       eventType: "invoice.paid",
       attemptId: original!.attemptId,
@@ -251,7 +272,7 @@ describe("stripe webhook claim concurrency", () => {
     ) as unknown as [Array<{ accessTier: string; stripeSubscriptionId: string }>];
     expect(unchanged[0]).toEqual({ accessTier: "premium", stripeSubscriptionId: "sub_stale" });
 
-    const applied = await commitEntitlementResync({
+    const applied = await resync({
       eventId: "evt_stale_fence",
       eventType: "invoice.paid",
       attemptId: reclaimed!.attemptId,
@@ -273,7 +294,7 @@ describe("stripe webhook claim concurrency", () => {
     const desired = { accessTier: "free" as const, stripeSubscriptionId: null, grantLifetime: false, lifetimePurchasedAt: null, accessExpiresAt: null };
 
     const match = await recordStripeWebhookEvent("evt_revoke_match", "customer.subscription.deleted");
-    expect(await commitEntitlementResync({
+    expect(await resync({
       eventId: "evt_revoke_match",
       eventType: "customer.subscription.deleted",
       attemptId: match!.attemptId,
@@ -286,7 +307,7 @@ describe("stripe webhook claim concurrency", () => {
     expect(downgraded[0].stripeSubscriptionId).toBeNull();
 
     const life = await recordStripeWebhookEvent("evt_revoke_life", "customer.subscription.deleted");
-    expect(await commitEntitlementResync({
+    expect(await resync({
       eventId: "evt_revoke_life",
       eventType: "customer.subscription.deleted",
       attemptId: life!.attemptId,
@@ -303,7 +324,7 @@ describe("stripe webhook claim concurrency", () => {
 
   it("high 1: a missing user is a zero-row write and does not seal the claim", async () => {
     const attempt = await recordStripeWebhookEvent("evt_missing_user", "invoice.paid");
-    await expect(commitEntitlementResync({
+    await expect(resync({
       eventId: "evt_missing_user",
       eventType: "invoice.paid",
       attemptId: attempt!.attemptId,
@@ -338,7 +359,7 @@ describe("stripe webhook claim concurrency", () => {
     );
     const [users] = await admin!.query("SELECT id FROM users WHERE openId = 'rollback'") as unknown as [Array<{ id: number }>];
     const attempt = await recordStripeWebhookEvent("evt_rollback", "invoice.paid");
-    await expect(commitEntitlementResync({
+    await expect(resync({
       eventId: "evt_rollback",
       eventType: "invoice.paid",
       attemptId: attempt!.attemptId,
@@ -351,6 +372,151 @@ describe("stripe webhook claim concurrency", () => {
     expect((await claimRow("evt_rollback")).eventType).toContain(attempt!.attemptId);
     expect(await entitlementAuditExists("evt_rollback")).toBe(false);
     expect(await getUserTier(users[0].id)).toBe("free");
+  });
+
+  it("does not seal a grant computed against a stale revision or a cancellation that landed later", async () => {
+    await admin!.query(
+      "INSERT INTO users (openId, accessTier, lifetimeAccess, entitlementRevision) VALUES ('cas', 'free', 0, 0)",
+    );
+    const [users] = await admin!.query("SELECT id FROM users WHERE openId = 'cas'") as unknown as [Array<{ id: number }>];
+    const userId = users[0].id;
+    const staleRevision = await recordStripeWebhookEvent("evt_stale_revision", "invoice.paid");
+    await admin!.query("UPDATE users SET entitlementRevision = 1 WHERE id = ?", [userId]);
+    expect(await resync({
+      eventId: "evt_stale_revision",
+      eventType: "invoice.paid",
+      attemptId: staleRevision!.attemptId,
+      userId,
+      observedRevision: 0,
+      desired: { accessTier: "premium", stripeSubscriptionId: "sub_cas", grantLifetime: false, lifetimePurchasedAt: null, accessExpiresAt: new Date("2027-06-01T00:00:00Z"), stripeCustomerId: "cus_cas" },
+      audit: { fromTier: "free", toTier: "premium", reason: "invoice.paid" },
+    })).toBe("stale_state");
+    const [unchanged] = await admin!.query("SELECT accessTier, stripeCustomerId, entitlementRevision FROM users WHERE id = ?", [userId]) as unknown as [Array<{ accessTier: string; stripeCustomerId: string | null; entitlementRevision: number }>];
+    expect(unchanged[0]).toEqual({ accessTier: "free", stripeCustomerId: null, entitlementRevision: 1 });
+    expect((await claimRow("evt_stale_revision")).eventType).toContain(staleRevision!.attemptId);
+
+    const staleMarker = await recordStripeWebhookEvent("evt_stale_marker", "invoice.paid");
+    await upsertStripeCancellationMarker({
+      stripeSubscriptionId: "sub_cas", canceledEventCreated: 500, status: "canceled", sourceEventId: "evt_cancel_cas", userId,
+    });
+    expect(await resync({
+      eventId: "evt_stale_marker",
+      eventType: "invoice.paid",
+      attemptId: staleMarker!.attemptId,
+      userId,
+      observedRevision: 1,
+      observedMarkers: [],
+      markerSubscriptionIds: ["sub_cas"],
+      desired: { accessTier: "premium", stripeSubscriptionId: "sub_cas", grantLifetime: false, lifetimePurchasedAt: null, accessExpiresAt: new Date("2027-06-01T00:00:00Z") },
+      audit: { fromTier: "free", toTier: "premium", reason: "invoice.paid" },
+    })).toBe("stale_state");
+    expect((await claimRow("evt_stale_marker")).eventType).toContain(staleMarker!.attemptId);
+    expect((await admin!.query("SELECT accessTier FROM users WHERE id = ?", [userId]) as unknown as [Array<{ accessTier: string }>])[0][0].accessTier).toBe("free");
+  });
+
+  it("lets one of two concurrent commits win and leaves the loser unsealed", async () => {
+    await admin!.query(
+      "INSERT INTO users (openId, accessTier, lifetimeAccess) VALUES ('race', 'free', 0)",
+    );
+    const [users] = await admin!.query("SELECT id FROM users WHERE openId = 'race'") as unknown as [Array<{ id: number }>];
+    const userId = users[0].id;
+    const first = await recordStripeWebhookEvent("evt_race_a", "invoice.paid");
+    const second = await recordStripeWebhookEvent("evt_race_b", "invoice.paid");
+    const desired = { accessTier: "premium" as const, stripeSubscriptionId: "sub_race", grantLifetime: false, lifetimePurchasedAt: null, accessExpiresAt: new Date("2027-06-01T00:00:00Z"), stripeCustomerId: "cus_race" };
+    const results = await Promise.all([
+      resync({
+        eventId: "evt_race_a", eventType: "invoice.paid", attemptId: first!.attemptId, userId, observedRevision: 0, desired,
+        audit: { fromTier: "free", toTier: "premium", reason: "invoice.paid", stripeCustomerId: "cus_race" },
+      }),
+      resync({
+        eventId: "evt_race_b", eventType: "invoice.paid", attemptId: second!.attemptId, userId, observedRevision: 0,
+        desired: { ...desired, accessTier: "core", stripeSubscriptionId: "sub_race_b" },
+        audit: { fromTier: "free", toTier: "core", reason: "invoice.paid" },
+      }),
+    ]);
+    expect(results.filter(result => result === "applied")).toHaveLength(1);
+    expect(results.filter(result => result === "stale_state")).toHaveLength(1);
+    const [row] = await admin!.query("SELECT accessTier, stripeCustomerId, entitlementRevision FROM users WHERE id = ?", [userId]) as unknown as [Array<{ accessTier: string; stripeCustomerId: string; entitlementRevision: number }>];
+    expect(["premium", "core"]).toContain(row[0].accessTier);
+    expect(row[0].stripeCustomerId).toBe("cus_race");
+    expect(Number(row[0].entitlementRevision)).toBe(1);
+    const sealed = results[0] === "applied" ? "evt_race_a" : "evt_race_b";
+    const open = sealed === "evt_race_a" ? "evt_race_b" : "evt_race_a";
+    expect((await claimRow(sealed)).eventType).not.toContain(":");
+    expect((await claimRow(open)).eventType).toContain(":");
+  });
+
+  it("persists a customer id without clearing it on a later write that omits it", async () => {
+    await admin!.query("INSERT INTO users (openId, accessTier, lifetimeAccess) VALUES ('cus', 'free', 0)");
+    const [users] = await admin!.query("SELECT id FROM users WHERE openId = 'cus'") as unknown as [Array<{ id: number }>];
+    const userId = users[0].id;
+    const first = await recordStripeWebhookEvent("evt_cus_1", "checkout.session.completed");
+    expect(await resync({
+      eventId: "evt_cus_1", eventType: "checkout.session.completed", attemptId: first!.attemptId, userId,
+      desired: { accessTier: "premium", stripeSubscriptionId: "sub_cus", grantLifetime: false, lifetimePurchasedAt: null, accessExpiresAt: new Date("2027-06-01T00:00:00Z"), stripeCustomerId: "cus_persist" },
+      audit: { fromTier: "free", toTier: "premium", reason: "checkout.session.completed" },
+    })).toBe("applied");
+    const second = await recordStripeWebhookEvent("evt_cus_2", "invoice.paid");
+    expect(await resync({
+      eventId: "evt_cus_2", eventType: "invoice.paid", attemptId: second!.attemptId, userId, observedRevision: 1,
+      desired: { accessTier: "premium", stripeSubscriptionId: "sub_cus", grantLifetime: false, lifetimePurchasedAt: null, accessExpiresAt: new Date("2027-07-01T00:00:00Z") },
+      audit: { fromTier: "premium", toTier: "premium", reason: "invoice.paid" },
+    })).toBe("applied");
+    const [row] = await admin!.query("SELECT stripeCustomerId FROM users WHERE id = ?", [userId]) as unknown as [Array<{ stripeCustomerId: string }>];
+    expect(row[0].stripeCustomerId).toBe("cus_persist");
+  });
+
+  it("supersedes a pause on resume and lets a newer cancellation clear that supersession", async () => {
+    await admin!.query("INSERT INTO users (openId, accessTier, lifetimeAccess) VALUES ('resume', 'free', 0)");
+    const [users] = await admin!.query("SELECT id FROM users WHERE openId = 'resume'") as unknown as [Array<{ id: number }>];
+    const userId = users[0].id;
+    await upsertStripeCancellationMarker({
+      stripeSubscriptionId: "sub_resume", canceledEventCreated: 200, status: "paused", sourceEventId: "evt_pause_resume", userId,
+    });
+    const attempt = await recordStripeWebhookEvent("evt_resume_apply", "customer.subscription.updated");
+    expect(await resync({
+      eventId: "evt_resume_apply",
+      eventType: "customer.subscription.updated",
+      attemptId: attempt!.attemptId,
+      userId,
+      observedMarkers: [{ stripeSubscriptionId: "sub_resume", canceledEventCreated: 200, status: "paused", supersededEventCreated: null }],
+      markerSubscriptionIds: ["sub_resume"],
+      supersedeCancellation: { stripeSubscriptionId: "sub_resume", eventCreated: 250 },
+      desired: { accessTier: "premium", stripeSubscriptionId: "sub_resume", grantLifetime: false, lifetimePurchasedAt: null, accessExpiresAt: new Date("2027-08-01T00:00:00Z") },
+      audit: { fromTier: "free", toTier: "premium", reason: "customer.subscription.updated" },
+    })).toBe("applied");
+    expect(await listStripeCancellationMarkers(["sub_resume"])).toEqual([
+      expect.objectContaining({ canceledEventCreated: 200, status: "paused", supersededEventCreated: 250 }),
+    ]);
+    await upsertStripeCancellationMarker({
+      stripeSubscriptionId: "sub_resume", canceledEventCreated: 100, status: "canceled", sourceEventId: "evt_old_cancel", userId,
+    });
+    expect(await listStripeCancellationMarkers(["sub_resume"])).toEqual([
+      expect.objectContaining({ canceledEventCreated: 200, supersededEventCreated: 250 }),
+    ]);
+    await upsertStripeCancellationMarker({
+      stripeSubscriptionId: "sub_resume", canceledEventCreated: 300, status: "canceled", sourceEventId: "evt_new_cancel", userId,
+    });
+    expect(await listStripeCancellationMarkers(["sub_resume"])).toEqual([
+      expect.objectContaining({ canceledEventCreated: 300, status: "canceled", supersededEventCreated: null }),
+    ]);
+  });
+
+  it("lets admin set and revoke lifetime so the effective tier matches", async () => {
+    await admin!.query("INSERT INTO users (openId, accessTier, lifetimeAccess) VALUES ('admin-tier', 'free', 1)");
+    const [users] = await admin!.query("SELECT id FROM users WHERE openId = 'admin-tier'") as unknown as [Array<{ id: number }>];
+    const userId = users[0].id;
+    expect(await getUserTier(userId)).toBe("founding");
+    await setUserTier(userId, "premium");
+    expect(await getUserTier(userId)).toBe("founding");
+    await setUserTier(userId, "core", false);
+    expect(await getUserTier(userId)).toBe("core");
+    await setUserTier(userId, "premium", true);
+    expect(await getUserTier(userId)).toBe("founding");
+    await setUserTier(userId, "free");
+    expect(await getUserTier(userId)).toBe("free");
+    const listed = await getAllUsersWithTier();
+    expect(listed.find(row => row.id === userId)).toMatchObject({ lifetimeAccess: false, effectiveTier: "free", accessTier: "free" });
   });
 
   it("records an entitlement audit the webhook can see on a replay", async () => {

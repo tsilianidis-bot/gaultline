@@ -24,6 +24,7 @@ import {
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { WatchlistEditModal } from '@/components/watchlist/WatchlistEditModal';
 import { CATEGORY_COLORS, SEVERITY_CONFIG } from '@/components/watchlist/watchlistPresentation';
@@ -341,7 +342,10 @@ export default function Watchlist() {
   const { user } = useAuth();
   const { output, canonicalState, integrityLabel } = useEngine();
   const { readings } = useLiveIndicatorReadings();
-  const isFreeUser = !user || ((user as { accessTier?: string }).accessTier ?? 'free') === 'free';
+  const tierQuery = trpc.user.getAccessTier.useQuery(undefined, { enabled: Boolean(user), retry: false });
+  // Observer cap follows effective tier. Do not fall back to the stored accessTier column:
+  // a lifetime account can be stored as free and must not be capped while the query loads.
+  const isFreeUser = !user || (tierQuery.isSuccess && tierQuery.data.tier === 'free');
   const [items, setItems] = useState<WatchlistItem[]>(() => loadWatchlist());
   const [editingItem, setEditingItem] = useState<WatchlistItem | null | undefined>(undefined);
   const [filterBreached, setFilterBreached] = useState(false);

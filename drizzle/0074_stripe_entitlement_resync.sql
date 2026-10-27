@@ -1,7 +1,8 @@
 -- NOT APPLIED. Do not run this against production or any shared database.
 -- Webhook entitlement re-sync needs these objects before a deploy:
 --   users.accessExpiresAt, users.entitlementRevision,
---   stripeSubscriptionCancellations (monotonic per-subscription cancellation marker).
+--   stripeSubscriptionCancellations (monotonic per-subscription cancellation marker
+--   plus supersededEventCreated for a corroborated resume).
 -- This PR only adds the file. It does not migrate any database.
 ALTER TABLE `users` ADD `accessExpiresAt` timestamp NULL;
 --> statement-breakpoint
@@ -14,6 +15,7 @@ CREATE TABLE `stripeSubscriptionCancellations` (
 	`status` varchar(32) NOT NULL,
 	`sourceEventId` varchar(128) NOT NULL,
 	`userId` int,
+	`supersededEventCreated` int NULL,
 	`createdAt` timestamp NOT NULL DEFAULT (now()),
 	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `stripeSubscriptionCancellations_id` PRIMARY KEY(`id`),

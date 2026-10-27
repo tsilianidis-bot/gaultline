@@ -2867,7 +2867,9 @@ export type InsertStripeWebhookEvent = typeof stripeWebhookEvents.$inferInsert;
 
 /**
  * Monotonic cancellation/pause marker. A later stale `active` list cannot
- * outrank canceledEventCreated. Schema is drizzle/0074, not applied by this PR.
+ * outrank canceledEventCreated. supersededEventCreated records a corroborated
+ * resume that is newer than the marker. Schema is drizzle/0074, not applied
+ * by this PR.
  */
 export const stripeSubscriptionCancellations = mysqlTable("stripeSubscriptionCancellations", {
   id: int("id").autoincrement().primaryKey(),
@@ -2876,6 +2878,8 @@ export const stripeSubscriptionCancellations = mysqlTable("stripeSubscriptionCan
   status: varchar("status", { length: 32 }).notNull(),
   sourceEventId: varchar("sourceEventId", { length: 128 }).notNull(),
   userId: int("userId"),
+  /** Unix seconds of the resume that cleared this marker. Null while it still blocks. */
+  supersededEventCreated: int("supersededEventCreated"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (t) => ({

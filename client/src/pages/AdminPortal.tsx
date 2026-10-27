@@ -459,7 +459,9 @@ function UsersTab() {
         <p style={{ ...MONO, fontSize: "11px", color: "rgba(100,116,139,0.4)" }}>No users found.</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          {filtered.map(u => (
+          {filtered.map(u => {
+            const tierShown = u.effectiveTier ?? u.accessTier ?? "free";
+            return (
             <div key={u.id} style={{
               display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap",
               background: "rgba(255,255,255,0.02)",
@@ -484,7 +486,7 @@ function UsersTab() {
               </div>
 
               {/* Tier badge */}
-              <TierBadge tier={u.accessTier ?? "free"} />
+              <TierBadge tier={tierShown} />
 
               {/* Role */}
               {u.role === "admin" && (
@@ -501,14 +503,18 @@ function UsersTab() {
                 {(["free", "premium", "founding"] as const).map(tier => (
                   <button
                     key={tier}
-                    onClick={() => setTier.mutate({ userId: u.id, tier })}
-                    disabled={setTier.isPending || u.accessTier === tier}
+                    onClick={() => setTier.mutate({
+                      userId: u.id,
+                      tier,
+                      ...(tier === "founding" ? {} : { lifetimeAccess: false }),
+                    })}
+                    disabled={setTier.isPending || tierShown === tier}
                     style={{
                       ...MONO, fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase",
-                      padding: "5px 10px", borderRadius: "5px", cursor: u.accessTier === tier ? "default" : "pointer",
-                      background: u.accessTier === tier ? TIER_BG[tier] : "transparent",
-                      border: `1px solid ${u.accessTier === tier ? (TIER_COLORS[tier] ?? "").replace("0.9", "0.3").replace("0.8", "0.3") : "rgba(255,255,255,0.06)"}`,
-                      color: u.accessTier === tier ? TIER_COLORS[tier] : "rgba(100,116,139,0.4)",
+                      padding: "5px 10px", borderRadius: "5px", cursor: tierShown === tier ? "default" : "pointer",
+                      background: tierShown === tier ? TIER_BG[tier] : "transparent",
+                      border: `1px solid ${tierShown === tier ? (TIER_COLORS[tier] ?? "").replace("0.9", "0.3").replace("0.8", "0.3") : "rgba(255,255,255,0.06)"}`,
+                      color: tierShown === tier ? TIER_COLORS[tier] : "rgba(100,116,139,0.4)",
                       opacity: setTier.isPending ? 0.5 : 1,
                       transition: "all 0.15s",
                     }}
@@ -539,7 +545,8 @@ function UsersTab() {
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

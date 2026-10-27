@@ -225,6 +225,74 @@ describe("cancellation marker and incomplete lists", () => {
     });
   });
 
+  it("reads a Dahlia item period when the subscription object has none", () => {
+    const dahlia = subscription({
+      current_period_start: null,
+      current_period_end: null,
+      items: { data: [{ price: { id: "price_premium" }, current_period_start: PERIOD_START, current_period_end: PERIOD_END }] },
+    });
+    expect(decide({ subscriptions: [dahlia], corroborated: dahlia })).toMatchObject({
+      action: "apply",
+      accessTier: "premium",
+      accessExpiresAt: new Date(PERIOD_END * 1000),
+    });
+  });
+
+  it("does not guess an expiry when item periods disagree", () => {
+    const mixed = subscription({
+      items: {
+        data: [
+          { price: { id: "price_premium" }, current_period_start: PERIOD_START, current_period_end: PERIOD_END },
+          { price: { id: "price_premium" }, current_period_start: PERIOD_START, current_period_end: PERIOD_END + 86_400 },
+        ],
+      },
+    });
+    expect(decide({ subscriptions: [mixed], corroborated: mixed })).toEqual({
+      action: "conflict",
+      reason: "inconsistent_period",
+    });
+  });
+
+  it("treats customer credit and a 100% coupon as renewals, and a zero total as neither", () => {
+    const credit = subscription({
+      latest_invoice: { id: "in_credit", status: "paid", amount_paid: 0, total: 5900, created: PERIOD_START },
+    });
+    expect(subscriptionInvoiceDecision(credit)).toEqual({ entitled: true, kind: "credit" });
+    expect(decide({ subscriptions: [credit], corroborated: credit })).toMatchObject({
+      action: "apply",
+      accessExpiresAt: new Date(PERIOD_END * 1000),
+    });
+    const zero = subscription({
+      latest_invoice: { id: "in_zero", status: "paid", amount_paid: 0, total: 0, created: PERIOD_START },
+    });
+    expect(subscriptionInvoiceDecision(zero)).toEqual({ entitled: false });
+  });
+
+  it("restores a same-period unpause from resume evidence and still blocks a later stale invoice", () => {
+    const resumed = subscription({ pause_collection: null });
+    const marker = { stripeSubscriptionId: "sub_live", canceledEventCreated: PERIOD_START + 10, status: "paused" };
+    expect(decide({
+      subscriptions: [resumed],
+      corroborated: resumed,
+      markers: [marker],
+      resume: { subscriptionId: "sub_live", eventCreated: PERIOD_START + 30 },
+    })).toMatchObject({
+      action: "apply",
+      accessTier: "premium",
+      supersedeCancellation: { stripeSubscriptionId: "sub_live", eventCreated: PERIOD_START + 30 },
+    });
+    expect(decide({
+      subscriptions: [resumed],
+      corroborated: resumed,
+      markers: [marker],
+    })).toEqual({ action: "conflict", reason: "stale_active_after_cancellation" });
+    expect(decide({
+      subscriptions: [resumed],
+      corroborated: resumed,
+      markers: [{ ...marker, supersededEventCreated: PERIOD_START + 30 }],
+    })).toMatchObject({ action: "apply", accessTier: "premium", supersedeCancellation: null });
+  });
+
   it("uses the newest invoice or period timestamp as evidence", () => {
     expect(subscriptionEvidenceSec(subscription({
       current_period_start: 10,
