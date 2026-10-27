@@ -5,24 +5,26 @@ import "./WebsitePressureIntro.css";
 export interface WebsitePressureIntroProps {
   onComplete: () => void;
   onReveal?: () => void;
+  onReady?: () => void;
   mode?: IntroMode;
 }
 
 type ExitReason = "completed" | "skipped" | "video_error" | "playback_failed" | "load_timeout" | "reduced_motion" | "static_overview";
-const POSTER = "/media/brand-cinematic/cinematic-intro-poster.webp";
-const DESKTOP = "/media/brand-cinematic/cinematic-intro-desktop.mp4";
-const MOBILE = "/media/brand-cinematic/cinematic-intro-mobile.mp4";
+const POSTER = "/media/brand-cinematic/cinematic-intro-market-poster.webp";
+const DESKTOP = "/media/brand-cinematic/cinematic-intro-market-desktop.mp4";
+const MOBILE = "/media/brand-cinematic/cinematic-intro-market-mobile.mp4";
 const REDUCED = "(prefers-reduced-motion: reduce)";
 const CROSSFADE_MS = 180;
 const LOAD_DEADLINE_MS = 5000;
 
-export default function WebsitePressureIntro({ onComplete, onReveal, mode = "first_visit" }: WebsitePressureIntroProps) {
+export default function WebsitePressureIntro({ onComplete, onReveal, onReady, mode = "first_visit" }: WebsitePressureIntroProps) {
   const dialogRef = useRef<HTMLElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const callbacks = useRef({ onComplete, onReveal });
+  const callbacks = useRef({ onComplete, onReveal, onReady });
   const finished = useRef(false);
   const impressionSent = useRef(false);
+  const readinessSent = useRef(false);
   const resumeOnVisible = useRef(false);
   const sourceKind = useRef<"desktop" | "mobile" | "none">("none");
   const deadline = useRef<number | undefined>(undefined);
@@ -30,10 +32,18 @@ export default function WebsitePressureIntro({ onComplete, onReveal, mode = "fir
   const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia(REDUCED).matches);
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
+  const [soundBlocked, setSoundBlocked] = useState(false);
   const [exiting, setExiting] = useState(false);
 
-  useEffect(() => { callbacks.current = { onComplete, onReveal }; }, [onComplete, onReveal]);
+  useEffect(() => { callbacks.current = { onComplete, onReveal, onReady }; }, [onComplete, onReveal, onReady]);
+  const signalReady = useCallback(() => {
+    setReady(true);
+    if (!readinessSent.current) {
+      readinessSent.current = true;
+      callbacks.current.onReady?.();
+    }
+  }, []);
   const clearDeadline = useCallback(() => {
     window.clearTimeout(deadline.current);
     deadline.current = undefined;
@@ -64,23 +74,32 @@ export default function WebsitePressureIntro({ onComplete, onReveal, mode = "fir
   useEffect(() => {
     if (!impressionSent.current) {
       impressionSent.current = true;
-      trackIntroEvent("intro_impression", { mode, muted: true, source: "none" });
+      trackIntroEvent("intro_impression", { mode, muted: false, source: "none" });
     }
     if (reducedMotion) {
       if (mode === "first_visit") finish("reduced_motion");
       return;
     }
-    // The homepage is already mounted/preloading. Begin muted playback after its first paint.
+    // Prefer effects with sound. Browser policy may require a muted first play;
+    // preserve automatic video playback and offer an explicit sound gesture.
     const frame = window.requestAnimationFrame(() => {
       const video = videoRef.current;
       if (!video || finished.current) return;
       const mobile = window.matchMedia("(max-width: 767px), (pointer: coarse)").matches;
       sourceKind.current = mobile ? "mobile" : "desktop";
-      video.muted = true;
+      video.muted = false;
       video.volume = 1;
       video.src = mobile ? MOBILE : DESKTOP;
       armDeadline();
-      void video.play().catch(() => finish("playback_failed"));
+      void video.play().catch((error: unknown) => {
+        if (finished.current) return;
+        if (error instanceof DOMException && error.name === "NotAllowedError") {
+          video.muted = true;
+          setMuted(true);
+          setSoundBlocked(true);
+          void video.play().catch(() => finish("playback_failed"));
+        } else finish("playback_failed");
+      });
     });
     return () => window.cancelAnimationFrame(frame);
   }, [mode, reducedMotion, finish, armDeadline]);
@@ -141,6 +160,14 @@ export default function WebsitePressureIntro({ onComplete, onReveal, mode = "fir
     if (!video || finished.current) return;
     video.muted = !video.muted;
     setMuted(video.muted);
+    setSoundBlocked(false);
+    if (!video.muted && video.paused) {
+      void video.play().catch(() => {
+        video.muted = true;
+        setMuted(true);
+        setSoundBlocked(true);
+      });
+    }
   };
   const trapFocus = (event: ReactKeyboardEvent<HTMLElement>) => {
     if (event.key !== "Tab") return;
@@ -157,8 +184,8 @@ export default function WebsitePressureIntro({ onComplete, onReveal, mode = "fir
       role="dialog" aria-modal="true" aria-labelledby="website-pressure-intro-title" onKeyDown={trapFocus}>
       <div className="website-pressure-intro__poster" aria-hidden="true"><img src={POSTER} alt="" /></div>
       {!reducedMotion && <video ref={videoRef} className="website-pressure-intro__video" autoPlay playsInline preload="metadata" poster={POSTER} muted={muted}
-        onLoadedData={() => setReady(true)}
-        onPlaying={() => { clearDeadline(); setPlaying(true); setReady(true); }}
+        onLoadedData={signalReady}
+        onPlaying={() => { clearDeadline(); setPlaying(true); signalReady(); }}
         onPause={() => setPlaying(false)} onWaiting={armDeadline}
         onEnded={() => finish("completed")} onError={() => finish("video_error")} />}
       <div className="website-pressure-intro__scrim" aria-hidden="true" />
@@ -172,7 +199,7 @@ export default function WebsitePressureIntro({ onComplete, onReveal, mode = "fir
           <button type="button" className="website-pressure-intro__button website-pressure-intro__button--primary" onClick={() => finish("static_overview")}>Continue to FAULTLINE</button>
         </> : <>
           <button type="button" className="website-pressure-intro__button" disabled={exiting} onClick={togglePause} aria-label={playing ? "Pause opening" : "Play opening"}>{playing ? "Pause opening" : "Play opening"}</button>
-          <button type="button" className="website-pressure-intro__button" disabled={exiting || !ready} onClick={toggleSound} aria-pressed={!muted} aria-label={muted ? "Turn sound on" : "Mute sound"}>Sound: {muted ? "off" : "on"}</button>
+          <button type="button" className={`website-pressure-intro__button${soundBlocked ? " website-pressure-intro__button--primary" : ""}`} disabled={exiting || !ready} onClick={toggleSound} aria-pressed={!muted} aria-label={soundBlocked ? "Tap for sound" : muted ? "Turn sound on" : "Mute sound"}>{soundBlocked ? "Tap for sound" : `Sound: ${muted ? "off" : "on"}`}</button>
         </>}
       </div>
     </section>

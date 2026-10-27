@@ -14,7 +14,10 @@ import { StoryReplayContext } from "./contexts/StoryReplayContext";
 import WebsiteIntroBoundary from "./components/WebsiteIntroBoundary";
 import { trackIntroEvent } from "./lib/introAnalytics";
 import IntroScreen from "./components/IntroScreen";
-const WebsitePressureIntro = lazy(() => import("./components/WebsitePressureIntro"));
+// Begin fetching the cinematic module with the application chunk; the static shell stays
+// on top until the player reports that its first frame is ready.
+const websitePressureIntroModule = import("./components/WebsitePressureIntro");
+const WebsitePressureIntro = lazy(() => websitePressureIntroModule);
 import FREDDebugConsole from "./components/FREDDebugConsole";
 import CookieConsent from './components/CookieConsent';
 import RouteTracker from './components/RouteTracker';
@@ -228,7 +231,7 @@ function PressureIntroLoadingFallback({ onComplete, onFailure }: { onComplete: (
   return (
     <section role="dialog" aria-modal="true" aria-label="FAULTLINE cinematic intro"
       style={{ position: "fixed", inset: 0, zIndex: 10000, background: "#030506", color: "#e8f7fb" }}>
-      <img src="/media/brand-cinematic/cinematic-intro-poster.webp" alt=""
+      <img src="/media/brand-cinematic/cinematic-intro-market-poster.webp" alt=""
         style={{ width: "100%", height: "100%", objectFit: "contain" }} />
       <button type="button" onClick={onComplete} aria-label="Skip intro"
         style={{ position: "absolute", top: "max(1rem, env(safe-area-inset-top))", right: "max(1rem, env(safe-area-inset-right))", minHeight: 44, border: "1px solid #65d6e5", padding: "0.7rem 1rem", color: "#e8f7fb", background: "#030506", cursor: "pointer", fontSize: "0.7rem", letterSpacing: "0.1em" }}>
@@ -919,6 +922,9 @@ function App() {
   const [cinematicDone, setCinematicDone] = useState<boolean>(() => !FIRST_TIME);
   const [introVisible, setIntroVisible] = useState(FIRST_TIME);
   const [storyReplay, setStoryReplay] = useState(false);
+  // The lazy homepage begins only after a usable cinematic frame; it can then preload
+  // throughout the remaining 16-second opening and still opens immediately on Skip.
+  const [cinematicFrameReady, setCinematicFrameReady] = useState<boolean>(() => !FIRST_TIME);
 
   // introComplete: always true for first-time users (cinematic IS the intro)
   // and always true for returning users (IntroScreen is no longer a session gate).
@@ -998,6 +1004,10 @@ function App() {
     } catch {}
     setCinematicDone(true);
   }, []);
+  const handleCinematicFrameReady = useCallback(() => {
+    setCinematicFrameReady(true);
+    window.dispatchEvent(new Event('faultline:cinematic-shell-dismiss'));
+  }, []);
 
   const introActive = (introVisible && !isReturning) || storyReplay;
   const requestStoryReplay = useCallback(() => {
@@ -1008,8 +1018,9 @@ function App() {
     }
   }, [location, introActive]);
   const revealHomepage = useCallback(() => {
+    handleCinematicFrameReady();
     if (!cinematicDone) handleCinematicComplete();
-  }, [cinematicDone, handleCinematicComplete]);
+  }, [cinematicDone, handleCinematicComplete, handleCinematicFrameReady]);
   const closeStory = useCallback(() => {
     setIntroVisible(false);
     setStoryReplay(false);
@@ -1025,8 +1036,18 @@ function App() {
     closeStory();
   }, [storyReplay, revealHomepage, closeStory]);
   useEffect(() => {
-    if (introActive && !isProductPath) void preloadMarketingSite().catch(() => {});
-  }, [introActive, isProductPath]);
+    if (introActive && cinematicFrameReady && !isProductPath) void preloadMarketingSite().catch(() => {});
+  }, [introActive, cinematicFrameReady, isProductPath]);
+  useEffect(() => {
+    if (!introActive || storyReplay || cinematicFrameReady) return;
+    const skipStaticShell = () => skipLoadingStory();
+    window.addEventListener('faultline:cinematic-shell-skip', skipStaticShell);
+    try {
+      // Covers a Skip that occurred after the static script ran but before this effect subscribed.
+      if (localStorage.getItem(CINEMATIC_COMPLETED_KEY)) skipStaticShell();
+    } catch {}
+    return () => window.removeEventListener('faultline:cinematic-shell-skip', skipStaticShell);
+  }, [introActive, storyReplay, cinematicFrameReady, skipLoadingStory]);
 
   // Resolve auth gate: if auth has loaded and user is present, mark done automatically
     useEffect(() => {
@@ -1095,7 +1116,7 @@ function App() {
             {introActive && (
               <WebsiteIntroBoundary onFailure={failStory}>
                 <Suspense fallback={<PressureIntroLoadingFallback onComplete={skipLoadingStory} onFailure={failStory} />}>
-                  <WebsitePressureIntro mode={storyReplay ? 'replay' : 'first_visit'} onReveal={revealHomepage} onComplete={closeStory} />
+                  <WebsitePressureIntro mode={storyReplay ? 'replay' : 'first_visit'} onReady={handleCinematicFrameReady} onReveal={revealHomepage} onComplete={closeStory} />
                 </Suspense>
               </WebsiteIntroBoundary>
             )}
@@ -1125,10 +1146,12 @@ function App() {
                 paddingTop: isDemo ? '30px' : undefined,
               }}
             >
-              <RouteTracker />
-              <Router />
-              {/* FREDDebugConsole is only visible to admin users */}
-              {user?.role === 'admin' && <FREDDebugConsole />}
+              {cinematicFrameReady && <>
+                <RouteTracker />
+                <Router />
+                {/* FREDDebugConsole is only visible to admin users */}
+                {user?.role === 'admin' && <FREDDebugConsole />}
+              </>}
             </div>
 
             {/* Onboarding Getting Started video — shown once to new users */}
