@@ -3,6 +3,7 @@ import { useLocation, useRoute } from "wouter";
 import { AlertTriangle, ArrowLeft, BrainCircuit, RefreshCw } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { UnifiedIntelligenceChart, type IntelligenceLevel } from "@/components/UnifiedIntelligenceChart";
+import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 
 const CYAN = "#00D4FF";
 const GREEN = "#00FF88";
@@ -85,6 +86,8 @@ export default function SignalDetail() {
       <div><div style={eyebrow}>SIGNALS / VISUAL ANALYSIS</div><h1 style={title}>{symbol}</h1><div style={subtle}>CURRENT OBSERVATION {stamp(detail.observedAt)} · DAILY BARS ONLY · NO INTRADAY INTERVALS</div></div>
       <div style={quoteBlock}><div style={{ ...quotePrice, color: currentPrice == null ? MUTED : "#EAF5FF" }}>{money(currentPrice)}</div><div style={{ color: positive ? GREEN : RED, fontSize: 11 }}>{typeof priceChange === "number" ? `${positive ? "+" : ""}${priceChange.toFixed(2)}%` : "QUOTE CHANGE UNAVAILABLE"}</div><div style={subtle}>{quote?.isDelayed ? "DELAYED QUOTE" : "QUOTE STATUS UNAVAILABLE"}</div></div>
     </header>
+
+    <PentagonalThesisNarrative symbol={symbol} surface="signal-detail" />
 
     <section style={statusStrip}>
       <Metric label="CURRENT SIGNAL" value={signal ? `${signal.action} · ${signal.actionLabel}` : "WITHHELD"} color={actionColor(signal?.action)} detail={signal ? `${signal.confidence}% confidence · ${signal.strength.toUpperCase()}` : "Required inputs are incomplete"} />

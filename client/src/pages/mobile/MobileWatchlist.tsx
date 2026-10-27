@@ -8,6 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { Plus, Trash2, TrendingUp, TrendingDown, Minus, Star, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { TickerChip } from "@/components/TickerActionMenu";
+import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 
 // ── Helpers ───────────────────────────────────────────────────
 function getSignalColor(signal: string): string {
@@ -327,6 +328,7 @@ export default function MobileWatchlist() {
         {stockItems.length > 0 && (
           <div>
             <div className="text-[9px] font-mono tracking-widest text-[#64748B]/60 mb-2">STOCKS</div>
+            <PentagonalThesisNarrative symbol={stockItems[0]?.symbol} surface="mobile-watchlist" compact />
             <div className="space-y-2">
               {stockItems.map(item => (
                 <WatchlistItemCard

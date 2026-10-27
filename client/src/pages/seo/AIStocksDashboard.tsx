@@ -1,7 +1,9 @@
 import SEOLandingPage from "@/pages/SEOLandingPage";
+import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 
 export default function AIStocksDashboard() {
   return (
+    <>
     <SEOLandingPage
       seo={{
         title: "AI Stocks Dashboard — Real-Time AI Stock Signals & Risk Scores | FAULTLINE",
@@ -17,7 +19,7 @@ export default function AIStocksDashboard() {
       features={[
         { icon: "◈", title: "AI Bubble Exposure Ratings", desc: "Every AI stock classified by its sensitivity to AI narrative momentum — from HIGH to MODERATE to LOW exposure." },
         { icon: "◎", title: "Regime Fit Scores", desc: "How well does each AI stock fit the current macro regime? Scores from 0-10 updated continuously." },
-        { icon: "⬡", title: "Live Signal Classification", desc: "BUY, SELL, HOLD, or WATCH for every tracked AI stock — based on macro alignment, momentum, and technical structure." },
+        { icon: "⬡", title: "Shared Stock Thesis", desc: "Individual AI-stock conclusions use the Pentagonal Thesis. The thesis does not issue an unsupported buy or sell call." },
         { icon: "◈", title: "AI Concentration Risk Monitor", desc: "Track the aggregate AI concentration in the S&P 500 and the systemic risk it creates for the broader market." },
         { icon: "◎", title: "Sector Rotation Signals", desc: "Monitor capital flows between AI infrastructure, AI software, and AI-powered platforms to identify rotation opportunities." },
         { icon: "⬡", title: "Earnings Catalyst Tracking", desc: "AI stock earnings are the most market-moving events in the current cycle. FAULTLINE tracks upcoming catalysts and their potential impact." },
@@ -91,5 +93,11 @@ Sector Rotation Signals: Monitor capital flows between AI infrastructure, AI sof
       schemaType="Article"
       datePublished="2024-06-01"
     />
+    <div className="bg-[#050608] px-5 pb-16">
+      <div className="mx-auto max-w-3xl">
+        <PentagonalThesisNarrative surface="ai-stocks" />
+      </div>
+    </div>
+    </>
   );
 }

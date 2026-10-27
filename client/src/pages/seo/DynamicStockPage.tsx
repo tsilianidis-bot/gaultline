@@ -10,6 +10,7 @@ import { useParams, Link } from "wouter";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { useCallback } from "react";
+import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 
 // ── Per-symbol enrichment data ─────────────────────────────────────────────
 interface SymbolData {
@@ -250,16 +251,6 @@ function getSymbolData(symbol: string): SymbolData {
   };
 }
 
-// ── Signal label color ─────────────────────────────────────────────────────
-function signalColor(label: string | null | undefined) {
-  if (!label) return "text-[#A8B8CC]";
-  const l = label.toUpperCase();
-  if (l === "BULLISH") return "text-emerald-400";
-  if (l === "BEARISH") return "text-red-400";
-  if (l === "WATCH") return "text-yellow-400";
-  return "text-[#A8B8CC]";
-}
-
 export default function DynamicStockPage() {
   const params = useParams<{ symbol: string }>();
   const symbol = (params.symbol ?? "").toLowerCase();
@@ -278,6 +269,7 @@ export default function DynamicStockPage() {
     trackCta.mutate({ pageSlug: `/stock/${symbol}`, ctaType });
   }, [symbol, trackCta]);
 
+  const unsupportedFaq = /crash probability|% confidence|\bis a buy\b|drawdowns of \d/i;
   const schemaData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -292,7 +284,7 @@ export default function DynamicStockPage() {
       },
       {
         "@type": "FAQPage",
-        "mainEntity": (liveSignal?.faqJson ? JSON.parse(liveSignal.faqJson) : data.faqs).map((faq: { q?: string; a?: string; question?: string; answer?: string }) => ({
+        "mainEntity": (liveSignal?.faqJson ? JSON.parse(liveSignal.faqJson) : data.faqs).filter((faq: { q?: string; a?: string; question?: string; answer?: string }) => !unsupportedFaq.test(`${faq.q ?? faq.question ?? ""} ${faq.a ?? faq.answer ?? ""}`)).map((faq: { q?: string; a?: string; question?: string; answer?: string }) => ({
           "@type": "Question",
           "name": faq.q ?? faq.question,
           "acceptedAnswer": { "@type": "Answer", "text": faq.a ?? faq.answer },
@@ -301,12 +293,12 @@ export default function DynamicStockPage() {
     ],
   };
 
-  const displayFaqs: { q: string; a: string }[] = liveSignal?.faqJson
+  const displayFaqs: { q: string; a: string }[] = (liveSignal?.faqJson
     ? JSON.parse(liveSignal.faqJson).map((f: { question?: string; answer?: string; q?: string; a?: string }) => ({
         q: f.question ?? f.q ?? "",
         a: f.answer ?? f.a ?? "",
       }))
-    : data.faqs;
+    : data.faqs).filter((faq: { q: string; a: string }) => !unsupportedFaq.test(`${faq.q} ${faq.a}`));
 
   return (
     <div className="min-h-screen bg-[#050608] text-white">
@@ -349,25 +341,11 @@ export default function DynamicStockPage() {
             {upper} Signal Analysis
           </h1>
           <p className="text-lg text-[#A8B8CC] leading-relaxed max-w-2xl">
-            Real-time {data.name} signal intelligence. FAULTLINE tracks {upper}'s macro regime fit, momentum score, and systemic risk alignment — updated daily.
+            The live {data.name} read is the shared Pentagonal Thesis below. Background copy is not a current price, level, or trade call.
           </p>
-          {liveSignal && (
-            <div className="flex items-center gap-4 mt-4">
-              <span className={`text-sm font-mono font-bold ${signalColor(liveSignal.signalLabel)}`}>
-                {liveSignal.signalLabel}
-              </span>
-              {liveSignal.confidenceScore != null && (
-                <span className="text-[11px] font-mono text-[#64748B]">
-                  {liveSignal.confidenceScore}% confidence
-                </span>
-              )}
-              {liveSignal.regime && (
-                <span className="text-[11px] font-mono text-[#64748B]">
-                  Regime: {liveSignal.regime}
-                </span>
-              )}
-            </div>
-          )}
+          <div className="mt-6">
+            <PentagonalThesisNarrative symbol={upper} surface="stock-page" />
+          </div>
         </div>
 
         {/* Live Signal CTA */}
@@ -392,77 +370,24 @@ export default function DynamicStockPage() {
         {/* Overview */}
         <section className="mb-12">
           <h2 className="text-2xl font-bold text-white mb-4">What is {data.name}?</h2>
-          <p className="text-[#A8B8CC] leading-relaxed">{data.description}</p>
+          <p className="text-[#A8B8CC] leading-relaxed">A company biography is not the current thesis. Price, volume, scenarios, and what to do come only from the shared Pentagonal Thesis above.</p>
         </section>
 
         {/* Live signal summary if available */}
-        {liveSignal?.signalSummary && (
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-4">Current {upper} Signal Summary</h2>
-            <div className="p-6 rounded-lg border border-[#00D4FF]/20 bg-[#00D4FF]/5">
-              <p className="text-[#A8B8CC] leading-relaxed">{liveSignal.signalSummary}</p>
-            </div>
-          </section>
-        )}
+        {/* Stored signal summaries are not a second stock conclusion. The thesis above is the read. */}
 
-        {/* Bull / Bear */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold text-white mb-6">{upper} Bull Case vs Bear Case</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-6 rounded-lg border border-emerald-500/20 bg-emerald-500/5">
-              <div className="text-[10px] font-mono tracking-widest text-emerald-400 mb-3">BULL CASE</div>
-              <p className="text-[#A8B8CC] text-sm leading-relaxed">{liveSignal?.bullishCase ?? data.bullCase}</p>
-            </div>
-            <div className="p-6 rounded-lg border border-red-500/20 bg-red-500/5">
-              <div className="text-[10px] font-mono tracking-widest text-red-400 mb-3">BEAR CASE</div>
-              <p className="text-[#A8B8CC] text-sm leading-relaxed">{liveSignal?.bearishCase ?? data.bearCase}</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Macro Risks */}
-        {liveSignal?.macroRisks && (
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-4">{upper} Macro Risk Analysis</h2>
-            <p className="text-[#A8B8CC] leading-relaxed">{liveSignal.macroRisks}</p>
-          </section>
-        )}
+        {/* Scenarios live in the shared thesis above. Static bull/bear copy is not rendered. */}
 
         {/* Catalyst Analysis */}
-        {liveSignal?.catalystAnalysis && (
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-4">{upper} Catalyst Analysis</h2>
-            <p className="text-[#A8B8CC] leading-relaxed">{liveSignal.catalystAnalysis}</p>
-          </section>
-        )}
+        {/* Catalysts are included in the thesis only when a dated source is present. */}
 
-        {/* Key Levels */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold text-white mb-4">{upper} Key Price Levels</h2>
-          <p className="text-[#A8B8CC] leading-relaxed">{data.keyLevels}</p>
-        </section>
-
-        {/* Risk Factors */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold text-white mb-6">{upper} Key Risk Factors</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {data.riskFactors.map((risk, i) => (
-              <div key={i} className="flex items-center gap-3 p-4 rounded-lg border border-white/8 bg-white/[0.02]">
-                <div className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
-                <span className="text-[#A8B8CC] text-sm">{risk}</span>
-              </div>
-            ))}
-          </div>
-        </section>
+        {/* Price levels live in the shared thesis. Static levels are not rendered. */}
 
         {/* Macro Context */}
         <section className="mb-12">
           <h2 className="text-2xl font-bold text-white mb-4">Macro Regime Context for {upper}</h2>
           <p className="text-[#A8B8CC] leading-relaxed mb-4">
-            {upper}'s performance is highly dependent on the prevailing macro regime. FAULTLINE classifies the current market environment as Bull, Bear, Crash, or Recovery — and each regime has distinct implications for {upper} positioning.
-          </p>
-          <p className="text-[#A8B8CC] leading-relaxed mb-4">
-            In bull regimes with low systemic pressure, {upper} tends to benefit from risk appetite expansion. In elevated-pressure environments — characterized by credit spread widening, VIX regime elevation, and liquidity tightening — {upper} faces headwinds that FAULTLINE's Pressure Index™ detects in advance.
+            Market context for {upper} is included in the thesis only when a fresh canonical reading is available. A missing reading is left blank.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
             <Link href="/market-regime-tracker" onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-cyan-400/30 transition-all">

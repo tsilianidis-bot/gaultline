@@ -6,73 +6,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import { getLoginUrl } from '@/const';
 import { useAuth } from '@/_core/hooks/useAuth';
-import { TickerChip } from '@/components/TickerActionMenu';
-
-// ── Static demo data (no API calls — pure teaser) ─────────────
-const DEMO_STOCKS = [
-  {
-    ticker: 'NVDA',
-    name: 'NVIDIA Corporation',
-    price: 924.58,
-    change: +3.42,
-    cap: 'Mega',
-    action: 'BUY' as const,
-    confidence: 84,
-    signals: ['Momentum Breakout', 'AI Bubble Exposure'],
-    bullFactors: ['Dominant AI inference share', 'Data-center backlog expanding', 'Margin expansion cycle'],
-    bearFactors: ['Elevated valuation vs. peers', 'Concentration risk in AI spend'],
-    regime: 'Aligned',
-  },
-  {
-    ticker: 'XLU',
-    name: 'Utilities Select SPDR',
-    price: 68.14,
-    change: +0.71,
-    cap: 'ETF',
-    action: 'WATCH' as const,
-    confidence: 61,
-    signals: ['Recession Defensive', 'Macro Beneficiary'],
-    bullFactors: ['Rate-cut tailwind building', 'Defensive rotation flows', 'Dividend yield premium'],
-    bearFactors: ['Underperforms in risk-on regimes', 'Rate sensitivity if cuts delayed'],
-    regime: 'Neutral',
-  },
-  {
-    ticker: 'ARKK',
-    name: 'ARK Innovation ETF',
-    price: 48.22,
-    change: -1.87,
-    cap: 'ETF',
-    action: 'SELL' as const,
-    confidence: 77,
-    signals: ['Liquidity Sensitive', 'Macro Vulnerable'],
-    bullFactors: ['High beta in risk-on rallies'],
-    bearFactors: ['Liquidity deterioration', 'Rate-sensitive duration risk', 'Speculative excess unwinding'],
-    regime: 'Counter-Trend',
-  },
-];
-
-const SIGNAL_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  'Momentum Breakout':   { bg: 'rgba(0,212,255,0.10)',  text: '#00D4FF', border: 'rgba(0,212,255,0.25)' },
-  'AI Bubble Exposure':  { bg: 'rgba(255,149,0,0.10)',  text: '#FF9500', border: 'rgba(255,149,0,0.25)' },
-  'Macro Beneficiary':   { bg: 'rgba(0,255,136,0.08)',  text: '#00FF88', border: 'rgba(0,255,136,0.20)' },
-  'Macro Vulnerable':    { bg: 'rgba(255,45,85,0.10)',  text: '#FF2D55', border: 'rgba(255,45,85,0.25)' },
-  'Liquidity Sensitive': { bg: 'rgba(255,215,0,0.08)',  text: '#FFD700', border: 'rgba(255,215,0,0.20)' },
-  'Recession Defensive': { bg: 'rgba(100,116,139,0.10)', text: '#94A3B8', border: 'rgba(100,116,139,0.25)' },
-  'Neutral / Watch':     { bg: 'rgba(100,116,139,0.07)', text: '#64748B', border: 'rgba(100,116,139,0.18)' },
-};
-
-const ACTION_COLORS = {
-  BUY:   { bg: 'rgba(0,212,255,0.14)',  text: '#00D4FF', border: 'rgba(0,212,255,0.35)', glow: 'rgba(0,212,255,0.45)' },
-  SELL:  { bg: 'rgba(255,45,85,0.14)',  text: '#FF2D55', border: 'rgba(255,45,85,0.35)',  glow: 'rgba(255,45,85,0.45)' },
-  HOLD:  { bg: 'rgba(255,215,0,0.10)',  text: '#FFD700', border: 'rgba(255,215,0,0.30)',  glow: 'rgba(255,215,0,0.35)' },
-  WATCH: { bg: 'rgba(100,116,139,0.10)', text: '#94A3B8', border: 'rgba(100,116,139,0.25)', glow: 'rgba(100,116,139,0.25)' },
-};
-
-const REGIME_ALIGN_COLORS = {
-  'Aligned':       '#00D4FF',
-  'Neutral':       '#FFD700',
-  'Counter-Trend': '#FF2D55',
-};
+import { PentagonalThesisNarrative } from '@/components/PentagonalThesisNarrative';
 
 // ── Macro Environment Panel data ──────────────────────────────
 const MACRO_METRICS = [
@@ -138,125 +72,6 @@ function SearchBarTeaser() {
         fontFamily: "'IBM Plex Mono', monospace",
         fontSize: '12px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.12em',
       }}>SEARCH ANY TICKER</span>
-    </div>
-  );
-}
-
-// ── Stock Intelligence Card ───────────────────────────────────
-function StockCard({ stock, delay }: { stock: typeof DEMO_STOCKS[0]; delay: number }) {
-  const [visible, setVisible] = useState(false);
-  const ac = ACTION_COLORS[stock.action];
-  const rc = REGIME_ALIGN_COLORS[stock.regime as keyof typeof REGIME_ALIGN_COLORS];
-
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(true), delay);
-    return () => clearTimeout(t);
-  }, [delay]);
-
-  return (
-    <div style={{
-      background: 'rgba(8,10,14,0.92)',
-      border: `1px solid ${ac.border}`,
-      borderRadius: '4px',
-      padding: '14px',
-      position: 'relative',
-      overflow: 'hidden',
-      opacity: visible ? 1 : 0,
-      transform: visible ? 'translateY(0)' : 'translateY(10px)',
-      transition: 'opacity 0.5s ease, transform 0.5s cubic-bezier(0.23,1,0.32,1)',
-    }}>
-      {/* Top accent bar */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
-        background: `linear-gradient(90deg, ${ac.text}80, ${ac.text}20)`,
-      }} />
-
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-            <TickerChip ticker={stock.ticker} name={stock.name} />
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.6)', background: 'rgba(255,255,255,0.04)', padding: '1px 5px', borderRadius: '2px', letterSpacing: '0.1em' }}>{stock.cap}</span>
-          </div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.04em' }}>{stock.name}</div>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '15px', color: '#F0F4FF' }}>${stock.price.toFixed(2)}</div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: stock.change >= 0 ? '#00FF88' : '#FF2D55', letterSpacing: '0.06em' }}>
-            {stock.change >= 0 ? '+' : ''}{stock.change.toFixed(2)}%
-          </div>
-        </div>
-      </div>
-
-      {/* Action badge + regime alignment */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', gap: '4px',
-          padding: '3px 10px', borderRadius: '2px',
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em',
-          background: ac.bg, color: ac.text, border: `1px solid ${ac.border}`,
-          boxShadow: `0 0 8px ${ac.glow}`,
-        }}>
-          {stock.action === 'BUY' && '▲ '}
-          {stock.action === 'SELL' && '▼ '}
-  {(stock.action as string) === 'HOLD' && '◆ '}
-        {stock.action === 'WATCH' && '◎ '}
-          {stock.action}
-        </span>
-        <span style={{
-          fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px',
-          color: rc, padding: '2px 6px',
-          background: `${rc}10`, border: `1px solid ${rc}25`, borderRadius: '2px',
-          letterSpacing: '0.08em',
-        }}>
-          {stock.regime === 'Counter-Trend' ? 'COUNTER' : stock.regime.toUpperCase()}
-        </span>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.08em' }}>CONFIDENCE</span>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: ac.text, fontWeight: 700 }}>{stock.confidence}%</span>
-          </div>
-          <ConfBar value={stock.confidence} color={ac.text} />
-        </div>
-      </div>
-
-      {/* Signal labels */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '10px' }}>
-        {stock.signals.map(sig => {
-          const sc = SIGNAL_COLORS[sig] ?? SIGNAL_COLORS['Neutral / Watch'];
-          return (
-            <span key={sig} style={{
-              fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', fontWeight: 700,
-              letterSpacing: '0.08em', textTransform: 'uppercase',
-              padding: '2px 8px', borderRadius: '2px',
-              background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`,
-            }}>{sig}</span>
-          );
-        })}
-      </div>
-
-      {/* Bull / Bear factors */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-        <div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#00FF88', letterSpacing: '0.1em', marginBottom: '4px' }}>▲ BULLISH</div>
-          {stock.bullFactors.map(f => (
-            <div key={f} style={{ display: 'flex', gap: '5px', marginBottom: '3px' }}>
-              <span style={{ color: '#00FF88', fontSize: '12px', flexShrink: 0, marginTop: '1px' }}>›</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.4 }}>{f}</span>
-            </div>
-          ))}
-        </div>
-        <div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#FF2D55', letterSpacing: '0.1em', marginBottom: '4px' }}>▼ BEARISH</div>
-          {stock.bearFactors.map(f => (
-            <div key={f} style={{ display: 'flex', gap: '5px', marginBottom: '3px' }}>
-              <span style={{ color: '#FF2D55', fontSize: '12px', flexShrink: 0, marginTop: '1px' }}>›</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.4 }}>{f}</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
@@ -418,11 +233,11 @@ export default function HomeStockIntelSection() {
 
         {/* Stock intelligence cards */}
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '8px' }}>
-          Live Signal Preview — 3 of 500+ Monitored Assets
+          Shared stock thesis
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
-          {DEMO_STOCKS.map((s, i) => (
-            <StockCard key={s.ticker} stock={s} delay={i * 150} />
+          {["NVDA", "XLU", "ARKK"].map(symbol => (
+            <PentagonalThesisNarrative key={symbol} symbol={symbol} surface="ai-stock-intelligence" compact />
           ))}
         </div>
 

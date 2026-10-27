@@ -18,6 +18,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
+import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 import { trpc } from "@/lib/trpc";
 import { useSEO } from "@/hooks/useSEO";
 import {
@@ -287,6 +288,9 @@ export default function Why() {
   return (
     <main className="min-h-screen bg-[#04070b] text-slate-200">
       <div className="mx-auto max-w-7xl px-5 pb-16 pt-8 md:px-10 md:pt-12">
+        <div className="mb-6">
+          <PentagonalThesisNarrative surface="why" compact />
+        </div>
 
         {/* ── HERO ─────────────────────────────────────────────────────── */}
         <section data-why-section="explanation" className="relative overflow-hidden rounded-sm border border-amber-300/20 bg-[#080c13] p-6 md:p-9">

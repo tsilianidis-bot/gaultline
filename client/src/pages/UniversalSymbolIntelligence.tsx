@@ -20,6 +20,7 @@ import { useRegisterAshaContext } from "@/contexts/AshaContext";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import { SectionErrorBoundary } from "@/components/ErrorBoundary";
 import { PremiumGateFull } from "@/components/PremiumGate";
+import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 
 // ── Shared styles ─────────────────────────────────────────────
 const CARD: React.CSSProperties = {
@@ -781,6 +782,15 @@ function UniversalSymbolIntelligence() {
               assetType={submitted.assetType === "crypto" ? "crypto" : "stock"}
             />
           </div>
+        )}
+
+        {submitted?.assetType === "stock" && (
+          <div style={{ marginBottom: 16 }}>
+            <PentagonalThesisNarrative symbol={submitted.symbol} surface="symbol-intelligence" />
+          </div>
+        )}
+        {submitted?.assetType === "crypto" && (
+          <p style={{ color: "#8EA0B5", fontSize: 12, margin: "0 0 16px" }}>The equity Pentagonal Thesis is not applied to crypto symbols.</p>
         )}
 
         {/* Results area */}

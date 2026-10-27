@@ -33,6 +33,7 @@ import FaultlineTerm from "@/components/FaultlineTerm";
 import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
 import ScoreExplainer from "@/components/ScoreExplainer";
 import RisingStarsPanel, { type RisingStarItem } from "@/components/RisingStarsPanel";
+import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 
 // ── Live Quote Types ──────────────────────────────────────────
 interface LiveQuote {
@@ -1619,6 +1620,9 @@ function SignalsInner() {
       padding: '0 0 120px 0',
       fontFamily: "'IBM Plex Mono', monospace",
     }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "16px 16px 0" }}>
+        <PentagonalThesisNarrative surface="signals" compact />
+      </div>
 
       <PageHeader
         title="Signals"
