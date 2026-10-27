@@ -10,7 +10,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, adminProcedure } from "../_core/trpc";
 import {
-  getAllUsers, getAllUsersWithTier, setUserTier,
+  getAllUsers, getAllUsersWithTier, setUserTier, getUserTier,
   getFoundingRequests, updateFoundingRequestStatus,
   getPlatformStats, getActivityFeed,
   getSignupTimeSeries, getWaitlistTimeSeries, getConversionStats,
@@ -50,11 +50,13 @@ export const adminRouter = router({
     .input(z.object({
       userId: z.number().int().positive(),
       tier: z.enum(["free", "core", "premium", "founding"]),
+      lifetimeAccess: z.boolean().optional(),
     }))
     .mutation(async ({ input }) => {
       try {
-        await setUserTier(input.userId, input.tier);
-        return { success: true };
+        await setUserTier(input.userId, input.tier, input.lifetimeAccess);
+        const tier = await getUserTier(input.userId);
+        return { success: true, tier };
       } catch (err) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to set tier", cause: err });
       }

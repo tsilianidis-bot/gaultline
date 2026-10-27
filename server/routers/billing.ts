@@ -15,6 +15,51 @@ import { checkoutReceiptForCaller } from "../security/access";
 /** Legacy founding-lifetime counter (retained for existing entitlements; not a public offer). */
 const LIFETIME_FOUNDING_LIMIT = 100;
 
+/**
+ * Checkout params. A user who already has a Stripe customer reuses it so a
+ * second session cannot create an unbound customer. Subscription checkouts
+ * copy user_id onto the subscription. customer and customer_email are not
+ * sent together.
+ */
+export function buildCheckoutSessionParams(input: {
+  userId: number;
+  email?: string | null;
+  name?: string | null;
+  planId: string;
+  priceId: string;
+  interval: string;
+  origin: string;
+  storedStripeCustomerId?: string | null;
+}) {
+  const mode = input.interval === "one_time" ? "payment" as const : "subscription" as const;
+  const storedCustomerId = input.storedStripeCustomerId || null;
+  const email = input.email || undefined;
+  return {
+    mode,
+    payment_method_types: ["card" as const],
+    ...(storedCustomerId ? { customer: storedCustomerId } : email ? { customer_email: email } : {}),
+    allow_promotion_codes: true,
+    line_items: [{ price: input.priceId, quantity: 1 }],
+    client_reference_id: input.userId.toString(),
+    metadata: {
+      user_id: input.userId.toString(),
+      customer_email: email ?? "",
+      customer_name: input.name ?? "",
+      plan_id: input.planId,
+    },
+    ...(mode === "subscription" ? {
+      subscription_data: {
+        metadata: {
+          user_id: input.userId.toString(),
+          plan_id: input.planId,
+        },
+      },
+    } : {}),
+    success_url: `${input.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}&plan=${input.planId}`,
+    cancel_url: `${input.origin}/app/account?payment=cancelled`,
+  };
+}
+
 /** Public/checkout availability: product lock AND a configured Stripe price. */
 export function isPlanAvailableForPurchase(planId: StripePlanId, priceId: string | null | undefined): boolean {
   return CHECKOUT_ENABLED && PAID_PLANS_ON_SALE && PRICING_PLANS[planId].available && !!priceId;
@@ -56,23 +101,16 @@ export const billingRouter = router({
       if (!priceId) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "This plan is not yet available for purchase. Please contact us." });
       }
-      const customerEmail = ctx.user.email ?? undefined;
-      const session = await stripe.checkout.sessions.create({
-        mode: plan.interval === "one_time" ? "payment" : "subscription",
-        payment_method_types: ["card"],
-        ...(customerEmail ? { customer_email: customerEmail } : {}),
-        allow_promotion_codes: true,
-        line_items: [{ price: priceId, quantity: 1 }],
-        client_reference_id: ctx.user.id.toString(),
-        metadata: {
-          user_id: ctx.user.id.toString(),
-          customer_email: customerEmail ?? "",
-          customer_name: ctx.user.name ?? "",
-          plan_id: input.planId,
-        },
-        success_url: `${input.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}&plan=${input.planId}`,
-        cancel_url: `${input.origin}/app/account?payment=cancelled`,
-      });
+      const session = await stripe.checkout.sessions.create(buildCheckoutSessionParams({
+        userId: ctx.user.id,
+        email: ctx.user.email,
+        name: ctx.user.name,
+        planId: input.planId,
+        priceId,
+        interval: plan.interval,
+        origin: input.origin,
+        storedStripeCustomerId: ctx.user.stripeCustomerId,
+      }));
       return { url: session.url };
     }),
 

@@ -20,7 +20,7 @@
 
 import type { Request, Response } from "express";
 import { eq, desc, and, gte, sql } from "drizzle-orm";
-import { getDb } from "./db";
+import { effectiveTier, getDb } from "./db";
 import {
   organicContent,
   dailyBriefSchedule,
@@ -335,15 +335,18 @@ async function notifyUsersByTier(
       email: users.email,
       name: users.name,
       accessTier: users.accessTier,
+      lifetimeAccess: users.lifetimeAccess,
+      accessExpiresAt: users.accessExpiresAt,
     })
       .from(users)
       .where(
-        sql`${users.accessTier} IN ('core', 'premium', 'founding')`
+        sql`${users.accessTier} IN ('core', 'premium', 'founding') OR ${users.lifetimeAccess} = true`
       )
       .limit(500);
 
     for (const user of eligibleUsers) {
-      const tier = user.accessTier;
+      const tier = effectiveTier(user);
+      if (tier === "free") continue;
 
       // Pro and Founding: send email
       if ((tier === "premium" || tier === "founding") && user.email) {

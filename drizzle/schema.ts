@@ -52,6 +52,14 @@ export const users = mysqlTable("users", {
   /** Timestamp of the lifetime purchase. NULL for non-lifetime users. */
   lifetimePurchasedAt: timestamp("lifetimePurchasedAt"),
   /**
+   * End of the current Stripe subscription period. Null for lifetime and for
+   * admin grants. effectiveTier treats a past value as free unless lifetimeAccess is set.
+   * Added by drizzle/0074_stripe_entitlement_resync.sql, which is not applied by this PR.
+   */
+  accessExpiresAt: timestamp("accessExpiresAt"),
+  /** Incremented on every entitlement write so a zero-row conditional update cannot seal. */
+  entitlementRevision: int("entitlementRevision").default(0).notNull(),
+  /**
    * Timestamp of the last completed Market Preflight session.
    * NULL means the user has never completed a preflight review.
    * Used by the PreflightGate to determine if a prompt is needed on dashboard load.
@@ -2856,6 +2864,29 @@ export const stripeWebhookEvents = mysqlTable("stripeWebhookEvents", {
 }));
 export type StripeWebhookEvent = typeof stripeWebhookEvents.$inferSelect;
 export type InsertStripeWebhookEvent = typeof stripeWebhookEvents.$inferInsert;
+
+/**
+ * Monotonic cancellation/pause marker. A later stale `active` list cannot
+ * outrank canceledEventCreated. supersededEventCreated records a corroborated
+ * resume that is newer than the marker. Schema is drizzle/0074, not applied
+ * by this PR.
+ */
+export const stripeSubscriptionCancellations = mysqlTable("stripeSubscriptionCancellations", {
+  id: int("id").autoincrement().primaryKey(),
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 64 }).notNull(),
+  /** Unix seconds. BIGINT so the marker stays valid past 2038. */
+  canceledEventCreated: bigint("canceledEventCreated", { mode: "number" }).notNull(),
+  status: varchar("status", { length: 32 }).notNull(),
+  sourceEventId: varchar("sourceEventId", { length: 128 }).notNull(),
+  userId: int("userId"),
+  /** Unix seconds of the resume that cleared this marker. Null while it still blocks. */
+  supersededEventCreated: bigint("supersededEventCreated", { mode: "number" }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  subUniq: uniqueIndex("stripeSubscriptionCancellations_sub_uniq").on(t.stripeSubscriptionId),
+}));
+export type StripeSubscriptionCancellation = typeof stripeSubscriptionCancellations.$inferSelect;
 
 // ── Entitlement audit log ─────────────────────────────────────────────────────
 export const entitlementAuditLog = mysqlTable("entitlementAuditLog", {
