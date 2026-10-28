@@ -128,14 +128,29 @@ function testCorpus(): string[] {
   return [...seen];
 }
 
+const AVOID_STOPLIST = "THE|AND|OR|TO|IN|IT|A|I|ALL|FOMO|CEO|LLM|AI|US|UK|EM|HY|CPI|GDP|FED|U\\.S\\.?" ;
+
 /** Remove only the spans whose case rules differ from 3eef438. */
 function freezeSix(text: string): string {
   return text
     .replace(/\bADD\b(?!\s+GRADUALLY)/g, "ZZZ")
     .replace(/\b(?:HOLD|KEEP|WAIT)\b/g, "ZZZ")
+    .replace(/\b(?:reduce|Reduce|REDUCE)(?:\s+(?:your|the))?\s+(?:positions|position|exposure|holdings|risk)\b/gi, "zzz")
+    .replace(/\b(?:avoid|Avoid|AVOID)\s+(?:this|these|the)\s+(?:stocks|stock|shares|name|sector)\b/gi, "zzz")
+    .replace(/\b(?:avoid|Avoid|AVOID)\s+(?:buying|adding|chasing)\b/gi, "zzz")
     .replace(/(?<![Ss][Tt][Rr][Oo][Nn][Gg] )\b(?:reduce|Reduce)\b/g, "zzz")
     .replace(/\bavoid\b/g, "zzz")
+    .replace(new RegExp(String.raw`\bAvoid(?=\s+\$?(?:${AVOID_STOPLIST})\b)`, "g"), "zzz")
     .replace(/\bAvoid\b(?!\s+(?:\$[A-Z]{1,5}(?:\.[A-Z])?|[A-Z]{1,5}(?:\.[A-Z])?)\b)/g, "zzz");
+}
+
+function baselineCommitPresent(): boolean {
+  try {
+    execFileSync("git", ["cat-file", "-e", `${BASELINE}^{commit}`], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function loadBaseline(): (text: string) => string {
@@ -155,7 +170,7 @@ function loadBaseline(): (text: string) => string {
 }
 
 describe("prose diff against 3eef438", () => {
-  it("differs only for REDUCE, AVOID, HOLD, ADD, KEEP, and WAIT", () => {
+  it.skipIf(!baselineCommitPresent())("differs only for REDUCE, AVOID, HOLD, ADD, KEEP, and WAIT", () => {
     const baseline = loadBaseline();
     const generated = new Set(matrix());
     const corpus = testCorpus();

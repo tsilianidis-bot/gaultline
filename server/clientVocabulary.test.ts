@@ -206,9 +206,9 @@ describe("client vocabulary", () => {
     const unchanged = [
       "We reduce costs",
       "How to reduce stress",
-      "Reduce the position",
       "We avoid crowds",
       "Avoid the draft",
+      "Avoid leverage",
       "We hold the line",
       "Hold the line",
       "Please add a note",
@@ -239,6 +239,29 @@ describe("client vocabulary", () => {
     expect(neutralizeChannelText("Avoid NVDA")).toBe("Lower-side condition NVDA");
     expect(neutralizeChannelText("Avoid $NVDA")).toBe("Lower-side condition $NVDA");
     expect(neutralizeChannelText("Avoid BRK.B")).toBe("Lower-side condition BRK.B");
+  });
+
+  it("neutralizes directive reduce and avoid phrases and leaves bare English", () => {
+    expect(neutralizeChannelText("Reduce exposure")).toBe("Lower-side condition");
+    expect(neutralizeChannelText("Reduce your position")).toBe("Lower-side condition");
+    expect(neutralizeChannelText("Reduce the position")).toBe("Lower-side condition");
+    expect(neutralizeChannelText("Avoid this stock")).toBe("Lower-side condition");
+    expect(neutralizeChannelText("Why you should avoid this stock")).toBe("Why you should Lower-side condition");
+    expect(neutralizeChannelText("We reduce costs")).toBe("We reduce costs");
+    expect(neutralizeChannelText("Avoid leverage")).toBe("Avoid leverage");
+    expect(neutralizeChannelText("avoid these shares")).toBe("Lower-side condition");
+    expect(neutralizeChannelText("Avoid buying")).toBe("Lower-side condition");
+    expect(neutralizeChannelText("do not avoid chasing")).toBe("do not Lower-side condition");
+  });
+
+  it("does not treat stoplisted English words or acronyms as tickers after Avoid", () => {
+    const stopped = ["THE", "AND", "OR", "TO", "IN", "IT", "A", "I", "ALL", "FOMO", "CEO", "LLM", "AI", "US", "UK", "EM", "HY", "CPI", "GDP", "FED", "U.S.", "U.S"];
+    for (const word of stopped) {
+      expect(neutralizeChannelText(`Avoid ${word}`)).toBe(`Avoid ${word}`);
+    }
+    expect(neutralizeChannelText("Avoid $AI")).toBe("Avoid $AI");
+    expect(neutralizeChannelText("Avoid NVDA")).toBe("Lower-side condition NVDA");
+    expect(neutralizeChannelText("Avoid $NVDA")).toBe("Lower-side condition $NVDA");
   });
 
   it("neutralizes case-insensitive buy and sell prose", () => {

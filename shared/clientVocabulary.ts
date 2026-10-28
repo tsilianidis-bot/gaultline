@@ -259,8 +259,28 @@ function channelTokenRegexCaps(): RegExp {
   return channelTokenPatternCaps;
 }
 
+/** Case-insensitive directive phrases. Bare reduce and avoid stay English. */
+const DIRECTIVE_PHRASES = [
+  String.raw`reduce(?:\s+(?:your|the))?\s+(?:positions|position|exposure|holdings|risk)`,
+  String.raw`avoid\s+(?:this|these|the)\s+(?:stocks|stock|shares|name|sector)`,
+  String.raw`avoid\s+(?:buying|adding|chasing)`,
+];
+
+let directivePhrasePattern: RegExp | null = null;
+
+function directivePhraseRegex(): RegExp {
+  if (!directivePhrasePattern) directivePhrasePattern = new RegExp(`\\b(?:${DIRECTIVE_PHRASES.join("|")})\\b`, "gi");
+  return directivePhrasePattern;
+}
+
 /** Sentence-case Avoid, only when the next word is a ticker or a cashtag. */
 const AVOID_BEFORE_SYMBOL = /\bAvoid(?=\s+(?:\$[A-Z]{1,5}(?:\.[A-Z])?|[A-Z]{1,5}(?:\.[A-Z])?)\b)/g;
+
+/** English words and acronyms that are not tickers after Avoid. */
+const AVOID_SYMBOL_STOPLIST = new Set([
+  "THE", "AND", "OR", "TO", "IN", "IT", "A", "I", "ALL", "FOMO", "CEO", "LLM",
+  "AI", "US", "UK", "EM", "HY", "CPI", "GDP", "FED", "U.S", "U.S.",
+]);
 
 const MASK_EDGE = "\uE000";
 const LOCAL_PART = /[A-Za-z0-9._%+-]/;
@@ -400,17 +420,36 @@ function replaceChannelTokens(text: string, pattern: RegExp): string {
   });
 }
 
+function symbolAfterAvoid(text: string, offset: number, length: number): string {
+  let index = offset + length;
+  while (index < text.length && /\s/.test(text[index] ?? "")) index += 1;
+  if ((text[index] ?? "") === "$") index += 1;
+  return /^[A-Z]{1,5}(?:\.[A-Z])?/.exec(text.slice(index))?.[0] ?? "";
+}
+
+function replaceDirectivePhrases(text: string): string {
+  const pattern = directivePhraseRegex();
+  pattern.lastIndex = 0;
+  return text.replace(pattern, (match, offset: number, whole: string) => {
+    if (protectedProseToken(whole, offset, match.length)) return match;
+    const head = match.split(/\s+/)[0] ?? match;
+    return neutralConditionLabel(head);
+  });
+}
+
 /**
  * Case-insensitive whole words for BUY, SELL, STRONG BUY, STRONG SELL, BUY NOW, and ACCUMULATE
  * (and the other 3eef438 prose tokens except REDUCE and AVOID).
  * REDUCE, AVOID, HOLD, ADD, KEEP, and WAIT match only as all-caps standalone tokens.
- * Sentence-case Avoid is also replaced when a ticker or cashtag follows it.
+ * Directive phrases such as "reduce exposure" and "avoid this stock" are case-insensitive.
+ * Sentence-case Avoid is also replaced when a ticker or cashtag follows it, unless that symbol is on the stoplist.
  */
 export function neutralizeChannelText(text: string): string {
   if (!text) return text;
   if (deniedExactToken(text)) return neutralConditionLabel(text);
   const masked = maskUrlsAndEmails(text);
-  const replaced = replaceSentenceCaseAvoid(replaceChannelTokens(replaceChannelTokens(masked.text, channelTokenRegexCi()), channelTokenRegexCaps()));
+  const withPhrases = replaceDirectivePhrases(replaceChannelTokens(masked.text, channelTokenRegexCi()));
+  const replaced = replaceSentenceCaseAvoid(replaceChannelTokens(withPhrases, channelTokenRegexCaps()));
   return restoreMasks(replaced, masked.masks);
 }
 
@@ -418,6 +457,8 @@ function replaceSentenceCaseAvoid(text: string): string {
   AVOID_BEFORE_SYMBOL.lastIndex = 0;
   return text.replace(AVOID_BEFORE_SYMBOL, (match, offset: number, whole: string) => {
     if (protectedProseToken(whole, offset, match.length)) return match;
+    const symbol = symbolAfterAvoid(whole, offset, match.length).toUpperCase();
+    if (AVOID_SYMBOL_STOPLIST.has(symbol) || AVOID_SYMBOL_STOPLIST.has(symbol.replace(/\.$/, ""))) return match;
     return neutralConditionLabel(match);
   });
 }
