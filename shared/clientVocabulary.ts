@@ -259,10 +259,17 @@ function channelTokenRegexCaps(): RegExp {
   return channelTokenPatternCaps;
 }
 
-/** Case-insensitive directive phrases. Bare reduce and avoid stay English. */
+/** Do not treat stock, stocks, sector, or shares as the object when ordinary English follows. */
+const NOT_ORDINARY_CONTINUATION = String.raw`(?!\s+(?:market|rotation|of)\b)`;
+/**
+ * Case-insensitive directive phrases. Bare reduce and avoid stay English.
+ * `risk` is not an object. `exposure to` matches only a ticker, cashtag, or market term.
+ */
 const DIRECTIVE_PHRASES = [
-  String.raw`reduce(?:\s+(?:your|the))?\s+(?:positions|position|exposure|holdings|risk)`,
-  String.raw`avoid\s+(?:this|these|the)\s+(?:stocks|stock|shares|name|sector)`,
+  String.raw`reduce(?:\s+(?:your|the))?\s+(?:positions|position|holdings)`,
+  String.raw`reduce(?:\s+(?:your|the))?\s+exposure(?!\s+to\b)`,
+  String.raw`reduce(?:\s+(?:your|the))?\s+exposure\s+to\s+(?:equities|stocks${NOT_ORDINARY_CONTINUATION}|stock${NOT_ORDINARY_CONTINUATION}|the\s+sector${NOT_ORDINARY_CONTINUATION}|the\s+market|(?:\$)?[A-Za-z]{1,5}(?:\.[A-Za-z])?${NOT_ORDINARY_CONTINUATION})`,
+  String.raw`avoid\s+(?:this|these|the)\s+(?:(?:stocks|stock|shares|sector)${NOT_ORDINARY_CONTINUATION}|name)`,
   String.raw`avoid\s+(?:buying|adding|chasing)`,
 ];
 
@@ -427,11 +434,31 @@ function symbolAfterAvoid(text: string, offset: number, length: number): string 
   return /^[A-Z]{1,5}(?:\.[A-Z])?/.exec(text.slice(index))?.[0] ?? "";
 }
 
+function exposureTailIsMarket(tail: string): boolean {
+  return /^(?:equities|stocks|stock|the\s+sector|the\s+market)$/i.test(tail);
+}
+
+/** Tickers stay case-sensitive. The directive regex is case-insensitive, so the tail is checked again here. */
+function exposureTailIsTicker(tail: string): boolean {
+  const symbol = tail.startsWith("$") ? tail.slice(1) : tail;
+  if (!/^[A-Z]{1,5}(?:\.[A-Z])?$/.test(symbol)) return false;
+  const upper = symbol.toUpperCase();
+  return !AVOID_SYMBOL_STOPLIST.has(upper) && !AVOID_SYMBOL_STOPLIST.has(upper.replace(/\.$/, ""));
+}
+
+function directivePhraseAccepted(match: string): boolean {
+  const tail = /\s+to\s+([\s\S]+)$/i.exec(match);
+  if (!tail) return true;
+  const object = tail[1] ?? "";
+  return exposureTailIsMarket(object) || exposureTailIsTicker(object);
+}
+
 function replaceDirectivePhrases(text: string): string {
   const pattern = directivePhraseRegex();
   pattern.lastIndex = 0;
   return text.replace(pattern, (match, offset: number, whole: string) => {
     if (protectedProseToken(whole, offset, match.length)) return match;
+    if (!directivePhraseAccepted(match)) return match;
     const head = match.split(/\s+/)[0] ?? match;
     return neutralConditionLabel(head);
   });

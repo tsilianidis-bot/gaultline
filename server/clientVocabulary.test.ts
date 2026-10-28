@@ -252,6 +252,16 @@ describe("client vocabulary", () => {
     expect(neutralizeChannelText("avoid these shares")).toBe("Lower-side condition");
     expect(neutralizeChannelText("Avoid buying")).toBe("Lower-side condition");
     expect(neutralizeChannelText("do not avoid chasing")).toBe("do not Lower-side condition");
+    expect(neutralizeChannelText("Reduce exposure to equities")).toBe("Lower-side condition");
+    expect(neutralizeChannelText("Reduce exposure to NVDA")).toBe("Lower-side condition");
+    expect(neutralizeChannelText("Reduce exposure to $NVDA")).toBe("Lower-side condition");
+    expect(neutralizeChannelText("Reduce exposure to the market")).toBe("Lower-side condition");
+    expect(neutralizeChannelText("to reduce the risk of fraud")).toBe("to reduce the risk of fraud");
+    expect(neutralizeChannelText("reduce your risk of heart disease")).toBe("reduce your risk of heart disease");
+    expect(neutralizeChannelText("reduce exposure to sunlight")).toBe("reduce exposure to sunlight");
+    expect(neutralizeChannelText("avoid the stock market crash")).toBe("avoid the stock market crash");
+    expect(neutralizeChannelText("Avoid the sector rotation trap")).toBe("Avoid the sector rotation trap");
+    expect(neutralizeChannelText("avoid the shares of the company")).toBe("avoid the shares of the company");
   });
 
   it("does not treat stoplisted English words or acronyms as tickers after Avoid", () => {
