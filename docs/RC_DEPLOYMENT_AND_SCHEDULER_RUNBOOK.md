@@ -9,7 +9,7 @@ Production today:
 | Live rollback commit | `f7756c7fad3cac0f96df45723ca5c4e2713146d0` |
 | Live `/api/health` on 2026-10-28 | `f7756c7fad3cac0f96df45723ca5c4e2713146d0` (`buildTime` `2026-10-27T18:43:24Z`) |
 | Rollback target | the live deployment that serves `f7756c7fad3cac0f96df45723ca5c4e2713146d0` |
-| RC candidate commit | PR #121 head at approval time, verified via `/api/health`. Not an earlier code commit. |
+| RC candidate commit | Reviewed SHA: ________ (blank until approval). Copy the exact SHA from the approval record into `FAULTLINE_APPROVED_SHA`. |
 | Seismograph cron (not changed) | `0 18 * * *` UTC |
 | Systemic-regime infer (not changed) | daily 19:00 UTC |
 
@@ -37,7 +37,11 @@ Do not store `15 20,21` with an `America/New_York` timezone. Railway cron is UTC
 
 ## Rollback
 
-The release candidate is the exact tip of draft PR #121 (`cursor/faultline-rc-2026-10-28-4018`) at approval time. Candidate = PR #121 head at approval time, verified via `GET /api/health` after that tip is what would be deployed. Do not write that tip hash into this file. The rollback target is the live deployment whose health commit is `f7756c7fad3cac0f96df45723ca5c4e2713146d0`. `1cb5dee13832c0556ec5a380ecc4ffb02513e875` and deployment `b19716b1` are not the rollback target. Leave the live deployment in place. Do not redeploy this branch to replace it.
+The release candidate is one exact reviewed commit. A moving target such as “PR #121 head at approval time” is not the candidate. The reviewed SHA is named outside this tree, because a commit cannot contain its own hash. After review, write an approval record: a comment on draft PR #121, or a release-approval file written after the review and kept out of the reviewed commit. That record names the full SHA. At deploy time, copy it into `FAULTLINE_APPROVED_SHA`. `scripts/guard-approved-deploy.sh` compares `FAULTLINE_APPROVED_SHA` with `RAILWAY_GIT_COMMIT_SHA` and refuses the boot on any mismatch, including a missing platform SHA.
+
+Reviewed SHA (fill this blank from the approval record; leave it blank in the repository): ________
+
+`f7756c7fad3cac0f96df45723ca5c4e2713146d0` is only the rollback target. `1cb5dee13832c0556ec5a380ecc4ffb02513e875` and deployment `b19716b1` are not the rollback target. Leave the live deployment in place. Do not redeploy this branch to replace it.
 
 If a later deploy of an approved SHA must be rolled back to production:
 
@@ -48,26 +52,21 @@ If a later deploy of an approved SHA must be rolled back to production:
 
 Production protection is Railway commit pinning of the live `f7756c7` deployment. The tag command below has not been executed. `config/approved-production-commits.txt` is not a control and is not read.
 
-The container start command is `bash scripts/start-production.sh`. It always reaches `node dist/index.js` unless `FAULTLINE_ENFORCE_DEPLOY_GUARD=1`. With that flag, `scripts/guard-approved-deploy.sh` must pass before the process listens. The flag is off in this candidate, so a Docker boot without the external allowlist still starts. Turning the flag on without `FAULTLINE_APPROVED_DEPLOY_SHAS` or `FAULTLINE_APPROVED_DEPLOY_TAGS` refuses the boot. `BUILD_COMMIT` is not an allowlist input. The runtime image copies `scripts/start-production.sh` and `scripts/guard-approved-deploy.sh`. It does not need `config/`.
+The container start command is `bash scripts/start-production.sh`. It always reaches `node dist/index.js` unless `FAULTLINE_ENFORCE_DEPLOY_GUARD=1`. With that flag, `scripts/guard-approved-deploy.sh` must pass before the process listens. The flag is off in this candidate, so a Docker boot without the external approval still starts. Turning the flag on without `FAULTLINE_APPROVED_SHA` (or `FAULTLINE_APPROVED_DEPLOY_SHAS` / `FAULTLINE_APPROVED_DEPLOY_TAGS`) refuses the boot. `BUILD_COMMIT` is not an allowlist input. The runtime image copies `scripts/start-production.sh` and `scripts/guard-approved-deploy.sh`. It does not need `config/`.
 
-Before a deploy, compare the target SHA to an allowlist held outside the commit. `BUILD_COMMIT` is not an input.
+Before a deploy, set `FAULTLINE_APPROVED_SHA` to the exact SHA from the approval record. The platform supplies `RAILWAY_GIT_COMMIT_SHA`. The guard refuses when those two values differ. `BUILD_COMMIT` is not an input. `f7756c7fad3cac0f96df45723ca5c4e2713146d0` stays the rollback target and is not the candidate value in this example.
 
 ```bash
-# Allow the production SHA from the environment, not from a file in the commit.
-FAULTLINE_APPROVED_DEPLOY_SHAS=f7756c7fad3cac0f96df45723ca5c4e2713146d0 \
-  FAULTLINE_DEPLOY_SHA=f7756c7fad3cac0f96df45723ca5c4e2713146d0 \
-  bash scripts/guard-approved-deploy.sh
-
-# Or resolve a release tag. The tag command is in the next section and has
-# not been executed; this line only reads the tag when it exists.
-FAULTLINE_APPROVED_DEPLOY_TAGS=production-f7756c7 \
-  FAULTLINE_DEPLOY_SHA=f7756c7fad3cac0f96df45723ca5c4e2713146d0 \
+# Fill FAULTLINE_APPROVED_SHA from the approval record. The blank below is
+# intentional. RAILWAY_GIT_COMMIT_SHA is the platform head of the deploy.
+FAULTLINE_APPROVED_SHA= \
+  RAILWAY_GIT_COMMIT_SHA="${RAILWAY_GIT_COMMIT_SHA}" \
   bash scripts/guard-approved-deploy.sh
 ```
 
-A missing external allowlist, a non-SHA target, or any other SHA exits 1. A stale `BUILD_COMMIT` does not change the result.
+A missing `FAULTLINE_APPROVED_SHA`, a platform SHA that differs from it, a missing external allowlist, a non-SHA target, or any other SHA exits 1. A stale `BUILD_COMMIT` does not change the result.
 
-When `FAULTLINE_ENFORCE_DEPLOY_GUARD=1`, the boot refuses with a clear message if neither `RAILWAY_GIT_COMMIT_SHA` nor `FAULTLINE_DEPLOY_SHA` is a full lowercase SHA. If both are set and they differ, the boot refuses. The platform SHA is the deploy identity. Tag mode (`FAULTLINE_APPROVED_DEPLOY_TAGS`) needs a git checkout. An image without `.git` must use `FAULTLINE_APPROVED_DEPLOY_SHAS`.
+When `FAULTLINE_ENFORCE_DEPLOY_GUARD=1`, the boot refuses with a clear message if neither `RAILWAY_GIT_COMMIT_SHA` nor `FAULTLINE_DEPLOY_SHA` is a full lowercase SHA. If `FAULTLINE_APPROVED_SHA` is set and it differs from `RAILWAY_GIT_COMMIT_SHA`, the boot refuses. If `RAILWAY_GIT_COMMIT_SHA` and `FAULTLINE_DEPLOY_SHA` are both set and they differ, the boot refuses. The platform SHA is the deploy identity. Tag mode (`FAULTLINE_APPROVED_DEPLOY_TAGS`) needs a git checkout. An image without `.git` must use `FAULTLINE_APPROVED_SHA` or `FAULTLINE_APPROVED_DEPLOY_SHAS`.
 
 ## Schema gate before deploy
 

@@ -194,12 +194,53 @@ describe("client vocabulary", () => {
     expect(neutralizeChannelText("REDUCE.now")).toBe("Lower-side condition.now");
     expect(neutralizeChannelText("BUY.2026")).toBe("Upper-side condition.2026");
     expect(neutralizeChannelText("the.BUY.sign")).toBe("the.Upper-side condition.sign");
-    expect(neutralizeChannelText("BUY.Sell")).toBe("Upper-side condition.Lower-side condition");
+    expect(neutralizeChannelText("BUY.Sell")).toBe("Upper-side condition.Sell");
     expect(neutralizeChannelText("Contact SELL@x.io.")).toBe("Contact SELL@x.io.");
     const urls = Array.from({ length: 11 }, (_, index) => `https://cdn.example/${index}/BUY`);
     const restored = neutralizeChannelText(urls.join(" "));
     for (const url of urls) expect(restored).toContain(url);
     expect(text).not.toMatch(/Upper-side condition-Rite|Upper-side condition\.com|\$Upper-side|#Upper-side/);
+  });
+
+  it("leaves lowercase and sentence-case English unchanged and still neutralizes all-caps trade tokens", () => {
+    const unchanged = [
+      "We reduce costs",
+      "How to reduce stress",
+      "Reduce the position",
+      "We avoid crowds",
+      "Avoid the draft",
+      "We hold the line",
+      "Hold the line",
+      "Please add a note",
+      "Add a note",
+      "We keep going",
+      "Keep going",
+      "Please wait here",
+      "Wait here",
+      "We buy groceries",
+      "Buy the close",
+      "We sell tickets",
+      "Sell the close",
+      "Add gradually to the list",
+      "Strong buy the rumor",
+    ];
+    for (const sentence of unchanged) {
+      expect(neutralizeChannelText(sentence)).toBe(sentence);
+    }
+    expect(neutralizeChannelText("REDUCE")).toBe("Lower-side condition");
+    expect(neutralizeChannelText("We REDUCE costs")).toBe("We Lower-side condition costs");
+    expect(neutralizeChannelText("AVOID")).toBe("Lower-side condition");
+    expect(neutralizeChannelText("HOLD")).toBe("Mixed condition");
+    expect(neutralizeChannelText("ADD")).toBe("Upper-side condition");
+    expect(neutralizeChannelText("KEEP")).toBe("Mixed condition");
+    expect(neutralizeChannelText("WAIT")).toBe("Mixed condition");
+    expect(neutralizeChannelText("BUY")).toBe("Upper-side condition");
+    expect(neutralizeChannelText("SELL")).toBe("Lower-side condition");
+    expect(neutralizeChannelText("ADD GRADUALLY")).toBe("Upper-side condition");
+    expect(neutralizeChannelText("Please HOLD")).toBe("Please Mixed condition");
+    expect(neutralizeChannelText("ADD a note")).toBe("Upper-side condition a note");
+    expect(neutralizeChannelText("KEEP going")).toBe("Mixed condition going");
+    expect(neutralizeChannelText("WAIT here")).toBe("Mixed condition here");
   });
 
   it("neutralizes an 8000-node list without a quadratic walk", () => {

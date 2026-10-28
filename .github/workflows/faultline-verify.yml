@@ -32,14 +32,19 @@ jobs:
 
       - name: Pre-deploy allowlist check
         run: |
-          prod=f7756c7fad3cac0f96df45723ca5c4e2713146d0
+          candidate=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
           other=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-          FAULTLINE_APPROVED_DEPLOY_SHAS="$prod" FAULTLINE_DEPLOY_SHA="$prod" BUILD_COMMIT="$other" bash scripts/guard-approved-deploy.sh
-          if FAULTLINE_APPROVED_DEPLOY_SHAS="$prod" FAULTLINE_DEPLOY_SHA="$other" BUILD_COMMIT="$prod" bash scripts/guard-approved-deploy.sh; then
+          FAULTLINE_APPROVED_SHA="$candidate" RAILWAY_GIT_COMMIT_SHA="$candidate" BUILD_COMMIT="$other" bash scripts/guard-approved-deploy.sh
+          if FAULTLINE_APPROVED_SHA="$candidate" RAILWAY_GIT_COMMIT_SHA="$other" FAULTLINE_APPROVED_DEPLOY_SHAS="$other" FAULTLINE_DEPLOY_SHA="$other" bash scripts/guard-approved-deploy.sh; then
+            echo "approved SHA mismatch was accepted" >&2
+            exit 1
+          fi
+          FAULTLINE_APPROVED_DEPLOY_SHAS="$candidate" FAULTLINE_DEPLOY_SHA="$candidate" BUILD_COMMIT="$other" bash scripts/guard-approved-deploy.sh
+          if FAULTLINE_APPROVED_DEPLOY_SHAS="$candidate" FAULTLINE_DEPLOY_SHA="$other" BUILD_COMMIT="$candidate" bash scripts/guard-approved-deploy.sh; then
             echo "unapproved target was accepted" >&2
             exit 1
           fi
-          if FAULTLINE_DEPLOY_SHA="$prod" BUILD_COMMIT="$prod" bash scripts/guard-approved-deploy.sh; then
+          if FAULTLINE_DEPLOY_SHA="$candidate" BUILD_COMMIT="$candidate" bash scripts/guard-approved-deploy.sh; then
             echo "missing external allowlist was accepted" >&2
             exit 1
           fi

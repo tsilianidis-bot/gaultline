@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # Pre-deploy check. The container start script calls this only when
-# FAULTLINE_ENFORCE_DEPLOY_GUARD=1. The allowlist is outside the commit:
+# FAULTLINE_ENFORCE_DEPLOY_GUARD=1. The approved SHA is outside the commit:
+#   FAULTLINE_APPROVED_SHA           exact reviewed SHA from the approval record
 #   FAULTLINE_APPROVED_DEPLOY_SHAS   comma/whitespace-separated full SHAs
 #   FAULTLINE_APPROVED_DEPLOY_TAGS   git tag names; each peeled commit is allowed
 # BUILD_COMMIT is ignored. A stale service variable cannot approve or reject the target.
 #
 # Identity:
+#   When FAULTLINE_APPROVED_SHA is set, it must equal RAILWAY_GIT_COMMIT_SHA.
+#   Any mismatch, including a missing platform SHA, refuses the boot.
 #   RAILWAY_GIT_COMMIT_SHA is the platform commit. It wins over FAULTLINE_DEPLOY_SHA.
 #   If both are set and differ, the boot is refused. A self-declared SHA cannot
 #   impersonate the platform commit.
@@ -15,9 +18,15 @@ set -euo pipefail
 
 PLATFORM="${RAILWAY_GIT_COMMIT_SHA:-}"
 DECLARED="${FAULTLINE_DEPLOY_SHA:-${1:-}}"
+APPROVED="${FAULTLINE_APPROVED_SHA:-}"
 
 if [[ -n "${PLATFORM}" && -n "${DECLARED}" && "${PLATFORM}" != "${DECLARED}" ]]; then
   echo "Refusing boot: RAILWAY_GIT_COMMIT_SHA (${PLATFORM}) does not match FAULTLINE_DEPLOY_SHA (${DECLARED}). The platform commit is the deploy identity. A self-declared SHA cannot override it." >&2
+  exit 1
+fi
+
+if [[ -n "${APPROVED}" && "${APPROVED}" != "${PLATFORM}" ]]; then
+  echo "Refusing boot: FAULTLINE_APPROVED_SHA (${APPROVED}) does not match RAILWAY_GIT_COMMIT_SHA (${PLATFORM:-unset}). The deployed head must be the exact reviewed SHA." >&2
   exit 1
 fi
 
@@ -32,6 +41,10 @@ fi
 
 allowfile="$(mktemp)"
 trap 'rm -f "${allowfile}"' EXIT
+
+if [[ -n "${APPROVED}" && "${APPROVED}" =~ ^[0-9a-f]{40}$ ]]; then
+  printf '%s\n' "${APPROVED}" >> "${allowfile}"
+fi
 
 if [[ -n "${FAULTLINE_APPROVED_DEPLOY_SHAS:-}" ]]; then
   normalized="${FAULTLINE_APPROVED_DEPLOY_SHAS//,/ }"
@@ -56,7 +69,7 @@ if [[ -n "${FAULTLINE_APPROVED_DEPLOY_TAGS:-}" ]]; then
 fi
 
 if [[ ! -s "${allowfile}" ]]; then
-  echo "Refusing boot: external allowlist is empty. Set FAULTLINE_APPROVED_DEPLOY_SHAS or FAULTLINE_APPROVED_DEPLOY_TAGS." >&2
+  echo "Refusing boot: external allowlist is empty. Set FAULTLINE_APPROVED_SHA to the exact reviewed SHA, or set FAULTLINE_APPROVED_DEPLOY_SHAS or FAULTLINE_APPROVED_DEPLOY_TAGS." >&2
   exit 1
 fi
 

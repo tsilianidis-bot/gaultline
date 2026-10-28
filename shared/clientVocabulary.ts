@@ -212,6 +212,7 @@ function isOpaque(value: object): boolean {
   return proto !== Object.prototype && proto !== null;
 }
 
+/** All-caps trade tokens only. Lowercase and sentence-case English is left unchanged. */
 const CHANNEL_PROSE_TOKENS = [
   "STRONG BUY",
   "BUY NOW",
@@ -227,6 +228,10 @@ const CHANNEL_PROSE_TOKENS = [
   "SELL",
   "AVOID",
   "REDUCE",
+  "HOLD",
+  "ADD",
+  "KEEP",
+  "WAIT",
 ];
 
 let channelTokenPattern: RegExp | null = null;
@@ -234,7 +239,7 @@ let channelTokenPattern: RegExp | null = null;
 function channelTokenRegex(): RegExp {
   if (!channelTokenPattern) {
     const tokens = [...CHANNEL_PROSE_TOKENS].sort((left, right) => right.length - left.length).map(escapeRegExp);
-    channelTokenPattern = new RegExp(`\\b(?:${tokens.join("|")})\\b`, "gi");
+    channelTokenPattern = new RegExp(`\\b(?:${tokens.join("|")})\\b`, "g");
   }
   return channelTokenPattern;
 }
@@ -369,7 +374,7 @@ function protectedProseToken(text: string, offset: number, length: number): bool
   return false;
 }
 
-/** Replace an exact trade token, or a whole-word BUY/SELL-class token inside stored prose. */
+/** Replace a standalone all-caps trade token inside stored prose. Sentence-case and lowercase English stay. */
 export function neutralizeChannelText(text: string): string {
   if (!text) return text;
   if (deniedExactToken(text)) return neutralConditionLabel(text);

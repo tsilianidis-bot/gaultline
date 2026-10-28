@@ -7,6 +7,7 @@ import { approvedShasFromExternalList, decidePreDeployApproval } from "./deployG
 
 const PRODUCTION = "1cb5dee13832c0556ec5a380ecc4ffb02513e875";
 const OTHER = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const CANDIDATE = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
 function preDeploy(env: Record<string, string>, cwd?: string) {
   return spawnSync("bash", [cwd ? join(process.cwd(), "scripts/guard-approved-deploy.sh") : "scripts/guard-approved-deploy.sh"], {
@@ -73,5 +74,31 @@ describe("pre-deploy allowlist", () => {
     }, mkdtempSync(join(tmpdir(), "guard-no-git-")));
     expect(tagsWithoutGit.status).not.toBe(0);
     expect(tagsWithoutGit.stderr).toMatch(/no git checkout/);
+  });
+
+  it("refuses when FAULTLINE_APPROVED_SHA differs from RAILWAY_GIT_COMMIT_SHA", () => {
+    const matched = preDeploy({
+      FAULTLINE_APPROVED_SHA: CANDIDATE,
+      RAILWAY_GIT_COMMIT_SHA: CANDIDATE,
+      BUILD_COMMIT: OTHER,
+    });
+    expect(matched.status).toBe(0);
+    expect(matched.stdout).toMatch(new RegExp(CANDIDATE));
+
+    const mismatch = preDeploy({
+      FAULTLINE_APPROVED_SHA: CANDIDATE,
+      RAILWAY_GIT_COMMIT_SHA: OTHER,
+      FAULTLINE_APPROVED_DEPLOY_SHAS: OTHER,
+      FAULTLINE_DEPLOY_SHA: OTHER,
+    });
+    expect(mismatch.status).not.toBe(0);
+    expect(mismatch.stderr).toMatch(/FAULTLINE_APPROVED_SHA .* does not match RAILWAY_GIT_COMMIT_SHA/);
+
+    const missingPlatform = preDeploy({
+      FAULTLINE_APPROVED_SHA: CANDIDATE,
+      FAULTLINE_DEPLOY_SHA: CANDIDATE,
+    });
+    expect(missingPlatform.status).not.toBe(0);
+    expect(missingPlatform.stderr).toMatch(/FAULTLINE_APPROVED_SHA .* does not match RAILWAY_GIT_COMMIT_SHA/);
   });
 });
