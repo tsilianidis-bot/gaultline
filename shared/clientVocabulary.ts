@@ -21,6 +21,8 @@ export const UPPER_SIDE_CONDITION = "Upper-side condition";
 export const LOWER_SIDE_CONDITION = "Lower-side condition";
 export const MIXED_CONDITION = "Mixed condition";
 export const UNSET_CONDITION = "Condition not established";
+/** AssessmentDirection `unchanged` is not a mixed trade condition. */
+export const UNCHANGED_LABEL = "Unchanged";
 
 export const CONDITION_ALLOWLIST = [
   UPPER_SIDE_CONDITION,
@@ -90,6 +92,7 @@ export function neutralConditionLabel(value: string | null | undefined): string 
   const trimmed = value.trim();
   if (!trimmed) return value;
   if ((CONDITION_ALLOWLIST as readonly string[]).includes(trimmed)) return trimmed;
+  if (trimmed.toUpperCase() === "UNCHANGED") return UNCHANGED_LABEL;
   const direction = conditionDirection(trimmed);
   if (DENYLIST.has(trimmed.toUpperCase())) {
     if (direction === "positive") return UPPER_SIDE_CONDITION;
@@ -117,6 +120,14 @@ export function ledgerScoreDirection(entry: {
   const fromVerdict = internalDirectionFromText(entry.verdict);
   if (fromVerdict === "positive") return 1;
   if (fromVerdict === "negative") return -1;
+  return legacyVerdictScore(entry.verdict);
+}
+
+/** Production 1cb5dee scored stored verdict text by substring, not by an exact token. */
+function legacyVerdictScore(verdict: string): 1 | -1 | 0 {
+  const text = verdict.toLowerCase();
+  if (text.includes("bull") || text.includes("buy") || text.includes("long") || text.includes("accumulate") || text.includes("upside")) return 1;
+  if (text.includes("bear") || text.includes("sell") || text.includes("short") || text.includes("avoid") || text.includes("downside")) return -1;
   return 0;
 }
 
@@ -188,6 +199,7 @@ function deniedExactToken(value: string): boolean {
 }
 
 function isOpaque(value: object): boolean {
+  if (Array.isArray(value)) return false;
   if (value instanceof Date || value instanceof Map || value instanceof Set || value instanceof URL || value instanceof Error) return true;
   if (typeof Buffer !== "undefined" && Buffer.isBuffer(value)) return true;
   if (ArrayBuffer.isView(value)) return true;
@@ -221,13 +233,46 @@ function channelTokenRegex(): RegExp {
   return channelTokenPattern;
 }
 
+const URL_OR_EMAIL = /https?:\/\/[^\s<>"']+|www\.[^\s<>"']+|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
+
+function maskUrlsAndEmails(text: string): { text: string; masks: string[] } {
+  const masks: string[] = [];
+  const masked = text.replace(URL_OR_EMAIL, (span) => {
+    masks.push(span);
+    return `\u0000${masks.length - 1}\u0000`;
+  });
+  return { text: masked, masks };
+}
+
+function restoreMasks(text: string, masks: string[]): string {
+  return text.replace(/\u0000(\d+)\u0000/g, (_mark, index) => masks[Number(index)] ?? "");
+}
+
+/** A cashtag, a hyphenated name, or a dotted compound is not a standalone trade word. */
+function protectedProseToken(text: string, offset: number, length: number): boolean {
+  const before = offset > 0 ? text[offset - 1] ?? "" : "";
+  const after = text[offset + length] ?? "";
+  if (before === "$") return true;
+  const word = /[A-Za-z0-9]/;
+  if (before === "-" && word.test(text[offset - 2] ?? "")) return true;
+  if (after === "-" && word.test(text[offset + length + 1] ?? "")) return true;
+  if (before === "." && word.test(text[offset - 2] ?? "")) return true;
+  if (after === "." && word.test(text[offset + length + 1] ?? "")) return true;
+  return false;
+}
+
 /** Replace an exact trade token, or a whole-word BUY/SELL-class token inside stored prose. */
 export function neutralizeChannelText(text: string): string {
   if (!text) return text;
   if (deniedExactToken(text)) return neutralConditionLabel(text);
+  const masked = maskUrlsAndEmails(text);
   const pattern = channelTokenRegex();
   pattern.lastIndex = 0;
-  return text.replace(pattern, (match) => neutralConditionLabel(match));
+  const replaced = masked.text.replace(pattern, (match, offset, whole) => {
+    if (protectedProseToken(whole, offset, match.length)) return match;
+    return neutralConditionLabel(match);
+  });
+  return restoreMasks(replaced, masked.masks);
 }
 
 /**
@@ -241,9 +286,9 @@ export function neutralizeChannelPayload<T>(value: T): T {
 function walkChannel(value: unknown, seen: WeakSet<object>): unknown {
   if (typeof value === "string") return neutralizeChannelText(value);
   if (value == null || typeof value !== "object") return value;
-  if (seen.has(value) || isOpaque(value)) return value;
-  seen.add(value);
+  if (seen.has(value)) return value;
   if (Array.isArray(value)) {
+    seen.add(value);
     let copy: unknown[] | null = null;
     for (let index = 0; index < value.length; index += 1) {
       const next = walkChannel(value[index], seen);
@@ -254,6 +299,8 @@ function walkChannel(value: unknown, seen: WeakSet<object>): unknown {
     }
     return copy ?? value;
   }
+  if (isOpaque(value)) return value;
+  seen.add(value);
   const record = value as Record<string, unknown>;
   let copy: Record<string, unknown> | null = null;
   for (const key of Object.keys(record)) {
@@ -294,12 +341,9 @@ function namedFieldChange(key: string, child: unknown): { kind: "keep" } | { kin
 function visit(value: unknown, depth: number, mapped: WeakMap<object, unknown>, budget: { n: number }): unknown {
   if (value == null || typeof value !== "object") return value;
   if (mapped.has(value)) return mapped.get(value);
-  if (isOpaque(value)) return value;
-  budget.n += 1;
-  // Past CLIENT_PAYLOAD_MAX_DEPTH the named fields on this node are still labeled or dropped.
-  // Only the node budget refuses to walk further, and it drops the rest instead of returning it raw.
-  const stopNesting = budget.n > CLIENT_PAYLOAD_MAX_NODES && depth >= 0;
   if (Array.isArray(value)) {
+    budget.n += 1;
+    const stopNesting = budget.n > CLIENT_PAYLOAD_MAX_NODES && depth >= 0;
     const copy = value.slice();
     mapped.set(value, copy);
     let changed = stopNesting && value.some(item => item != null && typeof item === "object");
@@ -319,6 +363,11 @@ function visit(value: unknown, depth: number, mapped: WeakMap<object, unknown>, 
     }
     return copy;
   }
+  if (isOpaque(value)) return value;
+  budget.n += 1;
+  // Past CLIENT_PAYLOAD_MAX_DEPTH the named fields on this node are still labeled or dropped.
+  // Only the node budget refuses to walk further, and it drops the rest instead of returning it raw.
+  const stopNesting = budget.n > CLIENT_PAYLOAD_MAX_NODES && depth >= 0;
   const record = value as Record<string, unknown>;
   const copy: Record<string, unknown> = { ...record };
   mapped.set(value, copy);

@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import { router, publicProcedure, protectedProcedure, adminProcedure } from "./_core/trpc";
 import {
   CLIENT_PAYLOAD_MAX_DEPTH,
+  CLIENT_PAYLOAD_MAX_NODES,
   guardNamedClientFields,
   ledgerScoreDirection,
+  neutralizeChannelPayload,
+  neutralizeChannelText,
   neutralConditionLabel,
 } from "../shared/clientVocabulary";
 
@@ -33,6 +36,22 @@ describe("client vocabulary", () => {
     expect(ledgerScoreDirection({ verdict: "REDUCE" })).toBe(-1);
     expect(ledgerScoreDirection({ verdict: "REDUCE", recommendationType: null })).toBe(-1);
     expect(ledgerScoreDirection({ verdict: "STRONG REDUCE" })).toBe(-1);
+  });
+
+  it("restores production substring scoring for stored verdicts", () => {
+    expect(ledgerScoreDirection({ verdict: "The tape is bullish" })).toBe(1);
+    expect(ledgerScoreDirection({ verdict: "bearish regime" })).toBe(-1);
+    expect(ledgerScoreDirection({ verdict: "a long pause" })).toBe(1);
+    expect(ledgerScoreDirection({ verdict: "short interest rose" })).toBe(-1);
+    expect(ledgerScoreDirection({ verdict: "upside remains open" })).toBe(1);
+    expect(ledgerScoreDirection({ verdict: "downside risk is the larger input" })).toBe(-1);
+    expect(ledgerScoreDirection({ verdict: "The tape is bullish", recommendationType: "negative" })).toBe(-1);
+  });
+
+  it("labels an unchanged assessment without calling it mixed", () => {
+    expect(neutralConditionLabel("unchanged")).toBe("Unchanged");
+    expect(neutralConditionLabel("UNCHANGED")).toBe("Unchanged");
+    expect(guardNamedClientFields({ direction: "unchanged" }).direction).toBe("Unchanged");
   });
 
   it("drops named trade-class fields and leaves every other value untouched", async () => {
@@ -136,5 +155,41 @@ describe("client vocabulary", () => {
     for (let index = 0; index < CLIENT_PAYLOAD_MAX_DEPTH + 3; index += 1) cursor = cursor.child as typeof cursor;
     expect(cursor.action).toBe("Upper-side condition");
     expect(cursor.verdict).toBe("Lower-side condition");
+  });
+
+  it("neutralizes root, nested, and nested-array trade fields", () => {
+    expect(guardNamedClientFields([{ action: "BUY" }])[0]?.action).toBe("Upper-side condition");
+    expect(guardNamedClientFields({ rows: [{ action: "SELL" }] }).rows[0]?.action).toBe("Lower-side condition");
+    expect(guardNamedClientFields([[{ action: "AVOID" }]])[0]?.[0]?.action).toBe("Lower-side condition");
+    const feed = neutralizeChannelPayload([
+      { title: "A BUY setup", link: "https://example.com/BUY", ticker: "HOLD", description: "Then BUY the close." },
+    ]);
+    expect(feed[0]?.title).toBe("A Upper-side condition setup");
+    expect(feed[0]?.description).toContain("Upper-side condition");
+    expect(feed[0]?.link).toBe("https://example.com/BUY");
+    expect(feed[0]?.ticker).toBe("HOLD");
+  });
+
+  it("leaves cashtags, URLs, emails, and hyphenated or dotted compounds in prose", () => {
+    const prose = "Buy-Rite Inc filed at BUY.com. Watch $BUY and mail desk@BUY.com. See https://example.com/BUY then BUY the close.";
+    const text = neutralizeChannelText(prose);
+    expect(text).toContain("Buy-Rite Inc");
+    expect(text).toContain("BUY.com");
+    expect(text).toContain("$BUY");
+    expect(text).toContain("desk@BUY.com");
+    expect(text).toContain("https://example.com/BUY");
+    expect(text).toContain("Upper-side condition the close");
+    expect(text).not.toMatch(/Upper-side condition-Rite|Upper-side condition\.com|\$Upper-side/);
+  });
+
+  it("neutralizes an 8000-node list without a quadratic walk", () => {
+    const nodes = Array.from({ length: CLIENT_PAYLOAD_MAX_NODES }, () => ({ action: "BUY" }));
+    const started = performance.now();
+    const guarded = guardNamedClientFields(nodes);
+    const elapsed = performance.now() - started;
+    expect(guarded).toHaveLength(CLIENT_PAYLOAD_MAX_NODES);
+    expect(guarded[0]?.action).toBe("Upper-side condition");
+    expect(guarded[CLIENT_PAYLOAD_MAX_NODES - 1]?.action).toBe("Upper-side condition");
+    expect(elapsed).toBeLessThan(500);
   });
 });
