@@ -72,13 +72,13 @@ const code = (rel: string) => readFileSync(path.join(root, rel), "utf8").replace
 describe("routers.ts applies the boundary on every mounted signal procedure", () => {
   const src = code("server/routers.ts");
   it("signals.getTradingSignals / getTradingSignal", () => {
-    expect(src).toContain("return withholdSignalsConfidence(computeTradingSignals(input.tickers, input.regime));");
-    expect(src).toContain("return withholdSignalConfidence(computeTradingSignal(tickerInput, regime));");
+    expect(src).toContain("return omitTradeActions(withholdSignalsConfidence(computeTradingSignals(input.tickers, input.regime)));");
+    expect(src).toContain("return omitTradeAction(withholdSignalConfidence(computeTradingSignal(tickerInput, regime)));");
     expect(src).not.toMatch(/return computeTradingSignals?\(/);
   });
   it("crypto.getSignal / crypto.getScreener", () => {
-    expect(src).toMatch(/const withheld = withholdSignalConfidence\(result\);\s*return withholdNonFiniteNumbers\(withheld\) as typeof withheld;/);
-    expect(src).toContain("signals: withholdScreenerConfidence(results),");
+    expect(src).toMatch(/const withheld = omitTradeAction\(withholdSignalConfidence\(result\)\);\s*return withholdNonFiniteNumbers\(withheld\) as typeof withheld;/);
+    expect(src).toContain("signals: omitTradeActions(withholdScreenerConfidence(results)),");
     expect(src).not.toMatch(/signals: results,/);
   });
 });

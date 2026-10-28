@@ -199,7 +199,7 @@ describe("getInsiderCompany", () => {
   it("timeline entries have required fields", () => {
     for (const ev of result.timeline) {
       expect(typeof ev.date).toBe("string");
-      expect(["buy", "sell"]).toContain(ev.type);
+      expect(["purchase", "sale"]).toContain(ev.type);
       expect(typeof ev.amount).toBe("number");
       expect(typeof ev.label).toBe("string");
       expect(ev.amount).toBeGreaterThan(0);
@@ -209,7 +209,7 @@ describe("getInsiderCompany", () => {
   it("accuracy history entries have required fields", () => {
     for (const h of result.accuracyHistory) {
       expect(typeof h.period).toBe("string");
-      expect(["buy", "sell"]).toContain(h.insiderAction);
+      expect(["purchase", "sale"]).toContain(h.insiderAction);
       expect(typeof h.subsequentReturn).toBe("number");
       expect(typeof h.wasCorrect).toBe("boolean");
     }

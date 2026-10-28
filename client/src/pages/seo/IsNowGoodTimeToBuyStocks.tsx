@@ -37,7 +37,7 @@ This is not a timing tool — it is a risk assessment framework. A low Pressure 
 
 FAULTLINE's regime engine classifies the current market environment as new data is published. In market history broadly, early-cycle recoveries have tended to reward buyers most, while late-cycle environments with elevated credit stress have tended to carry the greatest drawdown risk. An elevated Pressure Index shows that kind of structural pressure building; it is not calibrated to forward returns.
 
-The regime classification also determines how other signals should be interpreted. A rising VIX in a bull regime is often a buying opportunity. The same VIX move in a late-cycle regime with deteriorating credit conditions is a warning signal. Context is everything.`,
+The regime classification also determines how other signals should be interpreted. A rising VIX in a bull-regime label is a volatility reading. The same VIX move beside a late-cycle label and wider credit spreads is a different volatility reading. Context is everything.`,
         },
         {
           heading: "Historical Context: What Has Happened After Similar Conditions?",

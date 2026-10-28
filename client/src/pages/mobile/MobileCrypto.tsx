@@ -41,7 +41,8 @@ function SignalCard({
   signal: {
     symbol: string;
     name: string;
-    action: string;
+    action?: string;
+    direction?: string;
     actionLabel: string;
     confidence: number | null;
     strength: string;
@@ -68,7 +69,8 @@ function SignalCard({
   index: number;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const color = actionColor(signal.action);
+  const shown = signal.direction || signal.action || "";
+  const color = actionColor(shown);
   const currentPrice = signal.priceLevels.entryZone; // best proxy for current price
 
   return (
@@ -94,7 +96,7 @@ function SignalCard({
             className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold"
             style={{ background: `${color}15`, border: `1px solid ${color}30`, color }}
           >
-            {observedDirectionSentence(signal.action)}
+            {observedDirectionSentence(shown)}
           </div>
         </div>
 
@@ -119,7 +121,7 @@ function SignalCard({
         <div className="px-4 pb-4 border-t border-white/5 pt-3 space-y-3">
           {/* Action label + timeframe */}
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-mono" style={{ color }}>{observedDirectionSentence(signal.action)}</span>
+            <span className="text-[11px] font-mono" style={{ color }}>{observedDirectionSentence(shown)}</span>
             <span className="text-[10px] font-mono text-[#64748B]">{signal.timeframe} · {signal.strength}</span>
           </div>
 

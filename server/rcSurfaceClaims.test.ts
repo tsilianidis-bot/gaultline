@@ -1,8 +1,12 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { observedDirectionSentence } from "../shared/surfaceClaims";
+import { omitTradeAction } from "./signalConfidenceBoundary";
 
-const BANNED = /\b(?:STRONG BUY|BUY|SELL|HOLD)\b|crash probability|\bRISK[-\s]?ON\b|\bRISK[-\s]?OFF\b|REDUCE EXPOSURE|INCREASE EXPOSURE|\bACCUMULATE\b|\bAVOID\b|\bOVERWEIGHT\b|\bUNDERWEIGHT\b|\bENTRY\b|\bSTOP\b|\bTARGET\b|\badd to position\b|\bavoid new positions\b|\btake profits\b|(?<![\w.])trim\b(?!\s*\()|\d+(?:\.\d+)?%\s+chance of(?: a)? (?:crash|correction|recession)/i;
+const BANNED = /\b(?:STRONG BUY|BUY|SELL|HOLD)\b|crash probability|\bRISK[-\s]?ON\b|\bRISK[-\s]?OFF\b|REDUCE EXPOSURE|INCREASE EXPOSURE|\bACCUMULATE\b|\bAVOID\b|\bOVERWEIGHT\b|\bUNDERWEIGHT\b|\bENTRY\b|\bSTOP\b|\bTARGET\b|\badd to position\b|\bavoid new positions\b|\btake profits\b|(?<![\w.])trim\b(?!\s*\()|(?:\d+(?:\.\d+)?%\s+)?(?:odds|percent|probability|chance) of(?: a)? (?:crash|correction|recession)|\b(?:reduce|cut|lower) (?:leverage|exposure)\b|\braise (?:reserves|cash)\b|\blighten up\b|\bgo (?:long|short)\b|\bsit in cash\b|\bbuying opportunity\b|\brisk appetite on\b/i;
 const EXACT_PROTOCOL = "STRONG BUY|BUY NOW|STRONG SELL|STRONG REDUCE|BUY|SELL|HOLD|WATCH|WAIT|ADD|TRIM|ACCUMULATE|AVOID|REDUCE";
 
 const ROOTS = [
@@ -237,8 +241,11 @@ function scrubCodeKeepQuotes(line: string): string {
   return restored.replace(/\u0001(\d+)\u0001/g, (_mark, index) => jsxText[Number(index)] ?? "");
 }
 
-/** Exact protocol quotes are exempt only as type-union members, enum members, comparison operands, or a bare enum return. */
+/** Exact protocol quotes are exempt only inside a type union, an enum() list, or a comparison. */
 export function exemptNonRenderedTokens(line: string): string {
+  if (/^\s*(?:export\s+)?type\s+/.test(line)) {
+    return line.replace(new RegExp(`(["'\`])(?:${EXACT_PROTOCOL})\\1`, "gi"), '""');
+  }
   const exact = new RegExp(`(["'\`])(?:${EXACT_PROTOCOL})\\1`, "gi");
   return line.replace(exact, (match, _quote, offset, whole) => {
     const source = String(whole);
@@ -246,20 +253,18 @@ export function exemptNonRenderedTokens(line: string): string {
     const after = source.slice(offset + match.length);
     if (/(?:===|!==|==|!=)\s*$/.test(before)) return '""';
     if (/\|\s*$/.test(before) || /^\s*\|/.test(after)) return '""';
-    if (/\bcase\s+$/.test(before)) return '""';
-    if (/\breturn\b/.test(before)) return '""';
-    if (/\.includes\s*\(/.test(source)) return '""';
     if (/\benum\s*\(\s*\[[^\]]*$/.test(before)) return '""';
-    if (/(?:action|verdict|decisionLabel|moveType|insiderAction)\s*[:=]\s*$/.test(before)) return '""';
-    if (!match.slice(1, -1).includes(" ") && /[=?:]\s*$/.test(before)) return '""';
-    if (/^\s*:/.test(after)) return '""';
-    if (/^\s*as\s+const\b/.test(after)) return '""';
     return match;
   });
 }
 
+function decodeRenderedTricks(source: string): string {
+  const unicode = source.replace(/\\u([0-9a-fA-F]{4})/g, (_all, hex: string) => String.fromCharCode(parseInt(hex, 16)));
+  return unicode.replace(/\{['"]{2}\}/g, "");
+}
+
 export function claimHits(source: string): string[] {
-  return visibleCopy(source)
+  return visibleCopy(decodeRenderedTricks(source))
     .split("\n")
     .map(line => line.replace(/\$\{[^}]*\}/g, ""))
     .map(line => line.replace(/\bentry(?=\s*=>|\s*\.|\s*\))/gi, "row").replace(/\.target\b/g, ""))
@@ -343,7 +348,13 @@ describe("release-candidate surfaces do not print trade directives or crash-prob
     expect(claimHits('const label = "STRONG BUY";').length).toBeGreaterThan(0);
     expect(claimHits('type Action = "BUY" | "SELL" | "HOLD";')).toEqual([]);
     expect(claimHits('if (action === "BUY") return;')).toEqual([]);
-    expect(claimHits('case "hold": break;')).toEqual([]);
+    expect(claimHits('const label = "BUY";').length).toBeGreaterThan(0);
+    expect(claimHits('return "SELL";').length).toBeGreaterThan(0);
+    expect(claimHits('const shown = ok ? "BUY" : "SELL";').length).toBeGreaterThan(0);
+    expect(claimHits('case "HOLD": return label;').length).toBeGreaterThan(0);
+    expect(claimHits('{"BUY"}').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "\\u0042UY";').length).toBeGreaterThan(0);
+    expect(claimHits("const hidden = `Se{''}ll`;").length).toBeGreaterThan(0);
   });
 
   it("does not flag code property access", () => {
@@ -351,11 +362,48 @@ describe("release-candidate surfaces do not print trade directives or crash-prob
     expect(claimHits("<div>{entry.symbol}</div>")).toEqual([]);
   });
 
+  it("scans rendered text and the client signal payload", async () => {
+    const payload = omitTradeAction({
+      action: "BUY",
+      actionLabel: "RSI(14) is 28 on the latest completed daily bars.",
+      confidence: null,
+    });
+    const sold = omitTradeAction({
+      action: "SELL",
+      actionLabel: "RSI(14) is 74 on the latest completed daily bars.",
+      confidence: null,
+    });
+    const json = JSON.stringify({ signals: [payload, sold] });
+    expect(json).not.toMatch(/\b(?:BUY|SELL|HOLD)\b/);
+    expect(payload).not.toHaveProperty("action");
+    expect(payload.direction).toBe("positive");
+    const [{ default: Stocks }, { default: Vol }, { default: Cycles }] = await Promise.all([
+      import("../client/src/pages/seo/IsNowGoodTimeToBuyStocks"),
+      import("../client/src/pages/seo/VolatilityDashboard"),
+      import("../client/src/pages/seo/learn/LearnCryptoCycles"),
+    ]);
+    const html = [
+      renderToStaticMarkup(createElement(Stocks)),
+      renderToStaticMarkup(createElement(Vol)),
+      renderToStaticMarkup(createElement(Cycles)),
+      renderToStaticMarkup(createElement("section", null, observedDirectionSentence("BUY"), observedDirectionSentence("SELL"), payload.actionLabel)),
+    ].join("\n");
+    expect(html).not.toMatch(/\b(?:BUY|SELL|HOLD)\b|\bbuying opportunity\b|\btake profits\b|\braise cash\b|\badd to position\b/i);
+  });
+
   it("catches directive phrases the old token list missed", () => {
     expect(claimHits('const href = "/avoid new positions";').length).toBeGreaterThan(0);
     expect(claimHits('const note = "41% chance of a crash";').length).toBeGreaterThan(0);
     expect(claimHits('const note = "Add to position on weakness";').length).toBeGreaterThan(0);
     expect(claimHits('const note = "take profits on the rally";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "odds of a recession";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "reduce leverage";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "raise cash";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "lighten up";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "go short";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "sit in cash";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "buying opportunity";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "risk appetite on";').length).toBeGreaterThan(0);
   });
 
   const files = reachableFiles([...routedPageRoots(), ...ROOTS]);

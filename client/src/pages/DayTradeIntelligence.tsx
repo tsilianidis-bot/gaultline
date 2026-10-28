@@ -340,15 +340,15 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
                 <div style={VALUE}>{fmt(ds.entryZoneLow)} – {fmt(ds.entryZoneHigh)}</div>
               </div>
               <div>
-                <div style={LABEL}>Upper 1</div>
+                <div style={LABEL}>1.2× ATR from last price</div>
                 <div style={{ ...VALUE, color: "#00FF88" }}>{fmt(ds.target1)}</div>
               </div>
               <div>
-                <div style={LABEL}>Upper 2</div>
+                <div style={LABEL}>2.2× ATR from last price</div>
                 <div style={{ ...VALUE, color: "#00D4FF" }}>{fmt(ds.target2)}</div>
               </div>
               <div>
-                <div style={LABEL}>Downside mark</div>
+                <div style={LABEL}>0.8× ATR from last price</div>
                 <div style={{ ...VALUE, color: "#FF6B6B" }}>{fmt(ds.stopLoss)}</div>
               </div>
               <div>
@@ -1455,7 +1455,7 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
     { rule: "Wait for data confirmation", detail: "Never enter a position without confirmed live price and volume data." },
     { rule: "Reduce position size by 50%", detail: "During data outages, cut all position sizes in half to manage unknown risk." },
     { rule: "Widen the downside mark by 1.5x",         detail: "Spread widens during data gaps. Use 1.5x the usual downside distance." },
-    { rule: "Pass over momentum setups",        detail: "Momentum trades require live tape reading. Skip until data restores." },
+    { rule: "Momentum tape is missing",        detail: "Live tape is not on this card. Momentum is not scored until that input returns." },
     { rule: "Focus on mean-reversion",      detail: "If you must trade, mean-reversion setups are less data-dependent." },
     { rule: "Check pre-market levels",      detail: "Use last known support/resistance levels from prior session as reference." },
   ];
@@ -1474,7 +1474,7 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
   const RISK_DATA = [
     { title: "Maximum Risk Per Trade", value: "0.5% of portfolio", detail: "During data outages, cut normal risk per trade by 50%." },
     { title: "Daily Loss Limit",       value: "1.5% of portfolio", detail: "Pause for the day if this threshold is hit." },
-    { title: "Correlation Check",      value: "Required",          detail: "Pass over holding correlated positions when data is incomplete." },
+    { title: "Correlation Check",      value: "Required",          detail: "Correlation is not scored while the input set is incomplete." },
     { title: "Leverage",               value: "Reduce to 1:1",     detail: "No leverage during data outages. Spot only." },
   ];
 

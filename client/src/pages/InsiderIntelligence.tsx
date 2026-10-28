@@ -274,7 +274,7 @@ export function CompanyProfileModal({ ticker, onClose }: { ticker: string; onClo
                 <div style={{ position: "relative", paddingLeft: "20px" }}>
                   <div style={{ position: "absolute", left: "8px", top: 0, bottom: 0, width: "1px", background: "rgba(255,255,255,0.08)" }} />
                   {verifiedCompany.timeline.map((ev, i) => {
-                    const c = ev.type === "buy" ? "#00FF88" : "#FF2D55";
+                    const c = ev.type === "purchase" ? "#00FF88" : "#FF2D55";
                     return (
                       <div key={i} style={{ position: "relative", marginBottom: "12px" }}>
                         <div style={{ position: "absolute", left: "-16px", top: "4px", width: "8px", height: "8px", borderRadius: "50%", background: c, boxShadow: `0 0 6px ${c}80` }} />
@@ -301,8 +301,8 @@ export function CompanyProfileModal({ ticker, onClose }: { ticker: string; onClo
                 {verifiedCompany.accuracyHistory.map((h, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "8px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "4px", marginBottom: "6px" }}>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", minWidth: "60px" }}>{h.period}</div>
-                    <div style={{ padding: "2px 8px", background: h.insiderAction === "buy" ? "rgba(0,255,136,0.08)" : "rgba(255,45,85,0.08)", border: `1px solid ${h.insiderAction === "buy" ? "rgba(0,255,136,0.25)" : "rgba(255,45,85,0.25)"}`, borderRadius: "3px" }}>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: h.insiderAction === "buy" ? "#00FF88" : "#FF2D55" }}>{h.insiderAction.toUpperCase()}</span>
+                    <div style={{ padding: "2px 8px", background: h.insiderAction === "purchase" ? "rgba(0,255,136,0.08)" : "rgba(255,45,85,0.08)", border: `1px solid ${h.insiderAction === "purchase" ? "rgba(0,255,136,0.25)" : "rgba(255,45,85,0.25)"}`, borderRadius: "3px" }}>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: h.insiderAction === "purchase" ? "#00FF88" : "#FF2D55" }}>{h.insiderAction === "purchase" ? "Purchase filing" : "Sale filing"}</span>
                     </div>
                     <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: h.subsequentReturn > 0 ? "#00FF88" : "#FF2D55" }}>
                       {h.subsequentReturn > 0 ? "+" : ""}{h.subsequentReturn}%

@@ -101,7 +101,7 @@ describe("runTradePreflightSimulation Decision-Light", () => {
     );
     expect(deploy.moveFavorabilityScore).not.toBe(50);
     expect(hold.moveType).toBe("hold");
-    expect(hold.decisionLight.proposedAction).toBe("Unchanged");
+    expect(hold.decisionLight.proposedAction).toBe("Recorded weights");
     expect(deploy.decisionLight.moveFamily).toBe("risk_on");
     expect(hold.decisionLight.moveFamily).toBe("neutral");
   });

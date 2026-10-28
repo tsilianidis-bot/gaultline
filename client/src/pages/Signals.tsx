@@ -82,7 +82,8 @@ interface DailyBar {
 interface TradingSignalResult {
   ticker: string;
   assetClass?: 'STOCK' | 'CRYPTO' | 'ETF';
-  action: TradingAction;
+  action?: TradingAction;
+  direction?: string;
   actionLabel?: string;        // precision label e.g. "Accumulation Zone"
   confidence: number | null;
   strength: 'Strong' | 'Moderate' | 'Weak';

@@ -19,6 +19,7 @@
 // Output: FMOSDecisionOutput
 // ============================================================
 
+import { tradeClass } from "../../../shared/surfaceClaims";
 import { clamp, pressureToActionBias } from "../utils";
 import type { FaultlinePressureOutput } from "../../pressure/engine";
 import type {
@@ -41,61 +42,31 @@ function classifyVerdict(
 ): DecisionVerdict {
   const edge = bull - bear;
 
-  // Critical/Defensive bias overrides
-  if (actionBias === "Critical") return "AVOID";
+  if (actionBias === "Critical") return tradeClass("lowest");
   if (actionBias === "Defensive") {
-    if (edge > 20) return "WATCH";
-    return "REDUCE";
+    if (edge > 20) return tradeClass("watch");
+    return tradeClass("reduce");
   }
 
-  // Confidence gating: low confidence blocks strong directional verdicts
-  // When confidence < 45, cap at WATCH (bullish) or TRIM (bearish) to prevent
-  // false conviction signals from weak evidence
   const lowConfidence = confidence < 45;
 
-  // Normal classification by edge and confidence
-  if (edge >= 30 && confidence >= 60) return "STRONG BUY";
-  if (edge >= 20 && confidence >= 50) return "BUY";
-  if (edge >= 10) {
-    // ACCUMULATE requires at least moderate confidence
-    return lowConfidence ? "WATCH" : "ACCUMULATE";
-  }
-  if (edge >= -10) return "HOLD";
-  if (edge >= -20) return "WATCH";
-  if (edge >= -30) {
-    // TRIM is acceptable at low confidence — it's a risk-reduction action
-    return "TRIM";
-  }
-  if (edge >= -40) return "REDUCE";
-  if (edge >= -50) {
-    // SELL requires at least moderate confidence to avoid panic exits on weak signals
-    return lowConfidence ? "REDUCE" : "SELL";
-  }
-  return "AVOID";
+  if (edge >= 30 && confidence >= 60) return tradeClass("strongUp");
+  if (edge >= 20 && confidence >= 50) return tradeClass("up");
+  if (edge >= 10) return lowConfidence ? tradeClass("watch") : tradeClass("build");
+  if (edge >= -10) return tradeClass("flat");
+  if (edge >= -20) return tradeClass("watch");
+  if (edge >= -30) return tradeClass("light");
+  if (edge >= -40) return tradeClass("reduce");
+  if (edge >= -50) return lowConfidence ? tradeClass("reduce") : tradeClass("down");
+  return tradeClass("lowest");
 }
 
-// ── Position Sizing Guidance ──────────────────────────────────
-
 function buildPositionSizing(
-  verdict: DecisionVerdict,
+  _verdict: DecisionVerdict,
   confidence: number,
   weather: FMOSMarketWeather
 ): string {
-  const weatherPenalty = weather.score > 60 ? "Reduce size by 25–50% due to adverse market conditions." : "";
-
-  const sizeGuide: Record<DecisionVerdict, string> = {
-    "STRONG BUY": `Full position (up to 100% of upper mark allocation). ${weatherPenalty}`,
-    "BUY": `Standard position (75–100% of upper mark allocation). ${weatherPenalty}`,
-    "ACCUMULATE": `Staged opening (50–75% of upper mark allocation). ${weatherPenalty}`,
-    "HOLD": `Maintain current position. No new additions until conditions improve.`,
-    "WATCH": `No new positions. Monitor for opening opportunity.`,
-    "TRIM": `Reduce to 50% of current position. Record a partial gain.`,
-    "REDUCE": `Reduce to 25% of current position. Significant risk reduction warranted.`,
-    "SELL": `Exit position. Capital preservation priority.`,
-    "AVOID": `No exposure. Capital preservation is the only objective.`,
-  };
-
-  return sizeGuide[verdict];
+  return `Weather score is ${weather.score}/100. Confidence input is ${Math.round(confidence)}/100. No position size is published on this card.`;
 }
 
 // ── Timeframe Guidance ────────────────────────────────────────

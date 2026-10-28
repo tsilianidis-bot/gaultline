@@ -80,7 +80,7 @@ export const THESIS_QUESTIONS: readonly ThesisQuestion[] = [
     body: "What happens if current conditions continue—and what happens if they change? FAULTLINE lays out the scenario paths it tracks, the evidence that would move the base case, and what could weaken it.",
     shows: [
       "Scenario paths: bull continuation, soft landing, stagflation, recession, and crash or bear, with transition triggers and invalidation conditions where supported. Numeric scenario probabilities are withheld pending calibration.",
-      "Systemic-regime classification from sre-hmm2 is independent of the Pressure Index. Its numeric state and transition probabilities are withheld until calibration is validated; it does not state the odds of a crash.",
+      "Systemic-regime classification from sre-hmm2 is independent of the Pressure Index. Its numeric state and transition probabilities are withheld until calibration is validated; it does not publish an event percentage.",
       "Regime transitions recorded in the seismograph history.",
       "Aftershock and contagion map: a fixed contagion graph between assets, rescored with price, volume, volatility, and pressure context.",
       "Development timelines and historical resemblance: whether a condition is emerging, developing, or fading, and which reference period today's profile most resembles.",

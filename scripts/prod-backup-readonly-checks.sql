@@ -3,9 +3,11 @@
 -- Expected before deploy:
 --   * algo_outcome_prov_fk is present, or orphans_0076_would_delete is the
 --     count 0076 would remove before adding that key.
---   * The migration role's grants include TRIGGER.
---   * Neither the migration role nor the app role has DROP or TRUNCATE.
--- Run once as the migration user and once as the app user. Read SHOW GRANTS.
+--   * SHOW GRANTS for the migration role includes TRIGGER.
+--   * SHOW GRANTS for the app role does not include DROP or TRUNCATE,
+--     including a global *.* grant.
+-- Run this file twice: once as the migration user, once as the app user.
+-- Read both SHOW GRANTS results. A grant of *.* includes DROP and TRUNCATE.
 
 SELECT CONSTRAINT_NAME AS foreign_key_name
 FROM information_schema.TABLE_CONSTRAINTS
@@ -19,15 +21,13 @@ FROM algorithmOutcomeObservations o
 LEFT JOIN algorithmScoreProvenance p ON p.id = o.provenanceId
 WHERE p.id IS NULL;
 
-SELECT GRANTEE, PRIVILEGE_TYPE, TABLE_SCHEMA
-FROM information_schema.SCHEMA_PRIVILEGES
-WHERE GRANTEE = CONCAT('''', REPLACE(CURRENT_USER(), '@', '''@'''), '''')
-  AND PRIVILEGE_TYPE IN ('TRIGGER', 'DROP', 'ALL PRIVILEGES');
+-- Privilege check is SHOW GRANTS only.
+-- information_schema.SCHEMA_PRIVILEGES and TABLE_PRIVILEGES omit global *.* grants,
+-- so they are not the check.
+-- Run this file once connected as the migration role, then again as the app role.
+-- Read the SHOW GRANTS text for ON *.* as well as ON database.*.
+-- Migration role: TRIGGER must appear.
+-- App role: DROP and TRUNCATE must not appear, including inside ALL PRIVILEGES ON *.*.
 
-SELECT GRANTEE, TABLE_NAME, PRIVILEGE_TYPE
-FROM information_schema.TABLE_PRIVILEGES
-WHERE TABLE_SCHEMA = DATABASE()
-  AND GRANTEE = CONCAT('''', REPLACE(CURRENT_USER(), '@', '''@'''), '''')
-  AND PRIVILEGE_TYPE IN ('TRIGGER', 'DROP', 'TRUNCATE', 'ALL PRIVILEGES');
-
-SHOW GRANTS FOR CURRENT_USER;
+SHOW GRANTS FOR CURRENT_USER();
+SHOW GRANTS;

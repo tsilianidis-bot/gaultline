@@ -318,7 +318,7 @@ function buildBtcDashboard(p: FaultlinePressureOutput): Omit<BitcoinMacroDashboa
         "Macro regime shifts to 'Crisis' or 'Recession Onset' — bear market deepens rather than bases",
       ],
       tradingBias:
-        "Capital preservation is the primary objective. Selective accumulation of core positions (BTC, ETH) at scale is appropriate for long-term holders. Pass over aggressive risk-taking, leveraged long positions, or broad altcoin exposure until a confirmed breakout with volume and improving macro conditions. Dollar-cost averaging into BTC may be appropriate for investors with long time horizons. A new bull cycle is not confirmed — position sizing should reflect that uncertainty.",
+        `Pressure Index and the crypto regime label are on this card. No position change is published.`,
       disclaimer:
         "FAULTLINE cycle analysis is based on macro pressure indicators, not on-chain data. This is not financial advice. All signals reflect conditions — they do not predict outcomes.",
     };
@@ -498,10 +498,10 @@ function buildPortfolioGuidance(p: FaultlinePressureOutput): CryptoPortfolioGuid
   const btcScore  = scoreBitcoin(p).signalScore;
   const altScore  = scoreAltcoinSeason(p).signalScore;
 
-  const btcAction   = btcScore >= 65 ? "Add" : btcScore >= 50 ? "Keep" : btcScore >= 35 ? "Trim" : btcScore >= 20 ? "Reduce Risk" : "Move to Stables";
-  const ethAction   = btcScore >= 60 ? "Keep" : btcScore >= 45 ? "Keep" : btcScore >= 30 ? "Trim" : "Reduce Risk";
-  const altAction   = altScore >= 65 ? "Selective Add" : altScore >= 50 ? "Keep" : altScore >= 35 ? "Trim" : "Reduce Risk";
-  const stableAction = pressure >= 70 ? "Increase Allocation" : pressure >= 50 ? "Maintain Buffer" : "Reduce — Deploy Selectively";
+  const btcAction   = `Bitcoin score is ${btcScore}/100 on this reading.`;
+  const ethAction   = `Ethereum uses the Bitcoin score ${btcScore}/100 on this reading.`;
+  const altAction   = `Altcoin score is ${altScore}/100 on this reading.`;
+  const stableAction = `Stablecoin sleeve uses Pressure Index ${pressure}/100 on this reading.`;
 
   return {
     btcGuidance: {

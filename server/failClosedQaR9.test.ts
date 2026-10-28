@@ -118,7 +118,8 @@ describe("Sweep: other routed screens", () => {
     const s = read("client/src/pages/SeismographIntelligence.tsx");
     expect(s).not.toContain("crash probability at ${crash}%");
     expect(s).toContain("deriveTradeTypes(currentScore, currentDirection, currentRegime, regimeProbs.bull, null, null)");
-    expect(s).toContain('return value == null || !Number.isFinite(value) ? "not offered" : `${value}%`;');
+    expect(s).toContain("void bull; void recession; void crash;");
+    expect(s).not.toMatch(/\$\{(?:crash|recession|bull)\}%/);
   });
   it("SeismographNarrativeBanner: crisis transition only from an AVAILABLE contract claim", () => {
     const s = read("client/src/components/SeismographNarrativeBanner.tsx");

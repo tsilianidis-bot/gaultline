@@ -22,8 +22,12 @@ export type ObservedDirection = "positive" | "negative" | "mixed" | "unestablish
 
 export function observedDirection(action: string | null | undefined): ObservedDirection {
   const token = (action ?? "").trim().toUpperCase();
+  if (token === "POSITIVE") return "positive";
+  if (token === "NEGATIVE") return "negative";
+  if (token === "MIXED") return "mixed";
+  if (token === "UNESTABLISHED") return "unestablished";
   if (token === "BUY" || token === "STRONG BUY" || token === "ACCUMULATE" || token === "BUY NOW" || token === "ADD") return "positive";
-  if (token === "SELL" || token === "STRONG SELL" || token === "REDUCE" || token === "TRIM") return "negative";
+  if (token === "SELL" || token === "STRONG SELL" || token === "REDUCE" || token === "TRIM" || token === "AVOID") return "negative";
   if (token === "HOLD" || token === "WAIT" || token === "LOW CONVICTION") return "mixed";
   return "unestablished";
 }
@@ -126,8 +130,8 @@ export const SIM_SIDE = {
 export type SimulatedFillSide = (typeof SIM_SIDE)[keyof typeof SIM_SIDE];
 
 export function simulatedFillLabel(side: string | null | undefined): string {
-  if (side === SIM_SIDE.acquire || side === SIM_SIDE.add) return "Simulated acquisition";
-  if (side === SIM_SIDE.reduce || side === SIM_SIDE.trim) return "Simulated reduction";
+  if (side === SIM_SIDE.acquire || side === SIM_SIDE.add) return "Simulated fill, cash decreased";
+  if (side === SIM_SIDE.reduce || side === SIM_SIDE.trim) return "Simulated fill, cash increased";
   return "Simulated record";
 }
 
@@ -136,8 +140,44 @@ export function isSimulatedAcquisition(side: string | null | undefined): boolean
 }
 
 /** Stored preflight value. Screens should render a measured description, not this token. */
-export const PREFLIGHT_KEEP = "hold";
-export const OUTLOOK_STRAINED = "Avoid";
+export const PREFLIGHT_KEEP = "hold" as const;
+
+export type TradeBand =
+  | "strongUp"
+  | "up"
+  | "down"
+  | "strongDown"
+  | "flat"
+  | "open"
+  | "watch"
+  | "build"
+  | "light"
+  | "reduce"
+  | "lowest"
+  | "add"
+  | "wait";
+
+const TRADE_CLASS = {
+  strongUp: "STRONG BUY",
+  up: "BUY",
+  down: "SELL",
+  strongDown: "STRONG SELL",
+  flat: "HOLD",
+  open: "WATCH",
+  watch: "WATCH",
+  build: "ACCUMULATE",
+  light: "TRIM",
+  reduce: "REDUCE",
+  lowest: "AVOID",
+  add: "ADD",
+  wait: "WAIT",
+} as const;
+
+/** Internal class token. Client responses delete `action` before it is sent. */
+export function tradeClass<B extends TradeBand>(band: B): (typeof TRADE_CLASS)[B] {
+  return TRADE_CLASS[band];
+}
+export const OUTLOOK_STRAINED = "Avoid" as const;
 export const REGIME_HIGHER = "risk-on";
 export const REGIME_LOWER = "risk-off";
 export const STATUS_HIGHER = "RISK-ON";
@@ -156,6 +196,6 @@ export function displayPosture(value: string | null | undefined): string {
 export function appetiteLabel(value: string | null | undefined): string {
   if (value === REGIME_HIGHER || value === STATUS_HIGHER) return "Higher-risk appetite band";
   if (value === REGIME_LOWER || value === STATUS_LOWER) return "Lower-risk appetite band";
-  if (value === POSTURE_WITHHELD || value === OUTLOOK_STRAINED) return "Strained reading";
+  if (value === POSTURE_WITHHELD || value === OUTLOOK_STRAINED) return "Outlook score is in the lowest class. Not a trade instruction.";
   return value && value.trim() ? value : "Unavailable";
 }

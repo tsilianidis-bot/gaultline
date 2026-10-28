@@ -44,13 +44,13 @@ function computeTacticalBias(
   momentum: number
 ): string {
   if (condition === "Severe") {
-    return "Extreme caution — capital preservation is the priority. Pass over new risk positions.";
+    return "Weather score is in the highest band on this card. No position change is published.";
   }
   if (condition === "Stormy") {
-    return "The stress reading is in a higher band. Downside marks on existing positions are tighter in this reading. This is not an instruction.";
+    return "The stress reading is in a higher band on this card. No position change is published.";
   }
   if (condition === "Overcast") {
-    return "Selective positioning only. Favor quality names with strong fundamentals. Pass over speculative positions.";
+    return "Weather score is in a middle band on this card. No position change is published.";
   }
   if (condition === "Partly Cloudy") {
     if (breadth < 40 && momentum < 40) {

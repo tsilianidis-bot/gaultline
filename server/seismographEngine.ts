@@ -311,7 +311,7 @@ const PATTERN_SPECS: PatternSpec[] = [
     describe: (r) => {
       const current = patternDetectionPressureScore(r[0]?.pressureScore);
       const peak = finitePatternScores(r).reduce((max, score) => Math.max(max, score), Number.NEGATIVE_INFINITY);
-      if (current == null || !Number.isFinite(peak)) return "Pressure relief is not described because the latest score is missing.";
+      if (current == null || !Number.isFinite(peak)) return "Pressure relief is unavailable because the latest score is missing.";
       return `Pressure has declined from a recent peak of ${peak} to ${current}, a reduction of ${
         peak - current
       } points. What follows a relief move of this size has not been validated in FAULTLINE's record.`;

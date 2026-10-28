@@ -7,6 +7,7 @@
 // All data is simulation/research only — NOT financial advice.
 // ============================================================
 import { eq, desc, and } from "drizzle-orm";
+import { tradeClass } from "../shared/surfaceClaims";
 import { getDb } from "./db";
 import {
   ownerSimulationAccounts, ownerSimulationPositions, ownerSimulationTrades,
@@ -886,7 +887,7 @@ export async function executeTrade(
       regimeAtEntry: pressure.regime,
       bullBearAtEntry: pressure.level,
       objective: objective?.objectiveType ?? null,
-      rationale: `${opportunity.whyNow} | Downside mark: $${opportunity.stopLoss.toFixed(2)} | T1: $${opportunity.targetOne.toFixed(2)}`,
+      rationale: `${opportunity.whyNow} | ATR offset price: $${opportunity.stopLoss.toFixed(2)}. Method: completed bars. | 1.2× ATR offset: $${opportunity.targetOne.toFixed(2)}.`,
       status: "open",
     });
 
@@ -1372,7 +1373,7 @@ Return JSON:
   const fallbackAction: OptimalActionType =
     pressure.overallPressure > 70 ? "RAISE_CASH" :
     pressure.overallPressure > 50 ? "WAIT" :
-    positions.length === 0 ? "WAIT" : "HOLD";
+    positions.length === 0 ? tradeClass("wait") : tradeClass("flat");
 
   return {
     actionType: fallbackAction,

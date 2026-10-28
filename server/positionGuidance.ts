@@ -23,13 +23,7 @@ import { LRUCache } from "./lruCache";
 
 // ── Types ────────────────────────────────────────────────────
 
-export type PositionAction =
-  | "Add"
-  | "Hold"
-  | "Trim"
-  | "Watch / No Add"
-  | "Exit Watch"
-  | "Reduction bias";
+export type PositionAction = string;
 
 export type ConvictionLevel = "High" | "Moderate" | "Low";
 export type PositionTimeframe = "Today" | "Week" | "Month" | "Year";
@@ -287,12 +281,7 @@ function computeAssetScores(
 }
 
 function scoreToAction(compositeScore: number): PositionAction {
-  if (compositeScore >= 80) return "Add";
-  if (compositeScore >= 65) return "Hold";          // Hold / Add on Pullback
-  if (compositeScore >= 50) return "Watch / No Add"; // Hold — conditions mixed
-  if (compositeScore >= 35) return "Trim";
-  if (compositeScore >= 20) return "Exit Watch";
-  return "Reduction bias";
+  return `Composite score is ${compositeScore}/100.`;
 }
 
 function scoreToConviction(compositeScore: number, pressure: number): ConvictionLevel {
@@ -453,18 +442,8 @@ Return JSON with exactly these fields:
   } catch {
     // Fallback interpretation
     return {
-      aiInterpretation: `${asset.ticker} is showing a composite score of ${scores.compositeScore}/100 under ${regime} conditions. ${action === "Trim" || action === "Exit Watch" || action === "Reduction bias" ? "Market pressure is in a higher-stress reading." : action === "Add" ? "The reading is in a lower-stress band." : "The reading supports keeping the existing position on record."} The note reflects the current ${p >= 61 ? "elevated" : "moderate"} pressure environment.`,
-      suggestedBehavior: action === "Trim"
-        ? "A 10–25% smaller size of larger share exposure, keep the remaining core position, and pass over adding until market pressure eases."
-        : action === "Add"
-        ? "Conditions support adding exposure on pullbacks toward support. Use position sizing appropriate to the current volatility regime."
-        : action === "Hold"
-        ? "Maintain current position size. Pass over adding until conditions improve or reduce if pressure escalates."
-        : action === "Watch / No Add"
-        ? "Do not add to the position. Monitor for improved conditions before considering new exposure."
-        : action === "Exit Watch"
-        ? "Prepare to reduce or exit if trend support breaks. Tighten downside mark levels."
-        : "Conditions favor reducing or exiting exposure. Prioritize capital preservation.",
+      aiInterpretation: `${asset.ticker} composite score is ${scores.compositeScore}/100. Regime label is ${regime}. Pressure Index is ${p}/100.`,
+      suggestedBehavior: `Composite score is ${scores.compositeScore}/100. Pressure Index is ${p}/100 on this reading. No position size is published.`,
       invalidationCondition: `If ${asset.ticker} breaks below key trend support, the signal may shift to a more defensive posture.`,
       nextConditionToWatch: `Monitor FAULTLINE Pressure Index and ${asset.sector} sector strength for directional confirmation.`,
       whyThisSignal: {

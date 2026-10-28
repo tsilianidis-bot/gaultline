@@ -876,7 +876,7 @@ export default function Dashboard() {
           {
             label: 'MOST DANGEROUS ASSET',
             value: overall.riskLevel === 'critical' ? 'LEVERAGED ETFs' : overall.riskLevel === 'elevated' ? 'SMALL CAPS' : overall.riskLevel === 'moderate' ? 'MEMECOINS' : 'NONE',
-            sub: overall.riskLevel === 'critical' ? 'Highest stress band. Leveraged products are not described as a position.' : overall.riskLevel === 'elevated' ? 'Elevated pressure band' : overall.riskLevel === 'moderate' ? 'Moderate pressure band' : 'Lowest pressure band',
+            sub: overall.riskLevel === 'critical' ? 'Highest stress band' : overall.riskLevel === 'elevated' ? 'Elevated pressure band' : overall.riskLevel === 'moderate' ? 'Moderate pressure band' : 'Lowest pressure band',
             color: '#FF2D55',
             href: '/app/pressure',
           },

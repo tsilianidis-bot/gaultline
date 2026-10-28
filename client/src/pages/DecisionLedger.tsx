@@ -16,6 +16,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useSEO } from "@/hooks/useSEO";
+import { observedDirection } from "@shared/surfaceClaims";
 import {
   CheckCircle, XCircle, Clock, BookOpen, BarChart2,
   TrendingUp, TrendingDown, Activity, ArrowLeft,
@@ -61,10 +62,10 @@ interface LedgerEntry {
 // ── Helpers ───────────────────────────────────────────────────
 
 function verdictColor(verdict: string): string {
-  const v = verdict.toUpperCase();
-  if (v.includes("STRONG BUY") || v.includes("BUY") || v.includes("ACCUMULATE")) return "#00FF88";
-  if (v.includes("SELL") || v.includes("REDUCE") || v.includes("HIGH RISK")) return "#FF4444";
-  if (v.includes("WAIT") || v.includes("HOLD") || v.includes("LOW CONVICTION")) return "#FFD700";
+  const direction = observedDirection(verdict);
+  if (direction === "positive") return "#00FF88";
+  if (direction === "negative") return "#FF4444";
+  if (direction === "mixed") return "#FFD700";
   return "#00D4FF";
 }
 

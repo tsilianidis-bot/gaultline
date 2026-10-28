@@ -216,10 +216,10 @@ function buildLiquidityCondition(vectors: RiskVector[], pressure: FaultlinePress
       : "Ample liquidity — market depth healthy and spreads tight.",
     detail: `${
       liquidityScore >= 60
-        ? "Fed balance sheet reduction and elevated rates are compressing market liquidity. Thin order books increase slippage risk. Position sizing should account for reduced exit capacity."
+        ? `Liquidity score is ${liquidityScore}/100. The inputs are funding and reserve series on this Pressure Index reading.`
         : liquidityScore >= 35
         ? "Liquidity adequate at index level but thinner in small/mid-cap and high-yield. Monitor for sudden drying up during lower-risk appetite events."
-        : "Strong liquidity conditions. Fed accommodation or neutral stance supporting market depth. Low slippage risk for most position sizes."
+        : `Liquidity score is ${liquidityScore}/100. Funding and reserve inputs are on this reading.`
     }`,
     indicators: [
       { name: "Market Depth", value: liquidityScore >= 60 ? "Thin" : liquidityScore >= 35 ? "Moderate" : "Deep", status: liquidityScore >= 60 ? "red" : liquidityScore >= 35 ? "yellow" : "green" },
@@ -245,7 +245,7 @@ function buildAIBubbleRisk(vectors: RiskVector[], pressure: FaultlinePressureOut
       : "AI theme valuations reasonable — concentration risk contained.",
     detail: `${
       aiScore >= 65
-        ? "Top AI/tech names represent an outsized share of index returns. Valuation multiples at historical extremes. A rotation or earnings miss in key names could trigger broad market repricing. New concentrated AI size is not described exposure at current levels."
+        ? `AI concentration score is ${aiScore}/100 on this Pressure Index reading. No valuation multiple is attached to this card.`
         : aiScore >= 40
         ? "AI valuations elevated relative to earnings growth expectations. Concentration risk building but not yet at bubble levels. Monitor earnings revisions and capital expenditure guidance from key AI infrastructure names."
         : "AI sector valuations within historical norms. Earnings growth supporting current multiples. Concentration risk manageable."
@@ -487,7 +487,7 @@ function buildKeyRisks(vectors: RiskVector[], pressure: FaultlinePressureOutput)
       category: "credit",
       summary: `HY spreads ${creditScore >= 70 ? "aggressively widening" : "moderately elevated"}.`,
       detail: `Credit stress at ${creditScore}/100. High-yield spreads widening signals deteriorating corporate fundamentals and reduced risk appetite. Historically precedes equity drawdowns.`,
-      actionImplication: creditScore >= 70 ? "Reduce high-yield and leveraged equity exposure immediately." : "Monitor spread trajectory. New credit-sensitive size is not described.",
+      actionImplication: `Credit stress score is ${creditScore}/100. The input is the high-yield spread vector on this Pressure Index reading.`,
     });
   }
 
@@ -498,8 +498,8 @@ function buildKeyRisks(vectors: RiskVector[], pressure: FaultlinePressureOutput)
       severity: liquidityScore >= 65 ? "elevated" : "moderate",
       category: "liquidity",
       summary: `Market liquidity ${liquidityScore >= 65 ? "significantly reduced" : "showing stress"}.`,
-      detail: `Liquidity risk at ${liquidityScore}/100. Reduced market depth increases slippage and exit risk. Position sizing should account for reduced capacity to exit quickly.`,
-      actionImplication: liquidityScore >= 65 ? "Reduce position sizes. Illiquid instruments are a strained reading." : "Factor in wider spreads when sizing positions.",
+      detail: `Liquidity risk is ${liquidityScore}/100 on this Pressure Index reading.`,
+      actionImplication: `Liquidity score is ${liquidityScore}/100. The vector is the funding and reserve inputs published with this reading.`,
     });
   }
 
@@ -511,7 +511,7 @@ function buildKeyRisks(vectors: RiskVector[], pressure: FaultlinePressureOutput)
       category: "ai",
       summary: `AI/tech concentration ${aiScore >= 70 ? "at extreme levels" : "building"}.`,
       detail: `AI speculation score at ${aiScore}/100. Narrow leadership in AI/tech names creates fragility. Index performance dependent on few names sustaining elevated multiples.`,
-      actionImplication: aiScore >= 70 ? "New AI/tech concentration is not described. Diversify across sectors." : "Monitor AI earnings guidance. Reduce concentration if multiples expand further.",
+      actionImplication: `AI concentration score is ${aiScore}/100. The vector is the static AI-concentration baseline on this Pressure Index reading.`,
     });
   }
 
@@ -523,7 +523,7 @@ function buildKeyRisks(vectors: RiskVector[], pressure: FaultlinePressureOutput)
       category: "volatility",
       summary: `Yield-curve and 10Y-level pressure ${volScore >= 70 ? "high" : "building"}.`,
       detail: `${pressureVectorLabel("volatility-regime")} score at ${volScore}/100 (DGS10, DGS2). This vector does not read VIX.`,
-      actionImplication: "Reduce position sizes. Consider defined-risk structures (spreads, collars) over naked long exposure.",
+      actionImplication: `Yield-curve and 10-year pressure score is ${volScore}/100. Inputs are DGS10 and DGS2 on this reading. This vector does not read VIX.`,
     });
   }
 
@@ -535,7 +535,7 @@ function buildKeyRisks(vectors: RiskVector[], pressure: FaultlinePressureOutput)
       category: "fed",
       summary: `Fed maintaining ${fedScore >= 70 ? "highly restrictive" : "restrictive"} stance.`,
       detail: `Fed policy pressure at ${fedScore}/100. Elevated rates compress equity valuations via higher discount rates and increase debt service costs for leveraged companies.`,
-      actionImplication: "Favor quality over growth. Highly leveraged companies are a strained reading. Duration risk elevated in long-duration assets.",
+      actionImplication: `Fed policy score is ${fedScore}/100 on this Pressure Index reading.`,
     });
   }
 
@@ -547,7 +547,7 @@ function buildKeyRisks(vectors: RiskVector[], pressure: FaultlinePressureOutput)
       category: "breadth",
       summary: `Rally narrowing — fewer stocks ${breadthScore >= 70 ? "driving gains" : "participating"}.`,
       detail: `Breadth score at ${breadthScore}/100. Narrow market leadership is a classic late-cycle warning. When breadth deteriorates, index-level gains mask broad underlying weakness.`,
-      actionImplication: "Index highs are not a reason to add size. Focus on stocks with strong individual breadth. Watch for advance-decline line divergence.",
+      actionImplication: `Breadth score is ${breadthScore}/100 on this Pressure Index reading.`,
     });
   }
 
@@ -559,7 +559,7 @@ function buildKeyRisks(vectors: RiskVector[], pressure: FaultlinePressureOutput)
       category: "macro",
       summary: `Overall market pressure at ${pressure.overallPressure}/100 — ${pressure.regime}.`,
       detail: `Multiple risk vectors elevated simultaneously. Systemic pressure at this level historically associated with increased drawdown risk and reduced recovery time.`,
-      actionImplication: "Defensive positioning warranted. Raise cash allocation. Prioritize capital preservation.",
+      actionImplication: `Debt and fiscal score is ${debtScore}/100 on this Pressure Index reading.`,
     });
   }
 
@@ -590,18 +590,18 @@ function buildAwarenessChecks(vectors: RiskVector[], pressure: FaultlinePressure
       question: "Are you aware of current credit conditions?",
       status: creditScore >= 60 ? "fail" : creditScore >= 35 ? "warn" : "pass",
       explanation: creditScore >= 60
-        ? `Credit stress elevated at ${creditScore}/100. HY spreads widening — this is a key risk you must factor into position sizing.`
+        ? `Credit stress score is ${creditScore}/100. The input is the high-yield spread vector.`
         : creditScore >= 35
-        ? `Credit conditions moderately stressed at ${creditScore}/100. Monitor spread trends before adding risk.`
-        : `Credit conditions benign at ${creditScore}/100. No immediate credit risk to factor in.`,
+        ? `Credit stress score is ${creditScore}/100. The input is the high-yield spread vector.`
+        : `Credit stress score is ${creditScore}/100. The input is the high-yield spread vector.`,
     },
     {
       id: "liquidity-check",
       question: "Have you assessed current liquidity conditions?",
       status: liquidityScore >= 55 ? "warn" : "pass",
       explanation: liquidityScore >= 55
-        ? `Liquidity tighter than normal at ${liquidityScore}/100. Factor in wider spreads and reduced exit capacity.`
-        : `Liquidity adequate at ${liquidityScore}/100. Normal position sizing appropriate.`,
+        ? `Liquidity score is ${liquidityScore}/100 on this reading.`
+        : `Liquidity score is ${liquidityScore}/100 on this reading.`,
     },
     {
       id: "breadth-check",
@@ -618,10 +618,10 @@ function buildAwarenessChecks(vectors: RiskVector[], pressure: FaultlinePressure
       question: "Are you positioned for the current rate-structure (yield-curve) pressure?",
       status: volScore >= 60 ? "warn" : volScore < 20 ? "warn" : "pass",
       explanation: volScore >= 60
-        ? `Yield-curve / 10Y pressure elevated at ${volScore}/100. Reduce position sizes and consider defined-risk structures.`
+        ? `Yield-curve and 10-year pressure is ${volScore}/100. Inputs are DGS10 and DGS2. This vector does not read VIX.`
         : volScore < 20
         ? `Yield-curve / 10Y pressure very low at ${volScore}/100. This vector does not measure VIX or complacency.`
-        : `Yield-curve / 10Y pressure moderate at ${volScore}/100. Standard position sizing appropriate.`,
+        : `Yield-curve / 10Y pressure is ${volScore}/100. Inputs are DGS10 and DGS2.`,
     },
     {
       id: "fed-check",
@@ -646,8 +646,8 @@ function buildAwarenessChecks(vectors: RiskVector[], pressure: FaultlinePressure
       question: "Have you identified what could invalidate your thesis?",
       status: pressure.overallPressure >= 55 ? "warn" : "pass",
       explanation: pressure.overallPressure >= 55
-        ? `With systemic pressure at ${pressure.overallPressure}/100, multiple scenarios could invalidate a bullish thesis. Define your invalidation levels before entering.`
-        : `Market pressure manageable at ${pressure.overallPressure}/100. Still important to define invalidation levels for any position.`,
+        ? `Systemic pressure is ${pressure.overallPressure}/100 on this reading.`
+        : `Systemic pressure is ${pressure.overallPressure}/100 on this reading.`,
     },
   ];
 }

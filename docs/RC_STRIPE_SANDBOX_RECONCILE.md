@@ -12,7 +12,7 @@ Approved public offer lives in `shared/tiers.ts` (`PRICING_PLANS` + `MARKETING_T
 | `core` | `core` (Trader) | **$59/mo** (`5900`), name `FAULTLINE Trader`, available | `STRIPE_CORE_PRICE_ID` | **$9.99/mo** (`999`), label “Core (Mobile)” / “Core $9.99/mo”, locked live id `price_1TcdXSDlVkahIFK8mqjKOpfB` | `core` |
 | `premium` | `premium` (Power) | **$99/mo** (`9900`), name `FAULTLINE Power`, available | `STRIPE_PREMIUM_PRICE_ID` | **$59/mo** (`5900`), label “Trader (Premium)” / “Trader $59/mo”, locked live id `price_1TcdgGDlVkahIFK8QM0txjAB` | `premium` |
 | `founding` | `founding` | **$49/mo** (`4900`), name `FAULTLINE Founding Member`, available | `STRIPE_FOUNDING_PRICE_ID` | **$49/mo** (`4900`) — amount matches; locked live id `price_1TcdgIDlVkahIFK8KwBlWrvW` | `founding` |
-| `lifetime` | `founding` | **$299** one-time, **`available: false`** | `STRIPE_LIFETIME_PRICE_ID` | **$299** one-time; locked live id `price_1TcdgKDlVkahIFK855FfdepH` | `founding` if webhook sees the ID |
+| `lifetime` | `founding` | **$1,500** one-time (`150000`), name `FAULTLINE Lifetime`, price label `$1,500 one-time`, **`available: true`** | `STRIPE_LIFETIME_PRICE_ID` | locked live id `price_1TcdgKDlVkahIFK855FfdepH` is a different catalog amount | `founding` if webhook sees the ID |
 | `core_annual` | `core` | `amountCents: 0`, unavailable | `STRIPE_CORE_ANNUAL_PRICE_ID` | not in the four-ID suites | `core` if configured |
 | `premium_annual` | `premium` | `amountCents: 0`, unavailable | `STRIPE_PREMIUM_ANNUAL_PRICE_ID` | not in the four-ID suites | `premium` if configured |
 
@@ -21,7 +21,7 @@ Approved public offer lives in `shared/tiers.ts` (`PRICING_PLANS` + `MARKETING_T
 1. **Core vs Trader amount.** Tests and `RESTORE.md` still describe Core/Mobile at **$9.99**. Canonical UI/entitlement amount is **Trader $59**. Injecting the locked live Core ID into sandbox checkout will fail `unit_amount === 5900`.
 2. **Premium vs Power amount.** Tests treat `STRIPE_PREMIUM_PRICE_ID` as **Trader $59**. Canonical offer is **Power $99**. Same checkout-verification failure if the live $59 price is attached to `premium`.
 3. **Name lock.** Verification also requires Stripe product `name === plan.name` (`FAULTLINE Trader` / `FAULTLINE Power` / `FAULTLINE Founding Member`). Legacy “FAULTLINE Core” / “FAULTLINE Pro” products fail closed.
-4. **Lifetime.** Amount matches ($299) but public `available: false`. Checkout should stay closed even if a sandbox ID exists.
+4. **Lifetime.** Canonical amount in `shared/tiers.ts` is **$1,500** (`150000`), price label `$1,500 one-time`, name `FAULTLINE Lifetime`, `available: true`. The locked live id is a different catalog amount. Checkout stays closed while `CHECKOUT_ENABLED` is false.
 5. **Annuals.** Displayed as unavailable / $0. No sandbox IDs should be sold.
 6. **Entitlement test map** (`server/stripeEntitlement.test.ts`) uses synthetic IDs (`price_core_monthly`, …). Production webhook uses `getPlanByPriceId` → env IDs. Dummy map is **MOCKED** and not a catalog source.
 7. **Naming drift.** Env `STRIPE_CORE_*` means access tier `core` / marketing **Trader**, not the obsolete $9.99 “Core Mobile” SKU.
@@ -35,7 +35,7 @@ Do not invent `price_` values in git. Owner creates **test-mode** (`sk_test_`) p
 | `STRIPE_CORE_PRICE_ID` | Recurring USD **5900** / month | Product name `FAULTLINE Trader` |
 | `STRIPE_PREMIUM_PRICE_ID` | Recurring USD **9900** / month | Product name `FAULTLINE Power` |
 | `STRIPE_FOUNDING_PRICE_ID` | Recurring USD **4900** / month | Product name `FAULTLINE Founding Member` |
-| `STRIPE_LIFETIME_PRICE_ID` | One-time USD **29900** (optional; keep unsold) | Product name `FAULTLINE Founding Lifetime (Legacy)` |
+| `STRIPE_LIFETIME_PRICE_ID` | One-time USD **150000** (optional; keep unsold) | Product name `FAULTLINE Lifetime` |
 | `STRIPE_CORE_ANNUAL_PRICE_ID` | unset | — |
 | `STRIPE_PREMIUM_ANNUAL_PRICE_ID` | unset | — |
 | `STRIPE_SECRET_KEY` | `sk_test_…` only | never `sk_live_` on this RC |

@@ -1,3 +1,5 @@
+import { observedDirection, type ObservedDirection } from "../shared/surfaceClaims";
+
 /**
  * Launch fix-up: response-boundary guard for signal "confidence".
  *
@@ -23,6 +25,22 @@ export function withholdSignalsConfidence<T extends { confidence: number | null 
   signals: T[],
 ): WithheldConfidence<T>[] {
   return signals.map(withholdSignalConfidence);
+}
+
+/** Drop the internal classification before a client response. `direction` is the score bucket only. */
+export function omitTradeAction<T extends { action?: unknown }>(
+  signal: T,
+): Omit<T, "action"> & { direction: ObservedDirection } {
+  const direction = observedDirection(typeof signal.action === "string" ? signal.action : null);
+  const rest = { ...signal };
+  delete rest.action;
+  return { ...rest, direction };
+}
+
+export function omitTradeActions<T extends { action?: unknown }>(
+  signals: T[],
+): Array<Omit<T, "action"> & { direction: ObservedDirection }> {
+  return signals.map(omitTradeAction);
 }
 
 /**

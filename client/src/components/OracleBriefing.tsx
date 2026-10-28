@@ -5,6 +5,7 @@
    no typing animation, no chatbot feel.
    ============================================================ */
 import { useState, useEffect, useRef } from "react";
+import { observedDirection } from "@shared/surfaceClaims";
 import type { AshaQuestionAnalysis } from "@shared/ashaQuestionAnalysis";
 import type { ForecastMetadata } from "@shared/forecastMetadata";
 import { ForecastHorizonDisclosure } from "./ForecastHorizonDisclosure";
@@ -111,12 +112,11 @@ function threatColor(level: string) {
 }
 
 function verdictColor(action: string) {
-  const a = action.toUpperCase();
-  if (["BUY", "ACCUMULATE"].includes(a)) return "#00FF88";
-  if (["SELL", "AVOID"].includes(a)) return "#FF4444";
-  if (["REDUCE"].includes(a)) return "#FF8C00";
-  if (["HOLD", "WATCH"].includes(a)) return "#FFD700";
-  if (a === "NOT STATED") return "#94A3B8";
+  const direction = observedDirection(action);
+  if (direction === "positive") return "#00FF88";
+  if (direction === "negative") return "#FF4444";
+  if (direction === "mixed") return "#FFD700";
+  if (action.toUpperCase() === "NOT STATED") return "#94A3B8";
   return "#00E5FF";
 }
 

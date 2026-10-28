@@ -15,7 +15,8 @@ import { runV3HShadow } from "./pressure/shadowEngine";
 import { computeHistoricalContext } from "./historicalContextEngine";
 import { computeHomepageBriefing } from "./homepageBriefing";
 import { computeTradingSignals, computeTradingSignal, clearSignalCache } from "./tradingSignals";
-import { withholdSignalConfidence, withholdSignalsConfidence, withholdScreenerConfidence } from "./signalConfidenceBoundary";
+import { omitTradeAction, omitTradeActions, withholdSignalConfidence, withholdSignalsConfidence, withholdScreenerConfidence } from "./signalConfidenceBoundary";
+import { tradeClass } from "../shared/surfaceClaims";
 import { getSignalVisualDetailPayload } from "./signalVisualDetail";
 import { getDiagnosticReport, clearDiagnosticCache } from "./diagnosticAI";
 import { getPositionGuidance, clearGuidanceCache, getGuidanceForTicker } from "./positionGuidance";
@@ -255,7 +256,7 @@ export const appRouter = router({
       .mutation(({ input }) => {
         try {
           // Launch fix-up: formula confidence is withheld at the response boundary.
-          return withholdSignalsConfidence(computeTradingSignals(input.tickers, input.regime));
+          return omitTradeActions(withholdSignalsConfidence(computeTradingSignals(input.tickers, input.regime)));
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trading signal computation failed", cause: err });
         }
@@ -291,7 +292,7 @@ export const appRouter = router({
         try {
           const { regime, ...tickerInput } = input;
           // Launch fix-up: formula confidence is withheld at the response boundary.
-          return withholdSignalConfidence(computeTradingSignal(tickerInput, regime));
+          return omitTradeAction(withholdSignalConfidence(computeTradingSignal(tickerInput, regime)));
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trading signal computation failed", cause: err });
         }
@@ -875,7 +876,7 @@ export const appRouter = router({
           });
           // Launch fix-up: formula confidence is withheld at the response boundary.
           // A non-finite number is unavailable. It is not displayed as 0.
-          const withheld = withholdSignalConfidence(result);
+          const withheld = omitTradeAction(withholdSignalConfidence(result));
           return withholdNonFiniteNumbers(withheld) as typeof withheld;
         } catch (err) {
           if (err instanceof TRPCError) throw err;
@@ -902,7 +903,7 @@ export const appRouter = router({
           );
           const screenerResult = {
             // Launch fix-up: formula confidence is withheld at the response boundary.
-            signals: withholdScreenerConfidence(results),
+            signals: omitTradeActions(withholdScreenerConfidence(results)),
             regime,
             btcDominance,
             totalMarketCap: globalStats?.totalMarketCap ?? null,
@@ -2005,7 +2006,7 @@ export const appRouter = router({
                 accountId: account.id,
                 ticker: decision.ticker,
                 assetType: decision.assetType,
-                action: "BUY",
+                action: tradeClass("up"),
                 quantity: decision.quantity.toString(),
                 price: decision.price.toString(),
                 totalValue: cost.toString(),

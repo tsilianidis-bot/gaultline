@@ -73,7 +73,7 @@ function getSynthesis(
     "signal-outlook": {
       headline: `${regime} — here is what the signal landscape means`,
       body: isStressed
-        ? `Signal quality degrades in high-stress regimes. ${pageInsight ? pageInsight + " " : ""}Prioritize signals with multiple confirming factors: institutional flow, catalyst support, and technical structure alignment. Pass over chasing momentum without confirmation.`
+        ? `Signal inputs are thinner in high-stress regimes. ${pageInsight ? pageInsight + " " : ""}Institutional flow, catalyst, and technical-structure fields are listed when they are present.`
         : `Signal context is less stressed in the current regime. ${pageInsight ? pageInsight + " " : ""}The bull scenario score (${bullProb}) is a derived context value, not a trend-following forecast.`,
       nextLabel: "Identify the best opportunities now →",
       nextPath: "/app/opportunities",

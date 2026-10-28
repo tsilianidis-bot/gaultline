@@ -66,7 +66,7 @@ The combination of these three dimensions — level, trend, and term structure �
           answer: "The FAULTLINE Pressure Index™ does not read VIX: its six vectors are built from credit spreads, SOFR, Treasury yields, CPI, PPI, federal funds, and unemployment, plus a static AI-concentration baseline. VIX appears as a delayed quote on the markets board and as a daily input to FAULTLINE's separate systemic-regime model. Reading volatility next to the Pressure Index shows whether a volatility spike is confirmed by structural credit and funding stress.",
         },
         {
-          question: "Can high volatility be a buying opportunity?",
+          question: "What does a high VIX reading show on this page?",
           answer: "Yes — historically, extreme volatility spikes (VIX above 40-50) have coincided with market bottoms and created significant buying opportunities. However, catching the exact bottom is extremely difficult. FAULTLINE's approach is to monitor the Pressure Index for signs that multiple risk vectors are simultaneously improving — not just volatility declining — before increasing risk exposure.",
         },
       ]}

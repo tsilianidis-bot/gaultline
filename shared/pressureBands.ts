@@ -102,7 +102,7 @@ export const PRESSURE_BANDS: readonly PressureBandDefinition[] = [
     riskLevel: "critical",
     color: "#FF4444",
     range: "80–100",
-    description: "Critical measured pressure. This band does not establish a probability of a crash.",
+    description: "Critical measured pressure. This band does not publish an event percentage.",
   },
 ] as const;
 

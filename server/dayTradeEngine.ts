@@ -776,7 +776,7 @@ Return JSON with these exact fields:
       bearCase: `If volume fades or market conditions deteriorate, ${symbol} may reverse. Stop level provides defined risk.`,
       primaryCatalyst: `${setupType} pattern with ${relVol !== null ? relVol.toFixed(1) + "x" : "elevated"} relative volume.`,
       largestRisk: `Regime pressure at ${regimePressure}/100 — elevated macro risk could override technical setup.`,
-      mostLikelyPath: `${symbol} continues ${direction} momentum toward Upper 1. Volume must remain elevated for continuation.`,
+      mostLikelyPath: `${symbol} direction label is ${direction}. The nearer level is 1.2× ATR from the last price. Method: ATR offset. Volume on the latest bar is the continuation evidence. This is not a trade instruction.`,
       alternativePath: `If price fails to hold entry zone, expect consolidation or reversal toward stop level.`,
       recommendedTimeframe: `${expectedHold(setupType)}-minute hold on 5-min or 15-min chart.`,
       bestStrategy: `Enter on ${direction === "bullish" ? "breakout confirmation above" : "breakdown below"} entry zone with 1/3 position, add on confirmation.`,

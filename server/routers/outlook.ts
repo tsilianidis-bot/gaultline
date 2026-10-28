@@ -390,7 +390,7 @@ Write exactly this JSON structure:
 {
   "headline": "Concise institutional headline summarizing the regime (10-15 words). Examples: 'Moderate Risk Regime Persists Despite Improving Liquidity' or 'Higher appetite Conditions Strengthen as Credit Markets Stabilize'.",
   "executiveSummary": "2-4 sentences answering: What happened? Why does it matter? What should investors understand immediately? Read like the opening paragraph of an institutional macro report.",
-  "faultlineAction": "One of: 'Maintain existing exposure' / 'Add gradually selectively' / 'Favor quality growth' / 'Increase defensive allocation' / 'Reduce leverage' / 'Raise cash' / 'Wait for confirmation' / 'Rotate into defensive sectors'. Never leave users wondering what FAULTLINE would do.",
+  "faultlineAction": "State the Pressure Index, the regime label, and the as-of time. Do not tell the reader to change a position.",
   "topOpportunityTicker": "${topOpportunityTicker}",
   "topOpportunityName": "${topOpportunityName}",
   "topOpportunityRating": "${topOpportunityDir}",

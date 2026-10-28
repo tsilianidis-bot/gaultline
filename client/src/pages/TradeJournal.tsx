@@ -235,7 +235,7 @@ function TradeRow({ entry, onEdit, onDelete }: {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "10px", marginTop: "12px" }}>
             {entry.stopLoss && (
               <div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", textTransform: "uppercase", letterSpacing: "0.1em" }}>Downside mark</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", textTransform: "uppercase", letterSpacing: "0.1em" }}>User-entered exit price</div>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#FF2D55" }}>${parseFloat(entry.stopLoss).toFixed(2)}</div>
               </div>
             )}
@@ -587,7 +587,7 @@ function TradeJournalInner() {
 
             {/* Stop loss */}
             <div>
-              <Label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px" }}>Downside mark</Label>
+              <Label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px" }}>User-entered exit price</Label>
               <Input type="number" value={form.stopLoss} onChange={e => setForm(f => ({ ...f, stopLoss: e.target.value }))} placeholder="0.00" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", marginTop: "4px" }} />
             </div>
 

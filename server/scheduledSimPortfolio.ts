@@ -14,6 +14,7 @@
  */
 
 import type { Request, Response } from "express";
+import { tradeClass } from "../shared/surfaceClaims";
 import { runDailyEvaluation, valuateSimPortfolio } from "./simPortfolioEngine";
 import { generateDailyJournal } from "./simPortfolioJournal";
 import {
@@ -119,7 +120,7 @@ export async function handleScheduledSimPortfolio(_req: Request, res: Response):
           accountId,
           ticker: decision.ticker,
           assetType: decision.assetType,
-          action: "BUY",
+          action: tradeClass("up"),
           quantity: String(decision.quantity),
           price: String(decision.price),
           totalValue: String(decision.price * decision.quantity),
@@ -128,16 +129,16 @@ export async function handleScheduledSimPortfolio(_req: Request, res: Response):
           regime: pressure.regime,
         });
 
-        tradesSummary.push(`Recorded acquisition ${decision.quantity} ${decision.ticker} @ $${decision.price.toFixed(2)}`);
+        tradesSummary.push(`Simulated fill ${decision.quantity} ${decision.ticker} at $${decision.price.toFixed(2)}. Cash decreased.`);
         executedTrades.push({
           ticker: decision.ticker,
-          action: "BUY",
+          action: tradeClass("up"),
           price: decision.price,
           quantity: decision.quantity,
           rationale: decision.rationale.actionSummary,
         });
 
-        log(`✅ Recorded acquisition ${decision.quantity} ${decision.ticker} @ $${decision.price.toFixed(2)}`);
+        log(`Simulated fill ${decision.quantity} ${decision.ticker} at $${decision.price.toFixed(2)}. Cash decreased.`);
       }
 
       if (decision.action === "SELL") {
@@ -173,7 +174,7 @@ export async function handleScheduledSimPortfolio(_req: Request, res: Response):
           accountId,
           ticker: decision.ticker,
           assetType: decision.assetType,
-          action: "SELL",
+          action: tradeClass("down"),
           quantity: String(qty),
           price: String(decision.price),
           totalValue: String(proceeds),
@@ -182,16 +183,16 @@ export async function handleScheduledSimPortfolio(_req: Request, res: Response):
           regime: pressure.regime,
         });
 
-        tradesSummary.push(`Recorded reduction ${qty} ${decision.ticker} @ $${decision.price.toFixed(2)} (P&L: ${realizedPnl >= 0 ? "+" : ""}$${realizedPnl.toFixed(2)})`);
+        tradesSummary.push(`Simulated fill ${qty} ${decision.ticker} at $${decision.price.toFixed(2)}. Cash increased. Mark-to-fill change ${realizedPnl >= 0 ? "+" : ""}$${realizedPnl.toFixed(2)}.`);
         executedTrades.push({
           ticker: decision.ticker,
-          action: "SELL",
+          action: tradeClass("down"),
           price: decision.price,
           quantity: qty,
           rationale: decision.rationale.actionSummary,
         });
 
-        log(`✅ Recorded reduction ${qty} ${decision.ticker} @ $${decision.price.toFixed(2)} — P&L: ${realizedPnl >= 0 ? "+" : ""}$${realizedPnl.toFixed(2)}`);
+        log(`Simulated fill ${qty} ${decision.ticker} at $${decision.price.toFixed(2)}. Cash increased. Mark-to-fill change ${realizedPnl >= 0 ? "+" : ""}$${realizedPnl.toFixed(2)}.`);
       }
     }
 

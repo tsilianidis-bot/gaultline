@@ -297,7 +297,7 @@ export default function MobileSignals() {
     }).then(results => {
       const map: Record<string, { signal: string; riskLabel: string; momentum: string }> = {};
       results.forEach((r) => {
-        const action = r.action ?? "";
+        const action = r.direction ?? "";
         const strength = r.strength ?? "";
         const trend = r.technicals?.trend ?? "";
         map[r.ticker] = {

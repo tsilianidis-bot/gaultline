@@ -34,7 +34,7 @@ const MOVE_OPTIONS: { value: MoveType; label: string; icon: string }[] = [
   { value: "reduce_risk",        label: "Reduce Risk",               icon: "↓" },
   { value: "hedge",              label: "Hedge",                     icon: "⛨" },
   { value: "rotate",             label: "Rotate",                    icon: "⟳" },
-  { value: "raise_cash",         label: "Raise Cash",                icon: "◎" },
+  { value: "raise_cash",         label: "Cash weight",               icon: "◎" },
   { value: "deploy_cash",        label: "Deploy Cash",               icon: "◈" },
   { value: "buy_specific_asset", label: "Named acquisition",        icon: "₿" },
   { value: "sell_specific_asset",label: "Named reduction",       icon: "✕" },

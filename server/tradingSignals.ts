@@ -18,6 +18,8 @@
 // All computation is deterministic and runs server-side.
 // ============================================================
 
+import { tradeClass } from "../shared/surfaceClaims";
+
 // ── Types ─────────────────────────────────────────────────────
 
 export type TradingAction = "BUY" | "SELL" | "HOLD" | "WATCH";
@@ -26,28 +28,16 @@ export type TradingAction = "BUY" | "SELL" | "HOLD" | "WATCH";
  * Human-readable precision label for each TradingAction.
  * Stocks use equity-specific language; crypto overrides these via cryptoSignals.ts.
  */
-export const STOCK_ACTION_LABELS: Record<TradingAction, string> = {
-  BUY:  "Positive reading",
-  SELL: "Negative reading",
-  HOLD: "Unchanged reading",
-  WATCH: "Unsettled reading",
-};
-
-export const CRYPTO_ACTION_LABELS: Record<TradingAction, string> = {
-  BUY:  "Positive reading",
-  SELL: "Strained reading",
-  HOLD: "Unchanged reading",
-  WATCH: "Unsettled reading",
-};
-
-/** Returns the display label for a stock signal action. */
+/** Measured card text. The internal class is not part of this sentence. */
 export function stockActionLabel(action: TradingAction): string {
-  return STOCK_ACTION_LABELS[action];
+  void action;
+  return "RSI, trend, and the internal score are on this card. Freshness is the signal timestamp. This is not a trade instruction.";
 }
 
-/** Returns the display label for a crypto signal action. */
+/** Measured card text. The internal class is not part of this sentence. */
 export function cryptoActionLabel(action: TradingAction): string {
-  return CRYPTO_ACTION_LABELS[action];
+  void action;
+  return "RSI, trend, and the internal score are on this card. Freshness is the signal timestamp. This is not a trade instruction.";
 }
 
 export interface DailyBar {
@@ -681,22 +671,22 @@ export function computeTradingSignal(
   const absScore = Math.abs(score);
 
   if (score >= 4) {
-    action = "BUY";
+    action = tradeClass("up");
     confidence = Math.min(95, 55 + absScore * 5);
     strength = score >= 6 ? "Strong" : "Moderate";
     timeframe = "Short-Term";
   } else if (score <= -4) {
-    action = "SELL";
+    action = tradeClass("down");
     confidence = Math.min(95, 55 + absScore * 5);
     strength = score <= -6 ? "Strong" : "Moderate";
     timeframe = "Short-Term";
   } else if (absScore >= 2) {
-    action = "HOLD";
+    action = tradeClass("flat");
     confidence = Math.min(80, 45 + absScore * 5);
     strength = "Moderate";
     timeframe = "Swing";
   } else {
-    action = "WATCH";
+    action = tradeClass("open");
     confidence = Math.min(65, 35 + absScore * 5);
     strength = "Weak";
     timeframe = "Watch";
@@ -730,7 +720,7 @@ export function computeTradingSignal(
     ticker: input.ticker,
     assetClass: "STOCK",
     action,
-    actionLabel: stockActionLabel(action),
+    actionLabel: `${rsiNote}. Trend label is ${trend}. Internal score is ${score.toFixed(1)}. Volume label is ${volSignal}. Freshness is the signal timestamp. This is not a trade instruction.`,
     confidence,
     strength,
     timeframe,

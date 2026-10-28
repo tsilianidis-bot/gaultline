@@ -16,6 +16,7 @@
 //   • All price levels are calculated, never invented
 // ============================================================
 
+import { OUTLOOK_STRAINED, tradeClass } from "../shared/surfaceClaims";
 import { invokeLLM } from "./_core/llm";
 import { calculateFaultlinePressure, type FaultlinePressureOutput } from "./pressure/engine";
 import { getDiagnosticReport, pressureToActionBias } from "./diagnosticAI";
@@ -335,7 +336,7 @@ function scoreToDirection(score: number): OutlookDirection {
   if (score >= 65) return "Bullish";
   if (score >= 50) return "Neutral";
   if (score >= 30) return "Bearish";
-  return "Avoid";
+  return OUTLOOK_STRAINED;
 }
 
 // Retired: pressureToBullProb (100 − 0.85·P) and pressureToBearProb (0.75·P)
@@ -626,7 +627,7 @@ function buildTradeFramework(
   // ── No-trade gate ────────────────────────────────────────────
   if (direction === "Avoid" || score < 30) {
     const reasons: string[] = [];
-    if (direction === "Avoid") reasons.push(`Outlook direction is Pass over — no trade setup exists`);
+    if (direction === OUTLOOK_STRAINED) reasons.push(`Outlook score is in the lowest class. No setup score is attached to this card.`);
     if (score < 30) reasons.push(`Outlook score ${score}/100 is below the minimum threshold for a trade framework`);
     if (isHighPressure) reasons.push(`FAULTLINE Pressure Index at ${p}/100 — systemic risk is elevated`);
     return {
@@ -643,7 +644,7 @@ function buildTradeFramework(
       exitTrigger: "Do not enter",
       parameterConfidence: 0,
       riskRating: "Extreme",
-      bullCaseForTrade: "No bull case — outlook is Pass over",
+      bullCaseForTrade: "Outlook score is in the lowest class. No bull-case figure is attached to this card.",
       bearCaseForTrade: `Score ${score}/100 with ${direction} direction indicates high risk of loss`,
       doNotTradeIf: reasons,
       explanation: reasons.join(". "),
@@ -776,7 +777,7 @@ function buildTradeFramework(
   if (direction === "Bearish") doNotTradeIf.push("Outlook direction is Bearish — this is a short setup, not a long opening; do not acquire into a bearish outlook");
   if (direction === "Neutral") doNotTradeIf.push("Outlook direction is Neutral — wait for a directional signal before entering");
   if (score < 50) doNotTradeIf.push(`Outlook score is ${score}/100 — below 50 means the balance of evidence does not support a high-conviction opening`);
-  if (timeframe === "day" && p > 50) doNotTradeIf.push("Day trading in elevated pressure environments amplifies risk; consider reducing size by 50% or skipping the session");
+  if (timeframe === "day" && p > 50) doNotTradeIf.push(`Pressure Index is ${p}/100 on a day-horizon card. The score is the latest canonical reading.`);
   if (isCrypto && p > 55) doNotTradeIf.push("Crypto is highly sensitive to macro pressure; a pressure index above 55 significantly increases the risk of sharp reversals");
 
   // ── Confidence ───────────────────────────────────────────────
@@ -934,14 +935,14 @@ function buildTradeFramework(
     tradeStop: {
       price: calcTradeStop,
       pctFromEntry: (calcEntry && calcTradeStop) ? fmtPct(calcTradeStop, calcEntry) : null,
-      label: "Trade Downside mark",
+      label: "Short ATR offset from the last price. Method: completed bars.",
       description: tf.tradeStopDesc,
       rationale: tf.tradeStopRationale,
     },
     swingStop: {
       price: calcSwingStop,
       pctFromEntry: (calcEntry && calcSwingStop) ? fmtPct(calcSwingStop, calcEntry) : null,
-      label: "Swing Downside mark",
+      label: "Longer ATR offset from the last price. Method: completed bars.",
       description: tf.swingStopDesc,
       rationale: tf.swingStopRationale,
     },
@@ -2253,12 +2254,12 @@ function discoveryInstitutionalConviction(score: number, category: DiscoveryCate
 }
 
 function discoveryActionBias(score: number, pressure: number): DiscoveryItem["actionBias"] {
-  if (pressure >= 70) return score >= 75 ? "WATCH" : "AVOID";
-  if (score >= 75) return "BUY";
-  if (score >= 60) return "WATCH";
-  if (score >= 45) return "HOLD";
-  if (score >= 30) return "REDUCE";
-  return "AVOID";
+  if (pressure >= 70) return (score >= 75 ? tradeClass("watch") : tradeClass("lowest")) as DiscoveryItem["actionBias"];
+  if (score >= 75) return tradeClass("up") as DiscoveryItem["actionBias"];
+  if (score >= 60) return tradeClass("watch") as DiscoveryItem["actionBias"];
+  if (score >= 45) return tradeClass("flat") as DiscoveryItem["actionBias"];
+  if (score >= 30) return tradeClass("reduce") as DiscoveryItem["actionBias"];
+  return tradeClass("lowest") as DiscoveryItem["actionBias"];
 }
 
 const RISING_STAR_CANDIDATES: Array<{ symbol: string; name: string }> = [

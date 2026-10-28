@@ -30,12 +30,17 @@ import { UniversalTickerHeader } from "@/components/UniversalTickerHeader";
 
 type TradingAction = string;
 
+function signalClass(sig: { action?: string; direction?: string }): string {
+  return sig.direction || sig.action || "";
+}
+
 interface CryptoSignalResult {
   symbol: string;
   name: string;
   coinId: string;
   assetClass?: "CRYPTO";
-  action: TradingAction;
+  action?: TradingAction;
+  direction?: string;
   actionLabel?: string;        // precision label e.g. "Accumulation Zone"
   cryptoRegime?: string;
   regimeConflict?: boolean;
@@ -317,7 +322,7 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
     { symbol: sig.symbol },
     { enabled: infoOpen, staleTime: 30 * 60 * 1000 }
   );
-  const c = ACTION_COLORS[observedDirection(sig.action)] ?? ACTION_COLORS.unestablished;
+  const c = ACTION_COLORS[observedDirection(signalClass(sig))] ?? ACTION_COLORS.unestablished;
   const positive = (sig.technicals.priceChange7d ?? 0) >= 0;
   const sparklineData = sig.technicals.priceChange7d !== null
     ? Array.from({ length: 10 }, (_, i) => {
@@ -375,7 +380,7 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
             <TickerChip ticker={sig.symbol} name={sig.name} assetType="crypto" />
-            <ActionBadge action={sig.action} strength={sig.strength} actionLabel={sig.actionLabel} />
+            <ActionBadge action={signalClass(sig)} strength={sig.strength} actionLabel={sig.actionLabel} />
           </div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.6)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {sig.name}
@@ -695,15 +700,15 @@ function TopSignalCard({ label, sig, color, icon }: { label: string; sig: Crypto
 function SignalsSummaryBar({ signals }: { signals: CryptoSignalResult[] }) {
   const counts = useMemo(() => {
     const c = { positive: 0, negative: 0, mixed: 0, unestablished: 0 };
-    for (const s of signals) c[observedDirection(s.action)] += 1;
+    for (const s of signals) c[observedDirection(signalClass(s))] += 1;
     return c;
   }, [signals]);
 
   const total = signals.length;
   if (total === 0) return null;
 
-  const strongPositive = signals.filter(s => observedDirection(s.action) === "positive" && s.strength === "Strong").length;
-  const strongNegative = signals.filter(s => observedDirection(s.action) === "negative" && s.strength === "Strong").length;
+  const strongPositive = signals.filter(s => observedDirection(signalClass(s)) === "positive" && s.strength === "Strong").length;
+  const strongNegative = signals.filter(s => observedDirection(signalClass(s)) === "negative" && s.strength === "Strong").length;
 
   const sentiment = counts.positive > counts.negative + counts.mixed
     ? { label: "MORE POSITIVE THAN MIXED", color: "#00D4FF" }
@@ -904,7 +909,7 @@ function CryptoSignalsInner() {
     return screenerData.signals
       .filter(sig => {
         if (activeCategory !== "All" && classifyCategory(sig) !== activeCategory) return false;
-        if (filterAction !== "All" && sig.action !== filterAction) return false;
+        if (filterAction !== "All" && observedDirection(signalClass(sig)) !== observedDirection(filterAction)) return false;
         return true;
       })
       .sort(byStrengthRank);
@@ -914,8 +919,8 @@ function CryptoSignalsInner() {
   const topSignals = useMemo(() => {
     if (!screenerData?.signals || screenerData.signals.length === 0) return null;
     const sigs = screenerData.signals;
-    const buys  = sigs.filter(s => observedDirection(s.action) === "positive").sort(byStrengthRank);
-    const sells = sigs.filter(s => observedDirection(s.action) === "negative").sort(byStrengthRank);
+    const buys  = sigs.filter(s => observedDirection(signalClass(s)) === "positive").sort(byStrengthRank);
+    const sells = sigs.filter(s => observedDirection(signalClass(s)) === "negative").sort(byStrengthRank);
     const momentum = rankMomentumSignals(sigs);
     const volatile = [...sigs].sort((a, b) => (b.technicals.volatility24h ?? -1) - (a.technicals.volatility24h ?? -1));
     return {
@@ -956,9 +961,9 @@ function CryptoSignalsInner() {
                   regime: regimeCtx.headline,
                   btcDominance: screenerData.btcDominance,
                   totalMarketCap: screenerData.totalMarketCap,
-                  signals: screenerData.signals?.slice(0, 15).map((s: { symbol: string; action: string; actionLabel?: string; cryptoRegime?: string; regimeConflict?: boolean }) => ({
+                  signals: screenerData.signals?.slice(0, 15).map((s: { symbol: string; action?: string; direction?: string; actionLabel?: string; cryptoRegime?: string; regimeConflict?: boolean }) => ({
                     symbol: s.symbol,
-                    action: s.action,
+                    direction: signalClass(s),
                     actionLabel: s.actionLabel,
                     cryptoRegime: s.cryptoRegime,
                     regimeConflict: s.regimeConflict,

@@ -59,7 +59,7 @@ export default function VsTradingView() {
         },
         {
           question: "How does FAULTLINE help with risk management compared to TradingView?",
-          answer: "TradingView's risk management tools often focus on position sizing and downside-mark levels based on price action. FAULTLINE, conversely, helps with macro risk management by identifying systemic risks and potential regime shifts that could impact entire portfolios. It provides a framework to understand the conditions behind large-scale market dislocations.",
+          answer: "TradingView's chart tools mark price levels from price history. FAULTLINE reads systemic conditions: credit, funding, rates, and the Pressure Index. It records those conditions and their freshness. It does not publish a position change.",
         },
         {
           question: "Is FAULTLINE suitable for day trading?",

@@ -19,6 +19,7 @@ import { scanOpportunities, type TradeOpportunity } from "./ownerSimulation";
 import { evaluateDecisionLight } from "./decisionLight";
 import type { DecisionLightOutput } from "../shared/decisionLight";
 import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import { PREFLIGHT_KEEP } from "../shared/surfaceClaims";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -396,11 +397,11 @@ export const MOVE_LABELS: Record<MoveType, string> = {
   reduce_risk: "Reduce Risk",
   hedge: "Hedge",
   rotate: "Rotate",
-  raise_cash: "Raise Cash",
+  raise_cash: "Cash weight",
   deploy_cash: "Deploy Cash",
   buy_specific_asset: "Named acquisition",
   sell_specific_asset: "Named reduction",
-  hold: "Unchanged",
+  [PREFLIGHT_KEEP]: "Recorded weights",
 };
 
 // Human-readable labels for exposure categories
@@ -700,7 +701,7 @@ function computeFavorabilityScore(
       break;
 
     case "raise_cash":
-    case "hold": {
+    case PREFLIGHT_KEEP: {
       const extremeness = Math.abs(p - 50) / 50;
       rawFavorability = Math.round(70 - extremeness * 30);
       break;
@@ -792,7 +793,7 @@ function computeGreenLights(
       if (breadthScore > 40 && breadthScore < 70) lights.push("Sector divergence creating rotation opportunities");
       if (p < 65) lights.push("Systemic risk not at crisis levels — rotation feasible");
       break;
-    case "hold":
+    case PREFLIGHT_KEEP:
       if (p < 55) lights.push("No acute systemic trigger requiring a forced exit");
       if (creditScore < 50) lights.push("Credit conditions not signaling forced selling");
       break;
@@ -855,7 +856,7 @@ function computeRedFlags(
       if (p >= 70) flags.push("Crisis-level pressure — sector correlations converge, reducing rotation benefit");
       if (volatilityScore >= 65) flags.push("High volatility — rotation timing risk elevated");
       break;
-    case "hold":
+    case PREFLIGHT_KEEP:
       if (p >= 65) flags.push("Elevated pressure — holding without a downside plan carries tail risk");
       if (creditScore >= 60) flags.push("Credit deterioration may accelerate — review position sizing");
       break;
@@ -905,7 +906,7 @@ function computeInvalidationTriggers(
       triggers.push("Volatility compression — VIX drops below 15, hedge cost increases");
       break;
     case "raise_cash":
-    case "hold":
+    case PREFLIGHT_KEEP:
       triggers.push("Credit spreads compressing while breadth expands — defensive cash thesis weakens");
       break;
     case "rotate":
@@ -951,7 +952,7 @@ function computeWatchNext(
       watches.push("Put/call ratio — sentiment and positioning extremes");
       break;
     case "raise_cash":
-    case "hold":
+    case PREFLIGHT_KEEP:
       watches.push("Unemployment rate (UNRATE) — labor market health");
       watches.push("CPI YoY — inflation trajectory and Fed response");
       break;
@@ -978,50 +979,10 @@ function computeActionBias(
   timeframe?: SimulatorTimeframe
 ): string {
   const p = pressure.overallPressure;
-  const tickerRef = ticker ? ` a ${ticker.toUpperCase()} position` : " this position";
-  const tfRef = timeframe ? ` over the ${TIMEFRAME_LABELS[timeframe].toLowerCase()} timeframe` : "";
-
-  if (favorability >= 70) {
-    switch (moveType) {
-      case "add_risk": return `Conditions support selective higher-risk appetite positioning${tfRef}. Prioritize quality names with strong balance sheets and regime alignment.`;
-      case "buy_specific_asset": return `Macro regime is constructive for${tickerRef}${tfRef}. Confirm ticker-level technicals align with regime before a fill.`;
-      case "deploy_cash": return `Conditions support deploying cash${tickerRef}${tfRef}. Size to quality names with regime alignment.`;
-      case "sell_specific_asset": return `Conditions support exiting${tickerRef}${tfRef}. Elevated pressure and credit stress historically reward disciplined exits in specific names.`;
-      case "raise_cash": return `Raising cash is well-aligned with current regime${tfRef}. Cash preserves optionality for a later fill at better risk-adjusted levels.`;
-      case "reduce_risk": return `The regime reading is consistent with a smaller recorded size${tickerRef}${tfRef}. A staged size change keeps the rest on record.`;
-      case "hedge": return `Hedging conditions are favorable${tfRef}. Tail protection is cost-effective relative to current volatility regime.`;
-      case "rotate": return `Sector rotation conditions are favorable${tfRef}. Defensive and quality sectors are outperforming in this regime.`;
-      case "hold": return `Current regime supports holding${tickerRef}${tfRef}. No systemic trigger requiring defensive action.`;
-    }
-  }
-
-  if (favorability >= 45) {
-    switch (moveType) {
-      case "add_risk": return `Mixed regime — selective exposure only${tfRef}. Pass over overextended names and concentrate in quality with defensive characteristics.`;
-      case "buy_specific_asset": return `${ticker ? ticker.toUpperCase() + "-specific" : "Ticker-specific"} opportunity may exist, but macro regime is mixed${tfRef}. Staged fill with defined downside mark recommended.`;
-      case "deploy_cash": return `Mixed regime — deploy cash selectively${tfRef}. Staged deployment with defined invalidation is required.`;
-      case "sell_specific_asset": return `Mixed signals${tickerRef}${tfRef}. Consider partial exit rather than full position close. Monitor for regime confirmation before completing the exit.`;
-      case "raise_cash": return `Modest cash raise is prudent${tfRef}. Pass over full de-risking — regime does not yet confirm systemic deterioration.`;
-      case "reduce_risk": return `A smaller recorded size is consistent with current conditions${tfRef}. The core position stays on record.`;
-      case "hedge": return `Partial hedge is warranted${tfRef}. Full hedge may be premature — monitor for regime confirmation.`;
-      case "rotate": return `Rotation is feasible but timing is uncertain${tfRef}. Focus on relative strength within sectors rather than wholesale rotation.`;
-      case "hold": return `Keep with active monitoring${tfRef}. Regime is transitional — review downside levels and position sizing.`;
-    }
-  }
-
-  switch (moveType) {
-    case "add_risk": return `Current regime is not supportive of adding risk${tfRef}. Wait for pressure to normalize before increasing exposure.`;
-    case "buy_specific_asset": return `Macro headwinds are significant${tfRef}. ${ticker ? ticker.toUpperCase() + " thesis" : "Ticker-specific thesis"} must be very strong to overcome regime pressure.`;
-    case "deploy_cash": return `Macro regime does not support deploying cash${tickerRef}${tfRef}. Wait for pressure to normalize.`;
-    case "sell_specific_asset": return `Low-pressure regime reduces urgency to exit${tickerRef}${tfRef}. Confirm fundamental deterioration before completing the exit — opportunity cost of early exit is elevated.`;
-    case "raise_cash": return `Cash drag is significant in low-pressure environments${tfRef}. Maintain invested posture unless specific risk identified.`;
-    case "reduce_risk": return `A smaller recorded size${tickerRef} in a low-pressure environment may be early${tfRef}. The thesis is unchanged unless the inputs have changed.`;
-    case "hedge": return `Hedging in low-volatility conditions is expensive${tfRef}. Consider lighter hedge or wait for a later fill.`;
-    case "rotate": return `Low-pressure regime favors staying in current sector leaders${tfRef}. Rotation may underperform in this environment.`;
-    case "hold": return `Holding${tickerRef} in this regime requires active risk management${tfRef}. Review downside mark levels and consider partial reduction.`;
-  }
-
-  return `Monitor conditions before acting${tfRef}. Current regime is transitional.`;
+  const tickerRef = ticker ? ` Ticker on the card is ${ticker.toUpperCase()}.` : "";
+  const tfRef = timeframe ? ` Timeframe label is ${TIMEFRAME_LABELS[timeframe]}.` : "";
+  const move = MOVE_LABELS[moveType];
+  return `Pressure Index is ${p}/100. Regime label is ${pressure.regime}. Favorability on this card is ${favorability}/100. Simulated move label is ${move}.${tickerRef}${tfRef} Freshness is the canonical reading. No position change is published.`;
 }
 
 // ── Best Version of Move ──────────────────────────────────────
@@ -1032,41 +993,10 @@ function computeBestVersion(
   pressure: FaultlinePressureOutput
 ): string {
   const p = pressure.overallPressure;
-
-  switch (moveType) {
-    case "add_risk":
-      if (favorability >= 60) return "Staged fill over 3–5 sessions into quality names with strong free cash flow, low debt, and positive earnings revisions. Pass over highly leveraged or speculative names.";
-      return "If buying, limit to 25–50% of intended position size. Focus on defensive quality — consumer staples, healthcare, or dividend payers with low beta.";
-    case "buy_specific_asset":
-      if (favorability >= 60) return "A full fill is supportable. Confirm technical setup (above key moving averages, volume confirmation). Set the downside mark at 7–10% below the fill.";
-      return "Starter position only (25–33% of the planned size). Wait for price confirmation before adding. Define invalidation level before a fill.";
-    case "deploy_cash":
-      if (favorability >= 60) return "Deploy cash in stages into quality names aligned with the current regime. Keep a residual cash buffer.";
-      return "Deploy only a starter sleeve. Keep the majority of cash until confirmation arrives.";
-    case "sell_specific_asset":
-      if (favorability >= 60) return "Full position exit is supportable. Reduce systematically over 2–3 sessions to minimize market impact. Confirm no upcoming earnings or catalysts before exiting.";
-      return "Partial exit only (25–50% of position). Retain core exposure until regime confirms the exit thesis. Set a price or pressure trigger for completing the exit.";
-    case "raise_cash":
-      if (favorability >= 60) return "Move 15–25% of portfolio to cash or short-term Treasuries. Maintain dry powder for a later fill at better risk-adjusted levels.";
-      return "Modest cash raise of 5–10%. Pass over full de-risking — maintain core positions in quality names.";
-    case "reduce_risk":
-    if (favorability >= 60) return "A 20–30% smaller recorded size matches the current reading. The core stays on record. Re-read in 2–4 weeks.";
-    return "A 10–15% smaller recorded size matches the current reading. A full exit is not described unless the thesis has broken down.";
-    case "hedge":
-      if (favorability >= 60) return "Use put spreads on index (SPY/QQQ) for 30–60 day protection. Size hedge to cover 50–75% of equity exposure. Pass over over-hedging.";
-      return "Light tail hedge only — 1–2% of portfolio in protective puts. Focus on cheap out-of-the-money options for asymmetric payoff.";
-    case "rotate":
-      if (favorability >= 60) return "Rotate from high-beta cyclicals (tech, consumer discretionary) into defensive sectors (utilities, healthcare, consumer staples). Maintain sector diversification.";
-      return "Modest tilt toward quality and defensives. Pass over wholesale rotation — maintain exposure to current sector leaders.";
-    case "hold":
-      if (p < 50) return "Keep with standard position sizing. Review downside mark levels quarterly. No action required unless thesis changes.";
-      return "Keep with a tighter downside mark. Reduce position size if risk tolerance is exceeded. Set clear exit criteria before conditions deteriorate further.";
-  }
-
-  return "Proceed with caution and reduced position sizing relative to your normal approach.";
+  return `Pressure Index is ${p}/100. Favorability on this card is ${favorability}/100. Regime label is ${pressure.regime}. Simulated move label is ${MOVE_LABELS[moveType]}. No fill schedule or size is published.`;
 }
 
-// ── Pass over Areas ───────────────────────────────────────────────
+// ── Observed limits ───────────────────────────────────────────────
 
 function computeAvoidAreas(
   moveType: MoveType,
@@ -1075,50 +1005,12 @@ function computeAvoidAreas(
   const p = pressure.overallPressure;
   const creditScore = getVectorScore(pressure.vectors, "credit-contagion");
   const aiScore = getVectorScore(pressure.vectors, "ai-bubble");
-  const avoids: string[] = [];
-
-  switch (moveType) {
-    case "add_risk":
-    case "buy_specific_asset":
-    case "deploy_cash":
-      avoids.push("Highly leveraged companies with debt-to-equity above 3x");
-      avoids.push("Unprofitable growth names trading at extreme revenue multiples");
-      if (aiScore >= 55) avoids.push("Overextended AI/mega-cap names at all-time highs with stretched valuations");
-      if (creditScore >= 50) avoids.push("High-yield and leveraged loan exposure during credit stress");
-      avoids.push("Small-cap speculative names with limited liquidity");
-      break;
-    case "reduce_risk":
-    case "sell_specific_asset":
-      avoids.push("Panic selling of quality positions with intact fundamentals");
-      avoids.push("Selling into extreme volatility spikes — wait for stabilization");
-      avoids.push("Exiting without confirming the fundamental thesis has changed — not just price action");
-      if (p < 40) avoids.push("Forced exit in low-pressure regime — opportunity cost of early exit is high");
-      break;
-    case "hedge":
-      avoids.push("Over-hedging — more than 100% portfolio coverage creates net short exposure");
-      avoids.push("Buying volatility at extreme highs (VIX > 35) — premium is expensive");
-      avoids.push("Single-stock puts without index hedge — idiosyncratic risk not systemic");
-      break;
-    case "raise_cash":
-      avoids.push("Full de-risking — 100% cash misses potential upside if regime stabilizes");
-      avoids.push("Holding cash in low-yield accounts — use short-term Treasuries or money market");
-      break;
-    case "rotate":
-      avoids.push("Rotating into sectors with deteriorating fundamentals just because they are 'cheap'");
-      avoids.push("Chasing recent sector momentum without regime alignment");
-      if (p >= 60) avoids.push("Sector rotation during crisis-level pressure — correlations converge");
-      break;
-    case "hold":
-      avoids.push("Holding without a downside plan while pressure is rising");
-      avoids.push("Treating an unchanged posture as a forecast rather than a bounded posture");
-      break;
-    default:
-      avoids.push("Acting on short-term noise rather than regime-level signals");
-      avoids.push("Overconcentration in any single sector or theme");
-      break;
-  }
-
-  return avoids.slice(0, 4);
+  return [
+    `Pressure Index is ${p}/100.`,
+    `Credit vector is ${creditScore}/100.`,
+    `AI-concentration vector is ${aiScore}/100.`,
+    `Simulated move label is ${MOVE_LABELS[moveType]}. No exclusion list is published.`,
+  ];
 }
 
 // ── NEW: Decision Verdict ─────────────────────────────────────
@@ -1342,7 +1234,7 @@ function computePositionSizing(
   const guidance = p >= 60
     ? "Elevated systemic pressure warrants reduced position sizing across all tiers. Prioritize capital preservation over return maximization in this regime."
     : p >= 40
-    ? "Mixed regime conditions suggest standard sizing with active downside mark management. Pass over maximum allocation until regime confirms direction."
+    ? `Pressure Index is ${p}/100. Favorability on this card is ${favorability}/100. No size is published.`
     : "Low pressure environment supports standard to aggressive sizing for high-conviction setups. Maintain diversification across positions.";
 
   return {
@@ -2121,27 +2013,11 @@ function computePortfolioActions(pressure: FaultlinePressureOutput, favorability
   const p = pressure.overallPressure;
   const creditScore = getVectorScore(pressure.vectors, "credit-contagion");
   const volatilityScore = getVectorScore(pressure.vectors, "volatility-regime");
-  const actions: PortfolioActionRecommendation[] = [];
-
-  if (p >= 65) {
-    actions.push({ action: "Raise Cash: +10–15%", rationale: `FAULTLINE Pressure at ${p}/100 — the reading is in a higher-stress band`, urgency: "high" });
-    actions.push({ action: "Add Hedges: +5%", rationale: "Elevated systemic pressure warrants tail-risk protection", urgency: "high" });
-    actions.push({ action: "Reduce Speculative Exposure", rationale: "High-beta and speculative names underperform in elevated-pressure regimes", urgency: "medium" });
-  } else if (p >= 45) {
-    actions.push({ action: "Maintain Core Holdings", rationale: "Mixed regime — keep quality positions, pass over adding new speculative risk", urgency: "low" });
-    actions.push({ action: "Smaller extended positions", rationale: "Moderate pressure is a higher-stress reading for names that have run significantly", urgency: "medium" });
-    if (volatilityScore >= 50) actions.push({ action: "Reduce Position Sizes by 20%", rationale: "Elevated volatility increases execution risk — smaller size reduces P&L swings", urgency: "medium" });
-  } else {
-    actions.push({ action: "Increase Risk: +10–15%", rationale: `Low pressure regime (${p}/100) supports adding risk to high-conviction setups`, urgency: "low" });
-    actions.push({ action: "Maintain Existing Hedges", rationale: "Keep baseline protection even in favorable regimes — conditions can shift quickly", urgency: "low" });
-    if (favorability >= 70) actions.push({ action: "Scale Into Momentum Names", rationale: "High favorability score supports adding to trending positions with defined downside marks", urgency: "low" });
-  }
-
-  if (creditScore >= 60) {
-    actions.push({ action: "Pass over Credit-Sensitive Names", rationale: "Credit spreads widening — leveraged and low-quality names face refinancing risk", urgency: "high" });
-  }
-
-  return actions;
+  return [{
+    action: `Pressure Index is ${p}/100`,
+    rationale: `Credit vector is ${creditScore}/100. Volatility vector is ${volatilityScore}/100. Favorability is ${favorability}/100. Simulated move label is ${MOVE_LABELS[moveType]}. No position change is published.`,
+    urgency: p >= 65 ? "high" : p >= 45 ? "medium" : "low",
+  }];
 }
 
 function computeWhatFaultlineWouldDo(pressure: FaultlinePressureOutput, favorability: number, moveType: MoveType): WhatFaultlineWouldDo {
@@ -2149,46 +2025,15 @@ function computeWhatFaultlineWouldDo(pressure: FaultlinePressureOutput, favorabi
   const creditScore = getVectorScore(pressure.vectors, "credit-contagion");
   const liquidityScore = getVectorScore(pressure.vectors, "liquidity-stress");
   const breadthScore = getVectorScore(pressure.vectors, "market-breadth");
-
-  let headline: string;
-  let actions: string[];
-  let rationale: string;
-
-  if (p >= 70) {
-    headline = "Raise cash and wait for the pressure reading to stabilize";
-    actions = [
-      "Raise 15–20% cash",
-      "Add tail-risk hedges",
-      "Smaller recorded size for extended momentum names",
-      "Pass over new speculative additions",
-      "Maintain core quality holdings",
-      "Monitor credit spreads for stabilization signal",
-    ];
-    rationale = `FAULTLINE Pressure at ${p}/100 in a ${pressure.regime} regime. Credit stress is ${levelLabel(creditScore).toLowerCase()} and liquidity conditions are ${levelLabel(liquidityScore).toLowerCase()}. The reading is a higher-stress band. Capital preservation is the recorded context until pressure shows a sustained decline below 55/100.`;
-  } else if (p >= 50) {
-    headline = "Stay selective — add only to high-conviction setups with defined risk";
-    actions = [
-      "Keep existing quality positions",
-      "Smaller recorded size for names with weakening momentum",
-      "Add selectively to highest-conviction setups only",
-      "Keep position sizes 20–30% smaller than normal",
-      "Maintain existing hedges",
-      `Watch for pressure to drop below 45/100 before adding risk`,
-    ];
-    rationale = `FAULTLINE Pressure at ${p}/100 — mixed regime with ${levelLabel(breadthScore).toLowerCase()} breadth. Selective exposure is warranted. Pass over chasing extended names. Focus on setups with clear invalidation levels and favorable risk/reward.`;
-  } else {
-    headline = "Lean into the regime — add risk to high-conviction setups";
-    actions = [
-      "Add to TAO, PLTR, NVDA on dips",
-      "Increase crypto allocation toward BTC and ETH",
-      "Rotate toward Industrials and Financials",
-      "Scale into momentum names with defined downside marks",
-      "Maintain 5–10% cash for opportunistic additions",
-      "Pass over defensive/low-beta names in this regime",
-    ];
-    rationale = `FAULTLINE Pressure at ${p}/100 — ${pressure.regime} regime with ${levelLabel(liquidityScore).toLowerCase()} liquidity and ${levelLabel(creditScore).toLowerCase()} credit stress. Conditions support adding risk. Focus on assets with strong momentum and macro alignment.`;
-  }
-
+  const headline = `Pressure Index is ${p}/100. Regime label is ${pressure.regime}.`;
+  const actions = [
+    `Credit vector is ${creditScore}/100.`,
+    `Liquidity vector is ${liquidityScore}/100.`,
+    `Breadth vector is ${breadthScore}/100.`,
+    `Favorability on this card is ${favorability}/100.`,
+    `Simulated move label is ${MOVE_LABELS[moveType]}.`,
+  ];
+  const rationale = `Pressure Index is ${p}/100. Regime label is ${pressure.regime}. Credit vector is ${creditScore}/100. Liquidity vector is ${liquidityScore}/100. Breadth vector is ${breadthScore}/100. No position change is published.`;
   return { actions, headline, rationale, regime: pressure.regime, pressureIndex: p };
 }
 
@@ -2544,7 +2389,7 @@ function computePortfolioImpact(
     case "reduce_risk": {
       const reduceAmt = p >= 65 ? 15 : p >= 45 ? 10 : 5;
       const category = input.exposureCategory ? (EXPOSURE_LABELS[input.exposureCategory] ?? "Risk Assets") : "Risk Assets";
-      lines.push({ category: "Cash", currentAllocation: baselines["Cash"], targetAllocation: baselines["Cash"] + reduceAmt, change: reduceAmt, rationale: "Raise cash as buffer against pressure" });
+      lines.push({ category: "Cash", currentAllocation: baselines["Cash"], targetAllocation: baselines["Cash"] + reduceAmt, change: reduceAmt, rationale: `Cash weight in this simulation changes by ${reduceAmt} percentage points. Pressure Index is ${p}/100.` });
       lines.push({ category, currentAllocation: 20, targetAllocation: Math.max(5, 20 - reduceAmt), change: -reduceAmt, rationale: `Reduce ${category} exposure — pressure at ${p}/100` });
       headline = `Reduce ${category} by ${reduceAmt}%`;
       netRiskChange = "Decreased";
@@ -2553,12 +2398,12 @@ function computePortfolioImpact(
     }
     case "raise_cash": {
       const raiseAmt = p >= 65 ? 15 : p >= 45 ? 10 : 7;
-      lines.push({ category: "Cash", currentAllocation: baselines["Cash"], targetAllocation: baselines["Cash"] + raiseAmt, change: raiseAmt, rationale: "Raise cash buffer" });
+      lines.push({ category: "Cash", currentAllocation: baselines["Cash"], targetAllocation: baselines["Cash"] + raiseAmt, change: raiseAmt, rationale: `Cash weight in this simulation changes by ${raiseAmt} percentage points.` });
       lines.push({ category: "US Large Cap Stocks", currentAllocation: baselines["US Large Cap Stocks"], targetAllocation: baselines["US Large Cap Stocks"] - Math.round(raiseAmt * 0.6), change: -Math.round(raiseAmt * 0.6), rationale: "Primary source of cash" });
       lines.push({ category: "Technology", currentAllocation: baselines["Technology"], targetAllocation: baselines["Technology"] - Math.round(raiseAmt * 0.4), change: -Math.round(raiseAmt * 0.4), rationale: "Smaller recorded size for extended tech positions" });
-      headline = `Raise cash to ${baselines["Cash"] + raiseAmt}%`;
+      headline = `Simulated cash weight is ${baselines["Cash"] + raiseAmt}%.`;
       netRiskChange = "Decreased";
-      summary = `Raise cash from ${baselines["Cash"]}% to ${baselines["Cash"] + raiseAmt}% from a smaller large-cap and tech size. ${input.raiseCashReason === "risk_reduction" ? "The reading is a higher-stress band." : "The reading supports a later reallocation."}`;
+      summary = `This simulation moves cash weight from ${baselines["Cash"]}% to ${baselines["Cash"] + raiseAmt}%. Pressure Index is ${p}/100.`;
       break;
     }
     case "deploy_cash": {
@@ -2615,7 +2460,7 @@ function computePortfolioImpact(
       summary = `Reduce ${ticker} by ${sellAmt}% and keep proceeds as cash. ${input.exitType === "profit_taking" ? "Profit-taking exit — consider redeploying on next dip." : "Risk reduction — monitor for a later fill signal."}`;
       break;
     }
-    case "hold": {
+    case PREFLIGHT_KEEP: {
       const ticker = input.ticker ?? "Position";
       lines.push({ category: "Current Portfolio", currentAllocation: 100, targetAllocation: 100, change: 0, rationale: "No allocation changes — keep the current positions" });
       headline = `Keep ${ticker} — no changes`;

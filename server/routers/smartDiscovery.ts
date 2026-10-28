@@ -1265,7 +1265,7 @@ OPPORTUNITY SCAN STRUCTURE (ALL SECTIONS REQUIRED)
 
 3. RANK ONLY THE SCAN — Top names stay inside the supplied universe. A WATCH is allowed. If the scan is empty, return no opportunities and no substitute list.
 
-4. PORTFOLIO POSITIONING RECOMMENDATION — End every scan with one of: "Remain fully invested" / "Raise recorded allocation gradually" / "Wait for confirmation" / "Favor quality over speculation" / "Increase defensive allocations" / "Raise cash" / "Reduce leverage" / "Rotate into defensive sectors"
+4. CLOSING READING — End every scan with the Pressure Index, the regime label, and the as-of time. Do not tell the reader to change a position.
 
 WRITING STYLE:
 - Lead with the highest-conviction ideas. Rank by institutional merit, not popularity.
@@ -1301,7 +1301,7 @@ User question: "${query}"
 Universe scan results (sorted by composite score):
 ${universeContext || "No universe scan data available. Return an empty topOpportunities array. Do not substitute well-known tickers or scores."}
 
-Pass over candidates:
+Names the scan did not rank:
 ${avoidContext || "None identified."}
 
 Return only tickers from the universe scan. If that scan is empty, topOpportunities is []. Do not add names to reach a minimum count.

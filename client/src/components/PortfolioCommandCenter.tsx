@@ -157,7 +157,7 @@ function RebalancingSuggestions({ positions, totalValue }: CommandCenterProps) {
       if (pct > 30) {
         result.push({ ticker: p.ticker, action: "REDUCE", reason: `${pct.toFixed(0)}% of portfolio — oversized position`, pct, pnlPct });
       } else if (pct > 20) {
-        result.push({ ticker: p.ticker, action: "TRIM", reason: `${pct.toFixed(0)}% allocation — consider trimming to 15-20%`, pct, pnlPct });
+        result.push({ ticker: p.ticker, action: "WEIGHT", reason: `Measured weight is ${pct.toFixed(0)}% of portfolio value. The comparison threshold on this card is 20%.`, pct, pnlPct });
       }
       // Large loss
       else if (pnlPct != null && pnlPct < -20) {
@@ -165,7 +165,7 @@ function RebalancingSuggestions({ positions, totalValue }: CommandCenterProps) {
       }
       // Large gain — consider taking profits
       else if (pnlPct != null && pnlPct > 50 && pct > 10) {
-        result.push({ ticker: p.ticker, action: "TRIM", reason: `+${pnlPct.toFixed(1)}% gain with ${pct.toFixed(0)}% weight — consider partial profit-taking`, pct, pnlPct });
+        result.push({ ticker: p.ticker, action: "WEIGHT", reason: `Unrealized change is ${pnlPct.toFixed(1)}% and weight is ${pct.toFixed(0)}%. Both use stored cost and the latest price.`, pct, pnlPct });
       }
     });
 

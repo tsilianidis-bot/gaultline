@@ -172,7 +172,7 @@ function buildKeyInsights(
   if (ss === "bullish" && cs === "bullish") {
     insights.push("Forward bias: Larger share risk assets. Favour growth equities and quality crypto. Use momentum as your guide.");
   } else if (ss === "extreme-bear" || cs === "extreme-bear") {
-    insights.push("Forward bias: Defensive. Raise cash, reduce equity beta, and favour stablecoins over crypto alts.");
+    insights.push(`Forward reading: stock sentiment is ${ss}. Crypto sentiment is ${cs}. Pressure and regime labels are on this card. No position change is published.`);
   }
 
   return insights.slice(0, 5);
@@ -182,7 +182,7 @@ function buildForwardBias(ss: RegimeSentiment, cs: RegimeSentiment): string {
   if (ss === "bullish" && cs === "bullish") return "Higher-risk appetite. Larger share equities and quality crypto. Momentum-driven positioning.";
   if (ss === "bullish" && cs === "neutral") return "Moderately higher-risk appetite. Favour equities over crypto. Wait for crypto confirmation.";
   if (ss === "neutral" && cs === "bullish") return "Selective higher-risk appetite. Crypto outperforming \u2014 watch for equity confirmation before adding broad risk.";
-  if (ss === "neutral" && cs === "neutral") return "Neutral. Keep core positions. Pass over chasing breakouts. Wait for directional confirmation.";
+  if (ss === "neutral" && cs === "neutral") return "Stock sentiment is neutral. Crypto sentiment is neutral. No direction is established beyond those labels.";
   if (ss === "bearish" || cs === "bearish") return "Defensive. Reduce high-beta exposure. Favour cash, bonds, and stablecoins.";
   return "Defensive. Capital preservation is the priority. Minimal equity and crypto exposure.";
 }
@@ -195,7 +195,7 @@ function buildWhyItMatters(asset: "Stock" | "Crypto", previous: string, current:
   // Deteriorating transitions
   if (asset === "Stock") {
     if (curr.includes("recession") || curr.includes("crisis")) {
-      return "A shift into a recessionary or crisis regime historically precedes significant equity drawdowns (20–50%+). Capital preservation becomes the primary objective. Reduce equity beta, raise cash, and pass over leveraged positions.";
+      return "The regime label is recessionary or crisis. Historical drawdown ranges are not a forecast on this card. No position change is published.";
     }
     if (curr.includes("correction") || curr.includes("distribution")) {
       return "The equity market is entering a corrective or distribution phase. Institutional selling often accelerates in this regime. Risk-reward for new long positions deteriorates materially.";
@@ -214,7 +214,7 @@ function buildWhyItMatters(asset: "Stock" | "Crypto", previous: string, current:
     return "Bitcoin is forming a potential base inside a bear structure. Long-term holders are accumulating and exchange balances are declining — historically a precursor to the next bull cycle, but confirmation is required before aggressive positioning.";
   }
   if (curr.includes("capitulation")) {
-    return "Crypto is in capitulation — the most painful phase of a bear market. While this often marks a long-term bottom, timing is extremely difficult. Pass over catching falling knives; wait for volume confirmation and stabilising price action.";
+    return "Crypto regime label is capitulation. Volume confirmation is not on this card. No position change is published.";
   }
   if (curr.includes("bull") || curr.includes("early bull")) {
     return "Crypto has transitioned to a bull regime. Historically, early bull phases offer the best risk-adjusted returns. Momentum and on-chain metrics tend to confirm the move. Selective accumulation in quality assets is favoured.";

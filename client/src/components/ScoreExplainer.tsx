@@ -310,7 +310,7 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
       if (v >= 60) return "A favorable setup with multiple supporting factors. The macro and technical environment supports a higher-risk appetite approach with appropriate position sizing.";
       if (v >= 40) return "A moderate setup with mixed signals. Some supporting factors are present but the overall environment is not strongly aligned.";
       if (v >= 20) return "A weak setup. The current environment does not strongly support this opportunity. Smaller sizing or waiting for better conditions is advisable.";
-      return "An unfavorable setup. The macro and technical environment is working against this opportunity. Pass over or wait for conditions to improve.";
+      return "The macro and technical readings on this card are unfavorable versus their recent ranges.";
     },
     measures: "The Opportunity Score evaluates a specific trade or investment setup against the current macro regime, technical conditions, and risk/reward profile. Higher scores indicate better alignment between the opportunity and the current environment.",
     howCalculated: "Combines regime alignment score, technical signal strength, risk/reward ratio, and macro tailwind/headwind assessment into a single 0–100 score.",
@@ -482,7 +482,7 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
     ranges: [
       { label: "Healthy", range: "0–34", description: "Normal market functioning. Liquidity is not a concern." },
       { label: "Moderate Stress", range: "35–54", description: "Some tightening. Monitor for escalation." },
-      { label: "Elevated Stress", range: "55–74", description: "Meaningful tightening. Reduce leverage and illiquid exposures." },
+      { label: "Elevated Stress", range: "55–74", description: "Liquidity and leverage inputs are in the elevated band on this score." },
       { label: "Severe Stress", range: "75–100", description: "Crisis-level liquidity conditions. Capital preservation priority." },
     ],
     watchNext: (_v) => "Watch repo rates, the Fed's balance sheet actions, and financial conditions indices for signs of improvement or further deterioration.",

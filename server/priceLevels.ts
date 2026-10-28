@@ -433,8 +433,8 @@ export function computeCalculatedLevels(
       ? (resistances[1] ?? makeLevel(fmt(currentPrice + shortATR * 2), currentPrice, "3× ATR", "Short-term target 2"))
       : (supports[1] ?? makeLevel(fmt(currentPrice - shortATR * 2), currentPrice, "3× ATR", "Short-term target 2")),
     riskLevel: isBull
-      ? (supports[0] ? makeLevel(fmt(supports[0].price - effectiveAtr * 0.5), currentPrice, "Below Support 1", "Short-term downside-mark below nearest support") : makeLevel(fmt(currentPrice - shortATR), currentPrice, "1.5× ATR Below", "Short-term downside-mark"))
-      : (resistances[0] ? makeLevel(fmt(resistances[0].price + effectiveAtr * 0.5), currentPrice, "Above Resistance 1", "Short-term downside-mark above nearest resistance") : makeLevel(fmt(currentPrice + shortATR), currentPrice, "1.5× ATR Above", "Short-term downside-mark")),
+      ? (supports[0] ? makeLevel(fmt(supports[0].price - effectiveAtr * 0.5), currentPrice, "Below the nearest completed-bar high", "Last close minus half of the short average true range. Method: completed daily bars.") : makeLevel(fmt(currentPrice - shortATR), currentPrice, "1.5× short ATR below the last close", "Last close minus the short average true range. Method: completed daily bars."))
+      : (resistances[0] ? makeLevel(fmt(resistances[0].price + effectiveAtr * 0.5), currentPrice, "Above the nearest completed-bar high", "Last close plus half of the short average true range. Method: completed daily bars.") : makeLevel(fmt(currentPrice + shortATR), currentPrice, "1.5× short ATR above the last close", "Last close plus the short average true range. Method: completed daily bars.")),
   };
 
   // Swing (1–6 weeks): 20-day structure + SMA

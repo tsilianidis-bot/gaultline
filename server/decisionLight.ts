@@ -111,7 +111,7 @@ function defaultExplanation(light: DecisionLight, family: ReturnType<typeof clas
   if (light === "YELLOW") {
     return `Opportunity in ${action} exists alongside pressure, fragility, or conflict. Tighten controls.`;
   }
-  return `Material conflict between ${action} and the canonical state, risk, or invalidation set. Pass over the move.`;
+  return `Material conflict between the recorded move and the canonical state, risk, or invalidation set. Pressure and regime on this card are the latest canonical reading.`;
 }
 
 export function evaluateDecisionLight(input: DecisionLightEvidence): DecisionLightOutput {

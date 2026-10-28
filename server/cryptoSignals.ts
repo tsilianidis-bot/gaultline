@@ -17,6 +17,7 @@
 // All computation is deterministic and runs server-side.
 // ============================================================
 
+import { tradeClass } from "../shared/surfaceClaims";
 import { LRUCache } from "./lruCache";
 import {
   computeEMA,
@@ -246,14 +247,14 @@ function computeCryptoPriceLevels(
   const rrFromTradeStop = tradeRisk > 0 ? parseFloat((Math.abs(targetPrice - entryZone) / tradeRisk).toFixed(1)) : 0;
 
   const riskLevels: import('./tradingSignals').RiskLevels = {
-    tradeStop: { price: tradeStopPrice, pctFromEntry: tradeStopPct, label: "Trade Downside mark" },
-    swingStop: { price: swingStopPrice, pctFromEntry: swingStopPct, label: "Swing Downside mark" },
+    tradeStop: { price: tradeStopPrice, pctFromEntry: tradeStopPct, label: "Short ATR offset from the last price. Method: completed bars." },
+    swingStop: { price: swingStopPrice, pctFromEntry: swingStopPct, label: "Longer ATR offset from the last price. Method: completed bars." },
     thesisFailure: { price: thesisPrice, pctFromEntry: thesisPct, label: "Thesis Failure" },
     riskReward: rrFromTradeStop,
-    tradeStopExplanation: `Trade Downside mark at ${Math.abs(tradeStopPct).toFixed(1)}% below opening, just under recent intraday support. Protects against normal crypto volatility for active traders.`,
+    tradeStopExplanation: `Short ATR offset is ${Math.abs(tradeStopPct).toFixed(1)}% from the last price. Method: completed bars. This is not a trade instruction.`,
     swingStopExplanation: ohlcBars && ohlcBars.length >= 20
-      ? `Swing Downside mark anchored to the 20-day moving average (${Math.abs(swingStopPct).toFixed(1)}% below opening). A close below signals the short-term trend is broken.`
-      : `Swing Downside mark at ${Math.abs(swingStopPct).toFixed(1)}% below opening allows for trend fluctuations while protecting against a sustained breakdown.`,
+      ? `Longer offset is the 20-day average, ${Math.abs(swingStopPct).toFixed(1)}% from the last price. Method: completed bars.`
+      : `Longer offset is ${Math.abs(swingStopPct).toFixed(1)}% from the last price. Method: completed bars.`,
     thesisFailureExplanation: ohlcBars && ohlcBars.length >= 50
       ? `Thesis Failure marks the 50-session structural low (${Math.abs(thesisPct).toFixed(1)}% below opening). A breach here means the bullish thesis has fundamentally broken down.`
       : `Thesis Failure at ${Math.abs(thesisPct).toFixed(1)}% below opening is the structural invalidation point — where the original trade thesis is no longer valid.`,
@@ -484,17 +485,17 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
   const absScore = Math.abs(score);
 
   if (score >= 4) {
-    action = "BUY";
+    action = tradeClass("up");
     confidence = Math.min(92, 52 + absScore * 5);
     strength = score >= 6 ? "Strong" : "Moderate";
     timeframe = "Short-Term";
   } else if (score <= -4) {
-    action = "SELL";
+    action = tradeClass("down");
     confidence = Math.min(92, 52 + absScore * 5);
     strength = score <= -6 ? "Strong" : "Moderate";
     timeframe = "Short-Term";
   } else if (absScore >= 2) {
-    action = "HOLD";
+    action = tradeClass("flat");
     confidence = Math.min(78, 42 + absScore * 5);
     strength = "Moderate";
     timeframe = "Swing";
@@ -567,7 +568,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
     coinId,
     assetClass: "CRYPTO",
     action,
-    actionLabel: cryptoActionLabel(action),
+    actionLabel: `${rsiNote}. Trend label is ${trend}. Internal score is ${score.toFixed(1)}. Freshness is the signal timestamp. This is not a trade instruction.`,
     cryptoRegime,
     regimeConflict,
     regimeConflictExplanation,

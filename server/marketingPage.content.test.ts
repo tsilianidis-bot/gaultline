@@ -162,7 +162,7 @@ describe("Pentagonal Thesis section", () => {
     // Uncalibrated scenario and HMM probabilities are not marketed as available.
     expect(all).toContain("Numeric scenario probabilities are withheld pending calibration.");
     expect(all).toContain("numeric state and transition probabilities are withheld until calibration is validated");
-    expect(all).toContain("it does not state the odds of a crash.");
+    expect(all).toContain("it does not publish an event percentage.");
     expect(all).not.toMatch(/evidence-backed scenarios|crash probability/i);
     expect(all).toContain("sre-hmm2");
     // ACT options and boundaries.
@@ -293,7 +293,7 @@ describe("Worked example: live where public, illustrative where not", () => {
     expect(illustrative).not.toMatch(/PLATO/);
     expect(html).toContain("marketState.canonicalCurrent");
     expect(html).toContain("systemicRegime.current");
-    expect(html).toContain("Neither is the chance of a crash.");
+    expect(html).toContain("No event percentage is published.");
     expect(html).toContain("NOT INVESTMENT ADVICE");
   });
 });

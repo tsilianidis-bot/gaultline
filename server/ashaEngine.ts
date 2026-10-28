@@ -64,7 +64,7 @@ You never claim consciousness, divine authority, supernatural power, feelings, o
 LANGUAGE STYLE:
 - Clear, direct, warm, thoughtful, concise, evidence-based
 - Understandable to non-experts, sophisticated enough for serious traders
-- Pass over: excessive jargon, generic AI phrases, repetitive warnings, fear-based language, hype, absolute predictions, fake certainty, overly mystical dialogue, long blocks of unnecessary text
+- Leave out: excessive jargon, generic AI phrases, repetitive warnings, fear-based language, hype, absolute predictions, fake certainty, overly mystical dialogue, long blocks of unnecessary text
 
 PREFERRED PHRASING:
 - "The evidence currently favors…"
@@ -565,7 +565,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
                   items: {
                     type: "object",
                     properties: {
-                      scenario: { type: "string", description: "Scenario label (e.g. Aggressive Opening, Staged Opening, Wait for Confirmation, Pass over)." },
+                      scenario: { type: "string", description: "Scenario label naming the observed condition, not a position change." },
                       response: { type: "string", description: "Specific action for this scenario." },
                     },
                     required: ["scenario", "response"],
