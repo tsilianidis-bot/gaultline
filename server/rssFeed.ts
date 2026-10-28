@@ -7,6 +7,7 @@
  * The feed is generated on-the-fly from the database (no caching needed at this scale).
  */
 
+import { neutralizeChannelText } from "../shared/clientVocabulary";
 import type { Request, Response } from "express";
 import { desc, eq, and, sql } from "drizzle-orm";
 import { getDb } from "./db";
@@ -63,11 +64,17 @@ export type RssFeedItem = {
 };
 
 export function renderRssFeed(items: RssFeedItem[]): string {
-  const lastBuildDate = items.length > 0
-    ? formatRfc822(items[0].publishedAt ?? items[0].createdAt)
+  const safeItems = items.map(item => ({
+    ...item,
+    title: neutralizeChannelText(item.title),
+    metaDescription: item.metaDescription ? neutralizeChannelText(item.metaDescription) : item.metaDescription,
+    content: item.content ? neutralizeChannelText(item.content) : item.content,
+  }));
+  const lastBuildDate = safeItems.length > 0
+    ? formatRfc822(safeItems[0].publishedAt ?? safeItems[0].createdAt)
     : formatRfc822(new Date());
 
-  const rssItems = items.map(item => {
+  const rssItems = safeItems.map(item => {
     const url = `${SITE_URL}/intelligence/${item.slug}`;
     const category = contentTypeToCategory(item.contentType);
     const description = item.metaDescription

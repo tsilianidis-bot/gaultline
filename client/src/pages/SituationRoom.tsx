@@ -340,7 +340,7 @@ const VERDICT_CONFIG: Record<VerdictType, { label: string; color: string; glow: 
 
 function verdictVisual(verdict: string) {
   const key = verdict.trim().toUpperCase().replace(/[\s-]+/g, "_");
-  if (key === "WAIT") return VERDICT_CONFIG.WAIT;
+  if (key === "WAIT" || verdict.trim() === "Mixed condition") return VERDICT_CONFIG.WAIT;
   if (key === "HIGH_CONVICTION" || key === "APPROVED" || key === "CAUTION" || key === "DEFENSIVE") return VERDICT_CONFIG[key];
   return VERDICT_CONFIG.CAUTION;
 }

@@ -12,6 +12,7 @@
 
 import { z } from "zod";
 import { desc, eq } from "drizzle-orm";
+import { neutralizeChannelPayload } from "../../shared/clientVocabulary";
 import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { dailyBriefSnapshots, userPreferences } from "../../drizzle/schema";
@@ -431,7 +432,7 @@ Write the 3-sentence CIO institutional insight for today's brief.`,
         };
       });
 
-      return {
+      return neutralizeChannelPayload({
         // Section 1: Today's Market
         todaysMarket: {
           regime:             engineSnapshot.regime,
@@ -465,7 +466,7 @@ Write the 3-sentence CIO institutional insight for today's brief.`,
           lastUpdated:        new Date().toISOString(),
         },
         generatedAt: Date.now(),
-      };
+      });
     }),
 
   // ── Startup page preference ────────────────────────────────────────────────

@@ -956,18 +956,28 @@ export async function getAllFeatureFlags() {
 }
 
 /**
+ * Visibility flags fail closed. A missing database, a missing row, or a read
+ * error hides `sim_portfolio_visible`. Other flags keep the previous default
+ * so a missing `pressure_engine` row does not take the index offline.
+ */
+const FAIL_CLOSED_FLAGS = new Set(["sim_portfolio_visible"]);
+
+export function resolveFeatureFlag(key: string, row: { enabled: number } | null | undefined, dbAvailable: boolean): boolean {
+  if (!dbAvailable || !row) return !FAIL_CLOSED_FLAGS.has(key);
+  return row.enabled === 1;
+}
+
+/**
  * Get a single feature flag by key.
- * Returns true (enabled) as the safe default if DB is unavailable or key not found.
  */
 export async function getFeatureFlag(key: string): Promise<boolean> {
   try {
     const db = await getDb();
-    if (!db) return true; // safe default: features enabled when DB is down
+    if (!db) return resolveFeatureFlag(key, null, false);
     const rows = await db.select().from(featureFlags).where(eq(featureFlags.key, key)).limit(1);
-    if (rows.length === 0) return true; // unknown flags default to enabled
-    return rows[0]!.enabled === 1;
+    return resolveFeatureFlag(key, rows[0], true);
   } catch {
-    return true; // safe default on error
+    return resolveFeatureFlag(key, null, false);
   }
 }
 

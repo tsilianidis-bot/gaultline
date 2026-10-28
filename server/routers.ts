@@ -16,6 +16,7 @@ import { computeHistoricalContext } from "./historicalContextEngine";
 import { computeHomepageBriefing } from "./homepageBriefing";
 import { computeTradingSignals, computeTradingSignal, clearSignalCache, presentTradingSignal, presentTradingSignals } from "./tradingSignals";
 import { tradeClass } from "../shared/surfaceClaims";
+import { guardNamedClientFields, neutralConditionLabel, neutralizeChannelPayload, neutralizeChannelText } from "@shared/clientVocabulary";
 import { getSignalVisualDetailPayload } from "./signalVisualDetail";
 import { getDiagnosticReport, clearDiagnosticCache } from "./diagnosticAI";
 import { getPositionGuidance, clearGuidanceCache, getGuidanceForTicker } from "./positionGuidance";
@@ -54,7 +55,7 @@ import {
   getTodaySnapshot, hasTodaySnapshot, getSnapshotRange, getLatestSnapshot,
   upsertTodaySnapshot, getTimeframeReading, computeOutcomeSupport, getReadingHistorySummary,
 } from "./readingHistory";
-import { protectedProcedure, coreProcedure, ownerOrAdminProcedure } from "./_core/trpc";
+import { protectedProcedure, coreProcedure, adminProcedure, ownerOrAdminProcedure } from "./_core/trpc";
 import { withholdNonFiniteNumbers } from "./displayNumbers";
 import { generateXPosts } from './xPostGenerator';
 import { sendEmail, buildApprovalEmail, buildFoundingRequestNotification } from './email';
@@ -1196,7 +1197,7 @@ export const appRouter = router({
       }))
       .query(async ({ ctx, input }) => {
         if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
-        return getXPostQueue(input);
+        return neutralizeChannelPayload(await getXPostQueue(input));
       }),
     stats: protectedProcedure
       .query(async ({ ctx }) => {
@@ -1265,7 +1266,7 @@ export const appRouter = router({
             pressure,
             headline: input.headline,
           });
-          return { variants, pressure: { overallPressure: pressure.overallPressure, regime: pressure.regime, level: pressure.level } };
+          return { variants: neutralizeChannelPayload(variants), pressure: { overallPressure: pressure.overallPressure, regime: pressure.regime, level: pressure.level } };
         } catch (err) {
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to generate X posts', cause: err });
         }
@@ -1940,7 +1941,7 @@ export const appRouter = router({
           const stocksCash = parseFloat(stocksAccount?.cashBalance ?? "10000");
           const cryptoCash = parseFloat(cryptoAccount?.cashBalance ?? "10000");
           const valuation = await valuateSimPortfolio(openPositions, stocksCash, cryptoCash);
-          return { visible: true as const, isAdminOrOwner, accounts, valuation, startDate: stocksAccount?.createdAt ?? null, startingCapital: 20000 };
+          return guardNamedClientFields({ visible: true as const, isAdminOrOwner, accounts, valuation, startDate: stocksAccount?.createdAt ?? null, startingCapital: 20000 });
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Sim portfolio overview failed", cause: err });
         }
@@ -1950,7 +1951,12 @@ export const appRouter = router({
         const featureEnabled = await getFeatureFlag("sim_portfolio_visible");
         const isAdminOrOwner = ctx.user?.role === "admin" || ctx.user?.openId === ENV.ownerOpenId;
         if (!featureEnabled && !isAdminOrOwner) return [];
-        return getSimOpenPositions();
+        const positions = await getSimOpenPositions();
+        return positions.map(position => guardNamedClientFields({
+          ...position,
+          entrySignal: position.entrySignal ? neutralConditionLabel(position.entrySignal) : position.entrySignal,
+          exitSignal: position.exitSignal ? neutralConditionLabel(position.exitSignal) : position.exitSignal,
+        }));
       }),
     getTrades: publicProcedure
       .input(z.object({ limit: z.number().min(1).max(200).default(100) }).optional())
@@ -1958,7 +1964,12 @@ export const appRouter = router({
         const featureEnabled = await getFeatureFlag("sim_portfolio_visible");
         const isAdminOrOwner = ctx.user?.role === "admin" || ctx.user?.openId === ENV.ownerOpenId;
         if (!featureEnabled && !isAdminOrOwner) return [];
-        return getSimTrades(undefined, input?.limit ?? 100);
+        const trades = await getSimTrades(undefined, input?.limit ?? 100);
+        return trades.map(trade => guardNamedClientFields({
+          ...trade,
+          action: neutralConditionLabel(trade.action),
+          rationale: trade.rationale ? neutralizeChannelText(trade.rationale) : trade.rationale,
+        }));
       }),
     getJournal: publicProcedure
       .input(z.object({ limit: z.number().min(1).max(60).default(30) }).optional())
@@ -1966,9 +1977,13 @@ export const appRouter = router({
         const featureEnabled = await getFeatureFlag("sim_portfolio_visible");
         const isAdminOrOwner = ctx.user?.role === "admin" || ctx.user?.openId === ENV.ownerOpenId;
         if (!featureEnabled && !isAdminOrOwner) return [];
-        return getSimJournalEntries(input?.limit ?? 30);
+        const entries = await getSimJournalEntries(input?.limit ?? 30);
+        return entries.map(entry => ({
+          ...entry,
+          journalEntry: neutralizeChannelText(entry.journalEntry),
+        }));
       }),
-    runDailyUpdate: protectedProcedure
+    runDailyUpdate: adminProcedure
       .mutation(async () => {
         try {
           const { pressure, stockDecisions, cryptoDecisions } = await runDailyEvaluation();

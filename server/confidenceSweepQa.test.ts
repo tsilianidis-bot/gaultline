@@ -39,8 +39,8 @@ const notEst = (src: string) => (src.match(/data-(?:confidence|probability)-stat
 describe("SEO signal pages: LLM confidenceScore withheld", () => {
   it("public router nulls confidenceScore (getSignalPage + listSignalPages)", () => {
     const src = code("server/routers/organicContent.ts");
-    expect(src).toContain("return page ? { ...page, confidenceScore: null } : null;");
-    expect(src).toContain("return rows.map(row => ({ ...row, confidenceScore: null }));");
+    expect(src).toContain("return page ? neutralizeChannelPayload({ ...page, confidenceScore: null }) : null;");
+    expect(src).toContain("return neutralizeChannelPayload(rows.map(row => ({ ...row, confidenceScore: null })));");
     expect(src).not.toMatch(/return page \?\? null;/);
   });
   for (const f of ["client/src/pages/seo/DynamicStockPage.tsx", "client/src/pages/seo/DynamicCryptoPage.tsx"]) {

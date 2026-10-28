@@ -11,7 +11,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { runFMOSPipelineFast } from "../fmos/pipeline";
-import { internalDirectionFromText, neutralConditionLabel } from "../../shared/clientVocabulary";
+import { internalDirectionFromText, LOWER_SIDE_CONDITION, MIXED_CONDITION, neutralConditionLabel, UNSET_CONDITION, UPPER_SIDE_CONDITION, type ConditionLabel } from "../../shared/clientVocabulary";
 import { getQuickOutlook } from "../signalOutlook";
 import { invokeLLM } from "../_core/llm";
 import { resolveIntent, detectQuestionIntent, QuestionIntent } from "../intentResolver";
@@ -108,7 +108,7 @@ export interface FaultlineAnswer {
   upsideInvalidation: string | null;     // What would prevent the upside
 
   // Buy/Sell/Wait verdict (questionIntent === "buy_verdict" | "sell_verdict" | "wait_verdict")
-  actionVerdict: "BUY NOW" | "ACCUMULATE" | "WAIT" | "SELL" | "REDUCE" | "HOLD" | null;
+  actionVerdict: ConditionLabel | null;
   actionVerdictReason: string | null;    // One sentence: why this verdict
   actionVerdictConditions: string[];     // Conditions that would change the verdict
 
@@ -191,7 +191,7 @@ export interface FaultlineAnswer {
 
   // ── FINAL VERDICT — mandatory closing section ─────────────────────────────
   // The definitive institutional verdict that closes every response.
-  finalVerdictAction: "BUY" | "ACCUMULATE" | "HOLD" | "WATCH" | "REDUCE" | "SELL" | "AVOID";
+  finalVerdictAction: ConditionLabel;
   finalVerdictConfidence: number | null;
   finalVerdictRiskLevel: "LOW" | "MODERATE" | "HIGH" | "EXTREME";
   finalVerdictTimeHorizon: string;   // e.g. "1–3 days", "1–3 weeks", "1–3 months"
@@ -770,7 +770,7 @@ JSON schema:
   "upsideMostLikely": string | null,
   "upsideCatalysts": string[],
   "upsideInvalidation": string | null,
-  "actionVerdict": "BUY NOW" | "ACCUMULATE" | "WAIT" | "SELL" | "REDUCE" | "HOLD" | null,
+  "actionVerdict": "${UPPER_SIDE_CONDITION}" | "${LOWER_SIDE_CONDITION}" | "${MIXED_CONDITION}" | "${UNSET_CONDITION}" | null,
   "actionVerdictReason": string | null,
   "actionVerdictConditions": string[],
   "entryZoneIdeal": string | null,
@@ -794,7 +794,7 @@ JSON schema:
   "followUpChips": string[] (3-5 contextual follow-up questions SPECIFIC to the asset/topic asked about),
 
   // NEW REQUIRED FIELDS — FINAL VERDICT + INSTITUTIONAL INTELLIGENCE
-  "finalVerdictAction": "BUY" | "ACCUMULATE" | "HOLD" | "WATCH" | "REDUCE" | "SELL" | "AVOID",
+  "finalVerdictAction": "${UPPER_SIDE_CONDITION}" | "${LOWER_SIDE_CONDITION}" | "${MIXED_CONDITION}" | "${UNSET_CONDITION}",
   "finalVerdictConfidence": null,
   "finalVerdictRiskLevel": "LOW" | "MODERATE" | "HIGH" | "EXTREME",
   "finalVerdictTimeHorizon": string (e.g. "1-3 days", "1-3 weeks", "1-3 months"),
@@ -1153,7 +1153,7 @@ export interface RankedOpportunityItem {
   name: string;
   sector: string;
   assetType: "stock" | "crypto";
-  action: "BUY" | "ACCUMULATE" | "WATCH" | "HOLD" | "AVOID";
+  action: ConditionLabel;
   convictionScore: number;        // scanner composite, 0–100
   confidencePercent: number | null;
   timeHorizon: string;            // e.g. "1–3 weeks"
@@ -1323,7 +1323,7 @@ Respond with a JSON object matching this exact schema:
     "name": string,
     "sector": string,
     "assetType": "stock" | "crypto",
-    "action": "BUY" | "ACCUMULATE" | "WATCH" | "HOLD" | "AVOID",
+    "action": "${UPPER_SIDE_CONDITION}" | "${LOWER_SIDE_CONDITION}" | "${MIXED_CONDITION}" | "${UNSET_CONDITION}",
     "convictionScore": number (copy the universe scan Score for this ticker; do not invent a different number),
     "confidencePercent": null,
     "timeHorizon": string (e.g. "1-3 weeks"),

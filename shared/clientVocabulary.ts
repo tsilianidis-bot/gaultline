@@ -3,11 +3,10 @@
  *
  * The denylist is the only place these trade-class tokens are listed as data.
  * Source engines neutralize their own named trade-class fields. The tRPC
- * boundary is a field-name guard only: it never rewrites a value, and it
- * never copies a payload that has nothing to drop. Tickers, notes, titles,
- * ids, side, status, moveType, timeframe, direction, and verdict stay as
- * they are. `internalDirection` (`positive` | `negative` | `mixed` |
- * `unestablished`) is the scoring field.
+ * boundary is a field-name guard. An exact denied token on a named trade
+ * field becomes the condition label. `class` and `finalVerdictAction` are
+ * removed. Tickers, ids, slugs, and URLs are never rewritten. A clean payload
+ * is the same reference. `internalDirection` is the scoring field.
  *
  * Open owner decision: the ASHA words ACQUIRE, ADD GRADUALLY, KEEP, REDUCE,
  * and PASS OVER do not have an approved customer vocabulary. `neutralConditionLabel`
@@ -15,8 +14,7 @@
  * display label for them.
  *
  * Open owner decision: adminProcedure, ownerOrAdminProcedure, and the
- * ownerSim / simPortfolio paths are not guarded. Whether those screens should
- * show a stored token is undecided.
+ * admin-gated ownerSim path are not guarded. Public simulation reads are.
  */
 
 export const UPPER_SIDE_CONDITION = "Upper-side condition";
@@ -131,27 +129,53 @@ export function conditionColor(value: string | null | undefined): string {
   }
 }
 
-/** Depth cap so a hostile or cyclic payload cannot walk forever. */
+/** Depth cap so a hostile or cyclic payload cannot walk forever. Past this depth the named fields are still neutralized. */
 export const CLIENT_PAYLOAD_MAX_DEPTH = 12;
+/** Hard stop. Remaining nested objects are dropped so a named token cannot ride past the cap. */
+export const CLIENT_PAYLOAD_MAX_NODES = 8000;
 
 /**
- * Named trade-class fields only. Comparison is trim + lowercase + no spaces,
- * underscores, or hyphens, so " Action ", "ACTION", "final_verdict_action",
- * and "Final Verdict Action" are the same field. direction, verdict, symbol,
- * notes, title, id, side, status, moveType, and timeframe are not in this set.
+ * Exact-token fields. Comparison is trim + lowercase + no spaces, underscores,
+ * or hyphens. Ticker, id, slug, and URL fields are not in this set.
  */
-const GUARDED_FIELDS = new Set([
+const LABEL_FIELDS = new Set([
   "action",
   "actionbias",
-  "actionclass",
   "actiontype",
-  "class",
-  "finalverdictaction",
+  "direction",
+  "entrysignal",
+  "exitsignal",
   "proposedaction",
+  "recommendation",
   "recommendationaction",
+  "signal",
+  "signaldirection",
   "signalaction",
   "tradeaction",
+  "verdict",
   "verdictaction",
+]);
+
+/** Exact tokens on these names are removed. Relabeling them would merge distinct classes or decide the ASHA vocabulary. */
+const DROP_FIELDS = new Set([
+  "actionclass",
+  "class",
+  "finalverdictaction",
+]);
+
+const VALUE_PRESERVE_FIELDS = new Set([
+  "email",
+  "guid",
+  "href",
+  "id",
+  "link",
+  "name",
+  "openid",
+  "slug",
+  "symbol",
+  "ticker",
+  "url",
+  "xpostid",
 ]);
 
 export function normalizeClientFieldName(key: string): string {
@@ -171,24 +195,58 @@ function isOpaque(value: object): boolean {
   return proto !== Object.prototype && proto !== null;
 }
 
-/**
- * Drop a named trade-class field when its value is an exact denied token.
- * The string itself is never rewritten. Map, Set, Buffer, URL, Error, and
- * Date are returned intact. A clean payload is returned as the same reference.
- */
-export function guardNamedClientFields<T>(value: T): T {
-  return visit(value, 0, new WeakSet()) as T;
+const CHANNEL_PROSE_TOKENS = [
+  "STRONG BUY",
+  "BUY NOW",
+  "STRONG SELL",
+  "STRONG REDUCE",
+  "ADD GRADUALLY",
+  "PASS OVER",
+  "ACCUMULATE",
+  "ACQUIRE",
+  "OVERWEIGHT",
+  "UNDERWEIGHT",
+  "BUY",
+  "SELL",
+  "AVOID",
+];
+
+let channelTokenPattern: RegExp | null = null;
+
+function channelTokenRegex(): RegExp {
+  if (!channelTokenPattern) {
+    const tokens = [...CHANNEL_PROSE_TOKENS].sort((left, right) => right.length - left.length).map(escapeRegExp);
+    channelTokenPattern = new RegExp(`\\b(?:${tokens.join("|")})\\b`, "gi");
+  }
+  return channelTokenPattern;
 }
 
-function visit(value: unknown, depth: number, seen: WeakSet<object>): unknown {
-  if (depth > CLIENT_PAYLOAD_MAX_DEPTH) return value;
+/** Replace an exact trade token, or a whole-word BUY/SELL-class token inside stored prose. */
+export function neutralizeChannelText(text: string): string {
+  if (!text) return text;
+  if (deniedExactToken(text)) return neutralConditionLabel(text);
+  const pattern = channelTokenRegex();
+  pattern.lastIndex = 0;
+  return text.replace(pattern, (match) => neutralConditionLabel(match));
+}
+
+/**
+ * Output check for RSS, blog, organic, X, and daily-brief payloads.
+ * Content fields lose whole-word trade tokens. Ticker, id, slug, and URL fields stay.
+ */
+export function neutralizeChannelPayload<T>(value: T): T {
+  return walkChannel(value, new WeakSet()) as T;
+}
+
+function walkChannel(value: unknown, seen: WeakSet<object>): unknown {
+  if (typeof value === "string") return neutralizeChannelText(value);
   if (value == null || typeof value !== "object") return value;
-  if (seen.has(value)) return value;
+  if (seen.has(value) || isOpaque(value)) return value;
+  seen.add(value);
   if (Array.isArray(value)) {
-    seen.add(value);
     let copy: unknown[] | null = null;
     for (let index = 0; index < value.length; index += 1) {
-      const next = visit(value[index], depth + 1, seen);
+      const next = walkChannel(value[index], seen);
       if (next !== value[index]) {
         if (!copy) copy = value.slice();
         copy[index] = next;
@@ -196,27 +254,101 @@ function visit(value: unknown, depth: number, seen: WeakSet<object>): unknown {
     }
     return copy ?? value;
   }
-  if (isOpaque(value)) return value;
-  seen.add(value);
   const record = value as Record<string, unknown>;
   let copy: Record<string, unknown> | null = null;
   for (const key of Object.keys(record)) {
     const child = record[key];
-    const drop = typeof child === "string" && GUARDED_FIELDS.has(normalizeClientFieldName(key)) && deniedExactToken(child);
-    if (drop) {
+    const field = normalizeClientFieldName(key);
+    if (VALUE_PRESERVE_FIELDS.has(field)) continue;
+    const next = typeof child === "string"
+      ? (LABEL_FIELDS.has(field) && deniedExactToken(child) ? neutralConditionLabel(child) : neutralizeChannelText(child))
+      : child != null && typeof child === "object" ? walkChannel(child, seen) : child;
+    if (next !== child) {
       if (!copy) copy = { ...record };
-      delete copy[key];
-      continue;
-    }
-    if (child != null && typeof child === "object") {
-      const next = visit(child, depth + 1, seen);
-      if (next !== child) {
-        if (!copy) copy = { ...record };
-        copy[key] = next;
-      }
+      copy[key] = next;
     }
   }
   return copy ?? value;
+}
+
+/**
+ * Named trade-class fields only. An exact denied token becomes the condition
+ * label, except `class` and `finalVerdictAction`, which are removed. Ticker,
+ * id, slug, and URL values are never rewritten. Map, Set, Buffer, URL, Error,
+ * and Date pass through. Past the depth cap the named fields are still
+ * neutralized. A clean payload is the same reference.
+ */
+export function guardNamedClientFields<T>(value: T): T {
+  return visit(value, 0, new WeakMap(), { n: 0 }) as T;
+}
+
+function namedFieldChange(key: string, child: unknown): { kind: "keep" } | { kind: "drop" } | { kind: "label"; value: string } {
+  if (typeof child !== "string") return { kind: "keep" };
+  const field = normalizeClientFieldName(key);
+  if (VALUE_PRESERVE_FIELDS.has(field) || !deniedExactToken(child)) return { kind: "keep" };
+  if (DROP_FIELDS.has(field)) return { kind: "drop" };
+  if (LABEL_FIELDS.has(field)) return { kind: "label", value: neutralConditionLabel(child) };
+  return { kind: "keep" };
+}
+
+function visit(value: unknown, depth: number, mapped: WeakMap<object, unknown>, budget: { n: number }): unknown {
+  if (value == null || typeof value !== "object") return value;
+  if (mapped.has(value)) return mapped.get(value);
+  if (isOpaque(value)) return value;
+  budget.n += 1;
+  // Past CLIENT_PAYLOAD_MAX_DEPTH the named fields on this node are still labeled or dropped.
+  // Only the node budget refuses to walk further, and it drops the rest instead of returning it raw.
+  const stopNesting = budget.n > CLIENT_PAYLOAD_MAX_NODES && depth >= 0;
+  if (Array.isArray(value)) {
+    const copy = value.slice();
+    mapped.set(value, copy);
+    let changed = stopNesting && value.some(item => item != null && typeof item === "object");
+    for (let index = 0; index < value.length; index += 1) {
+      const child = value[index];
+      const next = stopNesting
+        ? (child != null && typeof child === "object" ? null : child)
+        : visit(child, depth + 1, mapped, budget);
+      if (next !== child) {
+        copy[index] = next;
+        changed = true;
+      }
+    }
+    if (!changed) {
+      mapped.set(value, value);
+      return value;
+    }
+    return copy;
+  }
+  const record = value as Record<string, unknown>;
+  const copy: Record<string, unknown> = { ...record };
+  mapped.set(value, copy);
+  let changed = false;
+  for (const key of Object.keys(record)) {
+    const child = record[key];
+    const change = namedFieldChange(key, child);
+    if (change.kind === "drop") {
+      delete copy[key];
+      changed = true;
+      continue;
+    }
+    if (change.kind === "label") {
+      copy[key] = change.value;
+      changed = true;
+      continue;
+    }
+    if (child != null && typeof child === "object") {
+      const next = stopNesting ? null : visit(child, depth + 1, mapped, budget);
+      if (next !== child) {
+        copy[key] = next;
+        changed = true;
+      }
+    }
+  }
+  if (!changed) {
+    mapped.set(value, value);
+    return value;
+  }
+  return copy;
 }
 
 /** @deprecated Use guardNamedClientFields. Kept so existing call sites stay source-compatible. */

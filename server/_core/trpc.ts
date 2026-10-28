@@ -14,10 +14,11 @@ export const router = t.router;
 
 /**
  * Customer procedures. Admin and owner procedures are intentionally not wrapped.
- * ownerSim and simPortfolio keep raw simulation tokens: that display is an open
- * owner decision. The guard drops a named trade-class field; it does not rewrite values.
+ * ownerSim stays raw because every procedure there is admin-gated. Public
+ * simPortfolio reads are guarded. Raw simulation tokens on an admin screen
+ * remain an open owner decision.
  */
-const RAW_SIMULATION_PATH = /^(?:ownerSim|simPortfolio)(?:\.|$)/;
+const RAW_SIMULATION_PATH = /^ownerSim(?:\.|$)/;
 
 const clientVocabulary = t.middleware(async (opts) => {
   const result = await opts.next();

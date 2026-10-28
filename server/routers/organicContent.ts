@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { eq, desc, and, gte, lte, count, sql, isNull, isNotNull } from "drizzle-orm";
+import { neutralizeChannelPayload } from "../../shared/clientVocabulary";
 import { router, publicProcedure, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { organicContent, signalPages, contentCtaClicks, pageViews, dailyBriefSnapshots } from "../../drizzle/schema";
@@ -46,7 +47,7 @@ export const organicContentRouter = router({
         .from(organicContent)
         .where(and(...conditions));
 
-      return { items, total };
+      return neutralizeChannelPayload({ items, total });
     }),
 
   // ── Public: get single organic content by slug ─────────────────────────────
@@ -66,7 +67,7 @@ export const organicContentRouter = router({
 
       if (!item) return null;
 
-      if (!item.briefSnapshotId) return { ...item, briefSnapshot: null };
+      if (!item.briefSnapshotId) return neutralizeChannelPayload({ ...item, briefSnapshot: null });
       const [snapshot] = await db.select({
         snapshotId: dailyBriefSnapshots.snapshotId,
         generatedAt: dailyBriefSnapshots.generatedAt,
@@ -93,7 +94,7 @@ export const organicContentRouter = router({
       const isStaleSnapshot = inputFreshness.some(input => input.freshness === "stale")
         || Boolean(validation?.errors?.includes("canonical-snapshot-unexpectedly-stale"));
 
-      return {
+      return neutralizeChannelPayload({
         ...item,
         briefSnapshot: snapshot ? {
           ...snapshot,
@@ -103,7 +104,7 @@ export const organicContentRouter = router({
           archiveSemantics: "ARCHIVED_GENERATED_SNAPSHOT",
           canonicalOriginStatus: snapshot.originatingStateId ? "linked" : "unavailable",
         } : null,
-      };
+      });
     }),
 
   // ── Public: get signal page data for a symbol ──────────────────────────────
@@ -120,7 +121,7 @@ export const organicContentRouter = router({
 
       // Launch fix-up: confidenceScore is an LLM-generated integer
       // (organicContentEngine.ts), not a calibrated value. Withheld publicly.
-      return page ? { ...page, confidenceScore: null } : null;
+      return page ? neutralizeChannelPayload({ ...page, confidenceScore: null }) : null;
     }),
 
   // ── Public: list all signal pages ─────────────────────────────────────────
@@ -152,7 +153,7 @@ export const organicContentRouter = router({
         .where(conditions.length > 0 ? and(...conditions) : undefined)
         .orderBy(signalPages.assetType, signalPages.symbol);
       // Launch fix-up: LLM-generated confidenceScore is withheld publicly.
-      return rows.map(row => ({ ...row, confidenceScore: null }));
+      return neutralizeChannelPayload(rows.map(row => ({ ...row, confidenceScore: null })));
     }),
 
   // ── Public: track CTA click ────────────────────────────────────────────────

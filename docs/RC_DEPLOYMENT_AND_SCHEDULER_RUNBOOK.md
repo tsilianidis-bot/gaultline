@@ -6,9 +6,9 @@ Production today:
 
 | Item | Value |
 | --- | --- |
-| Last reviewed git SHA | `1cb5dee13832c0556ec5a380ecc4ffb02513e875` |
+| Live rollback commit | `f7756c7fad3cac0f96df45723ca5c4e2713146d0` |
 | Live `/api/health` on 2026-10-28 | `f7756c7fad3cac0f96df45723ca5c4e2713146d0` (`buildTime` `2026-10-27T18:43:24Z`) |
-| Deployment id to preserve | `b19716b1` |
+| Rollback target | the live deployment that serves `f7756c7fad3cac0f96df45723ca5c4e2713146d0` |
 | Seismograph cron (not changed) | `0 18 * * *` UTC |
 | Systemic-regime infer (not changed) | daily 19:00 UTC |
 
@@ -36,16 +36,16 @@ Do not store `15 20,21` with an `America/New_York` timezone. Railway cron is UTC
 
 ## Rollback
 
-Leave deployment `b19716b1` in place. Do not redeploy this branch to replace it.
+The rollback target is the live deployment whose health commit is `f7756c7fad3cac0f96df45723ca5c4e2713146d0`. `1cb5dee13832c0556ec5a380ecc4ffb02513e875` and deployment `b19716b1` are not the rollback target. Leave the live deployment in place. Do not redeploy this branch to replace it.
 
 If a later deploy of an approved SHA must be rolled back to production:
 
-1. Confirm the running deployment id is still the one to keep, or that `b19716b1` is the rollback target.
-2. Roll the service back to deployment `b19716b1` (commit `1cb5dee13832c0556ec5a380ecc4ffb02513e875`) from the host UI. Do not run `railway up`, do not change cron, do not run migrations.
-3. `GET /api/health` must report commit `1cb5dee13832c0556ec5a380ecc4ffb02513e875`.
+1. Confirm `/api/health` on the current live service still reports `f7756c7fad3cac0f96df45723ca5c4e2713146d0`, or identify the host deployment that serves that commit.
+2. Roll the service back to that live deployment from the host UI. Do not roll back to `b19716b1` or `1cb5dee`. Do not run `railway up`, do not change cron, do not run migrations.
+3. `GET /api/health` must report commit `f7756c7fad3cac0f96df45723ca5c4e2713146d0`.
 4. Leave `FAULTLINE_INTELLIGENCE_EVIDENCE_ENABLED` and `TRACK_RECORD_CRON_WRITES` unset.
 
-Production protection is Railway commit pinning plus the tag `production-1cb5dee` on `1cb5dee13832c0556ec5a380ecc4ffb02513e875`. The tag command below has not been executed. `config/approved-production-commits.txt` is not a control and is not read.
+Production protection is Railway commit pinning of the live `f7756c7` deployment. The tag command below has not been executed. `config/approved-production-commits.txt` is not a control and is not read.
 
 The container start command is `bash scripts/start-production.sh`. It always reaches `node dist/index.js` unless `FAULTLINE_ENFORCE_DEPLOY_GUARD=1`. With that flag, `scripts/guard-approved-deploy.sh` must pass before the process listens. The flag is off in this candidate, so a Docker boot without the external allowlist still starts. Turning the flag on without `FAULTLINE_APPROVED_DEPLOY_SHAS` or `FAULTLINE_APPROVED_DEPLOY_TAGS` refuses the boot. `BUILD_COMMIT` is not an allowlist input. The runtime image copies `scripts/start-production.sh` and `scripts/guard-approved-deploy.sh`. It does not need `config/`.
 
@@ -53,14 +53,14 @@ Before a deploy, compare the target SHA to an allowlist held outside the commit.
 
 ```bash
 # Allow the production SHA from the environment, not from a file in the commit.
-FAULTLINE_APPROVED_DEPLOY_SHAS=1cb5dee13832c0556ec5a380ecc4ffb02513e875 \
-  FAULTLINE_DEPLOY_SHA=1cb5dee13832c0556ec5a380ecc4ffb02513e875 \
+FAULTLINE_APPROVED_DEPLOY_SHAS=f7756c7fad3cac0f96df45723ca5c4e2713146d0 \
+  FAULTLINE_DEPLOY_SHA=f7756c7fad3cac0f96df45723ca5c4e2713146d0 \
   bash scripts/guard-approved-deploy.sh
 
 # Or resolve a release tag. The tag command is in the next section and has
 # not been executed; this line only reads the tag when it exists.
-FAULTLINE_APPROVED_DEPLOY_TAGS=production-1cb5dee \
-  FAULTLINE_DEPLOY_SHA=1cb5dee13832c0556ec5a380ecc4ffb02513e875 \
+FAULTLINE_APPROVED_DEPLOY_TAGS=production-f7756c7 \
+  FAULTLINE_DEPLOY_SHA=f7756c7fad3cac0f96df45723ca5c4e2713146d0 \
   bash scripts/guard-approved-deploy.sh
 ```
 
@@ -97,9 +97,9 @@ mysql --batch --raw < scripts/prod-backup-readonly-checks.sql
 Tag the deployed commit. This does not move a branch.
 
 ```bash
-git tag -a production-1cb5dee 1cb5dee13832c0556ec5a380ecc4ffb02513e875 \
-  -m "Production deployment b19716b1. Do not move this tag."
-git push origin production-1cb5dee
+git tag -a production-f7756c7 f7756c7fad3cac0f96df45723ca5c4e2713146d0 \
+  -m "Live production health commit f7756c7. Do not move this tag."
+git push origin production-f7756c7
 ```
 
 Branch protection changes repository settings. Replace `BRANCH` only after James confirms the Railway production source branch. Do not point this at `release/verified-2026-10-22` or at PR #117 / #118.

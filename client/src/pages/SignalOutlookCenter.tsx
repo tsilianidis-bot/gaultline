@@ -11,6 +11,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
+import { LOWER_SIDE_CONDITION } from "@shared/clientVocabulary";
 import { OUTLOOK_STRAINED } from "@shared/surfaceClaims";
 import { conditionColor, neutralConditionLabel } from "@shared/clientVocabulary";
 import { formatFactorScore } from "@/lib/factorScoreDisplay";
@@ -32,7 +33,7 @@ import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
 import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Types (mirrored from server) ─────────────────────────────
-type OutlookDirection = "Bullish" | "Bearish" | "Neutral" | typeof OUTLOOK_STRAINED;
+type OutlookDirection = "Bullish" | "Bearish" | "Neutral" | typeof OUTLOOK_STRAINED | typeof LOWER_SIDE_CONDITION;
 type OutlookTimeframe = "day" | "short" | "swing" | "long";
 type OutlookRiskLevel = "Low" | "Moderate" | "High" | "Extreme";
 type TradeReadiness = "Cleared" | "Caution" | "Defensive";
@@ -81,7 +82,7 @@ function pctQuote(value: number | null | undefined, digits: number, leadingPlus 
 }
 
 function directionIcon(d: OutlookDirection) {
-  if (d === OUTLOOK_STRAINED) return <AlertTriangle size={14} color="#FF9500" />;
+  if (d === OUTLOOK_STRAINED || d === LOWER_SIDE_CONDITION) return <AlertTriangle size={14} color="#FF9500" />;
   switch (d) {
     case "Bullish": return <TrendingUp size={14} color="#00FF88" />;
     case "Bearish": return <TrendingDown size={14} color="#FF2D55" />;
@@ -364,7 +365,7 @@ function TopOpportunityCard({
           color, background: `${color}12`, border: `1px solid ${color}25`,
           borderRadius: "3px", padding: "2px 6px", letterSpacing: "0.08em",
         }}>
-          {directionIcon(opp.direction)} {opp.direction.toUpperCase()}
+          {directionIcon(opp.direction)} {outlookLabel(opp.direction)}
         </span>
         <span style={{
           fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px",
@@ -608,7 +609,7 @@ function FullOutlookView({
               color: dirColor, background: `${dirColor}12`, border: `1px solid ${dirColor}25`,
               borderRadius: "3px", padding: "3px 8px",
             }}>
-              {directionIcon(d.direction)} {d.direction.toUpperCase()}
+              {directionIcon(d.direction)} {outlookLabel(d.direction)}
             </span>
             <span style={{
               fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px",

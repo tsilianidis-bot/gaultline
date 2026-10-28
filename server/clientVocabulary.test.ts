@@ -72,10 +72,10 @@ describe("client vocabulary", () => {
     expect(customer.status).toBe("WATCH");
     expect(customer.moveType).toBe("WAIT");
     expect(customer.timeframe).toBe("HOLD");
-    expect(customer.direction).toBe("WATCH");
-    expect(customer.verdict).toBe("WAIT");
+    expect(customer.direction).toBe("Mixed condition");
+    expect(customer.verdict).toBe("Mixed condition");
+    expect(customer.action).toBe("Upper-side condition");
     expect(customer.internalDirection).toBe("positive");
-    expect(customer).not.toHaveProperty("action");
     expect(customer).not.toHaveProperty(" Final Verdict Action ");
     expect(customer).not.toHaveProperty("final_verdict_action");
     expect(customer).not.toHaveProperty("class");
@@ -121,20 +121,20 @@ describe("client vocabulary", () => {
     expect(buffer.toString()).toBe("HOLD");
   });
 
-  it("stops on a cycle and does not walk past the depth limit", () => {
+  it("neutralizes a cycle and a named field past the depth cap", () => {
     const box: { name: string; self?: unknown; action?: string } = { name: "loop", action: "HOLD" };
     box.self = box;
     const guarded = guardNamedClientFields(box);
     expect(guarded.name).toBe("loop");
-    expect(guarded).not.toHaveProperty("action");
-    expect(guarded.self).toBeTruthy();
+    expect(guarded.action).toBe("Mixed condition");
+    expect(guarded.self).toBe(guarded);
 
-    let deep: { child?: unknown; action?: string } = { action: "BUY" };
+    let deep: { child?: unknown; action?: string; verdict?: string } = { action: "BUY", verdict: "Avoid" };
     for (let index = 0; index < CLIENT_PAYLOAD_MAX_DEPTH + 3; index += 1) deep = { child: deep };
     const walked = guardNamedClientFields(deep);
-    expect(walked).toBe(deep);
-    let cursor: { child?: unknown; action?: string } = walked;
+    let cursor: { child?: unknown; action?: string; verdict?: string } = walked;
     for (let index = 0; index < CLIENT_PAYLOAD_MAX_DEPTH + 3; index += 1) cursor = cursor.child as typeof cursor;
-    expect(cursor.action).toBe("BUY");
+    expect(cursor.action).toBe("Upper-side condition");
+    expect(cursor.verdict).toBe("Lower-side condition");
   });
 });

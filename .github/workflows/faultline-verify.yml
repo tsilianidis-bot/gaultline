@@ -32,7 +32,7 @@ jobs:
 
       - name: Pre-deploy allowlist check
         run: |
-          prod=1cb5dee13832c0556ec5a380ecc4ffb02513e875
+          prod=f7756c7fad3cac0f96df45723ca5c4e2713146d0
           other=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           FAULTLINE_APPROVED_DEPLOY_SHAS="$prod" FAULTLINE_DEPLOY_SHA="$prod" BUILD_COMMIT="$other" bash scripts/guard-approved-deploy.sh
           if FAULTLINE_APPROVED_DEPLOY_SHAS="$prod" FAULTLINE_DEPLOY_SHA="$other" BUILD_COMMIT="$prod" bash scripts/guard-approved-deploy.sh; then

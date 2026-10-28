@@ -16,6 +16,7 @@
 //   • All price levels are calculated, never invented
 // ============================================================
 
+import { MIXED_CONDITION } from "../shared/clientVocabulary";
 import { OUTLOOK_STRAINED } from "../shared/surfaceClaims";
 import { invokeLLM } from "./_core/llm";
 import { calculateFaultlinePressure, type FaultlinePressureOutput } from "./pressure/engine";
@@ -1756,7 +1757,7 @@ export interface RisingStarItem extends RisingStarResult {
   latestPrice: number;
   dailyChange: number | null;
   dailyChangePercent: number | null;
-  signalDirection: "CONSTRUCTIVE" | "WATCH";
+  signalDirection: "CONSTRUCTIVE" | typeof MIXED_CONDITION;
   signalStrength: ConfidenceBand;
   momentumScore: number;
   relativeStrengthScore: number;
@@ -2413,7 +2414,7 @@ async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<Risi
         latestPrice: quote?.price ?? latest.close,
         dailyChange,
         dailyChangePercent,
-        signalDirection: result.risingStarScore >= 65 ? "CONSTRUCTIVE" as const : "WATCH" as const,
+        signalDirection: (result.risingStarScore >= 65 ? "CONSTRUCTIVE" : MIXED_CONDITION) as "CONSTRUCTIVE" | typeof MIXED_CONDITION,
         signalStrength: result.crossSignalConfidence,
         momentumScore: technical.momentumInflection,
         relativeStrengthScore: technical.relativeStrength,

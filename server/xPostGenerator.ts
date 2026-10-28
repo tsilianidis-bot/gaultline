@@ -4,6 +4,7 @@
 // pressure data and an LLM. Returns 5 post variants per call.
 // ============================================================
 
+import { neutralizeChannelPayload } from "../shared/clientVocabulary";
 import { invokeLLM } from "./_core/llm";
 import { stripProbabilityPercentClaims } from "./stripProbabilityClaims";
 import type { FaultlinePressureOutput } from "./pressure/engine";
@@ -201,5 +202,5 @@ export async function generateXPosts(input: GenerateXPostInput): Promise<XPostVa
   if (!raw) throw new Error("LLM returned empty response");
 
   const parsed = JSON.parse(raw) as XPostVariants;
-  return withoutPostProbabilities(parsed);
+  return neutralizeChannelPayload(withoutPostProbabilities(parsed));
 }

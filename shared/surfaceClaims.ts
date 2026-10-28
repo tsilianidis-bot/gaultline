@@ -23,6 +23,8 @@ export function containsCrashProbability(value: string): boolean {
 export type ObservedDirection = "positive" | "negative" | "mixed" | "unestablished";
 
 export function observedDirection(action: string | null | undefined): ObservedDirection {
+  const labeled = conditionDirection(action);
+  if (labeled !== "unestablished") return labeled;
   const token = (action ?? "").trim().toUpperCase();
   if (token === "POSITIVE") return "positive";
   if (token === "NEGATIVE") return "negative";

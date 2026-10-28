@@ -715,7 +715,8 @@ describe("release-candidate surfaces do not print trade directives or crash-prob
       quadrant: classifyQuadrant(1.1, 0.2),
     });
     expect(below.conditionId).not.toBe(lagging.conditionId);
-    expect(heldTitle).toContain("<title>HOLD</title>");
+    expect(heldTitle).toContain("<title>Mixed condition</title>");
+    expect(heldTitle).not.toContain("<title>HOLD</title>");
     const json = JSON.stringify(outputs);
     expect(namedTradeClassLeaks(outputs)).toEqual([]);
     expect(claimHits(json)).toEqual([]);
