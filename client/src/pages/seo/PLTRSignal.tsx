@@ -66,8 +66,8 @@ Technical Context: PLTR has historically exhibited high volatility relative to t
           answer: "Palantir sells software used by government and enterprise customers, including tools for deploying models on private data. That is a business description. This page does not publish an exposure rating.",
         },
         {
-          question: "What would cause PLTR to fall significantly?",
-          answer: "Scenarios that could cause significant PLTR drawdowns include: deceleration in AIP commercial adoption, loss of major government contracts, broader AI software multiple compression, a HIGH STRESS macro environment (FAULTLINE Pressure Index 60+), or a broader market crash that triggers risk-off rotation away from high-multiple growth stocks.",
+          question: "What does this page refuse to forecast for PLTR?",
+          answer: "It does not publish a drawdown path, a stress threshold, or a second stock call. Those paths stay inside the shared thesis, and only when the inputs are fresh.",
         },
       ]}
       internalLinks={[
@@ -75,7 +75,7 @@ Technical Context: PLTR has historically exhibited high volatility relative to t
         { label: "META SIGNAL", href: "/stock/meta", desc: "Meta AI signal analysis." },
         { label: "AI STOCKS DASHBOARD", href: "/ai-stocks-dashboard", desc: "All AI-exposed stocks in one dashboard." },
         { label: "AI BUBBLE MONITOR", href: "/ai-bubble-risk-tracker", desc: "Track AI concentration and valuation risk." },
-        { label: "MARKET CRASH PROBABILITY", href: "/market-crash-probability-2026", desc: "Systemic risk that could trigger PLTR drawdowns." },
+        { label: "SHARED THESIS", href: "/app/signals", desc: "The live PLTR read is the shared stock thesis." },
         { label: "STOCK SIGNALS", href: "/signals", desc: "All FAULTLINE stock signals in one view." },
       ]}
     />

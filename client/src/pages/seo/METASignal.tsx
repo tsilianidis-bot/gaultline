@@ -51,7 +51,7 @@ Historical Context: META experienced one of the most dramatic large-cap drawdown
         { question: "How does Meta make money?", answer: "Meta generates approximately 98% of its revenue from digital advertising across Facebook, Instagram, WhatsApp, and Threads. Advertisers pay to show targeted ads to Meta's approximately 3.3 billion daily active users. AI-powered ad targeting systems have significantly improved revenue per user over time." },
         { question: "What is Meta's AI strategy?", answer: "Meta's AI strategy has three pillars: (1) AI-powered advertising — using AI to improve ad targeting and measurement; (2) AI-powered products — Llama open-source models, Meta AI assistant, AI-generated content; (3) AI infrastructure — massive data center and GPU investment to support both internal AI development and Llama deployment." },
         { question: "How does advertising relate to Meta's revenue?", answer: "Most of Meta's reported revenue comes from advertising on its apps. An economic slowdown can affect advertising budgets. This page does not turn that into a numeric economic forecast or a second stock call." },
-        { question: "What does this META page refuse to rank?", answer: "It does not name a single largest threat for a future year, and it does not publish a separate score. The stock read is the shared thesis." },
+        { question: "What does this META page refuse to rank?", answer: "It does not name a single largest threat for a future year, and it does not publish a separate reading. The stock read is the shared thesis." },
       ]}
       internalLinks={[
         { label: "NVDA SIGNAL", href: "/stock/nvda", desc: "NVIDIA — META's primary GPU supplier." },

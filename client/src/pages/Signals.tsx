@@ -1156,13 +1156,11 @@ function SignalsInner() {
           fontSize: '13px', letterSpacing: '0.2em',
           color: 'rgba(100,116,139,0.75)',
           textTransform: 'uppercase', marginBottom: '10px',
-        }}>TODAY'S TOP SIGNALS</div>
+        }}>LARGEST MOVES</div>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
           <TopSignalCard label="Largest gain" stock={topSignals.topBullish} color="#00D4FF" icon="▲" liveQuote={quoteMap.get(topSignals.topBullish.ticker)} />
           <TopSignalCard label="Largest decline" stock={topSignals.topBearish} color="#FF2D55" icon="▼" liveQuote={quoteMap.get(topSignals.topBearish.ticker)} />
-          <TopSignalCard label="Volume Breakout" stock={topSignals.highestVolume} color="#FFD700" icon="⚡" liveQuote={quoteMap.get(topSignals.highestVolume.ticker)} />
-          <TopSignalCard label="Macro Risk" stock={topSignals.highestMacroRisk} color="#FF9500" icon="⚠" liveQuote={quoteMap.get(topSignals.highestMacroRisk.ticker)} />
-          <TopSignalCard label="AI Momentum" stock={topSignals.strongestAI} color="#A855F7" icon="◈" liveQuote={quoteMap.get(topSignals.strongestAI.ticker)} />
+          <TopSignalCard label="Highest volume" stock={topSignals.highestVolume} color="#FFD700" icon="⚡" liveQuote={quoteMap.get(topSignals.highestVolume.ticker)} />
         </div>
       </div>
 

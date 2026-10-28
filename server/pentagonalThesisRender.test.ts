@@ -242,6 +242,11 @@ const FORBIDDEN_PAGE_PHRASES = [
   "recession probability",
   "biggest risk in 2026",
   "risk score",
+  "market crash probability",
+  "macro alignment score",
+  "biggest opportunity in 2026",
+  "fall significantly",
+  "pressure index 60",
 ];
 
 describe("Pentagonal thesis render consistency", () => {
@@ -365,6 +370,9 @@ describe("Pentagonal thesis render consistency", () => {
     expect(ai).not.toContain("poor risk-adjusted investment");
     expect(ai.toLowerCase()).not.toContain("four categories");
     expect(ai).not.toContain("Highest AI Exposure");
+    expect(ai).not.toContain("35%");
+    expect(ai).not.toContain("25%");
+    expect(ai).not.toContain("higher revenue concentration");
   });
 
   it("does not render the removed stock-page claims", async () => {
@@ -373,22 +381,26 @@ describe("Pentagonal thesis render consistency", () => {
       import("../client/src/pages/seo/METASignal"),
       import("../client/src/pages/seo/TSLASignal"),
       import("../client/src/pages/seo/PLTRSignal"),
+      import("../client/src/pages/seo/AMDSignal"),
     ]);
     for (const page of pages) {
       const text = visibleText(renderToStaticMarkup(createElement(page.default))).toLowerCase();
       for (const phrase of FORBIDDEN_PAGE_PHRASES) expect(text, phrase).not.toContain(phrase);
+      for (const word of ["crash", "probability", "score"]) expect(text, word).not.toContain(word);
       expect(text).toContain("shared pentagonal thesis");
     }
   });
 
   it("renders one router thesis on Signals, SignalDetail, and symbol intelligence", async () => {
     expect(shared.thesis).not.toBeNull();
-    const [{ default: Signals }, { default: SignalDetail }, symbolPage, { TradeSetupTab, AIAnalysisTab }] = await Promise.all([
+    const [{ default: Signals }, { default: SignalDetail }, symbolPage, tabs, { default: HomeStockIntel }] = await Promise.all([
       import("../client/src/pages/Signals"),
       import("../client/src/pages/SignalDetail"),
       import("../client/src/pages/UniversalSymbolIntelligence"),
       import("../client/src/pages/UniversalSymbolIntelligence"),
+      import("../client/src/components/HomeStockIntelSection"),
     ]);
+    const { TradeSetupTab, AIAnalysisTab, RiskAnalysisTab } = tabs;
     const signals = renderToStaticMarkup(createElement(Signals));
     const detailMarkup = renderToStaticMarkup(createElement(SignalDetail));
     const intelligence = renderToStaticMarkup(createElement(symbolPage.UniversalSymbolIntelligence));
@@ -409,20 +421,46 @@ describe("Pentagonal thesis render consistency", () => {
     expect(signals).not.toContain("algorithmic estimates");
     expect(signals).not.toContain("probabilistic estimates");
     expect(signals).not.toContain("KEY PRICE LEVELS");
+    expect(signals).not.toContain("Macro Risk");
+    expect(signals).not.toContain("AI Momentum");
+    expect(signals).not.toContain("TODAY'S TOP SIGNALS");
     expect(intelligence).not.toContain("91/100");
     expect(intelligence).not.toContain(">Confidence<");
+    expect(detailMarkup).not.toContain("42/100");
+    expect(detailMarkup).not.toContain("40/100");
+    expect(detailMarkup).toContain("72-hour");
+    expect(visibleText(renderToStaticMarkup(createElement(HomeStockIntel)))).not.toContain("Real-Time");
     const trade = renderToStaticMarkup(createElement(TradeSetupTab, { report: dayTradeReport }));
     const analysis = renderToStaticMarkup(createElement(AIAnalysisTab, { report: dayTradeReport }));
-    for (const markup of [trade, analysis, intelligence]) {
+    const risk = renderToStaticMarkup(createElement(RiskAnalysisTab, {
+      report: {
+        ...dayTradeReport,
+        executionScoreBreakdown: {
+          macroCondition: 16,
+          technicalStructure: 14,
+          liquidityScore: 12,
+          volatilityScore: 11,
+          momentumScore: 10,
+          riskRewardScore: 9,
+        },
+      },
+    }));
+    for (const markup of [trade, analysis, risk, intelligence]) {
       expect(markup).not.toContain("Entry Zone");
       expect(markup).not.toContain("Target 1");
       expect(markup).not.toContain("Target 2");
       expect(markup).not.toContain("Stop Loss");
+      expect(markup).not.toContain("Risk/Reward");
+      expect(markup).not.toContain("R:R");
+      expect(markup).not.toContain("EXEC");
+      expect(markup).not.toMatch(/\/100/);
       expect(markup).not.toContain("91/100");
       expect(markup).not.toContain("CONFIDENCE BREAKDOWN");
     }
     expect(trade).not.toContain("100.11");
     expect(trade).not.toContain("110.33");
     expect(trade).not.toContain("95.55");
+    expect(trade).not.toContain("$90.00");
+    expect(trade).not.toContain("Invalidation");
   });
 });

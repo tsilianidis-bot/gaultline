@@ -51,15 +51,15 @@ Historical Volatility Context: TSLA is one of the most volatile large-cap stocks
       faqs={[
         { question: "Is TSLA a buy or sell right now?", answer: "FAULTLINE's TSLA signal classification is available in real time on the Signals tab, based on macro regime alignment, EV demand cycle, AI optionality momentum, and technical structure. This is not investment advice." },
         { question: "What is Tesla's AI exposure?", answer: "Tesla's AI exposure comes primarily from Full Self-Driving (FSD) — its autonomous driving software — and Optimus, its humanoid robot program. Both are embedded as optionality in TSLA's valuation. FAULTLINE tracks AI narrative momentum as one of the inputs to the TSLA signal." },
-        { question: "How does the Federal Reserve affect TSLA?", answer: "Higher interest rates increase monthly payments on financed EV purchases, reducing demand. They also increase the discount rate applied to TSLA's future earnings and optionality value, compressing the stock's valuation multiple. FAULTLINE's Federal Reserve Tracker monitors Fed policy as part of the TSLA macro alignment score." },
-        { question: "What does this TSLA page refuse to rank?", answer: "It does not name a single largest threat for a future year, and it does not publish a separate score. Competition, vehicle programs, and macro conditions stay background until the shared thesis has fresh evidence." },
-        { question: "How volatile is TSLA compared to the S&P 500?", answer: "TSLA has historically moved more than the S&P 500 in both directions, including deep drawdowns from cycle highs. This page does not turn that history into a score. The stock read is the shared thesis." },
+        { question: "How do interest rates relate to Tesla's vehicle business?", answer: "Higher interest rates can raise monthly payments on financed vehicles. This page does not turn that into a separate macro reading or a second stock call. Rate policy is a driver only when the shared thesis has a fresh sourced market input." },
+        { question: "What does this TSLA page refuse to rank?", answer: "It does not name a single largest threat for a future year, and it does not publish a separate reading. Competition, vehicle programs, and macro conditions stay background until the shared thesis has fresh evidence." },
+        { question: "How volatile is TSLA compared to the S&P 500?", answer: "TSLA has historically moved more than the S&P 500 in both directions, including deep drawdowns from cycle highs. This page does not turn that history into a separate reading. The stock read is the shared thesis." },
       ]}
       internalLinks={[
         { label: "NVDA SIGNAL", href: "/stock/nvda", desc: "NVIDIA — AI infrastructure signal analysis." },
         { label: "META SIGNAL", href: "/stock/meta", desc: "Meta AI signal analysis." },
         { label: "AI STOCKS DASHBOARD", href: "/ai-stocks-dashboard", desc: "All AI-exposed stocks in one dashboard." },
-        { label: "MARKET CRASH PROBABILITY", href: "/market-crash-probability-2026", desc: "Systemic risk that could trigger TSLA drawdowns." },
+        { label: "SHARED THESIS", href: "/app/signals", desc: "The live TSLA read is the shared stock thesis." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy impact on high-beta stocks like TSLA." },
         { label: "STOCK SIGNALS", href: "/signals", desc: "All FAULTLINE stock signals in one view." },
       ]}

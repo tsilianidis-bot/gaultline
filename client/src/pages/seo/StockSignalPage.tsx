@@ -40,14 +40,15 @@ export default function StockSignalPage({
   faqs,
   internalLinks,
 }: StockSignalPageProps) {
-  const unsupported = /crash probability|% confidence|\bbuy\b|\bsell\b|key price levels|key support|regime fit|0-10|advance warning|stop-loss|entry zone/i;
+  const unsupported = /crash|probability|\bscore\b|% confidence|\bbuy\b|\bsell\b|key price levels|key support|regime fit|0-10|advance warning|stop-loss|entry zone|pressure index|fall significantly|biggest opportunity/i;
   const safeFaqs = faqs.filter(faq => !unsupported.test(`${faq.question} ${faq.answer}`));
+  const safeLinks = internalLinks.filter(link => !unsupported.test(`${link.label} ${link.desc}`));
   return (
     <>
     <SEOLandingPage
       seo={{
         title: `${ticker} — shared stock thesis | FAULTLINE`,
-        description: `The ${ticker} page uses the shared Pentagonal Thesis. It does not publish a buy or sell classification, a regime-fit score, or static key price levels.`,
+        description: `The ${ticker} page uses the shared Pentagonal Thesis. It does not publish a buy or sell classification, a separate regime reading, or static key price levels.`,
         canonical,
       }}
       badge={badge}
@@ -58,7 +59,7 @@ export default function StockSignalPage({
       accentColor={accentColor}
       features={[
         { icon: "◈", title: "Shared stock thesis", desc: `${ticker} is read with the same Pentagonal Thesis as the rest of the product. There is no second buy or sell classification.` },
-        { icon: "◎", title: "No regime-fit score", desc: `This page does not score how ${ticker} fits the macro regime, and it does not publish a numbered fit score.` },
+        { icon: "◎", title: "No separate regime reading", desc: `This page does not grade how ${ticker} fits the macro regime, and it does not publish a numbered fit.` },
         { icon: "⬡", title: "No static price levels", desc: `Support, entry, stop, and target figures are not printed here. A completed-session range appears only inside the thesis when the bars are fresh.` },
         { icon: "◈", title: "Gaps stay gaps", desc: "Missing insider filings, a macro calendar, and sector rotation are not treated as drivers." },
       ]}
@@ -72,7 +73,7 @@ export default function StockSignalPage({
         question: `What does the ${ticker} page show?`,
         answer: `It shows background on ${companyName} and points at the shared Pentagonal Thesis. It does not classify the stock or publish a confidence percentage.`,
       }]}
-      internalLinks={internalLinks}
+      internalLinks={safeLinks}
       schemaType="Article"
       datePublished="2024-06-01"
     />

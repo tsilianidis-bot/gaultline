@@ -58,7 +58,7 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     faqs: [
       { q: "Is PLTR a good investment in 2025?", a: "PLTR's investment case depends heavily on macro regime. In bull regimes, PLTR's AI software narrative drives outperformance. In risk-off environments, its extreme valuation creates significant drawdown risk." },
       { q: "What drives PLTR's stock price?", a: "PLTR is driven by AI sentiment, government contract wins, commercial revenue growth, and macro risk appetite. FAULTLINE tracks all four dimensions in its PLTR signal analysis." },
-      { q: "How risky is PLTR compared to other AI stocks?", a: "PLTR carries above-average risk due to its extreme valuation multiples and government revenue concentration. FAULTLINE's risk score reflects this elevated risk profile." },
+      { q: "How risky is PLTR compared to other AI stocks?", a: "PLTR's stored notes mention valuation multiples and government revenue concentration. This page does not turn that background into a separate reading. The live read is the shared thesis." },
       { q: "What is PLTR's bull case?", a: "The bull case is AIP commercial adoption accelerating to match government revenue, creating a durable AI software moat with improving margins and expanding TAM." },
       { q: "What is PLTR's bear case?", a: "The bear case is valuation compression as commercial growth disappoints, combined with macro risk-off reducing appetite for high-multiple growth stocks." },
     ],
@@ -219,8 +219,8 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     relatedCrypto: [],
     faqs: [
       { q: "What does SMCI do?", a: "SMCI manufactures complete AI server systems, including rack-scale solutions for hyperscalers deploying NVDA GPUs. It's a key infrastructure play in the AI data center buildout." },
-      { q: "What happened with SMCI's accounting issues?", a: "SMCI faced accounting irregularities and auditor changes that created significant uncertainty. FAULTLINE tracks SMCI's accounting risk as a key factor in its risk score." },
-      { q: "Is SMCI a good AI infrastructure play?", a: "SMCI offers direct AI data center exposure but with higher risk than NVDA due to accounting concerns, margin pressure, and competition. FAULTLINE's risk score reflects this elevated risk profile." },
+      { q: "What happened with SMCI's accounting issues?", a: "SMCI faced accounting irregularities and auditor changes that created significant uncertainty. This page does not turn that history into a separate reading." },
+      { q: "Is SMCI a good AI infrastructure play?", a: "SMCI builds server systems used in data centers. Accounting concerns, margin pressure, and competition are background. This page does not publish a separate reading or a trade instruction." },
       { q: "How does SMCI perform in different market regimes?", a: "SMCI is one of the most volatile AI infrastructure stocks. In bull regimes, it can outperform significantly. In risk-off environments, its high beta and specific risks create sharp drawdowns." },
       { q: "How does FAULTLINE track SMCI?", a: "FAULTLINE monitors SMCI's momentum score, AI infrastructure exposure, accounting risk, and systemic pressure alignment. Signals are updated daily." },
     ],

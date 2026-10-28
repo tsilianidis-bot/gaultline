@@ -61,7 +61,7 @@ Stop-Loss Levels: FAULTLINE identifies stop-loss levels based on technical struc
         },
         {
           question: "Does this page forecast a large NVDA decline?",
-          answer: "No. This page does not publish a crash magnitude. When fresh completed bars exist, scenarios live inside the shared thesis and name a measurable invalidation.",
+          answer: "No. This page does not publish a sized decline. When fresh completed bars exist, scenarios live inside the shared thesis and name a measurable invalidation.",
         },
         {
           question: "How should interest rates be read here?",
@@ -74,7 +74,7 @@ Stop-Loss Levels: FAULTLINE identifies stop-loss levels based on technical struc
         { label: "AMD SIGNAL", href: "/stock/amd", desc: "AMD — NVDA's primary GPU competitor signal analysis." },
         { label: "META SIGNAL", href: "/stock/meta", desc: "Meta — major NVDA customer signal analysis." },
         { label: "AI STOCKS DASHBOARD", href: "/ai-stocks-dashboard", desc: "All AI-exposed stocks in one dashboard." },
-        { label: "MARKET CRASH PROBABILITY", href: "/market-crash-probability-2026", desc: "Systemic risk that could trigger NVDA drawdowns." },
+        { label: "SHARED THESIS", href: "/app/signals", desc: "The live NVDA read is the shared stock thesis." },
       ]}
     />
   );

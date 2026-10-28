@@ -33,11 +33,9 @@ These notes describe the business. They are not a rating, a ranking, or a live s
         },
         {
           heading: "AI Concentration Risk — The Systemic Dimension",
-          body: `The 2026 S&P 500 is historically concentrated in AI-exposed equities. The top 10 stocks — the majority of which are AI-exposed — represent over 35% of the index by market cap. This concentration creates a systemic risk dimension that goes beyond individual stock analysis.
+          body: `Index concentration is background, not a measurement on this page. This page does not state what share of an index sits in any group of stocks, and it does not compare that share with an earlier year.
 
-When concentrated positions unwind, the cascade effect on index-level returns is severe. The 2000 dot-com bubble provides the historical precedent: the top 10 S&P 500 stocks in March 2000 represented approximately 25% of the index. When technology stocks began to fall, the concentration amplified the index-level decline.
-
-This page does not measure that concentration as a live score and does not say which names to buy or sell. An individual name is read through the shared thesis, which lists missing inputs as gaps.
+This page does not measure concentration as a live gauge and does not say which names to buy or sell. An individual name is read through the shared thesis, which lists missing inputs as gaps.
 
 A name can look reasonable on its own reported figures and still sit inside a concentrated index. This page does not turn that background into a ranking or a trade.`,
         },
@@ -71,7 +69,7 @@ No bubble rating: This page does not publish an exposure score, and it does not 
         },
         {
           question: "What is the difference between AI infrastructure stocks and AI software stocks?",
-          answer: "AI infrastructure stocks (NVDA, AMD) supply the physical compute substrate for AI — GPUs and custom silicon. Their revenue is directly tied to AI capex spending by hyperscalers. AI software stocks (PLTR, MSFT) build the software platforms that enable AI deployment. Their revenue is tied to AI software adoption rates and enterprise digital transformation. Infrastructure stocks have higher revenue concentration in AI; software stocks have more diversified revenue bases.",
+          answer: "AI infrastructure companies such as NVDA and AMD sell chips and related hardware used to train and run models. AI software companies such as PLTR and MSFT sell software used to deploy models. This page does not rank one group ahead of the other.",
         },
       ]}
       internalLinks={[
