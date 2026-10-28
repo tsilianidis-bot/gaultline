@@ -142,7 +142,10 @@ export function conditionColor(value: string | null | undefined): string {
 
 /** Depth cap so a hostile or cyclic payload cannot walk forever. Past this depth the named fields are still neutralized. */
 export const CLIENT_PAYLOAD_MAX_DEPTH = 12;
-/** Hard stop. Remaining nested objects are dropped so a named token cannot ride past the cap. */
+/**
+ * Soft cap. Past this many nodes the walk keeps going and logs once.
+ * It does not replace later objects or arrays with null.
+ */
 export const CLIENT_PAYLOAD_MAX_NODES = 8000;
 
 /**
@@ -235,29 +238,40 @@ function channelTokenRegex(): RegExp {
 
 const URL_OR_EMAIL = /https?:\/\/[^\s<>"']+|www\.[^\s<>"']+|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 
+const MASK_EDGE = "\uE000";
+const HOST_SUFFIX = /^(?:com|net|org|io|co|edu|gov|uk|ai|app|dev|info|biz)\b/i;
+
 function maskUrlsAndEmails(text: string): { text: string; masks: string[] } {
   const masks: string[] = [];
   const masked = text.replace(URL_OR_EMAIL, (span) => {
+    const token = `${MASK_EDGE}${masks.length}${MASK_EDGE}`;
     masks.push(span);
-    return `\u0000${masks.length - 1}\u0000`;
+    return token;
   });
   return { text: masked, masks };
 }
 
 function restoreMasks(text: string, masks: string[]): string {
-  return text.replace(/\u0000(\d+)\u0000/g, (_mark, index) => masks[Number(index)] ?? "");
+  if (masks.length === 0) return text;
+  return text.replace(new RegExp(`${MASK_EDGE}(\\d+)${MASK_EDGE}`, "g"), (full, index: string) => {
+    const parsed = Number(index);
+    return parsed < masks.length ? masks[parsed] ?? full : full;
+  });
 }
 
-/** A cashtag, a hyphenated name, or a dotted compound is not a standalone trade word. */
+/**
+ * Cashtags and hashtags stay. Hyphenated names stay (`Buy-Rite`).
+ * A trade word immediately before a host suffix stays (`BUY.com`).
+ * A trade word after a dot is its own segment and is neutralized (`price.SELL`, `a.BUY`).
+ */
 function protectedProseToken(text: string, offset: number, length: number): boolean {
   const before = offset > 0 ? text[offset - 1] ?? "" : "";
   const after = text[offset + length] ?? "";
-  if (before === "$") return true;
+  if (before === "$" || before === "#") return true;
   const word = /[A-Za-z0-9]/;
   if (before === "-" && word.test(text[offset - 2] ?? "")) return true;
   if (after === "-" && word.test(text[offset + length + 1] ?? "")) return true;
-  if (before === "." && word.test(text[offset - 2] ?? "")) return true;
-  if (after === "." && word.test(text[offset + length + 1] ?? "")) return true;
+  if (after === "." && HOST_SUFFIX.test(text.slice(offset + length + 1))) return true;
   return false;
 }
 
@@ -280,42 +294,52 @@ export function neutralizeChannelText(text: string): string {
  * Content fields lose whole-word trade tokens. Ticker, id, slug, and URL fields stay.
  */
 export function neutralizeChannelPayload<T>(value: T): T {
-  return walkChannel(value, new WeakSet()) as T;
+  return walkChannel(value, new WeakMap()) as T;
 }
 
-function walkChannel(value: unknown, seen: WeakSet<object>): unknown {
+function walkChannel(value: unknown, mapped: WeakMap<object, unknown>): unknown {
   if (typeof value === "string") return neutralizeChannelText(value);
   if (value == null || typeof value !== "object") return value;
-  if (seen.has(value)) return value;
+  if (mapped.has(value)) return mapped.get(value);
   if (Array.isArray(value)) {
-    seen.add(value);
-    let copy: unknown[] | null = null;
+    const copy = value.slice();
+    mapped.set(value, copy);
+    let changed = false;
     for (let index = 0; index < value.length; index += 1) {
-      const next = walkChannel(value[index], seen);
+      const next = walkChannel(value[index], mapped);
       if (next !== value[index]) {
-        if (!copy) copy = value.slice();
         copy[index] = next;
+        changed = true;
       }
     }
-    return copy ?? value;
+    if (!changed) {
+      mapped.set(value, value);
+      return value;
+    }
+    return copy;
   }
   if (isOpaque(value)) return value;
-  seen.add(value);
   const record = value as Record<string, unknown>;
-  let copy: Record<string, unknown> | null = null;
+  const copy: Record<string, unknown> = { ...record };
+  mapped.set(value, copy);
+  let changed = false;
   for (const key of Object.keys(record)) {
     const child = record[key];
     const field = normalizeClientFieldName(key);
     if (VALUE_PRESERVE_FIELDS.has(field)) continue;
     const next = typeof child === "string"
       ? (LABEL_FIELDS.has(field) && deniedExactToken(child) ? neutralConditionLabel(child) : neutralizeChannelText(child))
-      : child != null && typeof child === "object" ? walkChannel(child, seen) : child;
+      : child != null && typeof child === "object" ? walkChannel(child, mapped) : child;
     if (next !== child) {
-      if (!copy) copy = { ...record };
       copy[key] = next;
+      changed = true;
     }
   }
-  return copy ?? value;
+  if (!changed) {
+    mapped.set(value, value);
+    return value;
+  }
+  return copy;
 }
 
 /**
@@ -326,7 +350,15 @@ function walkChannel(value: unknown, seen: WeakSet<object>): unknown {
  * neutralized. A clean payload is the same reference.
  */
 export function guardNamedClientFields<T>(value: T): T {
-  return visit(value, 0, new WeakMap(), { n: 0 }) as T;
+  return visit(value, 0, new WeakMap(), { n: 0, warned: false }) as T;
+}
+
+function noteNode(budget: { n: number; warned: boolean }) {
+  budget.n += 1;
+  if (budget.n > CLIENT_PAYLOAD_MAX_NODES && !budget.warned) {
+    budget.warned = true;
+    console.warn(`FAULTLINE client payload walk passed ${CLIENT_PAYLOAD_MAX_NODES} nodes; values are kept and the walk continues.`);
+  }
 }
 
 function namedFieldChange(key: string, child: unknown): { kind: "keep" } | { kind: "drop" } | { kind: "label"; value: string } {
@@ -338,20 +370,17 @@ function namedFieldChange(key: string, child: unknown): { kind: "keep" } | { kin
   return { kind: "keep" };
 }
 
-function visit(value: unknown, depth: number, mapped: WeakMap<object, unknown>, budget: { n: number }): unknown {
+function visit(value: unknown, depth: number, mapped: WeakMap<object, unknown>, budget: { n: number; warned: boolean }): unknown {
   if (value == null || typeof value !== "object") return value;
   if (mapped.has(value)) return mapped.get(value);
   if (Array.isArray(value)) {
-    budget.n += 1;
-    const stopNesting = budget.n > CLIENT_PAYLOAD_MAX_NODES && depth >= 0;
+    noteNode(budget);
     const copy = value.slice();
     mapped.set(value, copy);
-    let changed = stopNesting && value.some(item => item != null && typeof item === "object");
+    let changed = false;
     for (let index = 0; index < value.length; index += 1) {
       const child = value[index];
-      const next = stopNesting
-        ? (child != null && typeof child === "object" ? null : child)
-        : visit(child, depth + 1, mapped, budget);
+      const next = visit(child, depth + 1, mapped, budget);
       if (next !== child) {
         copy[index] = next;
         changed = true;
@@ -364,10 +393,9 @@ function visit(value: unknown, depth: number, mapped: WeakMap<object, unknown>, 
     return copy;
   }
   if (isOpaque(value)) return value;
-  budget.n += 1;
+  noteNode(budget);
   // Past CLIENT_PAYLOAD_MAX_DEPTH the named fields on this node are still labeled or dropped.
-  // Only the node budget refuses to walk further, and it drops the rest instead of returning it raw.
-  const stopNesting = budget.n > CLIENT_PAYLOAD_MAX_NODES && depth >= 0;
+  // Past CLIENT_PAYLOAD_MAX_NODES the walk continues. Nested values are never replaced with null.
   const record = value as Record<string, unknown>;
   const copy: Record<string, unknown> = { ...record };
   mapped.set(value, copy);
@@ -386,7 +414,7 @@ function visit(value: unknown, depth: number, mapped: WeakMap<object, unknown>, 
       continue;
     }
     if (child != null && typeof child === "object") {
-      const next = stopNesting ? null : visit(child, depth + 1, mapped, budget);
+      const next = visit(child, depth + 1, mapped, budget);
       if (next !== child) {
         copy[key] = next;
         changed = true;

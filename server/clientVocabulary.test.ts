@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { router, publicProcedure, protectedProcedure, adminProcedure } from "./_core/trpc";
 import {
   CLIENT_PAYLOAD_MAX_DEPTH,
@@ -170,26 +170,59 @@ describe("client vocabulary", () => {
     expect(feed[0]?.ticker).toBe("HOLD");
   });
 
-  it("leaves cashtags, URLs, emails, and hyphenated or dotted compounds in prose", () => {
-    const prose = "Buy-Rite Inc filed at BUY.com. Watch $BUY and mail desk@BUY.com. See https://example.com/BUY then BUY the close.";
+  it("leaves cashtags, hashtags, URLs, emails, host names, and hyphenated compounds in prose", () => {
+    const span = "\u00001\u0000";
+    const prose = `Buy-Rite Inc filed at BUY.com. Watch $BUY and #BUY and mail desk@BUY.com. See https://example.com/BUY then BUY the close. Keep ${span}. Quote price.SELL and a.BUY.`;
     const text = neutralizeChannelText(prose);
     expect(text).toContain("Buy-Rite Inc");
     expect(text).toContain("BUY.com");
     expect(text).toContain("$BUY");
+    expect(text).toContain("#BUY");
     expect(text).toContain("desk@BUY.com");
     expect(text).toContain("https://example.com/BUY");
+    expect(text).toContain(span);
     expect(text).toContain("Upper-side condition the close");
-    expect(text).not.toMatch(/Upper-side condition-Rite|Upper-side condition\.com|\$Upper-side/);
+    expect(text).toContain("price.Lower-side condition");
+    expect(text).toContain("a.Upper-side condition");
+    const urls = Array.from({ length: 11 }, (_, index) => `https://cdn.example/${index}/BUY`);
+    const restored = neutralizeChannelText(urls.join(" "));
+    for (const url of urls) expect(restored).toContain(url);
+    expect(text).not.toMatch(/Upper-side condition-Rite|Upper-side condition\.com|\$Upper-side|#Upper-side/);
   });
 
   it("neutralizes an 8000-node list without a quadratic walk", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const nodes = Array.from({ length: CLIENT_PAYLOAD_MAX_NODES }, () => ({ action: "BUY" }));
     const started = performance.now();
     const guarded = guardNamedClientFields(nodes);
     const elapsed = performance.now() - started;
+    warn.mockRestore();
     expect(guarded).toHaveLength(CLIENT_PAYLOAD_MAX_NODES);
     expect(guarded[0]?.action).toBe("Upper-side condition");
     expect(guarded[CLIENT_PAYLOAD_MAX_NODES - 1]?.action).toBe("Upper-side condition");
     expect(elapsed).toBeLessThan(500);
+  });
+
+  it("keeps a large clean payload deep-equal to its input", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const rows = Array.from({ length: 9000 }, (_, index) => ({ id: index, q: { p: index } }));
+    const started = performance.now();
+    const guarded = guardNamedClientFields(rows);
+    const elapsed = performance.now() - started;
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+    expect(guarded).toEqual(rows);
+    expect(guarded[5000]?.q).toEqual({ p: 5000 });
+    expect(guarded[8999]?.q).not.toBeNull();
+    expect(elapsed).toBeLessThan(500);
+  });
+
+  it("returns the neutralized array when a list refers back to itself", () => {
+    const items: Array<{ title: string } | unknown[]> = [{ title: "A BUY setup" }];
+    items.push(items);
+    const out = neutralizeChannelPayload(items);
+    expect(out[1]).toBe(out);
+    expect((out[0] as { title: string }).title).toBe("A Upper-side condition setup");
+    expect((out[1] as typeof out)[0]).toBe(out[0]);
   });
 });
