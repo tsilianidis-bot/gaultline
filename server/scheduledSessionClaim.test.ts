@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { handleScheduledSeismograph } from "./scheduledSeismograph";
+import { runScheduledSeismographForTests } from "./scheduledSeismograph";
 import {
   admitScheduledSessionOutcome,
   claimScheduledSeismographSession,
@@ -43,7 +43,7 @@ describe("scheduled seismograph database claim", () => {
     const results = await Promise.all(Array.from({ length: 8 }, () =>
       claimScheduledSeismographSession("2026-10-05", async () => store, { trigger: "SCHEDULED_CRON" })));
     expect(results.filter(result => result.status === "claimed")).toHaveLength(1);
-    expect(results.filter(result => result.status === "already_claimed")).toHaveLength(7);
+    expect(results.filter(result => result.status === "incomplete")).toHaveLength(7);
     expect(store.rows.has(scheduledSeismographClaimKey("2026-10-05"))).toBe(true);
   });
 
@@ -54,18 +54,21 @@ describe("scheduled seismograph database claim", () => {
     vi.setSystemTime(new Date("2026-10-05T20:15:00.000Z"));
     const json = vi.fn();
     const status = vi.fn(() => ({ json }));
-    await handleScheduledSeismograph({ sessionClaim: async () => "unavailable" } as never, { json, status } as never);
+    await runScheduledSeismographForTests({ json, status } as never, { sessionClaim: async () => "unavailable" });
     expect(status).toHaveBeenCalledWith(503);
     expect(json).toHaveBeenCalledWith(expect.objectContaining({ ok: false, skipped: "session_claim_unavailable" }));
   });
 
-  it("treats a restarted caller with a live lease as already claimed", async () => {
+  it("treats a restarted caller with a live lease as incomplete, not completed", async () => {
     const store = memoryStore();
     await claimScheduledSeismographSession("2026-11-02", async () => store, { nowMs: inWindow, trigger: "SCHEDULED_CRON" });
     await expect(claimScheduledSeismographSession("2026-11-02", async () => store, {
       nowMs: inWindow + 1000,
       trigger: "SCHEDULED_CRON",
-    })).resolves.toEqual({ status: "already_claimed" });
+    })).resolves.toEqual({ status: "incomplete", generation: 1 });
+    const stored = [...store.rows.values()].join("\n");
+    expect(stored).toContain("\"disposition\":\"incomplete\"");
+    expect(stored).not.toContain("\"state\":\"completed\"");
   });
 
   it("recovers a failed claim once inside the window and refuses a second recoverer", async () => {
@@ -79,7 +82,7 @@ describe("scheduled seismograph database claim", () => {
       claimScheduledSeismographSession("2026-10-05", async () => store, { nowMs: inWindow + 1000, trigger: "SCHEDULED_CRON" }),
     ]);
     expect(recovered.filter(result => result.status === "claimed" && result.mode === "recovered")).toHaveLength(1);
-    expect(recovered.filter(result => result.status === "already_claimed")).toHaveLength(1);
+    expect(recovered.filter(result => result.status === "incomplete")).toHaveLength(1);
   });
 
   it("refuses recovery outside the window, after completion, and after an outcome exists", async () => {
@@ -89,7 +92,7 @@ describe("scheduled seismograph database claim", () => {
     await expect(claimScheduledSeismographSession("2026-10-05", async () => expired, {
       nowMs: outsideWindow,
       trigger: "SCHEDULED_CRON",
-    })).resolves.toEqual({ status: "already_claimed" });
+    })).resolves.toEqual({ status: "incomplete", generation: 1 });
 
     const done = memoryStore();
     const won = await claimScheduledSeismographSession("2026-10-05", async () => done, { nowMs: inWindow, trigger: "SCHEDULED_CRON" });
@@ -128,19 +131,79 @@ describe("scheduled seismograph database claim", () => {
     const claimed = await claimScheduledSeismographSession("2026-10-05", async () => store, { nowMs: inWindow, trigger: "SCHEDULED_CRON" });
     const json = vi.fn();
     const status = vi.fn(() => ({ json }));
-    await handleScheduledSeismograph({
+    await runScheduledSeismographForTests({ json, status } as never, {
       sessionClaim: async () => claimed,
       sessionStore: async () => store,
       runPipeline: async () => {
         throw new Error("pipeline crashed after claim");
       },
-    } as never, { json, status } as never);
+    });
     expect(status).toHaveBeenCalledWith(500);
     const recovered = await claimScheduledSeismographSession("2026-10-05", async () => store, {
       nowMs: inWindow + 1000,
       trigger: "SCHEDULED_CRON",
     });
     expect(recovered).toEqual({ status: "claimed", generation: 2, mode: "recovered" });
+  });
+
+  it("does not report a crash mid-run as already completed, then allows one retry after the lease expires", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(inWindow));
+    const store = memoryStore();
+    const claimed = await claimScheduledSeismographSession("2026-10-05", async () => store, { nowMs: inWindow, trigger: "SCHEDULED_CRON" });
+    expect(claimed).toMatchObject({ status: "claimed", generation: 1 });
+    const json = vi.fn();
+    const status = vi.fn(() => ({ json }));
+    await runScheduledSeismographForTests({ json, status } as never, {
+      sessionClaim: async () => ({ status: "incomplete" as const, generation: 1 }),
+      sessionStore: async () => store,
+      runPipeline: async () => {
+        throw new Error("pipeline must not run for an incomplete claim");
+      },
+    });
+    expect(status).toHaveBeenCalledWith(409);
+    expect(json).toHaveBeenCalledWith(expect.objectContaining({
+      ok: false,
+      skipped: "session_incomplete",
+      execution: "in_progress",
+    }));
+    expect(json).not.toHaveBeenCalledWith(expect.objectContaining({ execution: "already_completed" }));
+
+    const stillHeld = await claimScheduledSeismographSession("2026-10-05", async () => store, {
+      nowMs: inWindow + 1000,
+      trigger: "SCHEDULED_CRON",
+    });
+    expect(stillHeld).toEqual({ status: "incomplete", generation: 1 });
+
+    const expiredLease = inWindow + 3 * 60 * 1000 + 1;
+    const retried = await claimScheduledSeismographSession("2026-10-05", async () => store, {
+      nowMs: expiredLease,
+      trigger: "SCHEDULED_CRON",
+    });
+    expect(retried).toEqual({ status: "claimed", generation: 2, mode: "recovered" });
+  });
+
+  it("keeps a completed duplicate idempotent and refuses a second concurrent pipeline", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(inWindow));
+    const store = memoryStore();
+    const won = await claimScheduledSeismographSession("2026-10-05", async () => store, { nowMs: inWindow, trigger: "SCHEDULED_CRON" });
+    await completeScheduledSession("2026-10-05", won.generation!, async () => store, inWindow);
+    const pipeline = vi.fn();
+    const json = vi.fn();
+    const status = vi.fn(() => ({ json }));
+    await runScheduledSeismographForTests({ json, status } as never, {
+      sessionClaim: async () => claimScheduledSeismographSession("2026-10-05", async () => store, { nowMs: inWindow + 1000, trigger: "SCHEDULED_CRON" }),
+      sessionStore: async () => store,
+      runPipeline: pipeline,
+    });
+    expect(pipeline).not.toHaveBeenCalled();
+    expect(status).not.toHaveBeenCalled();
+    expect(json).toHaveBeenCalledWith(expect.objectContaining({
+      ok: true,
+      skipped: "session_already_claimed",
+      execution: "already_completed",
+    }));
   });
 
   it("hides claim and outcome keys from public market memory", () => {

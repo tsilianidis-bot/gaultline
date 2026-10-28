@@ -12,7 +12,7 @@ import { evidenceFreshnessLabel } from "./evidenceFreshness";
 import { computeTradingSignal, computeWildersRSI } from "./tradingSignals";
 import { computeCryptoSignal } from "./cryptoSignals";
 import { dayTradeIndicatorGate } from "./dayTradeEngine";
-import { handleScheduledSeismograph } from "./scheduledSeismograph";
+import { runScheduledSeismographForTests } from "./scheduledSeismograph";
 import {
   admitScheduledSessionOutcome,
   claimScheduledSeismographSession,
@@ -124,16 +124,18 @@ describe("blocker 2 — the real out-of-window cron finalizes stale pending rows
     });
     const recordScore = vi.fn();
     const json = vi.fn();
-    await handleScheduledSeismograph({
+    const status = vi.fn(() => ({ json }));
+    await runScheduledSeismographForTests({ json, status } as never, {
       sessionStore: async () => store,
       runPipeline: pipeline,
-      recordScore,
-    } as never, { json } as never);
+    });
     expect(pipeline).not.toHaveBeenCalled();
     expect(recordScore).not.toHaveBeenCalled();
+    expect(status).toHaveBeenCalledWith(409);
     expect(json).toHaveBeenCalledWith(expect.objectContaining({
-      ok: true,
-      skipped: "outside_nyse_post_close_window",
+      ok: false,
+      alert: true,
+      skipped: "dst_companion_outside_window",
     }));
     expect(store.rows.get(scheduledSeismographOutcomeKey(etDate))).toContain("skipped: unrecoverable");
   });

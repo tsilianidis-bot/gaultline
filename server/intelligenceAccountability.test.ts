@@ -555,6 +555,10 @@ describe("accountability surface does not join the five-question navigation", ()
     expect(page).toContain("PUBLIC_DISCLAIMER");
     expect(page).toContain("Insufficient evidence");
     expect(page).toContain("import.meta.env.DEV");
+    expect(page).toContain("intelligenceAccountability.emptyPreview");
+    expect(page).not.toContain("isOwnerOrAdmin");
+    expect(page).not.toContain("emptyPublicTrackRecord");
+    expect(router).toContain("emptyPreview: ownerOrAdminProcedure");
     expect(page).not.toMatch(/Pre-Flight|crash probability|predictive/i);
     expect(nav).toContain("NAVIGATION_HIERARCHY");
     expect(CUSTOMER_SEARCH_ITEMS.some(item => item.path.includes("intelligence-track-record"))).toBe(false);

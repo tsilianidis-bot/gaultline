@@ -6,5 +6,5 @@ export const INTELLIGENCE_EVIDENCE_FLAG = "FAULTLINE_INTELLIGENCE_EVIDENCE_ENABL
  * being activated merely because this code has been deployed.
  */
 export function isIntelligenceEvidenceEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env[INTELLIGENCE_EVIDENCE_FLAG]?.trim().toLowerCase() === "true";
+  return env[INTELLIGENCE_EVIDENCE_FLAG] === "true";
 }

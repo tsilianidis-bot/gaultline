@@ -42,7 +42,7 @@ export const SCHEDULED_SESSION_LEASE_MS = 3 * 60 * 1000;
 export const MAX_SCHEDULED_SESSION_RECOVERIES = 1;
 export const MAX_SCHEDULED_SESSION_GENERATION = 1 + MAX_SCHEDULED_SESSION_RECOVERIES;
 
-export type ScheduledSessionClaimStatus = "claimed" | "already_claimed" | "unavailable" | "reconcile" | "exhausted";
+export type ScheduledSessionClaimStatus = "claimed" | "already_claimed" | "incomplete" | "unavailable" | "reconcile" | "exhausted";
 
 export interface ScheduledSessionClaimResult {
   status: ScheduledSessionClaimStatus;
@@ -174,11 +174,19 @@ function isDuplicateKey(error: unknown): boolean {
   return false;
 }
 
+function claimDisposition(state: ClaimState): "incomplete" | "failed" | "completed" | "exhausted" {
+  if (state === "completed") return "completed";
+  if (state === "failed") return "failed";
+  if (state === "exhausted") return "exhausted";
+  return "incomplete";
+}
+
 function encodeClaim(body: ClaimBody): string {
   return JSON.stringify({
     kind: body.kind,
     etDate: body.etDate,
     state: body.state,
+    disposition: claimDisposition(body.state),
     generation: body.generation,
     claimedAt: body.claimedAt,
     leaseExpiresAt: body.leaseExpiresAt,
@@ -285,6 +293,15 @@ async function writeOutcome(store: SessionClaimStore, etDate: string, previous: 
   return store.cas(scheduledSeismographOutcomeKey(etDate), previous, encodeOutcome(next));
 }
 
+function classifyStoredClaim(raw: string | null): ScheduledSessionClaimResult {
+  if (!raw) return { status: "unavailable" };
+  const parsed = parseClaim(raw);
+  if (!parsed) return { status: "unavailable" };
+  if (parsed.state === "completed") return { status: "already_claimed" };
+  if (parsed.state === "exhausted") return { status: "exhausted", generation: parsed.generation };
+  return { status: "incomplete", generation: parsed.generation };
+}
+
 async function recoverExistingClaim(
   store: SessionClaimStore,
   key: string,
@@ -296,26 +313,27 @@ async function recoverExistingClaim(
   try {
     current = await store.read(key);
   } catch {
-    return { status: "already_claimed" };
+    return { status: "unavailable" };
   }
-  if (!current) return { status: "already_claimed" };
-  const parsed = parseClaim(current);
-  if (!parsed || parsed.state === "completed") return { status: "already_claimed" };
+  const parsed = current ? parseClaim(current) : null;
+  if (!current || !parsed) return { status: "unavailable" };
+  if (parsed.state === "completed") return { status: "already_claimed" };
   if (parsed.state === "exhausted") return { status: "exhausted", generation: parsed.generation };
   const leaseExpiresAt = Date.parse(parsed.leaseExpiresAt);
   const leaseHeld = parsed.state === "leased" && Number.isFinite(leaseExpiresAt) && leaseExpiresAt > nowMs;
-  if (leaseHeld) return { status: "already_claimed" };
+  if (leaseHeld) return { status: "incomplete", generation: parsed.generation };
   const recoverable = parsed.state === "failed" || (Number.isFinite(leaseExpiresAt) && leaseExpiresAt <= nowMs);
-  if (!recoverable || trigger !== "SCHEDULED_CRON") return { status: "already_claimed" };
+  if (!recoverable || trigger !== "SCHEDULED_CRON") return { status: "incomplete", generation: parsed.generation };
   const window = nyseSeismographRunWindow(new Date(nowMs));
   const inWindow = window.isScheduledWindow && window.etDate === etDate;
   let outcomeRaw: string | null;
   try {
     outcomeRaw = await store.read(scheduledSeismographOutcomeKey(etDate));
   } catch {
-    return { status: "already_claimed" };
+    return { status: "unavailable" };
   }
   const outcome = outcomeRaw ? parseOutcome(outcomeRaw) : null;
+  if (outcome?.state === "scored") return { status: "already_claimed" };
   if (outcome && outcomeNeedsScore(outcome, nowMs)) {
     if (!inWindow) {
       try {
@@ -327,12 +345,12 @@ async function recoverExistingClaim(
       } catch {
         return { status: "unavailable" };
       }
-      return { status: "already_claimed" };
+      return { status: "incomplete", generation: parsed.generation };
     }
     return { status: "reconcile", generation: parsed.generation, mode: "reconcile" };
   }
-  if (outcomeRaw) return { status: "already_claimed" };
-  if (!inWindow) return { status: "already_claimed" };
+  if (outcomeRaw) return { status: "incomplete", generation: parsed.generation };
+  if (!inWindow) return { status: "incomplete", generation: parsed.generation };
   if (parsed.generation >= MAX_SCHEDULED_SESSION_GENERATION) {
     const exhausted = encodeClaim({
       ...parsed,
@@ -354,7 +372,7 @@ async function recoverExistingClaim(
   } catch {
     return { status: "unavailable" };
   }
-  if (!won) return { status: "already_claimed" };
+  if (!won) return classifyStoredClaim(await store.read(key).catch(() => null));
   return { status: "claimed", generation: nextGeneration, mode: "recovered" };
 }
 

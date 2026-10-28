@@ -67,6 +67,9 @@ export function classifyYahooObservation(quote: Pick<YahooQuote, "price" | "obse
   if (!quote || !Number.isFinite(quote.price) || !Number.isFinite(quote.observedAt) || quote.source === "error") {
     return { timing: "unavailable", supportsCurrentClaim: false, detail: "No usable provider observation timestamp is available." };
   }
+  if ((quote.observedAt as number) > nowMs) {
+    return { timing: "unavailable", supportsCurrentClaim: false, detail: "Provider observation timestamp is in the future." };
+  }
   const ageMs = Math.max(0, nowMs - (quote.observedAt as number));
   const activeSession = quote.marketState === "REGULAR" || quote.marketState === "PRE" || quote.marketState === "POST";
   if (!quote.isDelayed && activeSession && ageMs <= LIVE_OBSERVATION_MAX_AGE_MS) {
