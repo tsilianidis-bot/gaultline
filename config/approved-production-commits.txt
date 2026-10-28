@@ -1,0 +1,4 @@
+# Full git SHAs allowed to boot when Railway environment variables are present.
+# Production deployment b19716b1 is commit 1cb5dee. Do not add a release-candidate
+# SHA until James approves that deploy. This file does not deploy or retag anything.
+1cb5dee13832c0556ec5a380ecc4ffb02513e875

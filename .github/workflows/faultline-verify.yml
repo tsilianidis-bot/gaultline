@@ -6,10 +6,12 @@ on:
     branches:
       - grok/faultline-baseline-stabilization-2026-09-11
       - grok/faultline-completion-2026-09-08
+      - release/verified-2026-10-22
   pull_request:
     branches:
       - grok/faultline-completion-2026-09-08
       - grok/faultline-baseline-stabilization-2026-09-11
+      - release/verified-2026-10-22
 
 concurrency:
   group: faultline-verify-${{ github.workflow }}-${{ github.ref }}
@@ -37,6 +39,16 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+
+      - name: Install disposable MariaDB binaries
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mariadb-server
+          sudo systemctl stop mariadb.service || true
+          sudo systemctl disable mariadb.service || true
+          echo "/usr/sbin" >> "$GITHUB_PATH"
+          test -x /usr/bin/mariadb-install-db
+          test -x /usr/sbin/mariadbd
 
       - name: Install
         run: pnpm install --frozen-lockfile

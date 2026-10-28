@@ -4,6 +4,7 @@
  * Nothing here is labeled as a genuine market print.
  */
 import { spawn, type ChildProcess } from "node:child_process";
+import { mariaBinary } from "./testing/mariaBinary";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -116,10 +117,11 @@ describe("evidence pipeline on an isolated database", () => {
   beforeAll(async () => {
     assertIsolated(url);
     await new Promise<void>((resolve, reject) => {
-      const install = spawn("mariadb-install-db", ["--datadir", datadir, "--auth-root-authentication-method=normal", "--skip-test-db"], { stdio: "ignore" });
+      const install = spawn(mariaBinary("mariadb-install-db"), ["--datadir", datadir, "--auth-root-authentication-method=normal", "--skip-test-db"], { stdio: "ignore" });
+      install.on("error", reject);
       install.on("exit", code => code === 0 ? resolve() : reject(new Error(`mariadb-install-db exited ${code}`)));
     });
-    server = spawn("mariadbd", [
+    server = spawn(mariaBinary("mariadbd"), [
       `--datadir=${datadir}`,
       "--bind-address=127.0.0.1",
       `--port=${PORT}`,

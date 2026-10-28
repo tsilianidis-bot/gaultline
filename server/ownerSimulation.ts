@@ -688,6 +688,11 @@ export async function buildCryptoOpportunity(
     const parsedUpdated = Date.parse(marketData?.lastUpdated ?? "");
     const observedAtMs = Number.isFinite(parsedUpdated) ? parsedUpdated : null;
     const freshness = providerRowFreshness({ observedAtMs, provider: "coingecko" });
+    const sourceStatus = freshness === "LIVE"
+      ? "live"
+      : freshness === "UNAVAILABLE" || freshness === "STALE"
+        ? "unavailable"
+        : "delayed";
 
     return {
       id: `crypto-${ticker}-${Date.now()}`,
@@ -704,7 +709,7 @@ export async function buildCryptoOpportunity(
       dataSource: "CoinGecko",
       priceTimestamp: observedAtMs != null ? new Date(observedAtMs).toISOString() : undefined,
       observedAtMs,
-      sourceStatus: observedAtMs != null ? "live" : "unavailable",
+      sourceStatus,
       entryZoneLow: entryLow,
       entryZoneHigh: entryHigh,
       stopLoss,

@@ -124,16 +124,19 @@ describe("blocker 2 — the real out-of-window cron finalizes stale pending rows
     });
     const recordScore = vi.fn();
     const json = vi.fn();
+    const status = vi.fn(() => ({ json }));
     await handleScheduledSeismograph({
       sessionStore: async () => store,
       runPipeline: pipeline,
       recordScore,
-    } as never, { json } as never);
+    } as never, { json, status } as never);
     expect(pipeline).not.toHaveBeenCalled();
     expect(recordScore).not.toHaveBeenCalled();
+    expect(status).toHaveBeenCalledWith(409);
     expect(json).toHaveBeenCalledWith(expect.objectContaining({
-      ok: true,
-      skipped: "outside_nyse_post_close_window",
+      ok: false,
+      alert: true,
+      skipped: "dst_companion_outside_window",
     }));
     expect(store.rows.get(scheduledSeismographOutcomeKey(etDate))).toContain("skipped: unrecoverable");
   });

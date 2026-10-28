@@ -4,7 +4,7 @@
  * It does not change the Pressure Index or existing production outputs.
  */
 export type IntelligenceOrigin = "observed" | "modeled" | "inferred";
-export type IntelligenceIntegrityStatus = "verified" | "delayed" | "stale" | "unavailable";
+export type IntelligenceIntegrityStatus = "verified" | "delayed" | "stale" | "unavailable" | "historical";
 
 export interface IntelligenceEvidence {
   id: string;

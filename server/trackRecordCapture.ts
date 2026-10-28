@@ -48,7 +48,7 @@ export type TrackRecordCaptureReason =
   | "appended";
 
 export function trackRecordCronWritesEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env[TRACK_RECORD_CRON_WRITES]?.trim().toLowerCase() === "true";
+  return env[TRACK_RECORD_CRON_WRITES] === "true";
 }
 
 export function evidenceReferenceHash(parts: {
@@ -116,8 +116,13 @@ export function selectVerifiedEvidenceReferences(
 
 function gateFailure(observation: ValidatedIntelligenceEvidence | undefined): TrackRecordCaptureReason | null {
   if (!observation) return "evidence_missing";
-  if (observation.validationStatus === "stale") return "evidence_stale";
-  if (observation.validationStatus === "unavailable" || observation.value === null) return "integrity_gate_failed";
+  if (observation.validationStatus === "stale" || observation.temporalStatus === "stale") return "evidence_stale";
+  if (
+    observation.validationStatus === "historical"
+    || observation.temporalStatus === "completed_session"
+    || observation.validationStatus === "unavailable"
+    || observation.value === null
+  ) return "integrity_gate_failed";
   if (!observation.supportsCurrentClaim || observation.validationStatus !== "verified") return "integrity_gate_failed";
   return null;
 }

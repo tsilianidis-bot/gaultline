@@ -208,3 +208,24 @@ export function nyseSeismographRunWindow(at: Date | string = new Date()): NyseSe
       : `Scheduled Seismograph runs only from ${timeLabel(scheduledMinute)} through ${timeLabel(windowEndMinute)} on this ${earlyClose ? "early-close" : "regular"} session.`,
   };
 }
+
+/**
+ * Railway cron is UTC-only. `15 20,21 * * 1-5` fires at 20:15 and 21:15 UTC.
+ * Exactly one of those is 16:15 America/New_York (20:15 UTC in EDT, 21:15 UTC
+ * in EST). The other is the companion hour: 15:15 ET in EST, or 17:15 ET in EDT.
+ * A valid session day in that companion half-hour is not a second daily run.
+ */
+const DST_COMPANION_MINUTE_BANDS = [
+  { start: 15 * 60 + 15, end: 15 * 60 + 45 },
+  { start: 17 * 60 + 15, end: 17 * 60 + 45 },
+] as const;
+
+export function isDstCompanionSeismographCallback(at: Date | string = new Date()): boolean {
+  const window = nyseSeismographRunWindow(at);
+  if (window.isScheduledWindow) return false;
+  if (window.session !== "REGULAR" && window.session !== "EARLY_CLOSE") return false;
+  const instant = typeof at === "string" ? new Date(at) : at;
+  const fields = easternFields(instant);
+  if (!fields) return false;
+  return DST_COMPANION_MINUTE_BANDS.some(band => fields.minuteOfDay >= band.start && fields.minuteOfDay < band.end);
+}

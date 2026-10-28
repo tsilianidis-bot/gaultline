@@ -11,15 +11,19 @@
  * 7. Persist the assembled SeismographOutput to Market Memory
  *
  * Registered at: POST /api/scheduled/seismograph-daily
- * Host schedule: 4:15 PM America/New_York on valid NYSE sessions. The handler
- * independently skips callbacks outside that post-close schedule window.
+ * Host schedule: 4:15 PM America/New_York on valid NYSE sessions.
+ * Railway cannot express that timezone. The candidate crontab is
+ * `15 20,21 * * 1-5` UTC: exactly one fire is 16:15 ET. The handler admits
+ * only 16:15–16:45 America/New_York. Every other callback, including the
+ * current production `0 18 * * *` UTC cron and the DST companion hour,
+ * returns non-2xx so `curl -f` fails and the skip is alerted.
  */
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import type { Request, Response } from "express";
 import { seismographReadings } from "../drizzle/schema";
 import { getDb } from "./db";
-import { nyseSeismographRunWindow } from "../shared/nyseSession";
+import { isDstCompanionSeismographCallback, nyseSeismographRunWindow } from "../shared/nyseSession";
 import { calculateFaultlinePressure, type PressureAlert } from "./pressure/engine";
 import { persistPressureRunAndShadows } from "./pressure/scheduledPersistence";
 import { refreshPriorComponentsAfterVerifiedRun } from "./pressure/priorComponents";
@@ -78,6 +82,7 @@ import { evaluateAndPersistImportanceQualification } from "./importanceQualifica
 import { evaluateAndPersistLifecycle } from "./earlyWarningLifecycle";
 import { evaluateAndPersistPhase9ForCurrentStream } from "./confirmationInvalidation";
 import { resolveBuildIdentity } from "./buildIdentity";
+import { captureMessage } from "./errorTracking";
 
 /** Cache key for the latest assembled SeismographOutput in Market Memory */
 export const SEISMOGRAPH_OUTPUT_KEY = "seismograph:latest_output";
@@ -411,6 +416,21 @@ async function seismographReadingExists(date: string): Promise<boolean> {
   return rows.length > 0;
 }
 
+function alertSkippedSchedule(skipped: string, detail: Record<string, unknown>): void {
+  console.error(`[Seismograph][SCHEDULE-ALERT] ${skipped}`);
+  void captureMessage(`Scheduled seismograph callback rejected: ${skipped}`, "error", {
+    procedure: "scheduled.seismograph-daily",
+    skipped,
+    alert: true,
+    ...detail,
+  }).catch(() => undefined);
+}
+
+function rejectScheduledCallback(res: Response, statusCode: number, body: Record<string, unknown>): void {
+  alertSkippedSchedule(String(body.skipped ?? "skipped"), body);
+  res.status(statusCode).json({ ok: false, alert: true, ...body });
+}
+
 export async function handleScheduledSeismograph(
   req: Request & {
     sessionClaim?: (etDate: string) => Promise<ScheduledSessionClaimStatus | ScheduledSessionClaimResult>;
@@ -442,10 +462,11 @@ export async function handleScheduledSeismograph(
   // outside the documented NYSE post-close window must not record a pre-close canonical
   // observation or forward ledger provenance.
   if (!runWindow.isScheduledWindow) {
-    console.warn(`[Seismograph] Scheduled callback skipped: ${runWindow.reason}`);
-    res.json({
-      ok: true,
-      skipped: "outside_nyse_post_close_window",
+    const companion = isDstCompanionSeismographCallback(now);
+    const skipped = companion ? "dst_companion_outside_window" : "outside_nyse_post_close_window";
+    console.error(`[Seismograph] Scheduled callback rejected: ${runWindow.reason}`);
+    rejectScheduledCallback(res, 409, {
+      skipped,
       session: runWindow.session,
       etDate: runWindow.etDate,
       expectedRunAtEt: runWindow.scheduledRunAtEt,
@@ -462,8 +483,7 @@ export async function handleScheduledSeismograph(
     ? req.sessionClaim(scheduledEtDate)
     : claimScheduledSeismographSession(scheduledEtDate, sessionStore, { nowMs: now.getTime(), trigger: runContext.trigger })));
   if (sessionClaim.status === "exhausted") {
-    res.json({
-      ok: true,
+    rejectScheduledCallback(res, 409, {
       skipped: "session_recovery_exhausted",
       date: scheduledEtDate,
       etDate: scheduledEtDate,
@@ -502,10 +522,17 @@ export async function handleScheduledSeismograph(
           });
         },
       });
-      const skipped = resolution === "unrecoverable" ? "skipped: unrecoverable" : undefined;
+      if (resolution === "unrecoverable" || resolution === "unavailable") {
+        rejectScheduledCallback(res, resolution === "unavailable" ? 503 : 409, {
+          skipped: resolution === "unrecoverable" ? "session_unrecoverable" : "session_reconcile_unavailable",
+          execution: resolution,
+          date: scheduledEtDate,
+          etDate: scheduledEtDate,
+        });
+        return;
+      }
       res.json({
         ok: true,
-        skipped,
         execution: resolution,
         date: scheduledEtDate,
         etDate: scheduledEtDate,
@@ -517,17 +544,32 @@ export async function handleScheduledSeismograph(
     return;
   }
   if (sessionClaim.status !== "claimed") {
-    const skipped = sessionClaim.status === "already_claimed" ? "session_already_claimed" : "session_claim_unavailable";
     if (sessionClaim.status === "unavailable") {
-      res.status(503).json({
-        ok: false,
-        skipped,
+      rejectScheduledCallback(res, 503, {
+        skipped: "session_claim_unavailable",
         etDate: scheduledEtDate,
         reason: "Database session claim unavailable; the scheduled run and its forward capture were not started.",
       });
       return;
     }
-    res.json({ ok: true, skipped, date: scheduledEtDate, etDate: scheduledEtDate, execution: "already_completed" });
+    if (sessionClaim.status === "incomplete") {
+      rejectScheduledCallback(res, 409, {
+        skipped: "session_incomplete",
+        execution: "in_progress",
+        date: scheduledEtDate,
+        etDate: scheduledEtDate,
+        generation: sessionClaim.generation ?? null,
+        reason: "The session claim is leased or failed and is not a completed run.",
+      });
+      return;
+    }
+    res.json({
+      ok: true,
+      skipped: "session_already_claimed",
+      date: scheduledEtDate,
+      etDate: scheduledEtDate,
+      execution: "already_completed",
+    });
     return;
   }
   const generation = sessionClaim.generation;
@@ -556,8 +598,13 @@ export async function handleScheduledSeismograph(
     });
   } catch (err) {
     if (generation != null) await failScheduledSession(scheduledEtDate, generation, sessionStore).catch(() => undefined);
-    console.error("[Seismograph] Daily job failed:", err);
-    res.status(500).json({ ok: false, error: String(err) });
+    console.error("[Seismograph][SCHEDULE-ALERT] Daily job failed:", err);
+    void captureMessage("Scheduled seismograph run failed", "error", {
+      procedure: "scheduled.seismograph-daily",
+      etDate: scheduledEtDate,
+      alert: true,
+    }).catch(() => undefined);
+    res.status(500).json({ ok: false, alert: true, error: String(err) });
   } finally {
     if (heartbeat) clearInterval(heartbeat);
   }
