@@ -2,17 +2,44 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("./db", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./db")>();
+  return { ...actual, getUserTier: async () => "core" as const };
+});
 import { laborRatesUnavailableMessage } from "../shared/nowInterpretationCopy";
 import { observedDirectionSentence } from "../shared/surfaceClaims";
-import { computeCryptoSignal } from "./cryptoSignals";
+import { presentCryptoSignal, computeCryptoSignal } from "./cryptoSignals";
 import { computeDecision } from "./fmos/engines/decision";
-import { classifyQuadrant } from "./sectorRotation/calc";
+import { buildSectorRotationReading, classifyAction, classifyQuadrant } from "./sectorRotation/calc";
 import { omitTradeAction } from "./signalConfidenceBoundary";
 import { strategyText } from "./stockRegimeEngine";
-import { computeTradingSignal } from "./tradingSignals";
-import { clientPayloadHasDeniedToken, neutralizeClientPayload } from "../shared/clientVocabulary";
-import { stripClientTradeTokens } from "./routers/fmos";
+import { guardNamedClientFields, neutralConditionLabel, normalizeClientFieldName } from "../shared/clientVocabulary";
+import { renderRssFeed } from "./rssFeed";
+import { assemblePolygonBarQuote } from "./signalsProxy";
+import { buildDay1PressureEmail, buildDay2UpgradeEmail, buildDay3FoundingEmail, buildWelcomeEmail } from "./email";
+
+const NAMED_TRADE_FIELDS = new Set([
+  "action", "actionbias", "actionclass", "actiontype", "class", "finalverdictaction",
+  "proposedaction", "recommendationaction", "signalaction", "tradeaction", "verdictaction",
+]);
+
+function namedTradeClassLeaks(value: unknown, path: string[] = []): string[] {
+  if (value == null || typeof value !== "object") return [];
+  if (value instanceof Date || value instanceof Map || value instanceof Set || value instanceof URL || value instanceof Error || Buffer.isBuffer(value)) return [];
+  if (Array.isArray(value)) return value.flatMap((item, index) => namedTradeClassLeaks(item, [...path, String(index)]));
+  const leaks: string[] = [];
+  for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof child === "string" && NAMED_TRADE_FIELDS.has(normalizeClientFieldName(key))) {
+      const label = neutralConditionLabel(child);
+      if (label !== child && label !== child.trim()) leaks.push(`${[...path, key].join(".")}=${child}`);
+    } else if (child != null && typeof child === "object") {
+      leaks.push(...namedTradeClassLeaks(child, [...path, key]));
+    }
+  }
+  return leaks;
+}
 
 const BANNED = /\b(?:STRONG BUY|BUY|SELL|HOLD)\b|crash probability|\bRISK[-\s]?ON\b|\bRISK[-\s]?OFF\b|REDUCE EXPOSURE|INCREASE EXPOSURE|\bACCUMULATE\b|\bAVOID\b|\bOVERWEIGHT\b|\bUNDERWEIGHT\b|over-weight|\bENTRY\b|\bSTOP\b|\bTARGET\b|\badd to position\b|\badd exposure\b|\bavoid new positions\b|\btake profits\b|\bscale out\b|\bde-risk\b|(?<![\w.])trim\b(?!\s*\()|(?:\d+(?:\.\d+)?%\s+)?(?:odds|percent|probability|chance) of(?: a)? (?:crash|correction|recession)|\b(?:reduce|cut|lower) (?:leverage|exposure|risk exposure|position size)\b|\bincrease cash allocation\b|\bfavor defensive\b|\bprioriti[sz]e capital preservation\b|\braise (?:reserves|cash)\b|\blighten up\b|\bgo (?:long|short)\b|\bsit in cash\b|\bbuying opportunity\b|\brisk appetite on\b|\d+(?:\.\d+)?%\s+likelihood of a drawdown|(?:\d+(?:\.\d+)?%\s+)?chance of(?: a)? drawdown|crash risk is \d|recession probability \d|bull probability \d/i;
 const EXACT_PROTOCOL = "STRONG BUY|BUY NOW|STRONG SELL|STRONG REDUCE|BUY|SELL|HOLD|WATCH|WAIT|ADD|TRIM|ACCUMULATE|AVOID|REDUCE";
@@ -61,11 +88,21 @@ const ROOTS = [
   "client/src/pages/Press.tsx",
   "client/src/pages/Guide.tsx",
   "client/src/components/landing/thesis/thesisContent.ts",
+  "client/src/pages/seo/StockSignalPage.tsx",
   "server/decisionLight.ts",
   "server/fmos/engines/marketWeather.ts",
   "server/crossMarketEngine.ts",
   "server/simPortfolioJournal.ts",
   "server/xPostGenerator.ts",
+  "server/xPoster.ts",
+  "server/scheduledXPost.ts",
+  "server/scheduledDripEmail.ts",
+  "server/email.ts",
+  "server/rssFeed.ts",
+  "server/signalsProxy.ts",
+  "server/scheduledBlog.ts",
+  "server/soroBlogFeed.ts",
+  "server/fmos/engines/aiInterpretation.ts",
   "server/ownerSimulation.ts",
   "server/cryptoSignals.ts",
   "server/cryptoEngine.ts",
@@ -106,6 +143,15 @@ const SERVER_PAYLOADS = new Set([
   "server/crossMarketEngine.ts",
   "server/simPortfolioJournal.ts",
   "server/xPostGenerator.ts",
+  "server/xPoster.ts",
+  "server/scheduledXPost.ts",
+  "server/scheduledDripEmail.ts",
+  "server/email.ts",
+  "server/rssFeed.ts",
+  "server/signalsProxy.ts",
+  "server/scheduledBlog.ts",
+  "server/soroBlogFeed.ts",
+  "server/fmos/engines/aiInterpretation.ts",
   "server/ownerSimulation.ts",
   "server/cryptoSignals.ts",
   "server/cryptoEngine.ts",
@@ -135,7 +181,7 @@ const SKIP_FILES = new Set([
   // Classifies the user's own question. It does not render these tokens.
   "client/src/lib/askIntentClassifier.ts",
   "shared/interpretationIntegrity.ts",
-  // Denylist source. Customer payloads are scanned after neutralizeClientPayload.
+  // Denylist source. Customer payloads are scanned from procedure output, not by rewriting this file.
   "shared/clientVocabulary.ts",
   "server/pressure/engine.ts",
   "server/pressure/fredFixtureEvidence.ts",
@@ -277,29 +323,76 @@ function decodeNumericList(args: string): string {
   return `"${chars}"`;
 }
 
-/** NFKC, strip zero-width characters, and decode the escapes the scan has to see. */
+function quotedParts(inner: string): string {
+  return [...inner.matchAll(/["']([^"']*)["']/g)].map(match => match[1] ?? "").join("");
+}
+
+function decodePercentRuns(source: string): string {
+  let text = source;
+  let previous = "";
+  while (text !== previous) {
+    previous = text;
+    text = text.replace(/(?:%(?:25)?[0-9a-fA-F]{2}){2,}/g, (run) => {
+      try {
+        return decodeURIComponent(run.replace(/%25/gi, "%"));
+      } catch {
+        return run;
+      }
+    });
+  }
+  return text.replace(/decodeURIComponent\(\s*["']([^"']+)["']\s*\)/g, (_all, encoded: string) => {
+    try {
+      return `"${decodeURIComponent(encoded)}"`;
+    } catch {
+      return _all;
+    }
+  });
+}
+
+/** NFKD then NFKC, strip format characters, and decode the escapes the scan has to see. */
 export function normalizeClaimText(source: string): string {
   let text = source
+    .replace(/String\.fromCharCode\.call\(\s*[^,]+,([^)]*)\)/g, (_all, args: string) => decodeNumericList(args))
+    .replace(/String\.fromCodePoint\.call\(\s*[^,]+,([^)]*)\)/g, (_all, args: string) => decodeNumericList(args))
+    .replace(/String\.fromCharCode\.apply\(\s*[^,]+,\s*\[([^\]]*)\]\s*\)/g, (_all, args: string) => decodeNumericList(args))
+    .replace(/String\.fromCodePoint\.apply\(\s*[^,]+,\s*\[([^\]]*)\]\s*\)/g, (_all, args: string) => decodeNumericList(args))
+    .replace(/Reflect\.apply\(\s*String\.fromCharCode\s*,\s*[^,]+,\s*\[([^\]]*)\]\s*\)/g, (_all, args: string) => decodeNumericList(args))
     .replace(/\\u\{([0-9a-fA-F]+)\}/g, (_all, hex: string) => String.fromCodePoint(Number.parseInt(hex, 16)))
     .replace(/\\u([0-9a-fA-F]{4})/g, (_all, hex: string) => String.fromCharCode(Number.parseInt(hex, 16)))
     .replace(/\\x([0-9a-fA-F]{2})/g, (_all, hex: string) => String.fromCharCode(Number.parseInt(hex, 16)))
-    .replace(/&#x([0-9a-fA-F]+);/gi, (_all, hex: string) => String.fromCodePoint(Number.parseInt(hex, 16)))
-    .replace(/&#(\d+);/g, (_all, dec: string) => String.fromCodePoint(Number(dec)))
+    .replace(/\\([0-7]{3})/g, (_all, oct: string) => String.fromCharCode(Number.parseInt(oct, 8)))
+    .replace(/&#x([0-9a-fA-F]+);?/gi, (_all, hex: string) => String.fromCodePoint(Number.parseInt(hex, 16)))
+    .replace(/&#(\d+);?/g, (_all, dec: string) => String.fromCodePoint(Number(dec)))
     .replace(/String\.fromCodePoint\(([^)]*)\)/g, (_all, args: string) => decodeNumericList(args))
-    .replace(/String\.fromCharCode\(([^)]*)\)/g, (_all, args: string) => decodeNumericList(args));
-  text = text.replace(/\[((?:["'][^"']*["']\s*,\s*)*["'][^"']*["'])\]\.join\(\s*["']["']\s*\)/g, (_all, inner: string) => {
-    const parts = [...inner.matchAll(/["']([^"']*)["']/g)].map(match => match[1] ?? "");
-    return `"${parts.join("")}"`;
-  });
-  text = text.replace(/\{['"]{2}\}/g, "");
+    .replace(/String\.fromCharCode\(([^)]*)\)/g, (_all, args: string) => decodeNumericList(args))
+    .replace(/atob\(\s*["']([A-Za-z0-9+/=]+)["']\s*\)/g, (_all, b64: string) => {
+      try { return `"${Buffer.from(b64, "base64").toString("utf8")}"`; } catch { return _all; }
+    })
+    .replace(/Buffer\.from\(\s*["']([A-Za-z0-9+/=]+)["']\s*,\s*["']base64["']\s*\)/g, (_all, b64: string) => {
+      try { return `"${Buffer.from(b64, "base64").toString("utf8")}"`; } catch { return _all; }
+    })
+    .replace(/Buffer\.from\(\s*\[([^\]]*)\]\s*\)/g, (_all, args: string) => decodeNumericList(args));
+  text = decodePercentRuns(text);
+  const joinInner = String.raw`\[((?:["'][^"']*["']\s*,\s*)*["'][^"']*["'])\]`;
+  text = text.replace(new RegExp(`${joinInner}\\.join\\(\\s*(?:["'\`]["'\`]|\\\`\\s*\\\`)?\\s*\\)`, "g"), (_all, inner: string) => `"${quotedParts(inner)}"`);
+  text = text.replace(new RegExp(`${joinInner}\\.join\\([^)]*\\)\\.replace\\(\\s*\\/[^/]+\\/g?\\s*,\\s*["']["']\\s*\\)`, "g"), (_all, inner: string) => `"${quotedParts(inner)}"`);
+  text = text.replace(new RegExp(`${joinInner}\\.reduce\\(\\s*\\(?\\s*\\w+\\s*,\\s*\\w+\\s*\\)?\\s*=>\\s*\\w+\\s*\\+\\s*\\w+\\s*,\\s*["']["']\\s*\\)`, "g"), (_all, inner: string) => `"${quotedParts(inner)}"`);
+  text = text.replace(/(["'])([^"']+)\1\.split\(\s*["'][^"']*["']\s*\)\.join\(\s*(?:["'`]["'`]|`\s*`)?\s*\)/g, (_all, _quote: string, inner: string) => `"${inner.replace(/[^A-Za-z]/g, "")}"`);
   let concatenated = text;
   let previous = "";
+  const concatCall = /(["'])((?:\\.|(?!\1).)*)\1\.concat\(([^)]*)\)/g;
+  while (concatenated !== previous) {
+    previous = concatenated;
+    concatenated = concatenated.replace(concatCall, (_all, quote: string, left: string, args: string) => `${quote}${left}${quotedParts(args)}${quote}`);
+  }
+  concatenated = concatenated.replace(/\{['"]{2}\}/g, "");
+  previous = "";
   const pair = /(["'])((?:\\.|(?!\1).)*)\1\s*\+\s*(["'])((?:\\.|(?!\3).)*)\3/g;
   while (concatenated !== previous) {
     previous = concatenated;
-    concatenated = concatenated.replace(pair, (_all, quote, left, _quote, right) => `${quote}${left}${right}${quote}`);
+    concatenated = concatenated.replace(pair, (_all, quote: string, left: string, _quote: string, right: string) => `${quote}${left}${right}${quote}`);
   }
-  return concatenated.normalize("NFKC").replace(/[\u200B-\u200D\uFEFF\u2060\u00AD]/g, "");
+  return concatenated.normalize("NFKD").normalize("NFKC").replace(/[\u00AD\u034F\u061C\u115F\u1160\u17B4\u17B5\u180E\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u206F\u3164\uFEFF\uFFA0]/g, "");
 }
 
 function decodeRenderedTricks(source: string): string {
@@ -364,6 +457,9 @@ function reachableFiles(roots: string[]): string[] {
   for (const name of readdirSync("client/src/pages/seo/learn")) {
     if (name.endsWith(".tsx")) seen.add(join("client/src/pages/seo/learn", name));
   }
+  for (const name of readdirSync("client/src/pages/seo")) {
+    if (name.endsWith("Signal.tsx") || name === "StockSignalPage.tsx") seen.add(join("client/src/pages/seo", name));
+  }
   for (const name of readdirSync("server/routers")) {
     if (name.endsWith(".ts") && !name.endsWith(".test.ts")) seen.add(join("server/routers", name));
   }
@@ -412,6 +508,30 @@ describe("release-candidate surfaces do not print trade directives or crash-prob
     expect(claimHits('const note = "12% chance of a drawdown";').length).toBeGreaterThan(0);
     expect(claimHits('const hidden = "\\u0042UY";').length).toBeGreaterThan(0);
     expect(claimHits("const hidden = `Se{''}ll`;").length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "%42%55%59";').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "%2542%2555%2559";').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = decodeURIComponent("%42%55%59");').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "\\102\\125\\131";').length).toBeGreaterThan(0);
+    expect(claimHits("const hidden = String.fromCharCode.call(null, 66, 85, 89);").length).toBeGreaterThan(0);
+    expect(claimHits("const hidden = String.fromCodePoint.call(null, 66, 85, 89);").length).toBeGreaterThan(0);
+    expect(claimHits("const hidden = String.fromCharCode.apply(null, [66, 85, 89]);").length).toBeGreaterThan(0);
+    expect(claimHits("const hidden = Reflect.apply(String.fromCharCode, null, [66, 85, 89]);").length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = atob("QlVZ");').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = Buffer.from("QlVZ", "base64");').length).toBeGreaterThan(0);
+    expect(claimHits("const hidden = Buffer.from([66, 85, 89]);").length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = ["B","U","Y"].join();').length).toBeGreaterThan(0);
+    expect(claimHits("const hidden = ['B','U','Y'].join(``);").length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "B".concat("U", "Y");').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "B".concat("U").concat("Y");').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = ["B","U","Y"].reduce((a, c) => a + c, "");').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "B-U-Y".split("-").join("");').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = ["B","U","Y"].join("-").replace(/-/g, "");').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "B\\u200E\\u200FUY";').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "B\\u202A\\u202EUY";').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "B\\u2066UY";').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "B\\u180EUY";').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "&#66&#85&#89";').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "\\uFB00".normalize("NFKD");').length).toBe(0);
   });
 
   it("does not flag code property access", () => {
@@ -483,19 +603,28 @@ describe("release-candidate surfaces do not print trade directives or crash-prob
     expect(src).not.toMatch(/return\s+["']STRONG BUY["']/);
   });
 
-  it("scans client payloads from signal, stock, NOW, sector, crypto, and decision procedures", () => {
-    const stock = omitTradeAction(computeTradingSignal({
-      ticker: "NVDA",
-      price: 120,
-      open: 118,
-      high: 124,
-      low: 116,
-      changePercent: 1.8,
-      volumeMillions: 45,
-      avgVolume: 30,
-      sparkline: [-0.5, 0.2, 0.8, 1.4, 2.1],
-      relativeStrength: 72,
-    }, { label: "MODERATE RISK", score: 5 }));
+  it("scans real procedure and route outputs from fixture inputs", async () => {
+    const { appRouter } = await import("./routers");
+    const caller = appRouter.createCaller({
+      req: {} as never,
+      res: {} as never,
+      user: { id: 1, role: "user", isQaSession: false, openId: "fixture", email: "fixture@example.com", name: "Fixture", loginMethod: "manus", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() },
+    } as never);
+    const signals = await caller.signals.getTradingSignals({
+      tickers: [{
+        ticker: "NVDA",
+        price: 120,
+        open: 118,
+        high: 124,
+        low: 116,
+        changePercent: 1.8,
+        volumeMillions: 45,
+        avgVolume: 30,
+        sparkline: [-0.5, 0.2, 0.8, 1.4, 2.1],
+        relativeStrength: 72,
+      }],
+      regime: { label: "MODERATE RISK", score: 5 },
+    });
     const bars = Array.from({ length: 20 }, (_, index) => ({
       timestamp: 1_700_000_000_000 + index * 86_400_000,
       open: 100 + index,
@@ -503,7 +632,7 @@ describe("release-candidate surfaces do not print trade directives or crash-prob
       low: 99 + index,
       close: 101 + index,
     }));
-    const crypto = omitTradeAction(computeCryptoSignal({
+    const crypto = presentCryptoSignal(computeCryptoSignal({
       market: {
         symbol: "BTC",
         name: "Bitcoin",
@@ -524,32 +653,77 @@ describe("release-candidate surfaces do not print trade directives or crash-prob
       btcDominance: 54,
       regime: { label: "Neutral", score: 5 },
     }));
-    const decision = stripClientTradeTokens(computeDecision(
+    const below = classifyAction({ quadrant: "LOSING_MOMENTUM", relReturn20dPct: 0, breadthPct: 40, arrow: "DOWN" });
+    const lagging = classifyAction({ quadrant: "LAGGING", relReturn20dPct: -3, breadthPct: 20, arrow: "DOWN" });
+    const sector = buildSectorRotationReading({
+      now: Date.parse("2026-10-02T22:00:00.000Z"),
+      canonical: { stateId: null, stateHash: null, stateGeneratedAt: null, runId: null, regime: null, pressureIndex: 42 },
+      charts: {},
+      fred: {},
+      universe: { status: "UNAVAILABLE", name: "fixture", source: "fixture", asOf: null, members: [], reason: "fixture" },
+      stockCharts: {},
+      news: { status: "UNAVAILABLE", reason: "fixture", items: [] },
+    });
+    const quote = assemblePolygonBarQuote({ c: 101.25, o: 100, v: 1_500_000 }, 100);
+    const rss = renderRssFeed([{
+      slug: "pressure-brief",
+      title: "Pressure Index is 42/100",
+      contentType: "daily_market_brief",
+      metaDescription: "Regime label is mixed. No position change is published.",
+      content: "The latest completed reading is 42/100.",
+      regime: "MODERATE RISK",
+      pressureScore: 42,
+      publishedAt: new Date("2026-10-28T00:00:00.000Z"),
+      createdAt: new Date("2026-10-28T00:00:00.000Z"),
+    }]);
+    const heldTitle = renderRssFeed([{
+      slug: "ticker-hold",
+      title: "HOLD",
+      contentType: "daily_market_brief",
+      metaDescription: null,
+      content: "Ticker note.",
+      regime: null,
+      pressureScore: null,
+      publishedAt: null,
+      createdAt: new Date("2026-10-28T00:00:00.000Z"),
+    }]);
+    const emails = [
+      buildWelcomeEmail({ name: "Ada", email: "ada@example.com", siteUrl: "https://example.test" }),
+      buildDay1PressureEmail({ name: "Ada", email: "ada@example.com", siteUrl: "https://example.test" }),
+      buildDay2UpgradeEmail({ name: "Ada", email: "ada@example.com", siteUrl: "https://example.test" }),
+      buildDay3FoundingEmail({ name: "Ada", email: "ada@example.com", siteUrl: "https://example.test" }),
+    ].map(message => `${message.subject}\n${message.html}`).join("\n");
+    const decision = computeDecision(
       { overallPressure: 72, vectors: [], regime: "HIGH STRESS", alerts: [], dataSource: "live", level: "High" } as never,
       { currentRegime: "HIGH STRESS", confidence: 40, stability: 30, transitionRisk: 20, mostLikelyNextRegime: "HIGH STRESS", transitionProbability30d: 10, alternativeScenarios: [] } as never,
       { bull: 20, bear: 60, primaryDriver: "credit vector", bullEvidence: ["credit vector is elevated"], bearEvidence: ["pressure is elevated"], invalidationConditions: [] } as never,
       { score: 55, label: "Moderate" } as never,
       { score: 70 } as never,
-    ));
-    const clientPayloads = neutralizeClientPayload({
-      signal: stock,
+    );
+    const outputs = guardNamedClientFields({
+      signals,
       crypto,
       decision,
-      stockRegime: { strategy: strategyText("Bear Market", 80) },
-      sectorRotation: { action: { class: "OVERWEIGHT" }, also: "UNDERWEIGHT" },
-      now: { text: laborRatesUnavailableMessage() },
-      asha: { finalVerdictAction: "ACQUIRE", staged: "ADD GRADUALLY", steady: "KEEP", smaller: "REDUCE", passed: "PASS OVER" },
-      smartDiscovery: { verdict: "STRONG REDUCE", ledger: "WAIT" },
-      simPortfolio: { trade: { action: "BUY" } },
-      tradeSimulate: { verdict: "WAIT", direction: "Avoid" },
+      stockRegime: strategyText("Bear Market", 80),
+      sector,
+      sectorConditions: [
+        { conditionId: below.conditionId },
+        { conditionId: lagging.conditionId },
+      ],
+      now: laborRatesUnavailableMessage(),
+      quote,
       quadrant: classifyQuadrant(1.1, 0.2),
     });
-    const json = JSON.stringify(clientPayloads);
-    const leaked = json.match(/\b(?:STRONG BUY|BUY|SELL|HOLD|AVOID|ACCUMULATE|ACQUIRE|ADD GRADUALLY|KEEP|REDUCE|WAIT|PASS OVER|OVERWEIGHT|UNDERWEIGHT|STRONG REDUCE)\b/ig);
-    expect(leaked ?? []).toEqual([]);
-    expect(clientPayloadHasDeniedToken(json)).toBe(false);
+    expect(below.conditionId).not.toBe(lagging.conditionId);
+    expect(heldTitle).toContain("<title>HOLD</title>");
+    const json = JSON.stringify(outputs);
+    expect(namedTradeClassLeaks(outputs)).toEqual([]);
     expect(claimHits(json)).toEqual([]);
+    expect(claimHits(rss)).toEqual([]);
+    expect(claimHits(emails)).toEqual([]);
     expect(json).not.toMatch(/reduce risk exposure|reduce position size|increase cash allocation|prioritize capital preservation/i);
+    expect(signals[0]).not.toHaveProperty("action");
+    expect(crypto).not.toHaveProperty("action");
   });
 
   const files = reachableFiles([...routedPageRoots(), ...ROOTS]);

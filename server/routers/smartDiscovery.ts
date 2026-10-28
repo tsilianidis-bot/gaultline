@@ -1757,7 +1757,10 @@ export const smartDiscoveryRouter = router({
         .where(eq(decisionLedger.userId, ctx.user.id))
         .orderBy(desc(decisionLedger.createdAt))
         .limit(input.limit);
-      return withoutLedgerFabricatedScores(entries);
+      return withoutLedgerFabricatedScores(entries).map((entry) => ({
+        ...entry,
+        verdict: neutralConditionLabel(entry.verdict),
+      }));
     }),
 
   /**
@@ -1821,7 +1824,7 @@ export const smartDiscoveryRouter = router({
 
     const byVerdict: Record<string, { points: number; total: number }> = {};
     for (const e of scorable) {
-      const key = e.verdict;
+      const key = neutralConditionLabel(e.verdict);
       if (!byVerdict[key]) byVerdict[key] = { points: 0, total: 0 };
       byVerdict[key].total++;
       if (e.outcome === "correct") byVerdict[key].points += 1;

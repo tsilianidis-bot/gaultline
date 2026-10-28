@@ -1,5 +1,5 @@
 import { NOT_ADMIN_ERR_MSG, CORE_REQUIRED_ERR_MSG, PREMIUM_REQUIRED_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
-import { neutralizeClientPayload } from '@shared/clientVocabulary';
+import { guardNamedClientFields } from '@shared/clientVocabulary';
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
@@ -14,15 +14,17 @@ export const router = t.router;
 
 /**
  * Customer procedures. Admin and owner procedures are intentionally not wrapped.
- * Whether those screens should show a stored token is an open owner decision.
+ * ownerSim and simPortfolio keep raw simulation tokens: that display is an open
+ * owner decision. The guard drops a named trade-class field; it does not rewrite values.
  */
-const clientVocabulary = t.middleware(async ({ next }) => {
-  const result = await next();
-  if (!result.ok) return result;
-  return {
-    ...result,
-    data: neutralizeClientPayload(result.data),
-  };
+const RAW_SIMULATION_PATH = /^(?:ownerSim|simPortfolio)(?:\.|$)/;
+
+const clientVocabulary = t.middleware(async (opts) => {
+  const result = await opts.next();
+  if (!result.ok || RAW_SIMULATION_PATH.test(opts.path)) return result;
+  const data = guardNamedClientFields(result.data);
+  if (data === result.data) return result;
+  return { ...result, data };
 });
 
 export const publicProcedure = t.procedure.use(clientVocabulary);

@@ -431,7 +431,7 @@ p{font-size:14px;line-height:1.7;color:#94A3B8;margin:0 0 16px;}
 <span class="hl">45 to below 65:</span> Elevated.<br/>
 <span class="hl">65 to below 80:</span> High.<br/>
 <span class="hl">80 to 100:</span> Critical.</p>
-<p>These are pressure bands, not validated crash probabilities. Check input freshness and fallback labels alongside the score.</p>
+<p>These are pressure bands. The score is not an event percentage. Check input freshness and fallback labels alongside the score.</p>
 <p>Open the Pressure Index now and check today's reading.</p>
 <a href="${siteUrl}/app/pressure" class="cta">View Today's Pressure Index &#x2192;</a>
 </div>

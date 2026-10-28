@@ -109,13 +109,13 @@ function buildPlainEnglishSummary(
   const isDiverge = status.includes("Diverging");
 
   if (isRiskOn && status.includes("Strongly")) {
-    return `Both the stock market (${stockRegime}) and crypto market (${cryptoRegime}) are in higher-risk appetite regimes. This is a broadly constructive environment for risk assets. Macro conditions, price trends, and liquidity are all aligned in favour of continued upside.`;
+    return `Stock regime label is ${stockRegime}. Crypto regime label is ${cryptoRegime}. Both labels are in the higher-appetite group. Macro, price-trend, and liquidity inputs on this card share that group.`;
   }
   if (isRiskOn) {
-    return `The stock market is in a ${stockRegime} regime while crypto is showing ${cryptoRegime} conditions. Both markets are broadly higher-risk appetite, though with different levels of conviction. The overall environment favours risk assets, but position sizing should reflect the divergence in confidence.`;
+    return `Stock regime label is ${stockRegime}. Crypto regime label is ${cryptoRegime}. Both labels are in the higher-appetite group. The two conviction readings differ. No position change is published.`;
   }
   if (isRiskOff && status.includes("Strongly")) {
-    return `Both the stock market (${stockRegime}) and crypto market (${cryptoRegime}) are in lower-risk appetite regimes. This is a broadly defensive environment. Capital preservation should be the primary objective across both asset classes.`;
+    return `Stock regime label is ${stockRegime}. Crypto regime label is ${cryptoRegime}. Both labels are in the lower-appetite group. No position change is published.`;
   }
   if (isRiskOff) {
     return `The stock market (${stockRegime}) and crypto market (${cryptoRegime}) are both in a lower-risk appetite reading. High-beta assets are the smaller share of this reading. Cash, bonds, and stablecoins are the larger share. This is not an instruction.`;
@@ -124,12 +124,12 @@ function buildPlainEnglishSummary(
     return `Stock regime label is ${stockRegime}. Crypto regime label is ${cryptoRegime}. The stock label is the lower-appetite class and the crypto label is not. No position change is published.`;
   }
   if (isDiverge && status.includes("Crypto Leading")) {
-    return `Crypto (${cryptoRegime}) is outperforming equities (${stockRegime}). This divergence can signal either a crypto-specific catalyst or an early higher-risk appetite rotation. Monitor equity market breadth for confirmation.`;
+    return `Crypto regime label is ${cryptoRegime}. Stock regime label is ${stockRegime}. Equity breadth is not a separate input on this card. No position change is published.`;
   }
   if (isDiverge) {
-    return `The stock market (${stockRegime}) and crypto market (${cryptoRegime}) are sending conflicting signals. Reduce size, wait for alignment, and favour assets with clear trend confirmation.`;
+    return `Stock regime label is ${stockRegime}. Crypto regime label is ${cryptoRegime}. The two labels disagree. No position change is published.`;
   }
-  return `The stock market is in a ${stockRegime} regime and crypto is in a ${cryptoRegime} phase. Conditions are broadly neutral. Monitor for a directional break in either market before adjusting positioning.`;
+  return `Stock regime label is ${stockRegime}. Crypto regime label is ${cryptoRegime}. Neither label is a directional break. No position change is published.`;
 }
 
 function buildKeyInsights(
@@ -180,11 +180,11 @@ function buildKeyInsights(
 
 function buildForwardBias(ss: RegimeSentiment, cs: RegimeSentiment): string {
   if (ss === "bullish" && cs === "bullish") return `Stock sentiment label is ${ss}. Crypto sentiment label is ${cs}. No position change is published.`;
-  if (ss === "bullish" && cs === "neutral") return "Moderately higher-risk appetite. Favour equities over crypto. Wait for crypto confirmation.";
-  if (ss === "neutral" && cs === "bullish") return "Selective higher-risk appetite. Crypto outperforming \u2014 watch for equity confirmation before adding broad risk.";
+  if (ss === "bullish" && cs === "neutral") return `Stock sentiment label is ${ss}. Crypto sentiment label is ${cs}. No position change is published.`;
+  if (ss === "neutral" && cs === "bullish") return `Stock sentiment label is ${ss}. Crypto sentiment label is ${cs}. No position change is published.`;
   if (ss === "neutral" && cs === "neutral") return "Stock sentiment is neutral. Crypto sentiment is neutral. No direction is established beyond those labels.";
-  if (ss === "bearish" || cs === "bearish") return "Defensive. Reduce high-beta exposure. Favour cash, bonds, and stablecoins.";
-  return "Defensive. Capital preservation is the priority. Minimal equity and crypto exposure.";
+  if (ss === "bearish" || cs === "bearish") return `Stock sentiment label is ${ss}. Crypto sentiment label is ${cs}. At least one label is bearish. No position change is published.`;
+  return `Stock sentiment label is ${ss}. Crypto sentiment label is ${cs}. No position change is published.`;
 }
 
 // ── Alert Enrichment Helpers ─────────────────────────────────

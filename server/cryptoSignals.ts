@@ -18,6 +18,7 @@
 // ============================================================
 
 import { tradeClass } from "../shared/surfaceClaims";
+import { omitTradeAction, omitTradeActions, withholdScreenerConfidence, withholdSignalConfidence } from "./signalConfidenceBoundary";
 import { LRUCache } from "./lruCache";
 import {
   computeEMA,
@@ -614,6 +615,15 @@ export function computeCryptoSignals(
   inputs: CryptoSignalInput[]
 ): CryptoSignalResult[] {
   return inputs.map(input => computeCryptoSignal(input));
+}
+
+/** Client payload. The named `action` field stays on the engine result and is omitted here. */
+export function presentCryptoSignal<T extends { action?: unknown; confidence: number | null }>(signal: T) {
+  return omitTradeAction(withholdSignalConfidence(signal));
+}
+
+export function presentCryptoSignals<T extends { action?: unknown; confidence: number | null }>(signals: T[]) {
+  return omitTradeActions(withholdScreenerConfidence(signals));
 }
 
 /** Clear the crypto signal cache */

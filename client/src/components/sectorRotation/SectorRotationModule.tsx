@@ -14,8 +14,8 @@ import { trpc } from "@/lib/trpc";
 import { CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 import { formatEt } from "@shared/credibilityLabels";
 import {
-  ACTION_COLOR, ACTION_LABEL, ARROW_GLYPH, CATALYST_LABEL, LEADERSHIP_GROUP_LABEL, QUADRANT_LABEL,
-  type DailyChangeBasis, type LeadershipGroup, type MoverRow, type Quadrant, type SectorActionClass, type SectorRotationReading, type SectorRotationServed, type SectorRow,
+  ARROW_GLYPH, CATALYST_LABEL, CONDITION_COLOR, CONDITION_LABEL, LEADERSHIP_GROUP_LABEL, QUADRANT_LABEL,
+  type DailyChangeBasis, type LeadershipGroup, type MoverRow, type Quadrant, type SectorRotationReading, type SectorRotationServed, type SectorRow,
 } from "@shared/sectorRotation";
 
 export type ThesisQuestion = "now" | "why" | "outlook" | "watch" | "act";
@@ -388,7 +388,7 @@ function ActSlice({ reading }: { reading: SectorRotationReading }) {
           <div key={s.ticker} className="rounded border border-white/10 bg-white/[0.02] p-3" data-sector-action={s.ticker}>
             <div className="flex items-center justify-between gap-2">
               <p className="font-mono text-sm font-semibold text-white">{s.ticker} <span className="font-sans text-xs font-normal text-slate-500">{s.sector}</span></p>
-              <span className="rounded border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]" style={{ color: ACTION_COLOR[s.action!.class], borderColor: `${ACTION_COLOR[s.action!.class]}50` }}>{ACTION_LABEL[s.action!.class]}</span>
+              <span className="rounded border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em]" style={{ color: CONDITION_COLOR[s.action!.conditionId], borderColor: `${CONDITION_COLOR[s.action!.conditionId]}50` }}>{CONDITION_LABEL[s.action!.conditionId]}</span>
             </div>
             <ul className="mt-2 space-y-0.5">
               {s.action!.evidence.map(e => <li key={e.id} className="flex justify-between gap-2 text-[11px] text-slate-400"><span>{e.passed === true ? "✓" : e.passed === false ? "✗" : "–"} {e.label}</span><span className="font-mono text-slate-300">{e.observed}</span></li>)}

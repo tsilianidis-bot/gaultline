@@ -48,6 +48,14 @@ export type ObjectiveType = typeof OBJECTIVE_TYPES[number]["id"];
 
 // ── Opportunity types ─────────────────────────────────────────
 export type OpportunityDirection = "LONG" | "AVOID" | "WATCH" | "TRIM" | "DEFENSIVE";
+
+/**
+ * Simulation direction stays the raw protocol value. Admin and simulation
+ * tokens are an open owner decision, so this does not relabel WATCH, TRIM, or AVOID.
+ */
+export function keepRawSimulationDirection<T extends OpportunityDirection>(direction: T): T {
+  return direction;
+}
 export type DataFreshness = EvidenceStatusLabel;
 
 export interface TradeOpportunity {
@@ -520,7 +528,7 @@ export async function buildStockOpportunity(
       name,
       sector,
       assetType: "stock",
-      direction,
+      direction: keepRawSimulationDirection(direction),
       currentPrice: price,
       changePercent,
       volume: quote.volume ?? 0,
@@ -702,7 +710,7 @@ export async function buildCryptoOpportunity(
       name,
       sector,
       assetType: "crypto",
-      direction,
+      direction: keepRawSimulationDirection(direction),
       currentPrice: price,
       changePercent,
       volume,

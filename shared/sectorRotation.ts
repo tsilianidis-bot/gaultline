@@ -86,6 +86,13 @@ export type DataStatus = "OK" | "STALE" | "UNAVAILABLE";
 export type Quadrant = "LEADING" | "IMPROVING" | "LOSING_MOMENTUM" | "LAGGING";
 export type MomentumArrow = "UP" | "FLAT" | "DOWN";
 export type SectorActionClass = "OVERWEIGHT" | "NEUTRAL" | "UNDERWEIGHT" | "AVOID" | "WATCH_FOR_CONFIRMATION";
+/** Client key. One id per mechanical class, so the two lower classes stay distinct. */
+export type SectorConditionId =
+  | "breadth-confirmed-up"
+  | "confirmation-open"
+  | "momentum-fade"
+  | "return-at-or-below-benchmark"
+  | "lagging-confirmed-down";
 export type CatalystClass = "EVENT_DRIVEN" | "COMPANY_SPECIFIC" | "SECTOR_DRIVEN" | "MACRO_DRIVEN" | "CATALYST_UNCLEAR";
 export type EventFamily = "EARNINGS" | "GUIDANCE" | "M_AND_A" | "REGULATORY" | "ANALYST_ACTION";
 export type ThesisAlignment = "REINFORCES" | "CONTRADICTS" | "UNDETERMINED";
@@ -112,6 +119,27 @@ export const ACTION_LABEL: Record<SectorActionClass, string> = {
   UNDERWEIGHT: "20-session return at or below SPY",
   AVOID: "Lagging, 20-session return below SPY, breadth under 50%, momentum down",
   WATCH_FOR_CONFIRMATION: "Relative return is not confirmed on every measured input",
+};
+export const CONDITION_ID_BY_CLASS: Record<SectorActionClass, SectorConditionId> = {
+  OVERWEIGHT: "breadth-confirmed-up",
+  WATCH_FOR_CONFIRMATION: "confirmation-open",
+  NEUTRAL: "momentum-fade",
+  UNDERWEIGHT: "return-at-or-below-benchmark",
+  AVOID: "lagging-confirmed-down",
+};
+export const CONDITION_COLOR: Record<SectorConditionId, string> = {
+  "breadth-confirmed-up": "#00e599",
+  "confirmation-open": "#00e5ff",
+  "momentum-fade": "#94a3b8",
+  "return-at-or-below-benchmark": "#ffaa00",
+  "lagging-confirmed-down": "#ff4d6d",
+};
+export const CONDITION_LABEL: Record<SectorConditionId, string> = {
+  "breadth-confirmed-up": "20-session return above SPY, breadth at least 50%, momentum up",
+  "confirmation-open": "Relative return is not confirmed on every measured input",
+  "momentum-fade": "Losing momentum while the 20-session return is still above SPY",
+  "return-at-or-below-benchmark": "20-session return at or below SPY",
+  "lagging-confirmed-down": "Lagging, 20-session return below SPY, breadth under 50%, momentum down",
 };
 export const CATALYST_LABEL: Record<CatalystClass, string> = {
   EVENT_DRIVEN: "EVENT-DRIVEN",
@@ -176,7 +204,7 @@ export interface SectorRow {
   sessionsInQuadrant: number | null;
   leadershipGroup: LeadershipGroup | null;
   breadth: SectorBreadth;
-  action: { class: SectorActionClass; rule: string; evidence: EvidenceCheck[] } | null;
+  action: { conditionId: SectorConditionId; rule: string; evidence: EvidenceCheck[] } | null;
 }
 
 export type DriverId =

@@ -19,6 +19,7 @@
 // ============================================================
 
 import { tradeClass } from "../shared/surfaceClaims";
+import { omitTradeAction, omitTradeActions, withholdSignalConfidence, withholdSignalsConfidence } from "./signalConfidenceBoundary";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -755,6 +756,15 @@ export function computeTradingSignals(
   regime: RegimeInput
 ): TradingSignalResult[] {
   return inputs.map(input => computeTradingSignal(input, regime));
+}
+
+/** Client payload. The named `action` field stays on the engine result for scoring and is omitted here. */
+export function presentTradingSignal<T extends { action?: unknown; confidence: number | null }>(signal: T) {
+  return omitTradeAction(withholdSignalConfidence(signal));
+}
+
+export function presentTradingSignals<T extends { action?: unknown; confidence: number | null }>(signals: T[]) {
+  return omitTradeActions(withholdSignalsConfidence(signals));
 }
 
 /** Clear the signal cache */

@@ -2379,11 +2379,11 @@ function computePortfolioImpact(
     case "add_risk": {
       const addAmt = favorability >= 70 ? 10 : favorability >= 50 ? 7 : 4;
       const category = input.exposureCategory ? (EXPOSURE_LABELS[input.exposureCategory] ?? "Risk Assets") : "Risk Assets";
-      lines.push({ category: "Cash", currentAllocation: baselines["Cash"], targetAllocation: Math.max(2, baselines["Cash"] - addAmt), change: -addAmt, rationale: "Deploy cash into risk assets" });
-      lines.push({ category, currentAllocation: 15, targetAllocation: 15 + addAmt, change: addAmt, rationale: `Adding ${addAmt}% to ${category} — regime supports this move` });
-      headline = `Add ${addAmt}% to ${category}`;
+      lines.push({ category: "Cash", currentAllocation: baselines["Cash"], targetAllocation: Math.max(2, baselines["Cash"] - addAmt), change: -addAmt, rationale: `Cash weight in this simulation changes by -${addAmt} percentage points. Pressure Index is ${p}/100.` });
+      lines.push({ category, currentAllocation: 15, targetAllocation: 15 + addAmt, change: addAmt, rationale: `Simulated ${category} weight change is +${addAmt} percentage points. Favorability score is ${favorability}/100.` });
+      headline = `Simulated ${category} weight change is +${addAmt} percentage points.`;
       netRiskChange = "Increased";
-      summary = `Deploy ${addAmt}% from cash into ${category}. ${favorability >= 70 ? "High favorability supports full sizing." : "Moderate favorability — use staged additions."}`;
+      summary = `This simulation moves ${addAmt} percentage points from cash into ${category}. Favorability score is ${favorability}/100. Pressure Index is ${p}/100.`;
       break;
     }
     case "reduce_risk": {
@@ -2409,11 +2409,11 @@ function computePortfolioImpact(
     case "deploy_cash": {
       const deployAmt = favorability >= 65 ? 10 : 7;
       const target = input.deployCashTarget ? (EXPOSURE_LABELS[input.deployCashTarget as ExposureCategory] ?? input.deployCashTarget) : "Risk Assets";
-      lines.push({ category: "Cash", currentAllocation: baselines["Cash"] + 10, targetAllocation: baselines["Cash"], change: -10, rationale: "Deploy idle cash" });
-      lines.push({ category: target, currentAllocation: 10, targetAllocation: 10 + deployAmt, change: deployAmt, rationale: `Deploy into ${target}` });
-      headline = `Deploy ${deployAmt}% into ${target}`;
+      lines.push({ category: "Cash", currentAllocation: baselines["Cash"] + 10, targetAllocation: baselines["Cash"], change: -10, rationale: `Cash weight in this simulation changes by -10 percentage points. Pressure Index is ${p}/100.` });
+      lines.push({ category: target, currentAllocation: 10, targetAllocation: 10 + deployAmt, change: deployAmt, rationale: `Simulated ${target} weight change is +${deployAmt} percentage points.` });
+      headline = `Simulated ${target} weight is ${10 + deployAmt}%.`;
       netRiskChange = "Increased";
-      summary = `Deploy ${deployAmt}% from cash into ${target}. ${favorability >= 65 ? "Favorable setup — full deployment appropriate." : "Moderate setup — a staged fill recommended."}`;
+      summary = `This simulation moves ${deployAmt} percentage points from cash into ${target}. Favorability score is ${favorability}/100. Pressure Index is ${p}/100.`;
       break;
     }
     case "rotate": {
@@ -2421,19 +2421,19 @@ function computePortfolioImpact(
       const from = input.rotateFrom ?? "Current Sector";
       const to = input.rotateTo ?? "Named sector";
       lines.push({ category: from, currentAllocation: 20, targetAllocation: 20 - rotateAmt, change: -rotateAmt, rationale: `Simulated ${from} weight change is -${rotateAmt} percentage points.` });
-      lines.push({ category: to, currentAllocation: 10, targetAllocation: 10 + rotateAmt, change: rotateAmt, rationale: `Increase ${to} — regime tailwinds` });
-      headline = `Rotate ${rotateAmt}% from ${from} to ${to}`;
+      lines.push({ category: to, currentAllocation: 10, targetAllocation: 10 + rotateAmt, change: rotateAmt, rationale: `Simulated ${to} weight change is +${rotateAmt} percentage points.` });
+      headline = `Simulated weight change is -${rotateAmt} percentage points in ${from} and +${rotateAmt} percentage points in ${to}.`;
       netRiskChange = "Neutral";
-      summary = `Sector rotation: reduce ${from} by ${rotateAmt}% and add to ${to}. Net portfolio risk unchanged.`;
+      summary = `This simulation changes ${from} by -${rotateAmt} percentage points and ${to} by +${rotateAmt} percentage points. Pressure Index is ${p}/100.`;
       break;
     }
     case "hedge": {
       const hedgeAmt = p >= 65 ? 8 : p >= 45 ? 5 : 3;
-      lines.push({ category: "Alternatives / Hedges", currentAllocation: baselines["Alternatives / Hedges"], targetAllocation: baselines["Alternatives / Hedges"] + hedgeAmt, change: hedgeAmt, rationale: "Add tail-risk protection" });
-      lines.push({ category: "Cash", currentAllocation: baselines["Cash"], targetAllocation: Math.max(2, baselines["Cash"] - hedgeAmt), change: -hedgeAmt, rationale: "Fund hedge position from cash" });
-      headline = `Add ${hedgeAmt}% hedge allocation`;
+      lines.push({ category: "Alternatives / Hedges", currentAllocation: baselines["Alternatives / Hedges"], targetAllocation: baselines["Alternatives / Hedges"] + hedgeAmt, change: hedgeAmt, rationale: `Simulated hedge weight change is +${hedgeAmt} percentage points. Pressure Index is ${p}/100.` });
+      lines.push({ category: "Cash", currentAllocation: baselines["Cash"], targetAllocation: Math.max(2, baselines["Cash"] - hedgeAmt), change: -hedgeAmt, rationale: `Cash weight in this simulation changes by -${hedgeAmt} percentage points.` });
+      headline = `Simulated hedge weight change is +${hedgeAmt} percentage points.`;
       netRiskChange = "Decreased";
-      summary = `Add ${hedgeAmt}% to hedges. ${p >= 65 ? "Elevated pressure warrants meaningful protection." : "Moderate protection — keep hedges proportional to risk."}`;
+      summary = `This simulation changes the hedge weight by +${hedgeAmt} percentage points. Pressure Index is ${p}/100.`;
       break;
     }
     case "buy_specific_asset": {
@@ -2441,11 +2441,11 @@ function computePortfolioImpact(
       const ticker = input.ticker ?? "Asset";
       const isStock = !(["BTC","ETH","SOL","AVAX","DOGE","SHIB"].includes((ticker ?? "").toUpperCase()));
       const category = isStock ? "US Large Cap Stocks" : "Crypto";
-      lines.push({ category: "Cash", currentAllocation: baselines["Cash"], targetAllocation: Math.max(2, baselines["Cash"] - buyAmt), change: -buyAmt, rationale: `Fund ${ticker} position` });
-      lines.push({ category, currentAllocation: baselines[category] ?? 10, targetAllocation: (baselines[category] ?? 10) + buyAmt, change: buyAmt, rationale: `Add ${ticker} — ${input.positionSizeType === "full_position" ? "full position" : input.positionSizeType === "add_to_existing" ? "adding to existing" : "new position"}` });
-      headline = `Add ${ticker}: +${buyAmt}% allocation`;
+      lines.push({ category: "Cash", currentAllocation: baselines["Cash"], targetAllocation: Math.max(2, baselines["Cash"] - buyAmt), change: -buyAmt, rationale: `Cash weight in this simulation changes by -${buyAmt} percentage points.` });
+      lines.push({ category, currentAllocation: baselines[category] ?? 10, targetAllocation: (baselines[category] ?? 10) + buyAmt, change: buyAmt, rationale: `Simulated ${ticker} weight change is +${buyAmt} percentage points. Pressure Index is ${p}/100.` });
+      headline = `Simulated ${ticker} weight change is +${buyAmt} percentage points.`;
       netRiskChange = "Increased";
-      summary = `Allocate ${buyAmt}% to ${ticker} from cash. ${favorability >= 70 ? "High favorability supports this fill." : "Moderate setup — use a defined downside mark."}`;
+      summary = `This simulation changes the ${ticker} weight by +${buyAmt} percentage points. Favorability score is ${favorability}/100. Pressure Index is ${p}/100.`;
       break;
     }
     case "sell_specific_asset": {

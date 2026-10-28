@@ -338,6 +338,13 @@ const VERDICT_CONFIG: Record<VerdictType, { label: string; color: string; glow: 
   DEFENSIVE:       { label: "DEFENSIVE",        color: "#FF2D55", glow: "rgba(255,45,85,0.22)",  borderColor: "rgba(255,45,85,0.45)" },
 };
 
+function verdictVisual(verdict: string) {
+  const key = verdict.trim().toUpperCase().replace(/[\s-]+/g, "_");
+  if (key === "WAIT") return VERDICT_CONFIG.WAIT;
+  if (key === "HIGH_CONVICTION" || key === "APPROVED" || key === "CAUTION" || key === "DEFENSIVE") return VERDICT_CONFIG[key];
+  return VERDICT_CONFIG.CAUTION;
+}
+
 const GRADE_COLOR: Record<string, string> = {
   "A+": "#00FF88", "A": "#00E5FF", "A-": "#00E5FF",
   "B+": "#FF9500", "B": "#FF9500", "B-": "#FF6B35",
@@ -1097,7 +1104,7 @@ export default function SituationRoom() {
                 RED: { color: "#FF2D55", glow: "rgba(255,45,85,0.08)", borderColor: "rgba(255,45,85,0.35)" },
                 GRAY: { color: "#94A3B8", glow: "rgba(148,163,184,0.08)", borderColor: "rgba(148,163,184,0.28)" },
               };
-              const vc = (light ? lightConfig[light.decisionLight] : null) ?? VERDICT_CONFIG[vt] ?? VERDICT_CONFIG.CAUTION;
+              const vc = (light ? lightConfig[light.decisionLight] : null) ?? verdictVisual(String(vt ?? ""));
               const label = light?.decisionLabel ?? "UNAVAILABLE";
               const sub = light?.explanation ?? result.verdict.reason;
               const oppScore = Math.round(result.moveFavorabilityScore);

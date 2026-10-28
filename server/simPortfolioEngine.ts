@@ -81,6 +81,11 @@ export interface SimTradeRationale {
   actionSummary: string;         // 1-sentence summary for trade log
 }
 
+/** Simulation action stays the raw protocol value. Relabelling it is an open owner decision. */
+export function keepRawSimulationAction<T extends string>(action: T): T {
+  return action;
+}
+
 export interface SimPositionDecision {
   ticker: string;
   name: string;
@@ -464,7 +469,7 @@ export async function evaluateStockCandidate(
       ticker,
       name,
       assetType: "stock",
-      action: action as "BUY" | "SELL" | "HOLD",
+      action: keepRawSimulationAction(action as "BUY" | "SELL" | "HOLD"),
       price: quote.price,
       quantity,
       totalValue: quantity * quote.price,
@@ -535,7 +540,7 @@ export async function evaluateCryptoCandidate(
       ticker,
       name,
       assetType: "crypto",
-      action: action as "BUY" | "SELL" | "HOLD",
+      action: keepRawSimulationAction(action as "BUY" | "SELL" | "HOLD"),
       price,
       quantity: Math.round(quantity * 1e6) / 1e6,
       totalValue: quantity * price,

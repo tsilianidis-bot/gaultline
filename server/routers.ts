@@ -14,8 +14,7 @@ import { calculateFaultlinePressure, PressureInputsUnavailableError } from "./pr
 import { runV3HShadow } from "./pressure/shadowEngine";
 import { computeHistoricalContext } from "./historicalContextEngine";
 import { computeHomepageBriefing } from "./homepageBriefing";
-import { computeTradingSignals, computeTradingSignal, clearSignalCache } from "./tradingSignals";
-import { omitTradeAction, omitTradeActions, withholdSignalConfidence, withholdSignalsConfidence, withholdScreenerConfidence } from "./signalConfidenceBoundary";
+import { computeTradingSignals, computeTradingSignal, clearSignalCache, presentTradingSignal, presentTradingSignals } from "./tradingSignals";
 import { tradeClass } from "../shared/surfaceClaims";
 import { getSignalVisualDetailPayload } from "./signalVisualDetail";
 import { getDiagnosticReport, clearDiagnosticCache } from "./diagnosticAI";
@@ -47,7 +46,7 @@ import {
 import { valuateSimPortfolio, runDailyEvaluation } from "./simPortfolioEngine";
 import { generateDailyJournal } from "./simPortfolioJournal";
 import { runAftershockEngine, getAssetContagionChain, getAllContagionAssets, clearAftershockCache } from "./aftershockEngine";
-import { computeCryptoSignal, computeCryptoSignals, clearCryptoSignalCache } from "./cryptoSignals";
+import { computeCryptoSignal, computeCryptoSignals, clearCryptoSignalCache, presentCryptoSignal, presentCryptoSignals } from "./cryptoSignals";
 import { computeAltRotation, clearAltRotationCache } from "./altRotationEngine";
 import { getRecoveryAnalysis, clearRecoveryCache } from "./recoveryEngine";
 import { logMarketAwarenessAction, computeAwarenessScore, getRecentActions, ACTION_KEYS, type ActionKey } from "./marketAwareness";
@@ -256,7 +255,7 @@ export const appRouter = router({
       .mutation(({ input }) => {
         try {
           // Launch fix-up: formula confidence is withheld at the response boundary.
-          return omitTradeActions(withholdSignalsConfidence(computeTradingSignals(input.tickers, input.regime)));
+          return presentTradingSignals(computeTradingSignals(input.tickers, input.regime));
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trading signal computation failed", cause: err });
         }
@@ -292,7 +291,7 @@ export const appRouter = router({
         try {
           const { regime, ...tickerInput } = input;
           // Launch fix-up: formula confidence is withheld at the response boundary.
-          return omitTradeAction(withholdSignalConfidence(computeTradingSignal(tickerInput, regime)));
+          return presentTradingSignal(computeTradingSignal(tickerInput, regime));
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trading signal computation failed", cause: err });
         }
@@ -876,7 +875,7 @@ export const appRouter = router({
           });
           // Launch fix-up: formula confidence is withheld at the response boundary.
           // A non-finite number is unavailable. It is not displayed as 0.
-          const withheld = omitTradeAction(withholdSignalConfidence(result));
+          const withheld = presentCryptoSignal(result);
           return withholdNonFiniteNumbers(withheld) as typeof withheld;
         } catch (err) {
           if (err instanceof TRPCError) throw err;
@@ -903,7 +902,7 @@ export const appRouter = router({
           );
           const screenerResult = {
             // Launch fix-up: formula confidence is withheld at the response boundary.
-            signals: omitTradeActions(withholdScreenerConfidence(results)),
+            signals: presentCryptoSignals(results),
             regime,
             btcDominance,
             totalMarketCap: globalStats?.totalMarketCap ?? null,

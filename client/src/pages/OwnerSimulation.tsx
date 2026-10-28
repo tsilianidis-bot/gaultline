@@ -234,7 +234,7 @@ function ManualSearch({ accountValue, onTrade }: { accountValue: number; onTrade
           </div>
 
           {/* CTA */}
-          {result.direction !== POSTURE_WITHHELD && (
+          {directionKey(result.direction) !== POSTURE_WITHHELD && (
             <div className="p-4">
               <Button
                 onClick={() => onTrade(result)}
@@ -245,7 +245,7 @@ function ManualSearch({ accountValue, onTrade }: { accountValue: number; onTrade
               </Button>
             </div>
           )}
-          {result.direction === POSTURE_WITHHELD && (
+          {directionKey(result.direction) === POSTURE_WITHHELD && (
             <div className="p-4">
               <div className="text-center text-[#FF2D55] font-mono text-xs font-bold tracking-wider py-2">
                 The current regime reading does not support showing a simulated position. This is not an instruction.
@@ -319,18 +319,23 @@ function fmtUsd(n: number) {
 function fmtPct(n: number) {
   return (n >= 0 ? "+" : "") + fmt(n) + "%";
 }
+function directionKey(d: string) {
+  return d.trim().toUpperCase();
+}
 function dirColor(d: Direction) {
-  if (d === "LONG") return "text-[#00FF88]";
-  if (d === POSTURE_WITHHELD) return "text-[#FF2D55]";
-  if (d === "WATCH") return "text-[#FFD700]";
-  if (d === "TRIM") return "text-[#FF9500]";
+  const key = directionKey(d);
+  if (key === "LONG") return "text-[#00FF88]";
+  if (key === POSTURE_WITHHELD) return "text-[#FF2D55]";
+  if (key === "WATCH") return "text-[#FFD700]";
+  if (key === "TRIM") return "text-[#FF9500]";
   return "text-[#A8B8CC]";
 }
 function dirBg(d: Direction) {
-  if (d === "LONG") return "bg-[#00FF88]/10 border-[#00FF88]/30 text-[#00FF88]";
-  if (d === POSTURE_WITHHELD) return "bg-[#FF2D55]/10 border-[#FF2D55]/30 text-[#FF2D55]";
-  if (d === "WATCH") return "bg-[#FFD700]/10 border-[#FFD700]/30 text-[#FFD700]";
-  if (d === "TRIM") return "bg-[#FF9500]/10 border-[#FF9500]/30 text-[#FF9500]";
+  const key = directionKey(d);
+  if (key === "LONG") return "bg-[#00FF88]/10 border-[#00FF88]/30 text-[#00FF88]";
+  if (key === POSTURE_WITHHELD) return "bg-[#FF2D55]/10 border-[#FF2D55]/30 text-[#FF2D55]";
+  if (key === "WATCH") return "bg-[#FFD700]/10 border-[#FFD700]/30 text-[#FFD700]";
+  if (key === "TRIM") return "bg-[#FF9500]/10 border-[#FF9500]/30 text-[#FF9500]";
   return "bg-white/5 border-white/10 text-[#A8B8CC]";
 }
 function freshnessColor(f: DataFreshness) {
@@ -841,7 +846,7 @@ function OpportunityCard({ opp, onTrade, onReject }: {
 
       {/* Action buttons */}
       <div className="flex gap-2 px-4 pb-4">
-        {opp.direction === "LONG" || opp.direction === "WATCH" ? (
+        {directionKey(opp.direction) === "LONG" || directionKey(opp.direction) === "WATCH" ? (
           <Button
             size="sm"
             onClick={() => onTrade(opp)}
