@@ -403,7 +403,7 @@ function MarketCommandCenterInner() {
       },
       {
         label: "HIGHEST CONVICTION CRYPTO",
-        value: riskLevel === "low" ? "BTC / ETH" : riskLevel === "moderate" ? "BTC ONLY" : "PASS OVER",
+        value: riskLevel === "low" ? "BTC / ETH" : riskLevel === "moderate" ? "BTC ONLY" : "Not published",
         sub: riskLevel === "low" ? "Higher-risk appetite crypto rotation active" : riskLevel === "moderate" ? "Bitcoin as digital gold" : "Crypto risk elevated",
         color: riskLevel === "low" ? "#F7931A" : riskLevel === "moderate" ? "#F7931A" : "#FF2D55",
         href: "/app/crypto",
@@ -438,11 +438,11 @@ function MarketCommandCenterInner() {
       {
         label: "MOST DANGEROUS ASSET",
         value: riskLevel === "critical" ? "LEVERAGED ETFs" : riskLevel === "elevated" ? "SMALL CAPS" : riskLevel === "moderate" ? "MEMECOINS" : "NONE",
-        sub: riskLevel === "critical" ? "Pass over 2x/3x exposure" : riskLevel === "elevated" ? "High beta underperforming" : riskLevel === "moderate" ? "Speculative risk elevated" : "Risk environment benign",
+        sub: riskLevel === "critical" ? "Leveraged products are in a higher-stress reading" : riskLevel === "elevated" ? "High beta underperforming" : riskLevel === "moderate" ? "Speculative risk elevated" : "Risk environment benign",
         color: "#FF2D55",
         href: "/app/pressure",
         icon: AlertTriangle,
-        badge: "PASS OVER",
+        badge: "READING",
       },
       {
         label: "MOST UNDERVALUED",
