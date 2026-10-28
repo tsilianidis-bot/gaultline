@@ -142,6 +142,8 @@ export function conditionColor(value: string | null | undefined): string {
 
 /** Depth cap so a hostile or cyclic payload cannot walk forever. Past this depth the named fields are still neutralized. */
 export const CLIENT_PAYLOAD_MAX_DEPTH = 12;
+/** Stop before the JS stack throws. The remaining subtree is returned unchanged. */
+export const CLIENT_PAYLOAD_STACK_DEPTH = 1000;
 /**
  * Soft cap. Past this many nodes the walk keeps going and logs once.
  * It does not replace later objects or arrays with null.
@@ -236,19 +238,91 @@ function channelTokenRegex(): RegExp {
   return channelTokenPattern;
 }
 
-const URL_OR_EMAIL = /https?:\/\/[^\s<>"']+|www\.[^\s<>"']+|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
-
 const MASK_EDGE = "\uE000";
-const HOST_SUFFIX = /^(?:com|net|org|io|co|edu|gov|uk|ai|app|dev|info|biz)\b/i;
+const LOCAL_PART = /[A-Za-z0-9._%+-]/;
+const DOMAIN_CHAR = /[A-Za-z0-9.-]/;
+const LETTER = /[A-Za-z]/;
+/** A short suffix after a dot: TLD (de, fr, xyz, com) or a file extension (pdf). */
+const HOST_OR_EXTENSION = /^[A-Za-z0-9]{2,24}(?![A-Za-z0-9])/;
+
+function isUrlBreak(char: string): boolean {
+  return char === " " || char === "\n" || char === "\r" || char === "\t" || char === "<" || char === ">" || char === "\"" || char === "'";
+}
+
+function urlLengthAt(text: string, index: number): number {
+  const head = text.slice(index, index + 8).toLowerCase();
+  let scheme = 0;
+  if (head.startsWith("https://")) scheme = 8;
+  else if (head.startsWith("http://")) scheme = 7;
+  else if (head.startsWith("www.")) scheme = 4;
+  else return 0;
+  let end = index + scheme;
+  while (end < text.length && !isUrlBreak(text[end] ?? "")) end += 1;
+  return end > index + scheme ? end - index : 0;
+}
+
+/** Linear email span around one '@'. Local part is at most 64 characters. */
+function emailSpan(text: string, at: number): [number, number] | null {
+  if (text[at] !== "@") return null;
+  let start = at - 1;
+  let local = 0;
+  while (start >= 0 && local < 64 && LOCAL_PART.test(text[start] ?? "")) {
+    start -= 1;
+    local += 1;
+  }
+  if (local === 0) return null;
+  if (start >= 0 && LOCAL_PART.test(text[start] ?? "")) return null;
+  const localStart = start + 1;
+  let cursor = at + 1;
+  let label = 0;
+  let sawDot = false;
+  while (cursor < text.length && DOMAIN_CHAR.test(text[cursor] ?? "")) {
+    if (text[cursor] === ".") {
+      if (label === 0) return null;
+      sawDot = true;
+      label = 0;
+    } else {
+      label += 1;
+    }
+    cursor += 1;
+  }
+  if (!sawDot || label < 2) return null;
+  for (let index = cursor - label; index < cursor; index += 1) {
+    if (!LETTER.test(text[index] ?? "")) return null;
+  }
+  return [localStart, cursor];
+}
+
+function pushMask(masks: string[], span: string): string {
+  const token = `${MASK_EDGE}${masks.length}${MASK_EDGE}`;
+  masks.push(span);
+  return token;
+}
 
 function maskUrlsAndEmails(text: string): { text: string; masks: string[] } {
   const masks: string[] = [];
-  const masked = text.replace(URL_OR_EMAIL, (span) => {
-    const token = `${MASK_EDGE}${masks.length}${MASK_EDGE}`;
-    masks.push(span);
-    return token;
-  });
-  return { text: masked, masks };
+  let out = "";
+  let index = 0;
+  while (index < text.length) {
+    const urlLength = urlLengthAt(text, index);
+    if (urlLength > 0) {
+      out += pushMask(masks, text.slice(index, index + urlLength));
+      index += urlLength;
+      continue;
+    }
+    if (text[index] === "@") {
+      const span = emailSpan(text, index);
+      if (span && out.endsWith(text.slice(span[0], index))) {
+        out = out.slice(0, out.length - (index - span[0]));
+        out += pushMask(masks, text.slice(span[0], span[1]));
+        index = span[1];
+        continue;
+      }
+    }
+    out += text[index] ?? "";
+    index += 1;
+  }
+  return { text: out, masks };
 }
 
 function restoreMasks(text: string, masks: string[]): string {
@@ -261,8 +335,8 @@ function restoreMasks(text: string, masks: string[]): string {
 
 /**
  * Cashtags and hashtags stay. Hyphenated names stay (`Buy-Rite`).
- * A trade word immediately before a host suffix stays (`BUY.com`).
- * A trade word after a dot is its own segment and is neutralized (`price.SELL`, `a.BUY`).
+ * A trade word immediately before a host suffix or file extension stays (`BUY.com`, `BUY.de`, `report.BUY.pdf`).
+ * A trade word after a dot with nothing after it is its own segment and is neutralized (`price.SELL`, `a.BUY`).
  */
 function protectedProseToken(text: string, offset: number, length: number): boolean {
   const before = offset > 0 ? text[offset - 1] ?? "" : "";
@@ -271,7 +345,7 @@ function protectedProseToken(text: string, offset: number, length: number): bool
   const word = /[A-Za-z0-9]/;
   if (before === "-" && word.test(text[offset - 2] ?? "")) return true;
   if (after === "-" && word.test(text[offset + length + 1] ?? "")) return true;
-  if (after === "." && HOST_SUFFIX.test(text.slice(offset + length + 1))) return true;
+  if (after === "." && HOST_OR_EXTENSION.test(text.slice(offset + length + 1))) return true;
   return false;
 }
 
@@ -294,19 +368,29 @@ export function neutralizeChannelText(text: string): string {
  * Content fields lose whole-word trade tokens. Ticker, id, slug, and URL fields stay.
  */
 export function neutralizeChannelPayload<T>(value: T): T {
-  return walkChannel(value, new WeakMap()) as T;
+  return walkChannel(value, new WeakMap(), 0, { depthWarned: false }) as T;
 }
 
-function walkChannel(value: unknown, mapped: WeakMap<object, unknown>): unknown {
+function warnDepth(state: { depthWarned: boolean }) {
+  if (state.depthWarned) return;
+  state.depthWarned = true;
+  console.warn(`FAULTLINE client payload walk stopped at depth ${CLIENT_PAYLOAD_STACK_DEPTH}; the remaining subtree is unchanged.`);
+}
+
+function walkChannel(value: unknown, mapped: WeakMap<object, unknown>, depth: number, state: { depthWarned: boolean }): unknown {
   if (typeof value === "string") return neutralizeChannelText(value);
   if (value == null || typeof value !== "object") return value;
   if (mapped.has(value)) return mapped.get(value);
+  if (depth >= CLIENT_PAYLOAD_STACK_DEPTH) {
+    warnDepth(state);
+    return value;
+  }
   if (Array.isArray(value)) {
     const copy = value.slice();
     mapped.set(value, copy);
     let changed = false;
     for (let index = 0; index < value.length; index += 1) {
-      const next = walkChannel(value[index], mapped);
+      const next = walkChannel(value[index], mapped, depth + 1, state);
       if (next !== value[index]) {
         copy[index] = next;
         changed = true;
@@ -329,7 +413,7 @@ function walkChannel(value: unknown, mapped: WeakMap<object, unknown>): unknown 
     if (VALUE_PRESERVE_FIELDS.has(field)) continue;
     const next = typeof child === "string"
       ? (LABEL_FIELDS.has(field) && deniedExactToken(child) ? neutralConditionLabel(child) : neutralizeChannelText(child))
-      : child != null && typeof child === "object" ? walkChannel(child, mapped) : child;
+      : child != null && typeof child === "object" ? walkChannel(child, mapped, depth + 1, state) : child;
     if (next !== child) {
       copy[key] = next;
       changed = true;
@@ -350,7 +434,7 @@ function walkChannel(value: unknown, mapped: WeakMap<object, unknown>): unknown 
  * neutralized. A clean payload is the same reference.
  */
 export function guardNamedClientFields<T>(value: T): T {
-  return visit(value, 0, new WeakMap(), { n: 0, warned: false }) as T;
+  return visit(value, 0, new WeakMap(), { n: 0, warned: false, depthWarned: false }) as T;
 }
 
 function noteNode(budget: { n: number; warned: boolean }) {
@@ -370,9 +454,13 @@ function namedFieldChange(key: string, child: unknown): { kind: "keep" } | { kin
   return { kind: "keep" };
 }
 
-function visit(value: unknown, depth: number, mapped: WeakMap<object, unknown>, budget: { n: number; warned: boolean }): unknown {
+function visit(value: unknown, depth: number, mapped: WeakMap<object, unknown>, budget: { n: number; warned: boolean; depthWarned: boolean }): unknown {
   if (value == null || typeof value !== "object") return value;
   if (mapped.has(value)) return mapped.get(value);
+  if (depth >= CLIENT_PAYLOAD_STACK_DEPTH) {
+    warnDepth(budget);
+    return value;
+  }
   if (Array.isArray(value)) {
     noteNode(budget);
     const copy = value.slice();

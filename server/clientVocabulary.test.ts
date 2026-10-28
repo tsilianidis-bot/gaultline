@@ -184,6 +184,7 @@ describe("client vocabulary", () => {
     expect(text).toContain("Upper-side condition the close");
     expect(text).toContain("price.Lower-side condition");
     expect(text).toContain("a.Upper-side condition");
+    expect(neutralizeChannelText("BUY.de BUY.fr BUY.xyz report.BUY.pdf")).toBe("BUY.de BUY.fr BUY.xyz report.BUY.pdf");
     const urls = Array.from({ length: 11 }, (_, index) => `https://cdn.example/${index}/BUY`);
     const restored = neutralizeChannelText(urls.join(" "));
     for (const url of urls) expect(restored).toContain(url);
@@ -224,5 +225,40 @@ describe("client vocabulary", () => {
     expect(out[1]).toBe(out);
     expect((out[0] as { title: string }).title).toBe("A Upper-side condition setup");
     expect((out[1] as typeof out)[0]).toBe(out[0]);
+  });
+
+  it("stops a 5000-level payload without throwing or nulling", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    let node: { child?: unknown; marker: string } = { marker: "leaf" };
+    for (let index = 0; index < 5000; index += 1) node = { child: node, marker: "wrap" };
+    const root = { action: "BUY", child: node };
+    let guarded: { action?: string; child?: typeof node } | undefined;
+    expect(() => {
+      guarded = guardNamedClientFields(root);
+    }).not.toThrow();
+    expect(guarded?.action).toBe("Upper-side condition");
+    let cursor: { child?: unknown; marker?: string } | undefined = guarded?.child;
+    for (let index = 0; index < 5000; index += 1) {
+      expect(cursor).not.toBeNull();
+      expect(cursor).toBeTruthy();
+      cursor = cursor?.child as typeof cursor;
+    }
+    expect(cursor).toMatchObject({ marker: "leaf" });
+    expect(warn.mock.calls.some(call => String(call[0]).includes("depth"))).toBe(true);
+    warn.mockRestore();
+  });
+
+  it("masks long pathological strings in under 50ms", () => {
+    const bytes = 200 * 1024;
+    const samples = [
+      "a".repeat(bytes),
+      "a.".repeat(bytes / 2),
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".repeat(Math.ceil(bytes / 64)).slice(0, bytes),
+    ];
+    for (const sample of samples) {
+      const started = performance.now();
+      neutralizeChannelText(sample);
+      expect(performance.now() - started).toBeLessThan(50);
+    }
   });
 });
