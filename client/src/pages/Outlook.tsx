@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { useEngine } from "@/contexts/EngineContext";
+import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 import { useSEO } from "@/hooks/useSEO";
 import {
   CANONICAL_DESTINATION_BY_ID,
@@ -266,6 +267,9 @@ export default function Outlook() {
   return (
     <main className="min-h-screen bg-[#04060c] text-slate-200">
       <div className="mx-auto max-w-7xl px-5 pb-16 pt-8 md:px-10 md:pt-12">
+        <div className="mb-6">
+          <PentagonalThesisNarrative surface="outlook" compact />
+        </div>
 
         {/* ── HERO ─────────────────────────────────────────────────────── */}
         <section data-outlook-section="forecast" className="relative overflow-hidden rounded-sm border border-violet-300/20 bg-[#080a14] p-6 md:p-9">

@@ -23,6 +23,7 @@ import {
 } from '@/lib/watchlist';
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
+import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 import { PreflightTrigger } from "@/components/MarketPreflight";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
@@ -436,6 +437,9 @@ export default function Watchlist() {
         />
       )}
 
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "16px 16px 0" }}>
+        <PentagonalThesisNarrative surface="watchlist" compact />
+      </div>
       <PageHeader
         title="Watchlist"
         subtitle="Pin any macro indicator, set a custom threshold, and get a live visual alert when it’s breached."

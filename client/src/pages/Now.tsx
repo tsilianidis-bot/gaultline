@@ -29,6 +29,7 @@ import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 import SystemicRegimeModule from "@/components/SystemicRegimeModule";
 import { trpc } from "@/lib/trpc";
+import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 
 const NOW_DEEP_PATH = "/app/now/deep";
 
@@ -890,6 +891,9 @@ export default function Now() {
       `}</style>
 
       <div className="mx-auto max-w-7xl px-4 pb-16 pt-6 md:px-8 md:pt-10">
+        <div className="mb-6">
+          <PentagonalThesisNarrative surface="now" compact />
+        </div>
 
         {/* ── HERO COMMAND CENTER ──────────────────────────────────────── */}
         <section

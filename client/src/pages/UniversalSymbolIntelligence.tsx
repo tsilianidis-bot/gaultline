@@ -20,6 +20,7 @@ import { useRegisterAshaContext } from "@/contexts/AshaContext";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import { SectionErrorBoundary } from "@/components/ErrorBoundary";
 import { PremiumGateFull } from "@/components/PremiumGate";
+import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 
 // ── Shared styles ─────────────────────────────────────────────
 const CARD: React.CSSProperties = {
@@ -111,14 +112,8 @@ const fmt = (n: number, dec = 2) =>
 
 const pct = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
 
-const confColor = (c: number) =>
-  c >= 75 ? "#00FF88" : c >= 55 ? "#FFD700" : "#FF6B6B";
-
 const dirColor = (d: string) =>
   d === "bullish" ? "#00FF88" : d === "bearish" ? "#FF6B6B" : "#6B7280";
-
-const gradeColor = (g: string) =>
-  g === "A" ? "#00FF88" : g === "B" ? "#00D4FF" : g === "C" ? "#FFD700" : g === "D" ? "#FF9500" : "#FF6B6B";
 
 const fmtHold = (mins: number) =>
   mins < 60 ? `${mins} min` : `${(mins / 60).toFixed(1)}h`;
@@ -198,17 +193,6 @@ function OverviewTab({ report }: { report: DayTradeReport }) {
           }}>
             {isNoTrade ? "NO TRADE" : report.setupType}
           </span>
-          {!isNoTrade && (
-            <span style={{
-              ...MONO_SM, fontSize: "10px",
-              background: "rgba(0,0,0,0.3)",
-              color: gradeColor(report.executionGrade),
-              border: `1px solid ${gradeColor(report.executionGrade)}44`,
-              borderRadius: "3px", padding: "2px 8px",
-            }}>
-              EXEC {report.executionGrade} · {report.executionScore}/100
-            </span>
-          )}
           {report.vwapStatus && report.vwapStatus !== "Unknown" && (
             <span style={{
               ...MONO_SM, fontSize: "10px",
@@ -227,13 +211,9 @@ function OverviewTab({ report }: { report: DayTradeReport }) {
       {!isNoTrade && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "10px" }}>
           {[
-            { label: "Confidence", value: `${report.confidence}/100`, color: confColor(report.confidence) },
-            { label: "Execution Grade", value: `${report.executionGrade} (${report.executionScore})`, color: gradeColor(report.executionGrade) },
-            { label: "Risk/Reward", value: `${report.riskRewardRatio.toFixed(1)}:1`, color: "#F0F4FF" },
             { label: "Risk Level", value: report.riskLevel, color: report.riskLevel === "Low" ? "#00FF88" : report.riskLevel === "Medium" ? "#FFD700" : "#FF6B6B" },
             { label: "Liquidity", value: report.liquidityRating, color: "#F0F4FF" },
             { label: "Hold Time", value: fmtHold(report.expectedHoldMinutes), color: "#00D4FF" },
-            { label: "Momentum", value: `${report.momentumRating ?? 0}/100`, color: confColor(report.momentumRating ?? 0) },
             { label: "Intraday Trend", value: report.intradayTrend ?? "N/A", color: dirColor(report.direction) },
           ].map(m => (
             <div key={m.label} style={CARD}>
@@ -274,7 +254,7 @@ function OverviewTab({ report }: { report: DayTradeReport }) {
 }
 
 // ── Trade Setup Tab ───────────────────────────────────────────
-function TradeSetupTab({ report }: { report: DayTradeReport }) {
+export function TradeSetupTab({ report }: { report: DayTradeReport }) {
   const isNoTrade = report.setupType === "NO_TRADE";
 
   if (isNoTrade) {
@@ -293,28 +273,7 @@ function TradeSetupTab({ report }: { report: DayTradeReport }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-      {/* Entry / Targets / Stop */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "10px" }}>
-        <div style={CARD}>
-          <div style={LABEL}>Entry Zone</div>
-          <div style={VALUE}>{fmt(report.entryZoneLow)} – {fmt(report.entryZoneHigh)}</div>
-        </div>
-        <div style={{ ...CARD, borderColor: "rgba(0,255,136,0.2)" }}>
-          <div style={LABEL}>Target 1</div>
-          <div style={{ ...VALUE, color: "#00FF88" }}>{fmt(report.target1)}</div>
-        </div>
-        <div style={{ ...CARD, borderColor: "rgba(0,212,255,0.2)" }}>
-          <div style={LABEL}>Target 2</div>
-          <div style={{ ...VALUE, color: "#00D4FF" }}>{fmt(report.target2)}</div>
-        </div>
-        <div style={{ ...CARD, borderColor: "rgba(255,107,107,0.2)" }}>
-          <div style={LABEL}>Stop Loss</div>
-          <div style={{ ...VALUE, color: "#FF6B6B" }}>{fmt(report.stopLoss)}</div>
-        </div>
-        <div style={{ ...CARD, borderColor: "rgba(255,149,0,0.2)" }}>
-          <div style={LABEL}>Invalidation</div>
-          <div style={{ ...VALUE, color: "#FF9500" }}>{fmt(report.invalidationLevel)}</div>
-        </div>
         {report.supportLevel !== undefined && report.supportLevel > 0 && (
           <div style={CARD}>
             <div style={LABEL}>Support</div>
@@ -383,50 +342,9 @@ function TradeSetupTab({ report }: { report: DayTradeReport }) {
 }
 
 // ── Risk Analysis Tab ─────────────────────────────────────────
-function RiskAnalysisTab({ report }: { report: DayTradeReport }) {
+export function RiskAnalysisTab({ report }: { report: DayTradeReport }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-      {/* Execution Score Breakdown */}
-      {report.executionScoreBreakdown && report.executionScore > 0 && (
-        <div style={CARD}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
-            <div style={{ ...LABEL, marginBottom: 0 }}>Execution Score Breakdown</div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "22px", color: gradeColor(report.executionGrade) }}>
-                {report.executionGrade}
-              </span>
-              <span style={{ ...MONO_SM, color: "#94A3B8" }}>{report.executionScore}/100</span>
-            </div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-            {([
-              ["Macro Condition", report.executionScoreBreakdown.macroCondition, 20],
-              ["Technical Structure", report.executionScoreBreakdown.technicalStructure, 20],
-              ["Liquidity Score", report.executionScoreBreakdown.liquidityScore, 15],
-              ["Volatility Score", report.executionScoreBreakdown.volatilityScore, 15],
-              ["Momentum Score", report.executionScoreBreakdown.momentumScore, 15],
-              ["Risk/Reward Score", report.executionScoreBreakdown.riskRewardScore, 15],
-            ] as [string, number, number][]).map(([label, val, max]) => (
-              <div key={label}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                  <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>{label}</span>
-                  <span style={{ ...MONO_SM, fontSize: "10px", color: "#F0F4FF", fontWeight: 600 }}>{val}/{max}</span>
-                </div>
-                <div style={{ height: "4px", background: "rgba(255,255,255,0.06)", borderRadius: "2px", overflow: "hidden" }}>
-                  <div style={{
-                    height: "100%",
-                    width: `${(val / max) * 100}%`,
-                    background: val / max >= 0.7 ? "#00FF88" : val / max >= 0.4 ? "#FFD700" : "#FF6B6B",
-                    borderRadius: "2px",
-                    transition: "width 0.4s ease-out",
-                  }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* What cancels this trade */}
       {report.whatCancelsThisTrade && (
         <div style={{ ...CARD, borderColor: "rgba(255,149,0,0.2)" }}>
@@ -461,7 +379,7 @@ function RiskAnalysisTab({ report }: { report: DayTradeReport }) {
 }
 
 // ── AI Analysis Tab ───────────────────────────────────────────
-function AIAnalysisTab({ report }: { report: DayTradeReport }) {
+export function AIAnalysisTab({ report }: { report: DayTradeReport }) {
   const isNoTrade = report.setupType === "NO_TRADE";
   const verdictColor = isNoTrade ? '#6B7280' : report.direction === 'bullish' ? '#00FF88' : '#FF6B6B';
   const verdictLabel = isNoTrade ? 'NO TRADE' : report.direction === 'bullish' ? 'BULLISH SETUP' : 'BEARISH SETUP';
@@ -476,12 +394,8 @@ function AIAnalysisTab({ report }: { report: DayTradeReport }) {
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(100,116,139,0.6)', marginBottom: '4px' }}>FAULTLINE VERDICT</div>
             <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: '22px', color: verdictColor, letterSpacing: '0.06em', textShadow: `0 0 20px ${verdictColor}50` }}>{verdictLabel}</div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(148,163,184,0.7)', marginTop: '3px' }}>
-              {report.setupType} · {report.executionGrade} grade · {report.confidence}/100 confidence
+              {report.setupType}
             </div>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em', marginBottom: '2px' }}>R:R RATIO</div>
-            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '20px', color: report.riskRewardRatio >= 2 ? '#00FF88' : '#FF9500' }}>{report.riskRewardRatio.toFixed(1)}:1</div>
           </div>
         </div>
       </div>
@@ -528,20 +442,6 @@ function AIAnalysisTab({ report }: { report: DayTradeReport }) {
           )}
         </div>
       )}
-
-      {/* ── 6. CONFIDENCE ──────────────────────────────────────── */}
-      <div style={{ ...CARD, background: 'rgba(0,212,255,0.03)', borderColor: 'rgba(0,212,255,0.15)' }}>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(0,212,255,0.6)', marginBottom: '8px' }}>CONFIDENCE BREAKDOWN</div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
-          <div style={{ flex: 1, height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${report.confidence}%`, background: report.confidence >= 70 ? '#00FF88' : report.confidence >= 50 ? '#00D4FF' : '#FF9500', borderRadius: '2px', transition: 'width 0.5s ease' }} />
-          </div>
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '16px', color: report.confidence >= 70 ? '#00FF88' : report.confidence >= 50 ? '#00D4FF' : '#FF9500', minWidth: '40px', textAlign: 'right' }}>{report.confidence}%</div>
-        </div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.5)' }}>
-          {report.confidence >= 70 ? 'High conviction — setup quality meets institutional threshold' : report.confidence >= 50 ? 'Moderate conviction — proceed with reduced size' : 'Low conviction — wait for better entry or skip'}
-        </div>
-      </div>
 
       <div style={{ ...CARD, background: "rgba(255,170,0,0.04)", borderColor: "rgba(255,170,0,0.15)" }}>
         <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
@@ -781,6 +681,15 @@ function UniversalSymbolIntelligence() {
               assetType={submitted.assetType === "crypto" ? "crypto" : "stock"}
             />
           </div>
+        )}
+
+        {submitted?.assetType === "stock" && (
+          <div style={{ marginBottom: 16 }}>
+            <PentagonalThesisNarrative symbol={submitted.symbol} surface="symbol-intelligence" />
+          </div>
+        )}
+        {submitted?.assetType === "crypto" && (
+          <p style={{ color: "#8EA0B5", fontSize: 12, margin: "0 0 16px" }}>The equity Pentagonal Thesis is not applied to crypto symbols.</p>
         )}
 
         {/* Results area */}

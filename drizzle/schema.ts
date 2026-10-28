@@ -3031,3 +3031,43 @@ export const signalConvergenceReadings = mysqlTable("signalConvergenceReadings",
 }));
 export type SignalConvergenceReadingRow = typeof signalConvergenceReadings.$inferSelect;
 export type InsertSignalConvergenceReading = typeof signalConvergenceReadings.$inferInsert;
+
+/**
+ * Append-only Pentagonal Thesis versions. Migration 0075. Do not apply from startup.
+ * payloadJson is immutable at the database (UPDATE and DELETE triggers).
+ * A newer version inserts a row that points at the prior record.
+ * Outcome notes go in pentagonalThesisOutcomeScores, which is also append-only.
+ */
+export const pentagonalThesisRecords = mysqlTable("pentagonalThesisRecords", {
+  id: int("id").autoincrement().primaryKey(),
+  recordId: varchar("recordId", { length: 64 }).notNull(),
+  scopeKind: mysqlEnum("scopeKind", ["stock", "sector", "market"]).notNull(),
+  symbol: varchar("symbol", { length: 32 }).notNull(),
+  thesisVersion: int("thesisVersion").notNull(),
+  supersedesRecordId: varchar("supersedesRecordId", { length: 64 }),
+  engineVersion: varchar("engineVersion", { length: 64 }).notNull(),
+  contentHash: varchar("contentHash", { length: 64 }).notNull(),
+  payloadJson: text("payloadJson").notNull(),
+  generatedAt: timestamp("generatedAt").notNull(),
+  recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({
+  recordIdUniq: uniqueIndex("pentagonalThesisRecords_recordId_uniq").on(t.recordId),
+  symbolVersionUniq: uniqueIndex("pentagonalThesisRecords_symbol_version_uniq").on(t.scopeKind, t.symbol, t.thesisVersion),
+  symbolIdx: index("pentagonalThesisRecords_symbol_idx").on(t.symbol, t.recordedAt),
+}));
+export type PentagonalThesisRecord = typeof pentagonalThesisRecords.$inferSelect;
+export type InsertPentagonalThesisRecord = typeof pentagonalThesisRecords.$inferInsert;
+
+/** Append-only outcome notes for a thesis record. Scoring is not implemented. */
+export const pentagonalThesisOutcomeScores = mysqlTable("pentagonalThesisOutcomeScores", {
+  id: int("id").autoincrement().primaryKey(),
+  scoreId: varchar("scoreId", { length: 64 }).notNull(),
+  recordId: varchar("recordId", { length: 64 }).notNull(),
+  notes: text("notes"),
+  scoredAt: timestamp("scoredAt").defaultNow().notNull(),
+}, (t) => ({
+  scoreIdUniq: uniqueIndex("pentagonalThesisOutcomeScores_scoreId_uniq").on(t.scoreId),
+  recordIdx: index("pentagonalThesisOutcomeScores_record_idx").on(t.recordId, t.scoredAt),
+}));
+export type PentagonalThesisOutcomeScore = typeof pentagonalThesisOutcomeScores.$inferSelect;
+export type InsertPentagonalThesisOutcomeScore = typeof pentagonalThesisOutcomeScores.$inferInsert;

@@ -3,6 +3,7 @@ import { useLocation, useRoute } from "wouter";
 import { AlertTriangle, ArrowLeft, BrainCircuit, RefreshCw } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { UnifiedIntelligenceChart, type IntelligenceLevel } from "@/components/UnifiedIntelligenceChart";
+import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 
 const CYAN = "#00D4FF";
 const GREEN = "#00FF88";
@@ -24,13 +25,6 @@ function stamp(value: number | null | undefined): string {
   return value ? new Date(value).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "Unavailable";
 }
 
-function actionColor(action: string | undefined): string {
-  if (action === "BUY") return GREEN;
-  if (action === "SELL") return RED;
-  if (action === "HOLD") return AMBER;
-  return MUTED;
-}
-
 function Metric({ label, value, color = "#EAF5FF", detail }: { label: string; value: string; color?: string; detail?: string }) {
   return <div style={metric}><div style={metricLabel}>{label}</div><div style={{ ...metricValue, color }}>{value}</div>{detail && <div style={metricDetail}>{detail}</div>}</div>;
 }
@@ -47,24 +41,10 @@ export default function SignalDetail() {
   const detail = query.data;
   const signal = detail?.signal;
   const quote = detail?.quote;
-  const levelLines = useMemo<IntelligenceLevel[]>(() => {
-    if (!signal) return [];
-    const levels = signal.priceLevels;
-    return [
-      { label: "SUPPORT", value: levels.support, color: GREEN },
-      { label: "RESISTANCE", value: levels.resistance, color: AMBER },
-      { label: "ENTRY", value: levels.entryZone, color: CYAN, dashed: false },
-      { label: "STOP", value: levels.stopLoss, color: RED },
-      { label: "TARGET", value: levels.targetPrice, color: GREEN },
-      { label: "THESIS FAIL", value: levels.riskLevels.thesisFailure.price, color: RED },
-    ];
-  }, [signal]);
+  const levelLines = useMemo<IntelligenceLevel[]>(() => [], []);
 
   const askAsha = () => {
-    const current = signal
-      ? `${symbol} is currently ${signal.action} at ${signal.confidence}% confidence. Its calculated entry is ${money(signal.priceLevels.entryZone)}, stop is ${money(signal.priceLevels.stopLoss)}, and target is ${money(signal.priceLevels.targetPrice)}.`
-      : `${symbol} has incomplete source inputs, so FAULTLINE is withholding a current trading signal.`;
-    navigate(`/app/asha?prompt=${encodeURIComponent(`Explain the current ${symbol} Signals visual analysis using only the displayed observed daily bars, current technicals, calculated levels, regime context, and explicit source availability. ${current} Do not imply historical FAULTLINE signals or outcomes.`)}`);
+    navigate(`/app/asha?prompt=${encodeURIComponent(`Explain the current ${symbol} chart using only the displayed observed daily bars and the shared Pentagonal Thesis. Do not state a buy, sell, confidence percentage, entry, stop, or target. Do not imply historical FAULTLINE signals or outcomes.`)}`);
   };
 
   if (query.isLoading) return <main style={page}><div style={empty}>ASSEMBLING SOURCE-BACKED SIGNAL VISUAL ANALYSIS…</div></main>;
@@ -86,30 +66,27 @@ export default function SignalDetail() {
       <div style={quoteBlock}><div style={{ ...quotePrice, color: currentPrice == null ? MUTED : "#EAF5FF" }}>{money(currentPrice)}</div><div style={{ color: positive ? GREEN : RED, fontSize: 11 }}>{typeof priceChange === "number" ? `${positive ? "+" : ""}${priceChange.toFixed(2)}%` : "QUOTE CHANGE UNAVAILABLE"}</div><div style={subtle}>{quote?.isDelayed ? "DELAYED QUOTE" : "QUOTE STATUS UNAVAILABLE"}</div></div>
     </header>
 
+    <PentagonalThesisNarrative symbol={symbol} surface="signal-detail" />
+
     <section style={statusStrip}>
-      <Metric label="CURRENT SIGNAL" value={signal ? `${signal.action} · ${signal.actionLabel}` : "WITHHELD"} color={actionColor(signal?.action)} detail={signal ? `${signal.confidence}% confidence · ${signal.strength.toUpperCase()}` : "Required inputs are incomplete"} />
-      <Metric label="REGIME" value={detail.regime?.label ?? "UNAVAILABLE"} color={detail.regime ? CYAN : AMBER} detail={detail.regime ? `${detail.regime.pressureIndex}/100 · ${detail.regime.direction}` : "Signal calculation withheld"} />
+      <Metric label="SHARED THESIS" value="ABOVE" color={CYAN} detail="The stock read is the Pentagonal Thesis. This page does not add a trade call." />
+      <Metric label="REGIME" value="IN THE THESIS" color={CYAN} detail="Pressure and regime appear only in the shared thesis, and only when that reading is inside the 72-hour freshness window." />
       <Metric label="DAILY HISTORY" value={`${detail.bars.length} COMPLETED BARS`} detail={detail.providerHealth.dailyBars.status.toUpperCase()} />
       <Metric label="OBSERVED QUOTE" value={detail.providerHealth.quote.status.toUpperCase()} color={detail.providerHealth.quote.status === "available" ? GREEN : AMBER} detail={detail.providerHealth.quote.source.toUpperCase()} />
     </section>
 
     <section style={heroPanel}>
-      <div style={sectionHeader}><div><b style={{ color: "#EAF5FF" }}>PRICE ACTION & CURRENT SIGNAL LEVELS</b><div style={subtle}>Horizontal lines are current deterministic calculations from the displayed completed daily bars and observed quote. They are not historical FAULTLINE calls.</div></div><button style={secondaryButton} onClick={() => query.refetch()} disabled={query.isFetching}><RefreshCw size={13} /> {query.isFetching ? "REFRESHING" : "REFRESH"}</button></div>
-      <div style={{ overflowX: "auto", marginTop: 12 }}><UnifiedIntelligenceChart bars={detail.bars} levels={levelLines} ariaLabel={`${symbol} completed daily price, volume, and current signal levels`} volumeLabel="VOLUME · COMPLETED DAILY SOURCE BARS" /></div>
-      <div style={historyBoundary}><AlertTriangle size={14} color={AMBER} /><span><b>NO HISTORICAL SIGNAL MARKERS.</b> FAULTLINE does not yet have immutable stored signal observations for this symbol. The chart displays source price history and current calculated levels only.</span></div>
+      <div style={sectionHeader}><div><b style={{ color: "#EAF5FF" }}>COMPLETED DAILY PRICE</b><div style={subtle}>The chart is observed daily price and volume. It does not draw a trade entry, stop, or target.</div></div><button style={secondaryButton} onClick={() => query.refetch()} disabled={query.isFetching}><RefreshCw size={13} /> {query.isFetching ? "REFRESHING" : "REFRESH"}</button></div>
+      <div style={{ overflowX: "auto", marginTop: 12 }}><UnifiedIntelligenceChart bars={detail.bars} levels={levelLines} ariaLabel={`${symbol} completed daily price and volume`} volumeLabel="VOLUME · COMPLETED DAILY SOURCE BARS" /></div>
+      <div style={historyBoundary}><AlertTriangle size={14} color={AMBER} /><span><b>NO HISTORICAL SIGNAL MARKERS.</b> FAULTLINE does not yet have immutable stored signal observations for this symbol. The chart displays source price history only.</span></div>
     </section>
 
     {signal ? <>
       <section style={grid}>
-        <Panel title="WHY FAULTLINE IS SHOWING THIS"><div style={{ ...actionBadge, color: actionColor(signal.action), borderColor: `${actionColor(signal.action)}66` }}>{signal.action} · {signal.actionLabel}</div><p style={copy}>{signal.rationale}</p><div style={metricGrid}><Metric label="CONFIDENCE" value={`${signal.confidence}%`} color={actionColor(signal.action)} /><Metric label="TIMEFRAME" value={signal.timeframe.toUpperCase()} /><Metric label="REGIME ALIGNMENT" value={signal.regimeAlignment.toUpperCase()} color={signal.regimeAlignment === "Counter-Trend" ? RED : signal.regimeAlignment === "Aligned" ? GREEN : AMBER} detail={`${signal.regimeAlignmentScore}/10`} /></div></Panel>
-        <Panel title="CALCULATED PRICE LEVELS"><div style={metricGrid}><Metric label="SUPPORT" value={money(signal.priceLevels.support)} color={GREEN} /><Metric label="RESISTANCE" value={money(signal.priceLevels.resistance)} color={AMBER} /><Metric label="ENTRY" value={money(signal.priceLevels.entryZone)} color={CYAN} /><Metric label="STOP" value={money(signal.priceLevels.stopLoss)} color={RED} /><Metric label="TARGET" value={money(signal.priceLevels.targetPrice)} color={GREEN} /><Metric label="RISK / REWARD" value={`${signal.priceLevels.riskReward}:1`} /></div></Panel>
+        <Panel title="COMPLETED-BAR MEASUREMENTS"><div style={metricGrid}><Metric label={technicals?.rsiIsTrue ? "RSI (14)" : "RSI APPROX."} value={`${number(technicals?.rsiEstimate, "") } · ${technicals?.rsiLabel.toUpperCase() ?? "—"}`} color={technicals?.rsiLabel === "Overbought" ? RED : technicals?.rsiLabel === "Oversold" ? GREEN : "#EAF5FF"} detail={technicals?.rsiIsTrue ? "Wilder’s completed-bar calculation" : "Fallback calculation"} /><Metric label={technicals?.smaIsTrue ? "SMA 50 / 200" : "SMA STRUCTURE"} value={technicals?.smaSignal.toUpperCase() ?? "—"} color={technicals?.smaSignal === "Golden Cross" ? GREEN : technicals?.smaSignal === "Death Cross" ? RED : "#EAF5FF"} /><Metric label="MACD 12 / 26 / 9" value={technicals?.macd ? technicals.macd.signal.toUpperCase() : "UNAVAILABLE"} color={technicals?.macd?.signal === "Bullish" ? GREEN : technicals?.macd?.signal === "Bearish" ? RED : MUTED} detail={technicals?.macd ? `Histogram ${number(technicals.macd.histogram)}` : "Requires sufficient completed bars"} /><Metric label="VOLUME" value={technicals?.volumeSignal.toUpperCase() ?? "—"} color={technicals?.volumeSignal === "Surge" ? AMBER : technicals?.volumeSignal === "Low" ? RED : "#EAF5FF"} detail={detail.avgVolume ? `20-bar avg ${Math.round(detail.avgVolume).toLocaleString()} shares` : "20-bar average unavailable"} /><Metric label="TREND" value={technicals?.trend.toUpperCase() ?? "—"} /></div></Panel>
       </section>
-      <section style={grid}>
-        <Panel title="TECHNICAL EVIDENCE"><div style={metricGrid}><Metric label={technicals?.rsiIsTrue ? "RSI (14)" : "RSI APPROX."} value={`${number(technicals?.rsiEstimate, "") } · ${technicals?.rsiLabel.toUpperCase() ?? "—"}`} color={technicals?.rsiLabel === "Overbought" ? RED : technicals?.rsiLabel === "Oversold" ? GREEN : "#EAF5FF"} detail={technicals?.rsiIsTrue ? "Wilder’s completed-bar calculation" : "Fallback calculation"} /><Metric label={technicals?.smaIsTrue ? "SMA 50 / 200" : "SMA STRUCTURE"} value={technicals?.smaSignal.toUpperCase() ?? "—"} color={technicals?.smaSignal === "Golden Cross" ? GREEN : technicals?.smaSignal === "Death Cross" ? RED : "#EAF5FF"} /><Metric label="MACD 12 / 26 / 9" value={technicals?.macd ? technicals.macd.signal.toUpperCase() : "UNAVAILABLE"} color={technicals?.macd?.signal === "Bullish" ? GREEN : technicals?.macd?.signal === "Bearish" ? RED : MUTED} detail={technicals?.macd ? `Histogram ${number(technicals.macd.histogram)}` : "Requires sufficient completed bars"} /><Metric label="VOLUME" value={technicals?.volumeSignal.toUpperCase() ?? "—"} color={technicals?.volumeSignal === "Surge" ? AMBER : technicals?.volumeSignal === "Low" ? RED : "#EAF5FF"} detail={detail.avgVolume ? `20-bar avg ${Math.round(detail.avgVolume).toLocaleString()} shares` : "20-bar average unavailable"} /><Metric label="TREND" value={technicals?.trend.toUpperCase() ?? "—"} /><Metric label="MOMENTUM" value={`${technicals?.momentumScore ?? "—"}/100`} /></div></Panel>
-        <Panel title="RISK FRAMEWORK"><div style={metricGrid}><Metric label="TRADE STOP" value={money(signal.priceLevels.riskLevels.tradeStop.price)} color={RED} detail={signal.priceLevels.riskLevels.tradeStopExplanation} /><Metric label="SWING STOP" value={money(signal.priceLevels.riskLevels.swingStop.price)} color={AMBER} detail={signal.priceLevels.riskLevels.swingStopExplanation} /><Metric label="THESIS FAILURE" value={money(signal.priceLevels.riskLevels.thesisFailure.price)} color={RED} detail={signal.priceLevels.riskLevels.thesisFailureExplanation} /></div></Panel>
-      </section>
-      <Panel title="WHAT CHANGED"><div style={metricGrid}><Metric label="OBSERVED DAILY MOVE" value={typeof priceChange === "number" ? `${positive ? "+" : ""}${priceChange.toFixed(2)}%` : "UNAVAILABLE"} color={positive ? GREEN : RED} detail="Current quote versus its reported prior close" /><Metric label="RELATIVE TO 20-BAR AVERAGE" value={detail.relativeStrength == null ? "UNAVAILABLE" : `${detail.relativeStrength}/100`} color={detail.relativeStrength != null && detail.relativeStrength >= 50 ? GREEN : AMBER} detail="Normalized completed-bar price relationship" /><Metric label="LATEST COMPLETED BAR" value={stamp(detail.providerHealth.dailyBars.latestCompletedAt)} detail="Source daily OHLCV observation" /></div><p style={copy}>No earlier immutable FAULTLINE signal observation exists for this symbol yet, so this page does not claim a comparison with a prior FAULTLINE call. The first stored verified signal observation will establish that boundary.</p></Panel>
-    </> : <Panel title="CURRENT SIGNAL WITHHELD"><p style={copy}>FAULTLINE will not produce a partial or substituted signal. Review source status below; the chart still shows any completed source bars that were available.</p></Panel>}
+      <Panel title="WHAT CHANGED"><div style={metricGrid}><Metric label="OBSERVED DAILY MOVE" value={typeof priceChange === "number" ? `${positive ? "+" : ""}${priceChange.toFixed(2)}%` : "UNAVAILABLE"} color={positive ? GREEN : RED} detail="Current quote versus its reported prior close" /><Metric label="RELATIVE TO 20-BAR AVERAGE" value={detail.relativeStrength == null ? "UNAVAILABLE" : `${detail.relativeStrength}/100`} color={detail.relativeStrength != null && detail.relativeStrength >= 50 ? GREEN : AMBER} detail="Normalized completed-bar price relationship" /><Metric label="LATEST COMPLETED BAR" value={stamp(detail.providerHealth.dailyBars.latestCompletedAt)} detail="Source daily OHLCV observation" /></div><p style={copy}>No earlier immutable FAULTLINE signal observation exists for this symbol yet, so this page does not claim a comparison with a prior FAULTLINE call. The stock conclusion is the shared thesis above.</p></Panel>
+    </> : <Panel title="MEASUREMENTS WITHHELD"><p style={copy}>Completed-bar measurements were not assembled. The chart still shows any completed source bars that were available. The stock conclusion remains the shared thesis above.</p></Panel>}
 
     <section style={grid}>
       <Panel title="SOURCE STATUS"><div style={sourceList}>{Object.entries(detail.providerHealth).map(([name, source]) => <div key={name} style={sourceRow}><span style={{ color: source.status === "available" ? GREEN : AMBER }}>{source.status === "available" ? "●" : "▲"}</span><div><b>{name.replace(/([A-Z])/g, " $1").toUpperCase()}</b><p style={sourceCopy}>{source.detail}</p></div></div>)}</div></Panel>

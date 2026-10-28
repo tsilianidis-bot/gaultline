@@ -7,7 +7,7 @@ export default function PLTRSignal() {
       companyName="Palantir Technologies"
       sector="AI Software / Government & Enterprise Analytics"
       description="Palantir AI stock signal analysis"
-      seoTitle="PLTR Signal — Palantir Stock Analysis, AI Risk Score & Key Levels | FAULTLINE"
+      seoTitle="PLTR — Palantir background and shared stock thesis | FAULTLINE"
       seoDescription="Real-time PLTR signal analysis: Palantir's macro alignment score, AI software exposure rating, key support and resistance levels, bull and bear case scenarios, and regime-based signal classification."
       canonical="/stock/pltr"
       accentColor="#00D4FF"
@@ -36,7 +36,7 @@ Major Support Zones: The 200-day moving average is the primary long-term support
 
 Resistance Clusters: Previous all-time highs before they were broken become resistance if the stock pulls back. Options gamma walls at major strike prices create temporary resistance.
 
-Technical Context: PLTR has historically exhibited high volatility relative to the broader market (beta approximately 1.8-2.2). This means PLTR tends to amplify both upside and downside moves relative to the S&P 500. FAULTLINE's signal engine accounts for this elevated beta in the risk score calculation.`}
+Technical Context: PLTR has historically exhibited high volatility relative to the broader market (beta approximately 1.8-2.2). This means PLTR tends to amplify both upside and downside moves relative to the S&P 500. That history is background. This page does not turn it into a separate score.`}
       riskFactors={`PLTR faces five primary risk factors that FAULTLINE monitors:
 
 1. Valuation Multiple Risk: PLTR trades at a significant premium to traditional software companies — often 50-100x forward earnings. In a risk-off environment or during periods of software sector multiple compression, PLTR's high valuation creates significant downside risk.
@@ -62,12 +62,12 @@ Technical Context: PLTR has historically exhibited high volatility relative to t
           answer: "PLTR's government revenue (approximately 55% of total) provides relative stability during economic downturns — defense and intelligence spending tends to be maintained regardless of economic conditions. This makes PLTR's revenue more predictable than pure commercial software companies. However, government contract renewals and budget cycles create their own timing risks.",
         },
         {
-          question: "What is PLTR's AI bubble exposure rating?",
-          answer: "FAULTLINE classifies PLTR as having HIGH AI Software Exposure — its valuation is sensitive to AI software adoption rates and enterprise AI spending. Unlike hardware AI plays (NVDA), PLTR's exposure is to AI software adoption rather than AI infrastructure buildout. These are correlated but distinct risk factors.",
+          question: "What does this page say about Palantir and AI software?",
+          answer: "Palantir sells software used by government and enterprise customers, including tools for deploying models on private data. That is a business description. This page does not publish an exposure rating.",
         },
         {
-          question: "What would cause PLTR to fall significantly?",
-          answer: "Scenarios that could cause significant PLTR drawdowns include: deceleration in AIP commercial adoption, loss of major government contracts, broader AI software multiple compression, a HIGH STRESS macro environment (FAULTLINE Pressure Index 60+), or a broader market crash that triggers risk-off rotation away from high-multiple growth stocks.",
+          question: "What does this page refuse to forecast for PLTR?",
+          answer: "It does not publish a drawdown path, a stress threshold, or a second stock call. Those paths stay inside the shared thesis, and only when the inputs are fresh.",
         },
       ]}
       internalLinks={[
@@ -75,7 +75,7 @@ Technical Context: PLTR has historically exhibited high volatility relative to t
         { label: "META SIGNAL", href: "/stock/meta", desc: "Meta AI signal analysis." },
         { label: "AI STOCKS DASHBOARD", href: "/ai-stocks-dashboard", desc: "All AI-exposed stocks in one dashboard." },
         { label: "AI BUBBLE MONITOR", href: "/ai-bubble-risk-tracker", desc: "Track AI concentration and valuation risk." },
-        { label: "MARKET CRASH PROBABILITY", href: "/market-crash-probability-2026", desc: "Systemic risk that could trigger PLTR drawdowns." },
+        { label: "SHARED THESIS", href: "/app/signals", desc: "The live PLTR read is the shared stock thesis." },
         { label: "STOCK SIGNALS", href: "/signals", desc: "All FAULTLINE stock signals in one view." },
       ]}
     />
