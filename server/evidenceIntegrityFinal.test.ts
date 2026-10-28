@@ -365,5 +365,9 @@ describe("finding 10 — hardcoded LIVE claims", () => {
     expect(source("client/src/pages/Alerts.tsx")).not.toContain("LIVE VERIFIED");
     expect(source("client/src/pages/DayTradeIntelligence.tsx")).not.toContain("Live data is flowing normally");
     expect(source("client/src/components/dashboard/PulseMode.tsx")).not.toContain("LIVE INTELLIGENCE");
+    const owner = source("server/ownerSimulation.ts");
+    expect(owner).not.toContain('dataFreshness: "LIVE"');
+    expect(owner).not.toMatch(/quote\.source === "yahoo" \? "LIVE"/);
+    expect(owner).not.toContain('sourceStatus: observedAtMs != null ? "live"');
   });
 });

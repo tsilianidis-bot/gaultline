@@ -1,0 +1,15 @@
+# NOT APPLIED. Do not change Railway, production cron, or any live service from this file.
+# Production seismograph-cron today: 0 18 * * * UTC.
+# That fire is 14:00 EDT / 13:00 EST, outside 16:15–16:45 America/New_York,
+# so the handler returns 409 and curl -f fails.
+#
+# Candidate seismograph (Railway cron is UTC-only; exactly one of these is 16:15 ET):
+#   15 20,21 * * 1-5
+# 20:15 UTC = 16:15 EDT. 21:15 UTC = 16:15 EST. The other hour is the DST companion
+# and returns 409 dst_companion_outside_window.
+#
+# Candidate systemic-regime-infer, after both seismograph hours, weekdays:
+#   30 21 * * 1-5
+# Documented production infer remains daily 19:00 UTC until this is applied.
+# 19:00 UTC is before the candidate seismograph, so Signal Convergence would
+# read the previous session's seismograph:latest_output.

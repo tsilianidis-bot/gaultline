@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { CanonicalIntelligenceState } from "../../shared/canonicalIntelligenceState";
 import { pressureVectorLabel } from "../../shared/pressureVectorLabels";
 import { canonicalEngineIntegrityEvidence } from "../canonicalIntelligenceState";
+import { captureTrackRecordFromScheduledRun } from "../trackRecordCapture";
 import { buildEvidenceSnapshot, withinDeadline } from "./collector";
 
 const NOW = new Date("2026-10-16T15:00:00.000Z");
@@ -74,6 +75,13 @@ describe("Phase 1 Intelligence Evidence collector", () => {
     const snapshot = buildEvidenceSnapshot(inputs(), NOW);
     expect(finding(snapshot, "coingecko:global-market-cap")).toMatchObject({ value: 2_000_000_000_000, validationStatus: "verified", supportsCurrentClaim: true, observedAt: "2026-10-16T14:58:00.000Z", temporalStatus: "delayed" });
     expect(snapshot.providerHealth.find(provider => provider.id === "coingecko")?.status).toBe("healthy");
+  });
+
+  it("does not label a future CoinGecko timestamp as delayed", () => {
+    const crypto = { ...(inputs().crypto as Record<string, unknown>), observedAt: NOW_MS + 120_000 };
+    const snapshot = buildEvidenceSnapshot(inputs({ crypto }), NOW);
+    expect(finding(snapshot, "coingecko:global-market-cap").temporalStatus).not.toBe("delayed");
+    expect(finding(snapshot, "coingecko:global-market-cap")).toMatchObject({ temporalStatus: "unavailable", supportsCurrentClaim: false });
   });
 
   it("withholds a CoinGecko aggregate when the adapter has only ingestion time", () => {
@@ -157,5 +165,58 @@ describe("Phase 1 Intelligence Evidence collector", () => {
     for (const id of ["fred:SOFR", "fred:UNRATE", "fred:CPIAUCSL", "fred:PPIACO", "fred:FEDFUNDS"]) {
       expect(snapshot.observations.some(item => item.id === id)).toBe(false);
     }
+  });
+
+  it("keeps a five-minute-old closed-session SPY quote historical and out of track-record evidence", async () => {
+    const closedAt = new Date("2026-10-16T20:05:00.000Z");
+    const closedMs = closedAt.getTime();
+    const quotes = (inputs().quotes as Array<Record<string, unknown>>).map(quote => quote.ticker === "SPY"
+      ? { ...quote, marketState: "CLOSED", observedAt: closedMs - 5 * 60_000, fetchedAt: closedMs }
+      : { ...quote, marketState: "REGULAR", observedAt: closedMs - 60_000, fetchedAt: closedMs });
+    const snapshot = buildEvidenceSnapshot(inputs({ quotes }), closedAt);
+    expect(finding(snapshot, "quote:SPY")).toMatchObject({
+      value: 100,
+      validationStatus: "historical",
+      supportsCurrentClaim: false,
+      temporalStatus: "completed_session",
+    });
+    expect(finding(snapshot, "quote:SPY").validationStatus).not.toBe("verified");
+    const capture = await captureTrackRecordFromScheduledRun({
+      run: { trigger: "SCHEDULED_CRON" },
+      pressureIndex: 40,
+      regime: "ELEVATED",
+      generatedAt: closedAt.toISOString(),
+      env: { TRACK_RECORD_CRON_WRITES: "true" },
+      flagEnabled: true,
+      nowMs: closedMs,
+      loadSnapshot: async () => ({
+        ...snapshot,
+        persistence: "recorded" as const,
+        providerHealth: snapshot.providerHealth.map(item => ({ ...item, status: "healthy" as const })),
+      }),
+    });
+    expect(capture).toEqual({ recorded: false, reason: "integrity_gate_failed" });
+  });
+
+  it("keeps an age-stale in-session quote stale rather than historical", () => {
+    const staleQuotes = (inputs().quotes as Array<Record<string, unknown>>).map(quote => ({ ...quote, observedAt: NOW_MS - 25 * 60_000 }));
+    const snapshot = buildEvidenceSnapshot(inputs({ quotes: staleQuotes }), NOW);
+    expect(finding(snapshot, "quote:SPY")).toMatchObject({ validationStatus: "stale", supportsCurrentClaim: false, temporalStatus: "stale" });
+  });
+
+  it("retains a completed session as historical context distinct from a fresh in-session quote", () => {
+    const sessionQuotes = (inputs().quotes as Array<Record<string, unknown>>).map(quote => ({
+      ...quote,
+      marketState: quote.ticker === "QQQ" ? "CLOSED" : "REGULAR",
+      observedAt: quote.ticker === "QQQ" ? NOW_MS - 12 * 60 * 60_000 : NOW_MS - 60_000,
+    }));
+    const snapshot = buildEvidenceSnapshot(inputs({ quotes: sessionQuotes }), NOW);
+    expect(finding(snapshot, "quote:SPY")).toMatchObject({ validationStatus: "verified", supportsCurrentClaim: true, temporalStatus: "delayed" });
+    expect(finding(snapshot, "quote:QQQ")).toMatchObject({
+      validationStatus: "historical",
+      supportsCurrentClaim: false,
+      temporalStatus: "completed_session",
+      value: 101,
+    });
   });
 });

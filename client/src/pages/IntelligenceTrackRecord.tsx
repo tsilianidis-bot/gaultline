@@ -5,7 +5,6 @@ import { useSEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 import {
-  emptyPublicTrackRecord,
   type PublicChronologyItem,
   type PublicMetric,
   type PublicTrackRecord,
@@ -263,11 +262,9 @@ function ExamplePreview() {
   return <IntelligenceTrackRecordView record={record} mode="example" />;
 }
 
-function previewMode(): ViewMode | null {
-  if (!import.meta.env.DEV || typeof window === "undefined") return null;
-  const preview = new URLSearchParams(window.location.search).get("preview");
-  if (preview === "example" || preview === "empty") return preview;
-  return null;
+function previewQuery(): string | null {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get("preview");
 }
 
 export default function IntelligenceTrackRecord() {
@@ -276,10 +273,16 @@ export default function IntelligenceTrackRecord() {
     description: "Chronological record of FAULTLINE assessments and later observations. Figures stay withheld until enough forward observations exist. Not investment advice.",
     canonical: "/intelligence-track-record",
   });
-  const preview = previewMode();
-  const query = trpc.intelligenceAccountability.publicRecord.useQuery(undefined, { retry: false, enabled: preview == null });
-  if (import.meta.env.DEV && preview === "example") return <ExamplePreview />;
-  if (preview === "empty") return <IntelligenceTrackRecordView record={emptyPublicTrackRecord()} mode="empty" />;
+  const preview = previewQuery();
+  const examplePreview = import.meta.env.DEV && preview === "example";
+  const emptyPreview = preview === "empty";
+  const emptyQuery = trpc.intelligenceAccountability.emptyPreview.useQuery(undefined, { retry: false, enabled: emptyPreview });
+  const query = trpc.intelligenceAccountability.publicRecord.useQuery(undefined, { retry: false, enabled: !examplePreview && !(emptyPreview && (emptyQuery.isLoading || Boolean(emptyQuery.data))) });
+  if (examplePreview) return <ExamplePreview />;
+  if (emptyPreview && emptyQuery.isLoading) {
+    return <div className="min-h-screen bg-black px-6 py-16 text-sm text-zinc-500">Loading the accountability record.</div>;
+  }
+  if (emptyPreview && emptyQuery.data) return <IntelligenceTrackRecordView record={emptyQuery.data} mode="empty" />;
   if (query.isLoading) {
     return <div className="min-h-screen bg-black px-6 py-16 text-sm text-zinc-500">Loading the accountability record.</div>;
   }

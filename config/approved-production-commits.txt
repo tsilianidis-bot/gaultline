@@ -1,0 +1,8 @@
+# Not an allowlist. scripts/guard-approved-deploy.sh does not read this file,
+# and the server does not consult it at boot.
+#
+# Production protection is Railway commit pinning plus the tag
+# production-1cb5dee on 1cb5dee13832c0556ec5a380ecc4ffb02513e875
+# (deployment b19716b1). The tag command is in the deployment runbook and
+# has not been executed. A pre-deploy check passes that SHA in
+# FAULTLINE_APPROVED_DEPLOY_SHAS or resolves FAULTLINE_APPROVED_DEPLOY_TAGS.
