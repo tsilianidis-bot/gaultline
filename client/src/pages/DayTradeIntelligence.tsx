@@ -1443,7 +1443,7 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
   const lastUpdatedStr = lastUpdated ? lastUpdated.toLocaleTimeString() : "Not available";
 
   const SECTORS_DATA = [
-    { name: "Technology (XLK)",      bias: "Monitor",  note: "High beta; pass over during data outages" },
+    { name: "Technology (XLK)",      bias: "Monitor",  note: "High beta. The sector score is withheld while the feed is incomplete." },
     { name: "Semiconductors (SOXX)", bias: "Monitor",  note: "Momentum-driven; wait for data restore" },
     { name: "Financials (XLF)",      bias: "Neutral",  note: "Rate-sensitive; watch Fed signals" },
     { name: "Energy (XLE)",          bias: "Neutral",  note: "Commodity-linked; check oil levels" },
@@ -1453,7 +1453,7 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
 
   const PLAYBOOK_DATA = [
     { rule: "Wait for data confirmation", detail: "Never enter a position without confirmed live price and volume data." },
-    { rule: "Reduce position size by 50%", detail: "During data outages, cut all position sizes in half to manage unknown risk." },
+    { rule: "Live size input is missing", detail: "Price and volume are not on this card, so no size is published." },
     { rule: "Widen the downside mark by 1.5x",         detail: "Spread widens during data gaps. Use 1.5x the usual downside distance." },
     { rule: "Momentum tape is missing",        detail: "Live tape is not on this card. Momentum is not scored until that input returns." },
     { rule: "Focus on mean-reversion",      detail: "If you must trade, mean-reversion setups are less data-dependent." },
@@ -1475,7 +1475,7 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
     { title: "Maximum Risk Per Trade", value: "0.5% of portfolio", detail: "During data outages, cut normal risk per trade by 50%." },
     { title: "Daily Loss Limit",       value: "1.5% of portfolio", detail: "Pause for the day if this threshold is hit." },
     { title: "Correlation Check",      value: "Required",          detail: "Correlation is not scored while the input set is incomplete." },
-    { title: "Leverage",               value: "Reduce to 1:1",     detail: "No leverage during data outages. Spot only." },
+    { title: "Leverage",               value: "Not scored",     detail: "Leverage is not scored while the data feed is incomplete." },
   ];
 
   const MACRO_DATA = [

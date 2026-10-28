@@ -19,7 +19,6 @@
 // Output: FMOSDecisionOutput
 // ============================================================
 
-import { tradeClass } from "../../../shared/surfaceClaims";
 import { clamp, pressureToActionBias } from "../utils";
 import type { FaultlinePressureOutput } from "../../pressure/engine";
 import type {
@@ -42,23 +41,23 @@ function classifyVerdict(
 ): DecisionVerdict {
   const edge = bull - bear;
 
-  if (actionBias === "Critical") return tradeClass("lowest");
+  if (actionBias === "Critical") return "lowest-edge";
   if (actionBias === "Defensive") {
-    if (edge > 20) return tradeClass("watch");
-    return tradeClass("reduce");
+    if (edge > 20) return "open-edge";
+    return "down-edge";
   }
 
   const lowConfidence = confidence < 45;
 
-  if (edge >= 30 && confidence >= 60) return tradeClass("strongUp");
-  if (edge >= 20 && confidence >= 50) return tradeClass("up");
-  if (edge >= 10) return lowConfidence ? tradeClass("watch") : tradeClass("build");
-  if (edge >= -10) return tradeClass("flat");
-  if (edge >= -20) return tradeClass("watch");
-  if (edge >= -30) return tradeClass("light");
-  if (edge >= -40) return tradeClass("reduce");
-  if (edge >= -50) return lowConfidence ? tradeClass("reduce") : tradeClass("down");
-  return tradeClass("lowest");
+  if (edge >= 30 && confidence >= 60) return "strong-up";
+  if (edge >= 20 && confidence >= 50) return "up-edge";
+  if (edge >= 10) return lowConfidence ? "open-edge" : "build-edge";
+  if (edge >= -10) return "flat-edge";
+  if (edge >= -20) return "open-edge";
+  if (edge >= -30) return "light-edge";
+  if (edge >= -40) return "down-edge";
+  if (edge >= -50) return lowConfidence ? "down-edge" : "lower-edge";
+  return "lowest-edge";
 }
 
 function buildPositionSizing(
@@ -71,17 +70,8 @@ function buildPositionSizing(
 
 // ── Timeframe Guidance ────────────────────────────────────────
 
-function buildTimeframe(verdict: DecisionVerdict, regime: FMOSRegimeOutput): string {
-  if (verdict === "AVOID" || verdict === "SELL") {
-    return "No defined opening timeframe — wait for regime improvement";
-  }
-  if (verdict === "STRONG BUY" || verdict === "BUY") {
-    return `${regime.transitionProbability30d < 30 ? "Medium-term (3–6 months)" : "Short-term (4–8 weeks)"} — monitor for regime change`;
-  }
-  if (verdict === "ACCUMULATE") {
-    return "Staged opening over 2–4 weeks — build position as conditions confirm";
-  }
-  return "Tactical (1–4 weeks) — reassess as conditions evolve";
+function buildTimeframe(_verdict: DecisionVerdict, regime: FMOSRegimeOutput): string {
+  return `Regime label is ${regime.currentRegime}. Stability input is ${Math.round(regime.stability)}/100. No opening schedule is published.`;
 }
 
 // ── Catalysts ─────────────────────────────────────────────────
@@ -163,23 +153,14 @@ function buildThreats(
 // ── Primary Reason ────────────────────────────────────────────
 
 function buildPrimaryReason(
-  verdict: DecisionVerdict,
+  _verdict: DecisionVerdict,
   actionBias: ActionBias,
   pressure: FaultlinePressureOutput,
   probability: FMOSProbabilityDistribution
 ): string {
   const p = pressure.overallPressure;
 
-  if (verdict === "AVOID" || verdict === "SELL") {
-    return `Systemic pressure at ${p}/100 with ${actionBias} bias — capital preservation is the priority. ${probability.primaryDriver}`;
-  }
-  if (verdict === "STRONG BUY" || verdict === "BUY") {
-    return `Low systemic pressure (${p}/100) — conditions favor higher-risk appetite positioning. ${probability.primaryDriver}`;
-  }
-  if (verdict === "HOLD" || verdict === "WATCH") {
-    return `Mixed signals — wait for clearer direction. ${probability.primaryDriver}`;
-  }
-  return `Pressure at ${p}/100 — ${probability.primaryDriver}`;
+  return `Pressure Index is ${p}/100. Action-bias label is ${actionBias}. Primary driver on this card: ${probability.primaryDriver}`;
 }
 
 // ── Main Decision Engine Function ─────────────────────────────

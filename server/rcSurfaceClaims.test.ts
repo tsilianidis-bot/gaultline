@@ -3,10 +3,17 @@ import { join, resolve } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { laborRatesUnavailableMessage } from "../shared/nowInterpretationCopy";
 import { observedDirectionSentence } from "../shared/surfaceClaims";
+import { computeCryptoSignal } from "./cryptoSignals";
+import { computeDecision } from "./fmos/engines/decision";
+import { classifyQuadrant } from "./sectorRotation/calc";
 import { omitTradeAction } from "./signalConfidenceBoundary";
+import { strategyText } from "./stockRegimeEngine";
+import { computeTradingSignal } from "./tradingSignals";
+import { stripClientTradeTokens } from "./routers/fmos";
 
-const BANNED = /\b(?:STRONG BUY|BUY|SELL|HOLD)\b|crash probability|\bRISK[-\s]?ON\b|\bRISK[-\s]?OFF\b|REDUCE EXPOSURE|INCREASE EXPOSURE|\bACCUMULATE\b|\bAVOID\b|\bOVERWEIGHT\b|\bUNDERWEIGHT\b|\bENTRY\b|\bSTOP\b|\bTARGET\b|\badd to position\b|\bavoid new positions\b|\btake profits\b|(?<![\w.])trim\b(?!\s*\()|(?:\d+(?:\.\d+)?%\s+)?(?:odds|percent|probability|chance) of(?: a)? (?:crash|correction|recession)|\b(?:reduce|cut|lower) (?:leverage|exposure)\b|\braise (?:reserves|cash)\b|\blighten up\b|\bgo (?:long|short)\b|\bsit in cash\b|\bbuying opportunity\b|\brisk appetite on\b/i;
+const BANNED = /\b(?:STRONG BUY|BUY|SELL|HOLD)\b|crash probability|\bRISK[-\s]?ON\b|\bRISK[-\s]?OFF\b|REDUCE EXPOSURE|INCREASE EXPOSURE|\bACCUMULATE\b|\bAVOID\b|\bOVERWEIGHT\b|\bUNDERWEIGHT\b|over-weight|\bENTRY\b|\bSTOP\b|\bTARGET\b|\badd to position\b|\badd exposure\b|\bavoid new positions\b|\btake profits\b|\bscale out\b|\bde-risk\b|(?<![\w.])trim\b(?!\s*\()|(?:\d+(?:\.\d+)?%\s+)?(?:odds|percent|probability|chance) of(?: a)? (?:crash|correction|recession)|\b(?:reduce|cut|lower) (?:leverage|exposure|risk exposure|position size)\b|\bincrease cash allocation\b|\bfavor defensive\b|\bprioriti[sz]e capital preservation\b|\braise (?:reserves|cash)\b|\blighten up\b|\bgo (?:long|short)\b|\bsit in cash\b|\bbuying opportunity\b|\brisk appetite on\b|\d+(?:\.\d+)?%\s+likelihood of a drawdown|crash risk is \d|recession probability \d|bull probability \d/i;
 const EXACT_PROTOCOL = "STRONG BUY|BUY NOW|STRONG SELL|STRONG REDUCE|BUY|SELL|HOLD|WATCH|WAIT|ADD|TRIM|ACCUMULATE|AVOID|REDUCE";
 
 const ROOTS = [
@@ -238,7 +245,7 @@ function scrubCodeKeepQuotes(line: string): string {
     .replace(/\bhold\s*:/gi, "kept:")
     .replace(/\bentry is\b/g, "row is");
   const restored = restore(scrubbed, masks).replace(/["'`]\/[A-Za-z0-9\-._/~]*["'`]/g, '""');
-  return restored.replace(/\u0001(\d+)\u0001/g, (_mark, index) => jsxText[Number(index)] ?? "");
+  return restored.replace(/\u0001(\d+)\u0001/g, (_mark, index) => restore(jsxText[Number(index)] ?? "", masks));
 }
 
 /** Exact protocol quotes are exempt only inside a type union, an enum() list, or a comparison. */
@@ -260,7 +267,23 @@ export function exemptNonRenderedTokens(line: string): string {
 
 function decodeRenderedTricks(source: string): string {
   const unicode = source.replace(/\\u([0-9a-fA-F]{4})/g, (_all, hex: string) => String.fromCharCode(parseInt(hex, 16)));
-  return unicode.replace(/\{['"]{2}\}/g, "");
+  const joined = unicode.replace(/\{['"]{2}\}/g, "");
+  const fromCodes = joined.replace(/String\.fromCharCode\(([^)]*)\)/g, (_all, args: string) => {
+    const chars = args.split(",").map(part => {
+      const raw = part.trim();
+      const value = /^0x/i.test(raw) ? Number.parseInt(raw, 16) : Number(raw);
+      return Number.isFinite(value) ? String.fromCharCode(value) : "";
+    }).join("");
+    return `"${chars}"`;
+  });
+  let concatenated = fromCodes;
+  let previous = "";
+  const pair = /(["'])((?:\\.|(?!\1).)*)\1\s*\+\s*(["'])((?:\\.|(?!\3).)*)\3/g;
+  while (concatenated !== previous) {
+    previous = concatenated;
+    concatenated = concatenated.replace(pair, (_all, quote, left, _quote, right) => `${quote}${left}${right}${quote}`);
+  }
+  return concatenated;
 }
 
 export function claimHits(source: string): string[] {
@@ -353,6 +376,10 @@ describe("release-candidate surfaces do not print trade directives or crash-prob
     expect(claimHits('const shown = ok ? "BUY" : "SELL";').length).toBeGreaterThan(0);
     expect(claimHits('case "HOLD": return label;').length).toBeGreaterThan(0);
     expect(claimHits('{"BUY"}').length).toBeGreaterThan(0);
+    expect(claimHits('<b>{"BUY"}</b>').length).toBeGreaterThan(0);
+    expect(claimHits('<span>{ok ? "BUY" : "SELL"}</span>').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "BU" + "Y";').length).toBeGreaterThan(0);
+    expect(claimHits("const hidden = String.fromCharCode(66, 85, 89);").length).toBeGreaterThan(0);
     expect(claimHits('const hidden = "\\u0042UY";').length).toBeGreaterThan(0);
     expect(claimHits("const hidden = `Se{''}ll`;").length).toBeGreaterThan(0);
   });
@@ -404,6 +431,88 @@ describe("release-candidate surfaces do not print trade directives or crash-prob
     expect(claimHits('const note = "sit in cash";').length).toBeGreaterThan(0);
     expect(claimHits('const note = "buying opportunity";').length).toBeGreaterThan(0);
     expect(claimHits('const note = "risk appetite on";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "reduce risk exposure";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "reduce position size";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "increase cash allocation";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "favor defensive";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "prioritize capital preservation";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "de-risk the book";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "scale out";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "add exposure";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "over-weight equities";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "41% likelihood of a drawdown";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "Crash risk is 12%";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "Recession probability 30%";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "Bull probability 60%";').length).toBeGreaterThan(0);
+  });
+
+  it("does not hide a buy or sell verdict factory in the detector module", () => {
+    const src = readFileSync("shared/surfaceClaims.ts", "utf8");
+    const factory = src.slice(src.indexOf("const TRADE_CLASS"), src.indexOf("export function tradeClass"));
+    expect(factory).not.toMatch(/STRONG BUY|ACCUMULATE|AVOID|TRIM|REDUCE/);
+    expect(src).not.toMatch(/return\s+["']STRONG BUY["']/);
+  });
+
+  it("scans client payloads from signal, stock, NOW, sector, crypto, and decision procedures", () => {
+    const stock = omitTradeAction(computeTradingSignal({
+      ticker: "NVDA",
+      price: 120,
+      open: 118,
+      high: 124,
+      low: 116,
+      changePercent: 1.8,
+      volumeMillions: 45,
+      avgVolume: 30,
+      sparkline: [-0.5, 0.2, 0.8, 1.4, 2.1],
+      relativeStrength: 72,
+    }, { label: "MODERATE RISK", score: 5 }));
+    const bars = Array.from({ length: 20 }, (_, index) => ({
+      timestamp: 1_700_000_000_000 + index * 86_400_000,
+      open: 100 + index,
+      high: 102 + index,
+      low: 99 + index,
+      close: 101 + index,
+    }));
+    const crypto = omitTradeAction(computeCryptoSignal({
+      market: {
+        symbol: "BTC",
+        name: "Bitcoin",
+        id: "bitcoin",
+        currentPrice: 70000,
+        marketCap: 1_400_000_000_000,
+        totalVolume: 35_000_000_000,
+        high24h: 71000,
+        low24h: 69000,
+        priceChangePercent24h: 2,
+        priceChangePercent7d: 5,
+        priceChangePercent30d: 10,
+        ath: 73750,
+        athChangePercent: -5,
+        sparkline7d: Array.from({ length: 48 }, (_, index) => 65000 + index * 100),
+      } as never,
+      ohlcBars: bars,
+      btcDominance: 54,
+      regime: { label: "Neutral", score: 5 },
+    }));
+    const decision = stripClientTradeTokens(computeDecision(
+      { overallPressure: 72, vectors: [], regime: "HIGH STRESS", alerts: [], dataSource: "live", level: "High" } as never,
+      { currentRegime: "HIGH STRESS", confidence: 40, stability: 30, transitionRisk: 20, mostLikelyNextRegime: "HIGH STRESS", transitionProbability30d: 10, alternativeScenarios: [] } as never,
+      { bull: 20, bear: 60, primaryDriver: "credit vector", bullEvidence: ["credit vector is elevated"], bearEvidence: ["pressure is elevated"], invalidationConditions: [] } as never,
+      { score: 55, label: "Moderate" } as never,
+      { score: 70 } as never,
+    ));
+    const payloads = [
+      stock,
+      crypto,
+      decision,
+      { strategy: strategyText("Bear Market", 80) },
+      { quadrant: classifyQuadrant(1.1, 0.2) },
+      { now: laborRatesUnavailableMessage() },
+    ];
+    const json = JSON.stringify(payloads);
+    expect(json).not.toMatch(/\b(?:STRONG BUY|BUY|SELL|HOLD|AVOID|ACCUMULATE)\b/);
+    expect(claimHits(json)).toEqual([]);
+    expect(json).not.toMatch(/reduce risk exposure|reduce position size|increase cash allocation|prioritize capital preservation/i);
   });
 
   const files = reachableFiles([...routedPageRoots(), ...ROOTS]);

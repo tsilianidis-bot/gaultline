@@ -394,7 +394,7 @@ export interface HotSectorPick {
 
 export const MOVE_LABELS: Record<MoveType, string> = {
   add_risk: "Add Risk",
-  reduce_risk: "Reduce Risk",
+  reduce_risk: "Risk weight",
   hedge: "Hedge",
   rotate: "Rotate",
   raise_cash: "Cash weight",
@@ -1232,7 +1232,7 @@ function computePositionSizing(
   const aggressive   = Math.max(3, Math.round(baseAggressive * multiplier));
 
   const guidance = p >= 60
-    ? "Elevated systemic pressure warrants reduced position sizing across all tiers. Prioritize capital preservation over return maximization in this regime."
+    ? `Pressure Index is ${p}/100. Favorability on this card is ${favorability}/100. No size is published.`
     : p >= 40
     ? `Pressure Index is ${p}/100. Favorability on this card is ${favorability}/100. No size is published.`
     : "Low pressure environment supports standard to aggressive sizing for high-conviction setups. Maintain diversification across positions.";
@@ -2390,8 +2390,8 @@ function computePortfolioImpact(
       const reduceAmt = p >= 65 ? 15 : p >= 45 ? 10 : 5;
       const category = input.exposureCategory ? (EXPOSURE_LABELS[input.exposureCategory] ?? "Risk Assets") : "Risk Assets";
       lines.push({ category: "Cash", currentAllocation: baselines["Cash"], targetAllocation: baselines["Cash"] + reduceAmt, change: reduceAmt, rationale: `Cash weight in this simulation changes by ${reduceAmt} percentage points. Pressure Index is ${p}/100.` });
-      lines.push({ category, currentAllocation: 20, targetAllocation: Math.max(5, 20 - reduceAmt), change: -reduceAmt, rationale: `Reduce ${category} exposure — pressure at ${p}/100` });
-      headline = `Reduce ${category} by ${reduceAmt}%`;
+      lines.push({ category, currentAllocation: 20, targetAllocation: Math.max(5, 20 - reduceAmt), change: -reduceAmt, rationale: `Simulated ${category} weight change is -${reduceAmt} percentage points. Pressure Index is ${p}/100.` });
+      headline = `Simulated ${category} weight is ${Math.max(5, 20 - reduceAmt)}%.`;
       netRiskChange = "Decreased";
       summary = `Record a ${reduceAmt}% smaller ${category} size and keep the difference as cash. ${p >= 65 ? "Elevated pressure is a higher-stress reading." : "The reading supports a moderate size change."}`;
       break;
@@ -2420,7 +2420,7 @@ function computePortfolioImpact(
       const rotateAmt = 10;
       const from = input.rotateFrom ?? "Current Sector";
       const to = input.rotateTo ?? "Named sector";
-      lines.push({ category: from, currentAllocation: 20, targetAllocation: 20 - rotateAmt, change: -rotateAmt, rationale: `Reduce ${from} — regime headwinds` });
+      lines.push({ category: from, currentAllocation: 20, targetAllocation: 20 - rotateAmt, change: -rotateAmt, rationale: `Simulated ${from} weight change is -${rotateAmt} percentage points.` });
       lines.push({ category: to, currentAllocation: 10, targetAllocation: 10 + rotateAmt, change: rotateAmt, rationale: `Increase ${to} — regime tailwinds` });
       headline = `Rotate ${rotateAmt}% from ${from} to ${to}`;
       netRiskChange = "Neutral";
@@ -2454,10 +2454,10 @@ function computePortfolioImpact(
       const isStock = !(["BTC","ETH","SOL","AVAX","DOGE","SHIB"].includes((ticker ?? "").toUpperCase()));
       const category = isStock ? "US Large Cap Stocks" : "Crypto";
       lines.push({ category: "Cash", currentAllocation: baselines["Cash"], targetAllocation: baselines["Cash"] + sellAmt, change: sellAmt, rationale: `Proceeds from ${ticker} sale` });
-      lines.push({ category, currentAllocation: baselines[category] ?? 10, targetAllocation: Math.max(0, (baselines[category] ?? 10) - sellAmt), change: -sellAmt, rationale: `Reduce ${ticker} — ${input.exitType === "full_exit" ? "full exit" : input.exitType === "profit_taking" ? "profit taking" : "risk reduction"}` });
-      headline = `Reduce ${ticker}: -${sellAmt}% allocation`;
+      lines.push({ category, currentAllocation: baselines[category] ?? 10, targetAllocation: Math.max(0, (baselines[category] ?? 10) - sellAmt), change: -sellAmt, rationale: `Simulated ${ticker} weight change is -${sellAmt} percentage points.` });
+      headline = `Simulated ${ticker} weight change is -${sellAmt} percentage points.`;
       netRiskChange = "Decreased";
-      summary = `Reduce ${ticker} by ${sellAmt}% and keep proceeds as cash. ${input.exitType === "profit_taking" ? "Profit-taking exit — consider redeploying on next dip." : "Risk reduction — monitor for a later fill signal."}`;
+      summary = `This simulation changes the ${ticker} weight by -${sellAmt} percentage points. Pressure Index is ${p}/100.`;
       break;
     }
     case PREFLIGHT_KEEP: {

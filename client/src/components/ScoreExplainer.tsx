@@ -176,7 +176,7 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
     ranges: [
       { label: "Low Risk", range: "0–24", description: "Favorable conditions. Higher-risk appetite posture is historically rewarded." },
       { label: "Moderate Risk", range: "25–44", description: "Normal market conditions. Standard risk management applies." },
-      { label: "Elevated Risk", range: "45–64", description: "Above-average risk. Consider reducing position sizes." },
+      { label: "Elevated Risk", range: "45–64", description: "The market-risk score is above its middle display range." },
       { label: "High Risk", range: "65–79", description: "Significant downside risk present. Defensive positioning warranted." },
       { label: "Extreme Risk", range: "80–100", description: "Historically dangerous conditions. Capital preservation is the priority." },
     ],
@@ -224,7 +224,7 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
     whyItMatters: "It summarizes the model's current directional context. Review the contributing evidence and data-quality state rather than using it as a position-sizing forecast.",
     ranges: [
       { label: "Strong Bear Signal", range: "0–24", description: "Low bull-side scenario score; not a historical base-rate claim." },
-      { label: "Bear Bias", range: "25–44", description: "Conditions favor bears. Reduce risk, consider hedges." },
+      { label: "Bear Bias", range: "25–44", description: "The bull-side scenario score is below the middle of the display range." },
       { label: "Neutral / Mixed", range: "45–54", description: "No clear edge. Selectivity and smaller sizing are appropriate." },
       { label: "Moderate Bull Bias", range: "55–74", description: "Conditions modestly favor upside. Normal risk posture is appropriate." },
       { label: "Strong Bull Signal", range: "75–100", description: "High bull-side scenario score; not a forecast or historical base-rate claim." },
@@ -406,7 +406,7 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
     whyItMatters: "A high-confidence reading is more actionable than a low-confidence one. Confidence helps investors size positions appropriately — larger when signals are aligned, smaller when they conflict.",
     ranges: [
       { label: "Very Low", range: "0–19", description: "Highly conflicting signals. Treat with significant caution." },
-      { label: "Low", range: "20–39", description: "More conflict than alignment. Reduce position sizes." },
+      { label: "Low", range: "20–39", description: "More of the inputs conflict than agree on this card." },
       { label: "Moderate", range: "40–59", description: "Mixed signals. Standard caution applies." },
       { label: "Moderate-High", range: "60–79", description: "Mostly aligned signals. Above-average reliability." },
       { label: "High", range: "80–100", description: "Strong signal alignment. High-conviction reading." },

@@ -110,7 +110,7 @@ export const THESIS_QUESTIONS: readonly ThesisQuestion[] = [
     options: [
       { name: "Maintain exposure", tradeoff: "Stays with the current read. The risk is that the read is wrong, or pressure moves up a band." },
       { name: "Keep participation conditional", tradeoff: "Participates, with the condition that would end it written down first. It costs attention and can exit on a signal that reverses." },
-      { name: "Reduce risk or add hedges", tradeoff: "Lowers exposure to a deterioration. It gives up upside if pressure eases, and hedges have a cost." },
+      { name: "A smaller risk weight", tradeoff: "The recorded weight is smaller if pressure rises. Upside is also smaller if pressure eases. A hedge has a cost." },
       { name: "Wait for confirmation", tradeoff: "Avoids acting on thin or stale evidence. It can mean acting late." },
     ],
     shows: [

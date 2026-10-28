@@ -144,15 +144,15 @@ function buildKeyInsights(
   if (status.includes("Strongly Aligned \u2014 Higher appetite")) {
     insights.push("Both markets are in higher-risk appetite alignment \u2014 historically the strongest environment for portfolio returns.");
   } else if (status.includes("Strongly Aligned \u2014 Lower appetite")) {
-    insights.push("Both markets are in lower-risk appetite alignment \u2014 a rare and serious signal. Prioritise capital preservation.");
+    insights.push("Both markets carry the lower-appetite regime label on this card. No position change is published.");
   } else if (status.includes("Diverging")) {
     insights.push(`Cross-market divergence detected: stocks are ${ss} while crypto is ${cs}. Divergences typically resolve within 2\u20134 weeks.`);
   }
 
   if (stock.pressureScore >= 70) {
-    insights.push(`FAULTLINE Pressure Index is at ${Math.round(stock.pressureScore)}/100 \u2014 elevated stress. Reduce risk exposure.`);
+    insights.push(`FAULTLINE Pressure Index is at ${Math.round(stock.pressureScore)}/100, in the elevated-stress band.`);
   } else if (stock.pressureScore <= 30) {
-    insights.push(`FAULTLINE Pressure Index is at ${Math.round(stock.pressureScore)}/100 \u2014 benign conditions. The macro backdrop supports risk-taking.`);
+    insights.push(`FAULTLINE Pressure Index is at ${Math.round(stock.pressureScore)}/100, below the elevated-stress band.`);
   }
 
   if (crypto.regime === "Bear Market \u2192 Accumulation Phase") {
@@ -163,7 +163,7 @@ function buildKeyInsights(
     insights.push("Recession risk is elevated in the stock market. Historically, this regime precedes significant equity drawdowns.");
   }
   if (crypto.regime === "Capitulation") {
-    insights.push("Crypto is in capitulation. Wait for stabilisation and volume confirmation before re-entering.");
+    insights.push("Crypto regime label is capitulation. Volume confirmation is not on this card.");
   }
   if (stock.regime === "Recovery" && cs === "bullish") {
     insights.push("Stocks are recovering while crypto is already higher-risk appetite \u2014 a positive leading indicator for equities.");

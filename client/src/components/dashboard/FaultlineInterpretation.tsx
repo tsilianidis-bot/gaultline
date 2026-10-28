@@ -300,7 +300,7 @@ export function FaultlineInterpretation() {
         <TakeawayCard
           label="◈ Guidance"
           labelColor="amber"
-          title={constructive ? "Stay invested, stay selective" : "Reduce risk exposure"}
+          title={`Pressure score on this card is ${pressureScore}. Risk-level label is ${overall.riskLevel}.`}
           body={guidanceBody}
         />
         <TakeawayCard

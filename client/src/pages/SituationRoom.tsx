@@ -75,11 +75,11 @@ const EXPOSURE_STEP2: Record<MoveType, { value: ExposureCategory; label: string;
   reduce_risk: [
     { value: "technology",           label: "Technology",          sub: "Smaller tech size" },
     { value: "ai_infrastructure",    label: "AI Infrastructure",   sub: "Smaller AI/semis size" },
-    { value: "large_cap_growth",     label: "Large Cap Growth",    sub: "Reduce growth exposure" },
-    { value: "small_cap_growth",     label: "Small Cap Growth",    sub: "Reduce high-beta" },
-    { value: "bitcoin",              label: "Bitcoin",             sub: "Reduce BTC" },
-    { value: "ethereum",             label: "Ethereum",            sub: "Reduce ETH" },
-    { value: "altcoins",             label: "Altcoins",            sub: "Reduce alt exposure" },
+    { value: "large_cap_growth",     label: "Large Cap Growth",    sub: "Growth sleeve on this card" },
+    { value: "small_cap_growth",     label: "Small Cap Growth",    sub: "Higher-beta sleeve on this card" },
+    { value: "bitcoin",              label: "Bitcoin",             sub: "Bitcoin sleeve on this card" },
+    { value: "ethereum",             label: "Ethereum",            sub: "Ethereum sleeve on this card" },
+    { value: "altcoins",             label: "Altcoins",            sub: "Altcoin sleeve on this card" },
     { value: "leveraged_exposure",   label: "Leveraged",           sub: "2x/3x products and margin on this sleeve" },
     { value: "concentrated_position",label: "Concentrated Position",sub: "Smaller single large position" },
     { value: "options",              label: "Options",             sub: "Close or roll options" },
@@ -179,7 +179,7 @@ const CRYPTO_OPTIONS: { value: string; label: string; icon: string }[] = [
 // ── Constants ─────────────────────────────────────────────────
 const MOVE_OPTIONS: { value: MoveType; label: string; glyph: string; sub: string }[] = [
   { value: "add_risk",           label: "Add Risk",           glyph: "↑", sub: "Review a larger weight in a sector, asset class, or theme" },
-  { value: "reduce_risk",        label: "Reduce Risk",        glyph: "↓", sub: "Smaller sizes or an exit lower the recorded exposure" },
+  { value: "reduce_risk",        label: "Risk weight",        glyph: "↓", sub: "Risk sleeve on this card" },
   { value: "hedge",              label: "Hedge",              glyph: "⛨", sub: "Protect existing positions against downside" },
   { value: "rotate",             label: "Rotate",             glyph: "⟳", sub: "Shift capital from one sector or asset to another" },
   { value: "raise_cash",         label: "Cash weight",        glyph: "◎", sub: "Cash is the residual sleeve on this card" },

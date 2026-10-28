@@ -28,7 +28,7 @@ export function observedDirection(action: string | null | undefined): ObservedDi
   if (token === "UNESTABLISHED") return "unestablished";
   if (token === "BUY" || token === "STRONG BUY" || token === "ACCUMULATE" || token === "BUY NOW" || token === "ADD") return "positive";
   if (token === "SELL" || token === "STRONG SELL" || token === "REDUCE" || token === "TRIM" || token === "AVOID") return "negative";
-  if (token === "HOLD" || token === "WAIT" || token === "LOW CONVICTION") return "mixed";
+  if (token === "HOLD" || token === "WATCH" || token === "WAIT" || token === "LOW CONVICTION") return "mixed";
   return "unestablished";
 }
 
@@ -142,34 +142,14 @@ export function isSimulatedAcquisition(side: string | null | undefined): boolean
 /** Stored preflight value. Screens should render a measured description, not this token. */
 export const PREFLIGHT_KEEP = "hold" as const;
 
-export type TradeBand =
-  | "strongUp"
-  | "up"
-  | "down"
-  | "strongDown"
-  | "flat"
-  | "open"
-  | "watch"
-  | "build"
-  | "light"
-  | "reduce"
-  | "lowest"
-  | "add"
-  | "wait";
+export type TradeBand = "up" | "down" | "flat" | "open" | "watch" | "wait";
 
 const TRADE_CLASS = {
-  strongUp: "STRONG BUY",
   up: "BUY",
   down: "SELL",
-  strongDown: "STRONG SELL",
   flat: "HOLD",
   open: "WATCH",
   watch: "WATCH",
-  build: "ACCUMULATE",
-  light: "TRIM",
-  reduce: "REDUCE",
-  lowest: "AVOID",
-  add: "ADD",
   wait: "WAIT",
 } as const;
 

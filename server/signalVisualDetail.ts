@@ -1,3 +1,4 @@
+import { omitTradeAction } from "./signalConfidenceBoundary";
 import { computeTradingSignal } from "./tradingSignals";
 import { getDailyBars, getQuote } from "./yahooProxy";
 import { getLatestSeismographOutput } from "./scheduledSeismograph";
@@ -100,10 +101,9 @@ export async function getSignalVisualDetailPayload(symbol: string) {
     symbol,
     quote,
     bars,
-    // QA r13 B14: the signal "confidence" is min(95, 55 + |score| × 5), a formula,
-    // not a calibrated value; withheld from the payload. Action, strength,
-    // score inputs and levels are unchanged.
-    signal: signal ? { ...signal, confidence: null } : null,
+    // Confidence is a formula, not a calibrated probability. The trade class
+    // stays inside the engine and is not part of this client payload.
+    signal: signal ? omitTradeAction({ ...signal, confidence: null }) : null,
     regime,
     relativeStrength,
     avgVolume,

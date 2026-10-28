@@ -108,7 +108,7 @@ export function scoreToDirection(
   if (score >= 65) return "Bullish";
   if (score >= 50) return "Neutral";
   if (score >= 30) return "Bearish";
-  return "Avoid";
+  return "Bearish";
 }
 
 // ── Pressure Classification ───────────────────────────────────

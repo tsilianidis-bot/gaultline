@@ -16,7 +16,7 @@
 //   • All price levels are calculated, never invented
 // ============================================================
 
-import { OUTLOOK_STRAINED, tradeClass } from "../shared/surfaceClaims";
+import { OUTLOOK_STRAINED } from "../shared/surfaceClaims";
 import { invokeLLM } from "./_core/llm";
 import { calculateFaultlinePressure, type FaultlinePressureOutput } from "./pressure/engine";
 import { getDiagnosticReport, pressureToActionBias } from "./diagnosticAI";
@@ -773,7 +773,7 @@ function buildTradeFramework(
 
   // ── Do-not-trade conditions ───────────────────────────────────
   const doNotTradeIf: string[] = [];
-  if (isHighPressure) doNotTradeIf.push(`FAULTLINE Pressure Index is at ${p}/100 — systemic risk is elevated; reduce position size or wait for pressure to fall below 60`);
+  if (isHighPressure) doNotTradeIf.push(`FAULTLINE Pressure Index is at ${p}/100, above 60. No size is published on this card.`);
   if (direction === "Bearish") doNotTradeIf.push("Outlook direction is Bearish — this is a short setup, not a long opening; do not acquire into a bearish outlook");
   if (direction === "Neutral") doNotTradeIf.push("Outlook direction is Neutral — wait for a directional signal before entering");
   if (score < 50) doNotTradeIf.push(`Outlook score is ${score}/100 — below 50 means the balance of evidence does not support a high-conviction opening`);
@@ -1015,7 +1015,7 @@ async function buildPreflightImpact(
   }
   if (direction === "Bearish" || direction === "Avoid") {
     oppositionReasons.push("Outlook direction conflicts with entering a long position");
-    reviewBeforeEntering.push("Consider whether this is a short setup or an avoidance signal");
+    reviewBeforeEntering.push(`Outlook score is below the neutral band. Direction label is ${direction}.`);
   }
 
   reviewBeforeEntering.push("Complete Market Preflight™ before entering any position");
@@ -1125,7 +1125,7 @@ function buildScenarios(
         label: "Defensive",
         assets: p > 60 ? ["SPY", "QQQ"] : ["SPY"],
         rationale: p > 60
-          ? "Elevated pressure warrants index-only exposure. Individual stock risk elevated. Reduce position sizes."
+          ? `Pressure Index is ${p}/100. The defensive list on this card is the index symbols above.`
           : "Defensive positioning via broad index ETFs. Preserves capital while maintaining market exposure.",
       },
     ];
@@ -1730,7 +1730,7 @@ export interface DiscoveryItem {
   riskRewardRatio: string;        // e.g. "2.5:1"
   confidenceLevel: number | null; // QA confidence sweep: withheld (was score × 0.85 + band, a formula)
   topCatalyst: string;
-  actionBias: "BUY" | "WATCH" | "HOLD" | "REDUCE" | "AVOID";
+  actionBias: string;
 }
 
 export interface DiscoveryBucket {
@@ -2253,13 +2253,8 @@ function discoveryInstitutionalConviction(score: number, category: DiscoveryCate
   return "Low";
 }
 
-function discoveryActionBias(score: number, pressure: number): DiscoveryItem["actionBias"] {
-  if (pressure >= 70) return (score >= 75 ? tradeClass("watch") : tradeClass("lowest")) as DiscoveryItem["actionBias"];
-  if (score >= 75) return tradeClass("up") as DiscoveryItem["actionBias"];
-  if (score >= 60) return tradeClass("watch") as DiscoveryItem["actionBias"];
-  if (score >= 45) return tradeClass("flat") as DiscoveryItem["actionBias"];
-  if (score >= 30) return tradeClass("reduce") as DiscoveryItem["actionBias"];
-  return tradeClass("lowest") as DiscoveryItem["actionBias"];
+function discoveryActionBias(score: number, pressure: number): string {
+  return `Outlook score is ${score}/100. Pressure Index is ${pressure}/100.`;
 }
 
 const RISING_STAR_CANDIDATES: Array<{ symbol: string; name: string }> = [

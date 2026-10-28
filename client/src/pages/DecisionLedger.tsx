@@ -16,7 +16,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useSEO } from "@/hooks/useSEO";
-import { observedDirection } from "@shared/surfaceClaims";
+import { observedDirection, publicConditionText } from "@shared/surfaceClaims";
 import {
   CheckCircle, XCircle, Clock, BookOpen, BarChart2,
   TrendingUp, TrendingDown, Activity, ArrowLeft,
@@ -212,7 +212,7 @@ function LedgerRow({ entry, onUpdateOutcome }: {
               </span>
             )}
             <span style={{ ...SANS, fontSize: "14px", fontWeight: 700, color: vc, letterSpacing: "0.06em" }}>
-              {entry.verdict}
+              {publicConditionText(entry.verdict)}
             </span>
             {/* Outcome badge */}
             <span style={{

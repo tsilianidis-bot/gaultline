@@ -31,7 +31,7 @@ type SimulatorTimeframe = "today" | "this_week" | "one_three_months" | "six_twel
 // ── Constants ─────────────────────────────────────────────────
 const MOVE_OPTIONS: { value: MoveType; label: string; icon: string }[] = [
   { value: "add_risk",           label: "Add Risk",                  icon: "↑" },
-  { value: "reduce_risk",        label: "Reduce Risk",               icon: "↓" },
+  { value: "reduce_risk",        label: "Risk weight",               icon: "↓" },
   { value: "hedge",              label: "Hedge",                     icon: "⛨" },
   { value: "rotate",             label: "Rotate",                    icon: "⟳" },
   { value: "raise_cash",         label: "Cash weight",               icon: "◎" },

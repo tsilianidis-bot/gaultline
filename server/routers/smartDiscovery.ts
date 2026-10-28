@@ -11,6 +11,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { runFMOSPipelineFast } from "../fmos/pipeline";
+import { neutralizeClientToken } from "./fmos";
 import { getQuickOutlook } from "../signalOutlook";
 import { invokeLLM } from "../_core/llm";
 import { resolveIntent, detectQuestionIntent, QuestionIntent } from "../intentResolver";
@@ -68,7 +69,7 @@ export interface EvidenceScore {
 
 export interface FaultlineAnswer {
   // Core verdict
-  verdict: "STRONG BUY" | "BUY" | "ACCUMULATE" | "WAIT" | "HOLD" | "REDUCE" | "STRONG REDUCE" | "SELL" | "HIGH RISK" | "LOW CONVICTION" | "MACRO ANSWER";
+  verdict: string;
   verdictColor: "green" | "yellow" | "red" | "blue";
   opportunityScore: number | null;
   confidence: number | null;
@@ -455,23 +456,23 @@ Populate these fields with SPECIFIC PRICE LEVELS:
 - upsideInvalidation: What would prevent/invalidate the upside`,
     buy_verdict: `
 QUESTION TYPE: ACQUIRE READING
-The user is asking SHOULD I ACQUIRE. You MUST answer this FIRST with a clear verdict.
-- actionVerdict: "BUY NOW" | "ACCUMULATE" | "WAIT" | "SELL" | "REDUCE" | "HOLD"
-- actionVerdictReason: One sentence — the single most important reason for this verdict
-- actionVerdictConditions: 3 conditions that would change the verdict
-Do NOT bury the verdict in analysis. State it immediately.`,
+The user is asking about an acquisition. Answer with the measured reading first.
+- actionVerdict: One sentence with the Pressure Index, the regime label, and the as-of time. Do not name a trade class.
+- actionVerdictReason: One sentence naming the input that dominates the score.
+- actionVerdictConditions: 3 published inputs that would change the score.
+Do not tell the reader to change a position.`,
     sell_verdict: `
 QUESTION TYPE: REDUCE READING
-The user is asking SHOULD I REDUCE. You MUST answer this FIRST with a clear verdict.
-- actionVerdict: "SELL" | "REDUCE" | "HOLD" | "WAIT" | "BUY NOW" | "ACCUMULATE"
-- actionVerdictReason: One sentence — the single most important reason for this verdict
-- actionVerdictConditions: 3 conditions that would change the verdict`,
+The user is asking about a smaller position. Answer with the measured reading first.
+- actionVerdict: One sentence with the Pressure Index, the regime label, and the as-of time. Do not name a trade class.
+- actionVerdictReason: One sentence naming the input that dominates the score.
+- actionVerdictConditions: 3 published inputs that would change the score.`,
     wait_verdict: `
-QUESTION TYPE: WAIT/TIMING VERDICT
-The user is asking IS NOW THE RIGHT TIME. You MUST answer this FIRST.
-- actionVerdict: "BUY NOW" | "ACCUMULATE" | "WAIT" | "SELL" | "REDUCE" | "HOLD"
-- actionVerdictReason: One sentence — the single most important reason for this timing verdict
-- actionVerdictConditions: 3 conditions that would change the timing`,
+QUESTION TYPE: TIMING READING
+The user is asking whether the current reading is timely. Answer with the measured reading first.
+- actionVerdict: One sentence with the Pressure Index, the regime label, and the as-of time. Do not name a trade class.
+- actionVerdictReason: One sentence naming the input that dominates the score.
+- actionVerdictConditions: 3 published inputs that would change the score.`,
     entry_zone: `
 QUESTION TYPE: PRICE BAND
 The user is asking WHERE TO ENTER. You MUST answer this FIRST with SPECIFIC PRICE LEVELS.
@@ -722,7 +723,7 @@ For non-crypto assets, set "Stablecoin Growth" and "On-chain Activity" to signal
 
 JSON schema:
 {
-  "verdict": "STRONG BUY" | "BUY" | "ACCUMULATE" | "WAIT" | "HOLD" | "REDUCE" | "STRONG REDUCE" | "SELL" | "HIGH RISK" | "LOW CONVICTION" | "MACRO ANSWER",
+  "verdict": "One sentence with the Pressure Index, the regime label, and the as-of time. Do not name a trade class.",
   "verdictColor": "green" | "yellow" | "red" | "blue",
   "opportunityScore": null,
   "confidence": null,
@@ -976,6 +977,8 @@ JSON schema:
 
   const integrityValidation = validateInterpretationOutput(raw, transaction);
   raw = withholdUnsupportedAskScores(withoutModelProbabilities(integrityValidation.normalizedOutput));
+  if (typeof raw.verdict === "string") raw.verdict = neutralizeClientToken(raw.verdict);
+  if (typeof raw.actionVerdict === "string") raw.actionVerdict = neutralizeClientToken(raw.actionVerdict);
 
   // Ensure collectiveReading is always present with a fallback
   const rawCollective = raw.collectiveReading as Record<string, unknown> | null | undefined;
