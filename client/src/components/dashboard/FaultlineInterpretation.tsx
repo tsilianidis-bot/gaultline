@@ -174,7 +174,7 @@ export function FaultlineInterpretation() {
     liquidityDelta === "building" ? "Liquidity Tightening" : "Liquidity Stable";
 
   // Build dynamic narrative paragraphs
-  const para1 = `Overall, FAULTLINE is showing ${regimeLabel.toLowerCase()} systemic risk. The current Pressure Index is ${Math.round(pressureScore * 10)}/100, placing the market in a ${regimeLabel} regime. Bull scenario status: ${bullText} (not a calibrated probability). Crash status: ${crashText} — FAULTLINE has no governed crash model and does not imply a crash probability.`;
+  const para1 = `Overall, FAULTLINE is showing ${regimeLabel.toLowerCase()} systemic risk. The current Pressure Index is ${Math.round(pressureScore * 10)}/100, placing the market in a ${regimeLabel} regime. Bull scenario status: ${bullText} (not a calibrated probability). Crash status: ${crashText} — FAULTLINE has no governed crash model and does not imply a market-event percentage.`;
 
   const para2 = `The strongest warning is not broad recession pressure. The main risk is ${aiBubbleDomain?.label ?? "speculative concentration"}, scoring ${aiBubbleDomain ? Math.round(aiBubbleDomain.score * 10) : "—"}/100.${aiConcentration > 25 ? ` The model's AI/mega-cap concentration input is a static baseline of ${aiConcentration.toFixed(1)}% of the S&P 500, not a live measurement.` : ""}${closestAnalog ? ` The closest historical analog is the ${closestAnalog.era} (${closestAnalog.year}), with a ${closestAnalog.similarity}% similarity score.` : ""}`;
 

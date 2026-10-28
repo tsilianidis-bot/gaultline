@@ -49,8 +49,8 @@ function ConfidenceBar({ value }: { value: number }) {
 }
 
 function AlignmentBanner({ status, score }: { status: string; score: number }) {
-  const isRiskOn  = status.includes("Risk On");
-  const isRiskOff = status.includes("Risk Off");
+  const isRiskOn  = status.includes("Higher appetite");
+  const isRiskOff = status.includes("Lower appetite");
   const isDiverge = status.includes("Diverging");
   const cls = isRiskOn && status.includes("Strongly") ? "bg-green-500/20 border-green-500/40 text-green-300"
     : isRiskOn  ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"

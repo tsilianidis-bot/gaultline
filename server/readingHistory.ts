@@ -239,8 +239,8 @@ function computeScenarioSupport(
         trendDir === "stable" ? "Pressure trend is stable" : `Pressure trend is ${trendDir}`,
       ],
       weakeningEvidence: [
-        p < 20 ? "Low pressure may support risk-on conditions" : null,
-        p > 60 ? "High pressure may push toward risk-off" : null,
+        p < 20 ? "Low pressure may support higher-risk appetite conditions" : null,
+        p > 60 ? "High pressure may push toward lower-risk appetite" : null,
         trendDir !== "stable" ? `Trend is ${trendDir} — not stable` : null,
       ].filter((x): x is string => x !== null),
       confirmationSignals: [
@@ -261,7 +261,7 @@ function computeScenarioSupport(
     },
     {
       scenario: "bearish_risk_off",
-      label: "Bearish / Risk-Off",
+      label: "Bearish / Lower-risk appetite",
       supportScore: bearishSupport,
       confidence: confidenceLabel(bearishSupport),
       supportingEvidence: [
@@ -270,8 +270,8 @@ function computeScenarioSupport(
         pressure.alerts.length > 0 ? `${pressure.alerts.length} active alert(s)` : "No active alerts",
       ],
       weakeningEvidence: [
-        p < 35 ? "Low pressure reduces risk-off support" : null,
-        trendDir === "improving" ? "Improving trend reduces risk-off support" : null,
+        p < 35 ? "Low pressure reduces lower-risk appetite support" : null,
+        trendDir === "improving" ? "Improving trend reduces lower-risk appetite support" : null,
       ].filter((x): x is string => x !== null),
       confirmationSignals: [
         "Pressure rises above 55",

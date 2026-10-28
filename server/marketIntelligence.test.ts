@@ -238,10 +238,10 @@ describe("Cross-Market Intelligence Engine", () => {
   it("returns a valid alignment status", async () => {
     const result = await computeCrossMarketIntelligence();
     const validStatuses = [
-      "Strongly Aligned \u2014 Risk On",
-      "Aligned \u2014 Risk On",
-      "Aligned \u2014 Risk Off",
-      "Strongly Aligned \u2014 Risk Off",
+      "Strongly Aligned \u2014 Higher appetite",
+      "Aligned \u2014 Higher appetite",
+      "Aligned \u2014 Lower appetite",
+      "Strongly Aligned \u2014 Lower appetite",
       "Diverging \u2014 Stocks Leading",
       "Diverging \u2014 Crypto Leading",
       "Diverging \u2014 Conflicting Signals",

@@ -42,7 +42,53 @@ const ROOTS = [
   "client/src/components/NarrativeLoader.tsx",
   "server/tradePreflight.ts",
   "server/routers.ts",
+  "client/src/pages/mobile/MobileRotation.tsx",
+  "client/src/pages/mobile/MobileBrief.tsx",
+  "client/src/pages/SeismographicDash.tsx",
+  "client/src/pages/Press.tsx",
+  "client/src/pages/Guide.tsx",
+  "client/src/components/landing/thesis/thesisContent.ts",
+  "server/decisionLight.ts",
+  "server/fmos/engines/marketWeather.ts",
+  "server/crossMarketEngine.ts",
+  "server/simPortfolioJournal.ts",
+  "server/xPostGenerator.ts",
+  "server/ownerSimulation.ts",
+  "server/cryptoSignals.ts",
+  "server/cryptoEngine.ts",
+  "server/signalOutlook.ts",
+  "server/positionGuidance.ts",
+  "server/chatbotEngine.ts",
+  "server/cryptoIntelligence.ts",
+  "server/cryptoRegimeEngine.ts",
+  "server/diagnosticAI.ts",
+  "server/simPortfolioEngine.ts",
+  "server/fmos/engines/decision.ts",
+  "server/historicalIntelligenceEngine.ts",
+  "server/ashaEngine.ts",
 ];
+
+const SERVER_PAYLOADS = new Set([
+  "server/tradePreflight.ts",
+  "server/decisionLight.ts",
+  "server/fmos/engines/marketWeather.ts",
+  "server/crossMarketEngine.ts",
+  "server/simPortfolioJournal.ts",
+  "server/xPostGenerator.ts",
+  "server/ownerSimulation.ts",
+  "server/cryptoSignals.ts",
+  "server/cryptoEngine.ts",
+  "server/signalOutlook.ts",
+  "server/positionGuidance.ts",
+  "server/chatbotEngine.ts",
+  "server/cryptoIntelligence.ts",
+  "server/cryptoRegimeEngine.ts",
+  "server/diagnosticAI.ts",
+  "server/simPortfolioEngine.ts",
+  "server/fmos/engines/decision.ts",
+  "server/historicalIntelligenceEngine.ts",
+  "server/ashaEngine.ts",
+]);
 
 const SKIP_FILES = new Set([
   "shared/surfaceClaims.ts",
@@ -50,6 +96,8 @@ const SKIP_FILES = new Set([
   "shared/sectorRotation.ts",
   "shared/decisionLight.ts",
   "shared/systemicRegime.ts",
+  "shared/ashaQuestionAnalysis.ts",
+  "shared/interpretationIntegrity.ts",
   "server/pressure/engine.ts",
   "server/pressure/fredFixtureEvidence.ts",
   "server/seismographUnified.ts",
@@ -69,26 +117,78 @@ function restore(text: string, masks: string[]): string {
 }
 
 /**
- * Strings are masked before // comments are removed, so a URL such as
- * "https://x" does not swallow the rest of the line.
+ * One pass: comments are skipped before quotes are read, so an apostrophe
+ * in a comment ("Today's") cannot hide the rest of the file, and "//" inside
+ * a string ("https://x") cannot hide text later on the line.
  */
 export function visibleCopy(source: string): string {
-  const { text, masks } = maskStrings(source);
-  const stripped = text
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
-    .replace(/\/\/.*$/gm, "");
-  return restore(stripped, masks)
+  let out = "";
+  let i = 0;
+  while (i < source.length) {
+    const c = source[i] ?? "";
+    const next = source[i + 1] ?? "";
+    if (c === "/" && next === "/") {
+      while (i < source.length && source[i] !== "\n") i += 1;
+      continue;
+    }
+    if (c === "/" && next === "*") {
+      i += 2;
+      while (i < source.length && !(source[i] === "*" && source[i + 1] === "/")) i += 1;
+      i += 2;
+      continue;
+    }
+    if ((c === "\"" || c === "`" || (c === "'" && singleQuoteStartsString(source, i)))) {
+      const quote = c;
+      out += c;
+      i += 1;
+      while (i < source.length) {
+        const ch = source[i] ?? "";
+        if (ch === "\\") {
+          out += ch + (source[i + 1] ?? "");
+          i += 2;
+          continue;
+        }
+        if (quote === "`" && ch === "$" && source[i + 1] === "{") {
+          out += "${";
+          i += 2;
+          let depth = 1;
+          while (i < source.length && depth > 0) {
+            const inner = source[i] ?? "";
+            if (inner === "{") depth += 1;
+            else if (inner === "}") depth -= 1;
+            out += inner;
+            i += 1;
+          }
+          continue;
+        }
+        out += ch;
+        i += 1;
+        if (ch === quote) break;
+      }
+      continue;
+    }
+    out += c;
+    i += 1;
+  }
+  return out
     .split("\n")
     .filter(line => !/^\s*["'`]?\/[A-Za-z0-9\-._/~]*["'`]?,?\s*$/.test(line))
     .map(scrubCodeKeepQuotes)
     .join("\n");
 }
 
+function singleQuoteStartsString(source: string, index: number): boolean {
+  let j = index - 1;
+  while (j >= 0 && /\s/.test(source[j] ?? "")) j -= 1;
+  if (j < 0) return true;
+  return !/[A-Za-z0-9_]/.test(source[j] ?? "");
+}
+
 function scrubCodeKeepQuotes(line: string): string {
   const { text, masks } = maskStrings(line);
   const scrubbed = text
     .replace(/\.target\b/g, "")
+    .replace(/\.\s*stop\b/g, "")
     .replace(/<\/?stop\b/gi, "")
     .replace(/\bTarget\b/g, "")
     .replace(/\bentry\./gi, ".")
@@ -96,8 +196,10 @@ function scrubCodeKeepQuotes(line: string): string {
     .replace(/\bconst entry\b/gi, "const row")
     .replace(/\bentry\s*=>/gi, "row =>")
     .replace(/\btarget\s*=/gi, "=")
-    .replace(/\b(?:entry|stop|target)\b(?=\s*[,:)\]}=;])/gi, "row")
-    .replace(/\bhold\s*:/gi, "kept:");
+    .replace(/\b(?:entry|stop|target)\b/gi, "row")
+    .replace(/\b(?:BUY|SELL|HOLD|AVOID)\b/gi, "ROW")
+    .replace(/\bhold\s*:/gi, "kept:")
+    .replace(/\bentry is\b/g, "row is");
   return restore(scrubbed, masks).replace(/["'`]\/[^"'`]*["'`]/g, '""');
 }
 
@@ -133,7 +235,7 @@ function reachableFiles(roots: string[]): string[] {
     if (!file || seen.has(file) || !existsSync(file) || file.endsWith(".test.ts") || file.endsWith(".test.tsx")) continue;
     if (SKIP_FILES.has(file) || file.startsWith("server/pressure/")) continue;
     if (file.startsWith("client/src/lib/") || file.startsWith("client/src/contexts/")) continue;
-    if (file.startsWith("server/") && file !== "server/tradePreflight.ts" && !file.startsWith("server/routers/")) continue;
+    if (file.startsWith("server/") && !SERVER_PAYLOADS.has(file) && !file.startsWith("server/routers/") && !file.startsWith("server/fmos/engines/")) continue;
     seen.add(file);
     const source = readFileSync(file, "utf8");
     for (const specifier of importedSpecifiers(source)) {
@@ -161,11 +263,23 @@ describe("release-candidate surfaces do not print trade directives or crash-prob
     expect(hits.length).toBeGreaterThan(0);
   });
 
+  it("keeps text that follows a comment containing an apostrophe", () => {
+    const sample = "/* Today's Story */\nconst label = \"RISK-ON\";";
+    const hits = visibleCopy(sample).split("\n").filter(line => BANNED.test(line));
+    expect(hits.length).toBeGreaterThan(0);
+  });
+
   const files = reachableFiles(ROOTS);
   it("follows routed imports past the old fixed list", () => {
     expect(files).toContain("client/src/components/AshaHeroSection.tsx");
     expect(files).toContain("client/src/components/dashboard/FaultlineInterpretation.tsx");
     expect(files).toContain("server/tradePreflight.ts");
+    expect(files).toContain("client/src/pages/mobile/MobileRotation.tsx");
+    expect(files).toContain("server/decisionLight.ts");
+    expect(files).toContain("server/fmos/engines/marketWeather.ts");
+    expect(files).toContain("server/crossMarketEngine.ts");
+    expect(files).toContain("server/simPortfolioJournal.ts");
+    expect(files).toContain("server/xPostGenerator.ts");
   });
 
   for (const file of files) {

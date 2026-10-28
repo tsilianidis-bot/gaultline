@@ -779,7 +779,7 @@ function computeGreenLights(
       break;
     case "reduce_risk":
     case "sell_specific_asset":
-      if (p > 55) lights.push(`Elevated pressure (${p}/100) supports reducing exposure${tickerRef}`);
+      if (p > 55) lights.push(`Elevated pressure (${p}/100) is a higher-stress reading${tickerRef}`);
       if (creditScore > 50) lights.push("Credit stress rising — defensive posture historically rewarded");
       if (breadthScore > 55) lights.push("Breadth deteriorating — fewer names sustaining the advance");
       if (ticker) lights.push(`Ticker-specific exit${tickerRef} allows precision risk reduction without full de-risking`);
@@ -1415,7 +1415,7 @@ function computeHistoricalAnalogs(
       analogs.push({ label: "Post-COVID Recovery 2020", similarity: clamp(Math.round(80 - p * 0.25), 62, 88), period: "Apr–Dec 2020", outcome: "S&P 500 recovered +70% from March 2020 lows as liquidity surge and fiscal stimulus drove broad market advance." });
       analogs.push({ label: "2019 Fed Pivot Rally", similarity: clamp(Math.round(75 - p * 0.2), 58, 85), period: "Jan–Jul 2019", outcome: "S&P 500 advanced +20% as Fed pivoted from hiking to cutting. Low pressure and improving breadth confirmed the move." });
     } else if (p >= 55) {
-      analogs.push({ label: "2022 Bear Market Rally", similarity: clamp(Math.round(68 + p * 0.08), 60, 82), period: "Jun–Aug 2022", outcome: "S&P 500 rallied +17% before resuming decline. Higher-risk appetite positioning in elevated pressure required tight stops." });
+      analogs.push({ label: "2022 Bear Market Rally", similarity: clamp(Math.round(68 + p * 0.08), 60, 82), period: "Jun–Aug 2022", outcome: "S&P 500 rallied +17% before resuming decline. Higher-risk appetite positioning in elevated pressure required tight downside marks." });
       analogs.push({ label: "Q3 2023 Tactical Bounce", similarity: clamp(Math.round(65 + creditScore * 0.06), 55, 78), period: "Jun–Jul 2023", outcome: "S&P 500 advanced +8% in a short window. Selective risk-taking with defined exits outperformed passive holding." });
       analogs.push({ label: "October 2022 Capitulation Rally", similarity: clamp(Math.round(62 + volatilityScore * 0.05), 52, 75), period: "Oct 2022", outcome: "S&P 500 rallied +14% from October lows. Staged fill with tight risk management captured the move." });
     } else {
@@ -1698,7 +1698,7 @@ function computeMarketInterpretation(
   // Opportunity window
   const windowMap: Record<SimulatorTimeframe, string> = {
     today: volatilityScore >= 55
-      ? "Intraday window is narrow — elevated volatility requires tight entries and defined exits before the close."
+      ? "Intraday window is narrow — elevated volatility requires tight additions and defined exits before the close."
       : "Intraday window is open. Look for the first 30–60 minutes of price action to confirm direction before committing.",
     this_week: creditScore >= 50
       ? "Short-term window is compressed by credit stress. Staged fill over 2–3 sessions reduces timing risk."
@@ -2124,7 +2124,7 @@ function computePortfolioActions(pressure: FaultlinePressureOutput, favorability
   const actions: PortfolioActionRecommendation[] = [];
 
   if (p >= 65) {
-    actions.push({ action: "Raise Cash: +10–15%", rationale: `FAULTLINE Pressure at ${p}/100 — reducing exposure preserves capital for better entries`, urgency: "high" });
+    actions.push({ action: "Raise Cash: +10–15%", rationale: `FAULTLINE Pressure at ${p}/100 — the reading is in a higher-stress band`, urgency: "high" });
     actions.push({ action: "Add Hedges: +5%", rationale: "Elevated systemic pressure warrants tail-risk protection", urgency: "high" });
     actions.push({ action: "Reduce Speculative Exposure", rationale: "High-beta and speculative names underperform in elevated-pressure regimes", urgency: "medium" });
   } else if (p >= 45) {
@@ -2134,7 +2134,7 @@ function computePortfolioActions(pressure: FaultlinePressureOutput, favorability
   } else {
     actions.push({ action: "Increase Risk: +10–15%", rationale: `Low pressure regime (${p}/100) supports adding risk to high-conviction setups`, urgency: "low" });
     actions.push({ action: "Maintain Existing Hedges", rationale: "Keep baseline protection even in favorable regimes — conditions can shift quickly", urgency: "low" });
-    if (favorability >= 70) actions.push({ action: "Scale Into Momentum Names", rationale: "High favorability score supports adding to trending positions with defined stops", urgency: "low" });
+    if (favorability >= 70) actions.push({ action: "Scale Into Momentum Names", rationale: "High favorability score supports adding to trending positions with defined downside marks", urgency: "low" });
   }
 
   if (creditScore >= 60) {
@@ -2155,16 +2155,16 @@ function computeWhatFaultlineWouldDo(pressure: FaultlinePressureOutput, favorabi
   let rationale: string;
 
   if (p >= 70) {
-    headline = "Raise cash, reduce exposure, and wait for pressure to stabilize";
+    headline = "Raise cash and wait for the pressure reading to stabilize";
     actions = [
       "Raise 15–20% cash",
       "Add tail-risk hedges",
       "Trim extended momentum names",
-      "Pass over new speculative entries",
+      "Pass over new speculative additions",
       "Maintain core quality holdings",
       "Monitor credit spreads for stabilization signal",
     ];
-    rationale = `FAULTLINE Pressure at ${p}/100 in a ${pressure.regime} regime. Credit stress is ${levelLabel(creditScore).toLowerCase()} and liquidity conditions are ${levelLabel(liquidityScore).toLowerCase()}. The risk-adjusted move is to reduce exposure and preserve capital until pressure shows a sustained decline below 55/100.`;
+    rationale = `FAULTLINE Pressure at ${p}/100 in a ${pressure.regime} regime. Credit stress is ${levelLabel(creditScore).toLowerCase()} and liquidity conditions are ${levelLabel(liquidityScore).toLowerCase()}. The reading is a higher-stress band. Capital preservation is the recorded context until pressure shows a sustained decline below 55/100.`;
   } else if (p >= 50) {
     headline = "Stay selective — add only to high-conviction setups with defined risk";
     actions = [
@@ -2182,8 +2182,8 @@ function computeWhatFaultlineWouldDo(pressure: FaultlinePressureOutput, favorabi
       "Add to TAO, PLTR, NVDA on dips",
       "Increase crypto allocation toward BTC and ETH",
       "Rotate toward Industrials and Financials",
-      "Scale into momentum names with defined stops",
-      "Maintain 5–10% cash for opportunistic entries",
+      "Scale into momentum names with defined downside marks",
+      "Maintain 5–10% cash for opportunistic additions",
       "Pass over defensive/low-beta names in this regime",
     ];
     rationale = `FAULTLINE Pressure at ${p}/100 — ${pressure.regime} regime with ${levelLabel(liquidityScore).toLowerCase()} liquidity and ${levelLabel(creditScore).toLowerCase()} credit stress. Conditions support adding risk. Focus on assets with strong momentum and macro alignment.`;
@@ -2498,7 +2498,7 @@ function computeRecommendedVehicles(
   const notes = isHighPressure
     ? `High pressure regime (${p}/100) — prefer lower-risk vehicles and reduce position sizes by 25-30%`
     : p >= 40
-    ? `Mixed regime (${p}/100) — standard sizing, focus on vehicles with defined stops`
+    ? `Mixed regime (${p}/100) — standard sizing, focus on vehicles with defined downside marks`
     : `Favorable regime (${p}/100) — full position sizing appropriate for high-conviction vehicles`;
 
   return { exposureLabel, vehicles, notes };
@@ -2538,7 +2538,7 @@ function computePortfolioImpact(
       lines.push({ category, currentAllocation: 15, targetAllocation: 15 + addAmt, change: addAmt, rationale: `Adding ${addAmt}% to ${category} — regime supports this move` });
       headline = `Add ${addAmt}% to ${category}`;
       netRiskChange = "Increased";
-      summary = `Deploy ${addAmt}% from cash into ${category}. ${favorability >= 70 ? "High favorability supports full sizing." : "Moderate favorability — use staged entries."}`;
+      summary = `Deploy ${addAmt}% from cash into ${category}. ${favorability >= 70 ? "High favorability supports full sizing." : "Moderate favorability — use staged additions."}`;
       break;
     }
     case "reduce_risk": {
@@ -2558,7 +2558,7 @@ function computePortfolioImpact(
       lines.push({ category: "Technology", currentAllocation: baselines["Technology"], targetAllocation: baselines["Technology"] - Math.round(raiseAmt * 0.4), change: -Math.round(raiseAmt * 0.4), rationale: "Trim extended tech positions" });
       headline = `Raise cash to ${baselines["Cash"] + raiseAmt}%`;
       netRiskChange = "Decreased";
-      summary = `Raise cash from ${baselines["Cash"]}% to ${baselines["Cash"] + raiseAmt}% by trimming large cap and tech. ${input.raiseCashReason === "risk_reduction" ? "Driven by risk reduction objective." : "Tactical positioning for better entries."}`;
+      summary = `Raise cash from ${baselines["Cash"]}% to ${baselines["Cash"] + raiseAmt}% by trimming large cap and tech. ${input.raiseCashReason === "risk_reduction" ? "Driven by risk reduction objective." : "Tactical positioning for better additions."}`;
       break;
     }
     case "deploy_cash": {
@@ -2620,7 +2620,7 @@ function computePortfolioImpact(
       lines.push({ category: "Current Portfolio", currentAllocation: 100, targetAllocation: 100, change: 0, rationale: "No allocation changes — keep the current positions" });
       headline = `Keep ${ticker} — no changes`;
       netRiskChange = "Neutral";
-      summary = `Maintain current allocation. ${input.holdConcern === "volatility" ? "Monitor volatility — consider tightening stops." : input.holdConcern === "drawdown" ? "Drawdown concern — review downside levels." : "No structural reason to exit."}`;
+      summary = `Maintain current allocation. ${input.holdConcern === "volatility" ? "Monitor volatility — consider tightening downside marks." : input.holdConcern === "drawdown" ? "Drawdown concern — review downside levels." : "No structural reason to exit."}`;
       break;
     }
     default: {

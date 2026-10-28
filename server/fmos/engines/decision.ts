@@ -84,11 +84,11 @@ function buildPositionSizing(
   const weatherPenalty = weather.score > 60 ? "Reduce size by 25–50% due to adverse market conditions." : "";
 
   const sizeGuide: Record<DecisionVerdict, string> = {
-    "STRONG BUY": `Full position (up to 100% of target allocation). ${weatherPenalty}`,
-    "BUY": `Standard position (75–100% of target allocation). ${weatherPenalty}`,
-    "ACCUMULATE": `Staged entry (50–75% of target allocation). ${weatherPenalty}`,
+    "STRONG BUY": `Full position (up to 100% of upper mark allocation). ${weatherPenalty}`,
+    "BUY": `Standard position (75–100% of upper mark allocation). ${weatherPenalty}`,
+    "ACCUMULATE": `Staged opening (50–75% of upper mark allocation). ${weatherPenalty}`,
     "HOLD": `Maintain current position. No new additions until conditions improve.`,
-    "WATCH": `No new positions. Monitor for entry opportunity.`,
+    "WATCH": `No new positions. Monitor for opening opportunity.`,
     "TRIM": `Reduce to 50% of current position. Take partial profits.`,
     "REDUCE": `Reduce to 25% of current position. Significant risk reduction warranted.`,
     "SELL": `Exit position. Capital preservation priority.`,
@@ -102,13 +102,13 @@ function buildPositionSizing(
 
 function buildTimeframe(verdict: DecisionVerdict, regime: FMOSRegimeOutput): string {
   if (verdict === "AVOID" || verdict === "SELL") {
-    return "No defined entry timeframe — wait for regime improvement";
+    return "No defined opening timeframe — wait for regime improvement";
   }
   if (verdict === "STRONG BUY" || verdict === "BUY") {
     return `${regime.transitionProbability30d < 30 ? "Medium-term (3–6 months)" : "Short-term (4–8 weeks)"} — monitor for regime change`;
   }
   if (verdict === "ACCUMULATE") {
-    return "Staged entry over 2–4 weeks — build position as conditions confirm";
+    return "Staged opening over 2–4 weeks — build position as conditions confirm";
   }
   return "Tactical (1–4 weeks) — reassess as conditions evolve";
 }
@@ -127,7 +127,7 @@ function buildCatalysts(
   const liquidityScore = getVec("liquidity-stress");
 
   if (p < 45) {
-    catalysts.push("Continued low systemic pressure supports risk-on positioning");
+    catalysts.push("Continued low systemic pressure supports higher-risk appetite positioning");
   }
   if (creditScore < 35) {
     catalysts.push("Credit conditions benign — no systemic credit stress");
@@ -203,7 +203,7 @@ function buildPrimaryReason(
     return `Systemic pressure at ${p}/100 with ${actionBias} bias — capital preservation is the priority. ${probability.primaryDriver}`;
   }
   if (verdict === "STRONG BUY" || verdict === "BUY") {
-    return `Low systemic pressure (${p}/100) — conditions favor risk-on positioning. ${probability.primaryDriver}`;
+    return `Low systemic pressure (${p}/100) — conditions favor higher-risk appetite positioning. ${probability.primaryDriver}`;
   }
   if (verdict === "HOLD" || verdict === "WATCH") {
     return `Mixed signals — wait for clearer direction. ${probability.primaryDriver}`;
@@ -238,7 +238,7 @@ export function computeDecision(
   ));
 
   const primaryReason = buildPrimaryReason(verdict, actionBias, pressure, probability);
-  const bullCase = probability.bullEvidence[0] ?? "Low systemic pressure supports risk-on positioning";
+  const bullCase = probability.bullEvidence[0] ?? "Low systemic pressure supports higher-risk appetite positioning";
   const bearCase = probability.bearEvidence[0] ?? "Elevated pressure warrants caution";
   const catalysts = buildCatalysts(pressure, probability);
   const threats = buildThreats(pressure, probability);

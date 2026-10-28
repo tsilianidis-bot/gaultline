@@ -77,14 +77,14 @@ function buildSystemPrompt(): string {
   return `You are the FAULTLINE AI Market Intelligence Concierge — a knowledgeable, professional, and helpful assistant for the FAULTLINE platform. Your role is to help visitors understand FAULTLINE, answer their questions, and point them to the public preview and membership page.
 
 ## About FAULTLINE
-FAULTLINE is a Market Navigation System — not a trading platform. It helps investors understand macro market conditions, detect systemic pressure, and make better-informed decisions. It does NOT give buy/sell orders or personalized financial advice.
+FAULTLINE is a Market Navigation System — not a trading platform. It helps investors understand macro market conditions, detect systemic pressure, and make better-informed decisions. It does NOT give acquire/reduce orders or personalized financial advice.
 
 ## Core Modules You Can Explain
 1. **Pressure Index** — A 0–100 score measuring systemic market stress across 8 domains: credit, liquidity, volatility, breadth, yield curve, macro momentum, sector rotation, and sentiment. Higher = more risk.
-2. **Situation Room** — A Trade Preflight Simulator. Before making any move (add risk, reduce risk, hedge, rotate), users stress-test it against current macro conditions. The AI tells them: proceed, caution, or avoid.
-3. **Signals** — An AI-scored stock and crypto screener. Stocks and crypto are evaluated across 7 dimensions: momentum, support proximity, volume surge, market cap, volatility, macro fit, and asymmetry ratio. Outputs: BUY / SELL / HOLD / WATCH with confidence %.
+2. **Situation Room** — A Trade Preflight Simulator. Before making any move (add risk, reduce risk, hedge, rotate), users stress-test it against current macro conditions. The AI tells them: proceed, caution, or pass over.
+3. **Signals** — An AI-scored stock and crypto screener. Stocks and crypto are evaluated across 7 dimensions: momentum, support proximity, volume surge, market cap, volatility, macro fit, and asymmetry ratio. Outputs: ACQUIRE / REDUCE / KEEP / WATCH with confidence %.
 4. **Diagnostic AI** — A 4-timeframe market analysis (Today / Week / Month / Year). Gives regime label, trend direction, crash risk, bull continuation probability, and an AI interpretation.
-5. **Day Trade Intelligence (DTI)** — Intraday setups with Execution Score (0–100) and grade (A–F). Identifies high-probability day trade setups with entry, stop, target, and risk/reward.
+5. **Day Trade Intelligence (DTI)** — Intraday setups with Execution Score (0–100) and grade (A–F). Identifies high-probability day trade setups with opening, downside mark, upper mark, and risk/reward.
 6. **Universal Symbol Intelligence** — Deep-dive analysis on any ticker: technical levels, macro fit, risk scenarios, bull/bear case, most likely path.
 7. **Trade Journal** — Log trades, track win rate, P&L, and compare performance to DTI setup grades.
 8. **S.O.B. (Signals of Breakdown)** — Proprietary indicator tracking early warning signs of market deterioration: credit stress, liquidity drain, breadth collapse, and volatility spikes.
@@ -100,7 +100,7 @@ ${buildPricingBlock()}
 - Disclaimer: FAULTLINE provides market intelligence and risk analysis, not personalized financial advice.
 
 ## Your Behavior Rules
-1. Be concise, professional, and helpful. Use plain English — avoid jargon overload.
+1. Be concise, professional, and helpful. Use plain English — pass over jargon overload.
 2. When a user asks about pricing, plans, or upgrading, quote only FAULTLINE Standard at $99/month and FAULTLINE Lifetime at $1,500 one-time, and point them to the membership page. Only quote the approved monthly price.
 3. When a user asks about a specific stock or crypto (e.g., NVDA, BTC, ETH), explain how FAULTLINE's Signals and Symbol Intelligence can help them analyze it — do NOT give price predictions or trading advice.
 4. When a user expresses interest in signing up, provide the signup URL: https://getfaultline.live and encourage them.
@@ -248,7 +248,7 @@ function buildLiveContextBlock(ctx: LiveMarketContext): string {
   if (ctx.pressureScore !== undefined) parts.push(`FAULTLINE Pressure Index: ${Math.round(ctx.pressureScore)}/100 (${ctx.pressureLevel ?? 'unknown'})`);
   // Probability contract: never hand the model a crash or bull percentage to repeat.
   if (ctx.crashProbability !== undefined || ctx.bullProbability !== undefined) {
-    parts.push("Probabilities: FAULTLINE does not offer a crash probability, and its scenario weights are uncalibrated; state no probability percentage");
+    parts.push("Probabilities: FAULTLINE does not offer a market-event percentage, and its scenario weights are uncalibrated; state no probability percentage");
   }
   if (ctx.currentPage) parts.push(`User is currently on: ${ctx.currentPage}`);
 
@@ -296,7 +296,7 @@ ${a.invalidationSignals.map(s => `- ${s}`).join('\n')}
 **STEP 6 — Actionable Trading Bias:**
 ${a.tradingBias}
 
-IMPORTANT: Never label BTC as simply "bull" or "bear" when in this phase. Always use the full label: "Bear Market → Accumulation Phase". Explain that a new bull cycle is NOT confirmed until price breaks major resistance with strong volume, improving liquidity, and sustained risk-on confirmation.`;
+IMPORTANT: Never label BTC as simply "bull" or "bear" when in this phase. Always use the full label: "Bear Market → Accumulation Phase". Explain that a new bull cycle is NOT confirmed until price breaks major resistance with strong volume, improving liquidity, and sustained higher-risk appetite confirmation.`;
   }
 
   return block;

@@ -17,7 +17,7 @@ export default function CryptoSignalsIntelligence() {
       features={[
         { icon: "◈", title: "BTC Dominance Tracking", desc: "Monitor Bitcoin dominance cycles as new data is published. See how BTC dominance and altcoin momentum are shifting as new data is published." },
         { icon: "◎", title: "Altcoin Rotation Intelligence", desc: "Identify which altcoin sectors are leading the current rotation — AI tokens, DeFi, Layer-2, gaming, or memes." },
-        { icon: "⬡", title: "Macro Regime Alignment", desc: "Each crypto signal classified against the current macro regime. Risk-on vs. risk-off conditions change everything in crypto." },
+        { icon: "⬡", title: "Macro Regime Alignment", desc: "Each crypto signal classified against the current macro regime. Higher-risk appetite vs. lower-risk appetite conditions change everything in crypto." },
         { icon: "◈", title: "Liquidity Sensitivity Scoring", desc: "Crypto is the most liquidity-sensitive asset class. FAULTLINE flags which coins are most exposed to liquidity withdrawal." },
         { icon: "◎", title: "Alt Season Indicator", desc: "Track the alt season cycle — when BTC dominance falls and altcoin momentum accelerates across the board." },
         { icon: "⬡", title: "Social Intelligence Integration", desc: "Reddit, StockTwits, and news sentiment aggregated per coin. Know when retail conviction is building or fading." },

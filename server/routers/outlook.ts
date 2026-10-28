@@ -388,9 +388,9 @@ STORY INTELLIGENCE 2.0 — ALL 14 SECTIONS REQUIRED
 
 Write exactly this JSON structure:
 {
-  "headline": "Concise institutional headline summarizing the regime (10-15 words). Examples: 'Moderate Risk Regime Persists Despite Improving Liquidity' or 'Risk-On Conditions Strengthen as Credit Markets Stabilize'.",
+  "headline": "Concise institutional headline summarizing the regime (10-15 words). Examples: 'Moderate Risk Regime Persists Despite Improving Liquidity' or 'Higher appetite Conditions Strengthen as Credit Markets Stabilize'.",
   "executiveSummary": "2-4 sentences answering: What happened? Why does it matter? What should investors understand immediately? Read like the opening paragraph of an institutional macro report.",
-  "faultlineAction": "One of: 'Maintain existing exposure' / 'Accumulate selectively' / 'Favor quality growth' / 'Increase defensive allocation' / 'Reduce leverage' / 'Raise cash' / 'Wait for confirmation' / 'Rotate into defensive sectors'. Never leave users wondering what FAULTLINE would do.",
+  "faultlineAction": "One of: 'Maintain existing exposure' / 'Add gradually selectively' / 'Favor quality growth' / 'Increase defensive allocation' / 'Reduce leverage' / 'Raise cash' / 'Wait for confirmation' / 'Rotate into defensive sectors'. Never leave users wondering what FAULTLINE would do.",
   "topOpportunityTicker": "${topOpportunityTicker}",
   "topOpportunityName": "${topOpportunityName}",
   "topOpportunityRating": "${topOpportunityDir}",
@@ -421,7 +421,7 @@ Write exactly this JSON structure:
 
         const response = await invokeLLM({
 	          messages: [
-	            { role: "system", content: "You are FAULTLINE — an elite institutional market intelligence system operating as a Chief Investment Strategist. You synthesize current market evidence into clear analysis. Be direct, specific, and institutional. Derived scenario scores are not calibrated probabilities. Do not invent a price target, expected reward, timing, target date, probability, or historical success rate. Every statement must identify whether it is observed, derived, historical, interpreted, or forecast. Every thesis requires evidence and an invalidation condition. Respond only with valid JSON." },
+	            { role: "system", content: "You are FAULTLINE — an elite institutional market intelligence system operating as a Chief Investment Strategist. You synthesize current market evidence into clear analysis. Be direct, specific, and institutional. Derived scenario scores are not calibrated probabilities. Do not invent a price level, expected reward, timing, a calendar date, probability, or historical success rate. Every statement must identify whether it is observed, derived, historical, interpreted, or forecast. Every thesis requires evidence and an invalidation condition. Respond only with valid JSON." },
             { role: "user", content: prompt },
           ],
           response_format: { type: "json_object" } as any,

@@ -695,7 +695,7 @@ export default function SeismographicDash() {
   const analogLabel = topAnalog?.era?.split(' ').slice(0, 2).join(' ') ?? '—';
   const analogSim = topAnalog?.similarity ?? 0;
   const verdictScore = overall.score;
-  const verdictLabel = verdictScore >= 7.5 ? 'RISK OFF' : verdictScore >= 5.5 ? 'CAUTION' : verdictScore >= 3.5 ? 'SELECTIVE' : 'RISK ON';
+  const verdictLabel = verdictScore >= 7.5 ? 'LOWER APPETITE' : verdictScore >= 5.5 ? 'CAUTION' : verdictScore >= 3.5 ? 'SELECTIVE' : 'HIGHER APPETITE';
   const verdictColor = verdictScore >= 7.5 ? '#FF2D55' : verdictScore >= 5.5 ? '#FF9500' : verdictScore >= 3.5 ? '#FFD700' : '#00FF88';
   const bestDomain = useMemo(() => [...domains].sort((a, b) => a.score - b.score)[0], [domains]);
   const biggestShift = useMemo(() => [...domains].filter(d => Math.abs(d.delta) > 0.05).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))[0], [domains]);

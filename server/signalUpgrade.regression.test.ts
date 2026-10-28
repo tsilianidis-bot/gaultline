@@ -259,7 +259,7 @@ describe("Part 3 — Crypto regime reconciliation", () => {
   it("cryptoRegime field is always present on crypto signals", async () => {
     const result = computeCryptoSignal(makeCryptoInput());
     expect(result.cryptoRegime).toBeDefined();
-    const validRegimes = ["Bullish", "Neutral", "Defensive", "Risk-Off"];
+    const validRegimes = ["Bullish", "Neutral", "Defensive", "Lower appetite"];
     expect(validRegimes).toContain(result.cryptoRegime);
   });
 });

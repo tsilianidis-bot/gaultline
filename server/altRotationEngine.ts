@@ -375,7 +375,7 @@ function generateAlerts(
       id: "stable_contract",
       type: "liquidity",
       severity: "high",
-      title: "Risk-Off Conditions Returning",
+      title: "Lower appetite Conditions Returning",
       body: `Stablecoin supply contracting — capital exiting crypto ecosystem.`,
       timestamp: now,
     });

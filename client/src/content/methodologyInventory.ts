@@ -213,7 +213,7 @@ export const faqs = [
 
 export const crossMarket = {
   intro:
-    "The cross-market engine compares the equity regime with the crypto regime. Its statuses are strongly aligned risk-on, aligned risk-on, aligned risk-off, strongly aligned risk-off, diverging with stocks leading, diverging with crypto leading, diverging with conflicting signals, or neutral. Separately, the pressure composite scores high-yield credit, SOFR, the Treasury curve, inflation, federal funds, and unemployment together.",
+    "The cross-market engine compares the equity regime with the crypto regime. Its statuses are strongly aligned higher-risk appetite, aligned higher-risk appetite, aligned lower-risk appetite, strongly aligned lower-risk appetite, diverging with stocks leading, diverging with crypto leading, diverging with conflicting signals, or neutral. Separately, the pressure composite scores high-yield credit, SOFR, the Treasury curve, inflation, federal funds, and unemployment together.",
   regimes:
     "Equity labels are Bull Market, Expansion, Consolidation, Correction, Distribution, Bear Market, Recovery, and Recession Risk. Crypto labels are Bull Market, Expansion, Late Bull / Euphoria, Distribution, Bear Market, Capitulation, Bear Market → Accumulation Phase, Accumulation, and Early Recovery. Alignment compares those two reads.",
   quotedVsScored:

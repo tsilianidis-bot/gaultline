@@ -82,7 +82,7 @@ export const THRESHOLD_RULES: ThresholdRule[] = [
     direction: 'above',
     severity: 'elevated',
     category: 'threshold_breach',
-    message: (v) => `VIX at ${v.toFixed(1)} — volatility elevated above long-run average. Risk-off positioning increasing.`,
+    message: (v) => `VIX at ${v.toFixed(1)} — volatility elevated above long-run average. Lower-risk appetite positioning increasing.`,
     color: '#FFD700',
   },
   {

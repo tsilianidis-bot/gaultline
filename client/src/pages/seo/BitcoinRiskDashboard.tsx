@@ -15,7 +15,7 @@ export default function BitcoinRiskDashboard() {
       ctaHref="/app/crypto"
       accentColor="#F7931A"
       features={[
-        { icon: "◈", title: "Macro Regime Alignment Score", desc: "BTC classified against the current macro regime. Risk-on vs. risk-off conditions fundamentally change Bitcoin's risk/reward profile." },
+        { icon: "◈", title: "Macro Regime Alignment Score", desc: "BTC classified against the current macro regime. Higher-risk appetite vs. lower-risk appetite conditions fundamentally change Bitcoin's risk/reward profile." },
         { icon: "◎", title: "Price Levels", desc: "FAULTLINE does not publish price targets or support/resistance levels on this page." },
         { icon: "⬡", title: "Liquidity Sensitivity Rating", desc: "Bitcoin is the most liquidity-sensitive major asset. FAULTLINE scores BTC's vulnerability to Fed QT and global liquidity withdrawal." },
         { icon: "◈", title: "Bull Case / Bear Case Analysis", desc: "Structured bull and bear case context for BTC based on current macro conditions and technical structure." },
@@ -61,7 +61,7 @@ Psychological Levels: major round numbers that attract significant options posit
       faqs={[
         {
           question: "What is the biggest risk to Bitcoin in 2026?",
-          answer: "Based on FAULTLINE's macro framework, the primary risk to Bitcoin in 2026 is a shift in Federal Reserve policy toward renewed tightening — either through rate hikes or accelerated QT — driven by persistent inflation or financial stability concerns. Secondary risks include regulatory developments, a broader risk-off macro environment driven by recession fears, and potential contagion from crypto-specific events (exchange failures, stablecoin de-pegs).",
+          answer: "Based on FAULTLINE's macro framework, the primary risk to Bitcoin in 2026 is a shift in Federal Reserve policy toward renewed tightening — either through rate hikes or accelerated QT — driven by persistent inflation or financial stability concerns. Secondary risks include regulatory developments, a broader lower-risk appetite macro environment driven by recession fears, and potential contagion from crypto-specific events (exchange failures, stablecoin de-pegs).",
         },
         {
           question: "How does the Bitcoin halving affect risk in 2026?",
@@ -69,7 +69,7 @@ Psychological Levels: major round numbers that attract significant options posit
         },
         {
           question: "What is Bitcoin's correlation with the stock market?",
-          answer: "Bitcoin's correlation with the S&P 500 has increased significantly since 2020 as institutional adoption has grown. During risk-off events (market stress, recession fears), BTC typically falls alongside equities — often more severely due to its higher volatility. During risk-on environments, BTC can outperform equities significantly. FAULTLINE's macro regime alignment score reflects this by reading BTC through the same systemic pressure conditions as equities.",
+          answer: "Bitcoin's correlation with the S&P 500 has increased significantly since 2020 as institutional adoption has grown. During lower-risk appetite events (market stress, recession fears), BTC typically falls alongside equities — often more severely due to its higher volatility. During higher-risk appetite environments, BTC can outperform equities significantly. FAULTLINE's macro regime alignment score reflects this by reading BTC through the same systemic pressure conditions as equities.",
         },
         {
           question: "Does this page publish BTC price levels?",

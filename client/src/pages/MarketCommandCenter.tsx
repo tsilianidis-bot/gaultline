@@ -144,9 +144,9 @@ function SmartDiscovery() {
 
   const QUICK_ACTIONS = [
     { label: "Best swing trades", query: "What are the best swing trades right now?" },
-    { label: "Should I buy NVDA?", query: "Should I buy NVDA?" },
+    { label: "Should I acquire NVDA?", query: "Should I acquire NVDA?" },
     { label: "What are institutions buying?", query: "What are institutions buying right now?" },
-    { label: "Best AI stocks", query: "What are the best AI stocks to buy right now?" },
+    { label: "Best AI stocks", query: "What are the best AI stocks to acquire right now?" },
     { label: "Bitcoin risk", query: "What is the risk level for Bitcoin right now?" },
     { label: "Today's market verdict", query: "What is today's market verdict and regime?" },
   ];
@@ -403,8 +403,8 @@ function MarketCommandCenterInner() {
       },
       {
         label: "HIGHEST CONVICTION CRYPTO",
-        value: riskLevel === "low" ? "BTC / ETH" : riskLevel === "moderate" ? "BTC ONLY" : "AVOID",
-        sub: riskLevel === "low" ? "Risk-on crypto rotation active" : riskLevel === "moderate" ? "Bitcoin as digital gold" : "Crypto risk elevated",
+        value: riskLevel === "low" ? "BTC / ETH" : riskLevel === "moderate" ? "BTC ONLY" : "PASS OVER",
+        sub: riskLevel === "low" ? "Higher-risk appetite crypto rotation active" : riskLevel === "moderate" ? "Bitcoin as digital gold" : "Crypto risk elevated",
         color: riskLevel === "low" ? "#F7931A" : riskLevel === "moderate" ? "#F7931A" : "#FF2D55",
         href: "/app/crypto",
         icon: Bitcoin,
@@ -438,11 +438,11 @@ function MarketCommandCenterInner() {
       {
         label: "MOST DANGEROUS ASSET",
         value: riskLevel === "critical" ? "LEVERAGED ETFs" : riskLevel === "elevated" ? "SMALL CAPS" : riskLevel === "moderate" ? "MEMECOINS" : "NONE",
-        sub: riskLevel === "critical" ? "Avoid 2x/3x exposure" : riskLevel === "elevated" ? "High beta underperforming" : riskLevel === "moderate" ? "Speculative risk elevated" : "Risk environment benign",
+        sub: riskLevel === "critical" ? "Pass over 2x/3x exposure" : riskLevel === "elevated" ? "High beta underperforming" : riskLevel === "moderate" ? "Speculative risk elevated" : "Risk environment benign",
         color: "#FF2D55",
         href: "/app/pressure",
         icon: AlertTriangle,
-        badge: "AVOID",
+        badge: "PASS OVER",
       },
       {
         label: "MOST UNDERVALUED",

@@ -18,7 +18,7 @@ export default function AltSeasonIndicator() {
         { icon: "◈", title: "BTC Dominance Cycle Tracking", desc: "BTC dominance falling below key thresholds is the primary alt season signal. FAULTLINE tracks dominance levels, trend, and rate of change." },
         { icon: "◎", title: "ETH/BTC Ratio Monitor", desc: "The ETH/BTC ratio rising is the first confirmation that capital is rotating from Bitcoin into altcoins. FAULTLINE tracks this ratio as new data is published." },
         { icon: "⬡", title: "Altcoin Sector Momentum", desc: "Track momentum across DeFi, Layer-2, AI tokens, gaming, and meme coins simultaneously to identify which sectors are leading the rotation." },
-        { icon: "◈", title: "Macro Regime Alignment", desc: "Alt season requires a risk-on macro environment. FAULTLINE checks whether the macro regime supports altcoin outperformance." },
+        { icon: "◈", title: "Macro Regime Alignment", desc: "Alt season requires a higher-risk appetite macro environment. FAULTLINE checks whether the macro regime supports altcoin outperformance." },
         { icon: "◎", title: "Social Sentiment Surge Detection", desc: "Retail capital floods into altcoins during alt season. FAULTLINE tracks social sentiment across Reddit, StockTwits, and crypto news." },
         { icon: "⬡", title: "Historical Alt Season Comparisons", desc: "Compare current conditions against past alt season periods to understand the historical precedent." },
       ]}
@@ -37,7 +37,7 @@ FAULTLINE's Alt Season Indicator reads five signals together:
 
 3. Altcoin Sector Breadth — Are multiple altcoin sectors (DeFi, Layer-2, AI tokens, gaming) showing positive momentum simultaneously? Broad-based altcoin strength is more sustainable than single-sector rallies.
 
-4. Macro Regime Alignment — Is the broader macro environment (FAULTLINE Pressure Index, Fed policy, global liquidity) supportive of risk-on behavior? Alt season rarely sustains in HIGH STRESS macro environments.
+4. Macro Regime Alignment — Is the broader macro environment (FAULTLINE Pressure Index, Fed policy, global liquidity) supportive of higher-risk appetite behavior? Alt season rarely sustains in HIGH STRESS macro environments.
 
 5. Social Sentiment Momentum — Is retail interest in altcoins accelerating? Social sentiment surges precede and accompany alt season rotations.`,
         },
@@ -77,7 +77,7 @@ FAULTLINE's Alt Season Indicator tracks all of these conditions as new data is p
         },
         {
           question: "How long does alt season typically last?",
-          answer: "Historical alt seasons have varied widely in length, from a few weeks to several months. The duration depends on the macro environment, BTC dominance dynamics, and the degree of retail participation. Alt seasons that are supported by a favorable macro regime (expanding liquidity, risk-on sentiment) tend to last longer than those driven purely by crypto-specific factors.",
+          answer: "Historical alt seasons have varied widely in length, from a few weeks to several months. The duration depends on the macro environment, BTC dominance dynamics, and the degree of retail participation. Alt seasons that are supported by a favorable macro regime (expanding liquidity, higher-risk appetite sentiment) tend to last longer than those driven purely by crypto-specific factors.",
         },
         {
           question: "Which altcoins perform best during alt season?",

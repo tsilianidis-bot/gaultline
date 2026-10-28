@@ -127,7 +127,7 @@ const SECTIONS: Section[] = [
         </div>
         <Panel accentColor="rgba(255,200,0,0.3)">
           <p className="text-[10px] font-mono text-yellow-400/80 leading-relaxed">
-            <span className="text-yellow-400 font-bold">DISCLAIMER</span> — FAULTLINE is an analytical research tool. Nothing on this platform constitutes financial advice, investment recommendations, or solicitation to buy or sell any security. All data is provided for informational purposes only.
+            <span className="text-yellow-400 font-bold">DISCLAIMER</span> — FAULTLINE is an analytical research tool. Nothing on this platform constitutes financial advice, investment recommendations, or a solicitation to transact in any security. All data is provided for informational purposes only.
           </p>
         </Panel>
       </div>
@@ -246,7 +246,7 @@ const SECTIONS: Section[] = [
         <div className="space-y-1">
           {[
             { name: "Treasury Stress Score", fred: "DGS10, DGS30", desc: "Measures stress in the US Treasury market. Elevated when the 10Y yield is rising rapidly or when the yield curve inverts (long rates below short rates), signalling recession expectations." },
-            { name: "Inflation Pressure Score", fred: "CPIAUCSL", desc: "Tracks the degree to which inflation is above or below the Fed's 2% target. High scores indicate the Fed is likely to maintain or increase restrictive monetary policy." },
+            { name: "Inflation Pressure Score", fred: "CPIAUCSL", desc: "Tracks the degree to which inflation is above or below the Fed's stated 2% level. High scores indicate the Fed is likely to maintain or increase restrictive monetary policy." },
             { name: "Credit Risk Score", fred: "BAMLH0A0HYM2", desc: "Derived from the ICE BofA High Yield OAS spread. When this spread widens, it means credit markets are pricing in higher default risk — a classic leading indicator of financial stress." },
             { name: "AI Bubble Risk Score", fred: "Static AI-concentration baseline", desc: "The engine's AI-concentration vector (ai-bubble), scored 0–100. It reads a static AI-concentration baseline, not live equity valuations or sector data, so it changes only when that baseline is revised." },
             { name: "Liquidity Stress Score", fred: "SOFR, NFCI, BAMLH0A0HYM2", desc: "Composite score measuring tightness in short-term funding markets. Elevated SOFR, wide HY spreads, and a tight NFCI all contribute to a high liquidity stress score." },
@@ -783,14 +783,14 @@ const SECTIONS: Section[] = [
     id: "intelligence-hub",
     icon: Brain,
     title: "Intelligence Hub",
-    subtitle: "The unified entry point for all market intelligence",
+    subtitle: "The unified opening point for all market intelligence",
     color: "#00D4FF",
-    keywords: ["intelligence hub", "overview", "entry point", "summary", "hub"],
+    keywords: ["intelligence hub", "overview", "opening point", "summary", "hub"],
     content: (
       <div className="space-y-4">
         <Panel>
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            The <span className="text-cyan-400 font-bold">Intelligence Hub</span> is the unified entry point for the FAULTLINE platform. It surfaces the most important intelligence from across all engines in a single view — current regime, Seismograph state, top signals, active alerts, and the daily brief — so you can orient quickly before diving into any specific section.
+            The <span className="text-cyan-400 font-bold">Intelligence Hub</span> is the unified opening point for the FAULTLINE platform. It surfaces the most important intelligence from across all engines in a single view — current regime, Seismograph state, top signals, active alerts, and the daily brief — so you can orient quickly before diving into any specific section.
           </p>
         </Panel>
         <div className="space-y-1">
@@ -894,7 +894,7 @@ const SECTIONS: Section[] = [
             { name: "Regime-Signal Alignment", desc: "For each signal category (momentum, mean reversion, breakout, defensive, speculative), Signal Outlook shows how well that category has historically performed in the current regime." },
             { name: "Seismograph Context", desc: "The Seismograph's current evidence consensus and transition probability are injected into every outlook interpretation — so the assessment reflects not just the regime label but the full evidence picture." },
             { name: "Historical Follow-Through Rates", desc: "For the current regime, shows the historical percentage of signals in each category that resulted in positive outcomes over 5, 10, and 20 trading days." },
-            { name: "What to Avoid", desc: "Explicitly flags which signal types have historically underperformed in the current environment — helping users avoid strategies that are misaligned with prevailing conditions." },
+            { name: "Strained setups", desc: "Explicitly flags which signal types have historically underperformed in the current environment — helping users pass over strategies that are misaligned with prevailing conditions." },
           ].map(({ name, desc }) => (
             <Panel key={name} className="!p-3">
               <p className="text-[11px] font-mono text-emerald-400 font-bold mb-1">{name}</p>
@@ -1017,7 +1017,7 @@ const SECTIONS: Section[] = [
         </Panel>
         <div className="space-y-1">
           {[
-            { name: "BTC Dominance", desc: "Bitcoin's share of total crypto market capitalisation. Rising dominance = risk-off within crypto (capital consolidating into BTC). Falling dominance = risk-on (capital rotating into altcoins)." },
+            { name: "BTC Dominance", desc: "Bitcoin's share of total crypto market capitalisation. Rising dominance = lower-risk appetite within crypto (capital consolidating into BTC). Falling dominance = higher-risk appetite (capital rotating into altcoins)." },
             { name: "Crypto Regime Alignment", desc: "Shows how the current crypto market conditions align with the macro regime. In a high-pressure macro environment, crypto typically behaves as a risk asset — this section makes that relationship explicit." },
             { name: "Altcoin Season Indicator", desc: "Tracks whether altcoins are outperforming Bitcoin — a classic signal of speculative excess or risk appetite in the crypto market." },
             { name: "Macro-Crypto Correlation", desc: "Shows the rolling correlation between crypto and equities, bonds, and the dollar. High correlation = crypto is trading as a macro risk asset. Low correlation = crypto is trading on its own dynamics." },
@@ -1100,12 +1100,12 @@ const SECTIONS: Section[] = [
     title: "Opportunities",
     subtitle: "Regime-aligned opportunities — what the current environment favours",
     color: "#34D399",
-    keywords: ["opportunities", "regime opportunities", "what to buy", "what to avoid", "regime aligned"],
+    keywords: ["opportunities", "regime opportunities", "what to study", "strained setups", "regime aligned"],
     content: (
       <div className="space-y-4">
         <Panel accentColor="rgba(52,211,153,0.3)">
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            <span className="text-emerald-400 font-bold">Opportunities</span> surfaces asset classes, sectors, and strategies that have historically performed well in the current macro regime. It is not a buy list — it is a regime-aligned awareness tool that helps users understand which types of opportunities are most supported by the current environment.
+            <span className="text-emerald-400 font-bold">Opportunities</span> surfaces asset classes, sectors, and strategies that have historically performed well in the current macro regime. It is not a transaction list — it is a regime-aligned awareness tool that helps users understand which types of opportunities are most supported by the current environment.
           </p>
         </Panel>
         <div className="space-y-1">
@@ -1113,7 +1113,7 @@ const SECTIONS: Section[] = [
             { name: "Regime-Favoured Asset Classes", desc: "Which asset classes (equities, bonds, commodities, cash, crypto) have historically outperformed in the current regime, with historical return data." },
             { name: "Sector Opportunities", desc: "Which sectors are most aligned with the current regime based on historical sector rotation patterns." },
             { name: "Strategy Alignment", desc: "Which investment strategies (momentum, value, defensive, speculative) have the highest historical success rate in the current environment." },
-            { name: "What to Avoid", desc: "Asset classes, sectors, and strategies that have historically underperformed in the current regime — equally important as what to favour." },
+            { name: "Strained setups", desc: "Asset classes, sectors, and strategies that have historically underperformed in the current regime — equally important as what to favour." },
           ].map(({ name, desc }) => (
             <Panel key={name} className="!p-3">
               <p className="text-[11px] font-mono text-emerald-400 font-bold mb-1">{name}</p>
@@ -1212,7 +1212,7 @@ const SECTIONS: Section[] = [
           {[
             { name: "Today's Macro Catalysts", desc: "Economic data releases, Fed communications, and other macro events scheduled for today that could drive intraday volatility." },
             { name: "Regime Volatility Profile", desc: "How the current macro regime typically affects intraday volatility — whether to expect trending or mean-reverting conditions." },
-            { name: "Risk-On / Risk-Off Bias", desc: "The current macro bias — whether the environment favours risk-on (buy dips, momentum) or risk-off (sell rallies, defensive) intraday strategies." },
+            { name: "Appetite bias", desc: "The current macro bias — whether the environment favours a higher-risk appetite or a lower-risk appetite for the session." },
             { name: "Key Levels to Watch", desc: "Critical technical and macro levels that, if breached, would change the intraday macro narrative." },
           ].map(({ name, desc }) => (
             <Panel key={name} className="!p-3">
@@ -1272,8 +1272,8 @@ const SECTIONS: Section[] = [
         </Panel>
         <div className="space-y-1">
           {[
-            { name: "Trade Logging", desc: "Log any trade — entry, exit, size, and notes — with the current FAULTLINE macro context automatically attached." },
-            { name: "Macro Context Snapshot", desc: "Each journal entry automatically captures the regime, pressure score, Seismograph direction, and active alerts at the time of the trade." },
+            { name: "Trade Logging", desc: "Log any trade — opening, exit, size, and notes — with the current FAULTLINE macro context automatically attached." },
+            { name: "Macro Context Snapshot", desc: "Each journal record automatically captures the regime, pressure score, Seismograph direction, and active alerts at the time of the trade." },
             { name: "Performance Review", desc: "Review your trade history filtered by regime — see which macro environments your decisions have performed best and worst in." },
             { name: "Decision Quality Analysis", desc: "Over time, the journal helps you identify patterns between preparation quality and outcomes — without implying any checklist score predicts results." },
           ].map(({ name, desc }) => (
@@ -1422,7 +1422,7 @@ export default function Guide() {
       {showCinematic && (
         <div className="fixed inset-0 z-[9999]">
           {(() => {
-            // Dynamically require to avoid circular import issues
+            // Dynamically require to pass over circular import issues
             const CinematicIntroComp = require('../components/CinematicIntro').default;
             return (
               <CinematicIntroComp

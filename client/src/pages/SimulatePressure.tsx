@@ -57,7 +57,7 @@ const SLIDERS: SliderConfig[] = [
     key: 'hySpread', label: 'HY Credit Spread', sublabel: 'BAMLH0A0HYM2', unit: 'bps',
     min: 100, max: 1200, step: 10, defaultVal: 342, stressVal: 900,
     color: '#FF9500', category: 'credit',
-    description: 'Widening spreads signal credit market stress and risk-off sentiment.',
+    description: 'Widening spreads signal credit market stress and lower-risk appetite sentiment.',
     stressNote: 'Above 800bps: credit crunch, 2008-level distress',
   },
   {

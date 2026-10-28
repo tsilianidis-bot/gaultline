@@ -43,7 +43,7 @@ export interface PositionComment {
   ticker: string;
   name: string;
   assetType: "stock" | "crypto";
-  action: "HOLD" | "BUY" | "SELL" | "WATCH";
+  action: "KEEP" | "ACQUIRE" | "REDUCE" | "WATCH";
   currentPrice: number;
   dailyChange: number;
   unrealizedPnl: number;
@@ -58,7 +58,7 @@ export interface PositionComment {
 async function generatePositionCommentary(
   position: SimPortfolioValuation["positions"][0],
   pressure: FaultlinePressureOutput,
-  action: "HOLD" | "BUY" | "SELL",
+  action: "KEEP" | "ACQUIRE" | "REDUCE",
 ): Promise<string> {
   const pnlStr = position.unrealizedPnl >= 0
     ? `+$${position.unrealizedPnl.toFixed(2)} (+${position.unrealizedPnlPct.toFixed(2)}%)`
@@ -69,7 +69,7 @@ async function generatePositionCommentary(
 Position: ${position.ticker} (${position.name}) — ${position.assetType.toUpperCase()}
 Action Today: ${action}
 Current Price: $${position.currentPrice?.toFixed(2) ?? "N/A"}
-Entry Price: $${position.entryPrice.toFixed(2)}
+Opening Price: $${position.entryPrice.toFixed(2)}
 P&L: ${pnlStr}
 Original Signal: ${position.entrySignal ?? "N/A"}
 
@@ -79,7 +79,7 @@ FAULTLINE Context:
 - Top Alert: ${pressure.alerts[0]?.title ?? "None"}
 
 Write a concise, analytical commentary explaining:
-1. What the position did today relative to the entry thesis
+1. What the position did today relative to the opening thesis
 2. Whether FAULTLINE signals still support holding/selling
 3. What specific level or event would change the view
 
@@ -94,7 +94,7 @@ Be direct and data-driven. Reference specific FAULTLINE readings.`;
     });
     return (response.choices?.[0]?.message?.content as string) ?? `${action} ${position.ticker} — monitoring position against FAULTLINE pressure at ${pressure.overallPressure}/100.`;
   } catch {
-    return `${action} ${position.ticker} at $${position.currentPrice?.toFixed(2) ?? "N/A"}. P&L: ${pnlStr}. FAULTLINE pressure at ${pressure.overallPressure}/100 (${pressure.regime}) — ${action === "HOLD" ? "thesis intact" : "position closed"}.`;
+    return `${action} ${position.ticker} at $${position.currentPrice?.toFixed(2) ?? "N/A"}. P&L: ${pnlStr}. FAULTLINE pressure at ${pressure.overallPressure}/100 (${pressure.regime}) — ${action === "KEEP" ? "thesis intact" : "position closed"}.`;
   }
 }
 
@@ -115,14 +115,14 @@ export async function generateDailyJournal(
   // Build position comments
   const positionComments: PositionComment[] = [];
   for (const pos of valuation.positions) {
-    const action: "HOLD" | "BUY" | "SELL" = "HOLD"; // Default — engine will override for trades
+    const action: "KEEP" | "ACQUIRE" | "REDUCE" = "KEEP"; // Default — engine will override for trades
     const commentary = await generatePositionCommentary(pos, p, action);
 
     const faultlineAlignment = p.overallPressure >= 65
       ? `High pressure (${p.overallPressure}/100) creates headwinds — position sizing reduced`
       : p.overallPressure >= 45
       ? `Moderate pressure (${p.overallPressure}/100) — selective exposure appropriate`
-      : `Low pressure (${p.overallPressure}/100) supports risk-on positioning`;
+      : `Low pressure (${p.overallPressure}/100) supports higher-risk appetite positioning`;
 
     positionComments.push({
       ticker: pos.ticker,
@@ -148,7 +148,7 @@ export async function generateDailyJournal(
     .map(v => `${v.label}: ${v.score}/100 (${v.trend})`)
     .join("; ");
 
-  const macroPrompt = `You are FAULTLINE's portfolio journal writer. Write a 2-3 paragraph macro narrative for today's portfolio journal entry.
+  const macroPrompt = `You are FAULTLINE's portfolio journal writer. Write a 2-3 paragraph macro narrative for today's portfolio journal opening.
 
 DATE: ${today}
 FAULTLINE PRESSURE INDEX: ${p.overallPressure}/100
@@ -164,7 +164,7 @@ PORTFOLIO STATUS:
 - Open Positions: ${valuation.positions.length}
 - Trades Today: ${tradesSummary || "No trades executed"}
 
-Write a journal entry that:
+Write a journal opening that:
 1. Explains the current macro environment through FAULTLINE's lens
 2. Connects the pressure readings to portfolio positioning decisions
 3. References the historical analog and what it implies for near-term risk
@@ -178,7 +178,7 @@ Be specific, analytical, and reference exact numbers. This is a permanent record
   try {
     const macroResponse = await invokeLLM({
       messages: [
-        { role: "system", content: "You are FAULTLINE's portfolio journal writer. Generate precise, data-driven daily journal entries that prove the model's value." },
+        { role: "system", content: "You are FAULTLINE's portfolio journal writer. Generate precise, data-driven daily journal additions that prove the model's value." },
         { role: "user", content: macroPrompt },
       ],
     });
@@ -204,10 +204,10 @@ Be specific — name actual indicators, price levels, and FAULTLINE thresholds.`
 
     // Risk assessment
     riskAssessment = p.overallPressure >= 65
-      ? `ELEVATED RISK POSTURE: FAULTLINE pressure at ${p.overallPressure}/100 demands defensive positioning. Exposure reduced, stops tightened. Cash is a position.`
+      ? `ELEVATED RISK POSTURE: FAULTLINE pressure at ${p.overallPressure}/100 demands defensive positioning. Exposure reduced, downside marks tightened. Cash is a position.`
       : p.overallPressure >= 45
-      ? `MODERATE RISK POSTURE: FAULTLINE pressure at ${p.overallPressure}/100 warrants selective exposure. Maintaining core positions with standard stops.`
-      : `RISK-ON POSTURE: FAULTLINE pressure at ${p.overallPressure}/100 — low systemic stress supports full deployment. Monitoring for regime shifts.`;
+      ? `MODERATE RISK POSTURE: FAULTLINE pressure at ${p.overallPressure}/100 warrants selective exposure. Maintaining core positions with standard downside marks.`
+      : `HIGHER APPETITE POSTURE: FAULTLINE pressure at ${p.overallPressure}/100 — low systemic stress supports full deployment. Monitoring for regime shifts.`;
 
   } catch (err) {
     log.warn("[SimPortfolio] Journal LLM generation failed", { err: err as Error });

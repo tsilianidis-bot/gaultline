@@ -12,7 +12,7 @@ export default function PublicCryptoSignals() {
       ctaHref="/app/crypto-signals"
       accentColor="#A855F7"
       features={[
-        { icon: "◈", title: "Macro Regime Alignment", desc: "Digital assets classified against the current macro regime. See whether the risk-on cycle is building or breaking." },
+        { icon: "◈", title: "Macro Regime Alignment", desc: "Digital assets classified against the current macro regime. See whether the higher-risk appetite cycle is building or breaking." },
         { icon: "◎", title: "BTC Dominance Tracking", desc: "Monitor BTC dominance shifts as new data is published — the leading indicator of altcoin risk appetite and capital rotation." },
         { icon: "⬡", title: "Liquidity Conditions", desc: "Track liquidity conditions across digital assets. Know when the environment supports risk-taking and when it doesn't." },
         { icon: "◈", title: "Contagion Risk", desc: "Identify systemic contagion risk across the crypto ecosystem before it cascades from one asset class to another." },

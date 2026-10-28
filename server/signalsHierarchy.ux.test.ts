@@ -117,7 +117,9 @@ describe("Signal calculation / methodology untouched", () => {
     expect(outlook).toMatch(/-.*sentimentScore: social\?\.sentimentScore \?\? 0/);
     const outlookAdded = outlook.split("\n").filter(line => line.startsWith("+") && !line.startsWith("+++")).join("\n");
     expect(outlookAdded).toContain("Verified social composite is unavailable");
-    expect(outlookAdded).not.toMatch(/weight:\s*0\./);
+    const weightOf = (diffText: string) => [...diffText.matchAll(/weight:\s*(0\.\d+)/g)].map(match => match[1]).sort();
+    const outlookRemoved = outlook.split("\n").filter(line => line.startsWith("-") && !line.startsWith("---")).join("\n");
+    expect(weightOf(outlookAdded)).toEqual(weightOf(outlookRemoved));
     expect(outlookAdded).not.toMatch(/sentimentScore:.*\?\? 0/);
     // James authorized cryptoEngine null handling for a missing BTC dominance
     // (withheld, not 55), a missing total market cap, 24h volume, or 24h

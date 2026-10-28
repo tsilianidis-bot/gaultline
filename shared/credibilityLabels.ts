@@ -25,6 +25,7 @@
  */
 
 import { PROBABILITY_DISPLAY_TEXT, SYSTEMIC_REGIME_CALIBRATION, type CalibrationRecord } from "./probabilityContract";
+import { displayPosture } from "./surfaceClaims";
 
 /** Exact customer-facing disclosure when Systemic Regime probability fields are uncalibrated (#60 contract). */
 export const SYSTEMIC_REGIME_PROBABILITY_WITHHELD_TEXT =
@@ -147,7 +148,7 @@ export function headerRegimeChip(kind: "EQ" | "BTC", summary: HeaderRegimeInput 
   const when = computed ? ` Computed ${computed} (cached up to 10 min).` : "";
   if (kind === "EQ") {
     return {
-      regime,
+      regime: displayPosture(regime),
       tag: "RULE-BASED",
       title:
         "Rule-based equity regime label from the Pressure Index, credit/liquidity/Labor & Rates vectors and SPY daily moving averages (last close)." +
@@ -156,7 +157,7 @@ export function headerRegimeChip(kind: "EQ" | "BTC", summary: HeaderRegimeInput 
     };
   }
   return {
-    regime,
+    regime: displayPosture(regime),
     tag: "MACRO-IMPLIED",
     title:
       "Rule-based crypto cycle label inferred from the macro Pressure vectors only (no BTC price input)." +

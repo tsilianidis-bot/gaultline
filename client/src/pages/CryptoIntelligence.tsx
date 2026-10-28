@@ -402,7 +402,7 @@ function ActionCard({
 }) {
   const actionColor =
     action === "Add" || action === "Selective Add" ? "text-cyan-400 border-cyan-500/40 bg-cyan-500/10" :
-    action === "Hold" ? "text-slate-300 border-slate-500/40 bg-slate-500/10" :
+    action === "Keep" ? "text-slate-300 border-slate-500/40 bg-slate-500/10" :
     action === "Trim" ? "text-amber-400 border-amber-500/40 bg-amber-500/10" :
     action.includes("Reduce") ? "text-orange-400 border-orange-500/40 bg-orange-500/10" :
     "text-red-400 border-red-500/40 bg-red-500/10";
@@ -753,7 +753,7 @@ function CryptoIntelligenceInner() {
                   { label: "BTC Dominance", text: data.altcoinRisk.btcDominanceSignal },
                   { label: "Liquidity", text: data.altcoinRisk.liquiditySignal },
                   { label: "Stablecoin Supply", text: data.altcoinRisk.stablecoinSignal },
-                  { label: "Risk-On / Risk-Off", text: data.altcoinRisk.riskOnOffSignal },
+                  { label: "Higher appetite / Lower appetite", text: data.altcoinRisk.riskOnOffSignal },
                   { label: "Macro Pressure", text: data.altcoinRisk.macroPressureSignal },
                   { label: "Volatility", text: data.altcoinRisk.volatilitySignal },
                 ].map(({ label, text }) => (

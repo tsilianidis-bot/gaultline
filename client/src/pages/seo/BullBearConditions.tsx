@@ -19,7 +19,7 @@ const BullBearConditions = () => {
       accentColor="#00D4FF"
       features={[
         { icon: "◈", title: "Bull vs Bear Conditions", desc: "Understand the fundamental characteristics of bull and bear market conditions and what drives transitions." },
-        { icon: "◎", title: "FAULTLINE Regime Engine", desc: "Access FAULTLINE's regularly refreshed regime classification — bull, bear, risk-on, risk-off, late-cycle." },
+        { icon: "◎", title: "FAULTLINE Regime Engine", desc: "Access FAULTLINE's regularly refreshed regime classification — bull, bear, higher-risk appetite, lower-risk appetite, late-cycle." },
         { icon: "⬡", title: "Historical Turning Points", desc: "Compare current conditions with significant turning points in market history." },
         { icon: "◈", title: "Pressure Index Score", desc: "The 0-100 systemic risk score that shows where systemic pressure is building." },
         { icon: "◎", title: "Sentiment Shift Indicators", desc: "Context on the conditions that tend to accompany shifts in market sentiment." },

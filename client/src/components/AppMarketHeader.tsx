@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { hideBlankTickerDuplicates } from "@shared/customerIntegrityLabels";
 import { headerRegimeChip } from "@shared/credibilityLabels";
+import { displayPosture } from "@shared/surfaceClaims";
 
 export type MarketTickerDirection = "up" | "down" | "flat";
 
@@ -117,7 +118,7 @@ export default function AppMarketHeader({ items, intelligence, canonicalAvailabl
               flexShrink: 0,
             }}>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#8A9AB0", letterSpacing: "0.08em" }}>ALIGN</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: canonicalIntelligence.alignmentScore != null && canonicalIntelligence.alignmentScore > 65 ? "#6EE7B7" : canonicalIntelligence.alignmentScore != null && canonicalIntelligence.alignmentScore < 35 ? "#FCA5A5" : "#9CA3AF", letterSpacing: "0.06em" }}>{canonicalIntelligence.alignmentStatus}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: canonicalIntelligence.alignmentScore != null && canonicalIntelligence.alignmentScore > 65 ? "#6EE7B7" : canonicalIntelligence.alignmentScore != null && canonicalIntelligence.alignmentScore < 35 ? "#FCA5A5" : "#9CA3AF", letterSpacing: "0.06em" }}>{displayPosture(canonicalIntelligence.alignmentStatus)}</span>
             </div>
           )}
         </div>

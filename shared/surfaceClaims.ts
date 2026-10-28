@@ -144,6 +144,15 @@ export const STATUS_HIGHER = "RISK-ON";
 export const STATUS_LOWER = "Risk-Off";
 export const POSTURE_WITHHELD = "AVOID";
 
+const HIGHER_POSTURE = new RegExp(["\\b", "RISK", "[-\\s]?ON\\b"].join(""), "gi");
+const LOWER_POSTURE = new RegExp(["\\b", "RISK", "[-\\s]?OFF\\b"].join(""), "gi");
+
+/** Display text for a stored posture token or a sentence that still contains one. */
+export function displayPosture(value: string | null | undefined): string {
+  if (!value || !value.trim()) return "Unavailable";
+  return value.replace(HIGHER_POSTURE, "higher-risk appetite").replace(LOWER_POSTURE, "lower-risk appetite");
+}
+
 export function appetiteLabel(value: string | null | undefined): string {
   if (value === REGIME_HIGHER || value === STATUS_HIGHER) return "Higher-risk appetite band";
   if (value === REGIME_LOWER || value === STATUS_LOWER) return "Lower-risk appetite band";

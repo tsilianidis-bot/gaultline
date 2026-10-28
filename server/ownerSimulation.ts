@@ -34,7 +34,7 @@ const TARGET_VALUE = 1000000;
 
 // ── Objective types ───────────────────────────────────────────
 export const OBJECTIVE_TYPES = [
-  { id: "short_swing",       label: "Short-Term Swing Trade",     description: "1–5 day momentum plays with tight stops" },
+  { id: "short_swing",       label: "Short-Term Swing Trade",     description: "1–5 day momentum plays with tight downside marks" },
   { id: "long_position",     label: "Long-Term Position Build",   description: "2–12 month conviction holds" },
   { id: "crypto_momentum",   label: "Crypto Momentum Trade",      description: "Crypto rotation and momentum breakouts" },
   { id: "defensive",         label: "Defensive / Capital Preservation", description: "Protect capital in uncertain regimes" },
@@ -281,7 +281,7 @@ function scoreObjectiveFit(
     case "short_swing": {
       const confidence = typeof signal.confidence === "number" ? signal.confidence : null;
       if (typeof signal.technicals.rsiEstimate === "number" && signal.technicals.rsiEstimate > 40 && signal.technicals.rsiEstimate < 70 && signal.technicals.trend === "Uptrend")
-        return { fits: true, reason: "RSI in momentum zone with uptrend — ideal for swing entry" };
+        return { fits: true, reason: "RSI in momentum zone with uptrend — ideal for swing opening" };
       return { fits: confidence != null && confidence > 55, reason: confidence != null && confidence > 55 ? "Moderate confidence swing setup" : "Low confidence for short-term swing" };
     }
     case "long_position":
@@ -290,15 +290,15 @@ function scoreObjectiveFit(
       return { fits: pressure.overallPressure < 65, reason: pressure.overallPressure < 65 ? "Acceptable pressure for position build" : "High pressure — wait for regime improvement" };
     case "crypto_momentum":
       if (assetType !== "crypto") return { fits: false, reason: "Crypto momentum objective — stocks excluded" };
-      return { fits: signal.action === "BUY" && typeof signal.confidence === "number" && signal.confidence > 50, reason: typeof signal.confidence === "number" && signal.confidence > 50 ? "Crypto with buy signal" : "Weak crypto signal" };
+      return { fits: signal.action === "BUY" && typeof signal.confidence === "number" && signal.confidence > 50, reason: typeof signal.confidence === "number" && signal.confidence > 50 ? "Crypto with acquire signal" : "Weak crypto signal" };
     case "defensive":
       if (["SPY", "QQQ", "BTC", "ETH"].includes(ticker) && pressure.overallPressure < 60)
-        return { fits: true, reason: "Core asset in moderate-stress regime — defensive hold" };
+        return { fits: true, reason: "Core asset in moderate-stress regime — defensive keep" };
       return { fits: signal.technicals.trend !== "Downtrend" && pressure.overallPressure < 55, reason: "Acceptable for defensive positioning" };
     case "ai_tech_momentum":
       const aiTickers = ["NVDA", "AMD", "PLTR", "META", "MSFT", "IONQ", "SOUN", "RGTI", "QUBT"];
       if (!aiTickers.includes(ticker)) return { fits: false, reason: "Not in AI/tech universe for this objective" };
-      return { fits: signal.action === "BUY" && typeof signal.confidence === "number" && signal.confidence > 55, reason: "AI/tech ticker with buy signal" };
+      return { fits: signal.action === "BUY" && typeof signal.confidence === "number" && signal.confidence > 55, reason: "AI/tech ticker with acquire signal" };
     case "custom":
       return { fits: true, reason: "Custom objective — all opportunities shown" };
     default:
@@ -417,7 +417,7 @@ Labels must be chosen from: ["AI Bubble Exposure", "Momentum Breakout", "Oversol
       const parsed = JSON.parse(content);
       return {
         whyNow:       parsed.whyNow ?? "FAULTLINE signal alignment detected.",
-        invalidation: parsed.invalidation ?? "Break below stop-loss level.",
+        invalidation: parsed.invalidation ?? "Break below downside mark level.",
         keyRisks:     Array.isArray(parsed.keyRisks) ? parsed.keyRisks.slice(0, 3) : ["Market risk", "Regime shift", "Liquidity risk"],
         labels:       Array.isArray(parsed.labels) ? parsed.labels.slice(0, 3) : [],
       };
@@ -428,7 +428,7 @@ Labels must be chosen from: ["AI Bubble Exposure", "Momentum Breakout", "Oversol
   return {
     // The signal confidence is a heuristic, not calibrated: no figure in this customer-visible text.
     whyNow: `${ticker} shows ${signal.action} signal under ${pressure.regime} regime (confidence not established).`,
-    invalidation: `Break below stop-loss level invalidates the thesis.`,
+    invalidation: `Break below downside mark level invalidates the thesis.`,
     keyRisks: ["Market regime shift", "Liquidity deterioration", "Macro surprise"],
     labels: [signal.action === "BUY" ? "Momentum Breakout" : "Regime Aligned"],
   };
@@ -617,7 +617,7 @@ export async function buildCryptoOpportunity(
       ohlcBars: ohlcBars.length > 0 ? ohlcBars : undefined,
       btcDominance: globalStats?.btcDominance ?? null,
       regime: {
-        label: pressure.regime as "Bullish" | "Neutral" | "Defensive" | "Risk-Off",
+        label: pressure.regime as "Bullish" | "Neutral" | "Defensive" | "Lower appetite",
         score: pressure.overallPressure / 10,
       },
     };
@@ -885,7 +885,7 @@ export async function executeTrade(
       regimeAtEntry: pressure.regime,
       bullBearAtEntry: pressure.level,
       objective: objective?.objectiveType ?? null,
-      rationale: `${opportunity.whyNow} | Stop: $${opportunity.stopLoss.toFixed(2)} | T1: $${opportunity.targetOne.toFixed(2)}`,
+      rationale: `${opportunity.whyNow} | Downside mark: $${opportunity.stopLoss.toFixed(2)} | T1: $${opportunity.targetOne.toFixed(2)}`,
       status: "open",
     });
 
@@ -1123,17 +1123,17 @@ export async function generateOwnerJournal(
   try {
     const resp = await invokeLLM({
       messages: [
-        { role: "system", content: "You are FAULTLINE's simulation journal AI. Write a concise, analytical daily journal entry for the owner's simulation account. This is for research/educational purposes only." },
+        { role: "system", content: "You are FAULTLINE's simulation journal AI. Write a concise, analytical daily journal opening for the owner's simulation account. This is for research/educational purposes only." },
         {
           role: "user",
-          content: `Generate today's simulation journal entry:
+          content: `Generate today's simulation journal opening:
 DATE: ${today}
 OBJECTIVE: ${objectiveLabel}
 PORTFOLIO VALUE: $${portfolioValue.toFixed(2)}
 FAULTLINE REGIME: ${pressure.regime} (${pressure.overallPressure}/100)
 TRADES TODAY: ${tradesSummary}
 
-Write a JSON journal entry:
+Write a JSON journal opening:
 {
   "objectiveNotes": "1-2 sentences on how today's objective guided decisions",
   "tradesTaken": "summary of trades executed",
@@ -1244,7 +1244,7 @@ export async function getOptimalAction(
   const openPositionsSummary = positions.length === 0
     ? "No open positions — fully in cash."
     : positions.map(p =>
-        `${p.symbol} (${p.assetType}): ${p.quantity} units @ $${parseFloat(p.averageEntry.toString()).toFixed(2)} entry, stop $${parseFloat((p.stopLoss ?? "0").toString()).toFixed(2)}, target $${parseFloat((p.targetOne ?? "0").toString()).toFixed(2)}`
+        `${p.symbol} (${p.assetType}): ${p.quantity} units @ $${parseFloat(p.averageEntry.toString()).toFixed(2)} opening, downside mark $${parseFloat((p.stopLoss ?? "0").toString()).toFixed(2)}, upper mark $${parseFloat((p.targetOne ?? "0").toString()).toFixed(2)}`
       ).join("\n");
 
   const cashAvailable = accountValue - positions.reduce((sum, p) =>
@@ -1284,14 +1284,14 @@ OPEN POSITIONS:
 ${openPositionsSummary}
 
 Based on ALL of the above, what is the single most optimal action right now? Consider:
-1. Is the regime favorable for new entries or should cash be raised?
+1. Is the regime favorable for new additions or should cash be raised?
 2. Are any open positions at risk given current pressure scores?
 3. Is there a specific ticker/asset that stands out given the regime?
 4. What does the objective demand given current conditions?
 
 Return JSON:
 {
-  "actionType": "BUY|SELL|TRIM|HOLD|RAISE_CASH|HEDGE|REBALANCE|WAIT|ADD",
+  "actionType": "ACQUIRE|REDUCE|TRIM|KEEP|RAISE_CASH|HEDGE|REBALANCE|WAIT|ADD",
   "ticker": "ticker symbol or null",
   "assetType": "stock or crypto or null",
   "headline": "concise 8-12 word action headline",
@@ -1301,7 +1301,7 @@ Return JSON:
   "suggestedSize": "e.g. 5% of account ($5,000) or null",
   "entryZone": "price range or null",
   "stopLoss": "price or null",
-  "target": "price or null",
+  "upper mark": "price or null",
   "timeframe": "e.g. 1-3 days",
   "supportingSignals": ["signal 1", "signal 2", "signal 3"],
   "counterArguments": ["risk 1", "risk 2"]
@@ -1334,7 +1334,7 @@ Return JSON:
             required: [
               "actionType", "ticker", "assetType", "headline", "rationale",
               "confidence", "urgency", "suggestedSize", "entryZone", "stopLoss",
-              "target", "timeframe", "supportingSignals", "counterArguments",
+              "upper mark", "timeframe", "supportingSignals", "counterArguments",
             ],
             additionalProperties: false,
           },
@@ -1376,9 +1376,9 @@ Return JSON:
   return {
     actionType: fallbackAction,
     headline: pressure.overallPressure > 70
-      ? "Elevated pressure — preserve capital, reduce exposure"
-      : "Monitor conditions — no high-conviction entry yet",
-    rationale: `FAULTLINE pressure is currently ${pressure.overallPressure}/100 in a ${pressure.regime} regime. ${pressure.overallPressure > 70 ? "Elevated systemic risk suggests reducing exposure and raising cash until conditions stabilize." : "Conditions are moderate — maintain current positions and wait for higher-conviction setups."}`,
+      ? "Elevated pressure — the reading is in a higher-stress band"
+      : "Monitor conditions — no high-conviction opening yet",
+    rationale: `FAULTLINE pressure is currently ${pressure.overallPressure}/100 in a ${pressure.regime} regime. ${pressure.overallPressure > 70 ? "The pressure reading is in a higher-stress band until it stabilizes." : "Conditions are moderate — the current positions stay on record."}`,
     confidence: 55,
     urgency: pressure.overallPressure > 70 ? "HIGH" : "LOW",
     timeframe: "1-3 days",

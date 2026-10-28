@@ -109,9 +109,9 @@ function defaultExplanation(light: DecisionLight, family: ReturnType<typeof clas
       : `Canonical regime, evidence, and confirmation support ${action}.`;
   }
   if (light === "YELLOW") {
-    return `Opportunity in ${action} exists alongside pressure, fragility, or conflict. Reduce exposure and tighten controls.`;
+    return `Opportunity in ${action} exists alongside pressure, fragility, or conflict. Tighten controls.`;
   }
-  return `Material conflict between ${action} and the canonical state, risk, or invalidation set. Avoid the move.`;
+  return `Material conflict between ${action} and the canonical state, risk, or invalidation set. Pass over the move.`;
 }
 
 export function evaluateDecisionLight(input: DecisionLightEvidence): DecisionLightOutput {

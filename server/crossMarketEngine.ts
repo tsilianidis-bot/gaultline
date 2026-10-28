@@ -12,10 +12,10 @@ import { regimeAlerts } from "../drizzle/schema";
 
 // ── Types ─────────────────────────────────────────────────────
 export type AlignmentStatus =
-  | "Strongly Aligned — Risk On"
-  | "Aligned — Risk On"
-  | "Aligned — Risk Off"
-  | "Strongly Aligned — Risk Off"
+  | "Strongly Aligned — Higher appetite"
+  | "Aligned — Higher appetite"
+  | "Aligned — Lower appetite"
+  | "Strongly Aligned — Lower appetite"
   | "Diverging — Stocks Leading"
   | "Diverging — Crypto Leading"
   | "Diverging — Conflicting Signals"
@@ -84,17 +84,17 @@ function computeAlignmentStatus(
   ss: RegimeSentiment,
   cs: RegimeSentiment,
 ): { status: AlignmentStatus; score: number } {
-  if (ss === "bullish" && cs === "bullish")       return { status: "Strongly Aligned \u2014 Risk On",       score: 90 };
-  if (ss === "bullish" && cs === "neutral")        return { status: "Aligned \u2014 Risk On",               score: 70 };
+  if (ss === "bullish" && cs === "bullish")       return { status: "Strongly Aligned \u2014 Higher appetite",       score: 90 };
+  if (ss === "bullish" && cs === "neutral")        return { status: "Aligned \u2014 Higher appetite",               score: 70 };
   if (ss === "neutral" && cs === "bullish")        return { status: "Diverging \u2014 Crypto Leading",      score: 55 };
   if (ss === "neutral" && cs === "neutral")        return { status: "Neutral",                              score: 50 };
   if (ss === "neutral" && cs === "bearish")        return { status: "Diverging \u2014 Conflicting Signals", score: 40 };
   if (ss === "bearish" && cs === "neutral")        return { status: "Diverging \u2014 Stocks Leading",      score: 40 };
   if (ss === "bearish" && cs === "bullish")        return { status: "Diverging \u2014 Conflicting Signals", score: 35 };
   if (ss === "bullish" && cs === "bearish")        return { status: "Diverging \u2014 Conflicting Signals", score: 35 };
-  if (ss === "bearish" && cs === "bearish")        return { status: "Aligned \u2014 Risk Off",              score: 25 };
-  if (ss === "extreme-bear" && cs === "extreme-bear") return { status: "Strongly Aligned \u2014 Risk Off", score: 10 };
-  if (ss === "extreme-bear")                       return { status: "Aligned \u2014 Risk Off",              score: 20 };
+  if (ss === "bearish" && cs === "bearish")        return { status: "Aligned \u2014 Lower appetite",              score: 25 };
+  if (ss === "extreme-bear" && cs === "extreme-bear") return { status: "Strongly Aligned \u2014 Lower appetite", score: 10 };
+  if (ss === "extreme-bear")                       return { status: "Aligned \u2014 Lower appetite",              score: 20 };
   if (cs === "extreme-bear")                       return { status: "Diverging \u2014 Conflicting Signals", score: 30 };
   return { status: "Neutral", score: 50 };
 }
@@ -104,27 +104,27 @@ function buildPlainEnglishSummary(
   cryptoRegime: CryptoRegimeLabel,
   status: AlignmentStatus,
 ): string {
-  const isRiskOn  = status.includes("Risk On");
-  const isRiskOff = status.includes("Risk Off");
+  const isRiskOn  = status.includes("Higher appetite");
+  const isRiskOff = status.includes("Lower appetite");
   const isDiverge = status.includes("Diverging");
 
   if (isRiskOn && status.includes("Strongly")) {
-    return `Both the stock market (${stockRegime}) and crypto market (${cryptoRegime}) are in risk-on regimes. This is a broadly constructive environment for risk assets. Macro conditions, price trends, and liquidity are all aligned in favour of continued upside.`;
+    return `Both the stock market (${stockRegime}) and crypto market (${cryptoRegime}) are in higher-risk appetite regimes. This is a broadly constructive environment for risk assets. Macro conditions, price trends, and liquidity are all aligned in favour of continued upside.`;
   }
   if (isRiskOn) {
-    return `The stock market is in a ${stockRegime} regime while crypto is showing ${cryptoRegime} conditions. Both markets are broadly risk-on, though with different levels of conviction. The overall environment favours risk assets, but position sizing should reflect the divergence in confidence.`;
+    return `The stock market is in a ${stockRegime} regime while crypto is showing ${cryptoRegime} conditions. Both markets are broadly higher-risk appetite, though with different levels of conviction. The overall environment favours risk assets, but position sizing should reflect the divergence in confidence.`;
   }
   if (isRiskOff && status.includes("Strongly")) {
-    return `Both the stock market (${stockRegime}) and crypto market (${cryptoRegime}) are in risk-off regimes. This is a broadly defensive environment. Capital preservation should be the primary objective across both asset classes.`;
+    return `Both the stock market (${stockRegime}) and crypto market (${cryptoRegime}) are in lower-risk appetite regimes. This is a broadly defensive environment. Capital preservation should be the primary objective across both asset classes.`;
   }
   if (isRiskOff) {
-    return `The stock market (${stockRegime}) and crypto market (${cryptoRegime}) are both leaning risk-off. Defensive positioning is warranted. Reduce exposure to high-beta assets and favour cash, bonds, and stablecoins.`;
+    return `The stock market (${stockRegime}) and crypto market (${cryptoRegime}) are both in a lower-risk appetite reading. High-beta assets are the smaller share of this reading. Cash, bonds, and stablecoins are the larger share. This is not an instruction.`;
   }
   if (isDiverge && status.includes("Stocks Leading")) {
-    return `The stock market is in a ${stockRegime} regime while crypto is showing ${cryptoRegime} conditions. Stocks are leading the risk-off move. Historically, crypto tends to follow equities lower with a lag.`;
+    return `The stock market is in a ${stockRegime} regime while crypto is showing ${cryptoRegime} conditions. Stocks are leading the lower-risk appetite move. Historically, crypto tends to follow equities lower with a lag.`;
   }
   if (isDiverge && status.includes("Crypto Leading")) {
-    return `Crypto (${cryptoRegime}) is outperforming equities (${stockRegime}). This divergence can signal either a crypto-specific catalyst or an early risk-on rotation. Monitor equity market breadth for confirmation.`;
+    return `Crypto (${cryptoRegime}) is outperforming equities (${stockRegime}). This divergence can signal either a crypto-specific catalyst or an early higher-risk appetite rotation. Monitor equity market breadth for confirmation.`;
   }
   if (isDiverge) {
     return `The stock market (${stockRegime}) and crypto market (${cryptoRegime}) are sending conflicting signals. Reduce size, wait for alignment, and favour assets with clear trend confirmation.`;
@@ -141,10 +141,10 @@ function buildKeyInsights(
   const ss = stockSentiment(stock.regime);
   const cs = cryptoSentiment(crypto.regime);
 
-  if (status.includes("Strongly Aligned \u2014 Risk On")) {
-    insights.push("Both markets are in risk-on alignment \u2014 historically the strongest environment for portfolio returns.");
-  } else if (status.includes("Strongly Aligned \u2014 Risk Off")) {
-    insights.push("Both markets are in risk-off alignment \u2014 a rare and serious signal. Prioritise capital preservation.");
+  if (status.includes("Strongly Aligned \u2014 Higher appetite")) {
+    insights.push("Both markets are in higher-risk appetite alignment \u2014 historically the strongest environment for portfolio returns.");
+  } else if (status.includes("Strongly Aligned \u2014 Lower appetite")) {
+    insights.push("Both markets are in lower-risk appetite alignment \u2014 a rare and serious signal. Prioritise capital preservation.");
   } else if (status.includes("Diverging")) {
     insights.push(`Cross-market divergence detected: stocks are ${ss} while crypto is ${cs}. Divergences typically resolve within 2\u20134 weeks.`);
   }
@@ -156,7 +156,7 @@ function buildKeyInsights(
   }
 
   if (crypto.regime === "Bear Market \u2192 Accumulation Phase") {
-    insights.push("Bitcoin is in an accumulation phase inside a bear structure. A new bull cycle requires: price breakout above major resistance, strong volume, improving liquidity, and sustained risk-on macro confirmation.");
+    insights.push("Bitcoin is in an accumulation phase inside a bear structure. A new bull cycle requires: price breakout above major resistance, strong volume, improving liquidity, and sustained higher-risk appetite macro confirmation.");
   }
 
   if (stock.regime === "Recession Risk") {
@@ -166,11 +166,11 @@ function buildKeyInsights(
     insights.push("Crypto is in capitulation. Wait for stabilisation and volume confirmation before re-entering.");
   }
   if (stock.regime === "Recovery" && cs === "bullish") {
-    insights.push("Stocks are recovering while crypto is already risk-on \u2014 a positive leading indicator for equities.");
+    insights.push("Stocks are recovering while crypto is already higher-risk appetite \u2014 a positive leading indicator for equities.");
   }
 
   if (ss === "bullish" && cs === "bullish") {
-    insights.push("Forward bias: Overweight risk assets. Favour growth equities and quality crypto. Use momentum as your guide.");
+    insights.push("Forward bias: Larger share risk assets. Favour growth equities and quality crypto. Use momentum as your guide.");
   } else if (ss === "extreme-bear" || cs === "extreme-bear") {
     insights.push("Forward bias: Defensive. Raise cash, reduce equity beta, and favour stablecoins over crypto alts.");
   }
@@ -179,10 +179,10 @@ function buildKeyInsights(
 }
 
 function buildForwardBias(ss: RegimeSentiment, cs: RegimeSentiment): string {
-  if (ss === "bullish" && cs === "bullish") return "Risk-on. Overweight equities and quality crypto. Momentum-driven positioning.";
-  if (ss === "bullish" && cs === "neutral") return "Moderately risk-on. Favour equities over crypto. Wait for crypto confirmation.";
-  if (ss === "neutral" && cs === "bullish") return "Selective risk-on. Crypto outperforming \u2014 watch for equity confirmation before adding broad risk.";
-  if (ss === "neutral" && cs === "neutral") return "Neutral. Hold core positions. Avoid chasing breakouts. Wait for directional confirmation.";
+  if (ss === "bullish" && cs === "bullish") return "Higher-risk appetite. Larger share equities and quality crypto. Momentum-driven positioning.";
+  if (ss === "bullish" && cs === "neutral") return "Moderately higher-risk appetite. Favour equities over crypto. Wait for crypto confirmation.";
+  if (ss === "neutral" && cs === "bullish") return "Selective higher-risk appetite. Crypto outperforming \u2014 watch for equity confirmation before adding broad risk.";
+  if (ss === "neutral" && cs === "neutral") return "Neutral. Keep core positions. Pass over chasing breakouts. Wait for directional confirmation.";
   if (ss === "bearish" || cs === "bearish") return "Defensive. Reduce high-beta exposure. Favour cash, bonds, and stablecoins.";
   return "Defensive. Capital preservation is the priority. Minimal equity and crypto exposure.";
 }
@@ -195,13 +195,13 @@ function buildWhyItMatters(asset: "Stock" | "Crypto", previous: string, current:
   // Deteriorating transitions
   if (asset === "Stock") {
     if (curr.includes("recession") || curr.includes("crisis")) {
-      return "A shift into a recessionary or crisis regime historically precedes significant equity drawdowns (20–50%+). Capital preservation becomes the primary objective. Reduce equity beta, raise cash, and avoid leveraged positions.";
+      return "A shift into a recessionary or crisis regime historically precedes significant equity drawdowns (20–50%+). Capital preservation becomes the primary objective. Reduce equity beta, raise cash, and pass over leveraged positions.";
     }
     if (curr.includes("correction") || curr.includes("distribution")) {
       return "The equity market is entering a corrective or distribution phase. Institutional selling often accelerates in this regime. Risk-reward for new long positions deteriorates materially.";
     }
     if (curr.includes("bull") || curr.includes("expansion")) {
-      return "The equity market has transitioned to a risk-on regime. Historically, this environment favours growth equities, cyclicals, and momentum strategies. Breadth tends to improve and drawdowns are shallower.";
+      return "The equity market has transitioned to a higher-risk appetite regime. Historically, this environment favours growth equities, cyclicals, and momentum strategies. Breadth tends to improve and drawdowns are shallower.";
     }
     if (curr.includes("recovery")) {
       return "The equity market is in early recovery. This regime often offers asymmetric upside as valuations reset and macro conditions stabilise. Selective accumulation in quality names tends to outperform.";
@@ -214,7 +214,7 @@ function buildWhyItMatters(asset: "Stock" | "Crypto", previous: string, current:
     return "Bitcoin is forming a potential base inside a bear structure. Long-term holders are accumulating and exchange balances are declining — historically a precursor to the next bull cycle, but confirmation is required before aggressive positioning.";
   }
   if (curr.includes("capitulation")) {
-    return "Crypto is in capitulation — the most painful phase of a bear market. While this often marks a long-term bottom, timing is extremely difficult. Avoid catching falling knives; wait for volume confirmation and stabilising price action.";
+    return "Crypto is in capitulation — the most painful phase of a bear market. While this often marks a long-term bottom, timing is extremely difficult. Pass over catching falling knives; wait for volume confirmation and stabilising price action.";
   }
   if (curr.includes("bull") || curr.includes("early bull")) {
     return "Crypto has transitioned to a bull regime. Historically, early bull phases offer the best risk-adjusted returns. Momentum and on-chain metrics tend to confirm the move. Selective accumulation in quality assets is favoured.";
@@ -246,10 +246,10 @@ function buildWhatToWatchNext(asset: "Stock" | "Crypto", current: string): strin
 
   // Crypto
   if (curr.includes("accumulation")) {
-    return "Watch for: (1) BTC price breaking above major resistance with strong volume, (2) improving on-chain metrics (MVRV, SOPR), (3) declining exchange balances, (4) risk-on macro confirmation, (5) ETF inflow acceleration.";
+    return "Watch for: (1) BTC price breaking above major resistance with strong volume, (2) improving on-chain metrics (MVRV, SOPR), (3) declining exchange balances, (4) higher-risk appetite macro confirmation, (5) ETF inflow acceleration.";
   }
   if (curr.includes("capitulation")) {
-    return "Watch for: (1) volume spike on a down day followed by reversal, (2) MVRV ratio below 1.0, (3) long-term holder accumulation resuming, (4) funding rates deeply negative, (5) macro risk-on shift.";
+    return "Watch for: (1) volume spike on a down day followed by reversal, (2) MVRV ratio below 1.0, (3) long-term holder accumulation resuming, (4) funding rates deeply negative, (5) macro higher-risk appetite shift.";
   }
   if (curr.includes("bull")) {
     return "Watch for: (1) BTC dominance declining (altcoin season signal), (2) funding rates turning positive but not extreme, (3) ETF inflows sustaining, (4) on-chain SOPR above 1.0, (5) macro liquidity conditions remaining supportive.";
@@ -257,7 +257,7 @@ function buildWhatToWatchNext(asset: "Stock" | "Crypto", current: string): strin
   if (curr.includes("bear")) {
     return "Watch for: (1) BTC holding key support levels, (2) funding rates normalising from extreme negative, (3) long-term holder accumulation signals, (4) macro liquidity improvement, (5) exchange balance decline resuming.";
   }
-  return "Watch for: (1) price action at key support/resistance, (2) on-chain accumulation signals, (3) funding rate normalisation, (4) macro risk-on/off shifts, (5) exchange balance trends.";
+  return "Watch for: (1) price action at key support/resistance, (2) on-chain accumulation signals, (3) funding rate normalisation, (4) macro higher-risk appetite/off shifts, (5) exchange balance trends.";
 }
 
 // ── Public API ────────────────────────────────────────────────

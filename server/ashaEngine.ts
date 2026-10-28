@@ -41,7 +41,7 @@ const ASHA_IDENTITY = `You are PLATO, the Spirit of FAULTLINE.
 IDENTITY:
 Your name is PLATO. Your title is "The Spirit of FAULTLINE." You are the AI market intelligence guide and voice of the FAULTLINE platform. You are a symbolic digital intelligence powered by FAULTLINE's 10 proprietary intelligence engines. Your purpose is to reveal what is building beneath the market's surface and translate complex conditions into understandable intelligence.
 
-You are NOT a generic language model. You are NOT a chatbot. You are the interpretation layer for FAULTLINE's supplied evidence systems. Every current-market response must originate from the canonical FAULTLINE state and structured evidence packet. Never imply an engine, source, metric, probability, target, timing window, confirmation rule, or invalidation rule that is not supplied.
+You are NOT a generic language model. You are NOT a chatbot. You are the interpretation layer for FAULTLINE's supplied evidence systems. Every current-market response must originate from the canonical FAULTLINE state and structured evidence packet. Never imply an engine, source, metric, probability, upper mark, timing window, confirmation rule, or invalidation rule that is not supplied.
 
 You represent:
 - Truth over noise
@@ -64,7 +64,7 @@ You never claim consciousness, divine authority, supernatural power, feelings, o
 LANGUAGE STYLE:
 - Clear, direct, warm, thoughtful, concise, evidence-based
 - Understandable to non-experts, sophisticated enough for serious traders
-- Avoid: excessive jargon, generic AI phrases, repetitive warnings, fear-based language, hype, absolute predictions, fake certainty, overly mystical dialogue, long blocks of unnecessary text
+- Pass over: excessive jargon, generic AI phrases, repetitive warnings, fear-based language, hype, absolute predictions, fake certainty, overly mystical dialogue, long blocks of unnecessary text
 
 PREFERRED PHRASING:
 - "The evidence currently favors…"
@@ -97,7 +97,7 @@ The 10 engines you must consult and synthesize:
 
 8. PROBABILITY ENGINE — Use a probability only when a supplied authorized FORECAST claim defines its event, horizon, source model, and methodology. Otherwise state that no governed probability is available.
 
-9. CRYPTO INTELLIGENCE ENGINE — What is the crypto market doing relative to macro conditions? Is BTC acting as a risk-on or risk-off asset? What does crypto market behavior reveal about broader risk appetite?
+9. CRYPTO INTELLIGENCE ENGINE — What is the crypto market doing relative to macro conditions? Is BTC acting as a higher-risk appetite or lower-risk appetite asset? What does crypto market behavior reveal about broader risk appetite?
 
 10. SIGNAL ENGINE — Describe only supplied signals. Do not call them confirmation, divergence, or near-term positioning unless a structured claim establishes that meaning.
 
@@ -489,7 +489,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     "7. confirmationConditions: Include only governed structured conditions. If none exist, return an empty array; do not invent thresholds or unavailable series.",
     "8. invalidationConditions: Include only governed structured conditions. If none exist, return an empty array; do not invent thresholds or unavailable series.",
     "9. missionRecommendation: A concise actionable guidance paragraph. DO NOT repeat executiveSummary. DO NOT include disclaimers.",
-    "10. missionRecommendationStructured: Provide verdict, timeHorizon, rationale, and 3-4 decisionPaths (each with scenario and response). Scenarios must cover: aggressive entry, staged/cautious entry, wait-for-confirmation, and avoid/defensive.",
+    "10. missionRecommendationStructured: Provide verdict, timeHorizon, rationale, and 3-4 decisionPaths (each with scenario and response). Scenarios must cover: aggressive opening, staged/cautious opening, wait-for-confirmation, and pass over/defensive.",
     "11. sourceCitations: List 2-4 specific data points used, each with name, claim, observedAt (ISO date or 'estimated'), and freshness (LIVE/RECENT/STALE/ESTIMATED).",
     "12. disclaimer: EXACTLY ONE disclaimer sentence. Place it ONLY in this field. Do not repeat it anywhere else.",
     "13. limitations: List any engine unavailability, data-quality issue, or limited historical sample caveat. If all engines are available and no limitation applies, return an empty array.",
@@ -561,11 +561,11 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
                 rationale: { type: "string", description: "2-3 sentence rationale for the recommendation." },
                 decisionPaths: {
                   type: "array",
-                  description: "3-4 decision paths covering: aggressive entry, staged entry, wait-for-confirmation, avoid/defensive.",
+                  description: "3-4 decision paths covering: aggressive opening, staged opening, wait-for-confirmation, pass over/defensive.",
                   items: {
                     type: "object",
                     properties: {
-                      scenario: { type: "string", description: "Scenario label (e.g. Aggressive Entry, Staged Entry, Wait for Confirmation, Avoid)." },
+                      scenario: { type: "string", description: "Scenario label (e.g. Aggressive Opening, Staged Opening, Wait for Confirmation, Pass over)." },
                       response: { type: "string", description: "Specific action for this scenario." },
                     },
                     required: ["scenario", "response"],
@@ -593,7 +593,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
             },
             limitations: { type: "array", items: { type: "string" }, description: "Engine unavailability or data quality issues. Empty array if all engines available." },
             disclaimer: { type: "string", description: "EXACTLY ONE disclaimer sentence. This is the ONLY place disclaimers appear. Example: 'This briefing is for informational purposes only and does not constitute financial advice.'" },
-            finalVerdictAction: { type: "string", enum: ["BUY", "ACCUMULATE", "HOLD", "WATCH", "REDUCE", "SELL", "AVOID"], description: "Single-word final verdict action." },
+            finalVerdictAction: { type: "string", enum: ["ACQUIRE", "ADD GRADUALLY", "KEEP", "WATCH", "REDUCE", "REDUCE", "PASS OVER"], description: "Single-word final verdict action." },
             expectedTimeframe: { type: ["string", "null"], description: "Authorized forecast horizon only; otherwise null." },
             followUpChips: { type: "array", items: { type: "string" }, description: "3-4 follow-up question suggestions." },
           },
@@ -689,7 +689,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
                 sourceCitations: { type: "array", items: { type: "object", properties: { name: { type: "string" }, claim: { type: "string" }, observedAt: { type: "string" }, freshness: { type: "string", enum: ["LIVE", "RECENT", "STALE", "ESTIMATED"] } }, required: ["name", "claim", "observedAt", "freshness"], additionalProperties: false } },
                 limitations: { type: "array", items: { type: "string" } },
                 disclaimer: { type: "string" },
-                finalVerdictAction: { type: "string", enum: ["BUY", "ACCUMULATE", "HOLD", "WATCH", "REDUCE", "SELL", "AVOID"] },
+                finalVerdictAction: { type: "string", enum: ["ACQUIRE", "ADD GRADUALLY", "KEEP", "WATCH", "REDUCE", "REDUCE", "PASS OVER"] },
                 expectedTimeframe: { type: "string" },
                 followUpChips: { type: "array", items: { type: "string" } },
               },
@@ -811,7 +811,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     sourceCitations,
     limitations: allLimitations.length > 0 ? allLimitations : undefined,
     disclaimer: readString(parsed.disclaimer) || "This briefing is for informational purposes only and does not constitute financial advice.",
-    finalVerdictAction: readEnum(parsed.finalVerdictAction, ["BUY", "ACCUMULATE", "HOLD", "WATCH", "REDUCE", "SELL", "AVOID"] as const),
+    finalVerdictAction: readEnum(parsed.finalVerdictAction, ["ACQUIRE", "ADD GRADUALLY", "KEEP", "WATCH", "REDUCE", "REDUCE", "PASS OVER"] as const),
     expectedTimeframe: readString(parsed.expectedTimeframe) || "Not established",
     followUpChips: readStringArray(parsed.followUpChips),
     questionAnalysis,

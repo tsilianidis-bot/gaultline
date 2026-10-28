@@ -23,7 +23,7 @@ NVIDIA's reported results reflect its market position: revenue grew from $27.0 b
 NVIDIA is often discussed alongside AI infrastructure spending because its processors are widely used to train and run models. This page does not turn that business description into an exposure rating.`}
       signalAnalysis={`FAULTLINE classifies NVDA's signal based on three primary inputs: macro regime alignment, AI narrative momentum, and technical structure.
 
-Macro Regime Alignment: NVDA performs best in LOW RISK macro environments characterized by expanding liquidity, risk-on sentiment, and growth outperforming value. In HIGH STRESS environments (FAULTLINE Pressure Index 65+), NVDA's high valuation multiple creates significant downside risk as investors rotate from growth to defensive assets.
+Macro Regime Alignment: NVDA performs best in LOW RISK macro environments characterized by expanding liquidity, higher-risk appetite sentiment, and growth outperforming value. In HIGH STRESS environments (FAULTLINE Pressure Index 65+), NVDA's high valuation multiple creates significant downside risk as investors rotate from growth to defensive assets.
 
 AI Narrative Momentum: NVDA's revenue and valuation are directly tied to AI infrastructure spending by hyperscalers (Microsoft, Amazon, Google, Meta). When AI capex guidance from these companies is strong and rising, NVDA's forward estimates expand and the stock outperforms. When AI capex guidance disappoints or shows signs of peaking, NVDA's forward estimates compress rapidly.
 
@@ -43,7 +43,7 @@ Stop-Loss Levels: FAULTLINE does not publish price targets or support/resistance
 
 1. AI Capex Cycle Peak Risk: NVDA's extraordinary revenue growth depends on continued massive AI infrastructure investment by hyperscalers. If AI capex growth decelerates — due to ROI concerns, economic slowdown, or strategic pivots — NVDA's forward estimates would compress rapidly.
 
-2. Valuation Multiple Compression: NVDA has historically traded at a premium to the broader market. In a risk-off environment, high-multiple growth stocks experience multiple compression — the P/E ratio falls even if earnings remain stable, causing the stock price to decline.
+2. Valuation Multiple Compression: NVDA has historically traded at a premium to the broader market. In a lower-risk appetite environment, high-multiple growth stocks experience multiple compression — the P/E ratio falls even if earnings remain stable, causing the stock price to decline.
 
 3. Competition from Custom Silicon: Microsoft (Maia), Google (TPU), Amazon (Trainium), and Meta are all developing custom AI chips to reduce dependence on NVIDIA. If custom silicon adoption accelerates, NVDA's market share and pricing power could erode.
 

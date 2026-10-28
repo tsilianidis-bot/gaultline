@@ -38,7 +38,7 @@ import { completedCoinDailyBars, type CoinMarketData, type CoinOHLCBar } from ".
 export type { TradingAction };
 
 /** Crypto-specific regime label (separate from equity regime). */
-export type CryptoRegimeLabel = "Bullish" | "Neutral" | "Defensive" | "Risk-Off";
+export type CryptoRegimeLabel = "Bullish" | "Neutral" | "Defensive" | "Lower appetite";
 
 export interface CryptoSignalResult {
   symbol: string;
@@ -246,17 +246,17 @@ function computeCryptoPriceLevels(
   const rrFromTradeStop = tradeRisk > 0 ? parseFloat((Math.abs(targetPrice - entryZone) / tradeRisk).toFixed(1)) : 0;
 
   const riskLevels: import('./tradingSignals').RiskLevels = {
-    tradeStop: { price: tradeStopPrice, pctFromEntry: tradeStopPct, label: "Trade Stop" },
-    swingStop: { price: swingStopPrice, pctFromEntry: swingStopPct, label: "Swing Stop" },
+    tradeStop: { price: tradeStopPrice, pctFromEntry: tradeStopPct, label: "Trade Downside mark" },
+    swingStop: { price: swingStopPrice, pctFromEntry: swingStopPct, label: "Swing Downside mark" },
     thesisFailure: { price: thesisPrice, pctFromEntry: thesisPct, label: "Thesis Failure" },
     riskReward: rrFromTradeStop,
-    tradeStopExplanation: `Trade Stop at ${Math.abs(tradeStopPct).toFixed(1)}% below entry, just under recent intraday support. Protects against normal crypto volatility for active traders.`,
+    tradeStopExplanation: `Trade Downside mark at ${Math.abs(tradeStopPct).toFixed(1)}% below opening, just under recent intraday support. Protects against normal crypto volatility for active traders.`,
     swingStopExplanation: ohlcBars && ohlcBars.length >= 20
-      ? `Swing Stop anchored to the 20-day moving average (${Math.abs(swingStopPct).toFixed(1)}% below entry). A close below signals the short-term trend is broken.`
-      : `Swing Stop at ${Math.abs(swingStopPct).toFixed(1)}% below entry allows for trend fluctuations while protecting against a sustained breakdown.`,
+      ? `Swing Downside mark anchored to the 20-day moving average (${Math.abs(swingStopPct).toFixed(1)}% below opening). A close below signals the short-term trend is broken.`
+      : `Swing Downside mark at ${Math.abs(swingStopPct).toFixed(1)}% below opening allows for trend fluctuations while protecting against a sustained breakdown.`,
     thesisFailureExplanation: ohlcBars && ohlcBars.length >= 50
-      ? `Thesis Failure marks the 50-session structural low (${Math.abs(thesisPct).toFixed(1)}% below entry). A breach here means the bullish thesis has fundamentally broken down.`
-      : `Thesis Failure at ${Math.abs(thesisPct).toFixed(1)}% below entry is the structural invalidation point — where the original trade thesis is no longer valid.`,
+      ? `Thesis Failure marks the 50-session structural low (${Math.abs(thesisPct).toFixed(1)}% below opening). A breach here means the bullish thesis has fundamentally broken down.`
+      : `Thesis Failure at ${Math.abs(thesisPct).toFixed(1)}% below opening is the structural invalidation point — where the original trade thesis is no longer valid.`,
   };
 
   return { support, resistance, entryZone, stopLoss, targetPrice, riskReward, atr: parseFloat(atr.toFixed(8)), riskLevels };
@@ -331,7 +331,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
       assetClass: "CRYPTO",
       action: "WATCH",
       actionLabel: "Unavailable",
-      cryptoRegime: regime.score < 3.5 ? "Bullish" : regime.score < 5.5 ? "Neutral" : regime.score < 7.5 ? "Defensive" : "Risk-Off",
+      cryptoRegime: regime.score < 3.5 ? "Bullish" : regime.score < 5.5 ? "Neutral" : regime.score < 7.5 ? "Defensive" : "Lower appetite",
       regimeConflict: false,
       regimeConflictExplanation: null,
       confidence: null,
@@ -530,7 +530,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
   const cryptoRegime: CryptoRegimeLabel =
     regime.score < 3.5 ? "Bullish" :
     regime.score < 5.5 ? "Neutral" :
-    regime.score < 7.5 ? "Defensive" : "Risk-Off";
+    regime.score < 7.5 ? "Defensive" : "Lower appetite";
 
   // ── Regime conflict detection ────────────────────────────────
   // A conflict exists when the individual signal is bearish (SELL) but the
@@ -539,7 +539,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
   const isSignalBullish = action === "BUY";
   const regimeIsBullish = cryptoRegime === "Bullish";
   const regimeIsNeutralOrBetter = cryptoRegime === "Bullish" || cryptoRegime === "Neutral";
-  const regimeIsBearish = cryptoRegime === "Defensive" || cryptoRegime === "Risk-Off";
+  const regimeIsBearish = cryptoRegime === "Defensive" || cryptoRegime === "Lower appetite";
 
   let regimeConflict = false;
   let regimeConflictExplanation: string | null = null;
@@ -551,7 +551,7 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
       `${trend === "Downtrend" ? "price in downtrend" : "overbought conditions"}, ` +
       `${rsiIsTrue ? (rsiEstimate > 70 ? `RSI at ${rsiEstimate.toFixed(0)} (overbought)` : `RSI at ${rsiEstimate.toFixed(0)}`) : "completed-bar RSI unavailable"}` +
       `${smaSignal === "Death Cross" ? ", death cross confirmed" : ""}` +
-      `. Individual asset signal differs from broader crypto regime — reduce exposure to this asset only.`;
+      `. Individual asset signal differs from broader crypto regime — participation is smaller to this asset only.`;
   } else if (isSignalBullish && regimeIsBearish) {
     regimeConflict = true;
     regimeConflictExplanation =

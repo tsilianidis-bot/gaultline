@@ -319,7 +319,7 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
     ? "Crypto markets show elevated risk conditions. BTC dominance and volatility metrics suggest caution. Monitor liquidity conditions and macro developments closely."
     : finalScore >= 3
     ? "Crypto conditions are moderately stable. Some volatility present but systemic risk remains contained. Selective positioning may be appropriate."
-    : "Crypto markets are in a low-stress regime. Liquidity conditions are supportive and macro alignment is constructive. Risk-on conditions may favor digital assets.";
+    : "Crypto markets are in a low-stress regime. Liquidity conditions are supportive and macro alignment is constructive. Higher-risk appetite conditions may favor digital assets.";
 
   const result: CryptoSystemicRisk = {
     score:               finalScore == null ? null : parseFloat(finalScore.toFixed(2)),
@@ -590,7 +590,7 @@ export async function computeAssetIntelligence(
     insights.push(`${c.symbol} has a smaller market cap, making it more sensitive to liquidity shifts and speculative flows.`);
   }
   if (typeof sr.btcDominance === "number" && sr.btcDominance > 60) {
-    insights.push(`BTC dominance at ${sr.btcDominance.toFixed(1)}% signals risk-off rotation. Altcoins may face relative pressure.`);
+    insights.push(`BTC dominance at ${sr.btcDominance.toFixed(1)}% signals lower-risk appetite rotation. Altcoins may face relative pressure.`);
   }
   if (insights.length === 0) {
     insights.push(`${c.symbol} is trading within normal parameters. Monitor macro conditions and BTC dominance for directional cues.`);

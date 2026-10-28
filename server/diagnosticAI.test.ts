@@ -152,7 +152,7 @@ describe("DEMO_ASSETS catalog", () => {
 // We test the scoring conversion thresholds directly since
 // computeAssetScores is not exported (tested via integration).
 
-type PositionActionType = "Add" | "Hold" | "Watch / No Add" | "Trim" | "Exit Watch" | "Sell Bias";
+type PositionActionType = "Add" | "Hold" | "Watch / No Add" | "Trim" | "Exit Watch" | "Reduction bias";
 
 function scoreToAction(compositeScore: number): PositionActionType {
   if (compositeScore >= 80) return "Add";
@@ -160,7 +160,7 @@ function scoreToAction(compositeScore: number): PositionActionType {
   if (compositeScore >= 50) return "Watch / No Add";
   if (compositeScore >= 35) return "Trim";
   if (compositeScore >= 20) return "Exit Watch";
-  return "Sell Bias";
+  return "Reduction bias";
 }
 
 describe("scoreToAction (position guidance scoring)", () => {
@@ -175,8 +175,8 @@ describe("scoreToAction (position guidance scoring)", () => {
     [35,  "Trim"],
     [34,  "Exit Watch"],
     [20,  "Exit Watch"],
-    [19,  "Sell Bias"],
-    [0,   "Sell Bias"],
+    [19,  "Reduction bias"],
+    [0,   "Reduction bias"],
   ];
   for (const [score, expected] of cases) {
     it(`score ${score} → ${expected}`, () => {

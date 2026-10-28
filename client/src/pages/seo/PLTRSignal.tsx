@@ -39,7 +39,7 @@ Resistance Clusters: Prior peaks before they were broken become resistance if th
 Technical Context: PLTR has historically exhibited high volatility relative to the broader market (beta approximately 1.8-2.2). This means PLTR tends to amplify both upside and downside moves relative to the S&P 500. That history is background. This page does not turn it into a separate score.`}
       riskFactors={`PLTR faces five primary risk factors that FAULTLINE monitors:
 
-1. Valuation Multiple Risk: PLTR has historically traded at a significant premium to traditional software companies. In a risk-off environment or during periods of software sector multiple compression, PLTR's high valuation creates significant downside risk.
+1. Valuation Multiple Risk: PLTR has historically traded at a significant premium to traditional software companies. In a lower-risk appetite environment or during periods of software sector multiple compression, PLTR's high valuation creates significant downside risk.
 
 2. Government Contract Concentration: A significant portion of PLTR's revenue comes from U.S. government contracts. Changes in government spending priorities, contract renewals, or political dynamics could affect revenue predictability.
 

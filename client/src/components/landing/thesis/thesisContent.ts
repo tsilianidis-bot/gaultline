@@ -115,7 +115,7 @@ export const THESIS_QUESTIONS: readonly ThesisQuestion[] = [
     ],
     shows: [
       "A bounded posture, DEFENSIVE, BALANCED or OPPORTUNISTIC, read from the shared state, with supporting and cautionary signals and what would force a rethink.",
-      "A strategy matrix that rates increasing exposure, holding current risk, reducing exposure, adding hedges, seeking new positions and reviewing invalidations as favorable, conditional or avoid under each posture.",
+      "A strategy matrix that rates increasing exposure, holding current risk, reducing exposure, adding hedges, seeking new positions and reviewing invalidations as favorable, conditional or pass over under each posture.",
       "When evidence is missing or stale, the posture is withheld instead of guessed.",
       "PLATO can walk through the posture and the evidence behind it.",
     ],

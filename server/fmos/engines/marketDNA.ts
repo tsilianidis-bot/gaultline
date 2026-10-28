@@ -326,7 +326,7 @@ function scoreDNACandidates(
         "Leverage increasing",
       ],
       portfolioImplications: [
-        "Risk-on positioning rewarded",
+        "Higher-risk appetite positioning rewarded",
         "High yield and credit outperform",
         "Equities broadly rising",
         "Volatility selling strategies work",

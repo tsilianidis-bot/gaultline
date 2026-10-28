@@ -118,15 +118,15 @@ function regimeColor(r: CryptoRegimeLabel): string {
 
 function strategyText(r: CryptoRegimeLabel): string {
   const map: Record<CryptoRegimeLabel, string> = {
-    "Bull Market":                       "Ride momentum. Overweight BTC and quality alts. Use trailing stops.",
-    "Expansion":                         "Accumulate on dips. Favour BTC and ETH. Reduce stablecoin allocation.",
-    "Late Bull / Euphoria":              "Take profits. Reduce alt exposure. Raise stablecoin reserves. Avoid FOMO entries.",
+    "Bull Market":                       "Ride momentum. Larger share BTC and quality alts. Use trailing downside marks.",
+    "Expansion":                         "Add gradually on dips. Favour BTC and ETH. Reduce stablecoin allocation.",
+    "Late Bull / Euphoria":              "Take profits. Reduce alt exposure. Raise stablecoin reserves. Pass over FOMO additions.",
     "Distribution":                      "Shift to stablecoins. Reduce alt exposure significantly. Protect gains.",
-    "Bear Market":                       "Capital preservation. Favour stablecoins and cash. Avoid catching falling knives.",
-    "Capitulation":                      "Extreme caution. Potential final flush — watch for reversal signals before re-entry.",
-    "Bear Market → Accumulation Phase":  "Capital preservation first. Selective BTC accumulation at support. Avoid aggressive risk until breakout confirmation.",
+    "Bear Market":                       "Capital preservation. Favour stablecoins and cash. Pass over catching falling knives.",
+    "Capitulation":                      "Extreme caution. Potential final flush — watch for reversal signals before re-opening.",
+    "Bear Market → Accumulation Phase":  "Capital preservation first. Selective BTC accumulation at support. Pass over aggressive risk until breakout confirmation.",
     "Accumulation":                      "Gradual accumulation. Dollar-cost average into BTC. Position for the next cycle.",
-    "Early Recovery":                    "Selective re-entry. Favour BTC and ETH. Size small initially.",
+    "Early Recovery":                    "Selective re-opening. Favour BTC and ETH. Size small initially.",
     "UNAVAILABLE":                       "UNAVAILABLE — canonical market state is not bound. No crypto regime is manufactured.",
   };
   return map[r] ?? "Monitor conditions closely.";
@@ -157,7 +157,7 @@ function explanationText(r: CryptoRegimeLabel, phase: CyclePhase, confidence: nu
     "Distribution":                      `Bitcoin is in a distribution phase ${confPhrase}. Long-term holders appear to be reducing exposure. This phase often precedes a more significant correction.`,
     "Bear Market":                       `Bitcoin is in a bear market ${confPhrase}. Price structure is broken, liquidity is contracting, and macro conditions are unfavourable. Capital preservation is the priority.`,
     "Capitulation":                      `Bitcoin is in a capitulation phase ${confPhrase}. Forced selling and extreme fear dominate. This is often the final stage of a bear market.`,
-    "Bear Market → Accumulation Phase":  `Bitcoin appears to be in an accumulation phase inside a broader bear-market structure ${confPhrase}. Price may be forming a base, but a new bull cycle is not confirmed until price breaks major resistance with strong volume, improving liquidity, and sustained risk-on confirmation.`,
+    "Bear Market → Accumulation Phase":  `Bitcoin appears to be in an accumulation phase inside a broader bear-market structure ${confPhrase}. Price may be forming a base, but a new bull cycle is not confirmed until price breaks major resistance with strong volume, improving liquidity, and sustained higher-risk appetite confirmation.`,
     "Accumulation":                      `Bitcoin is in an accumulation phase ${confPhrase}. Long-term holders are absorbing supply at depressed prices. This phase can last months before a new bull cycle begins.`,
     "Early Recovery":                    `Bitcoin is showing early recovery signals ${confPhrase}. Price action is improving from lows but a new bull market is not yet confirmed.`,
     "UNAVAILABLE":                       "Crypto regime is UNAVAILABLE because no canonical market state is bound. No cycle phase is manufactured.",
@@ -414,10 +414,10 @@ function buildTransitionProbabilities(regime: CryptoRegimeLabel, confidence: num
 
 function buildTransitionDescription(from: CryptoRegimeLabel, to: string): string {
   if (to.includes("Bull") || to === "Expansion" || to === "Early Recovery") {
-    return "Requires: price breakout above resistance, improving liquidity, and risk-on macro confirmation.";
+    return "Requires: price breakout above resistance, improving liquidity, and higher-risk appetite macro confirmation.";
   }
   if (to.includes("Bear") || to === "Capitulation" || to === "Distribution") {
-    return "Triggered by: price breakdown below support, liquidity contraction, or macro risk-off shift.";
+    return "Triggered by: price breakdown below support, liquidity contraction, or macro lower-risk appetite shift.";
   }
   if (to.includes("Accumulation")) {
     return "Signals: stabilising price action, declining exchange balances, and long-term holder accumulation resuming.";
@@ -432,15 +432,15 @@ function buildActionableInterpretation(regime: CryptoRegimeLabel, confidence: nu
   const alt = report.altcoinRisk;
 
   const map: Record<CryptoRegimeLabel, string> = {
-    "Bull Market": `${confText} bull market signal. Bitcoin is in a confirmed uptrend with expanding liquidity and positive macro conditions. Overweight BTC and quality alts. Use momentum as your guide. ${mac.overallMacroSignal === "Bullish" ? "Macro conditions are supportive." : "Monitor macro for signs of deterioration."}`,
-    "Expansion": `${confText} early bull expansion. The cycle is gaining momentum but is not yet in full bull mode. Accumulate BTC and ETH on dips. Reduce stablecoin allocation gradually. ${alt.altcoinSeasonProbability > 50 ? "Altcoin season probability is elevated — selective exposure may be warranted." : "Maintain BTC/ETH focus for now."}`,
-    "Late Bull / Euphoria": `${confText} euphoria signal. This is historically the highest-risk phase of the bull cycle. Take profits systematically. Raise stablecoin reserves. Avoid FOMO entries. The risk of a cycle top is elevated.`,
-    "Distribution": `${confText} distribution signal. Long-term holders appear to be reducing exposure. Shift to stablecoins. Reduce altcoin exposure significantly. Protect gains from the bull cycle.`,
-    "Bear Market": `${confText} bear market signal. Capital preservation is the primary objective. Favour stablecoins and cash. Avoid catching falling knives. ${mac.overallMacroSignal === "Bearish" ? "Macro conditions are deteriorating — heightened caution is warranted." : "Monitor macro for signs of stabilisation."}`,
-    "Capitulation": `${confText} capitulation signal. Extreme fear and forced selling dominate. While this often marks a long-term bottom, timing is extremely difficult. Avoid aggressive positioning. Wait for volume confirmation and stabilising price action before re-entry.`,
+    "Bull Market": `${confText} bull market signal. Bitcoin is in a confirmed uptrend with expanding liquidity and positive macro conditions. Larger share BTC and quality alts. Use momentum as your guide. ${mac.overallMacroSignal === "Bullish" ? "Macro conditions are supportive." : "Monitor macro for signs of deterioration."}`,
+    "Expansion": `${confText} early bull expansion. The cycle is gaining momentum but is not yet in full bull mode. Add gradually BTC and ETH on dips. Reduce stablecoin allocation gradually. ${alt.altcoinSeasonProbability > 50 ? "Altcoin season probability is elevated — selective exposure may be warranted." : "Maintain BTC/ETH focus for now."}`,
+    "Late Bull / Euphoria": `${confText} euphoria signal. This is historically the highest-risk phase of the bull cycle. Take profits systematically. Raise stablecoin reserves. Pass over FOMO additions. The risk of a cycle top is elevated.`,
+    "Distribution": `${confText} distribution signal. Long-term holders appear to be smaller in this phase. Stablecoins are the larger share of the recorded mix. This is not an instruction.`,
+    "Bear Market": `${confText} bear market signal. Capital preservation is the primary objective. Favour stablecoins and cash. Pass over catching falling knives. ${mac.overallMacroSignal === "Bearish" ? "Macro conditions are deteriorating — heightened caution is warranted." : "Monitor macro for signs of stabilisation."}`,
+    "Capitulation": `${confText} capitulation signal. Extreme fear and forced selling dominate. While this often marks a long-term bottom, timing is extremely difficult. Pass over aggressive positioning. Wait for volume confirmation and stabilising price action before re-opening.`,
     "Bear Market → Accumulation Phase": `${confText} accumulation signal inside a bear structure. Crypto remains in an accumulation regime. Historically, this phase favors gradual accumulation of high-quality assets rather than aggressive momentum trading. A new bull cycle is not confirmed — position sizing should reflect that uncertainty. Selective BTC accumulation at support is appropriate for long-term holders.`,
-    "Accumulation": `${confText} accumulation signal. Long-term holders are absorbing supply at depressed prices. Dollar-cost averaging into BTC may be appropriate for investors with long time horizons. Avoid broad altcoin exposure until macro conditions improve and price confirms a new trend.`,
-    "Early Recovery": `${confText} early recovery signal. Price action is improving from lows but a new bull market is not yet confirmed. Selective re-entry into BTC and ETH is appropriate. Size positions conservatively and wait for confirmation before adding broad risk.`,
+    "Accumulation": `${confText} accumulation signal. Long-term holders are absorbing supply at depressed prices. Dollar-cost averaging into BTC may be appropriate for investors with long time horizons. Pass over broad altcoin exposure until macro conditions improve and price confirms a new trend.`,
+    "Early Recovery": `${confText} early recovery signal. Price action is improving from lows but a new bull market is not yet confirmed. Selective re-opening into BTC and ETH is appropriate. Size positions conservatively and wait for confirmation before adding broad risk.`,
     "UNAVAILABLE": "UNAVAILABLE — canonical market state is not bound. Crypto regime, confirmation, and invalidation are withheld.",
   };
   return map[regime] ?? `Current regime: ${regime}. Monitor conditions closely.`;

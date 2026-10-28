@@ -181,7 +181,7 @@ describe("QA r9 — #56 r16 disclaimer rule, auto-published link text, LLM promp
     expect(read("server/tradePreflight.ts")).not.toMatch(/Crash Probability: \$\{output|Bull Probability: \$\{output/);
     const chat = read("server/chatbotEngine.ts");
     expect(chat).not.toMatch(/Crash Probability: \$\{|Bull Continuation Probability: \$\{/);
-    expect(chat).toContain("Probabilities: FAULTLINE does not offer a crash probability, and its scenario weights are uncalibrated; state no probability percentage");
+    expect(chat).toContain("Probabilities: FAULTLINE does not offer a market-event percentage, and its scenario weights are uncalibrated; state no probability percentage");
   });
   it("smartDiscovery opportunity prompt: qualitative bull/bear balance, no FMOS percentages", () => {
     const full = read("server/routers/smartDiscovery.ts");
