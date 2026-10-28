@@ -48,6 +48,20 @@ jobs:
             echo "missing external allowlist was accepted" >&2
             exit 1
           fi
+          if FAULTLINE_ENFORCE_DEPLOY_GUARD=1 FAULTLINE_APPROVED_DEPLOY_SHAS="$candidate" FAULTLINE_APPROVED_DEPLOY_TAGS=production-f7756c7 RAILWAY_GIT_COMMIT_SHA="$candidate" FAULTLINE_DEPLOY_SHA="$candidate" bash scripts/guard-approved-deploy.sh; then
+            echo "enforced guard accepted an empty approval" >&2
+            exit 1
+          fi
+          short=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+          long="${candidate}b"
+          if FAULTLINE_ENFORCE_DEPLOY_GUARD=1 FAULTLINE_APPROVED_SHA="$short" RAILWAY_GIT_COMMIT_SHA="$short" bash scripts/guard-approved-deploy.sh; then
+            echo "short approval SHA was accepted" >&2
+            exit 1
+          fi
+          if FAULTLINE_ENFORCE_DEPLOY_GUARD=1 FAULTLINE_APPROVED_SHA="$long" RAILWAY_GIT_COMMIT_SHA="$long" bash scripts/guard-approved-deploy.sh; then
+            echo "long approval SHA was accepted" >&2
+            exit 1
+          fi
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4

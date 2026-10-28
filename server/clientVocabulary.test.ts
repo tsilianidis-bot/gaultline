@@ -194,7 +194,7 @@ describe("client vocabulary", () => {
     expect(neutralizeChannelText("REDUCE.now")).toBe("Lower-side condition.now");
     expect(neutralizeChannelText("BUY.2026")).toBe("Upper-side condition.2026");
     expect(neutralizeChannelText("the.BUY.sign")).toBe("the.Upper-side condition.sign");
-    expect(neutralizeChannelText("BUY.Sell")).toBe("Upper-side condition.Sell");
+    expect(neutralizeChannelText("BUY.Sell")).toBe("Upper-side condition.Lower-side condition");
     expect(neutralizeChannelText("Contact SELL@x.io.")).toBe("Contact SELL@x.io.");
     const urls = Array.from({ length: 11 }, (_, index) => `https://cdn.example/${index}/BUY`);
     const restored = neutralizeChannelText(urls.join(" "));
@@ -217,12 +217,7 @@ describe("client vocabulary", () => {
       "Keep going",
       "Please wait here",
       "Wait here",
-      "We buy groceries",
-      "Buy the close",
-      "We sell tickets",
-      "Sell the close",
-      "Add gradually to the list",
-      "Strong buy the rumor",
+      "avoid NVDA",
     ];
     for (const sentence of unchanged) {
       expect(neutralizeChannelText(sentence)).toBe(sentence);
@@ -241,6 +236,26 @@ describe("client vocabulary", () => {
     expect(neutralizeChannelText("ADD a note")).toBe("Upper-side condition a note");
     expect(neutralizeChannelText("KEEP going")).toBe("Mixed condition going");
     expect(neutralizeChannelText("WAIT here")).toBe("Mixed condition here");
+    expect(neutralizeChannelText("Avoid NVDA")).toBe("Lower-side condition NVDA");
+    expect(neutralizeChannelText("Avoid $NVDA")).toBe("Lower-side condition $NVDA");
+    expect(neutralizeChannelText("Avoid BRK.B")).toBe("Lower-side condition BRK.B");
+  });
+
+  it("neutralizes case-insensitive buy and sell prose", () => {
+    expect(neutralizeChannelText("Sell now")).toBe("Lower-side condition now");
+    expect(neutralizeChannelText("Buy the dip")).toBe("Upper-side condition the dip");
+    expect(neutralizeChannelText("Strong Buy")).toBe("Upper-side condition");
+    expect(neutralizeChannelText("Top 5 stocks to buy")).toBe("Top 5 stocks to Upper-side condition");
+    expect(neutralizeChannelText("Analysts rate it Buy")).toBe("Analysts rate it Upper-side condition");
+    expect(neutralizeChannelText("**Sell**")).toBe("**Lower-side condition**");
+    expect(neutralizeChannelText("[Buy](url)")).toBe("[Upper-side condition](url)");
+    expect(neutralizeChannelText("Buy the close")).toBe("Upper-side condition the close");
+    expect(neutralizeChannelText("Sell the close")).toBe("Lower-side condition the close");
+    expect(neutralizeChannelText("Strong buy the rumor")).toBe("Upper-side condition the rumor");
+    expect(neutralizeChannelText("We buy groceries")).toBe("We Upper-side condition groceries");
+    expect(neutralizeChannelText("We sell tickets")).toBe("We Lower-side condition tickets");
+    expect(neutralizeChannelText("Add gradually to the list")).toBe("Upper-side condition to the list");
+    expect(neutralizeChannelText("Analysts say accumulate")).toBe("Analysts say Upper-side condition");
   });
 
   it("neutralizes an 8000-node list without a quadratic walk", () => {

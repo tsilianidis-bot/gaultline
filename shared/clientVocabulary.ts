@@ -212,8 +212,11 @@ function isOpaque(value: object): boolean {
   return proto !== Object.prototype && proto !== null;
 }
 
-/** All-caps trade tokens only. Lowercase and sentence-case English is left unchanged. */
-const CHANNEL_PROSE_TOKENS = [
+/**
+ * Case-insensitive whole words, same as 3eef438.
+ * REDUCE and AVOID are not in this list.
+ */
+const CHANNEL_PROSE_TOKENS_CI = [
   "STRONG BUY",
   "BUY NOW",
   "STRONG SELL",
@@ -226,23 +229,38 @@ const CHANNEL_PROSE_TOKENS = [
   "UNDERWEIGHT",
   "BUY",
   "SELL",
-  "AVOID",
+];
+
+/** Standalone all-caps only. Lowercase and sentence case stay English, except Avoid before a ticker or cashtag. */
+const CHANNEL_PROSE_TOKENS_CAPS = [
   "REDUCE",
+  "AVOID",
   "HOLD",
   "ADD",
   "KEEP",
   "WAIT",
 ];
 
-let channelTokenPattern: RegExp | null = null;
+let channelTokenPatternCi: RegExp | null = null;
+let channelTokenPatternCaps: RegExp | null = null;
 
-function channelTokenRegex(): RegExp {
-  if (!channelTokenPattern) {
-    const tokens = [...CHANNEL_PROSE_TOKENS].sort((left, right) => right.length - left.length).map(escapeRegExp);
-    channelTokenPattern = new RegExp(`\\b(?:${tokens.join("|")})\\b`, "g");
-  }
-  return channelTokenPattern;
+function tokenPattern(tokens: readonly string[], flags: string): RegExp {
+  const body = [...tokens].sort((left, right) => right.length - left.length).map(escapeRegExp).join("|");
+  return new RegExp(`\\b(?:${body})\\b`, flags);
 }
+
+function channelTokenRegexCi(): RegExp {
+  if (!channelTokenPatternCi) channelTokenPatternCi = tokenPattern(CHANNEL_PROSE_TOKENS_CI, "gi");
+  return channelTokenPatternCi;
+}
+
+function channelTokenRegexCaps(): RegExp {
+  if (!channelTokenPatternCaps) channelTokenPatternCaps = tokenPattern(CHANNEL_PROSE_TOKENS_CAPS, "g");
+  return channelTokenPatternCaps;
+}
+
+/** Sentence-case Avoid, only when the next word is a ticker or a cashtag. */
+const AVOID_BEFORE_SYMBOL = /\bAvoid(?=\s+(?:\$[A-Z]{1,5}(?:\.[A-Z])?|[A-Z]{1,5}(?:\.[A-Z])?)\b)/g;
 
 const MASK_EDGE = "\uE000";
 const LOCAL_PART = /[A-Za-z0-9._%+-]/;
@@ -374,18 +392,34 @@ function protectedProseToken(text: string, offset: number, length: number): bool
   return false;
 }
 
-/** Replace a standalone all-caps trade token inside stored prose. Sentence-case and lowercase English stay. */
+function replaceChannelTokens(text: string, pattern: RegExp): string {
+  pattern.lastIndex = 0;
+  return text.replace(pattern, (match, offset: number, whole: string) => {
+    if (protectedProseToken(whole, offset, match.length)) return match;
+    return neutralConditionLabel(match);
+  });
+}
+
+/**
+ * Case-insensitive whole words for BUY, SELL, STRONG BUY, STRONG SELL, BUY NOW, and ACCUMULATE
+ * (and the other 3eef438 prose tokens except REDUCE and AVOID).
+ * REDUCE, AVOID, HOLD, ADD, KEEP, and WAIT match only as all-caps standalone tokens.
+ * Sentence-case Avoid is also replaced when a ticker or cashtag follows it.
+ */
 export function neutralizeChannelText(text: string): string {
   if (!text) return text;
   if (deniedExactToken(text)) return neutralConditionLabel(text);
   const masked = maskUrlsAndEmails(text);
-  const pattern = channelTokenRegex();
-  pattern.lastIndex = 0;
-  const replaced = masked.text.replace(pattern, (match, offset, whole) => {
+  const replaced = replaceSentenceCaseAvoid(replaceChannelTokens(replaceChannelTokens(masked.text, channelTokenRegexCi()), channelTokenRegexCaps()));
+  return restoreMasks(replaced, masked.masks);
+}
+
+function replaceSentenceCaseAvoid(text: string): string {
+  AVOID_BEFORE_SYMBOL.lastIndex = 0;
+  return text.replace(AVOID_BEFORE_SYMBOL, (match, offset: number, whole: string) => {
     if (protectedProseToken(whole, offset, match.length)) return match;
     return neutralConditionLabel(match);
   });
-  return restoreMasks(replaced, masked.masks);
 }
 
 /**

@@ -7,8 +7,13 @@
 # BUILD_COMMIT is ignored. A stale service variable cannot approve or reject the target.
 #
 # Identity:
-#   When FAULTLINE_APPROVED_SHA is set, it must equal RAILWAY_GIT_COMMIT_SHA.
-#   Any mismatch, including a missing platform SHA, refuses the boot.
+#   When FAULTLINE_ENFORCE_DEPLOY_GUARD=1, FAULTLINE_APPROVED_SHA is required.
+#   An unset, empty, short, or long value refuses the boot even if
+#   FAULTLINE_APPROVED_DEPLOY_SHAS or FAULTLINE_APPROVED_DEPLOY_TAGS is set.
+#   A set value must be 40 lowercase hex characters and must equal
+#   RAILWAY_GIT_COMMIT_SHA. Any mismatch, including a missing platform SHA,
+#   refuses the boot. Confirm Railway injects RAILWAY_GIT_COMMIT_SHA before
+#   the guard is enabled.
 #   RAILWAY_GIT_COMMIT_SHA is the platform commit. It wins over FAULTLINE_DEPLOY_SHA.
 #   If both are set and differ, the boot is refused. A self-declared SHA cannot
 #   impersonate the platform commit.
@@ -20,13 +25,26 @@ PLATFORM="${RAILWAY_GIT_COMMIT_SHA:-}"
 DECLARED="${FAULTLINE_DEPLOY_SHA:-${1:-}}"
 APPROVED="${FAULTLINE_APPROVED_SHA:-}"
 
-if [[ -n "${PLATFORM}" && -n "${DECLARED}" && "${PLATFORM}" != "${DECLARED}" ]]; then
-  echo "Refusing boot: RAILWAY_GIT_COMMIT_SHA (${PLATFORM}) does not match FAULTLINE_DEPLOY_SHA (${DECLARED}). The platform commit is the deploy identity. A self-declared SHA cannot override it." >&2
+if [[ "${FAULTLINE_ENFORCE_DEPLOY_GUARD:-}" == "1" ]]; then
+  if [[ -z "${APPROVED}" ]]; then
+    echo "Refusing boot: FAULTLINE_ENFORCE_DEPLOY_GUARD=1 and FAULTLINE_APPROVED_SHA is unset. FAULTLINE_APPROVED_DEPLOY_SHAS and FAULTLINE_APPROVED_DEPLOY_TAGS do not approve a boot without it." >&2
+    exit 1
+  fi
+  if [[ ! "${APPROVED}" =~ ^[0-9a-f]{40}$ ]]; then
+    echo "Refusing boot: FAULTLINE_APPROVED_SHA must be exactly 40 lowercase hex characters." >&2
+    exit 1
+  fi
+  if [[ "${APPROVED}" != "${PLATFORM}" ]]; then
+    echo "Refusing boot: FAULTLINE_APPROVED_SHA (${APPROVED}) does not match RAILWAY_GIT_COMMIT_SHA (${PLATFORM:-unset}). The deployed head must be the exact reviewed SHA." >&2
+    exit 1
+  fi
+elif [[ -n "${APPROVED}" && "${APPROVED}" != "${PLATFORM}" ]]; then
+  echo "Refusing boot: FAULTLINE_APPROVED_SHA (${APPROVED}) does not match RAILWAY_GIT_COMMIT_SHA (${PLATFORM:-unset}). The deployed head must be the exact reviewed SHA." >&2
   exit 1
 fi
 
-if [[ -n "${APPROVED}" && "${APPROVED}" != "${PLATFORM}" ]]; then
-  echo "Refusing boot: FAULTLINE_APPROVED_SHA (${APPROVED}) does not match RAILWAY_GIT_COMMIT_SHA (${PLATFORM:-unset}). The deployed head must be the exact reviewed SHA." >&2
+if [[ -n "${PLATFORM}" && -n "${DECLARED}" && "${PLATFORM}" != "${DECLARED}" ]]; then
+  echo "Refusing boot: RAILWAY_GIT_COMMIT_SHA (${PLATFORM}) does not match FAULTLINE_DEPLOY_SHA (${DECLARED}). The platform commit is the deploy identity. A self-declared SHA cannot override it." >&2
   exit 1
 fi
 
