@@ -307,7 +307,7 @@ export type InsertUserMarketAwarenessAction = typeof userMarketAwarenessActions.
 /**
  * One official system-wide FAULTLINE reading snapshot per calendar day.
  * Stores the full engine output so users can review historical readings.
- * No personal user data. No trade recommendations. No buy/sell/hold.
+ * No personal user data. No trade recommendations. No transaction/hold.
  */
 export const dailyReadingSnapshots = mysqlTable("dailyReadingSnapshots", {
   id:                   int("id").autoincrement().primaryKey(),

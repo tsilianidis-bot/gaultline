@@ -259,12 +259,12 @@ function DisclaimersTab() {
 
       <div style={{ padding: "20px 24px", background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "8px", marginBottom: "28px" }}>
         <div style={{ fontFamily: MONO, fontSize: "11px", color: "#EF4444", letterSpacing: "0.15em", marginBottom: "10px" }}>IMPORTANT — READ BEFORE USING FAULTLINE</div>
-        <P>FAULTLINE is an educational and informational platform. Nothing on this platform constitutes individualized investment advice, a recommendation to buy or sell any security, or a solicitation of any investment. All information is provided for educational purposes only.</P>
+        <P>FAULTLINE is an educational and informational platform. Nothing on this platform constitutes individualized investment advice, a recommendation to transact any security, or a solicitation of any investment. All information is provided for educational purposes only.</P>
       </div>
 
       <H3>Not Investment Advice</H3>
       <P>The content, analysis, signals, scores, and commentary provided by FAULTLINE — including the Pressure Index, regime classifications, stock signals, crypto intelligence, and AI-generated analysis — are for <strong style={{ color: "#F0F4FF" }}>educational and informational purposes only</strong>. They do not constitute investment advice, financial advice, trading advice, or any other type of advice.</P>
-      <P>FAULTLINE is not a registered investment advisor, broker-dealer, or financial planner. No content on this platform should be construed as a recommendation to buy, sell, or hold any security, cryptocurrency, or other financial instrument.</P>
+      <P>FAULTLINE is not a registered investment advisor, broker-dealer, or financial planner. No content on this platform should be construed as a recommendation to transact in any security, cryptocurrency, or other financial instrument.</P>
 
       <H3>Investing Involves Risk</H3>
       <P>All investing involves risk, including the possible loss of principal. Past performance — including historical Pressure Index readings and retrospective reconstructions — does not guarantee future results. Market conditions can and do change rapidly in ways that cannot be predicted by any model.</P>
@@ -303,7 +303,7 @@ function FAQTab() {
     },
     {
       q: "Is FAULTLINE investment advice?",
-      a: "No. FAULTLINE is an educational and informational platform. Nothing on this platform constitutes investment advice, a recommendation to buy or sell any security, or a solicitation of any investment. All content is for educational purposes only. You are solely responsible for your investment decisions.",
+      a: "No. FAULTLINE is an educational and informational platform. Nothing on this platform constitutes investment advice, a recommendation to transact any security, or a solicitation of any investment. All content is for educational purposes only. You are solely responsible for your investment decisions.",
     },
     {
       q: "How accurate is the Pressure Index?",
@@ -327,7 +327,7 @@ function FAQTab() {
     },
     {
       q: "Is my data secure?",
-      a: "Yes. FAULTLINE uses industry-standard encryption for all data in transit (TLS 1.3) and at rest. We do not sell user data to third parties. Authentication is handled via OAuth 2.0. See the Security tab for more details.",
+      a: "Yes. FAULTLINE uses industry-standard encryption for all data in transit (TLS 1.3) and at rest. We do not rent user data to third parties. Authentication is handled via OAuth 2.0. See the Security tab for more details.",
     },
     {
       q: "Do I need a paid subscription?",
@@ -378,7 +378,7 @@ function PrivacyTab() {
       <P>We collect information you provide directly (name, email, payment information via Stripe), information collected automatically (page views, session data, device type, browser, IP address for geo-analytics), and data from third-party authentication providers (OAuth).</P>
 
       <H3>How We Use It</H3>
-      <P>We use your data to provide and improve the FAULTLINE service, process payments, send service-related communications, and analyze aggregate usage patterns. We do not sell your personal data to third parties.</P>
+      <P>We use your data to provide and improve the FAULTLINE service, process payments, send service-related communications, and analyze aggregate usage patterns. We do not rent your personal data to third parties.</P>
 
       <H3>Data Providers</H3>
       <P>FAULTLINE uses the following third-party services that may process your data: Stripe (payments), Google Analytics (anonymous usage analytics), Sentry (error tracking), and Manus Auth (authentication). Each provider has their own privacy policy.</P>

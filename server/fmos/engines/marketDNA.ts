@@ -127,7 +127,7 @@ function scoreDNACandidates(
       characteristics: [
         "Fed tightening cycle underway or complete",
         "Yield curve flat or inverted",
-        "Inflation above target",
+        "Inflation above the stated level",
         "Credit spreads beginning to widen",
         "Earnings growth decelerating",
       ],
@@ -292,7 +292,7 @@ function scoreDNACandidates(
         )
       ),
       characteristics: [
-        "Inflation declining toward target",
+        "Inflation declining toward the stated level",
         "Fed easing or on hold",
         "Growth moderating but positive",
         "Credit conditions improving",

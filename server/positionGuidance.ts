@@ -399,7 +399,7 @@ STRUCTURED SCORES (interpret these — do not invent data):
 
 Return JSON with exactly these fields:
 - "aiInterpretation": 2–3 sentence paragraph. Start with "${asset.ticker} [observation about current conditions]". Reference specific scores. End with what the signal means for positioning.
-- "suggestedBehavior": 1–2 sentences describing the specific position action (e.g., "Trim 10–25% of larger share exposure, keep the remaining core position").
+- "suggestedBehavior": 1–2 sentences describing the specific position action (e.g., "A 10–25% smaller size of larger share exposure, keep the remaining core position").
 - "invalidationCondition": 1 sentence describing what would change this signal (e.g., "If ${asset.ticker} closes below key trend support...").
 - "nextConditionToWatch": 1 sentence describing the most important thing to monitor.
 - "whyThisSignal": object with:
@@ -455,7 +455,7 @@ Return JSON with exactly these fields:
     return {
       aiInterpretation: `${asset.ticker} is showing a composite score of ${scores.compositeScore}/100 under ${regime} conditions. ${action === "Trim" || action === "Exit Watch" || action === "Reduction bias" ? "Market pressure is in a higher-stress reading." : action === "Add" ? "The reading is in a lower-stress band." : "The reading supports keeping the existing position on record."} The note reflects the current ${p >= 61 ? "elevated" : "moderate"} pressure environment.`,
       suggestedBehavior: action === "Trim"
-        ? "Trim 10–25% of larger share exposure, keep the remaining core position, and pass over adding until market pressure eases."
+        ? "A 10–25% smaller size of larger share exposure, keep the remaining core position, and pass over adding until market pressure eases."
         : action === "Add"
         ? "Conditions support adding exposure on pullbacks toward support. Use position sizing appropriate to the current volatility regime."
         : action === "Hold"

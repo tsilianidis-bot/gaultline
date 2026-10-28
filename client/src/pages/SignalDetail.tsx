@@ -45,7 +45,7 @@ export default function SignalDetail() {
   const levelLines = useMemo<IntelligenceLevel[]>(() => [], []);
 
   const askAsha = () => {
-    navigate(`/app/asha?prompt=${encodeURIComponent(`Explain the current ${symbol} chart using only the displayed observed daily bars and the shared Pentagonal Thesis. Do not state a buy, sell, confidence percentage, entry, stop, or target. Do not imply historical FAULTLINE signals or outcomes.`)}`);
+    navigate(`/app/asha?prompt=${encodeURIComponent(`Explain the current ${symbol} chart using only the displayed observed daily bars and the shared Pentagonal Thesis. Do not state a transact, confidence percentage, entry, stop, or target. Do not imply historical FAULTLINE signals or outcomes.`)}`);
   };
 
   if (query.isLoading) return <main style={page}><div style={empty}>ASSEMBLING SOURCE-BACKED SIGNAL VISUAL ANALYSIS…</div></main>;
@@ -78,7 +78,7 @@ export default function SignalDetail() {
     </section>
 
     <section style={heroPanel}>
-      <div style={sectionHeader}><div><b style={{ color: "#EAF5FF" }}>COMPLETED DAILY PRICE</b><div style={subtle}>The chart is observed daily price and volume. It does not draw a trade entry, stop, or target.</div></div><button style={secondaryButton} onClick={() => query.refetch()} disabled={query.isFetching}><RefreshCw size={13} /> {query.isFetching ? "REFRESHING" : "REFRESH"}</button></div>
+      <div style={sectionHeader}><div><b style={{ color: "#EAF5FF" }}>COMPLETED DAILY PRICE</b><div style={subtle}>The chart is observed daily price and volume. It does not draw order levels.</div></div><button style={secondaryButton} onClick={() => query.refetch()} disabled={query.isFetching}><RefreshCw size={13} /> {query.isFetching ? "REFRESHING" : "REFRESH"}</button></div>
       <div style={{ overflowX: "auto", marginTop: 12 }}><UnifiedIntelligenceChart bars={detail.bars} levels={levelLines} ariaLabel={`${symbol} completed daily price and volume`} volumeLabel="VOLUME · COMPLETED DAILY SOURCE BARS" /></div>
       <div style={historyBoundary}><AlertTriangle size={14} color={AMBER} /><span><b>NO HISTORICAL SIGNAL MARKERS.</b> FAULTLINE does not yet have immutable stored signal observations for this symbol. The chart displays source price history only.</span></div>
     </section>

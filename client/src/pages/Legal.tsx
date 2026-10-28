@@ -259,7 +259,7 @@ function PrivacyPolicy() {
         <li>Monitor platform health and prevent abuse</li>
       </ul>
       <Para>
-        We do not sell, rent, or share your personal information with third parties for marketing
+        We do not rent or share your personal information with third parties for marketing
         purposes.
       </Para>
 
@@ -360,8 +360,8 @@ function TermsOfUse() {
           FAULTLINE does not provide financial, investment, legal, or tax advice.
         </strong>{" "}
         All content, signals, scores, and analysis provided by the platform are for informational
-        and educational purposes only. Nothing on FAULTLINE constitutes a recommendation to buy,
-        sell, or hold any security, cryptocurrency, or other financial instrument.
+        and educational purposes only. Nothing on FAULTLINE constitutes a recommendation to transact,
+        or otherwise transact any security, cryptocurrency, or other financial instrument.
       </Para>
       <Para>
         You are solely responsible for your own investment decisions. Always consult a qualified

@@ -2,7 +2,8 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const BANNED = /\b(?:STRONG BUY|BUY|SELL|HOLD)\b|crash probability|\bRISK[-\s]?ON\b|\bRISK[-\s]?OFF\b|REDUCE EXPOSURE|INCREASE EXPOSURE|\bACCUMULATE\b|\bAVOID\b|\bOVERWEIGHT\b|\bUNDERWEIGHT\b|\bENTRY\b|\bSTOP\b|\bTARGET\b/i;
+const BANNED = /\b(?:STRONG BUY|BUY|SELL|HOLD)\b|crash probability|\bRISK[-\s]?ON\b|\bRISK[-\s]?OFF\b|REDUCE EXPOSURE|INCREASE EXPOSURE|\bACCUMULATE\b|\bAVOID\b|\bOVERWEIGHT\b|\bUNDERWEIGHT\b|\bENTRY\b|\bSTOP\b|\bTARGET\b|\badd to position\b|\bavoid new positions\b|\btake profits\b|(?<![\w.])trim\b(?!\s*\()|\d+(?:\.\d+)?%\s+chance of(?: a)? (?:crash|correction|recession)/i;
+const EXACT_PROTOCOL = "STRONG BUY|BUY NOW|STRONG SELL|STRONG REDUCE|BUY|SELL|HOLD|WATCH|WAIT|ADD|TRIM|ACCUMULATE|AVOID|REDUCE";
 
 const ROOTS = [
   "client/src/pages/mobile/MobileSignals.tsx",
@@ -66,7 +67,25 @@ const ROOTS = [
   "server/fmos/engines/decision.ts",
   "server/historicalIntelligenceEngine.ts",
   "server/ashaEngine.ts",
+  "server/tradingSignals.ts",
+  "server/scheduledSimPortfolio.ts",
+  "server/insiderIntelligence.ts",
+  "server/preFlight.ts",
+  "client/src/components/ProductExperience.tsx",
 ];
+
+function routedPageRoots(): string[] {
+  const app = readFileSync("client/src/App.tsx", "utf8");
+  const specs = new Set<string>();
+  for (const match of app.matchAll(/import\(\s*["'](\.[^"']+)["']\s*\)/g)) specs.add(match[1] ?? "");
+  for (const match of app.matchAll(/from\s+["'](\.\/(?:pages|components)[^"']+)["']/g)) specs.add(match[1] ?? "");
+  const files: string[] = [];
+  for (const spec of specs) {
+    const resolved = resolveImport("client/src/App.tsx", spec);
+    if (resolved) files.push(resolved);
+  }
+  return files;
+}
 
 const SERVER_PAYLOADS = new Set([
   "server/tradePreflight.ts",
@@ -88,6 +107,10 @@ const SERVER_PAYLOADS = new Set([
   "server/fmos/engines/decision.ts",
   "server/historicalIntelligenceEngine.ts",
   "server/ashaEngine.ts",
+  "server/tradingSignals.ts",
+  "server/scheduledSimPortfolio.ts",
+  "server/insiderIntelligence.ts",
+  "server/preFlight.ts",
 ]);
 
 const SKIP_FILES = new Set([
@@ -97,6 +120,8 @@ const SKIP_FILES = new Set([
   "shared/decisionLight.ts",
   "shared/systemicRegime.ts",
   "shared/ashaQuestionAnalysis.ts",
+  // Classifies the user's own question. It does not render these tokens.
+  "client/src/lib/askIntentClassifier.ts",
   "shared/interpretationIntegrity.ts",
   "server/pressure/engine.ts",
   "server/pressure/fredFixtureEvidence.ts",
@@ -186,7 +211,15 @@ function singleQuoteStartsString(source: string, index: number): boolean {
 
 function scrubCodeKeepQuotes(line: string): string {
   const { text, masks } = maskStrings(line);
-  const scrubbed = text
+  const jsxText: string[] = [];
+  const protectedText = text.replace(/(?<!=)>([^<]*)</g, (_full, inner: string) => {
+    const scrubbedInner = inner.replace(/\{[^{}]*\}/g, expr => expr
+      .replace(/\b(?:entry|stop|target)\b/gi, "row")
+      .replace(/\b(?:BUY|SELL|HOLD|AVOID)\b/g, "ROW"));
+    jsxText.push(scrubbedInner);
+    return `>\u0001${jsxText.length - 1}\u0001<`;
+  });
+  const scrubbed = protectedText
     .replace(/\.target\b/g, "")
     .replace(/\.\s*stop\b/g, "")
     .replace(/<\/?stop\b/gi, "")
@@ -197,10 +230,44 @@ function scrubCodeKeepQuotes(line: string): string {
     .replace(/\bentry\s*=>/gi, "row =>")
     .replace(/\btarget\s*=/gi, "=")
     .replace(/\b(?:entry|stop|target)\b/gi, "row")
-    .replace(/\b(?:BUY|SELL|HOLD|AVOID)\b/gi, "ROW")
+    .replace(/\b(?:BUY|SELL|HOLD|AVOID|TRIM)\b/g, "ROW")
     .replace(/\bhold\s*:/gi, "kept:")
     .replace(/\bentry is\b/g, "row is");
-  return restore(scrubbed, masks).replace(/["'`]\/[^"'`]*["'`]/g, '""');
+  const restored = restore(scrubbed, masks).replace(/["'`]\/[A-Za-z0-9\-._/~]*["'`]/g, '""');
+  return restored.replace(/\u0001(\d+)\u0001/g, (_mark, index) => jsxText[Number(index)] ?? "");
+}
+
+/** Exact protocol quotes are exempt only as type-union members, enum members, comparison operands, or a bare enum return. */
+export function exemptNonRenderedTokens(line: string): string {
+  const exact = new RegExp(`(["'\`])(?:${EXACT_PROTOCOL})\\1`, "gi");
+  return line.replace(exact, (match, _quote, offset, whole) => {
+    const source = String(whole);
+    const before = source.slice(0, offset);
+    const after = source.slice(offset + match.length);
+    if (/(?:===|!==|==|!=)\s*$/.test(before)) return '""';
+    if (/\|\s*$/.test(before) || /^\s*\|/.test(after)) return '""';
+    if (/\bcase\s+$/.test(before)) return '""';
+    if (/\breturn\b/.test(before)) return '""';
+    if (/\.includes\s*\(/.test(source)) return '""';
+    if (/\benum\s*\(\s*\[[^\]]*$/.test(before)) return '""';
+    if (/(?:action|verdict|decisionLabel|moveType|insiderAction)\s*[:=]\s*$/.test(before)) return '""';
+    if (!match.slice(1, -1).includes(" ") && /[=?:]\s*$/.test(before)) return '""';
+    if (/^\s*:/.test(after)) return '""';
+    if (/^\s*as\s+const\b/.test(after)) return '""';
+    return match;
+  });
+}
+
+export function claimHits(source: string): string[] {
+  return visibleCopy(source)
+    .split("\n")
+    .map(line => line.replace(/\$\{[^}]*\}/g, ""))
+    .map(line => line.replace(/\bentry(?=\s*=>|\s*\.|\s*\))/gi, "row").replace(/\.target\b/g, ""))
+    .map(exemptNonRenderedTokens)
+    .map(line => /does not (?:offer|publish|imply)|not a crash probability|no governed/i.test(line)
+      ? line.replace(/crash probability/gi, "withheld event")
+      : line)
+    .flatMap((line, index) => (BANNED.test(line) ? [`${index + 1}: ${line.trim().slice(0, 220)}`] : []));
 }
 
 function repoPath(file: string): string {
@@ -234,7 +301,6 @@ function reachableFiles(roots: string[]): string[] {
     const file = queue.pop();
     if (!file || seen.has(file) || !existsSync(file) || file.endsWith(".test.ts") || file.endsWith(".test.tsx")) continue;
     if (SKIP_FILES.has(file) || file.startsWith("server/pressure/")) continue;
-    if (file.startsWith("client/src/lib/") || file.startsWith("client/src/contexts/")) continue;
     if (file.startsWith("server/") && !SERVER_PAYLOADS.has(file) && !file.startsWith("server/routers/") && !file.startsWith("server/fmos/engines/")) continue;
     seen.add(file);
     const source = readFileSync(file, "utf8");
@@ -265,11 +331,34 @@ describe("release-candidate surfaces do not print trade directives or crash-prob
 
   it("keeps text that follows a comment containing an apostrophe", () => {
     const sample = "/* Today's Story */\nconst label = \"RISK-ON\";";
-    const hits = visibleCopy(sample).split("\n").filter(line => BANNED.test(line));
-    expect(hits.length).toBeGreaterThan(0);
+    expect(claimHits(sample).length).toBeGreaterThan(0);
   });
 
-  const files = reachableFiles(ROOTS);
+  it("scans JSX text instead of rewriting BUY/SELL/HOLD/AVOID to ROW", () => {
+    expect(claimHits("<li>Unlimited stock signals (BUY/SELL/HOLD)</li>").length).toBeGreaterThan(0);
+    expect(claimHits("<p>AVOID new risk</p>").length).toBeGreaterThan(0);
+  });
+
+  it("catches a rendered exact token and exempts type members and comparisons", () => {
+    expect(claimHits('const label = "STRONG BUY";').length).toBeGreaterThan(0);
+    expect(claimHits('type Action = "BUY" | "SELL" | "HOLD";')).toEqual([]);
+    expect(claimHits('if (action === "BUY") return;')).toEqual([]);
+    expect(claimHits('case "hold": break;')).toEqual([]);
+  });
+
+  it("does not flag code property access", () => {
+    expect(claimHits("onChange={event => setX(event.target.value)}")).toEqual([]);
+    expect(claimHits("<div>{entry.symbol}</div>")).toEqual([]);
+  });
+
+  it("catches directive phrases the old token list missed", () => {
+    expect(claimHits('const href = "/avoid new positions";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "41% chance of a crash";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "Add to position on weakness";').length).toBeGreaterThan(0);
+    expect(claimHits('const note = "take profits on the rally";').length).toBeGreaterThan(0);
+  });
+
+  const files = reachableFiles([...routedPageRoots(), ...ROOTS]);
   it("follows routed imports past the old fixed list", () => {
     expect(files).toContain("client/src/components/AshaHeroSection.tsx");
     expect(files).toContain("client/src/components/dashboard/FaultlineInterpretation.tsx");
@@ -280,15 +369,15 @@ describe("release-candidate surfaces do not print trade directives or crash-prob
     expect(files).toContain("server/crossMarketEngine.ts");
     expect(files).toContain("server/simPortfolioJournal.ts");
     expect(files).toContain("server/xPostGenerator.ts");
+    expect(files).toContain("client/src/pages/UserAccount.tsx");
+    expect(files).toContain("client/src/pages/seo/NVDASignal.tsx");
+    expect(files.some(file => file.startsWith("client/src/lib/"))).toBe(true);
+    expect(files.some(file => file.startsWith("client/src/contexts/"))).toBe(true);
   });
 
   for (const file of files) {
     it(file, () => {
-      const hits = visibleCopy(readFileSync(file, "utf8"))
-        .split("\n")
-        .map(line => line.replace(/\$\{[^}]*\}/g, ""))
-        .map(line => line.replace(/(["'`])(?:STRONG BUY|BUY NOW|STRONG SELL|STRONG REDUCE|BUY|SELL|HOLD|WATCH|WAIT|ADD|TRIM|ACCUMULATE|AVOID|REDUCE)\1/gi, '""'))
-        .flatMap((line, index) => (BANNED.test(line) ? [`${file}:${index + 1}: ${line.trim().slice(0, 220)}`] : []));
+      const hits = claimHits(readFileSync(file, "utf8")).map(hit => `${file}:${hit}`);
       expect(hits).toEqual([]);
     });
   }

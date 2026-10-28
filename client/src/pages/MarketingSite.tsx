@@ -54,7 +54,7 @@ const founderParagraphs = [
   "There is already more data than anyone can reasonably process.",
   "The challenge is understanding what the data means together.",
   "FAULTLINE was built to look across those relationships, identify where pressure is developing, and translate complex market conditions into intelligence that people can actually understand.",
-  "The goal isn't to tell you what to buy or sell.",
+  "The goal isn't to tell you which transaction to make.",
   "The goal is to help you see what may be changing beneath the surface, understand the forces driving it, and make your own decisions with better information.",
 ];
 
@@ -397,7 +397,7 @@ const trustPoints = [
   "Every input, weight, and band is published, including the static AI-concentration baseline.",
   "No 25-year backtest is claimed. Analogs are resemblance tests, and the research windows are validation labels only.",
   "High pressure does not mean an immediate crash. Low pressure does not mean risk is absent.",
-  "FAULTLINE does not tell you what to buy or sell. Nothing on this page is a solicitation or a personal recommendation.",
+  "FAULTLINE does not tell you which transaction to make. Nothing on this page is a solicitation or a personal recommendation.",
 ];
 
 const trustLinks = [

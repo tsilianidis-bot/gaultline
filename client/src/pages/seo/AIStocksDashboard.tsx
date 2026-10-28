@@ -19,7 +19,7 @@ export default function AIStocksDashboard() {
       features={[
         { icon: "◈", title: "Exposure is a description", desc: "The essay below groups companies by how their businesses relate to AI spending. Those groups are not live scores." },
         { icon: "◎", title: "No regime-fit score", desc: "This page does not score how an AI stock fits the macro regime, and it does not publish a numbered fit score." },
-        { icon: "⬡", title: "Shared Stock Thesis", desc: "Individual AI-stock conclusions use the Pentagonal Thesis. The thesis does not issue an unsupported buy or sell call." },
+        { icon: "⬡", title: "Shared Stock Thesis", desc: "Individual AI-stock conclusions use the Pentagonal Thesis. The thesis does not issue an unsupported transact call." },
         { icon: "◈", title: "Concentration is not a live gauge", desc: "Index concentration is discussed as background. This page does not measure it as a FAULTLINE score." },
         { icon: "◎", title: "No sector-rotation call", desc: "A company profile sector is a classification. It is not a capital-flow or sector-rotation signal." },
         { icon: "⬡", title: "Earnings dates need an as-of", desc: "An earnings date is not cited unless the provider supplies an as-of timestamp. A missing date stays a gap." },
@@ -27,7 +27,7 @@ export default function AIStocksDashboard() {
       contentSections={[
         {
           heading: "The AI Stock Universe — A Taxonomy of Exposure",
-          body: `Companies often discussed alongside AI spending do different work. Some sell compute hardware, such as NVIDIA and AMD. Some sell software used to deploy models, such as Palantir and Microsoft. Some run large platforms that also spend on AI, such as Meta, Alphabet, Amazon, and Tesla. Some supply components or manufacturing used by those businesses, such as Broadcom and TSMC.
+          body: `Companies often discussed alongside AI spending do different work. Some ship compute hardware, such as NVIDIA and AMD. Some ship software used to deploy models, such as Palantir and Microsoft. Some run large platforms that also spend on AI, such as Meta, Alphabet, Amazon, and Tesla. Some supply components or manufacturing used by those businesses, such as Broadcom and TSMC.
 
 These notes describe the business. They are not a rating, a ranking, or a live score, and they do not say which names are more exposed than others.`,
         },
@@ -35,7 +35,7 @@ These notes describe the business. They are not a rating, a ranking, or a live s
           heading: "AI Concentration Risk — The Systemic Dimension",
           body: `Index concentration is background, not a measurement on this page. This page does not state what share of an index sits in any group of stocks, and it does not compare that share with an earlier year.
 
-This page does not measure concentration as a live gauge and does not say which names to buy or sell. An individual name is read through the shared thesis, which lists missing inputs as gaps.
+This page does not measure concentration as a live gauge and does not say which names to transact. An individual name is read through the shared thesis, which lists missing inputs as gaps.
 
 A name can look reasonable on its own reported figures and still sit inside a concentrated index. This page does not turn that background into a ranking or a trade. FAULTLINE's AI Bubble Monitor assesses this concentration risk from a static 32.4% AI-concentration baseline (a fixed reference value with no live source and no published as-of date; not a live market-cap feed).`,
         },
@@ -52,8 +52,8 @@ No bubble rating: This page does not publish an exposure score, and it does not 
       ]}
       faqs={[
         {
-          question: "Does this page say which AI stocks to buy in 2026?",
-          answer: "No. The page does not publish buy, sell, hold, or watch classifications. An individual stock read is the shared Pentagonal Thesis, which withholds a conclusion when the inputs are missing.",
+          question: "Does this page say which AI stocks to favor in 2026?",
+          answer: "No. The page does not publish a transaction classification. An individual stock read is the shared Pentagonal Thesis, which withholds a conclusion when the inputs are missing.",
         },
         {
           question: "Does this page say whether an AI stock bubble will burst?",
@@ -65,11 +65,11 @@ No bubble rating: This page does not publish an exposure score, and it does not 
         },
         {
           question: "Does this page sort AI stocks into exposure tiers?",
-          answer: "No. The notes below describe what the businesses sell. They are not exposure tiers and they are not a ranking.",
+          answer: "No. The notes below describe what the businesses ship. They are not exposure tiers and they are not a ranking.",
         },
         {
           question: "What is the difference between AI infrastructure stocks and AI software stocks?",
-          answer: "AI infrastructure companies such as NVDA and AMD sell chips and related hardware used to train and run models. AI software companies such as PLTR and MSFT sell software used to deploy models. This page does not rank one group ahead of the other.",
+          answer: "AI infrastructure companies such as NVDA and AMD ship chips and related hardware used to train and run models. AI software companies such as PLTR and MSFT ship software used to deploy models. This page does not rank one group ahead of the other.",
         },
       ]}
       internalLinks={[

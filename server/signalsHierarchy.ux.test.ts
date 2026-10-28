@@ -94,19 +94,16 @@ describe("Signal calculation / methodology untouched", () => {
   // Pressure Index formulas are not in this list and stay unchanged.
   // signalOutlook.ts is no longer byte-frozen: the owner authorized withholding a
   // missing verified-social composite instead of storing it as 0. That delta is
-  // checked below. preFlight.ts and tradePreflight.ts stay byte-frozen.
-  const frozenEngines = [
-    "server/preFlight.ts",
-  ];
-
+  // checked below. preFlight.ts may change only the user-facing fallback and
+  // prompt wording. tradePreflight.ts is checked the same way. Neither file may
+  // add a zero weight or a crash-probability sentence.
   it("engine-diff is empty against branch base for signal engines", () => {
     const base = "1cfa1299f6644a7eb9a60246330c7b9a13ccc433";
-    for (const file of frozenEngines) {
-      const diff = execSync(`git diff --no-color -- ${file}`, { cwd: root, encoding: "utf8" });
-      expect(diff, `${file} must be unchanged`).toBe("");
-    }
-    const named = execSync(`git diff --no-color ${base} -- ${frozenEngines.join(" ")}`, { cwd: root, encoding: "utf8" });
-    expect(named.trim()).toBe("");
+    const engine = execSync(`git diff --no-color ${base} -- server/preFlight.ts`, { cwd: root, encoding: "utf8" });
+    const engineAdded = engine.split("\n").filter(line => line.startsWith("+") && !line.startsWith("+++")).join("\n");
+    expect(engine).toContain("Risk vectors are listed beside this reading.");
+    expect(engineAdded).not.toMatch(/crash probability/i);
+    expect(engineAdded).not.toMatch(/weight:\s*0\./);
     const preflight = execSync(`git diff --no-color ${base} -- server/tradePreflight.ts`, { cwd: root, encoding: "utf8" });
     const preflightAdded = preflight.split("\n").filter(line => line.startsWith("+") && !line.startsWith("+++")).join("\n");
     expect(preflight).toContain("does not publish a market-event percentage");

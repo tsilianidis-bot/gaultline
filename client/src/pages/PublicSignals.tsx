@@ -16,7 +16,7 @@ export default function PublicSignals() {
         { icon: "◎", title: "Momentum Breakouts", desc: "Identify momentum leaders and laggards as new data is published, read against the current macro regime." },
         { icon: "⬡", title: "AI Bubble Exposure", desc: "Flag equities with outsized AI-driven valuation risk and see your concentration exposure in a crowded trade." },
         { icon: "◈", title: "Liquidity-Sensitive Names", desc: "Identify which equities are most vulnerable to liquidity withdrawal — the first to break when conditions tighten." },
-        { icon: "◎", title: "Recession-Defensive Classifications", desc: "Separate true defensive names from false safety. FAULTLINE regime analysis identifies which equities hold in contraction." },
+        { icon: "◎", title: "Recession-Defensive Classifications", desc: "Separate true defensive names from false safety. FAULTLINE regime analysis identifies which equities remain steady in contraction." },
         { icon: "⬡", title: "Regular Refreshes", desc: "Signal labels refresh as macro conditions shift. Each reading shows its as-of time. No headline dependency." },
       ]}
     />

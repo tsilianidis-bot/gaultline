@@ -340,11 +340,11 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
                 <div style={VALUE}>{fmt(ds.entryZoneLow)} – {fmt(ds.entryZoneHigh)}</div>
               </div>
               <div>
-                <div style={LABEL}>Target 1</div>
+                <div style={LABEL}>Upper 1</div>
                 <div style={{ ...VALUE, color: "#00FF88" }}>{fmt(ds.target1)}</div>
               </div>
               <div>
-                <div style={LABEL}>Target 2</div>
+                <div style={LABEL}>Upper 2</div>
                 <div style={{ ...VALUE, color: "#00D4FF" }}>{fmt(ds.target2)}</div>
               </div>
               <div>

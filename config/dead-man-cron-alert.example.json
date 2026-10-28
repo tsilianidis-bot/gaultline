@@ -1,0 +1,20 @@
+{
+  "status": "prepared-not-activated",
+  "doNotDeploy": true,
+  "purpose": "Page when the scheduled seismograph cron never fires. The app cannot see a cron that never calls it.",
+  "watch": {
+    "job": "seismograph-daily",
+    "timezone": "America/New_York",
+    "expectSuccessBy": "16:50",
+    "sessionDaysOnly": true,
+    "skip": ["weekend", "nyse_holiday"]
+  },
+  "signal": {
+    "description": "The scheduled handler would POST once, after a completed claim, to the URL in FAULTLINE_DEAD_MAN_ALERT_URL. That env var is unset. Nothing in start-production.sh or the scheduler reads this file.",
+    "urlEnv": "FAULTLINE_DEAD_MAN_ALERT_URL",
+    "method": "POST",
+    "body": { "job": "seismograph-daily", "ok": true }
+  },
+  "pageWhen": "No success ping arrives by 16:50 America/New_York on an NYSE session day.",
+  "activation": "Owner creates the external monitor and sets the URL. This repository does not activate it."
+}

@@ -33,7 +33,7 @@ const TIER_CONFIG = {
     icon: <Zap size={18} />,
     description: 'Fast, intelligent, connected. Built for traders who want institutional signals without the institutional price.',
     features: [
-      { label: 'Unlimited stock signals (BUY/SELL/HOLD)', available: true },
+      { label: 'Unlimited stock condition readings', available: true },
       { label: 'Unlimited crypto signals', available: true },
       { label: 'Portfolio tracker with live P&L', available: true },
       { label: 'Alt Rotation tracking', available: true },

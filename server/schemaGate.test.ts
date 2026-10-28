@@ -5,6 +5,7 @@ describe("deploy schema gate", () => {
   it("names 0074-0076 when accessExpiresAt is absent", () => {
     const missing = missingSchemaObjects([], []);
     expect(missing).toContain("users.accessExpiresAt");
+    expect(missing).toContain("foreign key algo_outcome_prov_fk");
     const message = schemaGateMessage(missing);
     expect(message).toContain("Refusing to start");
     expect(message).toContain("0074_stripe_entitlement_resync.sql");
@@ -17,6 +18,7 @@ describe("deploy schema gate", () => {
     expect(missingSchemaObjects(
       ["accessExpiresAt", "entitlementRevision"],
       ["stripeSubscriptionCancellations", "pentagonalThesisRecords", "pentagonalThesisOutcomeScores"],
+      ["algo_outcome_prov_fk"],
     )).toEqual([]);
   });
 });

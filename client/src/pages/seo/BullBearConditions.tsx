@@ -7,12 +7,12 @@ const BullBearConditions = () => {
   return (
     <SEOLandingPage
       seo={{
-        title: "Is Now a Good Time to Buy Stocks? Bull/Bear Conditions",
+        title: "Is Now a Good Time to Own Stocks? Bull/Bear Conditions",
         description: "Comprehensive analysis of current bull and bear market conditions. Understand what defines each regime, current FAULTLINE readings, historical context, and how conditions compare to past transitions.",
         canonical: "/bull-bear-conditions",
       }}
       badge="Market Analysis"
-      headline="Is Now a Good Time to Buy Stocks? — Bull/Bear Conditions"
+      headline="Is Now a Good Time to Own Stocks? — Bull/Bear Conditions"
       subheadline="A plain-English answer: Evaluating the current market landscape requires a deep dive into prevailing bull and bear conditions. While no one can predict the future with certainty, understanding the underlying dynamics can inform your investment strategy. FAULTLINE provides critical insights into these regimes."
       ctaLabel="Explore FAULTLINE"
       ctaHref="/explore-faultline"
@@ -40,7 +40,7 @@ const BullBearConditions = () => {
         },
         {
           heading: "What Would Change the Outlook?",
-          body: `A shift toward more supportive conditions would usually involve inflation returning toward target without a deep recession, a move by central banks toward easier policy or at least a pause in hikes, and narrowing credit spreads. A slide into a stressed regime would usually show up as widening credit spreads, funding stress, rising unemployment, and tightening policy into slowing growth. FAULTLINE reads these conditions through the Pressure Index as new FRED data is published.`,
+          body: `A shift toward more supportive conditions would usually involve inflation returning toward the stated level without a deep recession, a move by central banks toward easier policy or at least a pause in hikes, and narrowing credit spreads. A slide into a stressed regime would usually show up as widening credit spreads, funding stress, rising unemployment, and tightening policy into slowing growth. FAULTLINE reads these conditions through the Pressure Index as new FRED data is published.`,
         },
       ]}
       faqs={[

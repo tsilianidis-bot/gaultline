@@ -4,12 +4,12 @@ export default function IsNowGoodTimeToBuyStocks() {
   return (
     <SEOLandingPage
       seo={{
-        title: "Is Now a Good Time to Buy Stocks? | FAULTLINE",
+        title: "Is Now a Good Time to Own Stocks? | FAULTLINE",
         description: "Evaluate current market conditions for stock buying with FAULTLINE's Pressure Index, regime classification, and historical analogs. Data-driven, not advice.",
         canonical: "/is-now-good-time-to-buy-stocks",
       }}
-      badge="MARKET ENTRY CONDITIONS"
-      headline={"Is Now a Good Time\nto Buy Stocks?"}
+      badge="MARKET CONDITION CONTEXT"
+      headline={"Is Now a Good Time\nto Own Stocks?"}
       subheadline="FAULTLINE's Pressure Index, regime classification, and historical analog engine provide a structured framework for evaluating whether current market conditions favor stock buying — or suggest caution."
       ctaLabel="VIEW CURRENT CONDITIONS"
       ctaHref="/pressure-index"
@@ -24,8 +24,8 @@ export default function IsNowGoodTimeToBuyStocks() {
       ]}
       contentSections={[
         {
-          heading: "How to Evaluate Whether Now Is a Good Time to Buy Stocks",
-          body: `The question of whether now is a good time to buy stocks does not have a single answer. It depends on the current market regime, the level of systemic risk, and how today's conditions compare to historical environments. FAULTLINE's approach is to provide a structured, data-driven framework for evaluating these conditions rather than offering a simple yes or no.
+          heading: "How to Evaluate Whether Now Is a Good Time to Own Stocks",
+          body: `The question of whether now is a good time to own stocks does not have a single answer. It depends on the current market regime, the level of systemic risk, and how today's conditions compare to historical environments. FAULTLINE's approach is to provide a structured, data-driven framework for evaluating these conditions rather than offering a simple yes or no.
 
 The FAULTLINE Pressure Index combines six weighted vectors — liquidity stress (high-yield spreads and SOFR), credit contagion, yield curve and 10-year level, macro sensitivity (CPI, PPI, federal funds), labor and rates, and a static AI-concentration baseline — built from eight FRED series into a single 0-100 score. Below 25 the measured inputs show little structural stress; from 45 the reading is Elevated Risk, and from 65 High Stress. It describes the pressure in the system today — it does not predict forward returns or the timing of a dislocation.
 
@@ -49,13 +49,13 @@ Understanding which historical environment today most resembles is useful contex
         },
         {
           heading: "Disclaimer",
-          body: `FAULTLINE is a market intelligence and educational platform. The Pressure Index, regime classifications, historical analogs, and all other indicators are tools for understanding market conditions — they are not personalized financial advice, investment recommendations, or guarantees of future performance. Whether now is a good time to buy stocks depends on your individual financial situation, time horizon, risk tolerance, and investment objectives. FAULTLINE's data should be one input among many in your decision-making process. Consult a qualified financial advisor before making investment decisions.`,
+          body: `FAULTLINE is a market intelligence and educational platform. The Pressure Index, regime classifications, historical analogs, and all other indicators are tools for understanding market conditions — they are not personalized financial advice, investment recommendations, or guarantees of future performance. Whether now is a good time to own stocks depends on your individual financial situation, time horizon, risk tolerance, and investment objectives. FAULTLINE's data should be one input among many in your decision-making process. Consult a qualified financial advisor before making investment decisions.`,
         },
       ]}
       faqs={[
         {
-          question: "How does FAULTLINE assess whether now is a good time to buy stocks?",
-          answer: "FAULTLINE uses the Pressure Index (a 0-100 systemic risk score), regime classification (five bands from Low Risk to Systemic Crisis), and historical analog matching to provide a structured framework for evaluating market entry conditions. The framework describes current structural conditions; it does not predict forward returns.",
+          question: "How does FAULTLINE assess whether now is a good time to own stocks?",
+          answer: "FAULTLINE uses the Pressure Index (a 0-100 systemic risk score), regime classification (five bands from Low Risk to Systemic Crisis), and historical analog matching to provide a structured framework for evaluating current market conditions. The framework describes current structural conditions; it does not predict forward returns.",
         },
         {
           question: "Is FAULTLINE's analysis personalized financial advice?",

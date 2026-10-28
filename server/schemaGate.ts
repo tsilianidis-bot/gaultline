@@ -13,6 +13,7 @@ export const REQUIRED_TABLES = [
   "pentagonalThesisRecords",
   "pentagonalThesisOutcomeScores",
 ] as const;
+export const REQUIRED_FOREIGN_KEYS = ["algo_outcome_prov_fk"] as const;
 
 export function schemaGateMessage(missing: string[]): string {
   return [
@@ -21,18 +22,27 @@ export function schemaGateMessage(missing: string[]): string {
     "Apply drizzle/0074_stripe_entitlement_resync.sql, drizzle/0075_pentagonal_thesis_records.sql, and drizzle/0076_algorithm_outcome_fk_name.sql on a backup before this deploy.",
     "See docs/RC_DEPLOYMENT_AND_SCHEDULER_RUNBOOK.md.",
     "Do not start against an unmigrated users table: a users select that includes accessExpiresAt fails with Unknown column.",
+    "0076 must leave the foreign key algo_outcome_prov_fk on algorithmOutcomeObservations.",
   ].join(" ");
 }
 
-export function missingSchemaObjects(presentColumns: Iterable<string>, presentTables: Iterable<string>): string[] {
+export function missingSchemaObjects(
+  presentColumns: Iterable<string>,
+  presentTables: Iterable<string>,
+  presentForeignKeys: Iterable<string> = [],
+): string[] {
   const columns = new Set(presentColumns);
   const tables = new Set(presentTables);
+  const keys = new Set(presentForeignKeys);
   const missing: string[] = [];
   for (const column of REQUIRED_USER_COLUMNS) {
     if (!columns.has(column)) missing.push(`users.${column}`);
   }
   for (const table of REQUIRED_TABLES) {
     if (!tables.has(table)) missing.push(`table ${table}`);
+  }
+  for (const key of REQUIRED_FOREIGN_KEYS) {
+    if (!keys.has(key)) missing.push(`foreign key ${key}`);
   }
   return missing;
 }
@@ -55,9 +65,17 @@ export async function assertDeploySchemaReady(databaseUrl = process.env.DATABASE
        WHERE TABLE_SCHEMA = DATABASE()
          AND TABLE_NAME IN ('stripeSubscriptionCancellations', 'pentagonalThesisRecords', 'pentagonalThesisOutcomeScores')`,
     );
+    const [keyRows] = await connection.query(
+      `SELECT CONSTRAINT_NAME AS name FROM information_schema.TABLE_CONSTRAINTS
+       WHERE CONSTRAINT_SCHEMA = DATABASE()
+         AND TABLE_NAME = 'algorithmOutcomeObservations'
+         AND CONSTRAINT_NAME = 'algo_outcome_prov_fk'
+         AND CONSTRAINT_TYPE = 'FOREIGN KEY'`,
+    );
     const missing = missingSchemaObjects(
       (columnRows as Array<{ name: string }>).map(row => row.name),
       (tableRows as Array<{ name: string }>).map(row => row.name),
+      (keyRows as Array<{ name: string }>).map(row => row.name),
     );
     if (missing.length > 0) {
       throw new Error(schemaGateMessage(missing));

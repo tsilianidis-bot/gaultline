@@ -120,7 +120,7 @@ function strategyText(r: CryptoRegimeLabel): string {
   const map: Record<CryptoRegimeLabel, string> = {
     "Bull Market":                       "Ride momentum. Larger share BTC and quality alts. Use trailing downside marks.",
     "Expansion":                         "Add gradually on dips. Favour BTC and ETH. Reduce stablecoin allocation.",
-    "Late Bull / Euphoria":              "Take profits. Reduce alt exposure. Raise stablecoin reserves. Pass over FOMO additions.",
+    "Late Bull / Euphoria":              "Record gains. Reduce alt exposure. Raise stablecoin reserves. Pass over FOMO additions.",
     "Distribution":                      "Shift to stablecoins. Reduce alt exposure significantly. Protect gains.",
     "Bear Market":                       "Capital preservation. Favour stablecoins and cash. Pass over catching falling knives.",
     "Capitulation":                      "Extreme caution. Potential final flush — watch for reversal signals before re-opening.",
@@ -434,7 +434,7 @@ function buildActionableInterpretation(regime: CryptoRegimeLabel, confidence: nu
   const map: Record<CryptoRegimeLabel, string> = {
     "Bull Market": `${confText} bull market signal. Bitcoin is in a confirmed uptrend with expanding liquidity and positive macro conditions. Larger share BTC and quality alts. Use momentum as your guide. ${mac.overallMacroSignal === "Bullish" ? "Macro conditions are supportive." : "Monitor macro for signs of deterioration."}`,
     "Expansion": `${confText} early bull expansion. The cycle is gaining momentum but is not yet in full bull mode. Add gradually BTC and ETH on dips. Reduce stablecoin allocation gradually. ${alt.altcoinSeasonProbability > 50 ? "Altcoin season probability is elevated — selective exposure may be warranted." : "Maintain BTC/ETH focus for now."}`,
-    "Late Bull / Euphoria": `${confText} euphoria signal. This is historically the highest-risk phase of the bull cycle. Take profits systematically. Raise stablecoin reserves. Pass over FOMO additions. The risk of a cycle top is elevated.`,
+    "Late Bull / Euphoria": `${confText} euphoria signal. This is historically the highest-risk phase of the bull cycle. Record gains systematically. Raise stablecoin reserves. Pass over FOMO additions. The risk of a cycle top is elevated.`,
     "Distribution": `${confText} distribution signal. Long-term holders appear to be smaller in this phase. Stablecoins are the larger share of the recorded mix. This is not an instruction.`,
     "Bear Market": `${confText} bear market signal. Capital preservation is the primary objective. Favour stablecoins and cash. Pass over catching falling knives. ${mac.overallMacroSignal === "Bearish" ? "Macro conditions are deteriorating — heightened caution is warranted." : "Monitor macro for signs of stabilisation."}`,
     "Capitulation": `${confText} capitulation signal. Extreme fear and forced selling dominate. While this often marks a long-term bottom, timing is extremely difficult. Pass over aggressive positioning. Wait for volume confirmation and stabilising price action before re-opening.`,

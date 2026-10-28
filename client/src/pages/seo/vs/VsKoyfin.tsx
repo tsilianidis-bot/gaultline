@@ -62,7 +62,7 @@ const VsKoyfin = () => {
         },
         {
           question: 'How does FAULTLINE help with risk management?',
-          answer: 'FAULTLINE helps with risk management by identifying periods of elevated systemic risk and classifying market regimes. This allows investors to proactively adjust their portfolio exposure, hedge against potential downturns, and avoid periods unfavorable for certain asset classes.',
+          answer: 'FAULTLINE helps with risk management by identifying periods of elevated systemic risk and classifying market regimes. This allows investors to proactively adjust their portfolio exposure, hedge against potential downturns, and see when the reading is unfavorable for certain asset classes.',
         },
       ]}
       internalLinks={[

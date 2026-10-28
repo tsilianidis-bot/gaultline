@@ -50,7 +50,7 @@ const CRYPTO_DATA: Record<string, CryptoData> = {
       { q: "What drives Bitcoin's price?", a: "Bitcoin is driven by macro liquidity conditions, institutional demand (ETF flows), halving supply dynamics, regulatory developments, and correlation with broader risk assets during stress events." },
       { q: "How does Bitcoin perform in a market crash?", a: "Bitcoin initially correlates with risk assets during systemic stress events (as seen in COVID crash, 2022 bear market). However, Bitcoin often recovers faster than traditional assets once liquidity conditions stabilize." },
       { q: "What is Bitcoin's risk score?", a: "FAULTLINE's Bitcoin Risk Dashboard generates a daily risk score incorporating macro regime, liquidity conditions, and systemic pressure. Access the latest published score at FAULTLINE." },
-      { q: "Should I buy Bitcoin now?", a: "FAULTLINE does not provide financial advice. We provide macro regime context, risk scores, and signal intelligence to help you make informed decisions. Check the current Bitcoin regime before entering any position." },
+      { q: "What is the Bitcoin reading right now?", a: "FAULTLINE does not provide financial advice. We provide macro regime context, risk scores, and signal intelligence to help you make informed decisions. Check the current Bitcoin regime before entering any position." },
     ],
   },
   eth: {

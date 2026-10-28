@@ -63,7 +63,7 @@ const BestMarketRiskIndicators = () => {
         },
         {
           question: 'Is FAULTLINE suitable for individual investors?',
-          answer: 'FAULTLINE is designed for serious investors and financial professionals who seek deep market intelligence and a comprehensive understanding of risk. While the insights are powerful, they are intended for those who actively manage portfolios or make informed financial decisions, rather than casual investors seeking simple \"buy/sell\" signals.',
+          answer: 'FAULTLINE is designed for serious investors and financial professionals who seek deep market intelligence and a comprehensive understanding of risk. While the insights are powerful, they are intended for those who actively manage portfolios or make informed financial decisions, rather than casual investors seeking simple \"transaction\" signals.',
         },
       ]}
       internalLinks={[

@@ -280,8 +280,7 @@ describe("Part 4 — Precise signal language", () => {
     });
     const result = computeTradingSignal(strongInput, neutralRegime);
     if (result.action === "BUY") {
-      const buyLabels = ["Accumulation", "Breakout", "Momentum", "Dip Buy"];
-      expect(buyLabels.some(l => result.actionLabel.includes(l))).toBe(true);
+      expect(result.actionLabel).toBe("Positive reading");
     }
     // Regardless of action, actionLabel is descriptive (more than 3 chars)
     expect(result.actionLabel.length).toBeGreaterThan(3);
@@ -297,8 +296,7 @@ describe("Part 4 — Precise signal language", () => {
       sparkline7d: Array.from({ length: 48 }, (_, i) => 65000 - i * 400),
     }));
     if (result.action === "SELL") {
-      const sellLabels = ["Avoid", "Exit", "Reduce", "Distribution", "Caution"];
-      expect(sellLabels.some(l => result.actionLabel.includes(l))).toBe(true);
+      expect(result.actionLabel).toBe("Strained reading");
     }
     expect(result.actionLabel.length).toBeGreaterThan(3);
   });

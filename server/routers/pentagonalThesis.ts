@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { normalizeThesisSymbol } from "../../shared/pentagonalThesis";
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { adminProcedure, publicProcedure, router } from "../_core/trpc";
 import { composeStockPentagonalThesis } from "../pentagonalThesisCompose";
 import { maybeAppendThesisRecord } from "../pentagonalThesisRecord";
 
@@ -44,7 +44,7 @@ export const pentagonalThesisRouter = router({
     assertPentagonalThesisRateLimit(ctx.req.ip || "unknown");
     return composeStockPentagonalThesis(input.symbol);
   }),
-  recordForSymbol: protectedProcedure.input(symbolInput).mutation(async ({ input }) => {
+  recordForSymbol: adminProcedure.input(symbolInput).mutation(async ({ input }) => {
     assertPentagonalThesisRateLimit("authenticated-thesis-record");
     const thesis = await composeStockPentagonalThesis(input.symbol, { useCache: false });
     const persistence = await maybeAppendThesisRecord(thesis);

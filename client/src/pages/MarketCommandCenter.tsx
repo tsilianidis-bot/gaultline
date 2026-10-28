@@ -144,9 +144,9 @@ function SmartDiscovery() {
 
   const QUICK_ACTIONS = [
     { label: "Best swing trades", query: "What are the best swing trades right now?" },
-    { label: "Should I acquire NVDA?", query: "Should I acquire NVDA?" },
+    { label: "NVDA pressure reading", query: "What is the NVDA pressure reading?" },
     { label: "What are institutions buying?", query: "What are institutions buying right now?" },
-    { label: "Best AI stocks", query: "What are the best AI stocks to acquire right now?" },
+    { label: "AI pressure reading", query: "What is the pressure reading for AI stocks?" },
     { label: "Bitcoin risk", query: "What is the risk level for Bitcoin right now?" },
     { label: "Today's market verdict", query: "What is today's market verdict and regime?" },
   ];
@@ -403,8 +403,8 @@ function MarketCommandCenterInner() {
       },
       {
         label: "HIGHEST CONVICTION CRYPTO",
-        value: riskLevel === "low" ? "BTC / ETH" : riskLevel === "moderate" ? "BTC ONLY" : "Not published",
-        sub: riskLevel === "low" ? "Higher-risk appetite crypto rotation active" : riskLevel === "moderate" ? "Bitcoin as digital gold" : "Crypto risk elevated",
+        value: riskLevel === "low" ? "Broad crypto reading" : riskLevel === "moderate" ? "Bitcoin reading" : "Not published",
+        sub: riskLevel === "low" ? "Higher-risk appetite crypto reading" : riskLevel === "moderate" ? "Bitcoin is the only name on this card" : "Crypto stress is elevated",
         color: riskLevel === "low" ? "#F7931A" : riskLevel === "moderate" ? "#F7931A" : "#FF2D55",
         href: "/app/crypto",
         icon: Bitcoin,

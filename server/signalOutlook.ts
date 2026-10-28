@@ -124,7 +124,7 @@ export interface PreflightImpact {
 
 export interface TradeParameterLevel {
   price: number | null;         // calculated dollar price (null if unavailable)
-  pctFromEntry: number | null;  // % distance from entry price (negative = below entry)
+  pctFromEntry: number | null;  // % distance from opening price (negative = below entry)
   label: string;                // short label, e.g. "Trade Stop", "Entry Zone"
   description: string;          // e.g. "Near current price — momentum entry"
   rationale: string;            // one-line explanation of why this level matters
@@ -683,7 +683,7 @@ function buildTradeFramework(
       thesisDesc: "Below the prior week's low — if price reaches here on an intraday trade, the setup has completely failed",
       thesisRationale: "Thesis failure for a day trade is a full structural breakdown; exit immediately with no averaging down",
       tp1Desc: "First intraday resistance (prior day's high or a key intraday pivot)",
-      tp1Rationale: "Take partial profits at the first resistance; this locks in gains and reduces higher-risk appetite the remaining position",
+      tp1Rationale: "Record a partial gain at the first resistance; this locks in gains and reduces higher-risk appetite the remaining position",
       tp2Desc: "Second intraday resistance or a measured move equal to the opening range height",
       tp2Rationale: "Measured move upper marks are the most reliable intraday TP levels; they represent the natural extension of the opening range",
       tp3Desc: "Extended upper mark at 2x the opening range height — only reached on high-momentum days",

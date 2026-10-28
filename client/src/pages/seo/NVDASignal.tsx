@@ -27,7 +27,7 @@ Macro Regime Alignment: NVDA performs best in LOW RISK macro environments charac
 
 AI Narrative Momentum: NVDA's revenue and valuation are directly tied to AI infrastructure spending by hyperscalers (Microsoft, Amazon, Google, Meta). When AI capex guidance from these companies is strong and rising, NVDA's forward estimates expand and the stock outperforms. When AI capex guidance disappoints or shows signs of peaking, NVDA's forward estimates compress rapidly.
 
-Technical Structure: the NVDA signal (BUY, SELL, HOLD, or WATCH) is computed from daily price data together with the current Pressure Index reading and regime band. FAULTLINE does not publish price targets or support/resistance levels on this page.
+Technical Structure: the NVDA reading is computed from daily price data together with the current Pressure Index reading and regime band. FAULTLINE does not publish price levels or a transaction classification on this page.
 
 The combination of these three inputs produces FAULTLINE's NVDA regime fit score (0-10) and signal classification, recalculated as new data is published.`}
       keyLevels={`FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:

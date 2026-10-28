@@ -5,7 +5,7 @@
  * and the Outcome Support Engine (scenario support scoring).
  *
  * Rules:
- * - No buy/sell/hold language
+ * - No transaction/hold language
  * - No predictions
  * - Scenario-based language only
  * - Data clearly labelled: live | fallback | stale | demo
@@ -702,7 +702,7 @@ export default function ReadingHistory() {
         {/* Page-level disclaimer */}
         <div className="border-t border-border/30 pt-4">
           <p className="text-[10px] text-muted-foreground/50 leading-relaxed">
-            FAULTLINE Reading History is for informational and educational purposes only. It does not constitute investment advice, financial guidance, or a recommendation to buy, sell, or hold any security. Past readings do not predict future market conditions. Always conduct your own research and consult a qualified financial professional before making investment decisions.
+            FAULTLINE Reading History is for informational and educational purposes only. It does not constitute investment advice, financial guidance, or a recommendation to transact in any security. Past readings do not predict future market conditions. Always conduct your own research and consult a qualified financial professional before making investment decisions.
           </p>
         </div>
       </div>

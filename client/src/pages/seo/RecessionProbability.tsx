@@ -39,7 +39,7 @@ More importantly, recession risk affects which asset classes, sectors, and indiv
 
 2. Labor — The monthly U.S. unemployment rate (UNRATE). A rising unemployment rate is one of the clearest signs of labor-market deterioration.
 
-3. Credit Spreads — The ICE BofA US High Yield spread (BAMLH0A0HYM2), the premium investors demand to hold junk bonds over Treasuries. Spreads widen as recession risk rises.
+3. Credit Spreads — The ICE BofA US High Yield spread (BAMLH0A0HYM2), the premium investors demand to own junk bonds over Treasuries. Spreads widen as recession risk rises.
 
 4. Inflation and Policy Rates — CPI (CPIAUCSL), PPI (PPIACO), and the federal funds rate (FEDFUNDS). Tight policy into slowing growth has preceded many past recessions.
 
@@ -68,7 +68,7 @@ FAULTLINE does not offer a recession probability or a recession score, and it do
           answer: "No. FAULTLINE does not offer a recession probability, so it has no recession tiers. The only fixed bands are the Pressure Index labels (LOW RISK, MODERATE RISK, ELEVATED RISK, HIGH STRESS, SYSTEMIC CRISIS), which describe current systemic stress rather than the likelihood of a recession. ELEVATED RISK and higher readings are a prompt to review exposure to cyclical sectors, high-beta equities, and leveraged positions.",
         },
         {
-          question: "Does a high Pressure Index reading mean I should sell everything?",
+          question: "Does a high Pressure Index reading mean I should change every position?",
           answer: "No. The Pressure Index is one input among many. It is a current systemic-stress measure, not a recession forecast, and FAULTLINE does not offer a recession probability. A HIGH STRESS reading alongside deteriorating credit conditions can justify a defensive review — reducing cyclical exposure, increasing cash, and adding defensive sectors. But it does not necessarily mean exiting all equity positions. FAULTLINE's Situation Room helps you stress-test specific portfolio moves against current conditions.",
         },
         {

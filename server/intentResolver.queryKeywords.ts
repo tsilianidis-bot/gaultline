@@ -15,7 +15,7 @@ export const MACRO_KEYWORDS = [
 export const PORTFOLIO_KEYWORDS = [
   "portfolio", "position", "holding", "allocation", "rebalance", "diversify",
   "my stocks", "my crypto", "my investments", "should i stay", "should i exit",
-  "take profits", "cut losses", "stop loss", "risk management",
+  "record gains", "cut losses", "stop loss", "risk management",
 ];
 
 export const OPPORTUNITY_KEYWORDS = [

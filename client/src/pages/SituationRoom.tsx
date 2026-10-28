@@ -73,15 +73,15 @@ const EXPOSURE_STEP2: Record<MoveType, { value: ExposureCategory; label: string;
     { value: "leveraged_exposure",   label: "Leveraged",           sub: "2x/3x ETFs, margin" },
   ],
   reduce_risk: [
-    { value: "technology",           label: "Technology",          sub: "Trim tech allocation" },
-    { value: "ai_infrastructure",    label: "AI Infrastructure",   sub: "Trim AI/semis" },
+    { value: "technology",           label: "Technology",          sub: "Smaller tech size" },
+    { value: "ai_infrastructure",    label: "AI Infrastructure",   sub: "Smaller AI/semis size" },
     { value: "large_cap_growth",     label: "Large Cap Growth",    sub: "Reduce growth exposure" },
     { value: "small_cap_growth",     label: "Small Cap Growth",    sub: "Reduce high-beta" },
     { value: "bitcoin",              label: "Bitcoin",             sub: "Reduce BTC" },
     { value: "ethereum",             label: "Ethereum",            sub: "Reduce ETH" },
     { value: "altcoins",             label: "Altcoins",            sub: "Reduce alt exposure" },
     { value: "leveraged_exposure",   label: "Leveraged",           sub: "Reduce leverage" },
-    { value: "concentrated_position",label: "Concentrated Position",sub: "Trim single large position" },
+    { value: "concentrated_position",label: "Concentrated Position",sub: "Smaller single large position" },
     { value: "options",              label: "Options",             sub: "Close or roll options" },
   ],
   hedge: [
@@ -105,11 +105,11 @@ const EXPOSURE_STEP2: Record<MoveType, { value: ExposureCategory; label: string;
     { value: "bitcoin",              label: "Stocks → Bitcoin",    sub: "Crypto has moved with higher-risk-appetite equity periods" },
   ],
   raise_cash: [
-    { value: "entire_portfolio",     label: "Across Portfolio",    sub: "Trim broadly, raise cash" },
+    { value: "entire_portfolio",     label: "Across Portfolio",    sub: "Smaller sizes, raise cash" },
     { value: "technology",           label: "From Technology",     sub: "Technology sleeve with a cash residual" },
     { value: "large_cap_growth",     label: "From Growth",         sub: "Growth sleeve with a cash residual" },
     { value: "bitcoin",              label: "From Crypto",         sub: "Crypto sleeve with a cash residual" },
-    { value: "concentrated_position",label: "Concentrated Position",sub: "Trim large single name" },
+    { value: "concentrated_position",label: "Concentrated Position",sub: "Smaller large single name" },
     { value: "leveraged_exposure",   label: "From Leverage",       sub: "Lower leverage, cash residual" },
   ],
   deploy_cash: [
@@ -179,7 +179,7 @@ const CRYPTO_OPTIONS: { value: string; label: string; icon: string }[] = [
 // ── Constants ─────────────────────────────────────────────────
 const MOVE_OPTIONS: { value: MoveType; label: string; glyph: string; sub: string }[] = [
   { value: "add_risk",           label: "Add Risk",           glyph: "↑", sub: "Review a larger weight in a sector, asset class, or theme" },
-  { value: "reduce_risk",        label: "Reduce Risk",        glyph: "↓", sub: "Trim or exit positions to lower overall exposure" },
+  { value: "reduce_risk",        label: "Reduce Risk",        glyph: "↓", sub: "Smaller sizes or an exit lower the recorded exposure" },
   { value: "hedge",              label: "Hedge",              glyph: "⛨", sub: "Protect existing positions against downside" },
   { value: "rotate",             label: "Rotate",             glyph: "⟳", sub: "Shift capital from one sector or asset to another" },
   { value: "raise_cash",         label: "Raise Cash",         glyph: "◎", sub: "Move part of the book into cash or equivalents" },
@@ -233,7 +233,7 @@ const POSITION_SIZE_OPTIONS: { value: string; label: string; sub: string }[] = [
 
 // ── Exit type options ──────────────────────────────────────────
 const EXIT_TYPE_OPTIONS: { value: string; label: string; sub: string }[] = [
-  { value: "partial_exit",  label: "Partial Exit",   sub: "Trim 25–50% of position" },
+  { value: "partial_exit",  label: "Partial Exit",   sub: "25–50% smaller recorded size" },
   { value: "full_exit",     label: "Full Exit",      sub: "Close entire position" },
   { value: "risk_reduction",label: "Risk Reduction", sub: "A smaller position size is under review" },
   { value: "profit_taking", label: "Profit Taking",  sub: "A reduction after a gain is under review" },

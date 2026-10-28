@@ -27,17 +27,17 @@ export type TradingAction = "BUY" | "SELL" | "HOLD" | "WATCH";
  * Stocks use equity-specific language; crypto overrides these via cryptoSignals.ts.
  */
 export const STOCK_ACTION_LABELS: Record<TradingAction, string> = {
-  BUY:  "Accumulation Zone",
-  SELL: "Reduce Exposure",
-  HOLD: "Hold",
-  WATCH: "Watch",
+  BUY:  "Positive reading",
+  SELL: "Negative reading",
+  HOLD: "Unchanged reading",
+  WATCH: "Unsettled reading",
 };
 
 export const CRYPTO_ACTION_LABELS: Record<TradingAction, string> = {
-  BUY:  "Accumulation Zone",
-  SELL: "Avoid New Entry",
-  HOLD: "Hold",
-  WATCH: "Watch",
+  BUY:  "Positive reading",
+  SELL: "Strained reading",
+  HOLD: "Unchanged reading",
+  WATCH: "Unsettled reading",
 };
 
 /** Returns the display label for a stock signal action. */
@@ -66,8 +66,8 @@ export interface RiskTier {
 }
 
 export interface RiskLevels {
-  tradeStop: RiskTier;       // ATR-based short-term stop (5–15% below entry)
-  swingStop: RiskTier;       // MA/support-based medium-term stop (10–25% below entry)
+  tradeStop: RiskTier;       // ATR-based short-term stop (5–15% below the opening)
+  swingStop: RiskTier;       // MA/support-based medium-term stop (10–25% below the opening)
   thesisFailure: RiskTier;   // Structural invalidation level (replaces old oversized stop)
   riskReward: number;        // R:R using tradeStop as primary risk measure
   tradeStopExplanation: string;
@@ -78,8 +78,8 @@ export interface RiskLevels {
 export interface PriceLevels {
   support: number;       // estimated support (recent low area)
   resistance: number;    // estimated resistance (recent high area)
-  entryZone: number;     // suggested entry price
-  stopLoss: number;      // ATR-based stop-loss (legacy — kept for backward compat)
+  entryZone: number;     // suggested opening price
+  stopLoss: number;      // ATR-based downside-mark (legacy — kept for backward compat)
   targetPrice: number;   // 2:1 R:R target based on direction
   riskReward: number;    // (target - entry) / (entry - stop), rounded to 1dp
   atr: number;           // estimated ATR (high - low range proxy)
@@ -359,12 +359,12 @@ function computeRiskLevels(
   dailyBars?: DailyBar[]
 ): RiskLevels {
   const isBull = action === "BUY" || action === "HOLD" || action === "WATCH";
-  const dir = isBull ? -1 : 1; // negative = below entry for longs
+  const dir = isBull ? -1 : 1; // negative = below the opening for longs
 
   // ── Trade Stop: 0.75–1.0× ATR below recent low ──────────────
   // Tight tactical stop — protects against normal intraday noise.
   const rawTradeStop = low - atr * 0.75;
-  // Clamp to 5–15% below entry
+  // Clamp to 5–15% below the opening
   const tradeStopMin = entry * (1 - 0.15);
   const tradeStopMax = entry * (1 - 0.04);
   const tradeStopPrice = parseFloat(
@@ -382,7 +382,7 @@ function computeRiskLevels(
   } else {
     swingStopRaw = low - atr * 1.5;
   }
-  // Clamp to 10–25% below entry
+  // Clamp to 10–25% below the opening
   const swingStopMin = entry * (1 - 0.26);
   const swingStopMax = entry * (1 - 0.08);
   const swingStopPrice = parseFloat(
@@ -399,7 +399,7 @@ function computeRiskLevels(
   } else {
     thesisRaw = swingStopPrice - atr * 2.5;
   }
-  // Clamp to 20–65% below entry
+  // Clamp to 20–65% below the opening
   const thesisMin = entry * (1 - 0.65);
   const thesisMax = entry * (1 - 0.18);
   // Must be below swing stop
@@ -414,19 +414,19 @@ function computeRiskLevels(
   const riskReward = tradeRisk > 0 ? parseFloat((reward / tradeRisk).toFixed(1)) : 0;
 
   // ── AI Explanations ───────────────────────────────────────
-  const tradeStopExplanation = `Trade Stop sits ${Math.abs(tradeStopPct).toFixed(1)}% below entry, just under recent intraday support. Designed to protect against normal volatility while keeping risk tight for active traders.`;
+  const tradeStopExplanation = `Trade downside mark sits ${Math.abs(tradeStopPct).toFixed(1)}% below the opening, just under recent intraday support. Designed to protect against normal volatility while keeping risk tight for active traders.`;
 
   const swingStopExplanation = dailyBars && dailyBars.length >= 20
-    ? `Swing Stop is anchored to the 20-day moving average (${Math.abs(swingStopPct).toFixed(1)}% below entry). A close below this level signals the short-term trend is broken.`
-    : `Swing Stop at ${Math.abs(swingStopPct).toFixed(1)}% below entry allows for normal trend fluctuations while protecting capital from a sustained breakdown.`;
+    ? `Swing downside mark is anchored to the 20-day moving average (${Math.abs(swingStopPct).toFixed(1)}% below the opening). A close below this level signals the short-term trend is broken.`
+    : `Swing downside mark at ${Math.abs(swingStopPct).toFixed(1)}% below the opening allows for normal trend fluctuations while protecting capital from a sustained breakdown.`;
 
   const thesisFailureExplanation = dailyBars && dailyBars.length >= 50
-    ? `Thesis Failure Level marks the 50-session structural low (${Math.abs(thesisPct).toFixed(1)}% below entry). A breach here means the original bullish thesis has fundamentally broken down.`
-    : `Thesis Failure at ${Math.abs(thesisPct).toFixed(1)}% below entry represents the structural invalidation point — where the original trade thesis is no longer valid.`;
+    ? `Thesis Failure Level marks the 50-session structural low (${Math.abs(thesisPct).toFixed(1)}% below the opening). A breach here means the original bullish thesis has fundamentally broken down.`
+    : `Thesis Failure at ${Math.abs(thesisPct).toFixed(1)}% below the opening represents the structural invalidation point — where the original trade thesis is no longer valid.`;
 
   return {
-    tradeStop: { price: tradeStopPrice, pctFromEntry: tradeStopPct, label: "Trade Stop" },
-    swingStop: { price: swingStopPrice, pctFromEntry: swingStopPct, label: "Swing Stop" },
+    tradeStop: { price: tradeStopPrice, pctFromEntry: tradeStopPct, label: "Trade downside mark" },
+    swingStop: { price: swingStopPrice, pctFromEntry: swingStopPct, label: "Swing downside mark" },
     thesisFailure: { price: thesisPrice, pctFromEntry: thesisPct, label: "Thesis Failure" },
     riskReward,
     tradeStopExplanation,

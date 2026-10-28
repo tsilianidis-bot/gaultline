@@ -295,7 +295,7 @@ export async function evaluateLedgerEntry(entry: {
     };
   }
 
-  // If we have no entry price, use LLM evaluation
+  // If we have no opening price, use LLM evaluation
   if (!entry.priceAtEntry) {
     const llmResult = await llmEvaluateMacro({
       verdict: entry.verdict,

@@ -78,14 +78,14 @@ export async function handleScheduledSimPortfolio(_req: Request, res: Response):
         const cost = decision.price * decision.quantity;
 
         if (cost > cash) {
-          log(`Insufficient cash for ${decision.ticker} BUY — need $${cost.toFixed(2)}, have $${cash.toFixed(2)}`);
+          log(`Insufficient cash for ${decision.ticker} acquisition — need $${cost.toFixed(2)}, have $${cash.toFixed(2)}`);
           continue;
         }
 
         // Check if already have a position
         const existingPos = openPositions.find(p => p.ticker === decision.ticker && p.status === "open");
         if (existingPos) {
-          log(`Already have open position in ${decision.ticker} — skipping BUY`);
+          log(`Already have open position in ${decision.ticker} — skipping acquisition`);
           continue;
         }
 
@@ -128,7 +128,7 @@ export async function handleScheduledSimPortfolio(_req: Request, res: Response):
           regime: pressure.regime,
         });
 
-        tradesSummary.push(`BUY ${decision.quantity} ${decision.ticker} @ $${decision.price.toFixed(2)}`);
+        tradesSummary.push(`Recorded acquisition ${decision.quantity} ${decision.ticker} @ $${decision.price.toFixed(2)}`);
         executedTrades.push({
           ticker: decision.ticker,
           action: "BUY",
@@ -137,7 +137,7 @@ export async function handleScheduledSimPortfolio(_req: Request, res: Response):
           rationale: decision.rationale.actionSummary,
         });
 
-        log(`✅ BUY ${decision.quantity} ${decision.ticker} @ $${decision.price.toFixed(2)}`);
+        log(`✅ Recorded acquisition ${decision.quantity} ${decision.ticker} @ $${decision.price.toFixed(2)}`);
       }
 
       if (decision.action === "SELL") {
@@ -182,7 +182,7 @@ export async function handleScheduledSimPortfolio(_req: Request, res: Response):
           regime: pressure.regime,
         });
 
-        tradesSummary.push(`SELL ${qty} ${decision.ticker} @ $${decision.price.toFixed(2)} (P&L: ${realizedPnl >= 0 ? "+" : ""}$${realizedPnl.toFixed(2)})`);
+        tradesSummary.push(`Recorded reduction ${qty} ${decision.ticker} @ $${decision.price.toFixed(2)} (P&L: ${realizedPnl >= 0 ? "+" : ""}$${realizedPnl.toFixed(2)})`);
         executedTrades.push({
           ticker: decision.ticker,
           action: "SELL",
@@ -191,7 +191,7 @@ export async function handleScheduledSimPortfolio(_req: Request, res: Response):
           rationale: decision.rationale.actionSummary,
         });
 
-        log(`✅ SELL ${qty} ${decision.ticker} @ $${decision.price.toFixed(2)} — P&L: ${realizedPnl >= 0 ? "+" : ""}$${realizedPnl.toFixed(2)}`);
+        log(`✅ Recorded reduction ${qty} ${decision.ticker} @ $${decision.price.toFixed(2)} — P&L: ${realizedPnl >= 0 ? "+" : ""}$${realizedPnl.toFixed(2)}`);
       }
     }
 
@@ -210,7 +210,7 @@ export async function handleScheduledSimPortfolio(_req: Request, res: Response):
     const journal = await generateDailyJournal(
       currentValuation,
       previousTotal,
-      tradesSummary.join("; ") || "No trades executed today — all positions held.",
+      tradesSummary.join("; ") || "No simulation records today — recorded positions are unchanged.",
       pressure,
     );
 

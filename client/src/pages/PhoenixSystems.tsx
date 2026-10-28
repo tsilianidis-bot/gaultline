@@ -197,7 +197,7 @@ export default function PhoenixSystems() {
             label: "APPROACH",
             heading: "Probabilistic, Not Prescriptive",
             body:
-              "Phoenix Systems products emphasise probabilistic reasoning over binary predictions. We surface likelihoods, regimes, and stress indicators — not buy or sell signals. The goal is to give users a more complete picture of risk, not to make decisions for them.",
+              "Phoenix Systems products emphasise probabilistic reasoning over binary predictions. We surface likelihoods, regimes, and stress indicators — not transact signals. The goal is to give users a more complete picture of risk, not to make decisions for them.",
           },
         ].map((item) => (
           <div key={item.label}>

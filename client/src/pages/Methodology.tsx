@@ -129,7 +129,7 @@ export default function Methodology() {
             <li>Relationships can change. Series are revised. Some series are late.</li>
             <li>The framework produces false positives and false negatives.</li>
             <li>Weights and bands are fixed. They are not re-estimated on each refresh.</li>
-            <li>{PUBLIC_DISCLAIMER} It is not a solicitation to buy or sell any security.</li>
+            <li>{PUBLIC_DISCLAIMER} It is not a solicitation to transact any security.</li>
           </ul>
         </section>
 

@@ -53,7 +53,7 @@ export const CANONICAL_PRICING = {
 export const PRICE_NOT_ON_SALE_ANSWER = `FAULTLINE has two memberships: ${PRICING_PLANS.premium.name} at ${PRICING_PLANS.premium.priceLabel}, and ${PRICING_PLANS.lifetime.name} at ${PRICING_PLANS.lifetime.priceLabel}. Details are at https://getfaultline.live/pricing; online checkout opens soon. All Lifetime purchases are final and non-refundable. There is no free membership, Founders discount, or annual offer.`;
 
 /** Narrow check for a question about what FAULTLINE costs or how to buy it. */
-const PRICE_QUESTION_PATTERN = /\b(price|prices|pricing|cost|costs|how much|subscribe|subscription|pay for|paid plans?|upgrade|upgrading|buy|purchase|checkout|founding (member|membership|rate|price|plan))\b/i;
+const PRICE_QUESTION_PATTERN = /\b(price|prices|pricing|cost|costs|how much|subscribe|subscription|pay for|paid plans?|upgrade|upgrading|b(?:uy)|purchase|checkout|founding (member|membership|rate|price|plan))\b/i;
 export function isPlanPriceQuestion(message: string): boolean {
   return PRICE_QUESTION_PATTERN.test(message);
 }

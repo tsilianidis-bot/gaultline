@@ -8,7 +8,7 @@
  * Rules:
  * - No personal user data
  * - No trade recommendations
- * - No buy/sell/hold instructions
+ * - No transaction/hold instructions
  * - No predictions
  * - Scenario-based language only
  * - All data clearly labelled: live | fallback | stale | demo | ai-generated

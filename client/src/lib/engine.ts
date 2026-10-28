@@ -201,7 +201,7 @@ function scoreInflationFed(ind: RawIndicators): DomainScore {
 
   const score = clamp(cpiScore * 0.30 + ppiScore * 0.20 + rateScore * 0.25 + policyErrorScore * 0.25);
   const drivers: string[] = [];
-  if (cpiScore > 3) drivers.push(`CPI ${ind.cpi.toFixed(1)}% — above 2% target`);
+  if (cpiScore > 3) drivers.push(`CPI ${ind.cpi.toFixed(1)}% — above stated 2% level`);
   if (ppiScore > 3) drivers.push(`PPI ${ind.ppi.toFixed(1)}% — pipeline pressure`);
   if (rateScore > 5) drivers.push(`Fed Funds ${ind.fedFundsRate.toFixed(2)}% — restrictive`);
   if (policyErrorScore > 5) drivers.push('Policy error risk: stagflation trap');
@@ -535,7 +535,7 @@ function computeAnalogSimilarity(ind: RawIndicators, domains: DomainScore[]): An
       id: 'inflation2022', era: 'Inflation/Rates Shock', year: '2022',
       similarity: normalize(inflationSim, 85),
       matchReasons: [
-        `CPI ${ind.cpi.toFixed(1)}% — above target`,
+        `CPI ${ind.cpi.toFixed(1)}% — above the stated level`,
         `Fed Funds ${ind.fedFundsRate.toFixed(2)}% — restrictive`,
         treasuryScore > 6 ? 'Duration risk elevated' : 'Rate sensitivity high',
       ].filter(Boolean),
@@ -544,7 +544,7 @@ function computeAnalogSimilarity(ind: RawIndicators, domains: DomainScore[]): An
       id: 'stagflation1970', era: '1970s Stagflation', year: '1973–82',
       similarity: normalize(stagflationSim, 70),
       matchReasons: [
-        `CPI ${ind.cpi.toFixed(1)}% — persistent above target`,
+        `CPI ${ind.cpi.toFixed(1)}% — persistent above the stated level`,
         `Unemployment ${ind.unemployment.toFixed(1)}% — rising`,
         inflationScore > 6 ? 'Fed trapped between inflation and growth' : 'Policy dilemma emerging',
       ].filter(Boolean),

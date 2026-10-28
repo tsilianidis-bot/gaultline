@@ -70,7 +70,7 @@ When `FAULTLINE_ENFORCE_DEPLOY_GUARD=1`, the boot refuses with a clear message i
 
 ## Schema gate before deploy
 
-`0074`, `0075`, and `0076` are not applied by boot. Boot runs `assertDeploySchemaReady` (`server/schemaGate.ts`) and refuses to listen if `users.accessExpiresAt`, `users.entitlementRevision`, `stripeSubscriptionCancellations`, `pentagonalThesisRecords`, or `pentagonalThesisOutcomeScores` are missing. The error names the three SQL files. Apply them on a backup before the deploy. An unmigrated `users` select that includes `accessExpiresAt` otherwise fails with `Unknown column`.
+`0074`, `0075`, and `0076` are not applied by boot. Boot runs `assertDeploySchemaReady` (`server/schemaGate.ts`) and refuses to listen if `users.accessExpiresAt`, `users.entitlementRevision`, `stripeSubscriptionCancellations`, `pentagonalThesisRecords`, `pentagonalThesisOutcomeScores`, or the foreign key `algo_outcome_prov_fk` on `algorithmOutcomeObservations` are missing. The error names the three SQL files. Apply them on a backup before the deploy. An unmigrated `users` select that includes `accessExpiresAt` otherwise fails with `Unknown column`.
 
 `0076` deletes outcome rows whose `provenanceId` does not exist before it adds `algo_outcome_prov_fk`, so orphan rows do not abort the foreign key. `0075` row triggers do not run for `TRUNCATE`. The deploy role must not receive `DROP` or `TRUNCATE` on the thesis tables.
 
@@ -81,6 +81,16 @@ FAULTLINE_ISOLATED_MARIADB=1 pnpm exec vitest run server/migration0057Fk.test.ts
 ```
 
 Systemic-regime infer on a weekend or NYSE holiday returns HTTP 200 `{ ok: true, alert: false, skipped: "nyse_closed" }` and does not run the job. After 16:45 ET on a session day with no completed seismograph claim, infer returns 409 `missed_scheduled_run` with `alert: true`.
+
+## External dead-man alert (prepared, not activated)
+
+A cron that never fires does not hit the app, so the in-app 409 cannot page anyone. `config/dead-man-cron-alert.example.json` is a prepared external check: an outside monitor expects a success ping from the scheduled seismograph by 16:50 America/New_York on NYSE session days, and pages if that ping is missing. It is not wired, not enabled, and not deployed. Do not create the monitor, do not set `FAULTLINE_DEAD_MAN_ALERT_URL`, and do not change Railway cron while this candidate is NO-GO.
+
+The owner runs the read-only privilege and orphan check on a backup, not on production:
+
+```bash
+mysql --batch --raw < scripts/prod-backup-readonly-checks.sql
+```
 
 ## Commands prepared and not executed
 

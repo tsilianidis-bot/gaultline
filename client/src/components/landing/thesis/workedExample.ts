@@ -40,7 +40,7 @@ export const ILLUSTRATIVE = {
     paths: [
       {
         name: "If conditions continue",
-        text: "The vectors hold roughly where they are and the reading stays inside its band. Supported by vectors that are not moving. Weakened by a sustained move in the vectors that carry the most weight.",
+        text: "The vectors stay roughly where they are and the reading stays inside its band. Supported by vectors that are not moving. Weakened by a sustained move in the vectors that carry the most weight.",
       },
       {
         name: "If conditions change",

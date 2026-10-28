@@ -26,6 +26,7 @@ import { invokeLLM } from "./_core/llm";
 import { log } from "./logger";
 import { providerRowFreshness } from "./evidenceFreshness";
 import type { EvidenceStatusLabel } from "../shared/evidenceStatus";
+import { POSTURE_WITHHELD } from "../shared/surfaceClaims";
 
 // ── Constants ─────────────────────────────────────────────────
 const CG_BASE = "https://api.coingecko.com/api/v3";
@@ -473,7 +474,7 @@ export async function buildStockOpportunity(
     // Determine direction
     let direction: OpportunityDirection = "WATCH";
     if (signal.action === "BUY" && confidence >= 50) direction = "LONG";
-    else if (signal.action === "SELL") direction = "AVOID";
+    else if (signal.action === "SELL") direction = POSTURE_WITHHELD;
     else if (pressure.overallPressure >= 70) direction = "DEFENSIVE";
 
     // Price levels
@@ -632,7 +633,7 @@ export async function buildCryptoOpportunity(
     // Determine direction from crypto signal
     let direction: OpportunityDirection = "WATCH";
     if (cryptoSignal.action === "BUY" && confidence >= 50) direction = "LONG";
-    else if (cryptoSignal.action === "SELL") direction = "AVOID";
+    else if (cryptoSignal.action === "SELL") direction = POSTURE_WITHHELD;
     else if (pressure.overallPressure >= 70) direction = "DEFENSIVE";
 
     // Use ATR-based levels from computeCryptoSignal — these are asset-specific
@@ -1291,7 +1292,7 @@ Based on ALL of the above, what is the single most optimal action right now? Con
 
 Return JSON:
 {
-  "actionType": "ACQUIRE|REDUCE|TRIM|KEEP|RAISE_CASH|HEDGE|REBALANCE|WAIT|ADD",
+  "actionType": "ACQUIRE|REDUCE|SCALE|KEEP|RAISE_CASH|HEDGE|REBALANCE|WAIT|ADD",
   "ticker": "ticker symbol or null",
   "assetType": "stock or crypto or null",
   "headline": "concise 8-12 word action headline",

@@ -113,7 +113,7 @@ interface FaultlineAnswer {
   upsideMostLikely?: string | null;
   upsideCatalysts?: string[];
   upsideInvalidation?: string | null;
-  // Direct answer fields — buy/sell/wait verdict
+  // Direct answer fields — transaction/wait verdict
   actionVerdict?: string | null;
   actionVerdictReason?: string | null;
   actionVerdictConditions?: string[];

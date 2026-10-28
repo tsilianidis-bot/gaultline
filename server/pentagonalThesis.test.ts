@@ -243,7 +243,7 @@ describe("Pentagonal Thesis engine", () => {
     const thesisRouter = readFileSync(resolve(root, "server/routers/pentagonalThesis.ts"), "utf8");
     const publicQuery = thesisRouter.slice(thesisRouter.indexOf("forSymbol:"), thesisRouter.indexOf("recordForSymbol:"));
     expect(publicQuery).not.toContain("maybeAppendThesisRecord");
-    expect(thesisRouter).toContain("recordForSymbol: protectedProcedure");
+    expect(thesisRouter).toContain("recordForSymbol: adminProcedure");
     expect(compose).not.toContain("crisisProbability");
     expect(migration).toContain("Do not apply");
     expect(readFileSync(resolve(root, ".env.example"), "utf8")).toContain("PENTAGONAL_THESIS_RECORD_WRITES=");

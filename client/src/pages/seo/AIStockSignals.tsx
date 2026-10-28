@@ -19,7 +19,7 @@ export default function AIStockSignals() {
         { icon: "◎", title: "AI Bubble Exposure Scoring", desc: "Gauge AI-driven valuation risk in each equity and flag concentration exposure in a crowded trade." },
         { icon: "⬡", title: "Momentum Breakout Detection", desc: "Surface pre-move setups using momentum, volume, and macro confirmation. No lagging indicators." },
         { icon: "◈", title: "Liquidity Sensitivity Ranking", desc: "Identify which equities are most vulnerable to liquidity withdrawal — the first to break when conditions tighten." },
-        { icon: "◎", title: "Recession-Defensive Classification", desc: "Separate true defensive names from false safety. Regime analysis identifies which equities hold in contraction." },
+        { icon: "◎", title: "Recession-Defensive Classification", desc: "Separate true defensive names from false safety. Regime analysis identifies which equities remain steady in contraction." },
         { icon: "⬡", title: "Regular Signal Refreshes", desc: "Signal labels refresh as macro conditions shift. Each reading shows its as-of time. No headline dependency." },
       ]}
       contentSections={[
@@ -74,7 +74,7 @@ Each category is designed to surface different types of opportunities across dif
       faqs={[
         {
           question: "Are FAULTLINE AI stock signals financial advice?",
-          answer: "No. FAULTLINE provides market intelligence and risk analysis for educational and informational purposes only. AI stock signals are analytical outputs, not buy or sell recommendations. Always conduct your own research and consult a qualified financial advisor before making investment decisions.",
+          answer: "No. FAULTLINE provides market intelligence and risk analysis for educational and informational purposes only. AI stock signals are analytical outputs, not transact recommendations. Always conduct your own research and consult a qualified financial advisor before making investment decisions.",
         },
         {
           question: "How often do AI stock signals update?",

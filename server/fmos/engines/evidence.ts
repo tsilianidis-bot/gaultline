@@ -128,7 +128,7 @@ function buildMacroFamily(
       family: "macro",
       signal: scoreToSignal(inflationStress),
       strength: inflationStress,
-      description: `CPI YoY at ${macro.cpiYoY.toFixed(1)}% — ${macro.cpiYoY > 4 ? "above target, Fed hawkish" : macro.cpiYoY > 2.5 ? "elevated but declining" : "near target"}`,
+      description: `CPI YoY at ${macro.cpiYoY.toFixed(1)}% — ${macro.cpiYoY > 4 ? "above the stated level, Fed hawkish" : macro.cpiYoY > 2.5 ? "elevated but declining" : "near target"}`,
       source: "FRED",
     });
   }

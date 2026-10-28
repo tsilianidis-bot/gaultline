@@ -317,7 +317,7 @@ function LedgerRow({ entry, onUpdateOutcome }: {
               borderRadius: "5px",
             }}>
               <div>
-                <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "9px" }}>PRICE AT ENTRY</div>
+                <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "9px" }}>PRICE AT OPEN</div>
                 <div style={{ ...MONO, fontSize: "13px", fontWeight: 700, color: "#F0F4FF" }}>
                   {formatPrice(entry.priceAtEntry)}
                 </div>

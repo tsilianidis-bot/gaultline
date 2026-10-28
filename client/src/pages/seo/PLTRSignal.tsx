@@ -50,8 +50,8 @@ Technical Context: PLTR has historically exhibited high volatility relative to t
 5. Macro Regime Sensitivity: Despite its government revenue base, PLTR's high valuation multiple makes it sensitive to macro regime transitions. A shift to HIGH STRESS (FAULTLINE Pressure Index 65+) typically triggers significant drawdowns in high-multiple growth stocks.`}
       faqs={[
         {
-          question: "Is PLTR a buy or sell right now?",
-          answer: "FAULTLINE's PLTR signal classification (BUY, SELL, HOLD, or WATCH) is available on the Signals tab. The classification is based on macro regime alignment, government AI spending momentum, AIP commercial adoption, and technical structure — refreshed as new data is published. This is not investment advice.",
+          question: "Is PLTR a transact right now?",
+          answer: "FAULTLINE's PLTR reading is available on the Signals tab. It uses macro regime alignment, government AI spending momentum, AIP commercial adoption, and technical structure, refreshed as new data is published. It is not a transaction classification and it is not investment advice.",
         },
         {
           question: "What makes Palantir different from other AI stocks?",

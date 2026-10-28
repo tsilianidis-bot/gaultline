@@ -89,7 +89,7 @@ function buildPositionSizing(
     "ACCUMULATE": `Staged opening (50–75% of upper mark allocation). ${weatherPenalty}`,
     "HOLD": `Maintain current position. No new additions until conditions improve.`,
     "WATCH": `No new positions. Monitor for opening opportunity.`,
-    "TRIM": `Reduce to 50% of current position. Take partial profits.`,
+    "TRIM": `Reduce to 50% of current position. Record a partial gain.`,
     "REDUCE": `Reduce to 25% of current position. Significant risk reduction warranted.`,
     "SELL": `Exit position. Capital preservation priority.`,
     "AVOID": `No exposure. Capital preservation is the only objective.`,

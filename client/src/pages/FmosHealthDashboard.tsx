@@ -580,7 +580,7 @@ export default function FmosHealthDashboard() {
                   <p className={`text-2xl font-bold font-mono ${
                     m.status === "good" ? "text-green-400" : m.status === "warn" ? "text-yellow-400" : "text-red-400"
                   }`}>{m.value}</p>
-                  <p className="text-slate-500 text-xs mt-1">Target: {m.target}</p>
+                  <p className="text-slate-500 text-xs mt-1">Mark: {m.target}</p>
                   <p className="text-slate-600 text-xs">{m.hint}</p>
                 </CardContent>
               </Card>

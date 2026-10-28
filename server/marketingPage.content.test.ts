@@ -69,7 +69,7 @@ describe("Marketing page positioning guardrails", () => {
   it("keeps the founder note verbatim and points both CTAs at public destinations", () => {
     expect(page).toContain("A NOTE FROM THE FOUNDER");
     expect(page).toContain("— JT");
-    expect(page).toContain("The goal isn't to tell you what to buy or sell.");
+    expect(page).toContain("The goal isn't to tell you which transaction to make.");
     expect(page).toContain('["Future intelligence", "/methodology#future"]');
   });
 });

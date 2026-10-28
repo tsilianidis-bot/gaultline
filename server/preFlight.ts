@@ -218,7 +218,7 @@ function buildLiquidityCondition(vectors: RiskVector[], pressure: FaultlinePress
       liquidityScore >= 60
         ? "Fed balance sheet reduction and elevated rates are compressing market liquidity. Thin order books increase slippage risk. Position sizing should account for reduced exit capacity."
         : liquidityScore >= 35
-        ? "Liquidity adequate at index level but thinner in small/mid-cap and high-yield. Monitor for sudden drying up during risk-off events."
+        ? "Liquidity adequate at index level but thinner in small/mid-cap and high-yield. Monitor for sudden drying up during lower-risk appetite events."
         : "Strong liquidity conditions. Fed accommodation or neutral stance supporting market depth. Low slippage risk for most position sizes."
     }`,
     indicators: [
@@ -245,7 +245,7 @@ function buildAIBubbleRisk(vectors: RiskVector[], pressure: FaultlinePressureOut
       : "AI theme valuations reasonable — concentration risk contained.",
     detail: `${
       aiScore >= 65
-        ? "Top AI/tech names represent an outsized share of index returns. Valuation multiples at historical extremes. A rotation or earnings miss in key names could trigger broad market repricing. Avoid adding concentrated AI exposure at current levels."
+        ? "Top AI/tech names represent an outsized share of index returns. Valuation multiples at historical extremes. A rotation or earnings miss in key names could trigger broad market repricing. New concentrated AI size is not described exposure at current levels."
         : aiScore >= 40
         ? "AI valuations elevated relative to earnings growth expectations. Concentration risk building but not yet at bubble levels. Monitor earnings revisions and capital expenditure guidance from key AI infrastructure names."
         : "AI sector valuations within historical norms. Earnings growth supporting current multiples. Concentration risk manageable."
@@ -487,7 +487,7 @@ function buildKeyRisks(vectors: RiskVector[], pressure: FaultlinePressureOutput)
       category: "credit",
       summary: `HY spreads ${creditScore >= 70 ? "aggressively widening" : "moderately elevated"}.`,
       detail: `Credit stress at ${creditScore}/100. High-yield spreads widening signals deteriorating corporate fundamentals and reduced risk appetite. Historically precedes equity drawdowns.`,
-      actionImplication: creditScore >= 70 ? "Reduce high-yield and leveraged equity exposure immediately." : "Monitor spread trajectory. Avoid adding credit-sensitive positions.",
+      actionImplication: creditScore >= 70 ? "Reduce high-yield and leveraged equity exposure immediately." : "Monitor spread trajectory. New credit-sensitive size is not described.",
     });
   }
 
@@ -499,7 +499,7 @@ function buildKeyRisks(vectors: RiskVector[], pressure: FaultlinePressureOutput)
       category: "liquidity",
       summary: `Market liquidity ${liquidityScore >= 65 ? "significantly reduced" : "showing stress"}.`,
       detail: `Liquidity risk at ${liquidityScore}/100. Reduced market depth increases slippage and exit risk. Position sizing should account for reduced capacity to exit quickly.`,
-      actionImplication: liquidityScore >= 65 ? "Reduce position sizes. Avoid illiquid instruments." : "Factor in wider spreads when sizing positions.",
+      actionImplication: liquidityScore >= 65 ? "Reduce position sizes. Illiquid instruments are a strained reading." : "Factor in wider spreads when sizing positions.",
     });
   }
 
@@ -511,7 +511,7 @@ function buildKeyRisks(vectors: RiskVector[], pressure: FaultlinePressureOutput)
       category: "ai",
       summary: `AI/tech concentration ${aiScore >= 70 ? "at extreme levels" : "building"}.`,
       detail: `AI speculation score at ${aiScore}/100. Narrow leadership in AI/tech names creates fragility. Index performance dependent on few names sustaining elevated multiples.`,
-      actionImplication: aiScore >= 70 ? "Avoid adding AI/tech concentration. Diversify across sectors." : "Monitor AI earnings guidance. Reduce concentration if multiples expand further.",
+      actionImplication: aiScore >= 70 ? "New AI/tech concentration is not described. Diversify across sectors." : "Monitor AI earnings guidance. Reduce concentration if multiples expand further.",
     });
   }
 
@@ -535,7 +535,7 @@ function buildKeyRisks(vectors: RiskVector[], pressure: FaultlinePressureOutput)
       category: "fed",
       summary: `Fed maintaining ${fedScore >= 70 ? "highly restrictive" : "restrictive"} stance.`,
       detail: `Fed policy pressure at ${fedScore}/100. Elevated rates compress equity valuations via higher discount rates and increase debt service costs for leveraged companies.`,
-      actionImplication: "Favor quality over growth. Avoid highly leveraged companies. Duration risk elevated in long-duration assets.",
+      actionImplication: "Favor quality over growth. Highly leveraged companies are a strained reading. Duration risk elevated in long-duration assets.",
     });
   }
 
@@ -547,7 +547,7 @@ function buildKeyRisks(vectors: RiskVector[], pressure: FaultlinePressureOutput)
       category: "breadth",
       summary: `Rally narrowing — fewer stocks ${breadthScore >= 70 ? "driving gains" : "participating"}.`,
       detail: `Breadth score at ${breadthScore}/100. Narrow market leadership is a classic late-cycle warning. When breadth deteriorates, index-level gains mask broad underlying weakness.`,
-      actionImplication: "Avoid chasing index highs. Focus on stocks with strong individual breadth. Watch for advance-decline line divergence.",
+      actionImplication: "Index highs are not a reason to add size. Focus on stocks with strong individual breadth. Watch for advance-decline line divergence.",
     });
   }
 
@@ -685,10 +685,10 @@ Top active alerts:
 ${topAlerts || "No critical alerts at this time."}
 
 Write a brief that:
-1. States the current market regime and what it means for risk-taking
-2. Highlights the most important risk factor to be aware of today
-3. Gives a clear directional awareness statement (not a trade recommendation)
-4. Ends with what to watch for that could change the picture
+1. States the current market regime as a measured reading
+2. Highlights the most important risk factor recorded today
+3. Gives a clear condition statement and does not tell the reader to transact
+4. Ends with which published inputs would change the picture
 
 Tone: professional, direct, institutional. No hedging language. No "I" statements. Write as FAULTLINE.`;
 
@@ -702,9 +702,9 @@ Tone: professional, direct, institutional. No hedging language. No "I" statement
     const content = response?.choices?.[0]?.message?.content;
     return typeof content === "string" && content.length > 20
       ? content
-      : `${pressure.regime} regime with pressure at ${pressure.overallPressure}/100. Market status: ${marketStatus}. ${pressure.alerts[0]?.detail ?? "Monitor key risk vectors before deploying capital."}`;
+      : `${pressure.regime} regime with pressure at ${pressure.overallPressure}/100. Market status: ${marketStatus}. ${pressure.alerts[0]?.detail ?? "Key risk vectors are listed beside this reading."}`;
   } catch {
-    return `${pressure.regime} regime. Systemic pressure at ${pressure.overallPressure}/100. Market status: ${marketStatus}. Key risk: ${pressure.alerts[0]?.title ?? "Elevated macro uncertainty"}. Monitor ${pressure.alerts[0]?.detail ?? "all risk vectors"} before committing capital.`;
+    return `${pressure.regime} regime. Systemic pressure at ${pressure.overallPressure}/100. Market status: ${marketStatus}. Key risk: ${pressure.alerts[0]?.title ?? "Elevated macro uncertainty"}. ${pressure.alerts[0]?.detail ?? "Risk vectors are listed beside this reading."}`;
   }
 }
 

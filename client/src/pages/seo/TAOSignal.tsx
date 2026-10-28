@@ -43,7 +43,7 @@ Crypto Market Cycle Alignment: TAO is a crypto asset, meaning its price is heavi
 
 AI Narrative Momentum: TAO is also an AI asset, meaning its price is influenced by the strength of the AI narrative in both crypto and traditional markets. When AI stocks (NVDA, PLTR, META) are outperforming and AI investment themes are dominant in financial media, TAO benefits from narrative tailwinds. When AI narrative momentum fades, TAO loses this tailwind.
 
-The FAULTLINE TAO signal is most bullish when BOTH conditions are met: crypto market in a higher-risk appetite phase (BTC dominance falling, ETH/BTC rising) AND AI narrative momentum is strong (AI stocks outperforming, AI capex guidance strong). When only one condition is met, the signal is WATCH. When neither condition is met, the signal is HOLD or SELL.`,
+The FAULTLINE TAO reading is strongest when BOTH conditions are met: crypto market in a higher-risk appetite phase (BTC dominance falling, ETH/BTC rising) AND AI narrative momentum is strong (AI stocks outperforming, AI capex guidance strong). When only one condition is met, the reading is mixed. When neither condition is met, the reading is strained. This is not a transaction classification.`,
         },
         {
           heading: "How Technical Levels Are Read: TAO, and Its Historical Volatility",

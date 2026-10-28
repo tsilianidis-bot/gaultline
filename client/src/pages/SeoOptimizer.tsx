@@ -234,7 +234,7 @@ function MetaGenerator() {
             className="bg-white/5 border-white/10 text-white placeholder:text-white/30 h-9 text-sm" />
         </div>
         <div>
-          <label className="text-xs text-white/50 uppercase tracking-wider mb-1.5 block">Target Keyword</label>
+          <label className="text-xs text-white/50 uppercase tracking-wider mb-1.5 block">Focus keyword</label>
           <Input value={keyword} onChange={e => setKeyword(e.target.value)}
             placeholder="e.g. market risk analysis"
             className="bg-white/5 border-white/10 text-white placeholder:text-white/30 h-9 text-sm" />

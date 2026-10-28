@@ -111,7 +111,7 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     relatedSymbols: ["nvda", "msft", "meta"],
     relatedCrypto: [],
     faqs: [
-      { q: "Is AMD a better buy than NVDA?", a: "AMD offers AI GPU exposure at a more reasonable valuation than NVDA, but with lower market share and a less mature software ecosystem. FAULTLINE tracks both for regime-aligned signal generation." },
+      { q: "How does the AMD reading compare with NVDA?", a: "AMD and NVDA are both tracked as AI GPU names. This page does not rank one as a better acquisition. It records valuation context, market share, and the software ecosystem beside the shared pressure reading." },
       { q: "Can AMD challenge NVIDIA in AI GPUs?", a: "AMD is making progress with MI300X adoption, but NVDA's CUDA ecosystem creates significant switching costs. AMD is best positioned as a second-source supplier rather than a primary replacement." },
       { q: "How does AMD perform in different market regimes?", a: "AMD is highly correlated with NVDA and the broader AI semiconductor complex. In bull regimes, AMD benefits from AI sentiment. In lower-risk appetite environments, it experiences sharp drawdowns." },
       { q: "What is AMD's relationship to the AI bubble?", a: "AMD is a direct AI bubble exposure stock. FAULTLINE's AI bubble monitor tracks AMD's valuation and concentration risk alongside NVDA and the broader AI complex." },

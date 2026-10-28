@@ -400,7 +400,7 @@ export const MOVE_LABELS: Record<MoveType, string> = {
   deploy_cash: "Deploy Cash",
   buy_specific_asset: "Named acquisition",
   sell_specific_asset: "Named reduction",
-  hold: "Hold",
+  hold: "Unchanged",
 };
 
 // Human-readable labels for exposure categories
@@ -988,7 +988,7 @@ function computeActionBias(
       case "deploy_cash": return `Conditions support deploying cash${tickerRef}${tfRef}. Size to quality names with regime alignment.`;
       case "sell_specific_asset": return `Conditions support exiting${tickerRef}${tfRef}. Elevated pressure and credit stress historically reward disciplined exits in specific names.`;
       case "raise_cash": return `Raising cash is well-aligned with current regime${tfRef}. Cash preserves optionality for a later fill at better risk-adjusted levels.`;
-      case "reduce_risk": return `Regime supports reducing${tickerRef} at current levels${tfRef}. Consider staged trimming to preserve optionality.`;
+      case "reduce_risk": return `The regime reading is consistent with a smaller recorded size${tickerRef}${tfRef}. A staged size change keeps the rest on record.`;
       case "hedge": return `Hedging conditions are favorable${tfRef}. Tail protection is cost-effective relative to current volatility regime.`;
       case "rotate": return `Sector rotation conditions are favorable${tfRef}. Defensive and quality sectors are outperforming in this regime.`;
       case "hold": return `Current regime supports holding${tickerRef}${tfRef}. No systemic trigger requiring defensive action.`;
@@ -1002,7 +1002,7 @@ function computeActionBias(
       case "deploy_cash": return `Mixed regime — deploy cash selectively${tfRef}. Staged deployment with defined invalidation is required.`;
       case "sell_specific_asset": return `Mixed signals${tickerRef}${tfRef}. Consider partial exit rather than full position close. Monitor for regime confirmation before completing the exit.`;
       case "raise_cash": return `Modest cash raise is prudent${tfRef}. Pass over full de-risking — regime does not yet confirm systemic deterioration.`;
-      case "reduce_risk": return `Partial trim is reasonable given current conditions${tfRef}. Maintain core position but reduce tail risk exposure.`;
+      case "reduce_risk": return `A smaller recorded size is consistent with current conditions${tfRef}. The core position stays on record.`;
       case "hedge": return `Partial hedge is warranted${tfRef}. Full hedge may be premature — monitor for regime confirmation.`;
       case "rotate": return `Rotation is feasible but timing is uncertain${tfRef}. Focus on relative strength within sectors rather than wholesale rotation.`;
       case "hold": return `Keep with active monitoring${tfRef}. Regime is transitional — review downside levels and position sizing.`;
@@ -1015,7 +1015,7 @@ function computeActionBias(
     case "deploy_cash": return `Macro regime does not support deploying cash${tickerRef}${tfRef}. Wait for pressure to normalize.`;
     case "sell_specific_asset": return `Low-pressure regime reduces urgency to exit${tickerRef}${tfRef}. Confirm fundamental deterioration before completing the exit — opportunity cost of early exit is elevated.`;
     case "raise_cash": return `Cash drag is significant in low-pressure environments${tfRef}. Maintain invested posture unless specific risk identified.`;
-    case "reduce_risk": return `Trimming${tickerRef} in a low-pressure environment may be premature${tfRef}. Ensure thesis has changed before reducing.`;
+    case "reduce_risk": return `A smaller recorded size${tickerRef} in a low-pressure environment may be early${tfRef}. The thesis is unchanged unless the inputs have changed.`;
     case "hedge": return `Hedging in low-volatility conditions is expensive${tfRef}. Consider lighter hedge or wait for a later fill.`;
     case "rotate": return `Low-pressure regime favors staying in current sector leaders${tfRef}. Rotation may underperform in this environment.`;
     case "hold": return `Holding${tickerRef} in this regime requires active risk management${tfRef}. Review downside mark levels and consider partial reduction.`;
@@ -1050,8 +1050,8 @@ function computeBestVersion(
       if (favorability >= 60) return "Move 15–25% of portfolio to cash or short-term Treasuries. Maintain dry powder for a later fill at better risk-adjusted levels.";
       return "Modest cash raise of 5–10%. Pass over full de-risking — maintain core positions in quality names.";
     case "reduce_risk":
-      if (favorability >= 60) return "Trim 20–30% of position at current levels. Retain core exposure for potential continuation. Re-evaluate in 2–4 weeks.";
-      return "Trim 10–15% as a precautionary measure. Pass over full exit unless fundamental thesis has broken down.";
+    if (favorability >= 60) return "A 20–30% smaller recorded size matches the current reading. The core stays on record. Re-read in 2–4 weeks.";
+    return "A 10–15% smaller recorded size matches the current reading. A full exit is not described unless the thesis has broken down.";
     case "hedge":
       if (favorability >= 60) return "Use put spreads on index (SPY/QQQ) for 30–60 day protection. Size hedge to cover 50–75% of equity exposure. Pass over over-hedging.";
       return "Light tail hedge only — 1–2% of portfolio in protective puts. Focus on cheap out-of-the-money options for asymmetric payoff.";
@@ -1485,7 +1485,7 @@ function computeMarketInterpretation(
     full_position: "deploying a full position",
   };
   const exitTypeLabel: Record<ExitType, string> = {
-    partial_exit: "a partial exit (25–50% trim)",
+    partial_exit: "a partial exit (25–50% of the recorded size)",
     full_exit: "a full exit",
     risk_reduction: "cutting to downside mark size",
     profit_taking: "taking profit at the upper price",
@@ -1564,9 +1564,9 @@ function computeMarketInterpretation(
     }
     if (moveType === "sell_specific_asset" && exitType) {
       const exitCtx: Record<ExitType, string> = {
-        partial_exit: " Partial exit (25–50% trim) — FAULTLINE validates whether trimming now is structurally justified or premature.",
+        partial_exit: " Partial exit (25–50% of the recorded size) — FAULTLINE records whether that size is consistent with the current reading.",
         full_exit: " Full exit — FAULTLINE checks whether current conditions support a complete close or if holding has merit.",
-        risk_reduction: " Cutting to downside mark size — FAULTLINE validates whether risk conditions justify the defensive trim.",
+        risk_reduction: " Cutting to downside mark size — FAULTLINE records whether the reading supports a smaller size.",
         profit_taking: " Taking profit at the upper price — FAULTLINE checks whether conditions support locking in gains or extending the wait.",
       };
       return exitCtx[exitType];
@@ -2129,7 +2129,7 @@ function computePortfolioActions(pressure: FaultlinePressureOutput, favorability
     actions.push({ action: "Reduce Speculative Exposure", rationale: "High-beta and speculative names underperform in elevated-pressure regimes", urgency: "medium" });
   } else if (p >= 45) {
     actions.push({ action: "Maintain Core Holdings", rationale: "Mixed regime — keep quality positions, pass over adding new speculative risk", urgency: "low" });
-    actions.push({ action: "Trim Extended Positions", rationale: "Moderate pressure suggests trimming names that have run significantly", urgency: "medium" });
+    actions.push({ action: "Smaller extended positions", rationale: "Moderate pressure is a higher-stress reading for names that have run significantly", urgency: "medium" });
     if (volatilityScore >= 50) actions.push({ action: "Reduce Position Sizes by 20%", rationale: "Elevated volatility increases execution risk — smaller size reduces P&L swings", urgency: "medium" });
   } else {
     actions.push({ action: "Increase Risk: +10–15%", rationale: `Low pressure regime (${p}/100) supports adding risk to high-conviction setups`, urgency: "low" });
@@ -2159,7 +2159,7 @@ function computeWhatFaultlineWouldDo(pressure: FaultlinePressureOutput, favorabi
     actions = [
       "Raise 15–20% cash",
       "Add tail-risk hedges",
-      "Trim extended momentum names",
+      "Smaller recorded size for extended momentum names",
       "Pass over new speculative additions",
       "Maintain core quality holdings",
       "Monitor credit spreads for stabilization signal",
@@ -2169,7 +2169,7 @@ function computeWhatFaultlineWouldDo(pressure: FaultlinePressureOutput, favorabi
     headline = "Stay selective — add only to high-conviction setups with defined risk";
     actions = [
       "Keep existing quality positions",
-      "Trim names with weakening momentum",
+      "Smaller recorded size for names with weakening momentum",
       "Add selectively to highest-conviction setups only",
       "Keep position sizes 20–30% smaller than normal",
       "Maintain existing hedges",
@@ -2548,17 +2548,17 @@ function computePortfolioImpact(
       lines.push({ category, currentAllocation: 20, targetAllocation: Math.max(5, 20 - reduceAmt), change: -reduceAmt, rationale: `Reduce ${category} exposure — pressure at ${p}/100` });
       headline = `Reduce ${category} by ${reduceAmt}%`;
       netRiskChange = "Decreased";
-      summary = `Trim ${reduceAmt}% from ${category} and keep as cash. ${p >= 65 ? "Elevated pressure warrants meaningful reduction." : "Moderate reduction preserves upside optionality."}`;
+      summary = `Record a ${reduceAmt}% smaller ${category} size and keep the difference as cash. ${p >= 65 ? "Elevated pressure is a higher-stress reading." : "The reading supports a moderate size change."}`;
       break;
     }
     case "raise_cash": {
       const raiseAmt = p >= 65 ? 15 : p >= 45 ? 10 : 7;
       lines.push({ category: "Cash", currentAllocation: baselines["Cash"], targetAllocation: baselines["Cash"] + raiseAmt, change: raiseAmt, rationale: "Raise cash buffer" });
       lines.push({ category: "US Large Cap Stocks", currentAllocation: baselines["US Large Cap Stocks"], targetAllocation: baselines["US Large Cap Stocks"] - Math.round(raiseAmt * 0.6), change: -Math.round(raiseAmt * 0.6), rationale: "Primary source of cash" });
-      lines.push({ category: "Technology", currentAllocation: baselines["Technology"], targetAllocation: baselines["Technology"] - Math.round(raiseAmt * 0.4), change: -Math.round(raiseAmt * 0.4), rationale: "Trim extended tech positions" });
+      lines.push({ category: "Technology", currentAllocation: baselines["Technology"], targetAllocation: baselines["Technology"] - Math.round(raiseAmt * 0.4), change: -Math.round(raiseAmt * 0.4), rationale: "Smaller recorded size for extended tech positions" });
       headline = `Raise cash to ${baselines["Cash"] + raiseAmt}%`;
       netRiskChange = "Decreased";
-      summary = `Raise cash from ${baselines["Cash"]}% to ${baselines["Cash"] + raiseAmt}% by trimming large cap and tech. ${input.raiseCashReason === "risk_reduction" ? "Driven by risk reduction objective." : "Tactical positioning for better additions."}`;
+      summary = `Raise cash from ${baselines["Cash"]}% to ${baselines["Cash"] + raiseAmt}% from a smaller large-cap and tech size. ${input.raiseCashReason === "risk_reduction" ? "The reading is a higher-stress band." : "The reading supports a later reallocation."}`;
       break;
     }
     case "deploy_cash": {

@@ -28,7 +28,7 @@ export interface SupportResistanceLevels {
 
 export interface TradeFrameworkLevels {
   entryZone: PriceLevel | null;
-  riskZone: PriceLevel | null;       // stop-loss / invalidation of trade
+  riskZone: PriceLevel | null;       // downside-mark / invalidation of trade
   profitTarget1: PriceLevel | null;  // 1:1 R/R
   profitTarget2: PriceLevel | null;  // 2:1 R/R
   stretchTarget: PriceLevel | null;  // 3:1 R/R or major resistance
@@ -433,8 +433,8 @@ export function computeCalculatedLevels(
       ? (resistances[1] ?? makeLevel(fmt(currentPrice + shortATR * 2), currentPrice, "3× ATR", "Short-term target 2"))
       : (supports[1] ?? makeLevel(fmt(currentPrice - shortATR * 2), currentPrice, "3× ATR", "Short-term target 2")),
     riskLevel: isBull
-      ? (supports[0] ? makeLevel(fmt(supports[0].price - effectiveAtr * 0.5), currentPrice, "Below Support 1", "Short-term stop-loss below nearest support") : makeLevel(fmt(currentPrice - shortATR), currentPrice, "1.5× ATR Below", "Short-term stop-loss"))
-      : (resistances[0] ? makeLevel(fmt(resistances[0].price + effectiveAtr * 0.5), currentPrice, "Above Resistance 1", "Short-term stop-loss above nearest resistance") : makeLevel(fmt(currentPrice + shortATR), currentPrice, "1.5× ATR Above", "Short-term stop-loss")),
+      ? (supports[0] ? makeLevel(fmt(supports[0].price - effectiveAtr * 0.5), currentPrice, "Below Support 1", "Short-term downside-mark below nearest support") : makeLevel(fmt(currentPrice - shortATR), currentPrice, "1.5× ATR Below", "Short-term downside-mark"))
+      : (resistances[0] ? makeLevel(fmt(resistances[0].price + effectiveAtr * 0.5), currentPrice, "Above Resistance 1", "Short-term downside-mark above nearest resistance") : makeLevel(fmt(currentPrice + shortATR), currentPrice, "1.5× ATR Above", "Short-term downside-mark")),
   };
 
   // Swing (1–6 weeks): 20-day structure + SMA

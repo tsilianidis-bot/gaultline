@@ -103,7 +103,7 @@ function AccumulationPhasePanel({ analysis }: { analysis: AccumulationPhaseAnaly
         <p className="text-base font-semibold text-white leading-relaxed">{analysis.directAnswer}</p>
         <p className="text-xs text-slate-400 mt-2 leading-relaxed">
           BTC may be forming a base, but a new bull cycle is not confirmed until price breaks major resistance
-          with strong volume, improving liquidity, and sustained risk-on confirmation.
+          with strong volume, improving liquidity, and a sustained higher-risk appetite reading.
         </p>
       </div>
 
