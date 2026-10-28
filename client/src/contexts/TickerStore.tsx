@@ -136,8 +136,17 @@ export function TickerStoreProvider({ children }: { children: ReactNode }) {
   );
 }
 
+const EMPTY_TICKER_STORE: TickerStoreState = {
+  current: null,
+  history: [],
+  askMode: "global",
+  askPlaceholder: "",
+  setTicker: () => undefined,
+  clearTicker: () => undefined,
+  hasTicker: false,
+  resolveAskContext: question => classifyAskIntent(question, null),
+};
+
 export function useTickerStore(): TickerStoreState {
-  const ctx = useContext(TickerStoreContext);
-  if (!ctx) throw new Error("useTickerStore must be used within TickerStoreProvider");
-  return ctx;
+  return useContext(TickerStoreContext) ?? EMPTY_TICKER_STORE;
 }

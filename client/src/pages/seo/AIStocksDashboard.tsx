@@ -37,7 +37,7 @@ These notes describe the business. They are not a rating, a ranking, or a live s
 
 This page does not measure concentration as a live gauge and does not say which names to buy or sell. An individual name is read through the shared thesis, which lists missing inputs as gaps.
 
-A name can look reasonable on its own reported figures and still sit inside a concentrated index. This page does not turn that background into a ranking or a trade. FAULTLINE's AI Bubble Monitor assesses this concentration risk from a static 32.4% AI-concentration baseline (a fixed reference value with no live source and no published as-of date; not a live market-cap feed).
+A name can look reasonable on its own reported figures and still sit inside a concentrated index. This page does not turn that background into a ranking or a trade. FAULTLINE's AI Bubble Monitor assesses this concentration risk from a static 32.4% AI-concentration baseline (a fixed reference value with no live source and no published as-of date; not a live market-cap feed).`,
         },
         {
           heading: "How to Use the AI Stocks Dashboard",
@@ -57,7 +57,7 @@ No bubble rating: This page does not publish an exposure score, and it does not 
         },
         {
           question: "Does this page say whether an AI stock bubble will burst?",
-          answer: "No. This page does not publish a bubble score, a crash probability, or a forecast of a valuation reset. Concentration is discussed as background history, not as a live gauge.",
+          answer: "No. This page does not publish a crash probability. It does not publish a bubble score or a forecast of a valuation reset. Concentration is discussed as background history, not as a live gauge.",
         },
         {
           question: "Does this page rank which AI stocks are most at risk?",

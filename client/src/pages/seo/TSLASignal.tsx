@@ -8,7 +8,7 @@ export default function TSLASignal() {
       sector="Electric Vehicles / AI & Robotics"
       description="Tesla stock signal analysis"
       seoTitle="TSLA — Tesla background and shared stock thesis | FAULTLINE"
-      seoDescription="Real-time TSLA signal analysis: Tesla's macro alignment score, AI and EV exposure rating, key support and resistance levels, bull and bear case scenarios, and regime-based signal classification."
+      seoDescription="Background on Tesla. The live stock read is the shared Pentagonal Thesis. This page does not publish a separate trade instruction."
       canonical="/stock/tsla"
       accentColor="#E31937"
       badge="TSLA SIGNAL INTELLIGENCE"
@@ -50,7 +50,7 @@ Historical Volatility Context: TSLA is one of the most volatile large-cap stocks
 5. Macro Regime Sensitivity: TSLA's high valuation multiple makes it highly sensitive to macro regime transitions. A shift to HIGH STRESS (FAULTLINE Pressure Index 65+) typically triggers significant TSLA drawdowns.`}
       faqs={[
         { question: "Is TSLA a buy or sell right now?", answer: "FAULTLINE's TSLA signal classification is available in real time on the Signals tab, based on macro regime alignment, EV demand cycle, AI optionality momentum, and technical structure. This is not investment advice." },
-        { question: "What is Tesla's AI exposure?", answer: "Tesla's AI exposure comes primarily from Full Self-Driving (FSD) — its autonomous driving software — and Optimus, its humanoid robot program. Both are embedded as optionality in TSLA's valuation. FAULTLINE tracks AI narrative momentum as one of the inputs to the TSLA signal." },
+        { question: "What is Tesla's AI exposure?", answer: "Tesla's vehicle software includes Full Self-Driving, and the company also describes a humanoid robot program. This page does not turn that description into a separate reading. The stock read is the shared thesis." },
         { question: "How do interest rates relate to Tesla's vehicle business?", answer: "Higher interest rates can raise monthly payments on financed vehicles. This page does not turn that into a separate macro reading or a second stock call. Rate policy is a driver only when the shared thesis has a fresh sourced market input." },
         { question: "What does this TSLA page refuse to rank?", answer: "It does not name a single largest threat for a future year, and it does not publish a separate reading. Competition, vehicle programs, and macro conditions stay background until the shared thesis has fresh evidence." },
         { question: "How volatile is TSLA compared to the S&P 500?", answer: "TSLA has historically moved more than the S&P 500 in both directions, including deep drawdowns from cycle highs. This page does not turn that history into a separate reading. The stock read is the shared thesis." },

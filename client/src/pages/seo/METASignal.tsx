@@ -8,7 +8,7 @@ export default function METASignal() {
       sector="Social Media / AI Infrastructure & Advertising"
       description="Meta Platforms stock signal analysis"
       seoTitle="META — Meta Platforms background and shared stock thesis | FAULTLINE"
-      seoDescription="Real-time META signal analysis: Meta Platforms' macro alignment score, AI infrastructure exposure, advertising cycle sensitivity, key support and resistance levels, and regime-based signal classification."
+      seoDescription="Background on Meta Platforms. The live stock read is the shared Pentagonal Thesis. This page does not publish a separate trade instruction."
       canonical="/stock/meta"
       accentColor="#0081FB"
       badge="META SIGNAL INTELLIGENCE"

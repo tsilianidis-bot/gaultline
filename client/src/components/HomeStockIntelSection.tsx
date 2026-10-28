@@ -198,11 +198,12 @@ export default function HomeStockIntelSection() {
 
         {/* Stock intelligence cards */}
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '8px' }}>
-          Shared stock thesis
+          Shared stock thesis · Illustrative Example, Not Current Signals
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginBottom: '8px' }}>
           <div data-preview-price style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '15px', color: '#F0F4FF' }}>—</div>
           <div data-preview-change style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: '#64748B', letterSpacing: '0.06em' }}>—</div>
+          <div data-example-label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.7)', letterSpacing: '0.06em' }}>EXAMPLE · NO QUOTE</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
           {["NVDA", "XLU", "ARKK"].map(symbol => (

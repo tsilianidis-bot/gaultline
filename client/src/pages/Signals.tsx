@@ -510,6 +510,7 @@ export function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signal
           paddingTop: '8px', marginTop: '4px',
         }}>
           {tradingSignal && <ConfidenceBar action={tradingSignal.action} />}
+          {tradingSignal && <RegimeAlignmentBadge alignment={tradingSignal.regimeAlignment} />}
           {/* Upgrade prompt when tier gate blocks signals */}
           {!tradingSignal && signalBlocked && (
             <div style={{
@@ -608,7 +609,7 @@ export function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signal
                   </div>
                 ))}
               </div>
-              <div data-price-levels-basis style={{ marginTop: '6px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.7)', letterSpacing: '0.06em' }}>{priceLevelsBasis(liveQuote, quote.badge)} · ATR-based</div>
+              <div data-price-levels-basis style={{ marginTop: '6px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.7)', letterSpacing: '0.06em' }}>{priceLevelsBasis(liveQuote, quote.badge)} · {priceLevelsBasis(liveQuote, quote.badge)} · ATR-based</div>
             </div>
           )}
 

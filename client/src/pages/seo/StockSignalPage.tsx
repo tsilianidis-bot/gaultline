@@ -66,7 +66,7 @@ export default function StockSignalPage({
       contentSections={[
         {
           heading: `How Technical Levels Are Read: ${ticker}`,
-          body: `This page does not publish support, entry, stop, or target figures. A completed-session range appears only inside the shared thesis when the bars are fresh.`,
+          body: `FAULTLINE does not publish price targets or support/resistance levels on this page. A completed-session range appears only inside the shared thesis when the bars are fresh.`,
         },
         {
           heading: `${companyName} (${ticker})`,

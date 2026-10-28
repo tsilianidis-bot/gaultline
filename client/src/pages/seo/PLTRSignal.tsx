@@ -8,7 +8,7 @@ export default function PLTRSignal() {
       sector="AI Software / Government & Enterprise Analytics"
       description="Palantir AI stock signal analysis"
       seoTitle="PLTR — Palantir background and shared stock thesis | FAULTLINE"
-      seoDescription="Real-time PLTR signal analysis: Palantir's macro alignment score, AI software exposure rating, key support and resistance levels, bull and bear case scenarios, and regime-based signal classification."
+      seoDescription="Background on Palantir. The live stock read is the shared Pentagonal Thesis. This page does not publish a separate trade instruction."
       canonical="/stock/pltr"
       accentColor="#00D4FF"
       badge="PLTR SIGNAL INTELLIGENCE"

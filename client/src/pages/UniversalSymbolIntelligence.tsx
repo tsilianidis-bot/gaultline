@@ -219,7 +219,7 @@ function OverviewTab({ report }: { report: DayTradeReport }) {
             { label: "Liquidity", value: report.liquidityRating, color: "#F0F4FF" },
             { label: "Hold Time", value: fmtHold(report.expectedHoldMinutes), color: "#00D4FF" },
             { label: "Intraday Trend", value: report.intradayTrend ?? "N/A", color: dirColor(report.direction) },
-          ].map(m => (
+          ].filter(metric => metric.label !== "Confidence").map(m => (
             <div key={m.label} style={CARD}>
               <div style={LABEL}>{m.label}</div>
               <div style={{ ...VALUE, color: m.color, fontSize: "12px" }}>{m.value}</div>
@@ -393,6 +393,7 @@ export function AIAnalysisTab({ report }: { report: DayTradeReport }) {
             <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: '22px', color: verdictColor, letterSpacing: '0.06em', textShadow: `0 0 20px ${verdictColor}50` }}>{verdictLabel}</div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(148,163,184,0.7)', marginTop: '3px' }}>
               {report.setupType} · <span data-confidence-status="not-established">confidence not established</span>
+              <div data-confidence-status="not-established">Not established</div>
             </div>
           </div>
         </div>

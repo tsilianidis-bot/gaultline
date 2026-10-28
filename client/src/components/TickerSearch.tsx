@@ -719,6 +719,8 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
       setHistory(newHistory);
       saveHistory(newHistory);
 
+      if (data.price != null && data.changePercent != null && data.volume != null && data.volumeMillions != null && data.open != null && data.high != null && data.low != null) {
+      // A missing price, change, or volume is shown on the card and is not scored.
       // Trigger LLM classification
       classifyMutation.mutate({
         ticker: t,

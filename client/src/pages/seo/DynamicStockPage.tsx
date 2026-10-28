@@ -398,7 +398,7 @@ export default function DynamicStockPage() {
         <section className="mb-12">
           <h2 className="text-2xl font-bold text-white mb-4">Macro Regime Context for {upper}</h2>
           <p className="text-[#A8B8CC] leading-relaxed mb-4">
-            Market context for {upper} is included in the thesis only when a fresh canonical reading is available. A missing reading is left blank.
+            Market context for {upper} is included in the thesis only when a fresh canonical reading is available. A missing reading is left blank. FAULTLINE's Pressure Index™ shows where systemic pressure is building.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
             <Link href="/market-regime-tracker" onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-cyan-400/30 transition-all">
