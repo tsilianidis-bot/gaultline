@@ -185,6 +185,17 @@ describe("client vocabulary", () => {
     expect(text).toContain("price.Lower-side condition");
     expect(text).toContain("a.Upper-side condition");
     expect(neutralizeChannelText("BUY.de BUY.fr BUY.xyz report.BUY.pdf")).toBe("BUY.de BUY.fr BUY.xyz report.BUY.pdf");
+    expect(neutralizeChannelText("BUY.com")).toBe("BUY.com");
+    expect(neutralizeChannelText("BUY.now")).toBe("Upper-side condition.now");
+    expect(neutralizeChannelText("SELL.today")).toBe("Lower-side condition.today");
+    expect(neutralizeChannelText("AVOID.it")).toBe("Lower-side condition.it");
+    expect(neutralizeChannelText("BUY.NVDA")).toBe("Upper-side condition.NVDA");
+    expect(neutralizeChannelText("STRONG BUY.Now")).toBe("Upper-side condition.Now");
+    expect(neutralizeChannelText("REDUCE.now")).toBe("Lower-side condition.now");
+    expect(neutralizeChannelText("BUY.2026")).toBe("Upper-side condition.2026");
+    expect(neutralizeChannelText("the.BUY.sign")).toBe("the.Upper-side condition.sign");
+    expect(neutralizeChannelText("BUY.Sell")).toBe("Upper-side condition.Lower-side condition");
+    expect(neutralizeChannelText("Contact SELL@x.io.")).toBe("Contact SELL@x.io.");
     const urls = Array.from({ length: 11 }, (_, index) => `https://cdn.example/${index}/BUY`);
     const restored = neutralizeChannelText(urls.join(" "));
     for (const url of urls) expect(restored).toContain(url);

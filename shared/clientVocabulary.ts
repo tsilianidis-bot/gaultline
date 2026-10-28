@@ -226,6 +226,7 @@ const CHANNEL_PROSE_TOKENS = [
   "BUY",
   "SELL",
   "AVOID",
+  "REDUCE",
 ];
 
 let channelTokenPattern: RegExp | null = null;
@@ -242,8 +243,13 @@ const MASK_EDGE = "\uE000";
 const LOCAL_PART = /[A-Za-z0-9._%+-]/;
 const DOMAIN_CHAR = /[A-Za-z0-9.-]/;
 const LETTER = /[A-Za-z]/;
-/** A short suffix after a dot: TLD (de, fr, xyz, com) or a file extension (pdf). */
-const HOST_OR_EXTENSION = /^[A-Za-z0-9]{2,24}(?![A-Za-z0-9])/;
+/** Real host suffixes and file extensions. English words and tickers are separators, not suffixes. */
+const HOST_OR_FILE_SUFFIX = new Set([
+  "com", "net", "org", "io", "co", "ai", "app", "dev", "de", "fr", "uk", "xyz",
+  "edu", "gov", "info", "biz", "us", "ca", "au", "jp", "nl", "eu", "tv", "me",
+  "pdf", "csv", "png", "jpg", "jpeg", "gif", "json", "html", "htm", "txt",
+  "xlsx", "xls", "doc", "docx", "xml", "svg", "zip",
+]);
 
 function isUrlBreak(char: string): boolean {
   return char === " " || char === "\n" || char === "\r" || char === "\t" || char === "<" || char === ">" || char === "\"" || char === "'";
@@ -278,6 +284,8 @@ function emailSpan(text: string, at: number): [number, number] | null {
   let sawDot = false;
   while (cursor < text.length && DOMAIN_CHAR.test(text[cursor] ?? "")) {
     if (text[cursor] === ".") {
+      const next = text[cursor + 1] ?? "";
+      if (next === "." || !DOMAIN_CHAR.test(next)) break;
       if (label === 0) return null;
       sawDot = true;
       label = 0;
@@ -335,9 +343,21 @@ function restoreMasks(text: string, masks: string[]): string {
 
 /**
  * Cashtags and hashtags stay. Hyphenated names stay (`Buy-Rite`).
- * A trade word immediately before a host suffix or file extension stays (`BUY.com`, `BUY.de`, `report.BUY.pdf`).
- * A trade word after a dot with nothing after it is its own segment and is neutralized (`price.SELL`, `a.BUY`).
+ * A trade word stays only when the next dot begins an allowlisted host or file suffix
+ * (`BUY.com`, `BUY.de`, `report.BUY.pdf`). `BUY.now`, `BUY.NVDA`, and `the.BUY.sign` are separators.
  */
+function allowlistedSuffix(text: string, offset: number, length: number): boolean {
+  if ((text[offset + length] ?? "") !== ".") return false;
+  let index = offset + length + 1;
+  let suffix = "";
+  while (index < text.length && /[A-Za-z0-9]/.test(text[index] ?? "")) {
+    suffix += text[index] ?? "";
+    index += 1;
+    if (suffix.length > 5) return false;
+  }
+  return HOST_OR_FILE_SUFFIX.has(suffix.toLowerCase());
+}
+
 function protectedProseToken(text: string, offset: number, length: number): boolean {
   const before = offset > 0 ? text[offset - 1] ?? "" : "";
   const after = text[offset + length] ?? "";
@@ -345,7 +365,7 @@ function protectedProseToken(text: string, offset: number, length: number): bool
   const word = /[A-Za-z0-9]/;
   if (before === "-" && word.test(text[offset - 2] ?? "")) return true;
   if (after === "-" && word.test(text[offset + length + 1] ?? "")) return true;
-  if (after === "." && HOST_OR_EXTENSION.test(text.slice(offset + length + 1))) return true;
+  if (allowlistedSuffix(text, offset, length)) return true;
   return false;
 }
 
