@@ -1593,11 +1593,11 @@ function computeMarketInterpretation(
       ? "Intraday window is narrow — elevated volatility requires tight additions and defined exits before the close."
       : "Intraday window is open. Look for the first 30–60 minutes of price action to confirm direction before committing.",
     this_week: creditScore >= 50
-      ? "Short-term window is compressed by credit stress. Staged fill over 2–3 sessions reduces timing risk."
-      : "1–5 session window. Enter on confirmation, not anticipation. Macro data releases this week are the key risk.",
+      ? `Credit vector is ${creditScore}/100 on a one-week card. Pressure Index is ${p}/100.`
+      : `Credit vector is ${creditScore}/100 on a one-week card. Pressure Index is ${p}/100.`,
     one_three_months: p >= 55
-      ? "Tactical window requires patience. Wait for pressure to show signs of stabilizing before full position sizing."
-      : "1–3 month window is constructive. Scale in over 2–4 weeks to reduce single-fill timing risk.",
+      ? `Pressure Index is ${p}/100 on a one-to-three-month card. No size is published.`
+      : `Pressure Index is ${p}/100 on a one-to-three-month card. Favorability inputs are on this card. No size is published.`,
     six_twelve_months: p >= 65
       ? "Strategic window is open but requires drawdown tolerance. Elevated pressure means the path will not be linear."
       : "6–12 month window is well-supported by current regime. Build position over 4–8 weeks and define your invalidation level.",

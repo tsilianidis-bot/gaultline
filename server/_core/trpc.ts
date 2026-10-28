@@ -1,4 +1,5 @@
 import { NOT_ADMIN_ERR_MSG, CORE_REQUIRED_ERR_MSG, PREMIUM_REQUIRED_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
+import { neutralizeClientPayload } from '@shared/clientVocabulary';
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
@@ -10,7 +11,21 @@ const t = initTRPC.context<TrpcContext>().create({
 });
 
 export const router = t.router;
-export const publicProcedure = t.procedure;
+
+/**
+ * Customer procedures. Admin and owner procedures are intentionally not wrapped.
+ * Whether those screens should show a stored token is an open owner decision.
+ */
+const clientVocabulary = t.middleware(async ({ next }) => {
+  const result = await next();
+  if (!result.ok) return result;
+  return {
+    ...result,
+    data: neutralizeClientPayload(result.data),
+  };
+});
+
+export const publicProcedure = t.procedure.use(clientVocabulary);
 
 const requireUser = t.middleware(async opts => {
   const { ctx, next } = opts;
@@ -31,7 +46,7 @@ const requireUser = t.middleware(async opts => {
   });
 });
 
-export const protectedProcedure = t.procedure.use(requireUser);
+export const protectedProcedure = t.procedure.use(clientVocabulary).use(requireUser);
 
 // Requires login + core, premium, or founding tier
 const requireCore = t.middleware(async opts => {
@@ -55,7 +70,7 @@ const requireCore = t.middleware(async opts => {
   return next({ ctx: { ...ctx, user: ctx.user } });
 });
 
-export const coreProcedure = t.procedure.use(requireCore);
+export const coreProcedure = t.procedure.use(clientVocabulary).use(requireCore);
 
 // Requires login + premium or founding tier
 const requirePremium = t.middleware(async opts => {
@@ -79,7 +94,7 @@ const requirePremium = t.middleware(async opts => {
   return next({ ctx: { ...ctx, user: ctx.user } });
 });
 
-export const premiumProcedure = t.procedure.use(requirePremium);
+export const premiumProcedure = t.procedure.use(clientVocabulary).use(requirePremium);
 
 export const ownerOrAdminProcedure = t.procedure.use(
   t.middleware(async opts => {

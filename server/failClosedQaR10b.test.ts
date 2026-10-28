@@ -330,7 +330,8 @@ describe("QA r10 — uncalibrated % strings (FMOS, adapters, daily brief)", () =
   const probability = { bull: 43, neutral: 43, bear: 14, primaryDriver: "Credit", bullEvidence: [], bearEvidence: [] } as any;
   it("FMOS quick interpretation headline and prompt carry no bull / bear %", () => {
     const quick = computeQuickInterpretation({ overallPressure: 33 } as any, { currentRegime: "MODERATE RISK" } as any, probability, { verdict: "HOLD", primaryReason: "r", positionSizing: "p" } as any);
-    expect(quick.headline).toBe("MODERATE RISK — HOLD");
+    expect(quick.headline).toBe("Pressure Index is 33/100. Regime label is MODERATE RISK.");
+    expect(quick.headline).not.toMatch(/\bHOLD\b/);
     const src = read("server/fmos/engines/aiInterpretation.ts");
     expect(src).not.toMatch(/Bull \$\{probability\.bull\}%|transitionProbability30d\}%|\$\{probability\.bull\}% bull/);
     expect(src).toContain("**Scenario weights:** uncalibrated (not offered as probabilities)");

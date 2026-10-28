@@ -16,7 +16,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useSEO } from "@/hooks/useSEO";
-import { observedDirection, publicConditionText } from "@shared/surfaceClaims";
+import { directionColor, publicConditionText } from "@shared/surfaceClaims";
 import {
   CheckCircle, XCircle, Clock, BookOpen, BarChart2,
   TrendingUp, TrendingDown, Activity, ArrowLeft,
@@ -62,11 +62,7 @@ interface LedgerEntry {
 // ── Helpers ───────────────────────────────────────────────────
 
 function verdictColor(verdict: string): string {
-  const direction = observedDirection(verdict);
-  if (direction === "positive") return "#00FF88";
-  if (direction === "negative") return "#FF4444";
-  if (direction === "mixed") return "#FFD700";
-  return "#00D4FF";
+  return directionColor(verdict);
 }
 
 function outcomeIcon(outcome: string) {

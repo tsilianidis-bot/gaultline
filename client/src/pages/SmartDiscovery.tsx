@@ -58,6 +58,7 @@ interface EvidenceScore {
 
 interface FaultlineAnswer {
   verdict: string;
+  internalDirection?: "positive" | "negative" | "mixed" | "unestablished";
   verdictColor: "green" | "yellow" | "red" | "blue";
   opportunityScore: number | null;
   /** QA r11 B9: the integrity validator withholds model confidence (null). */
@@ -2595,7 +2596,8 @@ export default function SmartDiscovery() {
           logMutation.mutate({
             ticker: fa.ticker ?? null,
             assetType: (fa.assetType as "stock" | "crypto" | null) ?? null,
-            verdict: fa.verdict ?? "NEUTRAL",
+            verdict: fa.verdict ?? "Condition not established",
+            internalDirection: fa.internalDirection ?? "unestablished",
             // QA r12 (B9b): both columns are NOT NULL (drizzle/schema.ts decisionLedger),
             // so these defaults are still written (no migration), but the server
             // withholds them on read and nothing displays or prompts with them.

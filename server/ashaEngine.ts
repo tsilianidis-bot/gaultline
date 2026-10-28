@@ -528,7 +528,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
             threatLevel: { type: "string", enum: ["LOW", "ELEVATED", "HIGH", "CRITICAL"], description: "Systemic threat level." },
             pressureIndex: { type: "number", description: "Systemic pressure score 0-100." },
             riskLevel: { type: "string", description: "Risk level label (e.g. Moderate, Elevated, High)." },
-                      suggestedBias: { type: "string", description: "The pressure score and regime label on this card. Do not name a trade class." },
+            suggestedBias: { type: "string", description: "The pressure score and regime label on this card. Do not name a trade class." },
             bullProbability: { type: ["number", "null"], description: "Authorized bull forecast probability only; otherwise null." },
             bearProbability: { type: ["number", "null"], description: "Authorized bear forecast probability only; otherwise null." },
             keyFindings: { type: "array", items: { type: "string" }, description: "EXACTLY 3-5 DISTINCT key findings. Each must address a different aspect. NO duplicates. NO disclaimers." },

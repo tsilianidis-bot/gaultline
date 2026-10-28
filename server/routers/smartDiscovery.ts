@@ -11,7 +11,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { runFMOSPipelineFast } from "../fmos/pipeline";
-import { neutralizeClientToken } from "./fmos";
+import { internalDirectionFromText, neutralConditionLabel } from "../../shared/clientVocabulary";
 import { getQuickOutlook } from "../signalOutlook";
 import { invokeLLM } from "../_core/llm";
 import { resolveIntent, detectQuestionIntent, QuestionIntent } from "../intentResolver";
@@ -70,6 +70,8 @@ export interface EvidenceScore {
 export interface FaultlineAnswer {
   // Core verdict
   verdict: string;
+  /** Server-side score sign. Not a trade class. */
+  internalDirection?: "positive" | "negative" | "mixed" | "unestablished";
   verdictColor: "green" | "yellow" | "red" | "blue";
   opportunityScore: number | null;
   confidence: number | null;
@@ -977,8 +979,11 @@ JSON schema:
 
   const integrityValidation = validateInterpretationOutput(raw, transaction);
   raw = withholdUnsupportedAskScores(withoutModelProbabilities(integrityValidation.normalizedOutput));
-  if (typeof raw.verdict === "string") raw.verdict = neutralizeClientToken(raw.verdict);
-  if (typeof raw.actionVerdict === "string") raw.actionVerdict = neutralizeClientToken(raw.actionVerdict);
+  if (typeof raw.verdict === "string") {
+    raw.internalDirection = internalDirectionFromText(raw.verdict);
+    raw.verdict = neutralConditionLabel(raw.verdict);
+  }
+  if (typeof raw.actionVerdict === "string") raw.actionVerdict = neutralConditionLabel(raw.actionVerdict);
 
   // Ensure collectiveReading is always present with a fallback
   const rawCollective = raw.collectiveReading as Record<string, unknown> | null | undefined;
@@ -1671,6 +1676,7 @@ export const smartDiscoveryRouter = router({
       ticker: z.string().nullable(),
       assetType: z.enum(["stock", "crypto"]).nullable(),
       verdict: z.string(),
+      internalDirection: z.enum(["positive", "negative", "mixed", "unestablished"]).optional(),
       opportunityScore: z.number(),
       confidence: z.number(),
       primaryDriver: z.string(),
@@ -1721,7 +1727,8 @@ export const smartDiscoveryRouter = router({
         userId: ctx.user.id,
         ticker: input.ticker,
         assetType: input.assetType,
-        verdict: input.verdict,
+        verdict: neutralConditionLabel(input.verdict).slice(0, 32),
+        recommendationType: input.internalDirection ?? internalDirectionFromText(input.verdict),
         opportunityScore: input.opportunityScore,
         confidence: input.confidence,
         primaryDriver: input.primaryDriver,

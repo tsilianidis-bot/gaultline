@@ -12,6 +12,7 @@ import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
 import { OUTLOOK_STRAINED } from "@shared/surfaceClaims";
+import { conditionColor, neutralConditionLabel } from "@shared/clientVocabulary";
 import { formatFactorScore } from "@/lib/factorScoreDisplay";
 import { outlookEnvironmentDisplay } from "@/lib/outlookEnvironmentDisplay";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -37,14 +38,8 @@ type OutlookRiskLevel = "Low" | "Moderate" | "High" | "Extreme";
 type TradeReadiness = "Cleared" | "Caution" | "Defensive";
 
 // ── Color helpers ─────────────────────────────────────────────
-function directionColor(d: OutlookDirection): string {
-  if (d === OUTLOOK_STRAINED) return "#FF9500";
-  switch (d) {
-    case "Bullish": return "#00FF88";
-    case "Bearish": return "#FF2D55";
-    case "Neutral": return "#64B5F6";
-    default:        return "#94A3B8";
-  }
+function directionColor(d: string): string {
+  return conditionColor(neutralConditionLabel(d));
 }
 
 function riskColor(r: OutlookRiskLevel): string {
@@ -255,7 +250,9 @@ function readingTitle(value: string): string {
   if (value === "Bullish") return "Higher-price heuristic";
   if (value === "Bearish") return "Lower-price heuristic";
   if (value === "Neutral") return "Mixed heuristic";
-  if (value === OUTLOOK_STRAINED) return "Strained reading";
+  const neutral = neutralConditionLabel(value);
+  if (neutral !== value.trim()) return neutral;
+  if (value === OUTLOOK_STRAINED) return neutralConditionLabel(value);
   return value && value.trim() ? value : "Reading unavailable";
 }
 

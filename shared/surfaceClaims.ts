@@ -1,3 +1,5 @@
+import { conditionColor, conditionDirection, neutralConditionLabel } from "./clientVocabulary";
+
 /**
  * User-facing condition text. Directive trade words stay in this module so
  * product surfaces can render a measured description without printing them.
@@ -46,12 +48,7 @@ export function observedDirectionSentence(action: string | null | undefined): st
 }
 
 export function directionColor(action: string | null | undefined): string {
-  switch (observedDirection(action)) {
-    case "positive": return "#00D4FF";
-    case "negative": return "#FF2D55";
-    case "mixed": return "#FFD700";
-    default: return "#64748B";
-  }
+  return conditionColor(neutralConditionLabel(action));
 }
 
 /** Replace a stored directive or crash-probability phrase before it is rendered. */
@@ -59,6 +56,8 @@ export function publicConditionText(value: string | null | undefined): string {
   if (value == null) return "Unavailable";
   const trimmed = value.trim();
   if (!trimmed) return "Unavailable";
+  const neutral = neutralConditionLabel(trimmed);
+  if (neutral !== trimmed) return neutral;
   if (containsTradeDirective(trimmed) && trimmed.split(/\s+/).length <= 3) return observedDirectionSentence(trimmed);
   if (containsCrashProbability(trimmed)) {
     return "No market-event percentage is published. Read the Pressure Index, its as-of time, and the listed gaps.";
@@ -130,13 +129,14 @@ export const SIM_SIDE = {
 export type SimulatedFillSide = (typeof SIM_SIDE)[keyof typeof SIM_SIDE];
 
 export function simulatedFillLabel(side: string | null | undefined): string {
-  if (side === SIM_SIDE.acquire || side === SIM_SIDE.add) return "Simulated fill, cash decreased";
-  if (side === SIM_SIDE.reduce || side === SIM_SIDE.trim) return "Simulated fill, cash increased";
+  const direction = conditionDirection(side);
+  if (direction === "positive") return "Simulated fill, cash decreased";
+  if (direction === "negative") return "Simulated fill, cash increased";
   return "Simulated record";
 }
 
 export function isSimulatedAcquisition(side: string | null | undefined): boolean {
-  return side === SIM_SIDE.acquire || side === SIM_SIDE.add;
+  return side === SIM_SIDE.acquire || side === SIM_SIDE.add || conditionDirection(side) === "positive";
 }
 
 /** Stored preflight value. Screens should render a measured description, not this token. */

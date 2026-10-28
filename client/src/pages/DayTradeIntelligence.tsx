@@ -1448,7 +1448,7 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
     { name: "Financials (XLF)",      bias: "Neutral",  note: "Rate-sensitive; watch Fed signals" },
     { name: "Energy (XLE)",          bias: "Neutral",  note: "Commodity-linked; check oil levels" },
     { name: "Bitcoin (BTC)",         bias: "Monitor",  note: "24/7 liquidity; crypto data may differ" },
-    { name: "Ethereum (ETH)",        bias: "Monitor",  note: "Protocol risk; watch BTC correlation" },
+    { name: "Ethereum (ETH)",        bias: "Monitor",  note: "The Ethereum note uses the Bitcoin correlation input when that series is present." },
   ];
 
   const PLAYBOOK_DATA = [

@@ -11,9 +11,10 @@ import { classifyQuadrant } from "./sectorRotation/calc";
 import { omitTradeAction } from "./signalConfidenceBoundary";
 import { strategyText } from "./stockRegimeEngine";
 import { computeTradingSignal } from "./tradingSignals";
+import { clientPayloadHasDeniedToken, neutralizeClientPayload } from "../shared/clientVocabulary";
 import { stripClientTradeTokens } from "./routers/fmos";
 
-const BANNED = /\b(?:STRONG BUY|BUY|SELL|HOLD)\b|crash probability|\bRISK[-\s]?ON\b|\bRISK[-\s]?OFF\b|REDUCE EXPOSURE|INCREASE EXPOSURE|\bACCUMULATE\b|\bAVOID\b|\bOVERWEIGHT\b|\bUNDERWEIGHT\b|over-weight|\bENTRY\b|\bSTOP\b|\bTARGET\b|\badd to position\b|\badd exposure\b|\bavoid new positions\b|\btake profits\b|\bscale out\b|\bde-risk\b|(?<![\w.])trim\b(?!\s*\()|(?:\d+(?:\.\d+)?%\s+)?(?:odds|percent|probability|chance) of(?: a)? (?:crash|correction|recession)|\b(?:reduce|cut|lower) (?:leverage|exposure|risk exposure|position size)\b|\bincrease cash allocation\b|\bfavor defensive\b|\bprioriti[sz]e capital preservation\b|\braise (?:reserves|cash)\b|\blighten up\b|\bgo (?:long|short)\b|\bsit in cash\b|\bbuying opportunity\b|\brisk appetite on\b|\d+(?:\.\d+)?%\s+likelihood of a drawdown|crash risk is \d|recession probability \d|bull probability \d/i;
+const BANNED = /\b(?:STRONG BUY|BUY|SELL|HOLD)\b|crash probability|\bRISK[-\s]?ON\b|\bRISK[-\s]?OFF\b|REDUCE EXPOSURE|INCREASE EXPOSURE|\bACCUMULATE\b|\bAVOID\b|\bOVERWEIGHT\b|\bUNDERWEIGHT\b|over-weight|\bENTRY\b|\bSTOP\b|\bTARGET\b|\badd to position\b|\badd exposure\b|\bavoid new positions\b|\btake profits\b|\bscale out\b|\bde-risk\b|(?<![\w.])trim\b(?!\s*\()|(?:\d+(?:\.\d+)?%\s+)?(?:odds|percent|probability|chance) of(?: a)? (?:crash|correction|recession)|\b(?:reduce|cut|lower) (?:leverage|exposure|risk exposure|position size)\b|\bincrease cash allocation\b|\bfavor defensive\b|\bprioriti[sz]e capital preservation\b|\braise (?:reserves|cash)\b|\blighten up\b|\bgo (?:long|short)\b|\bsit in cash\b|\bbuying opportunity\b|\brisk appetite on\b|\d+(?:\.\d+)?%\s+likelihood of a drawdown|(?:\d+(?:\.\d+)?%\s+)?chance of(?: a)? drawdown|crash risk is \d|recession probability \d|bull probability \d/i;
 const EXACT_PROTOCOL = "STRONG BUY|BUY NOW|STRONG SELL|STRONG REDUCE|BUY|SELL|HOLD|WATCH|WAIT|ADD|TRIM|ACCUMULATE|AVOID|REDUCE";
 
 const ROOTS = [
@@ -134,6 +135,8 @@ const SKIP_FILES = new Set([
   // Classifies the user's own question. It does not render these tokens.
   "client/src/lib/askIntentClassifier.ts",
   "shared/interpretationIntegrity.ts",
+  // Denylist source. Customer payloads are scanned after neutralizeClientPayload.
+  "shared/clientVocabulary.ts",
   "server/pressure/engine.ts",
   "server/pressure/fredFixtureEvidence.ts",
   "server/seismographUnified.ts",
@@ -265,25 +268,42 @@ export function exemptNonRenderedTokens(line: string): string {
   });
 }
 
-function decodeRenderedTricks(source: string): string {
-  const unicode = source.replace(/\\u([0-9a-fA-F]{4})/g, (_all, hex: string) => String.fromCharCode(parseInt(hex, 16)));
-  const joined = unicode.replace(/\{['"]{2}\}/g, "");
-  const fromCodes = joined.replace(/String\.fromCharCode\(([^)]*)\)/g, (_all, args: string) => {
-    const chars = args.split(",").map(part => {
-      const raw = part.trim();
-      const value = /^0x/i.test(raw) ? Number.parseInt(raw, 16) : Number(raw);
-      return Number.isFinite(value) ? String.fromCharCode(value) : "";
-    }).join("");
-    return `"${chars}"`;
+function decodeNumericList(args: string): string {
+  const chars = args.split(",").map(part => {
+    const raw = part.trim();
+    const value = /^0x/i.test(raw) ? Number.parseInt(raw, 16) : Number(raw);
+    return Number.isFinite(value) ? String.fromCodePoint(value) : "";
+  }).join("");
+  return `"${chars}"`;
+}
+
+/** NFKC, strip zero-width characters, and decode the escapes the scan has to see. */
+export function normalizeClaimText(source: string): string {
+  let text = source
+    .replace(/\\u\{([0-9a-fA-F]+)\}/g, (_all, hex: string) => String.fromCodePoint(Number.parseInt(hex, 16)))
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_all, hex: string) => String.fromCharCode(Number.parseInt(hex, 16)))
+    .replace(/\\x([0-9a-fA-F]{2})/g, (_all, hex: string) => String.fromCharCode(Number.parseInt(hex, 16)))
+    .replace(/&#x([0-9a-fA-F]+);/gi, (_all, hex: string) => String.fromCodePoint(Number.parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_all, dec: string) => String.fromCodePoint(Number(dec)))
+    .replace(/String\.fromCodePoint\(([^)]*)\)/g, (_all, args: string) => decodeNumericList(args))
+    .replace(/String\.fromCharCode\(([^)]*)\)/g, (_all, args: string) => decodeNumericList(args));
+  text = text.replace(/\[((?:["'][^"']*["']\s*,\s*)*["'][^"']*["'])\]\.join\(\s*["']["']\s*\)/g, (_all, inner: string) => {
+    const parts = [...inner.matchAll(/["']([^"']*)["']/g)].map(match => match[1] ?? "");
+    return `"${parts.join("")}"`;
   });
-  let concatenated = fromCodes;
+  text = text.replace(/\{['"]{2}\}/g, "");
+  let concatenated = text;
   let previous = "";
   const pair = /(["'])((?:\\.|(?!\1).)*)\1\s*\+\s*(["'])((?:\\.|(?!\3).)*)\3/g;
   while (concatenated !== previous) {
     previous = concatenated;
     concatenated = concatenated.replace(pair, (_all, quote, left, _quote, right) => `${quote}${left}${right}${quote}`);
   }
-  return concatenated;
+  return concatenated.normalize("NFKC").replace(/[\u200B-\u200D\uFEFF\u2060\u00AD]/g, "");
+}
+
+function decodeRenderedTricks(source: string): string {
+  return normalizeClaimText(source);
 }
 
 export function claimHits(source: string): string[] {
@@ -380,6 +400,16 @@ describe("release-candidate surfaces do not print trade directives or crash-prob
     expect(claimHits('<span>{ok ? "BUY" : "SELL"}</span>').length).toBeGreaterThan(0);
     expect(claimHits('const hidden = "BU" + "Y";').length).toBeGreaterThan(0);
     expect(claimHits("const hidden = String.fromCharCode(66, 85, 89);").length).toBeGreaterThan(0);
+    expect(claimHits("const hidden = String.fromCodePoint(66, 85, 89);").length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "\\u{42}\\u{55}\\u{59}";').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "\\x42\\x55\\x59";').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "&#66;&#85;&#89;";').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "&#x42;&#x55;&#x59;";').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "B\\u200BUY";').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = "ＢＵＹ";').length).toBeGreaterThan(0);
+    expect(claimHits('const hidden = ["B","U","Y"].join("");').length).toBeGreaterThan(0);
+    expect(claimHits("const hidden = ['BU','Y'].join('');").length).toBeGreaterThan(0);
+    expect(claimHits('const note = "12% chance of a drawdown";').length).toBeGreaterThan(0);
     expect(claimHits('const hidden = "\\u0042UY";').length).toBeGreaterThan(0);
     expect(claimHits("const hidden = `Se{''}ll`;").length).toBeGreaterThan(0);
   });
@@ -501,16 +531,23 @@ describe("release-candidate surfaces do not print trade directives or crash-prob
       { score: 55, label: "Moderate" } as never,
       { score: 70 } as never,
     ));
-    const payloads = [
-      stock,
+    const clientPayloads = neutralizeClientPayload({
+      signal: stock,
       crypto,
       decision,
-      { strategy: strategyText("Bear Market", 80) },
-      { quadrant: classifyQuadrant(1.1, 0.2) },
-      { now: laborRatesUnavailableMessage() },
-    ];
-    const json = JSON.stringify(payloads);
-    expect(json).not.toMatch(/\b(?:STRONG BUY|BUY|SELL|HOLD|AVOID|ACCUMULATE)\b/);
+      stockRegime: { strategy: strategyText("Bear Market", 80) },
+      sectorRotation: { action: { class: "OVERWEIGHT" }, also: "UNDERWEIGHT" },
+      now: { text: laborRatesUnavailableMessage() },
+      asha: { finalVerdictAction: "ACQUIRE", staged: "ADD GRADUALLY", steady: "KEEP", smaller: "REDUCE", passed: "PASS OVER" },
+      smartDiscovery: { verdict: "STRONG REDUCE", ledger: "WAIT" },
+      simPortfolio: { trade: { action: "BUY" } },
+      tradeSimulate: { verdict: "WAIT", direction: "Avoid" },
+      quadrant: classifyQuadrant(1.1, 0.2),
+    });
+    const json = JSON.stringify(clientPayloads);
+    const leaked = json.match(/\b(?:STRONG BUY|BUY|SELL|HOLD|AVOID|ACCUMULATE|ACQUIRE|ADD GRADUALLY|KEEP|REDUCE|WAIT|PASS OVER|OVERWEIGHT|UNDERWEIGHT|STRONG REDUCE)\b/ig);
+    expect(leaked ?? []).toEqual([]);
+    expect(clientPayloadHasDeniedToken(json)).toBe(false);
     expect(claimHits(json)).toEqual([]);
     expect(json).not.toMatch(/reduce risk exposure|reduce position size|increase cash allocation|prioritize capital preservation/i);
   });

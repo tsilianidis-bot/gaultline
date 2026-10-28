@@ -178,7 +178,7 @@ const CRYPTO_OPTIONS: { value: string; label: string; icon: string }[] = [
 
 // ── Constants ─────────────────────────────────────────────────
 const MOVE_OPTIONS: { value: MoveType; label: string; glyph: string; sub: string }[] = [
-  { value: "add_risk",           label: "Add Risk",           glyph: "↑", sub: "Review a larger weight in a sector, asset class, or theme" },
+  { value: "add_risk",           label: "Larger risk weight", glyph: "↑", sub: "The simulation input is a larger risk weight on this card." },
   { value: "reduce_risk",        label: "Risk weight",        glyph: "↓", sub: "Risk sleeve on this card" },
   { value: "hedge",              label: "Hedge",              glyph: "⛨", sub: "Protect existing positions against downside" },
   { value: "rotate",             label: "Rotate",             glyph: "⟳", sub: "Shift capital from one sector or asset to another" },

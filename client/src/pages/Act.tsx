@@ -61,7 +61,7 @@ const postureConfig: Record<MarketPosture, { label: string; color: string; bgCol
     label: "BALANCED",
     color: "#fbbf24",
     bgColor: "rgba(251,191,36,0.08)",
-    description: "Keep participation conditional, preserve flexibility, and pair every decision with a visible invalidation state.",
+    description: "Balanced posture score on this card is 50/100. Invalidation state is listed beside the reading.",
     biasLabel: "Neutral",
     biasScore: 50,
   },

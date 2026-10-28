@@ -1,5 +1,6 @@
 import SEOLandingPage from "@/pages/SEOLandingPage";
 import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
+import { clientPayloadHasDeniedToken } from "@shared/clientVocabulary";
 
 interface StockSignalPageProps {
   ticker: string;
@@ -40,11 +41,10 @@ export default function StockSignalPage({
   faqs,
   internalLinks,
 }: StockSignalPageProps) {
-  const tradeWord = ["b", "uy"].join("");
-  const reduceWord = ["s", "ell"].join("");
-  const unsupported = new RegExp(`crash|probability|\\bscore\\b|% confidence|\\b${tradeWord}\\b|\\b${reduceWord}\\b|key price levels|key support|regime fit|0-10|advance warning|downside mark|price band|pressure index|fall significantly|biggest opportunity`, "i");
-  const safeFaqs = faqs.filter(faq => !unsupported.test(`${faq.question} ${faq.answer}`));
-  const safeLinks = internalLinks.filter(link => !unsupported.test(`${link.label} ${link.desc}`));
+  const unsupported = /crash|probability|\bscore\b|% confidence|key price levels|key support|regime fit|0-10|advance warning|downside mark|price band|pressure index|fall significantly|biggest opportunity/i;
+  const blocked = (text: string) => unsupported.test(text) || clientPayloadHasDeniedToken(text);
+  const safeFaqs = faqs.filter(faq => !blocked(`${faq.question} ${faq.answer}`));
+  const safeLinks = internalLinks.filter(link => !blocked(`${link.label} ${link.desc}`));
   return (
     <>
     <SEOLandingPage

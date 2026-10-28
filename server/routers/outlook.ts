@@ -414,7 +414,7 @@ Write exactly this JSON structure:
   "invalidationTriggers": ["3-5 specific conditions that would invalidate the current regime reading and force a reassessment. Each should explain how it would change FAULTLINE's outlook."],
   "confidenceExplanation": "2-3 sentences explaining WHY the confidence level is what it is. Never just show a number. Example: 'Confidence is moderate because liquidity and credit conditions are supportive, while elevated inflation and concentrated market leadership reduce conviction.'",
   "pressureIndexExplanation": "Explain why the Pressure Index is at ${pressure.overallPressure}/100. List the top 2-3 drivers that pushed it up or down. Every movement should be traceable to underlying evidence.",
-  "portfolioTakeaway": "One concise institutional recommendation ending the story. Examples: 'Remain selectively bullish. Favor high-quality companies. Maintain cash reserves for opportunities.' This is FAULTLINE's signature closing.",
+  "portfolioTakeaway": "One sentence stating the Pressure Index, the regime label, and the as-of time. Do not tell the reader to change a position.",
   "regimeSummary": "${pressure.regime} — Pressure ${pressure.overallPressure}/100",
   "generatedAt": "${new Date().toISOString()}"
 }`;

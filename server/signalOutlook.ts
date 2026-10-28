@@ -672,8 +672,8 @@ function buildTradeFramework(
     day: {
       maxHold: "Same session (close before market close)",
       entryDesc: isCrypto
-        ? "Near current price during the first 30 minutes of the session — wait for opening range to establish"
-        : "Within the opening range (first 30 minutes) — enter on a confirmed breakout above the opening high",
+        ? "The reference band is the first 30 minutes of the session versus the last price."
+        : "The reference band is the first 30 minutes of the session, including the opening high.",
       entryRationale: "Day trades require momentum confirmation at the open; entering before the range is established increases whipsaw risk",
       tradeStopDesc: isCrypto
         ? "Below the opening range low or the 15-minute VWAP — whichever is tighter"
@@ -720,8 +720,8 @@ function buildTradeFramework(
     swing: {
       maxHold: "1–4 weeks",
       entryDesc: isCrypto
-        ? "On a pullback to the 20-day moving average or a key support level — wait for a daily close above the level before entering"
-        : "On a pullback to the 20-day moving average or a prior breakout level — enter on the first close back above the level",
+        ? "The reference level is the 20-day average of completed daily closes."
+        : "The reference level is the 20-day average of completed daily closes, or the prior breakout close.",
       entryRationale: "Swing additions require patience; entering on the first close above a key level reduces the risk of a false breakout",
       tradeStopDesc: isCrypto
         ? "Below the most recent weekly swing low — a close below signals the swing trade has failed"
@@ -774,7 +774,7 @@ function buildTradeFramework(
   // ── Do-not-trade conditions ───────────────────────────────────
   const doNotTradeIf: string[] = [];
   if (isHighPressure) doNotTradeIf.push(`FAULTLINE Pressure Index is at ${p}/100, above 60. No size is published on this card.`);
-  if (direction === "Bearish") doNotTradeIf.push("Outlook direction is Bearish — this is a short setup, not a long opening; do not acquire into a bearish outlook");
+  if (direction === "Bearish") doNotTradeIf.push(`Outlook direction label is Bearish. Outlook score is ${score}/100. No position change is published.`);
   if (direction === "Neutral") doNotTradeIf.push("Outlook direction is Neutral — wait for a directional signal before entering");
   if (score < 50) doNotTradeIf.push(`Outlook score is ${score}/100 — below 50 means the balance of evidence does not support a high-conviction opening`);
   if (timeframe === "day" && p > 50) doNotTradeIf.push(`Pressure Index is ${p}/100 on a day-horizon card. The score is the latest canonical reading.`);

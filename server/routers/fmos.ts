@@ -9,7 +9,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, publicProcedure, ownerOrAdminProcedure } from "../_core/trpc";
 import { withholdNonFiniteNumbers } from "../displayNumbers";
-import { observedDirection, observedDirectionSentence } from "../../shared/surfaceClaims";
+import { neutralizeClientPayload } from "../../shared/clientVocabulary";
 import {
   runFMOSPipeline,
   runFMOSPipelineFast,
@@ -35,37 +35,8 @@ export function sanitizeNumbers(v: unknown): unknown {
   return withholdNonFiniteNumbers(v);
 }
 
-const EDGE_BUCKET = /^(?:strong-up|up-edge|build-edge|flat-edge|open-edge|light-edge|down-edge|lower-edge|lowest-edge)$/;
-const TRADE_FIELD = new Set(["verdict", "action", "actionBias", "decisionLabel", "proposedAction"]);
-
-/** Replace a stored trade class with the edge reading. The class word is not sent. */
-export function neutralizeClientToken(value: string): string {
-  const upper = EDGE_BUCKET.test(value) || observedDirection(value) !== "unestablished";
-  if (!upper) return value;
-  const direction = observedDirection(value);
-  if (value === "strong-up" || value === "up-edge" || value === "build-edge" || direction === "positive") {
-    return "Bull-bear edge is on the upper side of this card. No trade classification is published.";
-  }
-  if (value === "light-edge" || value === "down-edge" || value === "lower-edge" || value === "lowest-edge" || direction === "negative") {
-    return "Bull-bear edge is on the lower side of this card. No trade classification is published.";
-  }
-  return observedDirectionSentence(value);
-}
-
-export function stripClientTradeTokens(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(stripClientTradeTokens);
-  if (!value || typeof value !== "object") return value;
-  const out: Record<string, unknown> = {};
-  for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
-    if (typeof child === "string" && TRADE_FIELD.has(key)) {
-      const next = neutralizeClientToken(child);
-      if (key === "action" && next !== child) continue;
-      out[key] = next;
-      continue;
-    }
-    out[key] = stripClientTradeTokens(child);
-  }
-  return out;
+export function stripClientTradeTokens<T>(value: T): T {
+  return neutralizeClientPayload(value);
 }
 
 // ── Router ────────────────────────────────────────────────────

@@ -824,7 +824,7 @@ export default function Press() {
                 ))}
               </div>
               <div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(251,191,36,0.7)", marginBottom: "12px", letterSpacing: "0.15em" }}>PASS OVER</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(251,191,36,0.7)", marginBottom: "12px", letterSpacing: "0.15em" }}>NOT APPROVED</div>
                 {["PLATO chatbot", "PLATO AI assistant", "PLATO bot", "PLATO predicts / PLATO recommends", "PLATO tells you what to acquire"].map((item) => (
                   <div key={item} style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", lineHeight: 1.7, paddingLeft: "12px", borderLeft: "1px solid rgba(251,191,36,0.2)", marginBottom: "6px" }}>✗ {item}</div>
                 ))}

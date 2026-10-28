@@ -121,7 +121,7 @@ function buildPlainEnglishSummary(
     return `The stock market (${stockRegime}) and crypto market (${cryptoRegime}) are both in a lower-risk appetite reading. High-beta assets are the smaller share of this reading. Cash, bonds, and stablecoins are the larger share. This is not an instruction.`;
   }
   if (isDiverge && status.includes("Stocks Leading")) {
-    return `The stock market is in a ${stockRegime} regime while crypto is showing ${cryptoRegime} conditions. Stocks are leading the lower-risk appetite move. Historically, crypto tends to follow equities lower with a lag.`;
+    return `Stock regime label is ${stockRegime}. Crypto regime label is ${cryptoRegime}. The stock label is the lower-appetite class and the crypto label is not. No position change is published.`;
   }
   if (isDiverge && status.includes("Crypto Leading")) {
     return `Crypto (${cryptoRegime}) is outperforming equities (${stockRegime}). This divergence can signal either a crypto-specific catalyst or an early higher-risk appetite rotation. Monitor equity market breadth for confirmation.`;
@@ -166,11 +166,11 @@ function buildKeyInsights(
     insights.push("Crypto regime label is capitulation. Volume confirmation is not on this card.");
   }
   if (stock.regime === "Recovery" && cs === "bullish") {
-    insights.push("Stocks are recovering while crypto is already higher-risk appetite \u2014 a positive leading indicator for equities.");
+    insights.push(`Stock regime label is Recovery. Crypto sentiment label is ${cs}. Both labels are on this card. No position change is published.`);
   }
 
   if (ss === "bullish" && cs === "bullish") {
-    insights.push("Forward bias: Larger share risk assets. Favour growth equities and quality crypto. Use momentum as your guide.");
+    insights.push(`Stock sentiment label is ${ss}. Crypto sentiment label is ${cs}. No position change is published.`);
   } else if (ss === "extreme-bear" || cs === "extreme-bear") {
     insights.push(`Forward reading: stock sentiment is ${ss}. Crypto sentiment is ${cs}. Pressure and regime labels are on this card. No position change is published.`);
   }
@@ -179,7 +179,7 @@ function buildKeyInsights(
 }
 
 function buildForwardBias(ss: RegimeSentiment, cs: RegimeSentiment): string {
-  if (ss === "bullish" && cs === "bullish") return "Higher-risk appetite. Larger share equities and quality crypto. Momentum-driven positioning.";
+  if (ss === "bullish" && cs === "bullish") return `Stock sentiment label is ${ss}. Crypto sentiment label is ${cs}. No position change is published.`;
   if (ss === "bullish" && cs === "neutral") return "Moderately higher-risk appetite. Favour equities over crypto. Wait for crypto confirmation.";
   if (ss === "neutral" && cs === "bullish") return "Selective higher-risk appetite. Crypto outperforming \u2014 watch for equity confirmation before adding broad risk.";
   if (ss === "neutral" && cs === "neutral") return "Stock sentiment is neutral. Crypto sentiment is neutral. No direction is established beyond those labels.";
