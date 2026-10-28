@@ -24,7 +24,7 @@ type CryptoSignalLabel =
   | "Macro Sensitive"
   | "Stablecoin Stress"
   | "Deleveraging Risk"
-  | "Risk-Off Vulnerable"
+  | "Lower-appetite vulnerable"
   | "Neutral / Watch";
 
 type CryptoSignalBias = "Bullish" | "Neutral" | "Bearish" | "Unavailable";
@@ -78,7 +78,7 @@ const SIGNAL_COLORS: Record<CryptoSignalLabel, string> = {
   "Macro Sensitive":          "#FFD700",
   "Stablecoin Stress":        "#FF6B35",
   "Deleveraging Risk":        "#FF2D55",
-  "Risk-Off Vulnerable":      "#FF9500",
+  "Lower-appetite vulnerable": "#FF9500",
   "Neutral / Watch":          "#64748B",
 };
 

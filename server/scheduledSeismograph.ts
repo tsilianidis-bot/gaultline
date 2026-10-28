@@ -14,16 +14,18 @@
  * Host schedule: 4:15 PM America/New_York on valid NYSE sessions.
  * Railway cannot express that timezone. The candidate crontab is
  * `15 20,21 * * 1-5` UTC: exactly one fire is 16:15 ET. The handler admits
- * only 16:15–16:45 America/New_York. Every other callback, including the
- * current production `0 18 * * *` UTC cron and the DST companion hour,
- * returns non-2xx so `curl -f` fails and the skip is alerted.
+ * only 16:15–16:45 America/New_York. A holiday or weekend returns HTTP 200
+ * with alert false. The DST companion hour logs a heartbeat and returns
+ * HTTP 200 unless it is after 16:45 ET and the session has no completed claim,
+ * in which case it alerts a missed run. An unexpected hour on a real session,
+ * including the current production `0 18 * * *` UTC cron, stays HTTP 409.
  */
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import type { Request, Response } from "express";
 import { seismographReadings } from "../drizzle/schema";
 import { getDb } from "./db";
-import { isDstCompanionSeismographCallback, nyseSeismographRunWindow } from "../shared/nyseSession";
+import { easternSessionStamp, isDstCompanionSeismographCallback, nyseSeismographRunWindow } from "../shared/nyseSession";
 import { calculateFaultlinePressure, type PressureAlert } from "./pressure/engine";
 import { persistPressureRunAndShadows } from "./pressure/scheduledPersistence";
 import { refreshPriorComponentsAfterVerifiedRun } from "./pressure/priorComponents";
@@ -59,6 +61,7 @@ import {
   admitScheduledSessionOutcome,
   sealFinishedSessionClaim,
   claimScheduledSeismographSession,
+  scheduledSessionClaimPresence,
   failScheduledSession,
   finalizeStaleScheduledSessionOutcomes,
   heartbeatScheduledSession,
@@ -471,8 +474,33 @@ async function executeScheduledSeismograph(res: Response, hooks: ScheduledSeismo
   // observation or forward ledger provenance.
   if (!runWindow.isScheduledWindow) {
     const companion = isDstCompanionSeismographCallback(now);
+    const stamp = easternSessionStamp(now);
+    const afterWindow = stamp != null && stamp.minuteOfDay >= 16 * 60 + 45;
+    if (companion) {
+      const presence = runWindow.etDate
+        ? await scheduledSessionClaimPresence(runWindow.etDate, sessionStore ?? getDb)
+        : "unavailable";
+      console.log(`[Seismograph][SCHEDULE-HEARTBEAT] ${JSON.stringify({
+        kind: "dst_companion",
+        etDate: runWindow.etDate,
+        afterWindow,
+        sessionClaim: presence,
+        at: now.toISOString(),
+      })}`);
+      if (afterWindow && presence === "absent") {
+        rejectScheduledCallback(res, 409, {
+          skipped: "missed_scheduled_run",
+          session: runWindow.session,
+          etDate: runWindow.etDate,
+          expectedRunAtEt: runWindow.scheduledRunAtEt,
+          reason: "The DST companion hour fired after 16:45 ET and this session has no completed claim. A winter cron that only hits the companion hour looks healthy unless this heartbeat alerts.",
+          finalized,
+        });
+        return;
+      }
+    }
     const skipped = companion ? "dst_companion_outside_window" : "outside_nyse_post_close_window";
-    console.error(`[Seismograph] Scheduled callback rejected: ${runWindow.reason}`);
+    if (!companion) console.error(`[Seismograph] Scheduled callback rejected: ${runWindow.reason}`);
     rejectScheduledCallback(res, 409, {
       skipped,
       session: runWindow.session,
@@ -629,6 +657,11 @@ async function executeScheduledSeismograph(res: Response, hooks: ScheduledSeismo
       trigger: runContext.trigger,
     }).catch(() => ({ status: "unavailable" as const })));
     if (recovered.status === "claimed" && recovered.generation != null) {
+      const retryHeartbeat = setInterval(() => {
+        void heartbeatScheduledSession(scheduledEtDate, recovered.generation as number, sessionStore ?? getDb).catch(() => undefined);
+      }, 30_000);
+      retryHeartbeat.unref?.();
+      void heartbeatScheduledSession(scheduledEtDate, recovered.generation, sessionStore ?? getDb).catch(() => undefined);
       try {
         const retried = hooks.runPipeline
           ? await hooks.runPipeline()
@@ -673,6 +706,8 @@ async function executeScheduledSeismograph(res: Response, hooks: ScheduledSeismo
         }).catch(() => undefined);
         res.status(500).json({ ok: false, alert: true, error: String(retryError) });
         return;
+      } finally {
+        clearInterval(retryHeartbeat);
       }
     }
     console.error("[Seismograph][SCHEDULE-ALERT] Daily job failed:", err);

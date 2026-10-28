@@ -8,7 +8,7 @@ const CRYPTO_DEMO: Record<string, {
 }> = {
   BTC:  { name: "Bitcoin",        price: "$97,420", change: +1.84, score: 62, riskLevel: "Elevated", bias: "Bullish",  momentum: "Stable",       signals: ["Macro Sensitive", "Liquidity Fragile"],      color: "#FF9500" },
   ETH:  { name: "Ethereum",       price: "$3,240",  change: +2.31, score: 55, riskLevel: "Moderate", bias: "Bullish",  momentum: "Accelerating", signals: ["Momentum Breakout", "AI Narrative Exposure"], color: "#00D4FF" },
-  SOL:  { name: "Solana",         price: "$178",    change: -0.92, score: 71, riskLevel: "High",     bias: "Neutral",  momentum: "Decelerating", signals: ["Speculative Acceleration", "Risk-Off Vulnerable"], color: "#FF2D55" },
+  SOL:  { name: "Solana",         price: "$178",    change: -0.92, score: 71, riskLevel: "High",     bias: "Neutral",  momentum: "Decelerating", signals: ["Speculative Acceleration", "Lower-appetite vulnerable"], color: "#FF2D55" },
   AVAX: { name: "Avalanche",      price: "$38.40",  change: +0.44, score: 58, riskLevel: "Elevated", bias: "Neutral",  momentum: "Stable",       signals: ["Macro Sensitive"],                            color: "#FFD700" },
   RNDR: { name: "Render",         price: "$8.72",   change: +5.12, score: 78, riskLevel: "High",     bias: "Bullish",  momentum: "Accelerating", signals: ["AI Narrative Exposure", "Speculative Acceleration"], color: "#C084FC" },
   HYPE: { name: "Hyperliquid",    price: "$24.15",  change: -2.40, score: 82, riskLevel: "Critical", bias: "Bearish",  momentum: "Reversing",    signals: ["Deleveraging Risk", "Liquidity Fragile"],    color: "#FF2D55" },

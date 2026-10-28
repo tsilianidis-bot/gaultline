@@ -77,7 +77,7 @@ const ACTION_COLORS: Record<string, string> = {
   "Watch / No Add": "#FF9500",
   "Trim":           "#FF9500",
   "Exit Watch":     "#FF2D55",
-  "Sell Bias":      "#FF2D55",
+  "Reduction bias":      "#FF2D55",
 };
 
 const ASSET_TYPE_OPTIONS = ["Stock", "ETF", "Crypto", "Other"] as const;
@@ -272,7 +272,7 @@ function PositionForm({ initial, onClose, onSaved }: PositionFormProps) {
               style={inputStyle}
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              placeholder="e.g. Core long-term hold"
+              placeholder="e.g. Core long-term position"
               maxLength={500}
             />
           </div>

@@ -159,7 +159,7 @@ export default function DailyReport() {
 
   // Share card handler
   const handleShare = useCallback(async () => {
-    const text = `FAULTLINE Daily Report — ${formatDate(now)}\n\nSystemic Risk: ${score100Value(overall.score)}/100 — ${regime.label}\nCrash Probability: ${probability.crashProbability}%\nTop Analog: ${topAnalog.era} (${topAnalog.similarity}% match)\n\nProbabilistic risk intelligence. Not financial advice.`;
+    const text = `FAULTLINE Daily Report — ${formatDate(now)}\n\nSystemic Risk: ${score100Value(overall.score)}/100 — ${regime.label}\nMarket-event percentage: ${probability.crashProbability}%\nTop Analog: ${topAnalog.era} (${topAnalog.similarity}% match)\n\nProbabilistic risk intelligence. Not financial advice.`;
     if (navigator.share) {
       await navigator.share({ title: 'FAULTLINE Daily Report', text });
     } else {
@@ -386,7 +386,7 @@ export default function DailyReport() {
               { label: 'Yield Curve', value: `${indicators.yieldCurveSpread}bps`, note: indicators.yieldCurveSpread < 0 ? 'Inverted' : 'Normal' },
               { label: 'HY Spread', value: `${indicators.hySpread}bps`, note: indicators.hySpread > 500 ? 'Stressed' : 'Contained' },
               { label: 'VIX', value: indicators.vix.toFixed(1), note: indicators.vix > 30 ? 'Elevated Fear' : 'Moderate' },
-              { label: 'CPI', value: `${indicators.cpi.toFixed(1)}%`, note: indicators.cpi > 4 ? 'Above Target' : 'Easing' },
+              { label: 'CPI', value: `${indicators.cpi.toFixed(1)}%`, note: indicators.cpi > 4 ? 'Above the stated level' : 'Easing' },
               { label: 'Fed Funds', value: `${indicators.fedFundsRate.toFixed(2)}%`, note: 'Restrictive' },
               { label: 'Unemployment', value: `${indicators.unemployment.toFixed(1)}%`, note: indicators.unemployment > 5 ? 'Rising' : 'Contained' },
               { label: 'AI Concentration', value: `${indicators.aiConcentration.toFixed(1)}%`, note: indicators.aiConcentration > 35 ? 'Extreme' : 'Elevated' },
@@ -480,8 +480,8 @@ export default function DailyReport() {
           </p>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563', lineHeight: 1.6 }}>
             Top analog: <span style={{ color: '#FF9500' }}>{topAnalog.era} ({topAnalog.year})</span> at <span style={{ color: '#FF9500' }}>{topAnalog.similarity}% similarity</span>.
-            Crash probability: <span style={{ color: '#FF2D55' }}>{probability.crashProbability}%</span>.
-            Recession risk: <span style={{ color: '#FF9500' }}>{probability.recessionProbability}%</span>.
+            Market-event percentage: <span style={{ color: '#94A3B8' }}>Not published</span>.
+            The band is not a forecast.
           </div>
         </div>
 

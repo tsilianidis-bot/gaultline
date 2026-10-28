@@ -6,7 +6,7 @@
  *   - Primary Driver sentence (Section 5)
  *   - Evidence Engine grid — 14 categories with signal bars (Section 6)
  *   - Bull/Bear qualitative balance (contract scenario text) and key drivers (Sections 7-8)
- *   - Why Not Buy/Sell for WAIT/HOLD verdicts (Section 10)
+ *   - Why not for a wait verdict (Section 10)
  *   - What Changes Our View — 4-5 specific catalysts (Section 11)
  *   - Confidence breakdown with reasons
  *   - 13-stage loading sequence
@@ -106,7 +106,7 @@ interface FaultlineAnswer {
   downsideMostLikely?: string | null;
   downsideTriggers?: string[];
   downsideInvalidation?: string | null;
-  // Direct answer fields — upside / target
+  // Direct answer fields — upside
   upsideBaseTarget?: string | null;
   upsideBullTarget?: string | null;
   upsideExtremeTarget?: string | null;
@@ -117,7 +117,7 @@ interface FaultlineAnswer {
   actionVerdict?: string | null;
   actionVerdictReason?: string | null;
   actionVerdictConditions?: string[];
-  // Direct answer fields — entry zone
+  // Direct answer fields — price band
   entryZoneIdeal?: string | null;
   entryZoneAggressive?: string | null;
   entryZoneConservative?: string | null;
@@ -958,7 +958,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
     : "rgba(255,68,68,0.2)";
   const opportunityColor = typeof answer.opportunityScore !== "number" ? "#94A3B8" : answer.opportunityScore >= 65 ? "#00FF88" : answer.opportunityScore >= 40 ? "#FFD700" : "#FF4444";
 
-  // Determine if this is a WAIT/HOLD verdict
+  // Determine if this is a wait verdict
   const isWaitHold = observedDirection(answer.verdict) === "mixed" || answer.verdict === "LOW CONVICTION";
   // For general_analysis the DirectAnswerPanel already shows the executive summary — skip it in the body
   const isGeneralAnalysis = answer.questionIntent === "general_analysis";
@@ -1100,7 +1100,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
       {/* ── Bull / Bear (shown here for general_analysis since ContractScenarioStrip is already in DirectAnswerPanel) ── */}
       {isGeneralAnalysis && <BullBearSection answer={answer} />}
 
-      {/* ── Why Not Buy/Sell (only for WAIT/HOLD) ── */}
+      {/* ── Why not, only for a wait verdict ── */}
       {isWaitHold && (
         <WhyNotSection whyNotBuy={answer.whyNotBuy} whyNotSell={answer.whyNotSell} />
       )}
@@ -2411,7 +2411,7 @@ export default function SmartDiscovery() {
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
-  // Auto-submit if ?q= URL param is present (used by MarketCommandCenter and other entry points)
+  // Auto-submit if ?q= URL param is present (used by MarketCommandCenter and other pages)
   // Re-fires whenever the search string changes so navigating back with a new ?q= works too
   const locationSearch = typeof window !== "undefined" ? window.location.search : "";
   const [lastProcessedQuery, setLastProcessedQuery] = useState("");

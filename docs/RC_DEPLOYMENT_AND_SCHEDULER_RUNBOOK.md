@@ -6,7 +6,8 @@ Production today:
 
 | Item | Value |
 | --- | --- |
-| Deployed commit | `1cb5dee13832c0556ec5a380ecc4ffb02513e875` |
+| Last reviewed git SHA | `1cb5dee13832c0556ec5a380ecc4ffb02513e875` |
+| Live `/api/health` on 2026-10-28 | `f7756c7fad3cac0f96df45723ca5c4e2713146d0` (`buildTime` `2026-10-27T18:43:24Z`) |
 | Deployment id to preserve | `b19716b1` |
 | Seismograph cron (not changed) | `0 18 * * *` UTC |
 | Systemic-regime infer (not changed) | daily 19:00 UTC |
@@ -24,8 +25,8 @@ Copy is in `config/scheduler-candidate.txt`.
 
 `15 20,21 * * 1-5` fires twice. Exactly one instant is 16:15 ET:
 
-- EDT: 20:15 UTC is admitted. 21:15 UTC is the companion (`17:15 ET`) and returns 409 `dst_companion_outside_window`.
-- EST: 21:15 UTC is admitted. 20:15 UTC is the companion (`15:15 ET`) and returns 409.
+- EDT: 20:15 UTC is admitted. 21:15 UTC is the companion (`17:15 ET`). It logs `[Seismograph][SCHEDULE-HEARTBEAT]` and returns HTTP 200 `alert: false` when the session claim is already completed. If that later companion is the only fire and the claim is not completed, it returns 409 `missed_scheduled_run` with `alert: true`.
+- EST: 21:15 UTC is admitted. 20:15 UTC is the companion (`15:15 ET`), before the window. It logs the same heartbeat and returns HTTP 200 `alert: false`. A winter cron that only hits 20:15 UTC does not look like a successful daily run: infer after 16:45 ET returns 409 `missed_scheduled_run` when the claim is not completed.
 
 A weekend or full NYSE holiday returns HTTP 200 `{ ok: true, alert: false, skipped: "outside_nyse_post_close_window" }`. The DST companion hour returns HTTP 200 `{ ok: true, alert: false, skipped: "dst_companion_outside_window" }`. Neither writes a score and neither sends `[Seismograph][SCHEDULE-ALERT]`. An unexpected hour on a real session, including the current production `0 18 * * *` UTC fire, still returns 409 with `alert: true` so `curl -f` fails.
 
@@ -64,6 +65,22 @@ FAULTLINE_APPROVED_DEPLOY_TAGS=production-1cb5dee \
 ```
 
 A missing external allowlist, a non-SHA target, or any other SHA exits 1. A stale `BUILD_COMMIT` does not change the result.
+
+When `FAULTLINE_ENFORCE_DEPLOY_GUARD=1`, the boot refuses with a clear message if neither `RAILWAY_GIT_COMMIT_SHA` nor `FAULTLINE_DEPLOY_SHA` is a full lowercase SHA. If both are set and they differ, the boot refuses. The platform SHA is the deploy identity. Tag mode (`FAULTLINE_APPROVED_DEPLOY_TAGS`) needs a git checkout. An image without `.git` must use `FAULTLINE_APPROVED_DEPLOY_SHAS`.
+
+## Schema gate before deploy
+
+`0074`, `0075`, and `0076` are not applied by boot. Boot runs `assertDeploySchemaReady` (`server/schemaGate.ts`) and refuses to listen if `users.accessExpiresAt`, `users.entitlementRevision`, `stripeSubscriptionCancellations`, `pentagonalThesisRecords`, or `pentagonalThesisOutcomeScores` are missing. The error names the three SQL files. Apply them on a backup before the deploy. An unmigrated `users` select that includes `accessExpiresAt` otherwise fails with `Unknown column`.
+
+`0076` deletes outcome rows whose `provenanceId` does not exist before it adds `algo_outcome_prov_fk`, so orphan rows do not abort the foreign key. `0075` row triggers do not run for `TRUNCATE`. The deploy role must not receive `DROP` or `TRUNCATE` on the thesis tables.
+
+The disposable MariaDB check is not part of CI. Local only:
+
+```bash
+FAULTLINE_ISOLATED_MARIADB=1 pnpm exec vitest run server/migration0057Fk.test.ts
+```
+
+Systemic-regime infer on a weekend or NYSE holiday returns HTTP 200 `{ ok: true, alert: false, skipped: "nyse_closed" }` and does not run the job. After 16:45 ET on a session day with no completed seismograph claim, infer returns 409 `missed_scheduled_run` with `alert: true`.
 
 ## Commands prepared and not executed
 

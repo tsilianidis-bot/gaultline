@@ -8,6 +8,10 @@
 -- idx after 0074. Do not assign this migration over 0072_final_recovery_controls.
 -- Each thesis row is immutable. Outcome notes are a separate append-only table.
 -- Do not apply this against production.
+-- MariaDB row triggers do not run for TRUNCATE. BEFORE DELETE cannot block
+-- TRUNCATE. The deploy role must not be granted DROP or TRUNCATE on
+-- pentagonalThesisRecords or pentagonalThesisOutcomeScores. This file cannot
+-- revoke privileges for an unknown database user.
 CREATE TABLE `pentagonalThesisRecords` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`recordId` varchar(64) NOT NULL,

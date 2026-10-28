@@ -15,7 +15,7 @@ const PLATFORM_URL = "/app";
 const SEARCH_INTENT_OVERRIDES: Record<string, Pick<SEOLandingPageProps["seo"], "title" | "description">> = {
   "/market-crash-probability-2026": {
     title: "Market Crash Risk 2026 | FAULTLINE",
-    description: "Market Crash Risk 2026: systemic-pressure context from credit spreads, funding rates, the Treasury curve, inflation, and labor data. FAULTLINE does not offer a crash probability.",
+    description: "Market Crash Risk 2026: systemic-pressure context from credit spreads, funding rates, the Treasury curve, inflation, and labor data. FAULTLINE does not offer a market-event percentage.",
   },
   "/recession-probability": {
     title: "Recession Risk Context | FAULTLINE",

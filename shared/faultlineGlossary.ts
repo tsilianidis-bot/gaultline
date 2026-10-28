@@ -59,7 +59,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     id: "regime-shift",
     term: "Regime Shift",
     definition:
-      "A meaningful change in the dominant market environment — for example, a transition from a risk-on growth regime to a defensive or contraction regime — that alters the behavior of most asset classes.",
+      "A meaningful change in the dominant market environment — for example, a transition from a higher-risk appetite growth regime to a defensive or contraction regime — that alters the behavior of most asset classes.",
     whyItMatters:
       "Strategies that work in one regime often fail in another. Identifying a Regime Shift early allows investors to re-evaluate positioning before the broader market reprices.",
     triggeredBy:
@@ -77,7 +77,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     whyItMatters:
       "Catching a Changing Tide early provides the most time to adjust awareness and positioning before the shift becomes obvious to the broader market.",
     triggeredBy:
-      "Triggered when 2–3 leading indicators diverge from the prevailing trend, such as credit spreads widening while equities remain elevated, or breadth deteriorating while indices hold highs.",
+      "Triggered when 2–3 leading indicators diverge from the prevailing trend, such as credit spreads widening while equities remain elevated, or breadth deteriorating while indices stay near highs.",
     watchNext:
       "Watch for confirmation from a second wave of indicators. A Changing Tide that is confirmed by credit, breadth, and momentum becomes a Regime Shift.",
     category: "regime",

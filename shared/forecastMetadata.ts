@@ -56,7 +56,7 @@ export function supportedHorizonMetadata(metadata: Omit<ForecastMetadata, "expec
 
 export function forecastHorizonPromptContract(metadata?: ForecastMetadata): string {
   if (!metadata || metadata.expectedHorizonStatus !== "SUPPORTED" || !metadata.forecastAuthorized || !metadata.forecastContract || !metadata.canonicalStateId) {
-    return "FORECAST HORIZON RULE: No validated timeframe is available. Do not invent timing, duration, target date, or confidence. If asked when or by when, state: ‘Time horizon: insufficient evidence for reliable estimate.’";
+    return "FORECAST HORIZON RULE: No validated timeframe is available. Do not invent timing, duration, a calendar date, or confidence. If asked when or by when, state: ‘Time horizon: insufficient evidence for reliable estimate.’";
   }
   return `FORECAST HORIZON RULE: Use only the authorized structured horizon ${metadata.expectedHorizon}; it is a FORECAST, not an observed fact. Forecast contract: ${metadata.forecastContract.forecastContractId}. Canonical state: ${metadata.canonicalStateId}. Timing confidence: ${metadata.timingConfidence ?? "not established"}. Methodology: ${metadata.horizonMethodology}.`;
 }

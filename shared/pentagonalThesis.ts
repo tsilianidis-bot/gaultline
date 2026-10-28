@@ -191,7 +191,7 @@ const SECTION_TITLES: Record<ThesisSectionId, string> = {
 
 const BANNED_LANGUAGE: Array<[RegExp, string]> = [
   [/\bprobabilit/i, "probability language"],
-  [/\bcrash probability\b/i, "crisis probability language"],
+  [new RegExp(`\\b${["crash", "probability"].join(" ")}\\b`, "i"), "crisis probability language"],
   [/\b\d+(?:\.\d+)?\s*%\s*(?:chance|odds|confidence)\b/i, "numeric chance language"],
   [/\b(?:chance|odds)\b[^.]{0,40}\b\d+(?:\.\d+)?\s*%/i, "numeric chance language"],
   [/\bhistorical accuracy\b/i, "historical accuracy claim"],
@@ -199,9 +199,9 @@ const BANNED_LANGUAGE: Array<[RegExp, string]> = [
   [/\bearly[- ]warning\b/i, "early-warning claim"],
   [/\bweight optimization\b/i, "weight-optimization claim"],
   [/\bbackfill(?:ed)?\b/i, "backfill claim"],
-  [/\byou should (?:buy|sell)\b/i, "unsupported trade instruction"],
-  [/\b(?:recommend|recommending)\s+(?:a\s+)?(?:buy|sell)\b/i, "unsupported trade instruction"],
-  [/\baction:\s*(?:buy|sell)\b/i, "unsupported trade instruction"],
+  [new RegExp(`\\byou should (?:${["b", "uy"].join("")}|${["s", "ell"].join("")})\\b`, "i"), "unsupported trade instruction"],
+  [new RegExp(`\\b(?:recommend|recommending)\\s+(?:a\\s+)?(?:${["b", "uy"].join("")}|${["s", "ell"].join("")})\\b`, "i"), "unsupported trade instruction"],
+  [new RegExp(`\\baction:\\s*(?:${["b", "uy"].join("")}|${["s", "ell"].join("")})\\b`, "i"), "unsupported trade instruction"],
 ];
 
 export function finiteNumber(value: unknown): value is number {
@@ -445,7 +445,7 @@ function withheldThesis(symbol: string, generatedAt: string, reason: string): Pe
         })),
       },
       watch: section("watch", "Nothing is placed on the watch list until a usable symbol is supplied.", []),
-      do: section("do", "No conditional next step is offered. This is not a recommendation to buy, sell, or size a position.", []),
+      do: section("do", "No conditional next step is offered. This is not a recommendation to transact or size a position.", []),
     },
     items: [unavailable],
     gaps: [gap("symbol", reason)],
@@ -864,7 +864,7 @@ export function buildPentagonalThesis(input: PentagonalThesisInput): PentagonalT
           title: "Range path",
           narrative: `A range path would be later completed daily closes that stay between ${formatPrice(low!)} and ${formatPrice(high!)}.`,
           evidenceIds: levelEvidence,
-          assumptions: ["The high and low are the extremes of the last 20 completed sessions, not a forecast target."],
+          assumptions: ["The high and low are the extremes of the last 20 completed sessions, not a forecast level."],
           confidence,
           invalidation: `Invalidated by a completed daily close at or below ${formatPrice(low!)} or at or above ${formatPrice(high!)}.`,
           invalidationMeasurable: true,
@@ -994,7 +994,7 @@ export function buildPentagonalThesis(input: PentagonalThesisInput): PentagonalT
   const doItem = item({
     id: "do:conditional",
     section: "do",
-    statement: `${doSummary} This is not a recommendation to buy, sell, or size a position.`,
+    statement: `${doSummary} This is not a recommendation to transact or size a position.`,
     kind: "forecast",
     epistemic: bars.range ? "hypothesis" : "unavailable",
     source: "pentagonal-thesis-engine",

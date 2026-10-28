@@ -388,8 +388,8 @@ function ObjectiveModal({ open, onClose, onSave, current, isSaving }: ObjectiveM
   const [customNote, setCustomNote] = useState(current?.customNote ?? "");
 
   const OBJECTIVES = [
-    { id: "short_swing",      label: "Short-Term Swing Trade",     icon: Zap,       desc: "1–5 day momentum plays with tight stops" },
-    { id: "long_position",    label: "Long-Term Position Build",   icon: TrendingUp, desc: "2–12 month conviction holds" },
+    { id: "short_swing",      label: "Short-Term Swing Trade",     icon: Zap,       desc: "1–5 day momentum plays with a tight downside mark" },
+    { id: "long_position",    label: "Long-Term Position Build",   icon: TrendingUp, desc: "2–12 month conviction positions" },
     { id: "crypto_momentum",  label: "Crypto Momentum Trade",      icon: Activity,  desc: "Crypto rotation and momentum breakouts" },
     { id: "defensive",        label: "Defensive / Capital Preservation", icon: Shield, desc: "Protect capital in uncertain regimes" },
     { id: "ai_tech_momentum", label: "AI / Tech Momentum",         icon: Cpu,       desc: "High-growth AI and tech sector exposure" },
@@ -1478,7 +1478,7 @@ export default function OwnerSimulation() {
                         </Button>
                       </div>
 
-                      {/* Stop / targets */}
+                      {/* Downside and upper marks */}
                       <div className="flex gap-3 mt-3 text-xs">
                         {pos.stopLoss && <span className="text-[#64748B]">Low mark: <span className="text-[#FF2D55] font-mono">${fmt(parseFloat(pos.stopLoss.toString()), 2)}</span></span>}
                         {pos.targetOne && <span className="text-[#64748B]">T1: <span className="text-[#00FF88] font-mono">${fmt(parseFloat(pos.targetOne.toString()), 2)}</span></span>}

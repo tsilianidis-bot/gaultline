@@ -124,7 +124,7 @@ describe("Pentagonal Thesis engine", () => {
     expect(scenarioIsInvalidated(bear, 110)).toBe(true);
     expect(scenarioIsInvalidated(bear, 100)).toBe(false);
     expect(bull.invalidation.toLowerCase()).toContain("at or below");
-    expect(thesis.sections.do.summary.toLowerCase()).toContain("not a recommendation to buy, sell");
+    expect(thesis.sections.do.summary.toLowerCase()).toContain("not a recommendation to transact");
   });
 
   it("includes pressure and regime only when the canonical reading is fresh, and labels the link as a hypothesis", () => {
@@ -238,7 +238,12 @@ describe("Pentagonal Thesis engine", () => {
     expect(migration).toContain("pentagonalThesisOutcomeScores");
     expect(migration).toContain("BEFORE UPDATE");
     expect(migration).toContain("BEFORE DELETE");
+    expect(compose).not.toContain("maybeAppendThesisRecord");
     expect(compose).not.toContain("calculateFaultlinePressure");
+    const thesisRouter = readFileSync(resolve(root, "server/routers/pentagonalThesis.ts"), "utf8");
+    const publicQuery = thesisRouter.slice(thesisRouter.indexOf("forSymbol:"), thesisRouter.indexOf("recordForSymbol:"));
+    expect(publicQuery).not.toContain("maybeAppendThesisRecord");
+    expect(thesisRouter).toContain("recordForSymbol: protectedProcedure");
     expect(compose).not.toContain("crisisProbability");
     expect(migration).toContain("Do not apply");
     expect(readFileSync(resolve(root, ".env.example"), "utf8")).toContain("PENTAGONAL_THESIS_RECORD_WRITES=");

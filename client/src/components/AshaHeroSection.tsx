@@ -169,16 +169,16 @@ function AshaIntelPanel() {
 
   // Derive a verdict label from regime code
   const verdictMap: Record<string, string> = {
-    CRITICAL_SYSTEMIC:    "RISK-OFF",
-    LATE_CYCLE_FRAGILITY: "CAUTION",
-    ELEVATED_STRESS:      "SELECTIVE",
-    MODERATE_RISK:        "SELECTIVE",
-    LOW_RISK:             "RISK-ON",
+    CRITICAL_SYSTEMIC:    "Highest stress band",
+    LATE_CYCLE_FRAGILITY: "Elevated pressure band",
+    ELEVATED_STRESS:      "Elevated pressure band",
+    MODERATE_RISK:        "Moderate pressure band",
+    LOW_RISK:             "Lowest pressure band",
   };
-  const verdict = verdictMap[output.regime.code] ?? "SELECTIVE";
+  const verdict = verdictMap[output.regime.code] ?? "Pressure band unavailable";
 
   const scoreColor  = score >= 7 ? "#FF3B5C" : score >= 4.5 ? "#FFAA00" : "#00E5FF";
-  const verdictColor = verdict === "RISK-ON" ? "#00FF88" : verdict === "RISK-OFF" ? "#FF3B5C" : "#00E5FF";
+  const verdictColor = output.regime.code === "LOW_RISK" ? "#00FF88" : output.regime.code === "CRITICAL_SYSTEMIC" ? "#FF3B5C" : "#00E5FF";
 
   // Regime probability bars — mapped from ProbabilityOutput
   // Probability contract: values are already 0–100 (never multiply by 100);
@@ -251,7 +251,8 @@ function AshaIntelPanel() {
           flexWrap: "wrap",
         }}>
           {regimeBars.map(({ label, key, color }) => {
-            const pct = engineProbabilityPercent(output, key);
+            const withheld = key === "crashProbability";
+            const pct = withheld ? null : engineProbabilityPercent(output, key);
             return (
               <div key={label} style={{ minWidth: "54px" }}>
                 <div style={{
@@ -282,7 +283,7 @@ function AshaIntelPanel() {
                   fontSize: "11px",
                   fontWeight: 700,
                   color: pct !== null ? color : "rgba(255,255,255,0.45)",
-                }}>{engineProbabilityText(output, key)}</div>
+                }}>{withheld ? "Not published" : engineProbabilityText(output, key)}</div>
               </div>
             );
           })}
@@ -379,13 +380,13 @@ function AshaIntelPanel() {
                 fontSize: "8px",
                 color: "rgba(255,255,255,0.3)",
                 letterSpacing: "0.1em",
-              }}>CRASH PROBABILITY </span>
+              }}>MARKET-EVENT PERCENTAGE </span>
               <span style={{
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: "11px",
                 color: "rgba(255,255,255,0.55)",
                 fontWeight: 600,
-              }}>{engineProbabilityText(output, "crashProbability")}</span>
+              }}>Not published</span>
             </div>
           </div>
         </div>

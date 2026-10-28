@@ -281,7 +281,7 @@ export default function Scenarios() {
       { label: 'CRE Default Wave',        trigger: 'Office vacancy triggers loan defaults at regional banks' },
       { label: 'Regional Bank Stress',    trigger: 'Unrealized losses crystallize — deposit flight accelerates' },
       { label: 'Credit Tightening',       trigger: 'Banks reduce lending — corporate credit crunch begins' },
-      { label: 'HY Spread Widening',      trigger: 'Risk-off sentiment drives spreads to 600–800bps' },
+      { label: 'HY Spread Widening',      trigger: 'Lower-risk appetite sentiment drives spreads to 600–800bps' },
       { label: 'Corporate Defaults Rise', trigger: '$1.2T refinancing wall hits at 3x higher rates' },
       { label: 'Recession Trigger',       trigger: 'Credit contraction reduces GDP growth — recession confirmed' },
     ];
@@ -290,7 +290,7 @@ export default function Scenarios() {
       { label: 'Long-End Yield Spike',        trigger: '10Y yield surges to 5.5–6.0% — duration risk crystallizes' },
       { label: 'Equity Multiple Compression', trigger: 'Higher discount rate crushes growth stock valuations' },
       { label: 'Dollar Volatility',           trigger: 'Sovereign debt concerns trigger USD instability' },
-      { label: 'Global Contagion',            trigger: 'EM debt reprices — global risk-off accelerates' },
+      { label: 'Global Contagion',            trigger: 'EM debt reprices — global lower-risk appetite accelerates' },
       { label: 'Fed Policy Dilemma',          trigger: 'Forced to choose: defend currency or support growth' },
     ];
   }, [topDomain.id]);
@@ -338,7 +338,7 @@ export default function Scenarios() {
       {/* Probability trend chart */}
       <div style={{ background: 'rgba(10,12,16,0.9)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '6px', padding: '14px', marginBottom: '12px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 500ms both' }}>
         <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: '14px', color: '#E2E8F0', marginBottom: '4px' }}>Probability Trend — 20 Sessions</div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', marginBottom: '10px' }}>Bear/crash probability rising — bull scenario declining</div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', marginBottom: '10px' }}>Scenario weights are not a published market-event percentage.</div>
         <ResponsiveContainer width="100%" height={140}>
           <AreaChart margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
             <defs>

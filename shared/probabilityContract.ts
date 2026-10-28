@@ -209,7 +209,7 @@ export const TRANSITION_DEFINITIONS: Record<"remainInRegime" | "transitionToElev
 /** Event probabilities FAULTLINE does not offer: no governed model exists. */
 export const NOT_OFFERED_EVENTS = {
   recession: "Recession probability",
-  crash: "Crash probability",
+  crash: "Market-event percentage",
   softLanding: "Soft-landing probability",
   stagflation: "Stagflation probability",
   altSeason: "Alt-season probability",

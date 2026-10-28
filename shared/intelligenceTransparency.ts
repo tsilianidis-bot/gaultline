@@ -539,7 +539,7 @@ export function demoteProbabilityPair(
   };
   return [
     asDemoted("bullProbability", "Bull scenario", bull),
-    asDemoted("crashProbability", "Crash probability", crash),
+    asDemoted("crashProbability", "Market-event percentage", crash),
   ];
 }
 

@@ -1,5 +1,5 @@
 export type CanonicalDestinationId = "now" | "why" | "outlook" | "watch" | "act";
-export type RouteIconKey = "activity" | "network" | "telescope" | "bell" | "crosshair" | "message" | "search" | "help" | "user" | "gauge" | "brain" | "target";
+export type RouteIconKey = "activity" | "network" | "telescope" | "bell" | "crosshair" | "message" | "search" | "help" | "user" | "gauge" | "brain" | "scope";
 export type RouteAccess = "authenticated" | "public" | "owner";
 export type RouteSurface = "primary" | "utility" | "expert";
 export type PersistentUtilityId = "asha" | "search" | "alerts" | "help" | "account";
@@ -44,8 +44,8 @@ export const EXPERT_WORKSPACES: readonly ExpertWorkspace[] = [
   { id: "pressure", label: "Pressure Engine", path: "/app/pressure", owner: "now", ownerView: "pressure", icon: "gauge", analyticsId: "expert_pressure", searchKeywords: ["pressure", "stress", "seismograph", "risk"], access: "authenticated", surface: "expert" },
   { id: "signal-outlook", label: "Signal Outlook Center", path: "/app/signal-outlook", owner: "outlook", ownerView: "probabilities", icon: "telescope", analyticsId: "expert_signal_outlook", searchKeywords: ["signal outlook", "probability", "scenario", "transition"], access: "authenticated", surface: "expert" },
   { id: "decision-engine", label: "Decision Engine", path: "/app/decision-engine", owner: "act", ownerView: "decide", icon: "crosshair", analyticsId: "expert_decision_engine", searchKeywords: ["decision", "pre-flight", "respond", "scenario"], access: "authenticated", surface: "expert" },
-  { id: "day-trade-intelligence", label: "Day Trade Intelligence", path: "/app/day-trade-intelligence", owner: "act", ownerView: "decide", icon: "target", analyticsId: "expert_day_trade", searchKeywords: ["day trade", "intraday", "setup", "entry"], access: "authenticated", surface: "expert" },
-  { id: "symbol-intelligence", label: "Universal Symbol Intelligence", path: "/app/symbol-intelligence", owner: "act", ownerView: "analyze", icon: "target", analyticsId: "expert_symbol_intelligence", searchKeywords: ["symbol", "asset", "ticker", "analyze"], access: "authenticated", surface: "expert" },
+  { id: "day-trade-intelligence", label: "Day Trade Intelligence", path: "/app/day-trade-intelligence", owner: "act", ownerView: "decide", icon: "scope", analyticsId: "expert_day_trade", searchKeywords: ["day trade", "intraday", "setup", "fill"], access: "authenticated", surface: "expert" },
+  { id: "symbol-intelligence", label: "Universal Symbol Intelligence", path: "/app/symbol-intelligence", owner: "act", ownerView: "analyze", icon: "scope", analyticsId: "expert_symbol_intelligence", searchKeywords: ["symbol", "asset", "ticker", "analyze"], access: "authenticated", surface: "expert" },
   { id: "smart-discovery", label: "Smart Discovery", path: "/app/discover", owner: "asha", ownerView: "workspace", icon: "brain", analyticsId: "expert_smart_discovery", searchKeywords: ["discover", "search", "asha", "research"], access: "authenticated", surface: "expert" },
 ] as const;
 
@@ -93,14 +93,14 @@ export const CANONICAL_DESTINATION_BY_ID = Object.fromEntries(CANONICAL_DESTINAT
 export const PERSISTENT_UTILITY_BY_ID = Object.fromEntries(PERSISTENT_UTILITIES.map(item => [item.id, item])) as Record<PersistentUtilityId, PersistentUtility>;
 export const EXPERT_WORKSPACE_BY_ID = Object.fromEntries(EXPERT_WORKSPACES.map(item => [item.id, item])) as Record<ExpertWorkspaceId, ExpertWorkspace>;
 export function stripRouteContext(route: string): string { return route.split(/[?#]/, 1)[0] || "/"; }
-export function preserveRouteContext(target: string, currentSearch = "", currentHash = ""): string {
-  const [targetWithoutHash, targetHash = ""] = target.split("#", 2);
-  const [targetPath, targetQuery = ""] = targetWithoutHash.split("?", 2);
+export function preserveRouteContext(destination: string, currentSearch = "", currentHash = ""): string {
+  const [destinationWithoutHash, destinationHash = ""] = destination.split("#", 2);
+  const [destinationPath, destinationQuery = ""] = destinationWithoutHash.split("?", 2);
   const merged = new URLSearchParams(currentSearch.replace(/^\?/, ""));
-  new URLSearchParams(targetQuery).forEach((value, key) => merged.set(key, value));
+  new URLSearchParams(destinationQuery).forEach((value, key) => merged.set(key, value));
   const query = merged.toString();
-  const hash = currentHash || (targetHash ? `#${targetHash}` : "");
-  return `${targetPath}${query ? `?${query}` : ""}${hash}`;
+  const hash = currentHash || (destinationHash ? `#${destinationHash}` : "");
+  return `${destinationPath}${query ? `?${query}` : ""}${hash}`;
 }
 export function getLegacyAliasTarget(pathname: string): string | undefined {
   const clean = stripRouteContext(pathname);
@@ -114,10 +114,10 @@ export function resolveCanonicalDestination(pathname: string): CanonicalDestinat
   if (direct) return direct;
   const expert = EXPERT_WORKSPACES.find(item => item.path === clean);
   if (expert && expert.owner !== "asha") return CANONICAL_DESTINATION_BY_ID[expert.owner];
-  const target = getLegacyAliasTarget(clean);
-  if (!target) return undefined;
-  const targetPath = stripRouteContext(target);
-  return CANONICAL_DESTINATIONS.find(item => targetPath === item.path || targetPath === `${item.path}/deep`);
+  const destination = getLegacyAliasTarget(clean);
+  if (!destination) return undefined;
+  const destinationPath = stripRouteContext(destination);
+  return CANONICAL_DESTINATIONS.find(item => destinationPath === item.path || destinationPath === `${item.path}/deep`);
 }
 
 // ── Canonical home destination for authenticated users ────────────────────────

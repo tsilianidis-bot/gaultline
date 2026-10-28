@@ -48,6 +48,7 @@ import { handleQaAccess, handleQaAccessLogout } from "../qaAccess";
 import { resolveBuildIdentity } from "../buildIdentity";
 import { handleHealth } from "../health";
 import { renderPublicMaintenancePage, shouldServePublicMaintenance } from "../publicMaintenance";
+import { assertDeploySchemaReady } from "../schemaGate";
 
 const LISTEN_HOST = "0.0.0.0";
 
@@ -115,6 +116,7 @@ const qaAccessLimiter = rateLimit({
 });
 
 async function startServer() {
+  await assertDeploySchemaReady();
   const app = express();
   const server = createServer(app);
 

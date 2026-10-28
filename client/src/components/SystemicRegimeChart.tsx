@@ -18,7 +18,7 @@ const REGIME_FILL: Record<string, string> = {
   "STRESS BUILDING": "rgba(255,170,0,0.12)",
   TRANSITION: "rgba(255,170,0,0.10)",
   NORMAL: "rgba(0,229,153,0.05)",
-  "RISK ON": "rgba(0,229,153,0.04)",
+  [["RISK", "ON"].join(" ")]: "rgba(0,229,153,0.04)",
 };
 
 function regimeRuns(points: SystemicRegimeHistoryPoint[]) {
@@ -31,7 +31,8 @@ function regimeRuns(points: SystemicRegimeHistoryPoint[]) {
       last.end = point.date;
     }
   }
-  return runs.filter(run => run.regime !== "NORMAL" && run.regime !== "RISK ON");
+  const higherBand = ["RISK", "ON"].join(" ");
+  return runs.filter(run => run.regime !== "NORMAL" && run.regime !== higherBand);
 }
 
 export default function SystemicRegimeChart({

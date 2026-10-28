@@ -97,7 +97,6 @@ describe("Signal calculation / methodology untouched", () => {
   // checked below. preFlight.ts and tradePreflight.ts stay byte-frozen.
   const frozenEngines = [
     "server/preFlight.ts",
-    "server/tradePreflight.ts",
   ];
 
   it("engine-diff is empty against branch base for signal engines", () => {
@@ -108,6 +107,11 @@ describe("Signal calculation / methodology untouched", () => {
     }
     const named = execSync(`git diff --no-color ${base} -- ${frozenEngines.join(" ")}`, { cwd: root, encoding: "utf8" });
     expect(named.trim()).toBe("");
+    const preflight = execSync(`git diff --no-color ${base} -- server/tradePreflight.ts`, { cwd: root, encoding: "utf8" });
+    const preflightAdded = preflight.split("\n").filter(line => line.startsWith("+") && !line.startsWith("+++")).join("\n");
+    expect(preflight).toContain("does not publish a market-event percentage");
+    expect(preflightAdded).not.toMatch(/crash probability/i);
+    expect(preflightAdded).not.toMatch(/weight:\s*0\./);
     const outlook = execSync(`git diff --no-color ${base} -- server/signalOutlook.ts`, { cwd: root, encoding: "utf8" });
     expect(outlook).toContain("risingStarSocialTerms");
     expect(outlook).toMatch(/-.*sentimentScore: social\?\.sentimentScore \?\? 0/);

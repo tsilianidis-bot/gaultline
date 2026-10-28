@@ -71,7 +71,7 @@ export default function DisclaimerBanner({ variant = "default", className }: Dis
           All content on this platform — including pressure scores, regime classifications, signals, rotation
           suggestions, scenario outputs, and historical analogs — is for{" "}
           <strong style={{ color: "rgba(255,255,255,0.35)" }}>informational and educational purposes only</strong>.
-          Nothing here constitutes financial advice, investment recommendations, or a solicitation to buy or sell
+          Nothing here constitutes financial advice, investment recommendations, or a solicitation to transact
           any security, cryptocurrency, or other financial instrument.
         </p>
         <p style={{ margin: 0 }}>

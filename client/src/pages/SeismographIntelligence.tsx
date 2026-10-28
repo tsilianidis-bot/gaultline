@@ -214,11 +214,11 @@ function deriveCautions(score: number, direction: string, stressLevel: string): 
     cautions.push("Reduce leverage across all positions — elevated systemic pressure increases drawdown risk.");
   }
   if (direction === "Accelerating" || direction === "Deteriorating") {
-    cautions.push("Avoid adding new risk exposure while pressure is accelerating — wait for stabilization.");
+    cautions.push("Pass over adding new risk exposure while pressure is accelerating — wait for stabilization.");
   }
   if (score >= 45) {
-    cautions.push("Avoid chasing overextended breakouts — elevated pressure increases reversal risk.");
-    cautions.push("Avoid low-liquidity names — spreads widen and exits become costly in stressed conditions.");
+    cautions.push("Pass over chasing overextended breakouts — elevated pressure increases reversal risk.");
+    cautions.push("Pass over low-liquidity names — spreads widen and exits become costly in stressed conditions.");
   }
   if (score >= 60) {
     cautions.push("Remain selective with speculative growth — high-multiple names face multiple compression risk.");
@@ -803,7 +803,7 @@ export default function SeismographIntelligence() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
             {[
               { label: "BULL CONTINUATION", color: "#22c55e", border: "rgba(34,197,94,0.2)", bg: "rgba(34,197,94,0.04)", text: "No governed model produces a bull-continuation probability, so FAULTLINE does not offer one. Read the Pressure Index and the evidence families instead." },
-              { label: "MAJOR DRAWDOWN RISK", color: "#ef4444", border: "rgba(239,68,68,0.2)", bg: "rgba(239,68,68,0.04)", text: "FAULTLINE does not offer a crash probability and does not offer a recession probability: no governed model produces one. Read the Pressure Index and the evidence families instead." },
+              { label: "MAJOR DRAWDOWN RISK", color: "#ef4444", border: "rgba(239,68,68,0.2)", bg: "rgba(239,68,68,0.04)", text: "FAULTLINE does not publish a market-event percentage: no governed model produces one. Read the Pressure Index and the evidence families instead." },
             ].map(card => (
               <div key={card.label} style={{ padding: "24px", background: card.bg, borderRadius: "8px", border: `1px solid ${card.border}`, borderTop: `3px solid ${card.color}`, position: "relative", overflow: "hidden" }}>
                 <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.14em", color: card.color, opacity: 0.6, marginBottom: "8px" }}>{card.label}</div>

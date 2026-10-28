@@ -121,7 +121,7 @@ function deriveInstitutionalBias(pressure: number, regime: string): string {
   }
   if (pressure < 65) return "Cautious";
   if (pressure < 80) return "Defensive";
-  return "Risk-Off";
+  return "Lower-risk appetite";
 }
 
 // ── Helper: derive market health label ───────────────────────────────────────
@@ -442,7 +442,7 @@ Write the 3-sentence CIO institutional insight for today's brief.`,
           // Not calibrated, so surfaces render confidenceText, never the number.
           confidence:         overallConfidence === null ? null : Math.min(99, Math.max(50, overallConfidence)),
           confidenceText:     OVERALL_CONFIDENCE_DISPLAY_TEXT,
-          marketStatus:       engineSnapshot.overallPressure < 30 ? "RISK-ON" : engineSnapshot.overallPressure < 55 ? "NEUTRAL" : "RISK-OFF",
+          marketStatus:       engineSnapshot.overallPressure < 30 ? "HIGHER-RISK APPETITE" : engineSnapshot.overallPressure < 55 ? "NEUTRAL" : "LOWER-RISK APPETITE",
         },
         // Section 3: Top Opportunities
         topOpportunities: (topOpportunities ?? []).slice(0, 5),

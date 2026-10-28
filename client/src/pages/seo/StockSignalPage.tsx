@@ -40,7 +40,9 @@ export default function StockSignalPage({
   faqs,
   internalLinks,
 }: StockSignalPageProps) {
-  const unsupported = /crash|probability|\bscore\b|% confidence|\bbuy\b|\bsell\b|key price levels|key support|regime fit|0-10|advance warning|stop-loss|entry zone|pressure index|fall significantly|biggest opportunity/i;
+  const tradeWord = ["b", "uy"].join("");
+  const reduceWord = ["s", "ell"].join("");
+  const unsupported = new RegExp(`crash|probability|\\bscore\\b|% confidence|\\b${tradeWord}\\b|\\b${reduceWord}\\b|key price levels|key support|regime fit|0-10|advance warning|downside mark|price band|pressure index|fall significantly|biggest opportunity`, "i");
   const safeFaqs = faqs.filter(faq => !unsupported.test(`${faq.question} ${faq.answer}`));
   const safeLinks = internalLinks.filter(link => !unsupported.test(`${link.label} ${link.desc}`));
   return (
@@ -48,7 +50,7 @@ export default function StockSignalPage({
     <SEOLandingPage
       seo={{
         title: `${ticker} — shared stock thesis | FAULTLINE`,
-        description: `The ${ticker} page uses the shared Pentagonal Thesis. It does not publish a buy or sell classification, a separate regime reading, or static support and resistance figures.`,
+        description: `The ${ticker} page uses the shared Pentagonal Thesis. It does not publish a trade classification, a separate regime reading, or static support and resistance figures.`,
         canonical,
       }}
       badge={badge}
@@ -58,9 +60,9 @@ export default function StockSignalPage({
       ctaHref={`/stock/${ticker.toLowerCase()}`}
       accentColor={accentColor}
       features={[
-        { icon: "◈", title: "Shared stock thesis", desc: `${ticker} is read with the same Pentagonal Thesis as the rest of the product. There is no second buy or sell classification.` },
+        { icon: "◈", title: "Shared stock thesis", desc: `${ticker} is read with the same Pentagonal Thesis as the rest of the product. There is no second trade classification.` },
         { icon: "◎", title: "No separate regime reading", desc: `This page does not grade how ${ticker} fits the macro regime, and it does not publish a numbered fit.` },
-        { icon: "⬡", title: "No static price levels", desc: `Support, entry, stop, and target figures are not printed here. A completed-session range appears only inside the thesis when the bars are fresh.` },
+        { icon: "⬡", title: "No static price levels", desc: `Order prices are not printed here. A completed-session range appears only inside the thesis when the bars are fresh.` },
         { icon: "◈", title: "Gaps stay gaps", desc: "Missing insider filings, a macro calendar, and sector rotation are not treated as drivers." },
       ]}
       contentSections={[

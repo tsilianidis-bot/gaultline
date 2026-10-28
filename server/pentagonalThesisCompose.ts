@@ -15,7 +15,6 @@ import {
   type ProfileObservation,
   type QuoteObservation,
 } from "../shared/pentagonalThesis";
-import { maybeAppendThesisRecord } from "./pentagonalThesisRecord";
 
 const cache = new LRUCache<string, PentagonalThesis>(100, 60_000);
 
@@ -161,8 +160,7 @@ export async function composeStockPentagonalThesis(
     thesis.headline = "This read failed an integrity check and is not offered as analysis.";
     thesis.gaps.push({ field: "integrity", reason: thesis.integrity.violations.join("; ") || "Integrity check failed.", citedAsDriver: false });
   }
-  const persistence = await maybeAppendThesisRecord(thesis);
-  thesis.persistence = persistence;
+  thesis.persistence = { written: false, reason: "A public read does not record a thesis." };
   if (useCache && thesis.integrity.ok) cache.set(cacheKey, thesis);
   return thesis;
 }

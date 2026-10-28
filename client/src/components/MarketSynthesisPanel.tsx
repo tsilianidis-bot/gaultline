@@ -73,7 +73,7 @@ function getSynthesis(
     "signal-outlook": {
       headline: `${regime} — here is what the signal landscape means`,
       body: isStressed
-        ? `Signal quality degrades in high-stress regimes. ${pageInsight ? pageInsight + " " : ""}Prioritize signals with multiple confirming factors: institutional flow, catalyst support, and technical structure alignment. Avoid chasing momentum without confirmation.`
+        ? `Signal quality degrades in high-stress regimes. ${pageInsight ? pageInsight + " " : ""}Prioritize signals with multiple confirming factors: institutional flow, catalyst support, and technical structure alignment. Pass over chasing momentum without confirmation.`
         : `Signal context is less stressed in the current regime. ${pageInsight ? pageInsight + " " : ""}The bull scenario score (${bullProb}) is a derived context value, not a trend-following forecast.`,
       nextLabel: "Identify the best opportunities now →",
       nextPath: "/app/opportunities",
@@ -126,7 +126,7 @@ function getSynthesis(
         : `Portfolio conditions favorable — ${regime} environment`,
       body: isStressed
         ? `${pageInsight ? pageInsight + " " : ""}In the current ${regime} environment, review portfolio-specific risks and controls. Crash risk is not expressed as a probability (${crashProb}); nothing here is a calibrated hedging instruction.`
-        : `${pageInsight ? pageInsight + " " : ""}The bull scenario score (${bullProb}) is current context, not a recommendation to hold or add positions.`,
+        : `${pageInsight ? pageInsight + " " : ""}The bull scenario score (${bullProb}) is current context, not an instruction.`,
       nextLabel: "Monitor your alerts →",
       nextPath: "/app/alerts",
     },

@@ -371,7 +371,7 @@ describe("QA r10 — confirm list copy in #60-owned files", () => {
     expect(read("client/src/components/MarketPreflight.tsx")).toContain('`Recession risk: ${engineProbabilityText(output, "recessionProbability")} (no governed recession model)`,');
     const seis = read("client/src/pages/SeismographIntelligence.tsx");
     expect(seis).not.toMatch(/(?:[Rr]ecession|[Cc]rash|[Bb]ull) probability \$\{pctOrNotOffered/);
-    expect(seis).toContain("FAULTLINE does not offer a crash probability and does not offer a recession probability: no governed model produces one.");
+    expect(seis).toContain("FAULTLINE does not publish a market-event percentage: no governed model produces one.");
     expect(read("server/tradePreflight.ts")).not.toContain("Recession probability increase");
     expect(read("client/src/components/OnboardingFlow.tsx")).toContain('{ label: "Pressure", value: "68/100", sub: "Example value, not live", color: "#FF9500" },');
   });

@@ -404,6 +404,18 @@ async function transitionClaim(
   return store.cas(key, current, next);
 }
 
+/** unavailable: no store. absent: the primary never claimed this session. */
+export async function scheduledSessionClaimPresence(
+  etDate: string,
+  dbProvider: () => Promise<ClaimDb | SessionClaimStore | null> = getDb,
+): Promise<"completed" | "open" | "absent" | "unavailable"> {
+  const store = await resolveStore(dbProvider);
+  if (!store) return "unavailable";
+  const raw = await store.read(scheduledSeismographClaimKey(etDate)).catch(() => null);
+  if (!raw) return "absent";
+  return parseClaim(raw)?.state === "completed" ? "completed" : "open";
+}
+
 export async function heartbeatScheduledSession(
   etDate: string,
   generation: number,

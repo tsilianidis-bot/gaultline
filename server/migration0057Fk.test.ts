@@ -1,3 +1,11 @@
+/**
+ * Isolated MariaDB checks for the 0057 foreign-key name.
+ * CI does not have sudo mysql. The suite skips unless FAULTLINE_ISOLATED_MARIADB=1.
+ * Local run, against a disposable server only:
+ *   FAULTLINE_ISOLATED_MARIADB=1 pnpm exec vitest run server/migration0057Fk.test.ts
+ * The helper uses `sudo mysql` on 127.0.0.1:3306 to create databases named
+ * faultline_rc_fk_*. Do not point it at a shared or production server.
+ */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -67,7 +75,9 @@ async function fkName(connection: mysql.Connection): Promise<string | null> {
   return list[0]?.name ?? null;
 }
 
-describe("0057 foreign-key name on disposable MariaDB", () => {
+const isolated = process.env.FAULTLINE_ISOLATED_MARIADB === "1";
+
+describe.skipIf(!isolated)("0057 foreign-key name on disposable MariaDB", () => {
   const connections: mysql.Connection[] = [];
 
   afterAll(async () => {

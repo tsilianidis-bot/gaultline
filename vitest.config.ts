@@ -20,5 +20,11 @@ export default defineConfig({
     environment: "node",
     include: ["server/**/*.test.ts", "server/**/*.spec.ts", "shared/nyseSession.test.ts"],
     testTimeout: 30000,
+    // Default is UTC. An explicit TZ (including America/New_York) is kept so
+    // the suite can be proven under both zones. Tests must not read the
+    // process zone for claim ages or session windows.
+    env: {
+      TZ: process.env.TZ || "UTC",
+    },
   },
 });

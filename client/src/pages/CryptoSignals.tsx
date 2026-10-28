@@ -611,9 +611,9 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
             <SizingCalculator
               ticker={sig.symbol}
               assetType="CRYPTO"
-              defaultEntry={sig.priceLevels.entryZone}
-              defaultStop={sig.priceLevels.stopLoss}
-              defaultTarget={sig.priceLevels.targetPrice}
+              defaultFill={sig.priceLevels.entryZone}
+              defaultLower={sig.priceLevels.stopLoss}
+              defaultUpper={sig.priceLevels.targetPrice}
               defaultExpanded={false}
             />
           </div>

@@ -138,7 +138,7 @@ function getPersonalizationPriorities(
       "Regime shifts and trend changes",
       "Volatility and breadth conditions",
       "Medium-term opportunity signals",
-      "Risk-on / risk-off environment changes",
+      "Higher-risk appetite / lower-risk appetite environment changes",
       "Credit and liquidity conditions",
     ];
   }
@@ -744,7 +744,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                     label: "CRASH RISK",
                     color: "#FF4444",
                     range: "Not offered",
-                    definition: "FAULTLINE does not offer a crash probability: no governed model with a defined crash event, horizon and calibration record exists.",
+                    definition: "FAULTLINE does not offer a market-event percentage: no governed model with a defined crash event, horizon and calibration record exists.",
                     detail: "Use the Pressure Index and regime as stress context, not as a crash forecast.",
                   },
                 ].map((item, i) => (

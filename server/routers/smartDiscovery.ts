@@ -114,13 +114,13 @@ export interface FaultlineAnswer {
   entryZoneAggressive: string | null;    // e.g. "$320–$335" (for momentum buyers)
   entryZoneConservative: string | null;  // e.g. "$260–$280" (wait for pullback)
   entryZoneStop: string | null;          // Stop loss for the entry
-  entryZoneTarget: string | null;        // First profit target from entry
+  entryZoneTarget: string | null;        // First upper price from the fill
   entryZoneRR: string | null;            // Risk:reward ratio
 
   // Exit zone (questionIntent === "exit_zone")
   exitZonePrimary: string | null;        // First profit target
   exitZoneSecondary: string | null;      // Second profit target
-  exitZoneFull: string | null;           // Full exit / stop out level
+  exitZoneFull: string | null;           // Full exit / lower mark
   exitZoneReason: string | null;         // Why these levels
 
   // Invalidation (questionIntent === "invalidation")
@@ -156,7 +156,7 @@ export interface FaultlineAnswer {
   // Evidence Engine (Section 6) — 14 categories
   evidenceScores: EvidenceScore[];
 
-  // Why Not Buy/Sell (Section 10) — populated when verdict is WAIT/HOLD
+  // Why not section — populated when the verdict is a wait
   whyNotBuy: string[] | null;
   whyNotSell: string[] | null;
 
@@ -196,7 +196,7 @@ export interface FaultlineAnswer {
 
   // ── SUGGESTED BIAS ─────────────────────────────────────────────────────────
   suggestedBias: string;             // e.g. "LONG ONLY while current conditions hold"
-  suggestedBiasCondition: string;    // The condition that must remain true for the bias to hold
+  suggestedBiasCondition: string;    // The condition that must remain true for the bias to stay
 
   // ── HISTORICAL ANALOG ──────────────────────────────────────────────────────
   historicalAnalog: string | null;   // e.g. "Similar to NVDA in Q4 2022 before the AI breakout"
@@ -211,7 +211,7 @@ export interface FaultlineAnswer {
   // ── COLLECTIVE READING — mandatory synthesis section ───────────────────────
   // Combines all signals into one clear investment reading.
   collectiveReading: {
-    riskRegime: "risk-on" | "risk-off" | "mixed";     // Overall environment
+    riskRegime: "higher-risk appetite" | "lower-risk appetite" | "mixed";     // Overall environment
     beneficiaries: string[];                           // Asset types / sectors / stocks that benefit most
     strongestReason: string;                           // The single most compelling reason for the reading
     invalidation: string;                              // What could invalidate the reading
@@ -342,7 +342,7 @@ async function orchestrateAnswer(
     runFMOSPipelineFast({ symbol: ticker ?? undefined }),
     ticker ? getQuickOutlook(ticker, assetType ?? "stock") : Promise.resolve(null),
     computeCrossMarketIntelligence(),
-    // Fetch live price + OHLV so the LLM can generate accurate price targets
+    // Fetch live price + OHLV so the model can describe completed prices
     ticker
       ? (assetType === "crypto"
           ? getCoinMarketData(ticker).then(d => {
@@ -414,7 +414,7 @@ async function orchestrateAnswer(
         const vol = (livePrice as Record<string, unknown>).volume as number | null | undefined;
         const op = (livePrice as Record<string, unknown>).open as number | null | undefined;
         const fmtVol = vol != null ? (vol >= 1_000_000 ? `${(vol / 1_000_000).toFixed(2)}M` : vol >= 1_000 ? `${(vol / 1_000).toFixed(0)}K` : vol.toFixed(0)) : null;
-        return `\n── LIVE MARKET DATA (MANDATORY — base ALL price targets on this) ──\nTicker: ${ticker}\nCurrent Price: $${p.toFixed(2)}${chg != null ? ` (${chg >= 0 ? '+' : ''}${chg.toFixed(2)}% today)` : ''}${op != null ? `\nOpen: $${op.toFixed(2)}` : ''}${hi != null ? `\nDay High: $${hi.toFixed(2)}` : ''}${lo != null ? `\nDay Low: $${lo.toFixed(2)}` : ''}${fmtVol != null ? `\nVolume: ${fmtVol}` : ''}\nCRITICAL RULES:\n1. Every price target, support/resistance level, entry zone, stop loss, and profit target MUST be calculated relative to the CURRENT PRICE of $${p.toFixed(2)}.\n2. Use Day High ($${hi?.toFixed(2) ?? 'N/A'}) and Day Low ($${lo?.toFixed(2) ?? 'N/A'}) to establish intraday context and realistic near-term levels.\n3. NEVER use historical price levels from training data. Your training data is stale — always use the live prices above.\n4. All percentage moves must be calculated from $${p.toFixed(2)}.`;
+        return `\n── LIVE MARKET DATA (MANDATORY — base readings on the completed prices on this) ──\nTicker: ${ticker}\nCurrent Price: $${p.toFixed(2)}${chg != null ? ` (${chg >= 0 ? '+' : ''}${chg.toFixed(2)}% today)` : ''}${op != null ? `\nOpen: $${op.toFixed(2)}` : ''}${hi != null ? `\nDay High: $${hi.toFixed(2)}` : ''}${lo != null ? `\nDay Low: $${lo.toFixed(2)}` : ''}${fmtVol != null ? `\nVolume: ${fmtVol}` : ''}\nCRITICAL RULES:\n1. Every completed-price reference MUST be calculated relative to the CURRENT PRICE of $${p.toFixed(2)}.\n2. Use Day High ($${hi?.toFixed(2) ?? 'N/A'}) and Day Low ($${lo?.toFixed(2) ?? 'N/A'}) to establish intraday context and realistic near-term levels.\n3. NEVER use historical price levels from training data. Your training data is stale — always use the live prices above.\n4. All percentage moves must be calculated from $${p.toFixed(2)}.`;
       })()
     : "";
 
@@ -437,8 +437,8 @@ QUESTION TYPE: DOWNSIDE ANALYSIS
 The user is asking HOW LOW this asset can fall. You MUST answer this FIRST.
 Populate these fields with SPECIFIC PRICE LEVELS (not conditions):
 - downsideBaseZone: Most likely pullback zone (e.g. "$280–$310")
-- downsideBearTarget: Bear case downside target (e.g. "$220–$240")
-- downsideExtremeTarget: Crash/extreme scenario target (e.g. "$150–$180")
+- downsideBearTarget: Bear-case lower price (e.g. "$220–$240")
+- downsideExtremeTarget: Extreme lower price (e.g. "$150–$180")
 - downsideMostLikely: One sentence — the single most probable outcome
 - downsideTriggers: What triggers each level (3 items)
 - downsideInvalidation: What would prevent/invalidate the downside
@@ -447,22 +447,22 @@ Do NOT lead with generic bull/bear percentages. Lead with price levels.`,
 QUESTION TYPE: UPSIDE ANALYSIS
 The user is asking HOW HIGH this asset can go. You MUST answer this FIRST.
 Populate these fields with SPECIFIC PRICE LEVELS:
-- upsideBaseTarget: Base case upside target (e.g. "$450–$480")
-- upsideBullTarget: Bull case target (e.g. "$550–$600")
-- upsideExtremeTarget: Extreme/moonshot target (e.g. "$700+")
+- upsideBaseTarget: Base-case upper price (e.g. "$450–$480")
+- upsideBullTarget: Upper-case price (e.g. "$550–$600")
+- upsideExtremeTarget: Far upper price (e.g. "$700+")
 - upsideMostLikely: One sentence — the single most probable outcome
 - upsideCatalysts: What triggers each level (3 items)
 - upsideInvalidation: What would prevent/invalidate the upside`,
     buy_verdict: `
-QUESTION TYPE: BUY VERDICT
-The user is asking SHOULD I BUY. You MUST answer this FIRST with a clear verdict.
+QUESTION TYPE: ACQUIRE READING
+The user is asking SHOULD I ACQUIRE. You MUST answer this FIRST with a clear verdict.
 - actionVerdict: "BUY NOW" | "ACCUMULATE" | "WAIT" | "SELL" | "REDUCE" | "HOLD"
 - actionVerdictReason: One sentence — the single most important reason for this verdict
 - actionVerdictConditions: 3 conditions that would change the verdict
 Do NOT bury the verdict in analysis. State it immediately.`,
     sell_verdict: `
-QUESTION TYPE: SELL VERDICT
-The user is asking SHOULD I SELL. You MUST answer this FIRST with a clear verdict.
+QUESTION TYPE: REDUCE READING
+The user is asking SHOULD I REDUCE. You MUST answer this FIRST with a clear verdict.
 - actionVerdict: "SELL" | "REDUCE" | "HOLD" | "WAIT" | "BUY NOW" | "ACCUMULATE"
 - actionVerdictReason: One sentence — the single most important reason for this verdict
 - actionVerdictConditions: 3 conditions that would change the verdict`,
@@ -473,30 +473,30 @@ The user is asking IS NOW THE RIGHT TIME. You MUST answer this FIRST.
 - actionVerdictReason: One sentence — the single most important reason for this timing verdict
 - actionVerdictConditions: 3 conditions that would change the timing`,
     entry_zone: `
-QUESTION TYPE: ENTRY ZONE
+QUESTION TYPE: PRICE BAND
 The user is asking WHERE TO ENTER. You MUST answer this FIRST with SPECIFIC PRICE LEVELS.
-- entryZoneIdeal: Ideal entry zone (e.g. "$290–$310")
-- entryZoneAggressive: Aggressive entry for momentum buyers (e.g. "$320–$335")
-- entryZoneConservative: Conservative entry on pullback (e.g. "$260–$280")
-- entryZoneStop: Stop loss level for the entry
-- entryZoneTarget: First profit target from entry
+- entryZoneIdeal: Ideal price band (e.g. "$290–$310")
+- entryZoneAggressive: Aggressive band for momentum (e.g. "$320–$335")
+- entryZoneConservative: Conservative band on a pullback (e.g. "$260–$280")
+- entryZoneStop: Lower mark for the band
+- entryZoneTarget: First upper price from the fill
 - entryZoneRR: Risk:reward ratio (e.g. "1:3")`,
     exit_zone: `
 QUESTION TYPE: EXIT ZONE / TAKE PROFIT
 The user is asking WHERE TO EXIT. You MUST answer this FIRST with SPECIFIC PRICE LEVELS.
-- exitZonePrimary: First profit target / partial exit
-- exitZoneSecondary: Second profit target / full exit
-- exitZoneFull: Full exit / stop out level
+- exitZonePrimary: First upper price
+- exitZoneSecondary: Second upper price
+- exitZoneFull: Full exit / lower mark
 - exitZoneReason: One sentence — why these levels`,
     target_price: `
-QUESTION TYPE: PRICE TARGET
-The user is asking WHAT IS THE TARGET PRICE. You MUST answer this FIRST.
-- upsideBaseTarget: Base case price target
-- upsideBullTarget: Bull case price target
-- upsideExtremeTarget: Extreme/moonshot target
+QUESTION TYPE: UPPER PRICE
+The user is asking WHAT IS THE UPPER PRICE. You MUST answer this FIRST.
+- upsideBaseTarget: Base-case upper price
+- upsideBullTarget: Upper-case price level
+- upsideExtremeTarget: Far upper price
 - upsideMostLikely: One sentence — most probable outcome
-- upsideCatalysts: What drives each target (3 items)
-- upsideInvalidation: What invalidates the target`,
+- upsideCatalysts: What accompanies each upper price (3 items)
+- upsideInvalidation: What would change the upper price`,
     invalidation: `
 QUESTION TYPE: INVALIDATION PRICE
 The user is asking WHAT PRICE BREAKS THE THESIS. You MUST answer this FIRST.
@@ -528,7 +528,7 @@ Provide a comprehensive institutional analysis. Lead with the verdict and primar
 
   const questionIntentInstruction = `
 QUESTION TYPE: ${questionIntent}
-Answer the user's actual question first using supplied canonical evidence only. Do not create price levels, targets, stop levels, risk/reward ratios, expected reward, probability, forecast timing, confirmation conditions, or invalidation conditions unless an authorized structured claim explicitly supplies them. When such a claim is absent, return a concise governed limitation rather than a substitute value.`;
+Answer the user's actual question first using supplied canonical evidence only. Do not create price levels, targets, downside levels, risk/reward ratios, expected reward, probability, forecast timing, confirmation conditions, or invalidation conditions unless an authorized structured claim explicitly supplies them. When such a claim is absent, return a concise governed limitation rather than a substitute value.`;
 
   const legacySystemPrompt = `You are PLATO — the intelligence layer of FAULTLINE.
 You are an institutional market strategist. You deliver briefings to sophisticated investors with the precision of Goldman Sachs, the macro depth of Bridgewater, and the clarity of Bloomberg Intelligence.
@@ -560,9 +560,9 @@ BANNED OPENING PHRASES — NEVER use these:
 
 INSTEAD, open with the verdict. Examples:
   ✓ "RKT is FAVORABLE for day trading today. Momentum and liquidity both support the setup."
-  ✓ "NVDA is a BUY at current levels. The AI infrastructure cycle remains intact."
+  ✓ "NVDA is a positive reading at current levels. The AI infrastructure cycle remains intact."
   ✓ "Bitcoin is in a Bull Market Continuation phase. Momentum is accelerating."
-  ✓ "SPY is a HOLD. Current evidence does not support adding exposure here."
+  ✓ "SPY is unchanged versus its recent average. Current evidence does not support adding exposure here."
 
 For EVERY question about a specific asset, the FIRST sentence of executiveSummary must name the asset and state the verdict.
 For EVERY broad market question, the FIRST sentence must state the regime and what it means.
@@ -577,11 +577,11 @@ Every response MUST contain ALL of the following sections in this exact order:
 
   2. BULL / BEAR BALANCE (bullCase / bearCase)
      A qualitative balance only, in words. Never state a probability, odds or percentage chance.
-     FAULTLINE does not offer a crash probability; its scenario weights are uncalibrated.
+     FAULTLINE does not offer a market-event percentage; its scenario weights are uncalibrated.
 
   3. SUGGESTED BIAS (suggestedBias / suggestedBiasCondition)
      One clear directional stance. Example: "LONG ONLY while price holds above the 20-day moving average."
-     Always include the condition that must remain true for the bias to hold.
+     Always include the condition that must remain true for the bias to remain.
 
   4. KEY DRIVERS (keyDrivers) — 3–5 specific factors driving this asset RIGHT NOW.
      Each driver must be specific to the asset. No generic market commentary.
@@ -600,7 +600,7 @@ Every response MUST contain ALL of the following sections in this exact order:
 
   8. FINAL VERDICT (finalVerdictAction + finalVerdictConfidence + finalVerdictRiskLevel + finalVerdictTimeHorizon + finalVerdictRationale)
      MANDATORY. Every response ends with a Final Verdict.
-     - Action: BUY | ACCUMULATE | HOLD | WATCH | REDUCE | SELL | AVOID
+     - Action: positive | watch | strained
      - Confidence is not established. Do not state a confidence percentage.
      - Risk Level: LOW | MODERATE | HIGH | EXTREME
      - Time Horizon: e.g. "1–3 days", "1–3 weeks", "1–3 months"
@@ -614,7 +614,7 @@ Every response MUST contain ALL of the following sections in this exact order:
 ══════════════════════════════════════════════════════════════════════
 INTENT ROUTING RULES
 ══════════════════════════════════════════════════════════════════════
-1. If the user asks about a specific ticker (e.g. "Should I buy NVDA?", "I want to day trade RKT"), answer about THAT ticker ONLY. All drivers, risks, and price levels must be specific to that ticker.
+1. If the user asks about a specific ticker (e.g. "What is the reading on NVDA?", "I want the intraday note on RKT"), answer about THAT ticker ONLY. All drivers, risks, and price levels must be specific to that ticker.
 2. If the user asks a broad market question, do NOT default to the active ticker. Answer the broad question.
 3. The active symbol is context only — never assume it is the subject unless the user explicitly refers to it.
 4. Never refuse ordinary market questions. Provide evidence-backed intelligence without probability numbers.
@@ -649,20 +649,20 @@ FIELD RULES
 - catalysts / threats: EXACTLY 3 items each. Near-term and asset-specific.
 - confidenceReasons: EXACTLY 3 items. Each explains WHY confidence is at this level.
 - evidenceScores: EXACTLY 14 items. score is null. Do not invent a 0-100 score or use 50 as neutral. One-line explanation with a supplied number or condition, or "Not applicable".
-- whyNotBuy: If verdict is WAIT/HOLD, provide 3 specific reasons. Otherwise null.
-- whyNotSell: If verdict is WAIT/HOLD, provide 3 specific reasons. Otherwise null.
+- whyNotBuy: If verdict is a wait, provide 3 specific reasons. Otherwise null.
+- whyNotSell: If verdict is a wait, provide 3 specific reasons. Otherwise null.
 - watchCatalysts: EXACTLY 4-5 conditions. Format: "If [condition], then [implication]."
 - invalidation: ONE sentence starting with "Thesis fails if..." — specific condition, never generic.
 - suggestedAction: ONE sentence starting with a verb. Specific and actionable.
-- suggestedBias: ONE clear directional stance. Include the condition that must hold.
-- suggestedBiasCondition: The specific condition that must remain true for the bias to hold.
+- suggestedBias: ONE clear directional stance. Include the condition that must remain.
+- suggestedBiasCondition: The specific condition that must remain true for the bias to remain.
 - historicalAnalog: One sentence naming a specific historical analog. Null if no relevant analog exists.
 - historicalAnalogOutcome: One sentence describing what happened in that analog. Null if historicalAnalog is null.
-- finalVerdictAction: BUY | ACCUMULATE | HOLD | WATCH | REDUCE | SELL | AVOID
+- finalVerdictAction: positive | watch | strained
 - finalVerdictConfidence: null. Model confidence is not established.
 - finalVerdictRiskLevel: LOW | MODERATE | HIGH | EXTREME
 - finalVerdictTimeHorizon: e.g. "1–3 days", "1–3 weeks", "1–3 months"
-- finalVerdictRationale: 1–2 sentences. Why this verdict. What must hold for it to play out.
+- finalVerdictRationale: 1–2 sentences. Why this verdict. What must remain for it to play out.
 - followUpChips: 3–5 contextual follow-up questions. MUST be specific to the asset/topic. Never generic.
 - collectiveReading: REQUIRED. Synthesize all evidence. Keep to 3–4 sentences. Start with "Collective Reading:"
 
@@ -697,7 +697,7 @@ RESPONSE RULES:
 - Response format: ${answerFormat}. For SIMPLE, return only the direct answer, one supporting evidence item, and one limitation; keep nonessential lists empty and unsupported fields null. For STRUCTURED, use concise distinct sections only where evidence supports them.
 - Use concise, distinct sections: executiveSummary, whyThisVerdict, keyFindings, supportingEvidence, limitations, and followUpChips.
 - A field being present in the response schema never authorizes a claim. Return null or empty arrays for unsupported structured fields.
-- Do not use LLM-generated scores, confidence percentages, price targets, entry/exit zones, stop levels, expected reward, time horizons, probabilities, confirmation thresholds, invalidation thresholds, cross-engine synthesis, or Early Warnings. You may describe only the supplied governed Cross-Engine Synthesis relationships and qualified Early Warning objects exactly as provided.
+- Do not use LLM-generated scores, confidence percentages, upper prices or order levels, downside levels, expected reward, time horizons, probabilities, confirmation thresholds, invalidation thresholds, cross-engine synthesis, or Early Warnings. You may describe only the supplied governed Cross-Engine Synthesis relationships and qualified Early Warning objects exactly as provided.
 - Historical context is not a current forecast. Guidance must be explicitly separate from evidence and interpretation.
 - If a requested fact is absent from the evidence packet, state the concise governed limitation rather than creating a substitute.`;
 
@@ -740,8 +740,8 @@ JSON schema:
   "catalysts": string[] (exactly 3 near-term catalysts),
   "threats": string[] (exactly 3 near-term threats),
   "evidenceScores": Array of { "category": string, "score": null, "signal": "bullish"|"bearish"|"neutral", "explanation": string (one line) },
-  "whyNotBuy": string[] | null (3 reasons BUY was rejected if WAIT/HOLD, else null),
-  "whyNotSell": string[] | null (3 reasons SELL was rejected if WAIT/HOLD, else null),
+  "whyNotBuy": string[] | null (3 reasons an acquisition was rejected if a wait, else null),
+  "whyNotSell": string[] | null (3 reasons a reduction was rejected if a wait, else null),
   "watchCatalysts": string[] (4-5 specific events that would change the recommendation),
   "support": string | null,
   "resistance": string | null,
@@ -795,9 +795,9 @@ JSON schema:
   "finalVerdictConfidence": null,
   "finalVerdictRiskLevel": "LOW" | "MODERATE" | "HIGH" | "EXTREME",
   "finalVerdictTimeHorizon": string (e.g. "1-3 days", "1-3 weeks", "1-3 months"),
-  "finalVerdictRationale": string (1-2 sentences — why this verdict, what must hold for it to play out),
+  "finalVerdictRationale": string (1-2 sentences — why this verdict, what must remain for it to play out),
   "suggestedBias": string (one clear directional stance, e.g. "LONG ONLY while price holds above the 20-day MA"),
-  "suggestedBiasCondition": string (the specific condition that must remain true for the bias to hold),
+  "suggestedBiasCondition": string (the specific condition that must remain true for the bias to stay),
   "historicalAnalog": string | null (one sentence naming a specific historical analog, or null if none relevant),
   "historicalAnalogOutcome": string | null (one sentence describing what happened in that analog, or null),
   "keyDrivers": string[] (3-5 specific factors driving this asset RIGHT NOW, asset-specific not generic),
@@ -1237,17 +1237,17 @@ Rank only tickers present in the supplied universe scan. If that scan is empty, 
 INTENT ROUTING RULES (MUST follow):
 1. Answer the user's ACTUAL question — not the question implied by any currently selected symbol.
 2. This is a BROAD MARKET question. Return a ranked list of the most relevant securities. Do NOT default to any single active ticker.
-3. Never force a Buy/Hold/Sell verdict on a broad question. Rank by conviction and explain why.
+3. Never force a directional verdict on a broad question. Rank by conviction and explain why.
 4. If the question specifies a category (e.g. "best AI stocks", "best dividend stocks"), filter the universe to that category.
 5. Always answer the broad question first. If an active symbol is relevant, note its rank in the list.
 
 Current Market Regime: ${regimeLabel} (Pressure Index: ${pressureIndex === null ? "unavailable" : `${pressureIndex}/100`})
-Bull/bear balance: describe it qualitatively only. FAULTLINE does not offer a crash probability, does not offer a recession probability, and its bull/bear scenario weights are uncalibrated, so never state any probability, odds or percentage chance.${fmos?.probability?.primaryDriver ? ` Primary Driver: ${fmos.probability.primaryDriver}` : ""}
+Bull/bear balance: describe it qualitatively only. FAULTLINE does not offer a market-event percentage, does not offer a recession probability, and its bull/bear scenario weights are uncalibrated, so never state any probability, odds or percentage chance.${fmos?.probability?.primaryDriver ? ` Primary Driver: ${fmos.probability.primaryDriver}` : ""}
 
 ========================
-IF NO BUY OPPORTUNITIES EXIST
+IF NO POSITIVE READINGS EXIST
 ========================
-If the supplied scan has no BUY, keep the scanned names and explain that conviction is lower. Do not add names that are absent from the scan, and do not attach an example score such as 86.
+If the supplied scan has no positive reading, keep the scanned names and explain that conviction is lower. Do not add names that are absent from the scan, and do not attach an example score such as 86.
 
 ========================
 OPPORTUNITY SCAN STRUCTURE (ALL SECTIONS REQUIRED)
@@ -1256,7 +1256,7 @@ OPPORTUNITY SCAN STRUCTURE (ALL SECTIONS REQUIRED)
 1. MARKET SUMMARY — Current Regime, Pressure Index, Opportunity Level, and a qualitative bull/bear balance (words only, no percentages or probabilities). Briefly explain WHY this environment exists.
 
 2. TOP OPPORTUNITIES — only assets from the supplied scan. Each must include:
-   • Asset + Current Rating (BUY/ACCUMULATE/WATCH/HOLD/AVOID)
+   • Asset + Current Rating (positive/watch/strained)
    • The scanner composite is the only score. Confidence is not established. Do not add a confidence percent.
    • Expected Risk + Expected Reward + Current Trend
    • Bull Drivers + Bear Drivers + Macro Alignment + Sector Strength + Liquidity Impact + Valuation + Momentum + Catalysts + Historical Analog
@@ -1265,12 +1265,12 @@ OPPORTUNITY SCAN STRUCTURE (ALL SECTIONS REQUIRED)
 
 3. RANK ONLY THE SCAN — Top names stay inside the supplied universe. A WATCH is allowed. If the scan is empty, return no opportunities and no substitute list.
 
-4. PORTFOLIO POSITIONING RECOMMENDATION — End every scan with one of: "Remain fully invested" / "Increase exposure gradually" / "Wait for confirmation" / "Favor quality over speculation" / "Increase defensive allocations" / "Raise cash" / "Reduce leverage" / "Rotate into defensive sectors"
+4. PORTFOLIO POSITIONING RECOMMENDATION — End every scan with one of: "Remain fully invested" / "Raise recorded allocation gradually" / "Wait for confirmation" / "Favor quality over speculation" / "Increase defensive allocations" / "Raise cash" / "Reduce leverage" / "Rotate into defensive sectors"
 
 WRITING STYLE:
 - Lead with the highest-conviction ideas. Rank by institutional merit, not popularity.
 - Every recommendation must be grounded in the current regime context.
-- Be specific: name the catalyst, name the risk, name the entry zone.
+- Be specific: name the catalyst, name the risk, name the price band.
 - Never use: "navigate", "landscape", "nuanced", "could", "may", "possibly"
 - Use declarative statements. Write like a CIO briefing an investment committee.
 
@@ -1288,12 +1288,12 @@ FIELD RULES:
 - sectorStrength: "Strong" | "Moderate" | "Weak" | "Deteriorating".
 - momentum: "Bullish" | "Neutral" | "Bearish" | "Recovering".
 - historicalAnalog: one sentence referencing a historical period or analog.
-- avoidList: 3-5 assets to avoid right now with a specific one-sentence reason each.
+- avoidList: 3-5 assets to pass over right now with a specific one-sentence reason each.
 - sectorLeaderboard: Name sectors that appear in the scan, with bias and one-sentence reason. rating is null. Do not invent a 1-5 score.
 - whyTheseRankHighest: 3-4 sentences explaining the macro logic behind the top-ranked opportunities.
 - portfolioPositioning: One of the positioning recommendations listed above.
 - followUpChips: 4-5 natural follow-up questions the user might want to ask next.
-DISCLAIMER INSTRUCTION: All output is for informational and educational purposes only. Nothing constitutes financial advice or a solicitation to buy or sell any security.`;
+DISCLAIMER INSTRUCTION: All output is for informational and educational purposes only. Nothing constitutes financial advice or a solicitation to transact any security.`;
 
   const userPrompt = `${conversationContext}
 User question: "${query}"
@@ -1301,7 +1301,7 @@ User question: "${query}"
 Universe scan results (sorted by composite score):
 ${universeContext || "No universe scan data available. Return an empty topOpportunities array. Do not substitute well-known tickers or scores."}
 
-Avoid candidates:
+Pass over candidates:
 ${avoidContext || "None identified."}
 
 Return only tickers from the universe scan. If that scan is empty, topOpportunities is []. Do not add names to reach a minimum count.
@@ -1454,7 +1454,7 @@ Respond with a JSON object matching this exact schema:
   const followUpChips = (raw.followUpChips as string[]) ?? [
     "What is the #1 opportunity right now?",
     "Show me the top crypto opportunities",
-    "What sectors should I avoid?",
+    "What sectors are strained?",
     "What are the highest conviction setups?",
   ];
 

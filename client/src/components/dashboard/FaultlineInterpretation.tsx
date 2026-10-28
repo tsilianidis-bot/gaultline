@@ -203,7 +203,7 @@ export function FaultlineInterpretation() {
   const para3 = allTrendsUnavailable
     ? `Domain trends versus the prior reading are unavailable, so no domain is described as easing, building or stable. The level of stress is the ${regimeLabel} regime above.`
     : easingZones.length > 0
-    ? `Several major stress areas are easing, including ${easingZones.join(", ")}. This means the system is not currently confirming a broad liquidity collapse — risk-on assets may still have room to move.`
+    ? `Several major stress areas are easing, including ${easingZones.join(", ")}. This is a trend versus the prior reading. It is not a forecast and it is not an instruction.`
     : `No domain is showing an easing trend versus the prior reading. This is a trend statement only; the level of stress is the ${regimeLabel} regime above.`;
 
   const para4 = dangerZones.length > 0
@@ -214,16 +214,16 @@ export function FaultlineInterpretation() {
 
   // Takeaway card content — dynamically adapted to regime
   const cleanReadTitle = fragile
-    ? "High systemic pressure — defensive posture warranted"
+    ? "High systemic pressure"
     : "Not a 'crash now' signal";
 
   const cleanReadBody = fragile
-    ? `Systemic pressure is in the high band. The market is showing structural fragility. Reduce exposure to high-beta and speculative names.`
-    : `This is not a "crash now" signal. It is a "market is vulnerable if ${aiBubbleDomain?.label ?? "the AI trade"} cracks, credit worsens, or liquidity reverses" signal.`;
+    ? `Systemic pressure is in the high band. The market is showing structural fragility. Freshness is the timestamp on this reading. The band is not a forecast and it is not an instruction.`
+    : `This reading does not publish a market-event percentage. It says the market is vulnerable if ${aiBubbleDomain?.label ?? "the AI trade"} cracks, credit worsens, or liquidity reverses.`;
 
   const guidanceBody = constructive
-    ? "Stay invested selectively, but do not ignore risk. Favor stronger assets, avoid chasing weak speculative names, monitor AI concentration, watch credit spreads, track liquidity, and be careful with high-beta stocks that depend on cheap money."
-    : "Reduce speculative exposure. Favor quality, cash-flow positive assets. Watch credit spreads and liquidity conditions closely. Avoid adding risk until the regime clarifies.";
+    ? "The reading is mixed. Watch AI concentration, credit spreads, and liquidity. This is not an instruction."
+    : "Speculative names are in a higher-stress reading. Watch credit spreads and liquidity. This is not an instruction.";
 
   const mostImportantBody = `The market can ${constructive ? "keep climbing" : "stabilize"}, but the foundation is fragile. The biggest risk is ${aiBubbleDomain?.label ?? "an AI/mega-cap unwind"}, not a traditional recession shock right now.`;
 

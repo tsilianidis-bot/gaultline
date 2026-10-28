@@ -1,5 +1,6 @@
 import { eq, and, desc, count, sql, like, or, gte, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
 import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport, mobileUsage, dayTradeWatchlist, InsertDayTradeWatchlistItem, tradeJournal, InsertTradeJournalEntry, chatbotSessions, chatbotMessages, chatbotLeads, InsertChatbotSession, InsertChatbotMessage, InsertChatbotLead, ChatbotSession, dayTradeSnapshot, pipelineHealthLog, onboardingEmailSequence, stripeSubscriptionCancellations } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
@@ -15,7 +16,15 @@ export function closeDbForTests(): void {
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      const pool = mysql.createPool({
+        uri: process.env.DATABASE_URL,
+        timezone: "Z",
+        connectionLimit: 10,
+      });
+      pool.pool.on("connection", (connection) => {
+        connection.query("SET time_zone = '+00:00'");
+      });
+      _db = drizzle(pool) as unknown as NonNullable<typeof _db>;
     } catch (error) {
       log.warn("[Database] Failed to connect", { err: error as Error });
       _db = null;
@@ -1721,6 +1730,17 @@ export function processingClaimType(eventType: string): string {
   return `${STRIPE_WEBHOOK_PROCESSING_PREFIX}${eventType}`;
 }
 
+/** MySQL datetime strings have no zone. Treat them as UTC so an EDT process does not shift the claim age. */
+export function utcClaimMillis(value: Date | string | null | undefined): number {
+  if (value instanceof Date) return value.getTime();
+  if (typeof value !== "string") return Number.NaN;
+  const trimmed = value.trim();
+  if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(trimmed)) {
+    return Date.parse(`${trimmed.replace(" ", "T")}Z`);
+  }
+  return Date.parse(trimmed);
+}
+
 export function decideDuplicateStripeClaim(
   claim: { eventType?: string | null; processedAt?: Date | string | null } | null | undefined,
   nowMs: number,
@@ -1730,9 +1750,7 @@ export function decideDuplicateStripeClaim(
     // finished event: the caller must retry rather than acknowledge it.
     return claim?.eventType ? 'duplicate' : 'retry';
   }
-  const processedAtMs = claim?.processedAt instanceof Date
-    ? claim.processedAt.getTime()
-    : new Date(claim?.processedAt ?? '').getTime();
+  const processedAtMs = utcClaimMillis(claim?.processedAt);
   if (!Number.isFinite(processedAtMs) || nowMs - processedAtMs < STRIPE_WEBHOOK_UNFINISHED_CLAIM_MS) {
     return 'retry';
   }

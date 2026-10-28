@@ -224,7 +224,7 @@ const DISCLAIMER = (
     <AlertTriangle size={12} style={{ color: "#FFAA00", marginTop: "2px", flexShrink: 0 }} />
     <span style={{ ...MONO_SM, color: "#FFAA00", lineHeight: 1.5 }}>
       Day Trade Intelligence™ is designed only for same-day trading. Typical holding period: 30 min – 3 hours.
-      No overnight positions are recommended. If entry does not trigger today, the setup expires.
+      No overnight positions are recommended. If the session condition is not met today, the note expires.
     </span>
   </div>
 );
@@ -318,7 +318,7 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
         {ds && (
           <>
             <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>R/R: <strong style={{ color: "#F0F4FF" }}>{ratioText(ds.riskRewardRatio)}</strong></span>
-            <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>Hold: <strong style={{ color: "#F0F4FF" }}>{fmtHold(ds.expectedHoldMinutes)}</strong></span>
+            <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>Duration: <strong style={{ color: "#F0F4FF" }}>{fmtHold(ds.expectedHoldMinutes)}</strong></span>
             <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>Risk: <strong style={{ color: riskColor(ds.riskLevel) }}>{ds.riskLevel}</strong></span>
             {/* Launch fix-up: probabilityRating is confidence × 0.9 + momentum × 0.1, not a probability. */}
             <span style={{ ...MONO_SM, fontSize: "10px", color: "#94A3B8" }}>Prob: <strong data-probability-status="not-established" style={{ color: "#94A3B8" }}>Not established</strong></span>
@@ -336,7 +336,7 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
           ) : ds ? (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "12px" }}>
               <div>
-                <div style={LABEL}>Entry Zone</div>
+                <div style={LABEL}>Observed band</div>
                 <div style={VALUE}>{fmt(ds.entryZoneLow)} – {fmt(ds.entryZoneHigh)}</div>
               </div>
               <div>
@@ -348,7 +348,7 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
                 <div style={{ ...VALUE, color: "#00D4FF" }}>{fmt(ds.target2)}</div>
               </div>
               <div>
-                <div style={LABEL}>Stop Loss</div>
+                <div style={LABEL}>Downside mark</div>
                 <div style={{ ...VALUE, color: "#FF6B6B" }}>{fmt(ds.stopLoss)}</div>
               </div>
               <div>
@@ -845,7 +845,7 @@ function CryptoScreenerTab({ onSearch }: { onSearch: (sym: string, type: "stock"
       <div style={{ ...CARD, background: "rgba(153,102,255,0.03)", borderColor: "rgba(153,102,255,0.15)" }}>
         <div style={{ ...LABEL, marginBottom: "8px" }}>Crypto Criteria (Separate Logic)</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-          {["Trend", "Momentum", "Liquidity", "Volume", "Support/Resistance", "VWAP", "Relative Strength", "Catalyst", "Expected Hold Time", "Confidence"].map(c => (
+          {["Trend", "Momentum", "Liquidity", "Volume", "Support/Resistance", "VWAP", "Relative Strength", "Catalyst", "Stated duration", "Confidence"].map(c => (
             <span key={c} style={{
               ...MONO_SM, fontSize: "9px",
               background: "rgba(153,102,255,0.08)",
@@ -987,7 +987,7 @@ function SymbolSearchTab() {
         <EmptyState
           icon={<Search size={32} style={{ color: "#6B7280" }} />}
           title="Search Any Symbol"
-          message="Enter a stock or crypto symbol to generate a complete Day Trade Intelligence Report with entry zones, targets, stops, and AI analysis."
+          message="Enter a stock or crypto symbol to generate a complete Day Trade Intelligence Report with price bands, targets, stops, and AI analysis."
         />
       ) : isLoading ? (
         <LoadingState label={`Generating Day Trade Intelligence Report for ${submitted.symbol}...`} />
@@ -1443,7 +1443,7 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
   const lastUpdatedStr = lastUpdated ? lastUpdated.toLocaleTimeString() : "Not available";
 
   const SECTORS_DATA = [
-    { name: "Technology (XLK)",      bias: "Monitor",  note: "High beta; avoid during data outages" },
+    { name: "Technology (XLK)",      bias: "Monitor",  note: "High beta; pass over during data outages" },
     { name: "Semiconductors (SOXX)", bias: "Monitor",  note: "Momentum-driven; wait for data restore" },
     { name: "Financials (XLF)",      bias: "Neutral",  note: "Rate-sensitive; watch Fed signals" },
     { name: "Energy (XLE)",          bias: "Neutral",  note: "Commodity-linked; check oil levels" },
@@ -1454,8 +1454,8 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
   const PLAYBOOK_DATA = [
     { rule: "Wait for data confirmation", detail: "Never enter a position without confirmed live price and volume data." },
     { rule: "Reduce position size by 50%", detail: "During data outages, cut all position sizes in half to manage unknown risk." },
-    { rule: "Widen stops by 1.5x",         detail: "Spread widens during data gaps. Use 1.5x normal stop distance." },
-    { rule: "Avoid momentum setups",        detail: "Momentum trades require live tape reading. Skip until data restores." },
+    { rule: "Widen the downside mark by 1.5x",         detail: "Spread widens during data gaps. Use 1.5x the usual downside distance." },
+    { rule: "Pass over momentum setups",        detail: "Momentum trades require live tape reading. Skip until data restores." },
     { rule: "Focus on mean-reversion",      detail: "If you must trade, mean-reversion setups are less data-dependent." },
     { rule: "Check pre-market levels",      detail: "Use last known support/resistance levels from prior session as reference." },
   ];
@@ -1473,8 +1473,8 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
 
   const RISK_DATA = [
     { title: "Maximum Risk Per Trade", value: "0.5% of portfolio", detail: "During data outages, cut normal risk per trade by 50%." },
-    { title: "Daily Loss Limit",       value: "1.5% of portfolio", detail: "Stop trading for the day if this threshold is hit." },
-    { title: "Correlation Check",      value: "Required",          detail: "Avoid holding correlated positions when data is incomplete." },
+    { title: "Daily Loss Limit",       value: "1.5% of portfolio", detail: "Pause for the day if this threshold is hit." },
+    { title: "Correlation Check",      value: "Required",          detail: "Pass over holding correlated positions when data is incomplete." },
     { title: "Leverage",               value: "Reduce to 1:1",     detail: "No leverage during data outages. Spot only." },
   ];
 
@@ -1701,7 +1701,7 @@ function Top10RankedTab({ onSearch }: { onSearch: (sym: string, type: "stock" | 
                       <span style={{ ...MONO_SM, fontSize: "9px", color: "#6B7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100px" }}>{s.name}</span>
                       <span style={{ ...MONO_SM, fontSize: "8px", padding: "1px 4px", background: s.assetType === "crypto" ? "rgba(153,102,255,0.1)" : "rgba(0,212,255,0.08)", border: `1px solid ${s.assetType === "crypto" ? "rgba(153,102,255,0.2)" : "rgba(0,212,255,0.15)"}`, borderRadius: "2px", color: s.assetType === "crypto" ? "#9966FF" : "#00D4FF" }}>{s.assetType.toUpperCase()}</span>
                     </div>
-                    <div style={{ ...MONO_SM, fontSize: "9px", color: "#374151", marginTop: "1px" }}>{s.setupType} - {fmtHold(s.expectedHoldMinutes)} hold</div>
+                    <div style={{ ...MONO_SM, fontSize: "9px", color: "#374151", marginTop: "1px" }}>{s.setupType} - {fmtHold(s.expectedHoldMinutes)} duration</div>
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
                     <div style={{ ...MONO_SM, fontWeight: 600, color: "#F0F4FF", fontSize: "12px" }}>{fmt(s.currentPrice)}</div>
@@ -1724,10 +1724,10 @@ function Top10RankedTab({ onSearch }: { onSearch: (sym: string, type: "stock" | 
                 </div>
                 <div style={{ display: "flex", borderTop: "1px solid rgba(255,255,255,0.04)", background: "rgba(0,0,0,0.2)", flexWrap: "wrap" }}>
                   {[
-                    { label: "ENTRY",   value: `${fmt(s.entryZoneLow)}-${fmt(s.entryZoneHigh)}`, color: "#00D4FF" },
-                    { label: "T1",      value: fmt(s.target1),            color: "#00FF88" },
-                    { label: "T2",      value: fmt(s.target2),            color: "#7CFF7C" },
-                    { label: "STOP",    value: fmt(s.stopLoss),           color: "#FF6B6B" },
+                    { label: "BAND",    value: "Not published", color: "#94A3B8" },
+                    { label: "T1",      value: "Not published",           color: "#94A3B8" },
+                    { label: "T2",      value: "Not published",           color: "#94A3B8" },
+                    { label: "LOW",     value: "Not published",           color: "#94A3B8" },
                     // Launch fix-up: probabilityRating is a blend of heuristic scores, not a probability.
                     { label: "PROB",    value: "Not established", color: "#94A3B8" },
                     { label: "RISK",    value: s.riskLevel,               color: riskColor(s.riskLevel) },
@@ -2214,7 +2214,7 @@ function SymbolSearchTabWithEvent() {
         <EmptyState
           icon={<Search size={32} style={{ color: "#6B7280" }} />}
           title="Search Any Symbol"
-          message="Enter a stock or crypto symbol to generate a complete Day Trade Intelligence Report with entry zones, targets, stops, and AI analysis."
+          message="Enter a stock or crypto symbol to generate a complete Day Trade Intelligence Report with price bands, targets, stops, and AI analysis."
         />
       ) : isLoading ? (
         <LoadingState label={`Generating Day Trade Intelligence Report for ${submitted.symbol}...`} />

@@ -87,6 +87,7 @@ describe("stripe webhook claim concurrency", () => {
       `--socket=${join(datadir, "mysql.sock")}`,
       `--pid-file=${join(datadir, "mysql.pid")}`,
       "--skip-grant-tables",
+      "--default-time-zone=+00:00",
     ], { stdio: "ignore" });
     server.on("error", () => {});
     admin = await waitForMysql();

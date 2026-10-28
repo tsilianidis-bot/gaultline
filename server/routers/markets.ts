@@ -101,7 +101,7 @@ export interface GlobalMarketSnapshot {
   fetchedAt: number;
   activeSession: GlobalSession;
   summary: {
-    usEquities: "risk-on" | "risk-off" | "mixed" | "unavailable";
+    usEquities: "higher-risk appetite" | "lower-risk appetite" | "mixed" | "unavailable";
     europe: "positive" | "negative" | "mixed" | "closed" | "unavailable";
     asia: "positive" | "negative" | "mixed" | "closed" | "unavailable";
     volatility: "elevated" | "normal" | "low" | "unavailable";
@@ -239,7 +239,7 @@ function summary(items: MarketQuoteItem[]): GlobalMarketSnapshot["summary"] {
   const dollarMove = dxy?.changePercent;
   const tenYearChange = tenYear?.change;
   return {
-    usEquities: usAverage === null ? "unavailable" : usAverage > 0.3 ? "risk-on" : usAverage < -0.3 ? "risk-off" : "mixed",
+    usEquities: usAverage === null ? "unavailable" : usAverage > 0.3 ? "higher-risk appetite" : usAverage < -0.3 ? "lower-risk appetite" : "mixed",
     europe: deriveStatus(group("europe"), "positive", "negative", "mixed", "unavailable", "closed"),
     asia: deriveStatus(group("asia"), "positive", "negative", "mixed", "unavailable", "closed"),
     volatility: !isFiniteNumber(vixPrice) ? "unavailable" : vixPrice > 25 ? "elevated" : vixPrice < 15 ? "low" : "normal",
