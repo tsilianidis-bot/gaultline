@@ -259,18 +259,21 @@ function channelTokenRegexCaps(): RegExp {
   return channelTokenPatternCaps;
 }
 
+/** Bounded so a long run of spaces cannot make the phrase matcher backtrack. */
+const PHRASE_SPACE = String.raw`\s{1,8}`;
 /** Do not treat stock, stocks, sector, or shares as the object when ordinary English follows. */
-const NOT_ORDINARY_CONTINUATION = String.raw`(?!\s+(?:market|rotation|of)\b)`;
+const NOT_ORDINARY_CONTINUATION = String.raw`(?!${PHRASE_SPACE}(?:market|rotation|of)\b)`;
 /**
  * Case-insensitive directive phrases. Bare reduce and avoid stay English.
  * `risk` is not an object. `exposure to` matches only a ticker, cashtag, or market term.
+ * Every whitespace run is at most 8 characters.
  */
 const DIRECTIVE_PHRASES = [
-  String.raw`reduce(?:\s+(?:your|the))?\s+(?:positions|position|holdings)`,
-  String.raw`reduce(?:\s+(?:your|the))?\s+exposure(?!\s+to\b)`,
-  String.raw`reduce(?:\s+(?:your|the))?\s+exposure\s+to\s+(?:equities|stocks${NOT_ORDINARY_CONTINUATION}|stock${NOT_ORDINARY_CONTINUATION}|the\s+sector${NOT_ORDINARY_CONTINUATION}|the\s+market|(?:\$)?[A-Za-z]{1,5}(?:\.[A-Za-z])?${NOT_ORDINARY_CONTINUATION})`,
-  String.raw`avoid\s+(?:this|these|the)\s+(?:(?:stocks|stock|shares|sector)${NOT_ORDINARY_CONTINUATION}|name)`,
-  String.raw`avoid\s+(?:buying|adding|chasing)`,
+  String.raw`reduce(?:${PHRASE_SPACE}(?:your|the))?${PHRASE_SPACE}(?:positions|position|holdings)`,
+  String.raw`reduce(?:${PHRASE_SPACE}(?:your|the))?${PHRASE_SPACE}exposure(?!${PHRASE_SPACE}to\b)`,
+  String.raw`reduce(?:${PHRASE_SPACE}(?:your|the))?${PHRASE_SPACE}exposure${PHRASE_SPACE}to${PHRASE_SPACE}(?:equities|stocks${NOT_ORDINARY_CONTINUATION}|stock${NOT_ORDINARY_CONTINUATION}|the${PHRASE_SPACE}sector${NOT_ORDINARY_CONTINUATION}|the${PHRASE_SPACE}market|(?:\$)?[A-Za-z]{1,5}(?:\.[A-Za-z])?${NOT_ORDINARY_CONTINUATION})`,
+  String.raw`avoid${PHRASE_SPACE}(?:this|these|the)${PHRASE_SPACE}(?:(?:stocks|stock|shares|sector)${NOT_ORDINARY_CONTINUATION}|name)`,
+  String.raw`avoid${PHRASE_SPACE}(?:buying|adding|chasing)`,
 ];
 
 let directivePhrasePattern: RegExp | null = null;
@@ -280,13 +283,13 @@ function directivePhraseRegex(): RegExp {
   return directivePhrasePattern;
 }
 
-/** Sentence-case Avoid, only when the next word is a ticker or a cashtag. */
-const AVOID_BEFORE_SYMBOL = /\bAvoid(?=\s+(?:\$[A-Z]{1,5}(?:\.[A-Z])?|[A-Z]{1,5}(?:\.[A-Z])?)\b)/g;
+/** Sentence-case Avoid, only when the next word is a ticker or a cashtag. Whitespace is bounded. */
+const AVOID_BEFORE_SYMBOL = /\bAvoid(?=\s{1,8}(?:\$[A-Z]{1,5}(?:\.[A-Z])?|[A-Z]{1,5}(?:\.[A-Z])?)\b)/g;
 
-/** English words and acronyms that are not tickers after Avoid. */
+/** English words and acronyms that are not tickers after Avoid or after "exposure to". */
 const AVOID_SYMBOL_STOPLIST = new Set([
   "THE", "AND", "OR", "TO", "IN", "IT", "A", "I", "ALL", "FOMO", "CEO", "LLM",
-  "AI", "US", "UK", "EM", "HY", "CPI", "GDP", "FED", "U.S", "U.S.",
+  "AI", "US", "UK", "EM", "HY", "CPI", "GDP", "FED", "UV", "X", "U.S", "U.S.",
 ]);
 
 const MASK_EDGE = "\uE000";
@@ -427,15 +430,24 @@ function replaceChannelTokens(text: string, pattern: RegExp): string {
   });
 }
 
+function isPhraseSpace(char: string): boolean {
+  return char === " " || char === "\n" || char === "\r" || char === "\t" || char === "\f" || char === "\v";
+}
+
 function symbolAfterAvoid(text: string, offset: number, length: number): string {
   let index = offset + length;
-  while (index < text.length && /\s/.test(text[index] ?? "")) index += 1;
+  let spaces = 0;
+  while (index < text.length && spaces < 8 && isPhraseSpace(text[index] ?? "")) {
+    index += 1;
+    spaces += 1;
+  }
+  if (spaces < 1) return "";
   if ((text[index] ?? "") === "$") index += 1;
   return /^[A-Z]{1,5}(?:\.[A-Z])?/.exec(text.slice(index))?.[0] ?? "";
 }
 
 function exposureTailIsMarket(tail: string): boolean {
-  return /^(?:equities|stocks|stock|the\s+sector|the\s+market)$/i.test(tail);
+  return /^(?:equities|stocks|stock|the\s{1,8}sector|the\s{1,8}market)$/i.test(tail);
 }
 
 /** Tickers stay case-sensitive. The directive regex is case-insensitive, so the tail is checked again here. */
@@ -446,10 +458,36 @@ function exposureTailIsTicker(tail: string): boolean {
   return !AVOID_SYMBOL_STOPLIST.has(upper) && !AVOID_SYMBOL_STOPLIST.has(upper.replace(/\.$/, ""));
 }
 
+/** Linear search for "to" with 1–8 spaces on each side. No unbounded whitespace quantifier. */
+function directiveToTail(match: string): string | null {
+  const lower = match.toLowerCase();
+  let from = 0;
+  while (from < lower.length) {
+    const at = lower.indexOf("to", from);
+    if (at < 0) return null;
+    let left = at - 1;
+    let before = 0;
+    while (left >= 0 && before < 8 && isPhraseSpace(match[left] ?? "")) {
+      left -= 1;
+      before += 1;
+    }
+    const leftBounded = before >= 1 && (left < 0 || !isPhraseSpace(match[left] ?? ""));
+    let right = at + 2;
+    let after = 0;
+    while (right < match.length && after < 8 && isPhraseSpace(match[right] ?? "")) {
+      right += 1;
+      after += 1;
+    }
+    const rightBounded = after >= 1 && (right >= match.length || !isPhraseSpace(match[right] ?? ""));
+    if (leftBounded && rightBounded) return match.slice(right);
+    from = at + 2;
+  }
+  return null;
+}
+
 function directivePhraseAccepted(match: string): boolean {
-  const tail = /\s+to\s+([\s\S]+)$/i.exec(match);
-  if (!tail) return true;
-  const object = tail[1] ?? "";
+  const object = directiveToTail(match);
+  if (object == null) return true;
   return exposureTailIsMarket(object) || exposureTailIsTicker(object);
 }
 
@@ -459,7 +497,9 @@ function replaceDirectivePhrases(text: string): string {
   return text.replace(pattern, (match, offset: number, whole: string) => {
     if (protectedProseToken(whole, offset, match.length)) return match;
     if (!directivePhraseAccepted(match)) return match;
-    const head = match.split(/\s+/)[0] ?? match;
+    let headEnd = 0;
+    while (headEnd < match.length && !isPhraseSpace(match[headEnd] ?? "")) headEnd += 1;
+    const head = match.slice(0, headEnd);
     return neutralConditionLabel(head);
   });
 }

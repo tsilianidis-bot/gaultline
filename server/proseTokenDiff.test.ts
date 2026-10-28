@@ -128,7 +128,7 @@ function testCorpus(): string[] {
   return [...seen];
 }
 
-const AVOID_STOPLIST = "THE|AND|OR|TO|IN|IT|A|I|ALL|FOMO|CEO|LLM|AI|US|UK|EM|HY|CPI|GDP|FED|U\\.S\\.?" ;
+const AVOID_STOPLIST = "THE|AND|OR|TO|IN|IT|A|I|ALL|FOMO|CEO|LLM|AI|US|UK|EM|HY|CPI|GDP|FED|UV|X|U\\.S\\.?" ;
 
 /** Remove only the spans whose case rules differ from 3eef438. */
 function freezeSix(text: string): string {

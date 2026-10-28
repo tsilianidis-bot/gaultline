@@ -262,10 +262,32 @@ describe("client vocabulary", () => {
     expect(neutralizeChannelText("avoid the stock market crash")).toBe("avoid the stock market crash");
     expect(neutralizeChannelText("Avoid the sector rotation trap")).toBe("Avoid the sector rotation trap");
     expect(neutralizeChannelText("avoid the shares of the company")).toBe("avoid the shares of the company");
+    expect(neutralizeChannelText("Reduce exposure to X")).toBe("Reduce exposure to X");
+    expect(neutralizeChannelText("Reduce exposure to UV")).toBe("Reduce exposure to UV");
+    expect(neutralizeChannelText("Avoid X")).toBe("Avoid X");
+    expect(neutralizeChannelText("Avoid UV")).toBe("Avoid UV");
+  });
+
+  it("finishes 100k-space phrase runs in under 200ms", () => {
+    const gap = " ".repeat(100_000);
+    const families = [
+      `reduce your${gap}position`,
+      `reduce${gap}exposure`,
+      `reduce exposure to${gap}equities`,
+      `reduce exposure${gap}to sunlight`,
+      `avoid the${gap}stock`,
+      `avoid${gap}buying`,
+      `Avoid${gap}NVDA`,
+    ];
+    for (const sample of families) {
+      const started = performance.now();
+      neutralizeChannelText(sample);
+      expect(performance.now() - started).toBeLessThan(200);
+    }
   });
 
   it("does not treat stoplisted English words or acronyms as tickers after Avoid", () => {
-    const stopped = ["THE", "AND", "OR", "TO", "IN", "IT", "A", "I", "ALL", "FOMO", "CEO", "LLM", "AI", "US", "UK", "EM", "HY", "CPI", "GDP", "FED", "U.S.", "U.S"];
+    const stopped = ["THE", "AND", "OR", "TO", "IN", "IT", "A", "I", "ALL", "FOMO", "CEO", "LLM", "AI", "US", "UK", "EM", "HY", "CPI", "GDP", "FED", "UV", "X", "U.S.", "U.S"];
     for (const word of stopped) {
       expect(neutralizeChannelText(`Avoid ${word}`)).toBe(`Avoid ${word}`);
     }
