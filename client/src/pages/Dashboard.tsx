@@ -31,6 +31,7 @@ import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner"
 import SOBPanel from "@/components/SOBPanel";
 import FaultlineTerm from "@/components/FaultlineTerm";
 import { engineProbabilityPercent, engineProbabilityText } from "@/lib/marketStateProjection";
+import { measuredBandCopy } from "@shared/surfaceClaims";
 import { formatCanonicalScore } from "@shared/marketMetrics";
 import { availableDelta, finiteOrNull, pointsDeltaText, score100Value, similarityText } from "@/lib/displayFallbacks";
 import type { ProbabilityDisplay } from "@shared/probabilityContract";
@@ -719,7 +720,7 @@ export default function Dashboard() {
           // No analog → "Unavailable", never a 0% match.
           const analogSim = typeof analogs[0]?.similarity === 'number' && Number.isFinite(analogs[0].similarity) ? Math.round(analogs[0].similarity) : null;
           const verdictColor = overall.riskLevel === 'low' ? '#00FF88' : overall.riskLevel === 'moderate' ? '#FFD700' : overall.riskLevel === 'elevated' ? '#FF9500' : '#FF2D55';
-          const verdictLabel = overall.riskLevel === 'low' ? 'RISK ON' : overall.riskLevel === 'moderate' ? 'STAY SELECTIVE' : overall.riskLevel === 'elevated' ? 'REDUCE EXPOSURE' : 'STEP ASIDE';
+          const verdictLabel = measuredBandCopy(overall.riskLevel).title;
           const cells = [
             { label: 'PRESSURE INDEX', value: score100Value(overall.score), sub: '/ 100', valueColor: color },
             { label: 'REGIME', value: regime.label.split(' ').slice(0, 2).join(' '), sub: regime.sublabel.slice(0, 18), valueColor: color },
@@ -771,12 +772,12 @@ export default function Dashboard() {
           }}>
             <span style={{ color, fontWeight: 600 }}>PLATO:</span>{' '}
             {overall.riskLevel === 'low'
-              ? `Systemic pressure is low at ${score100(overall.score)} — conditions favor risk-taking. ${analogSentence('The closest historical analog is')}`
+              ? `Systemic pressure is low at ${score100(overall.score)}. ${measuredBandCopy('low').detail} ${analogSentence('The closest historical analog is')}`
               : overall.riskLevel === 'moderate'
-              ? `Systemic pressure is building at ${score100(overall.score)} — mixed signals favor selective positioning. ${analogSentence('The closest analog is')}`
+              ? `Systemic pressure is building at ${score100(overall.score)}. ${measuredBandCopy('moderate').detail} ${analogSentence('The closest analog is')}`
               : overall.riskLevel === 'elevated'
-              ? `Systemic pressure is elevated at ${score100(overall.score)} — reduce exposure and tighten stops. ${analogSentence('The closest analog is')}`
-              : `Systemic pressure is at crisis levels — ${score100(overall.score)}. Capital preservation is the trade. ${analogSentence('Closest analog:')}`
+              ? `Systemic pressure is elevated at ${score100(overall.score)}. ${measuredBandCopy('elevated').detail} ${analogSentence('The closest analog is')}`
+              : `Systemic pressure is in the highest stress class at ${score100(overall.score)}. ${measuredBandCopy('critical').detail} ${analogSentence('Closest analog:')}`
             }{' '}No scenario percentage is published with this reading.
           </p>
         </div>
@@ -789,23 +790,14 @@ export default function Dashboard() {
         let verdict: string;
         let verdictColor: string;
         let verdictSub: string;
-        if (riskLevel === 'low' || score <= 3.5) {
-          verdict = 'RISK ON';
-          verdictColor = '#00FF88';
-          verdictSub = 'Regime supports risk-on positioning — momentum window open';
-        } else if (riskLevel === 'moderate' || score <= 5.5) {
-          verdict = 'STAY SELECTIVE';
-          verdictColor = '#00E5FF';
-          verdictSub = 'Mixed signals — favor high-conviction setups with tight stops';
-        } else if (riskLevel === 'elevated' || score <= 7.5) {
-          verdict = 'REDUCE EXPOSURE';
-          verdictColor = '#FF9500';
-          verdictSub = 'Systemic pressure elevated — reduce size, tighten stops';
-        } else {
-          verdict = 'STEP ASIDE';
-          verdictColor = '#FF2D55';
-          verdictSub = 'Crisis-level risk detected — capital preservation is the trade';
-        }
+        const bandKey = riskLevel === 'low' || score <= 3.5 ? 'low'
+          : riskLevel === 'moderate' || score <= 5.5 ? 'moderate'
+          : riskLevel === 'elevated' || score <= 7.5 ? 'elevated'
+          : 'critical';
+        const band = measuredBandCopy(bandKey);
+        verdict = band.title;
+        verdictColor = bandKey === 'low' ? '#00FF88' : bandKey === 'moderate' ? '#00E5FF' : bandKey === 'elevated' ? '#FF9500' : '#FF2D55';
+        verdictSub = `${band.detail} Score ${score100(score)}.`;
         return (
           <div style={{
             position: 'relative', zIndex: 2,
@@ -841,8 +833,8 @@ export default function Dashboard() {
         const cards = [
           {
             label: "TODAY'S VERDICT",
-            value: overall.riskLevel === 'low' ? 'RISK ON' : overall.riskLevel === 'moderate' ? 'STAY SELECTIVE' : overall.riskLevel === 'elevated' ? 'REDUCE EXPOSURE' : 'STEP ASIDE',
-            sub: overall.riskLevel === 'low' ? 'Conditions favor risk-on positioning' : overall.riskLevel === 'moderate' ? 'High-conviction setups only' : overall.riskLevel === 'elevated' ? 'Trim and protect' : 'Capital preservation mode',
+            value: measuredBandCopy(overall.riskLevel).title,
+            sub: measuredBandCopy(overall.riskLevel).detail,
             color: overall.riskLevel === 'low' ? '#00FF88' : overall.riskLevel === 'moderate' ? '#FFD700' : overall.riskLevel === 'elevated' ? '#FF9500' : '#FF2D55',
             href: CANONICAL_DESTINATION_BY_ID.act.path,
           },
@@ -869,8 +861,8 @@ export default function Dashboard() {
           },
           {
             label: 'BEST CRYPTO',
-            value: overall.riskLevel === 'low' ? 'BTC / ETH' : overall.riskLevel === 'moderate' ? 'BTC ONLY' : 'AVOID',
-            sub: overall.riskLevel === 'low' ? 'Risk-on crypto rotation active' : overall.riskLevel === 'moderate' ? 'Bitcoin as digital gold' : 'Crypto risk elevated',
+            value: overall.riskLevel === 'low' ? 'Lowest pressure band' : overall.riskLevel === 'moderate' ? 'Moderate pressure band' : 'Elevated or higher',
+            sub: 'Crypto is not given a position instruction. Read the Pressure Index and its freshness.',
             color: overall.riskLevel === 'low' ? '#F7931A' : overall.riskLevel === 'moderate' ? '#F7931A' : '#FF9500',
             href: '/app/crypto',
           },
@@ -884,7 +876,7 @@ export default function Dashboard() {
           {
             label: 'MOST DANGEROUS ASSET',
             value: overall.riskLevel === 'critical' ? 'LEVERAGED ETFs' : overall.riskLevel === 'elevated' ? 'SMALL CAPS' : overall.riskLevel === 'moderate' ? 'MEMECOINS' : 'NONE',
-            sub: overall.riskLevel === 'critical' ? 'Avoid 2x/3x exposure' : overall.riskLevel === 'elevated' ? 'High beta underperforming' : overall.riskLevel === 'moderate' ? 'Speculative risk elevated' : 'Risk environment benign',
+            sub: overall.riskLevel === 'critical' ? 'Highest stress band. Leveraged products are not described as a position.' : overall.riskLevel === 'elevated' ? 'Elevated pressure band' : overall.riskLevel === 'moderate' ? 'Moderate pressure band' : 'Lowest pressure band',
             color: '#FF2D55',
             href: '/app/pressure',
           },

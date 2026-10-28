@@ -5,7 +5,7 @@
    ============================================================ */
 import { useState, useCallback, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
-import { SIM_SIDE, isSimulatedAcquisition, simulatedFillLabel, type SimulatedFillSide } from "@shared/surfaceClaims";
+import { POSTURE_WITHHELD, SIM_SIDE, appetiteLabel, isSimulatedAcquisition, simulatedFillLabel, type SimulatedFillSide } from "@shared/surfaceClaims";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -170,10 +170,10 @@ function ManualSearch({ accountValue, onTrade }: { accountValue: number; onTrade
           {/* Trade levels */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 border-b border-white/8">
             {[
-              { label: "ENTRY ZONE", value: `$${fmt(result.entryZoneLow)} – $${fmt(result.entryZoneHigh)}`, color: "text-[#00D4FF]" },
-              { label: "STOP LOSS", value: `$${fmt(result.stopLoss)}`, color: "text-[#FF2D55]" },
-              { label: "TARGET 1", value: `$${fmt(result.targetOne)}`, color: "text-[#00FF88]" },
-              { label: "TARGET 2", value: `$${fmt(result.targetTwo)}`, color: "text-[#00FF88]" },
+              { label: "SIMULATED BAND", value: `$${fmt(result.entryZoneLow)} – $${fmt(result.entryZoneHigh)}`, color: "text-[#00D4FF]" },
+              { label: "SIMULATED LOW", value: `$${fmt(result.stopLoss)}`, color: "text-[#FF2D55]" },
+              { label: "SIMULATED HIGH 1", value: `$${fmt(result.targetOne)}`, color: "text-[#00FF88]" },
+              { label: "SIMULATED HIGH 2", value: `$${fmt(result.targetTwo)}`, color: "text-[#00FF88]" },
               { label: "RISK/REWARD", value: `${fmt(result.riskRewardRatio)}x`, color: result.riskRewardRatio >= 2 ? "text-[#00FF88]" : "text-[#FFD700]" },
               { label: "POSITION SIZE", value: `$${fmt(result.suggestedPositionSizeUsd, 0)} (${fmt(result.suggestedPositionSizePct, 1)}%)`, color: "text-[#F4F8FF]" },
             ].map(({ label, value, color }) => (
@@ -234,7 +234,7 @@ function ManualSearch({ accountValue, onTrade }: { accountValue: number; onTrade
           </div>
 
           {/* CTA */}
-          {result.direction !== "AVOID" && (
+          {result.direction !== POSTURE_WITHHELD && (
             <div className="p-4">
               <Button
                 onClick={() => onTrade(result)}
@@ -245,10 +245,10 @@ function ManualSearch({ accountValue, onTrade }: { accountValue: number; onTrade
               </Button>
             </div>
           )}
-          {result.direction === "AVOID" && (
+          {result.direction === POSTURE_WITHHELD && (
             <div className="p-4">
               <div className="text-center text-[#FF2D55] font-mono text-xs font-bold tracking-wider py-2">
-                ⚠ AVOID — FAULTLINE does not recommend entering this position in the current regime.
+                The current regime reading does not support showing a simulated position. This is not an instruction.
               </div>
             </div>
           )}
@@ -272,7 +272,7 @@ type ObjectiveType = "short_swing" | "long_position" | "crypto_momentum" | "defe
 type AssetFilter = "stocks" | "crypto" | "both";
 type RiskMode = "aggressive" | "balanced" | "defensive";
 type Timeframe = "intraday" | "1_5_days" | "2_6_weeks" | "3_12_months";
-type Direction = "LONG" | "AVOID" | "WATCH" | "TRIM" | "DEFENSIVE";
+type Direction = "LONG" | typeof POSTURE_WITHHELD | "WATCH" | "TRIM" | "DEFENSIVE";
 type DataFreshness = "LIVE" | "RECENT" | "DELAYED" | "STALE" | "UNAVAILABLE";
 
 interface Opportunity {
@@ -321,14 +321,14 @@ function fmtPct(n: number) {
 }
 function dirColor(d: Direction) {
   if (d === "LONG") return "text-[#00FF88]";
-  if (d === "AVOID") return "text-[#FF2D55]";
+  if (d === POSTURE_WITHHELD) return "text-[#FF2D55]";
   if (d === "WATCH") return "text-[#FFD700]";
   if (d === "TRIM") return "text-[#FF9500]";
   return "text-[#A8B8CC]";
 }
 function dirBg(d: Direction) {
   if (d === "LONG") return "bg-[#00FF88]/10 border-[#00FF88]/30 text-[#00FF88]";
-  if (d === "AVOID") return "bg-[#FF2D55]/10 border-[#FF2D55]/30 text-[#FF2D55]";
+  if (d === POSTURE_WITHHELD) return "bg-[#FF2D55]/10 border-[#FF2D55]/30 text-[#FF2D55]";
   if (d === "WATCH") return "bg-[#FFD700]/10 border-[#FFD700]/30 text-[#FFD700]";
   if (d === "TRIM") return "bg-[#FF9500]/10 border-[#FF9500]/30 text-[#FF9500]";
   return "bg-white/5 border-white/10 text-[#A8B8CC]";
@@ -579,8 +579,8 @@ function TradeModal({ opp, accountValue, onClose, onExecute, isExecuting }: Trad
           <div className="grid grid-cols-3 gap-2">
             {[
               { label: "PRICE", val: `$${fmt(opp.currentPrice, opp.currentPrice < 1 ? 4 : 2)}` },
-              { label: "STOP", val: `$${fmt(opp.stopLoss, 2)}`, color: "text-[#FF2D55]" },
-              { label: "TARGET 1", val: `$${fmt(opp.targetOne, 2)}`, color: "text-[#00FF88]" },
+              { label: "SIMULATED LOW", val: `$${fmt(opp.stopLoss, 2)}`, color: "text-[#FF2D55]" },
+              { label: "SIMULATED HIGH", val: `$${fmt(opp.targetOne, 2)}`, color: "text-[#00FF88]" },
             ].map(({ label, val, color }) => (
               <div key={label} className="bg-white/5 rounded p-2 text-center">
                 <div className="text-[10px] text-[#64748B] font-mono">{label}</div>
@@ -634,7 +634,7 @@ function TradeModal({ opp, accountValue, onClose, onExecute, isExecuting }: Trad
             {[
               { label: "Notional Value", val: fmtUsd(notional) },
               { label: "% of Account", val: `${fmt(pctOfAccount)}%` },
-              { label: "Max Loss if Stop Hit", val: fmtUsd(maxLossIfStop), color: "text-[#FF2D55]" },
+              { label: "Simulated loss at the low mark", val: fmtUsd(maxLossIfStop), color: "text-[#FF2D55]" },
               { label: "R/R Ratio", val: `${opp.riskRewardRatio}:1`, color: "text-[#00FF88]" },
             ].map(({ label, val, color }) => (
               <div key={label} className="flex justify-between text-xs">
@@ -746,8 +746,8 @@ function OpportunityCard({ opp, onTrade, onReject }: {
         {/* Key metrics row */}
         <div className="grid grid-cols-4 gap-2 mt-3">
           {[
-            { label: "ENTRY", val: `$${fmt(opp.entryZoneLow, priceDecimals)}–${fmt(opp.entryZoneHigh, priceDecimals)}` },
-            { label: "STOP", val: `$${fmt(opp.stopLoss, priceDecimals)}`, color: "text-[#FF2D55]" },
+            { label: "SIMULATED BAND", val: `$${fmt(opp.entryZoneLow, priceDecimals)}–${fmt(opp.entryZoneHigh, priceDecimals)}` },
+            { label: "SIMULATED LOW", val: `$${fmt(opp.stopLoss, priceDecimals)}`, color: "text-[#FF2D55]" },
             { label: "T1", val: `$${fmt(opp.targetOne, priceDecimals)}`, color: "text-[#00FF88]" },
             { label: "R/R", val: `${opp.riskRewardRatio}:1`, color: "text-[#FFD700]" },
           ].map(({ label, val, color }) => (
@@ -948,7 +948,7 @@ export default function OwnerSimulation() {
   const generateJournalMut = trpc.ownerSim.generateJournal.useMutation({
     onSuccess: () => {
       utils.ownerSim.getDailySnapshots.invalidate();
-      toast.success("Journal entry generated");
+      toast.success("Journal record generated");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -965,7 +965,7 @@ export default function OwnerSimulation() {
   const [optimalAction, setOptimalAction] = useState<{
     actionType: string; ticker?: string; assetType?: string; headline: string;
     rationale: string; confidence: number; urgency: string;
-    suggestedSize?: string; entryZone?: string; stopLoss?: string; target?: string;
+    suggestedSize?: string; entryZone?: string; stopLoss?: string;
     timeframe: string; supportingSignals: string[]; counterArguments: string[];
     generatedAt: number;
   } | null>(null);
@@ -973,7 +973,7 @@ export default function OwnerSimulation() {
   const optimalActionMut = trpc.ownerSim.getOptimalAction.useMutation({
     onSuccess: (data) => {
       setOptimalAction(data as typeof optimalAction);
-      toast.success("Optimal action computed");
+      toast.success("Recorded scenario computed");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -1272,13 +1272,10 @@ export default function OwnerSimulation() {
                       <span className="text-[10px] text-[#64748B] font-mono">SIZE: <span className="text-[#A8B8CC]">{optimalAction.suggestedSize}</span></span>
                     )}
                     {optimalAction.entryZone && (
-                      <span className="text-[10px] text-[#64748B] font-mono">ENTRY: <span className="text-[#00D4FF]">{optimalAction.entryZone}</span></span>
+                      <span className="text-[10px] text-[#64748B] font-mono">BAND: <span className="text-[#00D4FF]">{optimalAction.entryZone}</span></span>
                     )}
                     {optimalAction.stopLoss && (
-                      <span className="text-[10px] text-[#64748B] font-mono">STOP: <span className="text-[#FF2D55]">{optimalAction.stopLoss}</span></span>
-                    )}
-                    {optimalAction.target && (
-                      <span className="text-[10px] text-[#64748B] font-mono">TARGET: <span className="text-[#00FF88]">{optimalAction.target}</span></span>
+                      <span className="text-[10px] text-[#64748B] font-mono">LOW: <span className="text-[#FF2D55]">{optimalAction.stopLoss}</span></span>
                     )}
                   </div>
                   {/* Supporting signals */}
@@ -1447,7 +1444,7 @@ export default function OwnerSimulation() {
                             <div className="text-sm font-mono text-[#F4F8FF]">{fmt(qty, pos.assetType === "crypto" ? 4 : 2)}</div>
                           </div>
                           <div>
-                            <div className="text-[10px] text-[#64748B] font-mono">AVG ENTRY</div>
+                            <div className="text-[10px] text-[#64748B] font-mono">AVG FILL</div>
                             <div className="text-sm font-mono text-[#F4F8FF]">${fmt(avgEntry, 2)}</div>
                           </div>
                           <div>
@@ -1483,10 +1480,10 @@ export default function OwnerSimulation() {
 
                       {/* Stop / targets */}
                       <div className="flex gap-3 mt-3 text-xs">
-                        {pos.stopLoss && <span className="text-[#64748B]">Stop: <span className="text-[#FF2D55] font-mono">${fmt(parseFloat(pos.stopLoss.toString()), 2)}</span></span>}
+                        {pos.stopLoss && <span className="text-[#64748B]">Low mark: <span className="text-[#FF2D55] font-mono">${fmt(parseFloat(pos.stopLoss.toString()), 2)}</span></span>}
                         {pos.targetOne && <span className="text-[#64748B]">T1: <span className="text-[#00FF88] font-mono">${fmt(parseFloat(pos.targetOne.toString()), 2)}</span></span>}
                         {pos.targetTwo && <span className="text-[#64748B]">T2: <span className="text-[#00FF88] font-mono">${fmt(parseFloat(pos.targetTwo.toString()), 2)}</span></span>}
-                        {pos.regimeAtEntry && <span className="text-[#64748B]">Entry Regime: <span className="text-[#A8B8CC] font-mono">{pos.regimeAtEntry}</span></span>}
+                        {pos.regimeAtEntry && <span className="text-[#64748B]">Regime at fill: <span className="text-[#A8B8CC] font-mono">{pos.regimeAtEntry}</span></span>}
                       </div>
                     </div>
                   );
@@ -1528,7 +1525,7 @@ export default function OwnerSimulation() {
                         </div>
 
                         <div className="flex items-center gap-4 text-xs">
-                          <span className="text-[#64748B]">Entry: <span className="text-[#F4F8FF] font-mono">${fmt(entryPrice, 2)}</span></span>
+                          <span className="text-[#64748B]">Fill: <span className="text-[#F4F8FF] font-mono">${fmt(entryPrice, 2)}</span></span>
                           {exitPrice && <span className="text-[#64748B]">Exit: <span className="text-[#F4F8FF] font-mono">${fmt(exitPrice, 2)}</span></span>}
                           {realizedPnl !== null && (
                             <span className={`font-mono font-bold ${realizedPnl >= 0 ? "text-[#00FF88]" : "text-[#FF2D55]"}`}>

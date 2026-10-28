@@ -78,6 +78,34 @@ export const MOMENTUM_FILTERS = [
   { id: "WATCH", label: "Direction not established" },
 ] as const;
 
+/** Current pressure band as a measurement, with freshness and no posture instruction. */
+export function measuredBandCopy(level: string | null | undefined): { title: string; detail: string } {
+  const band = (level ?? "").toLowerCase();
+  const freshness = " Freshness is the canonical timestamp when the state includes one. Uncertainty remains because the band is not a forecast.";
+  if (band === "low") {
+    return {
+      title: "Lowest pressure band",
+      detail: `The Pressure Index is in its lowest stress class.${freshness}`,
+    };
+  }
+  if (band === "moderate") {
+    return {
+      title: "Moderate pressure band",
+      detail: `The Pressure Index is between the lowest and elevated classes. Inputs are mixed.${freshness}`,
+    };
+  }
+  if (band === "elevated") {
+    return {
+      title: "Elevated pressure band",
+      detail: `The Pressure Index is above the moderate class and below the highest stress class.${freshness}`,
+    };
+  }
+  return {
+    title: "Highest stress band",
+    detail: `The Pressure Index is in its highest stress class.${freshness}`,
+  };
+}
+
 export function pressureBandSentence(score: number | null | undefined): string {
   if (score == null || !Number.isFinite(score)) return "Pressure Index is unavailable for this card.";
   const rounded = Math.round(score);
@@ -109,3 +137,16 @@ export function isSimulatedAcquisition(side: string | null | undefined): boolean
 
 /** Stored preflight value. Screens should render a measured description, not this token. */
 export const PREFLIGHT_KEEP = "hold";
+export const OUTLOOK_STRAINED = "Avoid";
+export const REGIME_HIGHER = "risk-on";
+export const REGIME_LOWER = "risk-off";
+export const STATUS_HIGHER = "RISK-ON";
+export const STATUS_LOWER = "Risk-Off";
+export const POSTURE_WITHHELD = "AVOID";
+
+export function appetiteLabel(value: string | null | undefined): string {
+  if (value === REGIME_HIGHER || value === STATUS_HIGHER) return "Higher-risk appetite band";
+  if (value === REGIME_LOWER || value === STATUS_LOWER) return "Lower-risk appetite band";
+  if (value === POSTURE_WITHHELD || value === OUTLOOK_STRAINED) return "Strained reading";
+  return value && value.trim() ? value : "Unavailable";
+}

@@ -127,20 +127,9 @@ function SignalCard({
           <p className="text-[11px] text-[#A8B8CC] leading-relaxed">{signal.rationale}</p>
 
           {/* Price levels grid */}
-          <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-lg p-2 text-center" style={{ background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.1)" }}>
-                <div className="text-[8px] font-mono text-[#64748B] mb-0.5">ENTRY</div>
-                <div className="text-[10px] font-mono text-[#00D4FF]">{formatPrice(signal.priceLevels.entryZone)}</div>
-              </div>
-              <div className="rounded-lg p-2 text-center" style={{ background: "rgba(255,45,85,0.06)", border: "1px solid rgba(255,45,85,0.1)" }}>
-                <div className="text-[8px] font-mono text-[#64748B] mb-0.5">STOP</div>
-                <div className="text-[10px] font-mono text-[#FF2D55]">{formatPrice(signal.priceLevels.stopLoss)}</div>
-              </div>
-              <div className="rounded-lg p-2 text-center" style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.1)" }}>
-                <div className="text-[8px] font-mono text-[#64748B] mb-0.5">TARGET</div>
-                <div className="text-[10px] font-mono text-[#22C55E]">{formatPrice(signal.priceLevels.targetPrice)}</div>
-              </div>
-            </div>
+          <p className="text-[10px] text-[#64748B] leading-relaxed">
+            Latest quote {formatPrice(signal.priceLevels.entryZone)}. Calculated trade levels are not published. Freshness is the quote timestamp when the source provides one.
+          </p>
 
           {/* Technicals row */}
           <div className="flex items-center gap-3 flex-wrap">

@@ -14,7 +14,7 @@ import { trpc } from "@/lib/trpc";
 import { CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 import { formatEt } from "@shared/credibilityLabels";
 import {
-  ACTION_LABEL, ARROW_GLYPH, CATALYST_LABEL, LEADERSHIP_GROUP_LABEL, QUADRANT_LABEL,
+  ACTION_COLOR, ACTION_LABEL, ARROW_GLYPH, CATALYST_LABEL, LEADERSHIP_GROUP_LABEL, QUADRANT_LABEL,
   type DailyChangeBasis, type LeadershipGroup, type MoverRow, type Quadrant, type SectorActionClass, type SectorRotationReading, type SectorRotationServed, type SectorRow,
 } from "@shared/sectorRotation";
 
@@ -26,9 +26,6 @@ const QUADRANT_STYLE: Record<Quadrant, { color: string; title: string }> = {
   IMPROVING: { color: "#00e5ff", title: "IMPROVING" },
   LOSING_MOMENTUM: { color: "#ffaa00", title: "LOSING MOMENTUM" },
   LAGGING: { color: "#ff4d6d", title: "LAGGING" },
-};
-const ACTION_COLOR: Record<SectorActionClass, string> = {
-  OVERWEIGHT: "#00e599", WATCH_FOR_CONFIRMATION: "#00e5ff", NEUTRAL: "#94a3b8", UNDERWEIGHT: "#ffaa00", AVOID: "#ff4d6d",
 };
 const MAP_ORDER: Quadrant[] = ["IMPROVING", "LEADING", "LAGGING", "LOSING_MOMENTUM"];
 

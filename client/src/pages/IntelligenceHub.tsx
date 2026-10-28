@@ -8,7 +8,7 @@
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
-import { directionColor, publicConditionText } from "@shared/surfaceClaims";
+import { directionColor, measuredBandCopy, publicConditionText } from "@shared/surfaceClaims";
 import {
   Zap, TrendingUp, TrendingDown, AlertTriangle, Shield,
   BarChart2, ChevronRight, RefreshCw, Clock, Activity,
@@ -299,7 +299,7 @@ export default function IntelligenceHub() {
     .filter(Boolean).length;
 
   // Regime label
-  const verdictLabel = riskLevel === "low" ? "RISK ON" : riskLevel === "moderate" ? "STAY SELECTIVE" : riskLevel === "elevated" ? "REDUCE EXPOSURE" : "STEP ASIDE";
+  const verdictLabel = measuredBandCopy(riskLevel).title;
 
   // Top threat
   const topThreat = useMemo(() => {
@@ -462,15 +462,9 @@ Updated: ${updatedAgo}`;
 
             {/* Recommended posture */}
             <div style={{ background: riskBg(riskLevel), border: `1px solid ${riskBorder(riskLevel)}`, borderRadius: "4px", padding: "14px 16px", marginBottom: "12px" }}>
-              <SectionHeader label="Recommended Posture" color={color} />
+              <SectionHeader label="Measured band" color={color} />
               <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(203,213,225,0.9)", lineHeight: 1.8, margin: 0 }}>
-                {riskLevel === "low"
-                  ? "Risk-on window is open. Momentum is aligned with macro conditions. Increase exposure to high-conviction growth assets. Prioritize AI infrastructure, energy, and financials. Maintain tight stops on speculative positions."
-                  : riskLevel === "moderate"
-                  ? "Selective positioning required. Only high-conviction setups with clear catalysts. Avoid speculative names without fundamental support. Hedge tail risk with defensive positions. Monitor for regime deterioration."
-                  : riskLevel === "elevated"
-                  ? "Reduce gross exposure. Trim extended positions. Increase cash or defensive allocation (Treasuries, gold, utilities). Avoid new risk-on entries until pressure normalizes. Set alerts for further deterioration."
-                  : "Capital preservation mode. Step aside from risk assets. Defensive allocation only — short-duration bonds, cash, gold. Do not catch falling knives. Wait for confirmed regime stabilization before re-entering."}
+                {measuredBandCopy(riskLevel).detail}
               </p>
             </div>
 
@@ -568,7 +562,7 @@ Updated: ${updatedAgo}`;
             {/* Market posture for opportunities */}
             <AlertBanner
               icon={riskLevel === "low" ? TrendingUp : riskLevel === "moderate" ? Target : Shield}
-              text={riskLevel === "low" ? "Risk-on: Breakout setups, momentum plays, and growth names are favored" : riskLevel === "moderate" ? "Selective: Focus on high-conviction reversals and oversold quality names" : "Defensive: Inverse ETFs, hedges, and capital preservation vehicles only"}
+              text={measuredBandCopy(riskLevel).detail}
               color={riskLevel === "low" ? ACCENT.green : riskLevel === "moderate" ? ACCENT.cyan : ACCENT.amber}
               href="/app/signal-outlook"
             />
@@ -656,7 +650,7 @@ Updated: ${updatedAgo}`;
 
             {/* Active alerts */}
             {hasRiskEscalation && (
-              <AlertBanner icon={Flame} text={`Risk Escalation: ${riskLevel.toUpperCase()} regime — ${riskLevel === "elevated" ? "reduce exposure, trim extended positions" : "capital preservation mode, step aside from risk assets"}`} color={ACCENT.red} href="/app/pressure" />
+              <AlertBanner icon={Flame} text={`${measuredBandCopy(riskLevel).title}. ${measuredBandCopy(riskLevel).detail}`} color={ACCENT.red} href="/app/pressure" />
             )}
             {hasRegimeChange && (
               <AlertBanner icon={TriangleAlert} text={`Regime Change: ${changedDomains.length} domain${changedDomains.length > 1 ? "s" : ""} shifted — ${changedDomains[0]?.label} is the primary driver`} color={ACCENT.amber} href="/app/pressure" />
@@ -735,7 +729,7 @@ Updated: ${updatedAgo}`;
                 <AlertBanner icon={Shield} text="Portfolio risk analysis is based on current regime and FMOS signal data" color={ACCENT.cyan} href="/app/portfolio" />
                 <ReportCard
                   title="Portfolio Risk Report"
-                  summary={`Your portfolio is being evaluated against the current ${riskLevel} risk regime. ${riskLevel === "elevated" || riskLevel === "high" ? "Consider reducing high-beta positions and increasing defensive allocation." : riskLevel === "moderate" ? "Maintain selective positioning. Review concentration in speculative names." : "Risk environment is supportive. Maintain or increase high-conviction positions."}`}
+                  summary={`The recorded portfolio is shown next to the current ${measuredBandCopy(riskLevel).title}. ${measuredBandCopy(riskLevel).detail}`}
                   color={color}
                   href="/app/portfolio"
                   copyText="View full portfolio risk report in FAULTLINE"
@@ -793,7 +787,7 @@ Updated: ${updatedAgo}`;
               <SectionHeader label="Scenario Analysis" color={ACCENT.cyan} />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
                 {[
-                  { label: "Bull Case", prob: probability.bullProbability, color: ACCENT.green, desc: "Inflation cools, Fed pivots, earnings beat. Risk-on rotation accelerates." },
+                  { label: "Bull Case", prob: probability.bullProbability, color: ACCENT.green, desc: "A scenario label only. No percentage is a forecast, and no posture instruction is attached." },
                   { label: "Base Case", prob: probability.softLandingProbability ?? 5, color: ACCENT.cyan, desc: "Soft landing achieved. Selective opportunities in quality names." },
                   { label: "Bear Case", prob: probability.crashProbability, color: ACCENT.red, desc: "Recession or credit event. Defensive positioning required." },
                 ].map((s, i) => (

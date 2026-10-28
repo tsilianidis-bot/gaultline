@@ -98,6 +98,14 @@ export const QUADRANT_LABEL: Record<Quadrant, string> = {
   LAGGING: "Lagging",
 };
 export const ARROW_GLYPH: Record<MomentumArrow, string> = { UP: "↑", FLAT: "→", DOWN: "↓" };
+export const ACTION_COLOR: Record<SectorActionClass, string> = {
+  OVERWEIGHT: "#00e599",
+  WATCH_FOR_CONFIRMATION: "#00e5ff",
+  NEUTRAL: "#94a3b8",
+  UNDERWEIGHT: "#ffaa00",
+  AVOID: "#ff4d6d",
+};
+
 export const ACTION_LABEL: Record<SectorActionClass, string> = {
   OVERWEIGHT: "20-session return above SPY, breadth at least 50%, momentum up",
   NEUTRAL: "Losing momentum while the 20-session return is still above SPY",

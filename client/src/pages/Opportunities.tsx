@@ -12,7 +12,7 @@ import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
 import { canonicalPressureLabel } from "@/lib/canonicalPressureDisplay";
 import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
-import { directionColor, observedDirectionSentence } from "@shared/surfaceClaims";
+import { OUTLOOK_STRAINED, appetiteLabel, directionColor, observedDirectionSentence } from "@shared/surfaceClaims";
 import { useSEO } from "@/hooks/useSEO";
 import NarrativeLoader from "@/components/NarrativeLoader";
 import {
@@ -151,11 +151,11 @@ function DirectionBadge({ direction }: { direction: string }) {
     Bullish: { icon: <TrendingUp size={9} />, color: "#34D399", bg: "rgba(52,211,153,0.12)" },
     Bearish: { icon: <TrendingDown size={9} />, color: "#F87171", bg: "rgba(248,113,113,0.12)" },
     Neutral: { icon: <Minus size={9} />, color: "#94A3B8", bg: "rgba(148,163,184,0.12)" },
-    Avoid:   { icon: <Minus size={9} />, color: "#F87171", bg: "rgba(248,113,113,0.12)" },
+    [OUTLOOK_STRAINED]:   { icon: <Minus size={9} />, color: "#F87171", bg: "rgba(248,113,113,0.12)" },
   }[direction] ?? { icon: <Minus size={9} />, color: "#94A3B8", bg: "rgba(148,163,184,0.12)" };
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: "3px", background: cfg.bg, color: cfg.color, fontSize: "9px", fontWeight: "700", letterSpacing: "0.06em", padding: "2px 5px", borderRadius: "3px" }}>
-      {cfg.icon} {direction.toUpperCase()}
+      {cfg.icon} {appetiteLabel(direction)}
     </span>
   );
 }
@@ -258,13 +258,13 @@ function RadarCard({
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginBottom: "8px" }}>
               {item.bullCase && (
                 <div style={{ background: "rgba(34,197,94,0.04)", border: "1px solid rgba(34,197,94,0.12)", borderRadius: "3px", padding: "7px 9px" }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(34,197,94,0.6)", letterSpacing: "0.12em", marginBottom: "4px" }}>BULL CASE</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(34,197,94,0.6)", letterSpacing: "0.12em", marginBottom: "4px" }}>HIGHER-PRICE SCENARIO</div>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.7)", lineHeight: 1.5 }}>{item.bullCase}</div>
                 </div>
               )}
               {item.bearCase && (
                 <div style={{ background: "rgba(255,45,85,0.04)", border: "1px solid rgba(255,45,85,0.12)", borderRadius: "3px", padding: "7px 9px" }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(255,45,85,0.6)", letterSpacing: "0.12em", marginBottom: "4px" }}>BEAR CASE</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(255,45,85,0.6)", letterSpacing: "0.12em", marginBottom: "4px" }}>LOWER-PRICE SCENARIO</div>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.7)", lineHeight: 1.5 }}>{item.bearCase}</div>
                 </div>
               )}

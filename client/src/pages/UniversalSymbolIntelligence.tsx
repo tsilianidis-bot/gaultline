@@ -124,7 +124,7 @@ const fmtHold = (mins: number) =>
 // ── Tab definitions ───────────────────────────────────────────
 const TABS = [
   { id: "overview",   label: "Overview",     icon: <Telescope size={12} /> },
-  { id: "trade",      label: "Trade Setup",  icon: <Target size={12} /> },
+  { id: "trade",      label: "Price reference",  icon: <Target size={12} /> },
   { id: "risk",       label: "Risk Analysis",icon: <Shield size={12} /> },
   { id: "ai",         label: "AI Analysis",  icon: <Brain size={12} /> },
 ];
@@ -194,7 +194,7 @@ function OverviewTab({ report }: { report: DayTradeReport }) {
             border: `1px solid ${isNoTrade ? "rgba(107,114,128,0.2)" : report.direction === "bullish" ? "rgba(0,255,136,0.2)" : "rgba(255,107,107,0.2)"}`,
             borderRadius: "3px", padding: "2px 8px",
           }}>
-            {isNoTrade ? "NO TRADE" : report.setupType}
+            Position plan not published
           </span>
           {report.vwapStatus && report.vwapStatus !== "Unknown" && (
             <span style={{
@@ -217,7 +217,7 @@ function OverviewTab({ report }: { report: DayTradeReport }) {
             { label: "Confidence", value: "Not established", color: "#94A3B8" },
             { label: "Risk Level", value: report.riskLevel, color: report.riskLevel === "Low" ? "#00FF88" : report.riskLevel === "Medium" ? "#FFD700" : "#FF6B6B" },
             { label: "Liquidity", value: report.liquidityRating, color: "#F0F4FF" },
-            { label: "Hold Time", value: fmtHold(report.expectedHoldMinutes), color: "#00D4FF" },
+            { label: "Stated duration", value: fmtHold(report.expectedHoldMinutes), color: "#00D4FF" },
             { label: "Intraday Trend", value: report.intradayTrend ?? "N/A", color: dirColor(report.direction) },
           ].filter(metric => metric.label !== "Confidence").map(m => (
             <div key={m.label} style={CARD}>
@@ -234,8 +234,8 @@ function OverviewTab({ report }: { report: DayTradeReport }) {
           <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
             <AlertTriangle size={16} style={{ color: "#FF6B6B", flexShrink: 0, marginTop: "2px" }} />
             <div>
-              <div style={{ ...MONO_SM, fontWeight: 700, color: "#FF6B6B", marginBottom: "4px" }}>NO TRADE</div>
-              <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{withholdConfidenceFigures(report.noTradeReason)}</div>
+              <div style={{ ...MONO_SM, fontWeight: 700, color: "#94A3B8", marginBottom: "4px" }}>POSITION PLAN NOT PUBLISHED</div>
+              <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>Not an instruction. {withholdConfidenceFigures(report.noTradeReason)}</div>
             </div>
           </div>
         </div>
@@ -259,88 +259,16 @@ function OverviewTab({ report }: { report: DayTradeReport }) {
 
 // ── Trade Setup Tab ───────────────────────────────────────────
 export function TradeSetupTab({ report }: { report: DayTradeReport }) {
-  const isNoTrade = report.setupType === "NO_TRADE";
-
-  if (isNoTrade) {
-    return (
-      <div style={{ ...CARD, borderColor: "rgba(255,107,107,0.2)", background: "rgba(255,107,107,0.04)" }}>
-        <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-          <AlertTriangle size={16} style={{ color: "#FF6B6B", flexShrink: 0, marginTop: "2px" }} />
-          <div>
-            <div style={{ ...MONO_SM, fontWeight: 700, color: "#FF6B6B", marginBottom: "4px" }}>NO TRADE — Setup Not Valid</div>
-            <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{withholdConfidenceFigures(report.noTradeReason) ?? "No valid intraday setup detected."}</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "10px" }}>
-        {report.supportLevel !== undefined && report.supportLevel > 0 && (
-          <div style={CARD}>
-            <div style={LABEL}>Support</div>
-            <div style={VALUE}>{fmt(report.supportLevel)}</div>
-          </div>
-        )}
-        {report.resistanceLevel !== undefined && report.resistanceLevel > 0 && (
-          <div style={CARD}>
-            <div style={LABEL}>Resistance</div>
-            <div style={VALUE}>{fmt(report.resistanceLevel)}</div>
-          </div>
-        )}
+      <div style={CARD}>
+        <div style={LABEL}>Position plan</div>
+        <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>
+          No setup badge or position plan is published. A bullish or bearish action is not stated. Confidence is not established. Freshness is the generated time on this report. Prior prices are omitted because this report does not name a bar count or a formula.
+          {report.noTradeReason ? <> {withholdConfidenceFigures(report.noTradeReason)}</> : null}
+          {report.whyTradeExists ? <> {withholdConfidenceFigures(report.whyTradeExists)}</> : null}
+        </div>
       </div>
-
-      {/* Bull / Bear Case */}
-      {(report.bullCase || report.bearCase) && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-          <div style={{ ...CARD, borderColor: "rgba(0,255,136,0.2)" }}>
-            <div style={{ ...LABEL, marginBottom: "8px", color: "#00FF88" }}>Bull Case</div>
-            <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{report.bullCase}</div>
-          </div>
-          <div style={{ ...CARD, borderColor: "rgba(255,107,107,0.2)" }}>
-            <div style={{ ...LABEL, marginBottom: "8px", color: "#FF6B6B" }}>Bear Case</div>
-            <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{report.bearCase}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Most Likely Path + Alternative */}
-      {(report.mostLikelyPath || report.alternativePath) && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-          <div style={CARD}>
-            <div style={LABEL}>Most Likely Path</div>
-            <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{report.mostLikelyPath}</div>
-          </div>
-          <div style={CARD}>
-            <div style={LABEL}>Alternative Path</div>
-            <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{report.alternativePath}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Timeframe + Strategy */}
-      {(report.recommendedTimeframe || report.bestStrategy) && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-          <div style={CARD}>
-            <div style={LABEL}>Recommended Timeframe</div>
-            <div style={{ ...MONO_SM, color: "#00D4FF", lineHeight: 1.5 }}>{report.recommendedTimeframe}</div>
-          </div>
-          <div style={CARD}>
-            <div style={LABEL}>Best Strategy</div>
-            <div style={{ ...MONO_SM, color: "#FFD700", lineHeight: 1.5 }}>{report.bestStrategy}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Why this trade exists */}
-      {report.whyTradeExists && (
-        <div style={CARD}>
-          <div style={LABEL}>Why This Trade Exists</div>
-          <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{withholdConfidenceFigures(report.whyTradeExists)}</div>
-        </div>
-      )}
     </div>
   );
 }
@@ -350,12 +278,12 @@ export function RiskAnalysisTab({ report }: { report: DayTradeReport }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       {/* What cancels this trade */}
-      {report.whatCancelsThisTrade && (
-        <div style={{ ...CARD, borderColor: "rgba(255,149,0,0.2)" }}>
-          <div style={{ ...LABEL, marginBottom: "8px", color: "#FF9500" }}>What Cancels This Trade</div>
-          <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{report.whatCancelsThisTrade}</div>
+      <div style={{ ...CARD, borderColor: "rgba(255,149,0,0.2)" }}>
+        <div style={{ ...LABEL, marginBottom: "8px", color: "#FF9500" }}>Condition noted on the report</div>
+        <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>
+          A model sentence that states an order is withheld. Read the catalyst and risk notes when the report includes them. They are not an instruction.
         </div>
-      )}
+      </div>
 
       {/* Primary Catalyst + Largest Risk */}
       {(report.primaryCatalyst || report.largestRisk) && (
@@ -378,34 +306,21 @@ export function RiskAnalysisTab({ report }: { report: DayTradeReport }) {
 
 // ── AI Analysis Tab ───────────────────────────────────────────
 export function AIAnalysisTab({ report }: { report: DayTradeReport }) {
-  const isNoTrade = report.setupType === "NO_TRADE";
-  const verdictColor = isNoTrade ? '#6B7280' : report.direction === 'bullish' ? '#00FF88' : '#FF6B6B';
-  const verdictLabel = isNoTrade ? 'NO TRADE' : report.direction === 'bullish' ? 'BULLISH SETUP' : 'BEARISH SETUP';
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
 
-      {/* ── 1. VERDICT ─────────────────────────────────────────── */}
-      <div style={{ ...CARD, background: `${verdictColor}08`, borderColor: `${verdictColor}30` }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-          <div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(100,116,139,0.6)', marginBottom: '4px' }}>FAULTLINE VERDICT</div>
-            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: '22px', color: verdictColor, letterSpacing: '0.06em', textShadow: `0 0 20px ${verdictColor}50` }}>{verdictLabel}</div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(148,163,184,0.7)', marginTop: '3px' }}>
-              {report.setupType} · <span data-confidence-status="not-established">confidence not established</span>
-              <div data-confidence-status="not-established">Not established</div>
-            </div>
+      <div style={{ ...CARD, background: "rgba(148,163,184,0.06)", borderColor: "rgba(148,163,184,0.25)" }}>
+        <div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(100,116,139,0.6)', marginBottom: '4px' }}>RECORDED READING</div>
+          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: '22px', color: '#94A3B8', letterSpacing: '0.06em' }}>Position plan not published</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(148,163,184,0.7)', marginTop: '3px' }}>
+            <span data-confidence-status="not-established">confidence not established</span>
+            <div data-confidence-status="not-established">Not established</div>
+            {report.generatedAt ? ` Generated ${new Date(report.generatedAt).toLocaleString()}.` : ""} The model path below is not an instruction.
+            {report.whyTradeExists ? <> {withholdConfidenceFigures(report.whyTradeExists)}</> : null}
           </div>
         </div>
       </div>
-
-      {/* ── 2. WHY ────────────────────────────────────────────── */}
-      {report.whyTradeExists && (
-        <div style={CARD}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(0,212,255,0.6)', marginBottom: '6px' }}>WHY THIS OPPORTUNITY EXISTS</div>
-          <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{withholdConfidenceFigures(report.whyTradeExists)}</div>
-        </div>
-      )}
 
       {/* ── 3. WHAT TO WATCH ─────────────────────────────────── */}
       {report.mostLikelyPath && (
@@ -428,25 +343,16 @@ export function AIAnalysisTab({ report }: { report: DayTradeReport }) {
         </div>
       )}
 
-      {/* ── 5. ACTION PLAN ─────────────────────────────────────── */}
-      {report.bestStrategy && (
-        <div style={{ ...CARD, borderColor: "rgba(255,215,0,0.2)", background: "rgba(255,215,0,0.03)" }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(255,215,0,0.7)', marginBottom: '6px' }}>ACTION PLAN</div>
-          <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{report.bestStrategy}</div>
-          {report.recommendedTimeframe && (
-            <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(0,212,255,0.5)', letterSpacing: '0.1em' }}>TIMEFRAME:</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#00D4FF', fontWeight: 700 }}>{report.recommendedTimeframe}</span>
-            </div>
-          )}
-        </div>
-      )}
+      <div style={CARD}>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(148,163,184,0.7)', marginBottom: '6px' }}>POSITION PLAN</div>
+        <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>Not published. This tab does not state an order, a size, or a horizon to act on.</div>
+      </div>
 
       <div style={{ ...CARD, background: "rgba(255,170,0,0.04)", borderColor: "rgba(255,170,0,0.15)" }}>
         <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
           <AlertTriangle size={12} style={{ color: "#FFAA00", marginTop: "2px", flexShrink: 0 }} />
           <span style={{ ...MONO_SM, fontSize: "10px", color: "#FFAA00", lineHeight: 1.5 }}>
-            AI analysis is for informational purposes only. Not financial advice. Day Trade Intelligence™ is designed for same-day intraday trading only.
+            This reading is informational. It is not financial advice and it does not state an order.
           </span>
         </div>
       </div>
@@ -568,7 +474,7 @@ function UniversalSymbolIntelligence() {
               </span>
             </div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#6B7280" }}>
-              Complete intelligence for any stock or crypto symbol — trade setup, risk analysis, and AI insights
+              Recorded conditions for any stock or crypto symbol. A position plan is not published.
             </div>
           </div>
         </div>
@@ -699,11 +605,11 @@ function UniversalSymbolIntelligence() {
               Enter Any Symbol
             </div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#374151", textAlign: "center", maxWidth: "400px", lineHeight: 1.6 }}>
-              Search any stock or crypto to get a complete intelligence report: intraday trade setup, execution score, risk analysis, and AI-powered insights.
+              Search any stock or crypto for a recorded reading. Order levels and a position plan are not published.
             </div>
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", justifyContent: "center", marginTop: "8px" }}>
               {[
-                { icon: <Target size={14} />, label: "Trade Setup" },
+                { icon: <Target size={14} />, label: "Price reference" },
                 { icon: <Shield size={14} />, label: "Risk Analysis" },
                 { icon: <Brain size={14} />, label: "AI Insights" },
                 { icon: <BarChart2 size={14} />, label: "Execution Score" },

@@ -34,7 +34,7 @@ FAULTLINE, in contrast, is a specialized market intelligence platform built from
         },
         {
           heading: 'Key Differences: Accessibility, Focus, and Cost',
-          body: `The primary distinction between FAULTLINE and Bloomberg lies in their target audience, analytical focus, and cost structure. Bloomberg is designed for institutional professionals who require deep, granular data across a vast array of financial instruments and markets. Its interface is powerful but demands significant expertise to navigate effectively. The cost of a Bloomberg Terminal subscription is prohibitive for most retail investors, reflecting its institutional-grade capabilities and support.
+          body: `The primary distinction between FAULTLINE and Bloomberg lies in their intended readers, analytical focus, and cost structure. Bloomberg is designed for institutional professionals who require deep, granular data across a vast array of financial instruments and markets. Its interface is powerful but demands significant expertise to navigate effectively. The cost of a Bloomberg Terminal subscription is prohibitive for most retail investors, reflecting its institutional-grade capabilities and support.
 
 FAULTLINE, conversely, prioritizes accessibility and a focused approach to macro risk. It distills complex quantitative models into clear, actionable indicators relevant to retail investors. The platform's design emphasizes ease of use, ensuring that insights into systemic risk and market regimes are readily understandable. It is built for individual investors: the public Pressure Index is free to read, full intelligence is offered through FAULTLINE Standard at $99/month or FAULTLINE Lifetime at $1,500 one-time.`,
         },
@@ -48,7 +48,7 @@ While Bloomberg serves a broad spectrum of institutional needs, FAULTLINE provid
           heading: "FAULTLINE's Unique Approach: Contextualizing Market Conditions",
           body: `FAULTLINE's unique value proposition lies in its ability to contextualize market conditions through proprietary indicators like the Pressure Index and Market Regime Tracker. Instead of merely presenting data, FAULTLINE interprets it, offering insights into 'what changed,' 'why it matters,' and 'what would change the outlook.' This narrative-driven approach helps retail investors connect the dots between various macro signals and their potential impact on their investments.
 
-Bloomberg provides the raw materials for such analysis, but the synthesis and interpretation are left entirely to the user. FAULTLINE bridges this gap by delivering not just the metrics, but the analytical framework to understand them. It's purpose-built to help retail investors identify periods of heightened systemic risk, understand the current market environment (e.g., 'risk-on' vs. 'risk-off'), and see where pressure is building beneath the market, providing a level of clarity and guidance unmatched by generalist platforms.`,
+Bloomberg provides the raw materials for such analysis, but the synthesis and interpretation are left entirely to the user. FAULTLINE bridges this gap by delivering not just the metrics, but the analytical framework to understand them. It's purpose-built to help retail investors identify periods of heightened systemic risk, understand the current market environment (e.g., 'higher-risk appetite' vs. 'lower-risk appetite'), and see where pressure is building beneath the market, providing a level of clarity and guidance unmatched by generalist platforms.`,
         },
       ]}
       faqs={[

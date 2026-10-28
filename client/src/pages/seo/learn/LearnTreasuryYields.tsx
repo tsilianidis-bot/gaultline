@@ -56,7 +56,7 @@ const LearnTreasuryYields = () => {
         },
         {
           question: "What is the Federal Reserve's role in treasury yields?",
-          answer: "The Federal Reserve influences treasury yields primarily through its monetary policy, particularly by setting the federal funds rate target. Changes in this target directly affect short-term yields. The Fed's quantitative easing or tightening programs (buying or selling bonds) can also impact long-term yields by altering the supply and demand for government debt."
+          answer: "The Federal Reserve influences treasury yields primarily through its monetary policy, particularly by setting the federal funds rate setting. Changes in this setting directly affect short-term yields. The Fed's quantitative easing or tightening programs (buying or selling bonds) can also impact long-term yields by altering the supply and demand for government debt."
         },
         {
           question: "What is the difference between nominal and real yields?",

@@ -43,7 +43,7 @@ For investors, liquidity conditions determine the risk of sudden, sharp drawdown
           heading: "How Investors Misunderstand Liquidity",
           body: `The most common misunderstanding is equating liquidity with trading volume. High trading volume does not guarantee liquidity — it measures how much is being traded, not whether there are buyers willing to absorb large offers at stable prices. Market depth (the number of orders at various price levels) is a better measure of true liquidity.
 
-A second misunderstanding is assuming liquidity is stable. In reality, liquidity is highly cyclical. It expands during periods of Fed accommodation and contracts during tightening cycles. It also contracts rapidly during risk-off events, as market makers reduce their risk exposure precisely when buyers are needed most.
+A second misunderstanding is assuming liquidity is stable. In reality, liquidity is highly cyclical. It expands during periods of Fed accommodation and contracts during tightening cycles. It also contracts rapidly during lower-risk appetite events, as market makers reduce their risk exposure precisely when buyers are needed most.
 
 A third misunderstanding is treating liquidity as a background condition rather than an active risk factor. Most investors focus on valuations, earnings, and economic data — but liquidity conditions determine whether those fundamentals can be expressed in prices or whether they are overwhelmed by forced selling and margin calls.`,
         },

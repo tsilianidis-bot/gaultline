@@ -102,7 +102,7 @@ const EXPOSURE_STEP2: Record<MoveType, { value: ExposureCategory; label: string;
     { value: "industrials",          label: "Into Industrials",    sub: "Capex cycle play" },
     { value: "international",        label: "US → International",  sub: "Geographic rotation" },
     { value: "emerging_markets",     label: "Into EM",             sub: "EM re-rating play" },
-    { value: "bitcoin",              label: "Stocks → Bitcoin",    sub: "Risk-on crypto rotation" },
+    { value: "bitcoin",              label: "Stocks → Bitcoin",    sub: "Crypto has moved with higher-risk-appetite equity periods" },
   ],
   raise_cash: [
     { value: "entire_portfolio",     label: "Across Portfolio",    sub: "Trim broadly, raise cash" },
@@ -178,7 +178,7 @@ const CRYPTO_OPTIONS: { value: string; label: string; icon: string }[] = [
 
 // ── Constants ─────────────────────────────────────────────────
 const MOVE_OPTIONS: { value: MoveType; label: string; glyph: string; sub: string }[] = [
-  { value: "add_risk",           label: "Add Risk",           glyph: "↑", sub: "Increase exposure to a sector, asset class, or theme" },
+  { value: "add_risk",           label: "Add Risk",           glyph: "↑", sub: "Review a larger weight in a sector, asset class, or theme" },
   { value: "reduce_risk",        label: "Reduce Risk",        glyph: "↓", sub: "Trim or exit positions to lower overall exposure" },
   { value: "hedge",              label: "Hedge",              glyph: "⛨", sub: "Protect existing positions against downside" },
   { value: "rotate",             label: "Rotate",             glyph: "⟳", sub: "Shift capital from one sector or asset to another" },
@@ -205,10 +205,10 @@ const ROTATE_TO_OPTIONS = [
 // ── Raise Cash reason options ──────────────────────────────────
 const RAISE_CASH_REASONS: { value: string; label: string; sub: string }[] = [
   { value: "risk_reduction",          label: "Risk Reduction",          sub: "Market conditions are deteriorating" },
-  { value: "waiting_for_opportunity", label: "Waiting for Opportunity",  sub: "Dry powder for better entry" },
+  { value: "waiting_for_opportunity", label: "Waiting for Opportunity",  sub: "Cash is uncommitted while evidence is thin" },
   { value: "near_term_expenses",      label: "Near-Term Expenses",       sub: "Capital needed soon" },
   { value: "market_concerns",         label: "Market Concerns",          sub: "Macro or geopolitical uncertainty" },
-  { value: "tactical_positioning",    label: "Tactical Positioning",     sub: "Rotating to cash before re-entry" },
+  { value: "tactical_positioning",    label: "Tactical Positioning",     sub: "A larger cash weight is under review" },
 ];
 
 // ── Deploy Cash target options ─────────────────────────────────
@@ -235,8 +235,8 @@ const POSITION_SIZE_OPTIONS: { value: string; label: string; sub: string }[] = [
 const EXIT_TYPE_OPTIONS: { value: string; label: string; sub: string }[] = [
   { value: "partial_exit",  label: "Partial Exit",   sub: "Trim 25–50% of position" },
   { value: "full_exit",     label: "Full Exit",      sub: "Close entire position" },
-  { value: "risk_reduction",label: "Risk Reduction", sub: "Cut to stop-loss size" },
-  { value: "profit_taking", label: "Profit Taking",  sub: "Lock in gains at target" },
+  { value: "risk_reduction",label: "Risk Reduction", sub: "A smaller position size is under review" },
+  { value: "profit_taking", label: "Profit Taking",  sub: "A reduction after a gain is under review" },
 ];
 
 // ── Hold concern options ───────────────────────────────────────
@@ -310,7 +310,7 @@ const THESIS_OPTIONS: { value: ThesisType; label: string; icon: string; sub: str
     icon: "₿",
     sub: "Crypto market cycle timing",
     description: "You are trading the crypto market cycle — accumulation, expansion, or distribution phase — based on on-chain and macro signals.",
-    conditions: ["Bitcoin dominance trend", "Macro liquidity conditions", "Halving cycle position", "Risk-on / risk-off regime"],
+    conditions: ["Bitcoin dominance trend", "Macro liquidity conditions", "Halving cycle position", "Higher- or lower-risk appetite band"],
   },
   {
     value: "sector_rotation",
@@ -940,7 +940,7 @@ export default function SituationRoom() {
               {/* ── BUY SPECIFIC ASSET: Position size ── */}
               {selectedMove === "buy_specific_asset" && (
                 <div style={{ marginBottom: "14px" }}>
-                  <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "8px" }}>Position size / entry type <span style={{ color: "#FF2D55", fontSize: "9px" }}>* required</span></label>
+                  <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "8px" }}>Position size under review <span style={{ color: "#FF2D55", fontSize: "9px" }}>* required</span></label>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "6px" }}>
                     {POSITION_SIZE_OPTIONS.map(opt => (
                       <button key={opt.value} onClick={() => setPositionSize(opt.value)}
@@ -1248,7 +1248,7 @@ export default function SituationRoom() {
                   <div style={{ background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.18)", borderRadius: "6px", padding: "18px 20px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
                       <TrendingUp size={14} color="#00FF88" />
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00FF88", textTransform: "uppercase", letterSpacing: "0.18em" }}>BULL CASE</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00FF88", textTransform: "uppercase", letterSpacing: "0.18em" }}>HIGHER-PRICE SCENARIO</span>
                     </div>
                     {bull && (
                       <>
@@ -1280,7 +1280,7 @@ export default function SituationRoom() {
                   <div style={{ background: "rgba(255,45,85,0.04)", border: "1px solid rgba(255,45,85,0.18)", borderRadius: "6px", padding: "18px 20px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
                       <TrendingDown size={14} color="#FF2D55" />
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#FF2D55", textTransform: "uppercase", letterSpacing: "0.18em" }}>BEAR CASE</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#FF2D55", textTransform: "uppercase", letterSpacing: "0.18em" }}>LOWER-PRICE SCENARIO</span>
                     </div>
                     {bear && (
                       <>
@@ -1316,86 +1316,29 @@ export default function SituationRoom() {
             })()}
 
             {/* ═══════════════════════════════════════════════════════
-                SECTION 5 — ACTION PLAN
+                SECTION 5 — RECORDED CONDITIONS
             ═══════════════════════════════════════════════════════ */}
             <div style={{ background: "rgba(10,13,20,0.95)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "6px", padding: "20px 22px", marginBottom: "10px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
-                <Crosshair size={14} color="#00FF88" />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00FF88", textTransform: "uppercase", letterSpacing: "0.18em" }}>ACTION PLAN</span>
+                <Crosshair size={14} color="#94A3B8" />
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.18em" }}>RECORDED CONDITIONS</span>
               </div>
-              {/* Primary action bias */}
-              <div style={{ padding: "12px 16px", background: "rgba(0,255,136,0.05)", border: "1px solid rgba(0,255,136,0.15)", borderRadius: "5px", marginBottom: "12px" }}>
-                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#00FF88", marginBottom: "4px" }}>{result.actionBias}</div>
-                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8" }}>{result.bestVersionOfMove}</div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#94A3B8", lineHeight: 1.6 }}>
+                A position plan is not published. This briefing does not state an order, a size, or a list of actions. Read the pressure band and the scenario returns above. Freshness is the timestamp on this briefing. Uncertainty remains because the band is not a forecast.
               </div>
-              {/* What FAULTLINE Would Do */}
-              {result.recommendedMoves?.whatFaultlineWouldDo && (
-                <div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px" }}>WHAT FAULTLINE WOULD DO</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-                    {result.recommendedMoves.whatFaultlineWouldDo.actions.slice(0, 4).map((action: string, i: number) => (
-                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-                        <div style={{ width: "20px", height: "20px", borderRadius: "50%", background: "rgba(0,255,136,0.08)", border: "1px solid rgba(0,255,136,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: "1px" }}>
-                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00FF88", fontWeight: 700 }}>{i + 1}</span>
-                        </div>
-                        <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#CBD5E1", lineHeight: 1.55 }}>{action}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {/* Areas to avoid */}
-              {result.avoidAreas && result.avoidAreas.length > 0 && (
-                <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.09)" }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(255,45,85,0.6)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "6px" }}>AVOID</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                    {result.avoidAreas.map((a: string, i: number) => (
-                      <span key={i} style={{ padding: "3px 8px", background: "rgba(255,45,85,0.06)", border: "1px solid rgba(255,45,85,0.15)", borderRadius: "3px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#FF6B8A" }}>{a}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* ═══════════════════════════════════════════════════════
-                SECTION 6 — KEY LEVELS (from top opportunities if ticker provided)
-            ═══════════════════════════════════════════════════════ */}
-            {result.ticker && result.recommendedMoves && (() => {
-              const allOpps = [...(result.recommendedMoves.topStocks || []), ...(result.recommendedMoves.topCrypto || [])];
-              const tickerOpp = allOpps.find((o: any) => o.ticker?.toUpperCase() === result.ticker?.toUpperCase());
-              if (!tickerOpp) return null;
-              return (
-                <div style={{ background: "rgba(10,13,20,0.95)", border: "1px solid rgba(0,229,255,0.25)", borderRadius: "6px", padding: "20px 22px", marginBottom: "10px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
-                    <Target size={14} color="#00E5FF" />
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00E5FF", textTransform: "uppercase", letterSpacing: "0.18em" }}>KEY LEVELS — {result.ticker}</span>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginBottom: "12px" }}>
-                    {[
-                      { label: "Entry Zone", value: `$${tickerOpp.entryZoneLow?.toFixed(2)} – $${tickerOpp.entryZoneHigh?.toFixed(2)}`, color: "#00E5FF" },
-                      { label: "Stop Loss", value: `$${tickerOpp.stopLoss?.toFixed(2)}`, color: "#FF2D55" },
-                      { label: "Risk / Reward", value: `${tickerOpp.riskRewardRatio?.toFixed(1)}:1`, color: "#00FF88" },
-                    ].map(({ label, value, color }) => (
-                      <div key={label} style={{ padding: "12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.11)", borderRadius: "5px", textAlign: "center" }}>
-                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "5px" }}>{label}</div>
-                        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color }}>{value}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                    {[
-                      { label: "Target 1", value: `$${tickerOpp.targetOne?.toFixed(2)}`, color: "#00FF88" },
-                      { label: "Target 2", value: `$${tickerOpp.targetTwo?.toFixed(2)}`, color: "#00FF88" },
-                    ].map(({ label, value, color }) => (
-                      <div key={label} style={{ padding: "10px 14px", background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.12)", borderRadius: "5px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.6)", textTransform: "uppercase", letterSpacing: "0.1em" }}>{label}</span>
-                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color }}>{value}</span>
-                      </div>
-                    ))}
-                  </div>
+            {/* Order prices for a ticker are not published on this briefing. */}
+            {result.ticker && (
+              <div style={{ background: "rgba(10,13,20,0.95)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "6px", padding: "20px 22px", marginBottom: "10px" }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.18em", marginBottom: "8px" }}>
+                  PRICE REFERENCES — {result.ticker}
                 </div>
-              );
-            })()}
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#94A3B8", lineHeight: 1.6 }}>
+                  Order prices are not published. This briefing does not carry a bar count or a formula for prior prices, so those figures are omitted.
+                </div>
+              </div>
+            )}
 
             {/* ═══════════════════════════════════════════════════════
                 SECTION 7 — TIMEFRAME + POSITION SIZING
@@ -1419,21 +1362,9 @@ export default function SituationRoom() {
               <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#94A3B8", lineHeight: 1.6, marginBottom: "14px" }}>
                 Expected duration: <strong style={{ color: "#F0F4FF" }}>{result.timeframeLabel}</strong>
               </div>
-              {/* Position sizing */}
-              {result.positionSizing && (
-                <div style={{ paddingTop: "14px", borderTop: "1px solid rgba(255,255,255,0.09)" }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px" }}>POSITION SIZING</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "8px" }}>
-                    {result.positionSizing.tiers.map((tier: any) => (
-                      <div key={tier.label} style={{ padding: "10px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.11)", borderRadius: "4px", textAlign: "center" }}>
-                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "4px" }}>{tier.label}</div>
-                        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#F0F4FF" }}>{tier.allocation}%</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#64748B", lineHeight: 1.55 }}>{result.positionSizing.guidance}</div>
-                </div>
-              )}
+              <div style={{ paddingTop: "14px", borderTop: "1px solid rgba(255,255,255,0.09)", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", lineHeight: 1.55 }}>
+                Size is not published. The horizon above is the briefing window, not an instruction.
+              </div>
             </div>
 
             {/* ═══════════════════════════════════════════════════════

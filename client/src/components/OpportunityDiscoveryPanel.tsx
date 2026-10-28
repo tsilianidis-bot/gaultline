@@ -298,13 +298,13 @@ function BucketCard({ bucket, onNavigate, onWatchlist }: { bucket: DiscoveryBuck
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginBottom: "6px" }}>
                   {item.bullCase && (
                     <div style={{ background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.12)", borderRadius: "3px", padding: "6px 8px" }}>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(34,197,94,0.6)", letterSpacing: "0.1em", marginBottom: "3px" }}>BULL CASE</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(34,197,94,0.6)", letterSpacing: "0.1em", marginBottom: "3px" }}>HIGHER-PRICE SCENARIO</div>
                       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.7)", lineHeight: 1.4 }}>{item.bullCase}</div>
                     </div>
                   )}
                   {item.bearCase && (
                     <div style={{ background: "rgba(255,45,85,0.05)", border: "1px solid rgba(255,45,85,0.12)", borderRadius: "3px", padding: "6px 8px" }}>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(255,45,85,0.6)", letterSpacing: "0.1em", marginBottom: "3px" }}>BEAR CASE</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(255,45,85,0.6)", letterSpacing: "0.1em", marginBottom: "3px" }}>LOWER-PRICE SCENARIO</div>
                       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.7)", lineHeight: 1.4 }}>{item.bearCase}</div>
                     </div>
                   )}

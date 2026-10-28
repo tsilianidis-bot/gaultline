@@ -37,7 +37,7 @@ interface CryptoSignalResult {
   assetClass?: "CRYPTO";
   action: TradingAction;
   actionLabel?: string;        // precision label e.g. "Accumulation Zone"
-  cryptoRegime?: "Bullish" | "Neutral" | "Defensive" | "Risk-Off";
+  cryptoRegime?: string;
   regimeConflict?: boolean;
   regimeConflictExplanation?: string | null;
   // Launch fix-up: the server withholds the formula confidence (always null).
@@ -163,10 +163,10 @@ const TREND_COLORS: Record<string, string> = {
 const UNAVAILABLE_CRYPTO_CONTEXT = { headline: "REGIME UNAVAILABLE", description: "The canonical market state is unavailable, so crypto regime context is withheld.", bullish: "Unavailable", bearish: "Unavailable" };
 
 const REGIME_CRYPTO_CONTEXT: Record<string, { headline: string; description: string; bullish: string; bearish: string }> = {
-  "LOW RISK":      { headline: "RISK-ON CONDITIONS", description: "Liquidity expanding, volatility compressed. Conditions favour momentum and altcoin exposure.", bullish: "BTC, ETH, high-beta alts, DeFi", bearish: "Stablecoins, cash" },
-  "MODERATE RISK": { headline: "MIXED CONDITIONS", description: "Macro pressure moderate. BTC dominance and liquidity signals are key. Selective exposure warranted.", bullish: "BTC, large-cap alts", bearish: "High-risk micro-caps, leverage" },
-  "HIGH RISK":     { headline: "RISK-OFF CONDITIONS", description: "Elevated systemic pressure. Liquidity tightening. Favour capital preservation and BTC over alts.", bullish: "Stablecoins, BTC relative to alts", bearish: "Altcoins, DeFi, high-beta names" },
-  "CRITICAL RISK": { headline: "DELEVERAGING RISK", description: "Systemic stress elevated. Crypto historically correlates with risk-off equity moves. Extreme caution.", bullish: "Cash, stablecoins", bearish: "All crypto, especially alts" },
+  "LOW RISK":      { headline: "LOWEST PRESSURE BAND", description: "The Pressure Index is in its lowest stress class. This is the current reading, not an instruction. Freshness follows the canonical timestamp.", bullish: "No position list", bearish: "No position list" },
+  "MODERATE RISK": { headline: "MODERATE PRESSURE BAND", description: "The Pressure Index is in the moderate class. Inputs are mixed. This is not an instruction. Freshness follows the canonical timestamp.", bullish: "No position list", bearish: "No position list" },
+  "HIGH RISK":     { headline: "ELEVATED PRESSURE BAND", description: "The Pressure Index is above the moderate class. This is the current reading, not an instruction. Freshness follows the canonical timestamp.", bullish: "No position list", bearish: "No position list" },
+  "CRITICAL RISK": { headline: "HIGHEST STRESS BAND", description: "The Pressure Index is in its highest stress class. Crypto has historically moved with stressed equity regimes. That is a comparison, not an instruction.", bullish: "No position list", bearish: "No position list" },
 };
 
 const CRYPTO_CATEGORIES = ["All", "Large Cap", "Mid Cap", "DeFi", "Layer-1", "Layer-2", "AI/Data", "Gaming/NFT", "Meme"] as const;
@@ -451,9 +451,7 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "4px", marginBottom: "6px" }}>
               {[
                 { label: "LAST", value: `$${fmt(sig.priceLevels.entryZone)}`, color: c.text, sub: "latest quote used" },
-                { label: "STOP LOSS", value: `$${fmt(sig.priceLevels.stopLoss)}`, color: "#FF2D55", sub: "ATR ×1.5" },
-                { label: "TARGET", value: `$${fmt(sig.priceLevels.targetPrice)}`, color: "#00D4FF", sub: "2:1 R:R" },
-                { label: "RISK/REWARD", value: `${sig.priceLevels.riskReward}:1`, color: sig.priceLevels.riskReward >= 2 ? "#22C55E" : sig.priceLevels.riskReward >= 1.5 ? "#FFD700" : "#FF9500", sub: `ATR $${fmt(sig.priceLevels.atr)}` },
+                { label: "NOT PUBLISHED", value: "—", color: "#94A3B8", sub: "calculated trade levels are omitted" },
               ].map(({ label, value, color, sub }) => (
                 <div key={label} style={{ textAlign: "center", background: "rgba(255,255,255,0.02)", borderRadius: "2px", padding: "5px 4px", borderTop: `2px solid ${color}30` }}>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "6px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.08em", marginBottom: "2px" }}>{label}</div>
@@ -462,17 +460,9 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
                 </div>
               ))}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" }}>
-              {[
-                { label: "SUPPORT", value: sig.priceLevels.support, color: "#22C55E" },
-                { label: "RESISTANCE", value: sig.priceLevels.resistance, color: "#FF9500" },
-              ].map(({ label, value, color }) => (
-                <div key={label} style={{ textAlign: "center", background: "rgba(255,255,255,0.02)", borderRadius: "2px", padding: "4px" }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "6px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.08em", marginBottom: "2px" }}>{label}</div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", fontWeight: 700, color }}>${fmt(value)}</div>
-                </div>
-              ))}
-            </div>
+            <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.6)", lineHeight: 1.5 }}>
+              Prior highs and lows are not published as trade levels. The last quote above is the observation. Freshness is the quote timestamp when the source provides one.
+            </p>
           </div>
 
           {/* Technical indicators */}
@@ -521,7 +511,7 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
                 { label: "BTC DOMINANCE", value: sig.cryptoFactors.btcDominanceEffect, color: sig.cryptoFactors.btcDominanceEffect === "Tailwind" ? "#00D4FF" : sig.cryptoFactors.btcDominanceEffect === "Headwind" ? "#FF2D55" : "#94A3B8" },
                 { label: "VOLATILITY", value: sig.cryptoFactors.volatilityRegime, color: sig.cryptoFactors.volatilityRegime === "High" ? "#FF9500" : sig.cryptoFactors.volatilityRegime === "Low" ? "#00D4FF" : "#94A3B8" },
                 { label: "ATH PROXIMITY", value: sig.cryptoFactors.athProximity, color: sig.cryptoFactors.athProximity === "Near ATH" ? "#FF9500" : sig.cryptoFactors.athProximity === "Deep Discount" ? "#00D4FF" : "#94A3B8" },
-                { label: "ASSET VOLUME LIQUIDITY", value: typeof sig.cryptoFactors.liquidityScore === "number" ? `${sig.cryptoFactors.liquidityScore.toFixed(1)}/10` : "Unavailable", color: typeof sig.cryptoFactors.liquidityScore === "number" && sig.cryptoFactors.liquidityScore >= 7 ? "#00D4FF" : typeof sig.cryptoFactors.liquidityScore === "number" && sig.cryptoFactors.liquidityScore >= 4 ? "#FFD700" : "#FF2D55" },
+                { label: "VOLUME / CAP", value: "Not shown", color: "#94A3B8" },
               ].map(({ label, value, color }) => (
                 <div key={label}>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>{label}</div>
@@ -990,12 +980,8 @@ function CryptoSignalsInner() {
 
         <div style={{ display: "flex", gap: "12px", marginTop: "10px", flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>FAVORS:</span>
-            <span style={{ fontSize: "9px", color: "#00D4FF" }}>{regimeCtx.bullish}</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>AVOIDS:</span>
-            <span style={{ fontSize: "9px", color: "#FF2D55" }}>{regimeCtx.bearish}</span>
+            <span style={{ fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>READING:</span>
+            <span style={{ fontSize: "9px", color: "#00D4FF" }}>{regimeCtx.description}</span>
           </div>
           {screenerData && (
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>

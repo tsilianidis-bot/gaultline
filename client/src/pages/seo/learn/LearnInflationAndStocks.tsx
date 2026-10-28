@@ -35,7 +35,7 @@ const LearnInflationAndStocks = () => {
         },
         {
           heading: 'Common Misconceptions About Inflation and Stock Market Performance',
-          body: `Many investors misunderstand the nuanced relationship between inflation and the stock market. A common misconception is that all inflation is bad for stocks. In reality, moderate inflation can be beneficial, signaling economic growth. Another error is failing to differentiate between expected and unexpected inflation; markets often price in expected inflation, but unexpected surges can cause significant disruption. Investors also frequently underestimate the Federal Reserve's role, assuming a direct, immediate correlation between inflation and rate hikes without considering the Fed's dual mandate of maximum employment and price stability. FAULTLINE addresses these misunderstandings by providing data-driven insights into market expectations, Fed policy signals, and historical comparisons, helping investors avoid common pitfalls. We highlight 'what changed' in the economic landscape to provide critical context for current market behavior.`, 
+          body: `Many investors misunderstand the nuanced relationship between inflation and the stock market. A common misconception is that all inflation is bad for stocks. In reality, moderate inflation can be beneficial, signaling economic growth. Another error is failing to differentiate between expected and unexpected inflation; markets often price in expected inflation, but unexpected surges can cause significant disruption. Investors also frequently underestimate the Federal Reserve's role, assuming a direct, immediate correlation between inflation and rate hikes without considering the Fed's dual mandate of maximum employment and price stability. FAULTLINE addresses these misunderstandings by providing data-driven insights into market expectations, Fed policy signals, and historical comparisons, helping investors see common pitfalls. We highlight 'what changed' in the economic landscape to provide critical context for current market behavior.`, 
         },
         {
           heading: 'How FAULTLINE Monitors and Measures Inflation\'s Market Impact',
@@ -49,7 +49,7 @@ const LearnInflationAndStocks = () => {
         },
         {
           question: 'How does the Federal Reserve respond to rising inflation?',
-          answer: 'The Federal Reserve typically responds to persistent, high inflation by raising interest rates to cool down the economy and reduce demand, thereby aiming to bring inflation back to its target level.',
+          answer: 'The Federal Reserve typically responds to persistent, high inflation by raising interest rates to cool down the economy and reduce demand, thereby aiming to bring inflation back to the level it has stated.',
         },
         {
           question: 'Which sectors tend to perform well during inflationary periods?',

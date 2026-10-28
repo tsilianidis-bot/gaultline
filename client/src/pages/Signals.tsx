@@ -1716,7 +1716,7 @@ function SignalsInner() {
         color: 'rgba(55,65,81,0.5)',
         textAlign: 'center', lineHeight: 1.5,
       }}>
-        Market scanner context only. Not financial advice. This page does not publish a target, a stop, or an entry. Past results are not a forecast.
+        Market scanner context only. Not financial advice. This page does not publish a price objective or an opening mark. Past results are not a forecast.
       </div>
 
       </>)}
@@ -2011,7 +2011,7 @@ function AsymmetricOpportunitiesView({
               lineHeight: 1.5, margin: 0, maxWidth: '500px',
             }}>
               A screened list of names. The stock read on each card is the shared Pentagonal Thesis.
-              This view does not publish a target, a stop, or an entry.
+              This view does not publish a price objective or an opening mark.
               Regime label: <span style={{ color: '#A855F7' }}>{regimeLabel}</span>
             </p>
           </div>

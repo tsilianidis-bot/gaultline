@@ -76,8 +76,8 @@ export function SnapshotRenderer({ snapshotJson, reportType }: { snapshotJson: s
     }
     if (typeof val === "object") {
       const raw = Object.entries(val as Record<string, unknown>);
-      const hadTradeAction = raw.some(([key, entry]) => key === "action" || key === "actionLabel" || isTradeActionValue(entry));
-      const entries = raw.filter(([key, entry]) => !isHiddenSnapshotKey(key) && !isTradeActionValue(entry));
+      const hadTradeAction = raw.some(([key, fieldValue]) => key === "action" || key === "actionLabel" || isTradeActionValue(fieldValue));
+      const entries = raw.filter(([key, fieldValue]) => !isHiddenSnapshotKey(key) && !isTradeActionValue(fieldValue));
       if (depth > 2) return <span className="text-zinc-500 text-xs">[object]</span>;
       return (
         <div className={`space-y-1 ${depth > 0 ? "pl-2 border-l border-zinc-800" : ""}`}>

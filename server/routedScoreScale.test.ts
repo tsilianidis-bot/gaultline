@@ -53,9 +53,9 @@ describe("routed X/10 score text is converted to /100 (class a)", () => {
     expect(src).toContain("? (canonicalPressure100 === null ? score100Value(null) : String(Math.round(canonicalPressure100)))");
     expect(src).not.toContain("overall?.score?.toFixed(1)");
     const remaining = src.split("\n").filter(line => slashTen.test(line) && (slashTen.lastIndex = 0, true));
-    expect(remaining).toHaveLength(1);
+    expect(remaining).toEqual([]);
     expect(src).not.toContain("regimeAlignmentScore}/10");
-    expect(remaining[0]).toContain("sig.cryptoFactors.liquidityScore.toFixed(1)}/10");
+    expect(src).not.toContain("liquidityScore.toFixed");
   });
 
   it("DayTrade pressure has no 0 fallback and renders — when missing", () => {

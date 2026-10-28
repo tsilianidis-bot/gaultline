@@ -252,7 +252,7 @@ const CRYPTO_META: Record<string, {
 }> = {
   BTC:  { name: "Bitcoin",        score: 62, riskLevel: "Elevated", bias: "Bullish",  momentum: "Stable",       signals: ["Macro Sensitive", "Liquidity Fragile"],      color: "#FF9500" },
   ETH:  { name: "Ethereum",       score: 55, riskLevel: "Moderate", bias: "Bullish",  momentum: "Accelerating", signals: ["Momentum Breakout", "AI Narrative Exposure"], color: "#00D4FF" },
-  SOL:  { name: "Solana",         score: 71, riskLevel: "High",     bias: "Neutral",  momentum: "Decelerating", signals: ["Speculative Acceleration", "Risk-Off Vulnerable"], color: "#FF2D55" },
+  SOL:  { name: "Solana",         score: 71, riskLevel: "High",     bias: "Neutral",  momentum: "Decelerating", signals: ["Speculative Acceleration", "Stressed-regime sensitive"], color: "#FF2D55" },
   AVAX: { name: "Avalanche",      score: 58, riskLevel: "Elevated", bias: "Neutral",  momentum: "Stable",       signals: ["Macro Sensitive"],                            color: "#FFD700" },
   RNDR: { name: "Render",         score: 78, riskLevel: "High",     bias: "Bullish",  momentum: "Accelerating", signals: ["AI Narrative Exposure", "Speculative Acceleration"], color: "#C084FC" },
   HYPE: { name: "Hyperliquid",    score: 82, riskLevel: "Critical", bias: "Bearish",  momentum: "Reversing",    signals: ["Deleveraging Risk", "Liquidity Fragile"],    color: "#FF2D55" },

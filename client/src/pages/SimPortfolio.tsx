@@ -615,7 +615,7 @@ export default function SimPortfolio() {
           {journalEntries.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 gap-2">
               <BookOpen size={24} style={{ color: "#374151" }} />
-              <p className="text-sm" style={{ color: "#6B7280" }}>No journal entries yet. The first entry will be generated on the next daily update.</p>
+              <p className="text-sm" style={{ color: "#6B7280" }}>No journal records yet. The first record is written on the next daily update.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -692,12 +692,12 @@ function PositionCard({ pos }: { pos: {
 } }) {
   const [open, setOpen] = useState(false);
   const qty = parseFloat(pos.quantity);
-  const entry = parseFloat(pos.entryPrice);
+  const fillPrice = parseFloat(pos.entryPrice);
   const current = pos.currentPrice ? parseFloat(pos.currentPrice) : null;
-  const currentValue = current ? qty * current : qty * entry;
-  const totalCost = qty * entry;
+  const currentValue = current ? qty * current : qty * fillPrice;
+  const totalCost = qty * fillPrice;
   const pnl = current ? currentValue - totalCost : 0;
-  const pnlPct = current ? ((current - entry) / entry) * 100 : 0;
+  const pnlPct = current ? ((current - fillPrice) / fillPrice) * 100 : 0;
   const isUp = pnl >= 0;
 
   return (
@@ -730,7 +730,7 @@ function PositionCard({ pos }: { pos: {
       {/* Price row */}
       <div className="flex gap-4 mt-2 flex-wrap">
         <span className="text-xs font-mono" style={{ color: "#6B7280" }}>
-          Entry: <span style={{ color: "#94A3B8" }}>{fmt$(entry)}</span>
+          Fill: <span style={{ color: "#94A3B8" }}>{fmt$(fillPrice)}</span>
         </span>
         {current && (
           <span className="text-xs font-mono" style={{ color: "#6B7280" }}>
