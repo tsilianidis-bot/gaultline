@@ -46,6 +46,14 @@
     <meta name="apple-mobile-web-app-title" content="FAULTLINE" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="preload" as="image" href="/media/brand-cinematic/cinematic-intro-market-poster.webp" fetchpriority="high" />
+    <style>
+      #cinematic-first-paint[hidden] { display: none !important; }
+      #cinematic-first-paint { position: fixed; z-index: 10001; inset: 0; overflow: hidden; background: #030506; color: #e8f7fb; isolation: isolate; }
+      #cinematic-first-paint img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      #cinematic-first-paint button { position: absolute; top: max(1rem, env(safe-area-inset-top)); right: max(1rem, env(safe-area-inset-right)); min-height: 44px; border: 1px solid #65d6e5; padding: .7rem 1rem; color: #e8f7fb; background: rgba(3, 5, 6, .88); cursor: pointer; font: 600 .7rem/1 "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .1em; }
+      #cinematic-first-paint button:focus-visible { outline: 2px solid #e8f7fb; outline-offset: 3px; }
+    </style>
 
     <!-- ── Structured Data (JSON-LD) ──────────────────────────── -->
     <script type="application/ld+json">
@@ -151,7 +159,8 @@
     <!-- ── Fonts ───────────────────────────────────────────────── -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
   </head>
   <body style="background:#020305;color:#F0F4FF;margin:0;padding:0;">
     <!-- Static HTML fallback for crawlers that don't execute JavaScript -->
@@ -185,6 +194,74 @@
         </p>
       </div>
     </noscript>
+    <section id="cinematic-first-paint" role="dialog" aria-modal="true" aria-label="FAULTLINE cinematic intro" hidden>
+      <img src="/media/brand-cinematic/cinematic-intro-market-poster.webp" alt="" fetchpriority="high" />
+      <button id="cinematic-first-paint-skip" type="button" aria-label="Skip intro">SKIP INTRO →</button>
+    </section>
+    <script>
+      (function () {
+        var COMPLETED_KEY = "fl_cinematic_completed_v1";
+        var DEMO_SESSION_KEY = "faultline_demo_session";
+        var shell = document.getElementById("cinematic-first-paint");
+        var skip = document.getElementById("cinematic-first-paint-skip");
+        var failOpenTimer;
+        var publicPaths = ["/blog", "/daily-brief", "/intelligence-library", "/analysis",
+          "/intelligence", "/intel-archive", "/methodology", "/pressure-index", "/legal",
+          "/contact", "/press", "/about", "/platform", "/phoenix-systems", "/glossary",
+          "/pricing", "/r/", "/mobile", "/public-", "/market-crash", "/alt-season",
+          "/bitcoin-", "/ethereum-", "/nvda-", "/pltr-", "/tao-", "/tsla-", "/meta-",
+          "/amd-", "/ai-stocks", "/market-regime", "/market-crash-indicator",
+          "/recession-", "/federal-reserve", "/liquidity-", "/volatility-", "/ai-bubble",
+          "/stock-market-", "/bull-or-bear", "/bull-bear", "/treasury-", "/credit-market",
+          "/is-now-", "/best-market", "/crypto-bull", "/crypto-market", "/bitcoin-vs",
+          "/aapl-", "/amzn-", "/msft-", "/spy-", "/qqq-", "/iwm-", "/dia-",
+          "/learn/", "/vs/", "/stocks/", "/crypto/", "/sitemap"];
+
+        function dismiss() {
+          if (failOpenTimer) window.clearTimeout(failOpenTimer);
+          if (!shell) return;
+          shell.hidden = true;
+          shell.setAttribute("aria-hidden", "true");
+        }
+
+        function shouldShowCinematic() {
+          try {
+            var path = window.location.pathname;
+            var isDemo = path.indexOf("/demo") === 0;
+            if (!isDemo) {
+              try { isDemo = sessionStorage.getItem(DEMO_SESSION_KEY) === "1"; } catch (_error) {}
+            }
+            if (isDemo) return false;
+            if (publicPaths.some(function (prefix) { return path.indexOf(prefix) === 0; })) return false;
+            if (path.indexOf("/app/") === 0 && path !== "/app/dashboard" && path !== "/app/") return false;
+            var completed = localStorage.getItem(COMPLETED_KEY);
+            if (!completed && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+              localStorage.setItem(COMPLETED_KEY, "1");
+              return false;
+            }
+            return !completed;
+          } catch (_error) {
+            return false;
+          }
+        }
+
+        if (!shouldShowCinematic()) {
+          dismiss();
+          return;
+        }
+
+        shell.hidden = false;
+        shell.removeAttribute("aria-hidden");
+        skip.addEventListener("click", function () {
+          try { localStorage.setItem(COMPLETED_KEY, "1"); } catch (_error) {}
+          window.dispatchEvent(new Event("faultline:cinematic-shell-skip"));
+          dismiss();
+        });
+        window.addEventListener("faultline:cinematic-shell-dismiss", dismiss, { once: true });
+        // A broken or unavailable app must never strand a visitor behind the static shell.
+        failOpenTimer = window.setTimeout(dismiss, 10000);
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
