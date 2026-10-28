@@ -21,7 +21,6 @@ import { trpc } from "@/lib/trpc";
 import { PremiumGateFull } from "@/components/PremiumGate";
 import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { TickerChip } from "@/components/TickerActionMenu";
-import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 import {
   BarChart2, RefreshCw, TrendingUp, TrendingDown, Activity,
   Filter, Volume2, Zap, ArrowUpCircle, ArrowDownCircle, Layers,
@@ -531,10 +530,6 @@ function StockHeatmapInner() {
 
       {/* ── Content ────────────────────────────────────────── */}
       <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "14px 16px 40px" }}>
-        <div style={{ marginBottom: 14 }}>
-          <PentagonalThesisNarrative surface="sector-heatmap" compact />
-        </div>
-
         {/* Cross-tab strip */}
         <CrossTabStrip gainers={gainersQuery.data} losers={losersQuery.data} volume={volumeQuery.data} />
 

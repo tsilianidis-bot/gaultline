@@ -6,7 +6,7 @@ export default function AIStocksDashboard() {
     <>
     <SEOLandingPage
       seo={{
-        title: "AI Stocks Dashboard — Real-Time AI Stock Signals & Risk Scores | FAULTLINE",
+        title: "AI Stocks Dashboard — AI-Exposed Equities | FAULTLINE",
         description: "A guide to AI-exposed equities. Individual stock conclusions use the shared Pentagonal Thesis. This page does not publish regime-fit scores or trade instructions.",
         canonical: "/ai-stocks-dashboard",
       }}
@@ -27,15 +27,9 @@ export default function AIStocksDashboard() {
       contentSections={[
         {
           heading: "The AI Stock Universe — A Taxonomy of Exposure",
-          body: `The term 'AI stock' encompasses a wide range of companies with very different risk profiles, revenue models, and sensitivity to the AI narrative. FAULTLINE classifies AI stocks into four categories:
+          body: `Companies often discussed alongside AI spending do different work. Some sell compute hardware, such as NVIDIA and AMD. Some sell software used to deploy models, such as Palantir and Microsoft. Some run large platforms that also spend on AI, such as Meta, Alphabet, Amazon, and Tesla. Some supply components or manufacturing used by those businesses, such as Broadcom and TSMC.
 
-AI Infrastructure (Highest AI Exposure): Companies that supply the physical infrastructure for AI — primarily GPUs, custom silicon, and data center components. NVIDIA (NVDA) is the dominant player. AMD (AMD) is the primary alternative. These companies have the highest direct revenue exposure to AI infrastructure spending and the highest sensitivity to AI capex cycle changes.
-
-AI Software Platforms (High AI Exposure): Companies that build software platforms enabling AI deployment and decision intelligence. Palantir (PLTR) is the leading example, with its AIP platform enabling enterprise and government AI deployment. Microsoft (MSFT) with Copilot, Salesforce (CRM) with Einstein, and ServiceNow (NOW) with AI workflows also belong to this category.
-
-AI-Powered Platforms (Moderate-High AI Exposure): Large technology platforms that are deploying AI to enhance their core products and services. Meta (META) with AI-powered advertising and Llama models, Alphabet (GOOGL) with Gemini and AI search, Amazon (AMZN) with AWS AI services, and Tesla (TSLA) with FSD and Optimus belong to this category. Their AI exposure is real but secondary to their core business fundamentals.
-
-AI-Adjacent (Moderate AI Exposure): Companies that benefit from AI adoption without being primarily AI companies. Broadcom (AVGO) with custom AI silicon, TSMC (TSM) as the primary AI chip manufacturer, and cloud infrastructure providers (AMZN, MSFT, GOOGL) as AI compute providers belong to this category.`,
+These notes describe the business. They are not a rating, a ranking, or a live score, and they do not say which names are more exposed than others.`,
         },
         {
           heading: "AI Concentration Risk — The Systemic Dimension",
@@ -45,7 +39,7 @@ When concentrated positions unwind, the cascade effect on index-level returns is
 
 This page does not measure that concentration as a live score and does not say which names to buy or sell. An individual name is read through the shared thesis, which lists missing inputs as gaps.
 
-The key insight is that AI stock analysis cannot be done in isolation from the systemic concentration risk. A stock that looks attractive on individual metrics may still be a poor risk-adjusted investment if it is part of a highly concentrated sector that is vulnerable to a systemic unwind.`,
+A name can look reasonable on its own reported figures and still sit inside a concentrated index. This page does not turn that background into a ranking or a trade.`,
         },
         {
           heading: "How to Use the AI Stocks Dashboard",
@@ -72,8 +66,8 @@ No bubble rating: This page does not publish an exposure score, and it does not 
           answer: "No. It does not publish an exposure rating or a crash ranking. An individual name is read through the shared thesis, which leaves missing inputs as gaps.",
         },
         {
-          question: "How does FAULTLINE classify AI stocks?",
-          answer: "FAULTLINE classifies AI stocks into four categories: AI Infrastructure (NVDA, AMD — highest direct AI revenue exposure), AI Software Platforms (PLTR, MSFT — software enabling AI deployment), AI-Powered Platforms (META, GOOGL, AMZN, TSLA — AI enhancing core businesses), and AI-Adjacent (AVGO, TSM — benefiting from AI adoption). Each category has a different risk profile and sensitivity to AI narrative changes.",
+          question: "Does this page sort AI stocks into exposure tiers?",
+          answer: "No. The notes below describe what the businesses sell. They are not exposure tiers and they are not a ranking.",
         },
         {
           question: "What is the difference between AI infrastructure stocks and AI software stocks?",

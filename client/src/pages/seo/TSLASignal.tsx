@@ -7,7 +7,7 @@ export default function TSLASignal() {
       companyName="Tesla, Inc."
       sector="Electric Vehicles / AI & Robotics"
       description="Tesla stock signal analysis"
-      seoTitle="TSLA Signal — Tesla Stock Analysis, Risk Score & Key Levels | FAULTLINE"
+      seoTitle="TSLA — Tesla background and shared stock thesis | FAULTLINE"
       seoDescription="Real-time TSLA signal analysis: Tesla's macro alignment score, AI and EV exposure rating, key support and resistance levels, bull and bear case scenarios, and regime-based signal classification."
       canonical="/stock/tsla"
       accentColor="#E31937"
@@ -52,8 +52,8 @@ Historical Volatility Context: TSLA is one of the most volatile large-cap stocks
         { question: "Is TSLA a buy or sell right now?", answer: "FAULTLINE's TSLA signal classification is available in real time on the Signals tab, based on macro regime alignment, EV demand cycle, AI optionality momentum, and technical structure. This is not investment advice." },
         { question: "What is Tesla's AI exposure?", answer: "Tesla's AI exposure comes primarily from Full Self-Driving (FSD) — its autonomous driving software — and Optimus, its humanoid robot program. Both are embedded as optionality in TSLA's valuation. FAULTLINE tracks AI narrative momentum as one of the inputs to the TSLA signal." },
         { question: "How does the Federal Reserve affect TSLA?", answer: "Higher interest rates increase monthly payments on financed EV purchases, reducing demand. They also increase the discount rate applied to TSLA's future earnings and optionality value, compressing the stock's valuation multiple. FAULTLINE's Federal Reserve Tracker monitors Fed policy as part of the TSLA macro alignment score." },
-        { question: "What is TSLA's biggest risk in 2026?", answer: "Based on FAULTLINE's analysis, TSLA's biggest risks in 2026 are EV competition intensification (particularly from BYD and legacy OEMs), FSD and Optimus execution risk (if AI optionality milestones are missed), and macro regime sensitivity (high-multiple growth stocks are vulnerable in HIGH STRESS environments)." },
-        { question: "How volatile is TSLA compared to the S&P 500?", answer: "TSLA has a historical beta of approximately 2.0-2.5 relative to the S&P 500, meaning it tends to move 2-2.5x the magnitude of the broader market. Drawdowns from cycle highs have exceeded 70% in bear market phases. This elevated volatility is a core feature of TSLA's risk profile that FAULTLINE accounts for in the risk score." },
+        { question: "What does this TSLA page refuse to rank?", answer: "It does not name a single largest threat for a future year, and it does not publish a separate score. Competition, vehicle programs, and macro conditions stay background until the shared thesis has fresh evidence." },
+        { question: "How volatile is TSLA compared to the S&P 500?", answer: "TSLA has historically moved more than the S&P 500 in both directions, including deep drawdowns from cycle highs. This page does not turn that history into a score. The stock read is the shared thesis." },
       ]}
       internalLinks={[
         { label: "NVDA SIGNAL", href: "/stock/nvda", desc: "NVIDIA — AI infrastructure signal analysis." },

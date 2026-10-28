@@ -228,7 +228,6 @@ function OverviewTab({ report }: { report: DayTradeReport }) {
       {!isNoTrade && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "10px" }}>
           {[
-            { label: "Confidence", value: `${report.confidence}/100`, color: confColor(report.confidence) },
             { label: "Execution Grade", value: `${report.executionGrade} (${report.executionScore})`, color: gradeColor(report.executionGrade) },
             { label: "Risk/Reward", value: `${report.riskRewardRatio.toFixed(1)}:1`, color: "#F0F4FF" },
             { label: "Risk Level", value: report.riskLevel, color: report.riskLevel === "Low" ? "#00FF88" : report.riskLevel === "Medium" ? "#FFD700" : "#FF6B6B" },
@@ -275,7 +274,7 @@ function OverviewTab({ report }: { report: DayTradeReport }) {
 }
 
 // ── Trade Setup Tab ───────────────────────────────────────────
-function TradeSetupTab({ report }: { report: DayTradeReport }) {
+export function TradeSetupTab({ report }: { report: DayTradeReport }) {
   const isNoTrade = report.setupType === "NO_TRADE";
 
   if (isNoTrade) {
@@ -294,24 +293,7 @@ function TradeSetupTab({ report }: { report: DayTradeReport }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-      {/* Entry / Targets / Stop */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "10px" }}>
-        <div style={CARD}>
-          <div style={LABEL}>Entry Zone</div>
-          <div style={VALUE}>{fmt(report.entryZoneLow)} – {fmt(report.entryZoneHigh)}</div>
-        </div>
-        <div style={{ ...CARD, borderColor: "rgba(0,255,136,0.2)" }}>
-          <div style={LABEL}>Target 1</div>
-          <div style={{ ...VALUE, color: "#00FF88" }}>{fmt(report.target1)}</div>
-        </div>
-        <div style={{ ...CARD, borderColor: "rgba(0,212,255,0.2)" }}>
-          <div style={LABEL}>Target 2</div>
-          <div style={{ ...VALUE, color: "#00D4FF" }}>{fmt(report.target2)}</div>
-        </div>
-        <div style={{ ...CARD, borderColor: "rgba(255,107,107,0.2)" }}>
-          <div style={LABEL}>Stop Loss</div>
-          <div style={{ ...VALUE, color: "#FF6B6B" }}>{fmt(report.stopLoss)}</div>
-        </div>
         <div style={{ ...CARD, borderColor: "rgba(255,149,0,0.2)" }}>
           <div style={LABEL}>Invalidation</div>
           <div style={{ ...VALUE, color: "#FF9500" }}>{fmt(report.invalidationLevel)}</div>
@@ -462,7 +444,7 @@ function RiskAnalysisTab({ report }: { report: DayTradeReport }) {
 }
 
 // ── AI Analysis Tab ───────────────────────────────────────────
-function AIAnalysisTab({ report }: { report: DayTradeReport }) {
+export function AIAnalysisTab({ report }: { report: DayTradeReport }) {
   const isNoTrade = report.setupType === "NO_TRADE";
   const verdictColor = isNoTrade ? '#6B7280' : report.direction === 'bullish' ? '#00FF88' : '#FF6B6B';
   const verdictLabel = isNoTrade ? 'NO TRADE' : report.direction === 'bullish' ? 'BULLISH SETUP' : 'BEARISH SETUP';
@@ -477,7 +459,7 @@ function AIAnalysisTab({ report }: { report: DayTradeReport }) {
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(100,116,139,0.6)', marginBottom: '4px' }}>FAULTLINE VERDICT</div>
             <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: '22px', color: verdictColor, letterSpacing: '0.06em', textShadow: `0 0 20px ${verdictColor}50` }}>{verdictLabel}</div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(148,163,184,0.7)', marginTop: '3px' }}>
-              {report.setupType} · {report.executionGrade} grade · {report.confidence}/100 confidence
+              {report.setupType} · {report.executionGrade} grade
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
@@ -529,20 +511,6 @@ function AIAnalysisTab({ report }: { report: DayTradeReport }) {
           )}
         </div>
       )}
-
-      {/* ── 6. CONFIDENCE ──────────────────────────────────────── */}
-      <div style={{ ...CARD, background: 'rgba(0,212,255,0.03)', borderColor: 'rgba(0,212,255,0.15)' }}>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(0,212,255,0.6)', marginBottom: '8px' }}>CONFIDENCE BREAKDOWN</div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
-          <div style={{ flex: 1, height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${report.confidence}%`, background: report.confidence >= 70 ? '#00FF88' : report.confidence >= 50 ? '#00D4FF' : '#FF9500', borderRadius: '2px', transition: 'width 0.5s ease' }} />
-          </div>
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '16px', color: report.confidence >= 70 ? '#00FF88' : report.confidence >= 50 ? '#00D4FF' : '#FF9500', minWidth: '40px', textAlign: 'right' }}>{report.confidence}%</div>
-        </div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.5)' }}>
-          {report.confidence >= 70 ? 'High conviction — setup quality meets institutional threshold' : report.confidence >= 50 ? 'Moderate conviction — proceed with reduced size' : 'Low conviction — wait for better entry or skip'}
-        </div>
-      </div>
 
       <div style={{ ...CARD, background: "rgba(255,170,0,0.04)", borderColor: "rgba(255,170,0,0.15)" }}>
         <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>

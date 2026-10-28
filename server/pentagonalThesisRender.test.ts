@@ -1,7 +1,66 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { buildPentagonalThesis, type PentagonalThesisInput } from "../shared/pentagonalThesis";
+import { buildPentagonalThesis, type PentagonalThesis, type PentagonalThesisInput } from "../shared/pentagonalThesis";
+
+const memory = new Map<string, string>();
+const storage = {
+  getItem: (key: string) => memory.get(key) ?? null,
+  setItem: (key: string, value: string) => { memory.set(key, value); },
+  removeItem: (key: string) => { memory.delete(key); },
+  clear: () => memory.clear(),
+  key: () => null,
+  length: 0,
+};
+const browser = {
+  location: { search: "", href: "http://localhost/app/signals", pathname: "/app/signals" },
+  history: { replaceState: () => {}, pushState: () => {} },
+  addEventListener: () => {},
+  removeEventListener: () => {},
+  setTimeout: globalThis.setTimeout.bind(globalThis),
+  clearTimeout: globalThis.clearTimeout.bind(globalThis),
+  setInterval: globalThis.setInterval.bind(globalThis),
+  clearInterval: globalThis.clearInterval.bind(globalThis),
+  localStorage: storage,
+  innerWidth: 1280,
+  innerHeight: 800,
+  document: {
+    activeElement: null,
+    querySelector: () => null,
+    createElement: () => ({ style: {}, setAttribute() {}, appendChild() {} }),
+  },
+};
+Object.assign(globalThis, { window: browser, localStorage: storage });
+
+const shared: { thesis: PentagonalThesis | null } = { thesis: null };
+
+const dayTradeReport = {
+  symbol: "NVDA",
+  name: "NVIDIA",
+  assetType: "stock" as const,
+  currentPrice: 102,
+  changePercent: 1.2,
+  setupType: "BREAKOUT",
+  direction: "bullish" as const,
+  confidence: 91,
+  executionScore: 88,
+  executionGrade: "A" as const,
+  riskRewardRatio: 2.4,
+  riskLevel: "Medium",
+  liquidityRating: "High",
+  entryZoneLow: 100.11,
+  entryZoneHigh: 101.22,
+  target1: 110.33,
+  target2: 120.44,
+  stopLoss: 95.55,
+  invalidationLevel: 90,
+  expectedHoldMinutes: 45,
+  intradayTrend: "Up",
+  marketContext: "Quiet tape",
+  vwapStatus: "Above",
+  momentumRating: 70,
+  generatedAt: Date.parse("2026-10-27T15:00:00.000Z"),
+};
 
 const detail = {
   observedAt: Date.parse("2026-10-27T15:00:00.000Z"),
@@ -56,8 +115,21 @@ const detail = {
 vi.mock("wouter", () => ({
   useRoute: () => [true, { symbol: "NVDA" }],
   useParams: () => ({ symbol: "pltr" }),
+  useSearch: () => "?symbol=NVDA&autorun=1",
   useLocation: () => ["/", () => {}],
   Link: (props: { children?: unknown }) => props.children ?? null,
+}));
+
+vi.mock("@/contexts/EngineContext", () => ({
+  useEngine: () => ({
+    output: { regime: { label: "MODERATE RISK", color: "#00D4FF", description: "Test regime" }, overall: { score: 4 } },
+    integrityLabel: "UNAVAILABLE",
+  }),
+}));
+
+vi.mock("@/contexts/AshaContext", () => ({
+  useRegisterAshaContext: () => {},
+  useAshaContext: () => ({ pageContext: null, setPageContext: () => {}, threadHistory: [], appendThreadExchange: () => {} }),
 }));
 
 vi.mock("@/_core/hooks/useAuth", () => ({
@@ -65,12 +137,13 @@ vi.mock("@/_core/hooks/useAuth", () => ({
 }));
 
 vi.mock("@/contexts/TickerStore", () => ({
-  useTickerStore: () => ({ current: null, setTicker: () => {} }),
+  useTickerStore: () => ({ current: { ticker: "NVDA", name: "NVIDIA", assetType: "stock" }, setTicker: () => {} }),
 }));
 
 vi.mock("@/lib/trpc", () => ({
   trpc: new Proxy({}, {
     get(_target, namespace) {
+      if (namespace === "useUtils") return () => new Proxy({}, { get: () => ({ invalidate: async () => {} }) });
       return new Proxy({}, {
         get(_inner, method) {
           if (namespace === "signals" && method === "getSignalVisualDetail") {
@@ -85,9 +158,33 @@ vi.mock("@/lib/trpc", () => ({
               }),
             };
           }
+          if (namespace === "pentagonalThesis" && method === "forSymbol") {
+            return {
+              useQuery: () => ({
+                data: shared.thesis,
+                isLoading: false,
+                isError: false,
+                isFetching: false,
+                refetch: () => Promise.resolve(),
+                error: null,
+              }),
+            };
+          }
+          if (namespace === "dayTrade" && method === "symbolSetup") {
+            return {
+              useQuery: () => ({
+                data: dayTradeReport,
+                isLoading: false,
+                isError: false,
+                error: null,
+                isFetching: false,
+                refetch: () => Promise.resolve(),
+              }),
+            };
+          }
           return {
-            useQuery: () => ({ data: null, isLoading: false, isError: false, isFetching: false, refetch: () => Promise.resolve() }),
-            useMutation: () => ({ mutate: () => {} }),
+            useQuery: () => ({ data: null, isLoading: false, isError: false, isFetching: false, refetch: () => Promise.resolve(), error: null }),
+            useMutation: () => ({ mutate: () => {}, mutateAsync: async () => ({}), reset: () => {}, isPending: false, data: null, error: null }),
           };
         },
       });
@@ -132,9 +229,25 @@ function visibleText(markup: string): string {
     .trim();
 }
 
+function attributionLines(markup: string): string[] {
+  const lines: string[] = [];
+  const pattern = /data-thesis-attribution="[^"]+"[^>]*>([\s\S]*?)<\/p>/g;
+  for (const match of markup.matchAll(pattern)) lines.push(visibleText(match[1] ?? ""));
+  return lines;
+}
+
+const FORBIDDEN_PAGE_PHRASES = [
+  "fall 50%",
+  "ai bubble exposure",
+  "recession probability",
+  "biggest risk in 2026",
+  "risk score",
+];
+
 describe("Pentagonal thesis render consistency", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    shared.thesis = buildPentagonalThesis({ ...thesisInput(), symbol: "NVDA" });
   });
 
   it("renders the same thesis text on two surfaces, including compact attribution", async () => {
@@ -248,5 +361,68 @@ describe("Pentagonal thesis render consistency", () => {
     expect(nvda).not.toContain("regime fit score");
     expect(nvda).toContain("shared Pentagonal Thesis");
     expect(nvda).toContain("data-pentagonal-thesis=\"stock-signal\"");
+    expect(ai.toLowerCase()).not.toContain("risk scores");
+    expect(ai).not.toContain("poor risk-adjusted investment");
+    expect(ai.toLowerCase()).not.toContain("four categories");
+    expect(ai).not.toContain("Highest AI Exposure");
+  });
+
+  it("does not render the removed stock-page claims", async () => {
+    const pages = await Promise.all([
+      import("../client/src/pages/seo/NVDASignal"),
+      import("../client/src/pages/seo/METASignal"),
+      import("../client/src/pages/seo/TSLASignal"),
+      import("../client/src/pages/seo/PLTRSignal"),
+    ]);
+    for (const page of pages) {
+      const text = visibleText(renderToStaticMarkup(createElement(page.default))).toLowerCase();
+      for (const phrase of FORBIDDEN_PAGE_PHRASES) expect(text, phrase).not.toContain(phrase);
+      expect(text).toContain("shared pentagonal thesis");
+    }
+  });
+
+  it("renders one router thesis on Signals, SignalDetail, and symbol intelligence", async () => {
+    expect(shared.thesis).not.toBeNull();
+    const [{ default: Signals }, { default: SignalDetail }, symbolPage, { TradeSetupTab, AIAnalysisTab }] = await Promise.all([
+      import("../client/src/pages/Signals"),
+      import("../client/src/pages/SignalDetail"),
+      import("../client/src/pages/UniversalSymbolIntelligence"),
+      import("../client/src/pages/UniversalSymbolIntelligence"),
+    ]);
+    const signals = renderToStaticMarkup(createElement(Signals));
+    const detailMarkup = renderToStaticMarkup(createElement(SignalDetail));
+    const intelligence = renderToStaticMarkup(createElement(symbolPage.UniversalSymbolIntelligence));
+    const headline = shared.thesis!.headline;
+    expect(headline.length).toBeGreaterThan(0);
+    expect(visibleText(signals)).toContain(headline);
+    expect(visibleText(detailMarkup)).toContain(headline);
+    expect(visibleText(intelligence)).toContain(headline);
+    expect(detailMarkup).not.toContain("Reading the shared stock thesis");
+    expect(detailMarkup).not.toContain("Pick a stock");
+    const signalsLines = attributionLines(signals);
+    const detailLines = attributionLines(detailMarkup);
+    const intelligenceLines = attributionLines(intelligence);
+    expect(signalsLines.length).toBeGreaterThan(0);
+    expect(detailLines).toEqual(signalsLines);
+    expect(intelligenceLines).toEqual(signalsLines);
+    expect(signalsLines.join(" ")).toContain("fact");
+    expect(signals).not.toContain("algorithmic estimates");
+    expect(signals).not.toContain("probabilistic estimates");
+    expect(signals).not.toContain("KEY PRICE LEVELS");
+    expect(intelligence).not.toContain("91/100");
+    expect(intelligence).not.toContain(">Confidence<");
+    const trade = renderToStaticMarkup(createElement(TradeSetupTab, { report: dayTradeReport }));
+    const analysis = renderToStaticMarkup(createElement(AIAnalysisTab, { report: dayTradeReport }));
+    for (const markup of [trade, analysis, intelligence]) {
+      expect(markup).not.toContain("Entry Zone");
+      expect(markup).not.toContain("Target 1");
+      expect(markup).not.toContain("Target 2");
+      expect(markup).not.toContain("Stop Loss");
+      expect(markup).not.toContain("91/100");
+      expect(markup).not.toContain("CONFIDENCE BREAKDOWN");
+    }
+    expect(trade).not.toContain("100.11");
+    expect(trade).not.toContain("110.33");
+    expect(trade).not.toContain("95.55");
   });
 });

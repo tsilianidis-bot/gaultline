@@ -1398,7 +1398,7 @@ function SignalsInner() {
         color: 'rgba(55,65,81,0.5)',
         textAlign: 'center', lineHeight: 1.5,
       }}>
-        Probabilistic macro-regime intelligence. Not financial advice. Trading signals are algorithmic estimates only — not investment recommendations. Past performance does not guarantee future results.
+        Market scanner context only. Not financial advice. This page does not publish a target, a stop, or an entry. Past results are not a forecast.
       </div>
 
       </>)}
@@ -1869,8 +1869,8 @@ function AsymmetricOpportunitiesView({
         color: 'rgba(55,65,81,0.5)',
         textAlign: 'center', lineHeight: 1.5,
       }}>
-        Asymmetric opportunity scores are algorithmic estimates based on technical and macro signals. Not financial advice.
-        Upside/downside targets are probabilistic estimates, not guarantees. Always conduct your own research before trading.
+        This list is a scanner of unusual moves. It does not publish an upside or downside figure. Not financial advice.
+        The stock conclusion, when a symbol is selected, is the shared thesis above.
       </div>
     </div>
   );

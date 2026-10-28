@@ -102,13 +102,28 @@ export interface YahooChartSessionMeta {
   currentTradingPeriod?: { regular?: { start?: number; end?: number } };
 }
 
+const REGULAR_CLOSE_MINUTE = 16 * 60;
+const LATEST_US_CASH_CLOSE_UTC_MINUTE = 21 * 60;
+
+function calendarParts(ms: number, offsetSeconds: number): { date: string; minutes: number } {
+  const shifted = new Date(ms + offsetSeconds * 1000);
+  const month = String(shifted.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(shifted.getUTCDate()).padStart(2, "0");
+  return {
+    date: `${shifted.getUTCFullYear()}-${month}-${day}`,
+    minutes: shifted.getUTCHours() * 60 + shifted.getUTCMinutes(),
+  };
+}
+
 /**
  * Drops the in-progress regular-session bar so callers that describe a
  * "latest completed daily close" do not keep today's unfinished candle.
  * After the session end, the bar is a completed close and is kept.
  * Midnight-UTC stamps that belong to the session are included via an 18-hour
- * lookback from the regular-session start. Without session metadata the
- * series is unchanged.
+ * lookback from the regular-session start.
+ * When Yahoo omits currentTradingPeriod, a last bar dated today in exchange
+ * time is dropped at or before 16:00 local. Without gmtoffset, the same
+ * fail-safe uses UTC and treats 21:00 UTC as the latest US cash close.
  */
 export function dropOpenSessionBar<T extends { timestamp: number }>(
   bars: T[],
@@ -118,11 +133,23 @@ export function dropOpenSessionBar<T extends { timestamp: number }>(
   if (bars.length === 0) return bars;
   const start = meta?.currentTradingPeriod?.regular?.start;
   const end = meta?.currentTradingPeriod?.regular?.end;
-  if (typeof start !== "number" || typeof end !== "number" || !Number.isFinite(start) || !Number.isFinite(end)) return bars;
-  if (nowMs >= end * 1000) return bars;
-  const windowStart = start * 1000 - 18 * 60 * 60 * 1000;
   const last = bars[bars.length - 1]!;
-  if (last.timestamp >= windowStart && last.timestamp < end * 1000) return bars.slice(0, -1);
+  if (typeof start === "number" && typeof end === "number" && Number.isFinite(start) && Number.isFinite(end)) {
+    if (nowMs >= end * 1000) return bars;
+    const windowStart = start * 1000 - 18 * 60 * 60 * 1000;
+    if (last.timestamp >= windowStart && last.timestamp < end * 1000) return bars.slice(0, -1);
+    return bars;
+  }
+  const offset = meta?.gmtoffset;
+  if (typeof offset === "number" && Number.isFinite(offset)) {
+    const nowLocal = calendarParts(nowMs, offset);
+    const barLocal = calendarParts(last.timestamp, offset);
+    if (barLocal.date === nowLocal.date && nowLocal.minutes <= REGULAR_CLOSE_MINUTE) return bars.slice(0, -1);
+    return bars;
+  }
+  const nowUtc = calendarParts(nowMs, 0);
+  const barUtc = calendarParts(last.timestamp, 0);
+  if (barUtc.date === nowUtc.date && nowUtc.minutes <= LATEST_US_CASH_CLOSE_UTC_MINUTE) return bars.slice(0, -1);
   return bars;
 }
 

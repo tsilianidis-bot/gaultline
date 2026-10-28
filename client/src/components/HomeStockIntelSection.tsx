@@ -159,19 +159,19 @@ export default function HomeStockIntelSection() {
           textAlign: 'center', margin: '0 auto 14px', maxWidth: '520px',
           letterSpacing: '0.02em',
         }}>
-          FAULTLINE combines live market data, momentum analysis, volatility conditions, liquidity trends,
-          and macroeconomic intelligence to classify stocks within the broader market environment.
+          The stock read on this page is the shared Pentagonal Thesis. It uses the observations that are
+          present and leaves missing inputs as gaps.
         </p>
 
         {/* Two-column capability pills */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', maxWidth: '480px', margin: '0 auto' }}>
           {[
-            ['Broader Market Conditions', '#00D4FF'],
-            ['Individual Stock Opportunities', '#00FF88'],
-            ['Momentum Classification', '#FFD700'],
-            ['Macro Regime Alignment', '#FF9500'],
-            ['Volatility & Liquidity Signals', '#FF2D55'],
-            ['AI Concentration Exposure', '#00D4FF'],
+            ['Shared stock thesis', '#00D4FF'],
+            ['Observed quotes', '#00FF88'],
+            ['Completed daily bars', '#FFD700'],
+            ['Scenario context', '#FF9500'],
+            ['Source timestamps', '#FF2D55'],
+            ['Gaps stay gaps', '#00D4FF'],
           ].map(([label, c]) => (
             <div key={label} style={{
               display: 'flex', alignItems: 'center', gap: '6px',

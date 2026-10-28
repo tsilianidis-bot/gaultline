@@ -60,7 +60,6 @@ const SURFACES = [
   "client/src/pages/seo/AIStocksDashboard.tsx",
   "client/src/pages/seo/DynamicStockPage.tsx",
   "client/src/pages/seo/StockSignalPage.tsx",
-  "client/src/pages/StockHeatmap.tsx",
   "client/src/pages/Now.tsx",
   "client/src/pages/Why.tsx",
   "client/src/pages/Outlook.tsx",
@@ -248,6 +247,10 @@ describe("Pentagonal Thesis engine", () => {
     expect(readFileSync(resolve(root, "server/pentagonalThesisCompose.ts"), "utf8")).not.toContain("observedAt: new Date()");
     expect(readFileSync(resolve(root, "client/src/components/HomeStockIntelSection.tsx"), "utf8")).not.toContain("495+ MORE ASSETS LOCKED");
     expect(readFileSync(resolve(root, "client/src/components/HomeStockIntelSection.tsx"), "utf8")).not.toContain("Signal Classification System");
+    expect(readFileSync(resolve(root, "client/src/components/HomeStockIntelSection.tsx"), "utf8")).not.toContain("Momentum Classification");
+    expect(readFileSync(resolve(root, "client/src/pages/StockHeatmap.tsx"), "utf8")).not.toContain("PentagonalThesisNarrative");
+    expect(migration).toContain("next free");
+    expect(migration).toContain("idx after 0074");
   });
 
   it("rejects a mixed-age bar series and keeps only the contiguous recent tail", () => {
@@ -314,6 +317,23 @@ describe("Pentagonal Thesis engine", () => {
     const openBar = { timestamp: start * 1000, close: 2 };
     expect(dropOpenSessionBar([completed, openBar], meta, (start + 60) * 1000)).toEqual([completed]);
     expect(dropOpenSessionBar([completed, openBar], meta, (end + 60) * 1000)).toEqual([completed, openBar]);
+  });
+
+  it("drops today's bar when Yahoo omits the session window", () => {
+    const offset = -4 * 60 * 60;
+    const prior = { timestamp: Date.parse("2026-10-27T18:00:00.000Z"), close: 1 };
+    const todayBar = { timestamp: Date.parse("2026-10-28T18:00:00.000Z"), close: 2 };
+    const during = Date.parse("2026-10-28T19:00:00.000Z");
+    const atClose = Date.parse("2026-10-28T20:00:00.000Z");
+    const afterClose = Date.parse("2026-10-28T20:01:00.000Z");
+    expect(dropOpenSessionBar([prior, todayBar], { gmtoffset: offset }, during)).toEqual([prior]);
+    expect(dropOpenSessionBar([prior, todayBar], { gmtoffset: offset }, atClose)).toEqual([prior]);
+    expect(dropOpenSessionBar([prior, todayBar], { gmtoffset: offset }, afterClose)).toEqual([prior, todayBar]);
+    expect(dropOpenSessionBar([prior], { gmtoffset: offset }, during)).toEqual([prior]);
+    const utcBar = { timestamp: Date.parse("2026-10-28T14:30:00.000Z"), close: 3 };
+    expect(dropOpenSessionBar([prior, utcBar], {}, Date.parse("2026-10-28T20:00:00.000Z"))).toEqual([prior]);
+    expect(dropOpenSessionBar([prior, utcBar], {}, Date.parse("2026-10-28T21:00:00.000Z"))).toEqual([prior]);
+    expect(dropOpenSessionBar([prior, utcBar], undefined, Date.parse("2026-10-28T21:01:00.000Z"))).toEqual([prior, utcBar]);
   });
 
   it("refuses a plan that would rewrite the prior record", () => {

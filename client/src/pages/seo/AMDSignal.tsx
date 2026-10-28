@@ -7,7 +7,7 @@ export default function AMDSignal() {
       companyName="Advanced Micro Devices, Inc."
       sector="Semiconductors / AI & Data Center"
       description="AMD stock signal analysis"
-      seoTitle="AMD Signal — Advanced Micro Devices Stock Analysis, AI Risk Score & Key Levels | FAULTLINE"
+      seoTitle="AMD — Advanced Micro Devices background and shared stock thesis | FAULTLINE"
       seoDescription="Real-time AMD signal analysis: Advanced Micro Devices' macro alignment score, AI GPU exposure rating, data center cycle sensitivity, key support and resistance levels, and regime-based signal classification."
       canonical="/stock/amd"
       accentColor="#ED1C24"
