@@ -23,6 +23,7 @@ import {
 } from '@/lib/watchlist';
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
+import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -456,6 +457,9 @@ export default function Watchlist() {
         />
       )}
 
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "16px 16px 0" }}>
+        <PentagonalThesisNarrative surface="watchlist" compact />
+      </div>
       <PageHeader
         title="Watchlist"
         subtitle="Pin any macro indicator and set a custom threshold. The card is flagged on this page when the latest published reading (delayed or last close) crosses it."

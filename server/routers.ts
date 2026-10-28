@@ -1,6 +1,6 @@
 import { COOKIE_NAME } from "@shared/const";
 import { ENV } from "./_core/env";
-import { analyticsRouter, blogRouter, billingRouter, adminRouter, outlookRouter, organicContentRouter, smartDiscoveryRouter, fmosRouter, dailyBriefRouter, intelligenceValidationRouter, marketIntelligenceRouter, conversationIntelligenceRouter, seismographRouter, ashaMemoryRouter, promoRouter, gscRouter, marketStateRouter, timeMachineRouter, marketsRouter, institutionalMemoryRouter, systemicRegimeRouter, sectorRotationRouter, intelligenceEvidenceRouter } from "./routers/index";
+import { analyticsRouter, blogRouter, billingRouter, adminRouter, outlookRouter, organicContentRouter, smartDiscoveryRouter, fmosRouter, dailyBriefRouter, intelligenceValidationRouter, marketIntelligenceRouter, conversationIntelligenceRouter, seismographRouter, ashaMemoryRouter, promoRouter, gscRouter, marketStateRouter, timeMachineRouter, marketsRouter, institutionalMemoryRouter, systemicRegimeRouter, sectorRotationRouter, intelligenceEvidenceRouter, pentagonalThesisRouter } from "./routers/index";
 import { intelligenceAccountabilityRouter } from "./routers/intelligenceAccountability";
 import { notifyOwner } from "./_core/notification";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -125,6 +125,7 @@ export const appRouter = router({
   sectorRotation: sectorRotationRouter,
   intelligenceEvidence: intelligenceEvidenceRouter,
   intelligenceAccountability: intelligenceAccountabilityRouter,
+  pentagonalThesis: pentagonalThesisRouter,
 
   auth: router({
     me: publicProcedure.query(opts => toPublicAuthUser(opts.ctx.user)),

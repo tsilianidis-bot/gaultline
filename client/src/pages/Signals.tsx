@@ -1,7 +1,7 @@
 /* ============================================================
    FAULTLINE — Signals Tab
-   Macro-regime-aware market scanner with live Yahoo Finance + Polygon.io data
-   + actionable BUY / SELL / HOLD trading signals.
+   Market scanner. Stock conclusions use the shared Pentagonal Thesis.
+   This page does not render a separate buy, sell, or confidence call.
    ============================================================ */
 import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
@@ -26,7 +26,6 @@ import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner";
 import { ShareReportButton } from "@/components/ShareReportButton";
-import { SizingCalculator } from "@/components/SizingCalculator";
 import { trackStockSignalViewed } from "@/hooks/useAnalytics";
 import { TickerChip } from "@/components/TickerActionMenu";
 import FaultlineTerm from "@/components/FaultlineTerm";
@@ -34,6 +33,7 @@ import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
 import ScoreExplainer from "@/components/ScoreExplainer";
 import RisingStarsPanel, { type RisingStarItem } from "@/components/RisingStarsPanel";
 import { formatEt } from "@shared/credibilityLabels";
+import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 
 // ── Live Quote Types ──────────────────────────────────────────
 interface LiveQuote {
@@ -320,7 +320,7 @@ function SkeletonCard() {
 }
 
 // ── Stock Card ────────────────────────────────────────────────
-function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked }: {
+export function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked }: {
   stock: SignalStock;
   /** null = no quote or no canonical regime: the bar is not drawn. */
   regimeScore: number | null;
@@ -350,11 +350,8 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
 
   const positive = typeof changePercent === "number" && changePercent >= 0;
 
-  // Trading signal colors for card border
-  const actionColor = tradingSignal
-    ? ACTION_COLORS[tradingSignal.action].text
-    : !quote.available ? '#64748B' : positive ? '#00D4FF' : '#FF2D55';
-  const actionBorderOpacity = tradingSignal ? '0.25' : '0.12';
+  const actionColor = !quote.available ? '#64748B' : positive ? '#00D4FF' : '#FF2D55';
+  const actionBorderOpacity = '0.12';
 
   return (
     <div
@@ -392,9 +389,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
         position: 'absolute', top: 0, left: 0,
         height: '2px',
         width: `${regimeScore}%`,
-        background: tradingSignal
-          ? `linear-gradient(90deg, ${ACTION_COLORS[tradingSignal.action].text}, ${ACTION_COLORS[tradingSignal.action].glow})`
-          : `linear-gradient(90deg, #00D4FF, #FFD700)`,
+        background: `linear-gradient(90deg, #00D4FF, #FFD700)`,
         opacity: 0.7,
       }} />}
 
@@ -447,42 +442,6 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
         </div>
       </div>
 
-      {/* ── Trading Signal Row ─────────────────────────────── */}
-      {tradingSignal && (
-        <div style={{
-          marginBottom: '8px',
-          padding: '7px 8px',
-          background: `${ACTION_COLORS[tradingSignal.action].text}08`,
-          border: `1px solid ${ACTION_COLORS[tradingSignal.action].text}18`,
-          borderRadius: '3px',
-        }}>
-          {/* Asset-class header */}
-          <div style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '9px', letterSpacing: '0.14em',
-            color: 'rgba(100,116,139,0.5)',
-            marginBottom: '4px',
-          }}>EQUITY SIGNAL — {stock.ticker}</div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-            <TradingSignalBadge
-              action={tradingSignal.action}
-              actionLabel={tradingSignal.actionLabel}
-              confidence={tradingSignal.confidence}
-              strength={tradingSignal.strength}
-              assetClass="STOCK"
-            />
-            <RegimeAlignmentBadge alignment={tradingSignal.regimeAlignment} />
-          </div>
-          <ConfidenceBar action={tradingSignal.action} />
-          <div style={{
-            marginTop: '5px',
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '12px', color: 'rgba(100,116,139,0.6)',
-            lineHeight: 1.4,
-          }}>{tradingSignal.rationale}</div>
-        </div>
-      )}
-
       {/* Sparkline */}
       <div style={{ marginBottom: '8px' }}>
         {sparklineData.length > 0 ? <MiniSparkline data={sparklineData} positive={positive} /> : <div style={{ height: '36px' }} />}
@@ -510,31 +469,6 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
           </div>
         ))}
       </div>
-
-      {/* ── Inline Entry / Stop / Target (collapsed view) ─── */}
-      {tradingSignal && (tradingSignal.action === 'BUY' || tradingSignal.action === 'SELL') && (
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: '4px', marginBottom: '8px',
-        }}>
-          {[
-            { label: 'ENTRY', value: tradingSignal.priceLevels.entryZone != null ? `$${tradingSignal.priceLevels.entryZone.toFixed(2)}` : '—', color: ACTION_COLORS[tradingSignal.action].text },
-            { label: 'STOP', value: tradingSignal.priceLevels.stopLoss != null ? `$${tradingSignal.priceLevels.stopLoss.toFixed(2)}` : '—', color: '#FF2D55' },
-            { label: 'TARGET', value: tradingSignal.priceLevels.targetPrice != null ? `$${tradingSignal.priceLevels.targetPrice.toFixed(2)}` : '—', color: '#00D4FF' },
-            { label: 'R:R', value: tradingSignal.priceLevels.riskReward != null ? `${tradingSignal.priceLevels.riskReward}:1` : '—', color: (tradingSignal.priceLevels.riskReward ?? 0) >= 2 ? '#22C55E' : (tradingSignal.priceLevels.riskReward ?? 0) >= 1.5 ? '#FFD700' : '#FF9500' },
-          ].map(({ label, value, color }) => (
-            <div key={label} style={{
-              background: 'rgba(255,255,255,0.03)',
-              borderRadius: '2px', padding: '4px 6px',
-              borderTop: `2px solid ${color}30`,
-            }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em' }}>{label}</div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', fontWeight: 700, color }}>{value}</div>
-            </div>
-          ))}
-          <div data-price-levels-basis style={{ gridColumn: '1 / -1', fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.7)', letterSpacing: '0.06em' }}>{priceLevelsBasis(liveQuote, quote.badge)}</div>
-        </div>
-      )}
 
       {/* Signal tags — static catalog descriptors; withheld when there is no quote
           so an UNAVAILABLE card never shows momentum/breakout-style tags, and
@@ -575,6 +509,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
           borderTop: '1px solid rgba(255,255,255,0.06)',
           paddingTop: '8px', marginTop: '4px',
         }}>
+          {tradingSignal && <ConfidenceBar action={tradingSignal.action} />}
           {/* Upgrade prompt when tier gate blocks signals */}
           {!tradingSignal && signalBlocked && (
             <div style={{
@@ -1078,20 +1013,6 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             </span>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#00D4FF' }}>→</span>
           </Link>
-          {/* Sizing Calculator — pre-seeded from signal price levels */}
-          {tradingSignal && (
-            <div style={{ marginTop: '8px' }}>
-              <SizingCalculator
-                ticker={stock.ticker}
-                assetType="STOCK"
-                defaultEntry={tradingSignal.priceLevels.entryZone}
-                defaultStop={tradingSignal.priceLevels.stopLoss}
-                defaultTarget={tradingSignal.priceLevels.targetPrice}
-                defaultExpanded={false}
-              />
-            </div>
-          )}
-
           {/* Data source */}
           <div style={{
             marginTop: '8px',
@@ -1661,6 +1582,9 @@ function SignalsInner() {
       padding: '0 0 120px 0',
       fontFamily: "'IBM Plex Mono', monospace",
     }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "16px 16px 0" }}>
+        <PentagonalThesisNarrative surface="signals" compact />
+      </div>
 
       <PageHeader
         title="Signals"
@@ -1872,20 +1796,14 @@ function SignalsInner() {
           fontSize: '13px', letterSpacing: '0.2em',
           color: 'rgba(100,116,139,0.75)',
           textTransform: 'uppercase', marginBottom: '10px',
-        }}>TODAY'S TOP SIGNALS</div>
+        }}>LARGEST MOVES</div>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-          <TopSignalCard label="Top Bullish" stock={topSignals?.topBullish ?? null} color="#00D4FF" icon="▲" liveQuote={topSignals ? quoteMap.get(topSignals.topBullish.ticker) : undefined} />
-          <TopSignalCard label="Top Bearish" stock={topSignals?.topBearish ?? null} color="#FF2D55" icon="▼" liveQuote={topSignals ? quoteMap.get(topSignals.topBearish.ticker) : undefined} />
-          <TopSignalCard label="Volume Breakout" stock={topSignals?.highestVolume ?? null} color="#FFD700" icon="⚡" liveQuote={topSignals ? quoteMap.get(topSignals.highestVolume.ticker) : undefined} />
-          <TopSignalCard label="Macro Risk" stock={topSignals?.highestMacroRisk ?? null} color="#FF9500" icon="⚠" liveQuote={topSignals ? quoteMap.get(topSignals.highestMacroRisk.ticker) : undefined} />
-          <TopSignalCard label="AI Momentum" stock={topSignals?.strongestAI ?? null} color="#A855F7" icon="◈" liveQuote={topSignals ? quoteMap.get(topSignals.strongestAI.ticker) : undefined} />
+          <TopSignalCard label="Largest gain" stock={topSignals?.topBullish ?? null} color="#00D4FF" icon="▲" liveQuote={topSignals ? quoteMap.get(topSignals.topBullish.ticker) : undefined} />
+          <TopSignalCard label="Largest decline" stock={topSignals?.topBearish ?? null} color="#FF2D55" icon="▼" liveQuote={topSignals ? quoteMap.get(topSignals.topBearish.ticker) : undefined} />
+          <TopSignalCard label="Highest volume" stock={topSignals?.highestVolume ?? null} color="#FFD700" icon="⚡" liveQuote={topSignals ? quoteMap.get(topSignals.highestVolume.ticker) : undefined} />
         </div>
       </div>
 
-      {/* ── Trading Signals Summary Bar ───────────────────── */}
-      {tradingSignalsData && tradingSignalsData.length > 0 && (
-        <TradingSignalsSummaryBar signals={tradingSignalsData} />
-      )}
 
       {/* ── Category Filter Tabs ──────────────────────────── */}
       <div style={{ padding: '16px 16px 0' }}>
@@ -2113,7 +2031,7 @@ function SignalsInner() {
         color: 'rgba(55,65,81,0.5)',
         textAlign: 'center', lineHeight: 1.5,
       }}>
-        Probabilistic macro-regime intelligence. Not financial advice. Trading signals are algorithmic estimates only — not investment recommendations. Past performance does not guarantee future results.
+        Market scanner context only. Not financial advice. This page does not publish a target, a stop, or an entry. Past results are not a forecast.
       </div>
 
       </>)}
@@ -2297,82 +2215,24 @@ function ScoreBar({ value, color, label, tip }: { value: number; color: string; 
 
 // ── Asymmetric Card ───────────────────────────────────────────
 function AsymmetricCard({ opp }: { opp: AsymmetricOpportunity }) {
-  const [expanded, setExpanded] = useState(false);
-  const cc = CONVICTION_COLORS[opp.conviction];
   const positive = opp.changePercent >= 0;
-  const capLabel = opp.marketCap
-    ? opp.marketCap >= 10e9 ? 'LARGE'
-    : opp.marketCap >= 2e9 ? 'MID'
-    : opp.marketCap >= 300e6 ? 'SMALL'
-    : 'MICRO'
-    : '—';
-
   return (
     <div
-      onClick={() => setExpanded(e => !e)}
       style={{
         background: 'rgba(8,10,14,0.92)',
-        border: `1px solid ${cc.border}`,
+        border: '1px solid rgba(255,215,0,0.28)',
         borderRadius: '4px',
         padding: '14px',
-        cursor: 'pointer',
-        transition: 'all 0.2s cubic-bezier(0.23,1,0.32,1)',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-      onMouseEnter={e => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = cc.text + '55';
-        (e.currentTarget as HTMLDivElement).style.background = 'rgba(12,15,20,0.97)';
-      }}
-      onMouseLeave={e => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = cc.border;
-        (e.currentTarget as HTMLDivElement).style.background = 'rgba(8,10,14,0.92)';
       }}
     >
-      {/* Composite score bar */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0,
-        height: '2px', width: `${opp.compositeScore}%`,
-        background: `linear-gradient(90deg, ${cc.text}60, ${cc.text})`,
-      }} />
-
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-            <TickerChip ticker={opp.ticker} name={opp.name} />
-
-            {/* Conviction badge */}
-            <InfoTooltip tip={
-              opp.conviction === 'HIGH' ? 'HIGH conviction: composite score ≥75 and asymmetry ratio ≥3:1. Strong technical + macro alignment.'
-              : opp.conviction === 'MODERATE' ? 'MODERATE conviction: composite score ≥55 and asymmetry ratio ≥2:1. Solid setup with some uncertainty.'
-              : 'SPECULATIVE: lower composite score or asymmetry ratio. Higher risk, higher potential reward.'
-            }>
-              <span style={{
-                fontSize: '10px', letterSpacing: '0.1em',
-                padding: '2px 6px', borderRadius: '2px',
-                background: cc.bg, color: cc.text,
-                border: `1px solid ${cc.border}`,
-                fontFamily: "'IBM Plex Mono', monospace",
-              }}>{opp.conviction}</span>
-            </InfoTooltip>
-
-            {/* Cap badge */}
-            <span style={{
-              fontSize: '10px', letterSpacing: '0.08em',
-              padding: '1px 5px', borderRadius: '2px',
-              background: 'rgba(255,255,255,0.04)',
-              color: 'rgba(100,116,139,0.75)',
-              fontFamily: "'IBM Plex Mono', monospace",
-            }}>{capLabel}</span>
-          </div>
-
+          <TickerChip ticker={opp.ticker} name={opp.name} />
           <div style={{
             fontSize: '12px', color: 'rgba(100,116,139,0.65)',
             marginTop: '2px', maxWidth: '160px',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{opp.name}</div>
-
           {opp.sector && (
             <div style={{
               fontSize: '10px', color: 'rgba(100,116,139,0.5)',
@@ -2380,8 +2240,6 @@ function AsymmetricCard({ opp }: { opp: AsymmetricOpportunity }) {
             }}>{opp.sector}</div>
           )}
         </div>
-
-        {/* Price + change */}
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <div style={{
             fontFamily: "'IBM Plex Mono', monospace",
@@ -2393,162 +2251,7 @@ function AsymmetricCard({ opp }: { opp: AsymmetricOpportunity }) {
           }}>{positive ? '+' : ''}{opp.changePercent.toFixed(2)}%</div>
         </div>
       </div>
-
-      {/* Asymmetry ratio + setup type */}
-      <div style={{
-        display: 'flex', gap: '8px', alignItems: 'center',
-        marginBottom: '10px', flexWrap: 'wrap',
-      }}>
-        <InfoTooltip tip={`Asymmetry Ratio = estimated upside % ÷ estimated downside %.\nTarget: $${opp.upsideTarget.toFixed(2)} (+${opp.upsidePct.toFixed(1)}%)\nStop: $${opp.downsideRisk.toFixed(2)} (-${opp.downsidePct.toFixed(1)}%)\nA ratio ≥3:1 is considered high asymmetry.`}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '4px',
-            padding: '5px 10px',
-            background: cc.bg, border: `1px solid ${cc.border}`,
-            borderRadius: '3px',
-          }}>
-            <span style={{ fontSize: '11px', color: 'rgba(100,116,139,0.7)', letterSpacing: '0.08em' }}>RATIO</span>
-            <span style={{
-              fontFamily: "'Rajdhani', sans-serif",
-              fontWeight: 700, fontSize: '18px', color: cc.text,
-            }}>{opp.asymmetryRatio.toFixed(1)}:1</span>
-          </div>
-        </InfoTooltip>
-
-        <InfoTooltip tip={`Setup type detected by FAULTLINE scoring engine based on momentum, support proximity, volume, and market cap signals.`}>
-          <span style={{
-            fontSize: '11px', letterSpacing: '0.06em',
-            padding: '4px 8px', borderRadius: '2px',
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            color: 'rgba(148,163,184,0.8)',
-          }}>{opp.setupType}</span>
-        </InfoTooltip>
-      </div>
-
-      {/* Upside / Downside targets */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: '1fr 1fr',
-        gap: '6px', marginBottom: '10px',
-      }}>
-        <InfoTooltip tip={`Estimated upside target based on 52-week high proximity and setup type.\nTarget: $${opp.upsideTarget.toFixed(2)}`}>
-          <div style={{
-            padding: '6px 8px',
-            background: 'rgba(0,212,255,0.06)',
-            border: '1px solid rgba(0,212,255,0.12)',
-            borderRadius: '3px',
-          }}>
-            <div style={{ fontSize: '10px', color: 'rgba(0,212,255,0.6)', letterSpacing: '0.08em', marginBottom: '2px' }}>▲ UPSIDE TARGET</div>
-            <div style={{ fontSize: '14px', fontWeight: 700, color: '#00D4FF' }}>+{opp.upsidePct.toFixed(1)}%</div>
-            <div style={{ fontSize: '10px', color: 'rgba(100,116,139,0.6)' }}>${opp.upsideTarget.toFixed(2)}</div>
-          </div>
-        </InfoTooltip>
-        <InfoTooltip tip={`Estimated stop/downside risk based on 52-week low proximity and ATR.\nStop: $${opp.downsideRisk.toFixed(2)}`}>
-          <div style={{
-            padding: '6px 8px',
-            background: 'rgba(255,45,85,0.06)',
-            border: '1px solid rgba(255,45,85,0.12)',
-            borderRadius: '3px',
-          }}>
-            <div style={{ fontSize: '10px', color: 'rgba(255,45,85,0.6)', letterSpacing: '0.08em', marginBottom: '2px' }}>▼ DOWNSIDE RISK</div>
-            <div style={{ fontSize: '14px', fontWeight: 700, color: '#FF2D55' }}>-{opp.downsidePct.toFixed(1)}%</div>
-            <div style={{ fontSize: '10px', color: 'rgba(100,116,139,0.6)' }}>${opp.downsideRisk.toFixed(2)}</div>
-          </div>
-        </InfoTooltip>
-      </div>
-
-      {/* Catalyst */}
-      <div style={{
-        padding: '7px 9px',
-        background: 'rgba(168,85,247,0.05)',
-        border: '1px solid rgba(168,85,247,0.12)',
-        borderRadius: '3px',
-        marginBottom: '8px',
-      }}>
-        <div style={{ fontSize: '10px', color: 'rgba(168,85,247,0.7)', letterSpacing: '0.1em', marginBottom: '3px' }}>CATALYST</div>
-        <div style={{ fontSize: '12px', color: 'rgba(148,163,184,0.85)', lineHeight: 1.5 }}>{opp.catalyst}</div>
-      </div>
-
-      {/* Scores (always visible) */}
-      <div style={{ marginBottom: '8px' }}>
-        <ScoreBar value={opp.momentumScore}    color="#00D4FF" label="MOMENTUM"         tip="Momentum score (0–100). Sweet spot: +2% to +8% daily change. Parabolic moves score lower." />
-        <ScoreBar value={opp.supportProximity} color="#A855F7" label="SUPPORT PROXIMITY" tip="How close the price is to its 52-week low (support floor). Higher = more room to bounce." />
-        <ScoreBar value={opp.volumeSurge}      color="#FFD700" label="VOLUME SURGE"      tip="Current volume vs 3-month average. 2× = 75 score. 5× = 100 score. Confirms institutional interest." />
-        <ScoreBar value={opp.macroFit}         color="#00FF88" label="MACRO FIT"         tip="How well this setup aligns with the current FAULTLINE macro regime. Higher = regime tailwind." />
-      </div>
-
-      {/* Composite score */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: expanded ? '10px' : '0' }}>
-        <InfoTooltip tip="Composite score = weighted blend of momentum (25%), support proximity (20%), volume surge (15%), market cap (15%), volatility (10%), macro fit (15%).">
-          <span style={{ fontSize: '11px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.08em' }}>
-            COMPOSITE SCORE
-          </span>
-        </InfoTooltip>
-        <span style={{
-          fontFamily: "'Rajdhani', sans-serif",
-          fontWeight: 700, fontSize: '16px', color: cc.text,
-        }}>{Math.round(opp.compositeScore)}/100</span>
-      </div>
-
-      {/* Expanded details */}
-      {expanded && (
-        <div style={{
-          borderTop: '1px solid rgba(255,255,255,0.06)',
-          paddingTop: '10px',
-          animation: 'fl-fade-in 0.2s ease',
-        }}>
-          {/* Entry thesis */}
-          <div style={{ marginBottom: '10px' }}>
-            <div style={{ fontSize: '10px', color: 'rgba(168,85,247,0.7)', letterSpacing: '0.1em', marginBottom: '4px' }}>ENTRY THESIS</div>
-            <div style={{ fontSize: '12px', color: 'rgba(148,163,184,0.85)', lineHeight: 1.6 }}>{opp.entryThesis}</div>
-          </div>
-
-          {/* Why asymmetric */}
-          <div style={{
-            padding: '8px 10px',
-            background: 'rgba(168,85,247,0.06)',
-            border: '1px solid rgba(168,85,247,0.15)',
-            borderRadius: '3px',
-            marginBottom: '10px',
-          }}>
-            <div style={{ fontSize: '10px', color: 'rgba(168,85,247,0.7)', letterSpacing: '0.1em', marginBottom: '3px' }}>WHY ASYMMETRIC</div>
-            <div style={{ fontSize: '12px', color: 'rgba(148,163,184,0.85)', lineHeight: 1.5 }}>{opp.whyAsymmetric}</div>
-          </div>
-
-          {/* Risk factors */}
-          <div style={{ marginBottom: '10px' }}>
-            <div style={{ fontSize: '10px', color: 'rgba(255,45,85,0.7)', letterSpacing: '0.1em', marginBottom: '6px' }}>RISK FACTORS</div>
-            {opp.riskFactors.map((r, i) => (
-              <div key={i} style={{
-                display: 'flex', gap: '6px', alignItems: 'flex-start',
-                marginBottom: '4px',
-              }}>
-                <span style={{ color: '#FF2D55', fontSize: '11px', flexShrink: 0 }}>▸</span>
-                <span style={{ fontSize: '12px', color: 'rgba(148,163,184,0.75)', lineHeight: 1.4 }}>{r}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Invalidation */}
-          <div style={{
-            padding: '7px 9px',
-            background: 'rgba(255,45,85,0.05)',
-            border: '1px solid rgba(255,45,85,0.12)',
-            borderRadius: '3px',
-          }}>
-            <div style={{ fontSize: '10px', color: 'rgba(255,45,85,0.6)', letterSpacing: '0.1em', marginBottom: '3px' }}>INVALIDATION</div>
-            <div style={{ fontSize: '12px', color: 'rgba(148,163,184,0.8)', lineHeight: 1.5 }}>{opp.invalidation}</div>
-          </div>
-
-          {/* AI enrichment badge */}
-          {opp.aiEnriched && (
-            <div style={{
-              marginTop: '8px', textAlign: 'right',
-              fontSize: '10px', color: 'rgba(168,85,247,0.5)',
-              letterSpacing: '0.06em',
-            }}>◈ AI-ENRICHED ANALYSIS</div>
-          )}
-        </div>
-      )}
+      <PentagonalThesisNarrative symbol={opp.ticker} surface="signals-asymmetric" compact />
     </div>
   );
 }
@@ -2622,9 +2325,9 @@ function AsymmetricOpportunitiesView({
               fontSize: '10px', color: 'rgba(100,116,139,0.75)',
               lineHeight: 1.5, margin: 0, maxWidth: '500px',
             }}>
-              AI-scored setups with high reward-to-risk ratios. Each opportunity is evaluated across 7 dimensions:
-              momentum, support proximity, volume surge, market cap, volatility, macro fit, and asymmetry ratio.
-              Regime: <span style={{ color: '#A855F7' }}>{regimeLabel}</span>
+              A screened list of names. The stock read on each card is the shared Pentagonal Thesis.
+              This view does not publish a target, a stop, or an entry.
+              Regime label: <span style={{ color: '#A855F7' }}>{regimeLabel}</span>
             </p>
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
@@ -2799,8 +2502,8 @@ function AsymmetricOpportunitiesView({
         color: 'rgba(55,65,81,0.5)',
         textAlign: 'center', lineHeight: 1.5,
       }}>
-        Asymmetric opportunity scores are algorithmic estimates based on technical and macro signals. Not financial advice.
-        Upside/downside targets are probabilistic estimates, not guarantees. Always conduct your own research before trading.
+        This list is a scanner of unusual moves. It does not publish an upside or downside figure. Not financial advice.
+        The stock conclusion, when a symbol is selected, is the shared thesis above.
       </div>
     </div>
   );

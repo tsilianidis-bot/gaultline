@@ -1,4 +1,5 @@
 import SEOLandingPage from "@/pages/SEOLandingPage";
+import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 
 interface StockSignalPageProps {
   ticker: string;
@@ -25,59 +26,66 @@ export default function StockSignalPage({
   ticker,
   companyName,
   sector,
-  seoTitle,
-  seoDescription,
+  seoTitle: _seoTitle,
+  seoDescription: _seoDescription,
   canonical,
   accentColor,
   badge,
   headline,
-  subheadline,
-  whatIsIt,
-  signalAnalysis,
-  keyLevels,
-  riskFactors,
+  subheadline: _subheadline,
+  whatIsIt: _whatIsIt,
+  signalAnalysis: _signalAnalysis,
+  keyLevels: _keyLevels,
+  riskFactors: _riskFactors,
   faqs,
   internalLinks,
 }: StockSignalPageProps) {
+  const unsupported = /crash|probability|\bscore\b|% confidence|\bbuy\b|\bsell\b|key price levels|key support|regime fit|0-10|advance warning|stop-loss|entry zone|pressure index|fall significantly|biggest opportunity/i;
+  const safeFaqs = faqs.filter(faq => !unsupported.test(`${faq.question} ${faq.answer}`));
+  const safeLinks = internalLinks.filter(link => !unsupported.test(`${link.label} ${link.desc}`));
   return (
+    <>
     <SEOLandingPage
-      seo={{ title: seoTitle, description: seoDescription, canonical }}
+      seo={{
+        title: `${ticker} — shared stock thesis | FAULTLINE`,
+        description: `The ${ticker} page uses the shared Pentagonal Thesis. It does not publish a buy or sell classification, a separate regime reading, or static support and resistance figures.`,
+        canonical,
+      }}
       badge={badge}
       headline={headline}
-      subheadline={subheadline}
-      ctaLabel={`ANALYZE ${ticker} NOW`}
-      ctaHref={`/app/signals?ticker=${ticker}`}
+      subheadline={`Background on ${companyName}. The live read is the shared Pentagonal Thesis. This page does not add a trade call.`}
+      ctaLabel={`READ ${ticker}`}
+      ctaHref={`/stock/${ticker.toLowerCase()}`}
       accentColor={accentColor}
       features={[
-        { icon: "◈", title: "Signal Classification", desc: `FAULTLINE classifies ${ticker} against the current macro regime — BUY, SELL, HOLD, or WATCH — refreshed as new data is published.` },
-        { icon: "◎", title: "Regime Fit Score", desc: `How well does ${ticker} fit the current macro environment? FAULTLINE scores regime alignment from 0-10.` },
-        { icon: "⬡", title: "Price Levels", desc: "FAULTLINE does not publish price targets or support/resistance levels on this page." },
-        { icon: "◈", title: "Bull & Bear Case", desc: `Structured bull and bear case scenarios for ${ticker} based on macro conditions, sector dynamics, and technical structure.` },
-        { icon: "◎", title: "Risk Score (0-100)", desc: `A composite ${ticker} risk score aggregating macro alignment, momentum, volatility, debt risk, and AI exposure.` },
-        { icon: "⬡", title: "AI & Macro Sensitivity", desc: `${ticker}'s sensitivity to AI narrative shifts, Federal Reserve policy, and macro regime transitions — quantified.` },
+        { icon: "◈", title: "Shared stock thesis", desc: `${ticker} is read with the same Pentagonal Thesis as the rest of the product. There is no second buy or sell classification.` },
+        { icon: "◎", title: "No separate regime reading", desc: `This page does not grade how ${ticker} fits the macro regime, and it does not publish a numbered fit.` },
+        { icon: "⬡", title: "No static price levels", desc: `Support, entry, stop, and target figures are not printed here. A completed-session range appears only inside the thesis when the bars are fresh.` },
+        { icon: "◈", title: "Gaps stay gaps", desc: "Missing insider filings, a macro calendar, and sector rotation are not treated as drivers." },
       ]}
       contentSections={[
         {
-          heading: `What Is ${companyName} (${ticker})? — Company Overview`,
-          body: whatIsIt,
-        },
-        {
-          heading: `${ticker} Signal Analysis — Macro Regime Alignment`,
-          body: signalAnalysis,
-        },
-        {
           heading: `How Technical Levels Are Read: ${ticker}`,
-          body: keyLevels,
+          body: `This page does not publish support, entry, stop, or target figures. A completed-session range appears only inside the shared thesis when the bars are fresh.`,
         },
         {
-          heading: `${ticker} Risk Factors — What Could Go Wrong`,
-          body: riskFactors,
+          heading: `${companyName} (${ticker})`,
+          body: `${companyName} is in the ${sector} group. That label is background, not a sector-rotation call. Price, scenarios, and what to do come from the shared thesis.`,
         },
       ]}
-      faqs={faqs}
-      internalLinks={internalLinks}
+      faqs={safeFaqs.length > 0 ? safeFaqs : [{
+        question: `What does the ${ticker} page show?`,
+        answer: `It shows background on ${companyName} and points at the shared Pentagonal Thesis. It does not classify the stock or publish a confidence percentage.`,
+      }]}
+      internalLinks={safeLinks}
       schemaType="Article"
       datePublished="2024-06-01"
     />
+    <div className="bg-[#050608] px-5 pb-16">
+      <div className="mx-auto max-w-3xl">
+        <PentagonalThesisNarrative symbol={ticker} surface="stock-signal" />
+      </div>
+    </div>
+    </>
   );
 }
