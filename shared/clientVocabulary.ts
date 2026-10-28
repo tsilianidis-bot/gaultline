@@ -259,7 +259,11 @@ function channelTokenRegexCaps(): RegExp {
   return channelTokenPatternCaps;
 }
 
-/** Bounded so a long run of spaces cannot make the phrase matcher backtrack. */
+/**
+ * Bounded so a long run of spaces cannot make the phrase matcher backtrack.
+ * A run of 9 or more whitespace characters does not match a directive phrase.
+ * That gap is accepted.
+ */
 const PHRASE_SPACE = String.raw`\s{1,8}`;
 /** Do not treat stock, stocks, sector, or shares as the object when ordinary English follows. */
 const NOT_ORDINARY_CONTINUATION = String.raw`(?!${PHRASE_SPACE}(?:market|rotation|of)\b)`;
@@ -283,7 +287,10 @@ function directivePhraseRegex(): RegExp {
   return directivePhrasePattern;
 }
 
-/** Sentence-case Avoid, only when the next word is a ticker or a cashtag. Whitespace is bounded. */
+/**
+ * Sentence-case Avoid, only when the next word is a ticker or a cashtag.
+ * Whitespace is 1–8 characters, the same cap as directive phrases. Nine or more do not match.
+ */
 const AVOID_BEFORE_SYMBOL = /\bAvoid(?=\s{1,8}(?:\$[A-Z]{1,5}(?:\.[A-Z])?|[A-Z]{1,5}(?:\.[A-Z])?)\b)/g;
 
 /** English words and acronyms that are not tickers after Avoid or after "exposure to". */
@@ -430,20 +437,23 @@ function replaceChannelTokens(text: string, pattern: RegExp): string {
   });
 }
 
+/** Same characters as `\s` in the phrase regex, including NBSP and other Unicode separators. */
 function isPhraseSpace(char: string): boolean {
-  return char === " " || char === "\n" || char === "\r" || char === "\t" || char === "\f" || char === "\v";
+  return char.length === 1 && /\s/.test(char);
 }
 
-function symbolAfterAvoid(text: string, offset: number, length: number): string {
+function symbolAfterAvoid(text: string, offset: number, length: number): { symbol: string; cashtag: boolean } {
   let index = offset + length;
   let spaces = 0;
   while (index < text.length && spaces < 8 && isPhraseSpace(text[index] ?? "")) {
     index += 1;
     spaces += 1;
   }
-  if (spaces < 1) return "";
-  if ((text[index] ?? "") === "$") index += 1;
-  return /^[A-Z]{1,5}(?:\.[A-Z])?/.exec(text.slice(index))?.[0] ?? "";
+  if (spaces < 1) return { symbol: "", cashtag: false };
+  const cashtag = (text[index] ?? "") === "$";
+  if (cashtag) index += 1;
+  const symbol = /^[A-Z]{1,5}(?:\.[A-Z])?/.exec(text.slice(index))?.[0] ?? "";
+  return { symbol, cashtag };
 }
 
 function exposureTailIsMarket(tail: string): boolean {
@@ -452,10 +462,18 @@ function exposureTailIsMarket(tail: string): boolean {
 
 /** Tickers stay case-sensitive. The directive regex is case-insensitive, so the tail is checked again here. */
 function exposureTailIsTicker(tail: string): boolean {
-  const symbol = tail.startsWith("$") ? tail.slice(1) : tail;
+  const cashtag = tail.startsWith("$");
+  const symbol = cashtag ? tail.slice(1) : tail;
   if (!/^[A-Z]{1,5}(?:\.[A-Z])?$/.test(symbol)) return false;
+  return !stoplistedSymbol(symbol, cashtag);
+}
+
+/** X and UV stay off the list when a cashtag is immediately before the word. */
+function stoplistedSymbol(symbol: string, cashtag: boolean): boolean {
   const upper = symbol.toUpperCase();
-  return !AVOID_SYMBOL_STOPLIST.has(upper) && !AVOID_SYMBOL_STOPLIST.has(upper.replace(/\.$/, ""));
+  const bare = upper.replace(/\.$/, "");
+  if (cashtag && (upper === "X" || upper === "UV" || bare === "X" || bare === "UV")) return false;
+  return AVOID_SYMBOL_STOPLIST.has(upper) || AVOID_SYMBOL_STOPLIST.has(bare);
 }
 
 /** Linear search for "to" with 1–8 spaces on each side. No unbounded whitespace quantifier. */
@@ -524,8 +542,8 @@ function replaceSentenceCaseAvoid(text: string): string {
   AVOID_BEFORE_SYMBOL.lastIndex = 0;
   return text.replace(AVOID_BEFORE_SYMBOL, (match, offset: number, whole: string) => {
     if (protectedProseToken(whole, offset, match.length)) return match;
-    const symbol = symbolAfterAvoid(whole, offset, match.length).toUpperCase();
-    if (AVOID_SYMBOL_STOPLIST.has(symbol) || AVOID_SYMBOL_STOPLIST.has(symbol.replace(/\.$/, ""))) return match;
+    const found = symbolAfterAvoid(whole, offset, match.length);
+    if (stoplistedSymbol(found.symbol, found.cashtag)) return match;
     return neutralConditionLabel(match);
   });
 }

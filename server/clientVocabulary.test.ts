@@ -266,6 +266,12 @@ describe("client vocabulary", () => {
     expect(neutralizeChannelText("Reduce exposure to UV")).toBe("Reduce exposure to UV");
     expect(neutralizeChannelText("Avoid X")).toBe("Avoid X");
     expect(neutralizeChannelText("Avoid UV")).toBe("Avoid UV");
+    expect(neutralizeChannelText("Avoid $X")).toBe("Lower-side condition $X");
+    expect(neutralizeChannelText("Reduce exposure to $UV")).toBe("Lower-side condition");
+    expect(neutralizeChannelText("Reduce\u00A0exposure")).toBe("Lower-side condition");
+    expect(neutralizeChannelText("avoid\u00A0this\u00A0stock")).toBe("Lower-side condition");
+    expect(neutralizeChannelText("reduce\u3000exposure")).toBe("Lower-side condition");
+    expect(neutralizeChannelText("avoid\u2003this\u2003stock")).toBe("Lower-side condition");
   });
 
   it("finishes 100k-space phrase runs in under 200ms", () => {
@@ -284,6 +290,10 @@ describe("client vocabulary", () => {
       neutralizeChannelText(sample);
       expect(performance.now() - started).toBeLessThan(200);
     }
+    const nbsp = "\u00A0".repeat(1_000_000);
+    const started = performance.now();
+    neutralizeChannelText(`Reduce${nbsp}exposure`);
+    expect(performance.now() - started).toBeLessThan(200);
   });
 
   it("does not treat stoplisted English words or acronyms as tickers after Avoid", () => {
