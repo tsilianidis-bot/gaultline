@@ -125,7 +125,13 @@ export function snapshotKeyLabel(key: string): string {
 // so the public page never prints it. Any key that reads as a probability, odds,
 // chance or confidence is hidden too, so a future raw key cannot reach /r/:id.
 // Keys with an explicit label above (the two /100 scores) are remapped, not hidden.
-export const HIDDEN_SNAPSHOT_KEYS = new Set<string>(["confidence"]);
+export const HIDDEN_SNAPSHOT_KEYS = new Set<string>([
+  "confidence",
+  "entryZone",
+  "stopLoss",
+  "targetPrice",
+  "riskReward",
+]);
 export const HIDDEN_SNAPSHOT_KEY_PATTERN = /probab|odds|chance|confidence$/i;
 export function isHiddenSnapshotKey(key: string): boolean {
   if (hasLabel(key)) return false;

@@ -939,29 +939,20 @@ function ApiHealthBadge({ source, tradeDate, lastUpdated, isLoading, quotes, tic
   );
 }
 
-// ── Trading Signals Aggregate Bar ─────────────────────────────
-function TradingSignalsSummaryBar({ signals }: { signals: TradingSignalResult[] }) {
-  const tradingSignal = signals[0];
-  const counts = useMemo(() => {
-    const c = { BUY: 0, SELL: 0, HOLD: 0, WATCH: 0 };
-    for (const s of signals) c[s.action]++;
-    return c;
-  }, [signals]);
-
-  const total = signals.length;
-  if (total === 0) return null;
-
-  const strongBuys = signals.filter(s => s.action === 'BUY' && s.strength === 'Strong').length;
-  const strongSells = signals.filter(s => s.action === 'SELL' && s.strength === 'Strong').length;
-
-  const sentiment = counts.BUY > counts.SELL + counts.HOLD
-    ? { label: 'BULLISH BIAS', color: '#00D4FF' }
-    : counts.SELL > counts.BUY + counts.HOLD
-    ? { label: 'BEARISH BIAS', color: '#FF2D55' }
-    : { label: 'MIXED / NEUTRAL', color: '#FFD700' };
+// Quote tape. Counts are observed price changes, not buy or sell calls.
+export function TradingSignalsSummaryBar({ quotes }: { quotes: readonly LiveQuote[] }) {
+  const available = quotes.filter(q => typeof q.price === "number" && q.price > 0).length;
+  const gainers = quotes.filter(q => typeof q.price === "number" && q.price > 0 && typeof q.changePercent === "number" && q.changePercent > 0).length;
+  const decliners = quotes.filter(q => typeof q.price === "number" && q.price > 0 && typeof q.changePercent === "number" && q.changePercent < 0).length;
+  if (quotes.length === 0) return null;
+  const rows = [
+    { label: "GAINERS", value: gainers, color: "#00D4FF" },
+    { label: "DECLINERS", value: decliners, color: "#FF2D55" },
+    { label: "QUOTES", value: available, color: "#94A3B8" },
+  ];
 
   return (
-    <div style={{
+    <div data-quote-summary style={{
       margin: '12px 16px 0',
       padding: '12px 14px',
       background: 'rgba(8,10,14,0.95)',
@@ -969,85 +960,38 @@ function TradingSignalsSummaryBar({ signals }: { signals: TradingSignalResult[] 
       borderRadius: '4px',
       position: 'relative', overflow: 'hidden',
     }}>
-      {/* Corner brackets */}
-      <div style={{ position: 'absolute', top: '4px', left: '4px', width: '8px', height: '8px', borderTop: '1px solid rgba(0,212,255,0.3)', borderLeft: '1px solid rgba(0,212,255,0.3)' }} />
-      <div style={{ position: 'absolute', top: '4px', right: '4px', width: '8px', height: '8px', borderTop: '1px solid rgba(0,212,255,0.3)', borderRight: '1px solid rgba(0,212,255,0.3)' }} />
-      <div style={{ position: 'absolute', bottom: '4px', left: '4px', width: '8px', height: '8px', borderBottom: '1px solid rgba(0,212,255,0.3)', borderLeft: '1px solid rgba(0,212,255,0.3)' }} />
-      <div style={{ position: 'absolute', bottom: '4px', right: '4px', width: '8px', height: '8px', borderBottom: '1px solid rgba(0,212,255,0.3)', borderRight: '1px solid rgba(0,212,255,0.3)' }} />
-
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '13px', letterSpacing: '0.2em',
-            color: 'rgba(100,116,139,0.75)',
-          }}>TRADING SIGNALS</span>
-          <span style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '13px', fontWeight: 700,
-            color: sentiment.color, letterSpacing: '0.1em',
-          }}>{sentiment.label}</span>
-        </div>
+        <span style={{
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: '13px', letterSpacing: '0.2em',
+          color: 'rgba(100,116,139,0.75)',
+        }}>QUOTE TAPE</span>
         <span style={{
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: '12px', color: 'rgba(100,116,139,0.65)',
         }}>CONFIDENCE: <span style={{ color: '#94A3B8' }}>{SIGNAL_CONFIDENCE_NOT_ESTABLISHED}</span></span>
-        {tradingSignal && <ConfidenceBar action={tradingSignal.action} />}
       </div>
-
-      {/* Signal count row */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
-        {(['BUY', 'SELL', 'HOLD', 'WATCH'] as TradingAction[]).map(action => {
-          const c = ACTION_COLORS[action];
-          const count = counts[action];
-          const strong = action === 'BUY' ? strongBuys : action === 'SELL' ? strongSells : 0;
-          return (
-            <div key={action} style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              padding: '5px 10px',
-              background: count > 0 ? `${c.text}10` : 'rgba(255,255,255,0.02)',
-              border: `1px solid ${count > 0 ? c.border : 'rgba(255,255,255,0.05)'}`,
-              borderRadius: '3px',
-            }}>
-              <span style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '13px', fontWeight: 700,
-                color: count > 0 ? c.text : 'rgba(100,116,139,0.3)',
-                letterSpacing: '0.1em',
-              }}>{action}</span>
-              <span style={{
-                fontFamily: "'Rajdhani', sans-serif",
-                fontSize: '18px', fontWeight: 700,
-                color: count > 0 ? c.text : 'rgba(100,116,139,0.2)',
-                lineHeight: 1,
-              }}>{count}</span>
-              {strong > 0 && (
-                <span style={{
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: '11px', color: c.text,
-                  background: `${c.text}15`,
-                  padding: '1px 4px', borderRadius: '2px',
-                }}>{strong} STRONG</span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Stacked bar */}
-      <div style={{ height: '4px', display: 'flex', borderRadius: '2px', overflow: 'hidden', gap: '1px' }}>
-        {(['BUY', 'SELL', 'HOLD', 'WATCH'] as TradingAction[]).map(action => {
-          const pct = total > 0 ? (counts[action] / total) * 100 : 0;
-          if (pct === 0) return null;
-          return (
-            <div key={action} style={{
-              height: '100%', width: `${pct}%`,
-              background: ACTION_COLORS[action].text,
-              opacity: 0.8,
-              transition: 'width 0.6s cubic-bezier(0.23,1,0.32,1)',
-            }} />
-          );
-        })}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        {rows.map(row => (
+          <div key={row.label} style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            padding: '5px 10px',
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.05)',
+            borderRadius: '3px',
+          }}>
+            <span style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '13px', fontWeight: 700,
+              color: row.color, letterSpacing: '0.1em',
+            }}>{row.label}</span>
+            <span style={{
+              fontFamily: "'Rajdhani', sans-serif",
+              fontSize: '18px', fontWeight: 700,
+              color: row.color, lineHeight: 1,
+            }}>{row.value}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1382,6 +1326,7 @@ function SignalsInner() {
     }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "16px 16px 0" }}>
         <PentagonalThesisNarrative surface="signals" compact />
+        <TradingSignalsSummaryBar quotes={Array.from(quoteMap.values())} />
       </div>
 
       <PageHeader
@@ -1404,10 +1349,7 @@ function SignalsInner() {
                     actionLabel: s.actionLabel,
                     assetClass: s.assetClass,
                     strength: s.strength,
-                    // QA Signals confidence (B14): no signal confidence in new share snapshots.
-                    entryZone: s.priceLevels?.entryZone,
-                    stopLoss: s.priceLevels?.stopLoss,
-                    targetPrice: s.priceLevels?.targetPrice,
+                    // QA Signals confidence (B14): no signal confidence, entry, stop, or target in new share snapshots.
                   }))
                 }}
               />

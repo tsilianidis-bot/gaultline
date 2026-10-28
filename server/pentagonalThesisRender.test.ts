@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -530,5 +532,54 @@ describe("Pentagonal thesis render consistency", () => {
     expect(trade).not.toContain("95.55");
     expect(trade).not.toContain("$90.00");
     expect(trade).not.toContain("Invalidation");
+  });
+
+  it("counts quotes instead of buy and sell, and shared reports omit trade levels", async () => {
+    const { TradingSignalsSummaryBar } = await import("../client/src/pages/Signals");
+    const { SnapshotRenderer, isHiddenSnapshotKey } = await import("../client/src/pages/PublicSharedReport");
+    const quote = {
+      ticker: "NVDA",
+      open: 100,
+      high: 110,
+      low: 90,
+      volume: 1_000_000,
+      volumeMillions: 1,
+      timestamp: Date.parse("2026-10-27T15:00:00.000Z"),
+      marketStatus: "open" as const,
+      isLive: false,
+      sparkline: [1, 2, 3],
+    };
+    const html = renderToStaticMarkup(createElement(TradingSignalsSummaryBar, {
+      quotes: [
+        { ...quote, ticker: "NVDA", price: 102, changePercent: 1.2 },
+        { ...quote, ticker: "TSLA", price: 90, changePercent: -2 },
+        { ...quote, ticker: "AMD", price: null, changePercent: null },
+      ],
+    }));
+    expect(html).toContain("GAINERS");
+    expect(html).toContain("DECLINERS");
+    expect(html).toContain("QUOTES");
+    expect(html).toContain(">1<");
+    for (const word of ["BUY", "SELL", "HOLD", "WATCH"]) expect(html, word).not.toContain(word);
+
+    const source = readFileSync(resolve(import.meta.dirname, "../client/src/pages/Signals.tsx"), "utf8");
+    const snapshot = source.slice(source.indexOf('reportType="stock_intelligence"'), source.indexOf("</ShareReportButton>"));
+    expect(snapshot).not.toMatch(/entryZone|stopLoss|targetPrice/);
+
+    for (const key of ["entryZone", "stopLoss", "targetPrice"]) expect(isHiddenSnapshotKey(key), key).toBe(true);
+    const saved = renderToStaticMarkup(createElement(SnapshotRenderer, {
+      reportType: "stock_intelligence",
+      snapshotJson: JSON.stringify({
+        signalCount: 1,
+        signals: [{ ticker: "NVDA", action: "BUY", entryZone: 333.33, stopLoss: 222.22, targetPrice: 444.44 }],
+      }),
+    }));
+    expect(saved).toContain("NVDA");
+    expect(saved).not.toContain("333.33");
+    expect(saved).not.toContain("222.22");
+    expect(saved).not.toContain("444.44");
+    expect(saved).not.toContain("entryZone");
+    expect(saved).not.toContain("stopLoss");
+    expect(saved).not.toContain("targetPrice");
   });
 });

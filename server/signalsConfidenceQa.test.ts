@@ -22,7 +22,6 @@ describe("Signals.tsx renders no signal confidence figure", () => {
     expect(body).toContain("{SIGNAL_CONFIDENCE_NOT_ESTABLISHED}");
     expect(body.slice(body.indexOf("return ("))).not.toMatch(/_props|(?<![-\w])confidence\b/);
     expect(code).toContain("const SIGNAL_CONFIDENCE_NOT_ESTABLISHED = 'Not established';");
-    expect(code).toContain("<ConfidenceBar action={tradingSignal.action} />");
     expect(code).toContain("CONFIDENCE: <span style={{ color: '#94A3B8' }}>{SIGNAL_CONFIDENCE_NOT_ESTABLISHED}</span>");
   });
   it("the static catalog confidence (hard-coded 88 / 76 / 70) is not rendered", () => {
@@ -38,7 +37,8 @@ describe("Signals.tsx renders no signal confidence figure", () => {
     const at = code.indexOf("signals: tradingSignalsData.slice(0, 20).map(s => ({", start);
     const block = code.slice(at, code.indexOf("}))", at));
     const keys = block.split("\n").slice(1).map(l => l.trim()).filter(Boolean).map(l => l.split(":")[0]);
-    expect(keys).toEqual(["ticker", "action", "actionLabel", "assetClass", "strength", "entryZone", "stopLoss", "targetPrice"]);
+    expect(keys).toEqual(["ticker", "action", "actionLabel", "assetClass", "strength"]);
+    expect(block).not.toMatch(/entryZone|stopLoss|targetPrice/);
     expect(block).not.toMatch(/confidence|\[[^\]]*\]\s*:|\.\.\./i);
   });
 });
