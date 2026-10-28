@@ -11,6 +11,7 @@ import {
   RefreshCw, Zap,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { publicConditionText } from "@shared/surfaceClaims";
 
 // ── Types ─────────────────────────────────────────────────────
 interface Position {
@@ -39,7 +40,7 @@ const ASSET_COLORS: Record<string, string> = {
 const REBALANCE_COLORS: Record<string, string> = {
   REDUCE:  "#FF2D55",
   TRIM:    "#FF9500",
-  HOLD:    "#00D4FF",
+  catalog: "#00D4FF",
   ADD:     "#22C55E",
   WATCH:   "#FFD700",
 };
@@ -170,11 +171,11 @@ function RebalancingSuggestions({ positions, totalValue }: CommandCenterProps) {
 
     // If no issues found
     if (result.length === 0) {
-      return [{ ticker: "PORTFOLIO", action: "HOLD", reason: "No immediate rebalancing signals detected", pct: 100, pnlPct: null }];
+      return [{ ticker: "PORTFOLIO", action: "catalog", reason: "No concentration or loss threshold was crossed on the measured weights", pct: 100, pnlPct: null }];
     }
 
     return result.sort((a, b) => {
-      const order = { REDUCE: 0, TRIM: 1, WATCH: 2, ADD: 3, HOLD: 4 };
+      const order = { REDUCE: 0, TRIM: 1, WATCH: 2, ADD: 3, catalog: 4 };
       return (order[a.action as keyof typeof order] ?? 5) - (order[b.action as keyof typeof order] ?? 5);
     });
   }, [positions, totalValue]);
@@ -187,7 +188,7 @@ function RebalancingSuggestions({ positions, totalValue }: CommandCenterProps) {
           const color = REBALANCE_COLORS[s.action] ?? "#94A3B8";
           return (
             <div key={`${s.ticker}-${i}`} style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "8px 10px", background: `${color}06`, border: `1px solid ${color}18`, borderRadius: "4px" }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", fontWeight: 700, color, background: `${color}15`, padding: "2px 6px", borderRadius: "2px", flexShrink: 0, letterSpacing: "0.1em" }}>{s.action}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", fontWeight: 700, color, background: `${color}15`, padding: "2px 6px", borderRadius: "2px", flexShrink: 0, letterSpacing: "0.1em" }}>{publicConditionText(s.action)}</span>
               <div style={{ flex: 1 }}>
                 <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: "#00D4FF" }}>{s.ticker} </span>
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.6)" }}>{s.reason}</span>

@@ -6,7 +6,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { formatObservedFixed } from "@/lib/nullableFormat";
 import { trpc } from "@/lib/trpc";
-import { TrendingUp, TrendingDown, Minus, Lock, RefreshCw, ChevronRight } from "lucide-react";
+import { Lock, RefreshCw, ChevronRight } from "lucide-react";
+import { observedDirectionSentence, directionColor, pressureBandSentence } from "@shared/surfaceClaims";
 
 // ── Core-visible tickers (limited set) ───────────────────────
 const CORE_TICKERS = ["NVDA", "MSFT", "META", "AMZN", "TSLA"];
@@ -17,23 +18,8 @@ const CORE_CRYPTO = ["bitcoin", "ethereum"];
 const LOCKED_CRYPTO = ["solana", "chainlink", "render-token"];
 
 // ── Helpers ───────────────────────────────────────────────────
-type SignalLabel = "BUY" | "SELL" | "HOLD" | "WATCH" | "AVOID";
-
-function getSignalColor(signal: SignalLabel | string): string {
-  switch (signal) {
-    case "BUY": return "#34D399";
-    case "SELL": return "#FF2D55";
-    case "HOLD": return "#FFD700";
-    case "WATCH": return "#00D4FF";
-    case "AVOID": return "#FF9500";
-    default: return "#64748B";
-  }
-}
-
-function getSignalIcon(signal: string) {
-  if (signal === "BUY") return <TrendingUp size={12} />;
-  if (signal === "SELL") return <TrendingDown size={12} />;
-  return <Minus size={12} />;
+function getSignalColor(signal: string): string {
+  return directionColor(signal);
 }
 
 function formatChange(pct: number): string {
@@ -52,7 +38,7 @@ interface SignalCardProps {
 }
 
 function SignalCard({ ticker, price, changePercent, signal, riskLabel, momentum, loading }: SignalCardProps) {
-  const signalColor = getSignalColor(signal ?? "HOLD");
+  const signalColor = getSignalColor(signal ?? "");
   const changeKnown = typeof changePercent === "number" && Number.isFinite(changePercent);
   const changeColor = changeKnown && changePercent >= 0 ? "#34D399" : changeKnown ? "#FF2D55" : "#64748B";
 
@@ -95,8 +81,7 @@ function SignalCard({ ticker, price, changePercent, signal, riskLabel, momentum,
               className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold"
               style={{ background: `${signalColor}15`, color: signalColor }}
             >
-              {getSignalIcon(signal)}
-              {signal}
+              {observedDirectionSentence(signal)}
             </div>
           )}
         </div>
@@ -168,7 +153,7 @@ interface CryptoSignalCardProps {
 }
 
 function CryptoSignalCard({ id, name, price, changePercent, signal, loading }: CryptoSignalCardProps) {
-  const signalColor = getSignalColor(signal ?? "HOLD");
+  const signalColor = getSignalColor(signal ?? "");
   const changeKnown = typeof changePercent === "number" && Number.isFinite(changePercent);
   const changeColor = changeKnown && changePercent >= 0 ? "#34D399" : changeKnown ? "#FF2D55" : "#64748B";
   const symbol = id.slice(0, 3).toUpperCase();
@@ -207,7 +192,6 @@ function CryptoSignalCard({ id, name, price, changePercent, signal, loading }: C
               className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold"
               style={{ background: `${signalColor}15`, color: signalColor }}
             >
-              {getSignalIcon(signal)}
               {signal}
             </div>
           )}
@@ -313,7 +297,7 @@ export default function MobileSignals() {
     }).then(results => {
       const map: Record<string, { signal: string; riskLabel: string; momentum: string }> = {};
       results.forEach((r) => {
-        const action = r.action ?? "HOLD";
+        const action = r.action ?? "";
         const strength = r.strength ?? "";
         const trend = r.technicals?.trend ?? "";
         map[r.ticker] = {
@@ -440,7 +424,7 @@ export default function MobileSignals() {
                 const btcDom = globalStats?.btcDominance;
                 // Simple signal based on pressure
                 const score = canonicalState?.pressureIndex ?? 0;
-                const signal = score >= 65 ? "AVOID" : score >= 45 ? "HOLD" : "WATCH";
+                const signal = pressureBandSentence(typeof score === "number" ? score : null);
                 return (
                   <CryptoSignalCard
                     key={id}

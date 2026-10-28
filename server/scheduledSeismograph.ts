@@ -57,8 +57,8 @@ import { captureTrackRecordFromScheduledRun } from "./trackRecordCapture";
 import { buildAtomicIntelligenceStateManifest, persistAtomicIntelligenceStateManifest } from "./intelligenceGovernance";
 import {
   admitScheduledSessionOutcome,
+  sealFinishedSessionClaim,
   claimScheduledSeismographSession,
-  completeScheduledSession,
   failScheduledSession,
   finalizeStaleScheduledSessionOutcomes,
   heartbeatScheduledSession,
@@ -426,8 +426,19 @@ function alertSkippedSchedule(skipped: string, detail: Record<string, unknown>):
   }).catch(() => undefined);
 }
 
+function isExpectedScheduleSkip(skipped: string, session: unknown): boolean {
+  if (skipped === "dst_companion_outside_window") return true;
+  return skipped === "outside_nyse_post_close_window" && session === "CLOSED";
+}
+
 function rejectScheduledCallback(res: Response, statusCode: number, body: Record<string, unknown>): void {
-  alertSkippedSchedule(String(body.skipped ?? "skipped"), body);
+  const skipped = String(body.skipped ?? "skipped");
+  if (isExpectedScheduleSkip(skipped, body.session)) {
+    console.log(`[Seismograph] Expected schedule skip: ${skipped}`);
+    res.status(200).json({ ok: true, alert: false, ...body });
+    return;
+  }
+  alertSkippedSchedule(skipped, body);
   res.status(statusCode).json({ ok: false, alert: true, ...body });
 }
 
@@ -579,7 +590,7 @@ async function executeScheduledSeismograph(res: Response, hooks: ScheduledSeismo
       ? await hooks.runPipeline()
       : await runScheduledSeismographOnce(scheduledEtDate, runContext);
     if (generation != null) {
-      const sealed = await completeScheduledSession(scheduledEtDate, generation, sessionStore);
+      const sealed = await sealFinishedSessionClaim(scheduledEtDate, generation, sessionStore ?? getDb);
       if (!sealed) {
         console.error("[Seismograph][SCHEDULE-ALERT] session claim was not marked completed");
         void captureMessage("Scheduled seismograph claim was not marked completed", "error", {
@@ -613,6 +624,57 @@ async function executeScheduledSeismograph(res: Response, hooks: ScheduledSeismo
     });
   } catch (err) {
     if (generation != null) await failScheduledSession(scheduledEtDate, generation, sessionStore).catch(() => undefined);
+    const recovered = normalizeSessionClaim(await claimScheduledSeismographSession(scheduledEtDate, sessionStore ?? getDb, {
+      nowMs: Date.now(),
+      trigger: runContext.trigger,
+    }).catch(() => ({ status: "unavailable" as const })));
+    if (recovered.status === "claimed" && recovered.generation != null) {
+      try {
+        const retried = hooks.runPipeline
+          ? await hooks.runPipeline()
+          : await runScheduledSeismographOnce(scheduledEtDate, runContext);
+        const sealed = await sealFinishedSessionClaim(scheduledEtDate, recovered.generation, sessionStore ?? getDb);
+        if (!sealed) {
+          res.status(500).json({
+            ok: false,
+            alert: true,
+            error: "Scheduled run finished but the session claim was not marked completed.",
+            date: scheduledEtDate,
+            etDate: scheduledEtDate,
+          });
+          return;
+        }
+        res.json({
+          ok: true,
+          date: scheduledEtDate,
+          execution: retried.disposition,
+          recovered: true,
+          pressureScore: retried.output.pressureScore,
+          regime: retried.output.regime,
+          stressLevel: retried.output.stressLevel,
+          direction: retried.output.direction,
+          evidenceContributors: retried.output.activeContributors,
+          evidenceConsensus: retried.output.evidenceConsensus,
+          activePatterns: retried.output.activePatterns.length,
+          dataFreshness: retried.output.dataFreshness,
+        });
+        return;
+      } catch (retryError) {
+        await failScheduledSession(scheduledEtDate, recovered.generation, sessionStore).catch(() => undefined);
+        await claimScheduledSeismographSession(scheduledEtDate, sessionStore ?? getDb, {
+          nowMs: Date.now(),
+          trigger: runContext.trigger,
+        }).catch(() => undefined);
+        console.error("[Seismograph][SCHEDULE-ALERT] Daily job failed after the in-request recovery:", retryError);
+        void captureMessage("Scheduled seismograph run failed", "error", {
+          procedure: "scheduled.seismograph-daily",
+          etDate: scheduledEtDate,
+          alert: true,
+        }).catch(() => undefined);
+        res.status(500).json({ ok: false, alert: true, error: String(retryError) });
+        return;
+      }
+    }
     console.error("[Seismograph][SCHEDULE-ALERT] Daily job failed:", err);
     void captureMessage("Scheduled seismograph run failed", "error", {
       procedure: "scheduled.seismograph-daily",

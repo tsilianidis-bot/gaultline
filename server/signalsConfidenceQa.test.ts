@@ -49,7 +49,7 @@ describe("DashboardSearchPanels stock preview shows no confidence figure", () =>
   const dsp = readFileSync(path.resolve(import.meta.dirname, "../client/src/components/DashboardSearchPanels.tsx"), "utf8")
     .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
   it("STOCK_META carries no confidence and nothing reads one", () => {
-    const meta = dsp.slice(dsp.indexOf("const STOCK_META"), dsp.indexOf("const ACTION_COLORS"));
+    const meta = dsp.slice(dsp.indexOf("const STOCK_META"), dsp.indexOf("const REGIME_COLORS"));
     expect(meta).toContain('NVDA: { name: "NVIDIA Corp"');
     expect(meta).not.toMatch(/confidence|conf\w*\s*:/i);
     expect(dsp).not.toMatch(/meta\??\.conf|meta\s*\[\s*["'`]conf/i);

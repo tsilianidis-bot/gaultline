@@ -13,6 +13,7 @@
  */
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { buildEngineSnapshot, canonicalPressure100, findDomainByFamily, type EngineSnapshotPayload } from "@/lib/engineSnapshot";
+import { directionColor, observedDirection, publicConditionText } from "@shared/surfaceClaims";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -150,7 +151,7 @@ interface FaultlineAnswer {
   // Historical Intelligence — server-computed, not from LLM
   historicalIntelligence?: HistoricalIntelligenceData | null;
   // ── NEW V3 FIELDS — Final Verdict + Institutional Intelligence ──────────────────────────────
-  finalVerdictAction?: "BUY" | "ACCUMULATE" | "HOLD" | "WATCH" | "REDUCE" | "SELL" | "AVOID";
+  finalVerdictAction?: string;
   finalVerdictConfidence?: number | null;
   finalVerdictRiskLevel?: "LOW" | "MODERATE" | "HIGH" | "EXTREME";
   finalVerdictTimeHorizon?: string;
@@ -170,7 +171,7 @@ interface RankedOpportunityItem {
   name: string;
   sector: string;
   assetType: "stock" | "crypto";
-  action: "BUY" | "ACCUMULATE" | "WATCH" | "AVOID";
+  action: string;
   convictionScore: number;
   riskLevel: "Low" | "Medium" | "High" | "Extreme";
   primaryDriver: string;
@@ -637,7 +638,7 @@ function WhyNotSection({ whyNotBuy, whyNotSell }: {
         <div style={{ padding: "12px 14px", background: "rgba(0,255,136,0.03)", border: "1px solid rgba(0,255,136,0.08)", borderRadius: "6px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "8px" }}>
             <XCircle size={10} style={{ color: "#00FF88" }} />
-            <span style={{ ...MONO_SM, color: "#00FF88", fontSize: "9px", letterSpacing: "0.1em" }}>WHY NOT BUY (YET)</span>
+            <span style={{ ...MONO_SM, color: "#00FF88", fontSize: "9px", letterSpacing: "0.1em" }}>WHAT IS NOT CONFIRMED</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
             {whyNotBuy.map((r, i) => (
@@ -653,7 +654,7 @@ function WhyNotSection({ whyNotBuy, whyNotSell }: {
         <div style={{ padding: "12px 14px", background: "rgba(255,68,68,0.03)", border: "1px solid rgba(255,68,68,0.08)", borderRadius: "6px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "8px" }}>
             <XCircle size={10} style={{ color: "#FF4444" }} />
-            <span style={{ ...MONO_SM, color: "#FF4444", fontSize: "9px", letterSpacing: "0.1em" }}>WHY NOT SELL (YET)</span>
+            <span style={{ ...MONO_SM, color: "#FF4444", fontSize: "9px", letterSpacing: "0.1em" }}>WHAT WOULD WEAKEN THIS</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
             {whyNotSell.map((r, i) => (
@@ -911,16 +912,12 @@ function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
   // ── Buy / Sell / Wait Verdict ──
   if (intent === "buy_verdict" || intent === "sell_verdict" || intent === "wait_verdict" || intent === "compare") {
     if (!answer.actionVerdict) return null;
-    const verdictColors: Record<string, string> = {
-      "BUY NOW": "#00FF88", "ACCUMULATE": "#00CC6A", "WAIT": "#FFD700",
-      "SELL": "#FF4444", "REDUCE": "#FF6B6B", "HOLD": "#FFD700",
-    };
-    const vc = verdictColors[answer.actionVerdict] ?? "#E8EDF5";
-    const intentLabel = intent === "buy_verdict" ? "BUY VERDICT" : intent === "sell_verdict" ? "SELL VERDICT" : intent === "compare" ? "COMPARISON VERDICT" : "TIMING VERDICT";
+    const vc = directionColor(answer.actionVerdict);
+    const intentLabel = "MEASURED CONDITION";
     return (
       <div style={panelStyle}>
         <div style={labelStyle}>DIRECT ANSWER — {intentLabel}</div>
-        <div style={{ ...bigValueStyle, color: vc, marginBottom: "8px" }}>{answer.actionVerdict}</div>
+        <div style={{ ...bigValueStyle, color: vc, marginBottom: "8px" }}>{publicConditionText(answer.actionVerdict)}</div>
         {answer.actionVerdictReason && (
           <div style={{ ...subValueStyle, fontSize: "13px", marginBottom: "10px", color: "rgba(255,255,255,0.8)" }}>{answer.actionVerdictReason}</div>
         )}
@@ -1047,17 +1044,11 @@ function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
 
   // ── General Analysis — lead with verdict + bull/bear ──
   if (intent === "general_analysis") {
-    const verdictColors: Record<string, string> = {
-      "STRONG BUY": "#00FF88", "BUY": "#00FF88", "ACCUMULATE": "#00CC6A",
-      "WAIT": "#FFD700", "HOLD": "#FFD700", "LOW CONVICTION": "#FFD700",
-      "REDUCE": "#FF6B6B", "STRONG REDUCE": "#FF4444", "SELL": "#FF4444",
-      "HIGH RISK": "#FF4444", "MACRO ANSWER": ACCENT,
-    };
-    const vc = verdictColors[answer.verdict] ?? "#E8EDF5";
+    const vc = directionColor(answer.verdict);
     return (
       <div style={{ ...panelStyle, border: `1px solid ${vc}33`, background: `${vc}06` }}>
         <div style={{ ...labelStyle, color: vc }}>DIRECT ANSWER</div>
-        <div style={{ ...bigValueStyle, color: vc, marginBottom: "6px" }}>{answer.verdict}</div>
+        <div style={{ ...bigValueStyle, color: vc, marginBottom: "6px" }}>{publicConditionText(answer.verdict)}</div>
         {answer.primaryDriver && (
           <div style={{ ...subValueStyle, fontSize: "13px", marginBottom: "8px", color: "rgba(255,255,255,0.8)" }}>{answer.primaryDriver}</div>
         )}
@@ -1138,7 +1129,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
   const opportunityColor = typeof answer.opportunityScore !== "number" ? "#94A3B8" : answer.opportunityScore >= 65 ? "#00FF88" : answer.opportunityScore >= 40 ? "#FFD700" : "#FF4444";
 
   // Determine if this is a WAIT/HOLD verdict
-  const isWaitHold = ["WAIT", "HOLD", "LOW CONVICTION"].includes(answer.verdict);
+  const isWaitHold = observedDirection(answer.verdict) === "mixed" || answer.verdict === "LOW CONVICTION";
   // For general_analysis the DirectAnswerPanel already shows the executive summary — skip it in the body
   const isGeneralAnalysis = answer.questionIntent === "general_analysis";
 
@@ -1170,7 +1161,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
             </div>
           )}
           <div style={{ ...SANS, fontSize: "24px", fontWeight: 800, color: vs.color, letterSpacing: "0.08em" }}>
-            {answer.verdict}
+            {publicConditionText(answer.verdict)}
           </div>
           {answer.expectedTimeframe && (
             <div style={{
@@ -1397,17 +1388,16 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
       {/* ── FINAL VERDICT ── */}
       {answer.finalVerdictAction && (() => {
         const fvAction = answer.finalVerdictAction!;
-        const fvColor = ["BUY", "ACCUMULATE"].includes(fvAction) ? "#00FF88"
-          : ["SELL", "AVOID"].includes(fvAction) ? "#FF4444"
-          : ["REDUCE"].includes(fvAction) ? "#FF6B35"
+        const fvDirection = observedDirection(fvAction);
+        const fvColor = fvDirection === "positive" ? "#00FF88"
+          : fvDirection === "negative" ? "#FF4444"
+          : fvAction === "AVOID" ? "#FF4444"
           : "#FFD700";
-        const fvBg = ["BUY", "ACCUMULATE"].includes(fvAction) ? "rgba(0,255,136,0.06)"
-          : ["SELL", "AVOID"].includes(fvAction) ? "rgba(255,68,68,0.06)"
-          : ["REDUCE"].includes(fvAction) ? "rgba(255,107,53,0.06)"
+        const fvBg = fvDirection === "positive" ? "rgba(0,255,136,0.06)"
+          : fvDirection === "negative" || fvAction === "AVOID" ? "rgba(255,68,68,0.06)"
           : "rgba(255,215,0,0.06)";
-        const fvBorder = ["BUY", "ACCUMULATE"].includes(fvAction) ? "rgba(0,255,136,0.25)"
-          : ["SELL", "AVOID"].includes(fvAction) ? "rgba(255,68,68,0.25)"
-          : ["REDUCE"].includes(fvAction) ? "rgba(255,107,53,0.25)"
+        const fvBorder = fvDirection === "positive" ? "rgba(0,255,136,0.25)"
+          : fvDirection === "negative" || fvAction === "AVOID" ? "rgba(255,68,68,0.25)"
           : "rgba(255,215,0,0.25)";
         const rlColor = answer.finalVerdictRiskLevel === "LOW" ? "#00FF88"
           : answer.finalVerdictRiskLevel === "MODERATE" ? "#FFD700"
@@ -1430,7 +1420,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
             {/* Action */}
             <div style={{ display: "flex", alignItems: "baseline", gap: "12px", marginBottom: "14px", flexWrap: "wrap" }}>
               <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "28px", fontWeight: 900, color: fvColor, letterSpacing: "0.06em" }}>
-                {fvAction}
+                {publicConditionText(fvAction)}
               </div>
               {answer.finalVerdictTimeHorizon && (
                 <div style={{
@@ -1798,12 +1788,12 @@ function HoverTip({ label, tip }: { label: string; tip: string }) {
   );
 }
 
-const ACTION_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  BUY:        { bg: "rgba(0,255,136,0.12)",  border: "rgba(0,255,136,0.35)",  text: "#00FF88" },
-  ACCUMULATE: { bg: "rgba(0,212,255,0.10)",  border: "rgba(0,212,255,0.30)",  text: "#00D4FF" },
-  WATCH:      { bg: "rgba(255,215,0,0.08)",  border: "rgba(255,215,0,0.25)",  text: "#FFD700" },
-  AVOID:      { bg: "rgba(255,68,68,0.08)",  border: "rgba(255,68,68,0.25)",  text: "#FF4444" },
-};
+function actionTone(action: string): { bg: string; border: string; text: string } {
+  const direction = observedDirection(action);
+  if (direction === "positive") return { bg: "rgba(0,255,136,0.12)", border: "rgba(0,255,136,0.35)", text: "#00FF88" };
+  if (direction === "negative" || action === "AVOID") return { bg: "rgba(255,68,68,0.08)", border: "rgba(255,68,68,0.25)", text: "#FF4444" };
+  return { bg: "rgba(255,215,0,0.08)", border: "rgba(255,215,0,0.25)", text: "#FFD700" };
+}
 
 const RISK_COLORS: Record<string, string> = {
   Low:     "#00FF88",
@@ -1897,7 +1887,7 @@ function OpportunityRankingCard({ answer, onAskFollowUp, onDeepDive, onSelectAss
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           {answer.topOpportunities.map((opp, i) => {
-            const ac = ACTION_COLORS[opp.action] ?? ACTION_COLORS.WATCH;
+            const ac = actionTone(opp.action);
             const riskColor = RISK_COLORS[opp.riskLevel] ?? "#FFD700";
             const isExpanded = expandedIdx === i;
             const convColor = opp.convictionScore >= 70 ? "#00FF88" : opp.convictionScore >= 45 ? "#FFD700" : "#FF4444";
@@ -1932,7 +1922,7 @@ function OpportunityRankingCard({ answer, onAskFollowUp, onDeepDive, onSelectAss
 
                   {/* Action badge */}
                   <div style={{ ...MONO_SM, fontSize: "10px", fontWeight: 700, padding: "3px 8px", background: ac.bg, border: `1px solid ${ac.border}`, borderRadius: "4px", color: ac.text, flexShrink: 0 }}>
-                    {opp.action}
+                    {publicConditionText(opp.action)}
                   </div>
 
                   {/* Conviction score */}
@@ -2553,7 +2543,7 @@ function SinceLastVisit({ onQuickAction }: { onQuickAction: (prompt: string) => 
 }
 
 const SUGGESTED_QUESTIONS = [
-  "Should I buy NVDA right now?",
+        "What is the current measured condition for NVDA?",
   "How dangerous is the market today?",
   "What are the best swing trades this week?",
   "Is Bitcoin in a bull or bear cycle?",

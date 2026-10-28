@@ -9,6 +9,7 @@ import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
 import { canonicalPressureLabel, canonicalPressureValue } from "@/lib/canonicalPressureDisplay";
 import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
+import { directionColor, observedDirectionSentence } from "@shared/surfaceClaims";
 import {
   TrendingUp, TrendingDown, Minus, Zap, Star, Target, Cpu,
   Bitcoin, Globe, BarChart2, Flame, ChevronRight, RefreshCw,
@@ -246,10 +247,10 @@ function BucketCard({ bucket, onNavigate, onWatchlist }: { bucket: DiscoveryBuck
                     {item.actionBias && (
                       <span style={{
                         fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em",
-                        color: item.actionBias === "BUY" ? "#22C55E" : item.actionBias === "WATCH" ? "#FFD700" : item.actionBias === "AVOID" ? "#FF2D55" : "#94A3B8",
-                        background: item.actionBias === "BUY" ? "rgba(34,197,94,0.1)" : item.actionBias === "WATCH" ? "rgba(255,215,0,0.1)" : item.actionBias === "AVOID" ? "rgba(255,45,85,0.1)" : "rgba(148,163,184,0.1)",
+                        color: directionColor(item.actionBias),
+                        background: "rgba(148,163,184,0.1)",
                         padding: "1px 5px", borderRadius: "2px",
-                      }}>{item.actionBias}</span>
+                      }}>{observedDirectionSentence(item.actionBias)}</span>
                     )}
                   </div>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.55)", marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

@@ -832,7 +832,7 @@ export default function ValidationLab() {
                       Probability: "Canonical bull/neutral/bear probability distribution",
                       Confidence: "Assesses overall confidence from evidence strength and diversity",
                       HistoricalAnalog: "Finds closest historical analogs using 5-dimensional vector matching",
-                      Decision: "Generates verdict (STRONG BUY → AVOID) with conviction score",
+                      Decision: "Records the measured condition and the inputs behind it. It does not publish a trade instruction.",
                       AIInterpretation: "LLM-powered narrative explaining current conditions",
                       Calibration: "Brier score, calibration error, accuracy metrics",
                       Learning: "Systematic bias detection and improvement suggestions",

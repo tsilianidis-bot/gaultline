@@ -287,7 +287,7 @@ export const ACTION_RULES: Record<SectorActionClass, string> = {
   OVERWEIGHT: "LEADING quadrant AND 20-session return above SPY AND breadth ≥ 50% of constituents above their 50-session average.",
   WATCH_FOR_CONFIRMATION: "IMPROVING quadrant, or LEADING without full confirmation (relative return, breadth, or breadth unavailable).",
   NEUTRAL: "LOSING MOMENTUM quadrant with 20-session return still above SPY.",
-  UNDERWEIGHT: "LOSING MOMENTUM with 20-session return at or below SPY, or LAGGING without every AVOID condition.",
+  UNDERWEIGHT: "LOSING MOMENTUM with 20-session return at or below SPY, or LAGGING without all three weakness conditions (below SPY, breadth under 50%, momentum down).",
   AVOID: "LAGGING quadrant AND 20-session return below SPY AND breadth < 50% AND RS-Momentum falling (↓).",
 };
 

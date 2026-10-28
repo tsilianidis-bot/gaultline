@@ -8,6 +8,7 @@ import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
 import { engineProbabilityPercent, engineProbabilityText } from "@/lib/marketStateProjection";
+import { PREFLIGHT_KEEP, publicConditionText } from "@shared/surfaceClaims";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import { SectionErrorBoundary } from "@/components/ErrorBoundary";
@@ -31,7 +32,7 @@ import DecisionConfidencePanel, { type ConfidenceData } from "@/components/Decis
 type MoveType =
   | "add_risk" | "reduce_risk" | "hedge" | "rotate"
   | "raise_cash" | "deploy_cash" | "buy_specific_asset" | "sell_specific_asset"
-  | "hold";
+  | typeof PREFLIGHT_KEEP;
 
 type SimulatorTimeframe = "today" | "this_week" | "one_three_months" | "six_twelve_months";
 
@@ -105,11 +106,11 @@ const EXPOSURE_STEP2: Record<MoveType, { value: ExposureCategory; label: string;
   ],
   raise_cash: [
     { value: "entire_portfolio",     label: "Across Portfolio",    sub: "Trim broadly, raise cash" },
-    { value: "technology",           label: "From Technology",     sub: "Sell tech, hold cash" },
-    { value: "large_cap_growth",     label: "From Growth",         sub: "Sell growth, hold cash" },
-    { value: "bitcoin",              label: "From Crypto",         sub: "Sell crypto, hold cash" },
+    { value: "technology",           label: "From Technology",     sub: "Technology sleeve with a cash residual" },
+    { value: "large_cap_growth",     label: "From Growth",         sub: "Growth sleeve with a cash residual" },
+    { value: "bitcoin",              label: "From Crypto",         sub: "Crypto sleeve with a cash residual" },
     { value: "concentrated_position",label: "Concentrated Position",sub: "Trim large single name" },
-    { value: "leveraged_exposure",   label: "From Leverage",       sub: "Deleverage, hold cash" },
+    { value: "leveraged_exposure",   label: "From Leverage",       sub: "Lower leverage, cash residual" },
   ],
   deploy_cash: [
     { value: "ai_infrastructure",    label: "AI Infrastructure",   sub: "Deploy into AI/semis" },
@@ -143,7 +144,7 @@ const EXPOSURE_STEP2: Record<MoveType, { value: ExposureCategory; label: string;
     { value: "altcoins",             label: "Altcoins",            sub: "SOL, AVAX, DOT" },
     { value: "leveraged_exposure",   label: "Leveraged",           sub: "2x/3x ETF, margin" },
   ],
-  hold: [
+  [PREFLIGHT_KEEP]: [
     { value: "ai_infrastructure",    label: "AI / Semis",          sub: "Holding AI/semis position" },
     { value: "technology",           label: "Technology",          sub: "Holding tech position" },
     { value: "large_cap_growth",     label: "Large Cap Growth",    sub: "Holding growth names" },
@@ -181,11 +182,11 @@ const MOVE_OPTIONS: { value: MoveType; label: string; glyph: string; sub: string
   { value: "reduce_risk",        label: "Reduce Risk",        glyph: "↓", sub: "Trim or exit positions to lower overall exposure" },
   { value: "hedge",              label: "Hedge",              glyph: "⛨", sub: "Protect existing positions against downside" },
   { value: "rotate",             label: "Rotate",             glyph: "⟳", sub: "Shift capital from one sector or asset to another" },
-  { value: "raise_cash",         label: "Raise Cash",         glyph: "◎", sub: "Sell down and move to cash or equivalents" },
+  { value: "raise_cash",         label: "Raise Cash",         glyph: "◎", sub: "Move part of the book into cash or equivalents" },
   { value: "deploy_cash",        label: "Deploy Cash",        glyph: "◈", sub: "Put idle cash to work in the market" },
-  { value: "buy_specific_asset", label: "Buy Specific Asset", glyph: "₿", sub: "Enter a specific stock, ETF, or crypto position" },
-  { value: "sell_specific_asset",label: "Sell Specific Asset",glyph: "✕", sub: "Exit or short a specific position" },
-  { value: "hold",               label: "Hold",               glyph: "⏸", sub: "Stay in current positions — validate the decision" },
+  { value: "buy_specific_asset", label: "Named position increase", glyph: "₿", sub: "Review adding to one stock, ETF, or crypto position" },
+  { value: "sell_specific_asset",label: "Named position reduction",glyph: "✕", sub: "Review reducing one existing position" },
+  { value: PREFLIGHT_KEEP,       label: "Keep current positions", glyph: "⏸", sub: "Review leaving the current positions unchanged" },
 ];
 
 // ── Rotate From/To options ─────────────────────────────────────
@@ -243,8 +244,8 @@ const HOLD_CONCERN_OPTIONS: { value: string; label: string; sub: string }[] = [
   { value: "volatility",    label: "Volatility",     sub: "Uncomfortable with price swings" },
   { value: "drawdown",      label: "Drawdown",       sub: "Position is underwater" },
   { value: "profit_taking", label: "Profit Taking",  sub: "Considering locking in gains" },
-  { value: "no_concern",    label: "No Concern",     sub: "Conviction hold, just validating" },
-  { value: "unsure",        label: "Unsure",         sub: "Not sure if I should hold or act" },
+  { value: "no_concern",    label: "No Concern",     sub: "Conviction is unchanged; this is a check" },
+  { value: "unsure",        label: "Unsure",         sub: "Not sure whether to keep the position" },
 ];
 
 const TIMEFRAME_OPTIONS: { value: SimulatorTimeframe; label: string; sub: string }[] = [
@@ -281,7 +282,7 @@ const THESIS_OPTIONS: { value: ThesisType; label: string; icon: string; sub: str
   },
   {
     value: "long_term",
-    label: "Long-Term Hold",
+    label: "Long horizon",
     icon: "🏛",
     sub: "Multi-month conviction",
     description: "You are building or holding a position based on a 6–18 month thesis. Short-term noise is acceptable.",
@@ -291,7 +292,7 @@ const THESIS_OPTIONS: { value: ThesisType; label: string; icon: string; sub: str
     value: "value",
     label: "Value",
     icon: "⚖",
-    sub: "Buy below intrinsic worth",
+    sub: "Price below a stated estimate of worth",
     description: "The asset is trading below what you believe it is worth. You are buying the discount, not the momentum.",
     conditions: ["Valuation metrics below historical average", "Catalyst or re-rating event visible", "No deteriorating fundamentals", "Patience for 3–12 month horizon"],
   },
@@ -514,7 +515,7 @@ export default function SituationRoom() {
   const [deployCashTarget, setDeployCashTarget] = useState<string>("");
   const [positionSize, setPositionSize] = useState<string>(urlAutorun ? "normal" : "");
   const [exitType, setExitType] = useState<string>(urlAutorun && urlMove === "sell_specific_asset" ? "full" : "");
-  const [holdConcern, setHoldConcern] = useState<string>(urlAutorun && urlMove === "hold" ? "general review" : "");
+  const [holdConcern, setHoldConcern] = useState<string>(urlAutorun && urlMove === PREFLIGHT_KEEP ? "general review" : "");
   const [open, setOpen] = useState<Record<string, boolean>>({
     greenLights: true, threatBoard: true, actionBias: true, invalidation: false, watchNext: false,
     verdict: true, outcomeSimulator: false, entryQuality: false, positionSizing: false,
@@ -552,7 +553,7 @@ export default function SituationRoom() {
     if (selectedMove === "deploy_cash") return deployCashTarget.trim().length > 0;
     if (selectedMove === "buy_specific_asset") return ticker.trim().length > 0 && positionSize.trim().length > 0;
     if (selectedMove === "sell_specific_asset") return ticker.trim().length > 0 && exitType.trim().length > 0;
-    if (selectedMove === "hold") return holdConcern.trim().length > 0;
+    if (selectedMove === PREFLIGHT_KEEP) return holdConcern.trim().length > 0;
     if (selectedMove === "hedge") return selectedExposure !== null;
     return selectedExposure !== null;
   };
@@ -584,7 +585,7 @@ export default function SituationRoom() {
       deployCashTarget: selectedMove === "deploy_cash" ? deployCashTarget : undefined,
       positionSizeType: selectedMove === "buy_specific_asset" ? positionSize : undefined,
       exitType: selectedMove === "sell_specific_asset" ? exitType : undefined,
-      holdConcern: selectedMove === "hold" ? holdConcern : undefined,
+      holdConcern: selectedMove === PREFLIGHT_KEEP ? holdConcern : undefined,
     });
   };
 
@@ -600,7 +601,7 @@ export default function SituationRoom() {
           ticker: urlSymbol,
           positionSizeType: urlMove === "buy_specific_asset" ? "normal" : undefined,
           exitType: urlMove === "sell_specific_asset" ? "full" : undefined,
-          holdConcern: urlMove === "hold" ? "general review" : undefined,
+          holdConcern: urlMove === PREFLIGHT_KEEP ? "general review" : undefined,
         });
       }, 300);
       return () => clearTimeout(t);
@@ -969,7 +970,7 @@ export default function SituationRoom() {
               )}
 
               {/* ── HOLD: What's your concern? ── */}
-              {selectedMove === "hold" && (
+              {selectedMove === PREFLIGHT_KEEP && (
                 <div style={{ marginBottom: "14px" }}>
                   <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "8px" }}>What's your concern with holding? <span style={{ color: "#FF2D55", fontSize: "9px" }}>* required</span></label>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "6px" }}>
@@ -1206,7 +1207,7 @@ export default function SituationRoom() {
             {(() => {
               const vt = result.verdict.verdict as VerdictType;
               const institutionalLabel: Record<VerdictType, string> = {
-                HIGH_CONVICTION: "BUY", APPROVED: "BUY", CAUTION: "HOLD", WAIT: "WAIT", DEFENSIVE: "REDUCE",
+                HIGH_CONVICTION: "Several measured inputs agree", APPROVED: "Measured inputs point the same way", CAUTION: "Measured inputs are mixed", WAIT: "WAIT", DEFENSIVE: "REDUCE",
               };
               const confData: ConfidenceData = {
                 confidenceScore: Math.round(result.verdict.confidence),

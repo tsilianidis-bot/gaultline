@@ -275,11 +275,13 @@ export default function IntelligenceTrackRecord() {
   });
   const preview = previewQuery();
   const examplePreview = import.meta.env.DEV && preview === "example";
-  const emptyPreview = preview === "empty";
+  const emptyPreviewRequested = preview === "empty";
+  const session = trpc.auth.me.useQuery(undefined, { retry: false });
+  const emptyPreview = emptyPreviewRequested && session.isSuccess && Boolean(session.data);
   const emptyQuery = trpc.intelligenceAccountability.emptyPreview.useQuery(undefined, { retry: false, enabled: emptyPreview });
-  const query = trpc.intelligenceAccountability.publicRecord.useQuery(undefined, { retry: false, enabled: !examplePreview && !(emptyPreview && (emptyQuery.isLoading || Boolean(emptyQuery.data))) });
+  const query = trpc.intelligenceAccountability.publicRecord.useQuery(undefined, { retry: false, enabled: !examplePreview && !emptyPreviewRequested && !(emptyPreview && (emptyQuery.isLoading || Boolean(emptyQuery.data))) });
   if (examplePreview) return <ExamplePreview />;
-  if (emptyPreview && emptyQuery.isLoading) {
+  if (emptyPreviewRequested && (session.isLoading || (emptyPreview && emptyQuery.isLoading))) {
     return <div className="min-h-screen bg-black px-6 py-16 text-sm text-zinc-500">Loading the accountability record.</div>;
   }
   if (emptyPreview && emptyQuery.data) return <IntelligenceTrackRecordView record={emptyQuery.data} mode="empty" />;

@@ -35,10 +35,10 @@ describe("scheduled Seismograph NYSE admission", () => {
 
     await runScheduledSeismographForTests(res as never);
 
-    expect(status).toHaveBeenCalledWith(409);
+    expect(status).toHaveBeenCalledWith(200);
     expect(json).toHaveBeenCalledWith(expect.objectContaining({
-      ok: false,
-      alert: true,
+      ok: true,
+      alert: false,
       skipped: "outside_nyse_post_close_window",
       session: "CLOSED",
       etDate: "2026-11-26",
@@ -84,10 +84,10 @@ describe("scheduled Seismograph NYSE admission", () => {
     const { json, status, res } = response();
     await runScheduledSeismographForTests(res as never, { runPipeline: pipeline });
     expect(pipeline).not.toHaveBeenCalled();
-    expect(status).toHaveBeenCalledWith(409);
+    expect(status).toHaveBeenCalledWith(200);
     expect(json).toHaveBeenCalledWith(expect.objectContaining({
-      ok: false,
-      alert: true,
+      ok: true,
+      alert: false,
       skipped: "dst_companion_outside_window",
     }));
   });

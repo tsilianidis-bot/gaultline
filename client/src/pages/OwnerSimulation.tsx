@@ -5,6 +5,7 @@
    ============================================================ */
 import { useState, useCallback, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { SIM_SIDE, isSimulatedAcquisition, simulatedFillLabel, type SimulatedFillSide } from "@shared/surfaceClaims";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -544,12 +545,12 @@ interface TradeModalProps {
   opp: Opportunity;
   accountValue: number;
   onClose: () => void;
-  onExecute: (side: "BUY" | "SELL" | "TRIM" | "ADD", qty: number) => void;
+  onExecute: (side: SimulatedFillSide, qty: number) => void;
   isExecuting: boolean;
 }
 
 function TradeModal({ opp, accountValue, onClose, onExecute, isExecuting }: TradeModalProps) {
-  const [side, setSide] = useState<"BUY" | "ADD">("BUY");
+  const [side, setSide] = useState<SimulatedFillSide>(SIM_SIDE.acquire);
   const [qty, setQty] = useState<number>(() => {
     const suggestedQty = opp.suggestedPositionSizeUsd / opp.currentPrice;
     return Math.max(1, Math.round(suggestedQty * 100) / 100);
@@ -592,7 +593,7 @@ function TradeModal({ opp, accountValue, onClose, onExecute, isExecuting }: Trad
           <div>
             <Label className="text-[#A8B8CC] text-xs font-mono tracking-widest mb-2 block">TRADE SIDE</Label>
             <div className="flex gap-2">
-              {(["BUY", "ADD"] as const).map(s => (
+              {([SIM_SIDE.acquire, SIM_SIDE.add] as const).map(s => (
                 <button
                   key={s}
                   onClick={() => setSide(s)}
@@ -600,7 +601,7 @@ function TradeModal({ opp, accountValue, onClose, onExecute, isExecuting }: Trad
                     side === s ? "border-[#00FF88]/60 bg-[#00FF88]/10 text-[#00FF88]" : "border-white/10 text-[#64748B] hover:border-white/20"
                   }`}
                 >
-                  {s}
+                  {simulatedFillLabel(s)}
                 </button>
               ))}
             </div>
@@ -846,7 +847,7 @@ function OpportunityCard({ opp, onTrade, onReject }: {
             onClick={() => onTrade(opp)}
             className="flex-1 bg-[#00FF88]/10 border border-[#00FF88]/30 text-[#00FF88] hover:bg-[#00FF88]/20 font-mono text-xs"
           >
-            <TrendingUp className="w-3 h-3 mr-1" /> SIMULATE BUY
+            <TrendingUp className="w-3 h-3 mr-1" /> RECORD SIMULATED ACQUISITION
           </Button>
         ) : null}
         <Button
@@ -1230,8 +1231,8 @@ export default function OwnerSimulation() {
                       }`} />
                       <span className="text-[10px] font-mono text-[#64748B] tracking-widest">OPTIMAL ACTION</span>
                       <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
-                        optimalAction.actionType === "BUY" || optimalAction.actionType === "ADD" ? "border-[#00D4FF]/50 text-[#00D4FF] bg-[#00D4FF]/10" :
-                        optimalAction.actionType === "SELL" || optimalAction.actionType === "TRIM" ? "border-[#FF2D55]/50 text-[#FF2D55] bg-[#FF2D55]/10" :
+                        isSimulatedAcquisition(optimalAction.actionType) ? "border-[#00D4FF]/50 text-[#00D4FF] bg-[#00D4FF]/10" :
+                        optimalAction.actionType === SIM_SIDE.reduce || optimalAction.actionType === SIM_SIDE.trim ? "border-[#FF2D55]/50 text-[#FF2D55] bg-[#FF2D55]/10" :
                         optimalAction.actionType === "RAISE_CASH" || optimalAction.actionType === "HEDGE" ? "border-[#FF6B35]/50 text-[#FF6B35] bg-[#FF6B35]/10" :
                         "border-[#64748B]/50 text-[#64748B] bg-[#64748B]/10"
                       }`}>{optimalAction.actionType.replace("_", " ")}</span>
@@ -1516,7 +1517,7 @@ export default function OwnerSimulation() {
                       <div className="flex items-center justify-between gap-4 flex-wrap">
                         <div className="flex items-center gap-3">
                           <span className={`text-xs px-2 py-0.5 rounded border font-mono ${
-                            trade.side === "BUY" || trade.side === "ADD" ? "border-[#00FF88]/30 text-[#00FF88] bg-[#00FF88]/8" :
+                            isSimulatedAcquisition(trade.side) ? "border-[#00FF88]/30 text-[#00FF88] bg-[#00FF88]/8" :
                             isRejected ? "border-white/10 text-[#64748B]" :
                             "border-[#FF2D55]/30 text-[#FF2D55] bg-[#FF2D55]/8"
                           }`}>

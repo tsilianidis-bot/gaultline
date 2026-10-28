@@ -50,7 +50,7 @@ const LearnMacroInvesting = () => {
         },
         {
           heading: "Important Disclaimer",
-          body: `FAULTLINE provides market intelligence and educational content for informational purposes only. It is not intended as, and does not constitute, personalized financial advice, investment recommendations, or an offer to buy or sell any securities. Investing involves risk, and past performance is not indicative of future results. Always consult with a qualified financial professional before making any investment decisions.`, 
+          body: `FAULTLINE provides market intelligence and educational content for informational purposes only. It is not personalized financial advice and it does not offer a position to take. Investing involves risk, and past performance is not indicative of future results. A qualified financial professional is the place for a personal decision.`, 
         },
       ]}
       faqs={[

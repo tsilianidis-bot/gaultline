@@ -10,22 +10,13 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
 import {
-  TrendingUp, TrendingDown, Minus, Lock, RefreshCw, Zap, Crown,
+  Lock, RefreshCw, Zap, Crown,
   ChevronRight, AlertTriangle, Activity, BarChart2,
 } from "lucide-react";
+import { directionColor, observedDirectionSentence } from "@shared/surfaceClaims";
 
-// ── Helpers ───────────────────────────────────────────────────
 function actionColor(action: string): string {
-  if (action === "BUY")   return "#00D4FF";
-  if (action === "SELL")  return "#FF2D55";
-  if (action === "HOLD")  return "#22D3EE";
-  return "#64748B"; // WATCH
-}
-
-function actionIcon(action: string) {
-  if (action === "BUY")  return <TrendingUp size={13} />;
-  if (action === "SELL") return <TrendingDown size={13} />;
-  return <Minus size={13} />;
+  return directionColor(action);
 }
 
 
@@ -103,8 +94,7 @@ function SignalCard({
             className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold"
             style={{ background: `${color}15`, border: `1px solid ${color}30`, color }}
           >
-            {actionIcon(signal.action)}
-            {signal.action}
+            {observedDirectionSentence(signal.action)}
           </div>
         </div>
 
@@ -129,7 +119,7 @@ function SignalCard({
         <div className="px-4 pb-4 border-t border-white/5 pt-3 space-y-3">
           {/* Action label + timeframe */}
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-mono" style={{ color }}>{signal.actionLabel}</span>
+            <span className="text-[11px] font-mono" style={{ color }}>{observedDirectionSentence(signal.action)}</span>
             <span className="text-[10px] font-mono text-[#64748B]">{signal.timeframe} · {signal.strength}</span>
           </div>
 

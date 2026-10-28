@@ -46,7 +46,7 @@ const LearnRiskOnRiskOff = () => {
         },
         {
           question: "What is a risk-off market environment?",
-          answer: "A risk-off environment occurs when investors become cautious or fearful due to economic uncertainty or geopolitical events. They tend to sell risky assets and move capital into safe-haven assets such as government bonds, gold, and certain currencies.",
+          answer: "A risk-off environment occurs when investors become cautious because of economic uncertainty or geopolitical events. Capital has historically moved from volatile assets toward government bonds, gold, and certain currencies.",
         },
         {
           question: "What drives shifts between risk-on and risk-off?",

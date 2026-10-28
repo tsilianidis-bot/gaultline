@@ -130,15 +130,17 @@ describe("integration 117+118 shared surface", () => {
 
   it("keeps the migration journal order and both schema additions", () => {
     const journal = JSON.parse(read("drizzle/meta/_journal.json")) as { entries: Array<{ idx: number; tag: string; when: number }> };
-    const tail = journal.entries.slice(-4);
+    const tail = journal.entries.slice(-5);
     expect(tail.map(entry => entry.tag)).toEqual([
       "0072_final_recovery_controls",
       "0073_pressure_v2_shadow",
       "0074_stripe_entitlement_resync",
       "0075_pentagonal_thesis_records",
+      "0076_algorithm_outcome_fk_name",
     ]);
-    expect(tail.map(entry => entry.idx)).toEqual([72, 73, 74, 75]);
+    expect(tail.map(entry => entry.idx)).toEqual([72, 73, 74, 75, 76]);
     expect(tail[3]?.when).toBe(1792200000000);
+    expect(tail[4]?.when).toBe(1792300000000);
     const schema = read("drizzle/schema.ts");
     expect(schema).toContain("pressureV2ShadowObservations");
     expect(schema).toContain("accessExpiresAt");

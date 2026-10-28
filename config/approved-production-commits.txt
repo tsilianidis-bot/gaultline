@@ -1,5 +1,10 @@
-# Not an allowlist. scripts/guard-approved-deploy.sh does not read this file,
-# and the server does not consult it at boot.
+# NOT A CONTROL. This file is not an allowlist.
+# scripts/guard-approved-deploy.sh does not read it.
+# scripts/start-production.sh does not read it.
+# The server does not consult it at boot.
+# The enforced control, when an owner turns it on, is the external environment
+# allowlist (FAULTLINE_APPROVED_DEPLOY_SHAS or FAULTLINE_APPROVED_DEPLOY_TAGS)
+# checked by scripts/guard-approved-deploy.sh because FAULTLINE_ENFORCE_DEPLOY_GUARD=1.
 #
 # Production protection is Railway commit pinning plus the tag
 # production-1cb5dee on 1cb5dee13832c0556ec5a380ecc4ffb02513e875

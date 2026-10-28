@@ -27,9 +27,9 @@ Copy is in `config/scheduler-candidate.txt`.
 - EDT: 20:15 UTC is admitted. 21:15 UTC is the companion (`17:15 ET`) and returns 409 `dst_companion_outside_window`.
 - EST: 21:15 UTC is admitted. 20:15 UTC is the companion (`15:15 ET`) and returns 409.
 
-Weekends, holidays, and the current `0 18 * * *` fire return 409 `outside_nyse_post_close_window`. `curl -f` fails. The process logs `[Seismograph][SCHEDULE-ALERT]` and sends an error-severity capture when error tracking is configured.
+A weekend or full NYSE holiday returns HTTP 200 `{ ok: true, alert: false, skipped: "outside_nyse_post_close_window" }`. The DST companion hour returns HTTP 200 `{ ok: true, alert: false, skipped: "dst_companion_outside_window" }`. Neither writes a score and neither sends `[Seismograph][SCHEDULE-ALERT]`. An unexpected hour on a real session, including the current production `0 18 * * *` UTC fire, still returns 409 with `alert: true` so `curl -f` fails.
 
-A completed claim is the only duplicate that stays HTTP 200 (`execution: already_completed`). A leased or failed claim is HTTP 409 `session_incomplete`. One recovery is allowed after the lease expires (3 minutes without a heartbeat) or after `failScheduledSession`, and only inside that session's 16:15–16:45 ET window. A second recovery is `exhausted` (409).
+A completed claim is the only duplicate that stays HTTP 200 (`execution: already_completed`). A leased claim that is still inside its 3-minute lease is HTTP 409 `session_incomplete`. If the pipeline throws, the same request fails the claim and retries once. If that retry also throws, the claim is marked exhausted in that request. A run that finishes is sealed even when the first compare-and-swap misses, so a later lease expiry does not start another pipeline. A second recovery after that is `exhausted` (409). The DST companion hour is not the recovery mechanism.
 
 Do not store `15 20,21` with an `America/New_York` timezone. Railway cron is UTC-only.
 
@@ -44,7 +44,9 @@ If a later deploy of an approved SHA must be rolled back to production:
 3. `GET /api/health` must report commit `1cb5dee13832c0556ec5a380ecc4ffb02513e875`.
 4. Leave `FAULTLINE_INTELLIGENCE_EVIDENCE_ENABLED` and `TRACK_RECORD_CRON_WRITES` unset.
 
-Production protection is Railway commit pinning plus the tag `production-1cb5dee` on `1cb5dee13832c0556ec5a380ecc4ffb02513e875`. The server does not check that allowlist at boot. `pnpm start` and the Docker runtime command do not run a guard, and the runtime image does not need `scripts/` or `config/`.
+Production protection is Railway commit pinning plus the tag `production-1cb5dee` on `1cb5dee13832c0556ec5a380ecc4ffb02513e875`. The tag command below has not been executed. `config/approved-production-commits.txt` is not a control and is not read.
+
+The container start command is `bash scripts/start-production.sh`. It always reaches `node dist/index.js` unless `FAULTLINE_ENFORCE_DEPLOY_GUARD=1`. With that flag, `scripts/guard-approved-deploy.sh` must pass before the process listens. The flag is off in this candidate, so a Docker boot without the external allowlist still starts. Turning the flag on without `FAULTLINE_APPROVED_DEPLOY_SHAS` or `FAULTLINE_APPROVED_DEPLOY_TAGS` refuses the boot. `BUILD_COMMIT` is not an allowlist input. The runtime image copies `scripts/start-production.sh` and `scripts/guard-approved-deploy.sh`. It does not need `config/`.
 
 Before a deploy, compare the target SHA to an allowlist held outside the commit. `BUILD_COMMIT` is not an input.
 

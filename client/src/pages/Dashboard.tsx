@@ -579,8 +579,8 @@ export default function Dashboard() {
       <IntelTicker items={[
         { label: 'FAULTLINE', value: score100(overall.score), color },
         { label: 'REGIME', value: regime.label, color },
-        { label: 'BULL SCENARIO', value: engineProbabilityText(output, 'bullProbability'), color: '#00FF88' },
-        { label: 'CRASH PROB.', value: engineProbabilityText(output, 'crashProbability'), color: '#94A3B8' },
+        { label: 'PRESSURE', value: score100(overall.score), color },
+        { label: 'FRESHNESS', value: integrityLabel, color: '#94A3B8' },
         { label: 'TOP THREAT', value: topThreat?.label?.split(' ')[0] ?? '—', color: '#FF2D55' },
         { label: 'ANALOG', value: analogs[0]?.era?.split(' ').slice(0, 2).join(' ') ?? '—', color: '#00E5FF' },
         { label: 'DELTA', value: pointsDeltaText(availableDelta(overall)), color },
@@ -723,8 +723,8 @@ export default function Dashboard() {
           const cells = [
             { label: 'PRESSURE INDEX', value: score100Value(overall.score), sub: '/ 100', valueColor: color },
             { label: 'REGIME', value: regime.label.split(' ').slice(0, 2).join(' '), sub: regime.sublabel.slice(0, 18), valueColor: color },
-            { label: 'BULL SCENARIO', value: engineProbabilityText(output, 'bullProbability'), sub: 'scenario weight', valueColor: engineProbabilityPercent(output, 'bullProbability') !== null ? '#00FF88' : '#94A3B8' },
-            { label: 'CRASH PROBABILITY', value: engineProbabilityText(output, 'crashProbability'), sub: 'no governed model', valueColor: '#94A3B8' },
+            { label: 'PRESSURE BAND', value: regime.label.split(' ').slice(0, 2).join(' '), sub: 'measured stress class', valueColor: color },
+            { label: 'AS OF', value: integrityLabel, sub: 'source freshness', valueColor: '#94A3B8' },
             { label: 'DIRECTION', value: directionLabel, sub: `Δ ${pointsDeltaText(overallDelta)} vs baseline`, valueColor: directionColor },
             { label: 'CLOSEST ANALOG', value: analogLabel, sub: analogSim !== null ? `${analogSim}% match` : 'Unavailable', valueColor: '#00E5FF' },
             { label: 'TOP THREAT', value: topThreat?.label?.split(' ').slice(0, 2).join(' ') ?? '—', sub: score100(topThreat?.score), valueColor: '#FF2D55' },
@@ -777,7 +777,7 @@ export default function Dashboard() {
               : overall.riskLevel === 'elevated'
               ? `Systemic pressure is elevated at ${score100(overall.score)} — reduce exposure and tighten stops. ${analogSentence('The closest analog is')}`
               : `Systemic pressure is at crisis levels — ${score100(overall.score)}. Capital preservation is the trade. ${analogSentence('Closest analog:')}`
-            }{' '}Bull scenario: {engineProbabilityText(output, 'bullProbability')}. Crash probability: {engineProbabilityText(output, 'crashProbability')}.
+            }{' '}No scenario percentage is published with this reading.
           </p>
         </div>
       </div>
@@ -1101,21 +1101,9 @@ export default function Dashboard() {
         <div className="intel-module" style={{ padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 150ms both' }}>
           <div style={{ marginBottom: '12px' }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Scenario Readings</div>
-            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: 'rgba(100,116,139,0.6)', lineHeight: 1.5 }}>The bull/neutral/bear scenario weights are evidence-vote shares with no defined event, horizon or calibration record, so no percentage is shown. FAULTLINE does not offer crash, recession, stagflation or soft-landing probabilities.</div>
+            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: 'rgba(100,116,139,0.6)', lineHeight: 1.5 }}>Scenario percentages are not published. The Pressure Index and regime band are the current measured readings. They do not state a future market outcome.</div>
           </div>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            {output.probabilityDisplay ? (
-              <>
-                <ProbBar label="Bull scenario" display={output.probabilityDisplay.bullProbability} color="#00FF88" />
-                <ProbBar label="Crash" display={output.probabilityDisplay.crashProbability} color="#FF2D55" />
-                <ProbBar label="Recession" display={output.probabilityDisplay.recessionProbability} color="#FF9500" />
-                <ProbBar label="Stagflation" display={output.probabilityDisplay.stagflationProbability} color="#FFD700" />
-                <ProbBar label="Soft Landing" display={output.probabilityDisplay.softLandingProbability} color="#00E5FF" />
-              </>
-            ) : (
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#94A3B8' }}>{engineProbabilityText(output, 'bullProbability')}</span>
-            )}
-          </div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#94A3B8' }}>Pressure Index {score100(overall.score)} · {regime.label}</div>
         </div>
 
         {/* Risk heatmap with signal prioritization tiers */}
@@ -1414,7 +1402,7 @@ export default function Dashboard() {
                 Market Regime Analysis
               </h3>
               <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.7, margin: 0 }}>
-                Probabilistic bull, bear, and crash regime classification using macro pressure, credit conditions, volatility regimes, and historical analog pattern recognition. Identifies regime transitions before they become consensus.
+Current regime description from the Pressure Index, credit conditions, and volatility readings, with historical analogs labeled by their dates. It does not identify a transition before it is measured.
               </p>
             </article>
             {/* AI Market Analytics */}

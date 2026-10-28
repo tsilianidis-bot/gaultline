@@ -422,6 +422,42 @@ export async function completeScheduledSession(
   return transitionClaim(etDate, generation, "completed", dbProvider, nowMs);
 }
 
+/**
+ * Close a run that already finished. A heartbeat race can make the first
+ * compare-and-swap miss. Sealing the latest body, once this generation owns
+ * the claim or an outcome row exists, stops a later lease expiry from starting
+ * another pipeline.
+ */
+export async function sealFinishedSessionClaim(
+  etDate: string,
+  generation: number,
+  dbProvider: () => Promise<ClaimDb | SessionClaimStore | null> = getDb,
+  nowMs = Date.now(),
+): Promise<boolean> {
+  if (await completeScheduledSession(etDate, generation, dbProvider, nowMs)) return true;
+  const store = await resolveStore(dbProvider);
+  if (!store) return false;
+  const key = scheduledSeismographClaimKey(etDate);
+  const current = await store.read(key).catch(() => null);
+  if (!current) return false;
+  const parsed = parseClaim(current);
+  if (!parsed) return false;
+  if (parsed.state === "completed") return true;
+  const outcomeRaw = await store.read(scheduledSeismographOutcomeKey(etDate)).catch(() => null);
+  const outcome = outcomeRaw ? parseOutcome(outcomeRaw) : null;
+  const workRecorded = outcome != null && outcome.state !== "unrecoverable";
+  if (parsed.generation !== generation && !workRecorded) return false;
+  const next = encodeClaim({
+    ...parsed,
+    state: "completed",
+    heartbeatAt: new Date(nowMs).toISOString(),
+  });
+  const won = await store.cas(key, current, next).catch(() => false);
+  if (won) return true;
+  const latest = await store.read(key).catch(() => null);
+  return parseClaim(latest ?? "")?.state === "completed";
+}
+
 export async function failScheduledSession(
   etDate: string,
   generation: number,

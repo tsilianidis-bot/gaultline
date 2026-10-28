@@ -462,20 +462,15 @@ const STOCK_META: Record<string, {
   score: number; action: string;
   signals: string[]; regime: string; color: string;
 }> = {
-  NVDA: { name: "NVIDIA Corp",        score: 84, action: "BUY",   signals: ["Momentum Breakout", "AI Bubble Exposure"],  regime: "Aligned",       color: "#00D4FF" },
-  AAPL: { name: "Apple Inc",          score: 61, action: "HOLD",  signals: ["Macro Beneficiary", "Neutral / Watch"],      regime: "Neutral",       color: "#FFD700" },
-  TSLA: { name: "Tesla Inc",          score: 72, action: "WATCH", signals: ["Liquidity Sensitive", "Macro Vulnerable"],   regime: "Counter-Trend", color: "#FF9500" },
-  SPY:  { name: "S&P 500 ETF",        score: 55, action: "HOLD",  signals: ["Macro Beneficiary"],                         regime: "Neutral",       color: "#00FF88" },
-  XLU:  { name: "Utilities SPDR",     score: 48, action: "WATCH", signals: ["Recession Defensive", "Macro Beneficiary"],  regime: "Neutral",       color: "#94A3B8" },
-  ARKK: { name: "ARK Innovation ETF", score: 77, action: "SELL",  signals: ["Liquidity Sensitive", "Macro Vulnerable"],   regime: "Counter-Trend", color: "#FF2D55" },
+  NVDA: { name: "NVIDIA Corp",        score: 84, action: "catalog", signals: ["Momentum Breakout", "AI Bubble Exposure"],  regime: "Aligned",       color: "#00D4FF" },
+  AAPL: { name: "Apple Inc",          score: 61, action: "catalog", signals: ["Macro Beneficiary", "Neutral / Watch"],      regime: "Neutral",       color: "#FFD700" },
+  TSLA: { name: "Tesla Inc",          score: 72, action: "catalog", signals: ["Liquidity Sensitive", "Macro Vulnerable"],   regime: "Counter-Trend", color: "#FF9500" },
+  SPY:  { name: "S&P 500 ETF",        score: 55, action: "catalog", signals: ["Macro Beneficiary"],                         regime: "Neutral",       color: "#00FF88" },
+  XLU:  { name: "Utilities SPDR",     score: 48, action: "catalog", signals: ["Recession Defensive", "Macro Beneficiary"],  regime: "Neutral",       color: "#94A3B8" },
+  ARKK: { name: "ARK Innovation ETF", score: 77, action: "catalog", signals: ["Liquidity Sensitive", "Macro Vulnerable"],   regime: "Counter-Trend", color: "#FF2D55" },
 };
 
-const ACTION_COLORS: Record<string, { text: string; border: string; bg: string }> = {
-  BUY:   { text: "#00D4FF", border: "rgba(0,212,255,0.4)",  bg: "rgba(0,212,255,0.12)"  },
-  SELL:  { text: "#FF2D55", border: "rgba(255,45,85,0.4)",  bg: "rgba(255,45,85,0.12)"  },
-  HOLD:  { text: "#FFD700", border: "rgba(255,215,0,0.35)", bg: "rgba(255,215,0,0.10)"  },
-  WATCH: { text: "#94A3B8", border: "rgba(148,163,184,0.3)", bg: "rgba(148,163,184,0.08)" },
-};
+const CATALOG_STYLE = { text: "#94A3B8", border: "rgba(148,163,184,0.35)", bg: "rgba(148,163,184,0.10)" };
 
 const REGIME_COLORS: Record<string, string> = {
   "Aligned": "#00D4FF", "Neutral": "#FFD700", "Counter-Trend": "#FF2D55",
@@ -508,7 +503,7 @@ export function StockPorchPanel() {
   }, []);
 
   const meta = STOCK_META[active] ?? STOCK_META.NVDA;
-  const actionStyle = ACTION_COLORS[meta.action] ?? ACTION_COLORS.HOLD;
+  const actionStyle = CATALOG_STYLE;
   const regimeColor = REGIME_COLORS[meta.regime] ?? "#FFD700";
   const liveQ = liveQuotes[active];
   const priceDisplay = liveQ?.price != null
@@ -560,7 +555,7 @@ export function StockPorchPanel() {
           Stock Signal Engine
         </div>
         <div style={{ fontFamily: SANS, fontSize: '10px', color: '#4B5563', lineHeight: 1.5, marginBottom: '12px' }}>
-          BUY / HOLD / SELL signals with macro regime alignment.
+          Observed prices and the current regime band. No trade instruction is attached.
         </div>
 
         {/* Search bar */}
@@ -626,7 +621,7 @@ export function StockPorchPanel() {
           <ArcGauge
             value={0}
             color={actionStyle.text}
-            label={meta.action}
+            label="CATALOG"
             sublabel="CONF NOT ESTABLISHED"
             size={108}
             blurred={true}
@@ -644,7 +639,7 @@ export function StockPorchPanel() {
                 borderRadius: '3px', padding: '3px 8px', background: actionStyle.bg,
                 textTransform: 'uppercase', fontWeight: 700,
                 boxShadow: `0 0 10px ${actionStyle.text}30`,
-              }}>{meta.action}</span>
+              }}>No trade instruction</span>
               <span style={{
                 fontFamily: MONO, fontSize: '11px', color: regimeColor,
                 border: `1px solid ${regimeColor}40`, borderRadius: '2px',

@@ -13,6 +13,7 @@ import { getCurrentGovernedEarlyWarningPresentation } from "../earlyWarningPrese
 import { computeSignalConvergence } from "./signalConvergence";
 import { persistApprovedModelRegistry, persistSignalConvergence, persistSystemicRegimeHistory, persistSystemicRegimeReading, restoreApprovedModelFromDb, ensureSystemicRegimeTables } from "./writer";
 import type { SystemicRegimeHistoryPoint, SystemicRegimeReading } from "../../shared/systemicRegime";
+import { seismographFreshForInfer } from "../../shared/nyseSession";
 
 const QUANT_DIR = resolve(process.cwd(), "quant/systemic-regime");
 const ARTIFACT_DIR = resolve(QUANT_DIR, "artifacts");
@@ -78,6 +79,19 @@ export async function runSystemicRegimeInferenceJob(): Promise<Record<string, un
   const persisted = await persistSystemicRegimeReading(reading, "LIVE_INFERENCE");
   const canonical = await getAuthoritativeCanonicalIntelligenceState();
   const seismograph = await memoryGetJson<SeismographOutput | null>("seismograph:latest_output", null);
+  const fresh = seismographFreshForInfer(seismograph?.computedAt, new Date());
+  if (!fresh || !seismograph) {
+    return {
+      ok: true,
+      persisted,
+      regime: reading.currentRegime,
+      dataAsOf: reading.dataAsOf,
+      convergence: null,
+      seismographFreshness: "stale_or_missing",
+      skippedConvergence: "seismograph_not_from_current_post_close_session",
+      alert: true,
+    };
+  }
   const synthesis = await getAuthoritativeCrossEngineSynthesis();
   const earlyWarning = await getCurrentGovernedEarlyWarningPresentation();
   const convergence = computeSignalConvergence({
@@ -88,7 +102,16 @@ export async function runSystemicRegimeInferenceJob(): Promise<Record<string, un
     systemicRegime: reading,
   });
   await persistSignalConvergence(convergence);
-  return { ok: true, persisted, regime: reading.currentRegime, dataAsOf: reading.dataAsOf, convergence: convergence.level };
+  return {
+    ok: true,
+    persisted,
+    regime: reading.currentRegime,
+    dataAsOf: reading.dataAsOf,
+    convergence: convergence.level,
+    seismographFreshness: "current_session",
+    skippedConvergence: null,
+    alert: false,
+  };
 }
 
 export async function runSystemicRegimeTrainJob(): Promise<Record<string, unknown>> {
@@ -124,6 +147,10 @@ export async function ingestPackagedResearchHistory(): Promise<number> {
 export async function handleScheduledSystemicRegimeInfer(_req: Request, res: Response): Promise<void> {
   try {
     const result = await runSystemicRegimeInferenceJob();
+    if (result.skippedConvergence) {
+      res.status(409).json(result);
+      return;
+    }
     res.json(result);
   } catch (error) {
     log.error("[SystemicRegime] Infer job failed", { err: error as Error });

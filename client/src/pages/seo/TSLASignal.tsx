@@ -20,12 +20,12 @@ Tesla operates across multiple sectors: Electric Vehicles (its core business), E
 
 Tesla's financial profile is complex: it is simultaneously a profitable automotive manufacturer, an energy business with high-margin storage products, and an AI/robotics company with significant optionality value embedded in the stock price. The AI/robotics optionality — particularly Full Self-Driving (FSD) and Optimus — is a significant component of TSLA's valuation at current prices.
 
-FAULTLINE classifies TSLA as having HIGH AI & EV Cycle Exposure — its valuation is sensitive to both EV demand cycles (interest rates, competition, consumer spending) and AI narrative momentum (FSD progress, Optimus development, Dojo compute).`}
+FAULTLINE does not publish a narrative-momentum score for TSLA. The business lines described on this page are electric vehicles, energy storage, and the company's public statements about FSD, Optimus, and Dojo. Those are descriptions of the business, not a measured momentum series.`}
       signalAnalysis={`FAULTLINE's TSLA signal analysis incorporates four primary inputs:
 
 EV Demand Cycle: Tesla's core automotive revenue is sensitive to interest rates (higher rates reduce EV affordability), competition (BYD, Rivian, legacy OEMs), and consumer spending. In HIGH STRESS macro environments, discretionary spending on EVs typically declines.
 
-AI & Robotics Optionality: TSLA's valuation includes significant optionality for FSD commercialization, Optimus robot deployment, and Dojo compute services. When AI narrative momentum is strong, this optionality expands TSLA's valuation multiple. When AI narrative fades, this optionality compresses.
+AI and robotics products: Tesla publishes material about FSD, Optimus, and Dojo. This page does not turn that material into a momentum score or a valuation multiple.
 
 Elon Musk Factor: TSLA's valuation is uniquely tied to Elon Musk's perceived execution ability and public profile. Positive developments (FSD milestones, Optimus demos, government contracts) can drive significant upside. Controversies or distractions can create headwinds.
 
@@ -47,9 +47,9 @@ Historical Volatility Context: TSLA is one of the most volatile large-cap stocks
 
 4. Elon Musk Concentration Risk: Tesla's brand, strategy, and investor narrative are heavily tied to Elon Musk. His involvement in other ventures (SpaceX, X, xAI, DOGE) and public controversies create headline risk that can affect TSLA's stock price independent of fundamental developments.
 
-5. Macro Regime Sensitivity: TSLA's high valuation multiple makes it highly sensitive to macro regime transitions. A shift to HIGH STRESS (FAULTLINE Pressure Index 65+) typically triggers significant TSLA drawdowns.`}
+5. Macro regime: HIGH STRESS is the Pressure Index band at 65 and above. This page does not state that the band produces a later drawdown.`}
       faqs={[
-        { question: "Is TSLA a buy or sell right now?", answer: "FAULTLINE's TSLA signal classification is available in real time on the Signals tab, based on macro regime alignment, EV demand cycle, AI optionality momentum, and technical structure. This is not investment advice." },
+        { question: "Does this page classify TSLA?", answer: "No. The live stock read is the shared thesis. This page does not publish a separate instruction or a narrative-momentum score." },
         { question: "What is Tesla's AI exposure?", answer: "Tesla's vehicle software includes Full Self-Driving, and the company also describes a humanoid robot program. This page does not turn that description into a separate reading. The stock read is the shared thesis." },
         { question: "How do interest rates relate to Tesla's vehicle business?", answer: "Higher interest rates can raise monthly payments on financed vehicles. This page does not turn that into a separate macro reading or a second stock call. Rate policy is a driver only when the shared thesis has a fresh sourced market input." },
         { question: "What does this TSLA page refuse to rank?", answer: "It does not name a single largest threat for a future year, and it does not publish a separate reading. Competition, vehicle programs, and macro conditions stay background until the shared thesis has fresh evidence." },

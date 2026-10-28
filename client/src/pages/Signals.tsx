@@ -1,7 +1,7 @@
 /* ============================================================
    FAULTLINE — Signals Tab
    Market scanner. Stock conclusions use the shared Pentagonal Thesis.
-   This page does not render a separate buy, sell, or confidence call.
+   This page does not render a separate trade instruction or a confidence call.
    ============================================================ */
 import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
@@ -68,7 +68,7 @@ interface QuotesResponse {
 }
 
 // ── Trading Signal Types (mirror server/tradingSignals.ts) ────
-type TradingAction = 'BUY' | 'SELL' | 'HOLD' | 'WATCH';
+type TradingAction = string;
 
 interface DailyBar {
   close: number;
@@ -136,57 +136,6 @@ export function priceLevelsBasis(quote: LiveQuote | undefined, badge: string): s
   const asOf = quote ? formatEt(quote.timestamp) : null;
   // As-of is the quote's market time; omitted (never the fetch time) when unknown.
   return `Computed from ${badge} Signals quote${asOf ? ` · as of ${asOf}` : ''}`;
-}
-
-// ── Trading Action Colors ─────────────────────────────────────
-const ACTION_COLORS: Record<TradingAction, { bg: string; text: string; glow: string; border: string }> = {
-  BUY:   { bg: 'rgba(0,212,255,0.15)',  text: '#00D4FF', glow: 'rgba(0,212,255,0.5)',  border: 'rgba(0,212,255,0.4)' },
-  SELL:  { bg: 'rgba(255,45,85,0.15)',  text: '#FF2D55', glow: 'rgba(255,45,85,0.5)',  border: 'rgba(255,45,85,0.4)' },
-  HOLD:  { bg: 'rgba(255,215,0,0.12)',  text: '#FFD700', glow: 'rgba(255,215,0,0.4)',  border: 'rgba(255,215,0,0.3)' },
-  WATCH: { bg: 'rgba(100,116,139,0.1)', text: '#64748B', glow: 'rgba(100,116,139,0.2)', border: 'rgba(100,116,139,0.2)' },
-};
-
-// ── Trading Signal Badge ──────────────────────────────────────
-function TradingSignalBadge({ action, actionLabel, confidence, strength, assetClass }: {
-  action: TradingAction;
-  actionLabel?: string;
-  confidence?: number | null;
-  strength: 'Strong' | 'Moderate' | 'Weak';
-  assetClass?: 'STOCK' | 'CRYPTO' | 'ETF';
-}) {
-  const c = ACTION_COLORS[action];
-  const STOCK_LABELS: Record<TradingAction, string> = { BUY: 'Accumulation Zone', SELL: 'Reduce Exposure', HOLD: 'Hold', WATCH: 'Watch' };
-  const CRYPTO_LABELS: Record<TradingAction, string> = { BUY: 'Accumulation Zone', SELL: 'Avoid New Entry', HOLD: 'Hold', WATCH: 'Watch' };
-  const displayLabel = actionLabel ?? (assetClass === 'CRYPTO' ? CRYPTO_LABELS[action] : STOCK_LABELS[action]);
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-      <span style={{
-        display: 'inline-flex', alignItems: 'center', gap: '4px',
-        padding: '3px 10px',
-        borderRadius: '2px',
-        fontSize: '10px',
-        fontFamily: "'IBM Plex Mono', monospace",
-        letterSpacing: '0.12em',
-        fontWeight: 700,
-        background: c.bg,
-        color: c.text,
-        border: `1px solid ${c.border}`,
-        boxShadow: `0 0 8px ${c.glow}`,
-        whiteSpace: 'nowrap',
-      }}>
-        {action === 'BUY' && '▲ '}
-        {action === 'SELL' && '▼ '}
-        {action === 'HOLD' && '◆ '}
-        {action === 'WATCH' && '◎ '}
-        {displayLabel}
-      </span>
-      <span style={{
-        fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: '12px', color: 'rgba(100,116,139,0.6)',
-        letterSpacing: '0.06em',
-      }}>{strength.toUpperCase()}</span>
-    </div>
-  );
 }
 
 // ── Confidence ────────────────────────────────────────────
@@ -733,7 +682,7 @@ export function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signal
                   )}
                   {stock.expectedHoldingPeriod && (
                     <div style={{ padding: '5px 8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '3px' }}>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>HOLD PERIOD</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>CATALOG WINDOW</div>
                       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(148,163,184,0.8)' }}>{stock.expectedHoldingPeriod}</div>
                     </div>
                   )}
@@ -939,7 +888,7 @@ function ApiHealthBadge({ source, tradeDate, lastUpdated, isLoading, quotes, tic
   );
 }
 
-// Quote tape. Counts are observed price changes, not buy or sell calls.
+// Quote tape. Counts are observed price changes, not instructions.
 export function TradingSignalsSummaryBar({ quotes }: { quotes: readonly LiveQuote[] }) {
   const available = quotes.filter(q => typeof q.price === "number" && q.price > 0).length;
   const gainers = quotes.filter(q => typeof q.price === "number" && q.price > 0 && typeof q.changePercent === "number" && q.changePercent > 0).length;

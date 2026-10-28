@@ -8,6 +8,7 @@
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
+import { directionColor, publicConditionText } from "@shared/surfaceClaims";
 import {
   Zap, TrendingUp, TrendingDown, AlertTriangle, Shield,
   BarChart2, ChevronRight, RefreshCw, Clock, Activity,
@@ -496,7 +497,7 @@ Updated: ${updatedAgo}`;
               <div style={{ background: "rgba(255,255,255,0.008)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "4px", padding: "14px 16px" }}>
                 <SectionHeader label="FMOS Decision Engine" color={ACCENT.purple} />
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                  <StatCard label="Verdict" value={fmosData.decision.verdict ?? "WATCH"} color={fmosData.decision.verdict === "BUY" || fmosData.decision.verdict === "ACCUMULATE" ? ACCENT.green : fmosData.decision.verdict === "SELL" || fmosData.decision.verdict === "REDUCE" ? ACCENT.red : ACCENT.amber} />
+                  <StatCard label="Condition" value={publicConditionText(fmosData.decision.verdict ?? "")} color={directionColor(fmosData.decision.verdict)} />
                   <StatCard label="Conviction" value={fmosData.decision.conviction != null ? String(fmosData.decision.conviction) : "Unavailable"} color={ACCENT.purple} />
                 </div>
                 {fmosData.decision.primaryReason && (

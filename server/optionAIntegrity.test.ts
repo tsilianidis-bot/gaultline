@@ -131,10 +131,10 @@ describe("blocker 2 — the real out-of-window cron finalizes stale pending rows
     });
     expect(pipeline).not.toHaveBeenCalled();
     expect(recordScore).not.toHaveBeenCalled();
-    expect(status).toHaveBeenCalledWith(409);
+    expect(status).toHaveBeenCalledWith(200);
     expect(json).toHaveBeenCalledWith(expect.objectContaining({
-      ok: false,
-      alert: true,
+      ok: true,
+      alert: false,
       skipped: "dst_companion_outside_window",
     }));
     expect(store.rows.get(scheduledSeismographOutcomeKey(etDate))).toContain("skipped: unrecoverable");

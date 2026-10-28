@@ -74,7 +74,7 @@ Bloomberg provides the raw materials for such analysis, but the synthesis and in
         },
         {
           question: 'Does FAULTLINE offer personalized financial advice?',
-          answer: 'No, FAULTLINE is a market intelligence and educational platform. It provides data, analysis, and insights to help users make informed decisions, but it does not offer personalized financial advice, recommendations, or solicitations to buy or sell any securities. Users should consult with a qualified financial advisor for personalized guidance.',
+          answer: 'No. FAULTLINE publishes measured market conditions, evidence, and freshness. It does not offer personalized financial advice or a position to take. A qualified adviser is the place for a personal decision.',
         },
       ]}
       internalLinks={[

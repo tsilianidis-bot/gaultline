@@ -93,7 +93,7 @@ This is educational and informational context, not investment advice.`,
         },
         {
           question: "What is the difference between an Elevated Risk regime and a market crash?",
-          answer: "Elevated Risk (Pressure Index 45-64) means pressure is building but is not acute. A market crash is typically associated with High Stress or Systemic Crisis conditions — acute, self-reinforcing stress across multiple vectors simultaneously. Elevated readings can resolve without a crash if the underlying vectors improve. The score is not a calibrated crash probability.",
+          answer: "Elevated Risk (Pressure Index 45-64) means pressure is above the moderate band and below the high-stress band. High Stress and Systemic Crisis are higher current bands, with more vectors elevated at the same time. An elevated reading can be followed by a lower reading if the vectors change. The score is the current measurement.",
         },
         {
           question: "How does the macro regime affect crypto markets?",

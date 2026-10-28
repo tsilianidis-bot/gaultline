@@ -99,11 +99,11 @@ export const QUADRANT_LABEL: Record<Quadrant, string> = {
 };
 export const ARROW_GLYPH: Record<MomentumArrow, string> = { UP: "↑", FLAT: "→", DOWN: "↓" };
 export const ACTION_LABEL: Record<SectorActionClass, string> = {
-  OVERWEIGHT: "OVERWEIGHT",
-  NEUTRAL: "NEUTRAL",
-  UNDERWEIGHT: "UNDERWEIGHT",
-  AVOID: "AVOID",
-  WATCH_FOR_CONFIRMATION: "WATCH FOR CONFIRMATION",
+  OVERWEIGHT: "20-session return above SPY, breadth at least 50%, momentum up",
+  NEUTRAL: "Losing momentum while the 20-session return is still above SPY",
+  UNDERWEIGHT: "20-session return at or below SPY",
+  AVOID: "Lagging, 20-session return below SPY, breadth under 50%, momentum down",
+  WATCH_FOR_CONFIRMATION: "Relative return is not confirmed on every measured input",
 };
 export const CATALYST_LABEL: Record<CatalystClass, string> = {
   EVENT_DRIVEN: "EVENT-DRIVEN",

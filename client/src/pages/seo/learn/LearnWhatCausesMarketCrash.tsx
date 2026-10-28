@@ -51,7 +51,7 @@ const LearnWhatCausesMarketCrash = () => {
         },
         {
           question: "What role does liquidity play in market stability?",
-          answer: "Liquidity refers to how easily assets can be bought or sold without affecting their price. A withdrawal of liquidity means it becomes harder to sell assets, leading to sharper price declines during periods of stress as buyers disappear.",
+          answer: "Liquidity refers to how easily assets can be exchanged without moving their price. When liquidity withdraws, exchanging assets moves prices more, and declines during stress have been sharper when buyers were scarce.",
         },
         {
           question: "Can investor sentiment alone cause a crash?",

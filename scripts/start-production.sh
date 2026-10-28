@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Container start path. Docker and Railway boot this script, then the server.
+# The deploy guard runs only when FAULTLINE_ENFORCE_DEPLOY_GUARD=1.
+# Leaving that unset keeps a boot working when the external allowlist is absent.
+# config/approved-production-commits.txt is not an allowlist and is not read.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+if [[ "${FAULTLINE_ENFORCE_DEPLOY_GUARD:-}" == "1" ]]; then
+  bash scripts/guard-approved-deploy.sh
+else
+  echo "Deploy guard is on the start path and is not enforced. Set FAULTLINE_ENFORCE_DEPLOY_GUARD=1 plus FAULTLINE_APPROVED_DEPLOY_SHAS or FAULTLINE_APPROVED_DEPLOY_TAGS before treating a boot as an approved deploy." >&2
+fi
+
+exec node dist/index.js

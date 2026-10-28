@@ -4,6 +4,7 @@ import {
   admitScheduledSessionOutcome,
   claimScheduledSeismographSession,
   completeScheduledSession,
+  sealFinishedSessionClaim,
   failScheduledSession,
   markScheduledSessionOutcomeScored,
   isHiddenSessionMemoryKey,
@@ -131,19 +132,34 @@ describe("scheduled seismograph database claim", () => {
     const claimed = await claimScheduledSeismographSession("2026-10-05", async () => store, { nowMs: inWindow, trigger: "SCHEDULED_CRON" });
     const json = vi.fn();
     const status = vi.fn(() => ({ json }));
+    let attempts = 0;
     await runScheduledSeismographForTests({ json, status } as never, {
       sessionClaim: async () => claimed,
       sessionStore: async () => store,
       runPipeline: async () => {
+        attempts += 1;
         throw new Error("pipeline crashed after claim");
       },
     });
+    expect(attempts).toBe(2);
     expect(status).toHaveBeenCalledWith(500);
     const recovered = await claimScheduledSeismographSession("2026-10-05", async () => store, {
       nowMs: inWindow + 1000,
       trigger: "SCHEDULED_CRON",
     });
-    expect(recovered).toEqual({ status: "claimed", generation: 2, mode: "recovered" });
+    expect(recovered.status).toBe("exhausted");
+  });
+
+  it("seals a finished unsealed claim so a later lease expiry does not start another pipeline", async () => {
+    const store = memoryStore();
+    const claimed = await claimScheduledSeismographSession("2026-10-05", async () => store, { nowMs: inWindow, trigger: "SCHEDULED_CRON" });
+    expect(claimed.generation).toBe(1);
+    const expired = inWindow + 3 * 60 * 1000 + 1;
+    await expect(sealFinishedSessionClaim("2026-10-05", claimed.generation!, async () => store, expired)).resolves.toBe(true);
+    await expect(claimScheduledSeismographSession("2026-10-05", async () => store, {
+      nowMs: expired + 1,
+      trigger: "SCHEDULED_CRON",
+    })).resolves.toEqual({ status: "already_claimed" });
   });
 
   it("does not report a crash mid-run as already completed, then allows one retry after the lease expires", async () => {

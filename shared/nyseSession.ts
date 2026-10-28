@@ -220,6 +220,29 @@ const DST_COMPANION_MINUTE_BANDS = [
   { start: 17 * 60 + 15, end: 17 * 60 + 45 },
 ] as const;
 
+const POST_CLOSE_START_MINUTE = 16 * 60 + 15;
+
+/** Eastern date and minute-of-day for a valid instant. */
+export function easternSessionStamp(at: Date | string = new Date()): { etDate: string; minuteOfDay: number } | null {
+  const instant = typeof at === "string" ? new Date(at) : at;
+  const fields = easternFields(instant);
+  if (!fields) return null;
+  return { etDate: dateKey(fields.date), minuteOfDay: fields.minuteOfDay };
+}
+
+/**
+ * True when a seismograph `computedAt` falls on the same Eastern session as `now`
+ * and at or after 16:15 ET. Yesterday's output is not fresh for today's infer.
+ */
+export function seismographFreshForInfer(computedAtMs: number | null | undefined, now: Date = new Date()): boolean {
+  if (computedAtMs == null || !Number.isFinite(computedAtMs)) return false;
+  const nowStamp = easternSessionStamp(now);
+  const atStamp = easternSessionStamp(new Date(computedAtMs));
+  if (!nowStamp || !atStamp) return false;
+  if (atStamp.etDate !== nowStamp.etDate) return false;
+  return atStamp.minuteOfDay >= POST_CLOSE_START_MINUTE && nowStamp.minuteOfDay >= POST_CLOSE_START_MINUTE;
+}
+
 export function isDstCompanionSeismographCallback(at: Date | string = new Date()): boolean {
   const window = nyseSeismographRunWindow(at);
   if (window.isScheduledWindow) return false;

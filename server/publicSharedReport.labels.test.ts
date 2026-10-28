@@ -103,6 +103,12 @@ describe("PublicSharedReport hides formula confidence and probability-like keys 
     });
   }
 
+  it("does not join a plain string list of trade directives", () => {
+    const html = render({ ideas: ["BUY", "SELL", "HOLD", "STRONG BUY"], note: "crash probability 40%" }, "stock_intelligence");
+    expect(html).not.toMatch(/\bBUY\b|\bSELL\b|\bHOLD\b|STRONG BUY|crash probability/i);
+    expect(html).toContain("Read the current shared thesis.");
+  });
+
   it("with score keys and future probability-like keys mixed in, only the two /100 score labels survive", () => {
     const snapshot = {
       ...STOCK_SIGNALS_SNAPSHOT,

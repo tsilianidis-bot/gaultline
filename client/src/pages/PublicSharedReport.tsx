@@ -16,6 +16,7 @@ import {
   Share2, Calendar
 } from "lucide-react";
 import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
+import { isExactTradeDirective, redactSnapshotScalar } from "@shared/surfaceClaims";
 
 // ── Helpers ────────────────────────────────────────────────────
 const REPORT_TYPE_LABELS: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
@@ -45,13 +46,22 @@ export function SnapshotRenderer({ snapshotJson, reportType }: { snapshotJson: s
     if (typeof val === "boolean") return <span className={val ? "text-emerald-400" : "text-red-400"}>{val ? "Yes" : "No"}</span>;
     if (typeof val === "number") return <span className="text-cyan-300 font-mono">{val.toLocaleString()}</span>;
     if (typeof val === "string") {
-      if (isTradeActionValue(val)) return <span data-thesis-pointer>{THESIS_POINTER}</span>;
-      return <span className="text-zinc-200">{val}</span>;
+      return <span className="text-zinc-200">{redactSnapshotScalar(val)}</span>;
     }
     if (Array.isArray(val)) {
       if (val.length === 0) return <span className="text-zinc-600">[]</span>;
-      if (typeof val[0] !== "object") {
-        return <span className="text-zinc-300">{val.join(", ")}</span>;
+      const primitive = val.every(item => item === null || item === undefined || typeof item !== "object");
+      if (primitive) {
+        return (
+          <span className="text-zinc-300">
+            {val.map((item, index) => (
+              <span key={index}>
+                {index > 0 ? ", " : ""}
+                {typeof item === "string" ? redactSnapshotScalar(item) : String(item ?? "")}
+              </span>
+            ))}
+          </span>
+        );
       }
       return (
         <div className="space-y-2 mt-1">
@@ -125,11 +135,10 @@ export function snapshotKeyLabel(key: string): string {
 // so the public page never prints it. Any key that reads as a probability, odds,
 // chance or confidence is hidden too, so a future raw key cannot reach /r/:id.
 // Keys with an explicit label above (the two /100 scores) are remapped, not hidden.
-const TRADE_ACTION_VALUES = new Set(["BUY", "SELL", "HOLD", "WATCH", "STRONG BUY"]);
 export const THESIS_POINTER = "Read the current shared thesis.";
 
 export function isTradeActionValue(value: unknown): boolean {
-  return typeof value === "string" && TRADE_ACTION_VALUES.has(value.trim().toUpperCase());
+  return isExactTradeDirective(value);
 }
 
 export const HIDDEN_SNAPSHOT_KEYS = new Set<string>([

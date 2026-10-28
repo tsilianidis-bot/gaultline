@@ -107,9 +107,14 @@ export function setAuthResolved(hasUser: boolean) {
   authHasUser = hasUser;
 }
 
-const redirectToLoginIfUnauthorized = (error: unknown) => {
+const redirectToLoginIfUnauthorized = (error: unknown, queryKey?: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
   if (typeof window === "undefined") return;
+  try {
+    if (JSON.stringify(queryKey ?? "").includes("emptyPreview")) return;
+  } catch {
+    return;
+  }
 
   const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
   if (!isUnauthorized) return;
@@ -143,7 +148,7 @@ queryClient.getQueryCache().subscribe(event => {
   }
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.query.state.error;
-    redirectToLoginIfUnauthorized(error);
+    redirectToLoginIfUnauthorized(error, event.query.queryKey);
     console.error("[API Query Error]", error);
   }
 });

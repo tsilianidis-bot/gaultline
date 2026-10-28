@@ -3,10 +3,11 @@
    Live simulated portfolio following FAULTLINE signals.
    Stocks: $10,000 starting capital
    Crypto: $10,000 starting capital
-   Daily AI journal documents every hold/trade decision.
+   Daily journal records simulated portfolio changes.
    ============================================================ */
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { isSimulatedAcquisition, simulatedFillLabel } from "@shared/surfaceClaims";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
@@ -573,14 +574,14 @@ export default function SimPortfolio() {
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-3">
                       <Badge style={{
-                        background: trade.action === "BUY" ? "rgba(0,255,136,0.15)" : "rgba(255,68,68,0.15)",
-                        color: trade.action === "BUY" ? "#00FF88" : "#FF4444",
-                        border: `1px solid ${trade.action === "BUY" ? "rgba(0,255,136,0.3)" : "rgba(255,68,68,0.3)"}`,
+                        background: isSimulatedAcquisition(trade.action) ? "rgba(0,255,136,0.15)" : "rgba(255,68,68,0.15)",
+                        color: isSimulatedAcquisition(trade.action) ? "#00FF88" : "#FF4444",
+                        border: `1px solid ${isSimulatedAcquisition(trade.action) ? "rgba(0,255,136,0.3)" : "rgba(255,68,68,0.3)"}`,
                         fontFamily: "'IBM Plex Mono', monospace",
                         fontSize: "10px",
                         letterSpacing: "0.08em",
                       }}>
-                        {trade.action}
+                        {simulatedFillLabel(trade.action)}
                       </Badge>
                       <div>
                         <span className="font-bold font-mono" style={{ color: "#F0F4FF" }}>{trade.ticker}</span>
