@@ -37,8 +37,8 @@ describe("Signals.tsx renders no signal confidence figure", () => {
     const at = code.indexOf("signals: tradingSignalsData.slice(0, 20).map(s => ({", start);
     const block = code.slice(at, code.indexOf("}))", at));
     const keys = block.split("\n").slice(1).map(l => l.trim()).filter(Boolean).map(l => l.split(":")[0]);
-    expect(keys).toEqual(["ticker", "action", "actionLabel", "assetClass", "strength"]);
-    expect(block).not.toMatch(/entryZone|stopLoss|targetPrice/);
+    expect(keys).toEqual(["ticker", "thesis"]);
+    expect(block).not.toMatch(/action|actionLabel|strength|entryZone|stopLoss|targetPrice/);
     expect(block).not.toMatch(/confidence|\[[^\]]*\]\s*:|\.\.\./i);
   });
 });

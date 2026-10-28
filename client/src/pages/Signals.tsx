@@ -1345,11 +1345,7 @@ function SignalsInner() {
                   signalCount: tradingSignalsData.length,
                   signals: tradingSignalsData.slice(0, 20).map(s => ({
                     ticker: s.ticker,
-                    action: s.action,
-                    actionLabel: s.actionLabel,
-                    assetClass: s.assetClass,
-                    strength: s.strength,
-                    // QA Signals confidence (B14): no signal confidence, entry, stop, or target in new share snapshots.
+                    thesis: "Read the current shared thesis.",
                   }))
                 }}
               />

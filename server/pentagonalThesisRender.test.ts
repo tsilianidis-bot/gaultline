@@ -581,5 +581,37 @@ describe("Pentagonal thesis render consistency", () => {
     expect(saved).not.toContain("entryZone");
     expect(saved).not.toContain("stopLoss");
     expect(saved).not.toContain("targetPrice");
+    expect(saved).not.toContain("BUY");
+    expect(saved).toContain("Read the current shared thesis.");
+  });
+
+  it("does not paint BUY or SELL from an old saved snapshot", async () => {
+    const { SnapshotRenderer } = await import("../client/src/pages/PublicSharedReport");
+    for (const action of ["BUY", "SELL"] as const) {
+      const html = renderToStaticMarkup(createElement(SnapshotRenderer, {
+        reportType: "stock_intelligence",
+        snapshotJson: JSON.stringify({
+          signalCount: 1,
+          signals: [{
+            ticker: "NVDA",
+            action,
+            actionLabel: action === "BUY" ? "Accumulation Zone" : "Reduce Exposure",
+            strength: "Strong",
+            entryZone: 333.33,
+            stopLoss: 222.22,
+            targetPrice: 444.44,
+          }],
+        }),
+      }));
+      expect(html, action).toContain("NVDA");
+      expect(html, action).toContain("Read the current shared thesis.");
+      expect(html, action).not.toContain("BUY");
+      expect(html, action).not.toContain("SELL");
+      expect(html, action).not.toContain("HOLD");
+      expect(html, action).not.toContain("WATCH");
+      expect(html, action).not.toContain("Accumulation Zone");
+      expect(html, action).not.toContain("Reduce Exposure");
+      expect(html, action).not.toContain("333.33");
+    }
   });
 });

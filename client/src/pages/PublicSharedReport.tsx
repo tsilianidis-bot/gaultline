@@ -45,15 +45,7 @@ export function SnapshotRenderer({ snapshotJson, reportType }: { snapshotJson: s
     if (typeof val === "boolean") return <span className={val ? "text-emerald-400" : "text-red-400"}>{val ? "Yes" : "No"}</span>;
     if (typeof val === "number") return <span className="text-cyan-300 font-mono">{val.toLocaleString()}</span>;
     if (typeof val === "string") {
-      // Detect action labels
-      if (["BUY", "SELL", "HOLD", "WATCH", "Accumulation Zone", "Reduce Exposure", "Avoid New Entry", "Momentum Confirmed", "Momentum Weakening"].includes(val)) {
-        const colorMap: Record<string, string> = {
-          "BUY": "text-emerald-400", "Accumulation Zone": "text-emerald-400", "Momentum Confirmed": "text-emerald-300",
-          "SELL": "text-red-400", "Reduce Exposure": "text-red-400", "Avoid New Entry": "text-red-300",
-          "HOLD": "text-amber-400", "WATCH": "text-amber-300", "Momentum Weakening": "text-amber-300",
-        };
-        return <span className={`font-semibold ${colorMap[val] ?? "text-zinc-200"}`}>{val}</span>;
-      }
+      if (isTradeActionValue(val)) return <span data-thesis-pointer>{THESIS_POINTER}</span>;
       return <span className="text-zinc-200">{val}</span>;
     }
     if (Array.isArray(val)) {
@@ -73,7 +65,9 @@ export function SnapshotRenderer({ snapshotJson, reportType }: { snapshotJson: s
       );
     }
     if (typeof val === "object") {
-      const entries = Object.entries(val as Record<string, unknown>).filter(([k]) => !isHiddenSnapshotKey(k));
+      const raw = Object.entries(val as Record<string, unknown>);
+      const hadTradeAction = raw.some(([key, entry]) => key === "action" || key === "actionLabel" || isTradeActionValue(entry));
+      const entries = raw.filter(([key, entry]) => !isHiddenSnapshotKey(key) && !isTradeActionValue(entry));
       if (depth > 2) return <span className="text-zinc-500 text-xs">[object]</span>;
       return (
         <div className={`space-y-1 ${depth > 0 ? "pl-2 border-l border-zinc-800" : ""}`}>
@@ -83,6 +77,12 @@ export function SnapshotRenderer({ snapshotJson, reportType }: { snapshotJson: s
               <span className="flex-1">{renderValue(v, depth + 1)}</span>
             </div>
           ))}
+          {hadTradeAction && (
+            <div className="flex flex-wrap gap-2 items-start text-sm">
+              <span className="text-zinc-500 font-mono text-xs min-w-[120px] pt-0.5">thesis</span>
+              <span className="flex-1" data-thesis-pointer>{THESIS_POINTER}</span>
+            </div>
+          )}
         </div>
       );
     }
@@ -125,8 +125,18 @@ export function snapshotKeyLabel(key: string): string {
 // so the public page never prints it. Any key that reads as a probability, odds,
 // chance or confidence is hidden too, so a future raw key cannot reach /r/:id.
 // Keys with an explicit label above (the two /100 scores) are remapped, not hidden.
+const TRADE_ACTION_VALUES = new Set(["BUY", "SELL", "HOLD", "WATCH", "STRONG BUY"]);
+export const THESIS_POINTER = "Read the current shared thesis.";
+
+export function isTradeActionValue(value: unknown): boolean {
+  return typeof value === "string" && TRADE_ACTION_VALUES.has(value.trim().toUpperCase());
+}
+
 export const HIDDEN_SNAPSHOT_KEYS = new Set<string>([
   "confidence",
+  "action",
+  "actionLabel",
+  "strength",
   "entryZone",
   "stopLoss",
   "targetPrice",
