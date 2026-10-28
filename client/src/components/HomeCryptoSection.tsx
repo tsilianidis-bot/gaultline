@@ -16,7 +16,7 @@ import { formatCryptoPrice, formatObservedFixed } from "@/lib/nullableFormat";
 type CryptoSignalLabel =
   | "Speculative Acceleration" | "Liquidity Fragile" | "Momentum Breakout"
   | "AI Narrative Exposure" | "Macro Sensitive" | "Stablecoin Stress"
-  | "Deleveraging Risk" | "Risk-Off Vulnerable" | "Neutral / Watch";
+  | "Deleveraging Risk" | "Lower-appetite vulnerable" | "Neutral / Watch";
 
 type CryptoRiskLevel = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
 
@@ -59,7 +59,7 @@ const LABEL_COLORS: Partial<Record<CryptoSignalLabel, string>> = {
   "Macro Sensitive": "#00D4FF",
   "Stablecoin Stress": "#FFD700",
   "Deleveraging Risk": "#FF2D55",
-  "Risk-Off Vulnerable": "#FF9500",
+  "Lower-appetite vulnerable": "#FF9500",
   "Neutral / Watch": "#64748B",
 };
 
@@ -74,7 +74,7 @@ const FEATURE_BLOCKS = [
   { icon: "◎", label: "Crypto Volatility Regimes", desc: "Classify current volatility as Low / Normal / Elevated / Extreme for risk-sizing." },
   { icon: "◐", label: "Exchange Liquidity & Flow Analysis", desc: "Monitor exchange inflows, outflows, and order-book depth as evolving market-context signals." },
   { icon: "◑", label: "Digital Asset Momentum Signals", desc: "Identify momentum breakouts, decelerations, and reversals across the asset class." },
-  { icon: "◒", label: "Risk-On / Risk-Off Conditions", desc: "Determine whether macro conditions favor or disfavor risk-asset exposure." },
+  { icon: "◒", label: "Appetite conditions", desc: "Show whether macro conditions are in a higher-stress or lower-stress reading." },
 ];
 
 // ── Sub-components ────────────────────────────────────────────

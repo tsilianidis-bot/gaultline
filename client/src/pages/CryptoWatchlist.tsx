@@ -26,7 +26,7 @@ type MomentumDir = "Accelerating" | "Stable" | "Decelerating" | "Reversing" | "U
 type CryptoSignalLabel =
   | "Speculative Acceleration" | "Liquidity Fragile" | "Momentum Breakout"
   | "AI Narrative Exposure" | "Macro Sensitive" | "Stablecoin Stress"
-  | "Deleveraging Risk" | "Risk-Off Vulnerable" | "Neutral / Watch";
+  | "Deleveraging Risk" | "Lower-appetite vulnerable" | "Neutral / Watch";
 
 interface CryptoAssetIntelligence {
   id: string; symbol: string; name: string; image: string;
@@ -54,7 +54,7 @@ const LABEL_COLORS: Partial<Record<CryptoSignalLabel, string>> = {
   "Macro Sensitive": "#00D4FF",
   "Stablecoin Stress": "#FFD700",
   "Deleveraging Risk": "#FF2D55",
-  "Risk-Off Vulnerable": "#FF9500",
+  "Lower-appetite vulnerable": "#FF9500",
   "Neutral / Watch": "#64748B",
 };
 const MOMENTUM_COLORS: Record<MomentumDir, string> = {

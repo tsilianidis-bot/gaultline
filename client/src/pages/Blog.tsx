@@ -520,7 +520,7 @@ export default function Blog() {
               color: "#A78BFA",
               label: "CRYPTO INTELLIGENCE",
               heading: "Digital Asset Macro Correlation",
-              body: "Bitcoin and digital assets do not move in isolation. FAULTLINE connects crypto market structure — BTC dominance, stablecoin supply, and speculative pressure — to the broader macro regime, helping investors understand when crypto is acting as a risk-on amplifier and when it is moving with broader stress.",
+              body: "Bitcoin and digital assets do not move in isolation. FAULTLINE connects crypto market structure — BTC dominance, stablecoin supply, and speculative pressure — to the broader macro regime, helping investors understand when crypto is acting as a higher-risk appetite amplifier and when it is moving with broader stress.",
             },
             {
               color: "#34D399",

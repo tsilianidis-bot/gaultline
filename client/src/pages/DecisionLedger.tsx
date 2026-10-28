@@ -16,6 +16,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useSEO } from "@/hooks/useSEO";
+import { directionColor, publicConditionText } from "@shared/surfaceClaims";
 import {
   CheckCircle, XCircle, Clock, BookOpen, BarChart2,
   TrendingUp, TrendingDown, Activity, ArrowLeft,
@@ -61,11 +62,7 @@ interface LedgerEntry {
 // ── Helpers ───────────────────────────────────────────────────
 
 function verdictColor(verdict: string): string {
-  const v = verdict.toUpperCase();
-  if (v.includes("STRONG BUY") || v.includes("BUY") || v.includes("ACCUMULATE")) return "#00FF88";
-  if (v.includes("SELL") || v.includes("REDUCE") || v.includes("HIGH RISK")) return "#FF4444";
-  if (v.includes("WAIT") || v.includes("HOLD") || v.includes("LOW CONVICTION")) return "#FFD700";
-  return "#00D4FF";
+  return directionColor(verdict);
 }
 
 function outcomeIcon(outcome: string) {
@@ -211,7 +208,7 @@ function LedgerRow({ entry, onUpdateOutcome }: {
               </span>
             )}
             <span style={{ ...SANS, fontSize: "14px", fontWeight: 700, color: vc, letterSpacing: "0.06em" }}>
-              {entry.verdict}
+              {publicConditionText(entry.verdict)}
             </span>
             {/* Outcome badge */}
             <span style={{
@@ -317,7 +314,7 @@ function LedgerRow({ entry, onUpdateOutcome }: {
               borderRadius: "5px",
             }}>
               <div>
-                <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "9px" }}>PRICE AT ENTRY</div>
+                <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "9px" }}>PRICE AT OPEN</div>
                 <div style={{ ...MONO, fontSize: "13px", fontWeight: 700, color: "#F0F4FF" }}>
                   {formatPrice(entry.priceAtEntry)}
                 </div>

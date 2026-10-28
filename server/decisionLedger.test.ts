@@ -310,6 +310,6 @@ describe("smartDiscovery.getLedgerStats", () => {
 
     expect(stats.winRate).toBe(50); // (1 + 0.5 + 0) / 3
     expect(stats.byAsset).toEqual([{ asset: "stock", accuracy: 50, total: 3 }]);
-    expect(stats.byVerdict).toEqual([{ verdict: "BUY", accuracy: 50, total: 3 }]);
+    expect(stats.byVerdict).toEqual([{ verdict: "Upper-side condition", accuracy: 50, total: 3 }]);
   });
 });

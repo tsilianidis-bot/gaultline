@@ -40,7 +40,7 @@ const TOTAL_STEPS = 9; // 0-indexed; steps 0–9 (step 9 = experience selection)
 // Only visible `label` values have been updated where safe.
 const INVESTOR_TYPES = [
   { id: "retail",            label: "Active Retail Investor",  desc: "Self-directed, long-term focus" },
-  { id: "long_term",         label: "Long-Term Investor",       desc: "Buy-and-hold, multi-year horizon" },
+  { id: "long_term",         label: "Long-Term Investor",       desc: "Multi-year, multi-year horizon" },
   { id: "retirement",        label: "Retirement Investor",      desc: "Capital preservation, income focus" },
   { id: "swing_trader",      label: "Swing Trader",             desc: "Multi-day to multi-week positions" },
   { id: "active_trader",     label: "Active Trader",            desc: "Frequent trades, technical analysis" },
@@ -138,7 +138,7 @@ function getPersonalizationPriorities(
       "Regime shifts and trend changes",
       "Volatility and breadth conditions",
       "Medium-term opportunity signals",
-      "Risk-on / risk-off environment changes",
+      "Higher-risk appetite / lower-risk appetite environment changes",
       "Credit and liquidity conditions",
     ];
   }
@@ -744,7 +744,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                     label: "CRASH RISK",
                     color: "#FF4444",
                     range: "Not offered",
-                    definition: "FAULTLINE does not offer a crash probability: no governed model with a defined crash event, horizon and calibration record exists.",
+                    definition: "FAULTLINE does not offer a market-event percentage: no governed model with a defined crash event, horizon and calibration record exists.",
                     detail: "Use the Pressure Index and regime as stress context, not as a crash forecast.",
                   },
                 ].map((item, i) => (

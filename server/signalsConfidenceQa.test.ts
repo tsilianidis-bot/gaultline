@@ -22,7 +22,6 @@ describe("Signals.tsx renders no signal confidence figure", () => {
     expect(body).toContain("{SIGNAL_CONFIDENCE_NOT_ESTABLISHED}");
     expect(body.slice(body.indexOf("return ("))).not.toMatch(/_props|(?<![-\w])confidence\b/);
     expect(code).toContain("const SIGNAL_CONFIDENCE_NOT_ESTABLISHED = 'Not established';");
-    expect(code).toContain("<ConfidenceBar action={tradingSignal.action} />");
     expect(code).toContain("CONFIDENCE: <span style={{ color: '#94A3B8' }}>{SIGNAL_CONFIDENCE_NOT_ESTABLISHED}</span>");
   });
   it("the static catalog confidence (hard-coded 88 / 76 / 70) is not rendered", () => {
@@ -38,7 +37,8 @@ describe("Signals.tsx renders no signal confidence figure", () => {
     const at = code.indexOf("signals: tradingSignalsData.slice(0, 20).map(s => ({", start);
     const block = code.slice(at, code.indexOf("}))", at));
     const keys = block.split("\n").slice(1).map(l => l.trim()).filter(Boolean).map(l => l.split(":")[0]);
-    expect(keys).toEqual(["ticker", "action", "actionLabel", "assetClass", "strength", "entryZone", "stopLoss", "targetPrice"]);
+    expect(keys).toEqual(["ticker", "thesis"]);
+    expect(block).not.toMatch(/action|actionLabel|strength|entryZone|stopLoss|targetPrice/);
     expect(block).not.toMatch(/confidence|\[[^\]]*\]\s*:|\.\.\./i);
   });
 });
@@ -49,7 +49,7 @@ describe("DashboardSearchPanels stock preview shows no confidence figure", () =>
   const dsp = readFileSync(path.resolve(import.meta.dirname, "../client/src/components/DashboardSearchPanels.tsx"), "utf8")
     .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
   it("STOCK_META carries no confidence and nothing reads one", () => {
-    const meta = dsp.slice(dsp.indexOf("const STOCK_META"), dsp.indexOf("const ACTION_COLORS"));
+    const meta = dsp.slice(dsp.indexOf("const STOCK_META"), dsp.indexOf("const REGIME_COLORS"));
     expect(meta).toContain('NVDA: { name: "NVIDIA Corp"');
     expect(meta).not.toMatch(/confidence|conf\w*\s*:/i);
     expect(dsp).not.toMatch(/meta\??\.conf|meta\s*\[\s*["'`]conf/i);

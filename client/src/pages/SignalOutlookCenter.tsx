@@ -11,6 +11,9 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
+import { LOWER_SIDE_CONDITION } from "@shared/clientVocabulary";
+import { OUTLOOK_STRAINED } from "@shared/surfaceClaims";
+import { conditionColor, neutralConditionLabel } from "@shared/clientVocabulary";
 import { formatFactorScore } from "@/lib/factorScoreDisplay";
 import { outlookEnvironmentDisplay } from "@/lib/outlookEnvironmentDisplay";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -30,20 +33,14 @@ import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
 import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Types (mirrored from server) ─────────────────────────────
-type OutlookDirection = "Bullish" | "Bearish" | "Neutral" | "Avoid";
+type OutlookDirection = "Bullish" | "Bearish" | "Neutral" | typeof OUTLOOK_STRAINED | typeof LOWER_SIDE_CONDITION;
 type OutlookTimeframe = "day" | "short" | "swing" | "long";
 type OutlookRiskLevel = "Low" | "Moderate" | "High" | "Extreme";
 type TradeReadiness = "Cleared" | "Caution" | "Defensive";
 
 // ── Color helpers ─────────────────────────────────────────────
-function directionColor(d: OutlookDirection): string {
-  switch (d) {
-    case "Bullish": return "#00FF88";
-    case "Bearish": return "#FF2D55";
-    case "Neutral": return "#64B5F6";
-    case "Avoid":   return "#FF9500";
-    default:        return "#94A3B8";
-  }
+function directionColor(d: string): string {
+  return conditionColor(neutralConditionLabel(d));
 }
 
 function riskColor(r: OutlookRiskLevel): string {
@@ -85,11 +82,11 @@ function pctQuote(value: number | null | undefined, digits: number, leadingPlus 
 }
 
 function directionIcon(d: OutlookDirection) {
+  if (d === OUTLOOK_STRAINED || d === LOWER_SIDE_CONDITION) return <AlertTriangle size={14} color="#FF9500" />;
   switch (d) {
     case "Bullish": return <TrendingUp size={14} color="#00FF88" />;
     case "Bearish": return <TrendingDown size={14} color="#FF2D55" />;
     case "Neutral": return <Minus size={14} color="#64B5F6" />;
-    case "Avoid":   return <AlertTriangle size={14} color="#FF9500" />;
     default:        return <Minus size={14} color="#94A3B8" />;
   }
 }
@@ -215,8 +212,11 @@ function Section({
 function ScoreBar({ score, label, weight, note }: { score: number | null; label: string; weight: number; note: string }) {
   const finite = typeof score === "number" && Number.isFinite(score) ? score : null;
   const color = finite == null ? "#94A3B8" : scoreColor(finite);
+  const shownNote = /\bentr(?:y|ies)\b/i.test(note)
+    ? "Volatility vector from the pressure reading. A high vector is a wide price range and a low vector is a narrow price range. Not an instruction."
+    : note;
   return (
-    <Tooltip text={note}>
+    <Tooltip text={shownNote}>
       <div style={{ marginBottom: "8px", cursor: "help" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8" }}>{label}</span>
@@ -243,6 +243,20 @@ function ScoreBar({ score, label, weight, note }: { score: number | null; label:
 }
 
 // ── Outlook Score Ring ────────────────────────────────────────
+function outlookLabel(value: string): string {
+  return readingTitle(value);
+}
+
+function readingTitle(value: string): string {
+  if (value === "Bullish") return "Higher-price heuristic";
+  if (value === "Bearish") return "Lower-price heuristic";
+  if (value === "Neutral") return "Mixed heuristic";
+  const neutral = neutralConditionLabel(value);
+  if (neutral !== value.trim()) return neutral;
+  if (value === OUTLOOK_STRAINED) return neutralConditionLabel(value);
+  return value && value.trim() ? value : "Reading unavailable";
+}
+
 function OutlookScoreRing({ score, direction }: { score: number; direction: OutlookDirection }) {
   const color = directionColor(direction);
   const size = 100;
@@ -351,7 +365,7 @@ function TopOpportunityCard({
           color, background: `${color}12`, border: `1px solid ${color}25`,
           borderRadius: "3px", padding: "2px 6px", letterSpacing: "0.08em",
         }}>
-          {directionIcon(opp.direction)} {opp.direction.toUpperCase()}
+          {directionIcon(opp.direction)} {outlookLabel(opp.direction)}
         </span>
         <span style={{
           fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px",
@@ -519,7 +533,7 @@ function FullOutlookView({
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(255,255,255,0.3)", letterSpacing: "0.12em" }}>BOTTOM LINE</span>
             <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "20px", color: dirColor, letterSpacing: "0.06em" }}>
-              {d.direction.toUpperCase()}
+              {readingTitle(d.direction)}
             </span>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: rkColor, background: `${rkColor}10`, border: `1px solid ${rkColor}20`, borderRadius: "3px", padding: "2px 7px" }}>
               {d.riskLevel.toUpperCase()} RISK
@@ -538,8 +552,8 @@ function FullOutlookView({
         </div>
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "8px", marginBottom: "8px" }}>
           <div style={{ padding: "8px 10px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "5px" }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(255,255,255,0.3)", marginBottom: "3px", letterSpacing: "0.08em" }}>PORTFOLIO IMPLICATION</div>
-            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#A0A8B4", lineHeight: 1.5 }}>{d.diagnosticIntegration.portfolioImplication}</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(255,255,255,0.3)", marginBottom: "3px", letterSpacing: "0.08em" }}>WHAT THIS CARD DOES NOT DO</div>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#A0A8B4", lineHeight: 1.5 }}>No portfolio action is published. The score and the Pressure Index are the measurements. Freshness is the generated time on this card. The heuristic is not a forecast.</div>
           </div>
           <div style={{ padding: "8px 10px", background: "rgba(255,149,0,0.04)", border: "1px solid rgba(255,149,0,0.12)", borderRadius: "5px" }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#FF9500", marginBottom: "3px", letterSpacing: "0.08em" }}>SENSITIVE TRIGGER</div>
@@ -595,7 +609,7 @@ function FullOutlookView({
               color: dirColor, background: `${dirColor}12`, border: `1px solid ${dirColor}25`,
               borderRadius: "3px", padding: "3px 8px",
             }}>
-              {directionIcon(d.direction)} {d.direction.toUpperCase()}
+              {directionIcon(d.direction)} {outlookLabel(d.direction)}
             </span>
             <span style={{
               fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px",
@@ -696,48 +710,51 @@ function FullOutlookView({
               </div>
             </div>
 
-            {/* Support + Resistance side by side */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-              {/* Support */}
+            {/* Prior prices relative to the latest quote. Order levels are not shown. */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
               <div style={{ padding: "12px 16px", borderRight: "1px solid rgba(255,255,255,0.04)" }}>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00FF88", letterSpacing: "0.08em", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
                   <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", background: "#00FF88" }} />
-                  SUPPORT LEVELS
+                  PRIOR PRICES BELOW THE LATEST QUOTE
                 </div>
+                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#64748B", lineHeight: 1.45, marginBottom: "8px" }}>
+                  Source: the {d.calculatedLevels.barsUsed} completed daily bars on this card. Pivot rows use the prior session high, low, and close. Moving-average and high/low rows use those same bars. Freshness is the quote time above. A later session can print beyond these figures. Historical reference, not an instruction.
+                </p>
                 {[
-                  { key: "S1", level: d.calculatedLevels.supportResistance.support1 },
-                  { key: "S2", level: d.calculatedLevels.supportResistance.support2 },
-                  { key: "S3", level: d.calculatedLevels.supportResistance.support3 },
-                ].map(({ key, level }) => level ? (
-                  <div key={key} style={{ marginBottom: "8px" }} title={level.description}>
+                  { key: "Below 1", level: d.calculatedLevels.supportResistance.support1 },
+                  { key: "Below 2", level: d.calculatedLevels.supportResistance.support2 },
+                  { key: "Below 3", level: d.calculatedLevels.supportResistance.support3 },
+                ].map(item => item.level ? (
+                  <div key={item.key} style={{ marginBottom: "8px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00FF8880", letterSpacing: "0.06em" }}>{key} · {level.method}</span>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00FF8899" }}>{pctQuote(level.pctFromCurrent, 1)}</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00FF8880", letterSpacing: "0.06em" }}>{item.key} · {item.level.method}</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00FF8899" }}>{pctQuote(item.level.pctFromCurrent, 1)}</span>
                     </div>
                     <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#00FF88" }}>
-                      {usdQuote(level.price)}
+                      {usdQuote(item.level.price)}
                     </div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", marginTop: "1px" }}>{level.description}</div>
                   </div>
                 ) : (
-                  <div key={key} style={{ marginBottom: "8px" }}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151" }}>{key} · —</div>
+                  <div key={item.key} style={{ marginBottom: "8px" }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151" }}>{item.key} · unavailable</div>
                   </div>
                 ))}
               </div>
 
-              {/* Resistance */}
               <div style={{ padding: "12px 16px" }}>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF2D55", letterSpacing: "0.08em", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
                   <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", background: "#FF2D55" }} />
-                  RESISTANCE LEVELS
+                  PRIOR PRICES ABOVE THE LATEST QUOTE
                 </div>
+                <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#64748B", lineHeight: 1.45, marginBottom: "8px" }}>
+                  Same bars and methods as the prices below the quote. Distance is from the latest quote on this card. Historical reference, not an instruction.
+                </p>
                 {[
-                  { key: "R1", level: d.calculatedLevels.supportResistance.resistance1 },
-                  { key: "R2", level: d.calculatedLevels.supportResistance.resistance2 },
-                  { key: "R3", level: d.calculatedLevels.supportResistance.resistance3 },
+                  { key: "Above 1", level: d.calculatedLevels.supportResistance.resistance1 },
+                  { key: "Above 2", level: d.calculatedLevels.supportResistance.resistance2 },
+                  { key: "Above 3", level: d.calculatedLevels.supportResistance.resistance3 },
                 ].map(({ key, level }) => level ? (
-                  <div key={key} style={{ marginBottom: "8px" }} title={level.description}>
+                  <div key={key} style={{ marginBottom: "8px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#FF2D5580", letterSpacing: "0.06em" }}>{key} · {level.method}</span>
                       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF2D5599" }}>{pctQuote(level.pctFromCurrent, 1, true)}</span>
@@ -745,98 +762,19 @@ function FullOutlookView({
                     <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#FF2D55" }}>
                       {usdQuote(level.price)}
                     </div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", marginTop: "1px" }}>{level.description}</div>
                   </div>
                 ) : (
                   <div key={key} style={{ marginBottom: "8px" }}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151" }}>{key} · —</div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151" }}>{key} · unavailable</div>
                   </div>
                 ))}
               </div>
             </div>
-
-            {/* Trade Framework: Entry / Risk / Targets / Invalidation */}
-            <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#64B5F6", letterSpacing: "0.08em", marginBottom: "10px" }}>TRADE FRAMEWORK</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "8px" }}>
-                {[
-                  { label: "ENTRY ZONE", level: d.calculatedLevels.tradeFramework.entryZone, color: "#00FF88", border: "rgba(0,255,136,0.2)", bg: "rgba(0,255,136,0.04)" },
-                  { label: "RISK ZONE", level: d.calculatedLevels.tradeFramework.riskZone, color: "#FF2D55", border: "rgba(255,45,85,0.2)", bg: "rgba(255,45,85,0.04)" },
-                  { label: "PROFIT TARGET 1", level: d.calculatedLevels.tradeFramework.profitTarget1, color: "#00D4FF", border: "rgba(0,212,255,0.2)", bg: "rgba(0,212,255,0.04)" },
-                  { label: "PROFIT TARGET 2", level: d.calculatedLevels.tradeFramework.profitTarget2, color: "#00D4FF", border: "rgba(0,212,255,0.2)", bg: "rgba(0,212,255,0.03)" },
-                  { label: "STRETCH TARGET", level: d.calculatedLevels.tradeFramework.stretchTarget, color: "#A78BFA", border: "rgba(167,139,250,0.2)", bg: "rgba(167,139,250,0.04)" },
-                  { label: "INVALIDATION", level: d.calculatedLevels.tradeFramework.invalidationLevel, color: "#FF9500", border: "rgba(255,149,0,0.2)", bg: "rgba(255,149,0,0.04)" },
-                ].map(item => item.level ? (
-                  <div key={item.label} style={{ background: item.bg, border: `1px solid ${item.border}`, borderRadius: "8px", padding: "10px 12px" }} title={item.level.description}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: item.color, letterSpacing: "0.08em", marginBottom: "4px" }}>{item.label}</div>
-                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: item.color }}>
-                      {usdQuote(item.level.price)}
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2px" }}>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563" }}>{item.level.method}</span>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: item.color + "99" }}>
-                        {pctQuote(item.level.pctFromCurrent, 1, typeof item.level.pctFromCurrent === "number" && item.level.pctFromCurrent > 0)}
-                      </span>
-                    </div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151", marginTop: "3px", lineHeight: 1.4 }}>{item.level.description}</div>
-                  </div>
-                ) : null)}
+            <div style={{ padding: "10px 16px", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#64748B", lineHeight: 1.5 }}>
+                Order prices, invalidation marks, and horizon-specific position levels are not published. The rows above are prior prices from completed bars.
               </div>
             </div>
-
-            {/* Timeframe-Specific Levels */}
-            {(() => {
-              const tf = d.timeframe;
-              const tfl = d.calculatedLevels.timeframeSpecific;
-              const tfData = tf === "day" ? [
-                { label: "INTRADAY SUPPORT", level: tfl.day.intradaySupport, color: "#00FF88" },
-                { label: "INTRADAY RESISTANCE", level: tfl.day.intradayResistance, color: "#FF2D55" },
-                { label: "DAY TARGET 1", level: tfl.day.dayTradeTarget1, color: "#00D4FF" },
-                { label: "DAY TARGET 2", level: tfl.day.dayTradeTarget2, color: "#00D4FF" },
-                { label: "INTRADAY INVALIDATION", level: tfl.day.intradayInvalidation, color: "#FF9500" },
-              ] : tf === "short" ? [
-                { label: "NEAR-TERM SUPPORT", level: tfl.short.nearTermSupport, color: "#00FF88" },
-                { label: "NEAR-TERM RESISTANCE", level: tfl.short.nearTermResistance, color: "#FF2D55" },
-                { label: "TARGET 1", level: tfl.short.target1, color: "#00D4FF" },
-                { label: "TARGET 2", level: tfl.short.target2, color: "#00D4FF" },
-                { label: "RISK LEVEL", level: tfl.short.riskLevel, color: "#FF9500" },
-              ] : tf === "swing" ? [
-                { label: "SWING SUPPORT", level: tfl.swing.swingSupport, color: "#00FF88" },
-                { label: "SWING RESISTANCE", level: tfl.swing.swingResistance, color: "#FF2D55" },
-                { label: "SWING TARGET 1", level: tfl.swing.swingTarget1, color: "#00D4FF" },
-                { label: "SWING TARGET 2", level: tfl.swing.swingTarget2, color: "#00D4FF" },
-                { label: "SWING INVALIDATION", level: tfl.swing.swingInvalidation, color: "#FF9500" },
-              ] : [
-                { label: "LT SUPPORT ZONE", level: tfl.long.longTermSupportZone, color: "#00FF88" },
-                { label: "LT RESISTANCE ZONE", level: tfl.long.longTermResistanceZone, color: "#FF2D55" },
-                { label: "LT TARGET (LOW)", level: tfl.long.longTermTargetLow, color: "#00D4FF" },
-                { label: "LT TARGET (HIGH)", level: tfl.long.longTermTargetHigh, color: "#A78BFA" },
-                { label: "LT INVALIDATION", level: tfl.long.longTermInvalidation, color: "#FF9500" },
-              ];
-              return (
-                <div style={{ padding: "12px 16px" }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#94A3B8", letterSpacing: "0.08em", marginBottom: "10px" }}>
-                    {tf === "day" ? "INTRADAY LEVELS" : tf === "short" ? "SHORT-TERM LEVELS (1–5 DAYS)" : tf === "swing" ? "SWING LEVELS (1–6 WEEKS)" : "LONG-TERM LEVELS (3–12 MONTHS)"}
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "8px" }}>
-                    {tfData.map(item => item.level ? (
-                      <div key={item.label} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${item.color}25`, borderRadius: "6px", padding: "8px 10px" }} title={item.level.description}>
-                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: item.color + "99", letterSpacing: "0.08em", marginBottom: "3px" }}>{item.label}</div>
-                        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color: item.color }}>
-                          {usdQuote(item.level.price)}
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2px" }}>
-                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151" }}>{item.level.method}</span>
-                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: item.color + "88" }}>
-                            {pctQuote(item.level.pctFromCurrent, 1, typeof item.level.pctFromCurrent === "number" && item.level.pctFromCurrent > 0)}
-                          </span>
-                        </div>
-                      </div>
-                    ) : null)}
-                  </div>
-                </div>
-              );
-            })()}
           </div>
         ) : (
           <div style={{
@@ -908,7 +846,7 @@ function FullOutlookView({
           <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: scoreColor(d.outlookScore) }}>
             {d.outlookScore}/100
           </span>
-          <InfoTip text="Weighted average of all 8 factors. Each factor is scored 0–100 (higher = more bullish). Weights are shown as ×%." />
+          <InfoTip text="Weighted average of all 8 factors. Each factor is scored 0–100 on this heuristic. Weights are shown as ×%. The score is not a position." />
         </div>
         {d.scoreBreakdown.factors.map(f => (
           <ScoreBar key={f.name} score={f.score} label={f.name} weight={f.weight} note={f.note} />
@@ -928,10 +866,10 @@ function FullOutlookView({
             borderRadius: "6px", padding: "10px 12px",
           }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00FF88", marginBottom: "6px", letterSpacing: "0.08em" }}>
-              BULL CASE
+              HIGHER-PRICE FACTORS
             </div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#94A3B8", lineHeight: 1.6 }}>
-              {d.whyBullish}
+              Recorded factors that scored toward higher prices. Not a position. {d.whyBullish}
             </div>
           </div>
           <div style={{
@@ -939,10 +877,10 @@ function FullOutlookView({
             borderRadius: "6px", padding: "10px 12px",
           }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF2D55", marginBottom: "6px", letterSpacing: "0.08em" }}>
-              BEAR CASE
+              LOWER-PRICE FACTORS
             </div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#94A3B8", lineHeight: 1.6 }}>
-              {d.whyBearish}
+              Recorded factors that scored toward lower prices. Not a position. {d.whyBearish}
             </div>
           </div>
         </div>
@@ -1139,17 +1077,17 @@ function FullOutlookView({
       >
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
           <div style={{ background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.12)", borderRadius: "6px", padding: "10px 12px" }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00FF88", marginBottom: "6px" }}>BULL CASE</div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>{d.diagnosticIntegration.bullCase}</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00FF88", marginBottom: "6px" }}>HIGHER-PRICE FACTORS</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>Narrative case withheld. Read the factor scores. Not a position.</div>
           </div>
           <div style={{ background: "rgba(255,45,85,0.04)", border: "1px solid rgba(255,45,85,0.12)", borderRadius: "6px", padding: "10px 12px" }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF2D55", marginBottom: "6px" }}>BEAR CASE</div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>{d.diagnosticIntegration.bearCase}</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF2D55", marginBottom: "6px" }}>LOWER-PRICE FACTORS</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>Narrative case withheld. Read the factor scores. Not a position.</div>
           </div>
         </div>
         {[
           { label: "Primary Driver", value: d.diagnosticIntegration.primaryDriver, tip: "The single most important factor driving this outlook." },
-          { label: "Portfolio Implication", value: d.diagnosticIntegration.portfolioImplication, tip: "What this outlook means for a diversified portfolio." },
+          { label: "Portfolio action", value: "Not published", tip: "This card does not state a portfolio action." },
           { label: "Sensitive Trigger", value: d.diagnosticIntegration.sensitiveTrigger, tip: "The event most likely to change this outlook." },
           { label: "Macro Path", value: d.diagnosticIntegration.macroPath, tip: "The expected macro trajectory." },
           { label: "Historical Analog", value: d.diagnosticIntegration.historicalAnalog, tip: "A comparable historical market environment, if available." },
@@ -1205,7 +1143,7 @@ function FullOutlookView({
         </div>
         {d.preflightImpact.reviewBeforeEntering.length > 0 && (
           <div style={{ background: "rgba(255,149,0,0.04)", border: "1px solid rgba(255,149,0,0.12)", borderRadius: "6px", padding: "10px 12px" }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF9500", marginBottom: "6px" }}>REVIEW BEFORE ENTERING</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF9500", marginBottom: "6px" }}>ITEMS STILL UNRESOLVED</div>
             {d.preflightImpact.reviewBeforeEntering.map((r, i) => (
               <div key={i} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.5, marginBottom: "3px" }}>→ {r}</div>
             ))}
@@ -1213,152 +1151,31 @@ function FullOutlookView({
         )}
       </Section>
 
-      {/* ── TRADE FRAMEWORK ── */}
+      {/* Position plan is withheld. Prior prices stay in the historical-reference card above. */}
       <Section
-        title="Trade Framework"
+        title="Position plan"
         icon={<Target size={14} color="#64B5F6" />}
         collapsible
       >
-        {d.tradeFramework.noTradeRecommended ? (
-          <div style={{
-            background: "rgba(255,45,85,0.06)", border: "1px solid rgba(255,45,85,0.2)",
-            borderRadius: "6px", padding: "12px",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-              <AlertTriangle size={13} color="#FF2D55" />
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#FF2D55", fontWeight: 700 }}>NO TRADE RECOMMENDED</span>
-            </div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>
-              {d.tradeFramework.noTradeReason}
-            </div>
+        <div style={{
+          background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: "6px", padding: "12px",
+        }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#CBD5E1", fontWeight: 700, marginBottom: "6px" }}>
+            NOT PUBLISHED
           </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-
-            {/* Confidence + Risk + Max Hold row */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
-              {[
-                // QA r13 B12: parameter "confidence" is score − penalties (heuristic), withheld by the server.
-                { label: "PARAMETER CONFIDENCE", value: CONFIDENCE_NOT_ESTABLISHED, color: "#94A3B8" },
-                { label: "RISK RATING", value: d.tradeFramework.riskRating, color: d.tradeFramework.riskRating === "Low" ? "#00FF88" : d.tradeFramework.riskRating === "Moderate" ? "#64B5F6" : d.tradeFramework.riskRating === "High" ? "#FF9500" : "#FF2D55" },
-                { label: "MAX HOLD TIME", value: d.tradeFramework.maxHoldTime, color: "#94A3B8" },
-              ].map(item => (
-                <div key={item.label} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "6px", padding: "8px 10px" }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", marginBottom: "4px", letterSpacing: "0.08em" }}>{item.label}</div>
-                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: item.color }}>{item.value}</div>
-                </div>
-              ))}
+          {[
+            { label: "PARAMETER CONFIDENCE", value: CONFIDENCE_NOT_ESTABLISHED, color: "#94A3B8" },
+          ].map(item => (
+            <div key={item.label} style={{ marginBottom: "8px" }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", letterSpacing: "0.08em" }}>{item.label}</div>
+              <div data-confidence-status="not-established" style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: item.color }}>{item.value}</div>
             </div>
-
-            {/* Entry Zone */}
-            {d.tradeFramework.entryZone && (
-              <div style={{ background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.15)", borderRadius: "6px", padding: "10px 12px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00FF88", letterSpacing: "0.08em" }}>ENTRY ZONE</div>
-                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#00FF88" }}>
-                    {usdQuote(d.tradeFramework.entryZone.price)}
-                  </div>
-                </div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#E2E8F0", lineHeight: 1.5 }}>{d.tradeFramework.entryZone.description}</div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#6B7280", marginTop: "4px" }}>{d.tradeFramework.entryZone.rationale}</div>
-              </div>
-            )}
-
-            {/* Stop levels */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.08em" }}>STOP LEVELS (3-TIER)</div>
-              {[
-                { label: "TRADE STOP", level: d.tradeFramework.tradeStop, color: "#FF9500" },
-                { label: "SWING STOP", level: d.tradeFramework.swingStop, color: "#FF6B35" },
-                { label: "THESIS FAILURE", level: d.tradeFramework.thesisFailure, color: "#FF2D55" },
-              ].map(item => item.level && (
-                <div key={item.label} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid rgba(255,255,255,0.06)`, borderLeft: `3px solid ${item.color}40`, borderRadius: "0 6px 6px 0", padding: "8px 10px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "3px" }}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: item.color, letterSpacing: "0.08em" }}>{item.label}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: item.color + "CC" }}>
-                        {pctQuote(item.level.pctFromEntry, 1, typeof item.level.pctFromEntry === "number" && item.level.pctFromEntry > 0)}
-                      </span>
-                      <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: item.color }}>
-                        {usdQuote(item.level.price)}
-                      </span>
-                    </div>
-                  </div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#CBD5E1", lineHeight: 1.5 }}>{item.level.description}</div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#6B7280", marginTop: "3px" }}>{item.level.rationale}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Take-profit ladder */}
-            {d.tradeFramework.takeProfitLadder.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.08em" }}>TAKE-PROFIT LADDER</div>
-                {d.tradeFramework.takeProfitLadder.map(tp => (
-                  <div key={tp.tier} style={{ background: "rgba(0,212,255,0.03)", border: "1px solid rgba(0,212,255,0.1)", borderRadius: "6px", padding: "8px 10px" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "3px" }}>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00D4FF", letterSpacing: "0.08em" }}>TP {tp.tier}</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00D4FFCC" }}>
-                          {pctQuote(tp.pctFromEntry, 1, true)}
-                        </span>
-                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#00D4FF" }}>
-                          {usdQuote(tp.price)}
-                        </span>
-                      </div>
-                    </div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#CBD5E1", lineHeight: 1.5 }}>{tp.description}</div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#6B7280", marginTop: "3px" }}>{tp.rationale}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Hold condition + exit trigger */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-              <div style={{ background: "rgba(0,255,136,0.03)", border: "1px solid rgba(0,255,136,0.1)", borderRadius: "6px", padding: "8px 10px" }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00FF88", marginBottom: "4px", letterSpacing: "0.08em" }}>IDEAL HOLD CONDITION</div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.5 }}>{d.tradeFramework.idealHoldCondition}</div>
-              </div>
-              <div style={{ background: "rgba(255,45,85,0.03)", border: "1px solid rgba(255,45,85,0.1)", borderRadius: "6px", padding: "8px 10px" }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#FF2D55", marginBottom: "4px", letterSpacing: "0.08em" }}>EXIT TRIGGER</div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.5 }}>{d.tradeFramework.exitTrigger}</div>
-              </div>
-            </div>
-
-            {/* Bull / bear case */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-              <div style={{ background: "rgba(0,255,136,0.03)", border: "1px solid rgba(0,255,136,0.1)", borderRadius: "6px", padding: "8px 10px" }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00FF88", marginBottom: "4px", letterSpacing: "0.08em" }}>BULL CASE FOR THIS TRADE</div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.5 }}>{d.tradeFramework.bullCaseForTrade}</div>
-              </div>
-              <div style={{ background: "rgba(255,45,85,0.03)", border: "1px solid rgba(255,45,85,0.1)", borderRadius: "6px", padding: "8px 10px" }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#FF2D55", marginBottom: "4px", letterSpacing: "0.08em" }}>BEAR CASE FOR THIS TRADE</div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.5 }}>{d.tradeFramework.bearCaseForTrade}</div>
-              </div>
-            </div>
-
-            {/* Do-not-trade conditions */}
-            {d.tradeFramework.doNotTradeIf.length > 0 && (
-              <div style={{ background: "rgba(255,149,0,0.04)", border: "1px solid rgba(255,149,0,0.15)", borderRadius: "6px", padding: "10px 12px" }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF9500", marginBottom: "6px", letterSpacing: "0.08em" }}>DO NOT TRADE IF</div>
-                {d.tradeFramework.doNotTradeIf.map((cond, i) => (
-                  <div key={i} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6, marginBottom: "3px" }}>
-                    ⚠ {cond}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Data note */}
-            {d.tradeFramework.dataInsufficient && (
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", textAlign: "center", paddingTop: "4px" }}>
-                Live price data unavailable — price levels could not be calculated for this asset.
-              </div>
-            )}
-
+          ))}
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>
+            No bullish or bearish position plan is shown for this symbol. Order prices, size, and a setup badge are omitted. Read the Pressure Index and the prior prices computed from the completed bars above. Freshness is the generated time on this card. The reading is a heuristic, not a forecast, and it is not an instruction.
           </div>
-        )}
+        </div>
       </Section>
 
       {/* ── OUTLOOK HISTORY ── */}
@@ -1390,7 +1207,7 @@ function FullOutlookView({
                       {item.point.outlookScore}
                     </div>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: directionColor(item.point.direction) }}>
-                      {item.point.direction}
+                      {outlookLabel(item.point.direction)}
                     </div>
                   </>
                 ) : (

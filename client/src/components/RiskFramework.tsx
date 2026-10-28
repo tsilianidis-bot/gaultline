@@ -382,7 +382,7 @@ export function RiskFramework({ entry, target, riskLevels, isCrypto = false }: R
           ? "Solid setup — favorable risk/reward"
           : riskReward >= 1.5
           ? "Acceptable — monitor closely"
-          : "Marginal — consider tightening entry or waiting for better setup"}
+          : `Reward-to-risk on this card is ${riskReward.toFixed(2)}. The ratio is below 1.5.`}
       </div>
     </div>
   );

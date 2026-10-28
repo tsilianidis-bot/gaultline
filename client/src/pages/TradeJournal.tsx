@@ -235,13 +235,13 @@ function TradeRow({ entry, onEdit, onDelete }: {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "10px", marginTop: "12px" }}>
             {entry.stopLoss && (
               <div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", textTransform: "uppercase", letterSpacing: "0.1em" }}>Stop Loss</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", textTransform: "uppercase", letterSpacing: "0.1em" }}>User-entered exit price</div>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#FF2D55" }}>${parseFloat(entry.stopLoss).toFixed(2)}</div>
               </div>
             )}
             {entry.target && (
               <div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", textTransform: "uppercase", letterSpacing: "0.1em" }}>Target</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", textTransform: "uppercase", letterSpacing: "0.1em" }}>Upper mark</div>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#00FF88" }}>${parseFloat(entry.target).toFixed(2)}</div>
               </div>
             )}
@@ -358,7 +358,7 @@ function TradeJournalInner() {
       exitedAt: form.exitedAt ? new Date(form.exitedAt).toISOString() : undefined,
     };
     if (!payload.symbol || !payload.entryPrice || !payload.quantity) {
-      toast.error("Symbol, entry price, and quantity are required");
+      toast.error("Symbol, opening price, and quantity are required");
       return;
     }
     if (editingId != null) {
@@ -553,7 +553,7 @@ function TradeJournalInner() {
 
             {/* Entry price */}
             <div>
-              <Label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px" }}>Entry Price *</Label>
+              <Label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px" }}>Opening price *</Label>
               <Input type="number" value={form.entryPrice} onChange={e => setForm(f => ({ ...f, entryPrice: e.target.value }))} placeholder="0.00" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", marginTop: "4px" }} />
             </div>
 
@@ -587,13 +587,13 @@ function TradeJournalInner() {
 
             {/* Stop loss */}
             <div>
-              <Label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px" }}>Stop Loss</Label>
+              <Label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px" }}>User-entered exit price</Label>
               <Input type="number" value={form.stopLoss} onChange={e => setForm(f => ({ ...f, stopLoss: e.target.value }))} placeholder="0.00" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", marginTop: "4px" }} />
             </div>
 
             {/* Target */}
             <div>
-              <Label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px" }}>Target</Label>
+              <Label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px" }}>Upper mark</Label>
               <Input type="number" value={form.target} onChange={e => setForm(f => ({ ...f, target: e.target.value }))} placeholder="0.00" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", marginTop: "4px" }} />
             </div>
 
@@ -636,7 +636,7 @@ function TradeJournalInner() {
 
             {/* Entered at */}
             <div>
-              <Label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px" }}>Entry Date/Time</Label>
+              <Label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px" }}>Opening date/Time</Label>
               <Input type="datetime-local" value={form.enteredAt} onChange={e => setForm(f => ({ ...f, enteredAt: e.target.value }))} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", marginTop: "4px" }} />
             </div>
 

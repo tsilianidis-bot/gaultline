@@ -553,7 +553,6 @@ function StockHeatmapInner() {
 
       {/* ── Content ────────────────────────────────────────── */}
       <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "14px 16px 40px" }}>
-
         {/* Cross-tab strip */}
         <CrossTabStrip gainers={gainersQuery.data} losers={losersQuery.data} volume={volumeQuery.data} />
 

@@ -90,7 +90,7 @@ describe("critical public claim containment", () => {
   it("does not require the Daily Story model to invent a target horizon or reward", () => {
     expect(outlookRouter).toContain("Not yet established — insufficient evidence for reliable estimate");
     expect(outlookRouter).toContain("Not established — no calibrated magnitude estimate");
-    expect(outlookRouter).toContain("Do not invent a price target, expected reward, timing");
+    expect(outlookRouter).toContain("Do not invent a price level, expected reward, timing");
     expect(outlookRouter).toContain("recordHorizonObservation");
   });
 

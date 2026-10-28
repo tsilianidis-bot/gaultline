@@ -72,13 +72,19 @@ const code = (rel: string) => readFileSync(path.join(root, rel), "utf8").replace
 describe("routers.ts applies the boundary on every mounted signal procedure", () => {
   const src = code("server/routers.ts");
   it("signals.getTradingSignals / getTradingSignal", () => {
-    expect(src).toContain("return withholdSignalsConfidence(computeTradingSignals(input.tickers, input.regime));");
-    expect(src).toContain("return withholdSignalConfidence(computeTradingSignal(tickerInput, regime));");
+    expect(src).toContain("return presentTradingSignals(computeTradingSignals(input.tickers, input.regime));");
+    expect(src).toContain("return presentTradingSignal(computeTradingSignal(tickerInput, regime));");
+    const engine = code("server/tradingSignals.ts");
+    expect(engine).toContain("return omitTradeActions(withholdSignalsConfidence(signals));");
+    expect(engine).toContain("return omitTradeAction(withholdSignalConfidence(signal));");
     expect(src).not.toMatch(/return computeTradingSignals?\(/);
   });
   it("crypto.getSignal / crypto.getScreener", () => {
-    expect(src).toMatch(/const withheld = withholdSignalConfidence\(result\);\s*return withholdNonFiniteNumbers\(withheld\) as typeof withheld;/);
-    expect(src).toContain("signals: withholdScreenerConfidence(results),");
+    expect(src).toMatch(/const withheld = presentCryptoSignal\(result\);\s*return withholdNonFiniteNumbers\(withheld\) as typeof withheld;/);
+    expect(src).toContain("signals: presentCryptoSignals(results),");
+    const engine = code("server/cryptoSignals.ts");
+    expect(engine).toContain("return omitTradeAction(withholdSignalConfidence(signal));");
+    expect(engine).toContain("return omitTradeActions(withholdScreenerConfidence(signals));");
     expect(src).not.toMatch(/signals: results,/);
   });
 });

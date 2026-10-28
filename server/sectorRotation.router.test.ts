@@ -13,7 +13,7 @@ describe("sectorRotation router", () => {
   beforeEach(() => getServedSectorRotation.mockClear());
   it("current returns the served snapshot view for anonymous callers (read-only query)", async () => {
     const caller = sectorRotationRouter.createCaller({ req: {} as never, res: {} as never, user: null } as never);
-    await expect(caller.current()).resolves.toBe(served);
+    await expect(caller.current()).resolves.toEqual(served);
     expect(getServedSectorRotation).toHaveBeenCalledTimes(1);
   });
   it("exposes only a query (no mutations)", () => {

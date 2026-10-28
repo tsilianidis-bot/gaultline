@@ -70,7 +70,6 @@ describe("tRPC clearCache is owner or admin only", () => {
     for (const file of [
       "server/routers.ts",
       "server/routers/marketIntelligence.ts",
-      "server/routers/signals.ts",
       "server/routers/outlook.ts",
       "server/routers/fmos.ts",
     ]) {

@@ -172,7 +172,7 @@ export default function MobileBrief() {
             </div>
           </div>
           <div>
-            <div className="text-[8px] font-mono text-[#64748B] mb-0.5">REGIME HOLD</div>
+            <div className="text-[8px] font-mono text-[#64748B] mb-0.5">REGIME READING</div>
             <div className="text-sm font-mono font-bold text-[#FFD700]">
               {regimeHoldText}
             </div>
@@ -211,8 +211,8 @@ export default function MobileBrief() {
             rotation?.aiCommentary
               ? rotation.aiCommentary.split(".")[0] + "."
               : topSector.avgChange24h != null && topSector.avgChange24h >= 0
-              ? "Risk-on rotation detected in this sector."
-              : "Risk-off pressure weighing on this sector."
+              ? "Higher-risk appetite rotation detected in this sector."
+              : "Lower-risk appetite pressure weighing on this sector."
           }`}
           accentColor={topSector.color ?? "#A78BFA"}
         />

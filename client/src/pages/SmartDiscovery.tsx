@@ -6,13 +6,14 @@
  *   - Primary Driver sentence (Section 5)
  *   - Evidence Engine grid — 14 categories with signal bars (Section 6)
  *   - Bull/Bear qualitative balance (contract scenario text) and key drivers (Sections 7-8)
- *   - Why Not Buy/Sell for WAIT/HOLD verdicts (Section 10)
+ *   - Why not for a wait verdict (Section 10)
  *   - What Changes Our View — 4-5 specific catalysts (Section 11)
  *   - Confidence breakdown with reasons
  *   - 13-stage loading sequence
  */
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { buildEngineSnapshot, canonicalPressure100, findDomainByFamily, type EngineSnapshotPayload } from "@/lib/engineSnapshot";
+import { appetiteLabel, directionColor, observedDirection, POSTURE_WITHHELD, publicConditionText, REGIME_HIGHER, REGIME_LOWER, STATUS_HIGHER, STATUS_LOWER } from "@shared/surfaceClaims";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -57,6 +58,7 @@ interface EvidenceScore {
 
 interface FaultlineAnswer {
   verdict: string;
+  internalDirection?: "positive" | "negative" | "mixed" | "unestablished";
   verdictColor: "green" | "yellow" | "red" | "blue";
   opportunityScore: number | null;
   /** QA r11 B9: the integrity validator withholds model confidence (null). */
@@ -105,18 +107,18 @@ interface FaultlineAnswer {
   downsideMostLikely?: string | null;
   downsideTriggers?: string[];
   downsideInvalidation?: string | null;
-  // Direct answer fields — upside / target
+  // Direct answer fields — upside
   upsideBaseTarget?: string | null;
   upsideBullTarget?: string | null;
   upsideExtremeTarget?: string | null;
   upsideMostLikely?: string | null;
   upsideCatalysts?: string[];
   upsideInvalidation?: string | null;
-  // Direct answer fields — buy/sell/wait verdict
+  // Direct answer fields — transaction/wait verdict
   actionVerdict?: string | null;
   actionVerdictReason?: string | null;
   actionVerdictConditions?: string[];
-  // Direct answer fields — entry zone
+  // Direct answer fields — price band
   entryZoneIdeal?: string | null;
   entryZoneAggressive?: string | null;
   entryZoneConservative?: string | null;
@@ -140,7 +142,7 @@ interface FaultlineAnswer {
   maxDrawdownEstimate?: string | null;
   // Collective Reading — synthesis section
   collectiveReading?: {
-    riskRegime: "risk-on" | "risk-off" | "mixed";
+    riskRegime: string;
     beneficiaries: string[];
     strongestReason: string;
     invalidation: string;
@@ -150,7 +152,7 @@ interface FaultlineAnswer {
   // Historical Intelligence — server-computed, not from LLM
   historicalIntelligence?: HistoricalIntelligenceData | null;
   // ── NEW V3 FIELDS — Final Verdict + Institutional Intelligence ──────────────────────────────
-  finalVerdictAction?: "BUY" | "ACCUMULATE" | "HOLD" | "WATCH" | "REDUCE" | "SELL" | "AVOID";
+  finalVerdictAction?: string;
   finalVerdictConfidence?: number | null;
   finalVerdictRiskLevel?: "LOW" | "MODERATE" | "HIGH" | "EXTREME";
   finalVerdictTimeHorizon?: string;
@@ -170,7 +172,7 @@ interface RankedOpportunityItem {
   name: string;
   sector: string;
   assetType: "stock" | "crypto";
-  action: "BUY" | "ACCUMULATE" | "WATCH" | "AVOID";
+  action: string;
   convictionScore: number;
   riskLevel: "Low" | "Medium" | "High" | "Extreme";
   primaryDriver: string;
@@ -578,7 +580,7 @@ function BullBearSection({ answer }: { answer: FaultlineAnswer }) {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "7px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <TrendingUp size={11} style={{ color: "#00FF88" }} />
-              <span style={{ ...MONO_SM, color: "#00FF88", letterSpacing: "0.1em" }}>BULL CASE</span>
+              <span style={{ ...MONO_SM, color: "#00FF88", letterSpacing: "0.1em" }}>HIGHER-PRICE SCENARIO</span>
             </div>
           </div>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC", lineHeight: 1.6, margin: "0 0 8px" }}>
@@ -601,7 +603,7 @@ function BullBearSection({ answer }: { answer: FaultlineAnswer }) {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "7px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <TrendingDown size={11} style={{ color: "#FF4444" }} />
-              <span style={{ ...MONO_SM, color: "#FF4444", letterSpacing: "0.1em" }}>BEAR CASE</span>
+              <span style={{ ...MONO_SM, color: "#FF4444", letterSpacing: "0.1em" }}>LOWER-PRICE SCENARIO</span>
             </div>
           </div>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC", lineHeight: 1.6, margin: "0 0 8px" }}>
@@ -637,7 +639,7 @@ function WhyNotSection({ whyNotBuy, whyNotSell }: {
         <div style={{ padding: "12px 14px", background: "rgba(0,255,136,0.03)", border: "1px solid rgba(0,255,136,0.08)", borderRadius: "6px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "8px" }}>
             <XCircle size={10} style={{ color: "#00FF88" }} />
-            <span style={{ ...MONO_SM, color: "#00FF88", fontSize: "9px", letterSpacing: "0.1em" }}>WHY NOT BUY (YET)</span>
+            <span style={{ ...MONO_SM, color: "#00FF88", fontSize: "9px", letterSpacing: "0.1em" }}>WHAT IS NOT CONFIRMED</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
             {whyNotBuy.map((r, i) => (
@@ -653,7 +655,7 @@ function WhyNotSection({ whyNotBuy, whyNotSell }: {
         <div style={{ padding: "12px 14px", background: "rgba(255,68,68,0.03)", border: "1px solid rgba(255,68,68,0.08)", borderRadius: "6px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "8px" }}>
             <XCircle size={10} style={{ color: "#FF4444" }} />
-            <span style={{ ...MONO_SM, color: "#FF4444", fontSize: "9px", letterSpacing: "0.1em" }}>WHY NOT SELL (YET)</span>
+            <span style={{ ...MONO_SM, color: "#FF4444", fontSize: "9px", letterSpacing: "0.1em" }}>WHAT WOULD WEAKEN THIS</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
             {whyNotSell.map((r, i) => (
@@ -794,9 +796,6 @@ function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
     fontFamily: "'Inter', sans-serif", fontSize: "12px",
     color: "rgba(255,255,255,0.5)", lineHeight: 1.5,
   };
-  const rowStyle: React.CSSProperties = {
-    display: "flex", gap: "24px", flexWrap: "wrap", marginBottom: "10px",
-  };
   const colStyle: React.CSSProperties = {
     display: "flex", flexDirection: "column", gap: "2px", minWidth: "120px",
   };
@@ -814,96 +813,14 @@ function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
     paddingLeft: "14px",
   };
 
-  // ── Downside ──
-  if (intent === "downside") {
-    const hasData = answer.downsideBaseZone || answer.downsideBearTarget || answer.downsideExtremeTarget;
-    if (!hasData) return null;
+  // Price objectives are not published. The record has no bar count or formula.
+  if (intent === "upside" || intent === "target_price" || intent === "entry_zone" || intent === "exit_zone" || intent === "downside") {
     return (
       <div style={panelStyle}>
-        <div style={labelStyle}>DIRECT ANSWER — DOWNSIDE ANALYSIS</div>
-        {answer.downsideMostLikely && (
-          <div style={{ ...subValueStyle, marginBottom: "12px", color: "#E8EDF5" }}>{answer.downsideMostLikely}</div>
-        )}
-        <div style={rowStyle}>
-          {answer.downsideBaseZone && (
-            <div style={colStyle}>
-              <div style={colLabelStyle}>BASE CASE SUPPORT</div>
-              <div style={colValueStyle}>{answer.downsideBaseZone}</div>
-            </div>
-          )}
-          {answer.downsideBearTarget && (
-            <div style={colStyle}>
-              <div style={colLabelStyle}>BEAR CASE TARGET</div>
-              <div style={{ ...colValueStyle, color: "#FF6B6B" }}>{answer.downsideBearTarget}</div>
-            </div>
-          )}
-          {answer.downsideExtremeTarget && (
-            <div style={colStyle}>
-              <div style={colLabelStyle}>EXTREME SCENARIO</div>
-              <div style={{ ...colValueStyle, color: "#FF4444" }}>{answer.downsideExtremeTarget}</div>
-            </div>
-          )}
+        <div style={labelStyle}>DIRECT ANSWER — PRICE REFERENCES</div>
+        <div style={{ ...subValueStyle, color: "#E8EDF5" }}>
+          Order prices are not published. This answer does not name a bar count or a formula, so prior prices and position levels are omitted. The Pressure Index and the as-of time are the measurements. This is not an instruction.
         </div>
-        {answer.downsideTriggers && answer.downsideTriggers.length > 0 && (
-          <div style={{ marginTop: "8px" }}>
-            <div style={colLabelStyle}>WHAT TRIGGERS EACH LEVEL</div>
-            {answer.downsideTriggers.map((t, i) => (
-              <div key={i} style={bulletStyle}>• {t}</div>
-            ))}
-          </div>
-        )}
-        {answer.downsideInvalidation && (
-          <div style={{ marginTop: "8px", ...dimStyle, color: "rgba(0,255,136,0.6)" }}>
-            ⚠ {answer.downsideInvalidation}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // ── Upside / Target Price ──
-  if (intent === "upside" || intent === "target_price") {
-    const hasData = answer.upsideBaseTarget || answer.upsideBullTarget || answer.upsideExtremeTarget;
-    if (!hasData) return null;
-    return (
-      <div style={panelStyle}>
-        <div style={labelStyle}>DIRECT ANSWER — UPSIDE ANALYSIS</div>
-        {answer.upsideMostLikely && (
-          <div style={{ ...subValueStyle, marginBottom: "12px", color: "#E8EDF5" }}>{answer.upsideMostLikely}</div>
-        )}
-        <div style={rowStyle}>
-          {answer.upsideBaseTarget && (
-            <div style={colStyle}>
-              <div style={colLabelStyle}>BASE CASE TARGET</div>
-              <div style={{ ...colValueStyle, color: "#00FF88" }}>{answer.upsideBaseTarget}</div>
-            </div>
-          )}
-          {answer.upsideBullTarget && (
-            <div style={colStyle}>
-              <div style={colLabelStyle}>BULL CASE TARGET</div>
-              <div style={{ ...colValueStyle, color: "#00FF88" }}>{answer.upsideBullTarget}</div>
-            </div>
-          )}
-          {answer.upsideExtremeTarget && (
-            <div style={colStyle}>
-              <div style={colLabelStyle}>EXTREME / MOONSHOT</div>
-              <div style={{ ...colValueStyle, color: "#FFD700" }}>{answer.upsideExtremeTarget}</div>
-            </div>
-          )}
-        </div>
-        {answer.upsideCatalysts && answer.upsideCatalysts.length > 0 && (
-          <div style={{ marginTop: "8px" }}>
-            <div style={colLabelStyle}>WHAT TRIGGERS EACH LEVEL</div>
-            {answer.upsideCatalysts.map((c, i) => (
-              <div key={i} style={bulletStyle}>• {c}</div>
-            ))}
-          </div>
-        )}
-        {answer.upsideInvalidation && (
-          <div style={{ marginTop: "8px", ...dimStyle, color: "rgba(255,100,100,0.7)" }}>
-            ⚠ {answer.upsideInvalidation}
-          </div>
-        )}
       </div>
     );
   }
@@ -911,16 +828,12 @@ function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
   // ── Buy / Sell / Wait Verdict ──
   if (intent === "buy_verdict" || intent === "sell_verdict" || intent === "wait_verdict" || intent === "compare") {
     if (!answer.actionVerdict) return null;
-    const verdictColors: Record<string, string> = {
-      "BUY NOW": "#00FF88", "ACCUMULATE": "#00CC6A", "WAIT": "#FFD700",
-      "SELL": "#FF4444", "REDUCE": "#FF6B6B", "HOLD": "#FFD700",
-    };
-    const vc = verdictColors[answer.actionVerdict] ?? "#E8EDF5";
-    const intentLabel = intent === "buy_verdict" ? "BUY VERDICT" : intent === "sell_verdict" ? "SELL VERDICT" : intent === "compare" ? "COMPARISON VERDICT" : "TIMING VERDICT";
+    const vc = directionColor(answer.actionVerdict);
+    const intentLabel = "MEASURED CONDITION";
     return (
       <div style={panelStyle}>
         <div style={labelStyle}>DIRECT ANSWER — {intentLabel}</div>
-        <div style={{ ...bigValueStyle, color: vc, marginBottom: "8px" }}>{answer.actionVerdict}</div>
+        <div style={{ ...bigValueStyle, color: vc, marginBottom: "8px" }}>{publicConditionText(answer.actionVerdict)}</div>
         {answer.actionVerdictReason && (
           <div style={{ ...subValueStyle, fontSize: "13px", marginBottom: "10px", color: "rgba(255,255,255,0.8)" }}>{answer.actionVerdictReason}</div>
         )}
@@ -936,100 +849,15 @@ function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
     );
   }
 
-  // ── Entry Zone ──
-  if (intent === "entry_zone") {
-    const hasData = answer.entryZoneIdeal || answer.entryZoneAggressive || answer.entryZoneConservative;
-    if (!hasData) return null;
-    return (
-      <div style={panelStyle}>
-        <div style={labelStyle}>DIRECT ANSWER — ENTRY ZONES</div>
-        <div style={rowStyle}>
-          {answer.entryZoneIdeal && (
-            <div style={colStyle}>
-              <div style={colLabelStyle}>IDEAL ENTRY</div>
-              <div style={{ ...colValueStyle, color: "#00FF88" }}>{answer.entryZoneIdeal}</div>
-            </div>
-          )}
-          {answer.entryZoneAggressive && (
-            <div style={colStyle}>
-              <div style={colLabelStyle}>AGGRESSIVE (MOMENTUM)</div>
-              <div style={colValueStyle}>{answer.entryZoneAggressive}</div>
-            </div>
-          )}
-          {answer.entryZoneConservative && (
-            <div style={colStyle}>
-              <div style={colLabelStyle}>CONSERVATIVE (PULLBACK)</div>
-              <div style={colValueStyle}>{answer.entryZoneConservative}</div>
-            </div>
-          )}
-        </div>
-        <div style={rowStyle}>
-          {answer.entryZoneStop && (
-            <div style={colStyle}>
-              <div style={colLabelStyle}>STOP LOSS</div>
-              <div style={{ ...colValueStyle, color: "#FF6B6B" }}>{answer.entryZoneStop}</div>
-            </div>
-          )}
-          {answer.entryZoneTarget && (
-            <div style={colStyle}>
-              <div style={colLabelStyle}>FIRST TARGET</div>
-              <div style={{ ...colValueStyle, color: "#00FF88" }}>{answer.entryZoneTarget}</div>
-            </div>
-          )}
-          {answer.entryZoneRR && (
-            <div style={colStyle}>
-              <div style={colLabelStyle}>RISK:REWARD</div>
-              <div style={colValueStyle}>{answer.entryZoneRR}</div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // ── Exit Zone ──
-  if (intent === "exit_zone") {
-    const hasData = answer.exitZonePrimary || answer.exitZoneSecondary;
-    if (!hasData) return null;
-    return (
-      <div style={panelStyle}>
-        <div style={labelStyle}>DIRECT ANSWER — EXIT / TAKE PROFIT ZONES</div>
-        <div style={rowStyle}>
-          {answer.exitZonePrimary && (
-            <div style={colStyle}>
-              <div style={colLabelStyle}>FIRST TARGET (PARTIAL EXIT)</div>
-              <div style={{ ...colValueStyle, color: "#00FF88" }}>{answer.exitZonePrimary}</div>
-            </div>
-          )}
-          {answer.exitZoneSecondary && (
-            <div style={colStyle}>
-              <div style={colLabelStyle}>SECOND TARGET (FULL EXIT)</div>
-              <div style={{ ...colValueStyle, color: "#00FF88" }}>{answer.exitZoneSecondary}</div>
-            </div>
-          )}
-          {answer.exitZoneFull && (
-            <div style={colStyle}>
-              <div style={colLabelStyle}>STOP OUT LEVEL</div>
-              <div style={{ ...colValueStyle, color: "#FF6B6B" }}>{answer.exitZoneFull}</div>
-            </div>
-          )}
-        </div>
-        {answer.exitZoneReason && (
-          <div style={{ ...dimStyle, marginTop: "6px" }}>{answer.exitZoneReason}</div>
-        )}
-      </div>
-    );
-  }
-
   // ── Invalidation ──
   if (intent === "invalidation") {
     if (!answer.invalidationPrice && (!answer.invalidationConditions || answer.invalidationConditions.length === 0)) return null;
     return (
       <div style={{ ...panelStyle, border: "1px solid rgba(255, 100, 100, 0.3)", background: "rgba(255, 68, 68, 0.04)" }}>
         <div style={{ ...labelStyle, color: "#FF6B6B" }}>DIRECT ANSWER — INVALIDATION LEVELS</div>
-        {answer.invalidationPrice && (
-          <div style={{ ...bigValueStyle, color: "#FF4444", marginBottom: "8px" }}>{answer.invalidationPrice}</div>
-        )}
+        <div style={{ ...subValueStyle, color: "#E8EDF5", marginBottom: "8px" }}>
+          An invalidation price is not published. Conditions below are recorded notes, not an instruction.
+        </div>
         {answer.invalidationConditions && answer.invalidationConditions.length > 0 && (
           <div style={{ marginBottom: "8px" }}>
             <div style={colLabelStyle}>CONDITIONS THAT BREAK THE THESIS</div>
@@ -1047,17 +875,11 @@ function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
 
   // ── General Analysis — lead with verdict + bull/bear ──
   if (intent === "general_analysis") {
-    const verdictColors: Record<string, string> = {
-      "STRONG BUY": "#00FF88", "BUY": "#00FF88", "ACCUMULATE": "#00CC6A",
-      "WAIT": "#FFD700", "HOLD": "#FFD700", "LOW CONVICTION": "#FFD700",
-      "REDUCE": "#FF6B6B", "STRONG REDUCE": "#FF4444", "SELL": "#FF4444",
-      "HIGH RISK": "#FF4444", "MACRO ANSWER": ACCENT,
-    };
-    const vc = verdictColors[answer.verdict] ?? "#E8EDF5";
+    const vc = directionColor(answer.verdict);
     return (
       <div style={{ ...panelStyle, border: `1px solid ${vc}33`, background: `${vc}06` }}>
         <div style={{ ...labelStyle, color: vc }}>DIRECT ANSWER</div>
-        <div style={{ ...bigValueStyle, color: vc, marginBottom: "6px" }}>{answer.verdict}</div>
+        <div style={{ ...bigValueStyle, color: vc, marginBottom: "6px" }}>{publicConditionText(answer.verdict)}</div>
         {answer.primaryDriver && (
           <div style={{ ...subValueStyle, fontSize: "13px", marginBottom: "8px", color: "rgba(255,255,255,0.8)" }}>{answer.primaryDriver}</div>
         )}
@@ -1137,8 +959,8 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
     : "rgba(255,68,68,0.2)";
   const opportunityColor = typeof answer.opportunityScore !== "number" ? "#94A3B8" : answer.opportunityScore >= 65 ? "#00FF88" : answer.opportunityScore >= 40 ? "#FFD700" : "#FF4444";
 
-  // Determine if this is a WAIT/HOLD verdict
-  const isWaitHold = ["WAIT", "HOLD", "LOW CONVICTION"].includes(answer.verdict);
+  // Determine if this is a wait verdict
+  const isWaitHold = observedDirection(answer.verdict) === "mixed" || answer.verdict === "LOW CONVICTION";
   // For general_analysis the DirectAnswerPanel already shows the executive summary — skip it in the body
   const isGeneralAnalysis = answer.questionIntent === "general_analysis";
 
@@ -1170,7 +992,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
             </div>
           )}
           <div style={{ ...SANS, fontSize: "24px", fontWeight: 800, color: vs.color, letterSpacing: "0.08em" }}>
-            {answer.verdict}
+            {publicConditionText(answer.verdict)}
           </div>
           {answer.expectedTimeframe && (
             <div style={{
@@ -1279,7 +1101,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
       {/* ── Bull / Bear (shown here for general_analysis since ContractScenarioStrip is already in DirectAnswerPanel) ── */}
       {isGeneralAnalysis && <BullBearSection answer={answer} />}
 
-      {/* ── Why Not Buy/Sell (only for WAIT/HOLD) ── */}
+      {/* ── Why not, only for a wait verdict ── */}
       {isWaitHold && (
         <WhyNotSection whyNotBuy={answer.whyNotBuy} whyNotSell={answer.whyNotSell} />
       )}
@@ -1397,17 +1219,16 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
       {/* ── FINAL VERDICT ── */}
       {answer.finalVerdictAction && (() => {
         const fvAction = answer.finalVerdictAction!;
-        const fvColor = ["BUY", "ACCUMULATE"].includes(fvAction) ? "#00FF88"
-          : ["SELL", "AVOID"].includes(fvAction) ? "#FF4444"
-          : ["REDUCE"].includes(fvAction) ? "#FF6B35"
+        const fvDirection = observedDirection(fvAction);
+        const fvColor = fvDirection === "positive" ? "#00FF88"
+          : fvDirection === "negative" ? "#FF4444"
+          : fvAction === POSTURE_WITHHELD ? "#FF4444"
           : "#FFD700";
-        const fvBg = ["BUY", "ACCUMULATE"].includes(fvAction) ? "rgba(0,255,136,0.06)"
-          : ["SELL", "AVOID"].includes(fvAction) ? "rgba(255,68,68,0.06)"
-          : ["REDUCE"].includes(fvAction) ? "rgba(255,107,53,0.06)"
+        const fvBg = fvDirection === "positive" ? "rgba(0,255,136,0.06)"
+          : fvDirection === "negative" || fvAction === POSTURE_WITHHELD ? "rgba(255,68,68,0.06)"
           : "rgba(255,215,0,0.06)";
-        const fvBorder = ["BUY", "ACCUMULATE"].includes(fvAction) ? "rgba(0,255,136,0.25)"
-          : ["SELL", "AVOID"].includes(fvAction) ? "rgba(255,68,68,0.25)"
-          : ["REDUCE"].includes(fvAction) ? "rgba(255,107,53,0.25)"
+        const fvBorder = fvDirection === "positive" ? "rgba(0,255,136,0.25)"
+          : fvDirection === "negative" || fvAction === POSTURE_WITHHELD ? "rgba(255,68,68,0.25)"
           : "rgba(255,215,0,0.25)";
         const rlColor = answer.finalVerdictRiskLevel === "LOW" ? "#00FF88"
           : answer.finalVerdictRiskLevel === "MODERATE" ? "#FFD700"
@@ -1430,7 +1251,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
             {/* Action */}
             <div style={{ display: "flex", alignItems: "baseline", gap: "12px", marginBottom: "14px", flexWrap: "wrap" }}>
               <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "28px", fontWeight: 900, color: fvColor, letterSpacing: "0.06em" }}>
-                {fvAction}
+                {publicConditionText(fvAction)}
               </div>
               {answer.finalVerdictTimeHorizon && (
                 <div style={{
@@ -1542,48 +1363,12 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
               ))}
             </div>
 
-            {/* Key Levels */}
-            {(answer.support || answer.resistance || answer.entryZone || answer.stopLevel) && (
-              <div style={{ padding: "12px 14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "6px" }}>
-                <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", marginBottom: "10px", letterSpacing: "0.1em", fontSize: "10px" }}>KEY LEVELS</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: "10px" }}>
-                  {answer.entryZone && (
-                    <div>
-                      <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "2px", fontSize: "9px" }}>ENTRY ZONE</div>
-                      <div style={{ ...MONO, fontSize: "12px", color: "#00FF88", fontWeight: 600 }}>{answer.entryZone}</div>
-                    </div>
-                  )}
-                  {answer.support && (
-                    <div>
-                      <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "2px", fontSize: "9px" }}>SUPPORT</div>
-                      <div style={{ ...MONO, fontSize: "12px", color: "#00FF88", fontWeight: 600 }}>{answer.support}</div>
-                    </div>
-                  )}
-                  {answer.resistance && (
-                    <div>
-                      <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "2px", fontSize: "9px" }}>RESISTANCE</div>
-                      <div style={{ ...MONO, fontSize: "12px", color: "#FF4444", fontWeight: 600 }}>{answer.resistance}</div>
-                    </div>
-                  )}
-                  {answer.stopLevel && (
-                    <div>
-                      <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "2px", fontSize: "9px" }}>STOP</div>
-                      <div style={{ ...MONO, fontSize: "12px", color: "#FF4444", fontWeight: 600 }}>{answer.stopLevel}</div>
-                    </div>
-                  )}
-                  {answer.profitTargets.length > 0 && (
-                    <div>
-                      <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "2px", fontSize: "9px" }}>TARGETS</div>
-                      <div style={{ ...MONO, fontSize: "11px", color: "#00D4FF", fontWeight: 600 }}>{answer.profitTargets.join(" / ")}</div>
-                    </div>
-                  )}
-                  <div>
-                    <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "2px", fontSize: "9px" }}>TIMEFRAME</div>
-                    <div style={{ ...MONO, fontSize: "11px", color: "#F0F4FF" }}>{answer.expectedTimeframe}</div>
-                  </div>
-                </div>
+            <div style={{ padding: "12px 14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "6px" }}>
+              <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", marginBottom: "8px", letterSpacing: "0.1em", fontSize: "10px" }}>PRICE REFERENCES</div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#A0A8B4", lineHeight: 1.5 }}>
+                Order prices are not published. This answer does not name a bar count or a formula for prior prices, so those figures are omitted. Stated horizon: {answer.expectedTimeframe}. That horizon is a label on the record, not an instruction.
               </div>
-            )}
+            </div>
 
             {/* What changes thesis */}
             <div style={{
@@ -1670,15 +1455,15 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
             <div style={{
               padding: "3px 10px",
-              background: answer.collectiveReading.riskRegime === "risk-on"
+              background: answer.collectiveReading.riskRegime === REGIME_HIGHER
                 ? "rgba(0,255,136,0.15)"
-                : answer.collectiveReading.riskRegime === "risk-off"
+                : answer.collectiveReading.riskRegime === REGIME_LOWER
                 ? "rgba(255,68,68,0.15)"
                 : "rgba(255,215,0,0.12)",
               border: `1px solid ${
-                answer.collectiveReading.riskRegime === "risk-on"
+                answer.collectiveReading.riskRegime === REGIME_HIGHER
                   ? "rgba(0,255,136,0.35)"
-                  : answer.collectiveReading.riskRegime === "risk-off"
+                  : answer.collectiveReading.riskRegime === REGIME_LOWER
                   ? "rgba(255,68,68,0.35)"
                   : "rgba(255,215,0,0.30)"
               }`,
@@ -1687,14 +1472,14 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
               fontSize: "9px",
               fontWeight: 700,
               letterSpacing: "0.12em",
-              color: answer.collectiveReading.riskRegime === "risk-on"
+              color: answer.collectiveReading.riskRegime === REGIME_HIGHER
                 ? "#00FF88"
-                : answer.collectiveReading.riskRegime === "risk-off"
+                : answer.collectiveReading.riskRegime === REGIME_LOWER
                 ? "#FF4444"
                 : "#FFD700",
               textTransform: "uppercase",
             }}>
-              {answer.collectiveReading.riskRegime}
+              {appetiteLabel(answer.collectiveReading.riskRegime)}
             </div>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "rgba(0,212,255,0.9)", textTransform: "uppercase" }}>
               Collective Reading
@@ -1798,12 +1583,12 @@ function HoverTip({ label, tip }: { label: string; tip: string }) {
   );
 }
 
-const ACTION_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  BUY:        { bg: "rgba(0,255,136,0.12)",  border: "rgba(0,255,136,0.35)",  text: "#00FF88" },
-  ACCUMULATE: { bg: "rgba(0,212,255,0.10)",  border: "rgba(0,212,255,0.30)",  text: "#00D4FF" },
-  WATCH:      { bg: "rgba(255,215,0,0.08)",  border: "rgba(255,215,0,0.25)",  text: "#FFD700" },
-  AVOID:      { bg: "rgba(255,68,68,0.08)",  border: "rgba(255,68,68,0.25)",  text: "#FF4444" },
-};
+function actionTone(action: string): { bg: string; border: string; text: string } {
+  const direction = observedDirection(action);
+  if (direction === "positive") return { bg: "rgba(0,255,136,0.12)", border: "rgba(0,255,136,0.35)", text: "#00FF88" };
+  if (direction === "negative" || action === POSTURE_WITHHELD) return { bg: "rgba(255,68,68,0.08)", border: "rgba(255,68,68,0.25)", text: "#FF4444" };
+  return { bg: "rgba(255,215,0,0.08)", border: "rgba(255,215,0,0.25)", text: "#FFD700" };
+}
 
 const RISK_COLORS: Record<string, string> = {
   Low:     "#00FF88",
@@ -1897,7 +1682,7 @@ function OpportunityRankingCard({ answer, onAskFollowUp, onDeepDive, onSelectAss
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           {answer.topOpportunities.map((opp, i) => {
-            const ac = ACTION_COLORS[opp.action] ?? ACTION_COLORS.WATCH;
+            const ac = actionTone(opp.action);
             const riskColor = RISK_COLORS[opp.riskLevel] ?? "#FFD700";
             const isExpanded = expandedIdx === i;
             const convColor = opp.convictionScore >= 70 ? "#00FF88" : opp.convictionScore >= 45 ? "#FFD700" : "#FF4444";
@@ -1932,7 +1717,7 @@ function OpportunityRankingCard({ answer, onAskFollowUp, onDeepDive, onSelectAss
 
                   {/* Action badge */}
                   <div style={{ ...MONO_SM, fontSize: "10px", fontWeight: 700, padding: "3px 8px", background: ac.bg, border: `1px solid ${ac.border}`, borderRadius: "4px", color: ac.text, flexShrink: 0 }}>
-                    {opp.action}
+                    {publicConditionText(opp.action)}
                   </div>
 
                   {/* Conviction score */}
@@ -1991,7 +1776,7 @@ function OpportunityRankingCard({ answer, onAskFollowUp, onDeepDive, onSelectAss
                       {opp.entryZone && (
                         <div style={{ padding: "8px 10px", background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.12)", borderRadius: "5px" }}>
                           <div style={{ ...MONO_SM, fontSize: "9px", color: "rgba(255,255,255,0.3)", marginBottom: "2px" }}>
-                            <HoverTip label="ENTRY ZONE" tip="The price range where risk/reward is most favorable. Entering within this zone maximizes the trade's probability of success." />
+                            <HoverTip label="OBSERVED PRICE BAND" tip="A calculated price band from completed bars. It is a historical reference, not an instruction." />
                           </div>
                           <div style={{ ...MONO, fontSize: "12px", color: "#00FF88", fontWeight: 700 }}>{opp.entryZone}</div>
                         </div>
@@ -1999,7 +1784,7 @@ function OpportunityRankingCard({ answer, onAskFollowUp, onDeepDive, onSelectAss
                       {opp.stopLevel && (
                         <div style={{ padding: "8px 10px", background: "rgba(255,68,68,0.04)", border: "1px solid rgba(255,68,68,0.12)", borderRadius: "5px" }}>
                           <div style={{ ...MONO_SM, fontSize: "9px", color: "rgba(255,255,255,0.3)", marginBottom: "2px" }}>
-                            <HoverTip label="STOP LOSS" tip="The price level at which the trade thesis is invalidated. Exiting at this level caps maximum loss." />
+                            <HoverTip label="LOWER CALCULATED PRICE" tip="A lower calculated price from completed bars. It is a historical reference, not an instruction." />
                           </div>
                           <div style={{ ...MONO, fontSize: "12px", color: "#FF4444", fontWeight: 700 }}>{opp.stopLevel}</div>
                         </div>
@@ -2007,7 +1792,7 @@ function OpportunityRankingCard({ answer, onAskFollowUp, onDeepDive, onSelectAss
                       {opp.targetOne && (
                         <div style={{ padding: "8px 10px", background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.12)", borderRadius: "5px" }}>
                           <div style={{ ...MONO_SM, fontSize: "9px", color: "rgba(255,255,255,0.3)", marginBottom: "2px" }}>
-                            <HoverTip label="TARGET" tip="Primary profit target based on technical levels, historical resistance, and macro context." />
+                            <HoverTip label="UPPER CALCULATED PRICE" tip="An upper calculated price from completed bars. It is a historical reference, not an instruction." />
                           </div>
                           <div style={{ ...MONO, fontSize: "12px", color: ACCENT, fontWeight: 700 }}>{opp.targetOne}</div>
                         </div>
@@ -2096,7 +1881,7 @@ function OpportunityRankingCard({ answer, onAskFollowUp, onDeepDive, onSelectAss
           >
             <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
               <AlertCircle size={11} style={{ color: "#FF4444" }} />
-              <span style={{ ...MONO_SM, color: "#FF6B6B", letterSpacing: "0.12em" }}>AVOID LIST</span>
+              <span style={{ ...MONO_SM, color: "#FF6B6B", letterSpacing: "0.12em" }}>STRAINED LIST</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.2)", fontSize: "10px" }}>{answer.avoidList.length} flagged</span>
@@ -2215,7 +2000,7 @@ function FullMarketBriefingCard({ brief, onAskFollowUp, onSelectAsset }: { brief
 
   const pressureColor = brief.todaysMarket.pressureIndex < 30 ? '#00FF88' : brief.todaysMarket.pressureIndex < 55 ? '#FFD700' : brief.todaysMarket.pressureIndex < 75 ? '#FF9500' : '#FF4444';
   const biasColor = brief.todaysMarket.institutionalBias.includes('Bull') ? '#00FF88' : brief.todaysMarket.institutionalBias === 'Neutral to Cautious' ? '#FFD700' : brief.todaysMarket.institutionalBias === 'Cautious' ? '#FF9500' : '#FF4444';
-  const statusColor = brief.todaysMarket.marketStatus === 'RISK-ON' ? '#00FF88' : brief.todaysMarket.marketStatus === 'NEUTRAL' ? '#FFD700' : '#FF4444';
+  const statusColor = brief.todaysMarket.marketStatus === STATUS_HIGHER ? '#00FF88' : brief.todaysMarket.marketStatus === 'NEUTRAL' ? '#FFD700' : '#FF4444';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', animation: 'fl-fade-in 0.4s ease' }}>
@@ -2390,7 +2175,7 @@ const QUICK_ACTIONS: Array<{ emoji: string; label: string; prompt: string }> = [
   { emoji: "💼", label: "Portfolio Risk Review", prompt: "Review current portfolio risk conditions and what I should watch" },
   { emoji: "📰", label: "What Changed?", prompt: "What changed in the market since yesterday?" },
   { emoji: "🔄", label: "Sector Rotation", prompt: "Analyze current sector rotation and where institutional money is flowing" },
-  { emoji: "⚡", label: "Best Day Trades Today", prompt: "What are the best day trading setups for today? Show me high-probability intraday opportunities with entry, stop, and target levels" },
+  { emoji: "⚡", label: "Today's observed moves", prompt: "What price moves are visible in the latest completed session, and how fresh is that evidence?" },
 ];
 
 // ── V3.0 Market Snapshot Component ───────────────────────────
@@ -2416,7 +2201,7 @@ function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => 
     if (p < 45) return r.includes('expansion') ? 'Moderately Bullish' : 'Neutral to Cautious';
     if (p < 65) return 'Cautious';
     if (p < 80) return 'Defensive';
-    return 'Risk-Off';
+    return STATUS_LOWER;
   }, [pressureScore, regime.label]);
 
   const biasColor = bias === 'Unavailable' ? '#94A3B8' : bias.includes('Bull') ? '#00FF88' : bias === 'Neutral to Cautious' ? '#FFD700' : bias === 'Cautious' ? '#FF9500' : '#FF4444';
@@ -2553,7 +2338,7 @@ function SinceLastVisit({ onQuickAction }: { onQuickAction: (prompt: string) => 
 }
 
 const SUGGESTED_QUESTIONS = [
-  "Should I buy NVDA right now?",
+        "What is the current measured condition for NVDA?",
   "How dangerous is the market today?",
   "What are the best swing trades this week?",
   "Is Bitcoin in a bull or bear cycle?",
@@ -2627,7 +2412,7 @@ export default function SmartDiscovery() {
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
-  // Auto-submit if ?q= URL param is present (used by MarketCommandCenter and other entry points)
+  // Auto-submit if ?q= URL param is present (used by MarketCommandCenter and other pages)
   // Re-fires whenever the search string changes so navigating back with a new ?q= works too
   const locationSearch = typeof window !== "undefined" ? window.location.search : "";
   const [lastProcessedQuery, setLastProcessedQuery] = useState("");
@@ -2811,7 +2596,8 @@ export default function SmartDiscovery() {
           logMutation.mutate({
             ticker: fa.ticker ?? null,
             assetType: (fa.assetType as "stock" | "crypto" | null) ?? null,
-            verdict: fa.verdict ?? "NEUTRAL",
+            verdict: fa.verdict ?? "Condition not established",
+            internalDirection: fa.internalDirection ?? "unestablished",
             // QA r12 (B9b): both columns are NOT NULL (drizzle/schema.ts decisionLedger),
             // so these defaults are still written (no migration), but the server
             // withholds them on read and nothing displays or prompts with them.

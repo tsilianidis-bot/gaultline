@@ -46,7 +46,7 @@ const ICONS: Record<NavigationIconName, ElementType> = {
   radio: Radio,
   bitcoin: Bitcoin,
   sparkles: Sparkles,
-  target: Target,
+  scope: Target,
   search: Search,
   "trending-up": TrendingUp,
   briefcase: Briefcase,

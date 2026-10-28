@@ -35,9 +35,9 @@ The distinction matters because the investment environment is fundamentally diff
           heading: "Why Bull and Bear Markets Matter for Investors",
           body: `Understanding the current market regime is one of the most important inputs for investment decision-making. In a bull market, growth-oriented investments and higher-risk assets tend to perform well. In a bear market, defensive stocks, bonds, and capital preservation strategies become more important.
 
-The most common mistake investors make is extrapolating the current regime indefinitely. Bull markets create complacency — investors assume the environment will continue indefinitely and take on excessive risk near the top. Bear markets create panic — investors sell at the bottom, locking in losses just before the recovery begins.
+A common mistake is treating the current regime as permanent. Calm periods have been followed by stress, and stress periods have been followed by calmer readings. Those are historical descriptions, not a schedule.
 
-FAULTLINE's regime classification system is designed to help investors understand where they are in the cycle without relying on hindsight. By tracking credit spreads, funding rates, the Treasury curve, inflation, and labor data through the Pressure Index as new data is published, FAULTLINE shows structural pressure building toward a regime transition — rather than confirming it only after prices have moved.`,
+FAULTLINE's regime label is the current Pressure Index band. It uses credit spreads, funding rates, the Treasury curve, inflation, and labor data as those series are published. It describes the current reading. It does not claim to show a transition before the inputs have changed.`,
         },
         {
           heading: "How Investors Misunderstand Bull and Bear Markets",

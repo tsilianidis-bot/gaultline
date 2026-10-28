@@ -3,10 +3,11 @@
    Live simulated portfolio following FAULTLINE signals.
    Stocks: $10,000 starting capital
    Crypto: $10,000 starting capital
-   Daily AI journal documents every hold/trade decision.
+   Daily journal records simulated portfolio changes.
    ============================================================ */
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { isSimulatedAcquisition, simulatedFillLabel } from "@shared/surfaceClaims";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
@@ -573,14 +574,14 @@ export default function SimPortfolio() {
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-3">
                       <Badge style={{
-                        background: trade.action === "BUY" ? "rgba(0,255,136,0.15)" : "rgba(255,68,68,0.15)",
-                        color: trade.action === "BUY" ? "#00FF88" : "#FF4444",
-                        border: `1px solid ${trade.action === "BUY" ? "rgba(0,255,136,0.3)" : "rgba(255,68,68,0.3)"}`,
+                        background: isSimulatedAcquisition(trade.action) ? "rgba(0,255,136,0.15)" : "rgba(255,68,68,0.15)",
+                        color: isSimulatedAcquisition(trade.action) ? "#00FF88" : "#FF4444",
+                        border: `1px solid ${isSimulatedAcquisition(trade.action) ? "rgba(0,255,136,0.3)" : "rgba(255,68,68,0.3)"}`,
                         fontFamily: "'IBM Plex Mono', monospace",
                         fontSize: "10px",
                         letterSpacing: "0.08em",
                       }}>
-                        {trade.action}
+                        {simulatedFillLabel(trade.action)}
                       </Badge>
                       <div>
                         <span className="font-bold font-mono" style={{ color: "#F0F4FF" }}>{trade.ticker}</span>
@@ -614,7 +615,7 @@ export default function SimPortfolio() {
           {journalEntries.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 gap-2">
               <BookOpen size={24} style={{ color: "#374151" }} />
-              <p className="text-sm" style={{ color: "#6B7280" }}>No journal entries yet. The first entry will be generated on the next daily update.</p>
+              <p className="text-sm" style={{ color: "#6B7280" }}>No journal records yet. The first record is written on the next daily update.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -691,12 +692,12 @@ function PositionCard({ pos }: { pos: {
 } }) {
   const [open, setOpen] = useState(false);
   const qty = parseFloat(pos.quantity);
-  const entry = parseFloat(pos.entryPrice);
+  const fillPrice = parseFloat(pos.entryPrice);
   const current = pos.currentPrice ? parseFloat(pos.currentPrice) : null;
-  const currentValue = current ? qty * current : qty * entry;
-  const totalCost = qty * entry;
+  const currentValue = current ? qty * current : qty * fillPrice;
+  const totalCost = qty * fillPrice;
   const pnl = current ? currentValue - totalCost : 0;
-  const pnlPct = current ? ((current - entry) / entry) * 100 : 0;
+  const pnlPct = current ? ((current - fillPrice) / fillPrice) * 100 : 0;
   const isUp = pnl >= 0;
 
   return (
@@ -729,7 +730,7 @@ function PositionCard({ pos }: { pos: {
       {/* Price row */}
       <div className="flex gap-4 mt-2 flex-wrap">
         <span className="text-xs font-mono" style={{ color: "#6B7280" }}>
-          Entry: <span style={{ color: "#94A3B8" }}>{fmt$(entry)}</span>
+          Fill: <span style={{ color: "#94A3B8" }}>{fmt$(fillPrice)}</span>
         </span>
         {current && (
           <span className="text-xs font-mono" style={{ color: "#6B7280" }}>

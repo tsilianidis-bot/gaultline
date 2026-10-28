@@ -32,7 +32,7 @@ export interface InterpretationValidationResult {
 
 const NO_FORECAST_FIELDS = new Set([
   "bullProbability", "bearProbability", "finalVerdictProbability", "confidence", "finalVerdictConfidence", "expectedTimeframe", "finalVerdictTimeHorizon",
-  "timeHorizon", "horizon", "target", "targets", "profitTargets", "entryZone", "entryZoneIdeal",
+  "timeHorizon", "horizon", "upper mark", "upper marks", "profitTargets", "entryZone", "entryZoneIdeal",
   "entryZoneAggressive", "entryZoneConservative", "entryZoneStop", "entryZoneTarget", "entryZoneRR",
   "exitZonePrimary", "exitZoneSecondary", "exitZoneFull", "support", "resistance", "stopLevel",
   "downsideBaseZone", "downsideBearTarget", "downsideExtremeTarget", "upsideBaseTarget",
@@ -117,11 +117,11 @@ export function buildInterpretationPromptContract(transaction: InterpretationTra
     "PHASE 4 INTERPRETATION CONTRACT (AUTHORITATIVE):",
     stateRule,
     "You are an interpretation system, not an independent quantitative engine.",
-    "Use only the supplied evidence claims. Do not create observations, metrics, historical facts, probabilities, targets, timing windows, confirmation rules, invalidation rules, causal relationships, cross-engine confirmation, model confidence, or source data.",
+    "Use only the supplied evidence claims. Do not create observations, metrics, historical facts, probabilities, upper marks, timing windows, confirmation rules, invalidation rules, causal relationships, cross-engine confirmation, model confidence, or source data.",
     "Historical frequency remains HISTORICAL_FREQUENCY. Analog similarity remains HISTORICAL_SIMILARITY. Scenario scores remain DERIVED_SCENARIO_SCORE. None is a current model probability.",
     transaction.forecastClaimIds.length
       ? `Authorized forecast claims: ${transaction.forecastClaimIds.join(", ")}. Only these may support a forecast, and retain their supplied event, horizon, model, and methodology.`
-      : "No authorized forecast claim exists. State 'No governed forecast available' when asked for probability, target, direction, magnitude, or timing.",
+      : "No authorized forecast claim exists. State 'No governed forecast available' when asked for probability, upper mark, direction, magnitude, or timing.",
     `Evidence strength present: ${transaction.evidenceStrength.join(", ") || "not established"}. Data quality present: ${transaction.dataQuality.join(", ") || "not established"}. When evidence is PRELIMINARY, PARTIAL, DEGRADED, UNAVAILABLE, stale, delayed, or conflicted, explicitly qualify the interpretation; never translate strength or quality into probability.`,
     "Do not call a single engine system-wide deterioration. Do not call multiple raw metrics confirmation. Do not use causal language unless supplied by an authorized structured claim.",
     "For missing confirmation or invalidation rules, state 'No governed confirmation condition is currently defined' or 'No governed invalidation condition is currently defined.'",

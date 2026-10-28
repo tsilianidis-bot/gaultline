@@ -80,7 +80,7 @@ export const THESIS_QUESTIONS: readonly ThesisQuestion[] = [
     body: "What happens if current conditions continue—and what happens if they change? FAULTLINE lays out the scenario paths it tracks, the evidence that would move the base case, and what could weaken it.",
     shows: [
       "Scenario paths: bull continuation, soft landing, stagflation, recession, and crash or bear, with transition triggers and invalidation conditions where supported. Numeric scenario probabilities are withheld pending calibration.",
-      "Systemic-regime classification from sre-hmm2 is independent of the Pressure Index. Its numeric state and transition probabilities are withheld until calibration is validated; it does not state the odds of a crash.",
+      "Systemic-regime classification from sre-hmm2 is independent of the Pressure Index. Its numeric state and transition probabilities are withheld until calibration is validated; it does not publish an event percentage.",
       "Regime transitions recorded in the seismograph history.",
       "Aftershock and contagion map: a fixed contagion graph between assets, rescored with price, volume, volatility, and pressure context.",
       "Development timelines and historical resemblance: whether a condition is emerging, developing, or fading, and which reference period today's profile most resembles.",
@@ -110,12 +110,12 @@ export const THESIS_QUESTIONS: readonly ThesisQuestion[] = [
     options: [
       { name: "Maintain exposure", tradeoff: "Stays with the current read. The risk is that the read is wrong, or pressure moves up a band." },
       { name: "Keep participation conditional", tradeoff: "Participates, with the condition that would end it written down first. It costs attention and can exit on a signal that reverses." },
-      { name: "Reduce risk or add hedges", tradeoff: "Lowers exposure to a deterioration. It gives up upside if pressure eases, and hedges have a cost." },
+      { name: "A smaller risk weight", tradeoff: "The recorded weight is smaller if pressure rises. Upside is also smaller if pressure eases. A hedge has a cost." },
       { name: "Wait for confirmation", tradeoff: "Avoids acting on thin or stale evidence. It can mean acting late." },
     ],
     shows: [
       "A bounded posture, DEFENSIVE, BALANCED or OPPORTUNISTIC, read from the shared state, with supporting and cautionary signals and what would force a rethink.",
-      "A strategy matrix that rates increasing exposure, holding current risk, reducing exposure, adding hedges, seeking new positions and reviewing invalidations as favorable, conditional or avoid under each posture.",
+      "A strategy matrix that rates increasing exposure, holding current risk, reducing exposure, adding hedges, seeking new positions and reviewing invalidations as favorable, conditional or pass over under each posture.",
       "When evidence is missing or stale, the posture is withheld instead of guessed.",
       "PLATO can walk through the posture and the evidence behind it.",
     ],

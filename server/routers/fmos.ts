@@ -9,6 +9,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, publicProcedure, ownerOrAdminProcedure } from "../_core/trpc";
 import { withholdNonFiniteNumbers } from "../displayNumbers";
+import { neutralizeClientPayload } from "../../shared/clientVocabulary";
 import {
   runFMOSPipeline,
   runFMOSPipelineFast,
@@ -34,6 +35,10 @@ export function sanitizeNumbers(v: unknown): unknown {
   return withholdNonFiniteNumbers(v);
 }
 
+export function stripClientTradeTokens<T>(value: T): T {
+  return neutralizeClientPayload(value);
+}
+
 // ── Router ────────────────────────────────────────────────────
 
 export const fmosRouter = router({
@@ -56,7 +61,7 @@ export const fmosRouter = router({
         const result = input?.skipAIInterpretation
           ? await runFMOSPipelineFast(options)
           : await runFMOSPipeline(options);
-        return sanitizeNumbers(result) as typeof result;
+        return sanitizeNumbers(stripClientTradeTokens(result)) as typeof result;
       } catch (err) {
         console.error("[fmos.runPipeline] Error:", err);
         throw new TRPCError({
@@ -78,7 +83,7 @@ export const fmosRouter = router({
     .query(async ({ input }) => {
       try {
         const result = await runFMOSPipelineFast({ symbol: input?.symbol });
-        return sanitizeNumbers(result) as typeof result;
+        return sanitizeNumbers(stripClientTradeTokens(result)) as typeof result;
       } catch (err) {
         console.error("[fmos.runPipelineFast] Error:", err);
         throw new TRPCError({

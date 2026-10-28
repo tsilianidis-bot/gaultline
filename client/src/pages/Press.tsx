@@ -37,7 +37,7 @@ PLATO — Spirit of FAULTLINE — is the interpretation layer of FAULTLINE. PLAT
 
 The platform's primary metric is the Faultline Pressure Index™ — a 0–100 composite of high-yield credit spreads, SOFR, the Treasury curve, inflation, federal funds, unemployment, and a static AI-concentration baseline, classified into five bands from LOW RISK to SYSTEMIC CRISIS. The Seismograph™ records those readings over time, so a level can be read next to the path that produced it.
 
-All FAULTLINE outputs are probabilistic rather than deterministic. The platform does not generate buy or sell signals. It generates probability-weighted assessments of current conditions, historical analog distributions, and scenario likelihoods — designed to support informed judgment, not to replace it.
+All FAULTLINE outputs are probabilistic rather than deterministic. The platform does not generate acquire or reduce signals. It generates probability-weighted assessments of current conditions, historical analog distributions, and scenario likelihoods — designed to support informed judgment, not to replace it.
 
 FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The public Pressure Index and methodology are free to read; full intelligence is offered through FAULTLINE Standard at $99/month or FAULTLINE Lifetime at $1,500 one-time.
 
@@ -136,7 +136,7 @@ Intelligence areas PLATO interprets:
 10. Signal Intelligence — regime-contextualised directional labels across equities and crypto
 
 PHILOSOPHY
-We believe the most valuable intelligence is not a recommendation — it is context. Phoenix Systems products emphasise probabilistic reasoning over binary predictions. We surface likelihoods, regimes, and stress indicators — not buy or sell signals. PLATO is designed to augment human judgment, not replace it.
+We believe the most valuable intelligence is not a recommendation — it is context. Phoenix Systems products emphasise probabilistic reasoning over binary predictions. We surface likelihoods, regimes, and stress indicators — not acquire or reduce signals. PLATO is designed to augment human judgment, not replace it.
 
 DISCLAIMER
 FAULTLINE is a macroeconomic risk intelligence platform. ${PUBLIC_DISCLAIMER} It is not a financial adviser.
@@ -274,7 +274,7 @@ The Pressure Index™ (0–100) combines six weighted vectors built from eight F
 PLATO'S ROLE
 PLATO (Spirit of FAULTLINE) is the unified intelligence interface of FAULTLINE. She is not a chatbot. Each time she answers, PLATO reads the persisted market state the platform publishes, explains what the measurements mean together, and states plainly what is unavailable or not established. She transforms complexity into clarity.
 
-TARGET CUSTOMERS
+INTENDED CUSTOMERS
 • Individual investors seeking structural situational awareness
 • Active traders who need regime context before executing
 • Financial advisers who want to communicate macro conditions to clients
@@ -444,7 +444,7 @@ export default function Press() {
             I built FAULTLINE because I kept asking a question that no platform could answer.
           </p>
           <p style={prose}>
-            Not "what should I buy?" — that question has a thousand answers, most of them wrong. The question I kept asking was simpler and more important: <em style={{ color: "#CBD5E1" }}>what is actually happening right now, beneath the surface of the market?</em>
+            Not "what is the reading?" — that question has a thousand answers, most of them wrong. The question I kept asking was simpler and more important: <em style={{ color: "#CBD5E1" }}>what is actually happening right now, beneath the surface of the market?</em>
           </p>
           <p style={prose}>
             Markets communicate long before they move. Pressure builds in credit markets before it appears in equity prices. Liquidity deteriorates before volatility spikes. Yield curves invert months before recessions arrive. The signals are there. They have always been there. The problem is that synthesising them — across dozens of data sources, as new data is published, with the historical context needed to understand what they mean — has historically required an institutional research desk, not a retail account.
@@ -490,7 +490,7 @@ export default function Press() {
           ))}
         </div>
         <div style={{ ...card, borderColor: "rgba(0,212,255,0.15)" }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.3em", color: "rgba(0,212,255,0.6)", marginBottom: "12px" }}>TARGET CUSTOMERS</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.3em", color: "rgba(0,212,255,0.6)", marginBottom: "12px" }}>INTENDED CUSTOMERS</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
             {["Individual Investors", "Active Traders", "Financial Advisers", "Hedge Funds", "Family Offices", "Enterprise Clients", "Financial Media", "Research Organisations"].map((c) => (
               <span key={c} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#CBD5E1", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", padding: "5px 12px", borderRadius: "4px" }}>{c}</span>
@@ -824,8 +824,8 @@ export default function Press() {
                 ))}
               </div>
               <div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(251,191,36,0.7)", marginBottom: "12px", letterSpacing: "0.15em" }}>AVOID</div>
-                {["PLATO chatbot", "PLATO AI assistant", "PLATO bot", "PLATO predicts / PLATO recommends", "PLATO tells you what to buy"].map((item) => (
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(251,191,36,0.7)", marginBottom: "12px", letterSpacing: "0.15em" }}>NOT APPROVED</div>
+                {["PLATO chatbot", "PLATO AI assistant", "PLATO bot", "PLATO predicts / PLATO recommends", "PLATO tells you what to acquire"].map((item) => (
                   <div key={item} style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", lineHeight: 1.7, paddingLeft: "12px", borderLeft: "1px solid rgba(251,191,36,0.2)", marginBottom: "6px" }}>✗ {item}</div>
                 ))}
               </div>

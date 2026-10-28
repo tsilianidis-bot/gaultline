@@ -37,7 +37,7 @@ The introduction of ETH staking (through Ethereum's transition to Proof of Stake
           heading: "Ethereum's Key Risk Factors in 2026",
           body: `FAULTLINE's Ethereum risk assessment for 2026 focuses on five key factors:
 
-1. ETH/BTC Ratio Dynamics — The ETH/BTC ratio reflects capital rotation between Bitcoin and Ethereum. A rising ETH/BTC ratio signals that capital is flowing from BTC into ETH — typically an early signal of broader altcoin season. A falling ratio signals capital concentration in Bitcoin, which is typically a risk-off signal for the broader crypto market.
+1. ETH/BTC Ratio Dynamics — The ETH/BTC ratio reflects capital rotation between Bitcoin and Ethereum. A rising ETH/BTC ratio signals that capital is flowing from BTC into ETH — typically an early signal of broader altcoin season. A falling ratio signals capital concentration in Bitcoin, which is typically a lower-risk appetite signal for the broader crypto market.
 
 2. Layer-2 Ecosystem Growth — Ethereum's Layer-2 networks (Arbitrum, Optimism, Base, zkSync, Starknet) have grown dramatically, processing more transactions than Ethereum mainnet. L2 activity drives ETH demand through base layer fees and ETH burning (EIP-1559). Strong L2 growth is a fundamental tailwind for ETH.
 
@@ -63,7 +63,7 @@ FAULTLINE's regularly refreshed risk score reflects which scenario conditions ar
       faqs={[
         {
           question: "What is the ETH/BTC ratio and why does it matter?",
-          answer: "The ETH/BTC ratio measures how much Bitcoin one Ethereum is worth. A rising ETH/BTC ratio means Ethereum is outperforming Bitcoin — capital is rotating from BTC into ETH. This is typically an early signal of broader altcoin season. A falling ETH/BTC ratio means capital is concentrating in Bitcoin, which is typically a risk-off signal for altcoins. FAULTLINE tracks this ratio as a core crypto market indicator.",
+          answer: "The ETH/BTC ratio measures how much Bitcoin one Ethereum is worth. A rising ETH/BTC ratio means Ethereum is outperforming Bitcoin — capital is rotating from BTC into ETH. This is typically an early signal of broader altcoin season. A falling ETH/BTC ratio means capital is concentrating in Bitcoin, which is typically a lower-risk appetite signal for altcoins. FAULTLINE tracks this ratio as a core crypto market indicator.",
         },
         {
           question: "How does Ethereum staking affect ETH's risk profile?",
@@ -71,7 +71,7 @@ FAULTLINE's regularly refreshed risk score reflects which scenario conditions ar
         },
         {
           question: "What is the biggest risk to Ethereum in 2026?",
-          answer: "The primary risk to Ethereum in 2026 is a macro-driven risk-off environment — Fed tightening, contracting global liquidity, or a broader market crash — that would cause ETH to fall more severely than BTC due to its higher beta. Secondary risks include competition from alternative Layer-1 blockchains (Solana, Avalanche), a major DeFi protocol exploit, regulatory action against ETH or DeFi, and L2 ecosystem fragmentation reducing ETH mainnet fee revenue.",
+          answer: "The primary risk to Ethereum in 2026 is a macro-driven lower-risk appetite environment — Fed tightening, contracting global liquidity, or a broader market crash — that would cause ETH to fall more severely than BTC due to its higher beta. Secondary risks include competition from alternative Layer-1 blockchains (Solana, Avalanche), a major DeFi protocol exploit, regulatory action against ETH or DeFi, and L2 ecosystem fragmentation reducing ETH mainnet fee revenue.",
         },
         {
           question: "How does FAULTLINE calculate the Ethereum risk score?",

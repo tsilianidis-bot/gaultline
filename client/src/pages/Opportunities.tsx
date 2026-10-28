@@ -12,6 +12,7 @@ import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
 import { canonicalPressureLabel } from "@/lib/canonicalPressureDisplay";
 import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
+import { OUTLOOK_STRAINED, appetiteLabel, directionColor, observedDirectionSentence } from "@shared/surfaceClaims";
 import { useSEO } from "@/hooks/useSEO";
 import NarrativeLoader from "@/components/NarrativeLoader";
 import {
@@ -123,13 +124,6 @@ const RISK_COLORS: Record<string, string> = {
   Extreme: "#F87171",
 };
 
-const ACTION_BIAS_COLORS: Record<string, { color: string; bg: string }> = {
-  BUY:   { color: "#22C55E", bg: "rgba(34,197,94,0.12)" },
-  WATCH: { color: "#FFD700", bg: "rgba(255,215,0,0.12)" },
-  AVOID: { color: "#FF2D55", bg: "rgba(255,45,85,0.12)" },
-  HOLD:  { color: "#00D4FF", bg: "rgba(0,212,255,0.12)" },
-};
-
 // ── Sub-components ────────────────────────────────────────────
 function ScoreRing({ score, size = 44 }: { score: number; size?: number }) {
   const r = (size - 8) / 2;
@@ -157,11 +151,11 @@ function DirectionBadge({ direction }: { direction: string }) {
     Bullish: { icon: <TrendingUp size={9} />, color: "#34D399", bg: "rgba(52,211,153,0.12)" },
     Bearish: { icon: <TrendingDown size={9} />, color: "#F87171", bg: "rgba(248,113,113,0.12)" },
     Neutral: { icon: <Minus size={9} />, color: "#94A3B8", bg: "rgba(148,163,184,0.12)" },
-    Avoid:   { icon: <Minus size={9} />, color: "#F87171", bg: "rgba(248,113,113,0.12)" },
+    [OUTLOOK_STRAINED]:   { icon: <Minus size={9} />, color: "#F87171", bg: "rgba(248,113,113,0.12)" },
   }[direction] ?? { icon: <Minus size={9} />, color: "#94A3B8", bg: "rgba(148,163,184,0.12)" };
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: "3px", background: cfg.bg, color: cfg.color, fontSize: "9px", fontWeight: "700", letterSpacing: "0.06em", padding: "2px 5px", borderRadius: "3px" }}>
-      {cfg.icon} {direction.toUpperCase()}
+      {cfg.icon} {appetiteLabel(direction)}
     </span>
   );
 }
@@ -177,8 +171,8 @@ function RadarCard({
   onSituationRoom: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const actionBias = item.actionBias ?? "WATCH";
-  const biasColors = ACTION_BIAS_COLORS[actionBias] ?? ACTION_BIAS_COLORS.WATCH;
+  const actionBias = item.actionBias ?? "";
+  const biasColors = { color: directionColor(actionBias), bg: "rgba(148,163,184,0.12)" };
 
   return (
     <div style={{
@@ -206,7 +200,7 @@ function RadarCard({
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)", background: "rgba(255,255,255,0.04)", padding: "1px 5px", borderRadius: "2px" }}>{item.assetType.toUpperCase()}</span>
             <DirectionBadge direction={item.direction} />
             {item.actionBias && (
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em", color: biasColors.color, background: biasColors.bg, padding: "1px 5px", borderRadius: "2px" }}>{actionBias}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em", color: biasColors.color, background: biasColors.bg, padding: "1px 5px", borderRadius: "2px" }}>{observedDirectionSentence(actionBias)}</span>
             )}
           </div>
           {/* Row 2: name + time horizon */}
@@ -264,13 +258,13 @@ function RadarCard({
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginBottom: "8px" }}>
               {item.bullCase && (
                 <div style={{ background: "rgba(34,197,94,0.04)", border: "1px solid rgba(34,197,94,0.12)", borderRadius: "3px", padding: "7px 9px" }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(34,197,94,0.6)", letterSpacing: "0.12em", marginBottom: "4px" }}>BULL CASE</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(34,197,94,0.6)", letterSpacing: "0.12em", marginBottom: "4px" }}>HIGHER-PRICE SCENARIO</div>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.7)", lineHeight: 1.5 }}>{item.bullCase}</div>
                 </div>
               )}
               {item.bearCase && (
                 <div style={{ background: "rgba(255,45,85,0.04)", border: "1px solid rgba(255,45,85,0.12)", borderRadius: "3px", padding: "7px 9px" }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(255,45,85,0.6)", letterSpacing: "0.12em", marginBottom: "4px" }}>BEAR CASE</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(255,45,85,0.6)", letterSpacing: "0.12em", marginBottom: "4px" }}>LOWER-PRICE SCENARIO</div>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.7)", lineHeight: 1.5 }}>{item.bearCase}</div>
                 </div>
               )}
@@ -530,7 +524,7 @@ function OpportunitiesInner() {
         <div style={{ padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.04)", display: "flex", gap: "10px" }}>
           {topItems.map((item, i) => {
             const accent = CATEGORY_ACCENT[item.category] ?? "#94A3B8";
-            const biasColors = ACTION_BIAS_COLORS[item.actionBias ?? "WATCH"] ?? ACTION_BIAS_COLORS.WATCH;
+            const biasColors = { color: directionColor(item.actionBias), bg: "rgba(148,163,184,0.12)" };
             return (
               <button
                 key={item.ticker}
@@ -550,7 +544,7 @@ function OpportunitiesInner() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
                     <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "16px", color: accent, letterSpacing: "0.04em", textShadow: `0 0 12px ${accent}60` }}>{item.ticker}</span>
-                    {item.actionBias && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", fontWeight: 700, color: biasColors.color, background: biasColors.bg, padding: "1px 5px", borderRadius: "2px" }}>{item.actionBias}</span>}
+                    {item.actionBias && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", fontWeight: 700, color: biasColors.color, background: biasColors.bg, padding: "1px 5px", borderRadius: "2px" }}>{observedDirectionSentence(item.actionBias)}</span>}
                   </div>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.catalyst}</div>
                 </div>
@@ -607,7 +601,7 @@ function OpportunitiesInner() {
             </div>
             {allItems.map((item, i) => {
               const accent = CATEGORY_ACCENT[item.category] ?? "#94A3B8";
-              const biasColors = ACTION_BIAS_COLORS[item.actionBias ?? "WATCH"] ?? ACTION_BIAS_COLORS.WATCH;
+              const biasColors = { color: directionColor(item.actionBias), bg: "rgba(148,163,184,0.12)" };
               return (
                 <div
                   key={`${item.ticker}-${i}`}
@@ -638,7 +632,7 @@ function OpportunitiesInner() {
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, color: "#22C55E" }}>{item.riskRewardRatio ?? "—"}</span>
                   <span data-confidence-status="not-established" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8" }}>{CONFIDENCE_NOT_ESTABLISHED}</span>
                   <div style={{ display: "flex", gap: "4px" }}>
-                    {item.actionBias && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", fontWeight: 700, color: biasColors.color, background: biasColors.bg, padding: "2px 6px", borderRadius: "2px" }}>{item.actionBias}</span>}
+                    {item.actionBias && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", fontWeight: 700, color: biasColors.color, background: biasColors.bg, padding: "2px 6px", borderRadius: "2px" }}>{observedDirectionSentence(item.actionBias)}</span>}
                     <ChevronRight size={10} color={`${accent}60`} />
                   </div>
                 </div>

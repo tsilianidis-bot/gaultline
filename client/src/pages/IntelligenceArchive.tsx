@@ -22,8 +22,8 @@ const REGIME_OPTIONS = [
   { value: "all", label: "All Regimes" },
   { value: "macro intelligence", label: "Macro Intelligence" },
   { value: "crypto intelligence", label: "Crypto Intelligence" },
-  { value: "risk-off", label: "Risk-Off" },
-  { value: "risk-on", label: "Risk-On" },
+  { value: "lower-risk appetite", label: "Lower appetite" },
+  { value: "higher-risk appetite", label: "Higher appetite" },
 ];
 
 function formatDate(d: Date | string | null | undefined): string {

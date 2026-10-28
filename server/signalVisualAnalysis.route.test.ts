@@ -31,7 +31,9 @@ describe("Signals Visual Analysis routing", () => {
     expect(detailSource).toContain("UnifiedIntelligenceChart");
     expect(detailSource).toContain("NO HISTORICAL SIGNAL MARKERS.");
     expect(detailSource).toContain("NO INTRADAY INTERVALS");
-    expect(detailSource).toContain("WHY FAULTLINE IS SHOWING THIS");
+    expect(detailSource).toContain("PentagonalThesisNarrative");
+    expect(detailSource).not.toContain("WHY FAULTLINE IS SHOWING THIS");
+    expect(detailSource).not.toContain("% confidence");
     expect(detailSource).toContain("WHAT CHANGED");
     expect(detailSource).toContain("SIGNAL VISUAL ANALYSIS REQUIRES CORE ACCESS.");
   });

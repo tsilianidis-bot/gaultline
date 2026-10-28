@@ -25,11 +25,11 @@ export default function MarketCrashIndicator() {
       contentSections={[
         {
           heading: "What Is a Market Crash Indicator?",
-          body: `A market crash indicator is a composite signal that monitors multiple leading indicators of systemic financial stress — the conditions that historically precede major market dislocations. Unlike lagging indicators that confirm a crash after it has already begun, a genuine crash indicator tracks the structural vulnerabilities that build up before the break.
+          body: `This page describes the current FAULTLINE Pressure Index. It is a measured stress reading, not a forecast of a future dislocation.
 
-FAULTLINE's crash indicator is built on the FAULTLINE Pressure Index™, which combines six weighted vectors: liquidity stress, credit contagion, the 10Y–2Y yield curve and 10Y level, macro sensitivity, labor and rates, and AI / speculation (a static concentration baseline). Each vector is scored and weighted to produce a single 0-100 systemic pressure score.
+The index combines six weighted vectors: liquidity stress, credit contagion, the 10Y–2Y yield curve and 10Y level, macro sensitivity, labor and rates, and AI / speculation (a static concentration baseline). Each vector is scored and weighted to produce a single 0-100 systemic pressure score.
 
-The current index labels scores of 65-79 HIGH STRESS and 80+ SYSTEMIC CRISIS. Those labels describe modeled stress, not a calibrated crash probability. No independently validated backtest shows that market crashes since 2000 were preceded by any particular Pressure Index reading.`,
+The current index labels scores of 65-79 HIGH STRESS and 80+ SYSTEMIC CRISIS. Those labels describe the current modeled stress band. No independently validated backtest shows that a particular Pressure Index reading established a later market outcome.`,
         },
         {
           heading: "The 6 Vectors Behind the Pressure Index",
@@ -61,11 +61,11 @@ Note: Past readings do not guarantee future results. The Pressure Index is a ris
       faqs={[
         {
           question: "Can FAULTLINE predict market crashes?",
-          answer: "No. FAULTLINE's market crash indicator measures the current level of systemic risk — it does not predict when or whether a crash will occur. High Pressure Index readings indicate elevated crash risk, not certainty of a crash. Markets can remain in HIGH STRESS for extended periods without a major dislocation. The indicator is a risk management tool, not a market timing system.",
+          answer: "The page shows the current Pressure Index and its band. A high band means several inputs are elevated now. It does not state whether a later dislocation will occur, and it is not a timing tool.",
         },
         {
           question: "What is the difference between HIGH STRESS and SYSTEMIC CRISIS?",
-          answer: "HIGH STRESS (score 65-79) indicates that multiple Pressure Index vectors are elevated at once — for example, credit spreads widening while funding rates and the yield curve signal tightening. SYSTEMIC CRISIS (score 80+) is the model's highest classification, with severe readings across most vectors. These labels are not a calibrated crash probability.",
+          answer: "HIGH STRESS (score 65-79) means several Pressure Index vectors are elevated at once — for example, credit spreads widening while funding rates and the yield curve are tight. SYSTEMIC CRISIS (score 80+) is the highest current classification, with severe readings across most vectors. The labels describe that current reading.",
         },
         {
           question: "How is the FAULTLINE crash indicator different from the VIX?",

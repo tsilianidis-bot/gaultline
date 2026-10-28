@@ -4,6 +4,7 @@
 // pressure data and an LLM. Returns 5 post variants per call.
 // ============================================================
 
+import { neutralizeChannelPayload } from "../shared/clientVocabulary";
 import { invokeLLM } from "./_core/llm";
 import { stripProbabilityPercentClaims } from "./stripProbabilityClaims";
 import type { FaultlinePressureOutput } from "./pressure/engine";
@@ -33,11 +34,11 @@ function getToneGuidance(pressure: FaultlinePressureOutput): string {
   if (p >= 75) {
     return "DEFENSIVE/CRITICAL: Elevated systemic risk. Warn about fragility. Emphasize hidden pressure. Caution tone.";
   } else if (p >= 55) {
-    return "CAUTIOUS/RISK-OFF: Pressure building. Highlight deteriorating conditions. Skeptical of rallies.";
+    return "CAUTIOUS/LOWER APPETITE: Pressure building. Highlight deteriorating conditions. Skeptical of rallies.";
   } else if (p >= 35) {
     return "NEUTRAL/WATCHFUL: Mixed signals. Acknowledge both sides. Focus on what to monitor.";
   } else {
-    return "CONSTRUCTIVE/RISK-ON: Improving conditions. Acknowledge positive signals while noting tail risks.";
+    return "CONSTRUCTIVE/HIGHER APPETITE: Improving conditions. Acknowledge positive signals while noting tail risks.";
   }
 }
 
@@ -56,7 +57,7 @@ REGIME: ${pressure.regime}
 LEVEL: ${pressure.level}
 DATA SOURCE: ${pressure.dataSource === "live" ? "Live FRED data" : "Baseline estimates"}
 
-SCENARIOS: FAULTLINE does not offer a crash probability, does not offer a recession probability, and its bull/bear scenario weights are uncalibrated. Never state a probability or odds.
+SCENARIOS: FAULTLINE does not offer a market-event percentage, does not offer a recession probability, and its bull/bear scenario weights are uncalibrated. Never state a probability or odds.
 
 TOP RISK VECTORS:
 ${topVectors.map(v => `- ${v.label}: ${v.score}/100 (${v.level}) — ${v.driver}`).join("\n")}
@@ -92,7 +93,7 @@ STYLE RULES:
 - Always interpret the HIDDEN macro implications — not just surface price action.
 - Always include breadth analysis: is participation broad or narrow? Are indexes masking weakness?
 - Always include: current market tone, FAULTLINE risk level, key takeaway, what to monitor next, and getfaultline.live
-- NEVER state a probability, odds or chance as a number (no bull, bear, crash or recession percentages). FAULTLINE does not offer a crash probability and does not offer a recession probability.
+- NEVER state a probability, odds or chance as a number (no bull, bear, crash or recession percentages). FAULTLINE does not offer a market-event percentage and does not offer a recession probability.
 - End every post with getfaultline.live
 
 TONE GUIDANCE: ${tone}
@@ -201,5 +202,5 @@ export async function generateXPosts(input: GenerateXPostInput): Promise<XPostVa
   if (!raw) throw new Error("LLM returned empty response");
 
   const parsed = JSON.parse(raw) as XPostVariants;
-  return withoutPostProbabilities(parsed);
+  return neutralizeChannelPayload(withoutPostProbabilities(parsed));
 }

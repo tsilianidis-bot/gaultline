@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 // QA r13 B14: signals.getSignalVisualDetail withholds the signal confidence
-// (min(95, 55 + |score| × 5)); action, strength and levels are the engine's.
+// (min(95, 55 + |score| × 5)) and the trade class. Strength and levels stay.
 const mocks = vi.hoisted(() => ({ getQuote: vi.fn(), getDailyBars: vi.fn(), getLatestSeismographOutput: vi.fn() }));
 vi.mock("./yahooProxy", () => ({ getQuote: mocks.getQuote, getDailyBars: mocks.getDailyBars }));
 vi.mock("./scheduledSeismograph", () => ({ getLatestSeismographOutput: mocks.getLatestSeismographOutput }));
@@ -18,7 +18,9 @@ describe("B14 visual-detail payload", () => {
     const detail = await getSignalVisualDetailPayload("AAPL");
     expect(detail.signal).not.toBeNull();
     expect(detail.signal!.confidence).toBeNull();
-    expect(detail.signal!.action).toMatch(/^(BUY|SELL|HOLD|WATCH)$/);
+    expect(detail.signal).not.toHaveProperty("action");
+    expect(detail.signal!.direction).toMatch(/^(positive|negative|mixed|unestablished)$/);
+    expect(JSON.stringify(detail.signal)).not.toMatch(/\b(?:BUY|SELL|HOLD)\b/);
     expect(detail.signal!.strength).toMatch(/^(Strong|Moderate|Weak)$/);
     expect(typeof detail.signal!.technicals.momentumScore).toBe("number");
     expect(JSON.stringify(detail)).not.toMatch(/"confidence":\d/);

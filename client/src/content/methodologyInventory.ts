@@ -206,14 +206,14 @@ export const researchWindows = [
 
 
 export const faqs = [
-  ["Is FAULTLINE investment advice?", "No. FAULTLINE is an analytical framework and an educational record of how that framework reads public data. It is not a recommendation to buy or sell any security, and it does not know your circumstances."],
+  ["Is FAULTLINE investment advice?", "No. FAULTLINE is an analytical framework and an educational record of how that framework reads public data. It is not a recommendation to transact any security, and it does not know your circumstances."],
   ["What does a high Pressure Index mean?", "More of the monitored inputs are in stressed ranges together. High pressure does not mean a crash is imminent. Low pressure does not mean risk is absent."],
   ["Does similarity to a past period mean the same outcome?", "No. The analog engine measures distance between fingerprints. Markets can diverge from any historical resemblance."],
 ];
 
 export const crossMarket = {
   intro:
-    "The cross-market engine compares the equity regime with the crypto regime. Its statuses are strongly aligned risk-on, aligned risk-on, aligned risk-off, strongly aligned risk-off, diverging with stocks leading, diverging with crypto leading, diverging with conflicting signals, or neutral. Separately, the pressure composite scores high-yield credit, SOFR, the Treasury curve, inflation, federal funds, and unemployment together.",
+    "The cross-market engine compares the equity regime with the crypto regime. Its statuses are strongly aligned higher-risk appetite, aligned higher-risk appetite, aligned lower-risk appetite, strongly aligned lower-risk appetite, diverging with stocks leading, diverging with crypto leading, diverging with conflicting signals, or neutral. Separately, the pressure composite scores high-yield credit, SOFR, the Treasury curve, inflation, federal funds, and unemployment together.",
   regimes:
     "Equity labels are Bull Market, Expansion, Consolidation, Correction, Distribution, Bear Market, Recovery, and Recession Risk. Crypto labels are Bull Market, Expansion, Late Bull / Euphoria, Distribution, Bear Market, Capitulation, Bear Market → Accumulation Phase, Accumulation, and Early Recovery. Alignment compares those two reads.",
   quotedVsScored:
@@ -257,7 +257,7 @@ export const validationClosing =
 export const limitations = [
   "FAULTLINE is an analytical framework. It does not guarantee outcomes.",
   "High pressure does not mean an immediate crash. Low pressure does not mean risk is absent.",
-  "Historical relationships can change. A fingerprint that resembled the past can stop resembling it.",
+  "Historical relationships can change. A fingerprint that resembled the past can cease resembling it.",
   "Economic series are revised. Monthly series arrive with a reporting lag. Daily FRED series are not intraday.",
   "The model can read stress when a break does not follow, and it can stay quiet when one does. Those are false positives and false negatives.",
   "The concentration input is a fixed 32.4% baseline, not a live market-cap feed. The Labor & Rates vector (formerly Market Breadth) is unemployment and the 10-year, not advance/decline. The Yield Curve vector (formerly Volatility Regime) is the 10-year minus 2-year curve and the 10-year level, not VIX.",

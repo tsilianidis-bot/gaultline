@@ -4,6 +4,8 @@ import { getLoginUrl, handleLoginCtaClick } from "@/const";
 import { useSEO } from "@/hooks/useSEO";
 import { trackStartFreeClicked } from "@/hooks/useAnalytics";
 import SeismicUnderlay from "@/components/landing/SeismicUnderlay";
+import NarratedStorySection from "@/components/NarratedStorySection";
+import { useStoryReplay } from "@/contexts/StoryReplayContext";
 import AmberSeismograph from "@/components/landing/AmberSeismograph";
 import MarketTicker from "@/components/landing/ticker/MarketTicker";
 import HeroProof from "@/components/landing/HeroProof";
@@ -52,7 +54,7 @@ const founderParagraphs = [
   "There is already more data than anyone can reasonably process.",
   "The challenge is understanding what the data means together.",
   "FAULTLINE was built to look across those relationships, identify where pressure is developing, and translate complex market conditions into intelligence that people can actually understand.",
-  "The goal isn't to tell you what to buy or sell.",
+  "The goal isn't to tell you which transaction to make.",
   "The goal is to help you see what may be changing beneath the surface, understand the forces driving it, and make your own decisions with better information.",
 ];
 
@@ -163,7 +165,8 @@ function setHeroBackgroundSrc(img: HTMLImageElement | null) {
   if (img && !img.getAttribute("src")) img.src = HERO_BACKGROUND;
 }
 
-function Hero() {
+function Hero({ showStory = false }: { showStory?: boolean }) {
+  const replayStory = useStoryReplay();
   return (
     <section className="relative isolate overflow-hidden border-b border-[#00D4FF]/10 bg-[#0A0D12]">
       {/* Restored original hero background (faultline_hero_bg_7d6aaf14.jpg), same treatment as before
@@ -210,6 +213,12 @@ function Hero() {
           <p className="mt-4 text-[12px] leading-[1.75] text-[#A8B4C2]">
             Explore opens the public Pressure Index. No account is required.
           </p>
+          {showStory && replayStory && (
+            <button type="button" onClick={replayStory} className={`mt-3 inline-flex min-h-11 items-center gap-2 rounded-sm px-1 text-[12px] tracking-[0.06em] text-[#B7C1CD] transition-colors hover:text-[#65D6E5] ${focusRing}`}>
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5 3.5L12 8L5 12.5V3.5Z" stroke="currentColor" strokeWidth="1.2" /></svg>
+              Replay cinematic intro
+            </button>
+          )}
         </div>
         <div className="w-full max-w-md lg:justify-self-end">
           <HeroProof />
@@ -388,7 +397,7 @@ const trustPoints = [
   "Every input, weight, and band is published, including the static AI-concentration baseline.",
   "No 25-year backtest is claimed. Analogs are resemblance tests, and the research windows are validation labels only.",
   "High pressure does not mean an immediate crash. Low pressure does not mean risk is absent.",
-  "FAULTLINE does not tell you what to buy or sell. Nothing on this page is a solicitation or a personal recommendation.",
+  "FAULTLINE does not tell you which transaction to make. Nothing on this page is a solicitation or a personal recommendation.",
 ];
 
 const trustLinks = [
@@ -513,7 +522,8 @@ export default function MarketingSite({ initialSection }: { initialSection?: Mar
       </div>
       <Header />
       <main id="main">
-        <Hero />
+        <Hero showStory={!initialSection} />
+        {!initialSection && <NarratedStorySection />}
         <PentagonalThesis />
         <Pressure />
         <HistoricalContext />

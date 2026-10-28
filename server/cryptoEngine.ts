@@ -8,7 +8,7 @@
 // Signal labels (institutional, not retail):
 //   Speculative Acceleration | Liquidity Fragile | Momentum Breakout
 //   AI Narrative Exposure | Macro Sensitive | Stablecoin Stress
-//   Deleveraging Risk | Risk-Off Vulnerable | Neutral / Watch
+//   Deleveraging Risk | Lower-appetite vulnerable | Neutral / Watch
 //
 // Systemic Risk Score: 0–10 composite
 // ============================================================
@@ -26,7 +26,7 @@ export type CryptoSignalLabel =
   | "Macro Sensitive"
   | "Stablecoin Stress"
   | "Deleveraging Risk"
-  | "Risk-Off Vulnerable"
+  | "Lower-appetite vulnerable"
   | "Neutral / Watch";
 
 export type CryptoSignalBias = "Bullish" | "Neutral" | "Bearish" | "Unavailable";
@@ -319,7 +319,7 @@ export async function computeCryptoSystemicRisk(): Promise<CryptoSystemicRisk> {
     ? "Crypto markets show elevated risk conditions. BTC dominance and volatility metrics suggest caution. Monitor liquidity conditions and macro developments closely."
     : finalScore >= 3
     ? "Crypto conditions are moderately stable. Some volatility present but systemic risk remains contained. Selective positioning may be appropriate."
-    : "Crypto markets are in a low-stress regime. Liquidity conditions are supportive and macro alignment is constructive. Risk-on conditions may favor digital assets.";
+    : "Crypto markets are in a low-stress regime. Liquidity conditions are supportive and macro alignment is constructive. Higher-risk appetite conditions may favor digital assets.";
 
   const result: CryptoSystemicRisk = {
     score:               finalScore == null ? null : parseFloat(finalScore.toFixed(2)),
@@ -541,9 +541,9 @@ export async function computeAssetIntelligence(
   if (change24h != null && change24h < -3 && change24h >= -5 && sr.score != null && sr.score >= 4) {
     labels.push("Macro Sensitive");
   }
-  // Risk-Off Vulnerable: high systemic risk or extreme volatility regime
+  // Lower-appetite vulnerable: high systemic risk or extreme volatility regime
   if ((sr.score != null && sr.score > 7) || sr.volatilityRegime === "Extreme") {
-    labels.push("Risk-Off Vulnerable");
+    labels.push("Lower-appetite vulnerable");
   }
   // Downside Pressure: any bearish signal score without a more specific label yet
   if (labels.length === 0 && signalScore != null && signalScore <= 43) {
@@ -590,7 +590,7 @@ export async function computeAssetIntelligence(
     insights.push(`${c.symbol} has a smaller market cap, making it more sensitive to liquidity shifts and speculative flows.`);
   }
   if (typeof sr.btcDominance === "number" && sr.btcDominance > 60) {
-    insights.push(`BTC dominance at ${sr.btcDominance.toFixed(1)}% signals risk-off rotation. Altcoins may face relative pressure.`);
+    insights.push(`BTC dominance at ${sr.btcDominance.toFixed(1)}% signals lower-risk appetite rotation. Altcoins may face relative pressure.`);
   }
   if (insights.length === 0) {
     insights.push(`${c.symbol} is trading within normal parameters. Monitor macro conditions and BTC dominance for directional cues.`);

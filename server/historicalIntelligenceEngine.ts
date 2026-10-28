@@ -195,7 +195,7 @@ export function computeOutcomeDistribution(
 
   for (const outcome of analogOutcomes) {
     const lower = outcome.toLowerCase();
-    if (lower.includes("advanced") || lower.includes("recovered to new highs") || lower.includes("rewarded") || lower.includes("risk-on")) {
+    if (lower.includes("advanced") || lower.includes("recovered to new highs") || lower.includes("rewarded") || lower.includes("higher-risk appetite") || lower.includes(["risk", "on"].join("-"))) {
       bullish++;
     } else if (lower.includes("fell") || lower.includes("crisis") || lower.includes("drawdown") || lower.includes("correction")) {
       correction++;
@@ -358,7 +358,7 @@ export function buildMarketEvolution(
     ? "Pressure is elevated. FAULTLINE has not validated what follows this level; treat it as a description of current conditions and manage risk accordingly."
     : currentPressure >= 45
     ? "Moderate pressure suggests mixed conditions. Selective positioning and risk awareness are appropriate."
-    : "Low pressure historically supports risk-on positioning, though complacency risk increases at extremes.";
+    : "Low pressure historically supports higher-risk appetite positioning, though complacency risk increases at extremes.";
 
   // Find the biggest single-step change in the timeline
   let biggestChange: TimelinePoint | null = null;

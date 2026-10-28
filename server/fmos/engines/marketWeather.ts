@@ -44,23 +44,23 @@ function computeTacticalBias(
   momentum: number
 ): string {
   if (condition === "Severe") {
-    return "Extreme caution — capital preservation is the priority. Avoid new risk positions.";
+    return "Weather score is in the highest band on this card. No position change is published.";
   }
   if (condition === "Stormy") {
-    return "Defensive posture warranted. Reduce exposure on rallies. Tight stops on existing positions.";
+    return "The stress reading is in a higher band on this card. No position change is published.";
   }
   if (condition === "Overcast") {
-    return "Selective positioning only. Favor quality names with strong fundamentals. Avoid speculative positions.";
+    return "Weather score is in a middle band on this card. No position change is published.";
   }
   if (condition === "Partly Cloudy") {
     if (breadth < 40 && momentum < 40) {
-      return "Cautiously constructive. Broad participation improving. Staged entries in high-conviction names.";
+      return "Cautiously constructive. Broad participation improving. Staged additions in high-conviction names.";
     }
-    return "Moderately constructive. Risk-on positioning appropriate with defined risk management.";
+    return "Moderately constructive. Higher-risk appetite positioning appropriate with defined risk management.";
   }
   // Clear
   if (breadth < 30 && momentum < 30) {
-    return "Favorable conditions. Broad market participation supports risk-on positioning.";
+    return "Favorable conditions. Broad market participation supports higher-risk appetite positioning.";
   }
   return "Optimal conditions for risk deployment. Momentum and breadth both supportive.";
 }
@@ -160,7 +160,7 @@ export function computeMarketWeather(
   }
 
   if (volatility > 65) {
-    observations.push("Volatility elevated — entry risk is high, use smaller position sizes");
+    observations.push("Volatility elevated — opening risk is high, use smaller position sizes");
   } else if (volatility < 30) {
     observations.push("Low volatility environment — favorable for systematic strategies");
   }
@@ -174,7 +174,7 @@ export function computeMarketWeather(
   }
 
   if (riskAppetite > 65) {
-    observations.push("Risk appetite deteriorating — institutional risk-off positioning");
+    observations.push("Risk appetite deteriorating — institutional lower-risk appetite positioning");
   } else if (riskAppetite < 35) {
     observations.push("Risk appetite healthy — institutions positioned for growth");
   }

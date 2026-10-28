@@ -76,7 +76,9 @@ describe("PublicSharedReport hides formula confidence and probability-like keys 
   it("hides confidence and any probability / odds / chance / *confidence key, but not the remapped scores", () => {
     for (const key of ["confidence", "Confidence", "signalConfidence", "regimeConfidence", "bullProbability", "crashProbabilities", "recessionOdds", "recoveryChance"])
       expect(isHiddenSnapshotKey(key), key).toBe(true);
-    for (const key of ["favorableSetupProbability", "adversePressureProbability", "favorableSetupScore", "adversePressureScore", "ticker", "strength", "regime", "constructor"])
+    for (const key of ["action", "actionLabel", "strength", "entryZone", "stopLoss", "targetPrice"])
+      expect(isHiddenSnapshotKey(key), key).toBe(true);
+    for (const key of ["favorableSetupProbability", "adversePressureProbability", "favorableSetupScore", "adversePressureScore", "ticker", "regime", "constructor"])
       expect(isHiddenSnapshotKey(key), key).toBe(false);
     expect(snapshotKeyLabel("constructor")).toBe("constructor");
   });
@@ -92,9 +94,20 @@ describe("PublicSharedReport hides formula confidence and probability-like keys 
       for (const v of LEAKED_VALUES) expect(html, String(v)).not.toContain(`>${v}<`);
       // The rest of the signal still renders.
       expect(html).toContain(name === "stock signals" ? "NVDA" : "BTC");
-      expect(html).toContain(name === "stock signals" ? "Accumulation Zone" : "Momentum Confirmed");
+      expect(html).toContain("Read the current shared thesis.");
+      expect(html).not.toContain("BUY");
+      expect(html).not.toContain("SELL");
+      expect(html).not.toContain("HOLD");
+      expect(html).not.toContain("WATCH");
+      expect(html).not.toContain(name === "stock signals" ? "Accumulation Zone" : "Momentum Confirmed");
     });
   }
+
+  it("does not join a plain string list of trade directives", () => {
+    const html = render({ ideas: ["BUY", "SELL", "HOLD", "STRONG BUY"], note: "crash probability 40%" }, "stock_intelligence");
+    expect(html).not.toMatch(/\bBUY\b|\bSELL\b|\bHOLD\b|STRONG BUY|crash probability/i);
+    expect(html).toContain("Read the current shared thesis.");
+  });
 
   it("with score keys and future probability-like keys mixed in, only the two /100 score labels survive", () => {
     const snapshot = {

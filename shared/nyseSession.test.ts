@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nyseSeismographRunWindow } from "./nyseSession";
+import { isDstCompanionSeismographCallback, nyseSeismographRunWindow, seismographFreshForInfer } from "./nyseSession";
 
 describe("NYSE Seismograph schedule window", () => {
   it("uses 4:15 PM New York time across the DST transition", () => {
@@ -9,6 +9,11 @@ describe("NYSE Seismograph schedule window", () => {
     expect(standard).toMatchObject({ etDate: "2026-11-02", session: "REGULAR", scheduledRunAtEt: "16:15 ET", isScheduledWindow: true });
     expect(nyseSeismographRunWindow("2026-03-09T21:15:00.000Z").isScheduledWindow).toBe(false); // 17:15 EDT
     expect(nyseSeismographRunWindow("2026-11-02T20:15:00.000Z").isScheduledWindow).toBe(false); // 15:15 EST
+    expect(isDstCompanionSeismographCallback("2026-03-09T20:15:00.000Z")).toBe(false);
+    expect(isDstCompanionSeismographCallback("2026-03-09T21:15:00.000Z")).toBe(true);
+    expect(isDstCompanionSeismographCallback("2026-11-02T21:15:00.000Z")).toBe(false);
+    expect(isDstCompanionSeismographCallback("2026-11-02T20:15:00.000Z")).toBe(true);
+    expect(isDstCompanionSeismographCallback("2026-10-05T18:00:00.000Z")).toBe(false);
   });
 
   it("rejects weekends and full NYSE holidays without inventing a session", () => {
@@ -28,6 +33,15 @@ describe("NYSE Seismograph schedule window", () => {
       isScheduledWindow: true,
     });
     expect(nyseSeismographRunWindow("2026-11-27T18:15:00.000Z").isScheduledWindow).toBe(false); // 13:15 EST is not the approved run time
+  });
+
+  it("treats only a same-session post-close seismograph as fresh for infer", () => {
+    const during = Date.parse("2026-10-05T20:20:00.000Z");
+    const now = new Date("2026-10-05T21:30:00.000Z");
+    expect(seismographFreshForInfer(during, now)).toBe(true);
+    expect(seismographFreshForInfer(Date.parse("2026-10-04T20:20:00.000Z"), now)).toBe(false);
+    expect(seismographFreshForInfer(Date.parse("2026-10-05T18:00:00.000Z"), now)).toBe(false);
+    expect(seismographFreshForInfer(null, now)).toBe(false);
   });
 
   it("is bounded and fails closed for invalid instants", () => {

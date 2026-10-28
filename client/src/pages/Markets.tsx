@@ -186,8 +186,8 @@ function MarketCard({ item, onClick }: { item: MarketQuoteItem; onClick?: () => 
 // ── Summary pill ──────────────────────────────────────────────────────────────
 function SummaryPill({ label, value }: { label: string; value: string }) {
   const color =
-    value.includes("risk-on") || value.includes("positive") || value.includes("low") ? GREEN :
-    value.includes("risk-off") || value.includes("negative") || value.includes("elevated") || value.includes("weakening") ? RED :
+    value.includes("higher-risk appetite") || value.includes("positive") || value.includes("low") ? GREEN :
+    value.includes("lower-risk appetite") || value.includes("negative") || value.includes("elevated") || value.includes("weakening") ? RED :
     value.includes("rising") || value.includes("strengthening") ? AMBER :
     value.includes("unavailable") ? MUTED : TEXT;
   return (
@@ -331,9 +331,9 @@ function generateLocalInterpretation(
   if (s.europe === "unavailable" && s.asia === "unavailable") {
     // omit unsupported international interpretation
   } else if (s.europe === "negative" || s.asia === "negative") {
-    parts.push(`International markets are showing weakness — ${s.europe === "negative" ? "European" : "Asian"} indices are broadly lower, suggesting the risk-off tone extends beyond U.S. borders.`);
+    parts.push(`International markets are showing weakness — ${s.europe === "negative" ? "European" : "Asian"} indices are broadly lower, suggesting the lower-risk appetite tone extends beyond U.S. borders.`);
   } else if (s.europe === "positive" && s.asia === "positive") {
-    parts.push("Global equity markets are broadly positive, with European and Asian indices participating in the risk-on tone.");
+    parts.push("Global equity markets are broadly positive, with European and Asian indices participating in the higher-risk appetite tone.");
   }
 
   if (parts.length === 0) return "Market observations are unavailable. No interpretation is offered.";
@@ -611,7 +611,7 @@ export default function Markets() {
                       "Divergence — watch for reversal",
                       "Neutral",
                     ),
-                    color: snapshot?.summary.dollar === "strengthening" && snapshot?.summary.usEquities === "risk-on" ? AMBER : TEXT,
+                    color: snapshot?.summary.dollar === "strengthening" && snapshot?.summary.usEquities === "higher-risk appetite" ? AMBER : TEXT,
                   },
                   {
                     label: "Rate / Equity Relationship",
@@ -622,7 +622,7 @@ export default function Markets() {
                       "Tension — rising yields pressuring valuations",
                       "Neutral",
                     ),
-                    color: snapshot?.summary.rates === "rising" && snapshot?.summary.usEquities === "risk-on" ? AMBER : TEXT,
+                    color: snapshot?.summary.rates === "rising" && snapshot?.summary.usEquities === "higher-risk appetite" ? AMBER : TEXT,
                   },
                   {
                     label: "Crypto / Risk Appetite",

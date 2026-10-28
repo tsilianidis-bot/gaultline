@@ -311,7 +311,17 @@ describe("action classes (mechanical: quadrant + evidence)", () => {
   ] as const)("%o → %s", (input, expected) => {
     const r = classifyAction(input as never);
     expect(r.class).toBe(expected);
+    expect(r.conditionId).toBeTruthy();
     expect(r.evidence.map(e => e.id)).toEqual(["quadrant", "rel20", "breadth", "momentum"]);
+  });
+  it("gives the two lower classes different condition ids", () => {
+    const below = classifyAction({ quadrant: "LOSING_MOMENTUM", relReturn20dPct: 0, breadthPct: 40, arrow: "DOWN" });
+    const lagging = classifyAction({ quadrant: "LAGGING", relReturn20dPct: -3, breadthPct: 20, arrow: "DOWN" });
+    expect(below.class).toBe("UNDERWEIGHT");
+    expect(lagging.class).toBe("AVOID");
+    expect(below.conditionId).toBe("return-at-or-below-benchmark");
+    expect(lagging.conditionId).toBe("lagging-confirmed-down");
+    expect(below.conditionId).not.toBe(lagging.conditionId);
   });
 });
 

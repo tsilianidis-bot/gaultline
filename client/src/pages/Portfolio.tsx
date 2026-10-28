@@ -71,14 +71,7 @@ const pnlColor = (n: number | null): string => {
   return "#6B7280";
 };
 
-const ACTION_COLORS: Record<string, string> = {
-  "Add":            "#00FF88",
-  "Hold":           "#00D4FF",
-  "Watch / No Add": "#FF9500",
-  "Trim":           "#FF9500",
-  "Exit Watch":     "#FF2D55",
-  "Sell Bias":      "#FF2D55",
-};
+const ACTION_COLORS: Record<string, string> = {};
 
 const ASSET_TYPE_OPTIONS = ["Stock", "ETF", "Crypto", "Other"] as const;
 
@@ -272,7 +265,7 @@ function PositionForm({ initial, onClose, onSaved }: PositionFormProps) {
               style={inputStyle}
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              placeholder="e.g. Core long-term hold"
+              placeholder="e.g. Core long-term position"
               maxLength={500}
             />
           </div>

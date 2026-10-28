@@ -59,7 +59,10 @@ COPY patches ./patches
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/quant ./quant
-RUN python3 -m pip install --no-cache-dir --break-system-packages -r quant/systemic-regime/requirements-runtime.txt
+COPY scripts/start-production.sh scripts/guard-approved-deploy.sh ./scripts/
+RUN chmod +x scripts/start-production.sh scripts/guard-approved-deploy.sh \
+  && python3 -m pip install --no-cache-dir --break-system-packages -r quant/systemic-regime/requirements-runtime.txt
 
 EXPOSE 3000
-CMD ["pnpm", "start"]
+# Boots the server. The deploy guard runs only when FAULTLINE_ENFORCE_DEPLOY_GUARD=1.
+CMD ["bash", "scripts/start-production.sh"]

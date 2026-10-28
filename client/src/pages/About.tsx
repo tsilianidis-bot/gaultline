@@ -13,7 +13,7 @@ const TEAM_PRINCIPLES = [
     icon: "◆",
     title: "Probabilistic over binary",
     body:
-      "Markets do not operate in certainties. FAULTLINE surfaces likelihoods, regimes, and stress indicators — not buy or sell signals. We believe informed investors make better decisions when they understand the probability landscape.",
+      "Markets do not operate in certainties. FAULTLINE surfaces likelihoods, regimes, and stress indicators — not transact signals. We believe informed investors make better decisions when they understand the probability landscape.",
   },
   {
     icon: "◆",

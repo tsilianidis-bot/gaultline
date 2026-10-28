@@ -60,18 +60,9 @@ function regimeColor(r: StockRegimeLabel): string {
   return map[r] ?? "#94A3B8";
 }
 
-function strategyText(r: StockRegimeLabel): string {
-  const map: Record<StockRegimeLabel, string> = {
-    "Bull Market":    "Ride momentum. Overweight equities, favour growth and cyclicals. Tight stops on laggards.",
-    "Expansion":      "Stay invested. Rotate into cyclicals and small-caps. Reduce cash drag.",
-    "Consolidation":  "Hold core positions. Avoid chasing breakouts. Wait for directional confirmation.",
-    "Correction":     "Reduce risk. Trim high-beta positions. Add defensive exposure. Watch for reversal signals.",
-    "Distribution":   "Shift defensive. Raise cash. Favour value and dividend payers. Avoid new longs.",
-    "Bear Market":    "Capital preservation. Minimal equity exposure. Favour cash, bonds, and inverse hedges.",
-    "Recovery":       "Selective re-entry. Favour quality growth and beaten-down cyclicals. Size small initially.",
-    "Recession Risk": "Defensive posture. Raise cash significantly. Favour Treasuries, utilities, and staples.",
-  };
-  return map[r] ?? "Monitor conditions closely.";
+export function strategyText(r: StockRegimeLabel, pressure?: number): string {
+  const p = pressure != null && Number.isFinite(pressure) ? ` Pressure Index is ${Math.round(pressure)}/100.` : "";
+  return `Stock regime label is ${r}.${p} No position change is published.`;
 }
 
 function riskLevelFromPressure(pressure: number, regime: StockRegimeLabel): StockRiskLevel {
@@ -277,7 +268,7 @@ export async function computeStockMarketRegime(): Promise<StockMarketRegime> {
     regime, riskLevel, trend, confidence,
     pressureScore: p,
     keyFactors,
-    strategy:    strategyText(regime),
+    strategy:    strategyText(regime, p),
     explanation: explanationText(regime, p, trend),
     color:       regimeColor(regime),
     fetchedAt:   Date.now(),

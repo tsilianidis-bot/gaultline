@@ -41,7 +41,7 @@ const TreasuryYieldStress = () => {
         },
         {
           heading: "Disclaimer",
-          body: `${PUBLIC_DISCLAIMER} The Treasury Yield Stress Tracker and its analyses are not personalized recommendations or an offer to buy or sell any security. Investing involves risk, and past performance does not guarantee future results.`,
+          body: `${PUBLIC_DISCLAIMER} The Treasury Yield Stress Tracker and its analyses are not personalized recommendations or an offer to transact any security. Investing involves risk, and past performance does not guarantee future results.`,
         },
       ]}
       faqs={[
@@ -73,7 +73,7 @@ const TreasuryYieldStress = () => {
         {
           question: "Is the FAULTLINE Treasury Yield Stress Tracker personalized financial advice?",
           answer:
-            "No, the FAULTLINE Treasury Yield Stress Tracker provides market intelligence and educational content for informational purposes only. It is not personalized financial advice, investment recommendations, or an offer to buy or sell any securities. Always consult with a qualified financial professional for investment decisions.",
+            "No, the FAULTLINE Treasury Yield Stress Tracker provides market intelligence and educational content for informational purposes only. It is not personalized financial advice, investment recommendations, or an offer to transact any securities. Always consult with a qualified financial professional for investment decisions.",
         },
       ]}
       internalLinks={[

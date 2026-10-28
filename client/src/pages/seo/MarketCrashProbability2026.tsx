@@ -61,7 +61,7 @@ Accordingly, historical examples are reference context only. FAULTLINE must not 
           heading: "How to Interpret Pressure Index Context",
           body: `The Pressure Index is a market-context input, not a trading signal or crash forecast. Use it to identify which components are contributing to the present systemic-stress reading, confirm data freshness, and compare the current value with the documented methodology.
 
-LOW RISK (0–24), MODERATE RISK (25–44), ELEVATED RISK (45–64), HIGH STRESS (65–79), and SYSTEMIC CRISIS (80–100) are fixed model labels. They classify the current composite; they are not validated instructions to buy, sell, reduce, or increase any position.
+LOW RISK (0–24), MODERATE RISK (25–44), ELEVATED RISK (45–64), HIGH STRESS (65–79), and SYSTEMIC CRISIS (80–100) are fixed model labels. They classify the current composite; they are not validated instructions to transact, reduce, or increase any position.
 
 Every user’s circumstances differ. FAULTLINE provides research context and should be one input among many in independent decision-making.`,
         },

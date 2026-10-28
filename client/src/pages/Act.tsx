@@ -17,6 +17,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
+import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 import { trpc } from "@/lib/trpc";
 import {
   CANONICAL_DESTINATION_BY_ID,
@@ -53,14 +54,14 @@ const postureConfig: Record<MarketPosture, { label: string; color: string; bgCol
     color: "#fb7185",
     bgColor: "rgba(251,113,133,0.08)",
     description: "Protect optionality, demand stronger confirmation, and make downside controls explicit before increasing risk.",
-    biasLabel: "Risk-off",
+    biasLabel: "Lower-risk appetite",
     biasScore: 20,
   },
   balanced: {
     label: "BALANCED",
     color: "#fbbf24",
     bgColor: "rgba(251,191,36,0.08)",
-    description: "Keep participation conditional, preserve flexibility, and pair every decision with a visible invalidation state.",
+    description: "Balanced posture score on this card is 50/100. Invalidation state is listed beside the reading.",
     biasLabel: "Neutral",
     biasScore: 50,
   },
@@ -69,7 +70,7 @@ const postureConfig: Record<MarketPosture, { label: string; color: string; bgCol
     color: "#34d399",
     bgColor: "rgba(52,211,153,0.08)",
     description: "Explore opportunity through specialist workflows while keeping evidence quality and downside boundaries visible.",
-    biasLabel: "Risk-on",
+    biasLabel: "Higher-risk appetite",
     biasScore: 80,
   },
 };
@@ -128,13 +129,13 @@ function ActionBiasInstrument({ posture, biasScore, biasLabel, color }: {
     <div className="flex flex-col items-center rounded-sm border border-white/10 bg-white/[0.025] p-5">
       <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.18em] text-emerald-300/70">Action bias</p>
       <svg viewBox="0 0 128 80" className="w-36" aria-label={`Action bias: ${biasLabel}`}>
-        {/* Background arc: risk-off (left) to risk-on (right) */}
+        {/* Background arc: lower-risk appetite (left) to higher-risk appetite (right) */}
         <path d={arcPath(-180, 0, r)} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="7" strokeLinecap="round" />
         {/* Colored fill arc */}
         <path d={arcPath(-180, angle - 90, r)} fill="none" stroke={color} strokeWidth="7" strokeLinecap="round" style={{ transition: "all 1.2s cubic-bezier(0.23,1,0.32,1)" }} />
         {/* Zone labels */}
-        <text x="12" y="68" fill="rgba(251,113,133,0.7)" fontSize="5.5" fontFamily="monospace">RISK-OFF</text>
-        <text x="82" y="68" fill="rgba(52,211,153,0.7)" fontSize="5.5" fontFamily="monospace">RISK-ON</text>
+        <text x="8" y="68" fill="rgba(251,113,133,0.7)" fontSize="5.5" fontFamily="monospace">HIGHER STRESS</text>
+        <text x="78" y="68" fill="rgba(52,211,153,0.7)" fontSize="5.5" fontFamily="monospace">LOWER STRESS</text>
         {/* Needle */}
         <line x1={cx} y1={cy} x2={needleX} y2={needleY} stroke={color} strokeWidth="2" strokeLinecap="round" style={{ transition: "all 1.2s cubic-bezier(0.23,1,0.32,1)", transformOrigin: `${cx}px ${cy}px` }} />
         <circle cx={cx} cy={cy} r="3" fill={color} />
@@ -149,11 +150,11 @@ function ActionBiasInstrument({ posture, biasScore, biasLabel, color }: {
 // ── Strategy favorability matrix ─────────────────────────────────────────────
 function StrategyMatrix({ posture, scenarios }: { posture: MarketPosture | null; scenarios: DecisionScenario[] }) {
   const strategies = [
-    { label: "Increase exposure",    defensive: "avoid",    balanced: "conditional", opportunistic: "favorable" },
-    { label: "Hold current risk",    defensive: "favorable", balanced: "favorable",   opportunistic: "conditional" },
-    { label: "Reduce exposure",      defensive: "favorable", balanced: "conditional", opportunistic: "avoid" },
-    { label: "Add hedges",           defensive: "favorable", balanced: "conditional", opportunistic: "avoid" },
-    { label: "Seek new positions",   defensive: "avoid",    balanced: "conditional", opportunistic: "favorable" },
+    { label: "Stress is lower",      defensive: "unfavorable", balanced: "conditional", opportunistic: "favorable" },
+    { label: "Stress is unchanged",  defensive: "favorable", balanced: "favorable",   opportunistic: "conditional" },
+    { label: "Stress is higher",     defensive: "favorable", balanced: "conditional", opportunistic: "unfavorable" },
+    { label: "Hedges recorded",      defensive: "favorable", balanced: "conditional", opportunistic: "unfavorable" },
+    { label: "New positions recorded", defensive: "unfavorable", balanced: "conditional", opportunistic: "favorable" },
     { label: "Review invalidations", defensive: "favorable", balanced: "favorable",   opportunistic: "favorable" },
   ];
   const cellColor = (rating: string) => {
@@ -313,7 +314,7 @@ export default function Act() {
       label: "Neutral path",
       probability: marketState.outlook.probabilities.neutral,
       withheldText: scenarioText("neutral"),
-      response: "If the neutral path persists, avoid forcing conviction and keep the review cadence, controls, and invalidation criteria explicit.",
+      response: "If the neutral path persists, pass over forcing conviction and keep the review cadence, controls, and invalidation criteria explicit.",
       boundary: marketState.outlook.highestProbabilityPath,
     },
     {
@@ -328,7 +329,7 @@ export default function Act() {
       label: "Bull path",
       probability: Number.NaN,
       response: "Bull-continuation probability is withheld. Canonical decision guidance is unavailable.",
-      boundary: "UNAVAILABLE — not a directive to buy, sell, or hedge.",
+      boundary: "UNAVAILABLE — not an instruction.",
     },
     {
       label: "Neutral path",
@@ -339,7 +340,7 @@ export default function Act() {
     {
       label: "Bear path",
       probability: Number.NaN,
-      response: "Crash/drawdown probability is withheld. This is not a directive to buy, sell, or hedge.",
+      response: "A market-event percentage is withheld. This is not an instruction.",
       boundary: "Use a specialist workflow before making any instrument-level decision.",
     },
   ];
@@ -348,6 +349,9 @@ export default function Act() {
     <main className="min-h-screen bg-[#05070a] text-slate-200" data-act-destination="canonical">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_76%_5%,rgba(0,255,136,0.08),transparent_27%),radial-gradient(circle_at_12%_28%,rgba(0,229,255,0.045),transparent_24%)]" />
       <div className="relative mx-auto max-w-7xl px-5 pb-16 pt-8 md:px-10 md:pt-12">
+        <div className="mb-6">
+          <PentagonalThesisNarrative surface="act" compact />
+        </div>
 
         {/* ── HERO ─────────────────────────────────────────────────────── */}
         <section data-act-section="posture" className="relative overflow-hidden rounded-sm border bg-[#080f0c] p-6 md:p-9" style={{ borderColor: `${postureView.color}30` }}>
@@ -435,7 +439,7 @@ export default function Act() {
 
         <SectorRotationQuestion question="act" />
 
-        <Section id="strategy-matrix" index="01" eyebrow="Strategy matrix" title="Favorability of common strategies under each posture" description="The matrix shows which strategies are favorable, conditional, or to avoid under each posture. The current posture is highlighted.">
+        <Section id="strategy-matrix" index="01" eyebrow="Strategy matrix" title="Favorability of common strategies under each posture" description="The matrix shows which strategies are favorable, conditional, or to pass over under each posture. The current posture is highlighted.">
           <StrategyMatrix posture={posture} scenarios={scenarios} />
         </Section>
 
@@ -470,7 +474,7 @@ export default function Act() {
           </div>
         </Section>
 
-        <Section id="scenario-responses" index="04" eyebrow="Scenario responses" title="How the posture changes across the probability field" description="Each scenario remains conditional. A probability is context for a decision process, not a direct instruction to increase or reduce exposure.">
+        <Section id="scenario-responses" index="04" eyebrow="Scenario responses" title="How the posture changes across the probability field" description="Each scenario remains conditional. A probability is context for a decision process, not an instruction.">
           <div className="grid gap-4 lg:grid-cols-3">
             {scenarios.map(scenario => (
               <article key={scenario.label} className="rounded-sm border border-white/10 bg-white/[0.025] p-5">

@@ -5,6 +5,7 @@
    no typing animation, no chatbot feel.
    ============================================================ */
 import { useState, useEffect, useRef } from "react";
+import { directionColor, publicConditionText } from "@shared/surfaceClaims";
 import type { AshaQuestionAnalysis } from "@shared/ashaQuestionAnalysis";
 import type { ForecastMetadata } from "@shared/forecastMetadata";
 import { ForecastHorizonDisclosure } from "./ForecastHorizonDisclosure";
@@ -111,13 +112,8 @@ function threatColor(level: string) {
 }
 
 function verdictColor(action: string) {
-  const a = action.toUpperCase();
-  if (["BUY", "ACCUMULATE"].includes(a)) return "#00FF88";
-  if (["SELL", "AVOID"].includes(a)) return "#FF4444";
-  if (["REDUCE"].includes(a)) return "#FF8C00";
-  if (["HOLD", "WATCH"].includes(a)) return "#FFD700";
-  if (a === "NOT STATED") return "#94A3B8";
-  return "#00E5FF";
+  if (action.toUpperCase() === "NOT STATED") return "#94A3B8";
+  return directionColor(action);
 }
 
 // ── Section wrapper with stagger-in animation ──────────────
@@ -196,7 +192,7 @@ function CopyButton({ data }: { data: OracleBriefingData }) {
     // Launch fix-up: no response confidence figure is established; none is copied.
     `Bias: ${data.marketBias} | Threat: ${data.threatLevel} | Response confidence: Not established`,
     `Regime: ${data.marketRegime} | Pressure Index: ${pressureAvailable(data.pressureIndex) ? `${data.pressureIndex}/100` : "Not available"} | Time Horizon: ${data.forecastMetadata.expectedHorizon ?? "Not established"}`,
-    `Action: ${data.missionRecommendationStructured?.verdict || data.finalVerdictAction}`,
+    `Action: ${publicConditionText(data.missionRecommendationStructured?.verdict || data.finalVerdictAction)}`,
     ...(data.questionAnalysis ? [
       `Scope: ${data.questionAnalysis.analysisScope}`,
       `Event: ${data.questionAnalysis.eventDefinition}`,
@@ -226,7 +222,7 @@ function CopyButton({ data }: { data: OracleBriefingData }) {
     `MISSION RECOMMENDATION`,
     data.missionRecommendationStructured?.rationale || data.missionRecommendation,
     ``,
-    `GUIDANCE: ${data.finalVerdictAction} | Time Horizon: ${data.forecastMetadata.expectedHorizon ?? "Not established"}`,
+    `GUIDANCE: ${publicConditionText(data.finalVerdictAction)} | Time Horizon: ${data.forecastMetadata.expectedHorizon ?? "Not established"}`,
   ].join("\n");
 
   return (
@@ -266,7 +262,7 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
   const bColor = biasColor(data.marketBias);
   const tColor = threatColor(data.threatLevel);
   const vColor = verdictColor(data.finalVerdictAction);
-  const missionAction = data.missionRecommendationStructured?.verdict || data.finalVerdictAction;
+  const missionAction = publicConditionText(data.missionRecommendationStructured?.verdict || data.finalVerdictAction);
   const missionTimeHorizon = data.forecastMetadata.expectedHorizon ?? "NOT ESTABLISHED";
   const confirmationConditions = data.confirmationConditions?.length
     ? data.confirmationConditions

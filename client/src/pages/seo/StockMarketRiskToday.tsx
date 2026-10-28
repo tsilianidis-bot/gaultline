@@ -40,7 +40,7 @@ const StockMarketRiskToday = () => {
         },
         {
           heading: "Important Disclaimer",
-          body: `${PUBLIC_DISCLAIMER} The Pressure Index and market assessments are not personalized recommendations or an offer to buy or sell any security. Past performance is not indicative of future results.`, 
+          body: `${PUBLIC_DISCLAIMER} The Pressure Index and market assessments are not personalized recommendations or an offer to transact any security. Past performance is not indicative of future results.`, 
         },
       ]}
       faqs={[

@@ -69,7 +69,7 @@ describe("Marketing page positioning guardrails", () => {
   it("keeps the founder note verbatim and points both CTAs at public destinations", () => {
     expect(page).toContain("A NOTE FROM THE FOUNDER");
     expect(page).toContain("— JT");
-    expect(page).toContain("The goal isn't to tell you what to buy or sell.");
+    expect(page).toContain("The goal isn't to tell you which transaction to make.");
     expect(page).toContain('["Future intelligence", "/methodology#future"]');
   });
 });
@@ -77,11 +77,11 @@ describe("Marketing page positioning guardrails", () => {
 describe("Landing page structure", () => {
   it("renders the sections in the agreed order", () => {
     const main = page.slice(page.indexOf('<main id="main">'), page.indexOf("</main>"));
-    const order = ["<Hero />", "<PentagonalThesis />", "<Pressure />", "<HistoricalContext />", "<Plato />", "<Capabilities />", "<TrustTeaser />", "<FinalCta />"];
-    const positions = order.map((tag) => main.indexOf(tag));
+    const order = ["Hero", "NarratedStorySection", "PentagonalThesis", "Pressure", "HistoricalContext", "Plato", "Capabilities", "TrustTeaser", "FinalCta"];
+    const positions = order.map((tag) => main.indexOf(`<${tag}`));
     expect(positions.every((pos) => pos >= 0)).toBe(true);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
-    expect((main.match(/<[A-Z][A-Za-z]+ \/>/g) ?? [])).toHaveLength(order.length);
+    expect([...main.matchAll(/<([A-Z][A-Za-z]+)\b[^>]*\/>/g)].map((match) => match[1])).toEqual(order);
   });
 
   it("keeps the landing-section ids used by App.tsx placements", () => {
@@ -162,7 +162,7 @@ describe("Pentagonal Thesis section", () => {
     // Uncalibrated scenario and HMM probabilities are not marketed as available.
     expect(all).toContain("Numeric scenario probabilities are withheld pending calibration.");
     expect(all).toContain("numeric state and transition probabilities are withheld until calibration is validated");
-    expect(all).toContain("it does not state the odds of a crash.");
+    expect(all).toContain("it does not publish an event percentage.");
     expect(all).not.toMatch(/evidence-backed scenarios|crash probability/i);
     expect(all).toContain("sre-hmm2");
     // ACT options and boundaries.
@@ -293,7 +293,7 @@ describe("Worked example: live where public, illustrative where not", () => {
     expect(illustrative).not.toMatch(/PLATO/);
     expect(html).toContain("marketState.canonicalCurrent");
     expect(html).toContain("systemicRegime.current");
-    expect(html).toContain("Neither is the chance of a crash.");
+    expect(html).toContain("No event percentage is published.");
     expect(html).toContain("NOT INVESTMENT ADVICE");
   });
 });

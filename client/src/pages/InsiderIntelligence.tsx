@@ -274,7 +274,7 @@ export function CompanyProfileModal({ ticker, onClose }: { ticker: string; onClo
                 <div style={{ position: "relative", paddingLeft: "20px" }}>
                   <div style={{ position: "absolute", left: "8px", top: 0, bottom: 0, width: "1px", background: "rgba(255,255,255,0.08)" }} />
                   {verifiedCompany.timeline.map((ev, i) => {
-                    const c = ev.type === "buy" ? "#00FF88" : "#FF2D55";
+                    const c = ev.type === "purchase" ? "#00FF88" : "#FF2D55";
                     return (
                       <div key={i} style={{ position: "relative", marginBottom: "12px" }}>
                         <div style={{ position: "absolute", left: "-16px", top: "4px", width: "8px", height: "8px", borderRadius: "50%", background: c, boxShadow: `0 0 6px ${c}80` }} />
@@ -301,8 +301,8 @@ export function CompanyProfileModal({ ticker, onClose }: { ticker: string; onClo
                 {verifiedCompany.accuracyHistory.map((h, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "8px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "4px", marginBottom: "6px" }}>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", minWidth: "60px" }}>{h.period}</div>
-                    <div style={{ padding: "2px 8px", background: h.insiderAction === "buy" ? "rgba(0,255,136,0.08)" : "rgba(255,45,85,0.08)", border: `1px solid ${h.insiderAction === "buy" ? "rgba(0,255,136,0.25)" : "rgba(255,45,85,0.25)"}`, borderRadius: "3px" }}>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: h.insiderAction === "buy" ? "#00FF88" : "#FF2D55" }}>{h.insiderAction.toUpperCase()}</span>
+                    <div style={{ padding: "2px 8px", background: h.insiderAction === "purchase" ? "rgba(0,255,136,0.08)" : "rgba(255,45,85,0.08)", border: `1px solid ${h.insiderAction === "purchase" ? "rgba(0,255,136,0.25)" : "rgba(255,45,85,0.25)"}`, borderRadius: "3px" }}>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: h.insiderAction === "purchase" ? "#00FF88" : "#FF2D55" }}>{h.insiderAction === "purchase" ? "Purchase filing" : "Sale filing"}</span>
                     </div>
                     <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: h.subsequentReturn > 0 ? "#00FF88" : "#FF2D55" }}>
                       {h.subsequentReturn > 0 ? "+" : ""}{h.subsequentReturn}%
@@ -386,8 +386,8 @@ export function InsiderIntelligenceInner() {
         {hasVerifiedRadar && verifiedRadar && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "6px", marginBottom: "10px" }}>
             {[
-              { label: "Total Buy Value", value: fmtDollar(verifiedRadar.weeklyStats.totalBuyValue), color: "#00FF88" },
-              { label: "Total Sell Value", value: fmtDollar(verifiedRadar.weeklyStats.totalSellValue), color: "#FF2D55" },
+              { label: "Total acquisition value", value: fmtDollar(verifiedRadar.weeklyStats.totalBuyValue), color: "#00FF88" },
+              { label: "Total disposition value", value: fmtDollar(verifiedRadar.weeklyStats.totalSellValue), color: "#FF2D55" },
               { label: "Net Sentiment", value: `${verifiedRadar.weeklyStats.netSentiment > 0 ? "+" : ""}${verifiedRadar.weeklyStats.netSentiment}`, color: verifiedRadar.weeklyStats.netSentiment > 0 ? "#00FF88" : "#FF2D55" },
               { label: "Active Tickers", value: `${verifiedRadar.weeklyStats.activeTickers}`, color: "#00D4FF" },
               { label: "Cluster Alerts", value: `${verifiedRadar.weeklyStats.clusterCount}`, color: "#A78BFA" },
@@ -459,7 +459,7 @@ export function InsiderIntelligenceInner() {
 
         {/* ── CLUSTER BUY ALERTS ────────────────────────────── */}
         {hasVerifiedRadar && verifiedRadar && (
-          <CollapsiblePanel open={open.clusters} onToggle={() => toggle("clusters")} icon={<Users size={14} />} title="Cluster Buy Alerts™" color="#00FF88" count={verifiedRadar.clusterAlerts.length}>
+          <CollapsiblePanel open={open.clusters} onToggle={() => toggle("clusters")} icon={<Users size={14} />} title="Cluster acquisition alerts™" color="#00FF88" count={verifiedRadar.clusterAlerts.length}>
           {verifiedRadar.clusterAlerts.map((alert, i) => {
             const sc = strengthColor(alert.strength);
             return (
@@ -504,7 +504,7 @@ export function InsiderIntelligenceInner() {
             );
           })}
           {verifiedRadar.clusterAlerts.length === 0 && !isLoading && (
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.45)", padding: "8px 0" }}>No cluster buy alerts detected this period.</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.45)", padding: "8px 0" }}>No cluster acquisition alerts detected this period.</div>
           )}
           </CollapsiblePanel>
         )}
@@ -601,7 +601,7 @@ export function InsiderIntelligenceInner() {
                   <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#00FF88", boxShadow: "0 0 8px #00FF88", flexShrink: 0, animation: "blink-alert 6s ease-in-out infinite" }} />
                   <div style={{ flex: 1 }}>
                     <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#E2E8F0" }}>{alert.ticker}</span>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#64748B", marginLeft: "8px" }}>Cluster Buy Detected — {alert.insiderCount} insiders, {fmtDollar(alert.totalCapital)}</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#64748B", marginLeft: "8px" }}>Cluster acquisition detected — {alert.insiderCount} insiders, {fmtDollar(alert.totalCapital)}</span>
                   </div>
                   <div style={{ padding: "2px 8px", background: "rgba(0,255,136,0.10)", border: "1px solid rgba(0,255,136,0.30)", borderRadius: "3px" }}>
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00FF88" }}>{alert.strength}</span>

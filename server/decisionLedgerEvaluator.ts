@@ -37,6 +37,7 @@
 import { getQuote } from "./yahooProxy";
 import { getCoinMarketData } from "./coingeckoProxy";
 import { invokeLLM } from "./_core/llm";
+import { ledgerScoreDirection } from "../shared/clientVocabulary";
 import { getDb } from "./db";
 import { decisionLedger } from "../drizzle/schema";
 import { eq, and, isNull, lt } from "drizzle-orm";
@@ -135,11 +136,8 @@ async function fetchCurrentPrice(ticker: string, assetType: "stock" | "crypto"):
  * "bearish" / "sell" / "short" → -1
  * anything else → 0 (neutral/ambiguous)
  */
-function verdictDirection(verdict: string): 1 | -1 | 0 {
-  const v = verdict.toLowerCase();
-  if (v.includes("bull") || v.includes("buy") || v.includes("long") || v.includes("accumulate") || v.includes("upside")) return 1;
-  if (v.includes("bear") || v.includes("sell") || v.includes("short") || v.includes("avoid") || v.includes("downside")) return -1;
-  return 0;
+function verdictDirection(verdict: string, recommendationType?: string | null): 1 | -1 | 0 {
+  return ledgerScoreDirection({ verdict, recommendationType });
 }
 
 // ── LLM evaluation for macro/ambiguous entries ────────────────────────────────
@@ -255,6 +253,7 @@ export async function evaluateLedgerEntry(entry: {
   expectedTimeframe: string;
   priceAtEntry: number | null;
   createdAt: Date;
+  recommendationType?: string | null;
 }): Promise<EvaluationResult> {
   const now = Date.now();
   const elapsedMs = now - new Date(entry.createdAt).getTime();
@@ -295,7 +294,7 @@ export async function evaluateLedgerEntry(entry: {
     };
   }
 
-  // If we have no entry price, use LLM evaluation
+  // If we have no opening price, use LLM evaluation
   if (!entry.priceAtEntry) {
     const llmResult = await llmEvaluateMacro({
       verdict: entry.verdict,
@@ -316,7 +315,7 @@ export async function evaluateLedgerEntry(entry: {
   }
 
   // Price-based evaluation
-  const direction = verdictDirection(entry.verdict);
+  const direction = verdictDirection(entry.verdict, entry.recommendationType);
   const priceChange = (currentPrice - entry.priceAtEntry) / entry.priceAtEntry; // e.g. 0.05 = +5%
   const absPriceChange = Math.abs(priceChange);
 
@@ -440,6 +439,7 @@ export async function evaluateExpiredEntries(): Promise<{
         expectedTimeframe: entry.expectedTimeframe,
         priceAtEntry: entry.priceAtEntry,
         createdAt: entry.createdAt,
+        recommendationType: entry.recommendationType,
       });
 
       await db

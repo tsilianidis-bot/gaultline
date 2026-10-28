@@ -14,6 +14,7 @@
  */
 
 import type { Request, Response } from "express";
+import { tradeClass } from "../shared/surfaceClaims";
 import { runDailyEvaluation, valuateSimPortfolio } from "./simPortfolioEngine";
 import { generateDailyJournal } from "./simPortfolioJournal";
 import {
@@ -78,14 +79,14 @@ export async function handleScheduledSimPortfolio(_req: Request, res: Response):
         const cost = decision.price * decision.quantity;
 
         if (cost > cash) {
-          log(`Insufficient cash for ${decision.ticker} BUY — need $${cost.toFixed(2)}, have $${cash.toFixed(2)}`);
+          log(`Insufficient cash for ${decision.ticker} acquisition — need $${cost.toFixed(2)}, have $${cash.toFixed(2)}`);
           continue;
         }
 
         // Check if already have a position
         const existingPos = openPositions.find(p => p.ticker === decision.ticker && p.status === "open");
         if (existingPos) {
-          log(`Already have open position in ${decision.ticker} — skipping BUY`);
+          log(`Already have open position in ${decision.ticker} — skipping acquisition`);
           continue;
         }
 
@@ -119,7 +120,7 @@ export async function handleScheduledSimPortfolio(_req: Request, res: Response):
           accountId,
           ticker: decision.ticker,
           assetType: decision.assetType,
-          action: "BUY",
+          action: tradeClass("up"),
           quantity: String(decision.quantity),
           price: String(decision.price),
           totalValue: String(decision.price * decision.quantity),
@@ -128,16 +129,16 @@ export async function handleScheduledSimPortfolio(_req: Request, res: Response):
           regime: pressure.regime,
         });
 
-        tradesSummary.push(`BUY ${decision.quantity} ${decision.ticker} @ $${decision.price.toFixed(2)}`);
+        tradesSummary.push(`Simulated fill ${decision.quantity} ${decision.ticker} at $${decision.price.toFixed(2)}. Cash decreased.`);
         executedTrades.push({
           ticker: decision.ticker,
-          action: "BUY",
+          action: tradeClass("up"),
           price: decision.price,
           quantity: decision.quantity,
           rationale: decision.rationale.actionSummary,
         });
 
-        log(`✅ BUY ${decision.quantity} ${decision.ticker} @ $${decision.price.toFixed(2)}`);
+        log(`Simulated fill ${decision.quantity} ${decision.ticker} at $${decision.price.toFixed(2)}. Cash decreased.`);
       }
 
       if (decision.action === "SELL") {
@@ -173,7 +174,7 @@ export async function handleScheduledSimPortfolio(_req: Request, res: Response):
           accountId,
           ticker: decision.ticker,
           assetType: decision.assetType,
-          action: "SELL",
+          action: tradeClass("down"),
           quantity: String(qty),
           price: String(decision.price),
           totalValue: String(proceeds),
@@ -182,16 +183,16 @@ export async function handleScheduledSimPortfolio(_req: Request, res: Response):
           regime: pressure.regime,
         });
 
-        tradesSummary.push(`SELL ${qty} ${decision.ticker} @ $${decision.price.toFixed(2)} (P&L: ${realizedPnl >= 0 ? "+" : ""}$${realizedPnl.toFixed(2)})`);
+        tradesSummary.push(`Simulated fill ${qty} ${decision.ticker} at $${decision.price.toFixed(2)}. Cash increased. Mark-to-fill change ${realizedPnl >= 0 ? "+" : ""}$${realizedPnl.toFixed(2)}.`);
         executedTrades.push({
           ticker: decision.ticker,
-          action: "SELL",
+          action: tradeClass("down"),
           price: decision.price,
           quantity: qty,
           rationale: decision.rationale.actionSummary,
         });
 
-        log(`✅ SELL ${qty} ${decision.ticker} @ $${decision.price.toFixed(2)} — P&L: ${realizedPnl >= 0 ? "+" : ""}$${realizedPnl.toFixed(2)}`);
+        log(`Simulated fill ${qty} ${decision.ticker} at $${decision.price.toFixed(2)}. Cash increased. Mark-to-fill change ${realizedPnl >= 0 ? "+" : ""}$${realizedPnl.toFixed(2)}.`);
       }
     }
 
@@ -210,7 +211,7 @@ export async function handleScheduledSimPortfolio(_req: Request, res: Response):
     const journal = await generateDailyJournal(
       currentValuation,
       previousTotal,
-      tradesSummary.join("; ") || "No trades executed today — all positions held.",
+      tradesSummary.join("; ") || "No simulation records today — recorded positions are unchanged.",
       pressure,
     );
 

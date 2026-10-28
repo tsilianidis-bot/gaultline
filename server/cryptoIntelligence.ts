@@ -189,7 +189,7 @@ function scoreAltcoinSeason(p: FaultlinePressureOutput): { signalScore: number; 
     riskScore,
     drivers: [
       liquidity > 60 ? "Liquidity expansion historically precedes altcoin outperformance" : "Liquidity contraction suppresses altcoin season probability",
-      pressure < 40  ? "Low macro pressure supports risk-on rotation into altcoins" : "Elevated macro pressure reduces altcoin season probability",
+      pressure < 40  ? "Low macro pressure supports higher-risk appetite rotation into altcoins" : "Elevated macro pressure reduces altcoin season probability",
     ],
   };
 }
@@ -287,7 +287,7 @@ function buildBtcDashboard(p: FaultlinePressureOutput): Omit<BitcoinMacroDashboa
     if (credit < 50)
       evidence.push("Credit stress is contained below systemic levels — no contagion signal, which historically precedes accumulation windows");
     if (equity < 55)
-      evidence.push("Equity market stress is muted — risk-off conditions are present but not panic-driven, supporting selective long-term holder behavior");
+      evidence.push("Equity market stress is muted — lower-risk appetite conditions are present but not panic-driven, supporting selective long-term holder behavior");
     if (pressure >= 40 && pressure <= 65)
       evidence.push(`FAULTLINE Pressure Index at ${pressure.toFixed(0)}/100 — elevated but not in crisis territory, consistent with late-bear / early-accumulation macro backdrop`);
     if (yields < 55)
@@ -307,18 +307,18 @@ function buildBtcDashboard(p: FaultlinePressureOutput): Omit<BitcoinMacroDashboa
         "Price breaks and holds above major resistance (prior cycle high or key moving average) with strong volume",
         "Liquidity conditions shift from neutral to expanding — FAULTLINE Liquidity score above 60",
         "FAULTLINE Pressure Index drops below 35, signaling macro tailwinds returning",
-        "Sustained risk-on confirmation: equity stress falls below 35, credit spreads tighten",
+        "Sustained higher-risk appetite confirmation: equity stress falls below 35, credit spreads tighten",
         "ETF and institutional flow signals shift to inflow bias with consistent weekly momentum",
       ],
       invalidationSignals: [
-        "Price breaks below the accumulation range low with high volume — capitulation re-entry",
+        "Price breaks below the accumulation range low with high volume — capitulation re-opening",
         "FAULTLINE Pressure Index spikes above 75, signaling macro deterioration or systemic shock",
         "Credit stress rises above 65 — contagion risk would invalidate the base-forming thesis",
         "Liquidity collapses below 30 — forced selling would overwhelm any accumulation activity",
         "Macro regime shifts to 'Crisis' or 'Recession Onset' — bear market deepens rather than bases",
       ],
       tradingBias:
-        "Capital preservation is the primary objective. Selective accumulation of core positions (BTC, ETH) at scale is appropriate for long-term holders. Avoid aggressive risk-taking, leveraged long positions, or broad altcoin exposure until a confirmed breakout with volume and improving macro conditions. Dollar-cost averaging into BTC may be appropriate for investors with long time horizons. A new bull cycle is not confirmed — position sizing should reflect that uncertainty.",
+        `Pressure Index and the crypto regime label are on this card. No position change is published.`,
       disclaimer:
         "FAULTLINE cycle analysis is based on macro pressure indicators, not on-chain data. This is not financial advice. All signals reflect conditions — they do not predict outcomes.",
     };
@@ -361,7 +361,7 @@ function buildBtcDashboard(p: FaultlinePressureOutput): Omit<BitcoinMacroDashboa
       phase: cyclePhase,
       confidence: cycleConfidence,
       note: cyclePhase === "Bear Market → Accumulation Phase"
-        ? `FAULTLINE macro indicators suggest BTC may be forming a base inside a broader bear-market structure. A new bull cycle is not confirmed until price breaks major resistance with strong volume, improving liquidity, and sustained risk-on confirmation.`
+        ? `FAULTLINE macro indicators suggest BTC may be forming a base inside a broader bear-market structure. A new bull cycle is not confirmed until price breaks major resistance with strong volume, improving liquidity, and sustained higher-risk appetite confirmation.`
         : `FAULTLINE macro indicators suggest ${cyclePhase} conditions with ${cycleConfidence}% signal confidence`,
     },
     overallBtcBias: scoreToSignal(btcSignalScore),
@@ -405,8 +405,8 @@ function buildAltcoinRisk(p: FaultlinePressureOutput): AltcoinRiskAssessment {
       ? "Stablecoin supply conditions suggest dry powder available for altcoin deployment"
       : "Stablecoin supply contraction may signal reduced altcoin buying pressure",
     riskOnOffSignal: equity < 45
-      ? "Risk-on equity conditions may support altcoin risk appetite"
-      : "Risk-off equity conditions typically suppress altcoin performance",
+      ? "Higher-risk appetite equity conditions may support altcoin risk appetite"
+      : "Lower-risk appetite equity conditions typically suppress altcoin performance",
     macroPressureSignal: pressure < 40
       ? "Low macro pressure is historically associated with altcoin season conditions"
       : "Elevated macro pressure is a headwind for speculative altcoin positions",
@@ -477,14 +477,14 @@ function buildMacroCorrelation(p: FaultlinePressureOutput): Omit<CryptoMacroCorr
     equityRiskAppetite: {
       signal: scoreToSignal(eqScore),
       note: eqScore >= 60
-        ? "Equity risk appetite signals suggest risk-on conditions for crypto"
-        : "Risk-off equity conditions may suppress crypto risk appetite",
+        ? "Equity risk appetite signals suggest higher-risk appetite conditions for crypto"
+        : "Lower-risk appetite equity conditions may suppress crypto risk appetite",
     },
     bondMarketStress: {
       signal: scoreToSignal(bondScore),
       note: bondScore >= 60
         ? "Bond market conditions are not signaling systemic stress for crypto"
-        : "Bond market stress signals may indicate broader risk-off conditions",
+        : "Bond market stress signals may indicate broader lower-risk appetite conditions",
     },
     overallMacroSignal: scoreToSignal(overallScore),
   };
@@ -498,10 +498,10 @@ function buildPortfolioGuidance(p: FaultlinePressureOutput): CryptoPortfolioGuid
   const btcScore  = scoreBitcoin(p).signalScore;
   const altScore  = scoreAltcoinSeason(p).signalScore;
 
-  const btcAction   = btcScore >= 65 ? "Add" : btcScore >= 50 ? "Hold" : btcScore >= 35 ? "Trim" : btcScore >= 20 ? "Reduce Risk" : "Move to Stables";
-  const ethAction   = btcScore >= 60 ? "Hold" : btcScore >= 45 ? "Hold" : btcScore >= 30 ? "Trim" : "Reduce Risk";
-  const altAction   = altScore >= 65 ? "Selective Add" : altScore >= 50 ? "Hold" : altScore >= 35 ? "Trim" : "Reduce Risk";
-  const stableAction = pressure >= 70 ? "Increase Allocation" : pressure >= 50 ? "Maintain Buffer" : "Reduce — Deploy Selectively";
+  const btcAction   = `Bitcoin score is ${btcScore}/100 on this reading.`;
+  const ethAction   = `Ethereum uses the Bitcoin score ${btcScore}/100 on this reading.`;
+  const altAction   = `Altcoin score is ${altScore}/100 on this reading.`;
+  const stableAction = `Stablecoin sleeve uses Pressure Index ${pressure}/100 on this reading.`;
 
   return {
     btcGuidance: {
@@ -533,7 +533,7 @@ function buildPortfolioGuidance(p: FaultlinePressureOutput): CryptoPortfolioGuid
       note: "Stablecoin guidance reflects overall macro risk level — not a specific allocation recommendation",
     },
     overallBias: btcScore >= 60 && liquidity >= 55
-      ? "Risk-on conditions may support crypto exposure with appropriate position sizing"
+      ? "Higher-risk appetite conditions may support crypto exposure with appropriate position sizing"
       : btcScore >= 45
       ? "Mixed signals — selective exposure with active risk management may be appropriate"
       : "Macro conditions suggest caution — risk management and capital preservation may be prudent",

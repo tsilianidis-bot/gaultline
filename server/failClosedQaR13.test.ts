@@ -145,7 +145,7 @@ describe("B14 signal confidence (min(95, 55 + |score| × 5)) is never displayed 
   });
   it("the visual-detail payload withholds signal confidence (source boundary)", () => {
     const src = read("server/signalVisualDetail.ts");
-    expect(src).toContain("signal: signal ? { ...signal, confidence: null } : null,");
+    expect(src).toContain("signal: signal ? omitTradeAction({ ...signal, confidence: null }) : null,");
   });
 });
 

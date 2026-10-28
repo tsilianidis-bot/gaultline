@@ -375,7 +375,7 @@ function generateAlerts(
       id: "stable_contract",
       type: "liquidity",
       severity: "high",
-      title: "Risk-Off Conditions Returning",
+      title: "Lower appetite Conditions Returning",
       body: `Stablecoin supply contracting — capital exiting crypto ecosystem.`,
       timestamp: now,
     });
@@ -442,7 +442,7 @@ function generateAiCommentary(
   } else if (btcDom.current == null) {
     return `Bitcoin dominance unavailable. ${ethStatus}. ${stableStatus}. Altcoin capital flows cannot be read from a missing dominance print. This is not an all-clear signal.`;
   } else {
-    return `Bitcoin dominance regime active at ${btcDom.current.toFixed(1)}%. ${ethStatus}. ${stableStatus}. Altcoin capital flows remain suppressed — BTC continues to absorb the majority of crypto market inflows. Wait for dominance breakdown below 55% before increasing alt exposure.`;
+    return `Bitcoin dominance is ${btcDom.current.toFixed(1)}% on this print. ${ethStatus}. ${stableStatus}. The card does not publish a position change.`;
   }
 }
 

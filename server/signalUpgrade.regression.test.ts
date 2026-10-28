@@ -259,7 +259,7 @@ describe("Part 3 — Crypto regime reconciliation", () => {
   it("cryptoRegime field is always present on crypto signals", async () => {
     const result = computeCryptoSignal(makeCryptoInput());
     expect(result.cryptoRegime).toBeDefined();
-    const validRegimes = ["Bullish", "Neutral", "Defensive", "Risk-Off"];
+    const validRegimes = ["Bullish", "Neutral", "Defensive", "Lower appetite"];
     expect(validRegimes).toContain(result.cryptoRegime);
   });
 });
@@ -280,8 +280,8 @@ describe("Part 4 — Precise signal language", () => {
     });
     const result = computeTradingSignal(strongInput, neutralRegime);
     if (result.action === "BUY") {
-      const buyLabels = ["Accumulation", "Breakout", "Momentum", "Dip Buy"];
-      expect(buyLabels.some(l => result.actionLabel.includes(l))).toBe(true);
+      expect(result.actionLabel).toContain("Internal score");
+      expect(result.actionLabel).not.toMatch(/\b(?:BUY|SELL|HOLD)\b/);
     }
     // Regardless of action, actionLabel is descriptive (more than 3 chars)
     expect(result.actionLabel.length).toBeGreaterThan(3);
@@ -297,8 +297,8 @@ describe("Part 4 — Precise signal language", () => {
       sparkline7d: Array.from({ length: 48 }, (_, i) => 65000 - i * 400),
     }));
     if (result.action === "SELL") {
-      const sellLabels = ["Avoid", "Exit", "Reduce", "Distribution", "Caution"];
-      expect(sellLabels.some(l => result.actionLabel.includes(l))).toBe(true);
+      expect(result.actionLabel).toContain("Internal score");
+      expect(result.actionLabel).not.toMatch(/\b(?:BUY|SELL|HOLD)\b/);
     }
     expect(result.actionLabel.length).toBeGreaterThan(3);
   });

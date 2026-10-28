@@ -31,13 +31,13 @@ type SimulatorTimeframe = "today" | "this_week" | "one_three_months" | "six_twel
 // ── Constants ─────────────────────────────────────────────────
 const MOVE_OPTIONS: { value: MoveType; label: string; icon: string }[] = [
   { value: "add_risk",           label: "Add Risk",                  icon: "↑" },
-  { value: "reduce_risk",        label: "Reduce Risk",               icon: "↓" },
+  { value: "reduce_risk",        label: "Risk weight",               icon: "↓" },
   { value: "hedge",              label: "Hedge",                     icon: "⛨" },
   { value: "rotate",             label: "Rotate",                    icon: "⟳" },
-  { value: "raise_cash",         label: "Raise Cash",                icon: "◎" },
+  { value: "raise_cash",         label: "Cash weight",               icon: "◎" },
   { value: "deploy_cash",        label: "Deploy Cash",               icon: "◈" },
-  { value: "buy_specific_asset", label: "Buy Specific Asset",        icon: "₿" },
-  { value: "sell_specific_asset",label: "Sell Specific Asset",       icon: "✕" },
+  { value: "buy_specific_asset", label: "Named acquisition",        icon: "₿" },
+  { value: "sell_specific_asset",label: "Named reduction",       icon: "✕" },
 ];
 
 const TIMEFRAME_OPTIONS: { value: SimulatorTimeframe; label: string; sub: string }[] = [
@@ -153,7 +153,7 @@ function ListItem({ text, color, icon }: { text: string; color: string; icon: Re
 
 // ── Main component ────────────────────────────────────────────
 export default function TradePreflight() {
-  useSEO(PAGE_SEO.diagnostic); // reuse diagnostic SEO until tradePreflight entry is added
+  useSEO(PAGE_SEO.diagnostic);
   const { output, marketMode, canonicalState } = useEngine();
 
   const [selectedMove, setSelectedMove] = useState<MoveType | null>(null);
@@ -582,9 +582,9 @@ export default function TradePreflight() {
               </div>
             </div>
 
-            {/* Areas to Avoid */}
+            {/* Areas to Pass over */}
             <div style={{ background: "rgba(12,15,22,0.98)", border: "1px solid rgba(255,149,0,0.15)", borderRadius: "6px", padding: "14px", marginBottom: "10px" }}>
-              <SectionHeader icon={<AlertTriangle size={14} />} title="Areas to Avoid" color="#FF9500" />
+              <SectionHeader icon={<AlertTriangle size={14} />} title="Strained areas" color="#FF9500" />
               {result.avoidAreas.map((item, i) => (
                 <ListItem key={i} text={item} color="#FF9500" icon={<AlertTriangle size={12} />} />
               ))}

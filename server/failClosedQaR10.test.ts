@@ -36,7 +36,7 @@ describe("QA r10 — Blocker 6: ASHA answer prompt and schema carry no probabili
     expect(promptAndSchema).not.toMatch(/Bull probability: \d/i);
     expect(promptAndSchema).not.toMatch(/highest probability scenario|probability-based/i);
     expect(promptAndSchema).toContain("BULL / BEAR BALANCE");
-    expect(promptAndSchema).toContain("FAULTLINE does not offer a crash probability");
+    expect(promptAndSchema).toContain("FAULTLINE does not offer a market-event percentage");
     expect(promptAndSchema).toContain("Scenario weights: uncalibrated (not offered as probabilities)");
     expect(promptAndSchema).toContain("never state a probability");
     expect(router).toContain("raw = withholdUnsupportedAskScores(withoutModelProbabilities(integrityValidation.normalizedOutput));");

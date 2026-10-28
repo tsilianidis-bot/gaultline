@@ -32,7 +32,7 @@ const VsKoyfin = () => {
         },
         {
           heading: 'Key Differences: Focus, Methodology, and Application',
-          body: `The fundamental difference between FAULTLINE and Koyfin lies in their analytical focus. Koyfin excels at bottom-up analysis, providing granular data for individual securities and traditional economic metrics. Its methodology is rooted in widely accepted financial reporting and market data. This makes it invaluable for equity research, credit analysis, and tracking established economic trends. FAULTLINE, however, employs a top-down, systemic approach. It utilizes proprietary algorithms and unique data sets to classify market regimes (e.g., risk-on, risk-off, inflationary, deflationary) and quantify systemic pressures. While Koyfin helps you understand a company's earnings, FAULTLINE helps you understand if the broader market environment is conducive to those earnings being valued. Koyfin answers 'how is this company doing?', while FAULTLINE answers 'what is the underlying health of the entire system affecting all companies?'.`,
+          body: `The fundamental difference between FAULTLINE and Koyfin lies in their analytical focus. Koyfin excels at bottom-up analysis, providing granular data for individual securities and traditional economic metrics. Its methodology is rooted in widely accepted financial reporting and market data. This makes it invaluable for equity research, credit analysis, and tracking established economic trends. FAULTLINE, however, employs a top-down, systemic approach. It utilizes proprietary algorithms and unique data sets to classify market regimes (e.g., higher-risk appetite, lower-risk appetite, inflationary, deflationary) and quantify systemic pressures. While Koyfin helps you understand a company's earnings, FAULTLINE helps you understand if the broader market environment is conducive to those earnings being valued. Koyfin answers 'how is this company doing?', while FAULTLINE answers 'what is the underlying health of the entire system affecting all companies?'.`,
         },
         {
           heading: 'Who FAULTLINE is For: The Macro-Aware Investor',
@@ -40,7 +40,7 @@ const VsKoyfin = () => {
         },
         {
           heading: 'FAULTLINE\'s Unique Approach: Systemic Risk & Regime Classification',
-          body: `FAULTLINE's unique value proposition is its ability to distill complex macro data into actionable systemic risk signals and clear market regime classifications. Unlike platforms that merely present data, FAULTLINE interprets it through its proprietary Pressure Index and Market Regime Tracker. This allows users to quickly ascertain the current state of systemic risk (e.g., 'Elevated Risk' or 'Neutral') and identify the prevailing market regime (e.g., 'Deflationary Risk-Off'). This context is vital because different market regimes favor different asset classes and strategies. FAULTLINE provides a framework for understanding 'what changed' in the macro environment, 'why it matters' for portfolio performance, and 'what would change the outlook' for future positioning. This structural, interpretive approach empowers users to make more informed and resilient investment decisions.`,
+          body: `FAULTLINE's unique value proposition is its ability to distill complex macro data into actionable systemic risk signals and clear market regime classifications. Unlike platforms that merely present data, FAULTLINE interprets it through its proprietary Pressure Index and Market Regime Tracker. This allows users to quickly ascertain the current state of systemic risk (e.g., 'Elevated Risk' or 'Neutral') and identify the prevailing market regime (e.g., 'Deflationary Lower-risk appetite'). This context is vital because different market regimes favor different asset classes and strategies. FAULTLINE provides a framework for understanding 'what changed' in the macro environment, 'why it matters' for portfolio performance, and 'what would change the outlook' for future positioning. This structural, interpretive approach empowers users to make more informed and resilient investment decisions.`,
         },
       ]}
       faqs={[
@@ -62,7 +62,7 @@ const VsKoyfin = () => {
         },
         {
           question: 'How does FAULTLINE help with risk management?',
-          answer: 'FAULTLINE helps with risk management by identifying periods of elevated systemic risk and classifying market regimes. This allows investors to proactively adjust their portfolio exposure, hedge against potential downturns, and avoid periods unfavorable for certain asset classes.',
+          answer: 'FAULTLINE helps with risk management by identifying periods of elevated systemic risk and classifying market regimes. This allows investors to proactively adjust their portfolio exposure, hedge against potential downturns, and see when the reading is unfavorable for certain asset classes.',
         },
       ]}
       internalLinks={[

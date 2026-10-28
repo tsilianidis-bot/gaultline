@@ -46,7 +46,7 @@ const COMING_SOON_FEATURES = [
       "Securely connect supported brokerage accounts to automatically import your holdings and receive personalized market intelligence without manual updates. FAULTLINE reads your portfolio and applies its full intelligence engine to your actual positions.",
     benefits: [
       "Secure read-only brokerage integration",
-      "Automatic holdings sync — no manual entry",
+      "Automatic holdings sync — no manual input",
       "Instant portfolio intelligence on connection",
       "Supports major U.S. brokerages",
     ],

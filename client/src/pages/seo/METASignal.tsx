@@ -7,8 +7,8 @@ export default function METASignal() {
       companyName="Meta Platforms, Inc."
       sector="Social Media / AI Infrastructure & Advertising"
       description="Meta Platforms stock signal analysis"
-      seoTitle="META Signal — Meta Platforms Stock Analysis, AI Risk Score | FAULTLINE"
-      seoDescription="META signal analysis: Meta Platforms' macro alignment score, AI infrastructure exposure, advertising cycle sensitivity, and regime-based signal classification."
+      seoTitle="META — Meta Platforms background and shared stock thesis | FAULTLINE"
+      seoDescription="Background on Meta Platforms. The live stock read is the shared Pentagonal Thesis. This page does not publish a separate trade instruction."
       canonical="/stock/meta"
       accentColor="#0081FB"
       badge="META SIGNAL INTELLIGENCE"
@@ -47,17 +47,17 @@ Historical Context: META experienced one of the most dramatic large-cap drawdown
 
 5. Macro Regime Sensitivity: META's high valuation multiple makes it sensitive to macro regime transitions. A shift to HIGH STRESS (FAULTLINE Pressure Index 65+) typically triggers multiple compression in high-multiple technology stocks.`}
       faqs={[
-        { question: "Is META a buy or sell right now?", answer: "FAULTLINE's META signal classification is available on the Signals tab, based on macro regime alignment, advertising cycle conditions, AI capex ROI assessment, and technical structure. This is not investment advice." },
+        { question: "What does the META reading show right now?", answer: "FAULTLINE's META reading is available on the Signals tab. It uses macro regime alignment, advertising cycle conditions, AI capex context, and technical structure. This is not a transaction classification and it is not investment advice." },
         { question: "How does Meta make money?", answer: "Meta generates the overwhelming majority of its revenue from digital advertising across Facebook, Instagram, WhatsApp, and Threads. Advertisers pay to show targeted ads to Meta's billions of daily users. AI-powered ad targeting systems have significantly improved revenue per user over time." },
         { question: "What is Meta's AI strategy?", answer: "Meta's AI strategy has three pillars: (1) AI-powered advertising — using AI to improve ad targeting and measurement; (2) AI-powered products — Llama open-source models, Meta AI assistant, AI-generated content; (3) AI infrastructure — massive data center and GPU investment to support both internal AI development and Llama deployment." },
-        { question: "How does the economy affect META's stock?", answer: "META's revenue is almost entirely advertising-based, making it highly sensitive to the economic cycle. In recessions or economic slowdowns, corporate advertising budgets are cut, directly reducing META's revenue. The Pressure Index is an input to the META macro alignment score; FAULTLINE does not offer a recession probability." },
-        { question: "What is META's biggest risk in 2026?", answer: "Based on FAULTLINE's analysis, META's biggest risks in 2026 are advertising recession risk (economic slowdown reducing ad budgets), AI capex ROI concerns (market questioning the return on its heavy AI investment), and regulatory/antitrust risk (FTC case seeking Instagram and WhatsApp divestiture)." },
+        { question: "How does advertising relate to Meta's revenue?", answer: "Most of Meta's reported revenue comes from advertising on its apps. An economic slowdown can affect advertising budgets. This page does not turn that into a numeric economic forecast or a second stock call." },
+        { question: "What does this META page refuse to rank?", answer: "It does not name a single largest threat for a future year, and it does not publish a separate reading. The stock read is the shared thesis." },
       ]}
       internalLinks={[
         { label: "NVDA SIGNAL", href: "/stock/nvda", desc: "NVIDIA — META's primary GPU supplier." },
         { label: "PLTR SIGNAL", href: "/stock/pltr", desc: "Palantir AI software signal analysis." },
         { label: "AI STOCKS DASHBOARD", href: "/ai-stocks-dashboard", desc: "All AI-exposed stocks in one dashboard." },
-        { label: "RECESSION RISK CONTEXT", href: "/recession-probability", desc: "Recession risk that could compress META's ad revenue." },
+        { label: "ECONOMIC BACKDROP", href: "/recession-probability", desc: "Background reading on economic slowdowns. This page does not publish an economic forecast." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy impact on META's valuation multiple." },
         { label: "STOCK SIGNALS", href: "/signals", desc: "All FAULTLINE stock signals in one view." },
       ]}

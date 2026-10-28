@@ -3,6 +3,15 @@
  * Fail closed on missing/non-finite/stale observations. Genuine zeros remain zeros.
  * Does not author Champion Pressure or FMOS scores.
  */
+import { REGIME_HIGHER, REGIME_LOWER } from "./surfaceClaims";
+
+function isHigherAppetite(status: string | null | undefined): boolean {
+  return status === "higher-risk appetite" || status === REGIME_HIGHER;
+}
+
+function isLowerAppetite(status: string | null | undefined): boolean {
+  return status === "lower-risk appetite" || status === REGIME_LOWER;
+}
 
 export type MarketsFreshness =
   | "LIVE"
@@ -91,8 +100,8 @@ export function rutSpxCommentary(spread: number | null, live = true): string | n
 }
 
 export type OverlayTone =
-  | "risk-on"
-  | "risk-off"
+  | "higher-risk appetite"
+  | "lower-risk appetite"
   | "mixed"
   | "unavailable"
   | "positive"
@@ -113,10 +122,10 @@ export function overlayLabel(value: string | null | undefined): string {
 }
 
 export function usEquityRead(status: string | null | undefined): string | null {
-  if (status === "risk-on") {
+  if (isHigherAppetite(status)) {
     return "U.S. equity markets are broadly positive, with most major indices advancing.";
   }
-  if (status === "risk-off") {
+  if (isLowerAppetite(status)) {
     return "U.S. equity markets are under pressure, with broad-based selling across major indices.";
   }
   if (status === "mixed") {
@@ -133,11 +142,11 @@ export function relationshipRead(
   presentFallback = "Unavailable",
 ): string {
   if (!left || left === "unavailable" || !right || right === "unavailable") return "Unavailable";
-  if (left === "strengthening" && right === "risk-on") return divergent;
-  if (left === "weakening" && right === "risk-on") return aligned;
-  if (left === "rising" && right === "risk-on") return divergent;
-  if (left === "falling" && right === "risk-on") return aligned;
-  if (left === "positive" && right === "risk-on") return aligned;
-  if (left === "negative" && right === "risk-on") return divergent;
+  if (left === "strengthening" && isHigherAppetite(right)) return divergent;
+  if (left === "weakening" && isHigherAppetite(right)) return aligned;
+  if (left === "rising" && isHigherAppetite(right)) return divergent;
+  if (left === "falling" && isHigherAppetite(right)) return aligned;
+  if (left === "positive" && isHigherAppetite(right)) return aligned;
+  if (left === "negative" && isHigherAppetite(right)) return divergent;
   return presentFallback;
 }

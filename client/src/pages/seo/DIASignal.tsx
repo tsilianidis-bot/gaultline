@@ -58,7 +58,7 @@ export default function DIASignal() {
         },
         {
           question: "Is FAULTLINE's DIA outlook financial advice?",
-          answer: "No, FAULTLINE provides market intelligence and educational insights only. Our analysis of DIA is not personalized financial advice, nor is it a recommendation to buy, sell, or hold any security. Users should conduct their own due diligence and consult with a financial professional.",
+          answer: "No, FAULTLINE provides market intelligence and educational insights only. Our analysis of DIA is not personalized financial advice, nor is it a recommendation to transact in any security. Users should conduct their own due diligence and consult with a financial professional.",
         },
         {
           question: "How often is the DIA outlook updated on FAULTLINE?",

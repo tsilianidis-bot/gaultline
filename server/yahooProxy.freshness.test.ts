@@ -24,8 +24,10 @@ describe("Yahoo observation freshness", () => {
     expect(classifyYahooObservation(quote({ marketState: "CLOSED", observedAt: NOW - 12 * 60 * 60_000 }), NOW)).toMatchObject({ timing: "completed_session", supportsCurrentClaim: false });
   });
 
-  it("fails closed for stale or timestamp-missing observations", () => {
+  it("fails closed for stale, future, or timestamp-missing observations", () => {
     expect(classifyYahooObservation(quote({ observedAt: NOW - 25 * 60_000 }), NOW)).toMatchObject({ timing: "stale", supportsCurrentClaim: false });
+    expect(classifyYahooObservation(quote({ observedAt: NOW + 1_000 }), NOW)).toMatchObject({ timing: "unavailable", supportsCurrentClaim: false });
+    expect(classifyYahooObservation(quote({ observedAt: NOW + 1_000 }), NOW).timing).not.toBe("delayed");
     expect(classifyYahooObservation(quote({ observedAt: null }), NOW)).toMatchObject({ timing: "unavailable", supportsCurrentClaim: false });
   });
 });

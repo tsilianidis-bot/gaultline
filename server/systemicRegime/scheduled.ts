@@ -13,6 +13,8 @@ import { getCurrentGovernedEarlyWarningPresentation } from "../earlyWarningPrese
 import { computeSignalConvergence } from "./signalConvergence";
 import { persistApprovedModelRegistry, persistSignalConvergence, persistSystemicRegimeHistory, persistSystemicRegimeReading, restoreApprovedModelFromDb, ensureSystemicRegimeTables } from "./writer";
 import type { SystemicRegimeHistoryPoint, SystemicRegimeReading } from "../../shared/systemicRegime";
+import { easternSessionStamp, nyseSeismographRunWindow, seismographFreshForInfer } from "../../shared/nyseSession";
+import { scheduledSessionClaimPresence } from "../scheduledSessionClaim";
 
 const QUANT_DIR = resolve(process.cwd(), "quant/systemic-regime");
 const ARTIFACT_DIR = resolve(QUANT_DIR, "artifacts");
@@ -78,6 +80,19 @@ export async function runSystemicRegimeInferenceJob(): Promise<Record<string, un
   const persisted = await persistSystemicRegimeReading(reading, "LIVE_INFERENCE");
   const canonical = await getAuthoritativeCanonicalIntelligenceState();
   const seismograph = await memoryGetJson<SeismographOutput | null>("seismograph:latest_output", null);
+  const fresh = seismographFreshForInfer(seismograph?.computedAt, new Date());
+  if (!fresh || !seismograph) {
+    return {
+      ok: true,
+      persisted,
+      regime: reading.currentRegime,
+      dataAsOf: reading.dataAsOf,
+      convergence: null,
+      seismographFreshness: "stale_or_missing",
+      skippedConvergence: "seismograph_not_from_current_post_close_session",
+      alert: true,
+    };
+  }
   const synthesis = await getAuthoritativeCrossEngineSynthesis();
   const earlyWarning = await getCurrentGovernedEarlyWarningPresentation();
   const convergence = computeSignalConvergence({
@@ -88,7 +103,16 @@ export async function runSystemicRegimeInferenceJob(): Promise<Record<string, un
     systemicRegime: reading,
   });
   await persistSignalConvergence(convergence);
-  return { ok: true, persisted, regime: reading.currentRegime, dataAsOf: reading.dataAsOf, convergence: convergence.level };
+  return {
+    ok: true,
+    persisted,
+    regime: reading.currentRegime,
+    dataAsOf: reading.dataAsOf,
+    convergence: convergence.level,
+    seismographFreshness: "current_session",
+    skippedConvergence: null,
+    alert: false,
+  };
 }
 
 export async function runSystemicRegimeTrainJob(): Promise<Record<string, unknown>> {
@@ -121,9 +145,61 @@ export async function ingestPackagedResearchHistory(): Promise<number> {
   return persistSystemicRegimeHistory(points, "sre-hmm2-v1.0.0", "gaussian-hmm-2state");
 }
 
+export function inferScheduleDecision(
+  now: Date,
+  claimCompleted: boolean | null,
+): { status: 200 | 409; body: Record<string, unknown> } | null {
+  const window = nyseSeismographRunWindow(now);
+  if (window.session === "CLOSED") {
+    return {
+      status: 200,
+      body: {
+        ok: true,
+        alert: false,
+        skipped: "nyse_closed",
+        session: window.session,
+        etDate: window.etDate,
+        reason: window.reason,
+      },
+    };
+  }
+  const stamp = easternSessionStamp(now);
+  const afterWindow = stamp != null && stamp.minuteOfDay >= 16 * 60 + 45;
+  if (afterWindow && claimCompleted === false) {
+    return {
+      status: 409,
+      body: {
+        ok: false,
+        alert: true,
+        skipped: "missed_scheduled_run",
+        session: window.session,
+        etDate: window.etDate,
+        reason: "The post-close window has passed and this session has no completed seismograph claim.",
+      },
+    };
+  }
+  return null;
+}
+
 export async function handleScheduledSystemicRegimeInfer(_req: Request, res: Response): Promise<void> {
   try {
+    const now = new Date();
+    const window = nyseSeismographRunWindow(now);
+    const presence = window.etDate ? await scheduledSessionClaimPresence(window.etDate) : "unavailable";
+    const claimCompleted = presence === "unavailable" ? null : presence === "completed";
+    const decision = inferScheduleDecision(now, claimCompleted);
+    if (decision) {
+      if (decision.body.skipped === "nyse_closed" || decision.body.skipped === "missed_scheduled_run") {
+        console.log(`[SystemicRegime][SCHEDULE-HEARTBEAT] ${JSON.stringify({ ...decision.body, at: now.toISOString() })}`);
+      }
+      res.status(decision.status).json(decision.body);
+      return;
+    }
     const result = await runSystemicRegimeInferenceJob();
+    if (result.skippedConvergence) {
+      res.status(409).json(result);
+      return;
+    }
     res.json(result);
   } catch (error) {
     log.error("[SystemicRegime] Infer job failed", { err: error as Error });

@@ -254,7 +254,7 @@ describe("QA r10 B2 — X posts carry no invented bull / crash probability", () 
     expect(prompt).not.toContain(`~${Math.round(pressure.overallPressure * 0.6)}%`);
     expect(prompt).not.toContain(`~${Math.round(100 - pressure.overallPressure)}%`);
     expect(prompt).not.toMatch(/bull probability, crash\/risk-off probability|bull\/crash probabilities|vectors and probabilities/);
-    expect(prompt).toContain("FAULTLINE does not offer a crash probability, does not offer a recession probability");
+    expect(prompt).toContain("FAULTLINE does not offer a market-event percentage, does not offer a recession probability");
     expect(prompt).toContain("NEVER state a probability");
     const src = read("server/xPostGenerator.ts");
     expect(src).not.toMatch(/overallPressure \* 0\.6|100 - pressure\.overallPressure/);
@@ -330,7 +330,8 @@ describe("QA r10 — uncalibrated % strings (FMOS, adapters, daily brief)", () =
   const probability = { bull: 43, neutral: 43, bear: 14, primaryDriver: "Credit", bullEvidence: [], bearEvidence: [] } as any;
   it("FMOS quick interpretation headline and prompt carry no bull / bear %", () => {
     const quick = computeQuickInterpretation({ overallPressure: 33 } as any, { currentRegime: "MODERATE RISK" } as any, probability, { verdict: "HOLD", primaryReason: "r", positionSizing: "p" } as any);
-    expect(quick.headline).toBe("MODERATE RISK — HOLD");
+    expect(quick.headline).toBe("Pressure Index is 33/100. Regime label is MODERATE RISK.");
+    expect(quick.headline).not.toMatch(/\bHOLD\b/);
     const src = read("server/fmos/engines/aiInterpretation.ts");
     expect(src).not.toMatch(/Bull \$\{probability\.bull\}%|transitionProbability30d\}%|\$\{probability\.bull\}% bull/);
     expect(src).toContain("**Scenario weights:** uncalibrated (not offered as probabilities)");
@@ -371,7 +372,7 @@ describe("QA r10 — confirm list copy in #60-owned files", () => {
     expect(read("client/src/components/MarketPreflight.tsx")).toContain('`Recession risk: ${engineProbabilityText(output, "recessionProbability")} (no governed recession model)`,');
     const seis = read("client/src/pages/SeismographIntelligence.tsx");
     expect(seis).not.toMatch(/(?:[Rr]ecession|[Cc]rash|[Bb]ull) probability \$\{pctOrNotOffered/);
-    expect(seis).toContain("FAULTLINE does not offer a crash probability and does not offer a recession probability: no governed model produces one.");
+    expect(seis).toContain("FAULTLINE does not publish a market-event percentage: no governed model produces one.");
     expect(read("server/tradePreflight.ts")).not.toContain("Recession probability increase");
     expect(read("client/src/components/OnboardingFlow.tsx")).toContain('{ label: "Pressure", value: "68/100", sub: "Example value, not live", color: "#FF9500" },');
   });

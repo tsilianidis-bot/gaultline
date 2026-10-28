@@ -174,7 +174,7 @@ export function FaultlineInterpretation() {
     liquidityDelta === "building" ? "Liquidity Tightening" : "Liquidity Stable";
 
   // Build dynamic narrative paragraphs
-  const para1 = `Overall, FAULTLINE is showing ${regimeLabel.toLowerCase()} systemic risk. The current Pressure Index is ${Math.round(pressureScore * 10)}/100, placing the market in a ${regimeLabel} regime. Bull scenario status: ${bullText} (not a calibrated probability). Crash status: ${crashText} — FAULTLINE has no governed crash model and does not imply a crash probability.`;
+  const para1 = `Overall, FAULTLINE is showing ${regimeLabel.toLowerCase()} systemic risk. The current Pressure Index is ${Math.round(pressureScore * 10)}/100, placing the market in a ${regimeLabel} regime. Bull scenario status: ${bullText} (not a calibrated probability). Crash status: ${crashText} — FAULTLINE has no governed crash model and does not imply a market-event percentage.`;
 
   const para2 = `The strongest warning is not broad recession pressure. The main risk is ${aiBubbleDomain?.label ?? "speculative concentration"}, scoring ${aiBubbleDomain ? Math.round(aiBubbleDomain.score * 10) : "—"}/100.${aiConcentration > 25 ? ` The model's AI/mega-cap concentration input is a static baseline of ${aiConcentration.toFixed(1)}% of the S&P 500, not a live measurement.` : ""}${closestAnalog ? ` The closest historical analog is the ${closestAnalog.era} (${closestAnalog.year}), with a ${closestAnalog.similarity}% similarity score.` : ""}`;
 
@@ -203,7 +203,7 @@ export function FaultlineInterpretation() {
   const para3 = allTrendsUnavailable
     ? `Domain trends versus the prior reading are unavailable, so no domain is described as easing, building or stable. The level of stress is the ${regimeLabel} regime above.`
     : easingZones.length > 0
-    ? `Several major stress areas are easing, including ${easingZones.join(", ")}. This means the system is not currently confirming a broad liquidity collapse — risk-on assets may still have room to move.`
+    ? `Several major stress areas are easing, including ${easingZones.join(", ")}. This is a trend versus the prior reading. It is not a forecast and it is not an instruction.`
     : `No domain is showing an easing trend versus the prior reading. This is a trend statement only; the level of stress is the ${regimeLabel} regime above.`;
 
   const para4 = dangerZones.length > 0
@@ -214,16 +214,16 @@ export function FaultlineInterpretation() {
 
   // Takeaway card content — dynamically adapted to regime
   const cleanReadTitle = fragile
-    ? "High systemic pressure — defensive posture warranted"
+    ? "High systemic pressure"
     : "Not a 'crash now' signal";
 
   const cleanReadBody = fragile
-    ? `Systemic pressure is in the high band. The market is showing structural fragility. Reduce exposure to high-beta and speculative names.`
-    : `This is not a "crash now" signal. It is a "market is vulnerable if ${aiBubbleDomain?.label ?? "the AI trade"} cracks, credit worsens, or liquidity reverses" signal.`;
+    ? `Systemic pressure is in the high band. The market is showing structural fragility. Freshness is the timestamp on this reading. The band is not a forecast and it is not an instruction.`
+    : `This reading does not publish a market-event percentage. It says the market is vulnerable if ${aiBubbleDomain?.label ?? "the AI trade"} cracks, credit worsens, or liquidity reverses.`;
 
   const guidanceBody = constructive
-    ? "Stay invested selectively, but do not ignore risk. Favor stronger assets, avoid chasing weak speculative names, monitor AI concentration, watch credit spreads, track liquidity, and be careful with high-beta stocks that depend on cheap money."
-    : "Reduce speculative exposure. Favor quality, cash-flow positive assets. Watch credit spreads and liquidity conditions closely. Avoid adding risk until the regime clarifies.";
+    ? "The reading is mixed. Watch AI concentration, credit spreads, and liquidity. This is not an instruction."
+    : "Speculative names are in a higher-stress reading. Watch credit spreads and liquidity. This is not an instruction.";
 
   const mostImportantBody = `The market can ${constructive ? "keep climbing" : "stabilize"}, but the foundation is fragile. The biggest risk is ${aiBubbleDomain?.label ?? "an AI/mega-cap unwind"}, not a traditional recession shock right now.`;
 
@@ -300,7 +300,7 @@ export function FaultlineInterpretation() {
         <TakeawayCard
           label="◈ Guidance"
           labelColor="amber"
-          title={constructive ? "Stay invested, stay selective" : "Reduce risk exposure"}
+          title={`Pressure score on this card is ${pressureScore}. Risk-level label is ${overall.riskLevel}.`}
           body={guidanceBody}
         />
         <TakeawayCard

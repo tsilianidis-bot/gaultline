@@ -66,6 +66,9 @@ describe("Signal Visual Analysis adapter", () => {
     expect(detail.bars).toEqual(completedBars);
     expect(detail.signal).not.toBeNull();
     expect(detail.signal?.ticker).toBe("AAPL");
+    expect(detail.signal).not.toHaveProperty("action");
+    expect(JSON.stringify(detail.signal)).not.toMatch(/\b(?:BUY|SELL|HOLD|STRONG BUY)\b/);
+    expect(detail.signal && "direction" in detail.signal).toBe(true);
     expect(detail.signal?.priceLevels).toMatchObject({
       support: expect.any(Number),
       resistance: expect.any(Number),

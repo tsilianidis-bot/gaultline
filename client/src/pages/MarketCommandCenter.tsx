@@ -144,9 +144,9 @@ function SmartDiscovery() {
 
   const QUICK_ACTIONS = [
     { label: "Best swing trades", query: "What are the best swing trades right now?" },
-    { label: "Should I buy NVDA?", query: "Should I buy NVDA?" },
+    { label: "NVDA pressure reading", query: "What is the NVDA pressure reading?" },
     { label: "What are institutions buying?", query: "What are institutions buying right now?" },
-    { label: "Best AI stocks", query: "What are the best AI stocks to buy right now?" },
+    { label: "AI pressure reading", query: "What is the pressure reading for AI stocks?" },
     { label: "Bitcoin risk", query: "What is the risk level for Bitcoin right now?" },
     { label: "Today's market verdict", query: "What is today's market verdict and regime?" },
   ];
@@ -235,21 +235,19 @@ function TodaysStoryPanel({ regime, domains, probability, analogs }: {
   const story = useMemo(() => {
     const threatLabel = topThreat?.label ?? "Unknown";
     const stabLabel = topStabilizer?.label ?? "Unknown";
-    const bull = probability.bullProbability;
-    const crash = probability.crashProbability;
     const analogText = topAnalog ? `The closest historical analog is ${topAnalog.era} (${topAnalog.similarity}% match).` : "";
 
     let opening = "";
     if (regime.label.toLowerCase().includes("risk") || regime.label.toLowerCase().includes("stress") || regime.label.toLowerCase().includes("crisis")) {
       opening = `Markets are operating under elevated systemic pressure. The ${regime.label} regime is active, with ${threatLabel} driving the primary stress vector.`;
     } else if (regime.label.toLowerCase().includes("bull") || regime.label.toLowerCase().includes("expansion")) {
-      opening = `Conditions favor risk-taking. The ${regime.label} regime is active, with ${stabLabel} providing the strongest structural support.`;
+      opening = `The ${regime.label} regime is active, with ${stabLabel} the lowest-stress domain on this card. This is a reading, not an instruction.`;
     } else {
       opening = `Markets are in a mixed regime. The ${regime.label} environment requires selectivity — not all opportunities are equal.`;
     }
 
-    const middle = `Bull probability stands at ${bull}%, with crash risk at ${crash}%. ${threatLabel} remains the highest-pressure domain at ${topThreat?.score?.toFixed(1) ?? "—"}/10. ${analogText}`;
-    const action = crash > 50 ? "Prioritize capital preservation. Reduce leverage and avoid new speculative positions." : bull > 60 ? "Momentum window is open. Focus on high-conviction breakouts with defined risk." : "Remain selective. Favor setups with asymmetric reward-to-risk and clear invalidation levels.";
+    const middle = `No market-event percentage is published. ${threatLabel} remains the highest-pressure domain at ${topThreat?.score?.toFixed(1) ?? "—"}/10. ${analogText} Freshness is the timestamp on this card.`;
+    const action = "No position plan is published. Read the pressure band and the domains above.";
 
     return { opening, middle, action };
   }, [regime, topThreat, topStabilizer, probability, topAnalog]);
@@ -326,7 +324,7 @@ function MarketCommandCenterInner() {
   const regimeAttr = riskLevel === "low" ? "bullish" : riskLevel === "moderate" ? "moderate" : riskLevel === "elevated" ? "elevated" : "crisis";
 
   // Verdict
-  const verdict = riskLevel === "low" ? "RISK ON" : riskLevel === "moderate" ? "STAY SELECTIVE" : riskLevel === "elevated" ? "REDUCE EXPOSURE" : "STEP ASIDE";
+  const verdict = riskLevel === "low" ? "Lowest pressure band" : riskLevel === "moderate" ? "Moderate pressure band" : riskLevel === "elevated" ? "Elevated pressure band" : "Highest stress band";
   const verdictColor = getVerdictColor(riskLevel);
 
   // ── 8 Regime indicator pills ──────────────────────────────
@@ -335,7 +333,7 @@ function MarketCommandCenterInner() {
       label: "MARKET VERDICT",
       value: verdict,
       color: verdictColor,
-      sub: riskLevel === "low" ? "Risk-on window open" : riskLevel === "moderate" ? "High-conviction only" : riskLevel === "elevated" ? "Trim & protect" : "Capital preservation",
+      sub: "Not a forecast. Not an instruction.",
       href: CANONICAL_DESTINATION_BY_ID.act.path,
     },
     {
@@ -382,9 +380,9 @@ function MarketCommandCenterInner() {
     },
     {
       label: "INST. RISK METER",
-      value: overall.score > 7 ? "RISK-OFF" : overall.score > 5 ? "CAUTIOUS" : overall.score > 3 ? "NEUTRAL" : "RISK-ON",
+      value: overall.score > 7 ? "Highest stress band" : overall.score > 5 ? "Elevated pressure band" : overall.score > 3 ? "Moderate pressure band" : "Lowest pressure band",
       color: overall.score > 7 ? "#FF2D55" : overall.score > 5 ? "#FF9500" : overall.score > 3 ? "#00D4FF" : "#00FF88",
-      sub: `Bull ${probability.bullProbability}% · Bear ${probability.crashProbability}%`,
+      sub: "Market-event percentages are not published.",
       href: "/app/market-intelligence",
     },
   ], [overall, riskLevel, verdict, verdictColor, aiDomain, cryptoDomain, creditDomain, liquidityDomain, probability]);
@@ -405,8 +403,8 @@ function MarketCommandCenterInner() {
       },
       {
         label: "HIGHEST CONVICTION CRYPTO",
-        value: riskLevel === "low" ? "BTC / ETH" : riskLevel === "moderate" ? "BTC ONLY" : "AVOID",
-        sub: riskLevel === "low" ? "Risk-on crypto rotation active" : riskLevel === "moderate" ? "Bitcoin as digital gold" : "Crypto risk elevated",
+        value: riskLevel === "low" ? "Broad crypto reading" : riskLevel === "moderate" ? "Bitcoin reading" : "Not published",
+        sub: riskLevel === "low" ? "Higher-risk appetite crypto reading" : riskLevel === "moderate" ? "Bitcoin is the only name on this card" : "Crypto stress is elevated",
         color: riskLevel === "low" ? "#F7931A" : riskLevel === "moderate" ? "#F7931A" : "#FF2D55",
         href: "/app/crypto",
         icon: Bitcoin,
@@ -440,11 +438,11 @@ function MarketCommandCenterInner() {
       {
         label: "MOST DANGEROUS ASSET",
         value: riskLevel === "critical" ? "LEVERAGED ETFs" : riskLevel === "elevated" ? "SMALL CAPS" : riskLevel === "moderate" ? "MEMECOINS" : "NONE",
-        sub: riskLevel === "critical" ? "Avoid 2x/3x exposure" : riskLevel === "elevated" ? "High beta underperforming" : riskLevel === "moderate" ? "Speculative risk elevated" : "Risk environment benign",
+        sub: riskLevel === "critical" ? "Leveraged products are in a higher-stress reading" : riskLevel === "elevated" ? "High beta underperforming" : riskLevel === "moderate" ? "Speculative risk elevated" : "Risk environment benign",
         color: "#FF2D55",
         href: "/app/pressure",
         icon: AlertTriangle,
-        badge: "AVOID",
+        badge: "READING",
       },
       {
         label: "MOST UNDERVALUED",

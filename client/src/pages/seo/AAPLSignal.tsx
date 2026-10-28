@@ -25,7 +25,7 @@ export default function AAPLSignal() {
       contentSections={[
         {
           heading: "Understanding FAULTLINE's AAPL Stock Signal",
-          body: `FAULTLINE's Apple (AAPL) signal is computed from daily price data together with the current Pressure Index reading, its vectors, and the regime band, and it is recalculated as new data is published. It does not ingest earnings, analyst estimates, fundamentals, or company news. It's a tool for understanding market dynamics, not a recommendation to buy or sell. Investors should always conduct their own due diligence and consider their personal financial situation.`,
+          body: `FAULTLINE's Apple (AAPL) signal is computed from daily price data together with the current Pressure Index reading, its vectors, and the regime band, and it is recalculated as new data is published. It does not ingest earnings, analyst estimates, fundamentals, or company news. It's a tool for understanding market dynamics, not a recommendation to transact. Investors should always conduct their own due diligence and consider their personal financial situation.`,
         },
         {
           heading: "Macro Sensitivity and Apple's Performance",
@@ -37,7 +37,7 @@ export default function AAPLSignal() {
         },
         {
           heading: "Key Risk Factors and Outlook Modifiers for AAPL",
-          body: `Investing in any stock, including Apple, involves inherent risks. Key risks specific to AAPL include supply chain disruptions, regulatory scrutiny (antitrust, privacy), intense competition across product segments, and shifts in consumer preferences. A product failure, a major data breach, or an unexpected downturn in iPhone sales could weigh on the stock; strong earnings, successful entry into new markets, or technological breakthroughs could help it. These are context for reading the signal; FAULTLINE does not ingest company-specific news or earnings data.`,
+          body: `Investing in any stock, including Apple, involves inherent risks. Key risks specific to AAPL include supply chain disruptions, regulatory scrutiny (antitrust, privacy), intense competition across product segments, and shifts in consumer preferences. A product failure, a major data breach, or an unexpected downturn in iPhone sales could weigh on the stock; strong earnings, successful expansion into new markets, or technological breakthroughs could help it. These are context for reading the signal; FAULTLINE does not ingest company-specific news or earnings data.`,
         },
       ]}
       faqs={[

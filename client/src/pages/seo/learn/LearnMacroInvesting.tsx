@@ -42,7 +42,7 @@ const LearnMacroInvesting = () => {
         },
         {
           heading: "Common Misconceptions in Macro Analysis",
-          body: `Many investors misunderstand macro investing by either oversimplifying it or getting lost in its complexity. A common pitfall is focusing on single indicators in isolation, like a single jobs report, without considering the broader context or conflicting signals. Another mistake is believing that macro events are always predictable or that historical patterns will repeat exactly. The reality is that macro analysis requires synthesizing diverse data points, understanding interdependencies, and recognizing that economic systems are dynamic and non-linear. Investors often struggle with identifying 'what changed' in the current environment versus past cycles, leading to misjudgments. FAULTLINE helps cut through this noise, providing a structured framework to avoid these common analytical traps.`, 
+          body: `Many investors misunderstand macro investing by either oversimplifying it or getting lost in its complexity. A common pitfall is focusing on single indicators in isolation, like a single jobs report, without considering the broader context or conflicting signals. Another mistake is believing that macro events are always predictable or that historical patterns will repeat exactly. The reality is that macro analysis requires synthesizing diverse data points, understanding interdependencies, and recognizing that economic systems are dynamic and non-linear. Investors often struggle with identifying 'what changed' in the current environment versus past cycles, leading to misjudgments. FAULTLINE helps cut through this noise, providing a structured framework that names these common analytical traps.`, 
         },
         {
           heading: "How FAULTLINE Measures Macro Conditions",
@@ -50,7 +50,7 @@ const LearnMacroInvesting = () => {
         },
         {
           heading: "Important Disclaimer",
-          body: `FAULTLINE provides market intelligence and educational content for informational purposes only. It is not intended as, and does not constitute, personalized financial advice, investment recommendations, or an offer to buy or sell any securities. Investing involves risk, and past performance is not indicative of future results. Always consult with a qualified financial professional before making any investment decisions.`, 
+          body: `FAULTLINE provides market intelligence and educational content for informational purposes only. It is not personalized financial advice and it does not offer a position to take. Investing involves risk, and past performance is not indicative of future results. A qualified financial professional is the place for a personal decision.`, 
         },
       ]}
       faqs={[

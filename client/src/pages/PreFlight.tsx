@@ -897,7 +897,7 @@ function PreFlightInner() {
               color: "#444",
               lineHeight: 1.7,
             }}>
-              <strong style={{ color: "#555" }}>DISCLAIMER:</strong> FAULTLINE Pre-Flight is a market awareness tool for informational purposes only. It does not constitute investment advice, financial advice, or a recommendation to buy or sell any security. All data is derived from publicly available macroeconomic indicators and algorithmic models. Past market conditions are not predictive of future outcomes. Always consult a qualified financial professional before making investment decisions.
+              <strong style={{ color: "#555" }}>DISCLAIMER:</strong> FAULTLINE Pre-Flight is a market awareness tool for informational purposes only. It does not constitute investment advice, financial advice, or a recommendation to transact any security. All data is derived from publicly available macroeconomic indicators and algorithmic models. Past market conditions are not predictive of future outcomes. Always consult a qualified financial professional before making investment decisions.
             </div>
           </>
         )}

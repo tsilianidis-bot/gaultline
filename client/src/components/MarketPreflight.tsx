@@ -237,7 +237,7 @@ function buildMarketScenarios(output: EngineOutput, degraded: boolean, canonical
     },
     {
       id: "bearish",
-      label: "Bearish / Risk-Off",
+      label: "Bearish / Lower appetite",
       confidence: bearConf,
       color: confColor(bearConf),
       description: "Risk conditions deteriorate. Pressure readings rise. Defensive positioning becomes more relevant.",

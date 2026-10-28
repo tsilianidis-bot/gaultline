@@ -11,6 +11,7 @@ import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { useCallback } from "react";
 import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
+import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 
 // ── Per-symbol enrichment data ─────────────────────────────────────────────
 interface SymbolData {
@@ -38,11 +39,11 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     relatedSymbols: ["amd", "msft", "meta", "pltr"],
     relatedCrypto: ["tao"],
     faqs: [
-      { q: "Is NVDA a buy right now?", a: "FAULTLINE evaluates NVDA through a macro regime lens. In bull regimes with low systemic pressure, NVDA tends to outperform. In elevated-pressure or crash regimes, NVDA's high beta amplifies drawdowns. Always check the current regime before entering." },
-      { q: "What is NVDA's AI risk score?", a: "FAULTLINE's AI risk score for NVDA incorporates valuation multiples, AI concentration exposure, momentum regime, and systemic market pressure. High AI concentration scores indicate elevated bubble risk." },
-      { q: "How does NVDA perform in a market crash?", a: "NVDA is a high-beta AI-concentrated stock. In the 2022 bear market, NVDA experienced a drawdown of 60–70%. FAULTLINE's Market Crash Risk 2026 context is one input for judging NVDA's exposure to a systemic sell-off." },
-      { q: "What are the key risks for NVDA?", a: "The primary risks are: AI capex cycle deceleration, China export restrictions reducing addressable market, custom ASIC competition from hyperscalers, and valuation compression if growth slows." },
-      { q: "How does FAULTLINE track NVDA?", a: "FAULTLINE monitors NVDA's momentum score, macro regime fit, AI bubble exposure, and systemic risk alignment. Signals are updated daily and classified as Bullish, Neutral, or Risk-Off." },
+      { q: "What does the NVDA page show?", a: "The live NVDA read is the shared Pentagonal Thesis on this page. It separates observed inputs from gaps. It does not answer whether NVDA should be bought or sold." },
+      { q: "Does FAULTLINE assign NVDA a trade classification?", a: "No. This page does not classify NVDA as bullish, neutral, or lower-risk appetite, and it does not publish a confidence percentage." },
+      { q: "Where do price levels come from?", a: "Only a fresh completed-session range inside the shared thesis is shown. Static support and resistance figures are not published on this page." },
+      { q: "What are commonly discussed risks for NVDA?", a: "Company filings and news discuss AI capex cycles, export rules, competition, and valuation. Those topics are not drivers in the thesis unless a fresh sourced observation is attached." },
+      { q: "How does FAULTLINE read NVDA?", a: "The shared thesis uses the observations it actually has, such as a delayed quote and completed daily bars. Missing insider filings, a macro calendar, and sector rotation stay listed as gaps." },
     ],
   },
   pltr: {
@@ -50,17 +51,17 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     sector: "AI Software / Defense",
     description: "Palantir (PLTR) is an AI software platform company serving government and commercial clients. Its Foundry and AIP platforms provide AI-powered data analytics and decision intelligence for defense, intelligence agencies, and enterprise customers.",
     bullCase: "PLTR's government contracts provide revenue stability, while AIP commercial adoption is accelerating. The company is one of the few profitable AI software companies with a clear path to enterprise AI dominance.",
-    bearCase: "Extreme valuation multiples, heavy government dependency, slow commercial growth relative to expectations, and macro risk-off environments create significant downside risk.",
+    bearCase: "Extreme valuation multiples, heavy government dependency, slow commercial growth relative to expectations, and macro lower-risk appetite environments create significant downside risk.",
     keyLevels: "FAULTLINE does not publish price targets or support/resistance levels on this page.",
-    riskFactors: ["Extreme valuation multiples", "Government contract concentration", "Commercial growth deceleration", "Macro risk-off sensitivity", "Insider selling pressure"],
+    riskFactors: ["Extreme valuation multiples", "Government contract concentration", "Commercial growth deceleration", "Macro lower-risk appetite sensitivity", "Insider selling pressure"],
     relatedSymbols: ["nvda", "meta", "msft"],
     relatedCrypto: [],
     faqs: [
-      { q: "Is PLTR a good investment?", a: "PLTR's investment case depends heavily on macro regime. In bull regimes, PLTR's AI software narrative drives outperformance. In risk-off environments, its extreme valuation creates significant drawdown risk." },
+      { q: "Is PLTR a good investment?", a: "PLTR's investment case depends heavily on macro regime. In bull regimes, PLTR's AI software narrative drives outperformance. In lower-risk appetite environments, its extreme valuation creates significant drawdown risk." },
       { q: "What drives PLTR's stock price?", a: "PLTR is driven by AI sentiment, government contract wins, commercial revenue growth, and macro risk appetite. FAULTLINE tracks all four dimensions in its PLTR signal analysis." },
-      { q: "How risky is PLTR compared to other AI stocks?", a: "PLTR carries above-average risk due to its extreme valuation multiples and government revenue concentration. FAULTLINE's risk score reflects this elevated risk profile." },
+      { q: "How risky is PLTR compared to other AI stocks?", a: "PLTR's stored notes mention valuation multiples and government revenue concentration. This page does not turn that background into a separate reading. The live read is the shared thesis." },
       { q: "What is PLTR's bull case?", a: "The bull case is AIP commercial adoption accelerating to match government revenue, creating a durable AI software moat with improving margins and expanding TAM." },
-      { q: "What is PLTR's bear case?", a: "The bear case is valuation compression as commercial growth disappoints, combined with macro risk-off reducing appetite for high-multiple growth stocks." },
+      { q: "What is PLTR's bear case?", a: "The bear case is valuation compression as commercial growth disappoints, combined with macro lower-risk appetite reducing appetite for high-multiple growth stocks." },
     ],
   },
   tsla: {
@@ -75,7 +76,7 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     relatedCrypto: [],
     faqs: [
       { q: "Is TSLA still a growth stock?", a: "TSLA's growth narrative has shifted from pure EV to AI/robotics. The investment thesis now depends on FSD and Optimus execution, making it a higher-risk, higher-reward bet on AI hardware." },
-      { q: "How does TSLA perform in different market regimes?", a: "TSLA is highly sensitive to macro regime. In bull markets, it outperforms significantly. In risk-off environments, its high beta and speculative premium compress rapidly." },
+      { q: "How does TSLA perform in different market regimes?", a: "TSLA is highly sensitive to macro regime. In bull markets, it outperforms significantly. In lower-risk appetite environments, its high beta and speculative premium compress rapidly." },
       { q: "What is TSLA's biggest risk?", a: "The biggest risks are EV market share loss to BYD and other Chinese manufacturers, FSD regulatory delays, and CEO distraction from core business." },
       { q: "How does FAULTLINE track TSLA?", a: "FAULTLINE monitors TSLA's momentum score, macro regime fit, volatility risk, and systemic pressure alignment. Signals are updated daily." },
       { q: "What is TSLA's relationship to AI stocks?", a: "TSLA is increasingly classified as an AI hardware company due to FSD and Optimus. Its AI exposure creates correlation with NVDA and the broader AI complex during AI sentiment shifts." },
@@ -94,7 +95,7 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     faqs: [
       { q: "Is META a good AI stock?", a: "META is a strong AI beneficiary through improved ad targeting and Llama model development. Unlike pure-play AI stocks, META generates substantial cash flow that funds its AI investments." },
       { q: "What is META's AI strategy?", a: "META's AI strategy focuses on open-source Llama models, AI-powered ad targeting, AI assistants across its platforms, and AI infrastructure investment to reduce dependency on NVDA." },
-      { q: "How does META perform in market downturns?", a: "META is less volatile than pure-play AI stocks but still sensitive to macro risk-off environments. Its strong cash flow provides a buffer compared to unprofitable AI companies." },
+      { q: "How does META perform in market downturns?", a: "META is less volatile than pure-play AI stocks but still sensitive to macro lower-risk appetite environments. Its strong cash flow provides a buffer compared to unprofitable AI companies." },
       { q: "What are META's key risks?", a: "Key risks include regulatory action in the EU and US, Reality Labs losses, privacy regulation impacting ad targeting, and competition from TikTok and YouTube." },
       { q: "How does FAULTLINE track META?", a: "FAULTLINE monitors META's momentum score, AI exposure, macro regime fit, and systemic pressure alignment. Signals are updated daily." },
     ],
@@ -103,16 +104,16 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     name: "Advanced Micro Devices",
     sector: "AI Semiconductors",
     description: "AMD (AMD) is NVIDIA's primary competitor in AI GPUs and CPUs. AMD's MI300X GPU series targets AI training and inference workloads, while its EPYC CPU line dominates data center server deployments.",
-    bullCase: "AMD's MI300X gaining traction with hyperscalers as an alternative to NVDA. CPU market share gains from Intel. Open software ecosystem (ROCm) improving. Valuation more reasonable than NVDA.",
+    bullCase: "AMD publishes the MI300X GPU line and the EPYC CPU line.",
     bearCase: "NVDA's CUDA moat is extremely difficult to displace. AMD's AI GPU market share remains small. Software ecosystem maturity gap vs NVDA creates adoption friction.",
     keyLevels: "FAULTLINE does not publish price targets or support/resistance levels on this page.",
-    riskFactors: ["NVDA CUDA moat", "AI GPU market share concentration", "Software ecosystem gap", "Macro risk-off sensitivity", "Intel CPU competition recovery"],
+    riskFactors: ["NVDA CUDA moat", "AI GPU market share concentration", "Software ecosystem gap", "Macro lower-risk appetite sensitivity", "Intel CPU competition recovery"],
     relatedSymbols: ["nvda", "msft", "meta"],
     relatedCrypto: [],
     faqs: [
-      { q: "Is AMD a better buy than NVDA?", a: "AMD offers AI GPU exposure at a more reasonable valuation than NVDA, but with lower market share and a less mature software ecosystem. FAULTLINE tracks both for regime-aligned signal generation." },
+      { q: "What product lines does this AMD card list?", a: "This card lists AMD's MI300X GPU line and EPYC CPU line. It does not attach a valuation multiple." },
       { q: "Can AMD challenge NVIDIA in AI GPUs?", a: "AMD is making progress with MI300X adoption, but NVDA's CUDA ecosystem creates significant switching costs. AMD is best positioned as a second-source supplier rather than a primary replacement." },
-      { q: "How does AMD perform in different market regimes?", a: "AMD is highly correlated with NVDA and the broader AI semiconductor complex. In bull regimes, AMD benefits from AI sentiment. In risk-off environments, it experiences sharp drawdowns." },
+      { q: "How does AMD perform in different market regimes?", a: "AMD is highly correlated with NVDA and the broader AI semiconductor complex. In bull regimes, AMD benefits from AI sentiment. In lower-risk appetite environments, it experiences sharp drawdowns." },
       { q: "What is AMD's relationship to the AI bubble?", a: "AMD is a direct AI bubble exposure stock. FAULTLINE's AI bubble monitor tracks AMD's valuation and concentration risk alongside NVDA and the broader AI complex." },
       { q: "How does FAULTLINE track AMD?", a: "FAULTLINE monitors AMD's momentum score, AI chip exposure, macro regime fit, and systemic pressure alignment. Signals are updated daily." },
     ],
@@ -147,7 +148,7 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     relatedCrypto: [],
     faqs: [
       { q: "Is GOOGL threatened by AI?", a: "GOOGL faces a dual dynamic: AI threatens its core search revenue while also creating new opportunities through Google Cloud AI services and Gemini. FAULTLINE tracks both the threat and opportunity dimensions." },
-      { q: "How does GOOGL perform in different market regimes?", a: "GOOGL is less volatile than pure-play AI stocks due to its diversified revenue base. In risk-off environments, its advertising revenue sensitivity creates moderate headwinds." },
+      { q: "How does GOOGL perform in different market regimes?", a: "GOOGL is less volatile than pure-play AI stocks due to its diversified revenue base. In lower-risk appetite environments, its advertising revenue sensitivity creates moderate headwinds." },
       { q: "What is GOOGL's AI strategy?", a: "GOOGL's AI strategy centers on Gemini model integration across Search, Cloud, and Workspace, plus DeepMind research for breakthrough AI capabilities." },
       { q: "What are GOOGL's key risks?", a: "Key risks include AI-powered search disruption, antitrust regulatory actions, OpenAI/Microsoft competition in enterprise AI, and advertising revenue cyclicality." },
       { q: "How does FAULTLINE track GOOGL?", a: "FAULTLINE monitors GOOGL's momentum score, AI exposure, macro regime fit, and systemic pressure alignment. Signals are updated daily." },
@@ -183,7 +184,7 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     relatedCrypto: [],
     faqs: [
       { q: "Is AAPL a good AI stock?", a: "AAPL's AI story centers on Apple Intelligence integration driving device upgrade cycles and Services monetization. It's a lower-risk AI play compared to pure-play AI stocks." },
-      { q: "How does AAPL perform in market downturns?", a: "AAPL is one of the most defensive large-cap tech stocks due to its strong brand, cash flow, and buyback program. It typically outperforms in risk-off environments relative to high-beta AI stocks." },
+      { q: "How does AAPL perform in market downturns?", a: "AAPL is one of the most defensive large-cap tech stocks due to its strong brand, cash flow, and buyback program. It typically outperforms in lower-risk appetite environments relative to high-beta AI stocks." },
       { q: "What is Apple Intelligence?", a: "Apple Intelligence is Apple's AI platform integrating on-device AI processing, Siri improvements, and ChatGPT integration across iPhone, Mac, and iPad. FAULTLINE tracks its adoption impact on upgrade cycles." },
       { q: "What are AAPL's key risks?", a: "Key risks include iPhone growth maturation, China market exposure, AI feature differentiation challenges vs Android, and Services regulatory pressure in the EU." },
       { q: "How does FAULTLINE track AAPL?", a: "FAULTLINE monitors AAPL's momentum score, consumer tech exposure, macro regime fit, and systemic pressure alignment. Signals are updated daily." },
@@ -203,7 +204,7 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
       { q: "What does Arm Holdings do?", a: "Arm licenses CPU and GPU intellectual property to semiconductor companies. Its architecture powers virtually all smartphones and is expanding into AI data center chips." },
       { q: "Is ARM a good AI investment?", a: "ARM benefits from the AI chip buildout as its architecture is used in custom AI chips by Apple, Amazon, and Google. However, its extreme valuation creates significant downside risk." },
       { q: "What is RISC-V and how does it threaten ARM?", a: "RISC-V is an open-source CPU instruction set architecture that could reduce dependency on ARM licenses. FAULTLINE tracks RISC-V adoption as a key risk factor for ARM's royalty revenue." },
-      { q: "How does ARM perform in different market regimes?", a: "ARM is a high-beta semiconductor stock that amplifies AI sentiment moves. In bull regimes, it outperforms. In risk-off environments, its extreme valuation creates sharp drawdowns." },
+      { q: "How does ARM perform in different market regimes?", a: "ARM is a high-beta semiconductor stock that amplifies AI sentiment moves. In bull regimes, it outperforms. In lower-risk appetite environments, its extreme valuation creates sharp drawdowns." },
       { q: "How does FAULTLINE track ARM?", a: "FAULTLINE monitors ARM's momentum score, AI chip exposure, macro regime fit, and systemic pressure alignment. Signals are updated daily." },
     ],
   },
@@ -219,9 +220,9 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
     relatedCrypto: [],
     faqs: [
       { q: "What does SMCI do?", a: "SMCI manufactures complete AI server systems, including rack-scale solutions for hyperscalers deploying NVDA GPUs. It's a key infrastructure play in the AI data center buildout." },
-      { q: "What happened with SMCI's accounting issues?", a: "SMCI faced accounting irregularities and auditor changes that created significant uncertainty. FAULTLINE tracks SMCI's accounting risk as a key factor in its risk score." },
-      { q: "Is SMCI a good AI infrastructure play?", a: "SMCI offers direct AI data center exposure but with higher risk than NVDA due to accounting concerns, margin pressure, and competition. FAULTLINE's risk score reflects this elevated risk profile." },
-      { q: "How does SMCI perform in different market regimes?", a: "SMCI is one of the most volatile AI infrastructure stocks. In bull regimes, it can outperform significantly. In risk-off environments, its high beta and specific risks create sharp drawdowns." },
+      { q: "What happened with SMCI's accounting issues?", a: "SMCI faced accounting irregularities and auditor changes that created significant uncertainty. This page does not turn that history into a separate reading." },
+      { q: "Is SMCI a good AI infrastructure play?", a: "SMCI builds server systems used in data centers. Accounting concerns, margin pressure, and competition are background. This page does not publish a separate reading or a trade instruction." },
+      { q: "How does SMCI perform in different market regimes?", a: "SMCI is one of the most volatile AI infrastructure stocks. In bull regimes, it can outperform significantly. In lower-risk appetite environments, its high beta and specific risks create sharp drawdowns." },
       { q: "How does FAULTLINE track SMCI?", a: "FAULTLINE monitors SMCI's momentum score, AI infrastructure exposure, accounting risk, and systemic pressure alignment. Signals are updated daily." },
     ],
   },
@@ -242,23 +243,12 @@ function getSymbolData(symbol: string): SymbolData {
     relatedSymbols: ["nvda", "pltr", "tsla", "meta", "amd"],
     relatedCrypto: ["btc", "eth"],
     faqs: [
-      { q: `What is ${upper}'s current signal?`, a: `FAULTLINE generates daily signals for ${upper} based on macro regime, momentum, and systemic pressure. Sign up for FAULTLINE to access the current ${upper} signal.` },
-      { q: `How does ${upper} perform in different market regimes?`, a: `${upper}'s performance varies significantly across bull, bear, and crash regimes. FAULTLINE's regime tracker classifies current conditions to help you align ${upper} exposure appropriately.` },
-      { q: `What are the key risks for ${upper}?`, a: `Key risks include macro regime deterioration, systemic pressure elevation, sector rotation, and liquidity tightening. FAULTLINE monitors all four dimensions daily.` },
-      { q: `How does FAULTLINE track ${upper}?`, a: `FAULTLINE monitors ${upper}'s momentum score, macro regime fit, and systemic pressure alignment. Signals are updated daily and classified as Bullish, Neutral, or Risk-Off.` },
-      { q: `Should I buy ${upper} now?`, a: `FAULTLINE does not provide financial advice. We provide macro regime context, systemic risk scores, and signal intelligence to help you make informed decisions. Always check the current regime before entering any position.` },
+      { q: `What does the ${upper} page show?`, a: `The live ${upper} read is the shared Pentagonal Thesis on this page. It does not publish a separate trade instruction.` },
+      { q: `Does this page classify ${upper}?`, a: `No. The page does not label ${upper} bullish, neutral, or lower-risk appetite, and it does not publish a confidence percentage.` },
+      { q: `Where do price levels come from?`, a: `Only a fresh completed-session range inside the shared thesis is shown. This page does not invent key levels.` },
+      { q: `What is left out of the ${upper} read?`, a: `Insider filings, a macro-release calendar, and sector rotation are gaps unless a fresh sourced observation is attached. A gap is not treated as a driver.` },
     ],
   };
-}
-
-// ── Signal label color ─────────────────────────────────────────────────────
-function signalColor(label: string | null | undefined) {
-  if (!label) return "text-[#A8B8CC]";
-  const l = label.toUpperCase();
-  if (l === "BULLISH") return "text-emerald-400";
-  if (l === "BEARISH") return "text-red-400";
-  if (l === "WATCH") return "text-yellow-400";
-  return "text-[#A8B8CC]";
 }
 
 export default function DynamicStockPage() {
@@ -267,11 +257,7 @@ export default function DynamicStockPage() {
   const upper = symbol.toUpperCase();
   const data = getSymbolData(symbol);
 
-  // Live signal data from DB
-  const { data: liveSignal } = trpc.organicContent.getSignalPage.useQuery(
-    { symbol: upper },
-    { retry: false, staleTime: 5 * 60 * 1000 }
-  );
+  // Stored marketing copy is not a second stock conclusion. The thesis above is the read.
 
   // CTA click tracker
   const trackCta = trpc.organicContent.trackCtaClick.useMutation();
@@ -279,13 +265,19 @@ export default function DynamicStockPage() {
     trackCta.mutate({ pageSlug: `/stock/${symbol}`, ctaType });
   }, [symbol, trackCta]);
 
+  const displayFaqs: { q: string; a: string }[] = [
+    { q: `What does the ${upper} page show?`, a: `The live ${upper} read is the shared Pentagonal Thesis on this page. It does not publish a separate trade instruction.` },
+    { q: `Does this page classify ${upper}?`, a: `No. The page does not publish a directional classification or a confidence percentage.` },
+    { q: `Where do price levels come from?`, a: `Only a fresh completed-session range inside the shared thesis is shown. This page does not print a static support or resistance figure.` },
+    { q: `What is left out of the ${upper} read?`, a: `Insider filings, a macro-release calendar, and sector rotation are gaps unless a fresh sourced observation is attached. A gap is not treated as a driver.` },
+  ];
   const schemaData = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "Article",
-        "headline": `${upper} Signal — Stock Risk Score & Analysis | FAULTLINE`,
-        "description": `Regularly refreshed ${upper} signal analysis. FAULTLINE tracks ${upper} macro regime fit, momentum score, and volatility risk.`,
+        "headline": `${upper} — shared stock thesis | FAULTLINE`,
+        "description": `The ${upper} page shows the shared Pentagonal Thesis. It does not publish a trade instruction or a static price level.`,
         "author": { "@type": "Organization", "name": "FAULTLINE" },
         "publisher": { "@type": "Organization", "name": "FAULTLINE", "url": "https://getfaultline.live" },
         "url": `https://getfaultline.live/stock/${symbol}`,
@@ -293,21 +285,14 @@ export default function DynamicStockPage() {
       },
       {
         "@type": "FAQPage",
-        "mainEntity": (liveSignal?.faqJson ? JSON.parse(liveSignal.faqJson) : data.faqs).map((faq: { q?: string; a?: string; question?: string; answer?: string }) => ({
+        "mainEntity": displayFaqs.map(faq => ({
           "@type": "Question",
-          "name": faq.q ?? faq.question,
-          "acceptedAnswer": { "@type": "Answer", "text": faq.a ?? faq.answer },
+          "name": faq.q,
+          "acceptedAnswer": { "@type": "Answer", "text": faq.a },
         })),
       },
     ],
   };
-
-  const displayFaqs: { q: string; a: string }[] = liveSignal?.faqJson
-    ? JSON.parse(liveSignal.faqJson).map((f: { question?: string; answer?: string; q?: string; a?: string }) => ({
-        q: f.question ?? f.q ?? "",
-        a: f.answer ?? f.a ?? "",
-      }))
-    : data.faqs;
 
   return (
     <div className="min-h-screen bg-[#050608] text-white">
@@ -350,21 +335,11 @@ export default function DynamicStockPage() {
             {upper} Signal Analysis
           </h1>
           <p className="text-lg text-[#A8B8CC] leading-relaxed max-w-2xl">
-            Regularly refreshed {data.name} signal intelligence. FAULTLINE tracks {upper}'s macro regime fit, momentum score, and systemic risk alignment — updated daily.
+            The live {data.name} read is the shared Pentagonal Thesis below. Background copy is not a current price, level, or trade call.
           </p>
-          {liveSignal && (
-            <div className="flex items-center gap-4 mt-4">
-              <span className={`text-sm font-mono font-bold ${signalColor(liveSignal.signalLabel)}`}>
-                {liveSignal.signalLabel}
-              </span>
-              {/* Launch fix-up: the signal page confidenceScore is LLM-generated, not calibrated: no % shown. */}
-              {liveSignal.regime && (
-                <span className="text-[11px] font-mono text-[#64748B]">
-                  Regime: {liveSignal.regime}
-                </span>
-              )}
-            </div>
-          )}
+          <div className="mt-6">
+            <PentagonalThesisNarrative symbol={upper} surface="stock-page" />
+          </div>
         </div>
 
         {/* Current Signal CTA */}
@@ -373,7 +348,7 @@ export default function DynamicStockPage() {
             <div>
               <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-2">CURRENT SIGNAL</div>
               <p className="text-white font-semibold mb-1">Access the current {upper} signal</p>
-              <p className="text-[#A8B8CC] text-sm">Macro regime fit · Momentum score · Risk classification</p>
+              <p className="text-[#A8B8CC] text-sm">The shared thesis on this page is the stock read. It does not add a separate trade call.</p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <a href="/pricing" onClick={() => handleCtaClick("pricing")} className="text-[11px] font-mono tracking-widest text-[#A8B8CC] border border-white/20 hover:border-[#00D4FF]/40 px-4 py-2.5 rounded transition-colors">
@@ -389,49 +364,16 @@ export default function DynamicStockPage() {
         {/* Overview */}
         <section className="mb-12">
           <h2 className="text-2xl font-bold text-white mb-4">What is {data.name}?</h2>
-          <p className="text-[#A8B8CC] leading-relaxed">{data.description}</p>
+          <p className="text-[#A8B8CC] leading-relaxed">A company biography is not the current thesis. Price, volume, scenarios, and what to do come only from the shared Pentagonal Thesis above.</p>
         </section>
 
         {/* Live signal summary if available */}
-        {liveSignal?.signalSummary && (
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-4">Current {upper} Signal Summary</h2>
-            <div className="p-6 rounded-lg border border-[#00D4FF]/20 bg-[#00D4FF]/5">
-              <p className="text-[#A8B8CC] leading-relaxed">{liveSignal.signalSummary}</p>
-            </div>
-          </section>
-        )}
+        {/* Stored signal summaries are not a second stock conclusion. The thesis above is the read. */}
 
-        {/* Bull / Bear */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold text-white mb-6">{upper} Bull Case vs Bear Case</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-6 rounded-lg border border-emerald-500/20 bg-emerald-500/5">
-              <div className="text-[10px] font-mono tracking-widest text-emerald-400 mb-3">BULL CASE</div>
-              <p className="text-[#A8B8CC] text-sm leading-relaxed">{liveSignal?.bullishCase ?? data.bullCase}</p>
-            </div>
-            <div className="p-6 rounded-lg border border-red-500/20 bg-red-500/5">
-              <div className="text-[10px] font-mono tracking-widest text-red-400 mb-3">BEAR CASE</div>
-              <p className="text-[#A8B8CC] text-sm leading-relaxed">{liveSignal?.bearishCase ?? data.bearCase}</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Macro Risks */}
-        {liveSignal?.macroRisks && (
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-4">{upper} Macro Risk Analysis</h2>
-            <p className="text-[#A8B8CC] leading-relaxed">{liveSignal.macroRisks}</p>
-          </section>
-        )}
+        {/* Scenarios live in the shared thesis above. Static bull/bear copy is not rendered. */}
 
         {/* Catalyst Analysis */}
-        {liveSignal?.catalystAnalysis && (
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-4">{upper} Catalyst Analysis</h2>
-            <p className="text-[#A8B8CC] leading-relaxed">{liveSignal.catalystAnalysis}</p>
-          </section>
-        )}
+        {/* Catalysts are included in the thesis only when a dated source is present. */}
 
         {/* Price levels section: FAULTLINE does not publish levels here */}
         <section className="mb-12">
@@ -456,10 +398,7 @@ export default function DynamicStockPage() {
         <section className="mb-12">
           <h2 className="text-2xl font-bold text-white mb-4">Macro Regime Context for {upper}</h2>
           <p className="text-[#A8B8CC] leading-relaxed mb-4">
-            {upper}'s performance is highly dependent on the prevailing macro regime. FAULTLINE classifies the current market environment as Bull, Bear, Crash, or Recovery — and each regime has distinct implications for {upper} positioning.
-          </p>
-          <p className="text-[#A8B8CC] leading-relaxed mb-4">
-            In bull regimes with low systemic pressure, {upper} tends to benefit from risk appetite expansion. In elevated-pressure environments — characterized by credit spread widening, VIX regime elevation, and liquidity tightening — {upper} faces headwinds; FAULTLINE's Pressure Index™ shows where systemic pressure is building.
+            Market context for {upper} is included in the thesis only when a fresh canonical reading is available. A missing reading is left blank. FAULTLINE's Pressure Index™ shows where systemic pressure is building.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
             <Link href="/market-regime-tracker" onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-cyan-400/30 transition-all">
@@ -467,8 +406,8 @@ export default function DynamicStockPage() {
               <div className="text-white text-sm font-semibold group-hover:text-[#00D4FF] transition-colors">Market Regime Tracker</div>
             </Link>
             <Link href="/market-crash-probability-2026" onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-red-400/30 transition-all">
-              <div className="text-[10px] font-mono tracking-widest text-red-400 mb-2">CRASH RISK</div>
-              <div className="text-white text-sm font-semibold group-hover:text-[#00D4FF] transition-colors">Market Crash Risk 2026</div>
+              <div className="text-[10px] font-mono tracking-widest text-red-400 mb-2">CONTEXT</div>
+              <div className="text-white text-sm font-semibold group-hover:text-[#00D4FF] transition-colors">Market stress research</div>
             </Link>
             <Link href="/volatility-dashboard" onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-yellow-400/30 transition-all">
               <div className="text-[10px] font-mono tracking-widest text-yellow-400 mb-2">VOLATILITY</div>
@@ -482,7 +421,7 @@ export default function DynamicStockPage() {
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
               <div className="text-[10px] font-mono tracking-[0.3em] text-[#A8B8CC]/60 mb-1">FAULTLINE DEMO</div>
-              <p className="text-white font-semibold text-sm">See how FAULTLINE tracks {upper} as new data is published</p>
+              <p className="text-white font-semibold text-sm">Open the app to read the same shared thesis for {upper}</p>
             </div>
             <a href="/pricing" onClick={() => handleCtaClick("demo")} className="text-[11px] font-mono tracking-widest text-[#00D4FF] border border-[#00D4FF]/30 hover:bg-[#00D4FF]/10 px-5 py-2.5 rounded font-bold transition-colors whitespace-nowrap">
               VIEW DEMO →
@@ -531,7 +470,7 @@ export default function DynamicStockPage() {
           <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-3">FAULTLINE INTELLIGENCE</div>
           <h2 className="text-2xl font-bold text-white mb-3">See the {upper} Signal</h2>
           <p className="text-[#A8B8CC] text-sm mb-6 max-w-md mx-auto">
-            See FAULTLINE's {upper} signal classification, macro regime, and systemic risk scores, refreshed as new data is published.
+            The live read is the shared thesis above. This page does not add a separate classification.
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <a href="/pricing" onClick={() => handleCtaClick("start_free")} className="inline-flex items-center gap-2 text-[12px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-8 py-4 rounded font-bold transition-colors">

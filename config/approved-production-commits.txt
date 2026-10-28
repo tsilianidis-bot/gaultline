@@ -1,0 +1,13 @@
+# NOT A CONTROL. This file is not an allowlist.
+# scripts/guard-approved-deploy.sh does not read it.
+# scripts/start-production.sh does not read it.
+# The server does not consult it at boot.
+# The enforced control, when an owner turns it on, is outside this tree:
+# FAULTLINE_APPROVED_SHA must equal RAILWAY_GIT_COMMIT_SHA.
+# scripts/guard-approved-deploy.sh compares them when FAULTLINE_ENFORCE_DEPLOY_GUARD=1.
+# The reviewed SHA is written into an approval record after review, then copied
+# into FAULTLINE_APPROVED_SHA. This file is not that record.
+#
+# f7756c7fad3cac0f96df45723ca5c4e2713146d0 is the live rollback target only.
+# It is not the candidate SHA. 1cb5dee13832c0556ec5a380ecc4ffb02513e875 and
+# deployment b19716b1 are not the rollback target.

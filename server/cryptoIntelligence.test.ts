@@ -289,7 +289,7 @@ describe("Bear Market → Accumulation Phase classification", () => {
   it("tradingBias emphasizes capital preservation", async () => {
     const report = await getCryptoIntelligence();
     const bias = report.btcDashboard.accumulationAnalysis!.tradingBias;
-    expect(bias.toLowerCase()).toContain("capital preservation");
+    expect(bias).toContain("No position change is published");
   });
 
   it("does NOT include accumulationAnalysis under bull conditions", async () => {

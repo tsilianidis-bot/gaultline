@@ -51,6 +51,7 @@ function hasUsableValue(value: ValidatedIntelligenceEvidence["value"]): boolean 
 
 function toVisualStatus(observation: ValidatedIntelligenceEvidence): EvidenceStatus {
   if (!hasUsableValue(observation.value)) return "unavailable";
+  if (observation.validationStatus === "historical" || observation.temporalStatus === "completed_session") return "unavailable";
   if (observation.validationStatus === "stale") return "stale";
   if (observation.validationStatus === "unavailable" || observation.value === null)
     return "unavailable";
@@ -70,11 +71,7 @@ function toVisualStatus(observation: ValidatedIntelligenceEvidence): EvidenceSta
   // upstream Integrity Gate admission and a non-expired canonical deadline.
   if (observation.validationStatus === "verified" && observation.temporalStatus === "live")
     return "current";
-  if (
-    observation.temporalStatus === "delayed" ||
-    observation.temporalStatus === "completed_session"
-  )
-    return "delayed";
+  if (observation.temporalStatus === "delayed") return "delayed";
   if (observation.temporalStatus === "stale") return "stale";
   // New or malformed temporal values are not promoted to a market condition.
   return "unavailable";

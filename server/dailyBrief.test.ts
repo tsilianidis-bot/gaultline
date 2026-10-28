@@ -61,7 +61,7 @@ describe("dailyBrief — pressure-to-bias mapping", () => {
     }
     if (pressure < 65) return "Cautious";
     if (pressure < 80) return "Defensive";
-    return "Risk-Off";
+    return "Lower-risk appetite";
   };
 
   it("returns Strongly Bullish for low pressure in expansion regime", () => {
@@ -84,8 +84,8 @@ describe("dailyBrief — pressure-to-bias mapping", () => {
     expect(deriveInstitutionalBias(72, "Recession")).toBe("Defensive");
   });
 
-  it("returns Risk-Off for extreme pressure", () => {
-    expect(deriveInstitutionalBias(85, "Crisis")).toBe("Risk-Off");
+  it("returns a lower-appetite label for extreme pressure", () => {
+    expect(deriveInstitutionalBias(85, "Crisis")).toBe("Lower-risk appetite");
   });
 });
 

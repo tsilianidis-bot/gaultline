@@ -17,7 +17,7 @@ export default function PublicCryptoMarketRisk() {
         { icon: "⬡", title: "Altcoin Risk Scoring", desc: "Every major altcoin scored for systemic risk, macro sensitivity, and regime alignment. Know your exposure before it moves." },
         { icon: "◈", title: "Contagion Risk Mapping", desc: "Identify contagion pathways across the crypto ecosystem. Know which assets fracture next when stress begins propagating." },
         { icon: "◎", title: "Macro Correlation", desc: "Track how digital assets correlate with macro risk factors: rates, liquidity, credit spreads, and equity volatility." },
-        { icon: "⬡", title: "Digital Asset Regime", desc: "Classify the current crypto regime: risk-on expansion, liquidity stress, or systemic contraction. Know which playbook applies." },
+        { icon: "⬡", title: "Digital Asset Regime", desc: "Classify the current crypto regime: higher-risk appetite expansion, liquidity stress, or systemic contraction. Know which playbook applies." },
       ]}
     />
   );

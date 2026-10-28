@@ -5,7 +5,7 @@ const LearnWhatIsMarketRegime = () => {
     <SEOLandingPage
       seo={{
         title: "What Is a Market Regime? - FAULTLINE Market Intelligence",
-        description: "Understand market regimes (bull, bear, risk-on, risk-off) and how FAULTLINE classifies them. Get insights into current market cycles.",
+        description: "Understand market regimes (bull, bear, higher-risk appetite, lower-risk appetite) and how FAULTLINE classifies them. Get insights into current market cycles.",
         canonical: "/learn/what-is-a-market-regime",
       }}
       badge="EDUCATIONAL GUIDE"
@@ -18,14 +18,14 @@ const LearnWhatIsMarketRegime = () => {
         { icon: "◈", title: "Regularly refreshed market regime classification", desc: "Regularly refreshed market regime classification" },
         { icon: "◎", title: "Historical market cycle analysis", desc: "Historical market cycle analysis" },
         { icon: "⬡", title: "Actionable insights for investors", desc: "Actionable insights for investors" },
-        { icon: "◈", title: "Understand bull, bear, risk-on, risk-off", desc: "Understand bull, bear, risk-on, risk-off dynamics" },
+        { icon: "◈", title: "Understand bull, bear, higher-risk appetite, lower-risk appetite", desc: "Understand bull, bear, higher-risk appetite, lower-risk appetite dynamics" },
         { icon: "◎", title: "Identify late-cycle and early-cycle indicators", desc: "Identify late-cycle and early-cycle indicators" },
         { icon: "⬡", title: "Data-driven market intelligence for informed", desc: "Data-driven market intelligence for informed decisions" }
       ]}
       contentSections={[
         {
           heading: "What Exactly Defines a Market Regime?",
-          body: `A market regime refers to a persistent state or pattern in financial markets characterized by specific behaviors in asset prices, volatility, and correlations. These regimes are not static; they evolve and transition over time, often driven by macroeconomic factors, monetary policy, and investor sentiment. Common regimes include bull markets (periods of sustained growth), bear markets (prolonged declines), risk-on (investors favor riskier assets), and risk-off (investors seek safety). More nuanced classifications also consider economic cycles, such as early-cycle, mid-cycle, and late-cycle, each with distinct implications for different asset classes. Understanding these underlying states is crucial for investors to contextualize market movements beyond daily headlines and recognize the broader forces at play. Faultline's approach to identifying these regimes goes beyond simple price action, incorporating a multitude of indicators to provide a holistic view of the market's current state. This foundational understanding is the first step towards adaptive investment strategies.`,
+          body: `A market regime refers to a persistent state or pattern in financial markets characterized by specific behaviors in asset prices, volatility, and correlations. These regimes are not static; they evolve and transition over time, often driven by macroeconomic factors, monetary policy, and investor sentiment. Common regimes include bull markets (periods of sustained growth), bear markets (prolonged declines), higher-risk appetite (investors favor riskier assets), and lower-risk appetite (investors seek safety). More nuanced classifications also consider economic cycles, such as early-cycle, mid-cycle, and late-cycle, each with distinct implications for different asset classes. Understanding these underlying states is crucial for investors to contextualize market movements beyond daily headlines and recognize the broader forces at play. Faultline's approach to identifying these regimes goes beyond simple price action, incorporating a multitude of indicators to provide a holistic view of the market's current state. This foundational understanding is the first step towards adaptive investment strategies.`,
         },
         {
           heading: "Why Understanding Market Regimes Matters for Investors",
@@ -46,8 +46,8 @@ const LearnWhatIsMarketRegime = () => {
           answer: "A bull market is characterized by rising asset prices, investor optimism, and economic growth, while a bear market sees falling prices, pessimism, and often precedes or accompanies economic contraction.",
         },
         {
-          question: "How do 'risk-on' and 'risk-off' regimes differ from bull and bear markets?",
-          answer: "Risk-on and risk-off refer to investor sentiment and appetite for risk. In a risk-on regime, investors favor riskier assets; in a risk-off regime, they seek safety. These can occur within both bull and bear market cycles.",
+          question: "How do 'higher-risk appetite' and 'lower-risk appetite' regimes differ from bull and bear markets?",
+          answer: "Higher-risk appetite and lower-risk appetite refer to investor sentiment and appetite for risk. In a higher-risk appetite regime, investors favor riskier assets; in a lower-risk appetite regime, they seek safety. These can occur within both bull and bear market cycles.",
         },
         {
           question: "Can a market regime change quickly?",

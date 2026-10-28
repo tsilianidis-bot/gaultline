@@ -16,6 +16,8 @@
 //   • All price levels are calculated, never invented
 // ============================================================
 
+import { MIXED_CONDITION } from "../shared/clientVocabulary";
+import { OUTLOOK_STRAINED } from "../shared/surfaceClaims";
 import { invokeLLM } from "./_core/llm";
 import { calculateFaultlinePressure, type FaultlinePressureOutput } from "./pressure/engine";
 import { getDiagnosticReport, pressureToActionBias } from "./diagnosticAI";
@@ -98,9 +100,9 @@ export interface CryptoOutlookAnalysis {
   btcDominanceSignal: "BTC Favored" | "Altcoin Rotation" | "Neutral";
   ethLeadership: "Leading" | "Lagging" | "Neutral";
   altRotationSignal: "Active" | "Inactive" | "Uncertain";
-  liquidityEnvironment: "Risk-On" | "Neutral" | "Defensive";
+  liquidityEnvironment: "Higher appetite" | "Neutral" | "Defensive";
   onChainContext: string | null;
-  cryptoRegime: "Risk-On" | "Neutral" | "Defensive";
+  cryptoRegime: "Higher appetite" | "Neutral" | "Defensive";
 }
 
 export interface DiagnosticAI2Integration {
@@ -124,7 +126,7 @@ export interface PreflightImpact {
 
 export interface TradeParameterLevel {
   price: number | null;         // calculated dollar price (null if unavailable)
-  pctFromEntry: number | null;  // % distance from entry price (negative = below entry)
+  pctFromEntry: number | null;  // % distance from opening price (negative = below entry)
   label: string;                // short label, e.g. "Trade Stop", "Entry Zone"
   description: string;          // e.g. "Near current price — momentum entry"
   rationale: string;            // one-line explanation of why this level matters
@@ -335,7 +337,7 @@ function scoreToDirection(score: number): OutlookDirection {
   if (score >= 65) return "Bullish";
   if (score >= 50) return "Neutral";
   if (score >= 30) return "Bearish";
-  return "Avoid";
+  return OUTLOOK_STRAINED;
 }
 
 // Retired: pressureToBullProb (100 − 0.85·P) and pressureToBearProb (0.75·P)
@@ -423,7 +425,7 @@ function scoreStockFactors(
     { name: "Trend",                      score: clamp(trendScore * tfMultiplier),          weight: 0.12, label: scoreToLabel(trendScore),          note: `Macro pressure at ${p}/100 — ${p > 60 ? "bearish trend conditions" : p > 40 ? "mixed trend" : "favorable trend environment"}` },
     { name: "Relative Strength",          score: clamp(breadthScore * tfMultiplier),        weight: 0.10, label: scoreToLabel(breadthScore),        note: `Market breadth score ${getVec("market_breadth")}/100 — ${getVec("market_breadth") > 60 ? "narrow leadership" : "broad participation"}` },
     { name: "Volume Expansion",           score: clamp(volumeScore * tfMultiplier),         weight: 0.08, label: scoreToLabel(volumeScore),         note: `Volatility regime ${getVec("volatility_regime")}/100 — ${getVec("volatility_regime") > 60 ? "elevated volatility" : "normal volume conditions"}` },
-    { name: "Volatility",                 score: clamp(volatilityScore * tfMultiplier),     weight: 0.08, label: scoreToLabel(volatilityScore),     note: `${getVec("volatility_regime") > 70 ? "High volatility — entry risk elevated" : getVec("volatility_regime") > 40 ? "Moderate volatility" : "Low volatility — favorable for entries"}` },
+    { name: "Volatility",                 score: clamp(volatilityScore * tfMultiplier),     weight: 0.08, label: scoreToLabel(volatilityScore),     note: `${getVec("volatility_regime") > 70 ? "High volatility — opening risk elevated" : getVec("volatility_regime") > 40 ? "Moderate volatility" : "Low volatility — favorable for additions"}` },
     { name: "Sector Strength",            score: clamp(sectorScore * tfMultiplier),         weight: 0.10, label: scoreToLabel(sectorScore),         note: isAITech ? `AI bubble score ${aiBubbleVec}/100 — ${aiBubbleVec > 70 ? "extreme AI concentration risk" : "manageable AI exposure"}` : "Sector macro sensitivity analysis" },
     { name: "Market Breadth",             score: clamp(breadthDirectScore * tfMultiplier),  weight: 0.08, label: scoreToLabel(breadthDirectScore),  note: "Participation across market cap spectrum" },
     { name: "Regime Alignment",           score: clamp(regimeScore * tfMultiplier),         weight: 0.08, label: scoreToLabel(regimeScore),         note: `Current regime: ${pressure.regime} — ${p > 60 ? "unfavorable for new longs" : "supportive of risk-taking"}` },
@@ -495,10 +497,10 @@ function scoreCryptoFactors(
 
     const tfMultiplier = timeframe === "day" ? 1.1 : timeframe === "short" ? 1.0 : timeframe === "swing" ? 0.9 : 0.8;
   const factors: OutlookScoreFactor[] = [
-    { name: "Trend",           score: clamp(trendScore * tfMultiplier),    weight: 0.20, label: scoreToLabel(trendScore),    note: `Macro pressure ${p}/100 — ${p > 60 ? "risk-off conditions" : "risk-on environment"}` },
+    { name: "Trend",           score: clamp(trendScore * tfMultiplier),    weight: 0.20, label: scoreToLabel(trendScore),    note: `Macro pressure ${p}/100 — ${p > 60 ? "lower-risk appetite conditions" : "higher-risk appetite environment"}` },
     { name: "BTC Dominance",   score: clamp(btcDomScore * tfMultiplier),   weight: 0.20, label: scoreToLabel(btcDomScore),   note: isBTC ? "BTC is the defensive crypto asset" : `BTC dominance ${p > 60 ? "rising — headwind for alts" : "stable or falling — supportive"}` },
     { name: "ETH Leadership",  score: clamp(ethLeaderScore * tfMultiplier),weight: 0.10, label: scoreToLabel(ethLeaderScore), note: isETH ? "ETH as market bellwether" : `ETH ${p < 50 ? "leading — positive for ecosystem" : "lagging — ecosystem risk elevated"}` },
-    { name: "Alt Rotation",    score: clamp(altRotScore * tfMultiplier),   weight: 0.15, label: scoreToLabel(altRotScore),   note: `${p < 40 ? "Active rotation into alts" : p < 60 ? "Rotation uncertain" : "Risk-off — rotation away from alts"}` },
+    { name: "Alt Rotation",    score: clamp(altRotScore * tfMultiplier),   weight: 0.15, label: scoreToLabel(altRotScore),   note: `${p < 40 ? "Active rotation into alts" : p < 60 ? "Rotation uncertain" : "Lower-risk appetite — rotation away from alts"}` },
     { name: "Liquidity",       score: clamp(liquidityScore * tfMultiplier),weight: 0.15, label: scoreToLabel(liquidityScore), note: `Liquidity stress ${liquidityVec}/100 — ${liquidityVec > 60 ? "tightening conditions" : "adequate liquidity"}` },
     { name: "Volatility",      score: clamp(volatilityScore * tfMultiplier),weight: 0.05, label: scoreToLabel(volatilityScore), note: `${volVec > 70 ? "High volatility — position sizing critical" : "Normal volatility range"}` },
     { name: "Regime Alignment",score: clamp(regimeScore * tfMultiplier),   weight: 0.10, label: scoreToLabel(regimeScore),   note: `FAULTLINE regime: ${pressure.regime}` },
@@ -589,11 +591,11 @@ function buildCryptoAnalysis(
   const altRotationSignal: "Active" | "Inactive" | "Uncertain" =
     p < 40 ? "Active" : p > 65 ? "Inactive" : "Uncertain";
 
-  const liquidityEnvironment: "Risk-On" | "Neutral" | "Defensive" =
-    liquidityVec > 65 ? "Defensive" : liquidityVec < 35 ? "Risk-On" : "Neutral";
+  const liquidityEnvironment: "Higher appetite" | "Neutral" | "Defensive" =
+    liquidityVec > 65 ? "Defensive" : liquidityVec < 35 ? "Higher appetite" : "Neutral";
 
-  const cryptoRegime: "Risk-On" | "Neutral" | "Defensive" =
-    p < 40 ? "Risk-On" : p > 65 ? "Defensive" : "Neutral";
+  const cryptoRegime: "Higher appetite" | "Neutral" | "Defensive" =
+    p < 40 ? "Higher appetite" : p > 65 ? "Defensive" : "Neutral";
 
   return {
     btcDominanceTrend,
@@ -626,7 +628,7 @@ function buildTradeFramework(
   // ── No-trade gate ────────────────────────────────────────────
   if (direction === "Avoid" || score < 30) {
     const reasons: string[] = [];
-    if (direction === "Avoid") reasons.push(`Outlook direction is Avoid — no trade setup exists`);
+    if (direction === OUTLOOK_STRAINED) reasons.push(`Outlook score is in the lowest class. No setup score is attached to this card.`);
     if (score < 30) reasons.push(`Outlook score ${score}/100 is below the minimum threshold for a trade framework`);
     if (isHighPressure) reasons.push(`FAULTLINE Pressure Index at ${p}/100 — systemic risk is elevated`);
     return {
@@ -643,7 +645,7 @@ function buildTradeFramework(
       exitTrigger: "Do not enter",
       parameterConfidence: 0,
       riskRating: "Extreme",
-      bullCaseForTrade: "No bull case — outlook is Avoid",
+      bullCaseForTrade: "Outlook score is in the lowest class. No bull-case figure is attached to this card.",
       bearCaseForTrade: `Score ${score}/100 with ${direction} direction indicates high risk of loss`,
       doNotTradeIf: reasons,
       explanation: reasons.join(". "),
@@ -671,23 +673,23 @@ function buildTradeFramework(
     day: {
       maxHold: "Same session (close before market close)",
       entryDesc: isCrypto
-        ? "Near current price during the first 30 minutes of the session — wait for opening range to establish"
-        : "Within the opening range (first 30 minutes) — enter on a confirmed breakout above the opening high",
+        ? "The reference band is the first 30 minutes of the session versus the last price."
+        : "The reference band is the first 30 minutes of the session, including the opening high.",
       entryRationale: "Day trades require momentum confirmation at the open; entering before the range is established increases whipsaw risk",
       tradeStopDesc: isCrypto
         ? "Below the opening range low or the 15-minute VWAP — whichever is tighter"
         : "Below the opening range low — a break here signals the intraday thesis has failed",
-      tradeStopRationale: "Intraday stops must be tight; the opening range low is the key structural level for day trades",
+      tradeStopRationale: "Intraday downside marks must be tight; the opening range low is the key structural level for day trades",
       swingStopDesc: "Below the prior day's low — a close below this level means the broader intraday structure is broken",
-      swingStopRationale: "Prior day's low is the intraday swing stop; breaching it typically means the session is trending against the trade",
+      swingStopRationale: "Prior day's low is the intraday swing downside mark; breaching it typically means the session is trending against the trade",
       thesisDesc: "Below the prior week's low — if price reaches here on an intraday trade, the setup has completely failed",
       thesisRationale: "Thesis failure for a day trade is a full structural breakdown; exit immediately with no averaging down",
       tp1Desc: "First intraday resistance (prior day's high or a key intraday pivot)",
-      tp1Rationale: "Take partial profits at the first resistance; this locks in gains and reduces risk on the remaining position",
+      tp1Rationale: "Record a partial gain at the first resistance; this locks in gains and reduces higher-risk appetite the remaining position",
       tp2Desc: "Second intraday resistance or a measured move equal to the opening range height",
-      tp2Rationale: "Measured move targets are the most reliable intraday TP levels; they represent the natural extension of the opening range",
-      tp3Desc: "Extended target at 2x the opening range height — only reached on high-momentum days",
-      tp3Rationale: "Extended targets require strong volume confirmation; reduce size significantly before this level",
+      tp2Rationale: "Measured move upper marks are the most reliable intraday TP levels; they represent the natural extension of the opening range",
+      tp3Desc: "Extended upper mark at 2x the opening range height — only reached on high-momentum days",
+      tp3Rationale: "Extended upper marks require strong volume confirmation; reduce size significantly before this level",
       holdCondition: "Price remains above VWAP and volume is expanding; momentum indicators are not diverging",
       exitTrigger: "Price closes below VWAP on 15-minute chart, or market close — whichever comes first",
     },
@@ -696,11 +698,11 @@ function buildTradeFramework(
       entryDesc: isCrypto
         ? "On a pullback to the nearest support level or after a confirmed breakout above recent resistance"
         : "On a pullback to the 5-day moving average or after a confirmed break above the prior week's high",
-      entryRationale: "Short-term entries require a defined catalyst; chasing price without a pullback increases the cost basis unnecessarily",
+      entryRationale: "Short-term additions require a defined catalyst; chasing price without a pullback increases the cost basis unnecessarily",
       tradeStopDesc: isCrypto
         ? "Below the most recent swing low (last 3–5 days) — a break here signals the short-term momentum has reversed"
-        : "Below the prior day's low or the 5-day moving average — whichever is closer to entry",
-      tradeStopRationale: "Short-term stops should be placed at the nearest structural low to keep the risk-reward ratio favorable",
+        : "Below the prior day's low or the 5-day moving average — whichever is closer to opening",
+      tradeStopRationale: "Short-term downside marks should be placed at the nearest structural low to keep the risk-reward ratio favorable",
       swingStopDesc: isCrypto
         ? "Below the 10-day moving average — a close below signals the short-term trend has changed"
         : "Below the 10-day moving average or the prior week's low",
@@ -709,35 +711,35 @@ function buildTradeFramework(
       thesisRationale: "Thesis failure for a short-term trade is a 2-week structural breakdown; exit without hesitation",
       tp1Desc: "Prior week's high or the nearest resistance level",
       tp1Rationale: "Take 30–50% off at the first resistance to lock in gains; this is where most short-term moves stall",
-      tp2Desc: "Next resistance level or a 1:2 risk-reward target from entry",
+      tp2Desc: "Next resistance level or a 1:2 risk-reward upper mark from opening",
       tp2Rationale: "A 1:2 R:R is the minimum acceptable for short-term trades; this tier captures the bulk of the move",
-      tp3Desc: "Extended target at 1:3 R:R — only reached on strong momentum with expanding volume",
-      tp3Rationale: "Extended targets require volume confirmation; trail stop aggressively if price reaches this level",
+      tp3Desc: "Extended upper mark at 1:3 R:R — only reached on strong momentum with expanding volume",
+      tp3Rationale: "Extended upper marks require volume confirmation; trail downside mark aggressively if price reaches this level",
       holdCondition: "Price remains above the 5-day moving average and FAULTLINE pressure is not rising sharply",
       exitTrigger: "Price closes below the 5-day MA, or FAULTLINE Pressure Index rises above 70, or the catalyst that drove the trade is invalidated",
     },
     swing: {
       maxHold: "1–4 weeks",
       entryDesc: isCrypto
-        ? "On a pullback to the 20-day moving average or a key support level — wait for a daily close above the level before entering"
-        : "On a pullback to the 20-day moving average or a prior breakout level — enter on the first close back above the level",
-      entryRationale: "Swing entries require patience; entering on the first close above a key level reduces the risk of a false breakout",
+        ? "The reference level is the 20-day average of completed daily closes."
+        : "The reference level is the 20-day average of completed daily closes, or the prior breakout close.",
+      entryRationale: "Swing additions require patience; entering on the first close above a key level reduces the risk of a false breakout",
       tradeStopDesc: isCrypto
         ? "Below the most recent weekly swing low — a close below signals the swing trade has failed"
         : "Below the most recent weekly low or the 20-day moving average",
-      tradeStopRationale: "Swing stops should be placed at weekly structural lows; this gives the trade room to breathe while protecting against a trend reversal",
+      tradeStopRationale: "Swing downside marks should be placed at weekly structural lows; this gives the trade room to breathe while protecting against a trend reversal",
       swingStopDesc: isCrypto
         ? "Below the 50-day moving average — a weekly close below this level signals a medium-term trend change"
         : "Below the 50-day moving average or the prior month's low",
       swingStopRationale: "The 50-day MA is the key trend indicator for swing trades; a weekly close below it means the medium-term trend has changed",
       thesisDesc: "Below the prior 4-week low — a breach here means the swing trade thesis has completely failed",
-      thesisRationale: "Thesis failure for a swing trade is a monthly structural breakdown; this level should never be reached if stops are respected",
+      thesisRationale: "Thesis failure for a swing trade is a monthly structural breakdown; this level should never be reached if downside marks are respected",
       tp1Desc: "Prior month's high or the nearest weekly resistance level",
       tp1Rationale: "Take 25–40% off at the first monthly resistance; this is where swing moves typically consolidate",
-      tp2Desc: "Next major resistance level or a 1:2 risk-reward target from entry",
-      tp2Rationale: "The 1:2 R:R tier captures the core of most swing moves; trail stop to breakeven after this level",
-      tp3Desc: "Extended target at 1:3 R:R — only reached on strong fundamental catalysts or regime shifts",
-      tp3Rationale: "Extended swing targets require a fundamental driver; reduce size to 25% of original position at this level",
+      tp2Desc: "Next major resistance level or a 1:2 risk-reward upper mark from opening",
+      tp2Rationale: "The 1:2 R:R tier captures the core of most swing moves; trail downside mark to breakeven after this level",
+      tp3Desc: "Extended upper mark at 1:3 R:R — only reached on strong fundamental catalysts or regime shifts",
+      tp3Rationale: "Extended swing upper marks require a fundamental driver; reduce size to 25% of original position at this level",
       holdCondition: "Price remains above the 20-day MA, FAULTLINE pressure is stable or falling, and the original catalyst remains intact",
       exitTrigger: "Weekly close below the 20-day MA, FAULTLINE Pressure Index rises above 65, or the original catalyst is invalidated",
     },
@@ -746,11 +748,11 @@ function buildTradeFramework(
       entryDesc: isCrypto
         ? "On a significant pullback to the 50-day or 200-day moving average — enter only after a weekly close above the level"
         : "On a pullback to the 50-day moving average or a prior quarterly breakout level — enter on a monthly close above the level",
-      entryRationale: "Long-term entries require major structural confirmation; a monthly close above a key level is the minimum requirement",
+      entryRationale: "Long-term additions require major structural confirmation; a monthly close above a key level is the minimum requirement",
       tradeStopDesc: isCrypto
         ? "Below the 50-day moving average — a monthly close below signals the long-term trend is in question"
         : "Below the 50-day moving average or the prior quarter's low",
-      tradeStopRationale: "Long-term stops should be placed at major structural levels; the 50-day MA is the minimum stop for a long-term position",
+      tradeStopRationale: "Long-term downside marks should be placed at major structural levels; the 50-day MA is the minimum downside mark for a long-term position",
       swingStopDesc: isCrypto
         ? "Below the 200-day moving average — a monthly close below signals a major trend reversal"
         : "Below the 200-day moving average or the prior 6-month low",
@@ -759,10 +761,10 @@ function buildTradeFramework(
       thesisRationale: "Thesis failure for a long-term position requires a complete re-evaluation of the fundamental case",
       tp1Desc: "Prior quarterly high or the nearest major resistance level",
       tp1Rationale: "Take 20–30% off at the first quarterly resistance; long-term positions should be managed in tranches",
-      tp2Desc: "Next major resistance level or a 1:2 risk-reward target from entry",
-      tp2Rationale: "The 1:2 R:R tier represents a significant move for a long-term position; trail stop to breakeven after this level",
-      tp3Desc: "Extended target at 1:3 R:R or the prior all-time high area",
-      tp3Rationale: "Extended long-term targets require fundamental confirmation; reduce size to 25% of original position at this level",
+      tp2Desc: "Next major resistance level or a 1:2 risk-reward upper mark from opening",
+      tp2Rationale: "The 1:2 R:R tier represents a significant move for a long-term position; trail downside mark to breakeven after this level",
+      tp3Desc: "Extended upper mark at 1:3 R:R or the prior all-time high area",
+      tp3Rationale: "Extended long-term upper marks require fundamental confirmation; reduce size to 25% of original position at this level",
       holdCondition: "Price remains above the 50-day MA, FAULTLINE pressure is below 60, and the fundamental thesis remains intact",
       exitTrigger: "Monthly close below the 50-day MA, FAULTLINE Pressure Index rises above 70 and stays elevated for 2+ weeks, or a fundamental change in the investment thesis",
     },
@@ -772,11 +774,11 @@ function buildTradeFramework(
 
   // ── Do-not-trade conditions ───────────────────────────────────
   const doNotTradeIf: string[] = [];
-  if (isHighPressure) doNotTradeIf.push(`FAULTLINE Pressure Index is at ${p}/100 — systemic risk is elevated; reduce position size or wait for pressure to fall below 60`);
-  if (direction === "Bearish") doNotTradeIf.push("Outlook direction is Bearish — this is a short setup, not a long entry; do not buy into a bearish outlook");
-  if (direction === "Neutral") doNotTradeIf.push("Outlook direction is Neutral — wait for a directional signal before entering");
-  if (score < 50) doNotTradeIf.push(`Outlook score is ${score}/100 — below 50 means the balance of evidence does not support a high-conviction entry`);
-  if (timeframe === "day" && p > 50) doNotTradeIf.push("Day trading in elevated pressure environments amplifies risk; consider reducing size by 50% or skipping the session");
+  if (isHighPressure) doNotTradeIf.push(`FAULTLINE Pressure Index is at ${p}/100, above 60. No size is published on this card.`);
+  if (direction === "Bearish") doNotTradeIf.push(`Outlook direction label is Bearish. Outlook score is ${score}/100. No position change is published.`);
+  if (direction === "Neutral") doNotTradeIf.push(`Outlook direction label is Neutral. Outlook score is ${score}/100. No position change is published.`);
+  if (score < 50) doNotTradeIf.push(`Outlook score is ${score}/100 — below 50 means the balance of evidence does not support a high-conviction opening`);
+  if (timeframe === "day" && p > 50) doNotTradeIf.push(`Pressure Index is ${p}/100 on a day-horizon card. The score is the latest canonical reading.`);
   if (isCrypto && p > 55) doNotTradeIf.push("Crypto is highly sensitive to macro pressure; a pressure index above 55 significantly increases the risk of sharp reversals");
 
   // ── Confidence ───────────────────────────────────────────────
@@ -927,21 +929,21 @@ function buildTradeFramework(
     entryZone: {
       price: calcEntry,
       pctFromEntry: calcEntry ? 0 : null,
-      label: "Entry Zone",
+      label: "Opening Zone",
       description: tf.entryDesc,
       rationale: tf.entryRationale,
     },
     tradeStop: {
       price: calcTradeStop,
       pctFromEntry: (calcEntry && calcTradeStop) ? fmtPct(calcTradeStop, calcEntry) : null,
-      label: "Trade Stop",
+      label: "Short ATR offset from the last price. Method: completed bars.",
       description: tf.tradeStopDesc,
       rationale: tf.tradeStopRationale,
     },
     swingStop: {
       price: calcSwingStop,
       pctFromEntry: (calcEntry && calcSwingStop) ? fmtPct(calcSwingStop, calcEntry) : null,
-      label: "Swing Stop",
+      label: "Longer ATR offset from the last price. Method: completed bars.",
       description: tf.swingStopDesc,
       rationale: tf.swingStopRationale,
     },
@@ -983,7 +985,7 @@ function buildTradeFramework(
     bullCaseForTrade,
     bearCaseForTrade,
     doNotTradeIf,
-    explanation: `${direction} outlook with ${score}/100 conviction. ${tf.maxHold} timeframe.${rrRatio ? ` R:R ratio ${rrRatio}:1.` : ""} ${doNotTradeIf.length > 0 ? "Caution: " + doNotTradeIf[0] : "Conditions are acceptable for entry."}`,
+    explanation: `${direction} outlook with ${score}/100 conviction. ${tf.maxHold} timeframe.${rrRatio ? ` R:R ratio ${rrRatio}:1.` : ""} ${doNotTradeIf.length > 0 ? "Caution: " + doNotTradeIf[0] : "Conditions are acceptable for opening."}`,
     dataInsufficient: !hasPrice,
   };
 }
@@ -1009,16 +1011,16 @@ async function buildPreflightImpact(
   if (isHighPressure) {
     oppositionReasons.push(`Macro pressure at ${p}/100 — elevated systemic risk`);
     oppositionReasons.push("High-pressure environments historically increase drawdown risk");
-    reviewBeforeEntering.push("Review current pressure index reading before entry");
+    reviewBeforeEntering.push("Review current pressure index reading before opening");
     reviewBeforeEntering.push("Confirm position sizing accounts for elevated volatility");
   }
   if (direction === "Bearish" || direction === "Avoid") {
     oppositionReasons.push("Outlook direction conflicts with entering a long position");
-    reviewBeforeEntering.push("Consider whether this is a short setup or an avoidance signal");
+    reviewBeforeEntering.push(`Outlook score is below the neutral band. Direction label is ${direction}.`);
   }
 
   reviewBeforeEntering.push("Complete Market Preflight™ before entering any position");
-  reviewBeforeEntering.push("Verify stop-loss levels using the Sizing Calculator");
+  reviewBeforeEntering.push("Verify downside mark levels using the Sizing Calculator");
 
   return {
     supportsThisTrade: supportReasons.length > 0,
@@ -1073,7 +1075,7 @@ function buildInvalidationScenarios(
     });
     scenarios.push({
       trigger: "Alt Weakness",
-      description: "Broad altcoin market cap decline signals risk-off rotation — individual coin setups become unreliable",
+      description: "Broad altcoin market cap decline signals lower-risk appetite rotation — individual coin setups become unreliable",
       severity: "Major",
     });
     scenarios.push({
@@ -1083,7 +1085,7 @@ function buildInvalidationScenarios(
     });
     scenarios.push({
       trigger: "Macro Deterioration",
-      description: "Rising macro pressure index correlates with crypto risk-off — defensive positioning required",
+      description: "Rising macro pressure index correlates with crypto lower-risk appetite — defensive positioning required",
       severity: p > 55 ? "Critical" : "Major",
     });
     scenarios.push({
@@ -1112,8 +1114,8 @@ function buildScenarios(
         label: "Aggressive",
         assets: p < 50 ? ["NVDA", "PLTR", "AMD", "TSLA"] : ["COIN", "MSTR"],
         rationale: p < 50
-          ? "Low macro pressure supports higher-beta growth exposure. AI and momentum names benefit from risk-on conditions."
-          : "Elevated pressure limits aggressive positioning. Only highest-conviction setups with tight stops.",
+          ? "Low macro pressure supports higher-beta growth exposure. AI and momentum names benefit from higher-risk appetite conditions."
+          : "Elevated pressure limits aggressive positioning. Only highest-conviction setups with tight downside marks.",
       },
       {
         label: "Balanced",
@@ -1124,7 +1126,7 @@ function buildScenarios(
         label: "Defensive",
         assets: p > 60 ? ["SPY", "QQQ"] : ["SPY"],
         rationale: p > 60
-          ? "Elevated pressure warrants index-only exposure. Individual stock risk elevated. Reduce position sizes."
+          ? `Pressure Index is ${p}/100. The defensive list on this card is the index symbols above.`
           : "Defensive positioning via broad index ETFs. Preserves capital while maintaining market exposure.",
       },
     ];
@@ -1134,7 +1136,7 @@ function buildScenarios(
         label: "Aggressive",
         assets: p < 50 ? ["SOL", "AVAX", "TAO", "LINK"] : ["ETH"],
         rationale: p < 50
-          ? "Risk-on conditions support high-beta altcoin exposure. Layer 1 alternatives and AI-adjacent tokens benefit from rotation."
+          ? "Higher-risk appetite conditions support high-beta altcoin exposure. Layer 1 alternatives and AI-adjacent tokens benefit from rotation."
           : "Elevated macro pressure limits aggressive crypto positioning. ETH as the only aggressive option in stressed conditions.",
       },
       {
@@ -1146,7 +1148,7 @@ function buildScenarios(
         label: "Defensive",
         assets: p > 60 ? ["BTC", "Stablecoins"] : ["BTC"],
         rationale: p > 60
-          ? "High macro pressure — BTC as the defensive crypto asset. Stablecoin allocation preserves capital during risk-off periods."
+          ? "High macro pressure — BTC as the defensive crypto asset. Stablecoin allocation preserves capital during lower-risk appetite periods."
           : "BTC as the lowest-risk crypto exposure. Defensive positioning while maintaining crypto market presence.",
       },
     ];
@@ -1197,7 +1199,7 @@ CURRENT DATA:
 - Top Bearish Factor: ${bottomFactors[0]?.name} (${bottomFactors[0]?.score}/100) — ${bottomFactors[0]?.note}
 - Regime: ${pressure.regime}
 
-Write in plain English. No jargon. No financial advice. No specific price targets. No entry/exit recommendations.
+Write in plain English. No jargon. No financial advice. No specific price upper marks. No opening/exit recommendations.
 Be direct and specific. Use short sentences.
 
 Respond with JSON matching this exact schema:
@@ -1627,7 +1629,7 @@ export async function getTopOpportunities(): Promise<{
       direction: scoreToDirection(sb.composite),
       confidence: clamp(Math.abs(sb.composite - 50) * 2),
       riskLevel: scoreToRisk(p),
-      regimeAlignment: p < 40 ? "Risk-On" : p < 65 ? "Neutral" : "Defensive",
+      regimeAlignment: p < 40 ? "Higher appetite" : p < 65 ? "Neutral" : "Defensive",
       topReason: sb.factors.sort((a, b) => b.score - a.score)[0]?.note ?? "",
     };
   });
@@ -1729,7 +1731,7 @@ export interface DiscoveryItem {
   riskRewardRatio: string;        // e.g. "2.5:1"
   confidenceLevel: number | null; // QA confidence sweep: withheld (was score × 0.85 + band, a formula)
   topCatalyst: string;
-  actionBias: "BUY" | "WATCH" | "HOLD" | "REDUCE" | "AVOID";
+  actionBias: string;
 }
 
 export interface DiscoveryBucket {
@@ -1755,7 +1757,7 @@ export interface RisingStarItem extends RisingStarResult {
   latestPrice: number;
   dailyChange: number | null;
   dailyChangePercent: number | null;
-  signalDirection: "CONSTRUCTIVE" | "WATCH";
+  signalDirection: "CONSTRUCTIVE" | typeof MIXED_CONDITION;
   signalStrength: ConfidenceBand;
   momentumScore: number;
   relativeStrengthScore: number;
@@ -2020,7 +2022,7 @@ function discoveryCatalyst(category: DiscoveryCategory, score: number): string {
   const pools: Record<DiscoveryCategory, string[]> = {
     top_opportunity_today: [
       "Regime alignment at peak \u2014 momentum window open",
-      "Macro pressure easing \u2014 risk-on rotation accelerating",
+      "Macro pressure easing \u2014 higher-risk appetite rotation accelerating",
       "Institutional accumulation signals detected",
     ],
     emerging_breakouts: [
@@ -2050,7 +2052,7 @@ function discoveryCatalyst(category: DiscoveryCategory, score: number): string {
     ],
     undervalued_opportunities: [
       "Price-to-growth ratio below sector average",
-      "Sentiment overshoot creating asymmetric entry",
+      "Sentiment overshoot creating asymmetric opening",
       "Fundamental catalyst not yet priced in",
     ],
     high_risk_high_reward: [
@@ -2126,7 +2128,7 @@ function discoveryCatalyst(category: DiscoveryCategory, score: number): string {
     technical_reversals: [
       "RSI oversold with bullish divergence forming",
       "Price at key multi-year support with volume confirmation",
-      "Sentiment extreme creating contrarian entry opportunity",
+      "Sentiment extreme creating contrarian opening opportunity",
     ],
     institutional_accumulation: [
       "Dark pool prints above average \u2014 institutional buying detected",
@@ -2159,7 +2161,7 @@ const discoveryCache = new LRUCache<string, OpportunityDiscoveryResult>(2, 10 * 
 
 function discoveryBullCase(category: DiscoveryCategory, score: number, pressure: number): string {
   const pools: Partial<Record<DiscoveryCategory, string[]>> = {
-    top_opportunity_today:      ["Regime alignment at peak — all macro vectors confirm risk-on", "Institutional flows accelerating into this setup", "Momentum breakout with volume confirmation"],
+    top_opportunity_today:      ["Regime alignment at peak — all macro vectors confirm higher-risk appetite", "Institutional flows accelerating into this setup", "Momentum breakout with volume confirmation"],
     emerging_breakouts:         ["Price approaching key resistance with volume expansion", "Breakout pattern forming on multiple timeframes", "Relative strength outperforming benchmark"],
     high_conviction_setups:     ["Strong regime alignment with clear risk/reward", "Multiple technical factors converging", "Institutional accumulation detected in recent sessions"],
     ai_leaders:                 ["AI infrastructure spending cycle accelerating", "Earnings revisions trending higher across sector", "Regime favors high-growth technology exposure"],
@@ -2174,7 +2176,7 @@ function discoveryBullCase(category: DiscoveryCategory, score: number, pressure:
     infrastructure_industrials: ["Government infrastructure spending creating durable demand", "Industrial cycle in early expansion phase", "Pricing power intact despite input cost pressures"],
     consumer_discretionary:     ["Consumer spending resilient despite macro headwinds", "Brand strength supporting premium pricing", "International expansion driving incremental growth"],
     dividend_income:            ["Dividend yield attractive relative to risk-free rate", "Cash flow generation supports dividend sustainability", "Defensive characteristics attractive in current regime"],
-    small_cap_growth:           ["Small cap premium historically attractive at current valuations", "Niche market leadership with high growth runway", "Acquisition target potential adds optionality"],
+    small_cap_growth:           ["Small cap premium historically attractive at current valuations", "Niche market leadership with high growth runway", "Acquisition upper mark potential adds optionality"],
     defi_web3:                  ["Protocol revenue growing with user adoption", "DeFi TVL recovering — ecosystem health improving", "Institutional interest in Web3 infrastructure increasing"],
     commodities_real_assets:    ["Inflation hedge demand supporting real asset prices", "Supply constraints creating structural price support", "Dollar weakness tailwind for commodity prices"],
     volatility_plays:           ["Volatility regime shift approaching — positioning ahead", "Event risk calendar supports elevated VIX", "Portfolio hedge value increasing in current environment"],
@@ -2194,7 +2196,7 @@ function discoveryBearCase(category: DiscoveryCategory, pressure: number): strin
   const highPressure = pressure >= 60;
   const pools: Partial<Record<DiscoveryCategory, string[]>> = {
     top_opportunity_today:      ["Macro pressure spike could invalidate setup quickly", "Crowded trade — reversal risk if sentiment shifts"],
-    emerging_breakouts:         ["False breakout risk if volume doesn't confirm", "Resistance level may hold — setup fails without volume"],
+    emerging_breakouts:         ["False breakout risk if volume doesn't confirm", "Resistance level may keep — setup fails without volume"],
     high_conviction_setups:     ["Conviction can reverse quickly if macro deteriorates", "High expectations already priced in"],
     ai_leaders:                 ["AI bubble risk — valuation stretched relative to earnings", "Rate sensitivity high — Fed pivot could compress multiples"],
     crypto_leaders:             ["Crypto volatility can overwhelm technical setups", "Regulatory risk remains elevated"],
@@ -2208,7 +2210,7 @@ function discoveryBearCase(category: DiscoveryCategory, pressure: number): strin
     infrastructure_industrials: ["Spending delays or budget cuts reduce visibility", "Input cost inflation squeezing margins"],
     consumer_discretionary:     ["Consumer spending slowdown risk", "Interest rate sensitivity high"],
     dividend_income:            ["Dividend cut risk if cash flows deteriorate", "Rising rates make yield less attractive"],
-    small_cap_growth:           ["Liquidity risk — small caps sell off harder in downturns", "Funding risk if rates stay elevated"],
+    small_cap_growth:           ["Liquidity risk — small caps reduce off harder in downturns", "Funding risk if rates stay elevated"],
     defi_web3:                  ["Smart contract exploit risk", "Regulatory action could freeze protocols"],
     commodities_real_assets:    ["Dollar strength headwind", "Demand destruction in recession scenario"],
     volatility_plays:           ["Volatility crush risk if event passes without move", "Contango decay in VIX products"],
@@ -2216,7 +2218,7 @@ function discoveryBearCase(category: DiscoveryCategory, pressure: number): strin
     earnings_momentum:          ["High expectations — any miss punished severely", "Multiple compression risk if growth decelerates"],
     technical_reversals:        ["Support breaks — setup fails with accelerated downside", "Dead cat bounce risk in downtrend"],
     institutional_accumulation: ["Institutions may be wrong — contrarian risk", "Distribution disguised as accumulation"],
-    etf_flows:                  ["Passive flows can reverse quickly in risk-off", "Concentration risk in top holdings"],
+    etf_flows:                  ["Passive flows can reverse quickly in lower-risk appetite", "Concentration risk in top holdings"],
     global_macro:               ["Currency risk can overwhelm equity returns", "Political instability adds unpredictable risk"],
     space_deep_tech:            ["Long development timelines — capital at risk for years", "Competition from well-funded incumbents"],
   };
@@ -2226,19 +2228,19 @@ function discoveryBearCase(category: DiscoveryCategory, pressure: number): strin
 
 function discoveryInvalidation(score: number, assetType: "stock" | "crypto"): string {
   if (assetType === "crypto") {
-    if (score >= 75) return "Breakdown below 7% from entry — close position";
-    if (score >= 60) return "Breakdown below 10% from entry — reassess thesis";
-    return "Breakdown below 15% from entry — exit and wait";
+    if (score >= 75) return "Breakdown below 7% from opening — close position";
+    if (score >= 60) return "Breakdown below 10% from opening — reassess thesis";
+    return "Breakdown below 15% from opening — exit and wait";
   }
   if (score >= 75) return "Close below 20-day SMA with volume — exit signal";
   if (score >= 60) return "Break of recent swing low — thesis invalidated";
-  return "Loss of key support level — reduce exposure";
+  return "Loss of key support level — participation is smaller";
 }
 
 function discoveryWhyFaultlineLikesIt(score: number, pressure: number, category: DiscoveryCategory): string {
   const rr = score >= 75 ? "3:1" : score >= 60 ? "2:1" : "1.5:1";
   const conviction = score >= 75 ? "High" : score >= 55 ? "Moderate" : "Low";
-  const regime = pressure < 40 ? "risk-on" : pressure < 60 ? "mixed" : "risk-off";
+  const regime = pressure < 40 ? "higher-risk appetite" : pressure < 60 ? "mixed" : "lower-risk appetite";
   return `${conviction} conviction setup in ${regime} regime. R:R ${rr}. Score ${score}/100 — ${score >= 70 ? "top decile opportunity" : score >= 55 ? "above-average setup" : "speculative position only"}.`;
 }
 
@@ -2252,13 +2254,8 @@ function discoveryInstitutionalConviction(score: number, category: DiscoveryCate
   return "Low";
 }
 
-function discoveryActionBias(score: number, pressure: number): DiscoveryItem["actionBias"] {
-  if (pressure >= 70) return score >= 75 ? "WATCH" : "AVOID";
-  if (score >= 75) return "BUY";
-  if (score >= 60) return "WATCH";
-  if (score >= 45) return "HOLD";
-  if (score >= 30) return "REDUCE";
-  return "AVOID";
+function discoveryActionBias(score: number, pressure: number): string {
+  return `Outlook score is ${score}/100. Pressure Index is ${pressure}/100.`;
 }
 
 const RISING_STAR_CANDIDATES: Array<{ symbol: string; name: string }> = [
@@ -2417,7 +2414,7 @@ async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<Risi
         latestPrice: quote?.price ?? latest.close,
         dailyChange,
         dailyChangePercent,
-        signalDirection: result.risingStarScore >= 65 ? "CONSTRUCTIVE" as const : "WATCH" as const,
+        signalDirection: (result.risingStarScore >= 65 ? "CONSTRUCTIVE" : MIXED_CONDITION) as "CONSTRUCTIVE" | typeof MIXED_CONDITION,
         signalStrength: result.crossSignalConfidence,
         momentumScore: technical.momentumInflection,
         relativeStrengthScore: technical.relativeStrength,

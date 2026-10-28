@@ -1,22 +1,22 @@
 /**
  * SizingCalculator.tsx
  * Interactive position sizing calculator.
- * Inputs: account size, risk %, entry price, stop-loss price, target price.
+ * Inputs: account size, risk %, fillPrice price, downside mark price, upperPrice price.
  * Outputs: shares/units, position size $, risk $, reward $, R/R ratio, % of account.
  *
- * Can be pre-seeded with entry/stop/target from signal data.
+ * Can be pre-seeded with fillPrice/lowerPrice/upperPrice from signal data.
  */
 
 import { useState, useCallback, useMemo } from "react";
 import { Calculator, ChevronDown, ChevronUp, AlertTriangle, TrendingUp, DollarSign, Percent, Target } from "lucide-react";
 
 interface SizingCalculatorProps {
-  /** Pre-seed entry price from signal */
-  defaultEntry?: number;
-  /** Pre-seed stop-loss price from signal */
-  defaultStop?: number;
-  /** Pre-seed target price from signal */
-  defaultTarget?: number;
+  /** Pre-seed fillPrice price from signal */
+  defaultFill?: number;
+  /** Pre-seed downside mark price from signal */
+  defaultLower?: number;
+  /** Pre-seed upperPrice price from signal */
+  defaultUpper?: number;
   /** Ticker symbol for display */
   ticker?: string;
   /** Asset type label */
@@ -45,9 +45,9 @@ function riskColor(rr: number): string {
 }
 
 export function SizingCalculator({
-  defaultEntry,
-  defaultStop,
-  defaultTarget,
+  defaultFill,
+  defaultLower,
+  defaultUpper,
   ticker,
   assetType = "STOCK",
   defaultExpanded = false,
@@ -58,23 +58,23 @@ export function SizingCalculator({
   // Inputs
   const [accountSize, setAccountSize] = useState("25000");
   const [riskPct, setRiskPct] = useState("1");
-  const [entry, setEntry] = useState(defaultEntry != null ? String(defaultEntry) : "");
-  const [stop, setStop] = useState(defaultStop != null ? String(defaultStop) : "");
-  const [target, setTarget] = useState(defaultTarget != null ? String(defaultTarget) : "");
+  const [fillPrice, setFillPrice] = useState(defaultFill != null ? String(defaultFill) : "");
+  const [lowerPrice, setLowerPrice] = useState(defaultLower != null ? String(defaultLower) : "");
+  const [upperPrice, setUpperPrice] = useState(defaultUpper != null ? String(defaultUpper) : "");
 
   // Derived calculations
   const calc = useMemo(() => {
     const acc = parseFloat(accountSize);
     const rPct = parseFloat(riskPct);
-    const entryN = parseFloat(entry);
-    const stopN = parseFloat(stop);
-    const targetN = parseFloat(target);
+    const entryN = parseFloat(fillPrice);
+    const stopN = parseFloat(lowerPrice);
+    const targetN = parseFloat(upperPrice);
 
     if (!isFinite(acc) || acc <= 0) return null;
     if (!isFinite(rPct) || rPct <= 0 || rPct > 100) return null;
     if (!isFinite(entryN) || entryN <= 0) return null;
     if (!isFinite(stopN) || stopN <= 0) return null;
-    if (stopN >= entryN) return null; // stop must be below entry for long
+    if (stopN >= entryN) return null; // lowerPrice must be below fillPrice for long
 
     const riskPerShare = entryN - stopN;
     const maxRiskDollars = acc * (rPct / 100);
@@ -97,7 +97,7 @@ export function SizingCalculator({
     const stopPct = ((entryN - stopN) / entryN) * 100;
 
     return { shares, positionSize, actualRisk, pctOfAccount, reward, rr, stopPct, rewardPct };
-  }, [accountSize, riskPct, entry, stop, target]);
+  }, [accountSize, riskPct, fillPrice, lowerPrice, upperPrice]);
 
   const handleNumberInput = useCallback(
     (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,11 +166,11 @@ export function SizingCalculator({
 
         {/* Entry */}
         <div>
-          <label style={labelStyle}>ENTRY PRICE ($)</label>
+          <label style={labelStyle}>FILL PRICE ($)</label>
           <input
             type="number"
-            value={entry}
-            onChange={handleNumberInput(setEntry)}
+            value={fillPrice}
+            onChange={handleNumberInput(setFillPrice)}
             placeholder="0.00"
             min="0.001"
             step="0.01"
@@ -180,19 +180,19 @@ export function SizingCalculator({
           />
         </div>
 
-        {/* Stop Loss */}
+        {/* Downside mark */}
         <div>
-          <label style={labelStyle}>STOP LOSS ($)</label>
+          <label style={labelStyle}>LOWER PRICE ($)</label>
           <input
             type="number"
-            value={stop}
-            onChange={handleNumberInput(setStop)}
+            value={lowerPrice}
+            onChange={handleNumberInput(setLowerPrice)}
             placeholder="0.00"
             min="0.001"
             step="0.01"
             style={{
               ...inputStyle,
-              borderColor: stop && parseFloat(stop) >= parseFloat(entry || "0") ? "rgba(255,45,85,0.4)" : "rgba(0,212,255,0.15)",
+              borderColor: lowerPrice && parseFloat(lowerPrice) >= parseFloat(fillPrice || "0") ? "rgba(255,45,85,0.4)" : "rgba(0,212,255,0.15)",
             }}
             onFocus={e => (e.currentTarget.style.borderColor = "rgba(255,45,85,0.4)")}
             onBlur={e => (e.currentTarget.style.borderColor = "rgba(0,212,255,0.15)")}
@@ -201,11 +201,11 @@ export function SizingCalculator({
 
         {/* Target */}
         <div>
-          <label style={labelStyle}>TARGET PRICE ($)</label>
+          <label style={labelStyle}>UPPER PRICE ($)</label>
           <input
             type="number"
-            value={target}
-            onChange={handleNumberInput(setTarget)}
+            value={upperPrice}
+            onChange={handleNumberInput(setUpperPrice)}
             placeholder="0.00 (optional)"
             min="0.001"
             step="0.01"
@@ -216,8 +216,8 @@ export function SizingCalculator({
         </div>
       </div>
 
-      {/* Stop above entry warning */}
-      {stop && entry && parseFloat(stop) >= parseFloat(entry) && (
+      {/* Stop above fillPrice warning */}
+      {lowerPrice && fillPrice && parseFloat(lowerPrice) >= parseFloat(fillPrice) && (
         <div style={{
           display: "flex", alignItems: "center", gap: "8px",
           padding: "8px 12px",
@@ -227,7 +227,7 @@ export function SizingCalculator({
         }}>
           <AlertTriangle size={12} style={{ color: "#FF2D55", flexShrink: 0 }} />
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#FF2D55" }}>
-            STOP MUST BE BELOW ENTRY FOR A LONG POSITION
+            LOWER PRICE MUST BE BELOW THE FILL FOR A LONG POSITION
           </span>
         </div>
       )}
@@ -273,7 +273,7 @@ export function SizingCalculator({
               icon={<AlertTriangle size={12} />}
               label="MAX RISK"
               value={fmtUSD(calc.actualRisk)}
-              sub={`${fmt(calc.stopPct, 1)}% below entry`}
+              sub={`${fmt(calc.stopPct, 1)}% below the fill`}
               color="#FF2D55"
             />
 
@@ -284,7 +284,7 @@ export function SizingCalculator({
                   icon={<TrendingUp size={12} />}
                   label="POTENTIAL REWARD"
                   value={fmtUSD(calc.reward)}
-                  sub={`+${fmt(calc.rewardPct ?? 0, 1)}% from entry`}
+                  sub={`+${fmt(calc.rewardPct ?? 0, 1)}% from the fill`}
                   color="#00FF88"
                 />
                 <ResultCard
@@ -337,7 +337,7 @@ export function SizingCalculator({
           color: "rgba(100,116,139,0.5)",
           letterSpacing: "0.08em",
         }}>
-          ENTER ENTRY + STOP PRICE TO CALCULATE
+          ENTER THE FILL AND THE LOWER PRICE TO CALCULATE
         </div>
       )}
 

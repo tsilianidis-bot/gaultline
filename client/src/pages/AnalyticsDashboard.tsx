@@ -306,7 +306,7 @@ export default function AnalyticsDashboard() {
                     <TableHeader>
                       <TableRow className="border-zinc-800">
                         <TableHead className="text-zinc-500 text-xs">Time</TableHead>
-                        <TableHead className="text-zinc-500 text-xs">Entry Page</TableHead>
+                        <TableHead className="text-zinc-500 text-xs">Landing page</TableHead>
                         <TableHead className="text-zinc-500 text-xs">Exit Page</TableHead>
                         <TableHead className="text-zinc-500 text-xs text-center">Pages</TableHead>
                         <TableHead className="text-zinc-500 text-xs text-center">Duration</TableHead>

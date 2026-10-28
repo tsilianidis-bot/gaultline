@@ -18,6 +18,9 @@
 // All computation is deterministic and runs server-side.
 // ============================================================
 
+import { tradeClass } from "../shared/surfaceClaims";
+import { omitTradeAction, omitTradeActions, withholdSignalConfidence, withholdSignalsConfidence } from "./signalConfidenceBoundary";
+
 // ── Types ─────────────────────────────────────────────────────
 
 export type TradingAction = "BUY" | "SELL" | "HOLD" | "WATCH";
@@ -26,28 +29,16 @@ export type TradingAction = "BUY" | "SELL" | "HOLD" | "WATCH";
  * Human-readable precision label for each TradingAction.
  * Stocks use equity-specific language; crypto overrides these via cryptoSignals.ts.
  */
-export const STOCK_ACTION_LABELS: Record<TradingAction, string> = {
-  BUY:  "Accumulation Zone",
-  SELL: "Reduce Exposure",
-  HOLD: "Hold",
-  WATCH: "Watch",
-};
-
-export const CRYPTO_ACTION_LABELS: Record<TradingAction, string> = {
-  BUY:  "Accumulation Zone",
-  SELL: "Avoid New Entry",
-  HOLD: "Hold",
-  WATCH: "Watch",
-};
-
-/** Returns the display label for a stock signal action. */
+/** Measured card text. The internal class is not part of this sentence. */
 export function stockActionLabel(action: TradingAction): string {
-  return STOCK_ACTION_LABELS[action];
+  void action;
+  return "RSI, trend, and the internal score are on this card. Freshness is the signal timestamp. This is not a trade instruction.";
 }
 
-/** Returns the display label for a crypto signal action. */
+/** Measured card text. The internal class is not part of this sentence. */
 export function cryptoActionLabel(action: TradingAction): string {
-  return CRYPTO_ACTION_LABELS[action];
+  void action;
+  return "RSI, trend, and the internal score are on this card. Freshness is the signal timestamp. This is not a trade instruction.";
 }
 
 export interface DailyBar {
@@ -66,8 +57,8 @@ export interface RiskTier {
 }
 
 export interface RiskLevels {
-  tradeStop: RiskTier;       // ATR-based short-term stop (5–15% below entry)
-  swingStop: RiskTier;       // MA/support-based medium-term stop (10–25% below entry)
+  tradeStop: RiskTier;       // ATR-based short-term stop (5–15% below the opening)
+  swingStop: RiskTier;       // MA/support-based medium-term stop (10–25% below the opening)
   thesisFailure: RiskTier;   // Structural invalidation level (replaces old oversized stop)
   riskReward: number;        // R:R using tradeStop as primary risk measure
   tradeStopExplanation: string;
@@ -78,8 +69,8 @@ export interface RiskLevels {
 export interface PriceLevels {
   support: number;       // estimated support (recent low area)
   resistance: number;    // estimated resistance (recent high area)
-  entryZone: number;     // suggested entry price
-  stopLoss: number;      // ATR-based stop-loss (legacy — kept for backward compat)
+  entryZone: number;     // suggested opening price
+  stopLoss: number;      // ATR-based downside-mark (legacy — kept for backward compat)
   targetPrice: number;   // 2:1 R:R target based on direction
   riskReward: number;    // (target - entry) / (entry - stop), rounded to 1dp
   atr: number;           // estimated ATR (high - low range proxy)
@@ -359,12 +350,12 @@ function computeRiskLevels(
   dailyBars?: DailyBar[]
 ): RiskLevels {
   const isBull = action === "BUY" || action === "HOLD" || action === "WATCH";
-  const dir = isBull ? -1 : 1; // negative = below entry for longs
+  const dir = isBull ? -1 : 1; // negative = below the opening for longs
 
   // ── Trade Stop: 0.75–1.0× ATR below recent low ──────────────
   // Tight tactical stop — protects against normal intraday noise.
   const rawTradeStop = low - atr * 0.75;
-  // Clamp to 5–15% below entry
+  // Clamp to 5–15% below the opening
   const tradeStopMin = entry * (1 - 0.15);
   const tradeStopMax = entry * (1 - 0.04);
   const tradeStopPrice = parseFloat(
@@ -382,7 +373,7 @@ function computeRiskLevels(
   } else {
     swingStopRaw = low - atr * 1.5;
   }
-  // Clamp to 10–25% below entry
+  // Clamp to 10–25% below the opening
   const swingStopMin = entry * (1 - 0.26);
   const swingStopMax = entry * (1 - 0.08);
   const swingStopPrice = parseFloat(
@@ -399,7 +390,7 @@ function computeRiskLevels(
   } else {
     thesisRaw = swingStopPrice - atr * 2.5;
   }
-  // Clamp to 20–65% below entry
+  // Clamp to 20–65% below the opening
   const thesisMin = entry * (1 - 0.65);
   const thesisMax = entry * (1 - 0.18);
   // Must be below swing stop
@@ -414,19 +405,19 @@ function computeRiskLevels(
   const riskReward = tradeRisk > 0 ? parseFloat((reward / tradeRisk).toFixed(1)) : 0;
 
   // ── AI Explanations ───────────────────────────────────────
-  const tradeStopExplanation = `Trade Stop sits ${Math.abs(tradeStopPct).toFixed(1)}% below entry, just under recent intraday support. Designed to protect against normal volatility while keeping risk tight for active traders.`;
+  const tradeStopExplanation = `Trade downside mark sits ${Math.abs(tradeStopPct).toFixed(1)}% below the opening, just under recent intraday support. Designed to protect against normal volatility while keeping risk tight for active traders.`;
 
   const swingStopExplanation = dailyBars && dailyBars.length >= 20
-    ? `Swing Stop is anchored to the 20-day moving average (${Math.abs(swingStopPct).toFixed(1)}% below entry). A close below this level signals the short-term trend is broken.`
-    : `Swing Stop at ${Math.abs(swingStopPct).toFixed(1)}% below entry allows for normal trend fluctuations while protecting capital from a sustained breakdown.`;
+    ? `Swing downside mark is anchored to the 20-day moving average (${Math.abs(swingStopPct).toFixed(1)}% below the opening). A close below this level signals the short-term trend is broken.`
+    : `Swing downside mark at ${Math.abs(swingStopPct).toFixed(1)}% below the opening allows for normal trend fluctuations while protecting capital from a sustained breakdown.`;
 
   const thesisFailureExplanation = dailyBars && dailyBars.length >= 50
-    ? `Thesis Failure Level marks the 50-session structural low (${Math.abs(thesisPct).toFixed(1)}% below entry). A breach here means the original bullish thesis has fundamentally broken down.`
-    : `Thesis Failure at ${Math.abs(thesisPct).toFixed(1)}% below entry represents the structural invalidation point — where the original trade thesis is no longer valid.`;
+    ? `Thesis Failure Level marks the 50-session structural low (${Math.abs(thesisPct).toFixed(1)}% below the opening). A breach here means the original bullish thesis has fundamentally broken down.`
+    : `Thesis Failure at ${Math.abs(thesisPct).toFixed(1)}% below the opening represents the structural invalidation point — where the original trade thesis is no longer valid.`;
 
   return {
-    tradeStop: { price: tradeStopPrice, pctFromEntry: tradeStopPct, label: "Trade Stop" },
-    swingStop: { price: swingStopPrice, pctFromEntry: swingStopPct, label: "Swing Stop" },
+    tradeStop: { price: tradeStopPrice, pctFromEntry: tradeStopPct, label: "Trade downside mark" },
+    swingStop: { price: swingStopPrice, pctFromEntry: swingStopPct, label: "Swing downside mark" },
     thesisFailure: { price: thesisPrice, pctFromEntry: thesisPct, label: "Thesis Failure" },
     riskReward,
     tradeStopExplanation,
@@ -681,22 +672,22 @@ export function computeTradingSignal(
   const absScore = Math.abs(score);
 
   if (score >= 4) {
-    action = "BUY";
+    action = tradeClass("up");
     confidence = Math.min(95, 55 + absScore * 5);
     strength = score >= 6 ? "Strong" : "Moderate";
     timeframe = "Short-Term";
   } else if (score <= -4) {
-    action = "SELL";
+    action = tradeClass("down");
     confidence = Math.min(95, 55 + absScore * 5);
     strength = score <= -6 ? "Strong" : "Moderate";
     timeframe = "Short-Term";
   } else if (absScore >= 2) {
-    action = "HOLD";
+    action = tradeClass("flat");
     confidence = Math.min(80, 45 + absScore * 5);
     strength = "Moderate";
     timeframe = "Swing";
   } else {
-    action = "WATCH";
+    action = tradeClass("open");
     confidence = Math.min(65, 35 + absScore * 5);
     strength = "Weak";
     timeframe = "Watch";
@@ -730,7 +721,7 @@ export function computeTradingSignal(
     ticker: input.ticker,
     assetClass: "STOCK",
     action,
-    actionLabel: stockActionLabel(action),
+    actionLabel: `${rsiNote}. Trend label is ${trend}. Internal score is ${score.toFixed(1)}. Volume label is ${volSignal}. Freshness is the signal timestamp. This is not a trade instruction.`,
     confidence,
     strength,
     timeframe,
@@ -765,6 +756,15 @@ export function computeTradingSignals(
   regime: RegimeInput
 ): TradingSignalResult[] {
   return inputs.map(input => computeTradingSignal(input, regime));
+}
+
+/** Client payload. The named `action` field stays on the engine result for scoring and is omitted here. */
+export function presentTradingSignal<T extends { action?: unknown; confidence: number | null }>(signal: T) {
+  return omitTradeAction(withholdSignalConfidence(signal));
+}
+
+export function presentTradingSignals<T extends { action?: unknown; confidence: number | null }>(signals: T[]) {
+  return omitTradeActions(withholdSignalsConfidence(signals));
 }
 
 /** Clear the signal cache */

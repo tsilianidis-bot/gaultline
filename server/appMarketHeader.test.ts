@@ -31,7 +31,8 @@ describe("AppMarketHeader", () => {
       canonicalAvailable: true,
     }));
 
-    expect(html).toContain("Risk-Off");
+    expect(html).toContain("lower-risk appetite");
+    expect(html).not.toContain("Risk-Off");
     expect(html).toContain("Transition");
     expect(html).toContain("DIVERGENT");
   });

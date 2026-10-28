@@ -7,8 +7,8 @@ export default function AMDSignal() {
       companyName="Advanced Micro Devices, Inc."
       sector="Semiconductors / AI & Data Center"
       description="AMD stock signal analysis"
-      seoTitle="AMD Signal — Advanced Micro Devices Stock Analysis, AI Risk Score | FAULTLINE"
-      seoDescription="AMD signal analysis: Advanced Micro Devices' macro alignment score, AI GPU exposure rating, data center cycle sensitivity, and regime-based signal classification."
+      seoTitle="AMD — Advanced Micro Devices background and shared stock thesis | FAULTLINE"
+      seoDescription="Background on Advanced Micro Devices. The live stock read is the shared Pentagonal Thesis. This page does not publish a separate trade instruction."
       canonical="/stock/amd"
       accentColor="#ED1C24"
       badge="AMD SIGNAL INTELLIGENCE"
@@ -49,17 +49,17 @@ Historical Context: AMD set a then-record high in late 2021, then fell approxima
 
 5. Macro Regime Sensitivity: AMD's high valuation multiple makes it sensitive to macro regime transitions. A shift to HIGH STRESS (FAULTLINE Pressure Index 65+) typically triggers significant semiconductor stock drawdowns.`}
       faqs={[
-        { question: "Is AMD a buy or sell right now?", answer: "FAULTLINE's AMD signal classification is available on the Signals tab, based on macro regime alignment, AI accelerator market share dynamics, data center cycle conditions, and technical structure. This is not investment advice." },
-        { question: "How does AMD compare to NVIDIA for AI?", answer: "NVIDIA dominates the AI accelerator market, driven by its CUDA software ecosystem and H100/H200/Blackwell hardware advantage. AMD's Instinct MI300X and successor products are competitive on raw performance but face significant software ecosystem disadvantages. AMD is the primary alternative for hyperscalers seeking supply diversification." },
-        { question: "What is AMD's biggest opportunity in 2026?", answer: "AMD's biggest opportunity is gaining AI accelerator market share from hyperscalers seeking to diversify away from NVIDIA dependence. Microsoft, Google, Meta, and Amazon have all publicly stated interest in AMD's Instinct products as a complement to NVIDIA GPUs. Even modest market share gains in the rapidly growing AI accelerator market represent significant revenue upside for AMD." },
-        { question: "How does AMD's stock relate to NVIDIA's?", answer: "AMD and NVIDIA are correlated as AI semiconductor stocks, but their relationship is complex. They compete directly in AI accelerators, meaning AMD sometimes benefits when NVIDIA faces challenges (supply constraints, export restrictions). However, both stocks tend to move in the same direction during broad market moves — both rise in risk-on environments and fall in risk-off environments." },
+        { question: "Does this page classify AMD?", answer: "No. The live stock read is the shared thesis. This page does not publish a market-share figure or a separate instruction." },
+        { question: "How does AMD compare to NVIDIA for AI?", answer: "NVIDIA sells the accelerators most often discussed alongside AMD's data-center products, including its CUDA software and H100/H200/Blackwell hardware. This page does not publish a market-share figure. AMD also sells accelerators. The live read is the shared thesis." },
+        { question: "What business is AMD in relative to NVIDIA?", answer: "AMD sells processors, including products aimed at data-center accelerators. NVIDIA also sells accelerators. This page does not rank a future-year opportunity or publish a market-share forecast." },
+        { question: "How does AMD's stock relate to NVIDIA's?", answer: "AMD and NVIDIA are correlated as AI semiconductor stocks, but their relationship is complex. They compete directly in AI accelerators, meaning AMD sometimes benefits when NVIDIA faces challenges (supply constraints, export restrictions). However, both stocks tend to move in the same direction during broad market moves — both rise in higher-risk-appetite environments and fall in lower-risk-appetite environments." },
         { question: "What would cause AMD to significantly outperform NVIDIA?", answer: "AMD could significantly outperform NVIDIA if: NVIDIA faces major supply constraints or export restriction tightening that drives hyperscalers to AMD; AMD's ROCm software ecosystem achieves a breakthrough in developer adoption; or AMD's next-generation Instinct architecture achieves a performance-per-dollar advantage over NVIDIA's competing products." },
       ]}
       internalLinks={[
         { label: "NVDA SIGNAL", href: "/stock/nvda", desc: "NVIDIA — AMD's primary AI GPU competitor." },
         { label: "AI STOCKS DASHBOARD", href: "/ai-stocks-dashboard", desc: "All AI-exposed stocks in one dashboard." },
         { label: "AI BUBBLE MONITOR", href: "/ai-bubble-risk-tracker", desc: "Track AI concentration and valuation risk." },
-        { label: "MARKET CRASH RISK 2026", href: "/market-crash-probability-2026", desc: "Systemic risk that could trigger AMD drawdowns." },
+        { label: "SHARED THESIS", href: "/app/signals", desc: "The live AMD read is the shared stock thesis." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy impact on semiconductor stocks." },
         { label: "STOCK SIGNALS", href: "/signals", desc: "All FAULTLINE stock signals in one view." },
       ]}

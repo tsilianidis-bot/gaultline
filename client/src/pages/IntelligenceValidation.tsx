@@ -678,7 +678,7 @@ export default function IntelligenceValidation() {
           <Card className="bg-zinc-900/60 border-zinc-800">
             <CardContent className="p-4 space-y-3 text-xs text-zinc-500 leading-relaxed">
               <p><span className="text-zinc-300 font-medium">Win Rate:</span> Correct outcomes score 1 point, Partially Correct score 0.5 points, Incorrect and Still Active score 0 points. Win Rate = total points / resolved entries × 100.</p>
-              <p><span className="text-zinc-300 font-medium">Conservative Scoring:</span> Auto-evaluation only marks "Correct" if price moved ≥60% toward the target. "Incorrect" requires ≥50% adverse move. Ambiguous outcomes are marked "Still Active" for manual review.</p>
+              <p><span className="text-zinc-300 font-medium">Conservative Scoring:</span> Auto-evaluation only marks "Correct" if price moved ≥60% toward the stated level. "Incorrect" requires ≥50% adverse move. Ambiguous outcomes are marked "Still Active" for manual review.</p>
               <p><span className="text-zinc-300 font-medium">Confidence Calibration:</span> Not established. Recommendations are logged without a stated model confidence, so no confidence bands or calibration deltas are reported.</p>
               <p><span className="text-zinc-300 font-medium">Sample Size:</span> Metrics with fewer than 10 resolved entries are flagged as low-sample and should be interpreted with caution.</p>
               <p><span className="text-zinc-300 font-medium">Not Financial Advice:</span> All recommendations and accuracy metrics are for informational and research purposes only. Past accuracy does not guarantee future performance. FAULTLINE is an intelligence tool, not a financial advisor.</p>

@@ -1,6 +1,6 @@
 import { COOKIE_NAME } from "@shared/const";
 import { ENV } from "./_core/env";
-import { analyticsRouter, blogRouter, billingRouter, adminRouter, outlookRouter, organicContentRouter, smartDiscoveryRouter, fmosRouter, dailyBriefRouter, intelligenceValidationRouter, marketIntelligenceRouter, conversationIntelligenceRouter, seismographRouter, ashaMemoryRouter, promoRouter, gscRouter, marketStateRouter, timeMachineRouter, marketsRouter, institutionalMemoryRouter, systemicRegimeRouter, sectorRotationRouter, intelligenceEvidenceRouter } from "./routers/index";
+import { analyticsRouter, blogRouter, billingRouter, adminRouter, outlookRouter, organicContentRouter, smartDiscoveryRouter, fmosRouter, dailyBriefRouter, intelligenceValidationRouter, marketIntelligenceRouter, conversationIntelligenceRouter, seismographRouter, ashaMemoryRouter, promoRouter, gscRouter, marketStateRouter, timeMachineRouter, marketsRouter, institutionalMemoryRouter, systemicRegimeRouter, sectorRotationRouter, intelligenceEvidenceRouter, pentagonalThesisRouter } from "./routers/index";
 import { intelligenceAccountabilityRouter } from "./routers/intelligenceAccountability";
 import { notifyOwner } from "./_core/notification";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -14,8 +14,9 @@ import { calculateFaultlinePressure, PressureInputsUnavailableError } from "./pr
 import { runV3HShadow } from "./pressure/shadowEngine";
 import { computeHistoricalContext } from "./historicalContextEngine";
 import { computeHomepageBriefing } from "./homepageBriefing";
-import { computeTradingSignals, computeTradingSignal, clearSignalCache } from "./tradingSignals";
-import { withholdSignalConfidence, withholdSignalsConfidence, withholdScreenerConfidence } from "./signalConfidenceBoundary";
+import { computeTradingSignals, computeTradingSignal, clearSignalCache, presentTradingSignal, presentTradingSignals } from "./tradingSignals";
+import { tradeClass } from "../shared/surfaceClaims";
+import { guardNamedClientFields, neutralConditionLabel, neutralizeChannelPayload, neutralizeChannelText } from "@shared/clientVocabulary";
 import { getSignalVisualDetailPayload } from "./signalVisualDetail";
 import { getDiagnosticReport, clearDiagnosticCache } from "./diagnosticAI";
 import { getPositionGuidance, clearGuidanceCache, getGuidanceForTicker } from "./positionGuidance";
@@ -46,7 +47,7 @@ import {
 import { valuateSimPortfolio, runDailyEvaluation } from "./simPortfolioEngine";
 import { generateDailyJournal } from "./simPortfolioJournal";
 import { runAftershockEngine, getAssetContagionChain, getAllContagionAssets, clearAftershockCache } from "./aftershockEngine";
-import { computeCryptoSignal, computeCryptoSignals, clearCryptoSignalCache } from "./cryptoSignals";
+import { computeCryptoSignal, computeCryptoSignals, clearCryptoSignalCache, presentCryptoSignal, presentCryptoSignals } from "./cryptoSignals";
 import { computeAltRotation, clearAltRotationCache } from "./altRotationEngine";
 import { getRecoveryAnalysis, clearRecoveryCache } from "./recoveryEngine";
 import { logMarketAwarenessAction, computeAwarenessScore, getRecentActions, ACTION_KEYS, type ActionKey } from "./marketAwareness";
@@ -54,7 +55,7 @@ import {
   getTodaySnapshot, hasTodaySnapshot, getSnapshotRange, getLatestSnapshot,
   upsertTodaySnapshot, getTimeframeReading, computeOutcomeSupport, getReadingHistorySummary,
 } from "./readingHistory";
-import { protectedProcedure, coreProcedure, ownerOrAdminProcedure } from "./_core/trpc";
+import { protectedProcedure, coreProcedure, adminProcedure, ownerOrAdminProcedure } from "./_core/trpc";
 import { withholdNonFiniteNumbers } from "./displayNumbers";
 import { generateXPosts } from './xPostGenerator';
 import { sendEmail, buildApprovalEmail, buildFoundingRequestNotification } from './email';
@@ -125,6 +126,7 @@ export const appRouter = router({
   sectorRotation: sectorRotationRouter,
   intelligenceEvidence: intelligenceEvidenceRouter,
   intelligenceAccountability: intelligenceAccountabilityRouter,
+  pentagonalThesis: pentagonalThesisRouter,
 
   auth: router({
     me: publicProcedure.query(opts => toPublicAuthUser(opts.ctx.user)),
@@ -254,7 +256,7 @@ export const appRouter = router({
       .mutation(({ input }) => {
         try {
           // Launch fix-up: formula confidence is withheld at the response boundary.
-          return withholdSignalsConfidence(computeTradingSignals(input.tickers, input.regime));
+          return presentTradingSignals(computeTradingSignals(input.tickers, input.regime));
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trading signal computation failed", cause: err });
         }
@@ -290,7 +292,7 @@ export const appRouter = router({
         try {
           const { regime, ...tickerInput } = input;
           // Launch fix-up: formula confidence is withheld at the response boundary.
-          return withholdSignalConfidence(computeTradingSignal(tickerInput, regime));
+          return presentTradingSignal(computeTradingSignal(tickerInput, regime));
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trading signal computation failed", cause: err });
         }
@@ -874,7 +876,7 @@ export const appRouter = router({
           });
           // Launch fix-up: formula confidence is withheld at the response boundary.
           // A non-finite number is unavailable. It is not displayed as 0.
-          const withheld = withholdSignalConfidence(result);
+          const withheld = presentCryptoSignal(result);
           return withholdNonFiniteNumbers(withheld) as typeof withheld;
         } catch (err) {
           if (err instanceof TRPCError) throw err;
@@ -901,7 +903,7 @@ export const appRouter = router({
           );
           const screenerResult = {
             // Launch fix-up: formula confidence is withheld at the response boundary.
-            signals: withholdScreenerConfidence(results),
+            signals: presentCryptoSignals(results),
             regime,
             btcDominance,
             totalMarketCap: globalStats?.totalMarketCap ?? null,
@@ -1195,7 +1197,7 @@ export const appRouter = router({
       }))
       .query(async ({ ctx, input }) => {
         if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
-        return getXPostQueue(input);
+        return neutralizeChannelPayload(await getXPostQueue(input));
       }),
     stats: protectedProcedure
       .query(async ({ ctx }) => {
@@ -1264,7 +1266,7 @@ export const appRouter = router({
             pressure,
             headline: input.headline,
           });
-          return { variants, pressure: { overallPressure: pressure.overallPressure, regime: pressure.regime, level: pressure.level } };
+          return { variants: neutralizeChannelPayload(variants), pressure: { overallPressure: pressure.overallPressure, regime: pressure.regime, level: pressure.level } };
         } catch (err) {
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to generate X posts', cause: err });
         }
@@ -1395,7 +1397,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         try {
           // Enforce 3-symbol watchlist cap for free/observer users
-          const tier = ctx.user.accessTier as string;
+          const tier = await getUserTier(ctx.user.id);
           const isPaid = tier === 'core' || tier === 'premium' || tier === 'founding';
           if (!isPaid) {
             const FREE_WATCHLIST_LIMIT = 3;
@@ -1939,7 +1941,7 @@ export const appRouter = router({
           const stocksCash = parseFloat(stocksAccount?.cashBalance ?? "10000");
           const cryptoCash = parseFloat(cryptoAccount?.cashBalance ?? "10000");
           const valuation = await valuateSimPortfolio(openPositions, stocksCash, cryptoCash);
-          return { visible: true as const, isAdminOrOwner, accounts, valuation, startDate: stocksAccount?.createdAt ?? null, startingCapital: 20000 };
+          return guardNamedClientFields({ visible: true as const, isAdminOrOwner, accounts, valuation, startDate: stocksAccount?.createdAt ?? null, startingCapital: 20000 });
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Sim portfolio overview failed", cause: err });
         }
@@ -1949,7 +1951,12 @@ export const appRouter = router({
         const featureEnabled = await getFeatureFlag("sim_portfolio_visible");
         const isAdminOrOwner = ctx.user?.role === "admin" || ctx.user?.openId === ENV.ownerOpenId;
         if (!featureEnabled && !isAdminOrOwner) return [];
-        return getSimOpenPositions();
+        const positions = await getSimOpenPositions();
+        return positions.map(position => guardNamedClientFields({
+          ...position,
+          entrySignal: position.entrySignal ? neutralConditionLabel(position.entrySignal) : position.entrySignal,
+          exitSignal: position.exitSignal ? neutralConditionLabel(position.exitSignal) : position.exitSignal,
+        }));
       }),
     getTrades: publicProcedure
       .input(z.object({ limit: z.number().min(1).max(200).default(100) }).optional())
@@ -1957,7 +1964,12 @@ export const appRouter = router({
         const featureEnabled = await getFeatureFlag("sim_portfolio_visible");
         const isAdminOrOwner = ctx.user?.role === "admin" || ctx.user?.openId === ENV.ownerOpenId;
         if (!featureEnabled && !isAdminOrOwner) return [];
-        return getSimTrades(undefined, input?.limit ?? 100);
+        const trades = await getSimTrades(undefined, input?.limit ?? 100);
+        return trades.map(trade => guardNamedClientFields({
+          ...trade,
+          action: neutralConditionLabel(trade.action),
+          rationale: trade.rationale ? neutralizeChannelText(trade.rationale) : trade.rationale,
+        }));
       }),
     getJournal: publicProcedure
       .input(z.object({ limit: z.number().min(1).max(60).default(30) }).optional())
@@ -1965,9 +1977,13 @@ export const appRouter = router({
         const featureEnabled = await getFeatureFlag("sim_portfolio_visible");
         const isAdminOrOwner = ctx.user?.role === "admin" || ctx.user?.openId === ENV.ownerOpenId;
         if (!featureEnabled && !isAdminOrOwner) return [];
-        return getSimJournalEntries(input?.limit ?? 30);
+        const entries = await getSimJournalEntries(input?.limit ?? 30);
+        return entries.map(entry => ({
+          ...entry,
+          journalEntry: neutralizeChannelText(entry.journalEntry),
+        }));
       }),
-    runDailyUpdate: protectedProcedure
+    runDailyUpdate: adminProcedure
       .mutation(async () => {
         try {
           const { pressure, stockDecisions, cryptoDecisions } = await runDailyEvaluation();
@@ -2004,7 +2020,7 @@ export const appRouter = router({
                 accountId: account.id,
                 ticker: decision.ticker,
                 assetType: decision.assetType,
-                action: "BUY",
+                action: tradeClass("up"),
                 quantity: decision.quantity.toString(),
                 price: decision.price.toString(),
                 totalValue: cost.toString(),
@@ -2451,7 +2467,7 @@ export const appRouter = router({
         expiresInDays: z.number().min(1).max(365).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const tier = ctx.user.accessTier;
+        const tier = await getUserTier(ctx.user.id);
         if (!['premium', 'founding'].includes(tier) && ctx.user.role !== 'admin') {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Share links require Premium or Founding access' });
         }
@@ -2574,7 +2590,7 @@ export const appRouter = router({
     getUsageSummary: protectedProcedure.query(async ({ ctx }) => {
       const row = await getMobileUsageToday(ctx.user.id);
       const monthlyCount = await getSituationRoomMonthlyCount(ctx.user.id);
-      const tier = ctx.user.accessTier as string;
+      const tier = await getUserTier(ctx.user.id);
       const isPro = tier === 'premium' || tier === 'founding';
       const isPaid = tier === 'core' || isPro;
       const limits = {
@@ -2599,7 +2615,7 @@ export const appRouter = router({
         feature: z.enum(['stockSignals', 'cryptoSignals', 'signalOutlooks', 'situationRoom']),
       }))
       .query(async ({ ctx, input }) => {
-        const tier = ctx.user.accessTier as string;
+        const tier = await getUserTier(ctx.user.id);
         const isPro = tier === 'premium' || tier === 'founding';
         const isPaid = tier === 'core' || isPro;
         if (isPro) return { allowed: true, remaining: null, limit: null, upgradeMessage: null };
@@ -2653,7 +2669,7 @@ export const appRouter = router({
     getToday: protectedProcedure.query(async ({ ctx }) => {
       const row = await getMobileUsageToday(ctx.user.id);
       const monthlyCount = await getSituationRoomMonthlyCount(ctx.user.id);
-      const tier = ctx.user.accessTier as string;
+      const tier = await getUserTier(ctx.user.id);
       const isPro = tier === 'premium' || tier === 'founding';
       const isPaid = tier === 'core' || isPro;
       return {

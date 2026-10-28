@@ -114,9 +114,11 @@ describe("#3/#4/#5 copy", () => {
     expect(o).not.toMatch(/3\.0–5\.0|8\.5\+/);
     expect(o).toContain("0–100 scale");
   });
-  it("CryptoSignals labels its native 0–10 ratings explicitly", () => {
+  it("CryptoSignals withholds the unsupported volume-to-cap score", () => {
     const c = read("client/src/pages/CryptoSignals.tsx");
-    expect(c).toContain('label: "ASSET VOLUME LIQUIDITY"');
+    expect(c).toContain('label: "VOLUME / CAP"');
+    expect(c).toContain('value: "Not shown"');
+    expect(c).not.toContain('label: "ASSET VOLUME LIQUIDITY"');
     expect(c).toContain(">REGIME ALIGNMENT:</span>");
     expect(c).not.toContain('"LIQUIDITY SCORE"');
   });

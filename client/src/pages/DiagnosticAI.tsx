@@ -41,7 +41,7 @@ function AITabBar() {
 
 type Timeframe = "today" | "week" | "month" | "year";
 type ActionBias = "Bullish" | "Neutral" | "Cautious" | "Defensive" | "Critical";
-type PositionAction = "Add" | "Hold" | "Trim" | "Watch / No Add" | "Exit Watch" | "Sell Bias";
+type PositionAction = "Add" | "Hold" | "Trim" | "Watch / No Add" | "Exit Watch" | "Reduction bias";
 type ConvictionLevel = "High" | "Moderate" | "Low";
 
 // ── Color helpers ─────────────────────────────────────────────
@@ -64,7 +64,7 @@ function actionColor(action: PositionAction): string {
     case "Trim":           return "#FFD700";
     case "Watch / No Add": return "#FF9800";
     case "Exit Watch":     return "#FF6B35";
-    case "Sell Bias":      return "#FF2D55";
+    case "Reduction bias": return "#FF2D55";
     default:               return "#94A3B8";
   }
 }

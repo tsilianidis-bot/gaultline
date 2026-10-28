@@ -23,13 +23,7 @@ import { LRUCache } from "./lruCache";
 
 // ── Types ────────────────────────────────────────────────────
 
-export type PositionAction =
-  | "Add"
-  | "Hold"
-  | "Trim"
-  | "Watch / No Add"
-  | "Exit Watch"
-  | "Sell Bias";
+export type PositionAction = string;
 
 export type ConvictionLevel = "High" | "Moderate" | "Low";
 export type PositionTimeframe = "Today" | "Week" | "Month" | "Year";
@@ -287,12 +281,7 @@ function computeAssetScores(
 }
 
 function scoreToAction(compositeScore: number): PositionAction {
-  if (compositeScore >= 80) return "Add";
-  if (compositeScore >= 65) return "Hold";          // Hold / Add on Pullback
-  if (compositeScore >= 50) return "Watch / No Add"; // Hold — conditions mixed
-  if (compositeScore >= 35) return "Trim";
-  if (compositeScore >= 20) return "Exit Watch";
-  return "Sell Bias";
+  return `Composite score is ${compositeScore}/100.`;
 }
 
 function scoreToConviction(compositeScore: number, pressure: number): ConvictionLevel {
@@ -377,7 +366,7 @@ async function generatePositionInterpretation(
   const p = pressure.overallPressure;
   const regime = pressure.regime;
 
-  const systemPrompt = `You are FAULTLINE's institutional position guidance engine. You interpret structured market-risk scores and produce clear, professional, non-hyped position guidance. Tone: institutional, serious, direct, non-generic. NEVER say "crash guaranteed", "buy now", "sell everything", or use hype language. This is market-risk interpretation, not personalized financial advice.`;
+  const systemPrompt = `You are FAULTLINE's institutional position guidance engine. You interpret structured market-risk scores and produce clear, professional, non-hyped position guidance. Tone: institutional, serious, direct, non-generic. NEVER say "crash guaranteed", "acquire now", "reduce everything", or use hype language. This is market-risk interpretation, not personalized financial advice.`;
 
   const userPrompt = `Generate FAULTLINE Position Guidance™ for ${asset.ticker} (${asset.name}).
 
@@ -399,7 +388,7 @@ STRUCTURED SCORES (interpret these — do not invent data):
 
 Return JSON with exactly these fields:
 - "aiInterpretation": 2–3 sentence paragraph. Start with "${asset.ticker} [observation about current conditions]". Reference specific scores. End with what the signal means for positioning.
-- "suggestedBehavior": 1–2 sentences describing the specific position action (e.g., "Trim 10–25% of overweight exposure, hold the remaining core position").
+- "suggestedBehavior": 1–2 sentences describing the specific position action (e.g., "A 10–25% smaller size of larger share exposure, keep the remaining core position").
 - "invalidationCondition": 1 sentence describing what would change this signal (e.g., "If ${asset.ticker} closes below key trend support...").
 - "nextConditionToWatch": 1 sentence describing the most important thing to monitor.
 - "whyThisSignal": object with:
@@ -453,18 +442,8 @@ Return JSON with exactly these fields:
   } catch {
     // Fallback interpretation
     return {
-      aiInterpretation: `${asset.ticker} is showing a composite score of ${scores.compositeScore}/100 under ${regime} conditions. ${action === "Trim" || action === "Exit Watch" || action === "Sell Bias" ? "Market pressure and deteriorating conditions suggest reducing exposure." : action === "Add" ? "Conditions remain constructive for adding exposure." : "Current conditions favor maintaining the existing position."} Risk management should reflect the current ${p >= 61 ? "elevated" : "moderate"} pressure environment.`,
-      suggestedBehavior: action === "Trim"
-        ? "Trim 10–25% of overweight exposure, hold the remaining core position, and avoid adding until market pressure eases."
-        : action === "Add"
-        ? "Conditions support adding exposure on pullbacks toward support. Use position sizing appropriate to the current volatility regime."
-        : action === "Hold"
-        ? "Maintain current position size. Avoid adding until conditions improve or reduce if pressure escalates."
-        : action === "Watch / No Add"
-        ? "Do not add to the position. Monitor for improved conditions before considering new exposure."
-        : action === "Exit Watch"
-        ? "Prepare to reduce or exit if trend support breaks. Tighten stop levels."
-        : "Conditions favor reducing or exiting exposure. Prioritize capital preservation.",
+      aiInterpretation: `${asset.ticker} composite score is ${scores.compositeScore}/100. Regime label is ${regime}. Pressure Index is ${p}/100.`,
+      suggestedBehavior: `Composite score is ${scores.compositeScore}/100. Pressure Index is ${p}/100 on this reading. No position size is published.`,
       invalidationCondition: `If ${asset.ticker} breaks below key trend support, the signal may shift to a more defensive posture.`,
       nextConditionToWatch: `Monitor FAULTLINE Pressure Index and ${asset.sector} sector strength for directional confirmation.`,
       whyThisSignal: {

@@ -117,7 +117,7 @@ export const CATEGORY_META: Record<ScreeningCategory, CategoryMeta> = {
     marketCapRange: '$2B–$10B',
     sector: 'Mixed',
     regimes: ['LOW_RISK', 'MODERATE_RISK', 'LATE_CYCLE_AI'],
-    bullCase: 'Revenue acceleration, market share gains, M&A target potential',
+    bullCase: 'Revenue acceleration, market share gains, M&A upper mark potential',
     bearCase: 'Liquidity risk, execution risk, rate sensitivity',
   },
   'Small-Cap Opportunity': {
@@ -128,7 +128,7 @@ export const CATEGORY_META: Record<ScreeningCategory, CategoryMeta> = {
     sector: 'Mixed',
     regimes: ['LOW_RISK', 'MODERATE_RISK'],
     bullCase: 'Underfollowed, catalyst-driven re-rating, M&A premium',
-    bearCase: 'Low liquidity, high beta, vulnerable in risk-off',
+    bearCase: 'Low liquidity, high beta, vulnerable in lower-risk appetite',
   },
   'Micro-Cap / Speculative': {
     icon: '🎯',
@@ -148,7 +148,7 @@ export const CATEGORY_META: Record<ScreeningCategory, CategoryMeta> = {
     sector: 'Mixed',
     regimes: ['ALL'],
     bullCase: 'Technical breakout, volume confirmation, momentum continuation',
-    bearCase: 'Failed breakout, false move, stop-out risk',
+    bearCase: 'Failed breakout, false move, downside mark-out risk',
   },
   'Oversold Reversal Candidates': {
     icon: '🔄',
@@ -157,7 +157,7 @@ export const CATEGORY_META: Record<ScreeningCategory, CategoryMeta> = {
     marketCapRange: 'All',
     sector: 'Mixed',
     regimes: ['ALL'],
-    bullCase: 'RSI divergence, support hold, catalyst-driven bounce',
+    bullCase: 'RSI divergence, support keep, catalyst-driven bounce',
     bearCase: 'Oversold can stay oversold, fundamental deterioration',
   },
   'AI / Semiconductors': {
@@ -188,7 +188,7 @@ export const CATEGORY_META: Record<ScreeningCategory, CategoryMeta> = {
     sector: 'Crypto',
     regimes: ['LOW_RISK', 'LATE_CYCLE_AI'],
     bullCase: 'Institutional adoption, ETF flows, halving cycle, DeFi growth',
-    bearCase: 'Regulatory crackdown, liquidity withdrawal, correlation to risk-off',
+    bearCase: 'Regulatory crackdown, liquidity withdrawal, correlation to lower-risk appetite',
   },
   'Meme / Retail Momentum': {
     icon: '🚀',
@@ -202,7 +202,7 @@ export const CATEGORY_META: Record<ScreeningCategory, CategoryMeta> = {
   },
   'Biotech / Healthcare Risk': {
     icon: '🧬',
-    description: 'Biotech and specialty pharma with binary catalyst risk — FDA decisions, Phase 3 readouts, and M&A targets.',
+    description: 'Biotech and specialty pharma with binary catalyst risk — FDA decisions, Phase 3 readouts, and M&A upper marks.',
     riskRating: 'Very High',
     marketCapRange: 'All',
     sector: 'Healthcare',
@@ -911,7 +911,7 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     signals: ['Rate Sensitive', 'Oversold Reversal'],
     categories: ['Real Estate / Rate Sensitive', 'Oversold Reversal Candidates'],
     sparkline: genSparkline('down', -0.8),
-    bullCase: 'Housing supply shortage, rate cut catalyst, entry-level focus',
+    bullCase: 'Housing supply shortage, rate cut catalyst, opening-level focus',
     bearCase: 'Mortgage rate sensitivity, affordability crisis, inventory buildup',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/DHI/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=DHI', shortInterest: 'polygon.io/v2/reference/financials/DHI', sparkline: 'twelvedata.com/time_series?symbol=DHI&interval=1h&outputsize=20' },
   },
@@ -1025,7 +1025,7 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     categories: ['Macro Beneficiaries'],
     sparkline: genSparkline('up', 0.8),
     bullCase: 'Central bank buying, dollar weakness, geopolitical risk premium',
-    bearCase: 'Rate hike cycle, dollar strength, risk-on rotation',
+    bearCase: 'Rate hike cycle, dollar strength, higher-risk appetite rotation',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/GLD/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=GLD', shortInterest: 'polygon.io/v2/reference/financials/GLD', sparkline: 'twelvedata.com/time_series?symbol=GLD&interval=1h&outputsize=20' },
   },
   {
@@ -1078,9 +1078,9 @@ export const REGIME_CONTEXT: Record<RegimeCode, { headline: string; description:
   LIQUIDITY_STRESS: { headline: 'Liquidity Stress Rising', description: 'NFCI tightening. Small caps and high-beta names under pressure. Defensive rotation underway. Cash flow quality premium.', bullish: 'Defensives, gold, cash-rich mega-caps', bearish: 'Small caps, leveraged names, speculative growth' },
   CREDIT_STRESS:    { headline: 'Credit Deterioration', description: 'HY spreads widening. Regional banks stressed. CRE exposure flagged. Refinancing risk elevated for high-debt companies.', bullish: 'Investment-grade, defensives, gold', bearish: 'Regional banks, CRE, leveraged small caps, high-debt' },
   INFLATION:        { headline: 'Inflationary Pressure', description: 'CPI/PPI elevated. Rate-sensitive sectors repricing. Energy and commodities outperforming. Duration risk elevated.', bullish: 'Energy, commodities, pricing-power companies', bearish: 'Long-duration growth, REITs, rate-sensitive' },
-  HIGH_RISK:        { headline: 'High Systemic Risk', description: 'Multiple pressure domains elevated. Defensive positioning favored. Risk-off rotation accelerating. Volatility elevated.', bullish: 'Defensives, gold, short-vol strategies', bearish: 'Speculative growth, high-beta, leveraged names' },
+  HIGH_RISK:        { headline: 'High Systemic Risk', description: 'Multiple pressure domains elevated. Defensive positioning favored. Lower-risk appetite rotation accelerating. Volatility elevated.', bullish: 'Defensives, gold, short-vol strategies', bearish: 'Speculative growth, high-beta, leveraged names' },
   MODERATE_RISK:    { headline: 'Moderate Risk Environment', description: 'Mixed signals across domains. Selective opportunities in momentum and quality. Monitor for regime shift triggers.', bullish: 'Quality momentum, AI leaders, selective value', bearish: 'High-debt, low-quality, speculative names' },
-  LOW_RISK:         { headline: 'Low Risk / Risk-On', description: 'Systemic pressure subdued. Risk appetite elevated. Momentum and growth strategies outperforming. Breadth expanding.', bullish: 'Growth, momentum, AI, small caps', bearish: 'Defensive, gold, low-beta' },
+  LOW_RISK:         { headline: 'Low Risk / Higher appetite', description: 'Systemic pressure subdued. Risk appetite elevated. Momentum and growth strategies outperforming. Breadth expanding.', bullish: 'Growth, momentum, AI, small caps', bearish: 'Defensive, gold, low-beta' },
 };
 export function scoreStockForRegime(stock: SignalStock, regime: RegimeCode): number {
   let score = 50;

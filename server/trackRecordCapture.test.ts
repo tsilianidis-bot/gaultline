@@ -163,6 +163,9 @@ describe("verified evidence selection", () => {
     })).toEqual({ recorded: false, reason: "reconstructed_input" });
     expect(trackRecordCronWritesEnabled({})).toBe(false);
     expect(trackRecordCronWritesEnabled({ TRACK_RECORD_CRON_WRITES: "false" })).toBe(false);
+    for (const value of ["TRUE", " true ", "true ", "1", "yes", "True", "true\n"]) {
+      expect(trackRecordCronWritesEnabled({ TRACK_RECORD_CRON_WRITES: value })).toBe(false);
+    }
     expect(await captureTrackRecordFromScheduledRun({
       run: { trigger: "SCHEDULED_CRON" },
       pressureIndex: 40,

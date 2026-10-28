@@ -6,5 +6,8 @@ describe("Phase 1 verified evidence rollout gate", () => {
     expect(isIntelligenceEvidenceEnabled({})).toBe(false);
     expect(isIntelligenceEvidenceEnabled({ [INTELLIGENCE_EVIDENCE_FLAG]: "false" })).toBe(false);
     expect(isIntelligenceEvidenceEnabled({ [INTELLIGENCE_EVIDENCE_FLAG]: "true" })).toBe(true);
+    for (const value of ["TRUE", " true ", "true ", "1", "yes", "True", "true\n"]) {
+      expect(isIntelligenceEvidenceEnabled({ [INTELLIGENCE_EVIDENCE_FLAG]: value })).toBe(false);
+    }
   });
 });

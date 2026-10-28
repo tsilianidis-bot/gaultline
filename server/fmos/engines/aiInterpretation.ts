@@ -91,7 +91,7 @@ function buildInterpretationPrompt(
 **Scenario weights:** uncalibrated (not offered as probabilities). FAULTLINE does not offer a crash probability; state no probability percentage.
 **Primary Driver:** ${probability.primaryDriver}
 
-**Decision:** ${decision.verdict} (conviction not established)
+**Decision:** Pressure Index is ${p}/100. Regime label is ${regime.currentRegime}. (conviction not established)
 **Action Bias:** ${decision.actionBias}
 
 **Confidence:** confidence not established
@@ -202,7 +202,7 @@ export function computeQuickInterpretation(
 ): Pick<FMOSAIInterpretation, "headline" | "whyNow" | "portfolioImplications"> {
   const p = pressure.overallPressure;
 
-  const headline = `${regime.currentRegime} — ${decision.verdict}`;
+  const headline = `Pressure Index is ${Math.round(p)}/100. Regime label is ${regime.currentRegime}.`;
   const whyNow = decision.primaryReason;
   const portfolioImplications = decision.positionSizing;
 

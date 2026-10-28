@@ -8,6 +8,7 @@
  */
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { neutralizeChannelPayload } from "../../shared/clientVocabulary";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import {
   getBlogPosts, getBlogPostBySlug, getBlogPostById,
@@ -26,7 +27,7 @@ export const blogRouter = router({
     }))
     .query(async ({ input }) => {
       try {
-        return await getBlogPosts({ publishedOnly: true, ...input });
+        return neutralizeChannelPayload(await getBlogPosts({ publishedOnly: true, ...input }));
       } catch (err) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch posts", cause: err });
       }
@@ -39,7 +40,7 @@ export const blogRouter = router({
     }))
     .query(async ({ input }) => {
       try {
-        return await getEvergreenPosts(input.limit);
+        return neutralizeChannelPayload(await getEvergreenPosts(input.limit));
       } catch (err) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch evergreen posts", cause: err });
       }
@@ -56,7 +57,7 @@ export const blogRouter = router({
     }))
     .query(async ({ input }) => {
       try {
-        return await getIntelRecords(input);
+        return neutralizeChannelPayload(await getIntelRecords(input));
       } catch (err) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch intelligence archive", cause: err });
       }
@@ -69,7 +70,7 @@ export const blogRouter = router({
       try {
         const post = await getBlogPostBySlug(input.slug);
         if (!post || !post.published) throw new TRPCError({ code: "NOT_FOUND", message: "Post not found" });
-        return post;
+        return neutralizeChannelPayload(post);
       } catch (err) {
         if (err instanceof TRPCError) throw err;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch post", cause: err });

@@ -172,11 +172,11 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
     },
     measures: "The Market Risk Score aggregates equity market stress indicators including implied volatility, put/call ratios, market breadth deterioration, and macro regime signals into a single 0–100 risk reading.",
     howCalculated: "Derived from a combination of options market signals, breadth indicators, and the current FAULTLINE Pressure Index. Higher values indicate greater near-term downside risk.",
-    whyItMatters: "Understanding current market risk helps investors size positions appropriately, decide when to hedge, and avoid taking on outsized risk during historically dangerous periods.",
+    whyItMatters: "Understanding current market risk helps investors size positions appropriately, decide when to hedge, and pass over taking on outsized risk during historically dangerous periods.",
     ranges: [
-      { label: "Low Risk", range: "0–24", description: "Favorable conditions. Risk-on posture is historically rewarded." },
+      { label: "Low Risk", range: "0–24", description: "Favorable conditions. Higher-risk appetite posture is historically rewarded." },
       { label: "Moderate Risk", range: "25–44", description: "Normal market conditions. Standard risk management applies." },
-      { label: "Elevated Risk", range: "45–64", description: "Above-average risk. Consider reducing position sizes." },
+      { label: "Elevated Risk", range: "45–64", description: "The market-risk score is above its middle display range." },
       { label: "High Risk", range: "65–79", description: "Significant downside risk present. Defensive positioning warranted." },
       { label: "Extreme Risk", range: "80–100", description: "Historically dangerous conditions. Capital preservation is the priority." },
     ],
@@ -224,7 +224,7 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
     whyItMatters: "It summarizes the model's current directional context. Review the contributing evidence and data-quality state rather than using it as a position-sizing forecast.",
     ranges: [
       { label: "Strong Bear Signal", range: "0–24", description: "Low bull-side scenario score; not a historical base-rate claim." },
-      { label: "Bear Bias", range: "25–44", description: "Conditions favor bears. Reduce risk, consider hedges." },
+      { label: "Bear Bias", range: "25–44", description: "The bull-side scenario score is below the middle of the display range." },
       { label: "Neutral / Mixed", range: "45–54", description: "No clear edge. Selectivity and smaller sizing are appropriate." },
       { label: "Moderate Bull Bias", range: "55–74", description: "Conditions modestly favor upside. Normal risk posture is appropriate." },
       { label: "Strong Bull Signal", range: "75–100", description: "High bull-side scenario score; not a forecast or historical base-rate claim." },
@@ -307,16 +307,16 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
     },
     meaning: (v) => {
       if (v >= 80) return "This setup scores in the top tier historically. The combination of macro alignment, technical structure, and risk/reward profile is highly favorable.";
-      if (v >= 60) return "A favorable setup with multiple supporting factors. The macro and technical environment supports a risk-on approach with appropriate position sizing.";
+      if (v >= 60) return "A favorable setup with multiple supporting factors. The macro and technical environment supports a higher-risk appetite approach with appropriate position sizing.";
       if (v >= 40) return "A moderate setup with mixed signals. Some supporting factors are present but the overall environment is not strongly aligned.";
       if (v >= 20) return "A weak setup. The current environment does not strongly support this opportunity. Smaller sizing or waiting for better conditions is advisable.";
-      return "An unfavorable setup. The macro and technical environment is working against this opportunity. Avoid or wait for conditions to improve.";
+      return "The macro and technical readings on this card are unfavorable versus their recent ranges.";
     },
     measures: "The Opportunity Score evaluates a specific trade or investment setup against the current macro regime, technical conditions, and risk/reward profile. Higher scores indicate better alignment between the opportunity and the current environment.",
     howCalculated: "Combines regime alignment score, technical signal strength, risk/reward ratio, and macro tailwind/headwind assessment into a single 0–100 score.",
     whyItMatters: "Not all opportunities are equal. A strong setup in a favorable macro environment has historically outperformed the same setup in a hostile environment. The Opportunity Score helps prioritize where to focus capital.",
     ranges: [
-      { label: "Unfavorable", range: "0–19", description: "Avoid. The environment is working against this setup." },
+      { label: "Unfavorable", range: "0–19", description: "The environment is working against this setup." },
       { label: "Weak Setup", range: "20–39", description: "Below-average conditions. Wait for improvement." },
       { label: "Moderate Setup", range: "40–59", description: "Mixed signals. Smaller sizing and tighter risk management." },
       { label: "Favorable Setup", range: "60–79", description: "Good conditions. Normal sizing with defined risk." },
@@ -324,7 +324,7 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
     ],
     watchNext: (v) => {
       if (v >= 60) return "Watch for any deterioration in the macro regime or a breakdown in technical structure that would reduce the score.";
-      return "Watch for improving macro alignment, a cleaner technical setup, or a better risk/reward entry point that could improve the score.";
+      return "Watch for improving macro alignment or a cleaner technical setup that could improve the score.";
     },
     historicalContext: (pct, analog) => {
       if (pct === undefined && !analog) return null;
@@ -406,7 +406,7 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
     whyItMatters: "A high-confidence reading is more actionable than a low-confidence one. Confidence helps investors size positions appropriately — larger when signals are aligned, smaller when they conflict.",
     ranges: [
       { label: "Very Low", range: "0–19", description: "Highly conflicting signals. Treat with significant caution." },
-      { label: "Low", range: "20–39", description: "More conflict than alignment. Reduce position sizes." },
+      { label: "Low", range: "20–39", description: "More of the inputs conflict than agree on this card." },
       { label: "Moderate", range: "40–59", description: "Mixed signals. Standard caution applies." },
       { label: "Moderate-High", range: "60–79", description: "Mostly aligned signals. Above-average reliability." },
       { label: "High", range: "80–100", description: "Strong signal alignment. High-conviction reading." },
@@ -478,11 +478,11 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
     },
     measures: "Liquidity Stress measures the availability and cost of liquidity in financial markets, including funding market conditions, bid-ask spreads, and market depth indicators.",
     howCalculated: "Derived from FRED data on financial conditions indices, repo market rates, and Treasury market liquidity proxies.",
-    whyItMatters: "Liquidity is the lifeblood of markets. When liquidity dries up, even fundamentally sound assets can sell off sharply. Liquidity stress often precedes broader market dislocations.",
+    whyItMatters: "Liquidity is the lifeblood of markets. When liquidity dries up, even fundamentally sound assets can fall sharply. Liquidity stress often precedes broader market dislocations.",
     ranges: [
       { label: "Healthy", range: "0–34", description: "Normal market functioning. Liquidity is not a concern." },
       { label: "Moderate Stress", range: "35–54", description: "Some tightening. Monitor for escalation." },
-      { label: "Elevated Stress", range: "55–74", description: "Meaningful tightening. Reduce leverage and illiquid exposures." },
+      { label: "Elevated Stress", range: "55–74", description: "Liquidity and leverage inputs are in the elevated band on this score." },
       { label: "Severe Stress", range: "75–100", description: "Crisis-level liquidity conditions. Capital preservation priority." },
     ],
     watchNext: (_v) => "Watch repo rates, the Fed's balance sheet actions, and financial conditions indices for signs of improvement or further deterioration.",
@@ -719,7 +719,7 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
     ranges: [
       { label: "Stable", range: "0–34", description: "Normal Treasury market functioning." },
       { label: "Moderate Stress", range: "35–54", description: "Above-average yield volatility. Monitor." },
-      { label: "Elevated Stress", range: "55–74", description: "Significant Treasury volatility. Risk-off signals." },
+      { label: "Elevated Stress", range: "55–74", description: "Significant Treasury volatility. Lower-risk appetite signals." },
       { label: "Severe Stress", range: "75–100", description: "Crisis-level Treasury stress. Systemic risk elevated." },
     ],
     watchNext: (_v) => "Watch the MOVE Index, 10-year Treasury yield, and the 2s10s yield curve for signs of normalization or further stress.",

@@ -242,7 +242,7 @@ function buildMetrics(
       level: scoreToLevel(creditScore),
       trend: getVectorTrend(vectors, "credit-contagion"),
       note: creditScore >= 65
-        ? "Credit spreads widening — risk-off signal for leveraged positions"
+        ? "Credit spreads widening — lower-risk appetite signal for leveraged positions"
         : creditScore >= 45
         ? "Credit conditions tightening — monitor high-yield spreads"
         : "Credit markets stable — no contagion signals present",
@@ -393,7 +393,7 @@ async function generateAIInterpretation(
   const regime = metrics.regimeLabel;
   const bias = metrics.actionBias;
 
-  const systemPrompt = `You are FAULTLINE's institutional risk analysis engine. You interpret structured market-risk scores and produce clear, professional, non-hyped market commentary. Your tone is: institutional, serious, direct, and non-generic. You NEVER say "crash guaranteed", "buy now", "sell everything", or use hype language. You interpret data — you do not predict outcomes.`;
+  const systemPrompt = `You are FAULTLINE's institutional risk analysis engine. You interpret structured market-risk scores and produce clear, professional, non-hyped market commentary. Your tone is: institutional, serious, direct, and non-generic. You NEVER say "crash guaranteed", "acquire now", "reduce everything", or use hype language. You interpret data — you do not predict outcomes.`;
 
   const userPrompt = `Generate a FAULTLINE Diagnostic AI™ interpretation for the ${tfLabel} timeframe.
 

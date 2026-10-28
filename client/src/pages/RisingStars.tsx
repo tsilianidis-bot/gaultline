@@ -11,7 +11,7 @@ type TopCategory = "all" | "new_listings" | MarketCapCategory | "mag7";
 
 interface DiscoveryStar {
   ticker: string; name: string; risingStarScore: number; latestPrice: number; dailyChange: number | null; dailyChangePercent: number | null;
-  signalDirection: "CONSTRUCTIVE" | "WATCH"; signalStrength: "LOW" | "MODERATE" | "HIGH" | "VERY HIGH";
+  signalDirection: "CONSTRUCTIVE" | "Mixed condition"; signalStrength: "LOW" | "MODERATE" | "HIGH" | "VERY HIGH";
   momentumScore: number; relativeStrengthScore: number; volumeParticipationScore: number; riskLevel: "MODERATE" | "ELEVATED";
   macroContext: string; marketDataAsOf: number; whyFaultlineIsSeeingItEarly: string[];
   exchange: string; marketCap: number | null; marketCapCategory: MarketCapCategory | null; marketCapLabel: string | null;

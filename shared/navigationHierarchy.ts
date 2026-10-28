@@ -22,7 +22,7 @@ export type NavigationIconName =
   | "radio"
   | "bitcoin"
   | "sparkles"
-  | "target"
+  | "scope"
   | "search"
   | "trending-up"
   | "briefcase"
@@ -176,7 +176,7 @@ const tradingItems: readonly NavigationItem[] = [
     label: "Day Trade Intelligence",
     path: "/app/day-trade-intelligence",
     description: "Intraday market context and symbol-specific setups.",
-    icon: "target",
+    icon: "scope",
     keywords: ["day trade", "intraday", "setup"],
     match: "prefix",
   },
@@ -356,7 +356,7 @@ export const ADMIN_NAVIGATION_SECTION: NavigationSection = {
     { id: "x-post-queue", label: "Post Queue", path: "/app/x-post-queue", description: "Queued X posts.", icon: "settings", keywords: ["admin", "queue", "posts"], match: "exact" },
     { id: "seo-optimizer", label: "SEO Optimizer", path: "/app/seo-optimizer", description: "SEO tooling.", icon: "globe", keywords: ["admin", "seo"], match: "exact" },
     { id: "analytics", label: "Site Analytics", path: "/app/analytics", description: "Site analytics.", icon: "bar-chart", keywords: ["admin", "analytics"], match: "exact" },
-    { id: "owner-simulation", label: "Owner Simulation", path: "/owner/simulation", description: "Owner-only simulation workspace.", icon: "target", keywords: ["admin", "owner", "simulation"], match: "exact" },
+    { id: "owner-simulation", label: "Owner Simulation", path: "/owner/simulation", description: "Owner-only simulation workspace.", icon: "scope", keywords: ["admin", "owner", "simulation"], match: "exact" },
     { id: "conversation-intelligence", label: "Conversation Intelligence", path: "/app/admin/conversation-intelligence", description: "Conversation intelligence workspace.", icon: "message-square", keywords: ["admin", "conversation", "intelligence"], match: "exact" },
     { id: "fmos-health", label: "FMOS Health", path: "/app/fmos-health", description: "FMOS health dashboard.", icon: "activity", keywords: ["admin", "fmos", "health"], match: "exact" },
     { id: "intel-validation", label: "Intel Validation", path: "/app/validation", description: "Intelligence validation workspace.", icon: "bar-chart", keywords: ["admin", "validation"], match: "exact" },

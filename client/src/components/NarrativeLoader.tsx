@@ -64,7 +64,7 @@ const NARRATIVES: Record<NarrativeLoaderProps["variant"], string[]> = {
   "preflight": [
     "Loading macro environment data...",
     "Computing Pressure Index across 6 domains...",
-    "Analyzing bull/bear probability...",
+    "Reading the pressure band...",
     "Running regime classification...",
     "Generating market awareness score...",
     "Building market briefing...",

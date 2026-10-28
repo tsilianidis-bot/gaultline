@@ -16,7 +16,7 @@ export default function TAOSignal() {
       accentColor="#E6007A"
       features={[
         { icon: "◈", title: "AI Crypto Exposure Rating", desc: "TAO is the highest-beta play on the intersection of AI and crypto. FAULTLINE scores TAO's sensitivity to AI narrative momentum and crypto market cycles." },
-        { icon: "◎", title: "Macro Regime Alignment", desc: "TAO requires a risk-on macro environment AND positive AI narrative momentum simultaneously. FAULTLINE tracks both conditions." },
+        { icon: "◎", title: "Macro Regime Alignment", desc: "TAO requires a higher-risk appetite macro environment AND positive AI narrative momentum simultaneously. FAULTLINE tracks both conditions." },
         { icon: "⬡", title: "Price Levels", desc: "FAULTLINE does not publish price targets or support/resistance levels on this page." },
         { icon: "◈", title: "BTC/ETH Correlation", desc: "TAO's price action is correlated with both BTC (crypto market beta) and AI stock momentum. FAULTLINE tracks both correlations." },
         { icon: "◎", title: "Subnet Ecosystem Context", desc: "Bittensor's subnet ecosystem growth is a fundamental driver of TAO demand. This is qualitative context; FAULTLINE does not ingest subnet or validator data." },
@@ -39,11 +39,11 @@ FAULTLINE classifies TAO as having MAXIMUM AI Crypto Exposure — it is the high
           heading: "TAO Signal Analysis — Dual Macro and AI Narrative Alignment",
           body: `FAULTLINE's TAO signal analysis is unique because it requires alignment across two independent dimensions simultaneously: the crypto market cycle and the AI narrative cycle.
 
-Crypto Market Cycle Alignment: TAO is a crypto asset, meaning its price is heavily influenced by Bitcoin's direction, overall crypto market sentiment, and liquidity conditions in the crypto ecosystem. When BTC is in a downtrend or the crypto market is in a risk-off phase, TAO typically falls more severely than BTC due to its smaller market cap and higher beta.
+Crypto Market Cycle Alignment: TAO is a crypto asset, meaning its price is heavily influenced by Bitcoin's direction, overall crypto market sentiment, and liquidity conditions in the crypto ecosystem. When BTC is in a downtrend or the crypto market is in a lower-risk appetite phase, TAO typically falls more severely than BTC due to its smaller market cap and higher beta.
 
 AI Narrative Momentum: TAO is also an AI asset, meaning its price is influenced by the strength of the AI narrative in both crypto and traditional markets. When AI stocks (NVDA, PLTR, META) are outperforming and AI investment themes are dominant in financial media, TAO benefits from narrative tailwinds. When AI narrative momentum fades, TAO loses this tailwind.
 
-The FAULTLINE TAO signal is most bullish when BOTH conditions are met: crypto market in a risk-on phase (BTC dominance falling, ETH/BTC rising) AND AI narrative momentum is strong (AI stocks outperforming, AI capex guidance strong). When only one condition is met, the signal is WATCH. When neither condition is met, the signal is HOLD or SELL.`,
+The FAULTLINE TAO reading is strongest when BOTH conditions are met: crypto market in a higher-risk appetite phase (BTC dominance falling, ETH/BTC rising) AND AI narrative momentum is strong (AI stocks outperforming, AI capex guidance strong). When only one condition is met, the reading is mixed. When neither condition is met, the reading is strained. This is not a transaction classification.`,
         },
         {
           heading: "How Technical Levels Are Read: TAO, and Its Historical Volatility",

@@ -80,7 +80,7 @@ describe("B9b Decision Ledger: the defaulted confidence / opportunity score neve
   });
   it("getLedger returns through the guard; the write path is unchanged (NOT NULL columns, no migration)", () => {
     const router = read("server/routers/smartDiscovery.ts");
-    expect(router).toContain("return withoutLedgerFabricatedScores(entries);");
+    expect(router).toContain("withoutLedgerFabricatedScores(entries).map((entry) => ({");
     const schema = read("drizzle/schema.ts");
     expect(schema).toContain('confidence:       int("confidence").notNull(),');
     const client = read("client/src/pages/SmartDiscovery.tsx");

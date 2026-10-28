@@ -8,6 +8,7 @@ import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
 import { engineProbabilityPercent, engineProbabilityText } from "@/lib/marketStateProjection";
+import { PREFLIGHT_KEEP, publicConditionText } from "@shared/surfaceClaims";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import { SectionErrorBoundary } from "@/components/ErrorBoundary";
@@ -31,7 +32,7 @@ import DecisionConfidencePanel, { type ConfidenceData } from "@/components/Decis
 type MoveType =
   | "add_risk" | "reduce_risk" | "hedge" | "rotate"
   | "raise_cash" | "deploy_cash" | "buy_specific_asset" | "sell_specific_asset"
-  | "hold";
+  | typeof PREFLIGHT_KEEP;
 
 type SimulatorTimeframe = "today" | "this_week" | "one_three_months" | "six_twelve_months";
 
@@ -72,15 +73,15 @@ const EXPOSURE_STEP2: Record<MoveType, { value: ExposureCategory; label: string;
     { value: "leveraged_exposure",   label: "Leveraged",           sub: "2x/3x ETFs, margin" },
   ],
   reduce_risk: [
-    { value: "technology",           label: "Technology",          sub: "Trim tech allocation" },
-    { value: "ai_infrastructure",    label: "AI Infrastructure",   sub: "Trim AI/semis" },
-    { value: "large_cap_growth",     label: "Large Cap Growth",    sub: "Reduce growth exposure" },
-    { value: "small_cap_growth",     label: "Small Cap Growth",    sub: "Reduce high-beta" },
-    { value: "bitcoin",              label: "Bitcoin",             sub: "Reduce BTC" },
-    { value: "ethereum",             label: "Ethereum",            sub: "Reduce ETH" },
-    { value: "altcoins",             label: "Altcoins",            sub: "Reduce alt exposure" },
-    { value: "leveraged_exposure",   label: "Leveraged",           sub: "Reduce leverage" },
-    { value: "concentrated_position",label: "Concentrated Position",sub: "Trim single large position" },
+    { value: "technology",           label: "Technology",          sub: "Smaller tech size" },
+    { value: "ai_infrastructure",    label: "AI Infrastructure",   sub: "Smaller AI/semis size" },
+    { value: "large_cap_growth",     label: "Large Cap Growth",    sub: "Growth sleeve on this card" },
+    { value: "small_cap_growth",     label: "Small Cap Growth",    sub: "Higher-beta sleeve on this card" },
+    { value: "bitcoin",              label: "Bitcoin",             sub: "Bitcoin sleeve on this card" },
+    { value: "ethereum",             label: "Ethereum",            sub: "Ethereum sleeve on this card" },
+    { value: "altcoins",             label: "Altcoins",            sub: "Altcoin sleeve on this card" },
+    { value: "leveraged_exposure",   label: "Leveraged",           sub: "2x/3x products and margin on this sleeve" },
+    { value: "concentrated_position",label: "Concentrated Position",sub: "Smaller single large position" },
     { value: "options",              label: "Options",             sub: "Close or roll options" },
   ],
   hedge: [
@@ -101,15 +102,15 @@ const EXPOSURE_STEP2: Record<MoveType, { value: ExposureCategory; label: string;
     { value: "industrials",          label: "Into Industrials",    sub: "Capex cycle play" },
     { value: "international",        label: "US → International",  sub: "Geographic rotation" },
     { value: "emerging_markets",     label: "Into EM",             sub: "EM re-rating play" },
-    { value: "bitcoin",              label: "Stocks → Bitcoin",    sub: "Risk-on crypto rotation" },
+    { value: "bitcoin",              label: "Stocks → Bitcoin",    sub: "Crypto has moved with higher-risk-appetite equity periods" },
   ],
   raise_cash: [
-    { value: "entire_portfolio",     label: "Across Portfolio",    sub: "Trim broadly, raise cash" },
-    { value: "technology",           label: "From Technology",     sub: "Sell tech, hold cash" },
-    { value: "large_cap_growth",     label: "From Growth",         sub: "Sell growth, hold cash" },
-    { value: "bitcoin",              label: "From Crypto",         sub: "Sell crypto, hold cash" },
-    { value: "concentrated_position",label: "Concentrated Position",sub: "Trim large single name" },
-    { value: "leveraged_exposure",   label: "From Leverage",       sub: "Deleverage, hold cash" },
+    { value: "entire_portfolio",     label: "Across Portfolio",    sub: "Cash is the residual of this sleeve" },
+    { value: "technology",           label: "From Technology",     sub: "Technology sleeve with a cash residual" },
+    { value: "large_cap_growth",     label: "From Growth",         sub: "Growth sleeve with a cash residual" },
+    { value: "bitcoin",              label: "From Crypto",         sub: "Crypto sleeve with a cash residual" },
+    { value: "concentrated_position",label: "Concentrated Position",sub: "Smaller large single name" },
+    { value: "leveraged_exposure",   label: "From Leverage",       sub: "Leverage sleeve. Cash is the residual." },
   ],
   deploy_cash: [
     { value: "ai_infrastructure",    label: "AI Infrastructure",   sub: "Deploy into AI/semis" },
@@ -143,7 +144,7 @@ const EXPOSURE_STEP2: Record<MoveType, { value: ExposureCategory; label: string;
     { value: "altcoins",             label: "Altcoins",            sub: "SOL, AVAX, DOT" },
     { value: "leveraged_exposure",   label: "Leveraged",           sub: "2x/3x ETF, margin" },
   ],
-  hold: [
+  [PREFLIGHT_KEEP]: [
     { value: "ai_infrastructure",    label: "AI / Semis",          sub: "Holding AI/semis position" },
     { value: "technology",           label: "Technology",          sub: "Holding tech position" },
     { value: "large_cap_growth",     label: "Large Cap Growth",    sub: "Holding growth names" },
@@ -177,15 +178,15 @@ const CRYPTO_OPTIONS: { value: string; label: string; icon: string }[] = [
 
 // ── Constants ─────────────────────────────────────────────────
 const MOVE_OPTIONS: { value: MoveType; label: string; glyph: string; sub: string }[] = [
-  { value: "add_risk",           label: "Add Risk",           glyph: "↑", sub: "Increase exposure to a sector, asset class, or theme" },
-  { value: "reduce_risk",        label: "Reduce Risk",        glyph: "↓", sub: "Trim or exit positions to lower overall exposure" },
+  { value: "add_risk",           label: "Larger risk weight", glyph: "↑", sub: "The simulation input is a larger risk weight on this card." },
+  { value: "reduce_risk",        label: "Risk weight",        glyph: "↓", sub: "Risk sleeve on this card" },
   { value: "hedge",              label: "Hedge",              glyph: "⛨", sub: "Protect existing positions against downside" },
   { value: "rotate",             label: "Rotate",             glyph: "⟳", sub: "Shift capital from one sector or asset to another" },
-  { value: "raise_cash",         label: "Raise Cash",         glyph: "◎", sub: "Sell down and move to cash or equivalents" },
+  { value: "raise_cash",         label: "Cash weight",        glyph: "◎", sub: "Cash is the residual sleeve on this card" },
   { value: "deploy_cash",        label: "Deploy Cash",        glyph: "◈", sub: "Put idle cash to work in the market" },
-  { value: "buy_specific_asset", label: "Buy Specific Asset", glyph: "₿", sub: "Enter a specific stock, ETF, or crypto position" },
-  { value: "sell_specific_asset",label: "Sell Specific Asset",glyph: "✕", sub: "Exit or short a specific position" },
-  { value: "hold",               label: "Hold",               glyph: "⏸", sub: "Stay in current positions — validate the decision" },
+  { value: "buy_specific_asset", label: "Named position increase", glyph: "₿", sub: "Review adding to one stock, ETF, or crypto position" },
+  { value: "sell_specific_asset",label: "Named position reduction",glyph: "✕", sub: "Review reducing one existing position" },
+  { value: PREFLIGHT_KEEP,       label: "Keep current positions", glyph: "⏸", sub: "Review leaving the current positions unchanged" },
 ];
 
 // ── Rotate From/To options ─────────────────────────────────────
@@ -204,10 +205,10 @@ const ROTATE_TO_OPTIONS = [
 // ── Raise Cash reason options ──────────────────────────────────
 const RAISE_CASH_REASONS: { value: string; label: string; sub: string }[] = [
   { value: "risk_reduction",          label: "Risk Reduction",          sub: "Market conditions are deteriorating" },
-  { value: "waiting_for_opportunity", label: "Waiting for Opportunity",  sub: "Dry powder for better entry" },
+  { value: "waiting_for_opportunity", label: "Waiting for Opportunity",  sub: "Cash is uncommitted while evidence is thin" },
   { value: "near_term_expenses",      label: "Near-Term Expenses",       sub: "Capital needed soon" },
   { value: "market_concerns",         label: "Market Concerns",          sub: "Macro or geopolitical uncertainty" },
-  { value: "tactical_positioning",    label: "Tactical Positioning",     sub: "Rotating to cash before re-entry" },
+  { value: "tactical_positioning",    label: "Tactical Positioning",     sub: "A larger cash weight is under review" },
 ];
 
 // ── Deploy Cash target options ─────────────────────────────────
@@ -232,10 +233,10 @@ const POSITION_SIZE_OPTIONS: { value: string; label: string; sub: string }[] = [
 
 // ── Exit type options ──────────────────────────────────────────
 const EXIT_TYPE_OPTIONS: { value: string; label: string; sub: string }[] = [
-  { value: "partial_exit",  label: "Partial Exit",   sub: "Trim 25–50% of position" },
+  { value: "partial_exit",  label: "Partial Exit",   sub: "25–50% smaller recorded size" },
   { value: "full_exit",     label: "Full Exit",      sub: "Close entire position" },
-  { value: "risk_reduction",label: "Risk Reduction", sub: "Cut to stop-loss size" },
-  { value: "profit_taking", label: "Profit Taking",  sub: "Lock in gains at target" },
+  { value: "risk_reduction",label: "Risk Reduction", sub: "A smaller position size is under review" },
+  { value: "profit_taking", label: "Profit Taking",  sub: "A reduction after a gain is under review" },
 ];
 
 // ── Hold concern options ───────────────────────────────────────
@@ -243,8 +244,8 @@ const HOLD_CONCERN_OPTIONS: { value: string; label: string; sub: string }[] = [
   { value: "volatility",    label: "Volatility",     sub: "Uncomfortable with price swings" },
   { value: "drawdown",      label: "Drawdown",       sub: "Position is underwater" },
   { value: "profit_taking", label: "Profit Taking",  sub: "Considering locking in gains" },
-  { value: "no_concern",    label: "No Concern",     sub: "Conviction hold, just validating" },
-  { value: "unsure",        label: "Unsure",         sub: "Not sure if I should hold or act" },
+  { value: "no_concern",    label: "No Concern",     sub: "Conviction is unchanged; this is a check" },
+  { value: "unsure",        label: "Unsure",         sub: "Not sure whether to keep the position" },
 ];
 
 const TIMEFRAME_OPTIONS: { value: SimulatorTimeframe; label: string; sub: string }[] = [
@@ -281,7 +282,7 @@ const THESIS_OPTIONS: { value: ThesisType; label: string; icon: string; sub: str
   },
   {
     value: "long_term",
-    label: "Long-Term Hold",
+    label: "Long horizon",
     icon: "🏛",
     sub: "Multi-month conviction",
     description: "You are building or holding a position based on a 6–18 month thesis. Short-term noise is acceptable.",
@@ -291,7 +292,7 @@ const THESIS_OPTIONS: { value: ThesisType; label: string; icon: string; sub: str
     value: "value",
     label: "Value",
     icon: "⚖",
-    sub: "Buy below intrinsic worth",
+    sub: "Price below a stated estimate of worth",
     description: "The asset is trading below what you believe it is worth. You are buying the discount, not the momentum.",
     conditions: ["Valuation metrics below historical average", "Catalyst or re-rating event visible", "No deteriorating fundamentals", "Patience for 3–12 month horizon"],
   },
@@ -309,7 +310,7 @@ const THESIS_OPTIONS: { value: ThesisType; label: string; icon: string; sub: str
     icon: "₿",
     sub: "Crypto market cycle timing",
     description: "You are trading the crypto market cycle — accumulation, expansion, or distribution phase — based on on-chain and macro signals.",
-    conditions: ["Bitcoin dominance trend", "Macro liquidity conditions", "Halving cycle position", "Risk-on / risk-off regime"],
+    conditions: ["Bitcoin dominance trend", "Macro liquidity conditions", "Halving cycle position", "Higher- or lower-risk appetite band"],
   },
   {
     value: "sector_rotation",
@@ -336,6 +337,13 @@ const VERDICT_CONFIG: Record<VerdictType, { label: string; color: string; glow: 
   WAIT:            { label: "WAIT",             color: "#A78BFA", glow: "rgba(167,139,250,0.18)", borderColor: "rgba(167,139,250,0.40)" },
   DEFENSIVE:       { label: "DEFENSIVE",        color: "#FF2D55", glow: "rgba(255,45,85,0.22)",  borderColor: "rgba(255,45,85,0.45)" },
 };
+
+function verdictVisual(verdict: string) {
+  const key = verdict.trim().toUpperCase().replace(/[\s-]+/g, "_");
+  if (key === "WAIT" || verdict.trim() === "Mixed condition") return VERDICT_CONFIG.WAIT;
+  if (key === "HIGH_CONVICTION" || key === "APPROVED" || key === "CAUTION" || key === "DEFENSIVE") return VERDICT_CONFIG[key];
+  return VERDICT_CONFIG.CAUTION;
+}
 
 const GRADE_COLOR: Record<string, string> = {
   "A+": "#00FF88", "A": "#00E5FF", "A-": "#00E5FF",
@@ -514,7 +522,7 @@ export default function SituationRoom() {
   const [deployCashTarget, setDeployCashTarget] = useState<string>("");
   const [positionSize, setPositionSize] = useState<string>(urlAutorun ? "normal" : "");
   const [exitType, setExitType] = useState<string>(urlAutorun && urlMove === "sell_specific_asset" ? "full" : "");
-  const [holdConcern, setHoldConcern] = useState<string>(urlAutorun && urlMove === "hold" ? "general review" : "");
+  const [holdConcern, setHoldConcern] = useState<string>(urlAutorun && urlMove === PREFLIGHT_KEEP ? "general review" : "");
   const [open, setOpen] = useState<Record<string, boolean>>({
     greenLights: true, threatBoard: true, actionBias: true, invalidation: false, watchNext: false,
     verdict: true, outcomeSimulator: false, entryQuality: false, positionSizing: false,
@@ -552,7 +560,7 @@ export default function SituationRoom() {
     if (selectedMove === "deploy_cash") return deployCashTarget.trim().length > 0;
     if (selectedMove === "buy_specific_asset") return ticker.trim().length > 0 && positionSize.trim().length > 0;
     if (selectedMove === "sell_specific_asset") return ticker.trim().length > 0 && exitType.trim().length > 0;
-    if (selectedMove === "hold") return holdConcern.trim().length > 0;
+    if (selectedMove === PREFLIGHT_KEEP) return holdConcern.trim().length > 0;
     if (selectedMove === "hedge") return selectedExposure !== null;
     return selectedExposure !== null;
   };
@@ -584,7 +592,7 @@ export default function SituationRoom() {
       deployCashTarget: selectedMove === "deploy_cash" ? deployCashTarget : undefined,
       positionSizeType: selectedMove === "buy_specific_asset" ? positionSize : undefined,
       exitType: selectedMove === "sell_specific_asset" ? exitType : undefined,
-      holdConcern: selectedMove === "hold" ? holdConcern : undefined,
+      holdConcern: selectedMove === PREFLIGHT_KEEP ? holdConcern : undefined,
     });
   };
 
@@ -600,7 +608,7 @@ export default function SituationRoom() {
           ticker: urlSymbol,
           positionSizeType: urlMove === "buy_specific_asset" ? "normal" : undefined,
           exitType: urlMove === "sell_specific_asset" ? "full" : undefined,
-          holdConcern: urlMove === "hold" ? "general review" : undefined,
+          holdConcern: urlMove === PREFLIGHT_KEEP ? "general review" : undefined,
         });
       }, 300);
       return () => clearTimeout(t);
@@ -939,7 +947,7 @@ export default function SituationRoom() {
               {/* ── BUY SPECIFIC ASSET: Position size ── */}
               {selectedMove === "buy_specific_asset" && (
                 <div style={{ marginBottom: "14px" }}>
-                  <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "8px" }}>Position size / entry type <span style={{ color: "#FF2D55", fontSize: "9px" }}>* required</span></label>
+                  <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "8px" }}>Position size under review <span style={{ color: "#FF2D55", fontSize: "9px" }}>* required</span></label>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "6px" }}>
                     {POSITION_SIZE_OPTIONS.map(opt => (
                       <button key={opt.value} onClick={() => setPositionSize(opt.value)}
@@ -969,7 +977,7 @@ export default function SituationRoom() {
               )}
 
               {/* ── HOLD: What's your concern? ── */}
-              {selectedMove === "hold" && (
+              {selectedMove === PREFLIGHT_KEEP && (
                 <div style={{ marginBottom: "14px" }}>
                   <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "8px" }}>What's your concern with holding? <span style={{ color: "#FF2D55", fontSize: "9px" }}>* required</span></label>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "6px" }}>
@@ -1096,7 +1104,7 @@ export default function SituationRoom() {
                 RED: { color: "#FF2D55", glow: "rgba(255,45,85,0.08)", borderColor: "rgba(255,45,85,0.35)" },
                 GRAY: { color: "#94A3B8", glow: "rgba(148,163,184,0.08)", borderColor: "rgba(148,163,184,0.28)" },
               };
-              const vc = (light ? lightConfig[light.decisionLight] : null) ?? VERDICT_CONFIG[vt] ?? VERDICT_CONFIG.CAUTION;
+              const vc = (light ? lightConfig[light.decisionLight] : null) ?? verdictVisual(String(vt ?? ""));
               const label = light?.decisionLabel ?? "UNAVAILABLE";
               const sub = light?.explanation ?? result.verdict.reason;
               const oppScore = Math.round(result.moveFavorabilityScore);
@@ -1206,7 +1214,7 @@ export default function SituationRoom() {
             {(() => {
               const vt = result.verdict.verdict as VerdictType;
               const institutionalLabel: Record<VerdictType, string> = {
-                HIGH_CONVICTION: "BUY", APPROVED: "BUY", CAUTION: "HOLD", WAIT: "WAIT", DEFENSIVE: "REDUCE",
+                HIGH_CONVICTION: "Several measured inputs agree", APPROVED: "Measured inputs point the same way", CAUTION: "Measured inputs are mixed", WAIT: "WAIT", DEFENSIVE: "REDUCE",
               };
               const confData: ConfidenceData = {
                 confidenceScore: Math.round(result.verdict.confidence),
@@ -1247,7 +1255,7 @@ export default function SituationRoom() {
                   <div style={{ background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.18)", borderRadius: "6px", padding: "18px 20px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
                       <TrendingUp size={14} color="#00FF88" />
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00FF88", textTransform: "uppercase", letterSpacing: "0.18em" }}>BULL CASE</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00FF88", textTransform: "uppercase", letterSpacing: "0.18em" }}>HIGHER-PRICE SCENARIO</span>
                     </div>
                     {bull && (
                       <>
@@ -1279,7 +1287,7 @@ export default function SituationRoom() {
                   <div style={{ background: "rgba(255,45,85,0.04)", border: "1px solid rgba(255,45,85,0.18)", borderRadius: "6px", padding: "18px 20px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
                       <TrendingDown size={14} color="#FF2D55" />
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#FF2D55", textTransform: "uppercase", letterSpacing: "0.18em" }}>BEAR CASE</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#FF2D55", textTransform: "uppercase", letterSpacing: "0.18em" }}>LOWER-PRICE SCENARIO</span>
                     </div>
                     {bear && (
                       <>
@@ -1315,86 +1323,29 @@ export default function SituationRoom() {
             })()}
 
             {/* ═══════════════════════════════════════════════════════
-                SECTION 5 — ACTION PLAN
+                SECTION 5 — RECORDED CONDITIONS
             ═══════════════════════════════════════════════════════ */}
             <div style={{ background: "rgba(10,13,20,0.95)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "6px", padding: "20px 22px", marginBottom: "10px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
-                <Crosshair size={14} color="#00FF88" />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00FF88", textTransform: "uppercase", letterSpacing: "0.18em" }}>ACTION PLAN</span>
+                <Crosshair size={14} color="#94A3B8" />
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.18em" }}>RECORDED CONDITIONS</span>
               </div>
-              {/* Primary action bias */}
-              <div style={{ padding: "12px 16px", background: "rgba(0,255,136,0.05)", border: "1px solid rgba(0,255,136,0.15)", borderRadius: "5px", marginBottom: "12px" }}>
-                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#00FF88", marginBottom: "4px" }}>{result.actionBias}</div>
-                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8" }}>{result.bestVersionOfMove}</div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#94A3B8", lineHeight: 1.6 }}>
+                A position plan is not published. This briefing does not state an order, a size, or a list of actions. Read the pressure band and the scenario returns above. Freshness is the timestamp on this briefing. Uncertainty remains because the band is not a forecast.
               </div>
-              {/* What FAULTLINE Would Do */}
-              {result.recommendedMoves?.whatFaultlineWouldDo && (
-                <div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px" }}>WHAT FAULTLINE WOULD DO</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-                    {result.recommendedMoves.whatFaultlineWouldDo.actions.slice(0, 4).map((action: string, i: number) => (
-                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-                        <div style={{ width: "20px", height: "20px", borderRadius: "50%", background: "rgba(0,255,136,0.08)", border: "1px solid rgba(0,255,136,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: "1px" }}>
-                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00FF88", fontWeight: 700 }}>{i + 1}</span>
-                        </div>
-                        <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#CBD5E1", lineHeight: 1.55 }}>{action}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {/* Areas to avoid */}
-              {result.avoidAreas && result.avoidAreas.length > 0 && (
-                <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.09)" }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(255,45,85,0.6)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "6px" }}>AVOID</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                    {result.avoidAreas.map((a: string, i: number) => (
-                      <span key={i} style={{ padding: "3px 8px", background: "rgba(255,45,85,0.06)", border: "1px solid rgba(255,45,85,0.15)", borderRadius: "3px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#FF6B8A" }}>{a}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* ═══════════════════════════════════════════════════════
-                SECTION 6 — KEY LEVELS (from top opportunities if ticker provided)
-            ═══════════════════════════════════════════════════════ */}
-            {result.ticker && result.recommendedMoves && (() => {
-              const allOpps = [...(result.recommendedMoves.topStocks || []), ...(result.recommendedMoves.topCrypto || [])];
-              const tickerOpp = allOpps.find((o: any) => o.ticker?.toUpperCase() === result.ticker?.toUpperCase());
-              if (!tickerOpp) return null;
-              return (
-                <div style={{ background: "rgba(10,13,20,0.95)", border: "1px solid rgba(0,229,255,0.25)", borderRadius: "6px", padding: "20px 22px", marginBottom: "10px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
-                    <Target size={14} color="#00E5FF" />
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00E5FF", textTransform: "uppercase", letterSpacing: "0.18em" }}>KEY LEVELS — {result.ticker}</span>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginBottom: "12px" }}>
-                    {[
-                      { label: "Entry Zone", value: `$${tickerOpp.entryZoneLow?.toFixed(2)} – $${tickerOpp.entryZoneHigh?.toFixed(2)}`, color: "#00E5FF" },
-                      { label: "Stop Loss", value: `$${tickerOpp.stopLoss?.toFixed(2)}`, color: "#FF2D55" },
-                      { label: "Risk / Reward", value: `${tickerOpp.riskRewardRatio?.toFixed(1)}:1`, color: "#00FF88" },
-                    ].map(({ label, value, color }) => (
-                      <div key={label} style={{ padding: "12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.11)", borderRadius: "5px", textAlign: "center" }}>
-                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "5px" }}>{label}</div>
-                        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color }}>{value}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                    {[
-                      { label: "Target 1", value: `$${tickerOpp.targetOne?.toFixed(2)}`, color: "#00FF88" },
-                      { label: "Target 2", value: `$${tickerOpp.targetTwo?.toFixed(2)}`, color: "#00FF88" },
-                    ].map(({ label, value, color }) => (
-                      <div key={label} style={{ padding: "10px 14px", background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.12)", borderRadius: "5px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.6)", textTransform: "uppercase", letterSpacing: "0.1em" }}>{label}</span>
-                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color }}>{value}</span>
-                      </div>
-                    ))}
-                  </div>
+            {/* Order prices for a ticker are not published on this briefing. */}
+            {result.ticker && (
+              <div style={{ background: "rgba(10,13,20,0.95)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "6px", padding: "20px 22px", marginBottom: "10px" }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.18em", marginBottom: "8px" }}>
+                  PRICE REFERENCES — {result.ticker}
                 </div>
-              );
-            })()}
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#94A3B8", lineHeight: 1.6 }}>
+                  Order prices are not published. This briefing does not carry a bar count or a formula for prior prices, so those figures are omitted.
+                </div>
+              </div>
+            )}
 
             {/* ═══════════════════════════════════════════════════════
                 SECTION 7 — TIMEFRAME + POSITION SIZING
@@ -1418,21 +1369,9 @@ export default function SituationRoom() {
               <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#94A3B8", lineHeight: 1.6, marginBottom: "14px" }}>
                 Expected duration: <strong style={{ color: "#F0F4FF" }}>{result.timeframeLabel}</strong>
               </div>
-              {/* Position sizing */}
-              {result.positionSizing && (
-                <div style={{ paddingTop: "14px", borderTop: "1px solid rgba(255,255,255,0.09)" }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px" }}>POSITION SIZING</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "8px" }}>
-                    {result.positionSizing.tiers.map((tier: any) => (
-                      <div key={tier.label} style={{ padding: "10px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.11)", borderRadius: "4px", textAlign: "center" }}>
-                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "4px" }}>{tier.label}</div>
-                        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#F0F4FF" }}>{tier.allocation}%</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#64748B", lineHeight: 1.55 }}>{result.positionSizing.guidance}</div>
-                </div>
-              )}
+              <div style={{ paddingTop: "14px", borderTop: "1px solid rgba(255,255,255,0.09)", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", lineHeight: 1.55 }}>
+                Size is not published. The horizon above is the briefing window, not an instruction.
+              </div>
             </div>
 
             {/* ═══════════════════════════════════════════════════════

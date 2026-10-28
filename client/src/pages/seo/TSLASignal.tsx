@@ -7,8 +7,8 @@ export default function TSLASignal() {
       companyName="Tesla, Inc."
       sector="Electric Vehicles / AI & Robotics"
       description="Tesla stock signal analysis"
-      seoTitle="TSLA Signal — Tesla Stock Analysis, Risk Score | FAULTLINE"
-      seoDescription="TSLA signal analysis: Tesla's macro alignment score, AI and EV exposure rating, bull and bear case scenarios, and regime-based signal classification."
+      seoTitle="TSLA — Tesla background and shared stock thesis | FAULTLINE"
+      seoDescription="Background on Tesla. The live stock read is the shared Pentagonal Thesis. This page does not publish a separate trade instruction."
       canonical="/stock/tsla"
       accentColor="#E31937"
       badge="TSLA SIGNAL INTELLIGENCE"
@@ -20,12 +20,12 @@ Tesla operates across multiple sectors: Electric Vehicles (its core business), E
 
 Tesla's financial profile is complex: it is simultaneously a profitable automotive manufacturer, an energy business with high-margin storage products, and an AI/robotics company with significant optionality value embedded in the stock price. The AI/robotics optionality — particularly Full Self-Driving (FSD) and Optimus — is a significant component of TSLA's valuation at current prices.
 
-FAULTLINE classifies TSLA as having HIGH AI & EV Cycle Exposure — its valuation is sensitive to both EV demand cycles (interest rates, competition, consumer spending) and AI narrative momentum (FSD progress, Optimus development, Dojo compute).`}
+FAULTLINE does not publish a narrative-momentum score for TSLA. The business lines described on this page are electric vehicles, energy storage, and the company's public statements about FSD, Optimus, and Dojo. Those are descriptions of the business, not a measured momentum series.`}
       signalAnalysis={`FAULTLINE's TSLA signal analysis incorporates four primary inputs:
 
 EV Demand Cycle: Tesla's core automotive revenue is sensitive to interest rates (higher rates reduce EV affordability), competition (BYD, Rivian, legacy OEMs), and consumer spending. In HIGH STRESS macro environments, discretionary spending on EVs typically declines.
 
-AI & Robotics Optionality: TSLA's valuation includes significant optionality for FSD commercialization, Optimus robot deployment, and Dojo compute services. When AI narrative momentum is strong, this optionality expands TSLA's valuation multiple. When AI narrative fades, this optionality compresses.
+AI and robotics products: Tesla publishes material about FSD, Optimus, and Dojo. This page does not turn that material into a momentum score or a valuation multiple.
 
 Elon Musk Factor: TSLA's valuation is uniquely tied to Elon Musk's perceived execution ability and public profile. Positive developments (FSD milestones, Optimus demos, government contracts) can drive significant upside. Controversies or distractions can create headwinds.
 
@@ -47,19 +47,19 @@ Historical Volatility Context: TSLA is one of the most volatile large-cap stocks
 
 4. Elon Musk Concentration Risk: Tesla's brand, strategy, and investor narrative are heavily tied to Elon Musk. His involvement in other ventures (SpaceX, X, xAI, DOGE) and public controversies create headline risk that can affect TSLA's stock price independent of fundamental developments.
 
-5. Macro Regime Sensitivity: TSLA's high valuation multiple makes it highly sensitive to macro regime transitions. A shift to HIGH STRESS (FAULTLINE Pressure Index 65+) typically triggers significant TSLA drawdowns.`}
+5. Macro regime: HIGH STRESS is the Pressure Index band at 65 and above. This page does not state that the band produces a later drawdown.`}
       faqs={[
-        { question: "Is TSLA a buy or sell right now?", answer: "FAULTLINE's TSLA signal classification is available on the Signals tab, based on macro regime alignment, EV demand cycle, AI optionality momentum, and technical structure. This is not investment advice." },
-        { question: "What is Tesla's AI exposure?", answer: "Tesla's AI exposure comes primarily from Full Self-Driving (FSD) — its autonomous driving software — and Optimus, its humanoid robot program. Both are embedded as optionality in TSLA's valuation. AI narrative momentum is qualitative context, not a data input to the TSLA signal." },
-        { question: "How does the Federal Reserve affect TSLA?", answer: "Higher interest rates increase monthly payments on financed EV purchases, reducing demand. They also increase the discount rate applied to TSLA's future earnings and optionality value, compressing the stock's valuation multiple. FAULTLINE's Federal Reserve Tracker monitors Fed policy as part of the TSLA macro alignment score." },
-        { question: "What is TSLA's biggest risk in 2026?", answer: "Based on FAULTLINE's analysis, TSLA's biggest risks in 2026 are EV competition intensification (particularly from BYD and legacy OEMs), FSD and Optimus execution risk (if AI optionality milestones are missed), and macro regime sensitivity (high-multiple growth stocks are vulnerable in HIGH STRESS environments)." },
-        { question: "How volatile is TSLA compared to the S&P 500?", answer: "TSLA has historically had a high beta relative to the S&P 500, meaning it has tended to move considerably more than the broader market. Drawdowns from cycle highs have exceeded 70% in bear market phases. This elevated volatility is a core feature of TSLA's risk profile that FAULTLINE accounts for in the risk score." },
+        { question: "Does this page classify TSLA?", answer: "No. The live stock read is the shared thesis. This page does not publish a separate instruction or a narrative-momentum score." },
+        { question: "What is Tesla's AI exposure?", answer: "Tesla's vehicle software includes Full Self-Driving, and the company also describes a humanoid robot program. This page does not turn that description into a separate reading. The stock read is the shared thesis." },
+        { question: "How do interest rates relate to Tesla's vehicle business?", answer: "Higher interest rates can raise monthly payments on financed vehicles. This page does not turn that into a separate macro reading or a second stock call. Rate policy is a driver only when the shared thesis has a fresh sourced market input." },
+        { question: "What does this TSLA page refuse to rank?", answer: "It does not name a single largest threat for a future year, and it does not publish a separate reading. Competition, vehicle programs, and macro conditions stay background until the shared thesis has fresh evidence." },
+        { question: "How volatile is TSLA compared to the S&P 500?", answer: "TSLA has historically moved more than the S&P 500 in both directions, including deep drawdowns from cycle highs. This page does not turn that history into a separate reading. The stock read is the shared thesis." },
       ]}
       internalLinks={[
         { label: "NVDA SIGNAL", href: "/stock/nvda", desc: "NVIDIA — AI infrastructure signal analysis." },
         { label: "META SIGNAL", href: "/stock/meta", desc: "Meta AI signal analysis." },
         { label: "AI STOCKS DASHBOARD", href: "/ai-stocks-dashboard", desc: "All AI-exposed stocks in one dashboard." },
-        { label: "MARKET CRASH RISK 2026", href: "/market-crash-probability-2026", desc: "Systemic risk that could trigger TSLA drawdowns." },
+        { label: "SHARED THESIS", href: "/app/signals", desc: "The live TSLA read is the shared stock thesis." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy impact on high-beta stocks like TSLA." },
         { label: "STOCK SIGNALS", href: "/signals", desc: "All FAULTLINE stock signals in one view." },
       ]}

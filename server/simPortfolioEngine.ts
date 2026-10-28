@@ -81,6 +81,11 @@ export interface SimTradeRationale {
   actionSummary: string;         // 1-sentence summary for trade log
 }
 
+/** Simulation action stays the raw protocol value. Relabelling it is an open owner decision. */
+export function keepRawSimulationAction<T extends string>(action: T): T {
+  return action;
+}
+
 export interface SimPositionDecision {
   ticker: string;
   name: string;
@@ -267,7 +272,7 @@ TECHNICAL ANALYSIS:
 - Regime Alignment: ${signal.regimeAlignment}
 
 ASYMMETRY:
-- Upside Target: $${asym.upsideTarget} (+${asym.upsidePct}%)
+- Upside Upper mark: $${asym.upsideTarget} (+${asym.upsidePct}%)
 - Downside Risk: $${asym.downsideRisk} (-${asym.downsidePct}%)
 - Asymmetry Ratio: ${asym.ratio}:1
 
@@ -279,7 +284,7 @@ Respond with a JSON object with these exact fields:
   "catalyst": "1-2 sentence specific catalyst or trigger for this trade right now",
   "riskFactors": ["risk 1", "risk 2", "risk 3"],
   "invalidation": "1 sentence describing exactly what would invalidate this thesis and trigger a reversal",
-  "actionSummary": "1 crisp sentence for the trade log (e.g. 'Bought NVDA at $890 — AI infrastructure demand accelerating, FAULTLINE pressure at 28/100 supports risk-on positioning')"
+  "actionSummary": "1 crisp sentence for the trade log (e.g. 'Bought NVDA at $890 — AI infrastructure demand accelerating, FAULTLINE pressure at 28/100 supports higher-risk appetite positioning')"
 }`;
 
   try {
@@ -368,8 +373,8 @@ async function buildRationale(
 
   // Asymmetry narrative
   const asymNarrative = `Risk/reward asymmetry of ${asym.ratio}:1. ` +
-    `Upside target: $${asym.upsideTarget} (+${asym.upsidePct}%). ` +
-    `Downside stop: $${asym.downsideRisk} (-${asym.downsidePct}%). ` +
+    `Upside upper mark: $${asym.upsideTarget} (+${asym.upsidePct}%). ` +
+    `Downside downside mark: $${asym.downsideRisk} (-${asym.downsidePct}%). ` +
     (asym.ratio >= 3 ? "This is a favorable setup — reward significantly outweighs risk." :
      asym.ratio >= 2 ? "Acceptable asymmetry — risk is manageable relative to potential reward." :
      "Asymmetry is below ideal threshold — position size reduced accordingly.");
@@ -381,8 +386,8 @@ async function buildRationale(
     pressureNarrative: `FAULTLINE Pressure Index at ${pressure.overallPressure}/100 — regime classified as "${pressure.regime}". ` +
       `Closest historical analog: ${pressure.topAnalog.label} (${pressure.topAnalog.similarity}% similarity). ` +
       (pressure.overallPressure >= 65 ? "Elevated systemic risk warrants defensive positioning and reduced exposure." :
-       pressure.overallPressure >= 45 ? "Moderate stress — selective risk-taking is appropriate with tight stops." :
-       "Low stress environment supports risk-on positioning with standard sizing."),
+       pressure.overallPressure >= 45 ? "Moderate stress — selective risk-taking is appropriate with tight downside marks." :
+       "Low stress environment supports higher-risk appetite positioning with standard sizing."),
     domainScores: domains,
     domainNarrative,
     rsi: signal.technicals.rsiEstimate,
@@ -464,7 +469,7 @@ export async function evaluateStockCandidate(
       ticker,
       name,
       assetType: "stock",
-      action: action as "BUY" | "SELL" | "HOLD",
+      action: keepRawSimulationAction(action as "BUY" | "SELL" | "HOLD"),
       price: quote.price,
       quantity,
       totalValue: quantity * quote.price,
@@ -535,7 +540,7 @@ export async function evaluateCryptoCandidate(
       ticker,
       name,
       assetType: "crypto",
-      action: action as "BUY" | "SELL" | "HOLD",
+      action: keepRawSimulationAction(action as "BUY" | "SELL" | "HOLD"),
       price,
       quantity: Math.round(quantity * 1e6) / 1e6,
       totalValue: quantity * price,

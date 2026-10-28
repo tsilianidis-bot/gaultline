@@ -63,10 +63,10 @@ describe("ACT destination composition", () => {
   it("keeps evidence, advice, scenario, and fallback boundaries explicit", () => {
     expect(actSource).toContain("does not create individualized investment advice");
     expect(actSource).toContain("It does not know a user&apos;s objectives");
-    expect(actSource).toContain("A probability is context for a decision process, not a direct instruction");
+    expect(actSource).toContain("A probability is context for a decision process, not an instruction");
     expect(actSource).toContain("Canonical risk controls are unavailable");
     expect(actSource).toContain("ACT will not manufacture a threshold");
-    expect(actSource).toContain("not a directive to buy, sell, or hedge");
+    expect(actSource).toContain("This is not an instruction.");
   });
 
   it("keeps monitored triggers, confidence, source health, freshness, warnings, and history attached", () => {

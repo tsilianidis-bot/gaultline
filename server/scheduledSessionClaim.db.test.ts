@@ -1,10 +1,14 @@
 /**
  * Disposable-database proof for the once-per-session claim.
- * Set DISPOSABLE_DATABASE_URL to an empty local MySQL/MariaDB. This file does
- * not read production DATABASE_URL and does not migrate the journal.
+ * Boots an isolated MariaDB on 127.0.0.1:3307 when DISPOSABLE_DATABASE_URL is
+ * unset. A non-local URL is refused. This file does not read production
+ * DATABASE_URL and does not migrate the journal. The suite does not skip.
  */
-import { spawn } from "node:child_process";
-import { describe, expect, it } from "vitest";
+import { spawn, type ChildProcess } from "node:child_process";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import mysql from "mysql2/promise";
 import { drizzle } from "drizzle-orm/mysql2";
 import { and, notLike } from "drizzle-orm";
@@ -17,9 +21,18 @@ import {
   finalizeStaleScheduledSessionOutcomes,
   reconcileScheduledSessionScore,
 } from "./scheduledSessionClaim";
+import { mariaBinary } from "./testing/mariaBinary";
 
-const url = process.env.DISPOSABLE_DATABASE_URL;
-const dbTest = url ? describe : describe.skip;
+const PRODUCTION_URL = /prod|railway|getfaultline|amazonaws|planetscale/i;
+const PORT = 3307;
+let databaseUrl = process.env.DISPOSABLE_DATABASE_URL ?? "";
+let ownedServer: ChildProcess | null = null;
+
+function assertIsolated(url: string): void {
+  if (!url || PRODUCTION_URL.test(url) || !/127\.0\.0\.1|localhost/.test(url)) {
+    throw new Error("Refusing to run the session-claim database test against a non-local database.");
+  }
+}
 
 function serverUrl(databaseUrl: string): string {
   return databaseUrl.replace(/\/[^/?]+(\?.*)?$/, "/$1");
@@ -61,7 +74,7 @@ function claimInProcess(databaseUrl: string, etDate: string, options: { nowMs?: 
     });
   `;
   return new Promise((resolve, reject) => {
-    const child = spawn("pnpm", ["exec", "tsx", "-e", script], {
+    const child = spawn(join(process.cwd(), "node_modules", ".bin", "tsx"), ["-e", script], {
       cwd: process.cwd(),
       env: {
         ...process.env,
@@ -82,8 +95,47 @@ function claimInProcess(databaseUrl: string, etDate: string, options: { nowMs?: 
   });
 }
 
-dbTest("disposable MySQL once-per-session claim", () => {
-  const databaseUrl = url!;
+describe("disposable MySQL once-per-session claim", () => {
+  beforeAll(async () => {
+    if (databaseUrl) {
+      assertIsolated(databaseUrl);
+      return;
+    }
+    const dir = mkdtempSync(join(tmpdir(), "faultline-claim-"));
+    await new Promise<void>((resolve, reject) => {
+      const install = spawn(mariaBinary("mariadb-install-db"), ["--datadir", dir, "--auth-root-authentication-method=normal", "--skip-test-db"], { stdio: "ignore" });
+      install.on("error", reject);
+      install.on("exit", code => code === 0 ? resolve() : reject(new Error(`mariadb-install-db exited ${code}`)));
+    });
+    ownedServer = spawn(mariaBinary("mariadbd"), [
+      `--datadir=${dir}`,
+      "--bind-address=127.0.0.1",
+      `--port=${PORT}`,
+      `--socket=${join(dir, "mysql.sock")}`,
+      `--pid-file=${join(dir, "mysql.pid")}`,
+      "--skip-grant-tables",
+    ], { stdio: "ignore" });
+    ownedServer.on("error", () => undefined);
+    let last: unknown;
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      try {
+        const conn = await mysql.createConnection({ host: "127.0.0.1", port: PORT, user: "root" });
+        await conn.end();
+        last = undefined;
+        break;
+      } catch (error) {
+        last = error;
+        await new Promise(resolve => setTimeout(resolve, 250));
+      }
+    }
+    if (last) throw last;
+    databaseUrl = `mysql://root@127.0.0.1:${PORT}/faultline_claim`;
+    assertIsolated(databaseUrl);
+  }, 60_000);
+
+  afterAll(() => {
+    ownedServer?.kill("SIGTERM");
+  });
 
   it("serializes parallel processes, a retry, and a new process", async () => {
     await resetTable(databaseUrl);
@@ -94,13 +146,13 @@ dbTest("disposable MySQL once-per-session claim", () => {
     ]);
     const parsed = firstWave.map(result => JSON.parse(result) as { status: string });
     expect(parsed.filter(result => result.status === "claimed")).toHaveLength(1);
-    expect(parsed.filter(result => result.status === "already_claimed")).toHaveLength(2);
+    expect(parsed.filter(result => result.status === "incomplete")).toHaveLength(2);
 
     const retry = JSON.parse(await claimInProcess(databaseUrl, "2026-10-05", { trigger: "SCHEDULED_CRON" })) as { status: string };
-    expect(retry.status).toBe("already_claimed");
+    expect(retry.status).toBe("incomplete");
 
     const restarted = JSON.parse(await claimInProcess(databaseUrl, "2026-10-05", { trigger: "SCHEDULED_CRON" })) as { status: string };
-    expect(restarted.status).toBe("already_claimed");
+    expect(restarted.status).toBe("incomplete");
 
     const otherSession = JSON.parse(await claimInProcess(databaseUrl, "2026-10-06", { trigger: "SCHEDULED_CRON" })) as { status: string };
     expect(otherSession.status).toBe("claimed");
@@ -127,7 +179,7 @@ dbTest("disposable MySQL once-per-session claim", () => {
     const first = await claimScheduledSeismographSession("2026-10-05", provider, { nowMs: now, trigger: "SCHEDULED_CRON" });
     expect(first.status).toBe("claimed");
     const retryWhileLeased = await claimScheduledSeismographSession("2026-10-05", provider, { nowMs: now + 1000, trigger: "SCHEDULED_CRON" });
-    expect(retryWhileLeased.status).toBe("already_claimed");
+    expect(retryWhileLeased.status).toBe("incomplete");
     await expect(failScheduledSession("2026-10-05", first.generation!, provider, now)).resolves.toBe(true);
     await conn.end();
 
@@ -137,7 +189,7 @@ dbTest("disposable MySQL once-per-session claim", () => {
     ]);
     const recovered = wave.map(result => JSON.parse(result) as { status: string; mode?: string });
     expect(recovered.filter(result => result.status === "claimed" && result.mode === "recovered")).toHaveLength(1);
-    expect(recovered.filter(result => result.status === "already_claimed")).toHaveLength(1);
+    expect(recovered.filter(result => result.status === "incomplete")).toHaveLength(1);
 
     const after = await mysql.createConnection(databaseUrl);
     const afterDb = drizzle(after);
@@ -228,7 +280,7 @@ dbTest("disposable MySQL once-per-session claim", () => {
       nowMs: Date.parse("2026-10-05T21:00:00.000Z"),
       trigger: "SCHEDULED_CRON",
     });
-    expect(late.status).toBe("already_claimed");
+    expect(late.status).toBe("incomplete");
     const rows = await db.select().from(marketMemory);
     const outcome = rows.find(row => String(row.memoryKey).includes("outcome"));
     expect(String(outcome?.memoryValue)).toContain("skipped: unrecoverable");

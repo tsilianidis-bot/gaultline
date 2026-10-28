@@ -47,7 +47,7 @@ export default function SPYSignal() {
         },
         {
           heading: "Disclaimer",
-          body: `${PUBLIC_DISCLAIMER} FAULTLINE's SPY outlook, signals, and analyses are not personalized recommendations or an offer to buy or sell any security. Investing involves risk, and past performance does not guarantee future results.`,
+          body: `${PUBLIC_DISCLAIMER} FAULTLINE's SPY outlook, signals, and analyses are not personalized recommendations or an offer to transact any security. Investing involves risk, and past performance does not guarantee future results.`,
         },
       ]}
       faqs={[
@@ -60,8 +60,8 @@ export default function SPYSignal() {
           answer: "Our SPY Outlook is updated regularly as market conditions evolve. Our models process new data as it is published, ensuring that the signal and contextual analysis reflect the most current market dynamics.",
         },
         {
-          question: "Is the SPY Outlook a buy/sell recommendation?",
-          answer: "No, the SPY Outlook is strictly for market intelligence and educational purposes. It provides insights into market conditions and potential trends but does not constitute personalized financial advice or a recommendation to buy, sell, or hold any security.",
+          question: "Is the SPY Outlook a transaction recommendation?",
+          answer: "No, the SPY Outlook is strictly for market intelligence and educational purposes. It provides insights into market conditions and potential trends but does not constitute personalized financial advice or a recommendation to transact in any security.",
         },
         {
           question: "What factors influence FAULTLINE's SPY Outlook?",

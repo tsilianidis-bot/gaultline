@@ -589,9 +589,9 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {[
-                      { label: '0–30', desc: 'Low Stress — Risk-on conditions supported', color: GREEN },
-                      { label: '30–60', desc: 'Moderate Stress — Caution warranted', color: GOLD },
-                      { label: '60–80', desc: 'Elevated Stress — Defensive positioning advised', color: '#FF8C00' },
+                      { label: '0–30', desc: 'Low stress — higher-risk appetite reading', color: GREEN },
+                      { label: '30–60', desc: 'Moderate stress — mixed reading', color: GOLD },
+                      { label: '60–80', desc: 'Elevated stress — higher-stress reading', color: '#FF8C00' },
                       { label: '80–100', desc: 'Critical Stress — Systemic risk elevated', color: RED },
                     ].map((r) => (
                       <div key={r.label} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>

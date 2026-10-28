@@ -152,6 +152,30 @@ function canonicalEngineDraft(canonical: CanonicalIntelligenceState, engine: Can
   };
 }
 
+/** A quote the session classifier rejects cannot stay verified-current. */
+function admitQuoteObservation(draft: EvidenceDraft, quote: YahooQuote | undefined, nowMs: number): ValidatedIntelligenceEvidence {
+  const item = validate(draft, nowMs);
+  const freshness = classifyYahooObservation(quote, nowMs);
+  if (freshness.supportsCurrentClaim) return item;
+  const historical = freshness.timing === "completed_session";
+  const validationStatus = historical
+    ? "historical"
+    : item.validationStatus === "verified"
+      ? freshness.timing === "stale" ? "stale" : "unavailable"
+      : item.validationStatus;
+  const withheld: ValidatedIntelligenceEvidence = {
+    ...item,
+    supportsCurrentClaim: false,
+    validationStatus,
+    temporalStatus: historical ? "completed_session" : freshness.timing === "stale" ? "stale" : "unavailable",
+    temporalDetail: freshness.detail,
+    validationReason: freshness.detail,
+    historicalValue: null,
+  };
+  withheld.historicalValue = toHistorical(withheld);
+  return withheld;
+}
+
 function quoteDraft(id: string, label: string, quote: YahooQuote | undefined, nowMs: number): EvidenceDraft {
   const polygon = quote?.source === "polygon-prev";
   const provider = polygon ? "Polygon.io previous-close fallback" : "Yahoo Finance";
@@ -204,7 +228,9 @@ function fredDraft(id: string, label: string, unit: string | null, fred: FredBul
   };
 }
 
-function cryptoDraft(crypto: GlobalStats | null): EvidenceDraft {
+function cryptoDraft(crypto: GlobalStats | null, nowMs = Date.now()): EvidenceDraft {
+  const observedAt = crypto?.observedAt;
+  const usableTime = finite(observedAt) && observedAt <= nowMs;
   return {
     id: "coingecko:global-market-cap",
     label: "Crypto aggregate market capitalization",
@@ -218,11 +244,13 @@ function cryptoDraft(crypto: GlobalStats | null): EvidenceDraft {
     maxAgeMs: 15 * 60_000,
     modelVersion: null,
     sourceIdentifier: "coingecko:global",
-    sourceHealthy: Boolean(crypto && finite(crypto.observedAt)),
-    temporalStatus: finite(crypto?.observedAt) ? "delayed" : "unavailable",
-    temporalDetail: finite(crypto?.observedAt)
+    sourceHealthy: Boolean(crypto && usableTime),
+    temporalStatus: usableTime ? "delayed" : "unavailable",
+    temporalDetail: usableTime
       ? "CoinGecko provider timestamp is retained; aggregate updates follow the provider cadence."
-      : "CoinGecko aggregate lacked a provider observation timestamp and is unavailable for current claims.",
+      : finite(observedAt)
+        ? "CoinGecko observation timestamp is in the future and is not a delayed reading."
+        : "CoinGecko aggregate lacked a provider observation timestamp and is unavailable for current claims.",
   };
 }
 
@@ -285,19 +313,31 @@ function sourceFailureWarnings(inputs: EvidenceInputs) {
 }
 
 export function buildEvidenceSnapshot(inputs: EvidenceInputs, now: Date = new Date(), previous: IntelligenceEvidenceSnapshot | null = null): IntelligenceEvidenceSnapshot {
+  const nowMs = now.getTime();
   const quoteByTicker = new Map(inputs.quotes.map(quote => [quote.ticker.toUpperCase(), quote]));
+  const quoteSpecs = [
+    ["quote:SPY", "S&P 500 proxy (SPY)", "SPY"],
+    ["quote:QQQ", "Nasdaq-100 proxy (QQQ)", "QQQ"],
+    ["quote:IWM", "Russell 2000 proxy (IWM)", "IWM"],
+    ["quote:VIX", "Cboe Volatility Index (^VIX)", "^VIX"],
+  ] as const;
   const drafts: EvidenceDraft[] = [
     ...(inputs.canonical?.engines.map(engine => canonicalEngineDraft(inputs.canonical as CanonicalIntelligenceState, engine)) ?? []),
-    quoteDraft("quote:SPY", "S&P 500 proxy (SPY)", quoteByTicker.get("SPY"), now.getTime()),
-    quoteDraft("quote:QQQ", "Nasdaq-100 proxy (QQQ)", quoteByTicker.get("QQQ"), now.getTime()),
-    quoteDraft("quote:IWM", "Russell 2000 proxy (IWM)", quoteByTicker.get("IWM"), now.getTime()),
-    quoteDraft("quote:VIX", "Cboe Volatility Index (^VIX)", quoteByTicker.get("^VIX"), now.getTime()),
     fredDraft("DGS10", "10-year Treasury yield", "percent", inputs.fred),
     fredDraft("DGS2", "2-year Treasury yield", "percent", inputs.fred),
     fredDraft("BAMLH0A0HYM2", "High-yield option-adjusted spread", "percent", inputs.fred),
-    cryptoDraft(inputs.crypto),
+    cryptoDraft(inputs.crypto, nowMs),
   ];
-  const observations = addLastVerified(drafts.map(draft => validate(draft, now.getTime())), previous);
+  const quoteObservations = quoteSpecs.map(([id, label, ticker]) => {
+    const quote = quoteByTicker.get(ticker);
+    return admitQuoteObservation(quoteDraft(id, label, quote, nowMs), quote, nowMs);
+  });
+  const canonicalCount = inputs.canonical?.engines.length ?? 0;
+  const observations = addLastVerified([
+    ...drafts.slice(0, canonicalCount).map(draft => validate(draft, nowMs)),
+    ...quoteObservations,
+    ...drafts.slice(canonicalCount).map(draft => validate(draft, nowMs)),
+  ], previous);
   const canonicalIds = observations.filter(item => item.kind === "canonical_model").map(item => item.id);
   const health: EvidenceProviderHealth[] = [
     {

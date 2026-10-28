@@ -28,7 +28,7 @@ const MSFTSignal = () => {
       contentSections={[
         {
           heading: "FAULTLINE's Current Signal for Microsoft (MSFT)",
-          body: `FAULTLINE's Microsoft (MSFT) signal is computed from daily price data together with the current Pressure Index reading, its vectors, and the regime band, recalculated as new data is published. It does not ingest earnings, analyst estimates, fundamentals, or company news. Azure and AI exposure are context for the stock, not signal inputs. This signal is not a buy or sell recommendation; investors can use it to contextualize their own research on one of the world's largest technology companies.`,
+          body: `FAULTLINE's Microsoft (MSFT) signal is computed from daily price data together with the current Pressure Index reading, its vectors, and the regime band, recalculated as new data is published. It does not ingest earnings, analyst estimates, fundamentals, or company news. Azure and AI exposure are context for the stock, not signal inputs. This signal is not a transaction recommendation. It is context beside an investor's own research on one of the world's largest technology companies.`,
         },
         {
           heading: "Historical Context and Recent Shifts in MSFT's Outlook",
@@ -46,7 +46,7 @@ const MSFTSignal = () => {
       faqs={[
         {
           question: "What is FAULTLINE's current outlook for Microsoft (MSFT) stock?",
-          answer: `FAULTLINE's MSFT signal combines daily price data with the current Pressure Index reading and regime band, recalculated as new data is published. It is not a buy/sell recommendation.`,
+          answer: `FAULTLINE's MSFT signal combines daily price data with the current Pressure Index reading and regime band, recalculated as new data is published. It is not a transaction recommendation.`,
         },
         {
           question: "How does FAULTLINE analyze MSFT's macro sensitivity?",

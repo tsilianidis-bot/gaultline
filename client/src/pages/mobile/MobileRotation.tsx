@@ -23,9 +23,9 @@ function getRegimeColor(regimeKey: string): string {
 }
 
 function getRiskOnOff(score: number): { label: string; color: string; icon: React.ReactNode } {
-  if (score >= 70) return { label: "RISK-ON", color: "#34D399", icon: <TrendingUp size={14} /> };
+  if (score >= 70) return { label: "HIGHER APPETITE", color: "#34D399", icon: <TrendingUp size={14} /> };
   if (score >= 40) return { label: "NEUTRAL", color: "#FFD700", icon: <Minus size={14} /> };
-  return { label: "RISK-OFF", color: "#FF2D55", icon: <TrendingDown size={14} /> };
+  return { label: "LOWER APPETITE", color: "#FF2D55", icon: <TrendingDown size={14} /> };
 }
 
 // ── Sector card ───────────────────────────────────────────────

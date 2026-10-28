@@ -302,6 +302,15 @@ export interface FMOSConfidenceOutput {
 // ── Decision Engine Types ─────────────────────────────────────
 
 export type DecisionVerdict =
+  | "strong-up"
+  | "up-edge"
+  | "build-edge"
+  | "flat-edge"
+  | "open-edge"
+  | "light-edge"
+  | "down-edge"
+  | "lower-edge"
+  | "lowest-edge"
   | "STRONG BUY"
   | "BUY"
   | "ACCUMULATE"

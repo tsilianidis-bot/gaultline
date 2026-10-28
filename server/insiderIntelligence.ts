@@ -116,14 +116,14 @@ export interface InsiderCompanyOutput {
   profile: InsiderConvictionProfile;
   timeline: Array<{
     date: string;
-    type: "buy" | "sell";
+    type: "purchase" | "sale";
     role: InsiderRole;
     amount: number;
     label: string;
   }>;
   accuracyHistory: Array<{
     period: string;
-    insiderAction: "buy" | "sell";
+    insiderAction: "purchase" | "sale";
     subsequentReturn: number;
     wasCorrect: boolean;
   }>;
@@ -405,7 +405,7 @@ function buildRadarEntry(ticker: string, company: string, dateStr: string, rank:
   };
 }
 
-// ── Cluster Buy Alerts ────────────────────────────────────────
+// ── Cluster acquisition alerts ────────────────────────────────────────
 
 function buildClusterAlerts(dateStr: string): ClusterBuyAlert[] {
   const alerts: ClusterBuyAlert[] = [];
@@ -465,7 +465,7 @@ function buildSellingAlerts(dateStr: string): SellingAnalysis[] {
   const sellTickers = RADAR_TICKERS.slice(5, 10);
 
   for (const { ticker, company } of sellTickers) {
-    const base = hashStr(ticker + dateStr + "sell");
+    const base = hashStr(ticker + dateStr + "disposition");
     const role: InsiderRole = ["CEO", "CFO", "Director", "EVP", "SVP"][base % 5] as InsiderRole;
     const saleAmount = seededRandom(base + 1, 200_000, 15_000_000);
     const pctHoldings = seededFloat(base + 2, 1, 35, 1);
@@ -566,8 +566,8 @@ Conviction Score: ${convictionScore}/100 (${getConvictionBand(convictionScore)})
 CEO purchased: ${ceoPurchased}
 CFO purchased: ${cfoPurchased}
 Director buys: ${directorCount}
-Total buy value: $${(totalBuyValue / 1_000_000).toFixed(1)}M
-Total sell value: $${(totalSellValue / 1_000_000).toFixed(1)}M
+Total acquisition value: $${(totalBuyValue / 1_000_000).toFixed(1)}M
+Total disposition value: $${(totalSellValue / 1_000_000).toFixed(1)}M
 Cluster buying: ${clusterCount >= 2}
 Historical accuracy: ${historicalAccuracy}%
 Recent transactions: ${txs.length} total (${buys.length} buys, ${sells.length} sells)
@@ -632,7 +632,7 @@ function buildTimeline(ticker: string, dateStr: string): InsiderCompanyOutput["t
     .sort((a, b) => a.daysAgo - b.daysAgo)
     .map(t => ({
       date: t.filingDate,
-      type: t.transactionType === "purchase" ? "buy" as const : "sell" as const,
+      type: t.transactionType === "purchase" ? "purchase" as const : "sale" as const,
       role: t.role,
       amount: t.totalValue,
       label: `${t.insiderName} (${t.role}) — ${t.transactionType === "purchase" ? "Purchased" : "Sold"} $${(t.totalValue / 1000).toFixed(0)}K`,
@@ -646,9 +646,9 @@ function buildAccuracyHistory(ticker: string): InsiderCompanyOutput["accuracyHis
   const periods = ["Q1 2023", "Q2 2023", "Q3 2023", "Q4 2023", "Q1 2024", "Q2 2024"];
   return periods.map((period, i) => {
     const seed = base + i * 17;
-    const insiderAction: "buy" | "sell" = seededRandom(seed, 0, 1) === 0 ? "buy" : "sell";
+    const insiderAction: "purchase" | "sale" = seededRandom(seed, 0, 1) === 0 ? "purchase" : "sale";
     const subsequentReturn = seededFloat(seed + 1, -18, 32, 1);
-    const wasCorrect = insiderAction === "buy" ? subsequentReturn > 0 : subsequentReturn < 0;
+    const wasCorrect = insiderAction === "purchase" ? subsequentReturn > 0 : subsequentReturn < 0;
     return { period, insiderAction, subsequentReturn, wasCorrect };
   });
 }

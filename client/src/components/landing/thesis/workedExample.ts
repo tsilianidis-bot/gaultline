@@ -40,7 +40,7 @@ export const ILLUSTRATIVE = {
     paths: [
       {
         name: "If conditions continue",
-        text: "The vectors hold roughly where they are and the reading stays inside its band. Supported by vectors that are not moving. Weakened by a sustained move in the vectors that carry the most weight.",
+        text: "The vectors stay roughly where they are and the reading stays inside its band. Supported by vectors that are not moving. Weakened by a sustained move in the vectors that carry the most weight.",
       },
       {
         name: "If conditions change",
@@ -59,7 +59,7 @@ export const ILLUSTRATIVE = {
 } as const;
 
 export const MODEL_LIMITS =
-  "Separate from the Pressure Index: a two-state hidden Markov model (sre-hmm2-v1.0.0) on one factor of a broader FRED panel. Its probability for the state it is in, and its chance of leaving that state at the next observation, are shown as Uncalibrated: the model's probabilities are not calibrated, so no figure is given. Neither is the chance of a crash. Out of sample, days on which the model put near-certain weight on its crisis state fell inside a labelled stress window about 18% of the time.";
+  "Separate from the Pressure Index: a two-state hidden Markov model (sre-hmm2-v1.0.0) on one factor of a broader FRED panel. Its probability for the state it is in, and its chance of leaving that state at the next observation, are shown as Uncalibrated: the model's probabilities are not calibrated, so no figure is given. No event percentage is published. Out of sample, days on which the model put near-certain weight on its crisis state fell inside a labelled stress window about 18% of the time.";
 
 export type LiveStatus = "loading" | "unavailable" | "ready";
 

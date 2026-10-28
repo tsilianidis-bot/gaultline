@@ -75,7 +75,7 @@ describe("five-page Pentagonal Thesis wiring (Map + Top 5 on NOW; slices on WHY/
     ["Why", "why", "WhySlice", "driverLinks"],
     ["Outlook", "outlook", "OutlookSlice", "LEADERSHIP_GROUP"],
     ["Watch", "watch", "WatchSlice", "earlyIndicator"],
-    ["Act", "act", "ActSlice", "ACTION_LABEL"],
+    ["Act", "act", "ActSlice", "CONDITION_LABEL"],
   ] as const)("%s.tsx mounts SectorRotationQuestion(%s) and %s uses %s", (page, q, slice, token) => {
     const srcPage = src(`client/src/pages/${page}.tsx`);
     expect(srcPage).toContain(`<SectorRotationQuestion question="${q}" />`);

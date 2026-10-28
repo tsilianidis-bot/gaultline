@@ -77,7 +77,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
       "True RSI / MACD / SMA signals",
       "AI signal classification",
       "Regime-weighted scoring",
-      "BUY / SELL / HOLD / WATCH labels",
+      "Condition labels",
     ],
     requiredTier: 'core',
   },
@@ -238,7 +238,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Opportunity Radar Locked",
     subtitle: "COMPLETE OPPORTUNITY RADAR",
     description:
-      `Full access to FAULTLINE's Opportunity Radar — ranked opportunities, entry zones, and regime-weighted conviction scores. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
+      `Full access to FAULTLINE's Opportunity Radar — ranked opportunities, price bands, and regime-weighted conviction scores. Included with FAULTLINE Intelligence. Lifetime access is also available for $1,500 one-time.`,
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
@@ -247,7 +247,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     ctaSecondary: "Pro Access",
     features: [
       "Ranked opportunity list",
-      "Entry zone identification",
+      "Price-band identification",
       "Regime-weighted conviction",
       "Risk/reward scoring",
     ],
@@ -345,7 +345,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
       "Regime-aware recommendations",
       "Conviction scoring",
       "Multi-factor synthesis",
-      "Actionable entry/exit guidance",
+      "Recorded condition notes",
     ],
     requiredTier: 'premium',
   },
@@ -809,7 +809,7 @@ export function PremiumBlurOverlay({
   const loginUrl = getLoginUrl();
   const tier = (tierQuery.data?.tier ?? 'free') as AccessTier;
 
-  // Still loading — show content unblurred to avoid flash
+  // Still loading — show content unblurred to pass over flash
   if (loading || (tierAware && isAuthenticated && tierQuery.isLoading)) return <>{children}</>;
 
   // Admin users always pass all gates

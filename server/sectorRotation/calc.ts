@@ -22,12 +22,12 @@
  *    not contain is dropped.
  */
 import {
-  ACTION_LABEL, ARROW_GLYPH, BENCHMARK_TICKER, CATALYST_LABEL, CATALYST_UNCLEAR_TEXT, DEFENSIVE_SECTORS,
+  ARROW_GLYPH, BENCHMARK_TICKER, CATALYST_LABEL, CATALYST_UNCLEAR_TEXT, CONDITION_ID_BY_CLASS, CONDITION_LABEL, DEFENSIVE_SECTORS,
   QUADRANT_LABEL, SECTOR_ETFS, SECTOR_ROTATION_METHOD_VERSION, SECTOR_ROTATION_PARAMS,
   SECTOR_ROTATION_SCHEMA_VERSION,
   type CanonicalLink, type CatalystClass, type DailyChangeBasis, type DataStatus, type DriverId, type EventFamily,
   type EvidenceCheck, type LeadershipGroup, type MacroDriverReading, type MomentumArrow, type MoverRow, type NewsEvidence,
-  type Quadrant, type SectorActionClass, type SectorBreadth, type SectorDriverLink, type SectorEtfTicker, type SectorRotationReading,
+  type Quadrant, type SectorActionClass, type SectorBreadth, type SectorConditionId, type SectorDriverLink, type SectorEtfTicker, type SectorRotationReading,
   type SectorRow, type ThesisAlignment, type TopMovers, type WatchIndicator,
 } from "../../shared/sectorRotation";
 import { PRESSURE_BANDS, pressureBand, type PressureBandRegime } from "../../shared/pressureBands";
@@ -287,11 +287,11 @@ export const ACTION_RULES: Record<SectorActionClass, string> = {
   OVERWEIGHT: "LEADING quadrant AND 20-session return above SPY AND breadth ≥ 50% of constituents above their 50-session average.",
   WATCH_FOR_CONFIRMATION: "IMPROVING quadrant, or LEADING without full confirmation (relative return, breadth, or breadth unavailable).",
   NEUTRAL: "LOSING MOMENTUM quadrant with 20-session return still above SPY.",
-  UNDERWEIGHT: "LOSING MOMENTUM with 20-session return at or below SPY, or LAGGING without every AVOID condition.",
+  UNDERWEIGHT: "LOSING MOMENTUM with 20-session return at or below SPY, or LAGGING without all three weakness conditions (below SPY, breadth under 50%, momentum down).",
   AVOID: "LAGGING quadrant AND 20-session return below SPY AND breadth < 50% AND RS-Momentum falling (↓).",
 };
 
-export function classifyAction(input: { quadrant: Quadrant; relReturn20dPct: number | null; breadthPct: number | null; arrow: MomentumArrow }): { class: SectorActionClass; evidence: EvidenceCheck[] } {
+export function classifyAction(input: { quadrant: Quadrant; relReturn20dPct: number | null; breadthPct: number | null; arrow: MomentumArrow }): { class: SectorActionClass; conditionId: SectorConditionId; evidence: EvidenceCheck[] } {
   const { quadrant, relReturn20dPct: rel, breadthPct: breadth, arrow } = input;
   const relPositive = rel == null ? null : rel > 0;
   const breadthStrong = breadth == null ? null : breadth >= 50;
@@ -306,7 +306,11 @@ export function classifyAction(input: { quadrant: Quadrant; relReturn20dPct: num
   else if (quadrant === "IMPROVING") cls = "WATCH_FOR_CONFIRMATION";
   else if (quadrant === "LOSING_MOMENTUM") cls = relPositive === true ? "NEUTRAL" : "UNDERWEIGHT";
   else cls = relPositive === false && breadthStrong === false && arrow === "DOWN" ? "AVOID" : "UNDERWEIGHT";
-  return { class: cls, evidence };
+  return { class: cls, conditionId: conditionIdForClass(cls), evidence };
+}
+
+function conditionIdForClass(cls: SectorActionClass): SectorConditionId {
+  return CONDITION_ID_BY_CLASS[cls];
 }
 
 // ── Macro drivers ────────────────────────────────────────────────────────────
@@ -773,7 +777,7 @@ export function buildSectorRotationReading(inputs: SectorRotationInputs): Sector
       rsRatio: rrg.rsRatio, rsMomentum: rrg.rsMomentum, quadrant: rrg.quadrant, arrow: rrg.arrow,
       rank: r, priorRank: pr, rankChange: pr - r, priorQuadrant: rrg.priorQuadrant, sessionsInQuadrant: rrg.sessionsInQuadrant,
       leadershipGroup: LEADERSHIP_GROUP_BY_QUADRANT[rrg.quadrant], breadth,
-      action: { class: action.class, rule: ACTION_RULES[action.class], evidence: action.evidence },
+      action: { conditionId: action.conditionId, rule: ACTION_RULES[action.class], evidence: action.evidence },
     };
   }).sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99) || a.ticker.localeCompare(b.ticker));
 
@@ -941,8 +945,8 @@ export function composeNarrative(r: SectorRotationReading): SectorRotationReadin
   const early = moverRows.filter(m => m.earlyIndicator.flagged).map(m => m.ticker);
   const watch = `${confirming} of ${measurable} measurable indicators currently confirming. ${early.length ? `Possible early indicators: ${early.join(", ")}.` : "No top mover meets the early-indicator rule."}`;
 
-  const classes: SectorActionClass[] = ["OVERWEIGHT", "WATCH_FOR_CONFIRMATION", "NEUTRAL", "UNDERWEIGHT", "AVOID"];
-  const act = classes.map(c => `${ACTION_LABEL[c]}: ${listOr(s.filter(x => x.action?.class === c).map(x => x.ticker), "none")}`).join(". ") + ".";
+  const conditionIds = ["breadth-confirmed-up", "confirmation-open", "momentum-fade", "return-at-or-below-benchmark", "lagging-confirmed-down"] as const;
+  const act = conditionIds.map(id => `${CONDITION_LABEL[id]}: ${listOr(s.filter(x => x.action?.conditionId === id).map(x => x.ticker), "none")}`).join(". ") + ".";
 
   // WHY IT MATTERS: rotation + strongest / weakest stock vs the canonical regime.
   const defensiveStrong = DEFENSIVE_SECTORS.filter(t => { const q = s.find(x => x.ticker === t)?.quadrant; return q === "LEADING" || q === "IMPROVING"; }).length;

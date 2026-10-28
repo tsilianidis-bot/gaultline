@@ -344,8 +344,8 @@ describe("no hard-coded current-looking prices or price levels", () => {
     const s = src("client/src/pages/Signals.tsx");
     expect(s).not.toMatch(/stock\.(entryZone|support|resistance|stopLoss|profitTargets|riskReward|invalidationLevel|price)\b/);
     expect(s).toMatch(/CATALOG NOTES · STATIC REFERENCE, NOT MARKET DATA/);
-    expect(s).toMatch(/KEY PRICE LEVELS · UNAVAILABLE/);
-    expect((s.match(/priceLevelsBasis\(liveQuote, quote\.badge\)/g) ?? []).length).toBe(2);
+    expect(s).not.toMatch(/KEY PRICE LEVELS/);
+    expect((s.match(/priceLevelsBasis\(liveQuote, quote\.badge\)/g) ?? []).length).toBe(0);
     expect(s).toMatch(/const asOf = quote \? formatEt\(quote\.timestamp\) : null;/);
   });
 
@@ -786,7 +786,7 @@ describe("price-level guard covers bare numeric levels and level tiles", () => {
   it("M10: Signals levels basis never hard-codes LIVE", () => {
     const s = src("client/src/pages/Signals.tsx");
     expect(s).not.toMatch(/Computed from LIVE/);
-    expect((s.match(/priceLevelsBasis\(liveQuote, quote\.badge\)/g) ?? []).length).toBe(2);
+    expect((s.match(/priceLevelsBasis\(liveQuote, quote\.badge\)/g) ?? []).length).toBe(0);
   });
 });
 
@@ -1032,7 +1032,7 @@ describe("no X/10 score text on routed #59 pages (Signals, Charts, SimulatePress
   it("Signals regime alignment badge shows the label only (no tier score)", () => {
     const s = src("client/src/pages/Signals.tsx");
     expect(s).toMatch(/function RegimeAlignmentBadge\(\{ alignment \}: \{/);
-    expect(s).toMatch(/<RegimeAlignmentBadge alignment=\{tradingSignal\.regimeAlignment\} \/>/);
+    expect(s).not.toMatch(/<RegimeAlignmentBadge alignment=\{tradingSignal\.regimeAlignment\} \/>/);
     expect(s).not.toMatch(/score\.toFixed\(0\)\}\/10/);
   });
 

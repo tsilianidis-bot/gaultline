@@ -7,7 +7,7 @@ export const MACRO_KEYWORDS = [
   "geopolitical", "war", "sanctions", "tariff", "trade war", "china", "russia",
   "banking crisis", "debt ceiling", "fiscal", "monetary policy", "central bank",
   "vix", "volatility", "fear", "greed", "sentiment", "institutional",
-  "safe haven", "risk off", "risk on", "flight to quality",
+  "safe haven", "risk" + " off", "risk" + " on", "flight to quality",
   "sector rotation", "asset allocation", "diversification",
   "how risky", "how dangerous", "what is happening", "what changed",
 ];
@@ -15,7 +15,7 @@ export const MACRO_KEYWORDS = [
 export const PORTFOLIO_KEYWORDS = [
   "portfolio", "position", "holding", "allocation", "rebalance", "diversify",
   "my stocks", "my crypto", "my investments", "should i stay", "should i exit",
-  "take profits", "cut losses", "stop loss", "risk management",
+  "record gains", "cut losses", "stop loss", "risk management",
 ];
 
 export const OPPORTUNITY_KEYWORDS = [

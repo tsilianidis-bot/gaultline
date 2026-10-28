@@ -7,6 +7,7 @@
  * The feed is generated on-the-fly from the database (no caching needed at this scale).
  */
 
+import { neutralizeChannelText } from "../shared/clientVocabulary";
 import type { Request, Response } from "express";
 import { desc, eq, and, sql } from "drizzle-orm";
 import { getDb } from "./db";
@@ -50,6 +51,81 @@ function contentTypeToCategory(contentType: string): string {
   return map[contentType] ?? "Market Intelligence";
 }
 
+export type RssFeedItem = {
+  slug: string;
+  title: string;
+  contentType: string;
+  metaDescription: string | null;
+  content: string | null;
+  regime: string | null;
+  pressureScore: number | null;
+  publishedAt: Date | string | null;
+  createdAt: Date | string | null;
+};
+
+export function renderRssFeed(items: RssFeedItem[]): string {
+  const safeItems = items.map(item => ({
+    ...item,
+    title: neutralizeChannelText(item.title),
+    metaDescription: item.metaDescription ? neutralizeChannelText(item.metaDescription) : item.metaDescription,
+    content: item.content ? neutralizeChannelText(item.content) : item.content,
+  }));
+  const lastBuildDate = safeItems.length > 0
+    ? formatRfc822(safeItems[0].publishedAt ?? safeItems[0].createdAt)
+    : formatRfc822(new Date());
+
+  const rssItems = safeItems.map(item => {
+    const url = `${SITE_URL}/intelligence/${item.slug}`;
+    const category = contentTypeToCategory(item.contentType);
+    const description = item.metaDescription
+      ? escapeXml(item.metaDescription)
+      : escapeXml((item.content ?? "").slice(0, 200).replace(/[#*`]/g, "").trim() + "…");
+    const excerpt = (item.content ?? "")
+      .replace(/^#{1,6}\s+/gm, "")
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/\n{2,}/g, " ")
+      .trim()
+      .slice(0, 500);
+
+    return `    <item>
+      <title>${escapeXml(item.title)}</title>
+      <link>${url}</link>
+      <guid isPermaLink="true">${url}</guid>
+      <description>${description}</description>
+      <content:encoded><![CDATA[${excerpt}… <a href="${url}">Read the full brief →</a>]]></content:encoded>
+      <category>${escapeXml(category)}</category>
+      <pubDate>${formatRfc822(item.publishedAt ?? item.createdAt)}</pubDate>
+      ${item.regime ? `<faultline:regime>${escapeXml(item.regime)}</faultline:regime>` : ""}
+      ${item.pressureScore !== null ? `<faultline:pressureScore>${item.pressureScore}</faultline:pressureScore>` : ""}
+    </item>`;
+  }).join("\n");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/"
+  xmlns:atom="http://www.w3.org/2005/Atom"
+  xmlns:faultline="https://getfaultline.live/rss-namespace">
+  <channel>
+    <title>${escapeXml(FEED_TITLE)}</title>
+    <link>${SITE_URL}</link>
+    <description>${escapeXml(FEED_DESCRIPTION)}</description>
+    <language>${FEED_LANGUAGE}</language>
+    <copyright>${escapeXml(FEED_COPYRIGHT)}</copyright>
+    <lastBuildDate>${lastBuildDate}</lastBuildDate>
+    <ttl>${FEED_TTL}</ttl>
+    <atom:link href="${SITE_URL}/api/rss.xml" rel="self" type="application/rss+xml" />
+    <image>
+      <url>${SITE_URL}/logo.png</url>
+      <title>${escapeXml(FEED_TITLE)}</title>
+      <link>${SITE_URL}</link>
+    </image>
+${rssItems}
+  </channel>
+</rss>`;
+}
+
 export async function handleRssFeed(req: Request, res: Response) {
   try {
     const db = await getDb();
@@ -76,62 +152,7 @@ export async function handleRssFeed(req: Request, res: Response) {
       .orderBy(desc(organicContent.publishedAt))
       .limit(50);
 
-    const lastBuildDate = items.length > 0
-      ? formatRfc822(items[0].publishedAt ?? items[0].createdAt)
-      : formatRfc822(new Date());
-
-    const rssItems = items.map(item => {
-      const url = `${SITE_URL}/intelligence/${item.slug}`;
-      const category = contentTypeToCategory(item.contentType);
-      const description = item.metaDescription
-        ? escapeXml(item.metaDescription)
-        : escapeXml((item.content ?? "").slice(0, 200).replace(/[#*`]/g, "").trim() + "…");
-
-      // Build a brief content excerpt (first 500 chars, stripped of markdown)
-      const excerpt = (item.content ?? "")
-        .replace(/^#{1,6}\s+/gm, "")
-        .replace(/\*\*([^*]+)\*\*/g, "$1")
-        .replace(/\*([^*]+)\*/g, "$1")
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-        .replace(/\n{2,}/g, " ")
-        .trim()
-        .slice(0, 500);
-
-      return `    <item>
-      <title>${escapeXml(item.title)}</title>
-      <link>${url}</link>
-      <guid isPermaLink="true">${url}</guid>
-      <description>${description}</description>
-      <content:encoded><![CDATA[${excerpt}… <a href="${url}">Read the full brief →</a>]]></content:encoded>
-      <category>${escapeXml(category)}</category>
-      <pubDate>${formatRfc822(item.publishedAt ?? item.createdAt)}</pubDate>
-      ${item.regime ? `<faultline:regime>${escapeXml(item.regime)}</faultline:regime>` : ""}
-      ${item.pressureScore !== null ? `<faultline:pressureScore>${item.pressureScore}</faultline:pressureScore>` : ""}
-    </item>`;
-    }).join("\n");
-
-    const feed = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0"
-  xmlns:content="http://purl.org/rss/1.0/modules/content/"
-  xmlns:atom="http://www.w3.org/2005/Atom"
-  xmlns:faultline="https://getfaultline.live/rss-namespace">
-  <channel>
-    <title>${escapeXml(FEED_TITLE)}</title>
-    <link>${SITE_URL}</link>
-    <description>${escapeXml(FEED_DESCRIPTION)}</description>
-    <language>${FEED_LANGUAGE}</language>
-    <copyright>${escapeXml(FEED_COPYRIGHT)}</copyright>
-    <lastBuildDate>${lastBuildDate}</lastBuildDate>
-    <ttl>${FEED_TTL}</ttl>
-    <atom:link href="${SITE_URL}/api/rss.xml" rel="self" type="application/rss+xml" />
-    <image>
-      <url>${SITE_URL}/logo.png</url>
-      <title>${escapeXml(FEED_TITLE)}</title>
-      <link>${SITE_URL}</link>
-    </image>
-${rssItems}
-  </channel>
-</rss>`;
+    const feed = renderRssFeed(items);
 
     res
       .set("Content-Type", "application/rss+xml; charset=utf-8")

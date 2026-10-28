@@ -7,19 +7,19 @@ const BullBearConditions = () => {
   return (
     <SEOLandingPage
       seo={{
-        title: "Is Now a Good Time to Buy Stocks? Bull/Bear Conditions",
+        title: "Is Now a Good Time to Own Stocks? Bull/Bear Conditions",
         description: "Comprehensive analysis of current bull and bear market conditions. Understand what defines each regime, current FAULTLINE readings, historical context, and how conditions compare to past transitions.",
         canonical: "/bull-bear-conditions",
       }}
       badge="Market Analysis"
-      headline="Is Now a Good Time to Buy Stocks? — Bull/Bear Conditions"
+      headline="Is Now a Good Time to Own Stocks? — Bull/Bear Conditions"
       subheadline="A plain-English answer: Evaluating the current market landscape requires a deep dive into prevailing bull and bear conditions. While no one can predict the future with certainty, understanding the underlying dynamics can inform your investment strategy. FAULTLINE provides critical insights into these regimes."
       ctaLabel="Explore FAULTLINE"
       ctaHref="/explore-faultline"
       accentColor="#00D4FF"
       features={[
         { icon: "◈", title: "Bull vs Bear Conditions", desc: "Understand the fundamental characteristics of bull and bear market conditions and what drives transitions." },
-        { icon: "◎", title: "FAULTLINE Regime Engine", desc: "Access FAULTLINE's regularly refreshed regime classification — bull, bear, risk-on, risk-off, late-cycle." },
+        { icon: "◎", title: "FAULTLINE Regime Engine", desc: "Access FAULTLINE's regularly refreshed regime classification — bull, bear, higher-risk appetite, lower-risk appetite, late-cycle." },
         { icon: "⬡", title: "Historical Turning Points", desc: "Compare current conditions with significant turning points in market history." },
         { icon: "◈", title: "Pressure Index Score", desc: "The 0-100 systemic risk score that shows where systemic pressure is building." },
         { icon: "◎", title: "Sentiment Shift Indicators", desc: "Context on the conditions that tend to accompany shifts in market sentiment." },
@@ -40,7 +40,7 @@ const BullBearConditions = () => {
         },
         {
           heading: "What Would Change the Outlook?",
-          body: `A shift toward more supportive conditions would usually involve inflation returning toward target without a deep recession, a move by central banks toward easier policy or at least a pause in hikes, and narrowing credit spreads. A slide into a stressed regime would usually show up as widening credit spreads, funding stress, rising unemployment, and tightening policy into slowing growth. FAULTLINE reads these conditions through the Pressure Index as new FRED data is published.`,
+          body: `A shift toward more supportive conditions would usually involve inflation returning toward the stated level without a deep recession, a move by central banks toward easier policy or at least a pause in hikes, and narrowing credit spreads. A slide into a stressed regime would usually show up as widening credit spreads, funding stress, rising unemployment, and tightening policy into slowing growth. FAULTLINE reads these conditions through the Pressure Index as new FRED data is published.`,
         },
       ]}
       faqs={[
