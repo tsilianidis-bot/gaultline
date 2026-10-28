@@ -514,50 +514,6 @@ export function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signal
           paddingTop: '8px', marginTop: '4px',
         }}>
           <PentagonalThesisNarrative symbol={stock.ticker} surface="signals-card" compact />
-          {/* Technical indicators */}
-          {tradingSignal && (
-            <div style={{
-              marginBottom: '10px',
-              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px',
-            }}>
-              {[
-                { label: tradingSignal.technicals.rsiIsTrue && tradingSignal.technicals.rsiEstimate != null ? 'RSI(14)' : 'INDICATOR', value: tradingSignal.technicals.rsiIsTrue && tradingSignal.technicals.rsiEstimate != null ? `${tradingSignal.technicals.rsiEstimate.toFixed(0)} ${tradingSignal.technicals.rsiLabel.toUpperCase()}` : 'UNAVAILABLE', color: tradingSignal.technicals.rsiIsTrue ? (tradingSignal.technicals.rsiLabel === 'Overbought' ? '#FF2D55' : tradingSignal.technicals.rsiLabel === 'Oversold' ? '#00D4FF' : '#94A3B8') : '#64748B', badge: tradingSignal.technicals.rsiIsTrue && tradingSignal.technicals.rsiEstimate != null ? 'TRUE' : undefined },
-                { label: tradingSignal.technicals.smaIsTrue ? 'SMA(50/200)' : 'SMA~', value: tradingSignal.technicals.smaSignal.toUpperCase(), color: tradingSignal.technicals.smaSignal === 'Golden Cross' ? '#00D4FF' : tradingSignal.technicals.smaSignal === 'Death Cross' ? '#FF2D55' : '#94A3B8', badge: tradingSignal.technicals.smaIsTrue ? 'TRUE' : undefined },
-                { label: 'VOLUME', value: tradingSignal.technicals.volumeSignal.toUpperCase(), color: tradingSignal.technicals.volumeSignal === 'Surge' ? '#FFD700' : tradingSignal.technicals.volumeSignal === 'Low' ? '#FF2D55' : '#94A3B8', badge: undefined },
-              ].map(({ label, value, color, badge }) => (
-                <div key={label} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '2px', padding: '4px 6px' }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                    {label}
-                    {badge && <span style={{ fontSize: '13px', color: '#22C55E', background: 'rgba(34,197,94,0.15)', padding: '0 3px', borderRadius: '2px' }}>{badge}</span>}
-                  </div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', fontWeight: 700, color }}>{value}</div>
-                </div>
-              ))}
-              {/* MACD row — only shown when real daily bars are available */}
-              {tradingSignal.technicals.macd && (
-                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '2px', padding: '4px 6px', gridColumn: '1 / -1' }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '3px', marginBottom: '2px' }}>
-                    MACD (12/26/9)
-                    <span style={{ fontSize: '13px', color: '#22C55E', background: 'rgba(34,197,94,0.15)', padding: '0 3px', borderRadius: '2px' }}>TRUE</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    {[
-                      { label: 'MACD', value: tradingSignal.technicals.macd.macdLine.toFixed(3) },
-                      { label: 'SIGNAL', value: tradingSignal.technicals.macd.signalLine.toFixed(3) },
-                      { label: 'HIST', value: tradingSignal.technicals.macd.histogram.toFixed(3), color: tradingSignal.technicals.macd.histogram > 0 ? '#00D4FF' : '#FF2D55' },
-                      { label: 'TREND', value: tradingSignal.technicals.macd.signal.toUpperCase(), color: tradingSignal.technicals.macd.signal === 'Bullish' ? '#00D4FF' : tradingSignal.technicals.macd.signal === 'Bearish' ? '#FF2D55' : '#94A3B8' },
-                    ].map(({ label, value, color: c }) => (
-                      <div key={label}>
-                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(100,116,139,0.65)' }}>{label}</div>
-                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', fontWeight: 700, color: c ?? '#94A3B8' }}>{value}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Fundamentals grid. Market cap, short interest, debt/equity and average
               volume in signalsData.ts are static catalog figures with no source or
               as-of date, so they are shown as Unavailable (never as current figures).
