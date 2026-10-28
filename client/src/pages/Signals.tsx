@@ -320,16 +320,18 @@ function SkeletonCard() {
 }
 
 // ── Stock Card ────────────────────────────────────────────────
-export function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked }: {
+export function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked, defaultExpanded = false }: {
   stock: SignalStock;
   /** null = no quote or no canonical regime: the bar is not drawn. */
   regimeScore: number | null;
   liveQuote?: LiveQuote;
   tradingSignal?: TradingSignalResult;
   signalBlocked?: boolean;
+  /** Tests open the details panel. The product starts collapsed. */
+  defaultExpanded?: boolean;
 }) {
   const [, navigate] = useLocation();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const [infoOpen, setInfoOpen] = useState(false);
 
   // Fire GA4 event the first time a card is expanded
@@ -487,8 +489,8 @@ export function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signal
         )}
       </div>}
 
-      {/* Details toggle: the expanded panel (KEY PRICE LEVELS, catalog notes) is
-          reachable without leaving the card; the card body still opens the ticker page. */}
+      {/* Details toggle: the expanded panel is the shared thesis and the quote.
+          The card body still opens the ticker page. */}
       <button
         type="button"
         data-card-details-toggle
@@ -505,114 +507,13 @@ export function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signal
 
       {/* Expanded details */}
       {expanded && (
-        <div style={{
+        <div
+          data-signal-tier={signalBlocked ? "locked" : "open"}
+          style={{
           borderTop: '1px solid rgba(255,255,255,0.06)',
           paddingTop: '8px', marginTop: '4px',
         }}>
-          {tradingSignal && <ConfidenceBar action={tradingSignal.action} />}
-          {tradingSignal && <RegimeAlignmentBadge alignment={tradingSignal.regimeAlignment} />}
-          {/* Upgrade prompt when tier gate blocks signals */}
-          {!tradingSignal && signalBlocked && (
-            <div style={{
-              marginBottom: '10px',
-              padding: '12px 10px',
-              background: 'rgba(255,153,0,0.04)',
-              border: '1px solid rgba(255,153,0,0.18)',
-              borderRadius: '3px',
-              display: 'flex', flexDirection: 'column', gap: '8px',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '10px', color: '#FF9500' }}>⚠</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', letterSpacing: '0.15em', color: 'rgba(255,153,0,0.7)' }}>PRO INTELLIGENCE LOCKED</span>
-              </div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: 'rgba(148,163,184,0.85)', lineHeight: 1.5 }}>
-                Stop loss, resistance, support, entry zone, and target price require a <span style={{ color: '#FF9500' }}>Premium or Founding</span> membership.
-              </div>
-              {/* Blurred placeholder grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', opacity: 0.25, pointerEvents: 'none', filter: 'blur(2px)' }}>
-                {['ENTRY', 'STOP LOSS', 'TARGET', 'R:R'].map(lbl => (
-                  <div key={lbl} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '2px', padding: '5px 4px', borderTop: '2px solid rgba(255,153,0,0.2)' }}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.08em', marginBottom: '2px' }}>{lbl}</div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', fontWeight: 700, color: '#FF9500' }}>———</div>
-                  </div>
-                ))}
-              </div>
-              <a
-                href="/app/account"
-                onClick={e => e.stopPropagation()}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  gap: '5px', padding: '6px 12px',
-                  background: 'rgba(255,153,0,0.12)',
-                  border: '1px solid rgba(255,153,0,0.35)',
-                  borderRadius: '3px',
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: '12px', letterSpacing: '0.12em',
-                  color: '#FF9500', textDecoration: 'none',
-                  transition: 'background 0.15s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,153,0,0.2)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,153,0,0.12)')}
-              >
-                ⚡ UPGRADE TO PRO — UNLOCK PRICE LEVELS
-              </a>
-            </div>
-          )}
-          {/* No computed signal (guest, no quote, no canonical regime): levels are Unavailable — never a static value. */}
-          {!tradingSignal && !signalBlocked && (
-            <div data-price-levels-unavailable style={{ marginBottom: '10px', padding: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '3px' }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', letterSpacing: '0.15em', color: 'rgba(100,116,139,0.75)', marginBottom: '4px' }}>KEY PRICE LEVELS · UNAVAILABLE</div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(148,163,184,0.75)', lineHeight: 1.5 }}>
-                Support, resistance, entry, stop and target are shown only when they are computed from a current or delayed quote for {stock.ticker}.
-              </div>
-            </div>
-          )}
-          {/* Key Price Levels (only when trading signal available) */}
-          {tradingSignal && (
-            <div style={{
-              marginBottom: '10px',
-              padding: '8px',
-              background: 'rgba(255,255,255,0.02)',
-              border: '1px solid rgba(255,255,255,0.05)',
-              borderRadius: '3px',
-            }}>
-              <div style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '11px', letterSpacing: '0.15em',
-                color: 'rgba(100,116,139,0.75)',
-                marginBottom: '6px',
-              }}>KEY PRICE LEVELS</div>
-              {/* Top row: entry/stop/target/R:R */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '6px' }}>
-                {[
-                  { label: 'ENTRY', value: tradingSignal.priceLevels.entryZone != null ? `$${tradingSignal.priceLevels.entryZone.toFixed(2)}` : '—', color: ACTION_COLORS[tradingSignal.action].text, sub: tradingSignal.action === 'BUY' ? 'BUY ZONE' : tradingSignal.action === 'SELL' ? 'SHORT ZONE' : 'LEVEL' },
-                  { label: 'STOP LOSS', value: tradingSignal.priceLevels.stopLoss != null ? `$${tradingSignal.priceLevels.stopLoss.toFixed(2)}` : '—', color: '#FF2D55', sub: `ATR ×1.5` },
-                  { label: 'TARGET', value: tradingSignal.priceLevels.targetPrice != null ? `$${tradingSignal.priceLevels.targetPrice.toFixed(2)}` : '—', color: '#00D4FF', sub: '2:1 R:R' },
-                  { label: 'RISK/REWARD', value: tradingSignal.priceLevels.riskReward != null ? `${tradingSignal.priceLevels.riskReward}:1` : '—', color: (tradingSignal.priceLevels.riskReward ?? 0) >= 2 ? '#22C55E' : (tradingSignal.priceLevels.riskReward ?? 0) >= 1.5 ? '#FFD700' : '#FF9500', sub: tradingSignal.priceLevels.atr != null ? `ATR $${tradingSignal.priceLevels.atr.toFixed(2)}` : 'ATR —' },
-                ].map(({ label, value, color, sub }) => (
-                  <div key={label} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '2px', padding: '5px 4px', borderTop: `2px solid ${color}30` }}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.08em', marginBottom: '2px' }}>{label}</div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', fontWeight: 700, color }}>{value}</div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(100,116,139,0.65)', marginTop: '1px' }}>{sub}</div>
-                  </div>
-                ))}
-              </div>
-              {/* Bottom row: support/resistance */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
-                {[
-                  { label: 'SUPPORT', value: tradingSignal.priceLevels.support, color: '#22C55E' },
-                  { label: 'RESISTANCE', value: tradingSignal.priceLevels.resistance, color: '#FF9500' },
-                ].map(({ label, value, color }) => (
-                  <div key={label} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '2px', padding: '4px' }}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.08em', marginBottom: '2px' }}>{label}</div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', fontWeight: 700, color }}>${value.toFixed(2)}</div>
-                  </div>
-                ))}
-              </div>
-              <div data-price-levels-basis style={{ marginTop: '6px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.7)', letterSpacing: '0.06em' }}>{priceLevelsBasis(liveQuote, quote.badge)} · {priceLevelsBasis(liveQuote, quote.badge)} · ATR-based</div>
-            </div>
-          )}
-
+          <PentagonalThesisNarrative symbol={stock.ticker} surface="signals-card" compact />
           {/* Technical indicators */}
           {tradingSignal && (
             <div style={{
@@ -813,68 +714,6 @@ export function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signal
             }}>Catalog · static · {stock.bias.toUpperCase()}</span>
           </div>
 
-          {/* Bull / Bear / Invalidation / Why FAULTLINE Likes It */}
-          {tradingSignal && (
-            <div style={{
-              marginBottom: '10px',
-              display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px',
-            }}>
-              {/* Bull Case */}
-              <div style={{
-                padding: '8px 10px',
-                background: 'rgba(0,255,136,0.04)',
-                border: '1px solid rgba(0,255,136,0.12)',
-                borderRadius: '3px',
-              }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(0,255,136,0.6)', marginBottom: '4px' }}>▲ BULL CASE</div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(200,220,200,0.85)', lineHeight: 1.5 }}>
-                  {tradingSignal.action === 'BUY' || tradingSignal.action === 'HOLD'
-                    ? `${stock.name} shows ${tradingSignal.technicals.smaSignal === 'Golden Cross' ? 'golden cross formation' : 'positive momentum'} with regime alignment at ${tradingSignal.regimeAlignmentScore}. ${tradingSignal.technicals.volumeSignal === 'Surge' ? 'Volume surge confirms institutional interest.' : 'Momentum supports continuation.'}`
-                    : `Counter-trend bounce from $${tradingSignal.priceLevels.support.toFixed(2)} support. ${typeof tradingSignal.technicals.rsiEstimate === "number" && tradingSignal.technicals.rsiIsTrue ? `RSI ${tradingSignal.technicals.rsiEstimate.toFixed(0)} approaching oversold territory.` : "Completed-bar RSI is unavailable."}`
-                  }
-                </div>
-              </div>
-              {/* Bear Case */}
-              <div style={{
-                padding: '8px 10px',
-                background: 'rgba(255,45,85,0.04)',
-                border: '1px solid rgba(255,45,85,0.12)',
-                borderRadius: '3px',
-              }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(255,45,85,0.6)', marginBottom: '4px' }}>▼ BEAR CASE</div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(220,200,200,0.85)', lineHeight: 1.5 }}>
-                  {tradingSignal.action === 'SELL'
-                    ? `${stock.name} faces ${tradingSignal.technicals.smaSignal === 'Death Cross' ? 'death cross breakdown' : 'distribution pressure'} with resistance at $${tradingSignal.priceLevels.resistance.toFixed(2)}. Macro headwinds amplify downside risk.`
-                    : `Failure to hold $${tradingSignal.priceLevels.stopLoss.toFixed(2)} stop invalidates setup. ${stock.recessionSensitivity === 'High' ? 'High recession sensitivity adds macro risk.' : 'Broader market weakness could drag price lower.'}`
-                  }
-                </div>
-              </div>
-              {/* Invalidation Level */}
-              <div style={{
-                padding: '8px 10px',
-                background: 'rgba(255,153,0,0.04)',
-                border: '1px solid rgba(255,153,0,0.12)',
-                borderRadius: '3px',
-              }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(255,153,0,0.6)', marginBottom: '4px' }}>⊘ INVALIDATION</div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(220,210,190,0.85)', lineHeight: 1.5 }}>
-                  Close below <span style={{ color: '#FF9500', fontWeight: 700 }}>${tradingSignal.priceLevels.stopLoss.toFixed(2)}</span> (ATR ×1.5) invalidates thesis. Volume must remain {tradingSignal.technicals.volumeSignal === 'Low' ? 'above average' : 'elevated'} to confirm.
-                </div>
-              </div>
-              {/* Why FAULTLINE Likes It */}
-              <div style={{
-                padding: '8px 10px',
-                background: 'rgba(0,212,255,0.04)',
-                border: '1px solid rgba(0,212,255,0.12)',
-                borderRadius: '3px',
-              }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(0,212,255,0.6)', marginBottom: '4px' }}>◈ WHY FAULTLINE LIKES IT</div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(190,210,220,0.85)', lineHeight: 1.5 }}>
-                  Regime score <span style={{ color: '#00D4FF', fontWeight: 700 }}>{tradingSignal.regimeAlignmentScore}</span> · R:R <span style={{ color: tradingSignal.priceLevels.riskReward >= 2 ? '#22C55E' : '#FFD700', fontWeight: 700 }}>{tradingSignal.priceLevels.riskReward}:1</span> · {tradingSignal.strength.toUpperCase()} conviction. {stock.aiExposure === 'High' ? 'AI sector tailwind.' : stock.aiExposure === 'Medium' ? 'Moderate AI exposure.' : 'Sector fundamentals intact.'}
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* ── Institutional Signal Data (Phase 3.5) ─────────────────────── */}
           {(stock.opportunityScore !== undefined || stock.catalysts?.length) && (
@@ -882,7 +721,7 @@ export function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signal
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(100,116,139,0.6)', marginBottom: '8px' }}>CATALOG NOTES · STATIC REFERENCE, NOT MARKET DATA</div>
 
               {/* Row 1: Opportunity Score + Macro Alignment (static catalog notes).
-                  No static R:R, entry, support, resistance, stop or targets: price levels live only in KEY PRICE LEVELS. */}
+                  Catalog notes are not a trade. Price levels are not printed on this card. */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '6px' }}>
                 {stock.opportunityScore !== undefined && (
                   <div style={{ textAlign: 'center', padding: '6px', background: 'rgba(0,212,255,0.05)', border: '1px solid rgba(0,212,255,0.12)', borderRadius: '3px' }}>
@@ -1146,6 +985,7 @@ function ApiHealthBadge({ source, tradeDate, lastUpdated, isLoading, quotes, tic
 
 // ── Trading Signals Aggregate Bar ─────────────────────────────
 function TradingSignalsSummaryBar({ signals }: { signals: TradingSignalResult[] }) {
+  const tradingSignal = signals[0];
   const counts = useMemo(() => {
     const c = { BUY: 0, SELL: 0, HOLD: 0, WATCH: 0 };
     for (const s of signals) c[s.action]++;
@@ -1196,6 +1036,7 @@ function TradingSignalsSummaryBar({ signals }: { signals: TradingSignalResult[] 
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: '12px', color: 'rgba(100,116,139,0.65)',
         }}>CONFIDENCE: <span style={{ color: '#94A3B8' }}>{SIGNAL_CONFIDENCE_NOT_ESTABLISHED}</span></span>
+        {tradingSignal && <ConfidenceBar action={tradingSignal.action} />}
       </div>
 
       {/* Signal count row */}

@@ -341,6 +341,74 @@ describe("Pentagonal thesis render consistency", () => {
     expect(card).toContain("NVDA");
   });
 
+  it("does not render price levels when the details panel is expanded", async () => {
+    const { StockCard } = await import("../client/src/pages/Signals");
+    const stock = {
+      ticker: "NVDA",
+      name: "NVIDIA",
+      sector: "Technology",
+      marketCap: "Mega",
+      marketCapValue: 2000,
+      price: 102,
+      changePercent: 1,
+      volume: 10,
+      avgVolume: 8,
+      relativeStrength: 55,
+      aiExposure: "High",
+      recessionSensitivity: "Medium",
+      debtSensitivity: "Low",
+      riskRating: "High",
+      volatilityLevel: "High",
+      liquidityLevel: "High",
+      timeframe: "Swing",
+      momentum: 60,
+      bias: "Bullish",
+      assetClass: "Stock",
+      signals: ["Insider Activity", "Sector Rotation"],
+      categories: [],
+      sparkline: [1, 2, 3],
+      bullCase: "",
+      bearCase: "",
+      invalidationLevel: "",
+      whyAppearing: "",
+      confidence: 77,
+      entryZone: "$333.33",
+      stopLoss: "$222.22",
+      apiSources: { quote: "catalog" },
+    };
+    const tradingSignal = {
+      ticker: "NVDA",
+      action: "BUY",
+      actionLabel: "Accumulation Zone",
+      confidence: 77,
+      strength: "Strong",
+      rationale: "Buy the dip",
+      timeframe: "daily",
+      regimeAlignment: "Aligned",
+      regimeAlignmentScore: 9,
+      assetClass: "STOCK",
+      priceLevels: { entryZone: 333.33, stopLoss: 222.22, targetPrice: 444.44, support: 90, resistance: 120, riskReward: 2, atr: 1 },
+      technicals: { rsiIsTrue: true, rsiEstimate: 55, rsiLabel: "Neutral", smaIsTrue: true, smaSignal: "Neutral", volumeSignal: "Normal", trend: "Sideways", macd: null },
+    };
+    const forbidden = ["KEY PRICE LEVELS", "ENTRY", "STOP", "TARGET", "R:R", "RISK/REWARD", "BUY ZONE", "SHORT ZONE"];
+    const cases = [
+      { name: "with a trading signal", props: { tradingSignal, signalBlocked: false } },
+      { name: "without a trading signal", props: { signalBlocked: false } },
+      { name: "with a locked tier", props: { signalBlocked: true } },
+    ] as const;
+    for (const entry of cases) {
+      const html = renderToStaticMarkup(createElement(StockCard, {
+        stock,
+        regimeScore: 10,
+        defaultExpanded: true,
+        ...entry.props,
+      }));
+      for (const phrase of forbidden) expect(html, `${entry.name} ${phrase}`).not.toContain(phrase);
+      expect(html, entry.name).toContain("PENTAGONAL THESIS");
+      expect(html, entry.name).toContain(`data-signal-tier="${entry.props.signalBlocked ? "locked" : "open"}"`);
+    }
+  });
+
   it("does not render stored stock-page trade copy or a second AI-stock classification", async () => {
     const { default: DynamicStockPage } = await import("../client/src/pages/seo/DynamicStockPage");
     const stock = renderToStaticMarkup(createElement(DynamicStockPage));
