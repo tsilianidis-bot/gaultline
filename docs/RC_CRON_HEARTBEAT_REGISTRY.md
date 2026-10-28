@@ -8,13 +8,14 @@
 Mounts are explicit in `server/_core/index.ts` (not auto-registered). Wrapper:
 
 ```ts
-CRON_SECRET = process.env.CRON_SECRET ?? process.env.HEARTBEAT_SECRET ?? ''
-// next() if: secret empty OR bearer matches OR (localhost && NODE_ENV=development)
+// server/_core/cronGuard.ts — configuredCronSecret() trims CRON_SECRET.
+// hasExactCronAuthorization returns false when the secret is missing.
+// requireCron then answers 401. There is no localhost or empty-secret bypass.
 ```
 
 | Fact | Evidence |
 | --- | --- |
-| Empty `CRON_SECRET` **fail-opens** all `requireCron` routes | `index.ts` `if (!CRON_SECRET \|\| …)` |
+| Unset, empty, or whitespace `CRON_SECRET` **fail-closes** every `requireCron` route with 401 | `server/_core/cronGuard.ts` `if (!secret \|\| …) return false` |
 | Platform secrets file has **no** `CRON_SECRET` / `HEARTBEAT_SECRET` | `docs/RC_PROJECT_CONFIG_SHAPES.md` |
 | Some handlers **also** require `sdk.authenticateRequest` → `user.isCron` | blog, X, drip, organic, weekly report |
 | Others trust `requireCron` only | ping, daily-snapshot, seismograph, shadow, rising-stars, ledger, sim |
@@ -68,7 +69,7 @@ Schedules below are **comments in handlers**, not a live Forge export. Owner mus
 ## Owner verification (preview only)
 
 ```bash
-# 1) Confirm secret is SET on the host (empty secret fail-opens — do not ship that)
+# 1) Confirm CRON_SECRET is set. Unset, empty, and whitespace values all return 401.
 # 2) Ping
 curl -sS -X POST "$PREVIEW_URL/api/scheduled/ping" \
   -H "Authorization: Bearer $CRON_SECRET"

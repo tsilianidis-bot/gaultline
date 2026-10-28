@@ -228,7 +228,9 @@ function fredDraft(id: string, label: string, unit: string | null, fred: FredBul
   };
 }
 
-function cryptoDraft(crypto: GlobalStats | null): EvidenceDraft {
+function cryptoDraft(crypto: GlobalStats | null, nowMs = Date.now()): EvidenceDraft {
+  const observedAt = crypto?.observedAt;
+  const usableTime = finite(observedAt) && observedAt <= nowMs;
   return {
     id: "coingecko:global-market-cap",
     label: "Crypto aggregate market capitalization",
@@ -242,11 +244,13 @@ function cryptoDraft(crypto: GlobalStats | null): EvidenceDraft {
     maxAgeMs: 15 * 60_000,
     modelVersion: null,
     sourceIdentifier: "coingecko:global",
-    sourceHealthy: Boolean(crypto && finite(crypto.observedAt)),
-    temporalStatus: finite(crypto?.observedAt) ? "delayed" : "unavailable",
-    temporalDetail: finite(crypto?.observedAt)
+    sourceHealthy: Boolean(crypto && usableTime),
+    temporalStatus: usableTime ? "delayed" : "unavailable",
+    temporalDetail: usableTime
       ? "CoinGecko provider timestamp is retained; aggregate updates follow the provider cadence."
-      : "CoinGecko aggregate lacked a provider observation timestamp and is unavailable for current claims.",
+      : finite(observedAt)
+        ? "CoinGecko observation timestamp is in the future and is not a delayed reading."
+        : "CoinGecko aggregate lacked a provider observation timestamp and is unavailable for current claims.",
   };
 }
 
@@ -322,7 +326,7 @@ export function buildEvidenceSnapshot(inputs: EvidenceInputs, now: Date = new Da
     fredDraft("DGS10", "10-year Treasury yield", "percent", inputs.fred),
     fredDraft("DGS2", "2-year Treasury yield", "percent", inputs.fred),
     fredDraft("BAMLH0A0HYM2", "High-yield option-adjusted spread", "percent", inputs.fred),
-    cryptoDraft(inputs.crypto),
+    cryptoDraft(inputs.crypto, nowMs),
   ];
   const quoteObservations = quoteSpecs.map(([id, label, ticker]) => {
     const quote = quoteByTicker.get(ticker);

@@ -1,48 +1,47 @@
+import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
-import { decideProductionDeploy, readApprovedProductionCommits } from "./deployGuard";
+import { approvedShasFromExternalList, decidePreDeployApproval } from "./deployGuard";
 
 const PRODUCTION = "1cb5dee13832c0556ec5a380ecc4ffb02513e875";
-const allowlist = readApprovedProductionCommits(`# note\n${PRODUCTION}\n`);
+const OTHER = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
-describe("production deploy guard", () => {
-  it("allows local and CI boots that are not on Railway", () => {
-    expect(decideProductionDeploy({
-      env: {},
-      allowlist,
-      bakedCommit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    })).toMatchObject({ allow: true, reason: "not_enforced" });
+function preDeploy(env: Record<string, string>) {
+  return spawnSync("bash", ["scripts/guard-approved-deploy.sh"], {
+    encoding: "utf8",
+    env: {
+      PATH: process.env.PATH,
+      HOME: process.env.HOME,
+      ...env,
+    },
+  });
+}
+
+describe("pre-deploy allowlist", () => {
+  it("compares one target SHA to an external list and ignores a stale BUILD_COMMIT", () => {
+    const allowlist = approvedShasFromExternalList(`${PRODUCTION}, TRUE, short, ${OTHER.toUpperCase()}`);
+    expect(allowlist).toEqual(new Set([PRODUCTION]));
+    expect(decidePreDeployApproval({ targetSha: PRODUCTION, allowlist })).toMatchObject({ allow: true, reason: "approved" });
+    expect(decidePreDeployApproval({ targetSha: OTHER, allowlist })).toMatchObject({ allow: false, reason: "unapproved_commit" });
+    expect(decidePreDeployApproval({ targetSha: "dev", allowlist })).toMatchObject({ allow: false, reason: "missing_target" });
+    expect(decidePreDeployApproval({ targetSha: PRODUCTION, allowlist: new Set() })).toMatchObject({ allow: false, reason: "missing_allowlist" });
   });
 
-  it("allows only the approved production SHA when Railway identity is present", () => {
-    expect(decideProductionDeploy({
-      env: { RAILWAY_ENVIRONMENT: "production", RAILWAY_GIT_COMMIT_SHA: PRODUCTION },
-      allowlist,
-      bakedCommit: PRODUCTION,
-    })).toMatchObject({ allow: true, reason: "approved" });
-  });
+  it("the script allows only an external allowlist match and does not read BUILD_COMMIT", () => {
+    const approved = preDeploy({
+      FAULTLINE_APPROVED_DEPLOY_SHAS: PRODUCTION,
+      FAULTLINE_DEPLOY_SHA: PRODUCTION,
+      BUILD_COMMIT: OTHER,
+    });
+    expect(approved.status).toBe(0);
 
-  it("refuses an unapproved commit and a missing identity", () => {
-    expect(decideProductionDeploy({
-      env: { RAILWAY_GIT_COMMIT_SHA: "b19716b1b19716b1b19716b1b19716b1b19716b1", FAULTLINE_ENFORCE_DEPLOY_GUARD: "true" },
-      allowlist,
-    })).toMatchObject({ allow: false, reason: "unapproved_commit" });
-    expect(decideProductionDeploy({
-      env: { FAULTLINE_ENFORCE_DEPLOY_GUARD: "true" },
-      allowlist,
-      bakedCommit: "dev",
-    })).toMatchObject({ allow: false, reason: "unapproved_commit" });
-    expect(decideProductionDeploy({
-      env: { RAILWAY_ENVIRONMENT: "production" },
-      allowlist,
-      bakedCommit: "",
-    })).toMatchObject({ allow: false, reason: "missing_commit" });
-  });
+    const staleTarget = preDeploy({
+      FAULTLINE_APPROVED_DEPLOY_SHAS: PRODUCTION,
+      FAULTLINE_DEPLOY_SHA: OTHER,
+      BUILD_COMMIT: PRODUCTION,
+    });
+    expect(staleTarget.status).not.toBe(0);
 
-  it("does not treat lookalike flag values as enforcement by themselves", () => {
-    expect(decideProductionDeploy({
-      env: { FAULTLINE_ENFORCE_DEPLOY_GUARD: "TRUE" },
-      allowlist,
-      bakedCommit: "not-approved",
-    })).toMatchObject({ allow: true, reason: "not_enforced" });
+    const missingList = preDeploy({ FAULTLINE_DEPLOY_SHA: PRODUCTION, BUILD_COMMIT: PRODUCTION });
+    expect(missingList.status).not.toBe(0);
   });
 });

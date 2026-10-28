@@ -1,52 +1,47 @@
 #!/usr/bin/env bash
-# Refuse a Railway start whose commit is not in config/approved-production-commits.txt.
-# No-ops unless this process is a Railway boot or FAULTLINE_ENFORCE_DEPLOY_GUARD=true.
-# Does not print secret values.
+# Pre-deploy check. Do not call this from pnpm start or the container entrypoint.
+# The allowlist is outside the commit:
+#   FAULTLINE_APPROVED_DEPLOY_SHAS   comma/whitespace-separated full SHAs
+#   FAULTLINE_APPROVED_DEPLOY_TAGS   git tag names; each peeled commit is allowed
+# BUILD_COMMIT is ignored. A stale service variable cannot approve or reject the target.
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ALLOWLIST="${ROOT}/config/approved-production-commits.txt"
+TARGET="${1:-${FAULTLINE_DEPLOY_SHA:-}}"
+if [[ ! "${TARGET}" =~ ^[0-9a-f]{40}$ ]]; then
+  echo "Refusing pre-deploy check: pass a full lowercase target SHA as FAULTLINE_DEPLOY_SHA or the first argument." >&2
+  exit 1
+fi
 
-if [[ "${FAULTLINE_ENFORCE_DEPLOY_GUARD:-}" != "true" && -z "${RAILWAY_ENVIRONMENT:-}" && -z "${RAILWAY_GIT_COMMIT_SHA:-}" ]]; then
+allowfile="$(mktemp)"
+trap 'rm -f "${allowfile}"' EXIT
+
+if [[ -n "${FAULTLINE_APPROVED_DEPLOY_SHAS:-}" ]]; then
+  normalized="${FAULTLINE_APPROVED_DEPLOY_SHAS//,/ }"
+  for token in ${normalized}; do
+    if [[ "${token}" =~ ^[0-9a-f]{40}$ ]]; then
+      printf '%s\n' "${token}" >> "${allowfile}"
+    fi
+  done
+fi
+
+if [[ -n "${FAULTLINE_APPROVED_DEPLOY_TAGS:-}" ]]; then
+  for tag in ${FAULTLINE_APPROVED_DEPLOY_TAGS}; do
+    sha="$(git rev-parse "${tag}^{commit}" 2>/dev/null || true)"
+    if [[ "${sha}" =~ ^[0-9a-f]{40}$ ]]; then
+      printf '%s\n' "${sha}" >> "${allowfile}"
+    fi
+  done
+fi
+
+if [[ ! -s "${allowfile}" ]]; then
+  echo "Refusing pre-deploy check: external allowlist is empty. Set FAULTLINE_APPROVED_DEPLOY_SHAS or FAULTLINE_APPROVED_DEPLOY_TAGS." >&2
+  exit 1
+fi
+
+if grep -qx "${TARGET}" "${allowfile}"; then
+  echo "Pre-deploy check passed for ${TARGET}."
   exit 0
 fi
 
-approved="$(grep -E '^[0-9a-f]{40}$' "${ALLOWLIST}" || true)"
-if [[ -z "${approved}" ]]; then
-  echo "Refusing Railway boot: approved production commit list is empty." >&2
-  exit 1
-fi
-
-check_one() {
-  local label="$1"
-  local sha="$2"
-  if [[ -z "${sha}" ]]; then
-    return 0
-  fi
-  if ! grep -qx "${sha}" <<< "${approved}"; then
-    echo "Refusing Railway boot: ${label} ${sha} is not an approved production commit." >&2
-    exit 1
-  fi
-}
-
-presented=0
-if [[ -n "${RAILWAY_GIT_COMMIT_SHA:-}" ]]; then
-  presented=1
-  check_one "RAILWAY_GIT_COMMIT_SHA" "${RAILWAY_GIT_COMMIT_SHA}"
-fi
-if [[ -n "${BUILD_COMMIT:-}" ]]; then
-  presented=1
-  check_one "BUILD_COMMIT" "${BUILD_COMMIT}"
-fi
-if [[ -f "${ROOT}/dist/build-identity.json" ]]; then
-  baked="$(node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); if (typeof v.commit==="string") process.stdout.write(v.commit.trim());' "${ROOT}/dist/build-identity.json" || true)"
-  if [[ -n "${baked}" && "${baked}" != "dev" ]]; then
-    presented=1
-    check_one "baked build identity" "${baked}"
-  fi
-fi
-
-if [[ "${presented}" -ne 1 ]]; then
-  echo "Refusing Railway boot: no commit identity was presented." >&2
-  exit 1
-fi
+echo "Refusing deploy of ${TARGET}: not in the external allowlist." >&2
+exit 1

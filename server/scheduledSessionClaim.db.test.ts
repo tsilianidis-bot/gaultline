@@ -74,7 +74,7 @@ function claimInProcess(databaseUrl: string, etDate: string, options: { nowMs?: 
     });
   `;
   return new Promise((resolve, reject) => {
-    const child = spawn("pnpm", ["exec", "tsx", "-e", script], {
+    const child = spawn(join(process.cwd(), "node_modules", ".bin", "tsx"), ["-e", script], {
       cwd: process.cwd(),
       env: {
         ...process.env,

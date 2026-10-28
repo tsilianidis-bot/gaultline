@@ -1,67 +1,37 @@
 /**
- * Refuse a Railway boot of a commit that is not on the production allowlist.
- * Local, CI, and startup smoke do not set Railway variables, so they are unchanged.
- * This does not deploy, tag, or change repository settings.
+ * Pre-deploy comparison of one target SHA against an allowlist that lives
+ * outside this commit (an env var or release-tag commits). This module does
+ * not run at server boot, does not read config/approved-production-commits.txt,
+ * and does not consult BUILD_COMMIT.
  */
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { resolveBuildIdentity } from "./buildIdentity";
 
-export const APPROVED_PRODUCTION_COMMITS_FILE = "config/approved-production-commits.txt";
+const FULL_SHA = /^[0-9a-f]{40}$/;
 
-export interface DeployGuardDecision {
-  enforced: boolean;
+export type PreDeployDecisionReason = "approved" | "missing_target" | "missing_allowlist" | "unapproved_commit";
+
+export interface PreDeployDecision {
   allow: boolean;
-  reason: "not_enforced" | "approved" | "missing_commit" | "unapproved_commit";
-  commits: string[];
+  reason: PreDeployDecisionReason;
+  targetSha: string;
 }
 
-export function readApprovedProductionCommits(text: string): Set<string> {
+/** Split an external allowlist. Only exact 40-character lowercase SHAs count. */
+export function approvedShasFromExternalList(source: string | null | undefined): Set<string> {
   const approved = new Set<string>();
-  for (const line of text.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    approved.add(trimmed);
+  if (!source) return approved;
+  for (const part of source.split(/[\s,]+/)) {
+    if (FULL_SHA.test(part)) approved.add(part);
   }
   return approved;
 }
 
-export function decideProductionDeploy(input: {
-  env: NodeJS.ProcessEnv;
+export function decidePreDeployApproval(input: {
+  targetSha: string | null | undefined;
   allowlist: ReadonlySet<string>;
-  bakedCommit?: string | null;
-}): DeployGuardDecision {
-  const enforced = input.env.FAULTLINE_ENFORCE_DEPLOY_GUARD === "true"
-    || Boolean(input.env.RAILWAY_ENVIRONMENT)
-    || Boolean(input.env.RAILWAY_GIT_COMMIT_SHA);
-  const commits = [input.env.RAILWAY_GIT_COMMIT_SHA, input.env.BUILD_COMMIT, input.bakedCommit]
-    .map(value => (typeof value === "string" ? value.trim() : ""))
-    .filter(value => value.length > 0);
-  if (!enforced) return { enforced: false, allow: true, reason: "not_enforced", commits };
-  if (commits.length === 0) return { enforced: true, allow: false, reason: "missing_commit", commits };
-  if (commits.some(commit => !input.allowlist.has(commit))) {
-    return { enforced: true, allow: false, reason: "unapproved_commit", commits };
-  }
-  return { enforced: true, allow: true, reason: "approved", commits };
-}
-
-export function assertApprovedProductionDeploy(env: NodeJS.ProcessEnv = process.env): DeployGuardDecision {
-  let text = "";
-  try {
-    text = readFileSync(resolve(process.cwd(), APPROVED_PRODUCTION_COMMITS_FILE), "utf8");
-  } catch {
-    text = "";
-  }
-  const decision = decideProductionDeploy({
-    env,
-    allowlist: readApprovedProductionCommits(text),
-    bakedCommit: resolveBuildIdentity().commit,
-  });
-  if (!decision.allow) {
-    const shown = decision.commits.length > 0 ? decision.commits.join(", ") : "(none)";
-    throw new Error(
-      `Refusing to boot an unapproved commit on Railway (${decision.reason}: ${shown}). Approved SHAs are listed in ${APPROVED_PRODUCTION_COMMITS_FILE}.`,
-    );
-  }
-  return decision;
+}): PreDeployDecision {
+  const targetSha = (input.targetSha ?? "").trim();
+  if (input.allowlist.size === 0) return { allow: false, reason: "missing_allowlist", targetSha };
+  if (!FULL_SHA.test(targetSha)) return { allow: false, reason: "missing_target", targetSha };
+  if (!input.allowlist.has(targetSha)) return { allow: false, reason: "unapproved_commit", targetSha };
+  return { allow: true, reason: "approved", targetSha };
 }

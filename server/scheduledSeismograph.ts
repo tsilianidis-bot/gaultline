@@ -431,19 +431,16 @@ function rejectScheduledCallback(res: Response, statusCode: number, body: Record
   res.status(statusCode).json({ ok: false, alert: true, ...body });
 }
 
-export async function handleScheduledSeismograph(
-  req: Request & {
-    sessionClaim?: (etDate: string) => Promise<ScheduledSessionClaimStatus | ScheduledSessionClaimResult>;
-    /** Test hook. Production uses getDb. */
-    sessionStore?: Parameters<typeof claimScheduledSeismographSession>[1];
-    /** Test hook. Production runs the scheduled pipeline. */
-    runPipeline?: () => Promise<ScheduledExecutionResult>;
-  },
-  res: Response,
-): Promise<void> {
+type ScheduledSeismographHooks = {
+  sessionClaim?: (etDate: string) => Promise<ScheduledSessionClaimStatus | ScheduledSessionClaimResult>;
+  sessionStore?: Parameters<typeof claimScheduledSeismographSession>[1];
+  runPipeline?: () => Promise<ScheduledExecutionResult>;
+};
+
+async function executeScheduledSeismograph(res: Response, hooks: ScheduledSeismographHooks = {}): Promise<void> {
   const now = new Date();
   const runWindow = nyseSeismographRunWindow(now);
-  const sessionStore = req.sessionStore;
+  const sessionStore = hooks.sessionStore;
   // This handler is mounted only behind requireCron. The out-of-window fire is
   // classified CRON_DEPLOY so it cannot run the pipeline or capture a forward
   // record. It is still the real dual-cron callback, so it may finalize stale
@@ -479,8 +476,8 @@ export async function handleScheduledSeismograph(
   const runContext = resolveRunContext("cron-endpoint", now);
   // Database claim is in addition to the in-process guard. Fail closed when the
   // claim cannot be recorded so a second container cannot capture forward evidence.
-  const sessionClaim = normalizeSessionClaim(await (req.sessionClaim
-    ? req.sessionClaim(scheduledEtDate)
+  const sessionClaim = normalizeSessionClaim(await (hooks.sessionClaim
+    ? hooks.sessionClaim(scheduledEtDate)
     : claimScheduledSeismographSession(scheduledEtDate, sessionStore, { nowMs: now.getTime(), trigger: runContext.trigger })));
   if (sessionClaim.status === "exhausted") {
     rejectScheduledCallback(res, 409, {
@@ -578,10 +575,28 @@ export async function handleScheduledSeismograph(
   }, 30_000);
   heartbeat?.unref?.();
   try {
-    const execution = req.runPipeline
-      ? await req.runPipeline()
+    const execution = hooks.runPipeline
+      ? await hooks.runPipeline()
       : await runScheduledSeismographOnce(scheduledEtDate, runContext);
-    if (generation != null) await completeScheduledSession(scheduledEtDate, generation, sessionStore);
+    if (generation != null) {
+      const sealed = await completeScheduledSession(scheduledEtDate, generation, sessionStore);
+      if (!sealed) {
+        console.error("[Seismograph][SCHEDULE-ALERT] session claim was not marked completed");
+        void captureMessage("Scheduled seismograph claim was not marked completed", "error", {
+          procedure: "scheduled.seismograph-daily",
+          etDate: scheduledEtDate,
+          alert: true,
+        }).catch(() => undefined);
+        res.status(500).json({
+          ok: false,
+          alert: true,
+          error: "Scheduled run finished but the session claim was not marked completed.",
+          date: scheduledEtDate,
+          etDate: scheduledEtDate,
+        });
+        return;
+      }
+    }
     const seismographOutput = execution.output;
     res.json({
       ok: true,
@@ -608,6 +623,15 @@ export async function handleScheduledSeismograph(
   } finally {
     if (heartbeat) clearInterval(heartbeat);
   }
+}
+
+export function handleScheduledSeismograph(_req: Request, res: Response): Promise<void> {
+  return executeScheduledSeismograph(res);
+}
+
+/** Tests pass hooks here. The production route never does. */
+export function runScheduledSeismographForTests(res: Response, hooks: ScheduledSeismographHooks = {}): Promise<void> {
+  return executeScheduledSeismograph(res, hooks);
 }
 
 // ── Helper: Build state shape for assembleSeismographOutput ───

@@ -1,6 +1,6 @@
 import { PUBLIC_DISCLAIMER } from "../../shared/publicDisclaimer";
-import { buildPublicTrackRecord } from "../../shared/intelligenceAccountability";
-import { publicProcedure, router } from "../_core/trpc";
+import { buildPublicTrackRecord, emptyPublicTrackRecord } from "../../shared/intelligenceAccountability";
+import { ownerOrAdminProcedure, publicProcedure, router } from "../_core/trpc";
 import { isIntelligenceTrackRecordEnabled, loadAccountabilityLedger } from "../intelligenceAccountability";
 
 /**
@@ -14,4 +14,5 @@ export const intelligenceAccountabilityRouter = router({
     const rows = await loadAccountabilityLedger();
     return buildPublicTrackRecord(rows);
   }),
+  emptyPreview: ownerOrAdminProcedure.query(() => emptyPublicTrackRecord()),
 });

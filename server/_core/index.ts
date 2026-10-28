@@ -46,7 +46,6 @@ import { requireCron } from "./cronGuard";
 import { captureError, flushErrorTracking } from "../errorTracking";
 import { handleQaAccess, handleQaAccessLogout } from "../qaAccess";
 import { resolveBuildIdentity } from "../buildIdentity";
-import { assertApprovedProductionDeploy } from "../deployGuard";
 import { handleHealth } from "../health";
 import { renderPublicMaintenancePage, shouldServePublicMaintenance } from "../publicMaintenance";
 
@@ -116,7 +115,6 @@ const qaAccessLimiter = rateLimit({
 });
 
 async function startServer() {
-  assertApprovedProductionDeploy();
   const app = express();
   const server = createServer(app);
 

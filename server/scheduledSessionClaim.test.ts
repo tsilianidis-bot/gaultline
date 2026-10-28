@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { handleScheduledSeismograph } from "./scheduledSeismograph";
+import { runScheduledSeismographForTests } from "./scheduledSeismograph";
 import {
   admitScheduledSessionOutcome,
   claimScheduledSeismographSession,
@@ -54,7 +54,7 @@ describe("scheduled seismograph database claim", () => {
     vi.setSystemTime(new Date("2026-10-05T20:15:00.000Z"));
     const json = vi.fn();
     const status = vi.fn(() => ({ json }));
-    await handleScheduledSeismograph({ sessionClaim: async () => "unavailable" } as never, { json, status } as never);
+    await runScheduledSeismographForTests({ json, status } as never, { sessionClaim: async () => "unavailable" });
     expect(status).toHaveBeenCalledWith(503);
     expect(json).toHaveBeenCalledWith(expect.objectContaining({ ok: false, skipped: "session_claim_unavailable" }));
   });
@@ -131,13 +131,13 @@ describe("scheduled seismograph database claim", () => {
     const claimed = await claimScheduledSeismographSession("2026-10-05", async () => store, { nowMs: inWindow, trigger: "SCHEDULED_CRON" });
     const json = vi.fn();
     const status = vi.fn(() => ({ json }));
-    await handleScheduledSeismograph({
+    await runScheduledSeismographForTests({ json, status } as never, {
       sessionClaim: async () => claimed,
       sessionStore: async () => store,
       runPipeline: async () => {
         throw new Error("pipeline crashed after claim");
       },
-    } as never, { json, status } as never);
+    });
     expect(status).toHaveBeenCalledWith(500);
     const recovered = await claimScheduledSeismographSession("2026-10-05", async () => store, {
       nowMs: inWindow + 1000,
@@ -154,13 +154,13 @@ describe("scheduled seismograph database claim", () => {
     expect(claimed).toMatchObject({ status: "claimed", generation: 1 });
     const json = vi.fn();
     const status = vi.fn(() => ({ json }));
-    await handleScheduledSeismograph({
+    await runScheduledSeismographForTests({ json, status } as never, {
       sessionClaim: async () => ({ status: "incomplete" as const, generation: 1 }),
       sessionStore: async () => store,
       runPipeline: async () => {
         throw new Error("pipeline must not run for an incomplete claim");
       },
-    } as never, { json, status } as never);
+    });
     expect(status).toHaveBeenCalledWith(409);
     expect(json).toHaveBeenCalledWith(expect.objectContaining({
       ok: false,
@@ -192,11 +192,11 @@ describe("scheduled seismograph database claim", () => {
     const pipeline = vi.fn();
     const json = vi.fn();
     const status = vi.fn(() => ({ json }));
-    await handleScheduledSeismograph({
+    await runScheduledSeismographForTests({ json, status } as never, {
       sessionClaim: async () => claimScheduledSeismographSession("2026-10-05", async () => store, { nowMs: inWindow + 1000, trigger: "SCHEDULED_CRON" }),
       sessionStore: async () => store,
       runPipeline: pipeline,
-    } as never, { json, status } as never);
+    });
     expect(pipeline).not.toHaveBeenCalled();
     expect(status).not.toHaveBeenCalled();
     expect(json).toHaveBeenCalledWith(expect.objectContaining({

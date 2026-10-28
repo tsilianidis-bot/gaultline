@@ -12,7 +12,7 @@ import { evidenceFreshnessLabel } from "./evidenceFreshness";
 import { computeTradingSignal, computeWildersRSI } from "./tradingSignals";
 import { computeCryptoSignal } from "./cryptoSignals";
 import { dayTradeIndicatorGate } from "./dayTradeEngine";
-import { handleScheduledSeismograph } from "./scheduledSeismograph";
+import { runScheduledSeismographForTests } from "./scheduledSeismograph";
 import {
   admitScheduledSessionOutcome,
   claimScheduledSeismographSession,
@@ -125,11 +125,10 @@ describe("blocker 2 — the real out-of-window cron finalizes stale pending rows
     const recordScore = vi.fn();
     const json = vi.fn();
     const status = vi.fn(() => ({ json }));
-    await handleScheduledSeismograph({
+    await runScheduledSeismographForTests({ json, status } as never, {
       sessionStore: async () => store,
       runPipeline: pipeline,
-      recordScore,
-    } as never, { json, status } as never);
+    });
     expect(pipeline).not.toHaveBeenCalled();
     expect(recordScore).not.toHaveBeenCalled();
     expect(status).toHaveBeenCalledWith(409);

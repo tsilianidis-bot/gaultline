@@ -44,7 +44,24 @@ If a later deploy of an approved SHA must be rolled back to production:
 3. `GET /api/health` must report commit `1cb5dee13832c0556ec5a380ecc4ffb02513e875`.
 4. Leave `FAULTLINE_INTELLIGENCE_EVIDENCE_ENABLED` and `TRACK_RECORD_CRON_WRITES` unset.
 
-The in-repo guard (`scripts/guard-approved-deploy.sh`, `server/deployGuard.ts`, `config/approved-production-commits.txt`) refuses a Railway boot whose `RAILWAY_GIT_COMMIT_SHA`, `BUILD_COMMIT`, or baked build identity is not that production SHA. It does not run for local or CI boots.
+Production protection is Railway commit pinning plus the tag `production-1cb5dee` on `1cb5dee13832c0556ec5a380ecc4ffb02513e875`. The server does not check that allowlist at boot. `pnpm start` and the Docker runtime command do not run a guard, and the runtime image does not need `scripts/` or `config/`.
+
+Before a deploy, compare the target SHA to an allowlist held outside the commit. `BUILD_COMMIT` is not an input.
+
+```bash
+# Allow the production SHA from the environment, not from a file in the commit.
+FAULTLINE_APPROVED_DEPLOY_SHAS=1cb5dee13832c0556ec5a380ecc4ffb02513e875 \
+  FAULTLINE_DEPLOY_SHA=1cb5dee13832c0556ec5a380ecc4ffb02513e875 \
+  bash scripts/guard-approved-deploy.sh
+
+# Or resolve a release tag. The tag command is in the next section and has
+# not been executed; this line only reads the tag when it exists.
+FAULTLINE_APPROVED_DEPLOY_TAGS=production-1cb5dee \
+  FAULTLINE_DEPLOY_SHA=1cb5dee13832c0556ec5a380ecc4ffb02513e875 \
+  bash scripts/guard-approved-deploy.sh
+```
+
+A missing external allowlist, a non-SHA target, or any other SHA exits 1. A stale `BUILD_COMMIT` does not change the result.
 
 ## Commands prepared and not executed
 
@@ -103,4 +120,4 @@ What the code already does without those values:
 | CoinGecko | `COINGECKO_API_KEY` | Public CoinGecko routes can still be called by the server if a test opts in. This run did not. The key-gated vitest is skipped. |
 | OAuth | `OAUTH_SERVER_URL`, `VITE_APP_ID`, `VITE_OAUTH_PORTAL_URL` | Login URL stays empty. Callback and user sync fail closed with no request to the OAuth host. `JWT_SECRET` was also unset, so session signing was not exercised. |
 
-`CRON_SECRET` unset means `requireCron` fail-opens. Do not run that configuration on a reachable host.
+Unset, empty, and whitespace `CRON_SECRET` values all fail closed. `requireCron` returns 401 (`server/_core/cronGuard.ts`).

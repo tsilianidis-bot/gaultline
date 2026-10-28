@@ -77,6 +77,13 @@ describe("Phase 1 Intelligence Evidence collector", () => {
     expect(snapshot.providerHealth.find(provider => provider.id === "coingecko")?.status).toBe("healthy");
   });
 
+  it("does not label a future CoinGecko timestamp as delayed", () => {
+    const crypto = { ...(inputs().crypto as Record<string, unknown>), observedAt: NOW_MS + 120_000 };
+    const snapshot = buildEvidenceSnapshot(inputs({ crypto }), NOW);
+    expect(finding(snapshot, "coingecko:global-market-cap").temporalStatus).not.toBe("delayed");
+    expect(finding(snapshot, "coingecko:global-market-cap")).toMatchObject({ temporalStatus: "unavailable", supportsCurrentClaim: false });
+  });
+
   it("withholds a CoinGecko aggregate when the adapter has only ingestion time", () => {
     const crypto = { ...(inputs().crypto as Record<string, unknown>), observedAt: null };
     const snapshot = buildEvidenceSnapshot(inputs({ crypto }), NOW);

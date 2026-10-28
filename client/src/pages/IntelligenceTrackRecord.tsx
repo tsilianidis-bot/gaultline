@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/_core/hooks/useAuth";
 import { useSEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 import {
-  emptyPublicTrackRecord,
   type PublicChronologyItem,
   type PublicMetric,
   type PublicTrackRecord,
@@ -275,17 +273,16 @@ export default function IntelligenceTrackRecord() {
     description: "Chronological record of FAULTLINE assessments and later observations. Figures stay withheld until enough forward observations exist. Not investment advice.",
     canonical: "/intelligence-track-record",
   });
-  const { user, loading } = useAuth();
   const preview = previewQuery();
   const examplePreview = import.meta.env.DEV && preview === "example";
   const emptyPreview = preview === "empty";
-  const ownerPreview = (user as { isOwnerOrAdmin?: boolean } | null)?.isOwnerOrAdmin === true;
-  const query = trpc.intelligenceAccountability.publicRecord.useQuery(undefined, { retry: false, enabled: !examplePreview && !(emptyPreview && (loading || ownerPreview)) });
+  const emptyQuery = trpc.intelligenceAccountability.emptyPreview.useQuery(undefined, { retry: false, enabled: emptyPreview });
+  const query = trpc.intelligenceAccountability.publicRecord.useQuery(undefined, { retry: false, enabled: !examplePreview && !(emptyPreview && (emptyQuery.isLoading || Boolean(emptyQuery.data))) });
   if (examplePreview) return <ExamplePreview />;
-  if (emptyPreview && loading) {
+  if (emptyPreview && emptyQuery.isLoading) {
     return <div className="min-h-screen bg-black px-6 py-16 text-sm text-zinc-500">Loading the accountability record.</div>;
   }
-  if (emptyPreview && ownerPreview) return <IntelligenceTrackRecordView record={emptyPublicTrackRecord()} mode="empty" />;
+  if (emptyPreview && emptyQuery.data) return <IntelligenceTrackRecordView record={emptyQuery.data} mode="empty" />;
   if (query.isLoading) {
     return <div className="min-h-screen bg-black px-6 py-16 text-sm text-zinc-500">Loading the accountability record.</div>;
   }
