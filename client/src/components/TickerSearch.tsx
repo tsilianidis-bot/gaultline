@@ -12,7 +12,6 @@ import { trpc } from '@/lib/trpc';
 import { signalQuoteBadge } from '@/lib/signalQuoteView';
 import { formatUsdQuote } from '@/lib/nullableFormat';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
-import { RiskFramework, type RiskLevels } from '@/components/RiskFramework';
 import { trackSignalSearch, trackWatchlistAction } from '@/hooks/useAnalytics';
 
 // ── Types ─────────────────────────────────────────────────────
@@ -241,23 +240,6 @@ function RegimeFitGauge({ score, label }: { score: number | null; label: string 
   );
 }
 
-// ── Price Levels Types ───────────────────────────────────────
-interface PriceLevels {
-  support: number;
-  resistance: number;
-  entryZone: number;
-  stopLoss: number;
-  targetPrice: number;
-  riskReward: number;
-  atr: number;
-  riskLevels?: RiskLevels;
-}
-interface TradingSignalData {
-  action: string;
-  confidence: number | null;
-  priceLevels: PriceLevels;
-}
-
 // ── Stock Intelligence Card ───────────────────────────────────
 function StockIntelligenceCard({
   profile,
@@ -267,8 +249,6 @@ function StockIntelligenceCard({
   onSave,
   isSaved,
   regime,
-  tradingSignal,
-  signalLoading,
 }: {
   profile: TickerProfile;
   classification: ClassificationResult | null;
@@ -277,8 +257,6 @@ function StockIntelligenceCard({
   onSave: () => void;
   isSaved: boolean;
   regime: RegimeContext;
-  tradingSignal: TradingSignalData | null;
-  signalLoading: boolean;
 }) {
   const [showWhy, setShowWhy] = useState(false);
   const [showDesc, setShowDesc] = useState(false);
@@ -536,44 +514,6 @@ function StockIntelligenceCard({
           </div>
         ) : null}
 
-        {/* ── Key Price Levels ─────────────────────────────── */}
-        {/* ── Risk Framework ────────────────────────────────── */}
-        {signalLoading ? (
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.75)', marginBottom: '8px', textTransform: 'uppercase' }}>RISK FRAMEWORK</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              {[0,1,2,3,4].map(i => (
-                <div key={i} style={{ height: '40px', background: 'rgba(255,255,255,0.03)', borderRadius: '3px', animation: 'fl-pulse 1.5s ease-in-out infinite' }} />
-              ))}
-            </div>
-          </div>
-        ) : tradingSignal?.priceLevels.riskLevels ? (
-          <RiskFramework
-            entry={tradingSignal.priceLevels.entryZone}
-            target={tradingSignal.priceLevels.targetPrice}
-            riskLevels={tradingSignal.priceLevels.riskLevels}
-            isCrypto={false}
-          />
-        ) : tradingSignal ? (
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.75)', marginBottom: '8px', textTransform: 'uppercase' }}>KEY PRICE LEVELS</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-              {[
-                { label: 'ENTRY', value: tradingSignal.priceLevels.entryZone, color: '#00D4FF' },
-                { label: 'STOP', value: tradingSignal.priceLevels.stopLoss, color: '#FF2D55' },
-                { label: 'TARGET', value: tradingSignal.priceLevels.targetPrice, color: '#34D399' },
-                { label: 'R:R', value: tradingSignal.priceLevels.riskReward, color: '#FFD700', isRR: true },
-              ].map(({ label, value, color, isRR }) => (
-                <div key={label} style={{ background: `${color}08`, border: `1px solid ${color}20`, borderRadius: '3px', padding: '7px 8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.75)', marginBottom: '3px', textTransform: 'uppercase' }}>{label}</div>
-                  <div style={{ fontSize: '14px', fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, color }}>
-                    {isRR ? `${value.toFixed(1)}x` : `$${value.toFixed(2)}`}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
         {/* ── Company Description ─────────────────────────── */}
         {profile.description && (
           <div>
@@ -724,8 +664,6 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
 
   // tRPC classifier mutation
   const classifyMutation = trpc.signals.classifyTicker.useMutation();
-  // tRPC trading signal mutation (price levels)
-  const tradingSignalMutation = trpc.signals.getTradingSignal.useMutation();
 
   // Keyboard shortcut: "/" to focus search
   useEffect(() => {
@@ -783,20 +721,6 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
 
       if (data.price != null && data.changePercent != null && data.volume != null && data.volumeMillions != null && data.open != null && data.high != null && data.low != null) {
       // A missing price, change, or volume is shown on the card and is not scored.
-      tradingSignalMutation.mutate({
-        ticker: t,
-        price: data.price,
-        open: data.open,
-        high: data.high,
-        low: data.low,
-        changePercent: data.changePercent,
-        volumeMillions: data.volumeMillions,
-        avgVolume: data.avgVolume ?? data.volume / 1_000_000,
-        sparkline: data.sparkline,
-        relativeStrength: 50,
-        regime: { label: regime.label, score: regime.score },
-      });
-
       // Trigger LLM classification
       classifyMutation.mutate({
         ticker: t,
@@ -1065,8 +989,6 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
             onSave={handleSaveToWatchlist}
             isSaved={isSaved}
             regime={regime}
-            tradingSignal={tradingSignalMutation.data ?? null}
-            signalLoading={tradingSignalMutation.isPending}
           />
         </div>
       )}

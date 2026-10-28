@@ -119,7 +119,7 @@ describe("admin.setUserTier", () => {
   it("admin can set a user's tier", async () => {
     const caller = appRouter.createCaller(makeAdminCtx());
     const result = await caller.admin.setUserTier({ userId: 1, tier: "premium" });
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ success: true, tier: "free" });
   });
 
   it("non-admin cannot set a user's tier", async () => {

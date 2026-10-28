@@ -52,6 +52,14 @@ export const users = mysqlTable("users", {
   /** Timestamp of the lifetime purchase. NULL for non-lifetime users. */
   lifetimePurchasedAt: timestamp("lifetimePurchasedAt"),
   /**
+   * End of the current Stripe subscription period. Null for lifetime and for
+   * admin grants. effectiveTier treats a past value as free unless lifetimeAccess is set.
+   * Added by drizzle/0074_stripe_entitlement_resync.sql, which is not applied by this PR.
+   */
+  accessExpiresAt: timestamp("accessExpiresAt"),
+  /** Incremented on every entitlement write so a zero-row conditional update cannot seal. */
+  entitlementRevision: int("entitlementRevision").default(0).notNull(),
+  /**
    * Timestamp of the last completed Market Preflight session.
    * NULL means the user has never completed a preflight review.
    * Used by the PreflightGate to determine if a prompt is needed on dashboard load.
@@ -2857,6 +2865,29 @@ export const stripeWebhookEvents = mysqlTable("stripeWebhookEvents", {
 export type StripeWebhookEvent = typeof stripeWebhookEvents.$inferSelect;
 export type InsertStripeWebhookEvent = typeof stripeWebhookEvents.$inferInsert;
 
+/**
+ * Monotonic cancellation/pause marker. A later stale `active` list cannot
+ * outrank canceledEventCreated. supersededEventCreated records a corroborated
+ * resume that is newer than the marker. Schema is drizzle/0074, not applied
+ * by this PR.
+ */
+export const stripeSubscriptionCancellations = mysqlTable("stripeSubscriptionCancellations", {
+  id: int("id").autoincrement().primaryKey(),
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 64 }).notNull(),
+  /** Unix seconds. BIGINT so the marker stays valid past 2038. */
+  canceledEventCreated: bigint("canceledEventCreated", { mode: "number" }).notNull(),
+  status: varchar("status", { length: 32 }).notNull(),
+  sourceEventId: varchar("sourceEventId", { length: 128 }).notNull(),
+  userId: int("userId"),
+  /** Unix seconds of the resume that cleared this marker. Null while it still blocks. */
+  supersededEventCreated: bigint("supersededEventCreated", { mode: "number" }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  subUniq: uniqueIndex("stripeSubscriptionCancellations_sub_uniq").on(t.stripeSubscriptionId),
+}));
+export type StripeSubscriptionCancellation = typeof stripeSubscriptionCancellations.$inferSelect;
+
 // ── Entitlement audit log ─────────────────────────────────────────────────────
 export const entitlementAuditLog = mysqlTable("entitlementAuditLog", {
   id:                   int("id").autoincrement().primaryKey(),
@@ -3064,3 +3095,42 @@ export const pressureV2ShadowObservations = mysqlTable("pressureV2ShadowObservat
 }));
 export type PressureV2ShadowObservation = typeof pressureV2ShadowObservations.$inferSelect;
 export type InsertPressureV2ShadowObservation = typeof pressureV2ShadowObservations.$inferInsert;
+/**
+ * Append-only Pentagonal Thesis versions. Migration 0075. Do not apply from startup.
+ * payloadJson is immutable at the database (UPDATE and DELETE triggers).
+ * A newer version inserts a row that points at the prior record.
+ * Outcome notes go in pentagonalThesisOutcomeScores, which is also append-only.
+ */
+export const pentagonalThesisRecords = mysqlTable("pentagonalThesisRecords", {
+  id: int("id").autoincrement().primaryKey(),
+  recordId: varchar("recordId", { length: 64 }).notNull(),
+  scopeKind: mysqlEnum("scopeKind", ["stock", "sector", "market"]).notNull(),
+  symbol: varchar("symbol", { length: 32 }).notNull(),
+  thesisVersion: int("thesisVersion").notNull(),
+  supersedesRecordId: varchar("supersedesRecordId", { length: 64 }),
+  engineVersion: varchar("engineVersion", { length: 64 }).notNull(),
+  contentHash: varchar("contentHash", { length: 64 }).notNull(),
+  payloadJson: text("payloadJson").notNull(),
+  generatedAt: timestamp("generatedAt").notNull(),
+  recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({
+  recordIdUniq: uniqueIndex("pentagonalThesisRecords_recordId_uniq").on(t.recordId),
+  symbolVersionUniq: uniqueIndex("pentagonalThesisRecords_symbol_version_uniq").on(t.scopeKind, t.symbol, t.thesisVersion),
+  symbolIdx: index("pentagonalThesisRecords_symbol_idx").on(t.symbol, t.recordedAt),
+}));
+export type PentagonalThesisRecord = typeof pentagonalThesisRecords.$inferSelect;
+export type InsertPentagonalThesisRecord = typeof pentagonalThesisRecords.$inferInsert;
+
+/** Append-only outcome notes for a thesis record. Scoring is not implemented. */
+export const pentagonalThesisOutcomeScores = mysqlTable("pentagonalThesisOutcomeScores", {
+  id: int("id").autoincrement().primaryKey(),
+  scoreId: varchar("scoreId", { length: 64 }).notNull(),
+  recordId: varchar("recordId", { length: 64 }).notNull(),
+  notes: text("notes"),
+  scoredAt: timestamp("scoredAt").defaultNow().notNull(),
+}, (t) => ({
+  scoreIdUniq: uniqueIndex("pentagonalThesisOutcomeScores_scoreId_uniq").on(t.scoreId),
+  recordIdx: index("pentagonalThesisOutcomeScores_record_idx").on(t.recordId, t.scoredAt),
+}));
+export type PentagonalThesisOutcomeScore = typeof pentagonalThesisOutcomeScores.$inferSelect;
+export type InsertPentagonalThesisOutcomeScore = typeof pentagonalThesisOutcomeScores.$inferInsert;

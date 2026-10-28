@@ -1,6 +1,6 @@
 import { COOKIE_NAME } from "@shared/const";
 import { ENV } from "./_core/env";
-import { analyticsRouter, blogRouter, billingRouter, adminRouter, outlookRouter, organicContentRouter, smartDiscoveryRouter, fmosRouter, dailyBriefRouter, intelligenceValidationRouter, marketIntelligenceRouter, conversationIntelligenceRouter, seismographRouter, ashaMemoryRouter, promoRouter, gscRouter, marketStateRouter, timeMachineRouter, marketsRouter, institutionalMemoryRouter, systemicRegimeRouter, sectorRotationRouter, intelligenceEvidenceRouter } from "./routers/index";
+import { analyticsRouter, blogRouter, billingRouter, adminRouter, outlookRouter, organicContentRouter, smartDiscoveryRouter, fmosRouter, dailyBriefRouter, intelligenceValidationRouter, marketIntelligenceRouter, conversationIntelligenceRouter, seismographRouter, ashaMemoryRouter, promoRouter, gscRouter, marketStateRouter, timeMachineRouter, marketsRouter, institutionalMemoryRouter, systemicRegimeRouter, sectorRotationRouter, intelligenceEvidenceRouter, pentagonalThesisRouter } from "./routers/index";
 import { intelligenceAccountabilityRouter } from "./routers/intelligenceAccountability";
 import { notifyOwner } from "./_core/notification";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -125,6 +125,7 @@ export const appRouter = router({
   sectorRotation: sectorRotationRouter,
   intelligenceEvidence: intelligenceEvidenceRouter,
   intelligenceAccountability: intelligenceAccountabilityRouter,
+  pentagonalThesis: pentagonalThesisRouter,
 
   auth: router({
     me: publicProcedure.query(opts => toPublicAuthUser(opts.ctx.user)),
@@ -1395,7 +1396,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         try {
           // Enforce 3-symbol watchlist cap for free/observer users
-          const tier = ctx.user.accessTier as string;
+          const tier = await getUserTier(ctx.user.id);
           const isPaid = tier === 'core' || tier === 'premium' || tier === 'founding';
           if (!isPaid) {
             const FREE_WATCHLIST_LIMIT = 3;
@@ -2451,7 +2452,7 @@ export const appRouter = router({
         expiresInDays: z.number().min(1).max(365).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const tier = ctx.user.accessTier;
+        const tier = await getUserTier(ctx.user.id);
         if (!['premium', 'founding'].includes(tier) && ctx.user.role !== 'admin') {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Share links require Premium or Founding access' });
         }
@@ -2574,7 +2575,7 @@ export const appRouter = router({
     getUsageSummary: protectedProcedure.query(async ({ ctx }) => {
       const row = await getMobileUsageToday(ctx.user.id);
       const monthlyCount = await getSituationRoomMonthlyCount(ctx.user.id);
-      const tier = ctx.user.accessTier as string;
+      const tier = await getUserTier(ctx.user.id);
       const isPro = tier === 'premium' || tier === 'founding';
       const isPaid = tier === 'core' || isPro;
       const limits = {
@@ -2599,7 +2600,7 @@ export const appRouter = router({
         feature: z.enum(['stockSignals', 'cryptoSignals', 'signalOutlooks', 'situationRoom']),
       }))
       .query(async ({ ctx, input }) => {
-        const tier = ctx.user.accessTier as string;
+        const tier = await getUserTier(ctx.user.id);
         const isPro = tier === 'premium' || tier === 'founding';
         const isPaid = tier === 'core' || isPro;
         if (isPro) return { allowed: true, remaining: null, limit: null, upgradeMessage: null };
@@ -2653,7 +2654,7 @@ export const appRouter = router({
     getToday: protectedProcedure.query(async ({ ctx }) => {
       const row = await getMobileUsageToday(ctx.user.id);
       const monthlyCount = await getSituationRoomMonthlyCount(ctx.user.id);
-      const tier = ctx.user.accessTier as string;
+      const tier = await getUserTier(ctx.user.id);
       const isPro = tier === 'premium' || tier === 'founding';
       const isPaid = tier === 'core' || isPro;
       return {

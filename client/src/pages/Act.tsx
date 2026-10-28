@@ -17,6 +17,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
+import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 import { trpc } from "@/lib/trpc";
 import {
   CANONICAL_DESTINATION_BY_ID,
@@ -348,6 +349,9 @@ export default function Act() {
     <main className="min-h-screen bg-[#05070a] text-slate-200" data-act-destination="canonical">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_76%_5%,rgba(0,255,136,0.08),transparent_27%),radial-gradient(circle_at_12%_28%,rgba(0,229,255,0.045),transparent_24%)]" />
       <div className="relative mx-auto max-w-7xl px-5 pb-16 pt-8 md:px-10 md:pt-12">
+        <div className="mb-6">
+          <PentagonalThesisNarrative surface="act" compact />
+        </div>
 
         {/* ── HERO ─────────────────────────────────────────────────────── */}
         <section data-act-section="posture" className="relative overflow-hidden rounded-sm border bg-[#080f0c] p-6 md:p-9" style={{ borderColor: `${postureView.color}30` }}>

@@ -14,7 +14,7 @@ import { runFMOSPipelineFast } from "../fmos/pipeline";
 import { getQuickOutlook } from "../signalOutlook";
 import { invokeLLM } from "../_core/llm";
 import { resolveIntent, detectQuestionIntent, QuestionIntent } from "../intentResolver";
-import { getDb, incrementAskUsage, getAskUsageToday } from "../db";
+import { getDb, incrementAskUsage, getAskUsageToday, getUserTier } from "../db";
 import { decisionLedger, DecisionLedgerEntry } from "../../drizzle/schema";
 import { and, eq, desc } from "drizzle-orm";
 import { getQuote } from "../yahooProxy";
@@ -1589,8 +1589,8 @@ export const smartDiscoveryRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       // Enforce daily Ask Intelligence limit for free/observer users
+      const tier = ctx.user ? await getUserTier(ctx.user.id) : 'anonymous';
       if (ctx.user) {
-        const tier = (ctx.user as { accessTier?: string }).accessTier ?? 'free';
         const isPaid = tier === 'core' || tier === 'premium' || tier === 'founding';
         if (!isPaid) {
           const FREE_ASK_LIMIT = 10;
@@ -1607,11 +1607,10 @@ export const smartDiscoveryRouter = router({
 
       // Start conversation logging (fire-and-forget)
       const sessionId = `ask_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      const userTier = ctx.user ? ((ctx.user as any).accessTier ?? 'free') : 'anonymous';
       const convIdPromise = startConversation({
         sessionId,
         userId: ctx.user?.id,
-        userTier: userTier as any,
+        userTier: tier as any,
         module: 'ask_intelligence',
         pagePath: '/app/ask',
       });

@@ -16,6 +16,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
+import { PentagonalThesisNarrative } from "@/components/PentagonalThesisNarrative";
 import { trpc } from "@/lib/trpc";
 import {
   CANONICAL_DESTINATION_BY_ID,
@@ -256,6 +257,9 @@ export default function Watch() {
     <main className="min-h-screen bg-[#05070a] text-slate-200" data-watch-destination="canonical">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_76%_5%,rgba(249,115,22,0.09),transparent_27%),radial-gradient(circle_at_12%_28%,rgba(0,229,255,0.045),transparent_24%)]" />
 	      <div className="relative mx-auto max-w-7xl px-5 pb-16 pt-8 md:px-10 md:pt-12">
+	        <div className="mb-6">
+	          <PentagonalThesisNarrative surface="watch" compact />
+	        </div>
 	        <EarlyWarningPresentationPanel mode="watch" />
 
 	        {/* ── HERO ─────────────────────────────────────────────────────── */}

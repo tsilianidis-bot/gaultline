@@ -76,7 +76,9 @@ describe("PublicSharedReport hides formula confidence and probability-like keys 
   it("hides confidence and any probability / odds / chance / *confidence key, but not the remapped scores", () => {
     for (const key of ["confidence", "Confidence", "signalConfidence", "regimeConfidence", "bullProbability", "crashProbabilities", "recessionOdds", "recoveryChance"])
       expect(isHiddenSnapshotKey(key), key).toBe(true);
-    for (const key of ["favorableSetupProbability", "adversePressureProbability", "favorableSetupScore", "adversePressureScore", "ticker", "strength", "regime", "constructor"])
+    for (const key of ["action", "actionLabel", "strength", "entryZone", "stopLoss", "targetPrice"])
+      expect(isHiddenSnapshotKey(key), key).toBe(true);
+    for (const key of ["favorableSetupProbability", "adversePressureProbability", "favorableSetupScore", "adversePressureScore", "ticker", "regime", "constructor"])
       expect(isHiddenSnapshotKey(key), key).toBe(false);
     expect(snapshotKeyLabel("constructor")).toBe("constructor");
   });
@@ -92,7 +94,12 @@ describe("PublicSharedReport hides formula confidence and probability-like keys 
       for (const v of LEAKED_VALUES) expect(html, String(v)).not.toContain(`>${v}<`);
       // The rest of the signal still renders.
       expect(html).toContain(name === "stock signals" ? "NVDA" : "BTC");
-      expect(html).toContain(name === "stock signals" ? "Accumulation Zone" : "Momentum Confirmed");
+      expect(html).toContain("Read the current shared thesis.");
+      expect(html).not.toContain("BUY");
+      expect(html).not.toContain("SELL");
+      expect(html).not.toContain("HOLD");
+      expect(html).not.toContain("WATCH");
+      expect(html).not.toContain(name === "stock signals" ? "Accumulation Zone" : "Momentum Confirmed");
     });
   }
 

@@ -1,6 +1,6 @@
-import { eq, and, desc, count, sql, like, or, gte } from "drizzle-orm";
+import { eq, and, desc, count, sql, like, or, gte, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport, mobileUsage, dayTradeWatchlist, InsertDayTradeWatchlistItem, tradeJournal, InsertTradeJournalEntry, chatbotSessions, chatbotMessages, chatbotLeads, InsertChatbotSession, InsertChatbotMessage, InsertChatbotLead, ChatbotSession, dayTradeSnapshot, pipelineHealthLog, onboardingEmailSequence } from "../drizzle/schema";
+import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport, mobileUsage, dayTradeWatchlist, InsertDayTradeWatchlistItem, tradeJournal, InsertTradeJournalEntry, chatbotSessions, chatbotMessages, chatbotLeads, InsertChatbotSession, InsertChatbotMessage, InsertChatbotLead, ChatbotSession, dayTradeSnapshot, pipelineHealthLog, onboardingEmailSequence, stripeSubscriptionCancellations } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
 
@@ -223,22 +223,95 @@ export async function getUserByEmail(email: string) {
 
 // ── Access Tier helpers ─────────────────────────────────────────────
 
+/**
+ * One effective tier for every gate. Lifetime outranks the stored tier and
+ * does not expire. A subscription tier is free once accessExpiresAt is past.
+ * A null expiry keeps the stored paid tier (admin grants and rows written
+ * before a period end was recorded).
+ */
+export function effectiveTier(input: {
+  accessTier?: string | null;
+  lifetimeAccess?: boolean | null;
+  accessExpiresAt?: Date | string | null;
+  nowMs?: number;
+}): 'free' | 'core' | 'premium' | 'founding' {
+  if (input.lifetimeAccess) return 'founding';
+  const tier = input.accessTier;
+  if (tier !== 'core' && tier !== 'premium' && tier !== 'founding') return 'free';
+  if (input.accessExpiresAt != null) {
+    const expiresMs = input.accessExpiresAt instanceof Date
+      ? input.accessExpiresAt.getTime()
+      : new Date(input.accessExpiresAt).getTime();
+    if (!Number.isFinite(expiresMs) || expiresMs <= (input.nowMs ?? Date.now())) return 'free';
+  }
+  return tier;
+}
+
+export function tierForEntitlement(
+  accessTier: string | null | undefined,
+  lifetimeAccess: boolean | null | undefined,
+): 'free' | 'core' | 'premium' | 'founding' {
+  return effectiveTier({ accessTier, lifetimeAccess });
+}
+
 export async function getUserTier(userId: number): Promise<'free' | 'core' | 'premium' | 'founding'> {
   const db = await getDb();
   if (!db) return 'free';
-  const result = await db.select({ accessTier: users.accessTier })
-    .from(users).where(eq(users.id, userId)).limit(1);
-  return result[0]?.accessTier ?? 'free';
+  const result = await db.select({
+    accessTier: users.accessTier,
+    lifetimeAccess: users.lifetimeAccess,
+    accessExpiresAt: users.accessExpiresAt,
+  }).from(users).where(eq(users.id, userId)).limit(1);
+  return effectiveTier(result[0] ?? {});
+}
+
+export async function getEntitlementRevision(userId: number): Promise<number | null> {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable: cannot read entitlement revision');
+  const [row] = await db.select({ entitlementRevision: users.entitlementRevision })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  if (!row) return null;
+  return row.entitlementRevision ?? 0;
+}
+
+export async function getEntitlementUserById(userId: number): Promise<{ id: number; name: string | null; email: string | null; accessTier: string | null; lifetimeAccess: boolean; stripeCustomerId: string | null } | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const [user] = await db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    accessTier: users.accessTier,
+    lifetimeAccess: users.lifetimeAccess,
+    stripeCustomerId: users.stripeCustomerId,
+  }).from(users).where(eq(users.id, userId)).limit(1);
+  return user ?? null;
 }
 
 export async function setUserTier(
   userId: number,
-  tier: 'free' | 'core' | 'premium' | 'founding'
+  tier: 'free' | 'core' | 'premium' | 'founding',
+  lifetimeAccess?: boolean,
 ): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
+  // Admin grants do not inherit a Stripe period. An explicit free tier, or
+  // lifetimeAccess: false, revokes lifetime so effectiveTier matches the write.
+  // A paid tier with the flag omitted leaves a lifetime purchase in place
+  // (effective tier stays founding). lifetimeAccess: true sets the flag.
+  const clearLifetime = lifetimeAccess === false || (lifetimeAccess === undefined && tier === 'free');
+  const grantLifetime = lifetimeAccess === true;
   await db.update(users)
-    .set({ accessTier: tier, updatedAt: new Date() })
+    .set({
+      accessTier: tier,
+      accessExpiresAt: null,
+      entitlementRevision: sql`${users.entitlementRevision} + 1`,
+      updatedAt: new Date(),
+      ...(grantLifetime ? { lifetimeAccess: true } : {}),
+      ...(clearLifetime ? { lifetimeAccess: false } : {}),
+    })
     .where(eq(users.id, userId));
 }
 
@@ -384,18 +457,24 @@ export async function getActivityFeed(limit = 20) {
 export async function getAllUsersWithTier() {
   const db = await getDb();
   if (!db) return [];
-  return db
+  const rows = await db
     .select({
       id: users.id,
       name: users.name,
       email: users.email,
       role: users.role,
       accessTier: users.accessTier,
+      lifetimeAccess: users.lifetimeAccess,
+      accessExpiresAt: users.accessExpiresAt,
       createdAt: users.createdAt,
       lastSignedIn: users.lastSignedIn,
     })
     .from(users)
     .orderBy(users.createdAt).limit(1000);
+  return rows.map(row => ({
+    ...row,
+    effectiveTier: effectiveTier(row),
+  }));
 }
 
 // ── Statistics helpers ────────────────────────────────────────
@@ -492,10 +571,10 @@ export async function updateDashboardMode(
     .where(eq(users.id, userId));
 }
 
-export async function getUserByStripeCustomerId(customerId: string): Promise<{ id: number; name: string | null; email: string | null; accessTier: string | null; lifetimeAccess: boolean } | null> {
+export async function getUserByStripeCustomerId(customerId: string): Promise<{ id: number; name: string | null; email: string | null; accessTier: string | null; lifetimeAccess: boolean; stripeCustomerId: string | null } | null> {
   const db = await getDb();
   if (!db) return null;
-  const [user] = await db.select({ id: users.id, name: users.name, email: users.email, accessTier: users.accessTier, lifetimeAccess: users.lifetimeAccess })
+  const [user] = await db.select({ id: users.id, name: users.name, email: users.email, accessTier: users.accessTier, lifetimeAccess: users.lifetimeAccess, stripeCustomerId: users.stripeCustomerId })
     .from(users)
     .where(eq(users.stripeCustomerId, customerId))
     .limit(1);
@@ -1536,6 +1615,7 @@ export async function getUsersPendingDripStep(step: number, minAgeMs: number): P
 }
 
 // ── Stripe webhook idempotency ────────────────────────────────────────────────
+import { randomBytes } from "node:crypto";
 import { stripeWebhookEvents, entitlementAuditLog } from '../drizzle/schema';
 
 /** True only for a MySQL unique-constraint violation, including a Drizzle-wrapped cause. */
@@ -1556,27 +1636,228 @@ function isDuplicateKeyError(error: unknown): boolean {
 }
 
 /**
- * Attempt to claim a Stripe event ID for idempotency.
- * Returns false only for a genuine duplicate key; other claim failures rethrow so
- * the webhook returns 5xx and Stripe retries instead of silently dropping events.
+ * Claims are inserted as `pending:<eventType>` and rewritten to the bare event
+ * type only after handling finishes. A failed release leaves the pending row in
+ * place. A later delivery must reclaim that row instead of acknowledging it as
+ * a finished duplicate, which would drop the event.
+ *
+ * The unfinished window stays above the Stripe client timeout so a delivery
+ * that still owns the claim is not processed a second time. A failed release
+ * leaves the pending row, and a later delivery reclaims it with a compare-and-swap.
  */
-export async function recordStripeWebhookEvent(eventId: string, eventType: string): Promise<boolean> {
-  const db = await getDb();
-  if (!db) throw new Error('Database unavailable: cannot claim Stripe webhook event');
-  try {
-    await db.insert(stripeWebhookEvents).values({ eventId, eventType });
-    return true; // Insert succeeded — event is new
-  } catch (err) {
-    if (isDuplicateKeyError(err)) return false;
-    throw err;
+export const STRIPE_WEBHOOK_CLAIM_PREFIX = 'pending:';
+export const STRIPE_WEBHOOK_PROCESSING_PREFIX = 'processing:';
+/**
+ * A second delivery may reclaim only after this age. Webhook reads are capped
+ * at 8 calls of 8s with maxNetworkRetries 0 (64s), under this window.
+ */
+export const STRIPE_WEBHOOK_UNFINISHED_CLAIM_MS = 90_000;
+const STRIPE_ATTEMPT_ID_RE = /^[0-9a-f]{16}$/;
+
+export class UnfinishedStripeWebhookClaimError extends Error {
+  constructor(eventId: string) {
+    super(`Stripe webhook claim ${eventId} is unfinished; retry shortly`);
+    this.name = 'UnfinishedStripeWebhookClaimError';
   }
 }
 
-/** Release a failed processing claim so the next Stripe delivery can be processed. */
-export async function releaseStripeWebhookEvent(eventId: string): Promise<void> {
+/** The attempt no longer owns the claim row. It must not write, seal, or release. */
+export class StaleStripeWebhookClaimError extends Error {
+  constructor(eventId: string) {
+    super(`Stripe webhook claim ${eventId} is owned by a newer attempt`);
+    this.name = 'StaleStripeWebhookClaimError';
+  }
+}
+
+export type StripeWebhookAttempt = { attemptId: string };
+
+export function newStripeAttemptId(): string {
+  return randomBytes(8).toString('hex');
+}
+
+function unfinishedClaim(eventType: string | null | undefined): boolean {
+  return Boolean(
+    eventType?.startsWith(STRIPE_WEBHOOK_CLAIM_PREFIX) ||
+    eventType?.startsWith(STRIPE_WEBHOOK_PROCESSING_PREFIX),
+  );
+}
+
+export function storedClaimType(phase: 'pending' | 'processing', attemptId: string, eventType: string): string {
+  const stored = `${phase}:${attemptId}:${eventType}`;
+  if (stored.length > 128) throw new Error('Stripe webhook claim type exceeds 128 characters');
+  return stored;
+}
+
+/** Split a claim row. Legacy rows are `pending:<eventType>` with no attempt id. */
+export function parseStoredClaim(stored: string | null | undefined): {
+  phase: 'pending' | 'processing' | 'done';
+  attemptId: string | null;
+  eventType: string;
+} {
+  if (!stored) return { phase: 'done', attemptId: null, eventType: '' };
+  for (const phase of ['pending', 'processing'] as const) {
+    const prefix = `${phase}:`;
+    if (!stored.startsWith(prefix)) continue;
+    const rest = stored.slice(prefix.length);
+    const colon = rest.indexOf(':');
+    const attemptId = colon === 16 ? rest.slice(0, colon) : '';
+    if (STRIPE_ATTEMPT_ID_RE.test(attemptId)) {
+      return { phase, attemptId, eventType: rest.slice(colon + 1) };
+    }
+    return { phase, attemptId: null, eventType: rest };
+  }
+  return { phase: 'done', attemptId: null, eventType: stored };
+}
+
+export function processingClaimType(eventType: string): string {
+  const parsed = parseStoredClaim(eventType);
+  if (parsed.attemptId && (parsed.phase === 'pending' || parsed.phase === 'processing')) {
+    return storedClaimType('processing', parsed.attemptId, parsed.eventType);
+  }
+  if (eventType.startsWith(STRIPE_WEBHOOK_CLAIM_PREFIX)) {
+    return `${STRIPE_WEBHOOK_PROCESSING_PREFIX}${eventType.slice(STRIPE_WEBHOOK_CLAIM_PREFIX.length)}`;
+  }
+  if (eventType.startsWith(STRIPE_WEBHOOK_PROCESSING_PREFIX)) return eventType;
+  return `${STRIPE_WEBHOOK_PROCESSING_PREFIX}${eventType}`;
+}
+
+export function decideDuplicateStripeClaim(
+  claim: { eventType?: string | null; processedAt?: Date | string | null } | null | undefined,
+  nowMs: number,
+): 'duplicate' | 'reclaim' | 'retry' {
+  if (!unfinishedClaim(claim?.eventType)) {
+    // Missing row or a claim already marked complete. A missing row is not a
+    // finished event: the caller must retry rather than acknowledge it.
+    return claim?.eventType ? 'duplicate' : 'retry';
+  }
+  const processedAtMs = claim?.processedAt instanceof Date
+    ? claim.processedAt.getTime()
+    : new Date(claim?.processedAt ?? '').getTime();
+  if (!Number.isFinite(processedAtMs) || nowMs - processedAtMs < STRIPE_WEBHOOK_UNFINISHED_CLAIM_MS) {
+    return 'retry';
+  }
+  return 'reclaim';
+}
+
+function affectedRows(result: unknown): number {
+  if (Array.isArray(result)) {
+    const header = result[0] as { affectedRows?: number } | undefined;
+    if (typeof header?.affectedRows === 'number') return header.affectedRows;
+  }
+  if (result && typeof result === 'object' && 'affectedRows' in result) {
+    const rows = (result as { affectedRows?: unknown }).affectedRows;
+    if (typeof rows === 'number') return rows;
+  }
+  return 0;
+}
+
+/**
+ * Attempt to claim a Stripe event ID for idempotency.
+ * Returns false only for a finished duplicate. An unfinished pending claim is
+ * reclaimed (true) or rejected so the webhook returns 5xx and Stripe retries.
+ */
+export async function recordStripeWebhookEvent(eventId: string, eventType: string): Promise<StripeWebhookAttempt | null> {
   const db = await getDb();
-  if (!db) return;
-  await db.delete(stripeWebhookEvents).where(eq(stripeWebhookEvents.eventId, eventId));
+  if (!db) throw new Error('Database unavailable: cannot claim Stripe webhook event');
+  const attemptId = newStripeAttemptId();
+  try {
+    await db.insert(stripeWebhookEvents).values({
+      eventId,
+      eventType: storedClaimType('pending', attemptId, eventType),
+    });
+    return { attemptId };
+  } catch (err) {
+    if (!isDuplicateKeyError(err)) throw err;
+  }
+  return db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select({
+        eventType: stripeWebhookEvents.eventType,
+        processedAt: stripeWebhookEvents.processedAt,
+      })
+      .from(stripeWebhookEvents)
+      .where(eq(stripeWebhookEvents.eventId, eventId))
+      .limit(1)
+      .for('update');
+    const decision = decideDuplicateStripeClaim(existing, Date.now());
+    if (decision === 'duplicate') return null;
+    if (decision !== 'reclaim' || !existing?.eventType || !existing.processedAt) {
+      throw new UnfinishedStripeWebhookClaimError(eventId);
+    }
+    const parsed = parseStoredClaim(existing.eventType);
+    const bareType = parsed.eventType || eventType;
+    const nextType = storedClaimType('processing', attemptId, bareType);
+    const updated = await tx.update(stripeWebhookEvents)
+      .set({ processedAt: new Date(), eventType: nextType })
+      .where(and(
+        eq(stripeWebhookEvents.eventId, eventId),
+        eq(stripeWebhookEvents.eventType, existing.eventType),
+        eq(stripeWebhookEvents.processedAt, existing.processedAt),
+      ));
+    if (affectedRows(updated) !== 1) throw new UnfinishedStripeWebhookClaimError(eventId);
+    console.error(`[Stripe Webhook][BILLING-ALERT] Reclaiming unfinished claim ${eventId} after a failed release`);
+    return { attemptId };
+  });
+}
+
+/**
+ * Mark a claimed event finished so a later delivery is a real duplicate.
+ * Throws when the database is unavailable — a 2xx must not be sent until the
+ * claim can no longer be mistaken for an unfinished release.
+ */
+function attemptOwnsClaim(stored: string | null | undefined, attemptId: string, eventType: string): boolean {
+  const parsed = parseStoredClaim(stored);
+  return parsed.attemptId === attemptId
+    && parsed.eventType === eventType
+    && (parsed.phase === 'pending' || parsed.phase === 'processing');
+}
+
+export async function completeStripeWebhookEvent(eventId: string, eventType: string, attemptId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable: cannot complete Stripe webhook event');
+  const updated = await db.update(stripeWebhookEvents)
+    .set({ eventType })
+    .where(and(
+      eq(stripeWebhookEvents.eventId, eventId),
+      or(
+        eq(stripeWebhookEvents.eventType, storedClaimType('pending', attemptId, eventType)),
+        eq(stripeWebhookEvents.eventType, storedClaimType('processing', attemptId, eventType)),
+      ),
+    ));
+  if (affectedRows(updated) === 1) return;
+  const [row] = await db.select({ eventType: stripeWebhookEvents.eventType })
+    .from(stripeWebhookEvents)
+    .where(eq(stripeWebhookEvents.eventId, eventId))
+    .limit(1);
+  if (row?.eventType === eventType) return;
+  if (row && !attemptOwnsClaim(row.eventType, attemptId, eventType)) {
+    throw new StaleStripeWebhookClaimError(eventId);
+  }
+  throw new Error(`Stripe webhook claim ${eventId} was not retained`);
+}
+
+/**
+ * Release only the row this attempt still owns. A newer attempt's claim is left
+ * in place. Throws when this attempt no longer owns an unfinished row.
+ */
+export async function releaseStripeWebhookEvent(eventId: string, attemptId: string, eventType: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable: cannot release Stripe webhook event');
+  const deleted = await db.delete(stripeWebhookEvents).where(and(
+    eq(stripeWebhookEvents.eventId, eventId),
+    or(
+      eq(stripeWebhookEvents.eventType, storedClaimType('pending', attemptId, eventType)),
+      eq(stripeWebhookEvents.eventType, storedClaimType('processing', attemptId, eventType)),
+    ),
+  ));
+  if (affectedRows(deleted) === 1) return;
+  const [row] = await db.select({ eventType: stripeWebhookEvents.eventType })
+    .from(stripeWebhookEvents)
+    .where(eq(stripeWebhookEvents.eventId, eventId))
+    .limit(1);
+  if (!row) return;
+  if (row.eventType === eventType) return;
+  throw new StaleStripeWebhookClaimError(eventId);
 }
 
 // ── Entitlement audit log ─────────────────────────────────────────────────────
@@ -1588,9 +1869,14 @@ export async function writeEntitlementAudit(params: {
   stripeEventId?: string;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
+  /** Webhook grants throw so a missing audit cannot be mistaken for "never applied". */
+  strict?: boolean;
 }): Promise<void> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) {
+    if (params.strict) throw new Error('Database unavailable: cannot write entitlement audit');
+    return;
+  }
   try {
     await db.insert(entitlementAuditLog).values({
       userId: params.userId,
@@ -1602,8 +1888,249 @@ export async function writeEntitlementAudit(params: {
       stripeSubscriptionId: params.stripeSubscriptionId ?? null,
     });
   } catch (err) {
+    if (params.strict) throw err;
     console.warn('[EntitlementAudit] Failed to write audit entry:', err);
   }
+}
+
+export async function entitlementAuditExists(stripeEventId: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable: cannot read entitlement audit');
+  const [row] = await db.select({ id: entitlementAuditLog.id })
+    .from(entitlementAuditLog)
+    .where(eq(entitlementAuditLog.stripeEventId, stripeEventId))
+    .limit(1);
+  return Boolean(row);
+}
+
+export class ZeroRowEntitlementWriteError extends Error {
+  constructor(eventId: string) {
+    super(`Stripe entitlement write for ${eventId} matched zero rows; claim was not sealed`);
+    this.name = 'ZeroRowEntitlementWriteError';
+  }
+}
+
+export type EntitlementResyncWrite = {
+  accessTier: 'free' | 'core' | 'premium' | 'founding';
+  stripeSubscriptionId: string | null;
+  grantLifetime: boolean;
+  lifetimePurchasedAt: Date | null;
+  accessExpiresAt: Date | null;
+  /** Persisted when present. An empty value does not clear a stored customer id. */
+  stripeCustomerId?: string | null;
+};
+
+export type EntitlementMarkerSnapshot = {
+  stripeSubscriptionId: string;
+  canceledEventCreated: number;
+  status: string;
+  supersededEventCreated: number | null;
+};
+
+/**
+ * Record a cancellation or pause. The timestamp only moves forward, and this
+ * commits on its own so a later conflict can refuse to seal without forgetting
+ * the cancellation.
+ */
+export async function upsertStripeCancellationMarker(params: {
+  stripeSubscriptionId: string;
+  canceledEventCreated: number;
+  status: string;
+  sourceEventId: string;
+  userId?: number | null;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable: cannot record Stripe cancellation');
+  await db.execute(sql`
+    INSERT INTO stripeSubscriptionCancellations
+      (stripeSubscriptionId, canceledEventCreated, status, sourceEventId, userId, supersededEventCreated)
+    VALUES (
+      ${params.stripeSubscriptionId},
+      ${params.canceledEventCreated},
+      ${params.status},
+      ${params.sourceEventId},
+      ${params.userId ?? null},
+      NULL
+    )
+    ON DUPLICATE KEY UPDATE
+      status = IF(VALUES(canceledEventCreated) > canceledEventCreated, VALUES(status), status),
+      sourceEventId = IF(VALUES(canceledEventCreated) > canceledEventCreated, VALUES(sourceEventId), sourceEventId),
+      userId = IF(VALUES(canceledEventCreated) > canceledEventCreated, VALUES(userId), userId),
+      supersededEventCreated = IF(VALUES(canceledEventCreated) > canceledEventCreated, NULL, supersededEventCreated),
+      canceledEventCreated = GREATEST(canceledEventCreated, VALUES(canceledEventCreated))
+  `);
+}
+
+export async function listStripeCancellationMarkers(subscriptionIds: string[]): Promise<EntitlementMarkerSnapshot[]> {
+  if (subscriptionIds.length === 0) return [];
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable: cannot read Stripe cancellation markers');
+  const rows = await db.select({
+    stripeSubscriptionId: stripeSubscriptionCancellations.stripeSubscriptionId,
+    canceledEventCreated: stripeSubscriptionCancellations.canceledEventCreated,
+    status: stripeSubscriptionCancellations.status,
+    supersededEventCreated: stripeSubscriptionCancellations.supersededEventCreated,
+  }).from(stripeSubscriptionCancellations)
+    .where(inArray(stripeSubscriptionCancellations.stripeSubscriptionId, subscriptionIds));
+  return rows.map(row => ({
+    ...row,
+    supersededEventCreated: row.supersededEventCreated ?? null,
+  }));
+}
+
+function markerSnapshotsMatch(locked: EntitlementMarkerSnapshot[], observed: EntitlementMarkerSnapshot[]): boolean {
+  if (locked.length !== observed.length) return false;
+  const byId = new Map(locked.map(row => [row.stripeSubscriptionId, row]));
+  for (const marker of observed) {
+    const row = byId.get(marker.stripeSubscriptionId);
+    if (!row) return false;
+    if (row.canceledEventCreated !== marker.canceledEventCreated) return false;
+    if (row.status !== marker.status) return false;
+    if ((row.supersededEventCreated ?? null) !== (marker.supersededEventCreated ?? null)) return false;
+  }
+  return true;
+}
+
+/**
+ * Lock the claim, the user, and the cancellation markers the decision observed.
+ * If the revision or those markers changed, return stale_state without writing
+ * or sealing so the caller can recompute. Stored lifetime access is never
+ * cleared by a subscription resync. A customer id is written when present and
+ * is not cleared when the new decision omits it.
+ */
+export async function commitEntitlementResync(params: {
+  eventId: string;
+  eventType: string;
+  attemptId: string;
+  userId: number;
+  observedRevision: number;
+  observedMarkers: EntitlementMarkerSnapshot[];
+  markerSubscriptionIds: string[];
+  desired: EntitlementResyncWrite;
+  supersedeCancellation?: { stripeSubscriptionId: string; eventCreated: number } | null;
+  audit: {
+    fromTier: string | null | undefined;
+    toTier: string;
+    reason: string;
+    stripeCustomerId?: string;
+    stripeSubscriptionId?: string;
+  };
+}): Promise<'applied' | 'claim_lost' | 'stale_state' | 'customer_conflict'> {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable: cannot commit Stripe entitlement');
+  return db.transaction(async (tx) => {
+    const [claim] = await tx.select({ eventType: stripeWebhookEvents.eventType })
+      .from(stripeWebhookEvents)
+      .where(eq(stripeWebhookEvents.eventId, params.eventId))
+      .limit(1)
+      .for('update');
+    if (!attemptOwnsClaim(claim?.eventType, params.attemptId, params.eventType)) {
+      return 'claim_lost';
+    }
+    const [locked] = await tx.select({
+      id: users.id,
+      lifetimeAccess: users.lifetimeAccess,
+      lifetimePurchasedAt: users.lifetimePurchasedAt,
+      entitlementRevision: users.entitlementRevision,
+      stripeCustomerId: users.stripeCustomerId,
+    }).from(users)
+      .where(eq(users.id, params.userId))
+      .limit(1)
+      .for('update');
+    if (!locked) throw new ZeroRowEntitlementWriteError(params.eventId);
+    if ((locked.entitlementRevision ?? 0) !== params.observedRevision) return 'stale_state';
+    if (params.markerSubscriptionIds.length > 0) {
+      const lockedMarkers = await tx.select({
+        stripeSubscriptionId: stripeSubscriptionCancellations.stripeSubscriptionId,
+        canceledEventCreated: stripeSubscriptionCancellations.canceledEventCreated,
+        status: stripeSubscriptionCancellations.status,
+        supersededEventCreated: stripeSubscriptionCancellations.supersededEventCreated,
+      }).from(stripeSubscriptionCancellations)
+        .where(inArray(stripeSubscriptionCancellations.stripeSubscriptionId, params.markerSubscriptionIds))
+        .for('update');
+      const normalized = lockedMarkers.map(row => ({
+        ...row,
+        supersededEventCreated: row.supersededEventCreated ?? null,
+      }));
+      if (!markerSnapshotsMatch(normalized, params.observedMarkers)) return 'stale_state';
+    } else if (params.observedMarkers.length > 0) {
+      return 'stale_state';
+    }
+    const incomingCustomerId = params.desired.stripeCustomerId || null;
+    const storedCustomerId = locked.stripeCustomerId || null;
+    if (incomingCustomerId && storedCustomerId && incomingCustomerId !== storedCustomerId) {
+      await tx.insert(entitlementAuditLog).values({
+        userId: params.userId,
+        fromTier: params.audit.fromTier ?? null,
+        toTier: params.audit.fromTier ?? 'free',
+        reason: 'customer_conflict',
+        stripeEventId: params.eventId,
+        stripeCustomerId: incomingCustomerId,
+        stripeSubscriptionId: params.audit.stripeSubscriptionId ?? params.desired.stripeSubscriptionId,
+      });
+      return 'customer_conflict';
+    }
+    const lifetime = Boolean(locked.lifetimeAccess) || params.desired.grantLifetime;
+    const tier = lifetime ? 'founding' : params.desired.accessTier;
+    const stripeCustomerId = incomingCustomerId || storedCustomerId;
+    const updated = await tx.update(users)
+      .set({
+        accessTier: tier,
+        stripeSubscriptionId: params.desired.stripeSubscriptionId,
+        stripeCustomerId,
+        lifetimeAccess: lifetime,
+        lifetimePurchasedAt: lifetime
+          ? (locked.lifetimePurchasedAt ?? params.desired.lifetimePurchasedAt ?? new Date())
+          : locked.lifetimePurchasedAt,
+        accessExpiresAt: params.desired.accessExpiresAt,
+        entitlementRevision: (locked.entitlementRevision ?? 0) + 1,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(users.id, params.userId),
+        eq(users.entitlementRevision, locked.entitlementRevision ?? 0),
+      ));
+    if (affectedRows(updated) !== 1) throw new ZeroRowEntitlementWriteError(params.eventId);
+    const supersede = params.supersedeCancellation;
+    if (supersede) {
+      await tx.execute(sql`
+        UPDATE stripeSubscriptionCancellations
+        SET supersededEventCreated = ${supersede.eventCreated}
+        WHERE stripeSubscriptionId = ${supersede.stripeSubscriptionId}
+          AND canceledEventCreated < ${supersede.eventCreated}
+          AND (supersededEventCreated IS NULL OR supersededEventCreated < ${supersede.eventCreated})
+      `);
+    }
+    await tx.insert(entitlementAuditLog).values({
+      userId: params.userId,
+      fromTier: params.audit.fromTier ?? null,
+      toTier: tier,
+      reason: params.audit.reason,
+      stripeEventId: params.eventId,
+      stripeCustomerId: params.audit.stripeCustomerId ?? stripeCustomerId,
+      stripeSubscriptionId: params.audit.stripeSubscriptionId ?? params.desired.stripeSubscriptionId,
+    });
+    await sealStripeClaim(tx, params.eventId, params.eventType, params.attemptId);
+    return 'applied';
+  });
+}
+
+async function sealStripeClaim(
+  tx: { update: (...args: any[]) => any },
+  eventId: string,
+  eventType: string,
+  attemptId: string,
+): Promise<void> {
+  const updated = await tx.update(stripeWebhookEvents)
+    .set({ eventType })
+    .where(and(
+      eq(stripeWebhookEvents.eventId, eventId),
+      or(
+        eq(stripeWebhookEvents.eventType, storedClaimType('pending', attemptId, eventType)),
+        eq(stripeWebhookEvents.eventType, storedClaimType('processing', attemptId, eventType)),
+      ),
+    ));
+  if (affectedRows(updated) !== 1) throw new StaleStripeWebhookClaimError(eventId);
 }
 
 export async function getEntitlementAuditHistory(userId: number, limit = 50) {
