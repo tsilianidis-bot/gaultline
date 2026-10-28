@@ -9,7 +9,7 @@ Production today:
 | Live rollback commit | `f7756c7fad3cac0f96df45723ca5c4e2713146d0` |
 | Live `/api/health` on 2026-10-28 | `f7756c7fad3cac0f96df45723ca5c4e2713146d0` (`buildTime` `2026-10-27T18:43:24Z`) |
 | Rollback target | the live deployment that serves `f7756c7fad3cac0f96df45723ca5c4e2713146d0` |
-| RC candidate commit | `ab23ed9ba4e642d7ea32260966959ced8f7327fa` |
+| RC candidate commit | `be7300e60f35da349f6e1d6585e4b22b30cd1b8d` |
 | Seismograph cron (not changed) | `0 18 * * *` UTC |
 | Systemic-regime infer (not changed) | daily 19:00 UTC |
 
@@ -37,7 +37,7 @@ Do not store `15 20,21` with an `America/New_York` timezone. Railway cron is UTC
 
 ## Rollback
 
-The RC candidate commit is `ab23ed9ba4e642d7ea32260966959ced8f7327fa` on `cursor/faultline-rc-2026-10-28-4018`. That commit contains the L3–L5 runtime fix `4d5f669ecb1840c54b874d0639066d1710dae0bf`. The rollback target is the live deployment whose health commit is `f7756c7fad3cac0f96df45723ca5c4e2713146d0`. `1cb5dee13832c0556ec5a380ecc4ffb02513e875` and deployment `b19716b1` are not the rollback target. Leave the live deployment in place. Do not redeploy this branch to replace it.
+The RC candidate commit is `be7300e60f35da349f6e1d6585e4b22b30cd1b8d` on `cursor/faultline-rc-2026-10-28-4018`. That commit contains the L3–L5 runtime fix `4d5f669ecb1840c54b874d0639066d1710dae0bf`. The rollback target is the live deployment whose health commit is `f7756c7fad3cac0f96df45723ca5c4e2713146d0`. `1cb5dee13832c0556ec5a380ecc4ffb02513e875` and deployment `b19716b1` are not the rollback target. Leave the live deployment in place. Do not redeploy this branch to replace it.
 
 If a later deploy of an approved SHA must be rolled back to production:
 
