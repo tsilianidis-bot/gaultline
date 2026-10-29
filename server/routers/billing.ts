@@ -16,6 +16,84 @@ import { checkoutReceiptForCaller } from "../security/access";
 const LIFETIME_FOUNDING_LIMIT = 100;
 
 /**
+ * This list is intentionally server-side and exact. Do not derive checkout
+ * return origins from Host or Origin headers: either can be supplied by a
+ * caller. The www entry returns the canonical apex URL after it is approved.
+ */
+const PRODUCTION_BILLING_RETURN_ORIGINS = new Map<string, string>([
+  ["https://getfaultline.live", "https://getfaultline.live"],
+  ["https://www.getfaultline.live", "https://getfaultline.live"],
+]);
+const DEFAULT_NON_PRODUCTION_BILLING_RETURN_ORIGINS = ["http://localhost:5173"];
+
+export type BillingOriginEnvironment = Readonly<{
+  NODE_ENV?: string;
+  BILLING_RETURN_ORIGIN_ALLOWLIST?: string;
+}>;
+
+function originAuthority(value: string): string | null {
+  const schemeEnd = value.indexOf("://");
+  if (schemeEnd < 0) return null;
+  const afterScheme = value.slice(schemeEnd + 3);
+  const pathStart = afterScheme.search(/[/?#]/);
+  return pathStart < 0 ? afterScheme : afterScheme.slice(0, pathStart);
+}
+
+function hasOnlyOptionalRootPath(value: string): boolean {
+  const schemeEnd = value.indexOf("://");
+  if (schemeEnd < 0) return false;
+  const afterScheme = value.slice(schemeEnd + 3);
+  const pathStart = afterScheme.search(/[/?#]/);
+  return pathStart < 0 || afterScheme.slice(pathStart) === "/";
+}
+
+function hasExplicitPort(value: string): boolean {
+  const authority = originAuthority(value);
+  if (!authority) return false;
+  const host = authority.slice(authority.lastIndexOf("@") + 1);
+  if (host.startsWith("[")) {
+    const closingBracket = host.indexOf("]");
+    return closingBracket >= 0 && host.slice(closingBracket + 1).startsWith(":");
+  }
+  return host.includes(":");
+}
+
+/** Parse an origin without letting URL normalization hide a path, query, hash, or production port. */
+function parseStrictBillingOrigin(value: string): string | null {
+  if (value.trim() !== value || !hasOnlyOptionalRootPath(value) || /[?#]/.test(value)) {
+    return null;
+  }
+  try {
+    const url = new URL(value);
+    if ((url.protocol !== "https:" && url.protocol !== "http:") ||
+        url.username || url.password || url.pathname !== "/" || url.search || url.hash) {
+      return null;
+    }
+    const isProductionHost = url.hostname === "getfaultline.live" || url.hostname === "www.getfaultline.live";
+    if (isProductionHost && (url.protocol !== "https:" || hasExplicitPort(value))) {
+      return null;
+    }
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
+
+function configuredBillingReturnOrigins(environment: BillingOriginEnvironment): Map<string, string> {
+  const approved = new Map(PRODUCTION_BILLING_RETURN_ORIGINS);
+  if (environment.NODE_ENV === "production") return approved;
+
+  for (const value of [
+    ...DEFAULT_NON_PRODUCTION_BILLING_RETURN_ORIGINS,
+    ...(environment.BILLING_RETURN_ORIGIN_ALLOWLIST ?? "").split(","),
+  ]) {
+    const origin = parseStrictBillingOrigin(value.trim());
+    if (origin) approved.set(origin, origin);
+  }
+  return approved;
+}
+
+/**
  * Checkout params. A user who already has a Stripe customer reuses it so a
  * second session cannot create an unbound customer. Subscription checkouts
  * copy user_id onto the subscription. customer and customer_email are not
@@ -34,6 +112,10 @@ export function buildCheckoutSessionParams(input: {
   const mode = input.interval === "one_time" ? "payment" as const : "subscription" as const;
   const storedCustomerId = input.storedStripeCustomerId || null;
   const email = input.email || undefined;
+  const origin = billingReturnOrigin(input.origin, input.origin);
+  if (!origin) {
+    throw new Error("Checkout URLs require an approved billing return origin.");
+  }
   return {
     mode,
     payment_method_types: ["card" as const],
@@ -55,14 +137,33 @@ export function buildCheckoutSessionParams(input: {
         },
       },
     } : {}),
-    success_url: `${input.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}&plan=${input.planId}`,
-    cancel_url: `${input.origin}/app/account?payment=cancelled`,
+    success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}&plan=${input.planId}`,
+    cancel_url: `${origin}/app/account?payment=cancelled`,
   };
 }
 
 /** Public/checkout availability: product lock AND a configured Stripe price. */
 export function isPlanAvailableForPurchase(planId: StripePlanId, priceId: string | null | undefined): boolean {
   return CHECKOUT_ENABLED && PAID_PLANS_ON_SALE && PRICING_PLANS[planId].available && !!priceId;
+}
+
+/**
+ * Origin is only a consistency check: both values must be identical entries
+ * in the server-configured allowlist; neither request header is a trust source.
+ */
+export function billingReturnOrigin(
+  inputOrigin: string,
+  requestOrigin: string | string[] | undefined,
+  environment: BillingOriginEnvironment = {
+    NODE_ENV: process.env.NODE_ENV,
+    BILLING_RETURN_ORIGIN_ALLOWLIST: process.env.BILLING_RETURN_ORIGIN_ALLOWLIST,
+  },
+): string | null {
+  if (typeof requestOrigin !== "string") return null;
+  const requested = parseStrictBillingOrigin(inputOrigin);
+  const request = parseStrictBillingOrigin(requestOrigin);
+  if (!requested || !request || requested !== request) return null;
+  return configuredBillingReturnOrigins(environment).get(requested) ?? null;
 }
 
 export const billingRouter = router({
@@ -101,6 +202,10 @@ export const billingRouter = router({
       if (!priceId) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "This plan is not yet available for purchase. Please contact us." });
       }
+      const origin = billingReturnOrigin(input.origin, ctx.req.headers.origin);
+      if (!origin) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Billing return URL must be an approved first-party origin and match the requesting origin." });
+      }
       const session = await stripe.checkout.sessions.create(buildCheckoutSessionParams({
         userId: ctx.user.id,
         email: ctx.user.email,
@@ -108,7 +213,7 @@ export const billingRouter = router({
         planId: input.planId,
         priceId,
         interval: plan.interval,
-        origin: input.origin,
+        origin,
         storedStripeCustomerId: ctx.user.stripeCustomerId,
       }));
       return { url: session.url };
@@ -147,9 +252,13 @@ export const billingRouter = router({
       if (!stripe) {
         throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Billing portal is unavailable because Stripe is not configured." });
       }
+      const origin = billingReturnOrigin(input.origin, ctx.req.headers.origin);
+      if (!origin) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Billing return URL must be an approved first-party origin and match the requesting origin." });
+      }
       const session = await stripe.billingPortal.sessions.create({
         customer: user.stripeCustomerId,
-        return_url: `${input.origin}/app/account`,
+        return_url: `${origin}/app/account`,
       });
       return { url: session.url };
     }),

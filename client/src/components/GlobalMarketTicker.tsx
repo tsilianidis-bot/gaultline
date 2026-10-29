@@ -65,8 +65,11 @@ function humanState(item: MarketQuoteItem) {
 }
 
 function observedTime(item: MarketQuoteItem) {
-  if (item.observedAt == null) return "AS OF —";
-  return `AS OF ${formatEt(item.observedAt) ?? "—"}`;
+  // FRED releases are date-granular: display their exact source date without
+  // inventing midnight or converting it into an ET timestamp.
+  if (item.observedAt != null) return `AS OF ${formatEt(item.observedAt) ?? "—"}`;
+  if (item.observedDate != null) return `AS OF ${item.observedDate}`;
+  return "AS OF —";
 }
 
 function TickerQuote({ item, onOpen }: { item: MarketQuoteItem; onOpen: () => void }) {

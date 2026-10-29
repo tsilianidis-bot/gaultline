@@ -7,12 +7,8 @@
  * No login required. Crawlable. Self-referencing canonical via useSEO.
  */
 import { useSEO } from "@/hooks/useSEO";
-import { getLoginUrl } from "@/const";
-import { Link } from "wouter";
 import { trackStartFreeClicked } from "@/hooks/useAnalytics";
 import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
-
-const PLATFORM_URL = "/app";
 
 interface Feature {
   icon: string;
@@ -61,14 +57,14 @@ export default function PublicLandingPage({
               href="/pricing"
               className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-white transition-colors px-4 py-2 border border-[rgba(168,184,204,0.25)] hover:border-[rgba(168,184,204,0.55)] rounded"
             >
-              MEMBER LOGIN
+              MEMBERSHIP DETAILS
             </a>
             <a
-              href={PLATFORM_URL}
+              href="/pressure-index"
               onClick={() => trackStartFreeClicked("public_landing")}
               className="text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 transition-colors px-4 py-2 rounded font-bold"
             >
-              VIEW MEMBERSHIP
+              PUBLIC PRESSURE INDEX
             </a>
           </div>
         </div>
@@ -138,7 +134,7 @@ export default function PublicLandingPage({
             See the pressure before the break.
           </h2>
           <p className="text-[#A8B8CC] mb-8">
-            FAULTLINE Standard $99/month · FAULTLINE Lifetime $1,500 one-time.
+            FAULTLINE Standard $99/month · FAULTLINE Lifetime $1,500 one-time. Checkout remains unavailable; no payment is taken.
           </p>
           <a
             href={ctaHref}
@@ -146,7 +142,7 @@ export default function PublicLandingPage({
             className="inline-flex items-center justify-center gap-2 text-[13px] font-mono tracking-widest text-[#050608] font-bold px-10 py-4 rounded"
             style={{ background: accentColor }}
           >
-            VIEW MEMBERSHIP →
+            {ctaLabel} →
           </a>
         </div>
       </section>

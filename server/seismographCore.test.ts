@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildAlertEvaluationContext,
+  buildMacroContextBlock,
   computeEvidenceConsensus,
   deriveProviderProvenance,
   groupIntoFamilies,
@@ -83,5 +85,34 @@ describe("Seismograph synthesis", () => {
         summary: "Test evidence.",
       },
     ]);
+  });
+
+  it("keeps pressure alerts but does not promote uncalibrated transition shares into crisis-risk alerts", () => {
+    const context = buildAlertEvaluationContext({
+      pressureScore: 75,
+      regime: "HIGH STRESS",
+      stressLevel: "High",
+      direction: "Deteriorating",
+      transitionProbabilities: { remainInRegime: 1, transitionToElevated: 1, transitionToLow: 1, transitionToCrisis: 99, primaryDriver: "static default" },
+      activePatterns: [],
+    } as any);
+    expect(context.significantChanges).toContain("High pressure: 75/100");
+    expect(context.significantChanges.join(" ")).not.toMatch(/crisis transition risk/i);
+  });
+
+  it("does not turn uncalibrated scenario evidence-vote shares into positioning guidance", () => {
+    const context = buildMacroContextBlock({
+      pressureScore: 60,
+      regime: "ELEVATED RISK",
+      stressLevel: "Elevated",
+      direction: "Deteriorating",
+      probabilities: { bull: 0, neutral: 0, bear: 100, primaryDriver: "Macro Pressure", confidence: 99 },
+      evidenceFamilies: [],
+      topAnalog: null,
+      historicalPercentile: null,
+      dataFreshness: "live",
+    } as any);
+    expect(context.regimeImplication).toMatch(/uncalibrated/i);
+    expect(context.regimeImplication).not.toMatch(/positioning is favored|tailwinds|selective positioning/i);
   });
 });

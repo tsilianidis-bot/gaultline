@@ -5,7 +5,7 @@
  */
 import { adminProcedure, publicProcedure, router } from "../_core/trpc";
 import { getQuotes, type YahooQuote } from "../yahooProxy";
-import { fetchFredBulk, type FredObservation } from "../fredClient";
+import { fetchFredBulk, type FredObservation, type FredSeriesResult } from "../fredClient";
 import { getGlobalStats } from "../coingeckoProxy";
 import { LRUCache } from "../lruCache";
 import { log } from "../logger";
@@ -14,6 +14,7 @@ import { isFiniteNumber } from "../../shared/marketsDisplay";
 export type MarketCategory = "us_equity" | "volatility" | "europe" | "asia" | "rates" | "fx" | "commodity" | "crypto";
 type InstrumentProvider = "yahoo" | "fred" | "coingecko" | "derived";
 export type FreshnessState = "LIVE" | "DELAYED" | "LATEST_VERIFIED" | "STALE" | "UNAVAILABLE";
+export type CacheHealthState = "FRESH" | "STALE" | "UNAVAILABLE";
 export type GlobalSession = "ASIA" | "EUROPE" | "US" | "OFF_HOURS";
 
 export interface MarketInstrument {
@@ -87,8 +88,14 @@ export interface MarketQuoteItem {
   sessionStatus: "OPEN" | "PRE-MARKET" | "AFTER HOURS" | "CLOSED" | "UNKNOWN";
   freshnessState: FreshnessState;
   isDelayed: boolean;
+  /** Provider's precise observation time, when that precision is supplied. */
   observedAt: number | null;
-  fetchedAt: number;
+  /** FRED observations are date-granular, so their source date is never turned into a made-up time of day. */
+  observedDate: string | null;
+  /** Local adapter receipt/cache time; this is never substituted for provider observation time. */
+  fetchedAt: number | null;
+  /** Receipt/cache health is deliberately separate from provider-observation freshness. */
+  cacheState: CacheHealthState;
   source: string;
   destination: string;
   /** Present only when the print is an explicitly labeled ETF proxy, never the cash index. */
@@ -133,35 +140,92 @@ function sessionStatus(state: YahooQuote["marketState"]): MarketQuoteItem["sessi
   return "UNKNOWN";
 }
 
-export function classifyFreshness({ price, isDelayed, fetchedAt, provider, state, now = Date.now() }: { price: number | null; isDelayed: boolean; fetchedAt: number; provider: InstrumentProvider; state: YahooQuote["marketState"]; now?: number }): FreshnessState {
+const FRED_STALE_AFTER_CALENDAR_DAYS = 1;
+
+function validPastTimestamp(value: unknown, now = Date.now()): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 && value <= now ? value : null;
+}
+
+function fredReceiptTimestamp(result: FredSeriesResult | undefined, now = Date.now()): number | null {
+  return validPastTimestamp(result?.fetchedAt, now);
+}
+
+function validFredDate(value: unknown): string | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day ? value : null;
+}
+
+function utcDate(now: number): string {
+  return new Date(now).toISOString().slice(0, 10);
+}
+
+function fredCalendarDayAge(observedDate: string, now: number): number | null {
+  const verifiedDate = validFredDate(observedDate);
+  if (!verifiedDate || verifiedDate > utcDate(now)) return null;
+  const [year, month, day] = verifiedDate.split("-").map(Number);
+  const today = new Date(now);
+  const todayStart = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  const observationStart = Date.UTC(year, month - 1, day);
+  return Math.floor((todayStart - observationStart) / 86_400_000);
+}
+
+function cacheHealthFor({ fetchedAt, provider, now = Date.now() }: { fetchedAt: number | null | undefined; provider: InstrumentProvider; now?: number }): CacheHealthState {
+  const receiptAt = validPastTimestamp(fetchedAt, now);
+  if (receiptAt == null) return "UNAVAILABLE";
+  const threshold = provider === "fred" ? 15 * 60 * 1000 : provider === "coingecko" ? 5 * 60 * 1000 : 12 * 60 * 1000;
+  return now - receiptAt > threshold ? "STALE" : "FRESH";
+}
+
+export function classifyFreshness({ price, isDelayed, fetchedAt, observedAt, observedDate, provider, state, now = Date.now() }: { price: number | null; isDelayed: boolean; fetchedAt: number | null; observedAt?: number | null; observedDate?: string | null; provider: InstrumentProvider; state: YahooQuote["marketState"]; now?: number }): FreshnessState {
   if (!isFiniteNumber(price)) return "UNAVAILABLE";
+  if (provider === "fred") {
+    const ageInCalendarDays = observedDate == null ? null : fredCalendarDayAge(observedDate, now);
+    if (ageInCalendarDays == null) return "UNAVAILABLE";
+    return ageInCalendarDays > FRED_STALE_AFTER_CALENDAR_DAYS ? "STALE" : "LATEST_VERIFIED";
+  }
+  if (provider === "coingecko") {
+    const sourceObservedAt = validPastTimestamp(observedAt, now);
+    if (sourceObservedAt == null) return "UNAVAILABLE";
+    if (now - sourceObservedAt > 12 * 60 * 1000) return "STALE";
+    return "LATEST_VERIFIED";
+  }
+  if (fetchedAt == null || validPastTimestamp(fetchedAt, now) == null) return "UNAVAILABLE";
   const age = Math.max(0, now - fetchedAt);
-  const threshold = provider === "fred" ? 27 * 60 * 60 * 1000 : state === "CLOSED" ? 26 * 60 * 60 * 1000 : 12 * 60 * 1000;
+  const threshold = state === "CLOSED" ? 26 * 60 * 60 * 1000 : 12 * 60 * 1000;
   if (age > threshold) return "STALE";
-  if (provider === "fred" || provider === "coingecko" || provider === "derived") return "LATEST_VERIFIED";
+  if (provider === "derived") return "LATEST_VERIFIED";
   return isDelayed ? "DELAYED" : "LIVE";
 }
 
-function latestFinite(observations: FredObservation[] = []): { value: number; observedAt: number } | null {
+function latestFinite(observations: FredObservation[] = []): { value: number; observedDate: string | null } | null {
   for (const observation of observations) {
+    // Number("") and Number(" ") are zero, but FRED blank/missing values are
+    // not readings. An explicit string "0" remains a valid numeric print.
+    if (typeof observation.value !== "string" || observation.value.trim() === "") continue;
     const value = Number(observation.value);
-    if (Number.isFinite(value)) return { value, observedAt: Date.parse(`${observation.date}T00:00:00Z`) };
+    if (Number.isFinite(value)) return { value, observedDate: validFredDate(observation.date) };
   }
   return null;
 }
 
-function fredItem(inst: MarketInstrument, observations: FredObservation[], fetchedAt: number): MarketQuoteItem {
+function fredItem(inst: MarketInstrument, observations: FredObservation[], fetchedAt: number | null): MarketQuoteItem {
   const latest = latestFinite(observations);
   const previous = latestFinite(observations.slice(1));
-  const change = latest && previous ? latest.value - previous.value : null;
-  const changePercent = latest && previous && previous.value !== 0 ? (change! / previous.value) * 100 : null;
+  const rawSourceDate = latest?.observedDate ?? null;
+  const sourceDate = rawSourceDate != null && fredCalendarDayAge(rawSourceDate, Date.now()) != null ? rawSourceDate : null;
+  const sourceUsable = sourceDate != null;
+  const price = sourceUsable ? latest?.value ?? null : null;
+  const change = sourceUsable && latest && previous ? latest.value - previous.value : null;
+  const changePercent = change != null && previous && previous.value !== 0 ? (change / previous.value) * 100 : null;
   return {
     ...inst,
-    price: latest?.value ?? null, prevClose: previous?.value ?? null, open: null, high: null, low: null,
+    price, prevClose: sourceUsable ? previous?.value ?? null : null, open: null, high: null, low: null,
     change, changePercent, marketState: "CLOSED", sessionStatus: "CLOSED", isDelayed: true,
-    observedAt: latest?.observedAt ?? null, fetchedAt, source: "fred", destination: inst.destination,
-    freshnessState: classifyFreshness({ price: latest?.value ?? null, isDelayed: true, fetchedAt, provider: "fred", state: "CLOSED" }),
-    ...(latest ? {} : { error: "Latest verified FRED observation unavailable" }),
+    observedAt: null, observedDate: sourceDate, fetchedAt, cacheState: cacheHealthFor({ fetchedAt, provider: "fred" }), source: "fred", destination: inst.destination,
+    freshnessState: classifyFreshness({ price, isDelayed: true, fetchedAt, observedDate: sourceDate, provider: "fred", state: "CLOSED" }),
+    ...(sourceUsable ? {} : { error: "Latest verified FRED observation timestamp unavailable, invalid, or in the future" }),
   };
 }
 
@@ -191,30 +255,58 @@ function yahooItem(inst: MarketInstrument, quote: YahooQuote | undefined): Marke
     price: quote?.price ?? null, prevClose: quote?.prevClose ?? null, open: quote?.open ?? null, high: quote?.high ?? null, low: quote?.low ?? null,
     change: quote?.change ?? null, changePercent: quote?.changePercent ?? null, marketState, sessionStatus: sessionStatus(marketState),
     isDelayed: Boolean(proxySymbol) || quote?.source !== "yahoo" || (quote?.isDelayed ?? true),
-    observedAt: quote?.observedAt ?? null, fetchedAt, source: quote?.source ?? "error", destination: inst.destination,
+    observedAt: quote?.observedAt ?? null, observedDate: null, fetchedAt, cacheState: cacheHealthFor({ fetchedAt, provider: "yahoo" }), source: quote?.source ?? "error", destination: inst.destination,
     freshnessState: freshnessForYahooQuote(quote),
     ...(proxySymbol ? { proxySymbol } : {}),
     ...(quote?.error ? { error: quote.error } : {}),
   };
 }
 
-function derivedCurveItem(inst: MarketInstrument, twoYear: MarketQuoteItem | undefined, tenYear: MarketQuoteItem | undefined, fetchedAt: number): MarketQuoteItem {
-  const price = twoYear?.price != null && tenYear?.price != null ? (tenYear.price - twoYear.price) * 100 : null;
-  const observedAt = twoYear?.observedAt && tenYear?.observedAt ? Math.min(twoYear.observedAt, tenYear.observedAt) : null;
+/**
+ * A derived print is receipt-verifiable only when every input has a receipt.
+ * When both Treasury inputs do, retain the oldest so the curve cannot look
+ * fresher than either source series.
+ */
+function oldestFredReceipt(...items: Array<MarketQuoteItem | undefined>): number | null {
+  const receipts = items.map(item => validPastTimestamp(item?.fetchedAt));
+  return receipts.length === items.length && receipts.every((receipt): receipt is number => receipt != null)
+    ? Math.min(...receipts)
+    : null;
+}
+
+function derivedCurveItem(inst: MarketInstrument, twoYear: MarketQuoteItem | undefined, tenYear: MarketQuoteItem | undefined): MarketQuoteItem {
+  const fetchedAt = oldestFredReceipt(twoYear, tenYear);
+  const inputsAvailable = twoYear?.price != null && tenYear?.price != null
+    && twoYear.freshnessState !== "UNAVAILABLE" && tenYear.freshnessState !== "UNAVAILABLE";
+  const price = inputsAvailable && tenYear?.price != null && twoYear?.price != null
+    ? (tenYear.price - twoYear.price) * 100 : null;
+  const observedDate = twoYear?.observedDate && tenYear?.observedDate
+    ? (twoYear.observedDate < tenYear.observedDate ? twoYear.observedDate : tenYear.observedDate)
+    : null;
+  const freshnessState: FreshnessState = price == null
+    ? "UNAVAILABLE"
+    : twoYear?.freshnessState === "STALE" || tenYear?.freshnessState === "STALE"
+      ? "STALE"
+      : "LATEST_VERIFIED";
   return {
     ...inst, price, prevClose: null, open: null, high: null, low: null, change: null, changePercent: null,
-    marketState: "CLOSED", sessionStatus: "CLOSED", isDelayed: true, observedAt, fetchedAt, source: "derived:FRED", destination: inst.destination,
-    freshnessState: price == null ? "UNAVAILABLE" : "LATEST_VERIFIED",
+    marketState: "CLOSED", sessionStatus: "CLOSED", isDelayed: true, observedAt: null, observedDate, fetchedAt,
+    cacheState: cacheHealthFor({ fetchedAt, provider: "fred" }), source: "derived:FRED", destination: inst.destination,
+    freshnessState,
     ...(price == null ? { error: "2Y/10Y curve requires both latest verified Treasury yields" } : {}),
   };
 }
 
-function cryptoGlobalItem(inst: MarketInstrument, value: number | null, changePercent: number | null, fetchedAt: number): MarketQuoteItem {
+function cryptoGlobalItem(inst: MarketInstrument, value: number | null, changePercent: number | null, observedAt: number | null, fetchedAt: number | null): MarketQuoteItem {
+  const sourceObservedAt = validPastTimestamp(observedAt);
+  const receiptAt = validPastTimestamp(fetchedAt);
+  const price = sourceObservedAt == null ? null : value;
   return {
-    ...inst, price: value, prevClose: null, open: null, high: null, low: null, change: null, changePercent,
-    marketState: "REGULAR", sessionStatus: "OPEN", isDelayed: false, observedAt: value == null ? null : fetchedAt, fetchedAt, source: "coingecko", destination: inst.destination,
-    freshnessState: classifyFreshness({ price: value, isDelayed: false, fetchedAt, provider: "coingecko", state: "REGULAR" }),
-    ...(value == null ? { error: "Latest verified CoinGecko global metric unavailable" } : {}),
+    ...inst, price, prevClose: null, open: null, high: null, low: null, change: null, changePercent: price == null ? null : changePercent,
+    marketState: "REGULAR", sessionStatus: "OPEN", isDelayed: false, observedAt: sourceObservedAt, observedDate: null, fetchedAt: receiptAt,
+    cacheState: cacheHealthFor({ fetchedAt: receiptAt, provider: "coingecko" }), source: "coingecko", destination: inst.destination,
+    freshnessState: classifyFreshness({ price, isDelayed: false, fetchedAt: receiptAt, observedAt: sourceObservedAt, provider: "coingecko", state: "REGULAR" }),
+    ...(price == null ? { error: "Latest verified CoinGecko global observation timestamp unavailable, invalid, or in the future" } : {}),
   };
 }
 
@@ -272,12 +364,15 @@ export async function getGlobalMarketSnapshot(force = false): Promise<GlobalMark
   const items: MarketQuoteItem[] = [];
   for (const inst of GLOBAL_INSTRUMENTS) {
     if (inst.provider === "yahoo") items.push(yahooItem(inst, quoteMap.get(inst.symbol)));
-    if (inst.provider === "fred") items.push(fredItem(inst, fred?.results[inst.symbol.replace("FRED:", "")]?.observations ?? [], fetchedAt));
+    if (inst.provider === "fred") {
+      const result = fred?.results[inst.symbol.replace("FRED:", "")];
+      items.push(fredItem(inst, result?.observations ?? [], fredReceiptTimestamp(result)));
+    }
   }
   const twoYear = items.find(item => item.symbol === "FRED:DGS2");
   const tenYear = items.find(item => item.symbol === "FRED:DGS10");
   const curve = GLOBAL_INSTRUMENTS.find(item => item.symbol === "DERIVED:2Y10Y");
-  if (curve) items.push(derivedCurveItem(curve, twoYear, tenYear, fetchedAt));
+  if (curve) items.push(derivedCurveItem(curve, twoYear, tenYear));
   const totalCap = GLOBAL_INSTRUMENTS.find(item => item.symbol === "CG:TOTAL_MC");
   const btcDom = GLOBAL_INSTRUMENTS.find(item => item.symbol === "CG:BTC_DOM");
   const totalMarketCapTrillions = typeof global?.totalMarketCap === "number" && Number.isFinite(global.totalMarketCap)
@@ -286,8 +381,8 @@ export async function getGlobalMarketSnapshot(force = false): Promise<GlobalMark
   const marketCapChange = typeof global?.marketCapChangePercent24h === "number" && Number.isFinite(global.marketCapChangePercent24h)
     ? global.marketCapChangePercent24h
     : null;
-  if (totalCap) items.push(cryptoGlobalItem(totalCap, totalMarketCapTrillions, marketCapChange, global?.fetchedAt ?? fetchedAt));
-  if (btcDom) items.push(cryptoGlobalItem(btcDom, global?.btcDominance ?? null, null, global?.fetchedAt ?? fetchedAt));
+  if (totalCap) items.push(cryptoGlobalItem(totalCap, totalMarketCapTrillions, marketCapChange, global?.observedAt ?? null, global?.fetchedAt ?? null));
+  if (btcDom) items.push(cryptoGlobalItem(btcDom, global?.btcDominance ?? null, null, global?.observedAt ?? null, global?.fetchedAt ?? null));
 
   const rankable = items.filter(item => isFiniteNumber(item.changePercent) && !["rates", "volatility"].includes(item.category) && item.freshnessState !== "STALE");
   const ranked = [...rankable].sort((a, b) => b.changePercent! - a.changePercent!);
@@ -305,7 +400,7 @@ export const marketsRouter = router({
       failedInstruments: snapshot.items.filter(item => item.freshnessState === "UNAVAILABLE").map(item => ({ symbol: item.symbol, error: item.error ?? "Unavailable" })),
       staleInstruments: snapshot.items.filter(item => item.freshnessState === "STALE").map(item => item.symbol),
       delayedInstruments: snapshot.items.filter(item => item.freshnessState === "DELAYED").map(item => item.symbol),
-      lastSuccessfulUpdate: snapshot.items.filter(item => item.price != null).reduce((latest, item) => Math.max(latest, item.fetchedAt), 0),
+      lastSuccessfulUpdate: snapshot.items.filter(item => item.price != null).reduce((latest, item) => Math.max(latest, item.fetchedAt ?? 0), 0),
     };
   }),
 });

@@ -407,6 +407,16 @@ describe("frozen classification and diversity guard", () => {
     expect(view.chronology.find(item => item.assessmentKey === "shown-s")?.scenarios[0]?.invalidation).toBe(scenarios[0]!.invalidation);
   });
 
+  it("does not render a stored resolution label that conflicts with the frozen classification", () => {
+    const row = withStatus("stored-label-conflict", RESOLUTION_SUPPORTED);
+    row.resolutions[0]!.status = RESOLUTION_CONTRADICTED;
+
+    const chronology = buildPublicTrackRecord([row]).chronology[0]!;
+
+    expect(chronology.currentStatus).toBe(RESOLUTION_SUPPORTED);
+    expect(chronology.resolutions.map(item => item.status)).toEqual([RESOLUTION_SUPPORTED]);
+  });
+
   it("withholds rates when the sample is one day, one regime, or one canonical state", () => {
     expect(DIVERSITY_GUARD.minimumDistinctUtcDates).toBe(5);
     const oneDay = Array.from({ length: 30 }, (_, index) => withStatus(`day-${index}`, index < 20 ? RESOLUTION_SUPPORTED : RESOLUTION_CONTRADICTED, {

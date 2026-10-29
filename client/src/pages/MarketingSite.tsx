@@ -198,11 +198,11 @@ function Hero({ showStory = false }: { showStory?: boolean }) {
             </span>
             <span className="mt-4 block h-px w-16 bg-[#65D6E5] sm:mt-6 sm:w-24" aria-hidden="true" />
             <span className="mt-4 block max-w-4xl text-[1.85rem] font-bold leading-[1.08] tracking-[-0.04em] text-white sm:mt-6 sm:text-5xl lg:text-[2.75rem] xl:text-6xl">
-              See the pressure before the break.
+              Before you take a position, know where you stand.
             </span>
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-[1.75] text-[#E3E5E8] sm:text-xl lg:mt-5 lg:text-lg xl:text-xl">
-            FAULTLINE monitors credit, liquidity, rates, macro conditions, equities and crypto together to show where systemic pressure is building.
+            Understand market conditions, developing pressure, and the evidence behind your next decision.
           </p>
           <p className="mt-4 max-w-2xl text-base leading-[1.75] text-[#B7C1CD]">
             Built on the <a href="#thesis" className={`font-semibold text-white underline decoration-[#65D6E5]/60 underline-offset-4 hover:decoration-[#65D6E5] ${focusRing}`}>Pentagonal Thesis™</a>: what is happening, why, what could come next, what to watch, and how to frame a decision. It does not claim to know that a crash will happen.
@@ -358,8 +358,8 @@ const capabilityModules = [
     links: [["How alignment works", "/methodology#cross-market"], ["Data sources", "/methodology#sources"]],
   },
   {
-    title: "Daily intelligence",
-    body: "A written brief generated from the engine snapshot, a public archive, and long-form research on the blog.",
+    title: "Research and public records",
+    body: "The public archive and long-form research provide context when published. Availability and timestamps are shown on their respective pages.",
     links: [["Daily brief", DAILY_BRIEF_HREF], ["Blog", BLOG_HREF]],
   },
 ] as const;
@@ -369,7 +369,7 @@ function Capabilities() {
     <section id="stack" className="scroll-mt-24 border-y border-white/[0.06] bg-[#070A0F] py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <SectionLabel>CAPABILITIES</SectionLabel>
-        <h2 className="max-w-3xl text-3xl font-semibold tracking-[-0.035em] text-white sm:text-5xl">Three things FAULTLINE does every day.</h2>
+        <h2 className="max-w-3xl text-3xl font-semibold tracking-[-0.035em] text-white sm:text-5xl">Three ways to explore FAULTLINE.</h2>
         <div className="mt-12 grid gap-4 lg:grid-cols-3">
           {capabilityModules.map((module) => (
             <article key={module.title} className="flex flex-col rounded-2xl border border-white/[0.08] bg-[#0A1018] p-6">
@@ -415,6 +415,7 @@ function TrustTeaser() {
         <div>
           <SectionLabel>TRUST AND METHODOLOGY</SectionLabel>
           <h2 className="text-3xl font-semibold tracking-[-0.035em] text-white sm:text-5xl">Built to be checked.</h2>
+          <p className="mt-5 max-w-2xl text-lg leading-[1.75] text-[#E3E5E8]">We show our evidence, preserve our history, and make our analysis accountable, including when we're wrong.</p>
           <ul className="mt-8 grid gap-3">
             {trustPoints.map((point) => (
               <li key={point} className="rounded-lg border border-white/[0.08] bg-white/[0.02] px-5 py-4 text-base leading-[1.75] text-[#E3E5E8]">{point}</li>
@@ -450,7 +451,7 @@ function FinalCta() {
       <div className="pointer-events-none absolute inset-0 bg-[#0A0D12]/72" aria-hidden="true" />
       <div className="relative mx-auto max-w-4xl px-5 text-center sm:px-8">
         <h2 className="text-3xl font-semibold leading-tight tracking-[-0.04em] text-white sm:text-5xl">
-          THE MARKET IS A SYSTEM. UNDERSTAND THE PRESSURE BUILDING BENEATH IT.
+          This isn’t your grandpa’s financial dashboard.
         </h2>
         <div className="mt-10"><MembershipOffer /></div>
         <p className="mx-auto mt-6 max-w-2xl text-sm leading-[1.75] text-[#C9D4E0]">

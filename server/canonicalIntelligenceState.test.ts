@@ -45,6 +45,27 @@ describe("Phase 2 canonical intelligence state", () => {
     expect(state.engines[0]).toMatchObject({ engineId: "liquidity-stress", freshnessStatus: "STALE", qualityStatus: "PARTIAL" });
   });
 
+  it("derives stale and unavailable input evidence from inputQuality when redundant manifest lists are absent", () => {
+    const state = buildCanonicalIntelligenceState({
+      ...base,
+      staleInputs: [],
+      unavailableInputs: [],
+      dataQualitySummary: { ...base.dataQualitySummary, staleInputs: [], unavailableInputs: [] },
+      inputQuality: [
+        { inputId: "hy", freshnessStatus: "STALE", contributesTo: ["liquidity-stress"] },
+        { inputId: "funding", freshnessStatus: "UNAVAILABLE", contributesTo: ["liquidity-stress"] },
+      ],
+    });
+    expect(state.confidenceOrEvidenceQuality).toBe("UNAVAILABLE");
+    expect(state.staleInputs).toEqual(["hy"]);
+    expect(state.unavailableInputs).toEqual(["funding"]);
+    expect(state.engines[0]).toMatchObject({ freshnessStatus: "UNAVAILABLE", qualityStatus: "UNAVAILABLE" });
+    expect(state.conflicts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ conflictType: "STALE_INPUT", components: ["hy"] }),
+      expect.objectContaining({ conflictType: "UNAVAILABLE_INPUT", components: ["funding"] }),
+    ]));
+  });
+
   it("does not let an unrelated delayed macro input downgrade a healthy liquidity engine", () => {
     const state = buildCanonicalIntelligenceState(base);
     expect(state.confidenceOrEvidenceQuality).toBe("PARTIAL");

@@ -514,7 +514,7 @@ function WatchlistButton({ symbol, name }: { symbol: string; name: string }) {
       </button>
       {isWatchlisted && (
         <button
-          onClick={() => navigate("/crypto-watchlist")}
+          onClick={() => navigate("/app/crypto-watchlist")}
           style={{
             fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px",
             letterSpacing: "0.12em", textTransform: "uppercase",

@@ -232,7 +232,7 @@ function WaitlistTab() {
 
   return (
     <div>
-      <SectionHeader title="Waitlist & Founding Requests" sub="All founding access applications — approve to grant platform access" />
+      <SectionHeader title="Waitlist & Founding Requests" sub="Review founding access applications. Approval records the decision; linked accounts require a separate tier grant." />
 
       {/* Filter tabs */}
       <div style={{ display: "flex", gap: "8px", marginBottom: "20px", flexWrap: "wrap" }}>
@@ -557,29 +557,32 @@ function UsersTab() {
 
 function HealthTab() {
   const { data: pressure } = trpc.pressure.getCurrentPressure.useQuery(undefined, { staleTime: 60_000 });
+  const { data: runtimeDiagnostics, isLoading: diagnosticsLoading, isError: diagnosticsError } = trpc.admin.getRuntimeDiagnostics.useQuery(undefined, { staleTime: 60_000 });
+  const configuration = new Map<string, boolean>(runtimeDiagnostics?.configuration.map(check => [check.key, check.configured]));
+  const configurationStatus = (key: string) => {
+    if (diagnosticsLoading) return { status: "CHECKING", color: "rgba(251,191,36,0.9)" };
+    const configured = configuration.get(key);
+    if (configured === undefined) return { status: diagnosticsError ? "UNAVAILABLE" : "NOT REPORTED", color: "rgba(255,45,85,0.8)" };
+    return configured
+      ? { status: "CONFIGURED", color: "rgba(0,212,255,0.9)" }
+      : { status: "NOT CONFIGURED", color: "rgba(251,191,36,0.9)" };
+  };
 
   const dataSourceStatus = [
-    { name: "FAULTLINE Pressure Engine", status: pressure ? "ONLINE" : "LOADING", color: pressure ? "rgba(0,212,255,0.9)" : "rgba(251,191,36,0.9)" },
-    { name: "FRED Economic Data", status: "ONLINE", color: "rgba(0,212,255,0.9)" },
-    { name: "Yahoo Finance Proxy", status: "ONLINE", color: "rgba(0,212,255,0.9)" },
-    { name: "CoinGecko Crypto API", status: "ONLINE", color: "rgba(0,212,255,0.9)" },
-    { name: "Signals Classification Engine", status: "ONLINE", color: "rgba(0,212,255,0.9)" },
-    { name: "Aftershock Engine™", status: "ONLINE", color: "rgba(0,212,255,0.9)" },
-    { name: "Crypto Intelligence Engine", status: "ONLINE", color: "rgba(0,212,255,0.9)" },
-    { name: "AI Diagnostic Engine", status: "ONLINE", color: "rgba(0,212,255,0.9)" },
-    { name: "Database (TiDB)", status: "ONLINE", color: "rgba(0,212,255,0.9)" },
-    { name: "OAuth Authentication", status: "ONLINE", color: "rgba(0,212,255,0.9)" },
+    { name: "FAULTLINE Pressure Engine", status: pressure ? "DATA RETURNED" : "UNAVAILABLE", color: pressure ? "rgba(0,212,255,0.9)" : "rgba(251,191,36,0.9)" },
+    { name: "FRED Economic Data", ...configurationStatus("FRED_API_KEY") },
+    { name: "Yahoo Finance Proxy", status: "NOT PROBED", color: "rgba(251,191,36,0.9)" },
+    { name: "CoinGecko Crypto API", ...configurationStatus("COINGECKO_API_KEY") },
+    { name: "Signals Classification Engine", status: "NOT PROBED", color: "rgba(251,191,36,0.9)" },
+    { name: "Aftershock Engine™", status: "NOT PROBED", color: "rgba(251,191,36,0.9)" },
+    { name: "Crypto Intelligence Engine", status: "NOT PROBED", color: "rgba(251,191,36,0.9)" },
+    { name: "AI Diagnostic Engine", ...configurationStatus("BUILT_IN_FORGE_API_KEY") },
+    { name: "Database (TiDB)", ...configurationStatus("DATABASE_URL") },
+    { name: "OAuth Authentication", ...configurationStatus("OAUTH_SERVER_URL") },
+    { name: "Error Monitoring (Sentry)", ...configurationStatus("SENTRY_DSN") },
   ];
 
-  const envChecks = [
-    { name: "JWT_SECRET", ok: true },
-    { name: "DATABASE_URL", ok: true },
-    { name: "BUILT_IN_FORGE_API_KEY", ok: true },
-    { name: "POLYGON_API_KEY", ok: true },
-    { name: "COINGECKO_API_KEY", ok: true },
-    { name: "VITE_APP_ID", ok: true },
-    { name: "OAUTH_SERVER_URL", ok: true },
-  ];
+  const envChecks = runtimeDiagnostics?.configuration ?? [];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
@@ -598,7 +601,7 @@ function HealthTab() {
 
       {/* Data Sources */}
       <div>
-        <SectionHeader title="Data Sources & Services" sub="Platform component health status" />
+        <SectionHeader title="Data Sources & Services" sub="Configuration presence and latest pressure response only — this view does not probe provider health." />
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {dataSourceStatus.map((src, i) => (
             <div key={i} style={{
@@ -618,17 +621,17 @@ function HealthTab() {
 
       {/* Environment */}
       <div>
-        <SectionHeader title="Environment Variables" sub="Required secrets and configuration" />
+        <SectionHeader title="Runtime Configuration" sub="Presence only; secret values are never displayed. This is not a provider availability check." />
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-          {envChecks.map((e, i) => (
-            <div key={i} style={{
+          {envChecks.map(e => (
+            <div key={e.key} style={{
               ...MONO, fontSize: "10px", letterSpacing: "0.08em",
               padding: "6px 12px", borderRadius: "6px",
-              background: e.ok ? "rgba(0,212,255,0.06)" : "rgba(255,45,85,0.06)",
-              border: `1px solid ${e.ok ? "rgba(0,212,255,0.2)" : "rgba(255,45,85,0.2)"}`,
-              color: e.ok ? "rgba(0,212,255,0.8)" : "rgba(255,45,85,0.8)",
+              background: e.configured ? "rgba(0,212,255,0.06)" : "rgba(251,191,36,0.06)",
+              border: `1px solid ${e.configured ? "rgba(0,212,255,0.2)" : "rgba(251,191,36,0.2)"}`,
+              color: e.configured ? "rgba(0,212,255,0.8)" : "rgba(251,191,36,0.8)",
             }}>
-              {e.ok ? "✓" : "✗"} {e.name}
+              {e.configured ? "✓ CONFIGURED" : "— NOT CONFIGURED"} {e.key}
             </div>
           ))}
         </div>

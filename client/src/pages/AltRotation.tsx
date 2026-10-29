@@ -912,7 +912,7 @@ function AltRotationInner() {
           <div className="text-xs font-mono text-zinc-600">
             DATA: {d.dataSource} · <AltRotationFreshness observedAtMs={null} /> · CACHE: 3 MIN
           </div>
-          <Link href="/app/crypto-intel"
+          <Link href="/app/crypto"
             className="text-xs font-mono text-zinc-500 hover:text-zinc-300 transition-colors">
             → CRYPTO INTEL
           </Link>

@@ -85,6 +85,18 @@ export interface CoinMarketData {
   distanceFromAth: number | null; // % below ATH; null when price was not supplied
 }
 
+/**
+ * Top-markets response metadata. `fetchedAt` is the adapter receipt/cache-write
+ * time, not a provider observation time; individual assets retain CoinGecko's
+ * `lastUpdated` provider field. A failed upstream call has no fetch timestamp.
+ */
+export interface CoinMarketsSnapshot {
+  coins: CoinMarketData[];
+  fetchedAt: number | null;
+  cached: boolean;
+  source: "coingecko";
+}
+
 export interface GlobalStats {
   totalMarketCap: number | null;
   totalVolume24h: number | null;
@@ -478,12 +490,14 @@ export async function getCoinMarketData(idOrSymbol: string): Promise<CoinMarketD
   });
 }
 
-export async function getTopMarkets(limit = 50): Promise<CoinMarketData[]> {
+export async function getTopMarketsSnapshot(limit = 50): Promise<CoinMarketsSnapshot> {
   const key = `top_${limit}`;
   const cached = marketCache.peek(key);
-  if (cached) return cached.value;
+  if (cached) {
+    return { coins: cached.value, fetchedAt: cached.fetchedAt, cached: true, source: "coingecko" };
+  }
 
-  return dedupe<CoinMarketData[]>(`markets:${limit}`, async () => {
+  const coins = await dedupe<CoinMarketData[]>(`markets:${limit}`, async () => {
     try {
       interface RawMarketItem {
         [key: string]: unknown;
@@ -504,6 +518,16 @@ export async function getTopMarkets(limit = 50): Promise<CoinMarketData[]> {
       return [];
     }
   });
+
+  // Read cache metadata instead of generating a response-time timestamp. When
+  // the provider fetch failed no value was cached, so freshness is unknown.
+  const stored = marketCache.peek(key);
+  return { coins, fetchedAt: stored?.fetchedAt ?? null, cached: false, source: "coingecko" };
+}
+
+/** Existing internal callers consume only the normalized asset array. */
+export async function getTopMarkets(limit = 50): Promise<CoinMarketData[]> {
+  return (await getTopMarketsSnapshot(limit)).coins;
 }
 
 export async function getGlobalStats(): Promise<GlobalStats | null> {
@@ -754,8 +778,7 @@ export function registerCoinGeckoProxy(app: Express) {
   // Top markets
   app.get("/api/crypto/markets", async (_req: Request, res: Response) => {
     try {
-      const coins = await getTopMarkets(50);
-      res.json({ coins, fetchedAt: Date.now() });
+      res.json(await getTopMarketsSnapshot(50));
     } catch (err) {
       log.error("[CoinGecko] /markets error", { err: err instanceof Error ? err.message : String(err) });
       res.status(500).json({ error: "Markets fetch failed" });

@@ -32,6 +32,10 @@ const methodology = read("client/src/pages/Methodology.tsx");
 const fullInventory = read("client/src/components/methodology/FullInventory.tsx");
 const inventorySource = read("client/src/content/methodologyInventory.ts");
 const app = read("client/src/App.tsx");
+const publicLanding = read("client/src/pages/PublicLandingPage.tsx");
+const seoLanding = read("client/src/pages/SEOLandingPage.tsx");
+const publicSignals = read("client/src/pages/PublicSignals.tsx");
+const publicSituationRoom = read("client/src/pages/PublicSituationRoom.tsx");
 
 describe("Marketing page positioning guardrails", () => {
   it("contains one canonical hero and the systemic-risk positioning", () => {
@@ -42,6 +46,13 @@ describe("Marketing page positioning guardrails", () => {
     expect(page).toContain("VIEW METHODOLOGY");
     expect(page).toContain('const EXPLORE_HREF = "/pressure-index"');
     expect(page).toContain('const METHOD_HREF = "/methodology"');
+  });
+
+  it("keeps the approved hero, accountability, and closing copy visible", () => {
+    expect(page).toContain("Before you take a position, know where you stand.");
+    expect(page).toContain("Understand market conditions, developing pressure, and the evidence behind your next decision.");
+    expect(page).toContain("We show our evidence, preserve our history, and make our analysis accountable, including when we're wrong.");
+    expect(page).toContain("This isn’t your grandpa’s financial dashboard.");
   });
 
   it("does not present unsupported historical warnings or competing score claims", () => {
@@ -104,6 +115,28 @@ describe("Landing page structure", () => {
     expect(page).toContain("function SignInCta");
     expect(page).toContain("handleLoginCtaClick");
     expect(page).not.toMatch(/href=\{getLoginUrl\(\)\}/);
+  });
+});
+
+describe("Public conversion framing", () => {
+  it("does not label the pricing page as a member login or route its public nav CTA into the gated app", () => {
+    for (const template of [publicLanding, seoLanding]) {
+      expect(template).toContain("MEMBERSHIP DETAILS");
+      expect(template).not.toContain("MEMBER LOGIN");
+      expect(template).toContain('href="/pressure-index"');
+      expect(template).toContain("PUBLIC PRESSURE INDEX");
+      expect(template).toContain("Checkout remains unavailable; no payment is taken.");
+      expect(template).toContain("{ctaLabel} →");
+    }
+  });
+
+  it("contains public signal and decision-route copy within access and evidence boundaries", () => {
+    expect(publicSignals).toContain("MEMBER ROUTE");
+    expect(publicSignals).toContain("subject to existing membership and access controls");
+    expect(publicSignals).not.toContain("before the rotation becomes obvious");
+    expect(publicSituationRoom).toContain("MEMBER ROUTE");
+    expect(publicSituationRoom).toContain("does not guarantee an outcome");
+    expect(publicSituationRoom).not.toContain("institutional desks do internally");
   });
 });
 

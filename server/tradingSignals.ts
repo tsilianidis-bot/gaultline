@@ -142,6 +142,30 @@ const SIGNAL_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 // Max 1000 entries (one per ticker:regime:price combo) — LRU evicts oldest
 const signalCache = new LRUCache<string, SignalCacheEntry>(1000, SIGNAL_CACHE_TTL_MS);
 
+/**
+ * A cached result is valid only for the exact inputs that feed its indicators,
+ * score, levels, and regime adjustment. Ticker, price, and bar count alone
+ * would reuse a prior indicator calculation after revised bars or a regime
+ * score change.
+ */
+function signalCacheKey(input: TradingSignalsInput, regime: RegimeInput): string {
+  return JSON.stringify([
+    input.ticker,
+    input.price,
+    input.open,
+    input.high,
+    input.low,
+    input.changePercent,
+    input.volumeMillions,
+    input.avgVolume,
+    input.sparkline,
+    input.relativeStrength,
+    input.dailyBars?.map(bar => [bar.close, bar.open, bar.high, bar.low, bar.volume, bar.timestamp]) ?? null,
+    regime.label,
+    regime.score,
+  ]);
+}
+
 // ── EMA helper ────────────────────────────────────────────────
 
 /**
@@ -561,7 +585,7 @@ export function computeTradingSignal(
   input: TradingSignalsInput,
   regime: RegimeInput
 ): TradingSignalResult {
-  const cacheKey = `${input.ticker}:${regime.label}:${input.price}:${input.dailyBars?.length ?? 0}`;
+  const cacheKey = signalCacheKey(input, regime);
   const cached = signalCache.peek(cacheKey);
   if (cached) {
     return cached.value.result;

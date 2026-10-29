@@ -832,24 +832,30 @@ export function buildPublicTrackRecord(
   const chronology: PublicChronologyItem[] = visible
     .slice()
     .sort((a, b) => a.assessedAt.localeCompare(b.assessedAt) || a.assessmentKey.localeCompare(b.assessmentKey))
-    .map(row => ({
-      assessmentKey: row.assessmentKey,
-      provenance: row.provenance,
-      provenanceLabel: provenanceLabel(row),
-      exampleData: row.exampleData,
-      assessedAt: row.assessedAt,
-      summary: row.summary,
-      pressureIndex: row.pressureIndex,
-      regime: row.regime,
-      scenarios: row.scenarios.map(scenario => ({ id: scenario.id, expectation: scenario.expectation, invalidation: scenario.invalidation })),
-      supportingObservations: row.supportingObservations.map(item => ({ ...item })),
-      developments: row.developments.map(item => ({ observedAt: item.observedAt, statement: item.statement })),
-      resolutions: row.resolutions.map(item => ({ resolvedAt: item.resolvedAt, status: item.status, statement: item.statement })),
-      evidenceReferences: row.evidenceReferences.map(item => ({ ...item })),
-      registryVersionId: row.registryVersionId,
-      registryContentHash: row.registryContentHash,
-      currentStatus: currentStatus(row),
-    }));
+    .map(row => {
+      // A stored resolution label is audit context, not an outcome input. The
+      // public surface must use the frozen-rule classification everywhere so a
+      // stale or inconsistent stored label cannot misstate the result.
+      const status = currentStatus(row);
+      return {
+        assessmentKey: row.assessmentKey,
+        provenance: row.provenance,
+        provenanceLabel: provenanceLabel(row),
+        exampleData: row.exampleData,
+        assessedAt: row.assessedAt,
+        summary: row.summary,
+        pressureIndex: row.pressureIndex,
+        regime: row.regime,
+        scenarios: row.scenarios.map(scenario => ({ id: scenario.id, expectation: scenario.expectation, invalidation: scenario.invalidation })),
+        supportingObservations: row.supportingObservations.map(item => ({ ...item })),
+        developments: row.developments.map(item => ({ observedAt: item.observedAt, statement: item.statement })),
+        resolutions: row.resolutions.map(item => ({ resolvedAt: item.resolvedAt, status, statement: item.statement })),
+        evidenceReferences: row.evidenceReferences.map(item => ({ ...item })),
+        registryVersionId: row.registryVersionId,
+        registryContentHash: row.registryContentHash,
+        currentStatus: status,
+      };
+    });
 
   return {
     schema: ACCOUNTABILITY_SCHEMA,

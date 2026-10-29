@@ -49,10 +49,20 @@ export interface FredSeriesResult {
   observations: FredObservation[];
   cached: boolean;
   error?: string;
+  /**
+   * Local receipt time for this specific successful upstream response. Optional
+   * for backward-compatible consumers; null/absent means no receipt exists.
+   * This is deliberately not synthesized for failed or empty responses.
+   */
+  fetchedAt?: number | null;
 }
 
 export interface FredBulkResult {
   results: Record<string, FredSeriesResult>;
+  /**
+   * Compatibility-only bulk composition time. It is the time this aggregate
+   * was assembled, not the receipt time for every series in `results`.
+   */
   timestamp: string;
 }
 
@@ -115,6 +125,9 @@ async function fetchOneSeries(
         continue;
       }
 
+      // Preserve the moment this upstream response was actually received. It
+      // belongs only to a validated successful series result, never an error.
+      const fetchedAt = Date.now();
       const data = await res.json() as { observations: FredObservation[] };
 
       if (!data.observations || data.observations.length === 0) {
@@ -122,7 +135,7 @@ async function fetchOneSeries(
         return { observations: [], cached: false, error: "empty observations" };
       }
 
-      return { observations: data.observations, cached: false };
+      return { observations: data.observations, cached: false, fetchedAt };
     } catch (err) {
       lastErr = err;
       log.warn(`[FRED Client] ${seriesId} attempt ${attempt}/${maxAttempts} failed`, { err: err as Error });
@@ -170,7 +183,9 @@ export async function fetchFredSeries(
 
 /**
  * Fetch multiple FRED series concurrently.
- * Returns a FredBulkResult — same shape as the old HTTP response.
+ * Returns a FredBulkResult — same shape as the old HTTP response. `timestamp`
+ * remains a compatibility-only composition time; consumers needing a source
+ * receipt must read each successful result's `fetchedAt`.
  * Never throws; failed series are recorded in result.error.
  */
 export async function fetchFredBulk(

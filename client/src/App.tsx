@@ -712,6 +712,11 @@ function Router() {
       <Route path="/altcoin-season-index"><Redirect to="/alt-season-indicator" /></Route>
       <Route path="/stock-market-today"><Redirect to="/stock-market-risk-today" /></Route>
       <Route path="/market-briefing"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
+      {/* Preserve legacy crypto links while customer controls use the authenticated routes. */}
+      <Route path="/crypto-search"><Redirect to="/app/crypto-search" /></Route>
+      <Route path="/crypto-watchlist"><Redirect to="/app/crypto-watchlist" /></Route>
+      <Route path="/asha"><Redirect to="/app/asha" /></Route>
+      <Route path="/dashboard"><Redirect to="/app/dashboard" /></Route>
       {/* Root / — unauthenticated users see the public marketing page;
            authenticated users are redirected to the canonical home dashboard.
            The cinematic render gate (first-time visitors) still intercepts before
@@ -795,6 +800,7 @@ function Router() {
 	              <Route path="/app/signals" component={Signals} />
 	              <Route path="/app/markets" component={Markets} />
 		              <Route path="/app/portfolio" component={Portfolio} />
+			              <Route path="/app/crypto-intel"><Redirect to="/app/crypto" /></Route>
 		              <Route path="/app/crypto" component={CryptoHub} />
 		              <Route path="/app/crypto-search" component={CryptoSearch} />
 		              <Route path="/app/crypto-watchlist" component={CryptoWatchlist} />

@@ -24,6 +24,26 @@ type StoredManifest = Record<string, any>;
  */
 const STATIC_TREND_ENGINES = new Set(["ai-bubble"]);
 
+function inputIds(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((id): id is string => typeof id === "string" && id.length > 0)
+    : [];
+}
+
+function uniqueInputIds(...lists: string[][]): string[] {
+  return Array.from(new Set(lists.flat()));
+}
+
+function freshnessInputIds(manifest: StoredManifest, listKey: "staleInputs" | "delayedInputs" | "fallbackInputs" | "unavailableInputs", status: string): string[] {
+  const summary = manifest.dataQualitySummary ?? {};
+  const inputQuality = Array.isArray(manifest.inputQuality) ? manifest.inputQuality : [];
+  const derived = inputQuality
+    .filter((input: any) => String(input.freshnessStatus ?? "").toUpperCase() === status)
+    .map((input: any) => input.inputId)
+    .filter((inputId: unknown): inputId is string => typeof inputId === "string" && inputId.length > 0);
+  return uniqueInputIds(inputIds(manifest[listKey]), inputIds(summary[listKey]), derived);
+}
+
 /** Engine vector trends describe stress: rising stress = Deteriorating (shared/snapshotEvidence.ts). */
 function direction(value: unknown, engineId?: string): CanonicalDirection {
   if (engineId && STATIC_TREND_ENGINES.has(engineId)) return "Unknown";
@@ -31,16 +51,11 @@ function direction(value: unknown, engineId?: string): CanonicalDirection {
 }
 
 function quality(manifest: StoredManifest): CanonicalQualityStatus {
-  const summary = manifest.dataQualitySummary ?? {};
   const inputQuality = Array.isArray(manifest.inputQuality) ? manifest.inputQuality : [];
-  const derivedDelayedInputs = inputQuality.filter((input: any) => String(input.freshnessStatus).toUpperCase() === "DELAYED");
-  const derivedStaleInputs = inputQuality.filter((input: any) => String(input.freshnessStatus).toUpperCase() === "STALE");
-  const unavailable = Array.isArray(manifest.unavailableInputs)
-    ? manifest.unavailableInputs
-    : Array.isArray(summary.unavailableInputs) ? summary.unavailableInputs : [];
-  const fallback = Array.isArray(manifest.fallbackInputs)
-    ? manifest.fallbackInputs
-    : Array.isArray(summary.fallbackInputs) ? summary.fallbackInputs : [];
+  const unavailable = freshnessInputIds(manifest, "unavailableInputs", "UNAVAILABLE");
+  const fallback = freshnessInputIds(manifest, "fallbackInputs", "FALLBACK");
+  const stale = freshnessInputIds(manifest, "staleInputs", "STALE");
+  const delayed = freshnessInputIds(manifest, "delayedInputs", "DELAYED");
   const requiredUnavailable = unavailable.filter((inputId: string) => {
     const input = inputQuality.find((candidate: any) => candidate.inputId === inputId);
     return !input || input.required !== false;
@@ -48,13 +63,7 @@ function quality(manifest: StoredManifest): CanonicalQualityStatus {
   if (manifest.coherenceStatus === "UNAVAILABLE" || requiredUnavailable.length > 0) return "UNAVAILABLE";
   if (unavailable.length > 0) return "PARTIAL";
   if (fallback.length > 0 || manifest.coherenceStatus === "EXPLICIT_MISMATCH") return "DEGRADED";
-  if (
-    (summary.staleInputs?.length ?? 0) > 0
-    || (summary.delayedInputs ?? 0) > 0
-    || (summary.staticInputs?.length ?? 0) > 0
-    || derivedStaleInputs.length > 0
-    || derivedDelayedInputs.length > 0
-  ) return "PARTIAL";
+  if (stale.length > 0 || delayed.length > 0 || inputIds(manifest.dataQualitySummary?.staticInputs).length > 0) return "PARTIAL";
   return "HEALTHY";
 }
 
@@ -96,10 +105,10 @@ export interface CanonicalStateBuildOptions {
 export function buildCanonicalIntelligenceState(manifest: StoredManifest, options: CanonicalStateBuildOptions = {}): CanonicalIntelligenceState {
   const inputQuality = Array.isArray(manifest.inputQuality) ? manifest.inputQuality : [];
   const stateQuality = quality(manifest);
-  const staleInputs = Array.isArray(manifest.staleInputs) ? manifest.staleInputs : [];
-  const unavailableInputs = Array.isArray(manifest.unavailableInputs) ? manifest.unavailableInputs : [];
-  const fallbackInputs = Array.isArray(manifest.fallbackInputs) ? manifest.fallbackInputs : [];
-  const delayedInputs = inputQuality.filter((input: any) => input.freshnessStatus === "DELAYED").map((input: any) => input.inputId);
+  const staleInputs = freshnessInputIds(manifest, "staleInputs", "STALE");
+  const unavailableInputs = freshnessInputIds(manifest, "unavailableInputs", "UNAVAILABLE");
+  const fallbackInputs = freshnessInputIds(manifest, "fallbackInputs", "FALLBACK");
+  const delayedInputs = freshnessInputIds(manifest, "delayedInputs", "DELAYED");
   const notes = Array.isArray(manifest.coherenceNotes) ? manifest.coherenceNotes : [];
   const inputById = new Map(inputQuality.map((input: any) => [input.inputId, input]));
   const conflicts: CanonicalStateConflict[] = [

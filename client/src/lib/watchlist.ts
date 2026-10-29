@@ -526,6 +526,25 @@ export function evaluateBreach(item: WatchlistItem, currentValue: number): boole
   return currentValue < item.thresholdValue;
 }
 
+/**
+ * Record a threshold event only when an already-observed non-breach becomes a
+ * breach. The caller supplies `undefined` for an unavailable baseline, which
+ * deliberately does not manufacture a breach event after a data gap.
+ */
+export function recordWatchlistBreachTransition(
+  item: WatchlistItem,
+  previouslyBreached: boolean | undefined,
+  isBreached: boolean,
+  observedAt = Date.now(),
+): WatchlistItem {
+  if (previouslyBreached !== false || !isBreached) return item;
+  return {
+    ...item,
+    lastBreached: observedAt,
+    breachCount: item.breachCount + 1,
+  };
+}
+
 export function getBreachDistance(item: WatchlistItem, currentValue: number, def: IndicatorDef): number {
   // Returns 0–1: how close we are to the threshold (1 = breached)
   const range = def.max - def.min;

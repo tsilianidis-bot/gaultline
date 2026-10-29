@@ -540,6 +540,13 @@
       "when": 1792300000000,
       "tag": "0076_algorithm_outcome_fk_name",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "5",
+      "when": 1793241851962,
+      "tag": "0077_governed_research_immutability",
+      "breakpoints": true
     }
   ]
 }

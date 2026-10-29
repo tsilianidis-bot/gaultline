@@ -101,11 +101,7 @@ export function TickerActionMenu({
     setOpen(false);
     // Update global Ask context so Ask FAULTLINE knows the active symbol
     setGlobalTicker(sym, displayName, resolved);
-    if (resolved === "crypto") {
-      navigate(`/crypto-search?symbol=${sym}`);
-    } else {
-      navigate(`/signals?search=${sym}`);
-    }
+    navigate(`/app/symbol-intelligence?symbol=${encodeURIComponent(sym)}&type=${resolved}&autorun=1`);
   }, [resolved, sym, displayName, navigate, setGlobalTicker]);
 
   const handleFullReading = useCallback(() => {

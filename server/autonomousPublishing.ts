@@ -316,15 +316,15 @@ function buildSchema(title: string, description: string, slug: string, published
 
 // ── Notification dispatcher ───────────────────────────────────────────────────
 
-async function notifyUsersByTier(
+export async function notifyUsersByTier(
   title: string,
   slug: string,
   category: string
-): Promise<{ notified: number; emailed: number }> {
+): Promise<{ eligible: number; emailed: number }> {
   const db = await getDb();
-  if (!db) return { notified: 0, emailed: 0 };
+  if (!db) return { eligible: 0, emailed: 0 };
 
-  let notified = 0;
+  let eligible = 0;
   let emailed = 0;
   const articleUrl = `https://getfaultline.live/intelligence/${slug}`;
 
@@ -350,8 +350,9 @@ async function notifyUsersByTier(
 
       // Pro and Founding: send email
       if ((tier === "premium" || tier === "founding") && user.email) {
+        eligible++;
         try {
-          await sendEmail({
+          const delivery = await sendEmail({
             to: user.email,
             subject: `New ${category}: ${title}`,
             html: buildBriefEmailHtml({
@@ -362,19 +363,21 @@ async function notifyUsersByTier(
               tier,
             }),
           });
-          emailed++;
+          if (delivery.success) {
+            emailed++;
+          } else {
+            console.warn(`[AutoPublish] Email was not accepted for user ${user.id}: ${delivery.error ?? "unknown delivery failure"}`);
+          }
         } catch (err) {
           console.warn(`[AutoPublish] Email failed for user ${user.id}:`, err);
         }
       }
-
-      notified++;
     }
   } catch (err) {
     console.warn("[AutoPublish] Notification dispatch error:", err);
   }
 
-  return { notified, emailed };
+  return { eligible, emailed };
 }
 
 function buildBriefEmailHtml(opts: {
@@ -417,8 +420,35 @@ function buildBriefEmailHtml(opts: {
 </html>`;
 }
 
-// ── Schedule stats updater ────────────────────────────────────────────────────
+export type PublishingAutomationGate = "active" | "inactive" | "unavailable";
 
+/**
+ * The owner-facing pause control is persisted in dailyBriefSchedule. Scheduled
+ * publishing must check it before collecting data or invoking a provider.
+ * A missing record preserves the historical default (active); an unavailable
+ * schedule store fails closed so a cron callback cannot publish blindly.
+ */
+export async function getPublishingAutomationGate(): Promise<PublishingAutomationGate> {
+  const db = await getDb();
+  if (!db) return "unavailable";
+  const [schedule] = await db.select({ isActive: dailyBriefSchedule.isActive })
+    .from(dailyBriefSchedule)
+    .limit(1);
+  return schedule?.isActive === false ? "inactive" : "active";
+}
+
+async function requireActivePublishingAutomation(res: Response): Promise<boolean> {
+  const gate = await getPublishingAutomationGate();
+  if (gate === "active") return true;
+  if (gate === "inactive") {
+    res.json({ ok: true, status: "skipped", reason: "publishing-inactive" });
+    return false;
+  }
+  res.status(503).json({ ok: false, error: "publishing-schedule-unavailable" });
+  return false;
+}
+
+// ── Schedule stats updater ────────────────────────────────────────────────────
 async function updateScheduleStats(
   status: "success" | "draft" | "skipped" | "error",
   slug: string | null,
@@ -729,6 +759,8 @@ export async function handleDailyBrief(req: Request, res: Response) {
       return res.status(403).json({ error: "cron or admin only" });
     }
 
+    if (!await requireActivePublishingAutomation(res)) return;
+
     console.log("[AutoPublish] Starting daily brief pipeline…");
 
     const engineData = await collectEngineData();
@@ -752,7 +784,7 @@ export async function handleDailyBrief(req: Request, res: Response) {
     );
 
     if (result.status === "published" && result.slug) {
-      const { notified, emailed } = await notifyUsersByTier(
+      const { eligible, emailed } = await notifyUsersByTier(
         result.slug.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
         result.slug,
         "Daily Intelligence Brief"
@@ -760,7 +792,7 @@ export async function handleDailyBrief(req: Request, res: Response) {
 
       await notifyOwner({
         title: "✅ Daily Brief Published",
-        content: `Today's Daily Intelligence Brief has been published.\n\nSlug: /intelligence/${result.slug}\nWord count: ${result.wordCount}\nQuality score: ${result.qualityScore}/100\nUsers notified: ${notified}\nEmails sent: ${emailed}\n\nPressure Index™: ${engineData.pressureScore}/100 | Regime: ${engineData.regime}`,
+        content: `Today's Daily Intelligence Brief has been published.\n\nSlug: /intelligence/${result.slug}\nWord count: ${result.wordCount}\nQuality score: ${result.qualityScore}/100\nEligible subscriber emails: ${eligible}\nEmail provider accepted: ${emailed}\n\nPressure Index™: ${engineData.pressureScore}/100 | Regime: ${engineData.regime}`,
       });
     } else if (result.status === "draft") {
       await notifyOwner({
@@ -792,6 +824,8 @@ export async function handleWeeklyReview(req: Request, res: Response) {
     if (!user.isCron && user.role !== "admin") {
       return res.status(403).json({ error: "cron or admin only" });
     }
+
+    if (!await requireActivePublishingAutomation(res)) return;
 
     console.log("[AutoPublish] Starting weekly review pipeline…");
 
@@ -833,6 +867,8 @@ export async function handleMonthlyReport(req: Request, res: Response) {
     if (!user.isCron && user.role !== "admin") {
       return res.status(403).json({ error: "cron or admin only" });
     }
+
+    if (!await requireActivePublishingAutomation(res)) return;
 
     console.log("[AutoPublish] Starting monthly report pipeline…");
 

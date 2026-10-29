@@ -1135,7 +1135,7 @@ function CryptoSignalsInner() {
               cursor: screenerQuery.isFetching ? "default" : "pointer",
             }}
           >↻ REFRESH</button>
-          <Link href="/crypto-search" style={{ textDecoration: "none" }}>
+          <Link href="/app/crypto-search" style={{ textDecoration: "none" }}>
             <button style={{
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: "8px", letterSpacing: "0.1em",

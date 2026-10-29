@@ -67,6 +67,29 @@ These SQL files exist beside the journaled twins. Drizzle Kit will **not** apply
 | schema vs prod unknown (no DB in this agent) | **IMPORTANT** — owner must diff |
 | Destructive migrate | Not done |
 
+## 0077 governed-research immutability acceptance (local implementation completeness)
+
+- **Journal placement:** `0077_governed_research_immutability` is appended as
+  idx 77 immediately after `0076_algorithm_outcome_fk_name`; no earlier journal
+  record is changed.
+- **Scope:** the migration creates the four established `BEFORE UPDATE` and
+  `BEFORE DELETE` guards for `governedResearchObservations` and
+  `governedResearchResolutions`. It does not recreate or drop data tables,
+  backfill data, modify unrelated writers, or add automatic migration at boot.
+- **Local acceptance:** an isolated MariaDB test seeds forward and reconstructed
+  history before applying the migration, verifies the preexisting rows remain,
+  exercises all four guards for both history paths, and confirms follow-up
+  inserts and an unrelated writer still succeed.
+- **Repeat and rollback policy:** Drizzle applies this creation-only migration
+  once through the journal. Do not replay its raw SQL as a retry: an existing
+  trigger is a condition to inspect, not a reason to issue `DROP TRIGGER`.
+  Removing any guard requires explicit owner/operator approval and a separately
+  reviewed rollback migration; this change does not silently disable a guard.
+- **Deployed gate:** this is local source completeness evidence only. It does
+  not prove deployed or production immutability; an authorized deployment
+  operator must confirm the journaled migration and restrictive DDL privileges
+  in the target environment.
+
 ## Related
 
 - `drizzle/meta/_journal.json`

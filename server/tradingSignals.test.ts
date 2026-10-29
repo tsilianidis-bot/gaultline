@@ -335,6 +335,29 @@ describe("signal cache", () => {
     expect(r1.action).toBe(r2.action);
     expect(r1.confidence).toBe(r2.confidence);
   });
+
+  it("does not reuse a cached indicator result when daily bars are revised with the same ticker, price, and count", () => {
+    const risingBars = Array.from({ length: 20 }, (_, i) => ({
+      close: 100 + i,
+      open: 99.5 + i,
+      high: 100.5 + i,
+      low: 99 + i,
+      volume: 1_000_000,
+      timestamp: Date.now() - (20 - i) * 86_400_000,
+    }));
+    const fallingBars = Array.from({ length: 20 }, (_, i) => ({
+      close: 120 - i,
+      open: 120.5 - i,
+      high: 121 - i,
+      low: 119.5 - i,
+      volume: 1_000_000,
+      timestamp: Date.now() - (20 - i) * 86_400_000,
+    }));
+    const first = computeTradingSignal(makeTicker({ ticker: "CACHE", dailyBars: risingBars }), MODERATE_REGIME);
+    const revised = computeTradingSignal(makeTicker({ ticker: "CACHE", dailyBars: fallingBars }), MODERATE_REGIME);
+    expect(first.technicals.rsiEstimate).toBe(100);
+    expect(revised.technicals.rsiEstimate).toBe(0);
+  });
 });
 
 // ── Edge case tests ───────────────────────────────────────────

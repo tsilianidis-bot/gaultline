@@ -306,7 +306,7 @@ export default function AdminBlog() {
     <div className="min-h-screen bg-[#080c18] text-white">
       <div className="border-b border-white/5 bg-[#0a0e1a]/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/admin">
+          <Link href="/app/admin">
             <span className="flex items-center gap-2 text-xs text-slate-400 font-['IBM_Plex_Mono'] hover:text-white transition-colors cursor-pointer">
               <ArrowLeft className="w-3.5 h-3.5" /> ADMIN
             </span>

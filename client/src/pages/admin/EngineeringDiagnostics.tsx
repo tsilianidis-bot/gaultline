@@ -242,7 +242,7 @@ export default function EngineeringDiagnostics() {
           maxWidth: "600px",
         }}>
           Internal tools for model validation, system monitoring, calibration, simulation, and audit.
-          All systems run continuously in the background — this hub provides direct access for engineering review.
+          This hub links diagnostic surfaces for engineering review; it does not itself establish that background services are currently running.
         </p>
         <div style={{
           marginTop: "16px",
@@ -395,7 +395,7 @@ export default function EngineeringDiagnostics() {
         color: "rgba(255,255,255,0.2)",
         lineHeight: 1.8,
       }}>
-        <div>All background services — validation, calibration, health checks, telemetry, drift detection, and scheduled jobs — run continuously regardless of whether this dashboard is open.</div>
+        <div>Background-service execution and scheduled-job health require direct operational evidence; opening this hub does not verify either state.</div>
         <div style={{ marginTop: "4px" }}>No customer-facing functionality depends on this page. Routes remain accessible for direct navigation.</div>
       </div>
     </div>

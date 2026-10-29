@@ -23,7 +23,11 @@ export async function handleDripEmail(req: Request, res: Response): Promise<void
     for (const u of step1Users) {
       if (!u.email) continue;
       try {
-        await sendEmail(buildDay1PressureEmail({ name: u.name || "", email: u.email }));
+        const delivery = await sendEmail(buildDay1PressureEmail({ name: u.name || "", email: u.email }));
+        if (!delivery.success) {
+          console.warn(`[DripEmail] Step 1 was not accepted for user ${u.id}: ${delivery.error ?? "unknown delivery failure"}`);
+          continue;
+        }
         await recordOnboardingEmailSent(u.id, 1);
         sent1++;
       } catch (err) {
@@ -36,7 +40,11 @@ export async function handleDripEmail(req: Request, res: Response): Promise<void
     for (const u of step2Users) {
       if (!u.email) continue;
       try {
-        await sendEmail(buildDay2UpgradeEmail({ name: u.name || "", email: u.email }));
+        const delivery = await sendEmail(buildDay2UpgradeEmail({ name: u.name || "", email: u.email }));
+        if (!delivery.success) {
+          console.warn(`[DripEmail] Step 2 was not accepted for user ${u.id}: ${delivery.error ?? "unknown delivery failure"}`);
+          continue;
+        }
         await recordOnboardingEmailSent(u.id, 2);
         sent2++;
       } catch (err) {
@@ -55,7 +63,11 @@ export async function handleDripEmail(req: Request, res: Response): Promise<void
         continue;
       }
       try {
-        await sendEmail(buildDay3FoundingEmail({ name: u.name || "", email: u.email }));
+        const delivery = await sendEmail(buildDay3FoundingEmail({ name: u.name || "", email: u.email }));
+        if (!delivery.success) {
+          console.warn(`[DripEmail] Step 3 was not accepted for user ${u.id}: ${delivery.error ?? "unknown delivery failure"}`);
+          continue;
+        }
         await recordOnboardingEmailSent(u.id, 3);
         sent3++;
       } catch (err) {

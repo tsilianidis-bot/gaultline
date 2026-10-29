@@ -121,6 +121,16 @@ describe("FRED fail-closed", () => {
     expect(res.ok).toBe(false);
     expect(res.provenance.find(p => p.inputId === "hySpread")!.status).toBe("stale");
   });
+  it("rejects a future-dated observation rather than treating it as a newer verified input", () => {
+    const r = base();
+    r.DGS10!.observations = [{ date: "2026-10-13", value: "4.20" }, ...r.DGS10!.observations];
+    const res = resolveVerifiedInputs(r, NOW);
+    const tenYear = res.provenance.find(p => p.inputId === "tsy10y")!;
+    expect(res.ok).toBe(false);
+    expect(tenYear).toMatchObject({ observationDate: "2026-10-13", status: "invalid" });
+    expect(tenYear.detail).toMatch(/future-dated/);
+    expect(res.inputs.tsy10y).toBeNull();
+  });
   it("skips holiday '.' rows for daily series", () => {
     const r = base();
     r.DGS10!.observations = [{ date: "2026-10-09", value: "." }, ...r.DGS10!.observations];

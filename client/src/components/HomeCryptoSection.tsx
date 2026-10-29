@@ -467,7 +467,7 @@ export default function HomeCryptoSection() {
       {/* CTA */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
         <button
-          onClick={() => navigate('/crypto-search')}
+          onClick={() => navigate('/app/crypto-search')}
           style={{
             fontFamily: MONO, fontSize: '13px', color: '#000', letterSpacing: '0.12em',
             background: 'linear-gradient(135deg, #00D4FF, #0099CC)',

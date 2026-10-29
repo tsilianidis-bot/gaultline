@@ -12,4 +12,4 @@ cmds = [
 cmds = ["pnpm run build"]
 
 [start]
-cmd = "pnpm start"
+cmd = "bash scripts/start-production.sh"

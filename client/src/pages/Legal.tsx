@@ -3,12 +3,38 @@ import { LIFETIME_TERMS, LIFETIME_FINAL_SALE_NOTICE } from "@shared/tiers";
    FAULTLINE — Legal Page
    Privacy Policy + Terms of Use
    ============================================================ */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
 import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 type Tab = "privacy" | "terms";
+
+type LegalLocation = Pick<Location, "hash" | "search">;
+type LocationChangeTarget = Pick<EventTarget, "addEventListener" | "removeEventListener">;
+
+function getTab(value: string | null): Tab | undefined {
+  const normalized = value?.trim().toLowerCase();
+  return normalized === "privacy" || normalized === "terms" ? normalized : undefined;
+}
+
+export function getLegalTabFromLocation(location: LegalLocation): Tab {
+  return getTab(location.hash.replace(/^#/, "")) ?? getTab(new URLSearchParams(location.search).get("tab")) ?? "privacy";
+}
+
+export function subscribeToLegalLocationChanges(
+  target: LocationChangeTarget,
+  location: LegalLocation,
+  onChange: (tab: Tab) => void,
+): () => void {
+  const syncTab = () => onChange(getLegalTabFromLocation(location));
+  target.addEventListener("hashchange", syncTab);
+  target.addEventListener("popstate", syncTab);
+  return () => {
+    target.removeEventListener("hashchange", syncTab);
+    target.removeEventListener("popstate", syncTab);
+  };
+}
 
 export default function Legal() {
   useSEO({
@@ -17,7 +43,18 @@ export default function Legal() {
     canonical: "/legal",
   });
 
-  const [tab, setTab] = useState<Tab>("privacy");
+  const [tab, setTab] = useState<Tab>(() => (
+    typeof window === "undefined" ? "privacy" : getLegalTabFromLocation(window.location)
+  ));
+
+  useEffect(() => subscribeToLegalLocationChanges(window, window.location, setTab), []);
+
+  function selectTab(nextTab: Tab) {
+    setTab(nextTab);
+    if (window.location.hash !== `#${nextTab}`) {
+      window.location.hash = nextTab;
+    }
+  }
 
   return (
     <div
@@ -38,7 +75,7 @@ export default function Legal() {
           justifyContent: "space-between",
         }}
       >
-        <Link href="/">
+        <Link href="/" aria-label="FAULTLINE home" style={{ textDecoration: "none" }}>
           <span
             style={{
               fontFamily: "'Rajdhani', sans-serif",
@@ -52,19 +89,17 @@ export default function Legal() {
             <span style={{ color: "#00D4FF" }}>LINE</span>
           </span>
         </Link>
-        <Link href="/">
-          <span
-            style={{
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: "10px",
-              color: "#64748B",
-              letterSpacing: "0.1em",
-              cursor: "pointer",
-              textDecoration: "none",
-            }}
-          >
-            ← BACK TO SITE
-          </span>
+        <Link
+          href="/"
+          style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: "10px",
+            color: "#64748B",
+            letterSpacing: "0.1em",
+            textDecoration: "none",
+          }}
+        >
+          ← BACK TO SITE
         </Link>
       </header>
 
@@ -127,11 +162,18 @@ export default function Legal() {
             padding: "4px",
             width: "fit-content",
           }}
+          role="tablist"
+          aria-label="Legal documents"
         >
           {(["privacy", "terms"] as Tab[]).map((t) => (
             <button
               key={t}
-              onClick={() => setTab(t)}
+              type="button"
+              role="tab"
+              id={`${t}-tab`}
+              aria-selected={tab === t}
+              aria-controls={`${t}-panel`}
+              onClick={() => selectTab(t)}
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: "11px",
@@ -151,7 +193,12 @@ export default function Legal() {
         </div>
 
         {/* Content */}
-        <div style={{ lineHeight: 1.8 }}>
+        <div
+          id={`${tab}-panel`}
+          role="tabpanel"
+          aria-labelledby={`${tab}-tab`}
+          style={{ lineHeight: 1.8 }}
+        >
           {tab === "privacy" ? <PrivacyPolicy /> : <TermsOfUse />}
         </div>
 

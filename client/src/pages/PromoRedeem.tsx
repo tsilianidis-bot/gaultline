@@ -158,7 +158,7 @@ export default function PromoRedeem() {
             )}
           </div>
           <Button
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navigate("/app/dashboard")}
             className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold"
           >
             Open FAULTLINE
@@ -216,7 +216,7 @@ export default function PromoRedeem() {
 
           <div className="space-y-3">
             <Button
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/app/dashboard")}
               className="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-semibold py-3 text-base"
             >
               Enter FAULTLINE

@@ -33,6 +33,69 @@ export interface ErrorContext {
   [key: string]: unknown;
 }
 
+type MutableMetadata = Record<string, unknown>;
+
+function isMutableMetadata(value: unknown): value is MutableMetadata {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isSensitiveFieldName(key: string): boolean {
+  const normalized = key
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .replace(/[\s-]+/g, "_")
+    .toLowerCase();
+  return [
+    "authorization",
+    "cookie",
+    "set_cookie",
+    "api_key",
+    "x_api_key",
+    "access_token",
+    "refresh_token",
+    "id_token",
+    "token",
+    "secret",
+    "password",
+    "jwt",
+    "dsn",
+  ].includes(normalized);
+}
+
+function scrubSensitiveMetadata(value: unknown, seen = new WeakSet<object>()): void {
+  if (Array.isArray(value)) {
+    for (const item of value) scrubSensitiveMetadata(item, seen);
+    return;
+  }
+  if (!isMutableMetadata(value) || seen.has(value)) return;
+  seen.add(value);
+  for (const [key, child] of Object.entries(value)) {
+    if (isSensitiveFieldName(key)) {
+      delete value[key];
+      continue;
+    }
+    scrubSensitiveMetadata(child, seen);
+  }
+}
+
+/**
+ * Removes credentials and request bodies before Sentry receives an event. Sentry
+ * header maps are not guaranteed to use lowercase field names, so every key is
+ * normalized before matching. This mutates and returns the event as required by
+ * Sentry's beforeSend hook.
+ */
+export function scrubSentryEvent(event: MutableMetadata): MutableMetadata {
+  const request = event.request;
+  if (isMutableMetadata(request)) {
+    delete request.data;
+    delete request.cookies;
+    delete request.query_string;
+    delete request.queryString;
+    if (typeof request.url === "string") request.url = request.url.split("?", 1)[0] ?? request.url;
+  }
+  scrubSensitiveMetadata(event);
+  return event;
+}
+
 // ── Sentry lazy loader ────────────────────────────────────────
 
 let _sentry: typeof import("@sentry/node") | null = null;
@@ -60,13 +123,8 @@ async function getSentry(): Promise<SentryModule | null> {
       // Attach release tag if available (set by CI/CD)
       release: process.env.APP_VERSION ?? undefined,
       // Scrub sensitive fields from payloads
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      beforeSend(event: any) {
-        // Strip Authorization headers and cookie values from captured requests
-        if (event.request?.headers) {
-          delete event.request.headers["authorization"];
-          delete event.request.headers["cookie"];
-        }
+      beforeSend(event) {
+        scrubSentryEvent(event as unknown as MutableMetadata);
         return event;
       },
     });

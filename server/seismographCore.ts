@@ -559,7 +559,7 @@ export function buildMacroContextBlock(output: SeismographOutput): MacroContextB
 
   const regimeImplication = `In a ${output.regime} regime with ${output.stressLevel.toLowerCase()} stress, ` +
     `the macro environment is ${output.direction.toLowerCase()}. ` +
-    `${output.probabilities.bear > 50 ? "Defensive positioning is favored." : output.probabilities.bull > 50 ? "Risk assets have macro tailwinds." : "Selective positioning is warranted."}`;
+    "Scenario evidence-vote shares are uncalibrated and do not prescribe positioning.";
 
   const historicalContext = output.topAnalog
     ? `Current conditions most closely resemble ${output.topAnalog.label} (${output.topAnalog.similarity}% similarity). ${output.topAnalog.description}`
@@ -595,11 +595,8 @@ export function buildAlertEvaluationContext(output: SeismographOutput): AlertEva
   if (output.pressureScore >= 70) {
     significantChanges.push(`High pressure: ${output.pressureScore}/100`);
   }
-  if (output.transitionProbabilities.transitionToCrisis > 25) {
-    significantChanges.push(
-      `Crisis transition risk: ${output.transitionProbabilities.transitionToCrisis}%`
-    );
-  }
+  // Transition shares are explicitly uncalibrated in the ASHA and brief
+  // contracts, so they must not be promoted into a customer-facing risk alert.
   for (const pattern of output.activePatterns) {
     if (pattern.confidence > 70) {
       significantChanges.push(`High-confidence pattern: ${pattern.name}`);

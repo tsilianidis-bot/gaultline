@@ -7,7 +7,7 @@
 
    Design: Palantir Noir — void-black, neon accents, scanlines.
    ============================================================ */
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Plus, Trash2, Bell, BellOff, Edit3,
   ChevronDown, ChevronUp, AlertTriangle,
@@ -19,7 +19,7 @@ import { getRiskColor } from '@/components/RiskBadge';
 import {
   WatchlistItem, IndicatorDef, INDICATOR_CATALOG, INDICATOR_MAP,
   loadWatchlist, saveWatchlist, evaluateBreach, getBreachDistance,
-  AlertSeverity,
+  AlertSeverity, recordWatchlistBreachTransition,
 } from '@/lib/watchlist';
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
@@ -351,6 +351,7 @@ export default function Watchlist() {
   const [editingItem, setEditingItem] = useState<WatchlistItem | null | undefined>(undefined);
   const [filterBreached, setFilterBreached] = useState(false);
   const [sortBy, setSortBy] = useState<'severity' | 'breach' | 'added'>('breach');
+  const previousBreachState = useRef<Record<string, boolean>>({});
 
   // Persist on change
   useEffect(() => { saveWatchlist(items); }, [items]);
@@ -381,15 +382,26 @@ export default function Watchlist() {
     return 'DELAYED';
   }, [items, watchlistReadings]);
 
-  // Update breach counts when values change
+  // A breach count is an observed threshold crossing, not the number of data
+  // refreshes while a reading stays above/below the threshold. Preserve the
+  // last known state through unavailable/stale data so recovery cannot invent
+  // a new breach event.
   useEffect(() => {
-    setItems(prev => prev.map(item => {
-      const lv = liveValues[item.indicatorKey];
-      if (lv != null && evaluateBreach(item, lv)) {
-        return { ...item, lastBreached: Date.now(), breachCount: item.breachCount + 1 };
-      }
-      return item;
-    }));
+    setItems(prev => {
+      let changed = false;
+      const nextState = { ...previousBreachState.current };
+      const next = prev.map(item => {
+        const lv = liveValues[item.indicatorKey];
+        if (lv == null) return item;
+        const isBreached = evaluateBreach(item, lv);
+        const updated = recordWatchlistBreachTransition(item, previousBreachState.current[item.id], isBreached);
+        nextState[item.id] = isBreached;
+        if (updated !== item) changed = true;
+        return updated;
+      });
+      previousBreachState.current = nextState;
+      return changed ? next : prev;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveValues]);
 

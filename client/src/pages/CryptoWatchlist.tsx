@@ -396,7 +396,7 @@ function CryptoWatchlistInner() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
               <button
-                onClick={() => navigate('/crypto-search')}
+                onClick={() => navigate('/app/crypto-search')}
                 style={{
                   fontFamily: MONO, fontSize: '7px', color: '#4B5563', letterSpacing: '0.12em',
                   background: 'transparent', border: 'none', cursor: 'pointer', padding: 0,
@@ -418,7 +418,7 @@ function CryptoWatchlistInner() {
             </div>
           </div>
           <button
-            onClick={() => navigate('/crypto-search')}
+            onClick={() => navigate('/app/crypto-search')}
             style={{
               fontFamily: MONO, fontSize: '8px', color: '#00D4FF', letterSpacing: '0.12em',
               background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.25)',
@@ -513,7 +513,7 @@ function CryptoWatchlistInner() {
                 Search for any crypto asset and click <strong style={{ color: '#94A3B8' }}>Save to Watchlist</strong> to track its live signal labels here.
               </div>
               <button
-                onClick={() => navigate('/crypto-search')}
+                onClick={() => navigate('/app/crypto-search')}
                 style={{
                   fontFamily: MONO, fontSize: '8px', color: '#000', letterSpacing: '0.12em',
                   background: '#00D4FF', border: 'none', borderRadius: '3px',
@@ -536,7 +536,7 @@ function CryptoWatchlistInner() {
                   isSelected={compareSet.has(item.symbol)}
                   onToggleCompare={() => toggleCompare(item.symbol)}
                   onRemove={() => removeMutation.mutate({ symbol: item.symbol })}
-                  onNavigate={() => navigate(`/crypto-search?q=${item.symbol}`)}
+                  onNavigate={() => navigate(`/app/symbol-intelligence?symbol=${encodeURIComponent(item.symbol)}&type=crypto&autorun=1`)}
                 />
               ))}
             </div>

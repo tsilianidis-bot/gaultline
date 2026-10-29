@@ -800,7 +800,15 @@ export function resolveVerifiedInputs(results: FredResultsLike, now: Date = new 
       detail = `value ${value} outside plausible range [${rule.min}, ${rule.max}]`;
     } else {
       const ageDays = (now.getTime() - Date.parse(`${observationDate}T00:00:00Z`)) / DAY_MS;
-      if (!Number.isFinite(ageDays) || ageDays > rule.maxAgeDays) {
+      if (!Number.isFinite(ageDays)) {
+        status = "invalid";
+        detail = `observation ${observationDate} has an invalid date`;
+      } else if (ageDays < 0) {
+        // A provider clock or malformed future row must not become a newer
+        // "verified" observation simply because it is younger than maxAgeDays.
+        status = "invalid";
+        detail = `observation ${observationDate} is future-dated`;
+      } else if (ageDays > rule.maxAgeDays) {
         status = "stale";
         detail = `observation ${observationDate} older than ${rule.maxAgeDays} days`;
       }

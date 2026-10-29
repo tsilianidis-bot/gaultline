@@ -1219,7 +1219,7 @@ export default function SeismographIntelligence() {
           <p style={{ fontSize: "13px", color: "rgba(226,232,240,0.55)", lineHeight: 1.65, margin: "0 0 16px", fontFamily: "'IBM Plex Sans',system-ui,sans-serif" }}>
             Ask PLATO any question about the current market environment. PLATO reads the full FAULTLINE intelligence context before responding.
           </p>
-          <Link href="/asha">
+          <Link href="/app/asha">
             <button style={{ ...mono, fontSize: "11px", letterSpacing: "0.1em", fontWeight: 700, color: "#050608", background: "#06b6d4", border: "none", borderRadius: "5px", padding: "10px 24px", cursor: "pointer", transition: "opacity 0.15s" }}>
               OPEN PLATO →
             </button>

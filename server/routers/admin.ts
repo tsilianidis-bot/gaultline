@@ -24,6 +24,41 @@ import { getCandidateObservationTimeline, getPersistedCandidateDetections } from
 import { getImportanceQualificationEvaluations } from "../importanceQualification";
 import { getLifecycleHistory } from "../earlyWarningLifecycle";
 
+/**
+ * Names only: this diagnostic deliberately exposes configuration presence, never
+ * environment values. It does not perform outbound provider probes.
+ */
+export const ADMIN_RUNTIME_CONFIGURATION_KEYS = [
+  "JWT_SECRET",
+  "DATABASE_URL",
+  "BUILT_IN_FORGE_API_KEY",
+  "FRED_API_KEY",
+  "POLYGON_API_KEY",
+  "COINGECKO_API_KEY",
+  "VITE_APP_ID",
+  "OAUTH_SERVER_URL",
+  "SENTRY_DSN",
+] as const;
+
+export function getAdminRuntimeDiagnostics() {
+  const configuration = ADMIN_RUNTIME_CONFIGURATION_KEYS.map(key => ({
+    key,
+    configured: Boolean(process.env[key]?.trim()),
+  }));
+  const sentryConfigured = configuration.find(check => check.key === "SENTRY_DSN")?.configured ?? false;
+
+  return {
+    checkedAt: new Date().toISOString(),
+    configuration,
+    errorMonitoring: {
+      provider: "sentry",
+      configured: sentryConfigured,
+    },
+    checksAreConfigurationOnly: true,
+    note: "Configuration presence only; this endpoint does not probe providers, the database, OAuth, or Sentry.",
+  };
+}
+
 export const adminRouter = router({
   // List all registered users
   getUsers: adminProcedure
@@ -117,6 +152,9 @@ export const adminRouter = router({
     return { signups, waitlist, conversion };
   }),
 
+  // Secret-safe configuration metadata for the owner operations surface.
+  getRuntimeDiagnostics: adminProcedure.query(() => getAdminRuntimeDiagnostics()),
+
   // Send founding access approval email
   sendApprovalEmail: adminProcedure
     .input(z.object({
@@ -142,6 +180,11 @@ export const adminRouter = router({
     .input(z.object({ userId: z.number().int().positive() }))
     .mutation(async ({ ctx, input }) => {
       if (input.userId === ctx.user.id) throw new TRPCError({ code: "BAD_REQUEST", message: "You cannot remove your own account." });
+      const target = (await getAllUsers()).find(user => user.id === input.userId);
+      if (!target) throw new TRPCError({ code: "NOT_FOUND", message: "User not found." });
+      if (target.role === "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Administrator accounts cannot be removed through this console." });
+      }
       try {
         await deleteUser(input.userId);
         return { success: true };
@@ -171,6 +214,8 @@ export const adminRouter = router({
   setFeatureFlag: adminProcedure
     .input(z.object({ key: z.string().min(1).max(80), enabled: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
+      const flagExists = (await getAllFeatureFlags()).some(flag => flag.key === input.key);
+      if (!flagExists) throw new TRPCError({ code: "NOT_FOUND", message: "Feature flag not found." });
       await setFeatureFlag(input.key, input.enabled, ctx.user.id);
       return { success: true };
     }),

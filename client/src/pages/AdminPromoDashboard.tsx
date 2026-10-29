@@ -85,7 +85,7 @@ export default function AdminPromoDashboard() {
       {/* Header */}
       <div className="border-b border-[#1e3a5f]/40 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate("/admin")} className="text-[#8899aa] hover:text-white transition-colors text-sm">
+          <button onClick={() => navigate("/app/admin")} className="text-[#8899aa] hover:text-white transition-colors text-sm">
             ← Admin
           </button>
           <div>
