@@ -1,20 +1,23 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { ANALYTICAL_LEGACY_ALIASES, CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 
 const projectRoot = path.resolve(import.meta.dirname, "../../..");
 const source = (relativePath: string) => readFileSync(path.join(projectRoot, relativePath), "utf8");
+const canonicalActPath = CANONICAL_DESTINATION_BY_ID.act.path;
 
 describe("customer route navigation", () => {
   it("keeps repaired customer controls on declared authenticated routes and preserves legacy links", () => {
     const app = source("client/src/App.tsx");
-    const registry = source("shared/routeRegistry.ts");
     expect(app).toContain('<Route path="/app/crypto" component={CryptoHub} />');
     expect(app).toContain('<Route path="/app/crypto-search" component={CryptoSearch} />');
     expect(app).toContain('<Route path="/app/crypto-watchlist" component={CryptoWatchlist} />');
     expect(app).toContain('<Route path="/app/symbol-intelligence" component={UniversalSymbolIntelligence} />');
     expect(app).toContain('<Route path="/app/asha">');
-    expect(registry).toContain('"/app/dashboard": "/app/now"');
+    expect(ANALYTICAL_LEGACY_ALIASES["/app/dashboard"]).toBe(CANONICAL_DESTINATION_BY_ID.now.path);
+    expect(app).toContain('<Route path="/demo/opportunities"><Redirect to={CANONICAL_DESTINATION_BY_ID.act.path} /></Route>');
+    expect(app).not.toContain(`<Route path="/demo/opportunities"><Redirect to="${canonicalActPath}" /></Route>`);
     expect(app).toContain('<Route path="/crypto-search"><Redirect to="/app/crypto-search" /></Route>');
     expect(app).toContain('<Route path="/crypto-watchlist"><Redirect to="/app/crypto-watchlist" /></Route>');
     expect(app).toContain('<Route path="/app/crypto-intel"><Redirect to="/app/crypto" /></Route>');

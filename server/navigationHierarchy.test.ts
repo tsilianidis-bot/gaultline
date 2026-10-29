@@ -8,6 +8,7 @@ import { enumerateApplicationRoutes } from '../scripts/navigationInventory';
 const router = fs.readFileSync('client/src/App.tsx', 'utf8');
 const mounted = enumerateApplicationRoutes(router);
 const baseline = JSON.parse(fs.readFileSync('docs/navigation/baseline-routes.json', 'utf8')) as Array<{path: string; component: string | null; redirect: string | null}>;
+const approvedAdditions = JSON.parse(fs.readFileSync('docs/navigation/approved-route-additions.json', 'utf8')) as Array<{path: string; component: string | null; redirect: string | null}>;
 
 describe('consolidated customer navigation', () => {
   it('has exactly the five approved hierarchy sections', () => {
@@ -72,8 +73,17 @@ describe('consolidated customer navigation', () => {
 });
 
 describe('complete route preservation', () => {
-  it('preserves every immutable baseline mount and redirect exactly', () => {
-    expect(mounted).toEqual(baseline);
+  it('preserves every immutable baseline mount and redirect exactly, with only the frozen reviewed additions', () => {
+    const baselinePaths = new Set(baseline.map(route => route.path));
+    const approvedAdditionPaths = new Set(approvedAdditions.map(route => route.path));
+    expect(approvedAdditions).toHaveLength(5);
+    expect(baselinePaths.size).toBe(baseline.length);
+    expect(approvedAdditionPaths.size).toBe(approvedAdditions.length);
+    expect([...approvedAdditionPaths].filter(path => baselinePaths.has(path))).toEqual([]);
+    expect(mounted).toHaveLength(baseline.length + approvedAdditions.length);
+    expect(mounted.filter(route => baselinePaths.has(route.path))).toEqual(baseline);
+    expect(mounted.filter(route => approvedAdditionPaths.has(route.path))).toEqual(approvedAdditions);
+    expect(mounted.filter(route => !baselinePaths.has(route.path) && !approvedAdditionPaths.has(route.path))).toEqual([]);
   });
   it('retains query strings and hashes on every centrally registered legacy alias', () => {
     for (const [from, target] of Object.entries(ANALYTICAL_LEGACY_ALIASES)) {

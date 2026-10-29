@@ -1,9 +1,11 @@
 /**
  * Isolated proof for the journaled 0077 governed-research guard migration.
- * It starts a disposable MariaDB on local port 3320 and never reads DATABASE_URL.
+ * It starts a disposable MariaDB on a unique loopback port and never reads DATABASE_URL.
  */
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createConnection, type Connection } from "mysql2/promise";
@@ -11,8 +13,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { mariaBinary } from "./testing/mariaBinary";
 
 const root = resolve(import.meta.dirname, "..");
-const PORT = 3320;
-const DATABASE = "governed_research_immutability_0077";
+const DATABASE = `governed_0077_${randomUUID().replaceAll("-", "")}`;
 const MIGRATION_TAG = "0077_governed_research_immutability";
 const MIGRATION = readFileSync(
   resolve(root, "drizzle", `${MIGRATION_TAG}.sql`),
@@ -38,27 +39,135 @@ function migrationStatements(sql: string): string[] {
     .filter(Boolean);
 }
 
+type MariaDbIdentity = Readonly<{
+  datadir: string;
+  pidFile: string;
+  port: number;
+  pid: number;
+}>;
+
+function assertMariaDbIdentity(
+  actual: MariaDbIdentity,
+  expected: MariaDbIdentity
+): void {
+  const mismatches: string[] = [];
+  if (resolve(actual.datadir) !== resolve(expected.datadir)) mismatches.push("datadir");
+  if (resolve(actual.pidFile) !== resolve(expected.pidFile)) mismatches.push("pidFile");
+  if (actual.port !== expected.port) mismatches.push("port");
+  if (actual.pid !== expected.pid) mismatches.push("pid");
+  if (mismatches.length > 0) {
+    throw new Error(`Refusing MariaDB connection with mismatched identity: ${mismatches.join(", ")}`);
+  }
+}
+
+function hasExited(child: ChildProcess): boolean {
+  return child.exitCode !== null || child.signalCode !== null;
+}
+
+function assertChildRunning(child: ChildProcess, startupError: () => Error | null): void {
+  const error = startupError();
+  if (error) throw new Error(`mariadbd failed to start: ${error.message}`);
+  if (!child.pid) throw new Error("mariadbd did not expose a child PID");
+  if (hasExited(child)) {
+    throw new Error(`mariadbd exited before isolated setup (code=${child.exitCode}, signal=${child.signalCode})`);
+  }
+}
+
+async function freeLoopbackPort(): Promise<number> {
+  return await new Promise((resolvePort, rejectPort) => {
+    const reservation = createServer();
+    reservation.once("error", rejectPort);
+    reservation.listen(0, "127.0.0.1", () => {
+      const address = reservation.address();
+      if (!address || typeof address === "string") {
+        reservation.close(() => rejectPort(new Error("unable to reserve a loopback MariaDB port")));
+        return;
+      }
+      reservation.close(error => error ? rejectPort(error) : resolvePort(address.port));
+    });
+  });
+}
+
 async function applyMigration(connection: Connection): Promise<void> {
   for (const statement of migrationStatements(MIGRATION)) {
     await connection.query(statement);
   }
 }
 
-async function waitForMariaDb(): Promise<Connection> {
+async function waitForMariaDb(
+  port: number,
+  child: ChildProcess,
+  startupError: () => Error | null
+): Promise<Connection> {
   let lastError: unknown;
   for (let attempt = 0; attempt < 40; attempt += 1) {
+    assertChildRunning(child, startupError);
     try {
-      return await createConnection({
+      const connection = await createConnection({
         host: "127.0.0.1",
-        port: PORT,
+        port,
         user: "root",
       });
+      try {
+        assertChildRunning(child, startupError);
+        return connection;
+      } catch (error) {
+        await connection.end();
+        throw error;
+      }
     } catch (error) {
       lastError = error;
       await new Promise(resolve => setTimeout(resolve, 250));
     }
   }
-  throw lastError;
+  throw lastError ?? new Error("mariadbd did not accept an isolated connection");
+}
+
+async function assertConnectedMariaDbIdentity(connection: Connection, expected: MariaDbIdentity): Promise<void> {
+  const [rows] = (await connection.query(
+    "SELECT @@datadir AS datadir, @@pid_file AS pidFile, @@port AS port"
+  )) as unknown as [Array<{ datadir: string; pidFile: string; port: number | string }>];
+  const row = rows[0];
+  if (!row) throw new Error("MariaDB identity query returned no row");
+  const pid = Number.parseInt(readFileSync(expected.pidFile, "utf8").trim(), 10);
+  if (!Number.isSafeInteger(pid) || pid < 1) {
+    throw new Error("MariaDB pid file did not contain a process ID");
+  }
+  assertMariaDbIdentity({
+    datadir: row.datadir,
+    pidFile: row.pidFile,
+    port: Number(row.port),
+    pid,
+  }, expected);
+}
+
+function waitForChildExit(child: ChildProcess, timeoutMs: number): Promise<void> {
+  if (hasExited(child)) return Promise.resolve();
+  return new Promise((resolveExit, rejectExit) => {
+    const timeout = setTimeout(() => {
+      child.off("exit", onExit);
+      rejectExit(new Error(`mariadbd did not exit within ${timeoutMs}ms`));
+    }, timeoutMs);
+    const onExit = () => {
+      clearTimeout(timeout);
+      resolveExit();
+    };
+    child.once("exit", onExit);
+  });
+}
+
+async function stopMariaDb(child: ChildProcess): Promise<void> {
+  if (hasExited(child)) return;
+  let exited = waitForChildExit(child, 10_000);
+  child.kill("SIGTERM");
+  try {
+    await exited;
+  } catch {
+    if (hasExited(child)) return;
+    exited = waitForChildExit(child, 10_000);
+    child.kill("SIGKILL");
+    await exited;
+  }
 }
 
 async function expectBlocked(
@@ -76,13 +185,36 @@ async function expectBlocked(
   }
 }
 
+describe("0077 MariaDB harness identity guard", () => {
+  it("rejects mismatching database datadir, pid file, port, or child PID", () => {
+    const expected: MariaDbIdentity = {
+      datadir: "/tmp/governed-expected",
+      pidFile: "/tmp/governed-expected/mysql.pid",
+      port: 33_201,
+      pid: 7_007,
+    };
+    for (const [field, actual] of [
+      ["datadir", { ...expected, datadir: "/tmp/governed-other" }],
+      ["pidFile", { ...expected, pidFile: "/tmp/governed-expected/other.pid" }],
+      ["port", { ...expected, port: 33_202 }],
+      ["pid", { ...expected, pid: 7_008 }],
+    ] as const) {
+      expect(() => assertMariaDbIdentity(actual, expected)).toThrow(field);
+    }
+  });
+});
+
 describe("0077 governed research immutability migration", () => {
   let server: ChildProcess | null = null;
   let admin: Connection | null = null;
-  const datadir = mkdtempSync(join(tmpdir(), "governed-research-0077-"));
+  let startupError: Error | null = null;
+  const datadir = mkdtempSync(join(tmpdir(), `governed-research-0077-${process.pid}-`));
+  const pidFile = join(datadir, "mysql.pid");
 
   beforeAll(async () => {
-    expect(PORT).toBe(3320);
+    const port = await freeLoopbackPort();
+    expect(port).toBeGreaterThan(1023);
+    expect(port).toBeLessThan(65_536);
     await new Promise<void>((resolveInstall, rejectInstall) => {
       const install = spawn(
         mariaBinary("mariadb-install-db"),
@@ -100,19 +232,35 @@ describe("0077 governed research immutability migration", () => {
           : rejectInstall(new Error(`mariadb-install-db exited ${code}`))
       );
     });
-    server = spawn(
+    const child = spawn(
       mariaBinary("mariadbd"),
       [
         `--datadir=${datadir}`,
         "--bind-address=127.0.0.1",
-        `--port=${PORT}`,
+        `--port=${port}`,
         `--socket=${join(datadir, "mysql.sock")}`,
-        `--pid-file=${join(datadir, "mysql.pid")}`,
+        `--pid-file=${pidFile}`,
         "--skip-grant-tables",
       ],
       { stdio: "ignore" }
     );
-    admin = await waitForMariaDb();
+    server = child;
+    child.once("error", error => {
+      startupError = error;
+    });
+    assertChildRunning(child, () => startupError);
+    const childPid = child.pid;
+    if (!childPid) throw new Error("mariadbd did not expose a child PID");
+    const expectedIdentity: MariaDbIdentity = { datadir, pidFile, port, pid: childPid };
+    const connection = await waitForMariaDb(port, child, () => startupError);
+    try {
+      await assertConnectedMariaDbIdentity(connection, expectedIdentity);
+      assertChildRunning(child, () => startupError);
+    } catch (error) {
+      await connection.end();
+      throw error;
+    }
+    admin = connection;
     await admin.query(`CREATE DATABASE \`${DATABASE}\``);
     await admin.query(`USE \`${DATABASE}\``);
     await admin.query(`CREATE TABLE \`governedResearchObservations\` (
@@ -152,8 +300,16 @@ describe("0077 governed research immutability migration", () => {
   }, 60_000);
 
   afterAll(async () => {
-    await admin?.end();
-    if (server && !server.killed) server.kill("SIGTERM");
+    const connection = admin;
+    admin = null;
+    try {
+      await connection?.end();
+    } finally {
+      const child = server;
+      server = null;
+      if (child) await stopMariaDb(child);
+      rmSync(datadir, { recursive: true, force: true });
+    }
   });
 
   it("is journaled directly after 0076 and contains only four creation-only trigger statements", () => {

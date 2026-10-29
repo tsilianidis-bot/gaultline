@@ -4,6 +4,7 @@
  * webhook.test.ts and stripeWebhookClaim.db.test.ts.
  */
 import { describe, expect, it } from "vitest";
+import { FAULTLINE_ORIGIN } from "../../shared/authOrigin";
 import { buildCheckoutSessionParams } from "../routers/billing";
 import {
   decideEntitlement,
@@ -154,13 +155,15 @@ describe("entitlement holes", () => {
       planId: "premium",
       priceId: "price_premium",
       interval: "month",
-      origin: "https://faultline.app",
+      origin: FAULTLINE_ORIGIN,
       storedStripeCustomerId: "cus_paid",
     });
     expect(rebound.customer).toBe("cus_paid");
     expect(rebound).not.toHaveProperty("customer_email");
     expect(rebound.subscription_data?.metadata).toEqual({ user_id: "7", plan_id: "premium" });
     expect(rebound.metadata.user_id).toBe("7");
+    expect(rebound.success_url).toBe(`${FAULTLINE_ORIGIN}/checkout/success?session_id={CHECKOUT_SESSION_ID}&plan=premium`);
+    expect(rebound.cancel_url).toBe(`${FAULTLINE_ORIGIN}/app/account?payment=cancelled`);
 
     const first = buildCheckoutSessionParams({
       userId: 7,
@@ -169,11 +172,13 @@ describe("entitlement holes", () => {
       planId: "lifetime",
       priceId: "price_lifetime",
       interval: "one_time",
-      origin: "https://faultline.app",
+      origin: FAULTLINE_ORIGIN,
       storedStripeCustomerId: null,
     });
     expect(first.customer_email).toBe("ada@example.com");
     expect(first).not.toHaveProperty("customer");
     expect(first).not.toHaveProperty("subscription_data");
+    expect(first.success_url).toBe(`${FAULTLINE_ORIGIN}/checkout/success?session_id={CHECKOUT_SESSION_ID}&plan=lifetime`);
+    expect(first.cancel_url).toBe(`${FAULTLINE_ORIGIN}/app/account?payment=cancelled`);
   });
 });

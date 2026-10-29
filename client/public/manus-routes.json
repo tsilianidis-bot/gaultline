@@ -117,6 +117,10 @@
       "title": "Preserved direct route and existing contextual links"
     },
     {
+      "path": "/app/crypto-intel",
+      "title": "/app/crypto"
+    },
+    {
       "path": "/app/crypto-regime",
       "title": "/app/outlook/deep"
     },
@@ -381,6 +385,10 @@
       "title": "Preserved direct route and existing contextual links"
     },
     {
+      "path": "/asha",
+      "title": "/app/asha"
+    },
+    {
       "path": "/best-market-risk-indicators",
       "title": "Preserved direct route and existing contextual links"
     },
@@ -437,12 +445,20 @@
       "title": "Preserved direct route and existing contextual links"
     },
     {
+      "path": "/crypto-search",
+      "title": "/app/crypto-search"
+    },
+    {
       "path": "/crypto-signals",
       "title": "Preserved direct route and existing contextual links"
     },
     {
       "path": "/crypto-signals-intelligence",
       "title": "Preserved direct route and existing contextual links"
+    },
+    {
+      "path": "/crypto-watchlist",
+      "title": "/app/crypto-watchlist"
     },
     {
       "path": "/crypto/:symbol",
@@ -459,6 +475,10 @@
     {
       "path": "/daily-brief/:slug",
       "title": "Contextual historical access through DAILY BRIEF"
+    },
+    {
+      "path": "/dashboard",
+      "title": "/app/dashboard"
     },
     {
       "path": "/demo",

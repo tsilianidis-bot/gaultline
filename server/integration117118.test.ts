@@ -129,18 +129,33 @@ describe("integration 117+118 shared surface", () => {
   });
 
   it("keeps the migration journal order and both schema additions", () => {
-    const journal = JSON.parse(read("drizzle/meta/_journal.json")) as { entries: Array<{ idx: number; tag: string; when: number }> };
-    const tail = journal.entries.slice(-5);
-    expect(tail.map(entry => entry.tag)).toEqual([
+    const journal = JSON.parse(read("drizzle/meta/_journal.json")) as {
+      entries: Array<{ idx: number; version: string; tag: string; when: number; breakpoints: boolean }>;
+    };
+    const originalSegment = journal.entries.filter(entry => entry.idx >= 72 && entry.idx <= 76);
+    expect(originalSegment.map(entry => entry.tag)).toEqual([
       "0072_final_recovery_controls",
       "0073_pressure_v2_shadow",
       "0074_stripe_entitlement_resync",
       "0075_pentagonal_thesis_records",
       "0076_algorithm_outcome_fk_name",
     ]);
-    expect(tail.map(entry => entry.idx)).toEqual([72, 73, 74, 75, 76]);
-    expect(tail[3]?.when).toBe(1792200000000);
-    expect(tail[4]?.when).toBe(1792300000000);
+    expect(originalSegment.map(entry => entry.idx)).toEqual([72, 73, 74, 75, 76]);
+    expect(originalSegment.map(entry => entry.when)).toEqual([1790544467081, 1791864000000, 1792100000000, 1792200000000, 1792300000000]);
+    expect(originalSegment[3]?.when).toBe(1792200000000);
+    expect(originalSegment[4]?.when).toBe(1792300000000);
+    const appended0077 = journal.entries.filter(entry => entry.idx === 77);
+    expect(appended0077).toEqual([
+      {
+        idx: 77,
+        version: "5",
+        when: 1793241851962,
+        tag: "0077_governed_research_immutability",
+        breakpoints: true,
+      },
+    ]);
+    expect(journal.entries.indexOf(appended0077[0]!)).toBe(journal.entries.indexOf(originalSegment[4]!) + 1);
+    expect(journal.entries.at(-1)).toEqual(appended0077[0]);
     const schema = read("drizzle/schema.ts");
     expect(schema).toContain("pressureV2ShadowObservations");
     expect(schema).toContain("accessExpiresAt");

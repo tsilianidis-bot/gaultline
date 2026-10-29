@@ -1,0 +1,27 @@
+[
+  {
+    "path": "/app/crypto-intel",
+    "component": null,
+    "redirect": "/app/crypto"
+  },
+  {
+    "path": "/asha",
+    "component": null,
+    "redirect": "/app/asha"
+  },
+  {
+    "path": "/crypto-search",
+    "component": null,
+    "redirect": "/app/crypto-search"
+  },
+  {
+    "path": "/crypto-watchlist",
+    "component": null,
+    "redirect": "/app/crypto-watchlist"
+  },
+  {
+    "path": "/dashboard",
+    "component": null,
+    "redirect": "/app/dashboard"
+  }
+]

@@ -39,30 +39,48 @@ function isMutableMetadata(value: unknown): value is MutableMetadata {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+const sensitiveFieldNames = new Set([
+  "authorization",
+  "cookie",
+  "set_cookie",
+  "api_key",
+  "x_api_key",
+  "access_token",
+  "refresh_token",
+  "id_token",
+  "token",
+  "secret",
+  "password",
+  "jwt",
+  "dsn",
+]);
+
+const sensitiveFieldSuffixes = [
+  "_api_key",
+  "_access_token",
+  "_refresh_token",
+  "_id_token",
+  "_token",
+  "_secret_key",
+  "_secret",
+  "_password",
+  "_jwt",
+  "_dsn",
+];
+
 function isSensitiveFieldName(key: string): boolean {
   const normalized = key
     .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
     .replace(/[\s-]+/g, "_")
     .toLowerCase();
-  return [
-    "authorization",
-    "cookie",
-    "set_cookie",
-    "api_key",
-    "x_api_key",
-    "access_token",
-    "refresh_token",
-    "id_token",
-    "token",
-    "secret",
-    "password",
-    "jwt",
-    "dsn",
-  ].includes(normalized);
+  return sensitiveFieldNames.has(normalized)
+    || sensitiveFieldSuffixes.some((suffix) => normalized.endsWith(suffix));
 }
 
 function scrubSensitiveMetadata(value: unknown, seen = new WeakSet<object>()): void {
   if (Array.isArray(value)) {
+    if (seen.has(value)) return;
+    seen.add(value);
     for (const item of value) scrubSensitiveMetadata(item, seen);
     return;
   }

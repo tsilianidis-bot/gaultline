@@ -360,6 +360,15 @@
     "note": "Router mount, component, parameters, and access logic unchanged."
   },
   {
+    "path": "/app/crypto-intel",
+    "component": null,
+    "redirect": "/app/crypto",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing authenticated / page-specific entitlement boundary unchanged",
+    "navigation": "/app/crypto",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
     "path": "/app/crypto-regime",
     "component": null,
     "redirect": "/app/outlook/deep",
@@ -990,6 +999,15 @@
     "note": "Router mount, component, parameters, and access logic unchanged."
   },
   {
+    "path": "/asha",
+    "component": null,
+    "redirect": "/app/asha",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/app/asha",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
     "path": "/best-market-risk-indicators",
     "component": "PageLoader",
     "redirect": null,
@@ -1116,6 +1134,15 @@
     "note": "Router mount, component, parameters, and access logic unchanged."
   },
   {
+    "path": "/crypto-search",
+    "component": null,
+    "redirect": "/app/crypto-search",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/app/crypto-search",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
+  },
+  {
     "path": "/crypto-signals",
     "component": "PageLoader",
     "redirect": null,
@@ -1132,6 +1159,15 @@
     "access": "Existing public or standalone boundary unchanged",
     "navigation": "Preserved direct route and existing contextual links",
     "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/crypto-watchlist",
+    "component": null,
+    "redirect": "/app/crypto-watchlist",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/app/crypto-watchlist",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
   },
   {
     "path": "/crypto/:symbol",
@@ -1168,6 +1204,15 @@
     "access": "Existing public or standalone boundary unchanged",
     "navigation": "Contextual historical access through DAILY BRIEF",
     "note": "Router mount, component, parameters, and access logic unchanged."
+  },
+  {
+    "path": "/dashboard",
+    "component": null,
+    "redirect": "/app/dashboard",
+    "treatment": "8. Legacy redirect to a canonical destination",
+    "access": "Existing public or standalone boundary unchanged",
+    "navigation": "/app/dashboard",
+    "note": "Existing redirect unchanged; registry aliases retain query/hash merging."
   },
   {
     "path": "/demo",
