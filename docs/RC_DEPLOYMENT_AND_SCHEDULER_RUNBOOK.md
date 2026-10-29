@@ -22,7 +22,7 @@ Copy is in `config/scheduler-candidate.txt`.
 | Job | Current | Candidate | Why |
 | --- | --- | --- | --- |
 | `seismograph-cron` | `0 18 * * *` UTC | `15 20,21 * * 1-5` UTC | 18:00 UTC is 14:00 EDT / 13:00 EST, outside 16:15–16:45 America/New_York. The handler now returns **409** for that fire (`server/scheduledSeismograph.ts`). |
-| `systemic-regime-infer` | daily 19:00 UTC | `30 21 * * 1-5` UTC | `runSystemicRegimeInferenceJob` reads `seismograph:latest_output` before Signal Convergence (`server/systemicRegime/scheduled.ts`). 19:00 UTC is before both candidate seismograph hours, so convergence would use the previous session. 21:30 UTC is after 20:15 and 21:15 UTC. |
+| `systemic-regime-infer` | daily 19:00 UTC | `30 21 * * 1-5` UTC | 19:00 UTC is before both candidate Seismograph hours, so it can reach the previous session. The candidate is 17:30 EDT / 16:30 EST. Before inference starts, the handler requires both the completed current ET session claim and a same-session post-close `seismograph:latest_output`; it returns retryable non-2xx without inference/persistence when either is missing. |
 
 `15 20,21 * * 1-5` fires twice. Exactly one instant is 16:15 ET:
 
@@ -34,6 +34,8 @@ A weekend or full NYSE holiday returns HTTP 200 `{ ok: true, alert: false, skipp
 A completed claim is the only duplicate that stays HTTP 200 (`execution: already_completed`). A leased claim that is still inside its 3-minute lease is HTTP 409 `session_incomplete`. If the pipeline throws, the same request fails the claim and retries once. If that retry also throws, the claim is marked exhausted in that request. A run that finishes is sealed even when the first compare-and-swap misses, so a later lease expiry does not start another pipeline. A second recovery after that is `exhausted` (409). The DST companion hour is not the recovery mechanism.
 
 Do not store `15 20,21` with an `America/New_York` timezone. Railway cron is UTC-only.
+
+The source-only infer candidate follows both UTC Seismograph callbacks, but in EST its 21:30 UTC callback is 16:30 ET and can arrive while the 16:15–16:45 ET Seismograph run is still completing. Infer therefore refuses a missing/open claim, a missing/stale prior-session output, or unavailable claim storage before it starts FRED/model work or persists `LIVE_INFERENCE`. Those responses are explicit retryable 409/503 failures, not success. Confirm an approved native scheduler retry policy before applying this candidate; no Railway schedule or retry setting was changed here.
 
 ## Rollback
 

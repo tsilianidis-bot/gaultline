@@ -10,8 +10,22 @@
 # A weekday holiday in that same schedule also returns HTTP 200 alert:false.
 # An unexpected hour on a real session still returns 409 alert:true.
 #
-# Candidate systemic-regime-infer, after both seismograph hours, weekdays:
+# Candidate systemic-regime-infer, after both seismograph UTC fires, weekdays:
 #   30 21 * * 1-5
-# Documented production infer remains daily 19:00 UTC until this is applied.
-# 19:00 UTC is before the candidate seismograph, so Signal Convergence would
-# read the previous session's seismograph:latest_output.
+# 21:30 UTC is 17:30 EDT and 16:30 EST. Before any inference work, the handler
+# requires BOTH a completed seismograph-scheduled-session:<ET date> claim and a
+# seismograph:latest_output computed in that same ET post-close session (at or
+# after 16:15 ET and never in the future). It never consumes a prior-session
+# output. A missing/open claim or missing/stale output returns a transparent
+# HTTP 409 (HTTP 503 when claim storage is unavailable), { ok:false,
+# retryable:true }, and does not run inference or persist a LIVE_INFERENCE row.
+#
+# The 16:30 EST invocation can arrive while the 16:15–16:45 Seismograph run is
+# still completing. Native scheduler configuration must therefore treat the
+# retryable non-2xx response as a retry condition; this file does not assert
+# Railway retry capability or configure any job. A no-retry scheduler requires
+# separately approved source configuration before this candidate can be used.
+#
+# Documented production infer remains daily 19:00 UTC until an owner applies an
+# approved native scheduler change. 19:00 UTC is before the candidate
+# Seismograph execution and is not evidence of correct ordering.

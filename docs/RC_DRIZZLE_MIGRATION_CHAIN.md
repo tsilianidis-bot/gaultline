@@ -1,13 +1,13 @@
 # RC Drizzle migration chain risks
 
 **Branch:** `grok/faultline-baseline-stabilization-2026-09-11`  
-**Policy:** inspect only. **No** `drizzle-kit migrate`, **no** destructive SQL, **no** journal rewrite.
+**Policy:** inspect only. **No** `drizzle-kit migrate`, **no** destructive SQL, and no journal rewrite; this accepted-subset integration appends only the reviewed 0078–0082 tail.
 
 ## Authority
 
 | Artifact | Role |
 | --- | --- |
-| `drizzle/meta/_journal.json` | **Executable apply order** (idx 0–71, tags `0000`…`0071` drizzle-kit names) |
+| `drizzle/meta/_journal.json` | **Executable apply order** (idx 0–82, tags `0000`…`0082`) |
 | `drizzle/*.sql` on disk | Files that *may* be applied if named in the journal |
 | `drizzle/schema.ts` | Desired TypeScript schema (can drift from applied SQL) |
 | `FAULTLINE_DATABASE_SCHEMA.md` | Readable backup map (2026-08-13; older than 0070) |
@@ -16,9 +16,9 @@ Dialect: **mysql**. Journal `version: 7`, entries `version: 5`.
 
 ## Journal chain (clean)
 
-`_journal.json` has **72** entries, idx 0–71, unique tags:
+`_journal.json` has **83** entries, idx 0–82, unique tags:
 
-`0000_solid_martin_li` … `0071_systemic_regime_engine`
+`0000_solid_martin_li` … `0082_durable_alert_events`
 
 No duplicate **tags** in the journal. Numeric prefixes in the journal are unique.
 
@@ -47,7 +47,8 @@ These SQL files exist beside the journaled twins. Drizzle Kit will **not** apply
 ## What this RC does **not** do
 
 - No `DROP TABLE` / `DROP COLUMN` / data backfill.
-- No journal edit.
+- No rewrite of preexisting journal records; accepted entries 0078–0082 are append-only after 0077.
+- No migration application, restored-database rehearsal, deployment, or boot migration.
 - No applying repairs.
 
 ## Owner restore order (safe)
@@ -55,14 +56,14 @@ These SQL files exist beside the journaled twins. Drizzle Kit will **not** apply
 1. Provision empty MySQL.
 2. Apply **only** tags in `_journal.json` in idx order (`drizzle-kit migrate`).
 3. Diff `information_schema` vs `schema.ts` for `shadowModelReadings` / `shadowForwardOutcomes`.
-4. If columns missing, add a **new** 0071+ migration — do not execute the orphan `0056_*repair*` files unless their `ADD COLUMN` is proven absent and wrapped in a checked migration.
-5. Never filename-glob `0056_*.sql`.
+4. If columns missing, add a **new** 0083+ migration — do not execute the orphan `0056_*repair*` files unless their `ADD COLUMN` is proven absent and wrapped in a checked migration.
+5. Never filename-glob migrations, including `0056_*.sql`; apply only ordered tags in `_journal.json`, never orphan or rejected files.
 
 ## Acceptance
 
 | Item | Label |
 | --- | --- |
-| Journal 0000–0071 unique and ordered | CLEANUP / documented |
+| Journal 0000–0082 unique and ordered | SOURCE REGISTRATION ONLY / operationally blocked |
 | Orphan repair SQL reusing 0056–0059 | **IMPORTANT** — restore footgun; no prod change here |
 | schema vs prod unknown (no DB in this agent) | **IMPORTANT** — owner must diff |
 | Destructive migrate | Not done |
@@ -89,6 +90,21 @@ These SQL files exist beside the journaled twins. Drizzle Kit will **not** apply
   not prove deployed or production immutability; an authorized deployment
   operator must confirm the journaled migration and restrictive DDL privileges
   in the target environment.
+
+## 0078–0082 accepted Wave 2 registration
+
+- **Journal placement:** the accepted additive migrations are appended directly
+  after unchanged `0077_governed_research_immutability` as idx 78–82 in this
+  exact order: `0078_payment_event_linkage`, `0079_decision_outcome_provenance`,
+  `0080_publishing_delivery_claims`, `0081_admin_audit_events`, and
+  `0082_durable_alert_events`.
+- **Scope:** registration records only these accepted source artifacts. It does
+  not modify earlier history, alter `drizzle/schema.ts`, apply SQL, generate
+  metadata snapshots, or authorize provider, deployment, customer, or
+  production activity.
+- **Required independent gate:** final QA must review this wiring and rehearse
+  the complete ordered chain against an isolated restored database before any
+  deployment decision. Startup and manual migration execution remain excluded.
 
 ## Related
 

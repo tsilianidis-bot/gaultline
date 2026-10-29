@@ -5,7 +5,7 @@ import {
   Layers3,
   ShieldCheck,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { adaptIntelligenceCore, createUnavailableCore } from "./adapter";
 import { CoreTopology, observationLabel, StatusBadge } from "./CoreTopology";
 import { EvidenceDrawer, type EvidenceSelection } from "./EvidenceDrawer";
@@ -18,6 +18,7 @@ import type {
   DomainId,
   IntelligenceCoreExperienceProps,
   IntelligenceCoreViewModel,
+  ScenarioId,
   ThesisDestination,
 } from "./types";
 import "./intelligence-core.css";
@@ -69,6 +70,13 @@ const CLASSIFICATIONS = [
   "degraded",
   "unavailable",
 ] as const;
+
+function sameDomainSelection(previous: DomainId[], next: DomainId[]) {
+  return (
+    previous.length === next.length &&
+    previous.every((domainId, index) => domainId === next[index])
+  );
+}
 
 export function IntelligenceCoreExperience({
   model: suppliedModel = createUnavailableCore(),
@@ -134,6 +142,19 @@ export function IntelligenceCoreExperience({
 
   const [selection, setSelection] = useState<EvidenceSelection | null>(null);
   const [scenarioDomains, setScenarioDomains] = useState<DomainId[]>([]);
+  const selectScenarioDomains = useCallback(
+    (scenarioId: ScenarioId | null) => {
+      const next = scenarioId
+        ? model.scenarios.find(item => item.id === scenarioId)?.domainIds || []
+        : [];
+      // ScenarioPanel publishes its resolved selection after every model change.
+      // Avoid a render loop for a semantically unchanged supplied domain set.
+      setScenarioDomains(previous =>
+        sameDomainSelection(previous, next) ? previous : next
+      );
+    },
+    [model.scenarios]
+  );
   const selectEvidence = (ids: string[], title: string) =>
     setSelection({ ids, title });
   const selectDomain = (id: DomainId) => {
@@ -378,11 +399,7 @@ export function IntelligenceCoreExperience({
       <ScenarioPanel
         model={model}
         onEvidence={selectEvidence}
-        onScenario={id =>
-          setScenarioDomains(
-            model.scenarios.find(item => item.id === id)?.domainIds || []
-          )
-        }
+        onScenario={selectScenarioDomains}
       />
       <TrackRecordPanel model={model} onEvidence={selectEvidence} />
       <footer className="fic-system-footer">

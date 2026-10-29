@@ -1,29 +1,42 @@
-# SEC EDGAR Form 4 ingestion (design only)
+# SEC EDGAR Section 16 ownership ingestion
 
-Status: **disabled**. `SEC_EDGAR_INGESTION_ENABLED` in `server/insider/edgarIngestion.ts` is a source constant set to `false`. It is not an environment variable. Nothing in this design fetches, stores, or displays a filing.
+## Source contract
 
-The synthetic Form 4 generator in `server/insiderIntelligence.ts` remains off the request path. Router procedures do not call it. A synthetic record is not an SEC filing.
+`server/insider/edgarIngestion.ts` reads a bounded set of **official SEC/EDGAR** records for one issuer ticker. It resolves the ticker only through SEC `company_tickers.json`, reads that issuer’s official `data.sec.gov/submissions/CIK##########.json`, verifies the SEC filing-index page, then parses the referenced ownership XML. It does not call a paid vendor or an aggregation provider.
 
-## What a real filing must carry
+The reader only considers SEC ownership Forms **3, 4, and 5** and their `/A` amendments. It never classifies Form 13F or any generic SEC form as insider activity. Forms lacking complete reportable transaction rows remain unavailable rather than becoming an inferred purchase, sale, score, alert, or radar entry.
 
-A verified filing is admissible only when all of the following are present on the same record:
+Every admitted result carries the official accession number, form type, amendment flag, filing date, report date when supplied, transaction date when supplied, transaction code, acquired/disposed value, shares, price when supplied, reporting-owner identity, primary-XML URL, filing-index URL, submissions URL, retrieval timestamp, and SHA-256 of the exact fetched XML. A filing with multiple reporting owners does not assign a transaction row to one owner unless the source identifies one unambiguously.
 
-- SEC accession number, matching `##########-##-######`
-- filing date (`YYYY-MM-DD`)
-- issuer ticker
-- at least one transaction: insider name, role, transaction code, positive share count, acquired-or-disposed (`A` or `D`), and a price that is either a finite non-negative number or explicitly null
-- HTTPS source link on `sec.gov` or `www.sec.gov`
-- provenance: provider exactly `SEC EDGAR`, retrieval timestamp, and an HTTPS filing-index link on the SEC host
+The implementation does not write the records to the database or backfill history. That avoids representing an ephemeral public retrieval as durable ingestion before a separately reviewed additive persistence design, migration, retention policy, and source-rights review exist. The customer surface labels each returned value as a source record and retains unavailable states.
 
-`validateEdgarForm4Claim` checks that contract and does not contact the network. `ingestVerifiedEdgarForm4` returns `{ status: "disabled" }` while the constant is false.
+## SEC fair-access boundary
 
-## Intended pipeline once explicitly activated
+The reader will not send a request unless `SEC_EDGAR_USER_AGENT` contains a declared organization-and-email contact in the shape published by the SEC, for example `Company Name AdminContact@example.com`. There is no fallback user agent. Syntax validation cannot prove that a configured identity is truthful; the deploy owner must supply an organization-owned contact and approve its use.
 
-1. Discover Form 4 filings from the SEC submissions feed for a known CIK. Do not invent a CIK from a ticker guess.
-2. Download the filing index and the primary XML document using the accession number.
-3. Parse transaction rows from the official XML only. Drop a filing that lacks the required fields.
-4. Persist the raw document hash, accession number, filing date, source URL, and retrieval time with the parsed rows.
-5. Serve those rows through a new read procedure. Do not route them through `getInsiderRadar`, `getInsiderCompany`, or `getInsiderAlertsForTicker`.
-6. Label the surface with the SEC source link and the filing date. Missing fields stay unavailable. No conviction score is computed from an incomplete filing.
+Requests are sequential across the process, rate-limited to **4 requests per second**, bounded to at most five candidate filings per ticker lookup, time out, and retry only one transient `429`/`5xx` response. Non-transient errors, malformed records, ticker mismatches, missing XML, missing required source fields, missing user-agent configuration, and denied SEC responses fail closed. The page shows no cached or model-generated insider facts in those cases.
 
-Activation requires a later change that sets the constant to true and adds the fetcher. This document does not authorize that change.
+The implementation follows the SEC’s published fair-access limit of no more than 10 requests per second and its declared-user-agent example. The SEC describes the unauthenticated submissions API, including the 10-digit CIK path, and identifies Forms 3, 4, and 5 as the ownership reports for officers, directors, and 10% holders.
+
+- [SEC Accessing EDGAR Data](https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data)
+- [SEC EDGAR Application Programming Interfaces](https://www.sec.gov/search-filings/edgar-application-programming-interfaces)
+- [SEC Forms 3, 4 and 5](https://www.sec.gov/answers/form345.htm)
+
+## Required central integration
+
+`server/routers.ts` is a protected central file and is intentionally unchanged in this worktree. The existing `insider.company` procedure therefore remains fail-closed until the integrator applies this exact reviewed wiring:
+
+```ts
+import { readOfficialEdgarInsiderFilings, type EdgarTickerReadResult } from "./insider/edgarIngestion";
+
+company: protectedProcedure
+  .input(z.object({ ticker: z.string().min(1).max(10) }))
+  .query(async ({ input }): Promise<EdgarTickerReadResult> =>
+    readOfficialEdgarInsiderFilings(input.ticker)),
+```
+
+`insider.radar` and `insider.tickerAlert` must stay unavailable. They represent synthetic aggregation and inferred signals that are not admitted by this source reader. The existing customer page is prepared to render the `EdgarTickerReadResult` union returned by the replacement `company` procedure, including its truthful unavailable statuses. Until the central wiring is reviewed and integrated, no customer request can reach an SEC fetcher.
+
+## Source-test boundary
+
+The focused tests use clearly synthetic XML and JSON fixtures to verify parser, URL, amendment, retry, rate, and unavailable-state semantics. They do not establish a live SEC acceptance, configured contact ownership, provider rights, database persistence, historical backfill, or production operation. No live filing request was made by this source implementation task because no approved truthful application contact was configured for it.

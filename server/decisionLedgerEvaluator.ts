@@ -8,40 +8,38 @@
  * Missing evidence must stay missing — do not invent scores or triggers.
  * Scope: docs/FAULTLINE_INTELLIGENCE_CONTRACT_V2_SCOPE.md
  *
- * Automatically evaluates expired Decision Ledger recommendations against
- * subsequent market data. Uses conservative scoring — never marks outcomes
- * as guaranteed. Preserves user-driven review by only auto-evaluating entries
- * that are still "pending" and whose timeframe has elapsed.
- *
- * Outcome states:
- *   - correct:           Price moved clearly in the recommended direction,
- *                        meeting or exceeding the primary target.
- *   - incorrect:         Price moved clearly against the recommendation,
- *                        or the stop level was breached.
- *   - partially_correct: Price moved in the right direction but fell short
- *                        of the primary target, or mixed signals.
- *   - still_active:      Timeframe has elapsed but price action is ambiguous;
- *                        requires human review.
- *   - pending:           Not yet evaluated (timeframe not elapsed).
- *
- * Conservative rules:
- *   1. Never auto-mark "correct" unless price moved ≥ 60% of the way to target.
- *   2. Never auto-mark "incorrect" unless price moved ≥ 50% against the entry.
- *   3. If data is unavailable or ambiguous, always fall back to "still_active".
- *   4. Macro/general queries (no ticker) always resolve to "still_active" with
- *      an LLM-generated narrative evaluation note.
- *   5. User manual overrides always take precedence — never re-evaluate if
- *      autoEvaluated = false and outcome != "pending".
+ * Automatic outcomes are deliberately limited to source-backed, completed daily
+ * observations. An execution-time quote and LLM narrative cannot prove what was
+ * true at a declared horizon, so they are never used to finalize an outcome.
  */
 
-import { getQuote } from "./yahooProxy";
-import { getCoinMarketData } from "./coingeckoProxy";
-import { invokeLLM } from "./_core/llm";
+import {
+  getDailyBarsForPeriod,
+  type YahooDailyBar,
+} from "./yahooProxy";
+import { getCoinOHLC, type CoinOHLCBar } from "./coingeckoProxy";
 import { ledgerScoreDirection } from "../shared/clientVocabulary";
+import {
+  equitySessionCloseMs,
+  etSessionDate,
+} from "../shared/completedBars";
 import { getDb } from "./db";
 import { decisionLedger } from "../drizzle/schema";
-import { eq, and, isNull, lt } from "drizzle-orm";
-import { extractLessonForEntry } from "./lessonExtractor";
+import { eq, and } from "drizzle-orm";
+import {
+  decisionLedgerOutcomeProvenanceKey,
+  decisionLedgerOutcomeProvenanceValues,
+  type DecisionLedgerAutomatedOutcome,
+  type DecisionLedgerOutcomeProvenanceInput,
+} from "./decisionLedgerProvenance";
+import { decisionLedgerOutcomeProvenance } from "../drizzle/decisionOutcomeProvenanceSchema";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const STOCK_ENTRY_LOOKBACK_MS = 14 * DAY_MS;
+const STOCK_HORIZON_GRACE_MS = 14 * DAY_MS;
+const CRYPTO_ENTRY_LOOKBACK_MS = 2 * DAY_MS;
+const CRYPTO_HORIZON_GRACE_MS = 2 * DAY_MS;
+const CRYPTO_MAX_HISTORY_MS = 366 * DAY_MS;
 
 // ── Timeframe parsing ─────────────────────────────────────────────────────────
 
@@ -49,200 +47,47 @@ import { extractLessonForEntry } from "./lessonExtractor";
  * Parse a human-readable timeframe string into milliseconds.
  * Conservative: if ambiguous, returns the LONGER duration so we wait longer
  * before evaluating (avoids premature incorrect verdicts).
- *
- * Examples:
- *   "1-3 days"    → 3 days
- *   "1 week"      → 7 days
- *   "2-4 weeks"   → 4 weeks
- *   "1-3 months"  → 3 months
- *   "intraday"    → 1 day
- *   "short-term"  → 14 days
- *   "medium-term" → 60 days
- *   "long-term"   → 180 days
  */
 export function parseTimeframeMs(timeframe: string): number {
   const t = timeframe.toLowerCase().trim();
-  const DAY = 24 * 60 * 60 * 1000;
 
-  // Intraday / same-day
   if (t.includes("intraday") || t.includes("same day") || t.includes("today")) {
-    return 1 * DAY;
+    return DAY_MS;
   }
 
-  // "X-Y days" or "X days" — take the upper bound
   const dayRange = t.match(/(\d+)(?:\s*[-–]\s*(\d+))?\s*day/);
   if (dayRange) {
     const upper = dayRange[2] ? parseInt(dayRange[2]) : parseInt(dayRange[1]);
-    return upper * DAY;
+    return upper * DAY_MS;
   }
 
-  // "X-Y weeks" or "X week(s)"
   const weekRange = t.match(/(\d+)(?:\s*[-–]\s*(\d+))?\s*week/);
   if (weekRange) {
     const upper = weekRange[2] ? parseInt(weekRange[2]) : parseInt(weekRange[1]);
-    return upper * 7 * DAY;
+    return upper * 7 * DAY_MS;
   }
 
-  // "X-Y months" or "X month(s)"
   const monthRange = t.match(/(\d+)(?:\s*[-–]\s*(\d+))?\s*month/);
   if (monthRange) {
     const upper = monthRange[2] ? parseInt(monthRange[2]) : parseInt(monthRange[1]);
-    return upper * 30 * DAY;
+    return upper * 30 * DAY_MS;
   }
 
-  // Qualitative labels
-  if (t.includes("short-term") || t.includes("short term")) return 14 * DAY;
-  if (t.includes("medium-term") || t.includes("medium term") || t.includes("mid-term")) return 60 * DAY;
-  if (t.includes("long-term") || t.includes("long term")) return 180 * DAY;
-  if (t.includes("swing")) return 10 * DAY;
-  if (t.includes("position")) return 90 * DAY;
+  if (t.includes("short-term") || t.includes("short term")) return 14 * DAY_MS;
+  if (t.includes("medium-term") || t.includes("medium term") || t.includes("mid-term")) return 60 * DAY_MS;
+  if (t.includes("long-term") || t.includes("long term")) return 180 * DAY_MS;
+  if (t.includes("swing")) return 10 * DAY_MS;
+  if (t.includes("position")) return 90 * DAY_MS;
 
-  // Default: 30 days (conservative)
-  return 30 * DAY;
+  return 30 * DAY_MS;
 }
 
-// ── Price fetching ────────────────────────────────────────────────────────────
+// ── Evaluation contracts ──────────────────────────────────────────────────────
 
-// Valid ticker: 1-10 uppercase letters/digits, optionally with a dot (e.g. BRK.B)
-const VALID_TICKER_RE = /^[A-Z][A-Z0-9.]{0,9}$/;
-// Words that are verdicts/actions, never valid tickers
-const VERDICT_WORDS = new Set(["BUYING", "SELLING", "HOLD", "BUY", "SELL", "AVOID", "WATCH", "ACCUMULATE", "REDUCE", "WAIT", "NEUTRAL"]);
+export type LedgerOutcome = DecisionLedgerAutomatedOutcome;
+export type EvaluationState = "verified" | "pending_unverifiable";
 
-async function fetchCurrentPrice(ticker: string, assetType: "stock" | "crypto"): Promise<number | null> {
-  // Guard: skip lookup for invalid or verdict-word tickers
-  const upper = ticker.toUpperCase();
-  if (!VALID_TICKER_RE.test(upper) || VERDICT_WORDS.has(upper)) {
-    console.warn(`[LedgerEval] Skipping price lookup for invalid ticker: ${ticker}`);
-    return null;
-  }
-  try {
-    if (assetType === "crypto") {
-      const data = await getCoinMarketData(ticker);
-      return data?.currentPrice ?? null;
-    } else {
-      const quote = await getQuote(ticker);
-      return quote.price ?? null;
-    }
-  } catch {
-    return null;
-  }
-}
-
-// ── Verdict direction parsing ─────────────────────────────────────────────────
-
-/**
- * Returns the expected price direction from a verdict string.
- * "bullish" / "buy" / "long" → +1
- * "bearish" / "sell" / "short" → -1
- * anything else → 0 (neutral/ambiguous)
- */
-function verdictDirection(verdict: string, recommendationType?: string | null): 1 | -1 | 0 {
-  return ledgerScoreDirection({ verdict, recommendationType });
-}
-
-// ── LLM evaluation for macro/ambiguous entries ────────────────────────────────
-
-async function llmEvaluateMacro(entry: {
-  verdict: string;
-  primaryDriver: string;
-  expectedTimeframe: string;
-  confidence: number;
-  createdAt: Date;
-  ticker: string | null;
-  assetType: string | null;
-  priceAtEntry: number | null;
-  currentPrice: number | null;
-}): Promise<{ outcome: "correct" | "incorrect" | "partially_correct" | "still_active"; evaluationNotes: string }> {
-  const priceContext = entry.ticker && entry.priceAtEntry && entry.currentPrice
-    ? `Entry price: $${entry.priceAtEntry.toFixed(4)}. Current price: $${entry.currentPrice.toFixed(4)}. Price change: ${(((entry.currentPrice - entry.priceAtEntry) / entry.priceAtEntry) * 100).toFixed(2)}%.`
-    : "No price data available (macro question or price data unavailable).";
-
-  const elapsed = Math.round((Date.now() - new Date(entry.createdAt).getTime()) / (24 * 60 * 60 * 1000));
-
-  const prompt = `You are a conservative market outcome evaluator for FAULTLINE, an institutional macro intelligence platform. Your job is to evaluate whether a past recommendation played out as expected.
-
-IMPORTANT RULES:
-- Be conservative. When in doubt, use "still_active" rather than "correct" or "incorrect".
-- Never claim a recommendation was "correct" with certainty. Use hedged language.
-- Never guarantee future performance.
-- If price data is unavailable or ambiguous, always use "still_active".
-- This is for informational and educational purposes only, not financial advice.
-
-RECOMMENDATION TO EVALUATE:
-- Verdict: ${entry.verdict}
-- Primary driver: ${entry.primaryDriver}
-- Expected timeframe: ${entry.expectedTimeframe}
-- Days elapsed since recommendation: ${elapsed} days
-- ${priceContext}
-
-Evaluate the outcome and respond in JSON with this exact schema:
-{
-  "outcome": "correct" | "incorrect" | "partially_correct" | "still_active",
-  "evaluationNotes": "A 1-3 sentence conservative evaluation note. Use hedged language. Do not claim certainty. End with: 'This evaluation is automated and for informational purposes only.'"
-}
-
-Use "still_active" if:
-- Price data is unavailable
-- The move is ambiguous
-- The timeframe is borderline
-- You are not confident in the outcome`;
-
-  try {
-    const response = await invokeLLM({
-      messages: [
-        { role: "system", content: "You are a conservative market outcome evaluator. Always respond with valid JSON only." },
-        { role: "user", content: prompt },
-      ],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "ledger_evaluation",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: {
-              outcome: { type: "string", enum: ["correct", "incorrect", "partially_correct", "still_active"] },
-              evaluationNotes: { type: "string" },
-            },
-            required: ["outcome", "evaluationNotes"],
-            additionalProperties: false,
-          },
-        },
-      },
-    });
-
-    const content = response?.choices?.[0]?.message?.content;
-    if (!content) throw new Error("No LLM response");
-    const parsed = typeof content === "string" ? JSON.parse(content) : content;
-    return {
-      outcome: parsed.outcome as "correct" | "incorrect" | "partially_correct" | "still_active",
-      evaluationNotes: parsed.evaluationNotes as string,
-    };
-  } catch (err) {
-    console.warn("[LedgerEval] LLM evaluation failed, falling back to still_active:", err);
-    return {
-      outcome: "still_active",
-      evaluationNotes: "Automated evaluation was unable to determine a clear outcome. Manual review recommended. This evaluation is automated and for informational purposes only.",
-    };
-  }
-}
-
-// ── Core evaluation logic ─────────────────────────────────────────────────────
-
-export type LedgerOutcome = "correct" | "incorrect" | "partially_correct" | "still_active";
-
-export interface EvaluationResult {
-  outcome: LedgerOutcome;
-  evaluationNotes: string;
-  priceAtResolution: number | null;
-  elapsedMs: number;
-}
-
-/**
- * Evaluate a single Decision Ledger entry.
- * Conservative: always biases toward "still_active" when uncertain.
- */
-export async function evaluateLedgerEntry(entry: {
+export interface LedgerEntryForEvaluation {
   id: number;
   ticker: string | null;
   assetType: "stock" | "crypto" | null;
@@ -254,241 +99,632 @@ export async function evaluateLedgerEntry(entry: {
   priceAtEntry: number | null;
   createdAt: Date;
   recommendationType?: string | null;
-}): Promise<EvaluationResult> {
-  const now = Date.now();
-  const elapsedMs = now - new Date(entry.createdAt).getTime();
+}
 
-  // Fetch current price if we have a ticker
-  let currentPrice: number | null = null;
-  if (entry.ticker && entry.assetType) {
-    currentPrice = await fetchCurrentPrice(entry.ticker, entry.assetType);
-  }
+export interface HorizonEvaluationSources {
+  getStockDailyBars(
+    ticker: string,
+    startDate: string,
+    endDate: string
+  ): Promise<YahooDailyBar[]>;
+  getCryptoDailyBars(ticker: string, days: number): Promise<CoinOHLCBar[]>;
+}
 
-  // For macro/general queries (no ticker), use LLM evaluation
-  if (!entry.ticker || !entry.assetType) {
-    const llmResult = await llmEvaluateMacro({
-      verdict: entry.verdict,
-      primaryDriver: entry.primaryDriver,
-      expectedTimeframe: entry.expectedTimeframe,
-      confidence: entry.confidence,
-      createdAt: entry.createdAt,
-      ticker: entry.ticker,
+const liveHorizonEvaluationSources: HorizonEvaluationSources = {
+  getStockDailyBars: getDailyBarsForPeriod,
+  getCryptoDailyBars: getCoinOHLC,
+};
+
+export interface EvaluationResult {
+  /** Null means no automatic outcome was finalized; the original row remains pending. */
+  outcome: LedgerOutcome | null;
+  evaluationState: EvaluationState;
+  evaluationNotes: string;
+  priceAtResolution: number | null;
+  elapsedMs: number;
+  provenance: DecisionLedgerOutcomeProvenanceInput;
+}
+
+type PriceObservation = Readonly<{
+  price: number;
+  /** Provider-supplied timestamp, not a synthesized session close. */
+  observedAt: Date;
+  /** Timestamp used only to decide whether a bar is before/after issuance/horizon. */
+  selectionAt: Date;
+}>;
+
+type SourceEvidence = Readonly<{
+  provider: "yahoo_finance_chart_daily" | "coingecko_ohlc_daily";
+  entry: PriceObservation;
+  horizon: PriceObservation;
+  evidence: Record<string, unknown>;
+}>;
+
+function finitePositive(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function validDate(value: Date): boolean {
+  return Number.isFinite(value.getTime());
+}
+
+function isoDate(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+function stockSelectionTime(bar: YahooDailyBar): Date | null {
+  if (!Number.isFinite(bar.timestamp)) return null;
+  const sessionDate = etSessionDate(bar.timestamp);
+  if (!sessionDate) return null;
+  const closeMs = equitySessionCloseMs(sessionDate);
+  return closeMs == null ? null : new Date(closeMs);
+}
+
+function sourceFailureResult(
+  entry: LedgerEntryForEvaluation,
+  now: Date,
+  horizonAt: Date,
+  reason: string,
+  sourceProvider: DecisionLedgerOutcomeProvenanceInput["sourceProvider"]
+): EvaluationResult {
+  const elapsedMs = Math.max(0, now.getTime() - entry.createdAt.getTime());
+  const originalStoredEntryPrice = finitePositive(entry.priceAtEntry)
+    ? entry.priceAtEntry
+    : null;
+  const notes = `Automatic outcome remains pending: ${reason.replaceAll("_", " ")}. No auditable source-backed as-of/horizon price pair was recorded.`;
+
+  return {
+    outcome: null,
+    evaluationState: "pending_unverifiable",
+    evaluationNotes: notes,
+    priceAtResolution: null,
+    elapsedMs,
+    provenance: {
+      decisionLedgerId: entry.id,
+      evaluationState: "pending_unverifiable",
+      sourceProvider,
       assetType: entry.assetType,
-      priceAtEntry: entry.priceAtEntry,
-      currentPrice,
-    });
-    return {
-      ...llmResult,
-      priceAtResolution: currentPrice,
-      elapsedMs,
-    };
-  }
+      assetSymbol: entry.ticker?.toUpperCase() ?? null,
+      originalIssuedAt: entry.createdAt,
+      horizonAt,
+      entryObservationAt: null,
+      entryPrice: null,
+      horizonObservationAt: null,
+      horizonPrice: null,
+      returnPct: null,
+      outcome: null,
+      receivedAt: now,
+      reason,
+      evidence: {
+        selectionRule: "horizon_daily_close_v1",
+        originalIssuedAt: entry.createdAt.toISOString(),
+        declaredTimeframe: entry.expectedTimeframe,
+        designatedHorizonAt: horizonAt.toISOString(),
+        originalStoredEntryPrice,
+        originalStoredEntryPriceStatus: originalStoredEntryPrice == null
+          ? "missing"
+          : "unverified_legacy_row_not_used_for_scoring",
+        receiptMeaning: "Time the evaluator received the adapter result; not a provider observation time.",
+      },
+    },
+  };
+}
 
-  // If we can't get a current price, fall back to still_active
-  if (currentPrice === null) {
+async function stockSourceEvidence(
+  entry: LedgerEntryForEvaluation,
+  issuedAt: Date,
+  horizonAt: Date,
+  sources: HorizonEvaluationSources
+): Promise<SourceEvidence | null> {
+  if (!entry.ticker) return null;
+  const startDate = isoDate(issuedAt.getTime() - STOCK_ENTRY_LOOKBACK_MS);
+  const endDate = isoDate(horizonAt.getTime() + STOCK_HORIZON_GRACE_MS);
+  const bars = await sources.getStockDailyBars(entry.ticker, startDate, endDate);
+  const observations = bars
+    .filter(bar => finitePositive(bar.close))
+    .map(bar => ({ bar, selectionAt: stockSelectionTime(bar) }))
+    .filter((item): item is { bar: YahooDailyBar; selectionAt: Date } => item.selectionAt != null)
+    .map(({ bar, selectionAt }) => ({
+      price: bar.close,
+      observedAt: new Date(bar.timestamp),
+      selectionAt,
+    }))
+    .filter(item => validDate(item.observedAt))
+    .sort((left, right) => left.selectionAt.getTime() - right.selectionAt.getTime());
+
+  const entryObservation = observations
+    .filter(item => item.selectionAt.getTime() <= issuedAt.getTime())
+    .at(-1);
+  const horizonObservation = observations.find(item =>
+    item.selectionAt.getTime() >= horizonAt.getTime()
+    && item.selectionAt.getTime() <= horizonAt.getTime() + STOCK_HORIZON_GRACE_MS
+  );
+  if (!entryObservation || !horizonObservation) return null;
+
+  return {
+    provider: "yahoo_finance_chart_daily",
+    entry: entryObservation,
+    horizon: horizonObservation,
+    evidence: {
+      rangeRequested: { startDate, endDate },
+      entrySelection: "latest completed NYSE session close at or before original issuance",
+      horizonSelection: "first completed NYSE session close at or after designated horizon, within 14 calendar days",
+      entrySelectionAt: entryObservation.selectionAt.toISOString(),
+      horizonSelectionAt: horizonObservation.selectionAt.toISOString(),
+    },
+  };
+}
+
+async function cryptoSourceEvidence(
+  entry: LedgerEntryForEvaluation,
+  issuedAt: Date,
+  horizonAt: Date,
+  now: Date,
+  sources: HorizonEvaluationSources
+): Promise<SourceEvidence | null> {
+  if (!entry.ticker) return null;
+  const requiredHistoryMs = now.getTime() - (issuedAt.getTime() - CRYPTO_ENTRY_LOOKBACK_MS);
+  if (requiredHistoryMs > CRYPTO_MAX_HISTORY_MS) return null;
+  const days = Math.max(3, Math.ceil(requiredHistoryMs / DAY_MS) + 1);
+  const bars = await sources.getCryptoDailyBars(entry.ticker, days);
+  const observations = bars
+    .filter(bar => finitePositive(bar.close) && Number.isFinite(bar.timestamp))
+    .map(bar => ({
+      price: bar.close,
+      observedAt: new Date(bar.timestamp),
+      selectionAt: new Date(bar.timestamp),
+    }))
+    .filter(item => validDate(item.observedAt))
+    .sort((left, right) => left.selectionAt.getTime() - right.selectionAt.getTime());
+
+  const entryObservation = observations
+    .filter(item => item.selectionAt.getTime() <= issuedAt.getTime())
+    .at(-1);
+  const horizonObservation = observations.find(item =>
+    item.selectionAt.getTime() >= horizonAt.getTime()
+    && item.selectionAt.getTime() <= horizonAt.getTime() + CRYPTO_HORIZON_GRACE_MS
+  );
+  if (!entryObservation || !horizonObservation) return null;
+
+  return {
+    provider: "coingecko_ohlc_daily",
+    entry: entryObservation,
+    horizon: horizonObservation,
+    evidence: {
+      requestedDays: days,
+      entrySelection: "latest provider daily candle close at or before original issuance",
+      horizonSelection: "first provider daily candle close at or after designated horizon, within 2 calendar days",
+      entrySelectionAt: entryObservation.selectionAt.toISOString(),
+      horizonSelectionAt: horizonObservation.selectionAt.toISOString(),
+    },
+  };
+}
+
+/** Returns the expected market direction; neutral or unestablished means unscorable. */
+function verdictDirection(
+  verdict: string,
+  recommendationType?: string | null
+): 1 | -1 | 0 {
+  return ledgerScoreDirection({ verdict, recommendationType });
+}
+
+function scoreHorizonEvidence(
+  entry: LedgerEntryForEvaluation,
+  now: Date,
+  horizonAt: Date,
+  evidence: SourceEvidence
+): EvaluationResult {
+  const direction = verdictDirection(entry.verdict, entry.recommendationType);
+  const observedReturnPct = Number(
+    (((evidence.horizon.price - evidence.entry.price) / evidence.entry.price) * 100).toFixed(12)
+  );
+  if (direction === 0) {
+    const elapsedMs = Math.max(0, now.getTime() - entry.createdAt.getTime());
     return {
-      outcome: "still_active",
-      evaluationNotes: `Unable to fetch current price for ${entry.ticker}. Manual review recommended. This evaluation is automated and for informational purposes only.`,
+      outcome: null,
+      evaluationState: "pending_unverifiable",
+      evaluationNotes: "Automatic outcome remains pending: unestablished direction. Source-backed daily observations were retained, but no deterministic directional scoring rule applies.",
       priceAtResolution: null,
       elapsedMs,
+      provenance: {
+        decisionLedgerId: entry.id,
+        evaluationState: "pending_unverifiable",
+        sourceProvider: evidence.provider,
+        assetType: entry.assetType,
+        assetSymbol: entry.ticker?.toUpperCase() ?? null,
+        originalIssuedAt: entry.createdAt,
+        horizonAt,
+        entryObservationAt: evidence.entry.observedAt,
+        entryPrice: evidence.entry.price,
+        horizonObservationAt: evidence.horizon.observedAt,
+        horizonPrice: evidence.horizon.price,
+        returnPct: observedReturnPct,
+        outcome: null,
+        receivedAt: now,
+        reason: "unestablished_direction",
+        evidence: {
+          selectionRule: "horizon_daily_close_v1",
+          originalIssuedAt: entry.createdAt.toISOString(),
+          declaredTimeframe: entry.expectedTimeframe,
+          designatedHorizonAt: horizonAt.toISOString(),
+          sourceProvider: evidence.provider,
+          entryObservation: {
+            observedAt: evidence.entry.observedAt.toISOString(),
+            selectionAt: evidence.entry.selectionAt.toISOString(),
+            close: evidence.entry.price,
+          },
+          horizonObservation: {
+            observedAt: evidence.horizon.observedAt.toISOString(),
+            selectionAt: evidence.horizon.selectionAt.toISOString(),
+            close: evidence.horizon.price,
+          },
+          receiptMeaning: "Time the evaluator received the adapter result; not a provider observation time.",
+          ...evidence.evidence,
+        },
+      },
     };
   }
 
-  // If we have no opening price, use LLM evaluation
-  if (!entry.priceAtEntry) {
-    const llmResult = await llmEvaluateMacro({
-      verdict: entry.verdict,
-      primaryDriver: entry.primaryDriver,
-      expectedTimeframe: entry.expectedTimeframe,
-      confidence: entry.confidence,
-      createdAt: entry.createdAt,
-      ticker: entry.ticker,
-      assetType: entry.assetType,
-      priceAtEntry: null,
-      currentPrice,
-    });
-    return {
-      ...llmResult,
-      priceAtResolution: currentPrice,
-      elapsedMs,
-    };
-  }
-
-  // Price-based evaluation
-  const direction = verdictDirection(entry.verdict, entry.recommendationType);
-  const priceChange = (currentPrice - entry.priceAtEntry) / entry.priceAtEntry; // e.g. 0.05 = +5%
-  const absPriceChange = Math.abs(priceChange);
-
-  // Neutral/ambiguous verdicts → LLM evaluation
-  if (direction === 0) {
-    const llmResult = await llmEvaluateMacro({
-      verdict: entry.verdict,
-      primaryDriver: entry.primaryDriver,
-      expectedTimeframe: entry.expectedTimeframe,
-      confidence: entry.confidence,
-      createdAt: entry.createdAt,
-      ticker: entry.ticker,
-      assetType: entry.assetType,
-      priceAtEntry: entry.priceAtEntry,
-      currentPrice,
-    });
-    return {
-      ...llmResult,
-      priceAtResolution: currentPrice,
-      elapsedMs,
-    };
-  }
-
-  // Directional price-based scoring
-  // priceMove: positive = moved in the direction of the recommendation
-  const priceMove = direction * priceChange; // +ve = correct direction
-
+  const priceChange = (evidence.horizon.price - evidence.entry.price) / evidence.entry.price;
+  const priceMove = direction * priceChange;
   let outcome: LedgerOutcome;
-  let evaluationNotes: string;
+  if (priceMove >= 0.06) outcome = "correct";
+  else if (priceMove >= 0.02) outcome = "partially_correct";
+  else if (priceMove <= -0.06) outcome = "incorrect";
+  else if (priceMove <= -0.02) outcome = "partially_correct";
+  else outcome = "still_active";
 
   const pct = (priceChange * 100).toFixed(2);
-  const dirLabel = direction === 1 ? "bullish" : "bearish";
-  const moveLabel = priceMove >= 0 ? "in the recommended direction" : "against the recommendation";
-
-  if (priceMove >= 0.06) {
-    // Moved ≥ 6% in the right direction — correct
-    outcome = "correct";
-    evaluationNotes = `${entry.ticker} moved ${pct}% ${moveLabel} over the evaluation period, consistent with the ${dirLabel} recommendation. The primary driver was: "${entry.primaryDriver}". This evaluation is automated and for informational purposes only.`;
-  } else if (priceMove >= 0.02) {
-    // Moved 2–6% in the right direction — partially correct
-    outcome = "partially_correct";
-    evaluationNotes = `${entry.ticker} moved ${pct}% ${moveLabel}, a modest move that partially supports the ${dirLabel} recommendation but fell short of a clear confirmation. The primary driver was: "${entry.primaryDriver}". This evaluation is automated and for informational purposes only.`;
-  } else if (priceMove <= -0.06) {
-    // Moved ≥ 6% against the recommendation — incorrect
-    outcome = "incorrect";
-    evaluationNotes = `${entry.ticker} moved ${pct}% ${moveLabel}, moving against the ${dirLabel} recommendation. The primary driver was: "${entry.primaryDriver}". This evaluation is automated and for informational purposes only.`;
-  } else if (priceMove <= -0.02) {
-    // Moved 2–6% against — partially correct (small adverse move, ambiguous)
-    outcome = "partially_correct";
-    evaluationNotes = `${entry.ticker} moved ${pct}% ${moveLabel}, a modest adverse move that does not clearly confirm or deny the ${dirLabel} recommendation. This evaluation is automated and for informational purposes only.`;
-  } else {
-    // Move < 2% in either direction — still active / ambiguous
-    outcome = "still_active";
-    evaluationNotes = `${entry.ticker} moved ${pct}% over the evaluation period, which is insufficient to determine a clear outcome for the ${dirLabel} recommendation. Manual review recommended. This evaluation is automated and for informational purposes only.`;
-  }
+  const directionLabel = direction === 1 ? "bullish" : "bearish";
+  const horizonPrice = evidence.horizon.price;
+  const notes = `${entry.ticker?.toUpperCase() ?? "Asset"} moved ${pct}% between the source-backed entry and horizon daily closes, evaluated as ${outcome.replaceAll("_", " ")} for the ${directionLabel} recommendation. Provider: ${evidence.provider}. This automated evaluation is informational only.`;
+  const elapsedMs = Math.max(0, now.getTime() - entry.createdAt.getTime());
 
   return {
     outcome,
-    evaluationNotes,
-    priceAtResolution: currentPrice,
+    evaluationState: "verified",
+    evaluationNotes: notes,
+    priceAtResolution: horizonPrice,
     elapsedMs,
+    provenance: {
+      decisionLedgerId: entry.id,
+      evaluationState: "verified",
+      sourceProvider: evidence.provider,
+      assetType: entry.assetType,
+      assetSymbol: entry.ticker?.toUpperCase() ?? null,
+      originalIssuedAt: entry.createdAt,
+      horizonAt,
+      entryObservationAt: evidence.entry.observedAt,
+      entryPrice: evidence.entry.price,
+      horizonObservationAt: evidence.horizon.observedAt,
+      horizonPrice,
+      returnPct: observedReturnPct,
+      outcome,
+      receivedAt: now,
+      reason: "horizon_observation_verified",
+      evidence: {
+        selectionRule: "horizon_daily_close_v1",
+        originalIssuedAt: entry.createdAt.toISOString(),
+        declaredTimeframe: entry.expectedTimeframe,
+        designatedHorizonAt: horizonAt.toISOString(),
+        sourceProvider: evidence.provider,
+        entryObservation: {
+          observedAt: evidence.entry.observedAt.toISOString(),
+          selectionAt: evidence.entry.selectionAt.toISOString(),
+          close: evidence.entry.price,
+        },
+        horizonObservation: {
+          observedAt: evidence.horizon.observedAt.toISOString(),
+          selectionAt: evidence.horizon.selectionAt.toISOString(),
+          close: horizonPrice,
+        },
+        returnPct: observedReturnPct,
+        originalStoredEntryPrice: finitePositive(entry.priceAtEntry)
+          ? entry.priceAtEntry
+          : null,
+        originalStoredEntryPriceStatus: "unverified_legacy_row_not_used_for_scoring",
+        receiptMeaning: "Time the evaluator received the adapter result; not a provider observation time.",
+        ...evidence.evidence,
+      },
+    },
   };
+}
+
+/**
+ * Evaluates one entry from completed, provider-timestamped daily bars. It never
+ * asks an LLM or reads a current quote. Missing source data produces a durable
+ * pending/unverifiable receipt rather than a relabelled original outcome.
+ */
+export async function evaluateLedgerEntry(
+  entry: LedgerEntryForEvaluation,
+  options: {
+    now?: Date;
+    sources?: HorizonEvaluationSources;
+  } = {}
+): Promise<EvaluationResult> {
+  const now = options.now ?? new Date();
+  const sources = options.sources ?? liveHorizonEvaluationSources;
+  const horizonAt = new Date(
+    entry.createdAt.getTime() + parseTimeframeMs(entry.expectedTimeframe)
+  );
+
+  if (!validDate(entry.createdAt) || !validDate(now) || !validDate(horizonAt)) {
+    return sourceFailureResult(entry, now, horizonAt, "invalid_issuance_or_horizon", null);
+  }
+  if (entry.createdAt.getTime() > now.getTime()) {
+    return sourceFailureResult(entry, now, horizonAt, "original_issuance_in_future", null);
+  }
+  if (!entry.ticker || !entry.assetType) {
+    return sourceFailureResult(entry, now, horizonAt, "asset_not_supported_for_horizon_price_evaluation", null);
+  }
+
+  try {
+    const evidence = entry.assetType === "stock"
+      ? await stockSourceEvidence(entry, entry.createdAt, horizonAt, sources)
+      : await cryptoSourceEvidence(entry, entry.createdAt, horizonAt, now, sources);
+    // In production this is captured after the adapter resolves. Tests pass a
+    // fixed value through `now` so their receipt evidence remains reproducible.
+    const sourceReceiptAt = options.now ?? new Date();
+    if (!evidence) {
+      const sourceProvider = entry.assetType === "stock"
+        ? "yahoo_finance_chart_daily"
+        : "coingecko_ohlc_daily";
+      return sourceFailureResult(entry, sourceReceiptAt, horizonAt, "horizon_or_entry_observation_unavailable", sourceProvider);
+    }
+    return scoreHorizonEvidence(entry, sourceReceiptAt, horizonAt, evidence);
+  } catch {
+    const sourceReceiptAt = options.now ?? new Date();
+    const sourceProvider = entry.assetType === "stock"
+      ? "yahoo_finance_chart_daily"
+      : "coingecko_ohlc_daily";
+    return sourceFailureResult(entry, sourceReceiptAt, horizonAt, "source_fetch_failed", sourceProvider);
+  }
 }
 
 // ── Batch evaluation (called by heartbeat) ────────────────────────────────────
 
+export interface DecisionLedgerEvaluationPersistence {
+  pendingEntries(): Promise<LedgerEntryForEvaluation[]>;
+  /**
+   * Inserts the deterministic receipt and, for a verified outcome, conditionally
+   * finalizes the original row in the same database transaction.
+   */
+  persistEvaluation(
+    entryId: number,
+    result: EvaluationResult
+  ): Promise<DecisionLedgerEvaluationPersistenceResult>;
+}
+
+export type DecisionLedgerEvaluationPersistenceResult =
+  | "finalized"
+  | "unverifiable_recorded"
+  | "already_recorded"
+  | "manual_resolution";
+
+export class DecisionLedgerOutcomeFinalizationConflictError extends Error {
+  constructor(entryId: number) {
+    super(`Decision Ledger entry ${entryId} was no longer pending for automatic finalization.`);
+    this.name = "DecisionLedgerOutcomeFinalizationConflictError";
+  }
+}
+
+/** Explicit fault hook used only by disposable-SQL recovery regressions. */
+export interface DecisionLedgerPersistenceTestHooks {
+  afterReceiptInserted?: () => Promise<void> | void;
+}
+
+function mysqlAffectedRows(result: unknown): number {
+  if (Array.isArray(result)) {
+    const header = result[0] as { affectedRows?: unknown } | undefined;
+    if (typeof header?.affectedRows === "number") return header.affectedRows;
+  }
+  if (result && typeof result === "object" && "affectedRows" in result) {
+    const rows = (result as { affectedRows?: unknown }).affectedRows;
+    if (typeof rows === "number") return rows;
+  }
+  return 0;
+}
+
+function isDuplicateKeyError(error: unknown): boolean {
+  let current = error;
+  for (let depth = 0; depth < 4; depth += 1) {
+    if (!current || typeof current !== "object") return false;
+    if ("code" in current && (current as { code?: unknown }).code === "ER_DUP_ENTRY") {
+      return true;
+    }
+    current = "cause" in current ? (current as { cause?: unknown }).cause : undefined;
+  }
+  return false;
+}
+
 /**
- * Evaluate all pending Decision Ledger entries whose timeframe has elapsed.
- * Only evaluates entries where:
- *   - outcome === "pending"
- *   - autoEvaluated === false (not already auto-evaluated)
- *   - createdAt + timeframe duration <= now
- *
- * Returns a summary of what was evaluated.
+ * This deliberately small structural type keeps the evaluator directly
+ * testable against Drizzle's mysql2 connection without changing server/db.ts.
  */
-export async function evaluateExpiredEntries(): Promise<{
+type DrizzleLedgerTransaction = {
+  insert: (...args: any[]) => {
+    values: (values: Record<string, unknown>) => Promise<unknown>;
+  };
+  update: (...args: any[]) => {
+    set: (values: Record<string, unknown>) => {
+      where: (condition: unknown) => Promise<unknown>;
+    };
+  };
+};
+
+export function createDrizzleDecisionLedgerPersistence(
+  database: unknown
+  , hooks: DecisionLedgerPersistenceTestHooks = {}
+): DecisionLedgerEvaluationPersistence {
+  const db = database as {
+    select: () => {
+      from: (table: typeof decisionLedger) => {
+        where: (condition: unknown) => { limit: (count: number) => Promise<LedgerEntryForEvaluation[]> };
+      };
+    };
+    transaction: <T>(
+      callback: (tx: DrizzleLedgerTransaction) => Promise<T>
+    ) => Promise<T>;
+  };
+
+  return {
+    pendingEntries: () =>
+      db
+        .select()
+        .from(decisionLedger)
+        .where(
+          and(
+            eq(decisionLedger.outcome, "pending"),
+            eq(decisionLedger.autoEvaluated, false)
+          )
+        )
+        .limit(100),
+    async persistEvaluation(entryId, result) {
+      const provenance = {
+        ...result.provenance,
+        provenanceKey: decisionLedgerOutcomeProvenanceKey(result.provenance),
+      };
+      try {
+        return await db.transaction(async tx => {
+          try {
+            await tx
+              .insert(decisionLedgerOutcomeProvenance)
+              .values(decisionLedgerOutcomeProvenanceValues(provenance));
+          } catch (error) {
+            // A previous committed worker owns this deterministic horizon/state
+            // receipt. It must not be reinterpreted or overwritten here.
+            if (isDuplicateKeyError(error)) return "already_recorded";
+            throw error;
+          }
+
+          await hooks.afterReceiptInserted?.();
+          if (result.outcome == null) return "unverifiable_recorded";
+
+          const updated = await tx
+            .update(decisionLedger)
+            .set({
+              outcome: result.outcome,
+              evaluationNotes: result.evaluationNotes,
+              priceAtResolution: result.priceAtResolution,
+              elapsedMs: result.elapsedMs,
+              autoEvaluated: true,
+              evaluatedAt: result.provenance.receivedAt,
+              resolvedAt: result.provenance.receivedAt,
+            })
+            .where(and(
+              eq(decisionLedger.id, entryId),
+              eq(decisionLedger.outcome, "pending"),
+              eq(decisionLedger.autoEvaluated, false)
+            ));
+          if (mysqlAffectedRows(updated) !== 1) {
+            // Throwing inside the transaction rolls the just-inserted receipt
+            // back too, so a retry has one deterministic repair path.
+            throw new DecisionLedgerOutcomeFinalizationConflictError(entryId);
+          }
+          return "finalized";
+        });
+      } catch (error) {
+        if (error instanceof DecisionLedgerOutcomeFinalizationConflictError) {
+          return "manual_resolution";
+        }
+        throw error;
+      }
+    },
+  };
+}
+
+export type ExpiredLedgerEvaluationSummary = {
   evaluated: number;
   skipped: number;
+  unverifiable: number;
   errors: number;
-  results: Array<{ id: number; outcome: LedgerOutcome; ticker: string | null }>;
-}> {
-  const db = await getDb();
-  if (!db) return { evaluated: 0, skipped: 0, errors: 0, results: [] };
+  results: Array<{
+    id: number;
+    outcome: LedgerOutcome | "pending";
+    ticker: string | null;
+    evaluationState: EvaluationState;
+  }>;
+};
 
-  // Fetch all pending entries that haven't been auto-evaluated yet
-  const pending = await db
-    .select()
-    .from(decisionLedger)
-    .where(
-      and(
-        eq(decisionLedger.outcome, "pending"),
-        eq(decisionLedger.autoEvaluated, false)
-      )
-    )
-    .limit(100); // Process at most 100 per heartbeat run to stay within 2-min timeout
+/**
+ * Evaluates only elapsed pending entries. The companion receipt and any automatic
+ * finalization occur in one transaction. If either statement fails, the original
+ * row remains pending and no partial automatic receipt survives (fail closed).
+ */
+export async function evaluateExpiredEntries(options: {
+  now?: Date;
+  sources?: HorizonEvaluationSources;
+  persistence?: DecisionLedgerEvaluationPersistence;
+  getDatabase?: () => Promise<unknown | null>;
+} = {}): Promise<ExpiredLedgerEvaluationSummary> {
+  const now = options.now ?? new Date();
+  let persistence = options.persistence;
+  if (!persistence) {
+    const database = await (options.getDatabase ?? getDb)();
+    if (!database) {
+      return { evaluated: 0, skipped: 0, unverifiable: 0, errors: 0, results: [] };
+    }
+    persistence = createDrizzleDecisionLedgerPersistence(database);
+  }
 
+  const pending = await persistence.pendingEntries();
   let evaluated = 0;
   let skipped = 0;
+  let unverifiable = 0;
   let errors = 0;
-  const results: Array<{ id: number; outcome: LedgerOutcome; ticker: string | null }> = [];
+  const results: ExpiredLedgerEvaluationSummary["results"] = [];
 
   for (const entry of pending) {
     try {
       const timeframeMs = parseTimeframeMs(entry.expectedTimeframe);
-      const ageMs = Date.now() - new Date(entry.createdAt).getTime();
-
-      // Not yet expired — skip
+      const ageMs = now.getTime() - entry.createdAt.getTime();
       if (ageMs < timeframeMs) {
         skipped++;
         continue;
       }
 
-      const result = await evaluateLedgerEntry({
-        id: entry.id,
-        ticker: entry.ticker,
-        assetType: entry.assetType,
-        verdict: entry.verdict,
-        opportunityScore: entry.opportunityScore,
-        confidence: entry.confidence,
-        primaryDriver: entry.primaryDriver,
-        expectedTimeframe: entry.expectedTimeframe,
-        priceAtEntry: entry.priceAtEntry,
-        createdAt: entry.createdAt,
-        recommendationType: entry.recommendationType,
+      const result = await evaluateLedgerEntry(entry, {
+        now,
+        sources: options.sources,
       });
 
-      await db
-        .update(decisionLedger)
-        .set({
-          outcome: result.outcome,
-          evaluationNotes: result.evaluationNotes,
-          priceAtResolution: result.priceAtResolution,
-          elapsedMs: result.elapsedMs,
-          autoEvaluated: true,
-          evaluatedAt: new Date(),
-          resolvedAt: new Date(),
-        })
-        .where(eq(decisionLedger.id, entry.id));
+      const persisted = await persistence.persistEvaluation(entry.id, result);
+      if (result.outcome == null) {
+        if (persisted === "manual_resolution") {
+          skipped++;
+          continue;
+        }
+        unverifiable++;
+        results.push({
+          id: entry.id,
+          outcome: "pending",
+          ticker: entry.ticker,
+          evaluationState: result.evaluationState,
+        });
+        continue;
+      }
 
-      results.push({ id: entry.id, outcome: result.outcome, ticker: entry.ticker });
-      evaluated++;
-
-      // Extract improvement lesson for this resolved entry (non-fatal)
-      extractLessonForEntry({
+      if (persisted !== "finalized") {
+        // Another evaluator committed the deterministic receipt or a manual
+        // resolver won the compare-and-set. Neither is an evaluator error.
+        skipped++;
+        continue;
+      }
+      results.push({
         id: entry.id,
-        userId: entry.userId,
-        ticker: entry.ticker,
-        assetType: entry.assetType,
-        verdict: entry.verdict,
-        opportunityScore: entry.opportunityScore,
-        confidence: entry.confidence,
-        primaryDriver: entry.primaryDriver,
-        expectedTimeframe: entry.expectedTimeframe,
         outcome: result.outcome,
-        evaluationNotes: result.evaluationNotes,
-        notes: entry.notes,
-        priceAtEntry: entry.priceAtEntry,
-        priceAtResolution: result.priceAtResolution,
-        elapsedMs: result.elapsedMs ?? null,
-        engineSource: entry.engineSource ?? null,
-        regimeAtTime: entry.regimeAtTime ?? null,
-        sector: entry.sector ?? null,
-        returnPct: entry.returnPct ?? null,
-      }).catch(err => console.error(`[LedgerEval] Lesson extraction failed for ${entry.id}:`, err));
-
-      // Small delay between entries to avoid rate-limiting price APIs
-      await new Promise(r => setTimeout(r, 300));
-    } catch (err) {
-      console.error(`[LedgerEval] Error evaluating entry ${entry.id}:`, err);
+        ticker: entry.ticker,
+        evaluationState: result.evaluationState,
+      });
+      evaluated++;
+    } catch (error) {
+      console.error(`[LedgerEval] Error evaluating entry ${entry.id}:`, error);
       errors++;
     }
   }
 
-  console.log(`[LedgerEval] Batch complete: evaluated=${evaluated}, skipped=${skipped}, errors=${errors}`);
-  return { evaluated, skipped, errors, results };
+  console.log(
+    `[LedgerEval] Batch complete: evaluated=${evaluated}, skipped=${skipped}, unverifiable=${unverifiable}, errors=${errors}`
+  );
+  return { evaluated, skipped, unverifiable, errors, results };
 }

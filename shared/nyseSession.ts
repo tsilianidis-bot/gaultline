@@ -236,6 +236,7 @@ export function easternSessionStamp(at: Date | string = new Date()): { etDate: s
  */
 export function seismographFreshForInfer(computedAtMs: number | null | undefined, now: Date = new Date()): boolean {
   if (computedAtMs == null || !Number.isFinite(computedAtMs)) return false;
+  if (computedAtMs > now.getTime()) return false;
   const nowStamp = easternSessionStamp(now);
   const atStamp = easternSessionStamp(new Date(computedAtMs));
   if (!nowStamp || !atStamp) return false;

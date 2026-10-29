@@ -8,7 +8,7 @@ import { AlertTriangle, Bell, BellOff, Shield, TrendingUp, TrendingDown, X, Chec
 import { useEngine } from '@/contexts/EngineContext';
 import { getRiskColor } from '@/components/RiskBadge';
 import {
-  RegimeAlert, generateAlerts, loadAlertHistory, saveAlertHistory,
+  RegimeAlert, generateAlerts,
   mergeAlerts, acknowledgeAlert, clearAcknowledged,
   severityColor, severityLabel, categoryLabel, THRESHOLD_RULES,
 } from '@/lib/regimeAlerts';
@@ -42,6 +42,54 @@ type ArchivedEvent = {
   outcomes?: Array<{ outcomeKey: string; horizonTradingDays: number; outcomeJson: string; observedAt: Date | string }>;
   outcomeStatus?: InstitutionalHorizonStatus[];
 };
+
+type DurablePersonalAlertEvent = {
+  id: number;
+  ruleId: string;
+  severity: RegimeAlert["severity"];
+  metric: string;
+  direction: "above" | "below";
+  threshold: string;
+  observedValue: string;
+  source: string;
+  sourceObservedAt: Date | string;
+  dataFreshness: string;
+  evidenceKind: "client_observed";
+  deliveryStatus: "not_sent";
+  acknowledgedAt: Date | string | null;
+  eventAt: Date | string;
+};
+
+type DisplayedAlert = RegimeAlert & { durableEventId?: number };
+
+function personalAlertToDisplayedAlert(event: DurablePersonalAlertEvent): DisplayedAlert {
+  const timestamp = new Date(event.eventAt).getTime();
+  const ruleLabel = THRESHOLD_RULES.find(rule => rule.id === event.ruleId)?.label
+    ?? `${event.ruleId.replace(/-/g, " ").toUpperCase()} · THRESHOLD TRANSITION`;
+  return {
+    id: `durable-alert-${event.id}`,
+    durableEventId: event.id,
+    timestamp: Number.isFinite(timestamp) ? timestamp : Date.now(),
+    category: "threshold_breach",
+    severity: event.severity,
+    title: ruleLabel,
+    body: `Observed ${event.observedValue} from ${event.source} (${event.dataFreshness}). This personal in-app history records a client-observed fresh transition; external notification delivery was not attempted or recorded.`,
+    metric: event.metric,
+    value: event.observedValue,
+    threshold: event.threshold,
+    direction: event.direction === "above" ? "up" : "down",
+    acknowledged: event.acknowledgedAt != null,
+    color: severityColor(event.severity),
+  };
+}
+
+function durableFreshness(stateLabel: string | null | undefined): "CURRENT" | "DELAYED" | "LAST CLOSE" | "STALE" | "UNAVAILABLE" | "UNKNOWN" {
+  if (stateLabel == null) return "CURRENT";
+  const normalized = stateLabel.trim().toUpperCase();
+  return normalized === "DELAYED" || normalized === "LAST CLOSE" || normalized === "STALE" || normalized === "UNAVAILABLE"
+    ? normalized
+    : "UNKNOWN";
+}
 
 function archivedSeverityColor(severity: ArchivedEvent["severity"]) {
   return severity === "critical" ? "#FF2D55" : severity === "high" ? "#FF9500" : severity === "moderate" ? "#FFD700" : "#00D4FF";
@@ -312,6 +360,7 @@ function ThresholdCard({ rule, reading }: { rule: typeof THRESHOLD_RULES[0]; rea
 // ── Main Alerts page ──────────────────────────────────────────
 function AlertsInner() {
   useSEO(PAGE_SEO.alerts);
+  const utils = trpc.useUtils();
   const { output, integrityLabel, marketMode } = useEngine();
   const { overall, domains, regime } = output;
   // Fail closed: without the canonical state the browser engine runs on its
@@ -336,6 +385,37 @@ function AlertsInner() {
     sourceEngine: archiveSource === "all" ? undefined : archiveSource,
     eventType: archiveType === "all" ? undefined : archiveType,
   });
+  const personalAlertQuery = trpc.institutionalMemory.listMyAlertEvents.useQuery({ limit: 50 });
+  const acknowledgeDurableAlert = trpc.institutionalMemory.acknowledgeMyAlertEvent.useMutation({
+    onSuccess: () => { void utils.institutionalMemory.listMyAlertEvents.invalidate(); },
+  });
+  const monitorObservations = useMemo(() => THRESHOLD_RULES.map(rule => {
+    const reading = readings[rule.metric as keyof typeof readings];
+    return {
+      ruleId: rule.id,
+      value: reading?.value ?? null,
+      freshness: reading == null ? "UNAVAILABLE" as const : durableFreshness(reading.stateLabel),
+      source: reading?.source ?? null,
+      observedAt: new Date().toISOString(),
+    };
+  }), [readings]);
+  const monitorObservationFingerprint = useMemo(() => JSON.stringify(monitorObservations.map(({ ruleId, value, freshness, source }) => ({ ruleId, value, freshness, source }))), [monitorObservations]);
+  const lastSubmittedMonitor = useRef<string | null>(null);
+  const syncDurableMonitor = trpc.institutionalMemory.syncMyAlertMonitor.useMutation({
+    onSuccess: (result) => {
+      if (result.status === "available" && result.created.length > 0) {
+        void utils.institutionalMemory.listMyAlertEvents.invalidate();
+      }
+    },
+  });
+  useEffect(() => {
+    // The durable server store creates its own first-fresh-reading baseline.
+    // Browser defaults, unavailable readings, and stale readings are never sent
+    // as a breach event by this page.
+    if (!canonicalAvailable || syncDurableMonitor.isPending || lastSubmittedMonitor.current === monitorObservationFingerprint) return;
+    lastSubmittedMonitor.current = monitorObservationFingerprint;
+    syncDurableMonitor.mutate({ observations: monitorObservations });
+  }, [canonicalAvailable, monitorObservationFingerprint, monitorObservations, syncDurableMonitor]);
   const archiveEvents = (archiveQuery.data?.events ?? []) as ArchivedEvent[];
   const archiveSources = useMemo(() => Array.from(new Set(archiveEvents.map(event => event.sourceEngine))).sort(), [archiveEvents]);
   const archiveTypes = useMemo(() => Array.from(new Set(archiveEvents.map(event => event.eventType))).sort(), [archiveEvents]);
@@ -350,8 +430,9 @@ function AlertsInner() {
     window.history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
   };
 
-  // Alert history state
-  const [alertHistory, setAlertHistory] = useState<RegimeAlert[]>([]);
+  // Browser-derived regime/domain context remains visible for this mounted
+  // session, but only threshold transitions are durable personal events.
+  const [sessionAlertHistory, setSessionAlertHistory] = useState<RegimeAlert[]>([]);
   const [filter, setFilter] = useState<'all' | 'critical' | 'high' | 'elevated' | 'unread'>('all');
   const [showThresholds, setShowThresholds] = useState(false);
 
@@ -359,11 +440,6 @@ function AlertsInner() {
   const prevRegimeCode = useRef<string | null>(null);
   const prevDomainScores = useRef<Record<string, number>>({});
   const initialized = useRef(false);
-
-  // Load persisted alerts on mount
-  useEffect(() => {
-    setAlertHistory(loadAlertHistory());
-  }, []);
 
   // Generate alerts when engine output changes
   useEffect(() => {
@@ -385,12 +461,9 @@ function AlertsInner() {
       prevDomainScores.current,
     );
 
-    if (newAlerts.length > 0) {
-      setAlertHistory(prev => {
-        const merged = mergeAlerts(prev, newAlerts);
-        saveAlertHistory(merged);
-        return merged;
-      });
+    const sessionOnlyAlerts = newAlerts.filter(alert => !THRESHOLD_RULES.some(rule => alert.id.startsWith(`${rule.id}-`)));
+    if (sessionOnlyAlerts.length > 0) {
+      setSessionAlertHistory(prev => mergeAlerts(prev, sessionOnlyAlerts));
     }
 
     prevRegimeCode.current = output.regime.code;
@@ -398,25 +471,29 @@ function AlertsInner() {
   }, [output, evaluableIndicators, canonicalAvailable]);
 
   const handleAcknowledge = (id: string) => {
-    setAlertHistory(prev => {
-      const updated = acknowledgeAlert(prev, id);
-      saveAlertHistory(updated);
-      return updated;
-    });
+    const durableEventId = alertHistory.find(alert => alert.id === id)?.durableEventId;
+    if (durableEventId != null) {
+      acknowledgeDurableAlert.mutate({ id: durableEventId });
+      return;
+    }
+    setSessionAlertHistory(prev => acknowledgeAlert(prev, id));
   };
 
   const handleClearAcknowledged = () => {
-    setAlertHistory(prev => {
-      const updated = clearAcknowledged(prev);
-      saveAlertHistory(updated);
-      return updated;
-    });
+    setSessionAlertHistory(prev => clearAcknowledged(prev));
   };
 
   const handleClearAll = () => {
-    setAlertHistory([]);
-    saveAlertHistory([]);
+    setSessionAlertHistory([]);
   };
+
+  const durableAlertHistory = useMemo(() => (
+    (personalAlertQuery.data?.events ?? [] as DurablePersonalAlertEvent[]).map(personalAlertToDisplayedAlert)
+  ), [personalAlertQuery.data?.events]);
+  const alertHistory: DisplayedAlert[] = useMemo(() => (
+    [...durableAlertHistory, ...sessionAlertHistory].sort((a, b) => b.timestamp - a.timestamp).slice(0, 100)
+  ), [durableAlertHistory, sessionAlertHistory]);
+  const sessionUnreadCount = sessionAlertHistory.filter(alert => !alert.acknowledged).length;
 
   // Filtered alerts
   const filteredAlerts = useMemo(() => {
@@ -559,7 +636,15 @@ function AlertsInner() {
           </div>
           {archiveQuery.isLoading ? <div style={{ color: "#6B7280", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", padding: "14px 0" }}>LOADING VERIFIED EVENT ARCHIVE…</div> : filteredArchiveEvents.length ? <div style={{ display: "grid", gap: "6px" }}>{filteredArchiveEvents.map((event, index) => <InstitutionalEventCard key={event.id} event={event} index={index} selectedEventId={selectedEventId} onSelect={selectArchiveEvent} />)}</div> : <div style={{ color: "#6B7280", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", padding: "14px 0" }}>NO VERIFIED SERVER EVENTS MATCH THESE FILTERS. DAILY CONTINUITY BEGINS WITH THE NEXT CANONICAL PIPELINE CAPTURE.</div>}
         </div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", letterSpacing: "0.12em", marginBottom: "9px" }}>SESSION-LOCAL THRESHOLD MONITOR · NOT A PROOF ARCHIVE</div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00D4FF", letterSpacing: "0.12em", marginBottom: "5px" }}>PERSONAL ALERT HISTORY · DURABLE THRESHOLD TRANSITIONS</div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", letterSpacing: "0.05em", marginBottom: "9px" }}>
+          {personalAlertQuery.data?.status === "unavailable"
+            ? "DURABLE ALERT STORAGE UNAVAILABLE — NO VOLATILE FALLBACK IS PRESENTED AS HISTORY."
+            : "CLIENT-OBSERVED FRESH READINGS ONLY · IN-APP HISTORY · EXTERNAL DELIVERY NOT SENT OR CLAIMED."}
+          {syncDurableMonitor.data?.status === "available" && syncDurableMonitor.data.skipped.length > 0
+            ? ` ${syncDurableMonitor.data.skipped.length} UNAVAILABLE, STALE, OR UNKNOWN READING${syncDurableMonitor.data.skipped.length === 1 ? "" : "S"} NOT EVALUATED.`
+            : ""}
+        </div>
         {/* Filter bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
@@ -582,7 +667,7 @@ function AlertsInner() {
             ))}
           </div>
           <div style={{ display: 'flex', gap: '6px' }}>
-            {unreadCount > 0 && (
+            {sessionUnreadCount > 0 && (
               <button
                 onClick={handleClearAcknowledged}
                 style={{
@@ -592,10 +677,10 @@ function AlertsInner() {
                   color: '#00FF88', display: 'flex', alignItems: 'center', gap: '4px',
                 }}
               >
-                <CheckCheck size={10} /> CLEAR READ
+                <CheckCheck size={10} /> CLEAR SESSION READ
               </button>
             )}
-            {alertHistory.length > 0 && (
+            {sessionAlertHistory.length > 0 && (
               <button
                 onClick={handleClearAll}
                 style={{
@@ -605,7 +690,7 @@ function AlertsInner() {
                   color: '#4B5563', display: 'flex', alignItems: 'center', gap: '4px',
                 }}
               >
-                <Trash2 size={10} /> CLEAR ALL
+                <Trash2 size={10} /> CLEAR SESSION CONTEXT
               </button>
             )}
           </div>

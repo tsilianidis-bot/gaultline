@@ -547,6 +547,41 @@
       "when": 1793241851962,
       "tag": "0077_governed_research_immutability",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "5",
+      "when": 1793270956094,
+      "tag": "0078_payment_event_linkage",
+      "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "5",
+      "when": 1793270956095,
+      "tag": "0079_decision_outcome_provenance",
+      "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "5",
+      "when": 1793270956096,
+      "tag": "0080_publishing_delivery_claims",
+      "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "5",
+      "when": 1793270956097,
+      "tag": "0081_admin_audit_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "5",
+      "when": 1793270956098,
+      "tag": "0082_durable_alert_events",
+      "breakpoints": true
     }
   ]
 }

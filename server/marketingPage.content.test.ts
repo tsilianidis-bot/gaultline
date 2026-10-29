@@ -52,7 +52,7 @@ describe("Marketing page positioning guardrails", () => {
     expect(page).toContain("Before you take a position, know where you stand.");
     expect(page).toContain("Understand market conditions, developing pressure, and the evidence behind your next decision.");
     expect(page).toContain("We show our evidence, preserve our history, and make our analysis accountable, including when we're wrong.");
-    expect(page).toContain("This isn’t your grandpa’s financial dashboard.");
+    expect(page).toContain("This isn't your grandpa's financial platform dashboard.");
   });
 
   it("does not present unsupported historical warnings or competing score claims", () => {

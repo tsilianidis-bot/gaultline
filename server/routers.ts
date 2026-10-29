@@ -68,7 +68,8 @@ import {
   calcGoalProgress, generateOwnerJournal, getOptimalAction, OBJECTIVE_TYPES,
   buildStockOpportunity, buildCryptoOpportunity,
 } from './ownerSimulation';
-import type { ConvictionBand, InsiderCompanyOutput, InsiderRadarOutput } from "./insiderIntelligence";
+import type { ConvictionBand, InsiderRadarOutput } from "./insiderIntelligence";
+import { readOfficialEdgarInsiderFilings, type EdgarTickerReadResult } from "./insider/edgarIngestion";
 import { dayTradeScanner, dayTradeSymbolSetup, getDayTradeFavorability, clearDayTradeCache } from './dayTradeEngine';
 import { fetchDailyBars } from './signalsProxy';
 import { saveDayTradeSnapshot, loadDayTradeSnapshot, getPipelineHealthLogs, getPipelineHealthSummary } from './db';
@@ -1636,17 +1637,19 @@ export const appRouter = router({
     }),
   }),
 
-  // ── Insider Intelligence — containment until SEC verification ──
-  // Output types keep the client compiling. The bodies still throw, so the
-  // synthetic generator is never called.
+  // ── Insider Intelligence — official filings only; synthetic procedures stay unavailable ──
   insider: router({
     radar: protectedProcedure.query((): InsiderRadarOutput => {
       throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Insider Intelligence unavailable: source verification required." });
     }),
     company: protectedProcedure
       .input(z.object({ ticker: z.string().min(1).max(10) }))
-      .query((): InsiderCompanyOutput => {
-        throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Insider Intelligence unavailable: source verification required." });
+      .query(async ({ input }): Promise<EdgarTickerReadResult> => {
+        const officialResult = await readOfficialEdgarInsiderFilings(input.ticker);
+        if (officialResult.status === "unavailable") {
+          throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Insider Intelligence unavailable: source verification required." });
+        }
+        return officialResult;
       }),
     tickerAlert: protectedProcedure
       .input(z.object({ ticker: z.string().min(1).max(10) }))

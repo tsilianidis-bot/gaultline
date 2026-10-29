@@ -1,688 +1,217 @@
-/* ============================================================
-   FAULTLINE — Insider Intelligence™
-   Source verification is pending; no insider intelligence is
-   displayed until a verified SEC-backed source is connected.
-   ============================================================ */
-import { useState, useEffect } from "react";
-import { trpc } from "@/lib/trpc";
+/*
+ * FAULTLINE — Insider Intelligence
+ *
+ * This surface renders only official SEC/EDGAR ownership filings returned by the
+ * authorized server reader. It does not derive conviction, a trading signal,
+ * accuracy, a radar, a ranking, or an institutional-ownership interpretation.
+ */
+import { useState } from "react";
+import { ExternalLink, FileText, RefreshCw, Search, ShieldAlert } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
-import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
-import { trackInsiderSearch } from "@/hooks/useAnalytics";
-import {
-  TrendingUp, TrendingDown, AlertTriangle, CheckCircle,
-  Eye, Activity, BarChart2, Shield, Users, DollarSign,
-  Clock, ChevronDown, ChevronUp, ArrowRight, Minus,
-  RefreshCw, Search, X, History, Brain, Zap,
-} from "lucide-react";
 import { PremiumGateFull } from "@/components/PremiumGate";
+import { trackInsiderSearch } from "@/hooks/useAnalytics";
+import { PAGE_SEO, useSEO } from "@/hooks/useSEO";
+import { trpc } from "@/lib/trpc";
 
-// ── Type aliases (mirrored from backend) ─────────────────────
-type ConvictionBand =
-  | "Exceptional Conviction" | "Strong Conviction" | "Moderate Conviction"
-  | "Neutral" | "Weak Conviction" | "Negative Insider Signal";
+type OwnershipForm = "3" | "3/A" | "4" | "4/A" | "5" | "5/A";
 
-type SellingClassification = "Normal" | "Elevated" | "Aggressive" | "Unusual";
+type OfficialTransaction = {
+  transactionDate: string | null;
+  ownerCik: string | null;
+  ownerName: string | null;
+  role: string | null;
+  transactionCode: string;
+  shares: number;
+  pricePerShare: number | null;
+  acquiredOrDisposed: "A" | "D";
+};
 
-// ── Color helpers ─────────────────────────────────────────────
-function convictionColor(score: number): string {
-  if (score >= 90) return "#00FF88";
-  if (score >= 75) return "#00D4FF";
-  if (score >= 60) return "#A78BFA";
-  if (score >= 40) return "#FF9500";
-  if (score >= 20) return "#FF6B35";
-  return "#FF2D55";
-}
-
-function bandColor(band: ConvictionBand): string {
-  const m: Record<ConvictionBand, string> = {
-    "Exceptional Conviction": "#00FF88",
-    "Strong Conviction": "#00D4FF",
-    "Moderate Conviction": "#A78BFA",
-    "Neutral": "#FF9500",
-    "Weak Conviction": "#FF6B35",
-    "Negative Insider Signal": "#FF2D55",
+type OfficialFiling = {
+  accessionNumber: string;
+  formType: OwnershipForm;
+  isAmendment: boolean;
+  filingDate: string;
+  reportDate: string | null;
+  issuerTicker: string;
+  sourceUrl: string;
+  rawDocumentSha256: string;
+  reportingOwners: Array<{ cik: string | null; name: string; role: string | null }>;
+  transactions: OfficialTransaction[];
+  provenance: {
+    provider: "SEC EDGAR";
+    retrievedAt: string;
+    filingIndexUrl: string;
+    submissionsUrl: string;
   };
-  return m[band] ?? "#94A3B8";
+};
+
+type OfficialReadResult =
+  | { status: "ok"; ticker: string; cik: string; companyName: string; retrievedAt: string; filings: OfficialFiling[] }
+  | { status: "unavailable"; ticker: string; reason: string; message: string };
+
+const MONO = "'IBM Plex Mono', monospace";
+const SANS = "'IBM Plex Sans', sans-serif";
+const PANEL: React.CSSProperties = {
+  background: "rgba(12,15,22,0.98)",
+  border: "1px solid rgba(0,212,255,0.18)",
+  borderRadius: "6px",
+};
+
+function formatNumber(value: number): string {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(value);
 }
 
-function sellingColor(cls: SellingClassification): string {
-  const m: Record<SellingClassification, string> = {
-    Normal: "#00FF88", Elevated: "#FF9500", Aggressive: "#FF2D55", Unusual: "#FF6B35",
-  };
-  return m[cls] ?? "#94A3B8";
+function formatPrice(value: number | null): string {
+  return value === null ? "Not reported" : `$${formatNumber(value)}`;
 }
 
-function signalColor(s: "green" | "yellow" | "red"): string {
-  return s === "green" ? "#00FF88" : s === "yellow" ? "#FF9500" : "#FF2D55";
-}
-
-function trendIcon(t: "improving" | "neutral" | "weakening") {
-  if (t === "improving") return <TrendingUp size={12} color="#00FF88" />;
-  if (t === "weakening") return <TrendingDown size={12} color="#FF2D55" />;
-  return <Minus size={12} color="#94A3B8" />;
-}
-
-function fmtDollar(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
-  return `$${n}`;
-}
-
-function strengthColor(s: "MODERATE" | "HIGH" | "EXCEPTIONAL"): string {
-  return s === "EXCEPTIONAL" ? "#00FF88" : s === "HIGH" ? "#00D4FF" : "#FF9500";
-}
-
-// ── Animated conviction gauge ─────────────────────────────────
-function ConvictionGauge({ score, size = 90 }: { score: number; size?: number }) {
-  const [anim, setAnim] = useState(0);
-  useEffect(() => { const t = setTimeout(() => setAnim(score), 300); return () => clearTimeout(t); }, [score]);
-  const color = convictionColor(score);
-  const r = size / 2 - 8;
-  const circ = 2 * Math.PI * r;
-  const dash = (anim / 100) * circ;
+function OfficialUnavailable({ message }: { message: string }) {
   return (
-    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
-      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={7} />
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={7}
-          strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
-          style={{ transition: "stroke-dasharray 1.2s cubic-bezier(0.23,1,0.32,1)", filter: `drop-shadow(0 0 6px ${color}80)` }} />
-      </svg>
-      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: size >= 90 ? "22px" : "16px", color, lineHeight: 1, textShadow: `0 0 12px ${color}80` }}>{anim}</div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.1em", marginTop: "1px" }}>ICS</div>
+    <div role="alert" style={{ ...PANEL, padding: "14px 16px", borderColor: "rgba(255,149,0,0.45)", color: "#FFD08A", lineHeight: 1.55, fontFamily: MONO, fontSize: "12px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "5px", color: "#FFB84D" }}>
+        <ShieldAlert size={15} aria-hidden="true" /> OFFICIAL SOURCE UNAVAILABLE
       </div>
+      {message}
     </div>
   );
 }
 
-// ── Section label ─────────────────────────────────────────────
-function SectionLabel({ icon, title, color = "#00D4FF", sub }: { icon: React.ReactNode; title: string; color?: string; sub?: string }) {
+function FilingCard({ filing }: { filing: OfficialFiling }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
-      <div style={{ color, opacity: 0.9 }}>{icon}</div>
-      <div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color, textTransform: "uppercase", letterSpacing: "0.18em", fontWeight: 600 }}>{title}</div>
-        {sub && <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.45)", letterSpacing: "0.1em", marginTop: "1px" }}>{sub}</div>}
+    <article style={{ ...PANEL, padding: "16px", marginTop: "12px" }} aria-label={`${filing.formType} filing ${filing.accessionNumber}`}>
+      <header style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", alignItems: "flex-start" }}>
+        <div>
+          <div style={{ color: "#00D4FF", fontFamily: MONO, fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em" }}>
+            FORM {filing.formType}{filing.isAmendment ? " · AMENDMENT" : ""}
+          </div>
+          <div style={{ color: "#D9E3ED", fontFamily: SANS, fontSize: "15px", marginTop: "5px" }}>
+            Filed {filing.filingDate}{filing.reportDate ? ` · report date ${filing.reportDate}` : " · report date not reported"}
+          </div>
+          <div style={{ color: "#8393A5", fontFamily: MONO, fontSize: "10px", marginTop: "5px", wordBreak: "break-all" }}>ACCESSION {filing.accessionNumber}</div>
+        </div>
+        <a href={filing.sourceUrl} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#66DAFF", fontFamily: MONO, fontSize: "10px", letterSpacing: "0.08em", textDecoration: "none", border: "1px solid rgba(0,212,255,0.35)", borderRadius: "4px", padding: "7px 9px" }}>
+          OPEN SEC FILING <ExternalLink size={12} aria-hidden="true" />
+        </a>
+      </header>
+
+      <div style={{ marginTop: "14px", padding: "10px 12px", background: "rgba(255,255,255,0.025)", borderRadius: "4px" }}>
+        <div style={{ fontFamily: MONO, fontSize: "10px", color: "#8A99A8", letterSpacing: "0.08em", marginBottom: "5px" }}>REPORTING OWNER{filing.reportingOwners.length === 1 ? "" : "S"}</div>
+        {filing.reportingOwners.map(owner => (
+          <div key={`${owner.cik ?? "unknown"}-${owner.name}`} style={{ fontFamily: SANS, fontSize: "13px", color: "#D9E3ED", lineHeight: 1.55 }}>
+            {owner.name}{owner.role ? ` · ${owner.role}` : " · role not reported"}{owner.cik ? <span style={{ color: "#8393A5", fontFamily: MONO, fontSize: "10px" }}> · CIK {owner.cik}</span> : null}
+          </div>
+        ))}
       </div>
-      <div style={{ flex: 1, height: "1px", background: `${color}20` }} />
-    </div>
-  );
-}
 
-// ── Conviction badge ──────────────────────────────────────────
-function ConvictionBadge({ band }: { band: ConvictionBand }) {
-  const c = bandColor(band);
-  return (
-    <div style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", background: `${c}12`, border: `1px solid ${c}35`, borderRadius: "3px" }}>
-      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: c, letterSpacing: "0.08em", fontWeight: 600 }}>{band.toUpperCase()}</span>
-    </div>
-  );
-}
-
-// ── Collapsible panel ─────────────────────────────────────────
-function CollapsiblePanel({ open, onToggle, icon, title, color, count, children }: {
-  open: boolean; onToggle: () => void; icon: React.ReactNode; title: string; color: string; count?: number; children: React.ReactNode;
-}) {
-  return (
-    <div style={{ background: "rgba(12,15,22,0.98)", border: `1px solid ${color}18`, borderRadius: "6px", overflow: "hidden" }}>
-      <button onClick={onToggle} style={{ width: "100%", background: "none", border: "none", cursor: "pointer", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div style={{ color }}>{icon}</div>
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color, textTransform: "uppercase", letterSpacing: "0.18em", fontWeight: 600 }}>{title}</span>
-          {count !== undefined && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", marginLeft: "4px" }}>{count}</span>}
-        </div>
-        {open ? <ChevronUp size={13} color="#64748B" /> : <ChevronDown size={13} color="#64748B" />}
-      </button>
-      {open && <div style={{ padding: "0 16px 14px" }}>{children}</div>}
-    </div>
-  );
-}
-
-// ── Company Profile Modal ─────────────────────────────────────
-const INSIDER_UNAVAILABLE = "Insider Intelligence unavailable: source verification required.";
-
-function InsiderUnavailable({ message }: { message: string }) {
-  return (
-    <div role="alert" style={{ padding: "14px 16px", marginBottom: "10px", background: "rgba(255,45,85,0.06)", border: "1px solid rgba(255,45,85,0.28)", borderRadius: "6px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#FF8FA3", lineHeight: 1.5 }}>
-      {message || INSIDER_UNAVAILABLE}
-    </div>
-  );
-}
-
-export function CompanyProfileModal({ ticker, onClose }: { ticker: string; onClose: () => void }) {
-  const { data, isLoading, error } = trpc.insider.company.useQuery({ ticker });
-  const [tab, setTab] = useState<"overview" | "timeline" | "accuracy">("overview");
-  const verifiedCompany = data && !error ? data : null;
-  const hasVerifiedCompany = Boolean(verifiedCompany);
-
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: "#0A0C12", border: "1px solid rgba(0,212,255,0.25)", borderRadius: "8px", width: "100%", maxWidth: "680px", maxHeight: "90vh", overflow: "auto", padding: "24px" }}>
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
-          <div>
-            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color: "#E2E8F0" }}>{ticker}</div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.15em" }}>Source verification pending</div>
-          </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B", padding: "4px" }}>
-            <X size={18} />
-          </button>
-        </div>
-
-        {isLoading && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "40px", gap: "12px" }}>
-            <div style={{ width: "16px", height: "16px", border: "2px solid rgba(0,212,255,0.3)", borderTopColor: "#00D4FF", borderRadius: "50%", animation: "fl-spin 0.8s linear infinite" }} />
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#64748B" }}>LOADING INSIDER PROFILE…</span>
-          </div>
-        )}
-
-        {error && <InsiderUnavailable message={error.message} />}
-
-        {hasVerifiedCompany && verifiedCompany && (
-          <>
-            {/* Score + Band */}
-            <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "20px", padding: "16px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "6px" }}>
-              <ConvictionGauge score={verifiedCompany.profile.convictionScore} size={90} />
-              <div>
-                <ConvictionBadge band={verifiedCompany.profile.convictionBand as ConvictionBand} />
-                <div style={{ marginTop: "8px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)" }}>
-                  Impact: <span style={{ color: verifiedCompany.profile.impactPoints >= 0 ? "#00FF88" : "#FF2D55", fontWeight: 700 }}>
-                    {verifiedCompany.profile.impactPoints >= 0 ? "+" : ""}{verifiedCompany.profile.impactPoints} pts
-                  </span> on Favorability Score
-                </div>
-                <div style={{ marginTop: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)" }}>
-                  Historical Accuracy: <span style={{ color: "#00D4FF", fontWeight: 700 }}>{verifiedCompany.profile.historicalAccuracy}%</span>
-                </div>
-                <div style={{ marginTop: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)" }}>
-                  Latest Filing: <span style={{ color: "#94A3B8" }}>{verifiedCompany.profile.mostRecentFiling}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Buy vs Sell */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "16px" }}>
-              <div style={{ padding: "12px", background: "rgba(0,255,136,0.05)", border: "1px solid rgba(0,255,136,0.18)", borderRadius: "5px" }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "4px" }}>Buying</div>
-                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color: "#00FF88" }}>{fmtDollar(verifiedCompany.profile.buyVsSell.buyValue)}</div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", marginTop: "2px" }}>{verifiedCompany.profile.buyVsSell.buyCount} transaction{verifiedCompany.profile.buyVsSell.buyCount !== 1 ? "s" : ""}</div>
-              </div>
-              <div style={{ padding: "12px", background: "rgba(255,45,85,0.05)", border: "1px solid rgba(255,45,85,0.18)", borderRadius: "5px" }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "4px" }}>Selling</div>
-                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color: "#FF2D55" }}>{fmtDollar(verifiedCompany.profile.buyVsSell.sellValue)}</div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", marginTop: "2px" }}>{verifiedCompany.profile.buyVsSell.sellCount} transaction{verifiedCompany.profile.buyVsSell.sellCount !== 1 ? "s" : ""}</div>
-              </div>
-            </div>
-
-            {/* Largest insider */}
-            {verifiedCompany.profile.largestInsider.totalBought > 0 && (
-              <div style={{ padding: "10px 12px", background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.15)", borderRadius: "4px", marginBottom: "16px" }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "3px" }}>Largest Insider</div>
-                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#CBD5E1" }}>
-                  {verifiedCompany.profile.largestInsider.name} <span style={{ color: "#64748B" }}>({verifiedCompany.profile.largestInsider.role})</span>
-                  <span style={{ color: "#00D4FF", marginLeft: "8px", fontWeight: 600 }}>{fmtDollar(verifiedCompany.profile.largestInsider.totalBought)}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Tabs */}
-            <div style={{ display: "flex", gap: "4px", marginBottom: "16px" }}>
-              {(["overview", "timeline", "accuracy"] as const).map(t => (
-                <button key={t} onClick={() => setTab(t)}
-                  style={{ padding: "6px 14px", background: tab === t ? "rgba(0,212,255,0.12)" : "rgba(255,255,255,0.03)", border: tab === t ? "1px solid rgba(0,212,255,0.40)" : "1px solid rgba(255,255,255,0.07)", borderRadius: "4px", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: tab === t ? "#00D4FF" : "#64748B", textTransform: "uppercase", letterSpacing: "0.1em", transition: "all 0.18s" }}>
-                  {t}
-                </button>
+      <div style={{ overflowX: "auto", marginTop: "14px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "630px" }}>
+          <caption style={{ textAlign: "left", color: "#8A99A8", fontFamily: MONO, fontSize: "10px", letterSpacing: "0.08em", paddingBottom: "8px" }}>TRANSACTION ROWS AS FILED</caption>
+          <thead>
+            <tr>
+              {["Transaction date", "Owner", "Code", "Acquired / disposed", "Shares", "Price / share"].map(label => (
+                <th key={label} scope="col" style={{ color: "#78899A", fontFamily: MONO, fontSize: "9px", fontWeight: 500, letterSpacing: "0.07em", padding: "7px 8px", textAlign: "left", borderBottom: "1px solid rgba(255,255,255,0.10)" }}>{label}</th>
               ))}
-            </div>
-
-            {/* Tab: Overview — AI Interpretation */}
-            {tab === "overview" && (
-              <div>
-                <div style={{ padding: "14px", background: "rgba(0,212,255,0.03)", border: "1px solid rgba(0,212,255,0.12)", borderRadius: "5px", marginBottom: "12px" }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <Brain size={11} color="#00D4FF" /> FAULTLINE Insider Analysis™
-                  </div>
-                  <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#94A3B8", lineHeight: 1.7 }}>
-                    {verifiedCompany.profile.aiInterpretation || "Generating analysis…"}
-                  </div>
-                </div>
-                {/* Selling analysis */}
-                {verifiedCompany.profile.sellingAnalysis.length > 0 && (
-                  <div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px" }}>Selling Analysis</div>
-                    {verifiedCompany.profile.sellingAnalysis.map((s, i) => {
-                      const sc = sellingColor(s.classification as SellingClassification);
-                      return (
-                        <div key={i} style={{ padding: "10px 12px", background: `${sc}06`, border: `1px solid ${sc}20`, borderRadius: "4px", marginBottom: "6px" }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
-                            <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#CBD5E1" }}>{s.insiderName} ({s.role})</span>
-                            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: sc, fontWeight: 700 }}>{s.classification.toUpperCase()}</span>
-                          </div>
-                          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)" }}>{fmtDollar(s.saleAmount)} — {s.reason}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Tab: Timeline */}
-            {tab === "timeline" && (
-              <div>
-                <div style={{ position: "relative", paddingLeft: "20px" }}>
-                  <div style={{ position: "absolute", left: "8px", top: 0, bottom: 0, width: "1px", background: "rgba(255,255,255,0.08)" }} />
-                  {verifiedCompany.timeline.map((ev, i) => {
-                    const c = ev.type === "purchase" ? "#00FF88" : "#FF2D55";
-                    return (
-                      <div key={i} style={{ position: "relative", marginBottom: "12px" }}>
-                        <div style={{ position: "absolute", left: "-16px", top: "4px", width: "8px", height: "8px", borderRadius: "50%", background: c, boxShadow: `0 0 6px ${c}80` }} />
-                        <div style={{ padding: "8px 12px", background: `${c}06`, border: `1px solid ${c}18`, borderRadius: "4px" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px" }}>
-                            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)" }}>{ev.date}</span>
-                            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: c }}>{fmtDollar(ev.amount)}</span>
-                          </div>
-                          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8" }}>{ev.label}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Tab: Historical Accuracy */}
-            {tab === "accuracy" && (
-              <div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "10px" }}>
-                  Insider Accuracy Rating™ — Did insider actions precede correct market moves?
-                </div>
-                {verifiedCompany.accuracyHistory.map((h, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "8px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "4px", marginBottom: "6px" }}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", minWidth: "60px" }}>{h.period}</div>
-                    <div style={{ padding: "2px 8px", background: h.insiderAction === "purchase" ? "rgba(0,255,136,0.08)" : "rgba(255,45,85,0.08)", border: `1px solid ${h.insiderAction === "purchase" ? "rgba(0,255,136,0.25)" : "rgba(255,45,85,0.25)"}`, borderRadius: "3px" }}>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: h.insiderAction === "purchase" ? "#00FF88" : "#FF2D55" }}>{h.insiderAction === "purchase" ? "Purchase filing" : "Sale filing"}</span>
-                    </div>
-                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: h.subsequentReturn > 0 ? "#00FF88" : "#FF2D55" }}>
-                      {h.subsequentReturn > 0 ? "+" : ""}{h.subsequentReturn}%
-                    </div>
-                    <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "4px" }}>
-                      {h.wasCorrect ? <CheckCircle size={13} color="#00FF88" /> : <X size={13} color="#FF2D55" />}
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: h.wasCorrect ? "#00FF88" : "#FF2D55" }}>{h.wasCorrect ? "CORRECT" : "WRONG"}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
+            </tr>
+          </thead>
+          <tbody>
+            {filing.transactions.map((transaction, index) => (
+              <tr key={`${filing.accessionNumber}-${index}`}>
+                <td style={cell}>{transaction.transactionDate ?? "Not reported"}</td>
+                <td style={cell}>{transaction.ownerName ?? (filing.reportingOwners.length > 1 ? "Multiple owners; filing does not assign row" : "Not reported")}</td>
+                <td style={{ ...cell, color: "#66DAFF", fontWeight: 700 }}>{transaction.transactionCode}</td>
+                <td style={cell}>{transaction.acquiredOrDisposed === "A" ? "A" : "D"}</td>
+                <td style={cell}>{formatNumber(transaction.shares)}</td>
+                <td style={cell}>{formatPrice(transaction.pricePerShare)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-    </div>
+
+      <footer style={{ marginTop: "12px", color: "#6F8193", fontFamily: MONO, fontSize: "9px", lineHeight: 1.6, wordBreak: "break-word" }}>
+        SEC EDGAR · retrieved {filing.provenance.retrievedAt} · <a href={filing.provenance.filingIndexUrl} target="_blank" rel="noreferrer" style={{ color: "#81CFF0" }}>filing index</a> · raw XML SHA-256 {filing.rawDocumentSha256}
+      </footer>
+    </article>
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────
+const cell: React.CSSProperties = { color: "#C3CFDB", fontFamily: MONO, fontSize: "10px", padding: "9px 8px", borderBottom: "1px solid rgba(255,255,255,0.055)", verticalAlign: "top" };
+
 export function InsiderIntelligenceInner() {
   useSEO(PAGE_SEO.insiderIntelligence);
-
-  const { data: radar, isLoading, error: radarError, refetch } = trpc.insider.radar.useQuery(undefined, {
+  const [input, setInput] = useState("");
+  const [requestedTicker, setRequestedTicker] = useState<string | null>(null);
+  const tickerForQuery = requestedTicker ?? "AAPL";
+  const query = trpc.insider.company.useQuery({ ticker: tickerForQuery }, {
+    enabled: requestedTicker !== null,
     refetchOnWindowFocus: false,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
   });
-  const hasVerifiedRadar = Boolean(radar && !radarError);
-  const verifiedRadar = radar && !radarError ? radar : null;
+  // The protected company procedure returns only the official-reader union.
+  // Configuration and source failures remain explicit unavailable states.
+  const officialRead = query.data as unknown as OfficialReadResult | undefined;
 
-  const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
-  const [searchTicker, setSearchTicker] = useState("");
-  const [open, setOpen] = useState<Record<string, boolean>>({
-    radar: true, clusters: true, selling: true, weeklyStats: true,
-  });
-  const toggle = (k: string) => setOpen(p => ({ ...p, [k]: !p[k] }));
-
-  const handleSearch = () => {
-    const t = searchTicker.trim().toUpperCase().replace(/[^A-Z0-9.]/g, "");
-    if (t) {
-      trackInsiderSearch(t);
-      setSelectedTicker(t);
-    }
+  const submit = () => {
+    const ticker = input.trim().toUpperCase().replace(/[^A-Z0-9.]/g, "");
+    if (!ticker) return;
+    trackInsiderSearch(ticker);
+    setRequestedTicker(ticker);
   };
+
+  const sourceUnavailable = officialRead?.status === "unavailable" ? officialRead.message : query.error?.message;
 
   return (
     <div style={{ background: "#050608", minHeight: "100vh", paddingBottom: "80px" }}>
-      {/* Ambient corner brackets */}
-      <div style={{ position: "fixed", top: 12, left: 12, width: 18, height: 18, borderTop: "2px solid rgba(0,212,255,0.25)", borderLeft: "2px solid rgba(0,212,255,0.25)", pointerEvents: "none", zIndex: 5 }} />
-      <div style={{ position: "fixed", top: 12, right: 12, width: 18, height: 18, borderTop: "2px solid rgba(0,212,255,0.25)", borderRight: "2px solid rgba(0,212,255,0.25)", pointerEvents: "none", zIndex: 5 }} />
-
       <div style={{ maxWidth: "900px", margin: "0 auto", padding: "0 16px" }}>
-        <PageHeader
-          title="Insider Intelligence™"
-          subtitle="Insider data unavailable — SEC source verification pending"
-          badge="SOURCE PENDING"
-        />
+        <PageHeader title="Insider Intelligence" subtitle="Official SEC/EDGAR Section 16 ownership filings only" badge="SEC SOURCE" />
 
-        {/* ── TICKER SEARCH ─────────────────────────────────── */}
-        <div style={{ background: "rgba(12,15,22,0.98)", border: "1px solid rgba(0,212,255,0.18)", borderRadius: "6px", padding: "16px", marginBottom: "10px" }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "10px" }}>Insider data unavailable — SEC source verification pending</div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <input
-              type="text"
-              value={searchTicker}
-              onChange={e => setSearchTicker(e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, ""))}
-              onKeyDown={e => e.key === "Enter" && handleSearch()}
-              placeholder="Ticker lookup unavailable pending verification"
-              maxLength={10}
-              style={{ flex: 1, padding: "10px 14px", background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.20)", borderRadius: "4px", color: "#E2E8F0", fontFamily: "'IBM Plex Mono', monospace", fontSize: "14px", letterSpacing: "0.12em", outline: "none" }}
-            />
-            <button onClick={handleSearch} style={{ padding: "10px 20px", background: "rgba(0,212,255,0.12)", border: "1px solid rgba(0,212,255,0.40)", borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", color: "#00D4FF", fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", letterSpacing: "0.12em", transition: "all 0.18s" }}>
-              <Search size={13} /> CHECK STATUS
+        <section style={{ ...PANEL, padding: "16px", marginBottom: "12px" }} aria-label="Official SEC filing lookup">
+          <div style={{ color: "#9BAABA", fontFamily: MONO, fontSize: "11px", lineHeight: 1.6, marginBottom: "12px" }}>
+            Search an issuer ticker to retrieve only official Forms 3, 4, and 5 records and amendments. Form 13F and inferred conviction, rankings, accuracy, and signals are not used or displayed.
+          </div>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <label style={{ flex: "1 1 220px" }}>
+              <span style={{ position: "absolute", width: "1px", height: "1px", overflow: "hidden", clip: "rect(0 0 0 0)" }}>Issuer ticker</span>
+              <input aria-label="Issuer ticker" value={input} onChange={event => setInput(event.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, ""))} onKeyDown={event => event.key === "Enter" && submit()} maxLength={10} placeholder="Ticker, for example AAPL" style={{ width: "100%", boxSizing: "border-box", background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.28)", borderRadius: "4px", color: "#E2E8F0", fontFamily: MONO, fontSize: "14px", letterSpacing: "0.08em", padding: "10px 12px", outline: "none" }} />
+            </label>
+            <button type="button" onClick={submit} style={{ background: "rgba(0,212,255,0.12)", border: "1px solid rgba(0,212,255,0.45)", borderRadius: "4px", color: "#66DAFF", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "7px", fontFamily: MONO, fontSize: "11px", letterSpacing: "0.08em", padding: "10px 14px" }}>
+              <Search size={14} aria-hidden="true" /> RETRIEVE FILINGS
             </button>
           </div>
-        </div>
+        </section>
 
-        {radarError && <InsiderUnavailable message={radarError.message} />}
+        {query.isLoading && <div role="status" style={{ ...PANEL, padding: "16px", color: "#9BAABA", fontFamily: MONO, fontSize: "11px" }}><RefreshCw size={13} aria-hidden="true" style={{ verticalAlign: "middle", marginRight: "7px" }} />REQUESTING OFFICIAL SEC/EDGAR RECORDS…</div>}
+        {sourceUnavailable && <OfficialUnavailable message={sourceUnavailable} />}
 
-        {/* ── WEEKLY STATS BAR ──────────────────────────────── */}
-        {hasVerifiedRadar && verifiedRadar && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "6px", marginBottom: "10px" }}>
-            {[
-              { label: "Total acquisition value", value: fmtDollar(verifiedRadar.weeklyStats.totalBuyValue), color: "#00FF88" },
-              { label: "Total disposition value", value: fmtDollar(verifiedRadar.weeklyStats.totalSellValue), color: "#FF2D55" },
-              { label: "Net Sentiment", value: `${verifiedRadar.weeklyStats.netSentiment > 0 ? "+" : ""}${verifiedRadar.weeklyStats.netSentiment}`, color: verifiedRadar.weeklyStats.netSentiment > 0 ? "#00FF88" : "#FF2D55" },
-              { label: "Active Tickers", value: `${verifiedRadar.weeklyStats.activeTickers}`, color: "#00D4FF" },
-              { label: "Cluster Alerts", value: `${verifiedRadar.weeklyStats.clusterCount}`, color: "#A78BFA" },
-            ].map(stat => (
-              <div key={stat.label} style={{ padding: "10px 12px", background: "rgba(12,15,22,0.98)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "5px" }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "4px" }}>{stat.label}</div>
-                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: stat.color }}>{stat.value}</div>
+        {officialRead?.status === "ok" && !query.error && (
+          <section aria-labelledby="official-filings-heading">
+            <div style={{ ...PANEL, padding: "16px", marginTop: "12px" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "9px" }}>
+                <FileText size={18} color="#00D4FF" aria-hidden="true" />
+                <div>
+                  <h2 id="official-filings-heading" style={{ color: "#E3EDF5", fontFamily: SANS, fontSize: "20px", margin: 0 }}>{officialRead.ticker} · {officialRead.companyName}</h2>
+                  <p style={{ color: "#8495A7", fontFamily: MONO, fontSize: "10px", lineHeight: 1.6, margin: "5px 0 0" }}>CIK {officialRead.cik} · retrieved {officialRead.retrievedAt} · {officialRead.filings.length} admitted filing{officialRead.filings.length === 1 ? "" : "s"}</p>
+                </div>
               </div>
-            ))}
+            </div>
+            {officialRead.filings.map(filing => <FilingCard key={filing.accessionNumber} filing={filing} />)}
+          </section>
+        )}
+
+        {!requestedTicker && (
+          <div style={{ ...PANEL, marginTop: "12px", padding: "16px", color: "#8191A1", fontFamily: MONO, fontSize: "11px", lineHeight: 1.65 }}>
+            No filing is displayed until an authenticated request retrieves a complete official SEC record. Missing source configuration, a denied request, malformed source record, or no admissible ownership transaction remains unavailable rather than becoming a modeled result.
           </div>
         )}
 
-        {/* ── SMART MONEY RADAR ─────────────────────────────── */}
-        {!radarError && (isLoading || hasVerifiedRadar) && (
-          <CollapsiblePanel open={open.radar} onToggle={() => toggle("radar")} icon={<Eye size={14} />} title="Smart Money Radar™" color="#00D4FF" count={hasVerifiedRadar && verifiedRadar ? verifiedRadar.radar.length : undefined}>
-          {isLoading && (
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "20px 0" }}>
-              <div style={{ width: "14px", height: "14px", border: "2px solid rgba(0,212,255,0.3)", borderTopColor: "#00D4FF", borderRadius: "50%", animation: "fl-spin 0.8s linear infinite" }} />
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#64748B" }}>SCANNING INSIDER ACTIVITY…</span>
-            </div>
-          )}
-          {hasVerifiedRadar && verifiedRadar && (
-            <>
-              {/* Column headers */}
-              <div style={{ display: "grid", gridTemplateColumns: "32px 80px 1fr 90px 100px 90px 80px 60px", gap: "8px", padding: "6px 8px", marginBottom: "4px" }}>
-                {["#", "Ticker", "Company", "ICS™", "Activity", "Capital", "Signal", "Trend"].map(h => (
-                  <div key={h} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.45)", textTransform: "uppercase", letterSpacing: "0.1em" }}>{h}</div>
-                ))}
-              </div>
-              {verifiedRadar.radar.map(entry => {
-                const cc = convictionColor(entry.convictionScore);
-                const sc = signalColor(entry.signalColor as "green" | "yellow" | "red");
-                return (
-                  <div key={entry.ticker}
-                    onClick={() => setSelectedTicker(entry.ticker)}
-                    style={{ display: "grid", gridTemplateColumns: "32px 80px 1fr 90px 100px 90px 80px 60px", gap: "8px", padding: "10px 8px", borderBottom: "1px solid rgba(255,255,255,0.04)", cursor: "pointer", borderRadius: "3px", transition: "background 0.15s" }}
-                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,212,255,0.04)")}
-                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.45)" }}>{entry.rank}</div>
-                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#E2E8F0" }}>{entry.ticker}</div>
-                    <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.company}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <ConvictionGauge score={entry.convictionScore} size={36} />
-                    </div>
-                    <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#94A3B8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.activity}</div>
-                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: "#00D4FF" }}>{fmtDollar(entry.dollarAmount)}</div>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <div style={{ padding: "2px 7px", background: `${sc}12`, border: `1px solid ${sc}30`, borderRadius: "3px" }}>
-                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: sc, letterSpacing: "0.08em" }}>{entry.convictionBand.split(" ")[0].toUpperCase()}</span>
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      {trendIcon(entry.trend as "improving" | "neutral" | "weakening")}
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)", textTransform: "capitalize" }}>{entry.trend}</span>
-                    </div>
-                  </div>
-                );
-              })}
-              <div style={{ marginTop: "10px", display: "flex", justifyContent: "flex-end" }}>
-                <button onClick={() => refetch()} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "4px", cursor: "pointer", color: "#64748B", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", letterSpacing: "0.1em" }}>
-                  <RefreshCw size={11} /> REFRESH RADAR
-                </button>
-              </div>
-            </>
-          )}
-          </CollapsiblePanel>
-        )}
-        <div style={{ marginBottom: "10px" }} />
-
-        {/* ── CLUSTER BUY ALERTS ────────────────────────────── */}
-        {hasVerifiedRadar && verifiedRadar && (
-          <CollapsiblePanel open={open.clusters} onToggle={() => toggle("clusters")} icon={<Users size={14} />} title="Cluster acquisition alerts™" color="#00FF88" count={verifiedRadar.clusterAlerts.length}>
-          {verifiedRadar.clusterAlerts.map((alert, i) => {
-            const sc = strengthColor(alert.strength);
-            return (
-              <div key={i} style={{ background: `${sc}06`, border: `1px solid ${sc}22`, borderRadius: "6px", padding: "14px", marginBottom: "8px" }}>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "10px" }}>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                      <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: sc, boxShadow: `0 0 8px ${sc}`, animation: "blink-alert 6s ease-in-out infinite" }} />
-                      <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#E2E8F0" }}>{alert.ticker}</span>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)" }}>{alert.company}</span>
-                    </div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)" }}>
-                      {alert.insiderCount} insiders purchased within {alert.daysWindow} days
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ padding: "3px 10px", background: `${sc}14`, border: `1px solid ${sc}40`, borderRadius: "3px", marginBottom: "4px" }}>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: sc, fontWeight: 700, letterSpacing: "0.1em" }}>STRENGTH: {alert.strength}</span>
-                    </div>
-                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#00D4FF" }}>{fmtDollar(alert.totalCapital)}</div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.45)" }}>Total Capital Committed</div>
-                  </div>
-                </div>
-                {/* Insiders involved */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  {alert.insiders.map((ins, j) => (
-                    <div key={j} style={{ padding: "4px 10px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "3px" }}>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8" }}>{ins.role}</span>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#64748B", marginLeft: "6px" }}>{fmtDollar(ins.amount)}</span>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ marginTop: "10px", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)" }}>ICS™:</div>
-                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: convictionColor(alert.convictionScore) }}>{alert.convictionScore}</div>
-                  <ConvictionBadge band={("Strong Conviction") as ConvictionBand} />
-                  <button onClick={() => setSelectedTicker(alert.ticker)} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "5px", padding: "4px 10px", background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.25)", borderRadius: "3px", cursor: "pointer", color: "#00D4FF", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px" }}>
-                    <ArrowRight size={11} /> VIEW PROFILE
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-          {verifiedRadar.clusterAlerts.length === 0 && !isLoading && (
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.45)", padding: "8px 0" }}>No cluster acquisition alerts detected this period.</div>
-          )}
-          </CollapsiblePanel>
-        )}
-        <div style={{ marginBottom: "10px" }} />
-
-        {/* ── INSIDER SELLING ANALYZER ──────────────────────── */}
-        {hasVerifiedRadar && verifiedRadar && (
-          <CollapsiblePanel open={open.selling} onToggle={() => toggle("selling")} icon={<Shield size={14} />} title="Insider Selling Analyzer™" color="#FF9500" count={verifiedRadar.topSellingAlerts.length}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.45)", marginBottom: "12px", lineHeight: 1.6 }}>
-            Not all selling is bearish. FAULTLINE classifies each sale by context — scheduled plans, tax events, diversification, and abnormal liquidation are treated differently.
-          </div>
-          {verifiedRadar?.topSellingAlerts.map((alert, i) => {
-            const sc = sellingColor(alert.classification as SellingClassification);
-            return (
-              <div key={i} style={{ padding: "12px 14px", background: `${sc}05`, border: `1px solid ${sc}18`, borderRadius: "5px", marginBottom: "8px" }}>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "6px" }}>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color: "#E2E8F0" }}>{alert.ticker}</span>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)" }}>{alert.insiderName} ({alert.role})</span>
-                    </div>
-                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "20px", color: sc, marginTop: "2px" }}>{fmtDollar(alert.saleAmount)}</div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", marginTop: "2px" }}>{alert.percentOfHoldings.toFixed(1)}% of holdings</div>
-                  </div>
-                  <div style={{ padding: "4px 12px", background: `${sc}14`, border: `1px solid ${sc}40`, borderRadius: "3px" }}>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: sc, fontWeight: 700, letterSpacing: "0.1em" }}>
-                      {alert.classification.toUpperCase()}
-                    </span>
-                  </div>
-                </div>
-                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", lineHeight: 1.6 }}>{alert.reason}</div>
-                <div style={{ marginTop: "6px", display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                  {alert.isScheduledPlan && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.55)", padding: "2px 6px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "2px" }}>10b5-1 PLAN</span>}
-                  {alert.isTaxRelated && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.55)", padding: "2px 6px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "2px" }}>TAX RELATED</span>}
-                  {alert.isDiversification && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.55)", padding: "2px 6px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "2px" }}>DIVERSIFICATION</span>}
-                  {alert.isAbnormal && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF2D55", padding: "2px 6px", background: "rgba(255,45,85,0.08)", border: "1px solid rgba(255,45,85,0.25)", borderRadius: "2px" }}>⚠ ABNORMAL</span>}
-                </div>
-              </div>
-            );
-          })}
-          {verifiedRadar.topSellingAlerts.length === 0 && !isLoading && (
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.45)", padding: "8px 0" }}>No significant selling activity to analyze this period.</div>
-          )}
-          </CollapsiblePanel>
-        )}
-	        <div style={{ marginBottom: "10px" }} />
-
-	        {/* ── INSIDER IMPACT ENGINE ─────────────────────────── */}
-	        {hasVerifiedRadar && verifiedRadar && (
-	          <div style={{ background: "rgba(12,15,22,0.98)", border: "1px solid rgba(167,139,250,0.18)", borderRadius: "6px", padding: "18px", marginBottom: "10px" }}>
-            <SectionLabel icon={<Zap size={14} />} title="Insider Impact Engine™" color="#A78BFA" sub="Aggregate impact of insider activity on market outlook" />
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
-              {(() => {
-                const bullish = verifiedRadar.radar.filter(r => r.convictionScore >= 65).length;
-                const bearish = verifiedRadar.radar.filter(r => r.convictionScore < 40).length;
-                const neutral = verifiedRadar.radar.length - bullish - bearish;
-                const netImpact = bullish * 3 - bearish * 3;
-                return [
-                  { label: "Bullish Impact", value: bullish, color: "#00FF88", icon: <TrendingUp size={14} color="#00FF88" /> },
-                  { label: "Neutral Impact", value: neutral, color: "#94A3B8", icon: <Minus size={14} color="#94A3B8" /> },
-                  { label: "Bearish Impact", value: bearish, color: "#FF2D55", icon: <TrendingDown size={14} color="#FF2D55" /> },
-                ].map(item => (
-                  <div key={item.label} style={{ padding: "14px", background: `${item.color}06`, border: `1px solid ${item.color}20`, borderRadius: "5px", textAlign: "center" }}>
-                    <div style={{ display: "flex", justifyContent: "center", marginBottom: "6px" }}>{item.icon}</div>
-                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "28px", color: item.color, lineHeight: 1 }}>{item.value}</div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.1em", marginTop: "4px" }}>{item.label}</div>
-                  </div>
-                ));
-              })()}
-            </div>
-            <div style={{ marginTop: "12px", padding: "10px 14px", background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.18)", borderRadius: "4px" }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", marginBottom: "4px" }}>Net Insider Sentiment Impact on Outlook</div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color: verifiedRadar.weeklyStats.netSentiment >= 0 ? "#00FF88" : "#FF2D55" }}>
-                {verifiedRadar.weeklyStats.netSentiment >= 0 ? "+" : ""}{verifiedRadar.weeklyStats.netSentiment}
-              </div>
-              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", marginTop: "4px", lineHeight: 1.6 }}>
-                {verifiedRadar.weeklyStats.netSentiment >= 20
-                  ? "CEO/CFO accumulation and cluster buying dominate the current insider landscape. Insider behavior supports a constructive market interpretation."
-                  : verifiedRadar.weeklyStats.netSentiment >= 0
-                  ? "Insider activity is mixed with moderate buying interest. No strong directional signal from aggregate insider behavior."
-                  : "Elevated selling activity relative to buying. Aggregate insider behavior warrants caution before adding risk."}
-              </div>
-            </div>
-          </div>
-	        )}
-
-	        {/* ── ALERTS SYSTEM ─────────────────────────────────── */}
-	        {hasVerifiedRadar && verifiedRadar && (
-	          <div style={{ background: "rgba(12,15,22,0.98)", border: "1px solid rgba(255,149,0,0.18)", borderRadius: "6px", padding: "18px", marginBottom: "10px" }}>
-            <SectionLabel icon={<AlertTriangle size={14} />} title="Insider Alerts™" color="#FF9500" sub="Significant insider activity requiring attention" />
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              {verifiedRadar.clusterAlerts.filter(a => a.strength !== "MODERATE").map((alert, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 12px", background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.18)", borderRadius: "4px" }}>
-                  <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#00FF88", boxShadow: "0 0 8px #00FF88", flexShrink: 0, animation: "blink-alert 6s ease-in-out infinite" }} />
-                  <div style={{ flex: 1 }}>
-                    <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#E2E8F0" }}>{alert.ticker}</span>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#64748B", marginLeft: "8px" }}>Cluster acquisition detected — {alert.insiderCount} insiders, {fmtDollar(alert.totalCapital)}</span>
-                  </div>
-                  <div style={{ padding: "2px 8px", background: "rgba(0,255,136,0.10)", border: "1px solid rgba(0,255,136,0.30)", borderRadius: "3px" }}>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00FF88" }}>{alert.strength}</span>
-                  </div>
-                </div>
-              ))}
-              {verifiedRadar.topSellingAlerts.filter(a => a.classification === "Aggressive" || a.classification === "Unusual").map((alert, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 12px", background: "rgba(255,45,85,0.04)", border: "1px solid rgba(255,45,85,0.18)", borderRadius: "4px" }}>
-                  <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#FF2D55", boxShadow: "0 0 8px #FF2D55", flexShrink: 0, animation: "blink-alert 6s ease-in-out infinite" }} />
-                  <div style={{ flex: 1 }}>
-                    <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#E2E8F0" }}>{alert.ticker}</span>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#64748B", marginLeft: "8px" }}>
-                      {alert.classification} Sale — {alert.insiderName} ({alert.role}), {fmtDollar(alert.saleAmount)}
-                    </span>
-                  </div>
-                  <div style={{ padding: "2px 8px", background: "rgba(255,45,85,0.10)", border: "1px solid rgba(255,45,85,0.30)", borderRadius: "3px" }}>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#FF2D55" }}>{alert.classification.toUpperCase()}</span>
-                  </div>
-                </div>
-              ))}
-              {verifiedRadar.radar.filter(r => r.convictionScore >= 85).slice(0, 3).map((entry, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 12px", background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.18)", borderRadius: "4px" }}>
-                  <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#00D4FF", boxShadow: "0 0 8px #00D4FF", flexShrink: 0 }} />
-                  <div style={{ flex: 1 }}>
-                    <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#E2E8F0" }}>{entry.ticker}</span>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#64748B", marginLeft: "8px" }}>
-                      ICS™ {entry.convictionScore} — {entry.activity}
-                    </span>
-                  </div>
-                  <div style={{ padding: "2px 8px", background: "rgba(0,212,255,0.10)", border: "1px solid rgba(0,212,255,0.30)", borderRadius: "3px" }}>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00D4FF" }}>HIGH CONVICTION</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-	        )}
-
-	        {/* ── HISTORICAL INSIDER ACCURACY ───────────────────── */}
-	        {hasVerifiedRadar && verifiedRadar && (
-	          <div style={{ background: "rgba(12,15,22,0.98)", border: "1px solid rgba(245,158,11,0.18)", borderRadius: "6px", padding: "18px", marginBottom: "10px" }}>
-            <SectionLabel icon={<History size={14} />} title="Insider Accuracy Rating™" color="#F59E0B" sub="Historical accuracy of insider signals across the radar universe" />
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "8px" }}>
-              {verifiedRadar.radar.slice(0, 8).map(entry => (
-                <div key={entry.ticker} style={{ padding: "12px", background: "rgba(245,158,11,0.04)", border: "1px solid rgba(245,158,11,0.15)", borderRadius: "5px", cursor: "pointer" }}
-                  onClick={() => setSelectedTicker(entry.ticker)}>
-                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color: "#E2E8F0", marginBottom: "4px" }}>{entry.ticker}</div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", marginBottom: "6px" }}>Insider Accuracy</div>
-                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color: "#F59E0B" }}>
-                    {/* Derive accuracy from conviction score as proxy */}
-                    {Math.min(95, Math.max(40, Math.round(entry.convictionScore * 0.6 + 25)))}%
-                  </div>
-                  <div style={{ height: "3px", background: "rgba(255,255,255,0.05)", borderRadius: "2px", overflow: "hidden", marginTop: "6px" }}>
-                    <div style={{ height: "100%", width: `${Math.min(95, Math.max(40, Math.round(entry.convictionScore * 0.6 + 25)))}%`, background: "#F59E0B", borderRadius: "2px" }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Compliance disclaimer */}
-        <div style={{ padding: "12px 14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "4px" }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", lineHeight: 1.6, textAlign: "center", letterSpacing: "0.04em" }}>
-            Insider data unavailable — SEC source verification pending. No SEC-derived or model-generated insider intelligence is displayed. This is not investment advice.
-          </div>
-        </div>
+        <footer style={{ ...PANEL, marginTop: "12px", padding: "13px 15px", color: "#708293", fontFamily: MONO, fontSize: "10px", lineHeight: 1.65, textAlign: "center" }}>
+          Source: U.S. Securities and Exchange Commission EDGAR. Filing dates, report dates, transaction dates, codes, ownership identity, amendment flags, source links, retrieval time, and raw-document hash are shown as available. This presentation is not investment advice.
+        </footer>
       </div>
-
-      {/* Company Profile Modal */}
-      {selectedTicker && (
-        <CompanyProfileModal ticker={selectedTicker} onClose={() => setSelectedTicker(null)} />
-      )}
     </div>
   );
 }
 
 export default function InsiderIntelligence() {
-  return (
-    <PremiumGateFull variant="insiderIntel">
-      <InsiderIntelligenceInner />
-    </PremiumGateFull>
-  );
+  return <PremiumGateFull variant="insiderIntel"><InsiderIntelligenceInner /></PremiumGateFull>;
 }

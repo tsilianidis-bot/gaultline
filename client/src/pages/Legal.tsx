@@ -3,12 +3,14 @@ import { LIFETIME_TERMS, LIFETIME_FINAL_SALE_NOTICE } from "@shared/tiers";
    FAULTLINE — Legal Page
    Privacy Policy + Terms of Use
    ============================================================ */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
 import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 type Tab = "privacy" | "terms";
+
+const LEGAL_TABS: readonly Tab[] = ["privacy", "terms"];
 
 type LegalLocation = Pick<Location, "hash" | "search">;
 type LocationChangeTarget = Pick<EventTarget, "addEventListener" | "removeEventListener">;
@@ -20,6 +22,16 @@ function getTab(value: string | null): Tab | undefined {
 
 export function getLegalTabFromLocation(location: LegalLocation): Tab {
   return getTab(location.hash.replace(/^#/, "")) ?? getTab(new URLSearchParams(location.search).get("tab")) ?? "privacy";
+}
+
+/** Implements the keyboard pattern for a horizontal tab list. */
+export function getNextLegalTab(current: Tab, key: string): Tab | undefined {
+  const currentIndex = LEGAL_TABS.indexOf(current);
+  if (key === "Home") return LEGAL_TABS[0];
+  if (key === "End") return LEGAL_TABS[LEGAL_TABS.length - 1];
+  if (key === "ArrowLeft" || key === "ArrowUp") return LEGAL_TABS[(currentIndex - 1 + LEGAL_TABS.length) % LEGAL_TABS.length];
+  if (key === "ArrowRight" || key === "ArrowDown") return LEGAL_TABS[(currentIndex + 1) % LEGAL_TABS.length];
+  return undefined;
 }
 
 export function subscribeToLegalLocationChanges(
@@ -46,6 +58,7 @@ export default function Legal() {
   const [tab, setTab] = useState<Tab>(() => (
     typeof window === "undefined" ? "privacy" : getLegalTabFromLocation(window.location)
   ));
+  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({ privacy: null, terms: null });
 
   useEffect(() => subscribeToLegalLocationChanges(window, window.location, setTab), []);
 
@@ -54,6 +67,14 @@ export default function Legal() {
     if (window.location.hash !== `#${nextTab}`) {
       window.location.hash = nextTab;
     }
+  }
+
+  function handleTabKeyDown(event: React.KeyboardEvent<HTMLButtonElement>, current: Tab) {
+    const nextTab = getNextLegalTab(current, event.key);
+    if (!nextTab) return;
+    event.preventDefault();
+    selectTab(nextTab);
+    tabRefs.current[nextTab]?.focus();
   }
 
   return (
@@ -103,7 +124,7 @@ export default function Legal() {
         </Link>
       </header>
 
-      <div style={{ maxWidth: "800px", margin: "0 auto", padding: "48px 24px 80px" }}>
+      <main style={{ maxWidth: "800px", margin: "0 auto", padding: "48px 24px 80px" }}>
         {/* Title */}
         <div style={{ marginBottom: "32px" }}>
           <div
@@ -165,7 +186,7 @@ export default function Legal() {
           role="tablist"
           aria-label="Legal documents"
         >
-          {(["privacy", "terms"] as Tab[]).map((t) => (
+          {LEGAL_TABS.map((t) => (
             <button
               key={t}
               type="button"
@@ -173,7 +194,10 @@ export default function Legal() {
               id={`${t}-tab`}
               aria-selected={tab === t}
               aria-controls={`${t}-panel`}
+              tabIndex={tab === t ? 0 : -1}
+              ref={(node) => { tabRefs.current[t] = node; }}
               onClick={() => selectTab(t)}
+              onKeyDown={(event) => handleTabKeyDown(event, t)}
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: "11px",
@@ -221,7 +245,7 @@ export default function Legal() {
             jt@getfaultline.live
           </a>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

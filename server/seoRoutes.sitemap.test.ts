@@ -41,6 +41,15 @@ async function fetchSitemap(): Promise<string> {
   return body;
 }
 
+async function fetchRobots(): Promise<string> {
+  const handlers: Record<string, (req: unknown, res: unknown) => unknown> = {};
+  registerSEORoutes({ get: (path: string, h: any) => { handlers[path] = h; } } as any);
+  let body = "";
+  const res = { setHeader: () => res, send: (b: string) => { body = b; return res; } };
+  await handlers["/robots.txt"]({}, res);
+  return body;
+}
+
 describe("sitemap consistency with server-rendered article pages", () => {
   beforeEach(() => { lastBriefWhere = null; });
 
@@ -52,10 +61,21 @@ describe("sitemap consistency with server-rendered article pages", () => {
     expect(locs).toContain("https://getfaultline.live/blog/fixture-evergreen");
     expect(locs).toContain("https://getfaultline.live/daily-brief/daily-brief-fixture-2026-09-29");
     expect(locs).toContain("https://getfaultline.live/blog?post=how-to-measure-market-liquidity");
+    expect(locs).toContain("https://getfaultline.live/pricing");
+    expect(locs).toContain("https://getfaultline.live/trust");
+    expect(locs).toContain("https://getfaultline.live/intelligence-library");
     expect(xml).toContain("<lastmod>2026-09-29</lastmod>");
     expect(new Set(locs).size).toBe(locs.length);
     // intel_record posts are noindex,follow and must stay out of the sitemap:
     expect(getEvergreenPosts).toHaveBeenCalled();
     expect(lastBriefWhere).not.toBeNull();
+  });
+
+  it("keeps private/account routes out of crawler discovery in the dynamic robots response", async () => {
+    const robots = await fetchRobots();
+    for (const path of ["/app", "/app/", "/admin/", "/billing/", "/login/", "/promo/", "/demo/", "/r/"]) {
+      expect(robots).toContain(`Disallow: ${path}`);
+    }
+    expect(robots).toContain("Sitemap: https://getfaultline.live/sitemap.xml");
   });
 });

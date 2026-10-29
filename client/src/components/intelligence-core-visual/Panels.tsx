@@ -1,4 +1,11 @@
-import { useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import { ChevronDown, FileText } from "lucide-react";
 import type {
   CoreAssessmentRecord,
@@ -50,6 +57,22 @@ function scenarioInitialId(scenarios: CoreScenario[]): ScenarioId {
   );
 }
 
+/**
+ * The tab can retain a now-absent id while an upstream model is replaced. Resolve
+ * it before rendering or informing the topology so stale scenario domains cannot
+ * stay visually selected. A null result is meaningful: no supplied scenario means
+ * no related-domain highlight.
+ */
+export function resolveScenarioSelection(
+  scenarios: CoreScenario[],
+  selectedId: ScenarioId | null
+): ScenarioId | null {
+  if (scenarios.length === 0) return null;
+  if (selectedId && scenarios.some(scenario => scenario.id === selectedId))
+    return selectedId;
+  return scenarioInitialId(scenarios);
+}
+
 function formatAssessmentDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Date unavailable";
@@ -83,7 +106,7 @@ export function ScenarioPanel({
 }: {
   model: IntelligenceCoreViewModel;
   onEvidence: (ids: string[], title: string) => void;
-  onScenario?: (id: ScenarioId) => void;
+  onScenario?: (id: ScenarioId | null) => void;
 }) {
   const scenarios = model.scenarios ?? [];
   const scenariosById = useMemo(
@@ -98,15 +121,26 @@ export function ScenarioPanel({
     {}
   );
   const panelId = `fic-scenarios-${idToken(useId())}`;
+  const resolvedSelectedId = resolveScenarioSelection(scenarios, selectedId);
+  const selectedScenario = resolvedSelectedId
+    ? scenariosById.get(resolvedSelectedId)
+    : undefined;
 
-  const selectedScenario =
-    scenariosById.get(selectedId) ??
-    scenariosById.get(scenarioInitialId(scenarios));
+  // Keep local keyboard/tab state reconciled with an upstream replacement while
+  // publishing the same resolved selection to the topology. This makes the initial
+  // favored scenario, a keyboard selection, and a removed scenario all use the
+  // same supplied domain linkage.
+  useEffect(() => {
+    if (resolvedSelectedId && resolvedSelectedId !== selectedId)
+      setSelectedId(resolvedSelectedId);
+  }, [resolvedSelectedId, selectedId]);
+  useEffect(() => {
+    onScenario?.(resolvedSelectedId);
+  }, [onScenario, resolvedSelectedId]);
 
   const selectScenario = (id: ScenarioId) => {
     if (!scenariosById.has(id)) return;
     setSelectedId(id);
-    onScenario?.(id);
   };
 
   const moveScenarioFocus = (

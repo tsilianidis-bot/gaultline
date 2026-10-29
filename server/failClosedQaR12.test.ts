@@ -128,12 +128,10 @@ describe("B9b Decision Ledger / Validation pages render no confidence or opportu
 
 describe("B9b prompts never carry the ledger confidence / opportunity score", () => {
   beforeEach(() => { llm.calls.length = 0; llm.reply = ""; dbState.inserted.length = 0; });
-  it("macro evaluator prompt", async () => {
-    llm.reply = JSON.stringify({ outcome: "still_active", evaluationNotes: "Ambiguous. This evaluation is automated and for informational purposes only." });
-    await evaluateLedgerEntry({ id: 1, ticker: null, assetType: null, verdict: "HOLD", opportunityScore: 5, confidence: 50, primaryDriver: "Credit", expectedTimeframe: "1-3 months", priceAtEntry: null, createdAt: new Date(Date.now() - 86400000) });
-    const prompt = JSON.stringify(llm.calls.map(c => c.messages));
-    expect(prompt).toContain("RECOMMENDATION TO EVALUATE");
-    expect(prompt).not.toMatch(/Confidence at time|Opportunity|\b50%|\b5\/100/);
+  it("macro evaluator leaves the outcome pending without an LLM call", async () => {
+    const result = await evaluateLedgerEntry({ id: 1, ticker: null, assetType: null, verdict: "HOLD", opportunityScore: 5, confidence: 50, primaryDriver: "Credit", expectedTimeframe: "1-3 months", priceAtEntry: null, createdAt: new Date(Date.now() - 86400000) });
+    expect(result).toMatchObject({ outcome: null, evaluationState: "pending_unverifiable" });
+    expect(llm.calls).toEqual([]);
   });
   it("lesson extractor prompt", async () => {
     llm.reply = JSON.stringify({ lessonText: "Credit spreads led the move by two weeks.", patternTag: "Correct Thesis", confidence: 70 });

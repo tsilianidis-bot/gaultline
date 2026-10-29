@@ -228,16 +228,108 @@ const PAGE_META: Record<string, PageMeta> = {
   },
 };
 
+/** Normalizes only request-path syntax; it never guesses or changes a route's public origin. */
+function normalizePath(urlPath: string): string {
+  const path = urlPath.split("?")[0].split("#")[0] || "/";
+  return path === "/" ? path : path.replace(/\/+$/, "") || "/";
+}
+
+/**
+ * Public SPA routes need a meaningful no-JavaScript body as well as route-specific
+ * metadata. These are exact, existing public metadata paths; authenticated and
+ * unknown routes are deliberately excluded.
+ */
+function isStaticPublicSeoPath(path: string): boolean {
+  return Object.prototype.hasOwnProperty.call(PAGE_META, path);
+}
+
+function stripHomepageOnlyStructuredData(html: string): string {
+  const homepageOnly = new Set(["SoftwareApplication", "FAQPage"]);
+  return html.replace(/<script type="application\/ld\+json">([\s\S]*?)<\/script>\s*/g, (block, body: string) => {
+    try {
+      const parsed = JSON.parse(body) as { "@type"?: unknown };
+      return typeof parsed?.["@type"] === "string" && homepageOnly.has(parsed["@type"]) ? "" : block;
+    } catch {
+      return block;
+    }
+  });
+}
+
+function replaceInitialBodyFallback(html: string, fallbackHtml: string): string {
+  const block = `<noscript>${fallbackHtml}</noscript>`;
+  const bodyIndex = html.search(/<body[\s>]/i);
+  if (bodyIndex !== -1) {
+    const open = html.indexOf("<noscript>", bodyIndex);
+    const close = open === -1 ? -1 : html.indexOf("</noscript>", open);
+    const rootIndex = html.indexOf('<div id="root"', bodyIndex);
+    if (open !== -1 && close !== -1 && (rootIndex === -1 || open < rootIndex)) {
+      return html.slice(0, open) + block + html.slice(close + "</noscript>".length);
+    }
+    if (rootIndex !== -1) return html.slice(0, rootIndex) + block + html.slice(rootIndex);
+  }
+  return html.replace("</body>", () => `${block}</body>`);
+}
+
+function insertIntoHead(html: string, fragment: string): string {
+  return html.replace("</head>", () => `${fragment}</head>`);
+}
+
+function serializeStaticSchema(data: unknown): string {
+  return JSON.stringify(data).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
+}
+
+function renderStaticPublicFallback(path: string, meta: PageMeta): string {
+  const canonicalUrl = meta.canonicalUrl ?? `${BASE_URL}${path === "/" ? "" : path}`;
+  const pageTitle = path === "/" ? "See the pressure before the break." : meta.title;
+  const routeDisclosure = path === "/pricing"
+    ? "FAULTLINE Standard is $99/month and FAULTLINE Lifetime is $1,500 one-time. Checkout remains unavailable; no payment is taken."
+    : path === "/daily-brief"
+      ? "Daily Brief availability and as-of dates are shown only when a public brief is available; no publication or delivery cadence is promised here."
+      : "Read the methodology and public disclosures before relying on any market information.";
+  const accountability = path === "/"
+    ? "We show our evidence, preserve our history, and make our analysis accountable, including when we're wrong. This isn't your grandpa's financial platform dashboard."
+    : "Public pages describe available FAULTLINE information and link to its methodology and disclosures. Unavailable or access-controlled information is not represented as public output.";
+  return `<main data-ssr="public-page" aria-labelledby="public-page-title">
+<h1 id="public-page-title">${escapeText(pageTitle)}</h1>
+<p>${escapeText(meta.description)}</p>
+<p>${escapeText(accountability)}</p>
+<p>${escapeText(routeDisclosure)}</p>
+<p>${escapeText(PUBLIC_DISCLAIMER)}</p>
+<nav aria-label="FAULTLINE public links"><a href="${BASE_URL}/methodology">Methodology</a> <a href="${BASE_URL}/trust">Trust Center</a> <a href="${BASE_URL}/legal">Legal</a> <a href="${canonicalUrl}">This page</a></nav>
+</main>`;
+}
+
+function injectStaticPublicHead(html: string, path: string, meta: PageMeta): string {
+  if (path === "/") return html;
+  const canonicalUrl = meta.canonicalUrl ?? `${BASE_URL}${path}`;
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": canonicalUrl,
+    url: canonicalUrl,
+    name: meta.title,
+    description: meta.description,
+    isPartOf: { "@type": "WebSite", name: "FAULTLINE", url: BASE_URL },
+  };
+  return insertIntoHead(
+    stripHomepageOnlyStructuredData(html),
+    `<script type="application/ld+json" id="seo-landing-schema">${serializeStaticSchema(schema)}</script>`,
+  );
+}
+
+function injectStaticPublicFallback(html: string, urlPath: string): string {
+  const path = normalizePath(urlPath);
+  if (!isStaticPublicSeoPath(path)) return html;
+  const meta = PAGE_META[path];
+  return replaceInitialBodyFallback(injectStaticPublicHead(html, path, meta), renderStaticPublicFallback(path, meta));
+}
+
 /**
  * Resolve metadata for a given URL path.
  * Falls back to homepage metadata for unknown routes.
  */
 export function getPageMeta(urlPath: string): PageMeta {
-  // Exact match
-  if (PAGE_META[urlPath]) return PAGE_META[urlPath];
-
-  // Strip query string
-  const cleanPath = urlPath.split("?")[0].split("#")[0];
+  const cleanPath = normalizePath(urlPath);
   if (PAGE_META[cleanPath]) return PAGE_META[cleanPath];
 
   // Dynamic stock pages: /stock/:symbol
@@ -286,7 +378,7 @@ function escapeText(value: string): string {
  * are rendered by server/publicContentSsr.ts before this fallback runs.
  */
 export async function injectPageMetaAsync(html: string, urlPath: string): Promise<string> {
-  const cleanPath = urlPath.split("?")[0].split("#")[0];
+  const cleanPath = normalizePath(urlPath);
 
   // Blog index: inject article list (DB posts + published Soro feed) as noscript content for crawlers
   if (cleanPath === "/blog") {
@@ -339,12 +431,13 @@ export async function injectPageMetaAsync(html: string, urlPath: string): Promis
     return result;
   }
 
-  return injectPageMeta(html, urlPath);
+  return injectStaticPublicFallback(injectPageMeta(html, urlPath), urlPath);
 }
 
 export function injectPageMeta(html: string, urlPath: string, overrideMeta?: PageMeta): string {
   const meta = overrideMeta ?? getPageMeta(urlPath);
-  const canonicalUrl = meta.canonicalUrl ?? `${BASE_URL}${urlPath === "/" ? "" : urlPath.split("?")[0]}`;
+  const cleanPath = normalizePath(urlPath);
+  const canonicalUrl = meta.canonicalUrl ?? `${BASE_URL}${cleanPath === "/" ? "" : cleanPath}`;
   const ogImage = escapeText(meta.ogImage || DEFAULT_OG_IMAGE);
   const ogType = meta.ogType || "website";
 
@@ -371,13 +464,10 @@ export function injectPageMeta(html: string, urlPath: string, overrideMeta?: Pag
   }
 
   // Add noindex for authenticated app routes
-  const isAppRoute = urlPath.startsWith("/app/") || urlPath === "/app";
+  const isAppRoute = cleanPath.startsWith("/app/") || cleanPath === "/app";
   if (isAppRoute) {
-    // Insert noindex meta after the canonical link
-    set(
-      /<link rel="canonical" href="[^"]*"/,
-      `<link rel="canonical" href="${safeCanonical}"><meta name="robots" content="noindex,follow"`
-    );
+    set(/<link rel="canonical" href="[^"]*"/, `<link rel="canonical" href="${safeCanonical}"`);
+    set(/<meta name="robots" content="[^"]*"/, `<meta name="robots" content="noindex,follow"`);
   } else {
     // Replace canonical
     set(/<link rel="canonical" href="[^"]*"/, `<link rel="canonical" href="${safeCanonical}"`);

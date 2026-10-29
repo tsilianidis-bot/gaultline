@@ -213,15 +213,23 @@ function WaitlistTab() {
     onSuccess: () => utils.admin.getFoundingRequests.invalidate(),
   });
   const sendEmail = trpc.admin.sendApprovalEmail.useMutation();
-  const [emailSent, setEmailSent] = useState<Record<number, boolean>>({});
+  const [emailDispatchState, setEmailDispatchState] = useState<Record<number, "accepted" | "ambiguous">>({});
   const [emailError, setEmailError] = useState<Record<number, string>>({});
 
   const handleSendEmail = (req: { id: number; email: string; name?: string | null }) => {
     sendEmail.mutate(
-      { email: req.email, name: req.name ?? undefined, origin: window.location.origin },
+      { requestId: req.id, origin: window.location.origin },
       {
-        onSuccess: () => setEmailSent(prev => ({ ...prev, [req.id]: true })),
-        onError: (err) => setEmailError(prev => ({ ...prev, [req.id]: err.message })),
+        onSuccess: () => {
+          setEmailDispatchState(prev => ({ ...prev, [req.id]: "accepted" }));
+          setEmailError(prev => ({ ...prev, [req.id]: "Adapter acceptance was recorded. Delivery is not claimed." }));
+        },
+        onError: (err) => {
+          if (err.data?.code === "CONFLICT") {
+            setEmailDispatchState(prev => ({ ...prev, [req.id]: "ambiguous" }));
+          }
+          setEmailError(prev => ({ ...prev, [req.id]: err.message }));
+        },
       }
     );
   };
@@ -326,18 +334,18 @@ function WaitlistTab() {
                     <>
                       <button
                         onClick={() => handleSendEmail(req)}
-                        disabled={sendEmail.isPending || emailSent[req.id]}
+                        disabled={sendEmail.isPending || emailDispatchState[req.id] === "accepted" || emailDispatchState[req.id] === "ambiguous"}
                         style={{
                           ...MONO, fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase",
-                          padding: "7px 16px", borderRadius: "6px", cursor: emailSent[req.id] ? "default" : "pointer",
-                          background: emailSent[req.id] ? "rgba(34,197,94,0.1)" : "rgba(168,85,247,0.1)",
-                          border: emailSent[req.id] ? "1px solid rgba(34,197,94,0.3)" : "1px solid rgba(168,85,247,0.3)",
-                          color: emailSent[req.id] ? "rgba(34,197,94,0.9)" : "rgba(168,85,247,0.9)",
+                          padding: "7px 16px", borderRadius: "6px", cursor: emailDispatchState[req.id] ? "default" : "pointer",
+                          background: emailDispatchState[req.id] === "accepted" ? "rgba(34,197,94,0.1)" : emailDispatchState[req.id] === "ambiguous" ? "rgba(251,191,36,0.1)" : "rgba(168,85,247,0.1)",
+                          border: emailDispatchState[req.id] === "accepted" ? "1px solid rgba(34,197,94,0.3)" : emailDispatchState[req.id] === "ambiguous" ? "1px solid rgba(251,191,36,0.3)" : "1px solid rgba(168,85,247,0.3)",
+                          color: emailDispatchState[req.id] === "accepted" ? "rgba(34,197,94,0.9)" : emailDispatchState[req.id] === "ambiguous" ? "rgba(251,191,36,0.9)" : "rgba(168,85,247,0.9)",
                           transition: "all 0.15s",
                           opacity: sendEmail.isPending ? 0.6 : 1,
                         }}
                       >
-                        {emailSent[req.id] ? "✓ Email Sent" : sendEmail.isPending ? "Sending…" : "✉ Send Email"}
+                        {emailDispatchState[req.id] === "accepted" ? "✓ Adapter Accepted" : emailDispatchState[req.id] === "ambiguous" ? "! Do Not Retry" : sendEmail.isPending ? "Recording attempt…" : "✉ Send Email"}
                       </button>
                       {emailError[req.id] && (
                         <p style={{ ...MONO, fontSize: "9px", color: "rgba(255,45,85,0.7)", maxWidth: "140px", lineHeight: 1.4 }}>
@@ -1343,9 +1351,76 @@ function ContentTab() {
   );
 }
 
+// ── Tab: Durable Mutation Audit ───────────────────────────────────────────────
+
+function formatAuditState(state: Record<string, string | number | boolean | null>): string {
+  return Object.entries(state).map(([key, value]) => `${key}=${String(value)}`).join(" · ");
+}
+
+function AuditTab() {
+  const [beforeId, setBeforeId] = useState<number | undefined>();
+  const audit = trpc.admin.getMutationAuditEvents.useQuery(
+    { limit: 50, ...(beforeId ? { beforeId } : {}) },
+    { staleTime: 15_000 },
+  );
+  const events = audit.data?.events ?? [];
+  const hasNewerPage = beforeId !== undefined;
+  const hasOlderPage = audit.data?.nextBeforeId !== null && audit.data?.nextBeforeId !== undefined;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div>
+        <SectionHeader
+          title="Administrative Audit History"
+          sub="Append-only, non-PII mutation evidence. Adapter acceptance is not mailbox delivery."
+        />
+        {audit.isLoading || audit.isFetching ? (
+          <p style={{ ...MONO, fontSize: "11px", color: "rgba(100,116,139,0.5)" }}>Loading durable audit history…</p>
+        ) : audit.isError ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "10px", padding: "16px", border: "1px solid rgba(255,45,85,0.25)", borderRadius: "8px", background: "rgba(255,45,85,0.04)" }}>
+            <p role="alert" style={{ ...MONO, fontSize: "10px", color: "rgba(255,120,140,0.9)" }}>Audit history is unavailable: {audit.error.message}</p>
+            <button onClick={() => audit.refetch()} style={{ ...MONO, fontSize: "10px", letterSpacing: "0.1em", cursor: "pointer", padding: "6px 12px", color: "rgba(0,212,255,0.85)", background: "transparent", border: "1px solid rgba(0,212,255,0.3)", borderRadius: "4px" }}>RETRY</button>
+          </div>
+        ) : events.length === 0 ? (
+          <p style={{ ...MONO, fontSize: "11px", color: "rgba(100,116,139,0.5)" }}>No durable audit events recorded for this page.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {events.map(event => (
+              <div key={event.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "12px 16px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+                  <p style={{ ...MONO, fontSize: "10px", color: "rgba(0,212,255,0.85)", letterSpacing: "0.06em" }}>{event.action}</p>
+                  <p style={{ ...MONO, fontSize: "9px", color: event.outcome === "SUCCEEDED" ? "rgba(34,197,94,0.9)" : event.outcome === "ATTEMPTED" ? "rgba(251,191,36,0.9)" : "rgba(255,120,140,0.9)", letterSpacing: "0.1em" }}>{event.outcome}</p>
+                </div>
+                <p style={{ ...MONO, fontSize: "9px", color: "rgba(148,163,184,0.7)", marginTop: "6px" }}>
+                  Event #{event.id} · actor #{event.actorUserId} · {event.targetType}{event.targetId ? ` #${event.targetId}` : event.targetKey ? ` ${event.targetKey}` : ""} · {fmtDate(event.occurredAt)}
+                </p>
+                {event.correlationId && <p style={{ ...MONO, fontSize: "9px", color: "rgba(168,85,247,0.8)", marginTop: "5px", overflowWrap: "anywhere" }}>Correlation: {event.correlationId}</p>}
+                <p style={{ ...MONO, fontSize: "9px", color: "rgba(100,116,139,0.65)", marginTop: "5px", overflowWrap: "anywhere" }}>Before: {formatAuditState(event.before)}</p>
+                <p style={{ ...MONO, fontSize: "9px", color: "rgba(100,116,139,0.65)", marginTop: "3px", overflowWrap: "anywhere" }}>After: {formatAuditState(event.after)}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div style={{ display: "flex", gap: "8px" }}>
+        <button
+          onClick={() => setBeforeId(undefined)}
+          disabled={!hasNewerPage || audit.isFetching}
+          style={{ ...MONO, fontSize: "10px", letterSpacing: "0.08em", cursor: !hasNewerPage || audit.isFetching ? "default" : "pointer", opacity: !hasNewerPage || audit.isFetching ? 0.45 : 1, padding: "7px 12px", color: "rgba(0,212,255,0.8)", background: "transparent", border: "1px solid rgba(0,212,255,0.2)", borderRadius: "4px" }}
+        >NEWER</button>
+        <button
+          onClick={() => setBeforeId(audit.data?.nextBeforeId ?? undefined)}
+          disabled={!hasOlderPage || audit.isFetching}
+          style={{ ...MONO, fontSize: "10px", letterSpacing: "0.08em", cursor: !hasOlderPage || audit.isFetching ? "default" : "pointer", opacity: !hasOlderPage || audit.isFetching ? 0.45 : 1, padding: "7px 12px", color: "rgba(0,212,255,0.8)", background: "transparent", border: "1px solid rgba(0,212,255,0.2)", borderRadius: "4px" }}
+        >OLDER</button>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Portal ─────────────────────────────────────────────────────────────────
 
-type Tab = "overview" | "waitlist" | "users" | "health" | "stats" | "engine" | "seo" | "content" | "demo";
+type Tab = "overview" | "waitlist" | "users" | "health" | "stats" | "engine" | "seo" | "content" | "audit" | "demo";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "overview", label: "Overview",       icon: "◈" },
@@ -1354,6 +1429,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "stats",    label: "Statistics",      icon: "◑" },
   { id: "health",   label: "Platform Health", icon: "◌" },
   { id: "engine",   label: "Engine & Flags",  icon: "⚙" },
+  { id: "audit",    label: "Audit",           icon: "▣" },
   { id: "seo",      label: "SEO",             icon: "◐" },
   { id: "content",  label: "Content",         icon: "✦" },
   { id: "demo",     label: "Demo Tokens",     icon: "🔑" },
@@ -1367,14 +1443,14 @@ export default function AdminPortal() {
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     const params = new URLSearchParams(search);
     const t = params.get("tab") as Tab | null;
-    return t && ["overview","waitlist","users","stats","health","engine","seo","content","demo"].includes(t) ? t : "overview";
+    return t && ["overview","waitlist","users","stats","health","engine","seo","content","audit","demo"].includes(t) ? t : "overview";
   });
 
   // Re-sync if the URL ?tab= param changes (e.g. navigation from More drawer)
   useEffect(() => {
     const params = new URLSearchParams(search);
     const t = params.get("tab") as Tab | null;
-    if (t && ["overview","waitlist","users","stats","health","engine","seo","content","demo"].includes(t)) {
+    if (t && ["overview","waitlist","users","stats","health","engine","seo","content","audit","demo"].includes(t)) {
       setActiveTab(t);
     }
   }, [search]);
@@ -1455,6 +1531,7 @@ export default function AdminPortal() {
       {activeTab === "stats"    && <StatsTab />}
       {activeTab === "health"   && <HealthTab />}
       {activeTab === "engine"   && <EngineTab />}
+      {activeTab === "audit"    && <AuditTab />}
       {activeTab === "seo"      && <SEOTab />}
       {activeTab === "content"   && <ContentTab />}
       {activeTab === "demo"      && <DemoTokensTab />}

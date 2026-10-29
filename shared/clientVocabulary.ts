@@ -303,6 +303,8 @@ const MASK_EDGE = "\uE000";
 const LOCAL_PART = /[A-Za-z0-9._%+-]/;
 const DOMAIN_CHAR = /[A-Za-z0-9.-]/;
 const LETTER = /[A-Za-z]/;
+/** URL schemes begin with h/w and email spans are found at @. */
+const URL_OR_EMAIL_START = /[HhWw@]/g;
 /** Real host suffixes and file extensions. English words and tickers are separators, not suffixes. */
 const HOST_OR_FILE_SUFFIX = new Set([
   "com", "net", "org", "io", "co", "ai", "app", "dev", "de", "fr", "uk", "xyz",
@@ -369,28 +371,34 @@ function pushMask(masks: string[], span: string): string {
 
 function maskUrlsAndEmails(text: string): { text: string; masks: string[] } {
   const masks: string[] = [];
-  let out = "";
-  let index = 0;
-  while (index < text.length) {
-    const urlLength = urlLengthAt(text, index);
+  const pieces: string[] = [];
+  let copiedThrough = 0;
+  URL_OR_EMAIL_START.lastIndex = 0;
+  let marker: RegExpExecArray | null;
+  while ((marker = URL_OR_EMAIL_START.exec(text))) {
+    const index = marker.index;
+    const urlLength = marker[0] === "@" ? 0 : urlLengthAt(text, index);
     if (urlLength > 0) {
-      out += pushMask(masks, text.slice(index, index + urlLength));
-      index += urlLength;
+      pieces.push(text.slice(copiedThrough, index), pushMask(masks, text.slice(index, index + urlLength)));
+      copiedThrough = index + urlLength;
+      URL_OR_EMAIL_START.lastIndex = copiedThrough;
       continue;
     }
-    if (text[index] === "@") {
+    if (marker[0] === "@") {
       const span = emailSpan(text, index);
-      if (span && out.endsWith(text.slice(span[0], index))) {
-        out = out.slice(0, out.length - (index - span[0]));
-        out += pushMask(masks, text.slice(span[0], span[1]));
-        index = span[1];
+      // Before the first mask, or after a prior mask, this is exactly the
+      // previous `out.endsWith(localPart)` condition without copying prose.
+      if (span && span[0] >= copiedThrough) {
+        pieces.push(text.slice(copiedThrough, span[0]), pushMask(masks, text.slice(span[0], span[1])));
+        copiedThrough = span[1];
+        URL_OR_EMAIL_START.lastIndex = copiedThrough;
         continue;
       }
     }
-    out += text[index] ?? "";
-    index += 1;
   }
-  return { text: out, masks };
+  if (masks.length === 0) return { text, masks };
+  pieces.push(text.slice(copiedThrough));
+  return { text: pieces.join(""), masks };
 }
 
 function restoreMasks(text: string, masks: string[]): string {

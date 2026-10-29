@@ -21,12 +21,13 @@ export async function handleScheduledLedgerEvaluation(req: Request, res: Respons
 
     const summary = await evaluateExpiredEntries();
 
-    console.log(`[LedgerEval] Run complete: evaluated=${summary.evaluated}, skipped=${summary.skipped}, errors=${summary.errors}`);
+    console.log(`[LedgerEval] Run complete: evaluated=${summary.evaluated}, skipped=${summary.skipped}, unverifiable=${summary.unverifiable}, errors=${summary.errors}`);
 
     return res.json({
       ok: true,
       evaluated: summary.evaluated,
       skipped: summary.skipped,
+      unverifiable: summary.unverifiable,
       errors: summary.errors,
       results: summary.results,
       timestamp: new Date().toISOString(),

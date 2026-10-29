@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "mode": "reuse_existing_isolated_candidate",
+  "source_base_sha": "faa392288b9e05cbbf4e7e5c502d8b59067120aa",
+  "production_identity_sha": "f7756c7fad3cac0f96df45723ca5c4e2713146d0",
+  "candidate": {
+    "name": "candidate-pr97-d5c20cc",
+    "railway_project_id": "3aa1a0a0-ec4e-4846-bff6-901f89c35d75",
+    "railway_environment_id": "654ca664-1ac5-4918-9b99-823cbf8ca91d",
+    "origin": "https://gaultline-candidate-pr97-d5c20cc.up.railway.app",
+    "observed_deployed_sha": "f3906f5d227fb56f91050deca425b2a6aaa28778",
+    "observed_build_time": "2026-10-19T20:20:04Z",
+    "identity_endpoints": [
+      "/api/health",
+      "/api/build-info"
+    ]
+  },
+  "identity_relationship": {
+    "source_base_is_not_deployed_candidate": true,
+    "production_is_not_candidate": true,
+    "public_identity_only": true,
+    "future_target_sha": "PENDING_INDEPENDENT_REVIEW_AND_OWNER_APPROVAL"
+  },
+  "authorized_existing_owner_actions": [
+    "Confirm ownership of the named candidate project/environment/service and current deployment metadata without secret values.",
+    "Provide a redacted read-only diagnostic packet containing identity, deployment, private resource topology, set/unset guard status, schedule inventory, and backup/PITR metadata.",
+    "Have the existing OAuth-project owner inspect and authorize the current candidate origin and callback in the existing redirect allowlist while preserving every approved origin; do not rewrite to production or create a new OAuth app/project.",
+    "Arrange the existing genuine candidate login process for two ordinary test principals and one owner/admin principal through a secure out-of-band process.",
+    "For a later separately approved candidate-only reconciliation, provide an exact approved SHA and prove candidate-only scope before any release action."
+  ],
+  "required_status_only_checks": [
+    "identity_platform_sha",
+    "candidate_mysql_private_reference",
+    "provider_configuration_presence",
+    "candidate_authentication",
+    "oauth_redirect_allowlist_existing_project",
+    "billing_closed",
+    "mail_nonsend",
+    "schedule_nochange",
+    "backup_recovery_readiness"
+  ],
+  "named_configuration_only": [
+    "RAILWAY_GIT_COMMIT_SHA",
+    "FAULTLINE_ENFORCE_DEPLOY_GUARD",
+    "FAULTLINE_APPROVED_SHA",
+    "DATABASE_URL",
+    "MYSQLHOST",
+    "MYSQLPORT",
+    "MYSQLUSER",
+    "MYSQLPASSWORD",
+    "MYSQLDATABASE",
+    "MYSQL_URL",
+    "MYSQL_PUBLIC_URL",
+    "FRED_API_KEY",
+    "POLYGON_API_KEY",
+    "COINGECKO_API_KEY",
+    "OAUTH_SERVER_URL",
+    "VITE_APP_ID",
+    "VITE_OAUTH_PORTAL_URL",
+    "JWT_SECRET",
+    "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET",
+    "SENDGRID_API_KEY",
+    "SENDGRID_FROM_EMAIL",
+    "DEFAULT_FROM_EMAIL",
+    "FOLLOWUP_EMAIL",
+    "OUTREACH_EMAIL",
+    "CRON_SECRET",
+    "TRACK_RECORD_CRON_WRITES",
+    "FAULTLINE_INTELLIGENCE_EVIDENCE_ENABLED",
+    "FAULTLINE_DEAD_MAN_ALERT_URL"
+  ],
+  "forbidden_actions": [
+    "request_replacement_credentials",
+    "extract_or_copy_secret_values",
+    "create_duplicate_staging",
+    "rewrite_candidate_redirect_to_production",
+    "create_new_oauth_application_or_project",
+    "deploy_or_provision",
+    "apply_migration",
+    "change_or_invoke_schedule",
+    "provider_call",
+    "charge_or_checkout_action",
+    "email_or_publication",
+    "copy_production_data"
+  ],
+  "guest_observation": {
+    "path": "/app/now",
+    "state": "Guest sign-in overlay with all canonical Core domains UNAVAILABLE and no admitted canonical state.",
+    "not_evidence_of": [
+      "missing_provider_credentials",
+      "accepted_member_behavior",
+      "verified_ledger",
+      "candidate_database_or_backup_state"
+    ],
+    "oauth_callback_scope": "candidate /api/oauth/callback, not production"
+  },
+  "oauth_redirect_allowlist_gate": {
+    "observed_at_utc": "2026-10-29T10:30:52Z",
+    "attempt_result": "Candidate-generated sign-in URL was rejected before callback with invalid redirect_uri for the existing candidate callback.",
+    "classification": "existing OAuth-project server-side allowed-origin configuration gate; not password, provider-key, or OAuth-client absence evidence",
+    "required_owner_action": "Existing OAuth-project owner inspects current allowed redirect domains/URIs and authorizes the existing candidate origin and callback in the project-required format while preserving all approved origins.",
+    "prohibited_response": [
+      "rewrite callback to production",
+      "bypass authentication",
+      "create a new OAuth app or project",
+      "request replacement credentials"
+    ],
+    "post_change_boundary": "Rerun the genuine candidate login through the existing flow; successful access remains a prerequisite, not operational acceptance."
+  },
+  "recovery_boundary": {
+    "boot_migrations": "prohibited",
+    "actual_backup_restore": "requires named owner, explicit resource/cost approval, restore-specific access scope, and independent review",
+    "preferred_non_disruptive_path_if_already_enabled": "PITR sibling MySQL recovery service; source remains untouched",
+    "standard_volume_restore": "consequential because it stages a service change and redeploy"
+  },
+  "contingency_only": {
+    "trigger": "designated owner explicitly attests that the online existing candidate is absent or unusable for acceptance and founder approves spend",
+    "isolation_choice": "new Railway project, not a duplicate environment in the existing project",
+    "resources": [
+      "faultline-acceptance-app",
+      "private faultline-acceptance-mysql"
+    ],
+    "prohibited_resources_or_links": [
+      "public MySQL TCP proxy",
+      "production data",
+      "production secrets",
+      "production domain",
+      "production database link",
+      "shared-variable import",
+      "scheduler or worker activation"
+    ],
+    "approval_question": "If and only if the existing candidate owner declares it unusable, authorize a separate project with one app and one private MySQL service, isolated non-production configurations, and an owner-stated monthly spend cap?"
+  },
+  "cost_boundary": {
+    "primary_reuse_new_spend": "none authorized",
+    "known_rate_inputs_usd": {
+      "ram_per_gb_month": 10,
+      "cpu_per_vcpu_month": 20,
+      "volume_per_gb_month": 0.15,
+      "network_egress_per_gb": 0.05
+    },
+    "unknowns_requiring_owner_estimate": [
+      "plan and included usage",
+      "app and MySQL CPU/RAM allocation and uptime",
+      "volume size",
+      "backup increment",
+      "PITR archive/bucket usage",
+      "network egress",
+      "provider, Stripe, OAuth, and mail charges"
+    ]
+  },
+  "visual_inventory_owner": "visual workstream; not duplicated by infrastructure",
+  "history_gap": "Saved media history ends with has_more true and a cursor; any continuation not recovered here is UNKNOWN pending parent retrieval."
+}

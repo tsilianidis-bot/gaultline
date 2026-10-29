@@ -40,6 +40,33 @@ vi.mock('../email', () => ({
   sendEmail: vi.fn().mockResolvedValue(undefined),
   buildSubscriptionConfirmationEmail: vi.fn(() => ({ to: 'a@b.c', subject: 's', html: 'h' })),
 }));
+vi.mock('./paymentLinkage', () => {
+  class PaymentLinkageUnresolvedError extends Error {
+    constructor(public readonly code: string) {
+      super(code);
+    }
+  }
+  return {
+    capturePaymentOrigin: vi.fn(),
+    isPaymentOriginEvent: vi.fn(() => false),
+    isPaymentReversalEvent: vi.fn((type: string) => [
+      'charge.refunded',
+      'refund.created',
+      'refund.updated',
+      'refund.failed',
+      'charge.dispute.created',
+      'charge.dispute.updated',
+      'charge.dispute.closed',
+      'charge.dispute.funds_withdrawn',
+      'charge.dispute.funds_reinstated',
+    ].includes(type)),
+    PaymentLinkageUnresolvedError,
+    paymentOriginFromChargeEvent: vi.fn(),
+    paymentOriginFromCheckoutEvent: vi.fn(),
+    paymentOriginFromPaymentIntentEvent: vi.fn(),
+    reconcilePaymentReversalEvent: vi.fn(),
+  };
+});
 
 import { stripe } from './client';
 import {
@@ -57,6 +84,13 @@ import {
   ZeroRowEntitlementWriteError,
 } from '../db';
 import { getPlanByPriceId } from './products';
+import {
+  capturePaymentOrigin,
+  isPaymentOriginEvent,
+  PaymentLinkageUnresolvedError,
+  paymentOriginFromCheckoutEvent,
+  reconcilePaymentReversalEvent,
+} from './paymentLinkage';
 
 const ATTEMPT = { attemptId: 'a1b2c3d4e5f67890' };
 const PERIOD_START = 1_700_000_000;
@@ -112,6 +146,9 @@ describe('handleStripeWebhook re-sync', () => {
     vi.mocked(commitEntitlementResync).mockResolvedValue('applied');
     vi.mocked(listStripeCancellationMarkers).mockResolvedValue([]);
     vi.mocked(writeEntitlementAudit).mockResolvedValue(undefined);
+    vi.mocked(capturePaymentOrigin).mockResolvedValue('recorded');
+    vi.mocked(isPaymentOriginEvent).mockImplementation(() => false);
+    vi.mocked(reconcilePaymentReversalEvent).mockResolvedValue('recorded');
     vi.mocked(getPlanByPriceId).mockImplementation((priceId: string) => (
       priceId === 'price_premium' ? { id: 'premium', tier: 'premium', name: 'Pro', amount: 5900, interval: 'month', description: '', priceId } as never : undefined
     ));
@@ -135,6 +172,79 @@ describe('handleStripeWebhook re-sync', () => {
     await handleStripeWebhook(makeReq({ id: 'evt_test_abc', type: 'checkout.session.completed' }, 'invalid'), res);
     expect(res._status).toBe(400);
     expect(recordStripeWebhookEvent).not.toHaveBeenCalled();
+  });
+
+  it('does not reconcile a refund when signature verification fails', async () => {
+    vi.mocked(stripe.webhooks.constructEvent).mockImplementation(() => { throw new Error('bad signature'); });
+    const res = makeRes();
+    await handleStripeWebhook(makeReq({ id: 'evt_refund_unsigned', type: 'refund.created' }, 'invalid'), res);
+    expect(res._status).toBe(400);
+    expect(reconcilePaymentReversalEvent).not.toHaveBeenCalled();
+    expect(recordStripeWebhookEvent).not.toHaveBeenCalled();
+  });
+
+  it('captures a signed refund as policy-pending evidence without resyncing entitlement', async () => {
+    const res = await post({
+      id: 'evt_refund_recorded',
+      type: 'refund.created',
+      created: PERIOD_START,
+      livemode: false,
+      data: { object: { id: 're_partial', charge: 'ch_lifetime', amount: 25_000, currency: 'usd', status: 'succeeded' } },
+    });
+    expect(res._status).toBe(200);
+    expect(res._body).toEqual({ received: true, reconciliation: 'policy_pending', duplicate: false });
+    expect(reconcilePaymentReversalEvent).toHaveBeenCalledWith(expect.objectContaining({ id: 'evt_refund_recorded', type: 'refund.created' }));
+    expect(commitEntitlementResync).not.toHaveBeenCalled();
+    expect(completeStripeWebhookEvent).toHaveBeenCalledWith('evt_refund_recorded', 'refund.created', ATTEMPT.attemptId);
+  });
+
+  it('persists a verified Checkout payment origin before the existing entitlement resync', async () => {
+    vi.mocked(isPaymentOriginEvent).mockImplementation(type => type === 'checkout.session.completed');
+    vi.mocked(paymentOriginFromCheckoutEvent).mockReturnValue({
+      userId: 7,
+      stripeCheckoutSessionId: 'cs_origin',
+      stripePaymentIntentId: 'pi_origin',
+      stripeChargeId: 'ch_origin',
+      stripeCustomerId: 'cus_a',
+      amount: 150000,
+      currency: 'usd',
+      livemode: false,
+      sourceEventId: 'evt_origin_capture',
+      sourceEventCreated: PERIOD_START,
+    });
+    vi.mocked(stripe.checkout.sessions.retrieve).mockResolvedValue({ id: 'cs_origin' } as never);
+    const res = await post({
+      id: 'evt_origin_capture',
+      type: 'checkout.session.completed',
+      created: PERIOD_START,
+      livemode: false,
+      data: { object: { id: 'cs_origin', customer: 'cus_a', mode: 'payment', metadata: { user_id: '7' } } },
+    });
+    expect(res._status).toBe(200);
+    expect(capturePaymentOrigin).toHaveBeenCalledWith(expect.objectContaining({
+      stripePaymentIntentId: 'pi_origin',
+      stripeChargeId: 'ch_origin',
+      stripeCustomerId: 'cus_a',
+      userId: 7,
+    }));
+    expect(commitEntitlementResync).toHaveBeenCalled();
+    expect(capturePaymentOrigin.mock.invocationCallOrder[0]).toBeLessThan(commitEntitlementResync.mock.invocationCallOrder[0]);
+  });
+
+  it('releases an unresolved reversal claim so a missing origin or persistence failure can replay', async () => {
+    vi.mocked(reconcilePaymentReversalEvent).mockRejectedValue(new PaymentLinkageUnresolvedError('missing_original_linkage'));
+    const res = await post({
+      id: 'evt_refund_early',
+      type: 'refund.created',
+      created: PERIOD_START,
+      livemode: false,
+      data: { object: { id: 're_early', charge: 'ch_missing', amount: 25_000, currency: 'usd', status: 'succeeded' } },
+    });
+    expect(res._status).toBe(500);
+    expect(res._body).toEqual({ error: 'Webhook processing failed', conflict: 'payment_linkage_unresolved' });
+    expect(completeStripeWebhookEvent).not.toHaveBeenCalled();
+    expect(releaseStripeWebhookEvent).toHaveBeenCalledWith('evt_refund_early', ATTEMPT.attemptId, 'refund.created');
+    expect(commitEntitlementResync).not.toHaveBeenCalled();
   });
 
   it('acknowledges a duplicate without reading Stripe', async () => {

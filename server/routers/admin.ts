@@ -10,15 +10,20 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, adminProcedure } from "../_core/trpc";
 import {
-  getAllUsers, getAllUsersWithTier, setUserTier, getUserTier,
-  getFoundingRequests, updateFoundingRequestStatus,
+  getAllUsers, getAllUsersWithTier,
+  getFoundingRequests,
   getPlatformStats, getActivityFeed,
   getSignupTimeSeries, getWaitlistTimeSeries, getConversionStats,
-  deleteUser,
   getRecentPressureRuns, countPressureRuns,
-  getAllFeatureFlags, setFeatureFlag,
+  getAllFeatureFlags,
 } from "../db";
 import { sendEmail, buildApprovalEmail } from "../email";
+import {
+  adminAuditStore,
+  AdminAuditAmbiguousResultError,
+  AdminAuditGuardError,
+  AdminAuditNotFoundError,
+} from "../adminAuditStore";
 import { getAuthoritativeCrossEngineSynthesis, getLatestCrossEngineSynthesis } from "../crossEngineSynthesis";
 import { getCandidateObservationTimeline, getPersistedCandidateDetections } from "../candidateDetection";
 import { getImportanceQualificationEvaluations } from "../importanceQualification";
@@ -59,6 +64,19 @@ export function getAdminRuntimeDiagnostics() {
   };
 }
 
+function throwAdminAuditRouterError(error: unknown, fallbackMessage: string): never {
+  if (error instanceof AdminAuditAmbiguousResultError) {
+    throw new TRPCError({ code: "CONFLICT", message: error.message, cause: error });
+  }
+  if (error instanceof AdminAuditNotFoundError) {
+    throw new TRPCError({ code: "NOT_FOUND", message: error.message, cause: error });
+  }
+  if (error instanceof AdminAuditGuardError) {
+    throw new TRPCError({ code: error.code, message: error.message, cause: error });
+  }
+  throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: fallbackMessage, cause: error });
+}
+
 export const adminRouter = router({
   // List all registered users
   getUsers: adminProcedure
@@ -87,13 +105,17 @@ export const adminRouter = router({
       tier: z.enum(["free", "core", "premium", "founding"]),
       lifetimeAccess: z.boolean().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       try {
-        await setUserTier(input.userId, input.tier, input.lifetimeAccess);
-        const tier = await getUserTier(input.userId);
+        const { tier } = await adminAuditStore.setUserTier({
+          actorUserId: ctx.user.id,
+          userId: input.userId,
+          tier: input.tier,
+          lifetimeAccess: input.lifetimeAccess,
+        });
         return { success: true, tier };
       } catch (err) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to set tier", cause: err });
+        throwAdminAuditRouterError(err, "Failed to set tier and persist its audit event.");
       }
     }),
 
@@ -133,12 +155,16 @@ export const adminRouter = router({
       id: z.number().int().positive(),
       status: z.enum(["pending", "approved", "rejected"]),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       try {
-        await updateFoundingRequestStatus(input.id, input.status);
+        await adminAuditStore.updateFoundingRequestStatus({
+          actorUserId: ctx.user.id,
+          requestId: input.id,
+          status: input.status,
+        });
         return { success: true };
       } catch (err) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to update request", cause: err });
+        throwAdminAuditRouterError(err, "Failed to update request and persist its audit event.");
       }
     }),
 
@@ -158,38 +184,62 @@ export const adminRouter = router({
   // Send founding access approval email
   sendApprovalEmail: adminProcedure
     .input(z.object({
-      email: z.string().email(),
-      name: z.string().optional(),
+      requestId: z.number().int().positive(),
       origin: z.string().url(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      let attempt: Awaited<ReturnType<typeof adminAuditStore.prepareApprovalEmailAttempt>>;
+      try {
+        attempt = await adminAuditStore.prepareApprovalEmailAttempt({
+          actorUserId: ctx.user.id,
+          requestId: input.requestId,
+        });
+      } catch (error) {
+        throwAdminAuditRouterError(error, "Failed to record approval email attempt before dispatch.");
+      }
+
       const emailPayload = buildApprovalEmail({
-        name: input.name ?? "",
-        email: input.email,
+        name: attempt.recipient.name,
+        email: attempt.recipient.email,
         siteUrl: input.origin,
       });
-      const result = await sendEmail(emailPayload);
+      let result: Awaited<ReturnType<typeof sendEmail>>;
+      try {
+        result = await sendEmail(emailPayload);
+      } catch (error) {
+        // An adapter exception after invocation does not prove non-delivery.
+        // The immutable attempt remains available for reconciliation and blocks
+        // a blind retry of this request.
+        throwAdminAuditRouterError(new AdminAuditAmbiguousResultError(attempt.correlationId, error), "");
+      }
+      try {
+        await adminAuditStore.recordApprovalEmailResult({
+          actorUserId: ctx.user.id,
+          requestId: input.requestId,
+          correlationId: attempt.correlationId,
+          accepted: result.success,
+        });
+      } catch (error) {
+        // The adapter has already been called. Do not manufacture a rejection,
+        // report success, or invite a duplicate blind retry when its result
+        // cannot be durably correlated to the prior attempt.
+        throwAdminAuditRouterError(new AdminAuditAmbiguousResultError(attempt.correlationId, error), "");
+      }
       if (!result.success) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: result.error ?? "Failed to send email" });
       }
-      return { success: true, sentTo: input.email };
+      return { success: true, correlationId: attempt.correlationId };
     }),
 
   // Remove a user account and all their data
   removeUser: adminProcedure
     .input(z.object({ userId: z.number().int().positive() }))
     .mutation(async ({ ctx, input }) => {
-      if (input.userId === ctx.user.id) throw new TRPCError({ code: "BAD_REQUEST", message: "You cannot remove your own account." });
-      const target = (await getAllUsers()).find(user => user.id === input.userId);
-      if (!target) throw new TRPCError({ code: "NOT_FOUND", message: "User not found." });
-      if (target.role === "admin") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Administrator accounts cannot be removed through this console." });
-      }
       try {
-        await deleteUser(input.userId);
+        await adminAuditStore.removeUser({ actorUserId: ctx.user.id, userId: input.userId });
         return { success: true };
       } catch (err) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to remove user", cause: err });
+        throwAdminAuditRouterError(err, "Failed to remove user and persist its audit event.");
       }
     }),
 
@@ -210,14 +260,35 @@ export const adminRouter = router({
       return getAllFeatureFlags();
     }),
 
+  // Durable, append-only evidence for owner/admin mutations. This is admin-only
+  // and returns safe state projections, never profile fields or credentials.
+  getMutationAuditEvents: adminProcedure
+    .input(z.object({
+      limit: z.number().int().min(1).max(200).default(50),
+      beforeId: z.number().int().positive().optional(),
+    }))
+    .query(async ({ input }) => {
+      try {
+        return await adminAuditStore.list(input);
+      } catch (err) {
+        throwAdminAuditRouterError(err, "Failed to read durable admin audit history.");
+      }
+    }),
+
   // Feature flags — toggle
   setFeatureFlag: adminProcedure
     .input(z.object({ key: z.string().min(1).max(80), enabled: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
-      const flagExists = (await getAllFeatureFlags()).some(flag => flag.key === input.key);
-      if (!flagExists) throw new TRPCError({ code: "NOT_FOUND", message: "Feature flag not found." });
-      await setFeatureFlag(input.key, input.enabled, ctx.user.id);
-      return { success: true };
+      try {
+        await adminAuditStore.setFeatureFlag({
+          actorUserId: ctx.user.id,
+          key: input.key,
+          enabled: input.enabled,
+        });
+        return { success: true };
+      } catch (err) {
+        throwAdminAuditRouterError(err, "Failed to update feature flag and persist its audit event.");
+      }
     }),
   // ── V3-H Shadow Model admin procedures ────────────────────────────────────
   getShadowStats: adminProcedure
@@ -284,21 +355,15 @@ export const adminRouter = router({
       v3hAtEvent: z.number().int().min(0).max(100).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const { getDb } = await import("../db");
-      const { shadowStressAnnotations: ssa } = await import("../../drizzle/schema");
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-      await db.insert(ssa).values({
-        eventAt: new Date(input.eventAt),
-        eventType: input.eventType,
-        title: input.title,
-        description: input.description,
-        severity: input.severity,
-        v1AtEvent: input.v1AtEvent ?? null,
-        v3hAtEvent: input.v3hAtEvent ?? null,
-        createdBy: ctx.user.id,
-      });
-      return { success: true };
+      try {
+        await adminAuditStore.addStressAnnotation({
+          actorUserId: ctx.user.id,
+          ...input,
+        });
+        return { success: true };
+      } catch (err) {
+        throwAdminAuditRouterError(err, "Failed to create stress annotation and persist its audit event.");
+      }
     }),
   getStressAnnotations: adminProcedure
     .query(async () => {

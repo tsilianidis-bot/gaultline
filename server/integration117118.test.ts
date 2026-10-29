@@ -155,7 +155,15 @@ describe("integration 117+118 shared surface", () => {
       },
     ]);
     expect(journal.entries.indexOf(appended0077[0]!)).toBe(journal.entries.indexOf(originalSegment[4]!) + 1);
-    expect(journal.entries.at(-1)).toEqual(appended0077[0]);
+    expect(journal.entries[77]).toEqual(appended0077[0]);
+    expect(journal.entries.slice(-5)).toEqual([
+      { idx: 78, version: "5", when: 1793270956094, tag: "0078_payment_event_linkage", breakpoints: true },
+      { idx: 79, version: "5", when: 1793270956095, tag: "0079_decision_outcome_provenance", breakpoints: true },
+      { idx: 80, version: "5", when: 1793270956096, tag: "0080_publishing_delivery_claims", breakpoints: true },
+      { idx: 81, version: "5", when: 1793270956097, tag: "0081_admin_audit_events", breakpoints: true },
+      { idx: 82, version: "5", when: 1793270956098, tag: "0082_durable_alert_events", breakpoints: true },
+    ]);
+    expect(journal.entries[78]!.when).toBeGreaterThan(appended0077[0]!.when);
     const schema = read("drizzle/schema.ts");
     expect(schema).toContain("pressureV2ShadowObservations");
     expect(schema).toContain("accessExpiresAt");

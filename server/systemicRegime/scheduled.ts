@@ -24,6 +24,24 @@ const INFERENCE_JSON = resolve(ARTIFACT_DIR, "latest_inference.json");
 const RESEARCH_HISTORY_JSON = resolve(ARTIFACT_DIR, "oos_regime_path.json");
 const LIVE_HISTORY_JSON = resolve(ARTIFACT_DIR, "live_regime_path.json");
 
+/**
+ * The scheduled infer endpoint accepts Seismograph only after both halves of
+ * its scheduled-session provenance agree: the durable session claim completed
+ * and the cached output was computed in this Eastern post-close session. This
+ * prevents a delayed infer callback from silently converging yesterday's
+ * `seismograph:latest_output` with today's regime inference.
+ */
+export interface CurrentSessionSeismographDependency {
+  claimPresence: Awaited<ReturnType<typeof scheduledSessionClaimPresence>>;
+  seismograph: Pick<SeismographOutput, "computedAt"> | null;
+}
+
+export interface SystemicRegimeInferenceJobOptions {
+  /** Supplied only after the scheduled endpoint validates current-session provenance. */
+  currentSeismograph: SeismographOutput | null;
+  now?: Date;
+}
+
 function runPython(args: string[], timeoutMs = 180_000): Promise<{ ok: boolean; stdout: string; stderr: string; skipped?: string }> {
   if (!existsSync(resolve(QUANT_DIR, "train.py"))) {
     return Promise.resolve({ ok: false, stdout: "", stderr: "", skipped: "quant worker missing" });
@@ -54,7 +72,24 @@ export async function exportFredPanelForQuant(): Promise<{ path: string; series:
   return { path: PANEL_JSON, series: Object.keys(bulk.results) };
 }
 
-export async function runSystemicRegimeInferenceJob(): Promise<Record<string, unknown>> {
+export async function runSystemicRegimeInferenceJob(
+  options: SystemicRegimeInferenceJobOptions = { currentSeismograph: null },
+): Promise<Record<string, unknown>> {
+  const now = options.now ?? new Date();
+  const seismograph = options.currentSeismograph;
+  // Defend the exported job as well as its HTTP caller. A direct internal
+  // caller without a handler-validated current-session output gets a
+  // retryable no-success result before table setup, FRED export, inference,
+  // or any persistence can begin.
+  if (!seismograph || !seismographFreshForInfer(seismograph.computedAt, now)) {
+    return {
+      ok: false,
+      alert: true,
+      retryable: true,
+      skipped: "current_session_seismograph_output_missing_or_stale",
+      reason: "Systemic-regime inference requires the completed current Eastern post-close Seismograph output.",
+    };
+  }
   mkdirSync(ARTIFACT_DIR, { recursive: true });
   mkdirSync(MODEL_DIR, { recursive: true });
   await ensureSystemicRegimeTables();
@@ -79,20 +114,6 @@ export async function runSystemicRegimeInferenceJob(): Promise<Record<string, un
   reading.contributesToPressureIndex = false;
   const persisted = await persistSystemicRegimeReading(reading, "LIVE_INFERENCE");
   const canonical = await getAuthoritativeCanonicalIntelligenceState();
-  const seismograph = await memoryGetJson<SeismographOutput | null>("seismograph:latest_output", null);
-  const fresh = seismographFreshForInfer(seismograph?.computedAt, new Date());
-  if (!fresh || !seismograph) {
-    return {
-      ok: true,
-      persisted,
-      regime: reading.currentRegime,
-      dataAsOf: reading.dataAsOf,
-      convergence: null,
-      seismographFreshness: "stale_or_missing",
-      skippedConvergence: "seismograph_not_from_current_post_close_session",
-      alert: true,
-    };
-  }
   const synthesis = await getAuthoritativeCrossEngineSynthesis();
   const earlyWarning = await getCurrentGovernedEarlyWarningPresentation();
   const convergence = computeSignalConvergence({
@@ -147,8 +168,8 @@ export async function ingestPackagedResearchHistory(): Promise<number> {
 
 export function inferScheduleDecision(
   now: Date,
-  claimCompleted: boolean | null,
-): { status: 200 | 409; body: Record<string, unknown> } | null {
+  dependency: CurrentSessionSeismographDependency,
+): { status: 200 | 409 | 503; body: Record<string, unknown> } | null {
   const window = nyseSeismographRunWindow(now);
   if (window.session === "CLOSED") {
     return {
@@ -165,12 +186,41 @@ export function inferScheduleDecision(
   }
   const stamp = easternSessionStamp(now);
   const afterWindow = stamp != null && stamp.minuteOfDay >= 16 * 60 + 45;
-  if (afterWindow && claimCompleted === false) {
+  if (dependency.claimPresence === "unavailable") {
+    return {
+      status: 503,
+      body: {
+        ok: false,
+        alert: true,
+        retryable: true,
+        skipped: "current_session_seismograph_claim_unavailable",
+        session: window.session,
+        etDate: window.etDate,
+        reason: "The current Seismograph session claim could not be read, so infer cannot establish same-session provenance.",
+      },
+    };
+  }
+  if (dependency.claimPresence !== "completed") {
+    if (!afterWindow) {
+      return {
+        status: 409,
+        body: {
+          ok: false,
+          alert: false,
+          retryable: true,
+          skipped: "awaiting_current_session_seismograph",
+          session: window.session,
+          etDate: window.etDate,
+          reason: "The current Seismograph session is not completed yet. Infer did not run and the scheduler may retry.",
+        },
+      };
+    }
     return {
       status: 409,
       body: {
         ok: false,
         alert: true,
+        retryable: true,
         skipped: "missed_scheduled_run",
         session: window.session,
         etDate: window.etDate,
@@ -178,25 +228,60 @@ export function inferScheduleDecision(
       },
     };
   }
+  if (!dependency.seismograph || !seismographFreshForInfer(dependency.seismograph.computedAt, now)) {
+    return {
+      status: 409,
+      body: {
+        ok: false,
+        alert: true,
+        retryable: true,
+        skipped: "current_session_seismograph_output_missing_or_stale",
+        session: window.session,
+        etDate: window.etDate,
+        reason: "The Seismograph claim completed but no current Eastern post-close output is available. Infer did not run and must retry from a verified dependency.",
+      },
+    };
+  }
   return null;
 }
 
-export async function handleScheduledSystemicRegimeInfer(_req: Request, res: Response): Promise<void> {
+type ScheduledSystemicRegimeInferHooks = {
+  sessionClaimPresence?: (etDate: string) => Promise<CurrentSessionSeismographDependency["claimPresence"]>;
+  currentSeismograph?: () => Promise<SeismographOutput | null>;
+  runInference?: (options: SystemicRegimeInferenceJobOptions) => Promise<Record<string, unknown>>;
+};
+
+async function executeScheduledSystemicRegimeInfer(
+  res: Response,
+  hooks: ScheduledSystemicRegimeInferHooks = {},
+): Promise<void> {
   try {
     const now = new Date();
     const window = nyseSeismographRunWindow(now);
-    const presence = window.etDate ? await scheduledSessionClaimPresence(window.etDate) : "unavailable";
-    const claimCompleted = presence === "unavailable" ? null : presence === "completed";
-    const decision = inferScheduleDecision(now, claimCompleted);
+    const presence = window.etDate && window.session !== "CLOSED"
+      ? await (hooks.sessionClaimPresence
+        ? hooks.sessionClaimPresence(window.etDate)
+        : scheduledSessionClaimPresence(window.etDate))
+      : "unavailable";
+    const seismograph = window.session !== "CLOSED"
+      ? await (hooks.currentSeismograph
+        ? hooks.currentSeismograph()
+        : memoryGetJson<SeismographOutput | null>("seismograph:latest_output", null))
+      : null;
+    const decision = inferScheduleDecision(now, { claimPresence: presence, seismograph });
     if (decision) {
-      if (decision.body.skipped === "nyse_closed" || decision.body.skipped === "missed_scheduled_run") {
+      if (decision.body.alert === true) {
+        console.error(`[SystemicRegime][SCHEDULE-ALERT] ${JSON.stringify({ ...decision.body, at: now.toISOString() })}`);
+      } else {
         console.log(`[SystemicRegime][SCHEDULE-HEARTBEAT] ${JSON.stringify({ ...decision.body, at: now.toISOString() })}`);
       }
       res.status(decision.status).json(decision.body);
       return;
     }
-    const result = await runSystemicRegimeInferenceJob();
-    if (result.skippedConvergence) {
+    const result = await (hooks.runInference
+      ? hooks.runInference({ currentSeismograph: seismograph, now })
+      : runSystemicRegimeInferenceJob({ currentSeismograph: seismograph, now }));
+    if (result.ok !== true && result.retryable === true) {
       res.status(409).json(result);
       return;
     }
@@ -205,4 +290,16 @@ export async function handleScheduledSystemicRegimeInfer(_req: Request, res: Res
     log.error("[SystemicRegime] Infer job failed", { err: error as Error });
     res.status(500).json({ ok: false, error: "Failed" });
   }
+}
+
+export async function handleScheduledSystemicRegimeInfer(_req: Request, res: Response): Promise<void> {
+  return executeScheduledSystemicRegimeInfer(res);
+}
+
+/** Tests inject dependencies here; the mounted production handler never does. */
+export async function runScheduledSystemicRegimeInferForTests(
+  res: Response,
+  hooks: ScheduledSystemicRegimeInferHooks = {},
+): Promise<void> {
+  return executeScheduledSystemicRegimeInfer(res, hooks);
 }

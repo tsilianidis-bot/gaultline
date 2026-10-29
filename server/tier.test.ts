@@ -2,6 +2,11 @@ import { describe, expect, it, beforeEach, vi } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
+const auditStore = vi.hoisted(() => ({
+  setUserTier: vi.fn(),
+  updateFoundingRequestStatus: vi.fn(),
+}));
+
 // ── Mock DB helpers ───────────────────────────────────────────
 vi.mock("./db", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./db")>();
@@ -14,6 +19,16 @@ vi.mock("./db", async (importOriginal) => {
     updateFoundingRequestStatus: vi.fn().mockResolvedValue(undefined),
     getAllUsersWithTier: vi.fn().mockResolvedValue([]),
   };
+});
+vi.mock("./adminAuditStore", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./adminAuditStore")>();
+  return { ...actual, adminAuditStore: auditStore };
+});
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  auditStore.setUserTier.mockResolvedValue({ tier: "premium", lifetimeAccess: false });
+  auditStore.updateFoundingRequestStatus.mockResolvedValue(undefined);
 });
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
@@ -119,7 +134,13 @@ describe("admin.setUserTier", () => {
   it("admin can set a user's tier", async () => {
     const caller = appRouter.createCaller(makeAdminCtx());
     const result = await caller.admin.setUserTier({ userId: 1, tier: "premium" });
-    expect(result).toEqual({ success: true, tier: "free" });
+    expect(result).toEqual({ success: true, tier: "premium" });
+    expect(auditStore.setUserTier).toHaveBeenCalledWith({
+      actorUserId: 99,
+      userId: 1,
+      tier: "premium",
+      lifetimeAccess: undefined,
+    });
   });
 
   it("non-admin cannot set a user's tier", async () => {

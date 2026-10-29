@@ -4,147 +4,77 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   companyUseQuery: vi.fn(),
-  radarUseQuery: vi.fn(),
-  refetch: vi.fn(),
   trackInsiderSearch: vi.fn(),
   useSEO: vi.fn(),
 }));
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    insider: {
-      company: { useQuery: mocks.companyUseQuery },
-      radar: { useQuery: mocks.radarUseQuery },
-    },
-  },
-}));
+vi.mock("@/lib/trpc", () => ({ trpc: { insider: { company: { useQuery: mocks.companyUseQuery } } } }));
+vi.mock("@/hooks/useSEO", () => ({ PAGE_SEO: { insiderIntelligence: {} }, useSEO: mocks.useSEO }));
+vi.mock("@/hooks/useAnalytics", () => ({ trackInsiderSearch: mocks.trackInsiderSearch }));
+vi.mock("@/components/PageHeader", () => ({ default: () => null }));
+vi.mock("@/components/PremiumGate", () => ({ PremiumGateFull: ({ children }: { children: unknown }) => children }));
 
-vi.mock("@/hooks/useSEO", () => ({
-  PAGE_SEO: { insiderIntelligence: {} },
-  useSEO: mocks.useSEO,
-}));
-
-vi.mock("@/hooks/useAnalytics", () => ({
-  trackInsiderSearch: mocks.trackInsiderSearch,
-}));
-
-vi.mock("@/components/PageHeader", () => ({
-  default: () => null,
-}));
-
-vi.mock("@/components/PremiumGate", () => ({
-  PremiumGateFull: ({ children }: { children: unknown }) => children,
-}));
-
-import { CompanyProfileModal, InsiderIntelligenceInner } from "../client/src/pages/InsiderIntelligence";
+import { InsiderIntelligenceInner } from "../client/src/pages/InsiderIntelligence";
 
 const unavailable = {
-  message: "Insider Intelligence unavailable: source verification required.",
+  status: "unavailable" as const,
+  ticker: "NVDA",
+  reason: "configuration_required",
+  message: "Official SEC/EDGAR retrieval is unavailable because no declared SEC contact user agent is configured.",
 };
 
-const staleRadar = {
-  weeklyStats: {
-    totalBuyValue: 9_900_000,
-    totalSellValue: 8_800_000,
-    netSentiment: 77,
-    activeTickers: 7,
-    clusterCount: 1,
-  },
-  radar: [{
-    rank: 1,
-    ticker: "CACHED",
-    company: "Cached Radar Company",
-    convictionScore: 92,
-    signalColor: "green",
-    activity: "Cached accumulation",
-    dollarAmount: 9_900_000,
-    convictionBand: "Exceptional Conviction",
-    trend: "improving",
+const official = {
+  status: "ok" as const,
+  ticker: "NVDA",
+  cik: "0001045810",
+  companyName: "NVIDIA CORP",
+  retrievedAt: "2026-10-03T12:00:00.000Z",
+  filings: [{
+    accessionNumber: "0001045810-26-000100",
+    formType: "4/A",
+    isAmendment: true,
+    filingDate: "2026-10-01",
+    reportDate: "2026-09-30",
+    issuerTicker: "NVDA",
+    sourceUrl: "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000100/form4.xml",
+    rawDocumentSha256: "a".repeat(64),
+    reportingOwners: [{ cik: "0001234567", name: "Official Filing Owner", role: "Chief Executive Officer" }],
+    transactions: [{ transactionDate: "2026-09-30", ownerCik: "0001234567", ownerName: "Official Filing Owner", role: "Chief Executive Officer", transactionCode: "P", shares: 1250, pricePerShare: 175.5, acquiredOrDisposed: "A" as const }],
+    provenance: { provider: "SEC EDGAR" as const, retrievedAt: "2026-10-03T12:00:00.000Z", filingIndexUrl: "https://www.sec.gov/Archives/edgar/data/1045810/0001045810-26-000100-index.html", submissionsUrl: "https://data.sec.gov/submissions/CIK0001045810.json" },
   }],
-  clusterAlerts: [{
-    ticker: "CLSTR",
-    company: "Cached Cluster Company",
-    strength: "HIGH",
-    insiderCount: 4,
-    daysWindow: 7,
-    totalCapital: 4_200_000,
-    insiders: [{ role: "CEO", amount: 4_200_000 }],
-    convictionScore: 91,
-  }],
-  topSellingAlerts: [{
-    ticker: "SALE",
-    insiderName: "Cached Seller",
-    role: "CFO",
-    saleAmount: 2_400_000,
-    percentOfHoldings: 12.5,
-    classification: "Aggressive",
-    reason: "Cached sale rationale",
-    isScheduledPlan: false,
-    isTaxRelated: false,
-    isDiversification: false,
-    isAbnormal: true,
-  }],
-};
-
-const staleCompany = {
-  profile: {
-    convictionScore: 96,
-    convictionBand: "Exceptional Conviction",
-    impactPoints: 12,
-    historicalAccuracy: 99,
-    mostRecentFiling: "2026-10-21",
-    buyVsSell: { buyValue: 2_000_000, buyCount: 2, sellValue: 0, sellCount: 0 },
-    largestInsider: { name: "Cached Board Member", role: "Director", totalBought: 2_000_000 },
-    aiInterpretation: "Synthetic cached interpretation must not render.",
-    sellingAnalysis: [],
-  },
-  timeline: [],
-  accuracyHistory: [],
 };
 
 beforeEach(() => {
-  mocks.refetch.mockReset();
-  mocks.radarUseQuery.mockReturnValue({
-    data: staleRadar,
-    error: unavailable,
-    isLoading: false,
-    refetch: mocks.refetch,
-  });
-  mocks.companyUseQuery.mockReturnValue({
-    data: staleCompany,
-    error: unavailable,
-    isLoading: false,
-  });
+  mocks.companyUseQuery.mockReset();
+  mocks.companyUseQuery.mockReturnValue({ data: unavailable, error: null, isLoading: false });
 });
 
-describe("Insider Intelligence unavailable-source rendering", () => {
-  it("withholds every cached radar count, card, map, and derived section after a refetch error", () => {
+describe("Insider Intelligence official-source rendering", () => {
+  it("shows a real unavailable state and withholds all filing rows", () => {
     const markup = renderToStaticMarkup(React.createElement(InsiderIntelligenceInner));
 
+    expect(markup).toContain("OFFICIAL SOURCE UNAVAILABLE");
     expect(markup).toContain(unavailable.message);
-    expect(markup).not.toContain("CACHED");
-    expect(markup).not.toContain("Cached Radar Company");
-    expect(markup).not.toContain("CLSTR");
-    expect(markup).not.toContain("Cached Seller");
-    expect(markup).not.toContain("$9.9M");
+    expect(markup).not.toContain("Official Filing Owner");
+    expect(markup).not.toContain("TRANSACTION ROWS AS FILED");
+    expect(markup).not.toContain("Insider Accuracy");
     expect(markup).not.toContain("Smart Money Radar");
-    expect(markup).not.toContain("Cluster Buy Alerts");
-    expect(markup).not.toContain("Insider Selling Analyzer");
-    expect(markup).not.toContain("Insider Impact Engine");
-    expect(markup).not.toContain("Insider Alerts");
-    expect(markup).not.toContain("Insider Accuracy Rating");
   });
 
-  it("withholds cached company facts after a company refetch error", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(CompanyProfileModal, { ticker: "CACHED", onClose: vi.fn() }),
-    );
+  it("renders only official filing identity and transaction provenance when a source record is admitted", () => {
+    mocks.companyUseQuery.mockReturnValue({ data: official, error: null, isLoading: false });
+    const markup = renderToStaticMarkup(React.createElement(InsiderIntelligenceInner));
 
-    expect(markup).toContain(unavailable.message);
-    expect(markup).not.toContain("Cached Board Member");
-    expect(markup).not.toContain("Synthetic cached interpretation must not render.");
-    expect(markup).not.toContain("2026-10-21");
-    expect(markup).not.toContain("$2.0M");
-    expect(markup).not.toContain("Latest Filing");
+    expect(markup).toContain("NVIDIA CORP");
+    expect(markup).toContain("FORM 4/A · AMENDMENT");
+    expect(markup).toContain("Official Filing Owner");
+    expect(markup).toContain("TRANSACTION ROWS AS FILED");
+    expect(markup).toContain("2026-09-30");
+    expect(markup).toContain("175.5");
+    expect(markup).toContain("raw XML SHA-256");
+    expect(markup).toContain("https://www.sec.gov/Archives/edgar/data/1045810/0001045810-26-000100-index.html");
+    expect(markup).not.toContain("Conviction");
+    expect(markup).not.toContain("Accuracy");
+    expect(markup).not.toContain("Smart Money Radar");
   });
 });

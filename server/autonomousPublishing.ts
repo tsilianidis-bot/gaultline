@@ -37,6 +37,12 @@ import { getLatestSeismographOutput } from "./scheduledSeismograph";
 import { buildDailyBriefPromptContext, buildDailyBriefSnapshot, DAILY_BRIEF_PROMPT_VERSION, validateDailyBriefNarrative } from "./dailyBriefSnapshot";
 import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 import { evidenceNarrativePromptContract } from "../shared/evidenceContract";
+import {
+  briefDeliveryKey,
+  dispatchEmailWithClaim,
+  publishingClaimStore,
+  type PublishingRunClaim,
+} from "./publishingDeliveryClaims";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -352,21 +358,26 @@ export async function notifyUsersByTier(
       if ((tier === "premium" || tier === "founding") && user.email) {
         eligible++;
         try {
-          const delivery = await sendEmail({
-            to: user.email,
-            subject: `New ${category}: ${title}`,
-            html: buildBriefEmailHtml({
-              name: user.name ?? "Investor",
-              title,
-              category,
-              articleUrl,
-              tier,
+          const delivery = await dispatchEmailWithClaim(publishingClaimStore, {
+            deliveryKey: briefDeliveryKey(slug, user.id),
+            deliveryType: "subscriber_daily_brief",
+            userId: user.id,
+            send: () => sendEmail({
+              to: user.email!,
+              subject: `New ${category}: ${title}`,
+              html: buildBriefEmailHtml({
+                name: user.name ?? "Investor",
+                title,
+                category,
+                articleUrl,
+                tier,
+              }),
             }),
           });
-          if (delivery.success) {
+          if (delivery.status === "accepted") {
             emailed++;
-          } else {
-            console.warn(`[AutoPublish] Email was not accepted for user ${user.id}: ${delivery.error ?? "unknown delivery failure"}`);
+          } else if (delivery.status !== "completed") {
+            console.warn(`[AutoPublish] Email was not accepted for user ${user.id}: ${delivery.status}`);
           }
         } catch (err) {
           console.warn(`[AutoPublish] Email failed for user ${user.id}:`, err);
@@ -509,14 +520,15 @@ async function updateScheduleStats(
 async function runPublishingPipeline(
   publishType: PublishType,
   engineData: EngineSnapshot,
-  confidenceThreshold: number
+  confidenceThreshold: number,
+  claim: PublishingRunClaim,
 ): Promise<PublishResult> {
   const db = await getDb();
   if (!db) return { ok: false, status: "error", reason: "database unavailable" };
 
   const config = PUBLISH_CONFIG[publishType];
   const now = new Date();
-  const dateStr = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  const dateStr = claim.cycleDateEt;
   const slug = `${config.slugPrefix}-${dateStr}`;
 
   // ── Step 1: Data availability guard ──────────────────────────────────────
@@ -529,7 +541,13 @@ async function runPublishingPipeline(
   const isDuplicate = await checkDuplicate(config.slugPrefix, dateStr);
   if (isDuplicate) {
     console.log(`[AutoPublish] Skipping ${publishType} — already published today (${slug})`);
-    return { ok: true, status: "skipped", slug, reason: "duplicate" };
+    const sealed = await publishingClaimStore.completeRunWithoutGeneration(claim, {
+      outputStatus: "skipped",
+      outputSlug: slug,
+    });
+    return sealed
+      ? { ok: true, status: "skipped", slug, reason: "duplicate" }
+      : { ok: false, status: "error", reason: "publishing-run-claim-unavailable" };
   }
 
   // ── Step 3: Build one immutable context snapshot ─────────────────────────
@@ -571,7 +589,13 @@ async function runPublishingPipeline(
       warningsJson: JSON.stringify(dailySnapshot.validation.warnings),
     });
     if (!dailySnapshot.validation.passed) {
-      return { ok: true, status: "draft", reason: `snapshot-validation-failed:${dailySnapshot.validation.errors.join(",")}` };
+      const sealed = await publishingClaimStore.completeRunWithoutGeneration(claim, {
+        outputStatus: "draft",
+        outputSlug: slug,
+      });
+      return sealed
+        ? { ok: true, status: "draft", reason: `snapshot-validation-failed:${dailySnapshot.validation.errors.join(",")}` }
+        : { ok: false, status: "error", reason: "publishing-run-claim-unavailable" };
     }
   }
 
@@ -640,6 +664,13 @@ Include a FAQ section with 5 questions at the end. Naturally embed these interna
 CRITICAL: Base all analysis on the provided data. Do not invent statistics. Minimum ${config.minWords} words.`,
   };
 
+  // This fence is intentionally immediately before the first LLM invocation.
+  // If the process dies after it, reconciliation is required instead of a
+  // second autonomous generation request with unknown provider acceptance.
+  if (!await publishingClaimStore.beginGeneration(claim)) {
+    return { ok: false, status: "error", reason: "publishing-run-claim-unavailable" };
+  }
+
   // ── Step 4: Generate SEO metadata ────────────────────────────────────────
   let title = `${config.label} — ${dateStr}`;
   let metaDescription = `FAULTLINE ${config.label} for ${dateStr}. Institutional market intelligence powered by live FAULTLINE engine data.`;
@@ -699,39 +730,48 @@ CRITICAL: Base all analysis on the provided data. Do not invent statistics. Mini
   const schemaJson = buildSchema(title, metaDescription, slug, publishedAt, config.category);
   const internalLinksJson = JSON.stringify(INTERNAL_LINKS.slice(0, 6));
 
-  // ── Step 9: Insert into database ──────────────────────────────────────────
-  await db.insert(organicContent).values({
-    contentType: publishType === "daily_brief" ? "daily_market_brief" : publishType === "weekly_review" ? "weekly_market_outlook" : "market_regime_report",
-    slug,
-    title,
-    metaDescription,
-    content: rawContent,
-    schemaJson,
-    internalLinksJson,
-    featuredImagePrompt: `Professional financial data visualization for "${title}". Dark background, glowing FAULTLINE data charts, institutional market intelligence aesthetic. Cinematic lighting.`,
-    status,
-    qualityScore: validation.score,
-    wordCount,
-    rejectionReason: validation.reason ?? null,
-    pressureScore: dailySnapshot ? Math.round(dailySnapshot.pressureIndex) : engineData.pressureScore,
-    regime: dailySnapshot?.regime ?? engineData.regime,
-    briefSnapshotId: dailySnapshot?.briefSnapshotId ?? null,
-    publishedAt: shouldPublish ? now : null,
-  });
-
-  const [inserted] = await db.select({ id: organicContent.id })
-    .from(organicContent)
-    .where(eq(organicContent.slug, slug))
-    .limit(1);
-
-  if (dailySnapshot) {
-    await db.update(dailyBriefSnapshots).set({
-      articleId: inserted?.id ?? null,
-      status: shouldPublish ? "published" : "draft",
-      validationJson: JSON.stringify({ ...dailySnapshot.validation, contentValidation: validation, narrativeValidation }),
-      warningsJson: JSON.stringify([...dailySnapshot.validation.warnings, ...narrativeValidation.issues]),
-    }).where(eq(dailyBriefSnapshots.snapshotId, dailySnapshot.briefSnapshotId));
+  // ── Step 9: Atomically seal claim and insert article ──────────────────────
+  const finalization = await publishingClaimStore.finalizeRun(
+    claim,
+    { outputStatus: status, outputSlug: slug },
+    async tx => {
+      await tx.insert(organicContent).values({
+        contentType: publishType === "daily_brief" ? "daily_market_brief" : publishType === "weekly_review" ? "weekly_market_outlook" : "market_regime_report",
+        slug,
+        title,
+        metaDescription,
+        content: rawContent,
+        schemaJson,
+        internalLinksJson,
+        featuredImagePrompt: `Professional financial data visualization for "${title}". Dark background, glowing FAULTLINE data charts, institutional market intelligence aesthetic. Cinematic lighting.`,
+        status,
+        qualityScore: validation.score,
+        wordCount,
+        rejectionReason: validation.reason ?? null,
+        pressureScore: dailySnapshot ? Math.round(dailySnapshot.pressureIndex) : engineData.pressureScore,
+        regime: dailySnapshot?.regime ?? engineData.regime,
+        briefSnapshotId: dailySnapshot?.briefSnapshotId ?? null,
+        publishedAt: shouldPublish ? now : null,
+      });
+      const [inserted] = await tx.select({ id: organicContent.id })
+        .from(organicContent)
+        .where(eq(organicContent.slug, slug))
+        .limit(1);
+      if (dailySnapshot) {
+        await tx.update(dailyBriefSnapshots).set({
+          articleId: inserted?.id ?? null,
+          status: shouldPublish ? "published" : "draft",
+          validationJson: JSON.stringify({ ...dailySnapshot.validation, contentValidation: validation, narrativeValidation }),
+          warningsJson: JSON.stringify([...dailySnapshot.validation.warnings, ...narrativeValidation.issues]),
+        }).where(eq(dailyBriefSnapshots.snapshotId, dailySnapshot.briefSnapshotId));
+      }
+      return inserted?.id;
+    },
+  );
+  if (finalization.status !== "completed") {
+    return { ok: false, status: "error", reason: "publishing-run-finalization-unavailable" };
   }
+  const insertedId = finalization.value;
 
   console.log(`[AutoPublish] ${status}: "${title}" (${wordCount} words, score: ${validation.score}) → /intelligence/${slug}`);
 
@@ -739,11 +779,71 @@ CRITICAL: Base all analysis on the provided data. Do not invent statistics. Mini
     ok: true,
     status: shouldPublish ? "published" : "draft",
     slug,
-    id: inserted?.id,
+    id: insertedId,
     wordCount,
     qualityScore: validation.score,
     reason: validation.reason,
   };
+}
+
+function publishingCycleDateEt(now = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+}
+
+interface ClaimedPublishingAttempt {
+  result: PublishResult;
+  engineData?: EngineSnapshot;
+  alreadyCompleted: boolean;
+}
+
+/**
+ * Claim before collecting engine data, snapshots, or invoking an LLM. A
+ * completed publication is returned so a restarted callback can resume only
+ * its independently claimed subscriber delivery work, not regenerate content.
+ */
+async function runClaimedPublishingPipeline(
+  publishType: PublishType,
+  confidenceThreshold: number,
+): Promise<ClaimedPublishingAttempt> {
+  const cycleDateEt = publishingCycleDateEt();
+  const acquired = await publishingClaimStore.claimRun({ publishType, cycleDateEt });
+  if (acquired.status === "completed") {
+    const status = acquired.outputStatus === "published" || acquired.outputStatus === "draft"
+      ? acquired.outputStatus
+      : "skipped";
+    return {
+      result: { ok: true, status, slug: acquired.outputSlug ?? undefined, reason: "publishing-run-already-completed" },
+      alreadyCompleted: true,
+    };
+  }
+  if (acquired.status !== "claimed") {
+    const reason = acquired.status === "unavailable"
+      ? "publishing-run-claim-unavailable"
+      : acquired.status === "ambiguous"
+        ? "publishing-run-ambiguous-needs-reconciliation"
+        : `publishing-run-${acquired.status}`;
+    return { result: { ok: false, status: "error", reason }, alreadyCompleted: false };
+  }
+
+  const engineData = await collectEngineData();
+  if (!engineData.dataAvailable) {
+    await publishingClaimStore.failRunBeforeGeneration(
+      acquired.claim,
+      `data-unavailable:${engineData.missingFields.join(",")}`,
+    );
+    return {
+      result: { ok: true, status: "draft", reason: `data-unavailable: ${engineData.missingFields.join(", ")}` },
+      engineData,
+      alreadyCompleted: false,
+    };
+  }
+  const result = await runPublishingPipeline(publishType, engineData, confidenceThreshold, acquired.claim);
+  return { result, engineData, alreadyCompleted: false };
 }
 
 // ── HTTP Handlers ─────────────────────────────────────────────────────────────
@@ -763,9 +863,14 @@ export async function handleDailyBrief(req: Request, res: Response) {
 
     console.log("[AutoPublish] Starting daily brief pipeline…");
 
-    const engineData = await collectEngineData();
+    const attempt = await runClaimedPublishingPipeline("daily_brief", 65);
+    const { result, engineData } = attempt;
+    if (result.status === "error") {
+      const statusCode = result.reason === "publishing-run-claim-unavailable" ? 503 : 409;
+      return res.status(statusCode).json(result);
+    }
 
-    if (!engineData.dataAvailable) {
+    if (engineData && !engineData.dataAvailable) {
       console.warn("[AutoPublish] Daily brief postponed — engine data unavailable");
       await updateScheduleStats("draft", null, `data-unavailable: ${engineData.missingFields.join(", ")}`);
       await notifyOwner({
@@ -775,13 +880,13 @@ export async function handleDailyBrief(req: Request, res: Response) {
       return res.json({ ok: true, status: "draft", reason: "engine-data-unavailable" });
     }
 
-    const result = await runPublishingPipeline("daily_brief", engineData, 65);
-
-    await updateScheduleStats(
-      result.status === "published" ? "success" : result.status === "skipped" ? "skipped" : "draft",
-      result.slug ?? null,
-      result.reason ?? null
-    );
+    if (!attempt.alreadyCompleted) {
+      await updateScheduleStats(
+        result.status === "published" ? "success" : result.status === "skipped" ? "skipped" : "draft",
+        result.slug ?? null,
+        result.reason ?? null,
+      );
+    }
 
     if (result.status === "published" && result.slug) {
       const { eligible, emailed } = await notifyUsersByTier(
@@ -790,11 +895,13 @@ export async function handleDailyBrief(req: Request, res: Response) {
         "Daily Intelligence Brief"
       );
 
-      await notifyOwner({
-        title: "✅ Daily Brief Published",
-        content: `Today's Daily Intelligence Brief has been published.\n\nSlug: /intelligence/${result.slug}\nWord count: ${result.wordCount}\nQuality score: ${result.qualityScore}/100\nEligible subscriber emails: ${eligible}\nEmail provider accepted: ${emailed}\n\nPressure Index™: ${engineData.pressureScore}/100 | Regime: ${engineData.regime}`,
-      });
-    } else if (result.status === "draft") {
+      if (!attempt.alreadyCompleted && engineData) {
+        await notifyOwner({
+          title: "✅ Daily Brief Published",
+          content: `Today's Daily Intelligence Brief has been published.\n\nSlug: /intelligence/${result.slug}\nWord count: ${result.wordCount}\nQuality score: ${result.qualityScore}/100\nEligible subscriber emails: ${eligible}\nEmail provider accepted: ${emailed}\n\nPressure Index™: ${engineData.pressureScore}/100 | Regime: ${engineData.regime}`,
+        });
+      }
+    } else if (result.status === "draft" && !attempt.alreadyCompleted) {
       await notifyOwner({
         title: "📋 Daily Brief Saved as Draft",
         content: `Today's Daily Intelligence Brief did not meet the confidence threshold and was saved as a draft.\n\nReason: ${result.reason ?? "quality-threshold"}\nQuality score: ${result.qualityScore ?? 0}/100\n\nReview and publish manually from the Publishing Dashboard at /app/admin/publishing.`,
@@ -829,8 +936,12 @@ export async function handleWeeklyReview(req: Request, res: Response) {
 
     console.log("[AutoPublish] Starting weekly review pipeline…");
 
-    const engineData = await collectEngineData();
-    const result = await runPublishingPipeline("weekly_review", engineData, 60);
+    const attempt = await runClaimedPublishingPipeline("weekly_review", 60);
+    const { result } = attempt;
+    if (result.status === "error") {
+      const statusCode = result.reason === "publishing-run-claim-unavailable" ? 503 : 409;
+      return res.status(statusCode).json(result);
+    }
 
     if (result.status === "published" && result.slug) {
       await notifyUsersByTier(
@@ -838,11 +949,13 @@ export async function handleWeeklyReview(req: Request, res: Response) {
         result.slug,
         "Weekly Intelligence Review"
       );
-      await notifyOwner({
-        title: "✅ Weekly Review Published",
-        content: `Weekly Intelligence Review published.\nSlug: /intelligence/${result.slug}\nWord count: ${result.wordCount}\nQuality score: ${result.qualityScore}/100`,
-      });
-    } else if (result.status === "draft") {
+      if (!attempt.alreadyCompleted) {
+        await notifyOwner({
+          title: "✅ Weekly Review Published",
+          content: `Weekly Intelligence Review published.\nSlug: /intelligence/${result.slug}\nWord count: ${result.wordCount}\nQuality score: ${result.qualityScore}/100`,
+        });
+      }
+    } else if (result.status === "draft" && !attempt.alreadyCompleted) {
       await notifyOwner({
         title: "📋 Weekly Review Saved as Draft",
         content: `Weekly Review saved as draft. Reason: ${result.reason ?? "quality-threshold"}. Review at /app/admin/publishing.`,
@@ -872,8 +985,12 @@ export async function handleMonthlyReport(req: Request, res: Response) {
 
     console.log("[AutoPublish] Starting monthly report pipeline…");
 
-    const engineData = await collectEngineData();
-    const result = await runPublishingPipeline("monthly_report", engineData, 55);
+    const attempt = await runClaimedPublishingPipeline("monthly_report", 55);
+    const { result } = attempt;
+    if (result.status === "error") {
+      const statusCode = result.reason === "publishing-run-claim-unavailable" ? 503 : 409;
+      return res.status(statusCode).json(result);
+    }
 
     if (result.status === "published" && result.slug) {
       await notifyUsersByTier(
@@ -881,11 +998,13 @@ export async function handleMonthlyReport(req: Request, res: Response) {
         result.slug,
         "Monthly Market Intelligence Report"
       );
-      await notifyOwner({
-        title: "✅ Monthly Report Published",
-        content: `Monthly Market Intelligence Report published.\nSlug: /intelligence/${result.slug}\nWord count: ${result.wordCount}\nQuality score: ${result.qualityScore}/100`,
-      });
-    } else if (result.status === "draft") {
+      if (!attempt.alreadyCompleted) {
+        await notifyOwner({
+          title: "✅ Monthly Report Published",
+          content: `Monthly Market Intelligence Report published.\nSlug: /intelligence/${result.slug}\nWord count: ${result.wordCount}\nQuality score: ${result.qualityScore}/100`,
+        });
+      }
+    } else if (result.status === "draft" && !attempt.alreadyCompleted) {
       await notifyOwner({
         title: "📋 Monthly Report Saved as Draft",
         content: `Monthly Report saved as draft. Reason: ${result.reason ?? "quality-threshold"}. Review at /app/admin/publishing.`,
@@ -920,10 +1039,13 @@ export async function handleManualPublish(req: Request, res: Response) {
       return res.status(400).json({ error: "invalid publishType", valid: Object.keys(PUBLISH_CONFIG) });
     }
 
-    const engineData = await collectEngineData();
     // For manual triggers, use a lower threshold (or 0 if forcePublish)
     const threshold = forcePublish ? 0 : 50;
-    const result = await runPublishingPipeline(publishType, engineData, threshold);
+    const { result } = await runClaimedPublishingPipeline(publishType, threshold);
+    if (result.status === "error") {
+      const statusCode = result.reason === "publishing-run-claim-unavailable" ? 503 : 409;
+      return res.status(statusCode).json(result);
+    }
 
     return res.json(result);
   } catch (err: unknown) {

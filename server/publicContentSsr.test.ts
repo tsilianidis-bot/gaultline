@@ -469,6 +469,31 @@ describe("non-article routes keep existing behaviour", () => {
     const page = await renderSpaPage(template, "/pricing", loaders());
     expect(page.status).toBe(200);
     expect(head(page.html).title).toBe("FAULTLINE Membership — $99/month or $1,500 Lifetime");
-    expect(jsonLdBlocks(page.html).map((b) => b["@type"])).toContain("FAQPage");
+    expect(jsonLdBlocks(page.html).map((b) => b["@type"])).toContain("WebPage");
+  });
+
+  it("serves crawler-visible, route-specific public content and WebPage schema without JavaScript", async () => {
+    const page = await renderSpaPage(template, "/pricing/", loaders());
+    expect(page.status).toBe(200);
+    const h = head(page.html);
+    expect(h.canonical).toBe("https://getfaultline.live/pricing");
+    expect(h.ogUrl).toBe(h.canonical);
+    expect(bodyFallback(page.html)).toContain('data-ssr="public-page"');
+    expect(bodyFallback(page.html)).toContain("FAULTLINE Standard is $99/month and FAULTLINE Lifetime is $1,500 one-time.");
+    expect(bodyFallback(page.html)).toContain("Checkout remains unavailable; no payment is taken.");
+    expect(bodyFallback(page.html)).toContain("For educational and informational purposes only. Not investment advice.");
+    const types = jsonLdBlocks(page.html).map((b) => b["@type"]);
+    expect(types).toContain("WebPage");
+    expect(types).not.toContain("SoftwareApplication");
+    expect(types).not.toContain("FAQPage");
+    const schema = jsonLdBlocks(page.html).find((b) => b["@type"] === "WebPage")!;
+    expect(schema).toMatchObject({ url: h.canonical, name: h.title, description: h.description });
+  });
+
+  it("keeps app paths noindex and out of the public route fallback", async () => {
+    const page = await renderSpaPage(template, "/app/now", loaders());
+    expect(head(page.html).robots).toEqual(["noindex,follow"]);
+    expect(bodyFallback(page.html)).not.toContain('data-ssr="public-page"');
+    expect(jsonLdBlocks(page.html).map((b) => b["@type"])).not.toContain("WebPage");
   });
 });

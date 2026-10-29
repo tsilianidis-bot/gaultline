@@ -451,7 +451,7 @@ function FinalCta() {
       <div className="pointer-events-none absolute inset-0 bg-[#0A0D12]/72" aria-hidden="true" />
       <div className="relative mx-auto max-w-4xl px-5 text-center sm:px-8">
         <h2 className="text-3xl font-semibold leading-tight tracking-[-0.04em] text-white sm:text-5xl">
-          This isn’t your grandpa’s financial dashboard.
+          This isn't your grandpa's financial platform dashboard.
         </h2>
         <div className="mt-10"><MembershipOffer /></div>
         <p className="mx-auto mt-6 max-w-2xl text-sm leading-[1.75] text-[#C9D4E0]">

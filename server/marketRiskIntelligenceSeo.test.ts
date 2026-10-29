@@ -62,6 +62,11 @@ describe("Market Risk Intelligence SEO positioning", () => {
     expect(getPageMeta("/ai-bubble-risk-tracker").title).toBe("AI Bubble Risk Monitor | FAULTLINE");
   });
 
+  it("normalizes public trailing slashes to the route's configured metadata", () => {
+    expect(getPageMeta("/pricing/").title).toBe("FAULTLINE Membership — $99/month or $1,500 Lifetime");
+    expect(injectPageMeta(homepage, "/pricing/")).toContain('rel="canonical" href="https://getfaultline.live/pricing"');
+  });
+
   it("preserves public crawl directives and sitemap discovery for the targeted pages", () => {
     expect(robots).toContain("Disallow: /app/");
     expect(robots).toContain("Allow: /market-regime-tracker");

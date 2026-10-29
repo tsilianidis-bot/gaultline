@@ -32,6 +32,17 @@ import {
   type ResumeEvidence,
   type SubscriptionView,
 } from './entitlementSync';
+import {
+  capturePaymentOrigin,
+  isPaymentOriginEvent,
+  isPaymentReversalEvent,
+  PaymentLinkageUnresolvedError,
+  paymentOriginFromChargeEvent,
+  paymentOriginFromCheckoutEvent,
+  paymentOriginFromPaymentIntentEvent,
+  reconcilePaymentReversalEvent,
+  type StripeEventLike,
+} from './paymentLinkage';
 
 export class UnresolvedPlanError extends Error {
   constructor(message: string) {
@@ -88,6 +99,40 @@ function stripeId(value: unknown): string | null {
     return (value as { id: string }).id;
   }
   return null;
+}
+
+/**
+ * Persist only a fully corroborated original payment. Subscription Checkout
+ * sessions have no Checkout PaymentIntent by Stripe design, so their origin is
+ * captured by the signed payment_intent.succeeded or charge.succeeded event.
+ */
+async function captureOriginalPaymentLinkage(
+  event: Stripe.Event,
+  user: EntitlementUser,
+  budget: ReadBudget,
+): Promise<void> {
+  const linkedEvent = event as unknown as StripeEventLike;
+  if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
+    const signedObject = event.data.object as { id?: unknown; mode?: unknown };
+    if (typeof signedObject.mode === 'string' && signedObject.mode !== 'payment') return;
+    const sessionId = stripeId(signedObject.id);
+    if (!sessionId) throw new PaymentLinkageUnresolvedError('missing_identifier', 'checkout_session');
+    const session = await stripeCall(budget, () => stripe!.checkout.sessions.retrieve(
+      sessionId,
+      { expand: ['payment_intent.latest_charge'] },
+      stripeRead,
+    ));
+    const origin = paymentOriginFromCheckoutEvent(linkedEvent, session, user.id);
+    if (origin) await capturePaymentOrigin(origin);
+    return;
+  }
+  if (event.type === 'payment_intent.succeeded') {
+    await capturePaymentOrigin(paymentOriginFromPaymentIntentEvent(linkedEvent, user.id));
+    return;
+  }
+  if (event.type === 'charge.succeeded') {
+    await capturePaymentOrigin(paymentOriginFromChargeEvent(linkedEvent, user.id));
+  }
 }
 
 async function stripeCall<T>(budget: ReadBudget, run: () => Promise<T>): Promise<T> {
@@ -336,6 +381,39 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     }
   };
 
+  if (isPaymentReversalEvent(event.type)) {
+    try {
+      const outcome = await reconcilePaymentReversalEvent(event as unknown as StripeEventLike);
+      if (!(await retainClaim())) return res.status(500).json({ error: 'Webhook processing failed' });
+      // Evidence is durable, but access-policy/lifecycle action remains founder-gated.
+      return res.json({ received: true, reconciliation: 'policy_pending', duplicate: outcome === 'duplicate' });
+    } catch (err) {
+      const reason = err instanceof PaymentLinkageUnresolvedError ? err.code : 'persistence_unavailable';
+      console.error(`[Stripe Webhook][BILLING-ALERT] ${event.type} ${event.id} reversal evidence unresolved (${reason}); releasing claim for replay:`, err);
+      await releaseClaim();
+      return res.status(500).json({ error: 'Webhook processing failed', conflict: 'payment_linkage_unresolved' });
+    }
+  }
+
+  if (event.type === 'charge.succeeded') {
+    try {
+      const user = await resolveUser(event as unknown as Parameters<typeof resolveUser>[0]);
+      const customerId = stripeId((event.data.object as { customer?: unknown }).customer);
+      if (!user || !customerId) throw new PaymentLinkageUnresolvedError('missing_user_or_customer');
+      if (user.stripeCustomerId && user.stripeCustomerId !== customerId) {
+        throw new PaymentLinkageUnresolvedError('customer_mismatch');
+      }
+      await captureOriginalPaymentLinkage(event, user, { n: 0 });
+      if (!(await retainClaim())) return res.status(500).json({ error: 'Webhook processing failed' });
+      return res.json({ received: true, linkage: 'recorded' });
+    } catch (err) {
+      const reason = err instanceof PaymentLinkageUnresolvedError ? err.code : 'persistence_unavailable';
+      console.error(`[Stripe Webhook][BILLING-ALERT] ${event.type} ${event.id} payment origin unresolved (${reason}); releasing claim for replay:`, err);
+      await releaseClaim();
+      return res.status(500).json({ error: 'Webhook processing failed', conflict: 'payment_linkage_unresolved' });
+    }
+  }
+
   if (!RELEVANT_PREFIXES.some(prefix => event.type.startsWith(prefix))) {
     console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
     if (!(await retainClaim())) return res.status(500).json({ error: 'Webhook processing failed' });
@@ -371,12 +449,16 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       return res.status(500).json({ error: 'Webhook processing failed', conflict: 'customer_conflict' });
     }
 
+    const budget: ReadBudget = { n: 0 };
+    if (isPaymentOriginEvent(event.type)) {
+      await captureOriginalPaymentLinkage(event, user, budget);
+    }
+
     const marker = cancellationMarkerFromEvent(event as unknown as Parameters<typeof cancellationMarkerFromEvent>[0]);
     if (marker) {
       await upsertStripeCancellationMarker({ ...marker, userId: user.id });
     }
 
-    const budget: ReadBudget = { n: 0 };
     let lifetimeVerified = false;
     let lifetimePurchasedAt: Date | null = null;
     const sessionId = stripeId((event.data.object as { id?: unknown }).id);

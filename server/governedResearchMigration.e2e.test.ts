@@ -318,24 +318,30 @@ describe("0077 governed research immutability migration", () => {
     ) as {
       entries: Array<{
         idx: number;
+        version: string;
         tag: string;
         when: number;
         breakpoints: boolean;
       }>;
     };
-    expect(journal.entries.slice(-2)).toEqual([
-      expect.objectContaining({
-        idx: 76,
-        tag: "0076_algorithm_outcome_fk_name",
-      }),
-      expect.objectContaining({
-        idx: 77,
-        tag: MIGRATION_TAG,
-        breakpoints: true,
-      }),
-    ]);
-    expect(journal.entries.at(-1)!.when).toBeGreaterThan(
-      journal.entries.at(-2)!.when
+    const migrationIndex = journal.entries.findIndex(entry => entry.tag === MIGRATION_TAG);
+    expect(migrationIndex).toBe(77);
+    expect(journal.entries[migrationIndex - 1]).toEqual({
+      idx: 76,
+      version: "5",
+      when: 1792300000000,
+      tag: "0076_algorithm_outcome_fk_name",
+      breakpoints: true,
+    });
+    expect(journal.entries[migrationIndex]).toEqual({
+      idx: 77,
+      version: "5",
+      when: 1793241851962,
+      tag: MIGRATION_TAG,
+      breakpoints: true,
+    });
+    expect(journal.entries[migrationIndex]!.when).toBeGreaterThan(
+      journal.entries[migrationIndex - 1]!.when
     );
     expect(migrationStatements(MIGRATION)).toHaveLength(4);
     expect(MIGRATION).toContain("--> statement-breakpoint");

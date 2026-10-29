@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { nyseSeismographRunWindow } from "../shared/nyseSession";
 import { claimScheduledSeismographSession, type SessionClaimStore } from "./scheduledSessionClaim";
 import { runScheduledSeismographForTests } from "./scheduledSeismograph";
 
@@ -27,6 +28,19 @@ function response() {
 
 describe("scheduled Seismograph NYSE admission", () => {
   afterEach(() => vi.useRealTimers());
+
+  it.each([
+    ["EDT before", "2026-03-09T20:14:00.000Z", false],
+    ["EDT start", "2026-03-09T20:15:00.000Z", true],
+    ["EDT final admitted minute", "2026-03-09T20:44:00.000Z", true],
+    ["EDT end", "2026-03-09T20:45:00.000Z", false],
+    ["EST before", "2026-11-02T21:14:00.000Z", false],
+    ["EST start", "2026-11-02T21:15:00.000Z", true],
+    ["EST final admitted minute", "2026-11-02T21:44:00.000Z", true],
+    ["EST end", "2026-11-02T21:45:00.000Z", false],
+  ])("maps %s UTC instant to the exact 16:15–16:45 ET boundary", (_name, iso, admitted) => {
+    expect(nyseSeismographRunWindow(new Date(iso)).isScheduledWindow).toBe(admitted);
+  });
 
   it("returns an explicit non-writing skip outside the valid post-close session window", async () => {
     vi.useFakeTimers();

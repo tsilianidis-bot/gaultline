@@ -12,7 +12,7 @@ vi.mock("wouter", () => ({
   ),
 }));
 
-import Legal, { getLegalTabFromLocation, subscribeToLegalLocationChanges } from "./Legal";
+import Legal, { getLegalTabFromLocation, getNextLegalTab, subscribeToLegalLocationChanges } from "./Legal";
 
 type MutableLocation = {
   hash: string;
@@ -34,6 +34,15 @@ describe("Legal tab URL behavior", () => {
     expect(getLegalTabFromLocation({ hash: "", search: "?tab=terms" })).toBe("terms");
     expect(getLegalTabFromLocation({ hash: "#unknown", search: "?tab=privacy" })).toBe("privacy");
     expect(getLegalTabFromLocation({ hash: "#unknown", search: "?tab=unknown" })).toBe("privacy");
+  });
+
+  it("uses arrow and Home/End keys to move between the legal tabs", () => {
+    expect(getNextLegalTab("privacy", "ArrowRight")).toBe("terms");
+    expect(getNextLegalTab("terms", "ArrowRight")).toBe("privacy");
+    expect(getNextLegalTab("privacy", "ArrowLeft")).toBe("terms");
+    expect(getNextLegalTab("terms", "Home")).toBe("privacy");
+    expect(getNextLegalTab("privacy", "End")).toBe("terms");
+    expect(getNextLegalTab("privacy", "Enter")).toBeUndefined();
   });
 
   it("synchronizes hash and history navigation events and removes listeners on cleanup", () => {
@@ -67,6 +76,8 @@ describe("Legal tab URL behavior", () => {
     expect(html).toContain('id="terms-panel"');
     expect(html).toContain("By accessing or using FAULTLINE");
     expect(html).toContain('role="tablist"');
+    expect(html).toContain('tabindex="-1"');
+    expect(html).toContain("<main");
     expect(html).toContain('href="/"');
     expect(html).toContain("← BACK TO SITE");
   });
