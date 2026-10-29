@@ -6,18 +6,19 @@
 
 import { TwitterApi } from "twitter-api-v2";
 import { log } from "./logger";
+import { assertAutomaticPublicationEnabled, type DeploymentSafetyEnvironment } from "./deploymentSafety";
 
 // ── Client singleton ─────────────────────────────────────────
 
 let _client: TwitterApi | null = null;
 
-function getClient(): TwitterApi {
+function getClient(env: DeploymentSafetyEnvironment): TwitterApi {
   if (_client) return _client;
 
-  const apiKey = process.env.X_API_KEY;
-  const apiSecret = process.env.X_API_SECRET;
-  const accessToken = process.env.X_ACCESS_TOKEN;
-  const accessTokenSecret = process.env.X_ACCESS_TOKEN_SECRET;
+  const apiKey = env.X_API_KEY;
+  const apiSecret = env.X_API_SECRET;
+  const accessToken = env.X_ACCESS_TOKEN;
+  const accessTokenSecret = env.X_ACCESS_TOKEN_SECRET;
 
   if (!apiKey || !apiSecret || !accessToken || !accessTokenSecret) {
     throw new Error("X API credentials not configured. Set X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET.");
@@ -35,8 +36,12 @@ function getClient(): TwitterApi {
 
 // ── Post a single tweet ──────────────────────────────────────
 
-export async function postTweet(text: string): Promise<{ id: string; text: string }> {
-  const client = getClient();
+export async function postTweet(
+  text: string,
+  env: DeploymentSafetyEnvironment = process.env,
+): Promise<{ id: string; text: string }> {
+  assertAutomaticPublicationEnabled(env);
+  const client = getClient(env);
   const rwClient = client.readWrite;
   const result = await rwClient.v2.tweet(text);
   log.info(`[XPoster] Posted tweet: ${result.data.id}`);
@@ -45,10 +50,14 @@ export async function postTweet(text: string): Promise<{ id: string; text: strin
 
 // ── Post a thread (array of tweet texts) ────────────────────
 
-export async function postThread(tweets: string[]): Promise<{ ids: string[] }> {
+export async function postThread(
+  tweets: string[],
+  env: DeploymentSafetyEnvironment = process.env,
+): Promise<{ ids: string[] }> {
   if (tweets.length === 0) throw new Error("Thread must have at least one tweet");
 
-  const client = getClient();
+  assertAutomaticPublicationEnabled(env);
+  const client = getClient(env);
   const rwClient = client.readWrite;
 
   const ids: string[] = [];
@@ -93,9 +102,10 @@ export function parseThread(threadText: string): string[] {
 
 // ── Validate credentials (lightweight check) ─────────────────
 
-export async function validateXCredentials(): Promise<boolean> {
+export async function validateXCredentials(env: DeploymentSafetyEnvironment = process.env): Promise<boolean> {
   try {
-    const client = getClient();
+    assertAutomaticPublicationEnabled(env);
+    const client = getClient(env);
     const me = await client.readWrite.v2.me();
     log.info(`[XPoster] Credentials valid. Account: @${me.data.username}`);
     return true;

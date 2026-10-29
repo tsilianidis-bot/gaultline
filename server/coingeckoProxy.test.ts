@@ -89,15 +89,14 @@ describe("CoinGecko Proxy", () => {
       expect(results[0].marketCapRank).toBe(1);
     });
 
-    it("returns empty array on fetch failure", async () => {
+    it("rejects on fetch failure instead of representing it as no matches", async () => {
       const mockFetch = vi.fn().mockRejectedValueOnce(new Error("Network error"));
       vi.stubGlobal("fetch", mockFetch);
       vi.doMock("./logger", () => ({ log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
 
       const { searchCoins } = await import("./coingeckoProxy");
-      const results = await searchCoins("failquery");
 
-      expect(results).toEqual([]);
+      await expect(searchCoins("failquery")).rejects.toThrow("Network error");
     });
 
     it("uppercases symbol in results", async () => {

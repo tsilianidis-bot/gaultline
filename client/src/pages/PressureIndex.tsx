@@ -118,7 +118,7 @@ export default function PressureIndex() {
     ? []
     : snapshot.state.engines
         .filter(engine => engine.value != null && engine.qualityStatus !== "UNAVAILABLE")
-        .slice(0, 5)
+        .slice(0, 6)
         .map(engine => ({
           id: engine.engineId,
           label: pressureVectorLabel(engine.engineId, engine.engineName),

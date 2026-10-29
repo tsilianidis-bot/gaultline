@@ -137,11 +137,14 @@ describe("Sector Rotation is data-first and has no demo / fallback / LLM path", 
     const mod = src(MODULE);
     expect(mod).not.toMatch(/MODERATE RISK|SYSTEMIC CRISIS|pressure\s*>=\s*\d+/);
   });
-  it("adds no env var or secret (only the existing POLYGON_API_KEY is read)", () => {
+  it("keeps provider config limited to the existing POLYGON_API_KEY and uses the shared collector opt-in", () => {
     for (const f of SERVER_FILES) {
       const envs = Array.from(src(f).matchAll(/process\.env\.([A-Z_]+)/g)).map(x => x[1]);
       expect(envs.every(e => e === "POLYGON_API_KEY"), f).toBe(true);
     }
+    const service = src("server/sectorRotation/service.ts");
+    expect(service).toContain("isSectorRotationCollectorEnabled");
+    expect(service).toContain("FAULTLINE_SECTOR_ROTATION_COLLECTOR_ENABLED");
   });
   it("the Yahoo daily chart adapter has no Polygon or placeholder fallback", () => {
     const y = src("server/yahooProxy.ts");

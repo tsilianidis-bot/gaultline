@@ -35,6 +35,15 @@ describe("Systemic Regime Engine remains additive", () => {
     expect(scheduled).not.toContain('--history-out", HISTORY_JSON');
   });
 
+  it("uses read-only schema readiness and never performs systemic DDL at runtime", () => {
+    const scheduled = source("server/systemicRegime/scheduled.ts");
+    const writer = source("server/systemicRegime/writer.ts");
+    expect(scheduled).toContain("assertSystemicRegimeSchemaReady()");
+    expect(writer).toContain("assertSystemicRegimeSchemaReady");
+    expect(writer).not.toMatch(/\b(?:CREATE|ALTER|DROP)\s+TABLE\b/i);
+    expect(writer).not.toMatch(/\bCREATE\s+INDEX\b/i);
+  });
+
   it("does not market PCA as Dynamic PCA or the HMM as AI", () => {
     const readme = source("quant/systemic-regime/README.md");
     expect(readme).toContain("StandardScaler + PCA");

@@ -460,6 +460,9 @@ export async function searchCoins(query: string): Promise<CoinSearchResult[]> {
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     log.warn("[CoinGecko] Search failed", { query, errMsg });
+    // An upstream failure is not an empty provider result. Callers need a
+    // distinct unavailable state rather than a misleading "no matches" UI.
+    throw err;
   }
   searchCache.set(key, results);
   return results;

@@ -11,7 +11,7 @@ import type { SeismographOutput } from "../seismographCore";
 import { getAuthoritativeCrossEngineSynthesis } from "../crossEngineSynthesis";
 import { getCurrentGovernedEarlyWarningPresentation } from "../earlyWarningPresentation";
 import { computeSignalConvergence } from "./signalConvergence";
-import { persistApprovedModelRegistry, persistSignalConvergence, persistSystemicRegimeHistory, persistSystemicRegimeReading, restoreApprovedModelFromDb, ensureSystemicRegimeTables } from "./writer";
+import { assertSystemicRegimeSchemaReady, persistApprovedModelRegistry, persistSignalConvergence, persistSystemicRegimeHistory, persistSystemicRegimeReading, restoreApprovedModelFromDb } from "./writer";
 import type { SystemicRegimeHistoryPoint, SystemicRegimeReading } from "../../shared/systemicRegime";
 import { easternSessionStamp, nyseSeismographRunWindow, seismographFreshForInfer } from "../../shared/nyseSession";
 import { scheduledSessionClaimPresence } from "../scheduledSessionClaim";
@@ -90,9 +90,9 @@ export async function runSystemicRegimeInferenceJob(
       reason: "Systemic-regime inference requires the completed current Eastern post-close Seismograph output.",
     };
   }
+  await assertSystemicRegimeSchemaReady();
   mkdirSync(ARTIFACT_DIR, { recursive: true });
   mkdirSync(MODEL_DIR, { recursive: true });
-  await ensureSystemicRegimeTables();
   if (!existsSync(resolve(MODEL_DIR, "approved.joblib"))) {
     const restored = await restoreApprovedModelFromDb(MODEL_DIR);
     if (!restored) {
@@ -137,8 +137,8 @@ export async function runSystemicRegimeInferenceJob(
 }
 
 export async function runSystemicRegimeTrainJob(): Promise<Record<string, unknown>> {
+  await assertSystemicRegimeSchemaReady();
   mkdirSync(MODEL_DIR, { recursive: true });
-  await ensureSystemicRegimeTables();
   try {
     await exportFredPanelForQuant();
   } catch (error) {
@@ -162,6 +162,7 @@ export async function runSystemicRegimeTrainJob(): Promise<Record<string, unknow
 
 export async function ingestPackagedResearchHistory(): Promise<number> {
   if (!existsSync(RESEARCH_HISTORY_JSON)) return 0;
+  await assertSystemicRegimeSchemaReady();
   const points = JSON.parse(readFileSync(RESEARCH_HISTORY_JSON, "utf8")) as SystemicRegimeHistoryPoint[];
   return persistSystemicRegimeHistory(points, "sre-hmm2-v1.0.0", "gaussian-hmm-2state");
 }

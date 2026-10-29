@@ -599,6 +599,44 @@ export function finiteQuoteNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+export type StockPerformerSource = "yahoo-screener" | "polygon-snapshot";
+export type StockPerformerCacheStatus = "fresh" | "cached";
+
+/**
+ * Converts an explicit provider epoch in seconds or milliseconds to milliseconds.
+ * A local receipt time is never substituted when the provider omitted its time.
+ */
+export function providerObservedAtMs(value: unknown): number | null {
+  const timestamp = finiteQuoteNumber(value);
+  if (timestamp == null || timestamp <= 0) return null;
+  const milliseconds = timestamp < 100_000_000_000 ? timestamp * 1000 : timestamp;
+  return milliseconds <= 8_640_000_000_000_000 ? milliseconds : null;
+}
+
+/** Yahoo's delay field is provider-declared minutes; absent or invalid stays unknown. */
+export function yahooScreenerProvenance(q: {
+  regularMarketTime?: unknown;
+  exchangeDataDelayedBy?: unknown;
+}): Pick<StockPerformer, "source" | "observedAt" | "delayMinutes"> {
+  const delayMinutes = finiteQuoteNumber(q.exchangeDataDelayedBy);
+  return {
+    source: "yahoo-screener",
+    observedAt: providerObservedAtMs(q.regularMarketTime),
+    delayMinutes: delayMinutes != null && delayMinutes >= 0 ? delayMinutes : null,
+  };
+}
+
+/** Polygon snapshot responses do not declare a delay in this adapter. */
+export function polygonSnapshotProvenance(t: {
+  updated?: unknown;
+}): Pick<StockPerformer, "source" | "observedAt" | "delayMinutes"> {
+  return {
+    source: "polygon-snapshot",
+    observedAt: providerObservedAtMs(t.updated),
+    delayMinutes: null,
+  };
+}
+
 /** A present screener number, including 0, is returned unchanged. A missing one stays null. */
 export function screenerQuoteFields(q: {
   regularMarketPrice?: unknown;
@@ -656,12 +694,28 @@ export interface StockPerformer {
   marketCap: number | null;
   sector: string | null;
   avgVolume: number | null;
-  source: "yahoo-screener";
+  source: StockPerformerSource;
+  /** Provider observation time when supplied; null means the provider did not supply one. */
+  observedAt?: number | null;
+  /** Provider-declared delay in minutes; null means the adapter cannot classify delay. */
+  delayMinutes?: number | null;
+  /** Whether this server response came from the three-minute screener cache. */
+  cacheStatus?: StockPerformerCacheStatus;
+  /** Local adapter receipt time, never a provider observation time. */
   fetchedAt: number;
 }
 
 // Cache for 3 minutes — screener data doesn't change second-by-second
 const performersCache = new LRUCache<string, StockPerformer[]>(8, 3 * 60_000);
+
+function getCachedPerformers(cacheKey: string): StockPerformer[] | undefined {
+  const cached = performersCache.get(cacheKey);
+  return cached?.map(performer => ({ ...performer, cacheStatus: "cached" }));
+}
+
+export function clearPerformerCache(): void {
+  performersCache.clear();
+}
 
 /**
  * Fetch top N daily stock gainers from Yahoo Finance screener.
@@ -670,7 +724,7 @@ const performersCache = new LRUCache<string, StockPerformer[]>(8, 3 * 60_000);
  */
 export async function getTopStockPerformers(limit = 100): Promise<StockPerformer[]> {
   const cacheKey = `gainers_${limit}`;
-  const cached = performersCache.get(cacheKey);
+  const cached = getCachedPerformers(cacheKey);
   if (cached) return cached;
 
   const count = Math.min(limit, 100);
@@ -703,10 +757,11 @@ export async function getTopStockPerformers(limit = 100): Promise<StockPerformer
         ticker:        q.symbol,
         name:          q.shortName ?? q.longName ?? q.symbol,
         ...screenerQuoteFields(q),
+        ...yahooScreenerProvenance(q),
         marketCap:     q.marketCap ?? null,
         sector:        q.sector ?? null,
         avgVolume:     q.averageDailyVolume3Month ?? null,
-        source:        "yahoo-screener" as const,
+        cacheStatus:   "fresh" as const,
         fetchedAt:     Date.now(),
       }))
       .sort((a, b) => compareNullableDesc(a.changePercent, b.changePercent));
@@ -730,7 +785,7 @@ export async function getTopStockPerformers(limit = 100): Promise<StockPerformer
  */
 async function getPolygonTopGainers(limit: number): Promise<StockPerformer[]> {
   const apiKey = process.env.POLYGON_API_KEY;
-  if (!apiKey) return [];
+  if (!apiKey) throw new Error("Polygon gainers fallback unavailable: POLYGON_API_KEY is not configured");
 
   try {
     const url = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/gainers?include_otc=false&apiKey=${apiKey}`;
@@ -738,7 +793,8 @@ async function getPolygonTopGainers(limit: number): Promise<StockPerformer[]> {
     if (!res.ok) throw new Error(`Polygon gainers HTTP ${res.status}`);
 
     const json = await res.json() as any;
-    const tickers: any[] = json?.tickers ?? [];
+    if (!Array.isArray(json?.tickers)) throw new Error("Polygon gainers response did not include a tickers array");
+    const tickers: any[] = json.tickers;
 
     return tickers
       .slice(0, limit)
@@ -746,17 +802,18 @@ async function getPolygonTopGainers(limit: number): Promise<StockPerformer[]> {
         ticker:        t.ticker,
         name:          t.ticker,
         ...polygonSnapshotQuoteFields(t),
+        ...polygonSnapshotProvenance(t),
         marketCap:     null,
         sector:        null,
         avgVolume:     null,
-        source:        "yahoo-screener" as const,
+        cacheStatus:   "fresh" as const,
         fetchedAt:     Date.now(),
       }))
       .sort((a, b) => compareNullableDesc(a.changePercent, b.changePercent));
 
   } catch (err: any) {
     log.warn(`[Yahoo Proxy] Polygon gainers fallback also failed: ${err?.message}`);
-    return [];
+    throw err;
   }
 }
 
@@ -766,7 +823,7 @@ async function getPolygonTopGainers(limit: number): Promise<StockPerformer[]> {
  */
 export async function getTopStockLosers(limit = 100): Promise<StockPerformer[]> {
   const cacheKey = `losers_${limit}`;
-  const cached = performersCache.get(cacheKey);
+  const cached = getCachedPerformers(cacheKey);
   if (cached) return cached;
   const count = Math.min(limit, 100);
   const url = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=day_losers&count=${count}&start=0`;
@@ -791,10 +848,11 @@ export async function getTopStockLosers(limit = 100): Promise<StockPerformer[]> 
         ticker:        q.symbol,
         name:          q.shortName ?? q.longName ?? q.symbol,
         ...screenerQuoteFields(q),
+        ...yahooScreenerProvenance(q),
         marketCap:     q.marketCap ?? null,
         sector:        q.sector ?? null,
         avgVolume:     q.averageDailyVolume3Month ?? null,
-        source:        "yahoo-screener" as const,
+        cacheStatus:   "fresh" as const,
         fetchedAt:     Date.now(),
       }))
       .sort((a, b) => compareNullableAsc(a.changePercent, b.changePercent));
@@ -814,7 +872,7 @@ export async function getTopStockLosers(limit = 100): Promise<StockPerformer[]> 
  */
 export async function getTopStockByVolume(limit = 100): Promise<StockPerformer[]> {
   const cacheKey = `volume_${limit}`;
-  const cached = performersCache.get(cacheKey);
+  const cached = getCachedPerformers(cacheKey);
   if (cached) return cached;
   const count = Math.min(limit, 100);
   const url = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=most_actives&count=${count}&start=0`;
@@ -839,10 +897,11 @@ export async function getTopStockByVolume(limit = 100): Promise<StockPerformer[]
         ticker:        q.symbol,
         name:          q.shortName ?? q.longName ?? q.symbol,
         ...screenerQuoteFields(q),
+        ...yahooScreenerProvenance(q),
         marketCap:     q.marketCap ?? null,
         sector:        q.sector ?? null,
         avgVolume:     q.averageDailyVolume3Month ?? null,
-        source:        "yahoo-screener" as const,
+        cacheStatus:   "fresh" as const,
         fetchedAt:     Date.now(),
       }))
       .sort((a, b) => compareNullableDesc(a.volume, b.volume));
@@ -859,40 +918,47 @@ export async function getTopStockByVolume(limit = 100): Promise<StockPerformer[]
 /** Fallback: Polygon losers snapshot */
 async function getPolygonTopLosers(limit: number): Promise<StockPerformer[]> {
   const apiKey = process.env.POLYGON_API_KEY;
-  if (!apiKey) return [];
+  if (!apiKey) throw new Error("Polygon losers fallback unavailable: POLYGON_API_KEY is not configured");
   try {
     const url = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/losers?include_otc=false&apiKey=${apiKey}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) throw new Error(`Polygon losers HTTP ${res.status}`);
     const json = await res.json() as any;
-    const tickers: any[] = json?.tickers ?? [];
+    if (!Array.isArray(json?.tickers)) throw new Error("Polygon losers response did not include a tickers array");
+    const tickers: any[] = json.tickers;
     return tickers.slice(0, limit).map((t: any) => ({
       ticker:        t.ticker,
       name:          t.ticker,
       ...polygonSnapshotQuoteFields(t),
+      ...polygonSnapshotProvenance(t),
       marketCap:     null,
       sector:        null,
       avgVolume:     null,
-      source:        "yahoo-screener" as const,
+      cacheStatus:   "fresh" as const,
       fetchedAt:     Date.now(),
     })).sort((a, b) => compareNullableAsc(a.changePercent, b.changePercent));
   } catch (err: any) {
     log.warn(`[Yahoo Proxy] Polygon losers fallback failed: ${err?.message}`);
-    return [];
+    throw err;
   }
 }
 
 /** Fallback: Polygon most active (merge gainers + losers, sort by volume) */
 async function getPolygonMostActive(limit: number): Promise<StockPerformer[]> {
   const apiKey = process.env.POLYGON_API_KEY;
-  if (!apiKey) return [];
+  if (!apiKey) throw new Error("Polygon most-active fallback unavailable: POLYGON_API_KEY is not configured");
   try {
     const [gainersRes, losersRes] = await Promise.all([
       fetch(`https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/gainers?include_otc=false&apiKey=${apiKey}`, { signal: AbortSignal.timeout(10_000) }),
       fetch(`https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/losers?include_otc=false&apiKey=${apiKey}`, { signal: AbortSignal.timeout(10_000) }),
     ]);
+    if (!gainersRes.ok) throw new Error(`Polygon most-active gainers HTTP ${gainersRes.status}`);
+    if (!losersRes.ok) throw new Error(`Polygon most-active losers HTTP ${losersRes.status}`);
     const [gainersJson, losersJson] = await Promise.all([gainersRes.json(), losersRes.json()]) as any[];
-    const all = [...(gainersJson?.tickers ?? []), ...(losersJson?.tickers ?? [])];
+    if (!Array.isArray(gainersJson?.tickers) || !Array.isArray(losersJson?.tickers)) {
+      throw new Error("Polygon most-active response did not include tickers arrays");
+    }
+    const all = [...gainersJson.tickers, ...losersJson.tickers];
     const seen = new Set<string>();
     return all
       .filter(t => { if (seen.has(t.ticker)) return false; seen.add(t.ticker); return true; })
@@ -900,17 +966,18 @@ async function getPolygonMostActive(limit: number): Promise<StockPerformer[]> {
         ticker:        t.ticker,
         name:          t.ticker,
         ...polygonSnapshotQuoteFields(t, "day"),
+        ...polygonSnapshotProvenance(t),
         marketCap:     null,
         sector:        null,
         avgVolume:     null,
-        source:        "yahoo-screener" as const,
+        cacheStatus:   "fresh" as const,
         fetchedAt:     Date.now(),
       }))
       .sort((a, b) => compareNullableDesc(a.volume, b.volume))
       .slice(0, limit);
   } catch (err: any) {
     log.warn(`[Yahoo Proxy] Polygon most-active fallback failed: ${err?.message}`);
-    return [];
+    throw err;
   }
 }
 

@@ -52,6 +52,35 @@ function fmtMktCap(v: number | null): string {
   return `$${v.toLocaleString()}`;
 }
 
+function fmtProviderObservation(observedAt: number | null | undefined): string {
+  if (typeof observedAt !== "number" || !Number.isFinite(observedAt) || observedAt <= 0) return "as-of unknown";
+  const date = new Date(observedAt);
+  if (!Number.isFinite(date.getTime())) return "as-of unknown";
+  return `as of ${date.toISOString().replace(".000Z", "Z")}`;
+}
+
+export function moverProvenanceText(row: {
+  source?: "yahoo-screener" | "polygon-snapshot";
+  observedAt?: number | null;
+  delayMinutes?: number | null;
+  cacheStatus?: "fresh" | "cached";
+}): string {
+  const source = row.source === "yahoo-screener"
+    ? "Yahoo screener"
+    : row.source === "polygon-snapshot"
+      ? "Polygon snapshot"
+      : "source unknown";
+  const delay = typeof row.delayMinutes === "number" && Number.isFinite(row.delayMinutes) && row.delayMinutes >= 0
+    ? row.delayMinutes > 0 ? `reported ${row.delayMinutes}m delay` : "provider reports no delay"
+    : "delay unknown";
+  const cache = row.cacheStatus === "cached"
+    ? "server cache"
+    : row.cacheStatus === "fresh"
+      ? "server cache miss"
+      : "cache status unknown";
+  return `${source} · ${fmtProviderObservation(row.observedAt)} · ${delay} · ${cache}`;
+}
+
 // ── Section header ────────────────────────────────────────────
 function SectionHeader({ label, sub, icon }: { label: string; sub?: string; icon?: React.ReactNode }) {
   return (
@@ -84,7 +113,7 @@ function TickerRibbon({ quotes }: { quotes: Array<{ ticker: string; price: numbe
         {items.map((q, i) => (
           <a
             key={`${q.ticker}-${i}`}
-            href={`/app/symbol-intelligence?symbol=${q.ticker}`}
+            href={`/app/symbol-intelligence?symbol=${encodeURIComponent(q.ticker)}&type=stock&autorun=1`}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -121,21 +150,26 @@ function UniversalSearch() {
   const [, navigate] = useLocation();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const doSearch = useCallback(async (q: string) => {
-    if (!q || q.length < 1) { setResults([]); setOpen(false); return; }
+    if (!q || q.length < 1) { setResults([]); setSearchError(null); setOpen(false); return; }
     setLoading(true);
+    setSearchError(null);
     try {
       const res = await fetch(`/api/signals/search?q=${encodeURIComponent(q)}`);
-      const data = await res.json() as { results?: SearchResult[] };
-      setResults(data.results ?? []);
+      const data = await res.json().catch(() => null) as { error?: string; results?: SearchResult[] } | null;
+      if (!res.ok) throw new Error(data?.error ?? "Stock and ETF search is temporarily unavailable.");
+      setResults(data?.results ?? []);
       setOpen(true);
     } catch {
       setResults([]);
+      setSearchError("Stock and ETF search is temporarily unavailable. No match result has been confirmed.");
+      setOpen(true);
     } finally {
       setLoading(false);
     }
@@ -149,17 +183,17 @@ function UniversalSearch() {
   };
 
   const handleSelect = (ticker: string) => {
+    const symbol = ticker.trim().toUpperCase();
     setQuery("");
     setResults([]);
     setOpen(false);
-    navigate(`/app/symbol-intelligence?symbol=${ticker}`);
+    navigate(`/app/symbol-intelligence?symbol=${encodeURIComponent(symbol)}&type=stock&autorun=1`);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") { setOpen(false); setQuery(""); }
     if (e.key === "Enter" && query.trim()) {
-      navigate(`/app/symbol-intelligence?symbol=${query.trim().toUpperCase()}`);
-      setQuery(""); setOpen(false);
+      handleSelect(query);
     }
   };
 
@@ -183,7 +217,7 @@ function UniversalSearch() {
           onKeyDown={handleKeyDown}
           onFocus={() => query && setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 180)}
-          placeholder="Search any ticker, stock, crypto, ETF…"
+          placeholder="Search stocks & ETFs…"
           style={{
             flex: 1,
             background: "transparent",
@@ -199,7 +233,39 @@ function UniversalSearch() {
           <div style={{ width: "10px", height: "10px", border: "1.5px solid rgba(0,229,255,0.45)", borderTopColor: "#00E5FF", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
         )}
       </div>
-      {open && results.length > 0 && (
+      {open && searchError && (
+        <div style={{
+          position: "absolute",
+          top: "calc(100% + 4px)",
+          left: 0,
+          right: 0,
+          background: "#0A0E1A",
+          border: "1px solid rgba(255,45,85,0.35)",
+          borderRadius: "6px",
+          zIndex: 100,
+          padding: "10px 12px",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+        }}>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF8FA3", lineHeight: 1.5 }}>{searchError}</span>
+        </div>
+      )}
+      {open && !searchError && !loading && results.length === 0 && (
+        <div style={{
+          position: "absolute",
+          top: "calc(100% + 4px)",
+          left: 0,
+          right: 0,
+          background: "#0A0E1A",
+          border: "1px solid rgba(0,212,255,0.18)",
+          borderRadius: "6px",
+          zIndex: 100,
+          padding: "10px 12px",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+        }}>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.65)" }}>No matching stocks or ETFs found.</span>
+        </div>
+      )}
+      {open && !searchError && results.length > 0 && (
         <div style={{
           position: "absolute",
           top: "calc(100% + 4px)",
@@ -241,6 +307,9 @@ function UniversalSearch() {
           ))}
         </div>
       )}
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(148,163,184,0.48)", marginTop: "4px", letterSpacing: "0.03em" }}>
+        STOCK & ETF LOOKUP · CRYPTO: <a href="/app/crypto-search" style={{ color: "#00E5FF", textDecoration: "none" }}>USE CRYPTO SEARCH →</a>
+      </div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
@@ -270,14 +339,17 @@ function SnapshotTile({ label, price, changePct, sub }: { label: string; price: 
 }
 
 // ── Mover row ─────────────────────────────────────────────────
-function MoverRow({ ticker, name, price, changePct, volume, marketCap, rank }: {
+function MoverRow({ ticker, name, price, changePct, volume, marketCap, rank, source, observedAt, delayMinutes, cacheStatus }: {
   ticker: string; name: string; price: number | null; changePct: number | null;
   volume?: number | null; marketCap?: number | null; rank?: number;
+  source?: "yahoo-screener" | "polygon-snapshot";
+  observedAt?: number | null; delayMinutes?: number | null; cacheStatus?: "fresh" | "cached";
 }) {
   const color = changeColor(changePct);
+  const provenance = moverProvenanceText({ source, observedAt, delayMinutes, cacheStatus });
   return (
     <a
-      href={`/app/symbol-intelligence?symbol=${ticker}`}
+      href={`/app/symbol-intelligence?symbol=${encodeURIComponent(ticker)}&type=stock&autorun=1`}
       style={{
         display: "flex",
         alignItems: "center",
@@ -297,6 +369,7 @@ function MoverRow({ ticker, name, price, changePct, volume, marketCap, rank }: {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, color: "#E2E8F0", letterSpacing: "0.05em" }}>{ticker}</div>
         <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "9px", color: "rgba(148,163,184,0.5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "120px" }}>{name}</div>
+        <div title={provenance} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(148,163,184,0.42)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "150px", marginTop: "2px" }}>{provenance}</div>
       </div>
       <div style={{ textAlign: "right", minWidth: "60px" }}>
         <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "12px", color: "#E2E8F0" }}>{fmtPrice(price)}</div>
@@ -372,7 +445,7 @@ function WatchlistRow({ symbol, name, type, quote }: {
   symbol: string; name: string; type: string;
   quote?: { price: number; changePercent: number } | null;
 }) {
-  const href = type === "crypto" ? `/app/crypto?coin=${symbol.toLowerCase()}` : `/app/symbol-intelligence?symbol=${symbol}`;
+  const href = type === "crypto" ? `/app/crypto?coin=${symbol.toLowerCase()}` : `/app/symbol-intelligence?symbol=${encodeURIComponent(symbol)}&type=stock&autorun=1`;
   return (
     <a
       href={href}
@@ -490,12 +563,11 @@ export default function MarketOverview() {
   const quoteMap = new Map(quotes.map(q => [q.ticker, q]));
 
   // ── Active mover data ─────────────────────────────────────────
-  const moverData = moverTab === "GAINERS" ? (gainersQ.data ?? []) :
-    moverTab === "LOSERS" ? (losersQ.data ?? []) :
-    (activeQ.data ?? []);
-  const moverLoading = moverTab === "GAINERS" ? gainersQ.isLoading :
-    moverTab === "LOSERS" ? losersQ.isLoading :
-    activeQ.isLoading;
+  const activeMoverQuery = moverTab === "GAINERS" ? gainersQ :
+    moverTab === "LOSERS" ? losersQ : activeQ;
+  const moverData = activeMoverQuery.data ?? [];
+  const moverLoading = activeMoverQuery.isLoading;
+  const moverUnavailable = activeMoverQuery.isError;
 
   return (
     <div style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
@@ -568,17 +640,27 @@ export default function MarketOverview() {
       }}>
         {/* Movers panel */}
         <div style={{ padding: "12px 16px", borderRight: "1px solid rgba(0,212,255,0.07)" }}>
-          <SectionHeader label="Market Movers" sub="Top gainers, losers, and most active" icon={<Zap size={11} />} />
+          <SectionHeader label="Market Movers" sub="Top gainers, losers, and most active · source shown per row" icon={<Zap size={11} />} />
           <TabBar tabs={["GAINERS", "LOSERS", "ACTIVE"]} active={moverTab} onChange={v => setMoverTab(v as typeof moverTab)} />
-          {moverLoading ? (
+          {!user ? (
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.4)", padding: "20px 0", textAlign: "center" }}>
+              Sign in to view market movers
+            </div>
+          ) : moverLoading ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} style={{ height: "34px", background: "rgba(255,255,255,0.03)", borderRadius: "4px", animation: "pulse 1.5s ease-in-out infinite" }} />
               ))}
             </div>
+          ) : moverUnavailable ? (
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(255,143,163,0.82)", padding: "20px 0", textAlign: "center", lineHeight: 1.5 }}>
+              Market movers are temporarily unavailable.
+              <button type="button" onClick={() => { void activeMoverQuery.refetch(); }} style={{ display: "block", margin: "8px auto 0", padding: "5px 9px", background: "rgba(255,45,85,0.06)", border: "1px solid rgba(255,45,85,0.32)", borderRadius: "3px", color: "#FF8FA3", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", cursor: "pointer", letterSpacing: "0.08em" }}>RETRY</button>
+            </div>
           ) : moverData.length === 0 ? (
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.4)", padding: "20px 0", textAlign: "center" }}>
-              {user ? "Loading market data…" : "Sign in to view market movers"}
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.6)", padding: "20px 0", textAlign: "center", lineHeight: 1.5 }}>
+              No market-mover data is available right now.
+              <button type="button" onClick={() => { void activeMoverQuery.refetch(); }} style={{ display: "block", margin: "8px auto 0", padding: "5px 9px", background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,229,255,0.26)", borderRadius: "3px", color: "#00E5FF", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", cursor: "pointer", letterSpacing: "0.08em" }}>RETRY</button>
             </div>
           ) : (
             moverData.slice(0, 8).map((s, i) => (
@@ -591,6 +673,10 @@ export default function MarketOverview() {
                 volume={s.volume}
                 marketCap={s.marketCap}
                 rank={i + 1}
+                source={s.source}
+                observedAt={s.observedAt}
+                delayMinutes={s.delayMinutes}
+                cacheStatus={s.cacheStatus}
               />
             ))
           )}

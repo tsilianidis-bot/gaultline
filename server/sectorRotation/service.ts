@@ -26,6 +26,7 @@ import { parseSsgaHoldings } from "./universe";
 import { SECTOR_ROTATION_COLLECTOR_POLICY as POLICY, type SectorRotationServed } from "../../shared/sectorRotation";
 import { SectorRotationCollector, abortBudget, newBudget, type FanoutBudget } from "./collector";
 import { createMarketMemorySnapshotStore } from "./snapshotStore";
+import { isSectorRotationCollectorEnabled, type DeploymentSafetyEnvironment } from "../deploymentSafety";
 import {
   dailyChange, newsWindow, splitBars,
   type ChartInput, type FredInput, type NewsInput, type SectorRotationInputs, type UniverseInput,
@@ -187,7 +188,12 @@ export function getServedSectorRotation(): Promise<SectorRotationServed> {
   return sectorRotationCollector.served();
 }
 
-/** Called once from server boot (server/_core/index.ts). */
-export function startSectorRotationCollector() {
+/** Called once from server boot (server/_core/index.ts) only after explicit candidate opt-in. */
+export function startSectorRotationCollector(env: DeploymentSafetyEnvironment = process.env) {
+  if (!isSectorRotationCollectorEnabled(env)) {
+    log.info("[SectorRotation] Collector disabled by FAULTLINE_SECTOR_ROTATION_COLLECTOR_ENABLED.");
+    return false;
+  }
   sectorRotationCollector.start();
+  return true;
 }

@@ -43,6 +43,7 @@ import { appRouter } from "../routers.ts";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { requireCron } from "./cronGuard";
+import { isSectorRotationCollectorEnabled, requireScheduledDispatch } from "../deploymentSafety";
 import { captureError, flushErrorTracking } from "../errorTracking";
 import { handleQaAccess, handleQaAccessLogout } from "../qaAccess";
 import { resolveBuildIdentity } from "../buildIdentity";
@@ -189,30 +190,31 @@ async function startServer() {
   registerSEORoutes(app);
   app.use("/api/analytics", analyticsRoutes);
 
-  // Scheduled cron endpoints — all use the canonical exact-bearer guard and
-  // are registered before tRPC / Vite fallthrough.
+  // Scheduled endpoints require both the canonical bearer guard and an explicit
+  // deployment-side dispatch opt-in. This keeps legacy native schedules from
+  // reaching a candidate merely because a CRON_SECRET remains configured.
   app.post("/api/scheduled/ping", requireCron, (_req, res) => res.json({ ok: true }));
-  app.post("/api/scheduled/daily-snapshot", requireCron, handleScheduledDailySnapshot);
-  app.post("/api/scheduled/publish-blog", requireCron, handleScheduledPublishBlog);
-  app.post("/api/scheduled/auto-publish-drafts", requireCron, handleScheduledAutoPublishDrafts);
-  app.post("/api/scheduled/x-post-scheduled", requireCron, handleScheduledXPost);
-  app.post("/api/scheduled/x-news-monitor", requireCron, handleXNewsMonitor);
-  app.post("/api/scheduled/daily-sim-portfolio", requireCron, handleScheduledSimPortfolio);
-  app.post("/api/scheduled/generate-organic-content", requireCron, handleGenerateOrganicContent);
-  app.post("/api/scheduled/refresh-signal-pages", requireCron, handleRefreshSignalPages);
-  app.post("/api/scheduled/ledger-evaluation", requireCron, handleScheduledLedgerEvaluation);
-  app.post("/api/scheduled/weekly-improvement-report", requireCron, weeklyImprovementReportHandler);
-  app.post("/api/scheduled/drip-email", requireCron, handleDripEmail);
-  app.post("/api/scheduled/seismograph-daily", requireCron, handleScheduledSeismograph);
-  app.post("/api/scheduled/shadow-forward-outcomes", requireCron, handleShadowForwardOutcomes);
-  app.post("/api/scheduled/shadow-daily-summary", requireCron, handleShadowDailySummary);
-  app.post("/api/scheduled/rising-stars-continuity", requireCron, handleScheduledRisingStarsContinuity);
-  app.post("/api/scheduled/systemic-regime-infer", requireCron, handleScheduledSystemicRegimeInfer);
-  // Autonomous publishing pipeline
-  app.post("/api/scheduled/daily-brief", requireCron, handleDailyBrief);
-  app.post("/api/scheduled/weekly-review", requireCron, handleWeeklyReview);
-  app.post("/api/scheduled/monthly-report", requireCron, handleMonthlyReport);
-  app.post("/api/scheduled/daily-brief/manual", requireCron, handleManualPublish);
+  app.post("/api/scheduled/daily-snapshot", requireCron, requireScheduledDispatch("canonical-collection"), handleScheduledDailySnapshot);
+  app.post("/api/scheduled/publish-blog", requireCron, requireScheduledDispatch("automatic-publication"), handleScheduledPublishBlog);
+  app.post("/api/scheduled/auto-publish-drafts", requireCron, requireScheduledDispatch("automatic-publication"), handleScheduledAutoPublishDrafts);
+  app.post("/api/scheduled/x-post-scheduled", requireCron, requireScheduledDispatch("automatic-publication"), handleScheduledXPost);
+  app.post("/api/scheduled/x-news-monitor", requireCron, requireScheduledDispatch("automatic-publication"), handleXNewsMonitor);
+  app.post("/api/scheduled/daily-sim-portfolio", requireCron, requireScheduledDispatch("canonical-collection"), handleScheduledSimPortfolio);
+  app.post("/api/scheduled/generate-organic-content", requireCron, requireScheduledDispatch("automatic-publication"), handleGenerateOrganicContent);
+  app.post("/api/scheduled/refresh-signal-pages", requireCron, requireScheduledDispatch("canonical-collection"), handleRefreshSignalPages);
+  app.post("/api/scheduled/ledger-evaluation", requireCron, requireScheduledDispatch("canonical-collection"), handleScheduledLedgerEvaluation);
+  app.post("/api/scheduled/weekly-improvement-report", requireCron, requireScheduledDispatch("canonical-collection"), weeklyImprovementReportHandler);
+  app.post("/api/scheduled/drip-email", requireCron, requireScheduledDispatch("outbound-customer-communication"), handleDripEmail);
+  app.post("/api/scheduled/seismograph-daily", requireCron, requireScheduledDispatch("canonical-collection"), handleScheduledSeismograph);
+  app.post("/api/scheduled/shadow-forward-outcomes", requireCron, requireScheduledDispatch("canonical-collection"), handleShadowForwardOutcomes);
+  app.post("/api/scheduled/shadow-daily-summary", requireCron, requireScheduledDispatch("canonical-collection"), handleShadowDailySummary);
+  app.post("/api/scheduled/rising-stars-continuity", requireCron, requireScheduledDispatch("canonical-collection"), handleScheduledRisingStarsContinuity);
+  app.post("/api/scheduled/systemic-regime-infer", requireCron, requireScheduledDispatch("canonical-collection"), handleScheduledSystemicRegimeInfer);
+  // Autonomous publishing pipeline remains blocked unless explicitly enabled.
+  app.post("/api/scheduled/daily-brief", requireCron, requireScheduledDispatch("automatic-publication"), handleDailyBrief);
+  app.post("/api/scheduled/weekly-review", requireCron, requireScheduledDispatch("automatic-publication"), handleWeeklyReview);
+  app.post("/api/scheduled/monthly-report", requireCron, requireScheduledDispatch("automatic-publication"), handleMonthlyReport);
+  app.post("/api/scheduled/daily-brief/manual", requireCron, requireScheduledDispatch("automatic-publication"), handleManualPublish);
   app.get("/api/publishing/status", requireCron, handlePublishingStatus);
   app.post("/api/publishing/toggle-active", requireCron, handleToggleActive);
   app.post("/api/publishing/publish-draft/:id", requireCron, handlePublishDraft);
@@ -294,8 +296,8 @@ async function startServer() {
 
   server.listen(port, LISTEN_HOST, () => {
     process.stdout.write(`Server running on http://${LISTEN_HOST}:${port}/\n`);
-    // Sector Rotation post-close collector: in-process timer (no cron, no env var). Page loads never build.
-    startSectorRotationCollector();
+    // Candidate data collection is opt-in. Page loads always remain read-only.
+    if (isSectorRotationCollectorEnabled()) startSectorRotationCollector();
     // Explicit opt-in: the evidence pipeline remains inactive until configured.
     if (isIntelligenceEvidenceEnabled()) startIntelligenceEvidenceCollector();
   });

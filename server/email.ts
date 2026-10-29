@@ -5,16 +5,19 @@
  */
 
 import sgMail from "@sendgrid/mail";
+import { isOutboundCustomerCommunicationEnabled, type DeploymentSafetyEnvironment } from "./deploymentSafety";
 
 const DEFAULT_FROM_EMAIL = "jt@getfaultline.live";
 const DEFAULT_FROM_NAME = "FAULTLINE";
 
 let _initializedKey = "";
 
+export type EmailTransport = Pick<typeof sgMail, "setApiKey" | "send">;
+
 /** Read env vars lazily so tests can override process.env after module load. */
-function initSendGrid(apiKey: string) {
+function initSendGrid(apiKey: string, transport: EmailTransport) {
   if (_initializedKey !== apiKey) {
-    sgMail.setApiKey(apiKey);
+    transport.setApiKey(apiKey);
     _initializedKey = apiKey;
   }
 }
@@ -26,20 +29,29 @@ export interface EmailPayload {
   text?: string;
 }
 
-export async function sendEmail(payload: EmailPayload): Promise<{ success: boolean; error?: string }> {
-  const apiKey = process.env.SENDGRID_API_KEY ?? "";
-  const fromEmail = process.env.SENDGRID_FROM_EMAIL ?? DEFAULT_FROM_EMAIL;
-  const fromName = process.env.SENDGRID_FROM_NAME ?? DEFAULT_FROM_NAME;
+export async function sendEmail(
+  payload: EmailPayload,
+  env: DeploymentSafetyEnvironment = process.env,
+  transport: EmailTransport = sgMail,
+): Promise<{ success: boolean; error?: string }> {
+  if (!isOutboundCustomerCommunicationEnabled(env)) {
+    console.warn("[Email] Outbound customer communication disabled — email not sent to:", payload.to);
+    return { success: false, error: "Outbound customer communication is disabled." };
+  }
+
+  const apiKey = env.SENDGRID_API_KEY ?? "";
+  const fromEmail = env.SENDGRID_FROM_EMAIL ?? DEFAULT_FROM_EMAIL;
+  const fromName = env.SENDGRID_FROM_NAME ?? DEFAULT_FROM_NAME;
 
   if (!apiKey) {
     console.warn("[Email] SENDGRID_API_KEY not configured — email not sent to:", payload.to);
     return { success: false, error: "Email service not configured. Add SENDGRID_API_KEY in Settings → Secrets." };
   }
 
-  initSendGrid(apiKey);
+  initSendGrid(apiKey, transport);
 
   try {
-    await sgMail.send({
+    await transport.send({
       to: payload.to,
       from: { email: fromEmail, name: fromName },
       subject: payload.subject,

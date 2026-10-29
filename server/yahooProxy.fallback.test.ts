@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { clearQuoteCache, getQuote, resolvePolygonFallbackPlan, toPolygonTicker } from "./yahooProxy";
+import { clearPerformerCache, clearQuoteCache, getQuote, getTopStockByVolume, getTopStockLosers, getTopStockPerformers, resolvePolygonFallbackPlan, toPolygonTicker } from "./yahooProxy";
 
 const YAHOO_HOST = "query1.finance.yahoo.com";
 const POLYGON_PREV = "api.polygon.io/v2/aggs/ticker";
@@ -231,4 +231,149 @@ describe("Yahoo caret-index fallback mapping", () => {
     expect(quote.error).toBe("Yahoo index unavailable; Polygon cannot serve this index");
     expect(fetchMock.mock.calls.some(([input]) => /VIXY|VXX|UVXY/.test(String(input)))).toBe(false);
   });
+});
+
+describe("stock mover provenance", () => {
+  const previousPolygonKey = process.env.POLYGON_API_KEY;
+
+  afterEach(() => {
+    clearPerformerCache();
+    vi.unstubAllGlobals();
+    if (previousPolygonKey === undefined) {
+      delete process.env.POLYGON_API_KEY;
+    } else {
+      process.env.POLYGON_API_KEY = previousPolygonKey;
+    }
+  });
+
+  it("keeps Yahoo's provider observation and declared delay separate from cache receipt time", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (!url.includes("finance/screener/predefined/saved")) throw new Error(`unexpected fetch: ${url}`);
+      return jsonResponse({
+        finance: {
+          result: [{
+            quotes: [{
+              symbol: "YHOO",
+              shortName: "Yahoo Test",
+              regularMarketPrice: 10,
+              regularMarketChange: 1,
+              regularMarketChangePercent: 11.11,
+              regularMarketVolume: 100,
+              regularMarketTime: 1_704_067_200,
+              exchangeDataDelayedBy: 15,
+            }],
+          }],
+        },
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const fresh = await getTopStockPerformers(1);
+    expect(fresh[0]).toMatchObject({
+      source: "yahoo-screener",
+      observedAt: 1_704_067_200_000,
+      delayMinutes: 15,
+      cacheStatus: "fresh",
+    });
+
+    const cached = await getTopStockPerformers(1);
+    expect(cached[0]).toMatchObject({
+      source: "yahoo-screener",
+      observedAt: 1_704_067_200_000,
+      delayMinutes: 15,
+      cacheStatus: "cached",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("labels Polygon fallback as Polygon and leaves undeclared delay unknown", async () => {
+    process.env.POLYGON_API_KEY = "test-polygon-key";
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("finance/screener/predefined/saved")) return jsonResponse({}, 503);
+      if (url.includes("snapshot/locale/us/markets/stocks/gainers")) {
+        return jsonResponse({
+          tickers: [{
+            ticker: "POLY",
+            day: { c: 10, v: 100 },
+            prevDay: { c: 9 },
+            todaysChangePerc: 11.11,
+            updated: 1_704_067_200_000,
+          }],
+        });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const [row] = await getTopStockPerformers(1);
+    expect(row).toMatchObject({
+      source: "polygon-snapshot",
+      observedAt: 1_704_067_200_000,
+      delayMinutes: null,
+      cacheStatus: "fresh",
+    });
+    expect(row?.fetchedAt).not.toBe(row?.observedAt);
+  });
+});
+
+describe("stock mover fallback availability", () => {
+  const previousPolygonKey = process.env.POLYGON_API_KEY;
+  const movers = [
+    { name: "gainers", load: getTopStockPerformers, polygonPaths: ["markets/stocks/gainers"] },
+    { name: "losers", load: getTopStockLosers, polygonPaths: ["markets/stocks/losers"] },
+    { name: "most-active", load: getTopStockByVolume, polygonPaths: ["markets/stocks/gainers", "markets/stocks/losers"] },
+  ];
+
+  afterEach(() => {
+    clearPerformerCache();
+    vi.unstubAllGlobals();
+    if (previousPolygonKey === undefined) {
+      delete process.env.POLYGON_API_KEY;
+    } else {
+      process.env.POLYGON_API_KEY = previousPolygonKey;
+    }
+  });
+
+  for (const mover of movers) {
+    it(`rejects when Yahoo fails and Polygon is not configured for ${mover.name}`, async () => {
+      delete process.env.POLYGON_API_KEY;
+      const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("finance/screener/predefined/saved")) return jsonResponse({}, 503);
+        throw new Error(`Polygon must not be called without a key: ${url}`);
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(mover.load(1)).rejects.toThrow("POLYGON_API_KEY is not configured");
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it(`rejects when Yahoo and Polygon HTTP fallback fail for ${mover.name}`, async () => {
+      process.env.POLYGON_API_KEY = "test-polygon-key";
+      const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("finance/screener/predefined/saved")) return jsonResponse({}, 503);
+        if (mover.polygonPaths.some(path => url.includes(path))) return jsonResponse({}, 503);
+        throw new Error(`unexpected fetch: ${url}`);
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(mover.load(1)).rejects.toThrow("Polygon");
+    });
+
+    it(`returns an empty array only for a decoded empty Polygon snapshot for ${mover.name}`, async () => {
+      process.env.POLYGON_API_KEY = "test-polygon-key";
+      const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("finance/screener/predefined/saved")) return jsonResponse({}, 503);
+        if (mover.polygonPaths.some(path => url.includes(path))) return jsonResponse({ tickers: [] });
+        throw new Error(`unexpected fetch: ${url}`);
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(mover.load(1)).resolves.toEqual([]);
+    });
+  }
 });

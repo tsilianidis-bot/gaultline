@@ -544,7 +544,7 @@ function CryptoSearchInner() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Search suggestions
-  const { data: suggestions, isFetching: isSearching } = trpc.crypto.search.useQuery(
+  const { data: suggestions, isFetching: isSearching, isError: suggestionsError } = trpc.crypto.search.useQuery(
     { query: searchInput },
     { enabled: searchInput.length >= 1, staleTime: 30_000, refetchOnWindowFocus: false }
   );
@@ -739,7 +739,39 @@ function CryptoSearchInner() {
             </div>
 
             {/* Dropdown */}
-            {showDropdown && suggestions && suggestions.length > 0 && (
+            {showDropdown && searchInput.trim() && !isSearching && suggestionsError && (
+              <div ref={dropdownRef} style={{
+                position: "absolute",
+                top: "calc(100% + 4px)",
+                left: 0,
+                right: 0,
+                background: "rgba(8,10,16,0.99)",
+                border: "1px solid rgba(255,45,85,0.35)",
+                borderRadius: "6px",
+                zIndex: 100,
+                padding: "10px 14px",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+              }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF8FA3", letterSpacing: "0.06em" }}>CRYPTO SEARCH IS TEMPORARILY UNAVAILABLE — NO MATCH RESULT HAS BEEN CONFIRMED.</div>
+              </div>
+            )}
+            {showDropdown && searchInput.trim() && !isSearching && !suggestionsError && suggestions && suggestions.length === 0 && (
+              <div ref={dropdownRef} style={{
+                position: "absolute",
+                top: "calc(100% + 4px)",
+                left: 0,
+                right: 0,
+                background: "rgba(8,10,16,0.99)",
+                border: `1px solid ${riskColor}30`,
+                borderRadius: "6px",
+                zIndex: 100,
+                padding: "10px 14px",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+              }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#64748B", letterSpacing: "0.06em" }}>NO MATCHING CRYPTO ASSETS FOUND.</div>
+              </div>
+            )}
+            {showDropdown && !suggestionsError && suggestions && suggestions.length > 0 && (
               <div ref={dropdownRef} style={{
                 position: "absolute",
                 top: "calc(100% + 4px)",
