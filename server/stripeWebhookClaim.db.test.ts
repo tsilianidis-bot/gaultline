@@ -4,18 +4,21 @@
  * which is not applied to any shared database. Production URLs are refused.
  */
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createConnection, type Connection } from "mysql2/promise";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
+  applyPurchaseRevocation,
   closeDbForTests,
   commitEntitlementResync,
   completeStripeWebhookEvent,
   entitlementAuditExists,
   getAllUsersWithTier,
   getUserTier,
+  listPurchaseRevocations,
   listStripeCancellationMarkers,
   recordStripeWebhookEvent,
   releaseStripeWebhookEvent,
@@ -140,6 +143,33 @@ describe("stripe webhook claim concurrency", () => {
       stripeSubscriptionId varchar(64),
       createdAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`);
+    const [beforeColumn] = await admin.query(
+      `SELECT COUNT(*) AS n FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'lifetimePaymentIntentId'`,
+    ) as unknown as [Array<{ n: number }>];
+    if (Number(beforeColumn[0].n) !== 0) {
+      throw new Error("lifetimePaymentIntentId must be added by 0077, not the base fixture");
+    }
+    const migration = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../drizzle/0077_stripe_purchase_revocations.sql"), "utf8");
+    for (const part of migration.split("--> statement-breakpoint")) {
+      const statement = part.split("\n").filter(line => !line.trim().startsWith("--")).join("\n").trim();
+      if (statement) await admin.query(statement);
+    }
+    const [afterColumn] = await admin.query(
+      `SELECT COUNT(*) AS n FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'lifetimePaymentIntentId'`,
+    ) as unknown as [Array<{ n: number }>];
+    const [auditColumn] = await admin.query(
+      `SELECT COUNT(*) AS n FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'entitlementAuditLog' AND COLUMN_NAME = 'sourceEventCreated'`,
+    ) as unknown as [Array<{ n: number }>];
+    const [revocationTable] = await admin.query(
+      `SELECT COUNT(*) AS n FROM information_schema.TABLES
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'stripePurchaseRevocations'`,
+    ) as unknown as [Array<{ n: number }>];
+    if (Number(afterColumn[0].n) !== 1 || Number(auditColumn[0].n) !== 1 || Number(revocationTable[0].n) !== 1) {
+      throw new Error("0077 did not add the refund and dispute entitlement objects");
+    }
     process.env.DATABASE_URL = url;
     closeDbForTests();
   }, 60_000);
@@ -158,6 +188,7 @@ describe("stripe webhook claim concurrency", () => {
     await admin!.query("DELETE FROM stripeWebhookEvents");
     await admin!.query("DELETE FROM entitlementAuditLog");
     await admin!.query("DELETE FROM stripeSubscriptionCancellations");
+    await admin!.query("DELETE FROM stripePurchaseRevocations");
     await admin!.query("DELETE FROM users");
   });
 
@@ -564,8 +595,189 @@ describe("stripe webhook claim concurrency", () => {
       toTier: "premium",
       reason: "invoice.paid",
       stripeEventId: "evt_audit_row",
+      sourceEventCreated: 1_700_000_000,
       strict: true,
     });
     expect(await entitlementAuditExists("evt_audit_row")).toBe(true);
+    const [audits] = await admin!.query(
+      "SELECT stripeEventId, sourceEventCreated, reason FROM entitlementAuditLog WHERE stripeEventId = ?",
+      ["evt_audit_row"],
+    ) as unknown as [Array<{ stripeEventId: string; sourceEventCreated: number | string; reason: string }>];
+    expect(audits[0].reason).toBe("invoice.paid");
+    expect(Number(audits[0].sourceEventCreated)).toBe(1_700_000_000);
+  });
+
+  function revocation(overrides: Partial<Parameters<typeof applyPurchaseRevocation>[0]> = {}) {
+    return {
+      purchaseKey: "invoice:in_paid",
+      reasonKind: "full_refund",
+      purchaseKind: "subscription" as const,
+      chargeId: "ch_std",
+      invoiceId: "in_paid",
+      paymentIntentId: null,
+      subscriptionId: "sub_live",
+      disputeId: null,
+      disputeOutcome: null,
+      active: true,
+      sourceEventId: "evt_refund",
+      sourceEventCreated: 300,
+      userId: 1,
+      ...overrides,
+    };
+  }
+
+  it("is idempotent under replay and ignores a stale event that would re-grant or revoke", async () => {
+    await admin!.query("INSERT INTO users (openId, accessTier, lifetimeAccess, lifetimePaymentIntentId) VALUES ('refund-user', 'premium', 0, NULL)");
+    const [users] = await admin!.query("SELECT id FROM users WHERE openId = 'refund-user'") as unknown as [Array<{ id: number }>];
+    const userId = users[0].id;
+    const first = await applyPurchaseRevocation(revocation({ userId, sourceEventId: "evt_open", sourceEventCreated: 100, reasonKind: "dispute:dp_1", disputeId: "dp_1", disputeOutcome: "open", active: true }));
+    expect(first).toEqual({ applied: true, stale: false });
+    const replay = await applyPurchaseRevocation(revocation({ userId, sourceEventId: "evt_open", sourceEventCreated: 100, reasonKind: "dispute:dp_1", disputeId: "dp_1", disputeOutcome: "open", active: true }));
+    expect(replay).toEqual({ applied: false, stale: false });
+    const staleWon = await applyPurchaseRevocation(revocation({
+      userId, sourceEventId: "evt_won_old", sourceEventCreated: 90, reasonKind: "dispute:dp_1", disputeId: "dp_1", disputeOutcome: "won", active: false,
+    }));
+    expect(staleWon).toEqual({ applied: false, stale: true });
+    expect(await listPurchaseRevocations(userId)).toEqual([
+      expect.objectContaining({ active: true, disputeOutcome: "open", sourceEventCreated: 100, sourceEventId: "evt_open" }),
+    ]);
+    const won = await applyPurchaseRevocation(revocation({
+      userId, sourceEventId: "evt_won", sourceEventCreated: 200, reasonKind: "dispute:dp_1", disputeId: "dp_1", disputeOutcome: "won", active: false,
+    }));
+    expect(won).toEqual({ applied: true, stale: false });
+    const staleOpen = await applyPurchaseRevocation(revocation({
+      userId, sourceEventId: "evt_open_late", sourceEventCreated: 150, reasonKind: "dispute:dp_1", disputeId: "dp_1", disputeOutcome: "open", active: true,
+    }));
+    expect(staleOpen).toEqual({ applied: false, stale: true });
+    expect(await listPurchaseRevocations(userId)).toEqual([
+      expect.objectContaining({ active: false, disputeOutcome: "won", sourceEventCreated: 200 }),
+    ]);
+    const lost = await applyPurchaseRevocation(revocation({
+      userId, sourceEventId: "evt_lost", sourceEventCreated: 250, reasonKind: "dispute:dp_1", disputeId: "dp_1", disputeOutcome: "lost", active: true,
+    }));
+    expect(lost.applied).toBe(true);
+    const olderWon = await applyPurchaseRevocation(revocation({
+      userId, sourceEventId: "evt_won_after_lost", sourceEventCreated: 220, reasonKind: "dispute:dp_1", disputeId: "dp_1", disputeOutcome: "won", active: false,
+    }));
+    expect(olderWon).toEqual({ applied: false, stale: true });
+    expect(await listPurchaseRevocations(userId)).toEqual([
+      expect.objectContaining({ active: true, disputeOutcome: "lost", sourceEventCreated: 250 }),
+    ]);
+  });
+
+  it("converges concurrent dispute events onto the newer source timestamp", async () => {
+    await admin!.query("INSERT INTO users (openId, accessTier, lifetimeAccess) VALUES ('race-revoke', 'premium', 0)");
+    const [users] = await admin!.query("SELECT id FROM users WHERE openId = 'race-revoke'") as unknown as [Array<{ id: number }>];
+    const userId = users[0].id;
+    await Promise.all([
+      applyPurchaseRevocation(revocation({
+        userId, sourceEventId: "evt_open_race", sourceEventCreated: 100, reasonKind: "dispute:dp_race", disputeId: "dp_race", disputeOutcome: "open", active: true,
+      })),
+      applyPurchaseRevocation(revocation({
+        userId, sourceEventId: "evt_won_race", sourceEventCreated: 300, reasonKind: "dispute:dp_race", disputeId: "dp_race", disputeOutcome: "won", active: false,
+      })),
+    ]);
+    expect(await listPurchaseRevocations(userId)).toEqual([
+      expect.objectContaining({ active: false, disputeOutcome: "won", sourceEventCreated: 300, sourceEventId: "evt_won_race" }),
+    ]);
+  });
+
+  it("keeps a full refund when a won dispute is recorded at the same time", async () => {
+    await admin!.query("INSERT INTO users (openId, accessTier, lifetimeAccess) VALUES ('both-reasons', 'founding', 1)");
+    const [users] = await admin!.query("SELECT id FROM users WHERE openId = 'both-reasons'") as unknown as [Array<{ id: number }>];
+    const userId = users[0].id;
+    await Promise.all([
+      applyPurchaseRevocation(revocation({ userId, purchaseKey: "pi:pi_life", purchaseKind: "lifetime", invoiceId: null, paymentIntentId: "pi_life", subscriptionId: null, chargeId: "ch_life" })),
+      applyPurchaseRevocation(revocation({
+        userId,
+        purchaseKey: "pi:pi_life",
+        purchaseKind: "lifetime",
+        invoiceId: null,
+        paymentIntentId: "pi_life",
+        subscriptionId: null,
+        chargeId: "ch_life",
+        reasonKind: "dispute:dp_life",
+        disputeId: "dp_life",
+        disputeOutcome: "won",
+        active: false,
+        sourceEventId: "evt_won_life",
+        sourceEventCreated: 400,
+      })),
+    ]);
+    const rows = await listPurchaseRevocations(userId);
+    expect(rows).toHaveLength(2);
+    expect(rows.find(row => row.reasonKind === "full_refund")).toMatchObject({ active: true, paymentIntentId: "pi_life" });
+    expect(rows.find(row => row.reasonKind === "dispute:dp_life")).toMatchObject({ active: false, disputeOutcome: "won" });
+  });
+
+  it("does not seal a grant computed before a revocation landed, and a refund clear writes the audit timestamp", async () => {
+    await admin!.query(
+      "INSERT INTO users (openId, accessTier, lifetimeAccess, lifetimePaymentIntentId, entitlementRevision) VALUES ('cas-revoke', 'founding', 1, 'pi_life', 0)",
+    );
+    const [users] = await admin!.query("SELECT id FROM users WHERE openId = 'cas-revoke'") as unknown as [Array<{ id: number }>];
+    const userId = users[0].id;
+    await applyPurchaseRevocation(revocation({
+      userId,
+      purchaseKey: "pi:pi_life",
+      purchaseKind: "lifetime",
+      invoiceId: null,
+      paymentIntentId: "pi_life",
+      subscriptionId: null,
+      chargeId: "ch_life",
+      sourceEventId: "evt_life_refund",
+      sourceEventCreated: 1_711_000_000,
+    }));
+    const stale = await recordStripeWebhookEvent("evt_stale_grant", "invoice.paid");
+    expect(await resync({
+      eventId: "evt_stale_grant",
+      eventType: "invoice.paid",
+      attemptId: stale!.attemptId,
+      userId,
+      observedRevocations: [],
+      desired: { accessTier: "founding", stripeSubscriptionId: null, grantLifetime: true, lifetimePurchasedAt: null, accessExpiresAt: null },
+      audit: { fromTier: "founding", toTier: "founding", reason: "invoice.paid", sourceEventCreated: 1_700_000_100 },
+    })).toBe("stale_state");
+    const [unchanged] = await admin!.query(
+      "SELECT accessTier, lifetimeAccess, entitlementRevision FROM users WHERE id = ?",
+      [userId],
+    ) as unknown as [Array<{ accessTier: string; lifetimeAccess: number; entitlementRevision: number }>];
+    expect(unchanged[0].accessTier).toBe("founding");
+    expect(Number(unchanged[0].lifetimeAccess)).toBe(1);
+    expect(Number(unchanged[0].entitlementRevision)).toBe(0);
+    expect((await claimRow("evt_stale_grant")).eventType).toContain(stale!.attemptId);
+
+    const clear = await recordStripeWebhookEvent("evt_life_clear", "charge.refunded");
+    const observed = await listPurchaseRevocations(userId);
+    expect(await resync({
+      eventId: "evt_life_clear",
+      eventType: "charge.refunded",
+      attemptId: clear!.attemptId,
+      userId,
+      observedRevocations: observed,
+      desired: {
+        accessTier: "free",
+        stripeSubscriptionId: null,
+        grantLifetime: false,
+        revokeLifetime: true,
+        lifetimePurchasedAt: null,
+        accessExpiresAt: null,
+      },
+      audit: { fromTier: "founding", toTier: "free", reason: "charge.refunded:full", sourceEventCreated: 1_711_000_000 },
+    })).toBe("applied");
+    const [cleared] = await admin!.query(
+      "SELECT accessTier, lifetimeAccess, lifetimePaymentIntentId FROM users WHERE id = ?",
+      [userId],
+    ) as unknown as [Array<{ accessTier: string; lifetimeAccess: number; lifetimePaymentIntentId: string }>];
+    expect(cleared[0].accessTier).toBe("free");
+    expect(Number(cleared[0].lifetimeAccess)).toBe(0);
+    expect(cleared[0].lifetimePaymentIntentId).toBe("pi_life");
+    const [audits] = await admin!.query(
+      "SELECT stripeEventId, reason, sourceEventCreated, toTier FROM entitlementAuditLog WHERE stripeEventId = ?",
+      ["evt_life_clear"],
+    ) as unknown as [Array<{ stripeEventId: string; reason: string; sourceEventCreated: number | string; toTier: string }>];
+    expect(audits).toHaveLength(1);
+    expect(audits[0]).toMatchObject({ stripeEventId: "evt_life_clear", reason: "charge.refunded:full", toTier: "free" });
+    expect(Number(audits[0].sourceEventCreated)).toBe(1_711_000_000);
+    expect((await claimRow("evt_life_clear")).eventType).toBe("charge.refunded");
   });
 });

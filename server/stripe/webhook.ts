@@ -13,6 +13,8 @@ import {
   commitEntitlementResync,
   upsertStripeCancellationMarker,
   listStripeCancellationMarkers,
+  listPurchaseRevocations,
+  applyPurchaseRevocation,
   writeEntitlementAudit,
   StaleStripeWebhookClaimError,
   ZeroRowEntitlementWriteError,
@@ -22,13 +24,21 @@ import {
 import { sendEmail, buildSubscriptionConfirmationEmail } from '../email';
 import {
   cancellationMarkerFromEvent,
+  chargeViewFromRecord,
   decideEntitlement,
+  disputeCloseDisposition,
+  lifetimeRevocationDecision,
   linkedUserIds,
+  planChargeRevocation,
   resumeEvidenceFromEvent,
+  revokedInvoiceIds,
+  revokedLifetimePaymentIntentIds,
   verifiedLifetimePayment,
+  type ChargeView,
   type EntitlementApply,
   type LifetimeSessionView,
   type PaidTier,
+  type PurchaseRevocationSnapshot,
   type ResumeEvidence,
   type SubscriptionView,
 } from './entitlementSync';
@@ -78,9 +88,14 @@ const stripeRead: Stripe.RequestOptions = {
 };
 
 const RELEVANT_PREFIXES = ['checkout.session.', 'customer.subscription.', 'invoice.', 'payment_intent.'];
+const CHARGE_ENTITLEMENT_TYPES = new Set(['charge.refunded', 'charge.dispute.created', 'charge.dispute.closed']);
+
+function isRelevantStripeEvent(type: string): boolean {
+  return RELEVANT_PREFIXES.some(prefix => type.startsWith(prefix)) || CHARGE_ENTITLEMENT_TYPES.has(type);
+}
 
 type ReadBudget = { n: number };
-type EntitlementUser = { id: number; name: string | null; email: string | null; accessTier: string | null; lifetimeAccess: boolean; stripeCustomerId?: string | null };
+type EntitlementUser = { id: number; name: string | null; email: string | null; accessTier: string | null; lifetimeAccess: boolean; stripeCustomerId?: string | null; lifetimePaymentIntentId?: string | null };
 
 function stripeId(value: unknown): string | null {
   if (typeof value === 'string' && value) return value;
@@ -170,21 +185,64 @@ function tierToPlanName(tier: string): string {
 type EntitlementPicture = {
   subscriptions: SubscriptionView[];
   markers: EntitlementMarkerSnapshot[];
+  revocations: PurchaseRevocationSnapshot[];
   revision: number;
   decision: EntitlementApply;
+  revokeLifetime: boolean;
+  lifetimePaymentIntentId: string | null;
+  auditReason: string;
 };
 
 function isEntitlementPicture(value: EntitlementPicture | { stale: true }): value is EntitlementPicture {
   return !('stale' in value);
 }
 
+type DisputeEffect = { id: string; status: string | null; phase: 'created' | 'closed' };
+
+async function retrieveCharge(chargeId: string, budget: ReadBudget): Promise<ChargeView> {
+  const retrieved = await stripeCall(budget, () => stripe!.charges.retrieve(chargeId, {}, stripeRead));
+  const view = chargeViewFromRecord(retrieved as unknown as Record<string, unknown>);
+  if (!view) throw new EntitlementConflictError('missing_charge');
+  return view;
+}
+
+async function loadChargeEffect(
+  event: Stripe.Event,
+  budget: ReadBudget,
+): Promise<{ charge: ChargeView; dispute: DisputeEffect | null }> {
+  const object = event.data.object as unknown as Record<string, unknown>;
+  if (event.type === 'charge.refunded') {
+    const parsed = chargeViewFromRecord(object);
+    if (parsed && parsed.amount != null) return { charge: parsed, dispute: null };
+    const chargeId = parsed?.id ?? (typeof object.id === 'string' ? object.id : null);
+    if (!chargeId) throw new EntitlementConflictError('missing_charge');
+    return { charge: await retrieveCharge(chargeId, budget), dispute: null };
+  }
+  const disputeId = typeof object.id === 'string' ? object.id : '';
+  if (!disputeId) throw new EntitlementConflictError('missing_dispute');
+  const status = typeof object.status === 'string' ? object.status : null;
+  const phase: DisputeEffect['phase'] = event.type === 'charge.dispute.created' ? 'created' : 'closed';
+  let charge = object.charge && typeof object.charge === 'object'
+    ? chargeViewFromRecord(object.charge as Record<string, unknown>)
+    : null;
+  if (!charge || charge.amount == null) {
+    const chargeId = typeof object.charge === 'string' ? object.charge : charge?.id ?? null;
+    if (!chargeId) throw new EntitlementConflictError('missing_charge');
+    charge = await retrieveCharge(chargeId, budget);
+  }
+  return { charge, dispute: { id: disputeId, status, phase } };
+}
+
 /**
  * One full recompute. The revision is sampled before the Stripe reads and
  * again after them. A change means this snapshot is already stale and must
  * not be committed. Lifetime is re-read so an admin revoke is visible.
+ * A charge refund or dispute is recorded before the decision, and the
+ * revocation rows are part of the snapshot the commit compares.
  */
 async function computeEntitlementPicture(input: {
   eventId: string;
+  eventCreated: number | null;
   userId: number;
   customerId: string | null;
   eventType: string;
@@ -193,6 +251,8 @@ async function computeEntitlementPicture(input: {
   resume: ResumeEvidence | null;
   lifetimeVerified: boolean;
   lifetimePurchasedAt: Date | null;
+  charge: ChargeView | null;
+  dispute: DisputeEffect | null;
 }): Promise<EntitlementPicture | { stale: true }> {
   const revisionBefore = await getEntitlementRevision(input.userId);
   if (revisionBefore == null) throw new ZeroRowEntitlementWriteError(input.eventId);
@@ -205,6 +265,7 @@ async function computeEntitlementPicture(input: {
   let lifetimeVerified = input.lifetimeVerified;
   let lifetimePurchasedAt = input.lifetimePurchasedAt;
   let subscriptions: SubscriptionView[] = [];
+  let sessions: LifetimeSessionView[] = [];
   let listIncomplete = false;
 
   if (input.customerId) {
@@ -214,20 +275,47 @@ async function computeEntitlementPicture(input: {
     if (input.budget.n >= STRIPE_WEBHOOK_MAX_READS && !lifetimeVerified) {
       throw new EntitlementConflictError('read_budget');
     }
-    const sessions = await loadLifetimeSessions(input.customerId, input.budget);
-    const verified = sessions.find(session => verifiedLifetimePayment(session));
-    if (verified) {
-      lifetimeVerified = true;
-      if (!lifetimePurchasedAt && typeof verified.created === 'number') lifetimePurchasedAt = new Date(verified.created * 1000);
-    }
+    sessions = await loadLifetimeSessions(input.customerId, input.budget);
+    const alreadyVerified = sessions.some(session => verifiedLifetimePayment(session));
     const checkoutAttempt = input.eventType === 'checkout.session.completed' || input.eventType === 'checkout.session.async_payment_succeeded';
-    if (input.eventType.startsWith('checkout.session.') && !lifetimeVerified && input.sessionId && checkoutAttempt && input.budget.n < STRIPE_WEBHOOK_MAX_READS) {
+    if (!alreadyVerified && input.eventType.startsWith('checkout.session.') && input.sessionId && checkoutAttempt && input.budget.n < STRIPE_WEBHOOK_MAX_READS) {
       const session = await stripeCall(input.budget, () => stripe!.checkout.sessions.retrieve(input.sessionId!, { expand: ['payment_intent'] }, stripeRead)) as LifetimeSessionView;
-      if (verifiedLifetimePayment(session)) {
-        lifetimeVerified = true;
-        if (typeof session.created === 'number') lifetimePurchasedAt = new Date(session.created * 1000);
+      if (session && typeof session === 'object') {
+        sessions = [session, ...sessions.filter(existing => existing.id !== session.id)];
       }
     }
+  }
+
+  let auditReason = input.eventType;
+  if (input.charge) {
+    if (input.eventCreated == null || input.eventCreated <= 0) throw new EntitlementConflictError('missing_source_timestamp');
+    const plan = planChargeRevocation({
+      eventId: input.eventId,
+      eventType: input.eventType,
+      created: input.eventCreated,
+      charge: input.charge,
+      sessions,
+      subscriptions,
+      dispute: input.dispute ?? undefined,
+    });
+    auditReason = plan.reason;
+    if (plan.reason === 'charge.dispute.closed:unknown') throw new EntitlementConflictError('unknown_dispute_status');
+    if (plan.mutation) {
+      const recorded = await applyPurchaseRevocation({ ...plan.mutation, userId: input.userId });
+      if (recorded.stale) auditReason = `${plan.reason}:stale`;
+    }
+  }
+
+  const revocations = await listPurchaseRevocations(input.userId);
+  const lifetime = lifetimeRevocationDecision({
+    storedLifetime: Boolean(user.lifetimeAccess),
+    storedPaymentIntentId: user.lifetimePaymentIntentId ?? null,
+    sessions,
+    revokedPaymentIntentIds: revokedLifetimePaymentIntentIds(revocations),
+  });
+  if (sessions.length > 0 || revokedLifetimePaymentIntentIds(revocations).length > 0) {
+    lifetimeVerified = lifetime.lifetimeVerified;
+    if (lifetime.lifetimePurchasedAt) lifetimePurchasedAt = lifetime.lifetimePurchasedAt;
   }
 
   const markers = await listStripeCancellationMarkers(subscriptions.map(subscription => subscription.id));
@@ -235,17 +323,19 @@ async function computeEntitlementPicture(input: {
   if (revisionAfter == null) throw new ZeroRowEntitlementWriteError(input.eventId);
   if (revisionAfter !== revisionBefore) return { stale: true };
 
-  let decision = decideEntitlement({
+  const decisionInput = {
     subscriptions,
     listIncomplete,
     markers,
-    corroborated: null,
     storedLifetime: Boolean(user.lifetimeAccess),
     lifetimeVerified,
     lifetimePurchasedAt,
     resolveTier: priceTier,
     resume: input.resume,
-  });
+    revokedInvoiceIds: revokedInvoiceIds(revocations),
+    suppressStoredLifetime: lifetime.suppressStoredLifetime,
+  };
+  let decision = decideEntitlement({ ...decisionInput, corroborated: null });
   if (decision.action === 'needs_corroboration') {
     if (input.budget.n >= STRIPE_WEBHOOK_MAX_READS) throw new EntitlementConflictError('single_read');
     const subscriptionId = decision.subscriptionId;
@@ -254,24 +344,25 @@ async function computeEntitlementPicture(input: {
       { expand: ['latest_invoice'] },
       stripeRead,
     )) as SubscriptionView;
-    decision = decideEntitlement({
-      subscriptions,
-      listIncomplete,
-      markers,
-      corroborated: retrieved,
-      storedLifetime: Boolean(user.lifetimeAccess),
-      lifetimeVerified,
-      lifetimePurchasedAt,
-      resolveTier: priceTier,
-      resume: input.resume,
-    });
+    decision = decideEntitlement({ ...decisionInput, corroborated: retrieved });
   }
   if (decision.action === 'conflict') throw new EntitlementConflictError(decision.reason);
   if (decision.action === 'needs_corroboration') throw new EntitlementConflictError('single_read');
   if (decision.action === 'unresolved') {
     throw new UnresolvedPlanError(`Subscription ${decision.subscriptionId} price ${decision.priceId ?? 'missing'} does not match any configured paid plan — no entitlement granted`);
   }
-  return { subscriptions, markers, revision: revisionAfter, decision };
+  const revokeLifetime = lifetime.suppressStoredLifetime && !decision.grantLifetime;
+  const lifetimePaymentIntentId = decision.grantLifetime ? lifetime.lifetimePaymentIntentId : null;
+  return {
+    subscriptions,
+    markers,
+    revocations,
+    revision: revisionAfter,
+    decision,
+    revokeLifetime,
+    lifetimePaymentIntentId,
+    auditReason,
+  };
 }
 
 export async function handleStripeWebhook(req: Request, res: Response) {
@@ -336,7 +427,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     }
   };
 
-  if (!RELEVANT_PREFIXES.some(prefix => event.type.startsWith(prefix))) {
+  if (!isRelevantStripeEvent(event.type)) {
     console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
     if (!(await retainClaim())) return res.status(500).json({ error: 'Webhook processing failed' });
     return res.json({ received: true });
@@ -344,14 +435,29 @@ export async function handleStripeWebhook(req: Request, res: Response) {
 
   let entitlementWritten = false;
   try {
-    const user = await resolveUser(event as unknown as Parameters<typeof resolveUser>[0]);
+    if (event.type === 'charge.dispute.closed') {
+      const status = (event.data.object as { status?: string | null }).status;
+      if (disputeCloseDisposition(status) === 'unknown') throw new EntitlementConflictError('unknown_dispute_status');
+    }
+    const budget: ReadBudget = { n: 0 };
+    const chargeEffect = CHARGE_ENTITLEMENT_TYPES.has(event.type) ? await loadChargeEffect(event, budget) : null;
+    const user = await resolveUser({
+      type: event.type,
+      data: {
+        object: {
+          ...(event.data.object as unknown as Record<string, unknown>),
+          ...(chargeEffect?.charge.customer ? { customer: chargeEffect.charge.customer } : {}),
+          ...(chargeEffect?.charge.metadata ? { metadata: { ...(event.data.object as { metadata?: Record<string, unknown> }).metadata, ...chargeEffect.charge.metadata } } : {}),
+        },
+      },
+    });
     if (!user) {
       console.warn(`[Stripe Webhook] ${event.type} ${event.id} has no resolvable user — not acknowledging`);
       await releaseClaim();
       return res.status(500).json({ error: 'Webhook processing failed', conflict: 'missing_user' });
     }
 
-    const customerId = stripeId((event.data.object as { customer?: unknown }).customer);
+    const customerId = stripeId((event.data.object as { customer?: unknown }).customer) ?? chargeEffect?.charge.customer ?? null;
     const storedCustomerId = user.stripeCustomerId || null;
     if (customerId && storedCustomerId && customerId !== storedCustomerId) {
       console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} customer ${customerId} does not match stored ${storedCustomerId}; not sealing or downgrading`);
@@ -363,6 +469,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
           reason: 'customer_conflict',
           stripeEventId: event.id,
           stripeCustomerId: customerId,
+          sourceEventCreated: typeof event.created === 'number' ? event.created : null,
           strict: true,
         });
       } catch (auditErr) {
@@ -376,7 +483,6 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       await upsertStripeCancellationMarker({ ...marker, userId: user.id });
     }
 
-    const budget: ReadBudget = { n: 0 };
     let lifetimeVerified = false;
     let lifetimePurchasedAt: Date | null = null;
     const sessionId = stripeId((event.data.object as { id?: unknown }).id);
@@ -397,6 +503,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     const resume = resumeEvidenceFromEvent(event as unknown as Parameters<typeof resumeEvidenceFromEvent>[0]);
     const pictureInput = {
       eventId: event.id,
+      eventCreated: typeof event.created === 'number' ? event.created : null,
       userId: user.id,
       customerId,
       eventType: event.type,
@@ -405,6 +512,8 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       resume,
       lifetimeVerified,
       lifetimePurchasedAt,
+      charge: chargeEffect?.charge ?? null,
+      dispute: chargeEffect?.dispute ?? null,
     };
     let pictured = await computeEntitlementPicture(pictureInput);
     if (!isEntitlementPicture(pictured)) {
@@ -420,10 +529,13 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       observedMarkers: picture.markers,
       markerSubscriptionIds: picture.subscriptions.map(subscription => subscription.id),
       supersedeCancellation: picture.decision.supersedeCancellation,
+      observedRevocations: picture.revocations,
       desired: {
         accessTier: picture.decision.accessTier,
         stripeSubscriptionId: picture.decision.stripeSubscriptionId,
         grantLifetime: picture.decision.grantLifetime,
+        revokeLifetime: picture.revokeLifetime,
+        lifetimePaymentIntentId: picture.lifetimePaymentIntentId,
         lifetimePurchasedAt: picture.decision.lifetimePurchasedAt,
         accessExpiresAt: picture.decision.accessExpiresAt,
         stripeCustomerId: customerId,
@@ -431,9 +543,10 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       audit: {
         fromTier: user.accessTier,
         toTier: picture.decision.accessTier,
-        reason: event.type,
+        reason: picture.auditReason,
         stripeCustomerId: customerId ?? undefined,
         stripeSubscriptionId: picture.decision.stripeSubscriptionId ?? undefined,
+        sourceEventCreated: typeof event.created === 'number' ? event.created : null,
       },
     });
     let outcome = await commitOf(pictured);

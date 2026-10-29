@@ -70,6 +70,7 @@ export function qaPrincipal() {
     stripeSubscriptionId: null,
     lifetimeAccess: false,
     lifetimePurchasedAt: null,
+    lifetimePaymentIntentId: null,
     accessExpiresAt: null,
     entitlementRevision: 0,
     lastPreflightCompletedAt: null,

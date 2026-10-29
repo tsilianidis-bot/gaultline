@@ -64,6 +64,20 @@ Resolve the user by Stripe customer id, then metadata `user_id` on the checkout 
 - A paid tier with the flag omitted leaves an existing lifetime purchase in place.
 - The admin list returns `effectiveTier` as well as the stored `accessTier`. The users screen highlights and badges the effective tier. Choosing free, core, or premium passes `lifetimeAccess: false` so the effective tier matches the control. Choosing founding does not strip a lifetime purchase.
 
+## Refunds and disputes
+
+`charge.refunded`, `charge.dispute.created`, and `charge.dispute.closed` use the same claim fence, revision compare, and audit log. Each processed event writes one `entitlementAuditLog` row with the Stripe event id, `event.created` (`sourceEventCreated`, unix seconds), and a reason.
+
+A charge is the Lifetime purchase only when its PaymentIntent is the Lifetime checkout (`plan_id=lifetime`, mode `payment`, amount $1,500) or the charge itself carries that plan and amount. A charge is a subscription purchase when it has an invoice id and a positive amount. The public Standard price is $99/month. An unrelated charge, including a different amount with no invoice and no Lifetime PaymentIntent, does not revoke Lifetime or a 100% coupon renewal.
+
+- A full refund (`refunded` or `amount_refunded >= amount`, amount > 0) revokes that purchase only. A partial refund writes the audit row and does not revoke. A zero-amount charge does not revoke.
+- `charge.dispute.created` revokes that purchase. `charge.dispute.closed` with `won` clears that dispute when its source timestamp is newer. `lost` and `charge_refunded` keep it revoked. `warning_closed` and `prevented` do not revoke. Any other close status is not sealed.
+- Won restores access only when no other revocation reason is still active. A full refund on the same purchase stays in force. A cancellation marker is unchanged. A newer paid invoice is a different purchase and stays entitled. A stale or equal-timestamp event cannot clear a revocation, and an older event cannot revoke a newer one.
+- Rows live in `stripePurchaseRevocations`, one per purchase and reason, so a dispute and a refund do not overwrite each other. The commit locks them with the user row. A mismatch is `stale_state` and is not sealed.
+- Stored lifetime is cleared only when its `lifetimePaymentIntentId` is revoked, or when a legacy row has no PaymentIntent, an active Lifetime revocation exists, and no newer verified Lifetime session remains. An admin grant has no revocation row and is left in place. A newer stored PaymentIntent that is not revoked keeps access.
+
+`drizzle/0077_stripe_purchase_revocations.sql` adds `users.lifetimePaymentIntentId`, `entitlementAuditLog.sourceEventCreated`, and `stripePurchaseRevocations`. It is additive. It is not applied by this change. The boot gate refuses to start until it has been applied on a backup.
+
 ## What this does not do
 
-Checkout prices, checkout enablement, and PLATO are unchanged. No migration is applied. No live Stripe object is modified.
+Checkout prices, checkout enablement, and PLATO are unchanged. No migration is applied. No live Stripe object is modified. Billing, registration, and checkout stay off.

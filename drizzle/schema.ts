@@ -52,6 +52,13 @@ export const users = mysqlTable("users", {
   /** Timestamp of the lifetime purchase. NULL for non-lifetime users. */
   lifetimePurchasedAt: timestamp("lifetimePurchasedAt"),
   /**
+   * PaymentIntent that funded the stored lifetime purchase. A refund or dispute
+   * of a different charge does not clear lifetime. Null for admin grants and
+   * for purchases recorded before drizzle/0077_stripe_purchase_revocations.sql.
+   * That migration is additive and is not applied by this change.
+   */
+  lifetimePaymentIntentId: varchar("lifetimePaymentIntentId", { length: 64 }),
+  /**
    * End of the current Stripe subscription period. Null for lifetime and for
    * admin grants. effectiveTier treats a past value as free unless lifetimeAccess is set.
    * Added by drizzle/0074_stripe_entitlement_resync.sql, which is not applied by this PR.
@@ -2898,6 +2905,8 @@ export const entitlementAuditLog = mysqlTable("entitlementAuditLog", {
   stripeEventId:        varchar("stripeEventId", { length: 128 }),
   stripeCustomerId:     varchar("stripeCustomerId", { length: 64 }),
   stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 64 }),
+  /** Unix seconds from the Stripe event that caused this row. Null for older writers. */
+  sourceEventCreated: bigint("sourceEventCreated", { mode: "number" }),
   createdAt:            timestamp("createdAt").defaultNow().notNull(),
 }, (t) => ({
   userIdx:      index("entitlementAuditLog_userId_idx").on(t.userId),
@@ -2905,6 +2914,36 @@ export const entitlementAuditLog = mysqlTable("entitlementAuditLog", {
 }));
 export type EntitlementAuditEntry = typeof entitlementAuditLog.$inferSelect;
 export type InsertEntitlementAuditEntry = typeof entitlementAuditLog.$inferInsert;
+
+/**
+ * One revocation reason for one purchase. A full refund and a dispute are
+ * separate rows so a won dispute cannot clear a refund. dispute reasonKind is
+ * `dispute:<dispute id>`. The timestamp only moves forward. Schema is
+ * drizzle/0077_stripe_purchase_revocations.sql, which is not applied here.
+ */
+export const stripePurchaseRevocations = mysqlTable("stripePurchaseRevocations", {
+  id: int("id").autoincrement().primaryKey(),
+  purchaseKey: varchar("purchaseKey", { length: 191 }).notNull(),
+  reasonKind: varchar("reasonKind", { length: 64 }).notNull(),
+  userId: int("userId").notNull(),
+  purchaseKind: varchar("purchaseKind", { length: 32 }).notNull(),
+  chargeId: varchar("chargeId", { length: 64 }).notNull(),
+  invoiceId: varchar("invoiceId", { length: 64 }),
+  paymentIntentId: varchar("paymentIntentId", { length: 64 }),
+  subscriptionId: varchar("subscriptionId", { length: 64 }),
+  disputeId: varchar("disputeId", { length: 64 }),
+  disputeOutcome: varchar("disputeOutcome", { length: 16 }),
+  active: boolean("active").notNull(),
+  sourceEventId: varchar("sourceEventId", { length: 128 }).notNull(),
+  /** Unix seconds. A stale event must not outrank this. */
+  sourceEventCreated: bigint("sourceEventCreated", { mode: "number" }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  purchaseReasonUniq: uniqueIndex("stripePurchaseRevocations_purchase_reason_uniq").on(t.purchaseKey, t.reasonKind),
+  userIdx: index("stripePurchaseRevocations_userId_idx").on(t.userId),
+}));
+export type StripePurchaseRevocation = typeof stripePurchaseRevocations.$inferSelect;
 
 // ── V3-H Shadow Model Tables ──────────────────────────────────────────────────
 export const shadowModelReadings = mysqlTable("shadowModelReadings", {

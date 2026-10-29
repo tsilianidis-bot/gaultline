@@ -16,9 +16,10 @@ describe("deploy schema gate", () => {
 
   it("passes when the required columns and tables are present", () => {
     expect(missingSchemaObjects(
-      ["accessExpiresAt", "entitlementRevision"],
-      ["stripeSubscriptionCancellations", "pentagonalThesisRecords", "pentagonalThesisOutcomeScores"],
+      ["accessExpiresAt", "entitlementRevision", "lifetimePaymentIntentId"],
+      ["stripeSubscriptionCancellations", "pentagonalThesisRecords", "pentagonalThesisOutcomeScores", "stripePurchaseRevocations"],
       ["algo_outcome_prov_fk"],
+      ["sourceEventCreated"],
     )).toEqual([]);
   });
 });

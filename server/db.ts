@@ -285,7 +285,7 @@ export async function getEntitlementRevision(userId: number): Promise<number | n
   return row.entitlementRevision ?? 0;
 }
 
-export async function getEntitlementUserById(userId: number): Promise<{ id: number; name: string | null; email: string | null; accessTier: string | null; lifetimeAccess: boolean; stripeCustomerId: string | null } | null> {
+export async function getEntitlementUserById(userId: number): Promise<{ id: number; name: string | null; email: string | null; accessTier: string | null; lifetimeAccess: boolean; stripeCustomerId: string | null; lifetimePaymentIntentId?: string | null } | null> {
   const db = await getDb();
   if (!db) return null;
   const [user] = await db.select({
@@ -295,6 +295,7 @@ export async function getEntitlementUserById(userId: number): Promise<{ id: numb
     accessTier: users.accessTier,
     lifetimeAccess: users.lifetimeAccess,
     stripeCustomerId: users.stripeCustomerId,
+    lifetimePaymentIntentId: users.lifetimePaymentIntentId,
   }).from(users).where(eq(users.id, userId)).limit(1);
   return user ?? null;
 }
@@ -580,10 +581,18 @@ export async function updateDashboardMode(
     .where(eq(users.id, userId));
 }
 
-export async function getUserByStripeCustomerId(customerId: string): Promise<{ id: number; name: string | null; email: string | null; accessTier: string | null; lifetimeAccess: boolean; stripeCustomerId: string | null } | null> {
+export async function getUserByStripeCustomerId(customerId: string): Promise<{ id: number; name: string | null; email: string | null; accessTier: string | null; lifetimeAccess: boolean; stripeCustomerId: string | null; lifetimePaymentIntentId?: string | null } | null> {
   const db = await getDb();
   if (!db) return null;
-  const [user] = await db.select({ id: users.id, name: users.name, email: users.email, accessTier: users.accessTier, lifetimeAccess: users.lifetimeAccess, stripeCustomerId: users.stripeCustomerId })
+  const [user] = await db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    accessTier: users.accessTier,
+    lifetimeAccess: users.lifetimeAccess,
+    stripeCustomerId: users.stripeCustomerId,
+    lifetimePaymentIntentId: users.lifetimePaymentIntentId,
+  })
     .from(users)
     .where(eq(users.stripeCustomerId, customerId))
     .limit(1);
@@ -1635,7 +1644,8 @@ export async function getUsersPendingDripStep(step: number, minAgeMs: number): P
 
 // ── Stripe webhook idempotency ────────────────────────────────────────────────
 import { randomBytes } from "node:crypto";
-import { stripeWebhookEvents, entitlementAuditLog } from '../drizzle/schema';
+import { stripeWebhookEvents, entitlementAuditLog, stripePurchaseRevocations } from '../drizzle/schema';
+import { reducePurchaseRevocation, type PurchaseRevocationMutation, type PurchaseRevocationSnapshot } from './stripe/entitlementSync';
 
 /** True only for a MySQL unique-constraint violation, including a Drizzle-wrapped cause. */
 function isDuplicateKeyError(error: unknown): boolean {
@@ -1897,6 +1907,8 @@ export async function writeEntitlementAudit(params: {
   stripeEventId?: string;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
+  /** Unix seconds from the Stripe event. Null for writers that do not have one. */
+  sourceEventCreated?: number | null;
   /** Webhook grants throw so a missing audit cannot be mistaken for "never applied". */
   strict?: boolean;
 }): Promise<void> {
@@ -1914,6 +1926,7 @@ export async function writeEntitlementAudit(params: {
       stripeEventId: params.stripeEventId ?? null,
       stripeCustomerId: params.stripeCustomerId ?? null,
       stripeSubscriptionId: params.stripeSubscriptionId ?? null,
+      sourceEventCreated: params.sourceEventCreated ?? null,
     });
   } catch (err) {
     if (params.strict) throw err;
@@ -1946,6 +1959,13 @@ export type EntitlementResyncWrite = {
   accessExpiresAt: Date | null;
   /** Persisted when present. An empty value does not clear a stored customer id. */
   stripeCustomerId?: string | null;
+  /**
+   * Clears stored lifetime when this event revoked that purchase and no newer
+   * lifetime payment replaced it. Omitted or false never clears lifetime.
+   */
+  revokeLifetime?: boolean;
+  /** Set when this decision verified a lifetime PaymentIntent. Never cleared. */
+  lifetimePaymentIntentId?: string | null;
 };
 
 export type EntitlementMarkerSnapshot = {
@@ -2019,6 +2039,187 @@ function markerSnapshotsMatch(locked: EntitlementMarkerSnapshot[], observed: Ent
   return true;
 }
 
+function revocationNumber(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "bigint") return Number(value);
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return 0;
+}
+
+function normalizePurchaseRevocation(row: {
+  purchaseKey: string;
+  reasonKind: string;
+  purchaseKind: string;
+  chargeId: string;
+  invoiceId: string | null;
+  paymentIntentId: string | null;
+  subscriptionId: string | null;
+  disputeId: string | null;
+  disputeOutcome: string | null;
+  active: boolean | number;
+  sourceEventId: string;
+  sourceEventCreated: number | string | bigint;
+  userId: number;
+}): PurchaseRevocationSnapshot {
+  const outcome = row.disputeOutcome;
+  return {
+    purchaseKey: row.purchaseKey,
+    reasonKind: row.reasonKind,
+    purchaseKind: row.purchaseKind === "lifetime" ? "lifetime" : "subscription",
+    chargeId: row.chargeId,
+    invoiceId: row.invoiceId,
+    paymentIntentId: row.paymentIntentId,
+    subscriptionId: row.subscriptionId,
+    disputeId: row.disputeId,
+    disputeOutcome: outcome === "open" || outcome === "won" || outcome === "lost" || outcome === "charge_refunded" ? outcome : null,
+    active: Boolean(row.active),
+    sourceEventId: row.sourceEventId,
+    sourceEventCreated: revocationNumber(row.sourceEventCreated),
+    userId: row.userId,
+  };
+}
+
+function revocationSnapshotsMatch(locked: PurchaseRevocationSnapshot[], observed: PurchaseRevocationSnapshot[]): boolean {
+  if (locked.length !== observed.length) return false;
+  const keyOf = (row: PurchaseRevocationSnapshot) => `${row.purchaseKey}\0${row.reasonKind}`;
+  const byKey = new Map(locked.map(row => [keyOf(row), row]));
+  for (const row of observed) {
+    const found = byKey.get(keyOf(row));
+    if (!found) return false;
+    if (found.active !== row.active) return false;
+    if (found.sourceEventCreated !== row.sourceEventCreated) return false;
+    if (found.sourceEventId !== row.sourceEventId) return false;
+    if ((found.disputeOutcome ?? null) !== (row.disputeOutcome ?? null)) return false;
+    if ((found.invoiceId ?? null) !== (row.invoiceId ?? null)) return false;
+    if ((found.paymentIntentId ?? null) !== (row.paymentIntentId ?? null)) return false;
+  }
+  return true;
+}
+
+export async function listPurchaseRevocations(userId: number): Promise<PurchaseRevocationSnapshot[]> {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable: cannot read Stripe purchase revocations');
+  const rows = await db.select({
+    purchaseKey: stripePurchaseRevocations.purchaseKey,
+    reasonKind: stripePurchaseRevocations.reasonKind,
+    purchaseKind: stripePurchaseRevocations.purchaseKind,
+    chargeId: stripePurchaseRevocations.chargeId,
+    invoiceId: stripePurchaseRevocations.invoiceId,
+    paymentIntentId: stripePurchaseRevocations.paymentIntentId,
+    subscriptionId: stripePurchaseRevocations.subscriptionId,
+    disputeId: stripePurchaseRevocations.disputeId,
+    disputeOutcome: stripePurchaseRevocations.disputeOutcome,
+    active: stripePurchaseRevocations.active,
+    sourceEventId: stripePurchaseRevocations.sourceEventId,
+    sourceEventCreated: stripePurchaseRevocations.sourceEventCreated,
+    userId: stripePurchaseRevocations.userId,
+  }).from(stripePurchaseRevocations)
+    .where(eq(stripePurchaseRevocations.userId, userId));
+  return rows.map(normalizePurchaseRevocation);
+}
+
+/**
+ * Record a refund or dispute against one purchase. The user row is locked
+ * first so a concurrent entitlement commit cannot snapshot revocation state
+ * and then miss this write. An older source timestamp does not apply.
+ */
+export async function applyPurchaseRevocation(
+  input: PurchaseRevocationMutation & { userId: number },
+): Promise<{ applied: boolean; stale: boolean }> {
+  const db = await getDb();
+  if (!db) throw new Error('Database unavailable: cannot record Stripe purchase revocation');
+  return db.transaction(async (tx) => {
+    const [user] = await tx.select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, input.userId))
+      .limit(1)
+      .for('update');
+    if (!user) throw new ZeroRowEntitlementWriteError(input.sourceEventId);
+    const load = async () => {
+      const [row] = await tx.select({
+        purchaseKey: stripePurchaseRevocations.purchaseKey,
+        reasonKind: stripePurchaseRevocations.reasonKind,
+        purchaseKind: stripePurchaseRevocations.purchaseKind,
+        chargeId: stripePurchaseRevocations.chargeId,
+        invoiceId: stripePurchaseRevocations.invoiceId,
+        paymentIntentId: stripePurchaseRevocations.paymentIntentId,
+        subscriptionId: stripePurchaseRevocations.subscriptionId,
+        disputeId: stripePurchaseRevocations.disputeId,
+        disputeOutcome: stripePurchaseRevocations.disputeOutcome,
+        active: stripePurchaseRevocations.active,
+        sourceEventId: stripePurchaseRevocations.sourceEventId,
+        sourceEventCreated: stripePurchaseRevocations.sourceEventCreated,
+        userId: stripePurchaseRevocations.userId,
+      }).from(stripePurchaseRevocations)
+        .where(and(
+          eq(stripePurchaseRevocations.purchaseKey, input.purchaseKey),
+          eq(stripePurchaseRevocations.reasonKind, input.reasonKind),
+        ))
+        .limit(1)
+        .for('update');
+      return row ? normalizePurchaseRevocation(row) : null;
+    };
+    const write = async (existingId: number | null) => {
+      const values = {
+        purchaseKey: input.purchaseKey,
+        reasonKind: input.reasonKind,
+        userId: input.userId,
+        purchaseKind: input.purchaseKind,
+        chargeId: input.chargeId,
+        invoiceId: input.invoiceId,
+        paymentIntentId: input.paymentIntentId,
+        subscriptionId: input.subscriptionId,
+        disputeId: input.disputeId,
+        disputeOutcome: input.disputeOutcome,
+        active: input.active,
+        sourceEventId: input.sourceEventId,
+        sourceEventCreated: input.sourceEventCreated,
+      };
+      if (existingId == null) {
+        await tx.insert(stripePurchaseRevocations).values(values);
+        return;
+      }
+      await tx.update(stripePurchaseRevocations).set(values).where(eq(stripePurchaseRevocations.id, existingId));
+    };
+    const existing = await load();
+    const decision = reducePurchaseRevocation(existing, input);
+    if (!decision.apply) return { applied: false, stale: decision.stale };
+    if (!existing) {
+      try {
+        await write(null);
+      } catch (err) {
+        if (!isDuplicateKeyError(err)) throw err;
+        const raced = await load();
+        const again = reducePurchaseRevocation(raced, input);
+        if (!again.apply || !raced) return { applied: false, stale: again.stale };
+        const [idRow] = await tx.select({ id: stripePurchaseRevocations.id })
+          .from(stripePurchaseRevocations)
+          .where(and(
+            eq(stripePurchaseRevocations.purchaseKey, input.purchaseKey),
+            eq(stripePurchaseRevocations.reasonKind, input.reasonKind),
+          ))
+          .limit(1);
+        if (!idRow) throw err;
+        await write(idRow.id);
+      }
+    } else {
+      const [idRow] = await tx.select({ id: stripePurchaseRevocations.id })
+        .from(stripePurchaseRevocations)
+        .where(and(
+          eq(stripePurchaseRevocations.purchaseKey, input.purchaseKey),
+          eq(stripePurchaseRevocations.reasonKind, input.reasonKind),
+        ))
+        .limit(1);
+      if (!idRow) throw new Error(`Stripe purchase revocation ${input.purchaseKey} disappeared`);
+      await write(idRow.id);
+    }
+    return { applied: true, stale: false };
+  });
+}
+
 /**
  * Lock the claim, the user, and the cancellation markers the decision observed.
  * If the revision or those markers changed, return stale_state without writing
@@ -2036,12 +2237,19 @@ export async function commitEntitlementResync(params: {
   markerSubscriptionIds: string[];
   desired: EntitlementResyncWrite;
   supersedeCancellation?: { stripeSubscriptionId: string; eventCreated: number } | null;
+  /**
+   * When present, the locked revocation rows for this user must match. A
+   * refund or dispute that landed after the snapshot returns stale_state
+   * and does not write or seal.
+   */
+  observedRevocations?: PurchaseRevocationSnapshot[];
   audit: {
     fromTier: string | null | undefined;
     toTier: string;
     reason: string;
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
+    sourceEventCreated?: number | null;
   };
 }): Promise<'applied' | 'claim_lost' | 'stale_state' | 'customer_conflict'> {
   const db = await getDb();
@@ -2059,6 +2267,7 @@ export async function commitEntitlementResync(params: {
       id: users.id,
       lifetimeAccess: users.lifetimeAccess,
       lifetimePurchasedAt: users.lifetimePurchasedAt,
+      lifetimePaymentIntentId: users.lifetimePaymentIntentId,
       entitlementRevision: users.entitlementRevision,
       stripeCustomerId: users.stripeCustomerId,
     }).from(users)
@@ -2084,6 +2293,28 @@ export async function commitEntitlementResync(params: {
     } else if (params.observedMarkers.length > 0) {
       return 'stale_state';
     }
+    if (params.observedRevocations) {
+      const lockedRevocations = await tx.select({
+        purchaseKey: stripePurchaseRevocations.purchaseKey,
+        reasonKind: stripePurchaseRevocations.reasonKind,
+        purchaseKind: stripePurchaseRevocations.purchaseKind,
+        chargeId: stripePurchaseRevocations.chargeId,
+        invoiceId: stripePurchaseRevocations.invoiceId,
+        paymentIntentId: stripePurchaseRevocations.paymentIntentId,
+        subscriptionId: stripePurchaseRevocations.subscriptionId,
+        disputeId: stripePurchaseRevocations.disputeId,
+        disputeOutcome: stripePurchaseRevocations.disputeOutcome,
+        active: stripePurchaseRevocations.active,
+        sourceEventId: stripePurchaseRevocations.sourceEventId,
+        sourceEventCreated: stripePurchaseRevocations.sourceEventCreated,
+        userId: stripePurchaseRevocations.userId,
+      }).from(stripePurchaseRevocations)
+        .where(eq(stripePurchaseRevocations.userId, params.userId))
+        .for('update');
+      if (!revocationSnapshotsMatch(lockedRevocations.map(normalizePurchaseRevocation), params.observedRevocations)) {
+        return 'stale_state';
+      }
+    }
     const incomingCustomerId = params.desired.stripeCustomerId || null;
     const storedCustomerId = locked.stripeCustomerId || null;
     if (incomingCustomerId && storedCustomerId && incomingCustomerId !== storedCustomerId) {
@@ -2095,10 +2326,12 @@ export async function commitEntitlementResync(params: {
         stripeEventId: params.eventId,
         stripeCustomerId: incomingCustomerId,
         stripeSubscriptionId: params.audit.stripeSubscriptionId ?? params.desired.stripeSubscriptionId,
+        sourceEventCreated: params.audit.sourceEventCreated ?? null,
       });
       return 'customer_conflict';
     }
-    const lifetime = Boolean(locked.lifetimeAccess) || params.desired.grantLifetime;
+    const clearLifetime = params.desired.revokeLifetime === true && !params.desired.grantLifetime;
+    const lifetime = clearLifetime ? false : (Boolean(locked.lifetimeAccess) || params.desired.grantLifetime);
     const tier = lifetime ? 'founding' : params.desired.accessTier;
     const stripeCustomerId = incomingCustomerId || storedCustomerId;
     const updated = await tx.update(users)
@@ -2110,6 +2343,7 @@ export async function commitEntitlementResync(params: {
         lifetimePurchasedAt: lifetime
           ? (locked.lifetimePurchasedAt ?? params.desired.lifetimePurchasedAt ?? new Date())
           : locked.lifetimePurchasedAt,
+        lifetimePaymentIntentId: params.desired.lifetimePaymentIntentId || locked.lifetimePaymentIntentId,
         accessExpiresAt: params.desired.accessExpiresAt,
         entitlementRevision: (locked.entitlementRevision ?? 0) + 1,
         updatedAt: new Date(),
@@ -2137,6 +2371,7 @@ export async function commitEntitlementResync(params: {
       stripeEventId: params.eventId,
       stripeCustomerId: params.audit.stripeCustomerId ?? stripeCustomerId,
       stripeSubscriptionId: params.audit.stripeSubscriptionId ?? params.desired.stripeSubscriptionId,
+      sourceEventCreated: params.audit.sourceEventCreated ?? null,
     });
     await sealStripeClaim(tx, params.eventId, params.eventType, params.attemptId);
     return 'applied';

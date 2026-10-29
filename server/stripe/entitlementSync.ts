@@ -9,10 +9,12 @@
  * authoritative for API version 2026-04-22.dahlia, with a subscription-level
  * fallback. A paid invoice with total > 0 renews when the amount was collected
  * in cash, by a discount, or by customer credit. An unverified lifetime
- * purchase does not.
+ * purchase does not. A full refund or an open or lost dispute revokes only
+ * the linked purchase. A partial refund does not. A won dispute clears that
+ * dispute alone, and only when its source timestamp is newer.
  */
 
-import type { AccessTier } from "../../shared/tiers";
+import { PRICING_PLANS, type AccessTier } from "../../shared/tiers";
 
 export type PaidTier = Exclude<AccessTier, "free">;
 
@@ -70,6 +72,7 @@ export type LifetimeSessionView = {
   created?: number | null;
   metadata?: { plan_id?: string | null } | null;
   payment_intent?: string | {
+    id?: string | null;
     status?: string | null;
     amount_received?: number | null;
     amount?: number | null;
@@ -295,6 +298,13 @@ function invoiceObject(invoice: SubscriptionView["latest_invoice"]): InvoiceView
   return invoice;
 }
 
+export function latestInvoiceId(subscription: SubscriptionView): string | null {
+  const invoice = subscription.latest_invoice;
+  if (typeof invoice === "string") return invoice || null;
+  if (!invoice || typeof invoice.id !== "string" || !invoice.id) return null;
+  return invoice.id;
+}
+
 function markerSuperseded(marker: CancellationMarker): boolean {
   return marker.supersededEventCreated != null && marker.supersededEventCreated >= marker.canceledEventCreated;
 }
@@ -399,12 +409,28 @@ export function decideEntitlement(input: {
   resolveTier: (priceId: string) => PaidTier | null;
   nowMs?: number;
   resume?: ResumeEvidence | null;
+  /**
+   * Invoice ids whose charge was fully refunded or is under an active dispute.
+   * The subscription is skipped. A newer invoice id is unaffected.
+   */
+  revokedInvoiceIds?: readonly string[];
+  /**
+   * The stored lifetime flag is ignored for this decision. Set when that
+   * purchase's own PaymentIntent is revoked and no newer lifetime payment
+   * verified. Admin lifetime (no PaymentIntent) is not suppressed.
+   */
+  suppressStoredLifetime?: boolean;
 }): EntitlementDecision {
   const nowMs = input.nowMs ?? Date.now();
   const resume = input.resume ?? null;
   const markers = new Map(input.markers.map(marker => [marker.stripeSubscriptionId, marker]));
+  const revokedInvoices = new Set(input.revokedInvoiceIds ?? []);
+  const considered = input.subscriptions.filter(subscription => {
+    const invoiceId = latestInvoiceId(subscription);
+    return invoiceId == null || !revokedInvoices.has(invoiceId);
+  });
 
-  for (const subscription of input.subscriptions) {
+  for (const subscription of considered) {
     const payment = subscriptionInvoiceDecision(subscription);
     if (payment.entitled === true || payment.entitled === "unknown") {
       const bounds = periodBounds(subscription);
@@ -417,7 +443,7 @@ export function decideEntitlement(input: {
   if (input.listIncomplete) return { action: "conflict", reason: "subscription_list_incomplete" };
 
   let winner: { subscription: SubscriptionView; tier: PaidTier } | null = null;
-  for (const subscription of input.subscriptions) {
+  for (const subscription of considered) {
     const payment = subscriptionInvoiceDecision(subscription);
     if (payment.entitled === "unknown") {
       if (!input.corroborated || input.corroborated.id !== subscription.id) {
@@ -438,7 +464,7 @@ export function decideEntitlement(input: {
     if (!winner || TIER_RANK[tier] > TIER_RANK[winner.tier]) winner = { subscription, tier };
   }
 
-  const grantLifetime = input.storedLifetime || input.lifetimeVerified;
+  const grantLifetime = (input.suppressStoredLifetime ? false : input.storedLifetime) || input.lifetimeVerified;
   if (winner) {
     if (!input.corroborated) return { action: "needs_corroboration", subscriptionId: winner.subscription.id };
     if (!subscriptionsAgree(winner.subscription, input.corroborated)) {
@@ -473,5 +499,324 @@ export function decideEntitlement(input: {
     accessExpiresAt: null,
     usesSubscription: false,
     supersedeCancellation: null,
+  };
+}
+
+/**
+ * PaymentIntent of a Lifetime checkout ($1,500, plan_id lifetime, mode payment).
+ * This does not require amount_received: a later refund can zero that field
+ * while the session still identifies the purchase.
+ */
+export function lifetimePaymentIntentId(
+  session: LifetimeSessionView | null | undefined,
+  amountCents: number = PRICING_PLANS.lifetime.amountCents,
+): string | null {
+  if (!session) return null;
+  if (session.metadata?.plan_id !== "lifetime") return null;
+  if ((session.mode ?? "") !== "payment") return null;
+  if (session.amount_total !== amountCents) return null;
+  const intent = session.payment_intent;
+  if (typeof intent === "string" && intent) return intent;
+  if (intent && typeof intent === "object" && typeof intent.id === "string" && intent.id) return intent.id;
+  return null;
+}
+
+export type ChargeView = {
+  id: string;
+  amount: number | null;
+  amount_refunded: number | null;
+  refunded: boolean | null;
+  customer: string | null;
+  invoiceId: string | null;
+  paymentIntentId: string | null;
+  metadata: { plan_id?: string | null; user_id?: string | null } | null;
+};
+
+export type PurchaseRevocationMutation = {
+  purchaseKey: string;
+  reasonKind: string;
+  purchaseKind: "lifetime" | "subscription";
+  chargeId: string;
+  invoiceId: string | null;
+  paymentIntentId: string | null;
+  subscriptionId: string | null;
+  disputeId: string | null;
+  disputeOutcome: "open" | "won" | "lost" | "charge_refunded" | null;
+  active: boolean;
+  sourceEventId: string;
+  sourceEventCreated: number;
+};
+
+export type PurchaseRevocationSnapshot = PurchaseRevocationMutation & {
+  userId: number;
+};
+
+/** Full refund revokes. A partial refund and a zero-amount charge do not. */
+export function refundExtent(charge: Pick<ChargeView, "amount" | "amount_refunded" | "refunded">): "full" | "partial" | "none" {
+  const amount = typeof charge.amount === "number" ? charge.amount : null;
+  const refundedAmount = typeof charge.amount_refunded === "number" ? charge.amount_refunded : 0;
+  if (amount == null || amount <= 0) return "none";
+  if (charge.refunded === true || refundedAmount >= amount) return "full";
+  if (refundedAmount > 0) return "partial";
+  return "none";
+}
+
+export function disputeCloseDisposition(status: string | null | undefined): "won" | "revoke" | "ignore" | "unknown" {
+  const normalized = (status ?? "").toLowerCase();
+  if (normalized === "won") return "won";
+  if (normalized === "lost" || normalized === "charge_refunded") return "revoke";
+  if (normalized === "warning_closed" || normalized === "prevented") return "ignore";
+  return "unknown";
+}
+
+function idString(value: unknown): string | null {
+  if (typeof value === "string" && value) return value;
+  if (value && typeof value === "object" && "id" in value && typeof (value as { id?: unknown }).id === "string") {
+    const id = (value as { id: string }).id;
+    return id || null;
+  }
+  return null;
+}
+
+export function chargeViewFromRecord(object: Record<string, unknown> | null | undefined): ChargeView | null {
+  if (!object) return null;
+  const id = idString(object.id) ?? (typeof object.id === "string" ? object.id : null);
+  if (!id) return null;
+  const invoice = object.invoice;
+  const metadata = object.metadata;
+  return {
+    id,
+    amount: typeof object.amount === "number" ? object.amount : null,
+    amount_refunded: typeof object.amount_refunded === "number" ? object.amount_refunded : null,
+    refunded: typeof object.refunded === "boolean" ? object.refunded : null,
+    customer: idString(object.customer),
+    invoiceId: idString(invoice),
+    paymentIntentId: idString(object.payment_intent),
+    metadata: metadata && typeof metadata === "object" ? metadata as ChargeView["metadata"] : null,
+  };
+}
+
+export type LinkedPurchase =
+  | { kind: "lifetime"; purchaseKey: string; paymentIntentId: string; chargeId: string }
+  | { kind: "subscription"; purchaseKey: string; invoiceId: string; chargeId: string; subscriptionId: string | null }
+  | { kind: "unrelated"; chargeId: string };
+
+/**
+ * A charge is the Lifetime purchase only when its PaymentIntent is that
+ * checkout (or the charge itself carries plan_id lifetime at the Lifetime
+ * amount). A subscription purchase is the invoice on the charge. Amount alone
+ * never links an unrelated charge to either one.
+ */
+export function linkChargeToPurchase(input: {
+  charge: ChargeView;
+  sessions: LifetimeSessionView[];
+  subscriptions?: SubscriptionView[];
+  lifetimeAmountCents?: number;
+}): LinkedPurchase {
+  const lifetimeAmount = input.lifetimeAmountCents ?? PRICING_PLANS.lifetime.amountCents;
+  const paymentIntentId = input.charge.paymentIntentId;
+  const sessionMatch = paymentIntentId
+    ? input.sessions.some(session => lifetimePaymentIntentId(session, lifetimeAmount) === paymentIntentId)
+    : false;
+  const metadataMatch = input.charge.metadata?.plan_id === "lifetime"
+    && input.charge.amount === lifetimeAmount
+    && paymentIntentId != null;
+  if ((sessionMatch || metadataMatch) && paymentIntentId) {
+    return {
+      kind: "lifetime",
+      purchaseKey: `pi:${paymentIntentId}`,
+      paymentIntentId,
+      chargeId: input.charge.id,
+    };
+  }
+  const invoiceId = input.charge.invoiceId;
+  if (invoiceId && (input.charge.amount ?? 0) > 0) {
+    const subscriptionId = (input.subscriptions ?? []).find(subscription => latestInvoiceId(subscription) === invoiceId)?.id ?? null;
+    return {
+      kind: "subscription",
+      purchaseKey: `invoice:${invoiceId}`,
+      invoiceId,
+      chargeId: input.charge.id,
+      subscriptionId,
+    };
+  }
+  return { kind: "unrelated", chargeId: input.charge.id };
+}
+
+export type ChargePlan = {
+  reason: string;
+  mutation: PurchaseRevocationMutation | null;
+};
+
+/**
+ * What this event wants to record if it wins the source-timestamp race.
+ * Partial refunds, zero-amount charges, unrelated charges, and non-revoking
+ * dispute closes return an audit reason and no mutation.
+ */
+export function planChargeRevocation(input: {
+  eventId: string;
+  eventType: string;
+  created: number;
+  charge: ChargeView;
+  sessions: LifetimeSessionView[];
+  subscriptions?: SubscriptionView[];
+  dispute?: { id: string; status: string | null; phase: "created" | "closed" };
+}): ChargePlan {
+  const linked = linkChargeToPurchase({
+    charge: input.charge,
+    sessions: input.sessions,
+    subscriptions: input.subscriptions,
+  });
+  if (input.eventType === "charge.refunded") {
+    const extent = refundExtent(input.charge);
+    if (extent === "none") return { reason: "charge.refunded:none", mutation: null };
+    if (linked.kind === "unrelated") return { reason: "charge.refunded:unrelated", mutation: null };
+    if (extent === "partial") return { reason: "charge.refunded:partial", mutation: null };
+    return {
+      reason: "charge.refunded:full",
+      mutation: mutationFor(linked, {
+        eventId: input.eventId,
+        created: input.created,
+        active: true,
+        reasonKind: "full_refund",
+        disputeId: null,
+        disputeOutcome: null,
+      }),
+    };
+  }
+  if (!input.dispute) return { reason: `${input.eventType}:unrelated`, mutation: null };
+  if (linked.kind === "unrelated") return { reason: `${input.eventType}:unrelated`, mutation: null };
+  if ((input.charge.amount ?? 0) <= 0) return { reason: `${input.eventType}:none`, mutation: null };
+  if (input.dispute.phase === "created") {
+    return {
+      reason: "charge.dispute.created",
+      mutation: mutationFor(linked, {
+        eventId: input.eventId,
+        created: input.created,
+        active: true,
+        reasonKind: `dispute:${input.dispute.id}`,
+        disputeId: input.dispute.id,
+        disputeOutcome: "open",
+      }),
+    };
+  }
+  const disposition = disputeCloseDisposition(input.dispute.status);
+  if (disposition === "unknown") return { reason: "charge.dispute.closed:unknown", mutation: null };
+  if (disposition === "ignore") return { reason: `charge.dispute.closed:${(input.dispute.status ?? "ignored").toLowerCase()}`, mutation: null };
+  const won = disposition === "won";
+  const outcome = won ? "won" as const : (input.dispute.status ?? "").toLowerCase() === "charge_refunded" ? "charge_refunded" as const : "lost" as const;
+  return {
+    reason: won ? "charge.dispute.closed:won" : outcome === "charge_refunded" ? "charge.dispute.closed:charge_refunded" : "charge.dispute.closed:lost",
+    mutation: mutationFor(linked, {
+      eventId: input.eventId,
+      created: input.created,
+      active: !won,
+      reasonKind: `dispute:${input.dispute.id}`,
+      disputeId: input.dispute.id,
+      disputeOutcome: outcome,
+    }),
+  };
+}
+
+function mutationFor(
+  linked: Exclude<LinkedPurchase, { kind: "unrelated" }>,
+  action: {
+    eventId: string;
+    created: number;
+    active: boolean;
+    reasonKind: string;
+    disputeId: string | null;
+    disputeOutcome: PurchaseRevocationMutation["disputeOutcome"];
+  },
+): PurchaseRevocationMutation {
+  return {
+    purchaseKey: linked.purchaseKey,
+    reasonKind: action.reasonKind,
+    purchaseKind: linked.kind,
+    chargeId: linked.chargeId,
+    invoiceId: linked.kind === "subscription" ? linked.invoiceId : null,
+    paymentIntentId: linked.kind === "lifetime" ? linked.paymentIntentId : null,
+    subscriptionId: linked.kind === "subscription" ? linked.subscriptionId : null,
+    disputeId: action.disputeId,
+    disputeOutcome: action.disputeOutcome,
+    active: action.active,
+    sourceEventId: action.eventId,
+    sourceEventCreated: action.created,
+  };
+}
+
+/**
+ * Timestamp order for one purchase reason. An older event never applies.
+ * An equal timestamp may activate a revocation and must not clear one.
+ * The same event id is a replay and does not write again.
+ */
+export function reducePurchaseRevocation(
+  existing: { active: boolean; sourceEventCreated: number; sourceEventId: string } | null,
+  incoming: { active: boolean; sourceEventCreated: number; sourceEventId: string },
+): { apply: boolean; stale: boolean } {
+  if (!existing) return { apply: true, stale: false };
+  if (existing.sourceEventId === incoming.sourceEventId) return { apply: false, stale: false };
+  if (incoming.sourceEventCreated < existing.sourceEventCreated) return { apply: false, stale: true };
+  if (incoming.sourceEventCreated === existing.sourceEventCreated) {
+    if (incoming.active && !existing.active) return { apply: true, stale: false };
+    if (!incoming.active && existing.active) return { apply: false, stale: true };
+    return { apply: false, stale: false };
+  }
+  return { apply: true, stale: false };
+}
+
+export function revokedInvoiceIds(rows: ReadonlyArray<Pick<PurchaseRevocationSnapshot, "active" | "invoiceId">>): string[] {
+  const ids: string[] = [];
+  for (const row of rows) {
+    if (!row.active || !row.invoiceId || ids.includes(row.invoiceId)) continue;
+    ids.push(row.invoiceId);
+  }
+  return ids;
+}
+
+export function revokedLifetimePaymentIntentIds(rows: ReadonlyArray<Pick<PurchaseRevocationSnapshot, "active" | "purchaseKind" | "paymentIntentId">>): string[] {
+  const ids: string[] = [];
+  for (const row of rows) {
+    if (!row.active || row.purchaseKind !== "lifetime" || !row.paymentIntentId || ids.includes(row.paymentIntentId)) continue;
+    ids.push(row.paymentIntentId);
+  }
+  return ids;
+}
+
+/**
+ * Stored lifetime is cleared only when its own PaymentIntent is revoked, or
+ * when a legacy row has no PaymentIntent and every Lifetime session we can
+ * see for this customer is revoked. An admin grant has neither and stays.
+ * A newer unrevoked Lifetime session keeps access.
+ */
+export function lifetimeRevocationDecision(input: {
+  storedLifetime: boolean;
+  storedPaymentIntentId: string | null;
+  sessions: LifetimeSessionView[];
+  revokedPaymentIntentIds: readonly string[];
+}): { suppressStoredLifetime: boolean; lifetimeVerified: boolean; lifetimePurchasedAt: Date | null; lifetimePaymentIntentId: string | null } {
+  const revoked = new Set(input.revokedPaymentIntentIds);
+  const amount = PRICING_PLANS.lifetime.amountCents;
+  let lifetimeVerified = false;
+  let lifetimePurchasedAt: Date | null = null;
+  let grantedPaymentIntentId: string | null = null;
+  for (const session of input.sessions) {
+    const paymentIntentId = lifetimePaymentIntentId(session, amount);
+    if (paymentIntentId && revoked.has(paymentIntentId)) continue;
+    if (!verifiedLifetimePayment(session)) continue;
+    lifetimeVerified = true;
+    if (!lifetimePurchasedAt && typeof session.created === "number") lifetimePurchasedAt = new Date(session.created * 1000);
+    if (!grantedPaymentIntentId && paymentIntentId) grantedPaymentIntentId = paymentIntentId;
+  }
+  const storedPi = input.storedPaymentIntentId;
+  const storedRevoked = input.storedLifetime && storedPi != null && revoked.has(storedPi);
+  const newerStoredPurchase = input.storedLifetime && storedPi != null && !revoked.has(storedPi);
+  const legacyRevoked = input.storedLifetime && storedPi == null && revoked.size > 0 && !lifetimeVerified;
+  const suppressStoredLifetime = !lifetimeVerified && !newerStoredPurchase && (storedRevoked || legacyRevoked);
+  return {
+    suppressStoredLifetime,
+    lifetimeVerified,
+    lifetimePurchasedAt,
+    lifetimePaymentIntentId: grantedPaymentIntentId,
   };
 }
