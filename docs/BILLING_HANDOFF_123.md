@@ -1,6 +1,6 @@
 # Billing integration handoff (for the release owner / Manus)
 
-Integration proceeds only with James's explicit approval. This file does not approve a merge, a deploy, or a production migration. Checkout stays off (`CHECKOUT_ENABLED` is false). Stripe live mode stays fail-closed unless `FAULTLINE_STRIPE_LAUNCH_AUTHORIZED=true`.
+James explicitly directed that Manus owns integration and production deploy. Integration proceeds only with James's explicit approval. This file does not approve a merge, a deploy, or a production migration. Checkout stays off (`CHECKOUT_ENABLED` is false). Stripe live mode stays fail-closed unless `FAULTLINE_STRIPE_LAUNCH_AUTHORIZED=true`.
 
 ## SHA
 
@@ -40,7 +40,7 @@ Test mode only. A live key is ignored unless `FAULTLINE_STRIPE_LAUNCH_AUTHORIZED
 
 ## Migration 0074–0077
 
-Not applied by this PR. Not applied by boot. The release owner applies them on a fresh backup, in this order, only with James's approval:
+Not applied by this PR. Not applied by boot. Manus, as release owner, applies them on a fresh backup, in this order, only after James's explicit approval:
 
 1. `drizzle/0074_stripe_entitlement_resync.sql` (`users.accessExpiresAt`, `users.entitlementRevision`, `stripeSubscriptionCancellations`)
 2. `drizzle/0075_pentagonal_thesis_records.sql`
@@ -55,7 +55,7 @@ Not applied by this PR. Not applied by boot. The release owner applies them on a
 
 Endpoint: `POST /api/stripe/webhook` (`server/_core/index.ts`). Body must be the raw JSON Stripe signs.
 
-Pinned API version in `server/stripe/client.ts`: **2026-04-22.dahlia**. `Charge.invoice` is absent in that version. Subscription invoices come from InvoicePayment.
+Pinned client API version in `server/stripe/client.ts`: **2026-04-22.dahlia**. That is the version the server sends on API calls. It is not the API version configured on the production Stripe webhook endpoint. That endpoint setting is UNKNOWN and must be checked in the Dashboard. `Charge.invoice` is absent in the pinned client version. Subscription invoices come from InvoicePayment.
 
 Enable these events:
 
