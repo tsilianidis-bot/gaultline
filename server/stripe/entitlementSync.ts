@@ -633,14 +633,17 @@ export function invoiceIdFromInvoicePayments(
 export type LinkedPurchase =
   | { kind: "lifetime"; purchaseKey: string; paymentIntentId: string; chargeId: string }
   | { kind: "subscription"; purchaseKey: string; invoiceId: string; chargeId: string; subscriptionId: string | null }
-  | { kind: "unrelated"; chargeId: string };
+  | { kind: "unrelated"; chargeId: string }
+  | { kind: "unresolved"; chargeId: string };
 
 /**
  * A charge is the Lifetime purchase only when its PaymentIntent is that
  * checkout, the charge itself carries plan_id lifetime at the Lifetime
  * amount, or the stored lifetime PaymentIntent is this charge. A subscription
  * purchase is the invoice paid by the charge's PaymentIntent. Amount alone
- * never links an unrelated charge to either one.
+ * never links an unrelated charge to either one. A charge with a customer and
+ * a positive amount but no InvoicePayment is unresolved, not unrelated: the
+ * lookup may not have caught up, so the caller retries instead of sealing.
  */
 export function linkChargeToPurchase(input: {
   charge: ChargeView;
@@ -682,6 +685,9 @@ export function linkChargeToPurchase(input: {
       subscriptionId,
     };
   }
+  if (input.charge.customer && (input.charge.amount ?? 0) > 0) {
+    return { kind: "unresolved", chargeId: input.charge.id };
+  }
   return { kind: "unrelated", chargeId: input.charge.id };
 }
 
@@ -711,6 +717,7 @@ export function planChargeRevocation(input: {
     subscriptions: input.subscriptions,
     storedLifetimePaymentIntentId: input.storedLifetimePaymentIntentId,
   });
+  if (linked.kind === "unresolved") return { reason: "invoice_unlinked", mutation: null };
   if (input.eventType === "charge.refunded") {
     const extent = refundExtent(input.charge);
     if (extent === "none") return { reason: "charge.refunded:none", mutation: null };
@@ -763,7 +770,7 @@ export function planChargeRevocation(input: {
 }
 
 function mutationFor(
-  linked: Exclude<LinkedPurchase, { kind: "unrelated" }>,
+  linked: Exclude<LinkedPurchase, { kind: "unrelated" } | { kind: "unresolved" }>,
   action: {
     eventId: string;
     created: number;

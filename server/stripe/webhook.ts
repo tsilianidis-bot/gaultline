@@ -392,6 +392,7 @@ async function computeEntitlementPicture(input: {
       dispute: input.dispute ?? undefined,
     });
     auditReason = plan.reason;
+    if (plan.reason === 'invoice_unlinked') throw new EntitlementConflictError('invoice_unlinked');
     if (plan.reason === 'charge.dispute.closed:unknown') throw new EntitlementConflictError('unknown_dispute_status');
     if (plan.mutation) {
       const recorded = await applyPurchaseRevocation({ ...plan.mutation, userId: input.userId });
@@ -538,10 +539,10 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     const user = resolved.user;
     if (!user) throw new EntitlementConflictError('missing_user');
 
-    const customerId = stripeId((event.data.object as { customer?: unknown }).customer) ?? chargeEffect?.charge.customer ?? null;
+    const eventCustomerId = stripeId((event.data.object as { customer?: unknown }).customer) ?? chargeEffect?.charge.customer ?? null;
     const storedCustomerId = user.stripeCustomerId || null;
-    if (customerId && storedCustomerId && customerId !== storedCustomerId) {
-      console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} customer ${customerId} does not match stored ${storedCustomerId}; not sealing or downgrading`);
+    if (eventCustomerId && storedCustomerId && eventCustomerId !== storedCustomerId) {
+      console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} customer ${eventCustomerId} does not match stored ${storedCustomerId}; not sealing or downgrading`);
       try {
         await writeEntitlementAudit({
           userId: user.id,
@@ -549,7 +550,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
           toTier: user.accessTier ?? 'free',
           reason: 'customer_conflict',
           stripeEventId: event.id,
-          stripeCustomerId: customerId,
+          stripeCustomerId: eventCustomerId,
           sourceEventCreated: typeof event.created === 'number' ? event.created : null,
           strict: true,
         });
@@ -568,6 +569,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     let lifetimePurchasedAt: Date | null = null;
     const sessionId = stripeId((event.data.object as { id?: unknown }).id);
 
+    const customerId = eventCustomerId || storedCustomerId;
     if (event.type.startsWith('checkout.session.') && customerId == null) {
       if (sessionId && (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded')) {
         const session = await stripeCall(budget, () => stripe!.checkout.sessions.retrieve(sessionId, { expand: ['payment_intent'] }, stripeRead)) as LifetimeSessionView;
@@ -667,8 +669,8 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       console.error(`[Stripe Webhook][BILLING-ALERT] ${event.id} lost the claim fence; not sealing or releasing the current attempt`);
       return res.status(500).json({ error: 'Webhook processing failed' });
     }
-    if (err instanceof EntitlementConflictError && PERMANENT_CONFLICTS.has(err.message)) {
-      console.warn(`[Stripe Webhook] ${event.type} ${event.id} is ${err.message} — acknowledging without entitlement changes`);
+    if (err instanceof EntitlementConflictError && CHARGE_ENTITLEMENT_TYPES.has(event.type) && PERMANENT_CONFLICTS.has(err.message)) {
+      console.error(`[Stripe Webhook][BILLING-ALERT] ${event.type} ${event.id} is ${err.message} — acknowledging without entitlement changes`);
       if (!(await retainClaim())) return res.status(500).json({ error: 'Webhook processing failed' });
       return res.json({ received: true, ignored: err.message });
     }

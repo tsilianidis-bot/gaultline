@@ -119,9 +119,13 @@ describe("refund extent and purchase link", () => {
     expect(linkChargeToPurchase({
       charge: charge({ amount: LIFETIME, invoiceId: null, paymentIntentId: "pi_other" }),
       sessions: [lifetimeCheckout("pi_life")],
-    }).kind).toBe("unrelated");
+    }).kind).toBe("unresolved");
     expect(linkChargeToPurchase({
       charge: charge({ amount: STANDARD, invoiceId: null, paymentIntentId: "pi_other" }),
+      sessions: [lifetimeCheckout("pi_life")],
+    }).kind).toBe("unresolved");
+    expect(linkChargeToPurchase({
+      charge: charge({ customer: null, amount: 500, invoiceId: null, paymentIntentId: "pi_other" }),
       sessions: [lifetimeCheckout("pi_life")],
     }).kind).toBe("unrelated");
     expect(linkChargeToPurchase({
@@ -149,7 +153,7 @@ describe("refund extent and purchase link", () => {
       charge: viewed!,
       sessions: [],
       subscriptions: [subscription()],
-    }).kind).toBe("unrelated");
+    }).kind).toBe("unresolved");
     const payments = [
       {
         id: "inpay_canceled",
@@ -198,6 +202,13 @@ describe("plan and timestamp order", () => {
       eventType: "charge.refunded",
       created: 50,
       charge: charge({ invoiceId: null, paymentIntentId: "pi_other", amount: 500, amount_refunded: 500 }),
+      sessions: [lifetimeCheckout("pi_life")],
+    })).toEqual({ reason: "invoice_unlinked", mutation: null });
+    expect(planChargeRevocation({
+      eventId: "evt_other_guest",
+      eventType: "charge.refunded",
+      created: 50,
+      charge: charge({ customer: null, invoiceId: null, paymentIntentId: "pi_other", amount: 500, amount_refunded: 500 }),
       sessions: [lifetimeCheckout("pi_life")],
     })).toEqual({ reason: "charge.refunded:unrelated", mutation: null });
     expect(planChargeRevocation({
