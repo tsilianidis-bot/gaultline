@@ -5,6 +5,7 @@
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { spawnSync } from "node:child_process";
 import mysql from "mysql2/promise";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
@@ -37,6 +38,18 @@ function journalTags(): string[] {
     entries: Array<{ tag: string }>;
   };
   return journal.entries.map(entry => entry.tag);
+}
+
+function freshBootstrapStatements(): string[] {
+  const result = spawnSync(
+    process.execPath,
+    [resolve(root, "scripts/buildCandidateFreshMySqlMigrationSql.mjs")],
+    { cwd: root, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }
+  );
+  if (result.status !== 0) {
+    throw new Error(`Fresh bootstrap builder failed: ${result.stderr}`);
+  }
+  return statements(result.stdout);
 }
 
 async function applyFile(
@@ -98,11 +111,11 @@ describe("0057 foreign-key name on disposable MariaDB", () => {
     expect(SHORT_FK.length).toBeLessThanOrEqual(64);
   });
 
-  it("applies the full current journal on an empty database", async () => {
+  it("applies the generated fresh bootstrap on an empty database", async () => {
     const connection = await maria.createDatabase("faultline_rc_fk_clean");
     connections.push(connection);
-    for (const tag of journalTags()) {
-      await applyFile(connection, tag);
+    for (const statement of freshBootstrapStatements()) {
+      await connection.query(statement);
     }
     const name = await fkName(connection);
     expect(name).toBe(SHORT_FK);
