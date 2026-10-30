@@ -19,6 +19,7 @@ import {
 import { runFMOSPipelineFast } from "../fmos/pipeline";
 import { invokeLLM } from "../_core/llm";
 import { getQuote } from "../yahooProxy";
+import { securityQuoteProvenance } from "../securityQuoteContext";
 import { getRisingStarVisualDetail } from "../risingStarsVisual";
 import { forecastHorizonPromptContract, insufficientHorizonMetadata } from "../../shared/forecastMetadata";
 import { evidenceNarrativePromptContract } from "../../shared/evidenceContract";
@@ -117,7 +118,7 @@ export const outlookRouter = router({
         console.error("[outlook.getOutlook] Error for", input.symbol, err);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: `Unable to generate outlook for ${input.symbol}. Live market data may be temporarily unavailable.`,
+          message: `Unable to generate outlook for ${input.symbol}. Market data may be temporarily unavailable.`,
         });
       }
     }),
@@ -236,7 +237,7 @@ export const outlookRouter = router({
     }),
 
   /**
-   * Security Context — unified live data bar for any ticker.
+   * Security Context — provider-provenanced quote bar for any ticker.
    * Returns price, change, volume, market cap, sector, regime alignment, opportunity score.
    * Used by UniversalTickerHeader on every analysis page.
    */
@@ -254,6 +255,11 @@ export const outlookRouter = router({
 
         const q = quote.status === "fulfilled" ? quote.value : null;
         const o = quickOutlook.status === "fulfilled" ? quickOutlook.value : null;
+        // Provider session (for example, REGULAR) is not a freshness claim.
+        // The context carries the provider's own observation metadata so the
+        // header can label live, delayed, stale, fallback, or unavailable
+        // without inferring LIVE from a session name.
+        const quoteProvenance = securityQuoteProvenance(q);
 
         // Fetch sector/industry from Polygon reference
         const apiKey = process.env.POLYGON_API_KEY ?? "";
@@ -284,6 +290,7 @@ export const outlookRouter = router({
           changePercent: q?.changePercent ?? null,
           volume: q?.volume ?? null,
           marketState: q?.marketState ?? "UNKNOWN",
+          quoteProvenance,
           sector,
           industry,
           marketCap,
@@ -301,6 +308,13 @@ export const outlookRouter = router({
           changePercent: number | null;
           volume: number | null;
           marketState: string;
+          quoteProvenance: {
+            provider: "yahoo" | "polygon-prev" | "unavailable";
+            observedAt: number | null;
+            isDelayed: boolean | null;
+            marketSession: string;
+            freshnessState: "LIVE" | "DELAYED" | "STALE" | "FALLBACK" | "UNAVAILABLE";
+          };
           sector: string | null;
           industry: string | null;
           marketCap: number | null;

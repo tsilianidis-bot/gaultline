@@ -1,12 +1,12 @@
 /**
- * FAULTLINE TIME MACHINE™ — Historical Truth Engine
+ * FAULTLINE TIME MACHINE™ — Retrospective Reconstruction
  *
- * Choose any market period. Travel back to that moment.
- * See what FAULTLINE would have known using only the information available at the time.
- * Watch pressure build. See when the regime changed. Compare the warning with what happened next.
+ * Explore stored monthly pressure readings alongside historical outcomes.
+ * The view uses revised historical records; it is not a point-in-time replay,
+ * a contemporaneous FAULTLINE run, or evidence of an advance warning.
  */
 import { pressureShortLabel } from "@shared/pressureBands";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import AppLayout from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
@@ -29,7 +29,6 @@ import {
   ChevronRight,
   TrendingUp,
   TrendingDown,
-  AlertTriangle,
   Shield,
   Activity,
   BarChart3,
@@ -202,22 +201,6 @@ export default function TimeMachine() {
 
   const selectedPeriod = periods?.find(p => p.id === selectedPeriodId);
 
-  // Find the "peak month" index in the timeline for the reference line
-  const peakMonthIndex = useMemo(() => {
-    if (!periodData?.timeline || !selectedPeriod) return -1;
-    return periodData.timeline.findIndex(r => r.month === selectedPeriod.peakMonth);
-  }, [periodData, selectedPeriod]);
-
-  // Compute the "first warning" narrative
-  const firstWarningNarrative = useMemo(() => {
-    if (!periodData?.firstWarningMonth || !selectedPeriod) return null;
-    const warningDate = new Date(periodData.firstWarningMonth + "-01");
-    const peakDate = new Date(selectedPeriod.peakMonth + "-01");
-    const monthsDiff = (peakDate.getFullYear() - warningDate.getFullYear()) * 12 +
-      (peakDate.getMonth() - warningDate.getMonth());
-    return { month: periodData.firstWarningMonth, monthsBefore: monthsDiff };
-  }, [periodData, selectedPeriod]);
-
   const isLoading = periodsLoading || dataLoading;
 
   return (
@@ -235,7 +218,7 @@ export default function TimeMachine() {
                   FAULTLINE TIME MACHINE™
                 </h1>
                 <p className="text-xs text-white/40 tracking-wider uppercase">
-                  Historical Truth Engine · 2000–Present · {periodData?.stats?.totalMonths ?? 317} Monthly Readings
+                  Retrospective Reconstruction · 2000–Present · {periodData?.stats?.totalMonths ?? 317} Monthly Readings
                 </p>
               </div>
             </div>
@@ -247,14 +230,14 @@ export default function TimeMachine() {
           <div className="mb-8 p-6 rounded-2xl border border-[#FFB800]/20 bg-[#FFB800]/4">
             <div className="max-w-3xl">
               <h2 className="text-2xl font-black text-white mb-3 leading-tight">
-                Choose any market period you know.
+                Explore a historical period in retrospect.
               </h2>
               <p className="text-white/60 leading-relaxed mb-4">
-                Travel back to that moment and see what FAULTLINE would have known using only the information available at the time.
-                Watch pressure build. See when the regime changed. Examine the evidence. Compare the warning with what happened next.
+                This view reconstructs stored monthly pressure readings next to known historical outcomes. It uses revised historical records,
+                not point-in-time data vintages, and does not recreate a contemporaneous FAULTLINE run or a historical warning.
               </p>
               <p className="text-[#FFB800] font-bold text-sm tracking-wider uppercase">
-                You choose the period. You judge the result.
+                Examine the reconstruction and its limits.
               </p>
             </div>
           </div>
@@ -287,8 +270,8 @@ export default function TimeMachine() {
                 <div className="flex gap-2">
                   <Info className="w-3.5 h-3.5 text-white/30 shrink-0 mt-0.5" />
                   <p className="text-[10px] text-white/30 leading-relaxed">
-                    Historical pressure readings are computed from FRED macroeconomic data using the same methodology as the live Pressure Index.
-                    Past performance does not guarantee future results. Not investment advice.
+                    Historical readings use FRED values as currently published and may differ from values available at the time. This is not a
+                    point-in-time backtest or proof of a live track record. Not investment advice.
                   </p>
                 </div>
               </div>
@@ -338,26 +321,6 @@ export default function TimeMachine() {
                         </div>
                       )}
                     </div>
-
-                    {/* First Warning */}
-                    {firstWarningNarrative && (
-                      <div className="mt-4 pt-4 border-t border-white/8">
-                        <div className="flex items-center gap-2 text-sm">
-                          <AlertTriangle className="w-4 h-4 text-[#FFB800]" />
-                          <span className="text-white/70">
-                            FAULTLINE first crossed into{" "}
-                            <span className="text-[#FFB800] font-bold">ELEVATED RISK</span>{" "}
-                            in{" "}
-                            <span className="text-white font-bold">{formatMonth(firstWarningNarrative.month)}</span>
-                            {firstWarningNarrative.monthsBefore > 0 && (
-                              <span className="text-white/50">
-                                {" "}— {firstWarningNarrative.monthsBefore} month{firstWarningNarrative.monthsBefore !== 1 ? "s" : ""} before the peak
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   {/* Pressure Timeline Chart */}
@@ -538,21 +501,21 @@ export default function TimeMachine() {
           {/* ── Challenge FAULTLINE CTA ── */}
           <div className="mt-12 p-8 rounded-2xl border border-[#FFB800]/20 bg-gradient-to-br from-[#FFB800]/6 to-[#FF6B35]/4 text-center">
             <div className="text-[10px] font-bold text-[#FFB800]/60 tracking-widest uppercase mb-3">
-              The Live Pressure Index
+              Pressure Index
             </div>
             <h3 className="text-2xl font-black text-white mb-3">
-              See What FAULTLINE Is Reading Right Now
+              Explore the Pressure Index
             </h3>
             <p className="text-white/50 max-w-xl mx-auto mb-6 text-sm leading-relaxed">
-              The same methodology that identified these historical regimes is running live today.
-              The current Pressure Index is recalculated as new FRED data is published.
+              The Pressure Index is produced from governed inputs as source data is published. This retrospective reconstruction is historical
+              context, not evidence that the method produced or would have issued a warning in these periods.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button
                 className="bg-[#FFB800] hover:bg-[#FFB800]/90 text-black font-bold px-8 py-3 h-auto"
                 onClick={() => window.location.href = "/app/now/deep"}
               >
-                View Live Pressure Index
+                Open Pressure Index
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
               <Button
@@ -560,7 +523,7 @@ export default function TimeMachine() {
                 className="border-white/20 text-white/70 hover:text-white hover:border-white/40 px-8 py-3 h-auto"
                 onClick={() => window.location.href = "/app/track-record"}
               >
-                View Full Track Record
+                Open Observed History
               </Button>
             </div>
           </div>
@@ -571,9 +534,9 @@ export default function TimeMachine() {
               <Shield className="w-4 h-4 text-white/30 shrink-0 mt-0.5" />
               <div className="text-xs text-white/30 leading-relaxed">
                 <span className="font-bold text-white/50">Methodology:</span>{" "}
-                Historical pressure readings are computed from Federal Reserve Economic Data (FRED) using the same 8-domain methodology as the live Pressure Index:
-                Liquidity Stress, Credit Contagion, Volatility Regime, Macro Sensitivity, Market Breadth, Systemic Risk, Funding Stress, and Cross-Asset Correlation.
-                All readings use only data that would have been available at the time — no look-ahead bias.
+                Historical readings are reconstructed from stored monthly components and FRED series as currently published. Revisions, unavailable
+                source vintages, and formula/version differences mean this view does not reproduce the inputs, methodology, or output available at
+                the time. It is not a point-in-time backtest, a contemporaneous track record, or evidence of advance warning.
                 Readings are not investment advice. Past regimes do not guarantee future outcomes.
               </div>
             </div>

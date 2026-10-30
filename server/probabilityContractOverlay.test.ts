@@ -99,7 +99,7 @@ describe("daily brief engine snapshot (QA item 4)", () => {
     expect(EngineSnapshotSchema.safeParse(base).success).toBe(true);
     expect(EngineSnapshotSchema.safeParse({ ...base, bullProbability: 53 }).success).toBe(true);
   });
-  it("overallConfidence keeps the pre-contract formula (methodology-neutral) and is displayed as Uncalibrated", () => {
+  it("overallConfidence keeps the pre-contract formula (methodology-neutral) while the customer label is not established", () => {
     // Base formula: round((100-p)*0.35 + breadth*0.25 + liquidity*0.25 + bull*0.15) = round(60.65) = 61.
     expect(computeOverallConfidence({ ...base, bullProbability: 53 })).toBe(61);
     expect(computeOverallConfidence({ ...base, bullProbability: 0 })).toBe(53);
@@ -109,7 +109,9 @@ describe("daily brief engine snapshot (QA item 4)", () => {
     expect(OVERALL_CONFIDENCE_DISPLAY_TEXT).toBe("Uncalibrated");
     const page = readFileSync(join(__dirname, "..", "client", "src", "pages", "SmartDiscovery.tsx"), "utf8");
     expect(page).not.toMatch(/\{brief\.todaysMarket\.confidence\}%/);
-    expect(page).toContain("brief.todaysMarket.confidenceText ?? 'Uncalibrated'");
+    expect(page).not.toContain("brief.todaysMarket.confidenceText");
+    expect(page).toContain('data-confidence-status="not-established"');
+    expect(page).toContain("CONFIDENCE_NOT_ESTABLISHED");
   });
 });
 

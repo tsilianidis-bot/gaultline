@@ -36,7 +36,7 @@ import { HistoricalContextPanel } from "@/components/HistoricalContextPanel";
 import type { HistoricalIntelligenceData } from "@/components/HistoricalContextPanel";
 import { engineProbabilityText } from "@/lib/marketStateProjection";
 import { PROBABILITY_DISPLAY_TEXT } from "@shared/probabilityContract";
-import { CONFIDENCE_NOT_ESTABLISHED, confidenceDisplayText, hasConfidenceValue } from "@/lib/confidenceDisplay";
+import { CONFIDENCE_NOT_ESTABLISHED } from "@/lib/confidenceDisplay";
 
 // ── Design tokens ─────────────────────────────────────────────
 const BG = "#050608";
@@ -257,7 +257,7 @@ interface ConversationMessage {
 
 const EXECUTION_STEPS = [
   "Initializing FAULTLINE intelligence engine...",
-  "Fetching live market data...",
+  "Fetching available market data...",
   "Reading macro regime conditions...",
   "Scanning institutional positioning...",
   "Evaluating liquidity environment...",
@@ -944,19 +944,9 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
   // Derive FMOS engine status values from answer fields
   const regimeStatus = answer.regimeColor === "green" ? "STABLE" : answer.regimeColor === "red" ? "STRESSED" : "TRANSITIONING";
   const regimeColor = answer.regimeColor === "green" ? "#00FF88" : answer.regimeColor === "red" ? "#FF4444" : "#FFD700";
-  // Confidence color — driven by confidenceLabel (HIGH/MODERATE/LOW) from ASHA, falling back to numeric score
-  const confidenceLabelNorm = (answer.confidenceLabel ?? "").toUpperCase().trim();
-  const confidenceColor = confidenceLabelNorm === "HIGH" ? "#00FF88"
-    : confidenceLabelNorm === "MODERATE" ? "#FFD700"
-    : confidenceLabelNorm === "LOW" ? "#FF4444"
-    : !hasConfidenceValue(answer.confidence) ? "#94A3B8"
-    : answer.confidence >= 70 ? "#00FF88" : answer.confidence >= 45 ? "#FFD700" : "#FF4444";
-  const confidenceBg = confidenceLabelNorm === "HIGH" ? "rgba(0,255,136,0.08)"
-    : confidenceLabelNorm === "MODERATE" ? "rgba(255,215,0,0.08)"
-    : "rgba(255,68,68,0.08)";
-  const confidenceBorder = confidenceLabelNorm === "HIGH" ? "rgba(0,255,136,0.2)"
-    : confidenceLabelNorm === "MODERATE" ? "rgba(255,215,0,0.2)"
-    : "rgba(255,68,68,0.2)";
+  // ASHA confidence fields have no structured calibration/provenance contract.
+  // Do not turn a model keyword or number into a customer-visible confidence.
+  const confidenceColor = "#94A3B8";
   const opportunityColor = typeof answer.opportunityScore !== "number" ? "#94A3B8" : answer.opportunityScore >= 65 ? "#00FF88" : answer.opportunityScore >= 40 ? "#FFD700" : "#FF4444";
 
   // Determine if this is a wait verdict
@@ -1014,7 +1004,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
           {[
             { label: "OPPORTUNITY", value: answer.opportunityScore as number | null, color: answer.verdictColor },
-            { label: "CONFIDENCE", value: hasConfidenceValue(answer.confidence) ? answer.confidence : null, color: confidenceLabelNorm === "HIGH" ? "green" : confidenceLabelNorm === "MODERATE" ? "yellow" : "red" },
+            { label: "CONFIDENCE", value: null, color: "gray" },
           ].map(({ label, value, color }) => (
             <div key={label}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
@@ -1057,10 +1047,10 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
         <EngineCard
           icon={<BarChart2 size={9} />}
           label="Confidence"
-          value={confidenceDisplayText(answer.confidence)}
+          value={CONFIDENCE_NOT_ESTABLISHED}
           color={confidenceColor}
-          sub={answer.confidenceLabel}
-          subColor={confidenceColor}
+          sub="No structured provenance"
+          subColor="#94A3B8"
         />
         <EngineCard
           icon={<Target size={9} />}
@@ -1273,7 +1263,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginBottom: "12px" }}>
               {[
                 { label: "PROBABILITY", value: PROBABILITY_DISPLAY_TEXT.NOT_OFFERED, color: "#94A3B8" },
-                { label: "CONFIDENCE", value: confidenceDisplayText(answer.finalVerdictConfidence), color: hasConfidenceValue(answer.finalVerdictConfidence) ? confidenceColor : "#94A3B8" },
+                { label: "CONFIDENCE", value: CONFIDENCE_NOT_ESTABLISHED, color: "#94A3B8" },
                 { label: "RISK LEVEL", value: answer.finalVerdictRiskLevel ?? "—", color: rlColor },
               ].map(({ label, value, color }) => (
                 <div key={label} style={{
@@ -2028,7 +2018,7 @@ function FullMarketBriefingCard({ brief, onAskFollowUp, onSelectAsset }: { brief
           <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>BIAS</div><div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: biasColor }}>{brief.todaysMarket.institutionalBias}</div></div>
           <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>HEALTH</div><div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: '#F0F4FF' }}>{brief.todaysMarket.marketHealth}</div></div>
           <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>STATUS</div><div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: statusColor }}>{brief.todaysMarket.marketStatus}</div></div>
-          <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>CONFIDENCE</div><div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: '#94A3B8' }}>{brief.todaysMarket.confidenceText ?? 'Uncalibrated'}</div></div>
+          <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>CONFIDENCE</div><div data-confidence-status="not-established" style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: '#94A3B8' }}>{CONFIDENCE_NOT_ESTABLISHED}</div></div>
         </div>
       </div>
 
@@ -2166,21 +2156,21 @@ function FullMarketBriefingCard({ brief, onAskFollowUp, onSelectAsset }: { brief
 // ── V3.0 Quick Action Chips ─────────────────────────────────
 const QUICK_ACTIONS: Array<{ emoji: string; label: string; prompt: string }> = [
   { emoji: "📊", label: "Full Market Briefing", prompt: "Full Market Briefing" },
-  { emoji: "🌍", label: "Macro Overview", prompt: "Give me a macro overview of the current market environment" },
-  { emoji: "📈", label: "Market Regime", prompt: "What is the current market regime and what does it mean for investors?" },
-  { emoji: "⚠️", label: "Top Risks Today", prompt: "What are the top risks in the market today?" },
-  { emoji: "🚀", label: "Top Opportunities", prompt: "What are the top investment opportunities right now?" },
+  { emoji: "🌍", label: "Macro Overview", prompt: "Give me a macro overview of the market environment" },
+  { emoji: "📈", label: "Market Regime", prompt: "What market regime is available and what does it mean for investors?" },
+  { emoji: "⚠️", label: "Top Risks", prompt: "What are the key market risks?" },
+  { emoji: "🚀", label: "Top Opportunities", prompt: "What investment opportunities are available?" },
   { emoji: "₿", label: "Crypto Intelligence", prompt: "Give me a comprehensive crypto market intelligence report" },
-  { emoji: "📅", label: "Economic Calendar", prompt: "What are today's most important economic events and catalysts?" },
-  { emoji: "💼", label: "Portfolio Risk Review", prompt: "Review current portfolio risk conditions and what I should watch" },
+  { emoji: "📅", label: "Economic Calendar", prompt: "Which economic events and catalysts should I consider?" },
+  { emoji: "💼", label: "Portfolio Risk Review", prompt: "Review portfolio risk conditions and what I should watch" },
   { emoji: "📰", label: "What Changed?", prompt: "What changed in the market since yesterday?" },
-  { emoji: "🔄", label: "Sector Rotation", prompt: "Analyze current sector rotation and where institutional money is flowing" },
+  { emoji: "🔄", label: "Sector Rotation", prompt: "Analyze sector rotation and where institutional money is flowing" },
   { emoji: "⚡", label: "Today's observed moves", prompt: "What price moves are visible in the latest completed session, and how fresh is that evidence?" },
 ];
 
 // ── V3.0 Market Snapshot Component ───────────────────────────
 function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => void }) {
-  const { output, lastUpdated, isLoading, marketMode } = useEngine();
+  const { output, isLoading, marketMode } = useEngine();
   const { overall, regime, domains, probability } = output;
 
   // Fail closed: only a canonical state yields a pressure reading. Under a
@@ -2220,7 +2210,6 @@ function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => 
   }, [pressureScore, breadth, liquidity]);
 
   const pressureColor = pressureScore === null ? '#94A3B8' : pressureScore < 30 ? '#00FF88' : pressureScore < 55 ? '#FFD700' : pressureScore < 75 ? '#FF9500' : '#FF4444';
-  const freshness = lastUpdated ? `${Math.round((Date.now() - lastUpdated.getTime()) / 60000)}m ago` : 'Loading...';
 
   if (isLoading) {
     return (
@@ -2233,17 +2222,16 @@ function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => 
   return (
     <div style={{ background: 'rgba(0,212,255,0.03)', border: '1px solid rgba(0,212,255,0.1)', borderRadius: '8px', overflow: 'hidden' }}>
       <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(0,212,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ ...MONO_SM, color: ACCENT, letterSpacing: '0.12em', fontSize: '10px' }}>TODAY'S MARKET SNAPSHOT</span>
-        <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.25)', fontSize: '9px' }}>Updated {freshness}</span>
+        <span style={{ ...MONO_SM, color: ACCENT, letterSpacing: '0.12em', fontSize: '10px' }}>MARKET SNAPSHOT</span>
       </div>
       <div style={{ padding: '12px 14px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px' }}>
         {/* Regime — clickable */}
-        <button onClick={() => onQuickAction(regimeLabel === null ? `The market regime is currently unavailable. What does that mean and what should I watch?` : `What is the ${regimeLabel} regime and what does it mean for my portfolio?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+        <button onClick={() => onQuickAction(regimeLabel === null ? `The market regime is unavailable. What does that mean and what should I watch?` : `What is the ${regimeLabel} regime and what does it mean for my portfolio?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
           <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>REGIME ↗</span>
           <span data-snapshot-regime style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: regimeLabel === null ? '#94A3B8' : '#F0F4FF', lineHeight: 1.3 }}>{regimeLabel ?? 'Unavailable'}</span>
         </button>
         {/* Pressure Index — clickable */}
-        <button onClick={() => onQuickAction(pressureScore === null ? `The Pressure Index is currently unavailable. What does that mean and what should I watch?` : `The Pressure Index is at ${pressureScore}/100. What does this mean and what should I do?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+        <button onClick={() => onQuickAction(pressureScore === null ? `The Pressure Index is unavailable. What does that mean and what should I watch?` : `The Pressure Index is at ${pressureScore}/100. What does this mean and what should I do?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
           <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>PRESSURE INDEX ↗</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             <span data-snapshot-pressure style={{ ...MONO, fontSize: '13px', fontWeight: 700, color: pressureColor }}>{pressureScore ?? '—'}</span>
@@ -2262,7 +2250,7 @@ function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => 
         </button>
         {/* Bull Probability — clickable */}
         {/* Probability contract: the bull field renders only its contract display text. */}
-        <button onClick={() => onQuickAction(`FAULTLINE shows the bull scenario as ${engineProbabilityText(output, "bullProbability")}. What are the key factors behind the current Pressure Index and what should I watch?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+        <button onClick={() => onQuickAction(`FAULTLINE shows the bull scenario as ${engineProbabilityText(output, "bullProbability")}. What are the key factors behind the Pressure Index and what should I watch?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
           <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>BULL SCENARIO ↗</span>
           <span style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: '#94A3B8' }}>{engineProbabilityText(output, "bullProbability")}</span>
         </button>
@@ -2338,7 +2326,7 @@ function SinceLastVisit({ onQuickAction }: { onQuickAction: (prompt: string) => 
 }
 
 const SUGGESTED_QUESTIONS = [
-        "What is the current measured condition for NVDA?",
+        "What measured condition is available for NVDA?",
   "How dangerous is the market today?",
   "What are the best swing trades this week?",
   "Is Bitcoin in a bull or bear cycle?",
@@ -2353,7 +2341,7 @@ const SUGGESTED_QUESTIONS = [
 export default function SmartDiscovery() {
   useSEO({
     title: "FAULTLINE — Ask Anything",
-    description: "Ask any market question. FAULTLINE synthesizes live data, macro regime analysis, and institutional signal scoring into one clear recommendation.",
+    description: "Ask any market question. FAULTLINE synthesizes available source data, macro regime analysis, and institutional signal scoring into one clear recommendation.",
   });
 
   const { user, loading: authLoading } = useAuth();

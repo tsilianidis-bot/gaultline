@@ -1,9 +1,10 @@
 /**
- * FAULTLINE TIME MACHINE™ — Historical Truth Engine
+ * FAULTLINE TIME MACHINE™ — Retrospective Reconstruction
  *
- * Lets users choose any market period (2000-01 to present) and see what
- * FAULTLINE would have known using only information available at the time.
- * Powered by the pressureHistory table (317 monthly rows, 2000–present).
+ * Lets users choose any market period (2000-01 to present) and inspect a
+ * retrospective reconstruction from the stored pressureHistory rows. These
+ * rows use revised historical inputs and are not a point-in-time replay or a
+ * record of a contemporaneous FAULTLINE warning.
  */
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
@@ -17,7 +18,7 @@ export const HISTORICAL_PERIODS = [
     startMonth: "1999-06",
     endMonth: "2001-12",
     peakMonth: "2000-03",
-    description: "The NASDAQ peaked in March 2000. What did the pressure engine read in the months before the crash? (Reconstructed from revised data; FAULTLINE's reconstruction did not flag every decline in advance.)",
+    description: "Retrospective monthly pressure readings around the March 2000 NASDAQ peak, reconstructed from revised historical records rather than point-in-time vintages.",
     outcome: "NASDAQ fell 78% from peak to trough. S&P 500 lost 49%. The bear market lasted 31 months.",
     category: "Equity Crash",
   },
@@ -27,7 +28,7 @@ export const HISTORICAL_PERIODS = [
     startMonth: "2005-01",
     endMonth: "2007-06",
     peakMonth: "2006-04",
-    description: "Housing prices peaked in 2006. Credit spreads were historically tight. What was the pressure engine reading?",
+    description: "Retrospective monthly pressure readings around the 2006 housing peak. Historical source values may have been revised after the period ended.",
     outcome: "The S&P/Case-Shiller Index fell 33% from peak. Subprime defaults began accelerating in 2007.",
     category: "Credit Cycle",
   },
@@ -37,7 +38,7 @@ export const HISTORICAL_PERIODS = [
     startMonth: "2007-06",
     endMonth: "2009-06",
     peakMonth: "2008-09",
-    description: "Lehman Brothers filed for bankruptcy on September 15, 2008. What did the pressure engine read in the months before? (Reconstructed from revised data; not evidence of advance warning.)",
+    description: "Retrospective monthly pressure readings around the 2008 crisis. This reconstruction is not a record of contemporaneous signals or warnings.",
     outcome: "S&P 500 fell 57% from peak. Global credit markets froze. The Fed cut rates to zero. TARP was passed.",
     category: "Systemic Crisis",
   },
@@ -47,7 +48,7 @@ export const HISTORICAL_PERIODS = [
     startMonth: "2019-10",
     endMonth: "2020-08",
     peakMonth: "2020-03",
-    description: "Markets fell 34% in 33 days in February–March 2020. What did the pressure engine see before and during the crash?",
+    description: "Retrospective monthly pressure readings before and during the February–March 2020 market shock, using revised historical inputs.",
     outcome: "The fastest bear market in history. The Fed cut to zero and launched $3T in QE. Markets recovered in 5 months.",
     category: "Exogenous Shock",
   },
@@ -57,7 +58,7 @@ export const HISTORICAL_PERIODS = [
     startMonth: "2021-06",
     endMonth: "2023-01",
     peakMonth: "2022-06",
-    description: "The Fed raised rates 525bps in about 16 months — the fastest tightening cycle in 40 years. What did the pressure engine see?",
+    description: "The Fed raised rates 525bps in about 16 months. This view provides retrospective monthly pressure readings across that period, not a point-in-time replay of a live method.",
     outcome: "S&P 500 fell about 25% peak-to-trough (Jan–Oct 2022); the Nasdaq Composite fell about 36% (Nov 2021–Dec 2022). 10-year Treasury notes had their worst year since 1788, per a Bank of America estimate. Rate-sensitive sectors fell sharply.",
     category: "Monetary Tightening",
   },
@@ -67,7 +68,7 @@ export const HISTORICAL_PERIODS = [
     startMonth: "2023-01",
     endMonth: "2025-06",
     peakMonth: "2024-07",
-    description: "The Magnificent 7 drove 60%+ of S&P 500 returns. Market breadth collapsed. What did the pressure engine see?",
+    description: "Retrospective monthly pressure readings around the 2023–2025 concentration period, presented as historical context rather than a live track record.",
     outcome: "Concentration risk reached levels not seen since the Dot-Com bubble. Breadth divergence widened throughout 2024.",
     category: "Structural Risk",
   },
@@ -141,7 +142,6 @@ export const timeMachineRouter = router({
           period: period ?? null,
           timeline: [],
           peakReading: null,
-          firstWarningMonth: null,
           regimeChanges: [],
           stats: null,
         };
@@ -173,9 +173,6 @@ export const timeMachineRouter = router({
       const peakReading = timeline.reduce((max, r) =>
         r.overallPressure > max.overallPressure ? r : max, timeline[0]);
 
-      // Find first warning month (first month where pressure > 60 = ELEVATED or higher)
-      const firstWarningMonth = timeline.find(r => r.overallPressure >= 60)?.month ?? null;
-
       // Detect regime changes
       const regimeChanges: { month: string; from: string; to: string }[] = [];
       for (let i = 1; i < timeline.length; i++) {
@@ -203,7 +200,6 @@ export const timeMachineRouter = router({
         period: period ?? { id: "custom", label: "Custom Period", startMonth, endMonth, peakMonth: peakReading.month, description: "", outcome: "", category: "Custom" },
         timeline,
         peakReading,
-        firstWarningMonth,
         regimeChanges,
         stats,
       };

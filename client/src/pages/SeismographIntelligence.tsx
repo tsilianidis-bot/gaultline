@@ -5,7 +5,7 @@
  * Single data source: trpc.seismograph.getUnifiedIntelligence
  *
  * Layout order:
- *  1. Sticky header (live clock, refresh)
+ *  1. Sticky header (local clock, source status, refresh)
  *  2. FAULTLINE VERDICT — regime + one-line narrative
  *  3. TRADING CONDITIONS — conditions, bias, position size, confidence, cash, risk env
  *  4. BULL vs BEAR — scenario cards (probability contract: Not offered)
@@ -31,6 +31,7 @@ import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import { SectionErrorBoundary } from "@/components/ErrorBoundary";
 import { formatOrdinal } from "@shared/historicalPercentile";
 import { PROBABILITY_DISPLAY_TEXT } from "@shared/probabilityContract";
+import { seismographReadingPresentation } from "@/lib/seismographReadingStatus";
 
 // ── Reduced-motion helper ─────────────────────────────────────────────────────
 function prefersReducedMotion(): boolean {
@@ -631,7 +632,7 @@ export default function SeismographIntelligence() {
     probabilities, evidenceFamilies, evidenceConsensus, enginesAgreeing, enginesDisagreeing,
     analogs, analogSummary, transitionProbabilities, evolution, memory,
     regimeProbabilities5way, developingConditions, engineContributions, marketNarrative,
-    macroTicker, dataFreshness, lastUpdated,
+    macroTicker, dataFreshness, providerProvenance,
   } = intel;
 
   // Probability contract: the 5-way split is NOT_OFFERED; the server sends nulls.
@@ -651,6 +652,17 @@ export default function SeismographIntelligence() {
   const topEngines = [...safeEngineContributions].sort((a, b) => b.contributionWeight - a.contributionWeight).slice(0, 6);
 
   const scoreColor = pressureColor(currentScore);
+  const sourceReading = seismographReadingPresentation({ freshness: dataFreshness, providerProvenance });
+  const sourceStatusColor: Record<string, string> = {
+    LIVE: "#22c55e",
+    DELAYED: "#f59e0b",
+    STALE: "#f97316",
+    FALLBACK: "#f97316",
+    UNAVAILABLE: "#94a3b8",
+    "LATEST VERIFIED": "#06b6d4",
+  };
+  const sourceColor = sourceStatusColor[sourceReading.status] ?? "#94a3b8";
+  const sourceIsLive = sourceReading.status === "LIVE";
 
   // Derived data
   const tradingConditions = deriveTradingConditions(currentScore, currentDirection, probabilities.confidence);
@@ -671,14 +683,16 @@ export default function SeismographIntelligence() {
         <div style={{ maxWidth: "760px", margin: "0 auto", padding: "10px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <div style={{ position: "relative", width: "7px", height: "7px", flexShrink: 0 }}>
-              <div style={{ position: "absolute", inset: "-4px", borderRadius: "50%", background: "#22c55e", opacity: 0, animation: "live-ripple 2.2s ease-out infinite" }} />
-              <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 8px #22c55e, 0 0 16px #22c55e40", animation: "livepulse 2s infinite", position: "relative", zIndex: 1 }} />
+              {sourceIsLive && <div style={{ position: "absolute", inset: "-4px", borderRadius: "50%", background: sourceColor, opacity: 0, animation: "live-ripple 2.2s ease-out infinite" }} />}
+              <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: sourceColor, boxShadow: `0 0 8px ${sourceColor}, 0 0 16px ${sourceColor}40`, animation: sourceIsLive ? "livepulse 2s infinite" : "none", position: "relative", zIndex: 1 }} />
             </div>
             <span style={{ ...mono, fontSize: "10px", letterSpacing: "0.14em", fontWeight: 700, color: "#06b6d4" }}>FAULTLINE SEISMOGRAPH</span>
+            <span data-seismograph-source-status={sourceReading.status} style={{ ...mono, fontSize: "8px", color: sourceColor, letterSpacing: "0.08em" }}>{sourceReading.status}</span>
             <span style={{ ...mono, fontSize: "9px", color: "rgba(6,182,212,0.3)", letterSpacing: "0.06em" }}>{safeMemory.observationCount} OBS · {safeMemory.datasetSpan}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ ...mono, fontSize: "9px", color: "rgba(6,182,212,0.3)" }}>{formatUtc(now)}</span>
+            <span data-seismograph-source-as-of style={{ ...mono, fontSize: "8px", color: "rgba(6,182,212,0.45)", letterSpacing: "0.04em" }}>{sourceReading.sourceAsOfText}</span>
+            <span aria-label="Local clock" style={{ ...mono, fontSize: "9px", color: "rgba(6,182,212,0.3)" }}>LOCAL CLOCK {formatUtc(now)}</span>
             <button
               onClick={() => refetch()}
               disabled={isFetching}

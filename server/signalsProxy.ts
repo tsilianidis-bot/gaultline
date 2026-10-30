@@ -445,15 +445,16 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
     const prevBar = prevBarMap.get(ticker);
     const yahooQ = yahooMap.get(ticker);
 
-    // Determine if Yahoo has a live/extended price for this ticker
-    const yahooIsLive = yahooQ != null &&
+    // This selects an active-session Yahoo quote path. Its session name is not
+    // itself proof of a live observation; quoteFreshnessFlags below decides that.
+    const yahooHasActiveSessionPrice = yahooQ != null &&
       yahooQ.price !== null &&
       (yahooQ.marketState === "REGULAR" || yahooQ.marketState === "PRE" ||
        yahooQ.marketState === "POST" || yahooQ.marketState === "PREPRE" ||
        yahooQ.marketState === "POSTPOST");
 
-    if (yahooIsLive && yahooQ && yahooQ.price !== null) {
-      // ── Yahoo live path ──
+    if (yahooHasActiveSessionPrice && yahooQ && yahooQ.price !== null) {
+      // ── Yahoo active-session path ──
       const price = yahooQ.price;
       const prevClose = finiteQuoteNumber(yahooQ.prevClose) ?? finiteQuoteNumber(bar?.c);
       const changePercent = resolveSignalChangePercent(yahooQ.changePercent, price, prevClose);
@@ -474,7 +475,7 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
         delayed: yahooQ.isDelayed !== false,
         sessionOpen: marketStatus === "open" || marketStatus === "extended",
       });
-      sessionMarks.push({ isLive: true, marketStatus });
+      sessionMarks.push({ isLive: freshness.isLive, marketStatus });
       return {
         ticker,
         price: parseFloat(price.toFixed(2)),
@@ -759,7 +760,7 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
 
   const sessionOpen = marketStatus === "open" || marketStatus === "extended";
   const freshness = quoteFreshnessFlags({ delayed: true, sessionOpen });
-  effectiveTradeDate = selectEffectiveTradeDate([{ isLive: sessionOpen, marketStatus }], new Date().toISOString().slice(0, 10), tradeDate);
+  effectiveTradeDate = selectEffectiveTradeDate([{ isLive: freshness.isLive, marketStatus }], new Date().toISOString().slice(0, 10), tradeDate);
 
   return {
     ticker: symbol,

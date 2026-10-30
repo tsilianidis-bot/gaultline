@@ -326,28 +326,26 @@ function AshaIntelligenceWorkspace() {
 
           {activeThreadMessages.length > 0 ? (
             <div data-asha-shared-thread style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {activeThreadMessages.map(message => (
+              {activeThreadMessages.map(msg => (
                 <div
-                  key={message.id}
-                  data-asha-thread-message={message.role}
+                  key={msg.id}
+                  data-asha-thread-message={msg.role}
                   style={{
-                    borderLeft: `2px solid ${message.role === "assistant" ? "rgba(0,229,255,0.45)" : "rgba(148,163,184,0.28)"}`,
+                    borderLeft: `2px solid ${msg.role === "assistant" ? "rgba(0,229,255,0.45)" : "rgba(148,163,184,0.28)"}`,
                     padding: "8px 0 8px 12px",
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", marginBottom: "5px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: message.role === "assistant" ? "rgba(0,229,255,0.7)" : "rgba(148,163,184,0.65)", textTransform: "uppercase" }}>
-                    <span>{message.role === "assistant" ? "PLATO" : "You"} · {message.page}</span>
-                    <span>{formatTime(new Date(message.createdAt))}</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", marginBottom: "5px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: msg.role === "assistant" ? "rgba(0,229,255,0.7)" : "rgba(148,163,184,0.65)", textTransform: "uppercase" }}>
+                    <span>{msg.role === "assistant" ? "PLATO" : "You"} · {msg.page}</span>
+                    <span>{formatTime(new Date(msg.createdAt))}</span>
                   </div>
                   <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", lineHeight: 1.65, color: "rgba(240,244,255,0.82)", whiteSpace: "pre-wrap" }}>
-                    {message.content}
+                    {msg.content}
                   </div>
-                  {message.role === "assistant" && (
-                    <div style={{ marginTop: "7px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", lineHeight: 1.6, color: "rgba(100,116,139,0.58)" }}>
-                      CONFIDENCE {message.confidence?.toUpperCase() ?? "UNAVAILABLE"}
-                      {message.sources?.length ? ` · SOURCES ${message.sources.slice(0, 3).join(", ")}` : " · SOURCES UNAVAILABLE"}
-                    </div>
+                  {msg.role === "assistant" && (
+                    <span data-confidence-status="not-established" style={{ display: "block", marginTop: "7px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", lineHeight: 1.6, color: "rgba(100,116,139,0.58)" }}>Confidence not established</span>
                   )}
+                  {msg.role === "assistant" && <span style={{ display: "block", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", lineHeight: 1.6, color: "rgba(100,116,139,0.58)" }}>{msg.sources?.length ? `SOURCES ${msg.sources.slice(0, 3).join(", ")}` : "SOURCES UNAVAILABLE"}</span>}
                 </div>
               ))}
               <button
@@ -360,7 +358,7 @@ function AshaIntelligenceWorkspace() {
           ) : (
             <div data-asha-shared-thread-empty style={{ padding: "8px 0 4px" }}>
               <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", lineHeight: 1.65, color: "rgba(148,163,184,0.72)" }}>
-                Ask PLATO from any destination. The same session thread will continue here with its page context, confidence, and available-source provenance intact.
+                Ask PLATO from any destination. The same session thread will continue here with its page context and available-source provenance intact. Confidence is not established without a structured provenance contract.
               </div>
               <button
                 onClick={() => summonSharedThread()}
@@ -396,9 +394,9 @@ function AshaIntelligenceWorkspace() {
           </form>
         </IntelCard>
 
-        {/* ── Current Market Thesis ── */}
+        {/* ── Market Thesis ── */}
         <IntelCard accent={color}>
-          <SectionLabel text="Current Market Thesis" />
+          <SectionLabel text="Market Thesis" />
           {loadingThesis ? (
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "rgba(100,116,139,0.5)", padding: "12px 0" }}>
               PLATO is synthesizing your recent conversations...
@@ -436,7 +434,7 @@ function AshaIntelligenceWorkspace() {
             <EmptyState
               icon="🧠"
               title="No thesis yet"
-              subtitle="Ask PLATO a few market questions and she will synthesize your current market perspective here."
+              subtitle="Ask PLATO a few market questions and she will synthesize your market perspective here."
               ctaLabel="ASK PLATO →"
               ctaPath="/app/discover"
             />

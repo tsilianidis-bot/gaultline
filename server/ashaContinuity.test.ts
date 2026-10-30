@@ -30,13 +30,17 @@ describe("ASHA cross-surface continuity", () => {
     expect(context).toContain("MAX_ASHA_THREAD_MESSAGES = 24");
     expect(context).toContain("appendThreadExchange");
     expect(context).toContain("threadHistory");
+    expect(context).toContain("return parsed.flatMap");
+    expect(context).not.toContain('confidence?: "high" | "moderate" | "low"');
+    expect(context).not.toContain("confidence: exchange.confidence");
   });
 
-  it("sends the prior thread through the persistent utility and records live response provenance", () => {
+  it("sends the prior thread through the persistent utility and records source provenance without model confidence", () => {
     expect(panel).toContain("const { pageContext, threadHistory, appendThreadExchange } = useAshaContext()");
     expect(panel).toMatch(/history:\s*threadHistory/);
     expect(panel).toContain("appendThreadExchange({");
-    expect(panel).toContain("confidence: response.confidence");
+    expect(panel).not.toContain("confidence: response.confidence");
+    expect(panel).not.toContain("confidence: undefined");
     expect(panel).toContain("sources: response.sources");
     expect(panel).toContain("enginesConsulted: response.enginesConsulted");
     expect(panel).toContain('window.addEventListener("asha:summon", handler)');
@@ -75,7 +79,7 @@ describe("ASHA cross-surface continuity", () => {
     expect(app).toContain('<Route path="/app/asha-intelligence">');
     expect(workspace).toContain("const { threadMessages, clearThread } = useAshaContext()");
     expect(workspace).toContain("data-asha-shared-thread");
-    expect(workspace).toContain("data-asha-thread-message={message.role}");
+    expect(workspace).toContain("data-asha-thread-message={msg.role}");
     expect(workspace).toContain("data-asha-workspace-continuation");
     expect(workspace).toContain("summonSharedThread(workspacePrompt)");
     expect(workspace).toContain('new CustomEvent("asha:summon"');
