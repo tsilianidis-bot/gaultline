@@ -30,7 +30,7 @@ import {
 import { invokeLLM } from "./_core/llm";
 import { sdk } from "./_core/sdk";
 import { notifyOwner } from "./_core/notification";
-import { sendEmail } from "./email";
+import { buildSubscriberBriefEmailHtml, sanitizeEmailHeader, sendEmail } from "./email";
 import { calculateFaultlinePressure, type FaultlinePressureOutput } from "./pressure/engine";
 import { getDiagnosticReport, type DiagnosticReport } from "./diagnosticAI";
 import { getLatestSeismographOutput } from "./scheduledSeismograph";
@@ -332,7 +332,7 @@ export async function notifyUsersByTier(
 
   let eligible = 0;
   let emailed = 0;
-  const articleUrl = `https://getfaultline.live/intelligence/${slug}`;
+  const articlePath = `/intelligence/${encodeURIComponent(slug)}`;
 
   try {
     // Get all users with email for pro/founding tiers
@@ -364,12 +364,12 @@ export async function notifyUsersByTier(
             userId: user.id,
             send: () => sendEmail({
               to: user.email!,
-              subject: `New ${category}: ${title}`,
-              html: buildBriefEmailHtml({
+              subject: sanitizeEmailHeader(`New ${category}: ${title}`),
+              html: buildSubscriberBriefEmailHtml({
                 name: user.name ?? "Investor",
                 title,
                 category,
-                articleUrl,
+                articlePath,
                 tier,
               }),
             }),
@@ -389,46 +389,6 @@ export async function notifyUsersByTier(
   }
 
   return { eligible, emailed };
-}
-
-function buildBriefEmailHtml(opts: {
-  name: string;
-  title: string;
-  category: string;
-  articleUrl: string;
-  tier: string;
-}): string {
-  const { name, title, category, articleUrl, tier } = opts;
-  const tierLabel = tier === "founding" ? "Founding Member" : tier === "premium" ? "Pro Member" : "Core Member";
-  return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${title}</title>
-</head>
-<body style="margin:0;padding:0;background:#050A0F;font-family:'IBM Plex Sans',Arial,sans-serif;color:#CBD5E1;">
-  <div style="max-width:560px;margin:0 auto;padding:40px 24px;">
-    <div style="font-family:'Rajdhani',Arial,sans-serif;font-size:26px;font-weight:700;letter-spacing:0.12em;color:#00D4FF;margin-bottom:8px;">
-      FAULT<span style="color:#E2E8F0;">LINE</span>
-    </div>
-    <div style="font-size:11px;color:#64748B;letter-spacing:0.1em;margin-bottom:32px;">INSTITUTIONAL MARKET INTELLIGENCE</div>
-    <div style="background:#0A1520;border:1px solid rgba(0,212,255,0.15);border-radius:12px;padding:32px;margin-bottom:24px;">
-      <div style="font-size:11px;color:#00D4FF;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">${category}</div>
-      <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#E2E8F0;line-height:1.3;">${title}</h1>
-      <p style="margin:0 0 24px;font-size:14px;color:#94A3B8;line-height:1.6;">
-        Hi ${name}, your latest FAULTLINE intelligence brief is ready. This report is powered by live market data from the FAULTLINE engine — not AI speculation.
-      </p>
-      <a href="${articleUrl}" style="display:inline-block;background:#00D4FF;color:#050A0F;font-weight:700;font-size:14px;padding:12px 24px;border-radius:6px;text-decoration:none;letter-spacing:0.05em;">
-        READ FULL BRIEF →
-      </a>
-    </div>
-    <div style="font-size:11px;color:#334155;text-align:center;">
-      ${tierLabel} · <a href="https://getfaultline.live/app/profile" style="color:#334155;">Manage preferences</a>
-    </div>
-  </div>
-</body>
-</html>`;
 }
 
 export type PublishingAutomationGate = "active" | "inactive" | "unavailable";
