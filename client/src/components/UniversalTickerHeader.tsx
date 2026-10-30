@@ -2,8 +2,8 @@
  * UniversalTickerHeader
  * ─────────────────────
  * Security-first context bar. Accepts a ticker symbol + assetType and renders:
- *   - Live price + change%
- *   - Market state badge (LIVE / PRE / POST / CLOSED)
+ *   - Provider quote price + change%
+ *   - Quote freshness and market-session badges (kept separate)
  *   - Volume
  *   - Sector / Industry
  *   - Market cap
@@ -40,14 +40,22 @@ const RISK_STYLE: Record<string, { color: string }> = {
   Extreme:  { color: "#FF2D55" },
 };
 
-const MARKET_STATE_LABEL: Record<string, { label: string; color: string }> = {
-  REGULAR:   { label: "LIVE",   color: "#22C55E" },
-  PRE:       { label: "PRE",    color: "#FFD700" },
-  POST:      { label: "POST",   color: "#FF9500" },
-  CLOSED:    { label: "CLOSED", color: "#888" },
-  PREPRE:    { label: "PRE",    color: "#FFD700" },
-  POSTPOST:  { label: "POST",   color: "#FF9500" },
-  UNKNOWN:   { label: "—",      color: "#888" },
+const QUOTE_FRESHNESS_LABEL: Record<string, { label: string; color: string }> = {
+  LIVE:        { label: "LIVE",        color: "#22C55E" },
+  DELAYED:     { label: "DELAYED",     color: "#FFD700" },
+  STALE:       { label: "STALE",       color: "#FF9500" },
+  FALLBACK:    { label: "FALLBACK",    color: "#FF9500" },
+  UNAVAILABLE: { label: "UNAVAILABLE", color: "#888" },
+};
+
+const MARKET_SESSION_LABEL: Record<string, string> = {
+  REGULAR: "REGULAR SESSION",
+  PRE: "PRE-MARKET",
+  PREPRE: "PRE-MARKET",
+  POST: "AFTER HOURS",
+  POSTPOST: "AFTER HOURS",
+  CLOSED: "CLOSED",
+  UNKNOWN: "SESSION UNKNOWN",
 };
 
 function fmt(n: number | null | undefined, decimals = 2): string {
@@ -69,6 +77,19 @@ function fmtMktCap(n: number | null | undefined): string {
   if (n >= 1_000_000_000)     return `$${(n / 1_000_000_000).toFixed(1)}B`;
   if (n >= 1_000_000)         return `$${(n / 1_000_000).toFixed(0)}M`;
   return `$${n.toFixed(0)}`;
+}
+
+function fmtQuoteAsOf(observedAt: number | null | undefined): string {
+  if (typeof observedAt !== "number" || !Number.isFinite(observedAt) || observedAt <= 0) return "AS-OF UNAVAILABLE";
+  const date = new Date(observedAt);
+  if (!Number.isFinite(date.getTime())) return "AS-OF UNAVAILABLE";
+  return `AS OF ${date.toISOString().replace(".000Z", "Z")}`;
+}
+
+function quoteProviderLabel(provider: string | null | undefined): string {
+  if (provider === "yahoo") return "YAHOO FINANCE";
+  if (provider === "polygon-prev") return "POLYGON PREV CLOSE";
+  return "PROVIDER UNAVAILABLE";
 }
 
 export function UniversalTickerHeader({ symbol, assetType = "stock", className = "" }: Props) {
@@ -104,7 +125,10 @@ export function UniversalTickerHeader({ symbol, assetType = "stock", className =
   const changePct = typeof data.changePercent === "number" && Number.isFinite(data.changePercent) ? data.changePercent : null;
   const chgColor = changePct == null ? "#64748B" : changePct >= 0 ? "#22C55E" : "#FF2D55";
   const chgSign  = changePct != null && changePct >= 0 ? "+" : "";
-  const mktState = MARKET_STATE_LABEL[data.marketState ?? "UNKNOWN"] ?? MARKET_STATE_LABEL["UNKNOWN"];
+  const quoteProvenance = data.quoteProvenance;
+  const quoteFreshness = QUOTE_FRESHNESS_LABEL[quoteProvenance?.freshnessState ?? "UNAVAILABLE"] ?? QUOTE_FRESHNESS_LABEL.UNAVAILABLE;
+  const marketSession = quoteProvenance?.marketSession ?? data.marketState ?? "UNKNOWN";
+  const marketSessionLabel = MARKET_SESSION_LABEL[marketSession] ?? MARKET_SESSION_LABEL.UNKNOWN;
   const dirStyle = DIRECTION_STYLE[data.direction ?? ""] ?? { color: "#888", bg: "rgba(136,136,136,0.1)" };
   const riskStyle = RISK_STYLE[data.riskLevel ?? ""] ?? { color: "#888" };
 
@@ -124,7 +148,7 @@ export function UniversalTickerHeader({ symbol, assetType = "stock", className =
         fontSize: 13,
       }}
     >
-      {/* Ticker + Market State */}
+      {/* Ticker + quote freshness. A session label alone never establishes LIVE. */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ color: "#00D4FF", fontWeight: 700, fontSize: 15, letterSpacing: 1 }}>
           {data.symbol}
@@ -134,14 +158,14 @@ export function UniversalTickerHeader({ symbol, assetType = "stock", className =
             fontSize: 10,
             fontWeight: 700,
             letterSpacing: 1,
-            color: mktState.color,
-            background: `${mktState.color}1A`,
+            color: quoteFreshness.color,
+            background: `${quoteFreshness.color}1A`,
             padding: "2px 6px",
             borderRadius: 4,
-            border: `1px solid ${mktState.color}44`,
+            border: `1px solid ${quoteFreshness.color}44`,
           }}
         >
-          {mktState.label}
+          {quoteFreshness.label}
         </span>
       </div>
 
@@ -163,6 +187,15 @@ export function UniversalTickerHeader({ symbol, assetType = "stock", className =
       </div>
 
       {/* Divider */}
+      <div style={{ width: 1, height: 24, background: "rgba(255,255,255,0.1)" }} />
+
+      {/* Provider provenance: observation time remains distinct from receipt/cache time. */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 132 }}>
+        <span style={{ color: "#888", fontSize: 10, letterSpacing: 0.5 }}>{quoteProviderLabel(quoteProvenance?.provider)}</span>
+        <span style={{ color: "#B0C4D8", fontWeight: 600, fontSize: 10 }}>{fmtQuoteAsOf(quoteProvenance?.observedAt)}</span>
+        <span style={{ color: "#64748B", fontSize: 9 }}>{marketSessionLabel}{quoteProvenance?.isDelayed === true ? " · PROVIDER DELAYED" : ""}</span>
+      </div>
+
       <div style={{ width: 1, height: 24, background: "rgba(255,255,255,0.1)" }} />
 
       {/* Volume */}

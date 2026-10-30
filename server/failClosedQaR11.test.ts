@@ -181,12 +181,15 @@ describe("B9 SmartDiscovery: a withheld confidence is 'Not established', never 0
     expect(confidenceDisplayText(out.confidence)).toBe("Not established");
     expect(confidenceDisplayText(out.finalVerdictConfidence)).toBe("Not established");
   });
-  it("every SmartDiscovery confidence display goes through the null-safe path", () => {
+  it("SmartDiscovery withholds unprovenanced confidence instead of rendering a model field", () => {
     const src = read("client/src/pages/SmartDiscovery.tsx");
     expect(src).not.toMatch(/finalVerdictConfidence \?\? 0/);
     expect(src).not.toMatch(/\$\{answer\.(confidence|finalVerdictConfidence)\}%/);
-    expect(src).toContain("value={confidenceDisplayText(answer.confidence)}");
-    expect(src).toContain('{ label: "CONFIDENCE", value: confidenceDisplayText(answer.finalVerdictConfidence),');
+    expect(src).not.toContain("confidenceDisplayText(answer.confidence)");
+    expect(src).not.toContain("confidenceDisplayText(answer.finalVerdictConfidence)");
+    expect(src).not.toContain("answer.confidenceLabel");
+    expect(src).toContain('value={CONFIDENCE_NOT_ESTABLISHED}');
+    expect(src).toContain('{ label: "CONFIDENCE", value: CONFIDENCE_NOT_ESTABLISHED,');
     expect(src).toContain("{value == null ? CONFIDENCE_NOT_ESTABLISHED : value}");
     expect(src).toContain("{value != null && <div style={scoreBar(value, color)} />}");
   });

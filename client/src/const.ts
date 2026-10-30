@@ -1,5 +1,3 @@
-import { canonicalAuthOrigin } from "@shared/authOrigin";
-
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
 function isNonEmptyString(value: unknown): value is string {
@@ -18,52 +16,32 @@ export function isValidAbsoluteUrl(value: unknown): value is string {
 }
 
 /**
- * Build the Manus app-auth login URL. Returns "" when the portal or app id is
- * missing/invalid so module load and first render cannot throw `Invalid URL`.
- * When both are set, the constructed URL matches the previous production shape.
+ * OAuth state must be generated and stored by the server, not deterministically
+ * derived in browser JavaScript. The server validates provider configuration,
+ * issues a secure HttpOnly browser verifier, and then redirects to the portal.
  */
 export function buildLoginUrl(
   oauthPortalUrl: unknown,
   appId: unknown,
-  origin: string,
+  _origin?: string,
 ): string {
   if (!isValidAbsoluteUrl(oauthPortalUrl) || !isNonEmptyString(appId)) {
     return "";
   }
-
-  const redirectUri = `${canonicalAuthOrigin(origin)}/api/oauth/callback`;
-  const state = btoa(redirectUri);
-
-  try {
-    const url = new URL(`${oauthPortalUrl}/app-auth`);
-    url.searchParams.set("appId", appId);
-    url.searchParams.set("redirectUri", redirectUri);
-    url.searchParams.set("state", state);
-    url.searchParams.set("type", "signIn");
-    return url.toString();
-  } catch {
-    return "";
-  }
+  return "/api/oauth/login";
 }
 
-// Generate login URL at runtime so redirect URI reflects the current origin.
-export const getLoginUrl = () => {
-  const origin =
-    typeof window !== "undefined" && window.location?.origin
-      ? window.location.origin
-      : "";
-  return buildLoginUrl(
-    import.meta.env.VITE_OAUTH_PORTAL_URL,
-    import.meta.env.VITE_APP_ID,
-    origin,
-  );
-};
+// Generate the local initiation URL at runtime so first render stays safe when
+// OAuth configuration is absent from an independent staging build.
+export const getLoginUrl = () => buildLoginUrl(
+  import.meta.env.VITE_OAUTH_PORTAL_URL,
+  import.meta.env.VITE_APP_ID,
+);
 
 /**
- * Navigate to the OAuth portal only when Vite OAuth env produced a real URL.
- * Independent staging leaves getLoginUrl() as "" — do not send the browser to Manus.
- * Returns true only when a navigation to the portal was started, so callers can
- * leave any "redirecting" UI state when sign-in is unavailable.
+ * Navigate only to the local OAuth initiator when client configuration indicates
+ * sign-in is available. The server independently fails closed if its durable
+ * state store or its provider configuration is unavailable.
  */
 export function navigateToLogin(): boolean {
   const url = getLoginUrl();

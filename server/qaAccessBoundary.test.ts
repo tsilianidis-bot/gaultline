@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { appRouter } from "./routers";
 import { qaPrincipal } from "./qaAccess";
+import { adminProcedure, router } from "./_core/trpc";
 
 const qaPage = readFileSync(resolve(process.cwd(), "client/src/pages/QaAccess.tsx"), "utf8");
 const appSource = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
@@ -26,6 +27,22 @@ describe("permanent owner QA access boundaries", () => {
 
   it("rejects protected mutations for the QA principal", async () => {
     await expect(qaCaller().auth.setDashboardMode({ mode: "pulse" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("rejects publicProcedure mutations for the QA principal", async () => {
+    // auth.logout intentionally remains callable while anonymous, so this
+    // covers the previously unguarded public-procedure mutation class.
+    await expect(qaCaller().auth.logout()).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("keeps QA-marked principals read-only even if a future representation is admin-shaped", async () => {
+    const mutate = vi.fn(() => ({ success: true }));
+    const probe = router({ mutate: adminProcedure.mutation(mutate) });
+    const qaAdmin = { ...qaPrincipal(), role: "admin" as const };
+
+    await expect(probe.createCaller({ user: qaAdmin, req: {}, res: {} } as any).mutate())
+      .rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(mutate).not.toHaveBeenCalled();
   });
 
   it("keeps the permanent entry route explicit and never stores the secret in browser state", () => {

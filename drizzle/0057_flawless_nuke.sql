@@ -28,7 +28,7 @@ CREATE TABLE `algorithmScoreProvenance` (
 	CONSTRAINT `algorithmScoreProvenance_observationKey_unique` UNIQUE(`observationKey`)
 );
 --> statement-breakpoint
-ALTER TABLE `algorithmOutcomeObservations` ADD CONSTRAINT `algo_outcome_prov_fk` FOREIGN KEY (`provenanceId`) REFERENCES `algorithmScoreProvenance`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `algorithmOutcomeObservations` ADD CONSTRAINT `algorithmOutcomeObservations_provenanceId_algorithmScoreProvenance_id_fk` FOREIGN KEY (`provenanceId`) REFERENCES `algorithmScoreProvenance`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX `algorithmOutcomeObservations_provenance_horizon_idx` ON `algorithmOutcomeObservations` (`provenanceId`,`horizonTradingDays`);--> statement-breakpoint
 CREATE INDEX `algorithmOutcomeObservations_observedAt_idx` ON `algorithmOutcomeObservations` (`observedAt`);--> statement-breakpoint
 CREATE INDEX `algorithmScoreProvenance_observedAt_idx` ON `algorithmScoreProvenance` (`observedAt`);--> statement-breakpoint

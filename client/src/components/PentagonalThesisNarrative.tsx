@@ -125,6 +125,10 @@ export function PentagonalThesisNarrative({
                   <details key={scenario.id} style={{ marginTop: 8 }}>
                     <summary style={{ cursor: "pointer", color: "#FFD700" }}>{scenario.title} · {scenario.confidence} evidence</summary>
                     <p style={{ margin: "6px 0 0", fontSize: 13, lineHeight: 1.55 }}>{scenario.narrative}</p>
+                    <p data-thesis-confirmation={`${surface}:${scenario.id}`} style={{ margin: "8px 0 0", color: "#7EE7C7", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                      Confirmation · {scenario.confirmation.available ? "condition" : "withheld"}
+                    </p>
+                    <p style={{ margin: "4px 0 0", fontSize: 12, lineHeight: 1.55, color: "#C9D5E3" }}>{scenario.confirmation.condition}</p>
                     <p style={{ margin: "6px 0 0", fontSize: 12, color: "#C9D5E3" }}>{scenario.invalidation}</p>
                     <p style={{ margin: "6px 0 0", fontSize: 11, color: "#8EA0B5" }}>{scenario.assumptions.join(" ")}</p>
                   </details>

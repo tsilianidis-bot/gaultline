@@ -9,6 +9,77 @@ import { isOutboundCustomerCommunicationEnabled, type DeploymentSafetyEnvironmen
 
 const DEFAULT_FROM_EMAIL = "jt@getfaultline.live";
 const DEFAULT_FROM_NAME = "FAULTLINE";
+const DEFAULT_EMAIL_TEMPLATE_SITE_ORIGIN = "https://getfaultline.live";
+const EMAIL_TEMPLATE_SITE_ORIGINS = new Set([
+  DEFAULT_EMAIL_TEMPLATE_SITE_ORIGIN,
+  "https://www.getfaultline.live",
+]);
+const HTML_ESCAPE_MAP: Record<string, string> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+const EMAIL_LINK_ADDRESS_PATTERN = /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i;
+
+/** Encodes all delimiter characters for HTML text and quoted attribute contexts. */
+export function escapeEmailHtml(value: unknown): string {
+  return String(value ?? "").replace(/[&<>"']/g, character => HTML_ESCAPE_MAP[character]);
+}
+
+/** Alias retained to make attribute-context use explicit at call sites. */
+export function escapeEmailAttribute(value: unknown): string {
+  return escapeEmailHtml(value);
+}
+
+/** Prevent user-supplied line breaks from becoming email header delimiters. */
+export function sanitizeEmailHeader(value: unknown): string {
+  return String(value ?? "").replace(/[\r\n\u0000]+/g, " ").trim();
+}
+
+function resolveEmailTemplateSiteOrigin(siteUrl?: string): string {
+  try {
+    const parsed = new URL(siteUrl ?? DEFAULT_EMAIL_TEMPLATE_SITE_ORIGIN);
+    const isAllowed =
+      parsed.protocol === "https:" &&
+      parsed.username === "" &&
+      parsed.password === "" &&
+      parsed.pathname === "/" &&
+      parsed.search === "" &&
+      parsed.hash === "" &&
+      EMAIL_TEMPLATE_SITE_ORIGINS.has(parsed.origin);
+    return isAllowed ? parsed.origin : DEFAULT_EMAIL_TEMPLATE_SITE_ORIGIN;
+  } catch {
+    return DEFAULT_EMAIL_TEMPLATE_SITE_ORIGIN;
+  }
+}
+
+/** Creates an escaped first-party HTTPS URL for email template attributes. */
+export function buildEmailTemplateLink(path = "/", siteUrl?: string): string {
+  const origin = resolveEmailTemplateSiteOrigin(siteUrl);
+  let destination: URL;
+  try {
+    destination = new URL(path, `${origin}/`);
+  } catch {
+    destination = new URL("/", `${origin}/`);
+  }
+  if (
+    destination.protocol !== "https:" ||
+    destination.username !== "" ||
+    destination.password !== "" ||
+    !EMAIL_TEMPLATE_SITE_ORIGINS.has(destination.origin)
+  ) {
+    destination = new URL("/", `${origin}/`);
+  }
+  return escapeEmailAttribute(destination.href);
+}
+
+function buildEmailMailtoLink(email: string, subject: string): string {
+  const recipient = EMAIL_LINK_ADDRESS_PATTERN.test(email.trim()) ? email.trim() : DEFAULT_FROM_EMAIL;
+  const query = new URLSearchParams({ subject: `Re: ${sanitizeEmailHeader(subject)}` });
+  return escapeEmailAttribute(`mailto:${recipient}?${query.toString()}`);
+}
 
 let _initializedKey = "";
 
@@ -49,16 +120,17 @@ export async function sendEmail(
   }
 
   initSendGrid(apiKey, transport);
+  const safeSubject = sanitizeEmailHeader(payload.subject);
 
   try {
     await transport.send({
       to: payload.to,
       from: { email: fromEmail, name: fromName },
-      subject: payload.subject,
+      subject: safeSubject,
       html: payload.html,
       text: payload.text ?? payload.html.replace(/<[^>]+>/g, ""),
     });
-    console.log(`[Email] Sent "${payload.subject}" to ${payload.to}`);
+    console.log(`[Email] Sent "${safeSubject}" to ${payload.to}`);
     return { success: true };
   } catch (err: unknown) {
     const raw = err instanceof Error ? err.message : String(err);
@@ -80,7 +152,7 @@ export function buildApprovalEmail(opts: {
   siteUrl: string;
 }): EmailPayload {
   const { name, siteUrl } = opts;
-  const displayName = name || "there";
+  const displayName = escapeEmailHtml(name.trim() || "there");
 
   const html = `
 <!DOCTYPE html>
@@ -118,7 +190,7 @@ export function buildApprovalEmail(opts: {
       <p>
         Sign in using this email address and your founding tier will be activated automatically on first login. No codes, no forms.
       </p>
-      <a href="${siteUrl}" class="cta">Access FAULTLINE →</a>
+      <a href="${buildEmailTemplateLink("/", siteUrl)}" class="cta">Access FAULTLINE →</a>
     </div>
 
     <div class="card" style="background: rgba(0,212,255,0.03);">
@@ -132,7 +204,7 @@ export function buildApprovalEmail(opts: {
     <hr class="divider" />
     <div class="footer">
       FAULTLINE — Macroeconomic Risk Intelligence<br />
-      <a href="${siteUrl}" style="color: rgba(0,212,255,0.5); text-decoration: none;">getfaultline.live</a><br /><br />
+      <a href="${buildEmailTemplateLink("/", siteUrl)}" style="color: rgba(0,212,255,0.5); text-decoration: none;">getfaultline.live</a><br /><br />
       You received this because your email was approved for founding access.
     </div>
   </div>
@@ -176,12 +248,12 @@ body{margin:0;padding:0;background:#050A0F;font-family:'IBM Plex Sans',Arial,san
 <div class="logo">FAULT<span>LINE</span></div>
 <div class="card">
 <div class="badge">⬡ New Contact Inquiry</div>
-<div class="fl">From</div><div class="fv">${name} &lt;${email}&gt;</div>
-<div class="fl">Category</div><div class="fv">${category}</div>
-<div class="fl">Subject</div><div class="fv">${subject}</div>
+<div class="fl">From</div><div class="fv">${escapeEmailHtml(name)} &lt;${escapeEmailHtml(email)}&gt;</div>
+<div class="fl">Category</div><div class="fv">${escapeEmailHtml(category)}</div>
+<div class="fl">Subject</div><div class="fv">${escapeEmailHtml(subject)}</div>
 <div class="fl">Message</div>
-<div class="msg">${message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
-<br/><a href="mailto:${email}?subject=Re: ${encodeURIComponent(subject)}" class="btn">Reply to ${name} →</a>
+<div class="msg">${escapeEmailHtml(message)}</div>
+<br/><a href="${buildEmailMailtoLink(email, subject)}" class="btn">Reply to ${escapeEmailHtml(name)} →</a>
 </div>
 <div class="card" style="background:rgba(0,0,0,.2);">
 <div class="fl">Received</div>
@@ -192,7 +264,7 @@ body{margin:0;padding:0;background:#050A0F;font-family:'IBM Plex Sans',Arial,san
 </div></body></html>`;
   return {
     to: "jt@getfaultline.live",
-    subject: `[FAULTLINE Contact] ${category}: ${subject}`,
+    subject: sanitizeEmailHeader(`[FAULTLINE Contact] ${category}: ${subject}`),
     html,
   };
 }
@@ -221,12 +293,12 @@ p{font-size:14px;line-height:1.7;color:#94A3B8;margin:0 0 16px;}
 <div class="logo">FAULT<span>LINE</span></div>
 <div class="card">
 <div class="badge">⬡ Message Received</div>
-<h1>We got your message, ${name}.</h1>
-<p>Your inquiry regarding <strong style="color:#E2E8F0;">"${subject}"</strong> has been received. We typically respond within 24–48 hours.</p>
-<p>In the meantime, explore the platform at <a href="https://getfaultline.live" style="color:#00D4FF;">getfaultline.live</a>.</p>
+<h1>We got your message, ${escapeEmailHtml(name)}.</h1>
+<p>Your inquiry regarding <strong style="color:#E2E8F0;">"${escapeEmailHtml(subject)}"</strong> has been received. We typically respond within 24–48 hours.</p>
+<p>In the meantime, explore the platform at <a href="${buildEmailTemplateLink("/")}" style="color:#00D4FF;">getfaultline.live</a>.</p>
 </div>
 <hr class="divider"/>
-<div class="footer">FAULTLINE — Macroeconomic Risk Intelligence<br/><a href="https://getfaultline.live" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a></div>
+<div class="footer">FAULTLINE — Macroeconomic Risk Intelligence<br/><a href="${buildEmailTemplateLink("/")}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a></div>
 </div></body></html>`;
   return {
     to: email,
@@ -242,7 +314,7 @@ export function buildWelcomeEmail(opts: {
   siteUrl?: string;
 }): EmailPayload {
   const { name, email, siteUrl = "https://getfaultline.live" } = opts;
-  const displayName = name?.trim() || "there";
+  const displayName = escapeEmailHtml(name?.trim() || "there");
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0" /><style>
 body{margin:0;padding:0;background:#050A0F;font-family:'IBM Plex Sans',Arial,sans-serif;color:#CBD5E1;}
@@ -272,13 +344,13 @@ p{font-size:14px;line-height:1.7;color:#94A3B8;margin:0 0 16px;}
 <div class="feature-row"><div class="feature-icon">&#x2B21;</div><div class="feature-text"><span class="feature-label">Signals Screener</span> — AI-scored stock signals with RSI, MACD, and regime weighting.</div></div>
 <div class="feature-row"><div class="feature-icon">&#x2B21;</div><div class="feature-text"><span class="feature-label">Crypto Intelligence</span> — Systemic risk, alt rotation, and on-chain signal analysis.</div></div>
 <br/>
-<a href="${siteUrl}/app" class="cta">Enter the Terminal &#x2192;</a>
+<a href="${buildEmailTemplateLink("/app", siteUrl)}" class="cta">Enter the Terminal &#x2192;</a>
 </div>
 <div class="card" style="background:rgba(0,0,0,.2);">
-<p style="margin:0;font-size:13px;color:#64748B;">Questions? Reply to this email or visit <a href="${siteUrl}/contact" style="color:#00D4FF;">getfaultline.live/contact</a>.</p>
+<p style="margin:0;font-size:13px;color:#64748B;">Questions? Reply to this email or visit <a href="${buildEmailTemplateLink("/contact", siteUrl)}" style="color:#00D4FF;">getfaultline.live/contact</a>.</p>
 </div>
 <hr class="divider"/>
-<div class="footer">FAULTLINE &#x2014; Macroeconomic Risk Intelligence<br/><a href="${siteUrl}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a></div>
+<div class="footer">FAULTLINE &#x2014; Macroeconomic Risk Intelligence<br/><a href="${buildEmailTemplateLink("/", siteUrl)}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a></div>
 </div></body></html>`;
   return {
     to: email,
@@ -295,7 +367,7 @@ export function buildSubscriptionConfirmationEmail(opts: {
   siteUrl?: string;
 }): EmailPayload {
   const { name, email, planName, siteUrl = "https://getfaultline.live" } = opts;
-  const displayName = name?.trim() || "there";
+  const displayName = escapeEmailHtml(name?.trim() || "there");
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0" /><style>
 body{margin:0;padding:0;background:#050A0F;font-family:'IBM Plex Sans',Arial,sans-serif;color:#CBD5E1;}
@@ -321,20 +393,20 @@ p{font-size:14px;line-height:1.7;color:#94A3B8;margin:0 0 16px;}
 <p>Your subscription has been activated. Full intelligence access is now unlocked.</p>
 <div class="plan-box">
 <div class="plan-label">Active Plan</div>
-<div class="plan-name">${planName}</div>
+<div class="plan-name">${escapeEmailHtml(planName)}</div>
 </div>
 <p>Head back to the terminal to explore everything that's now available to you.</p>
-<a href="${siteUrl}/app" class="cta">Open FAULTLINE &#x2192;</a>
+<a href="${buildEmailTemplateLink("/app", siteUrl)}" class="cta">Open FAULTLINE &#x2192;</a>
 </div>
 <div class="card" style="background:rgba(0,0,0,.2);">
-<p style="margin:0;font-size:13px;color:#64748B;">Manage your subscription at <a href="${siteUrl}/app/account" style="color:#00D4FF;">Account Settings</a>. Questions? Reply to this email.</p>
+<p style="margin:0;font-size:13px;color:#64748B;">Manage your subscription at <a href="${buildEmailTemplateLink("/app/account", siteUrl)}" style="color:#00D4FF;">Account Settings</a>. Questions? Reply to this email.</p>
 </div>
 <hr class="divider"/>
-<div class="footer">FAULTLINE &#x2014; Macroeconomic Risk Intelligence<br/><a href="${siteUrl}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a></div>
+<div class="footer">FAULTLINE &#x2014; Macroeconomic Risk Intelligence<br/><a href="${buildEmailTemplateLink("/", siteUrl)}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a></div>
 </div></body></html>`;
   return {
     to: email,
-    subject: `Your FAULTLINE ${planName} subscription is active`,
+    subject: sanitizeEmailHeader(`Your FAULTLINE ${planName} subscription is active`),
     html,
   };
 }
@@ -348,7 +420,7 @@ export function buildFoundingRequestNotification(opts: {
   siteUrl?: string;
 }): EmailPayload {
   const { name, email, message, requestId, siteUrl = "https://getfaultline.live" } = opts;
-  const displayName = name?.trim() || "Anonymous";
+  const displayName = escapeEmailHtml(name?.trim() || "Anonymous");
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0" /><style>
 body{margin:0;padding:0;background:#050A0F;font-family:'IBM Plex Sans',Arial,sans-serif;color:#CBD5E1;}
@@ -373,17 +445,17 @@ p{font-size:14px;line-height:1.7;color:#94A3B8;margin:0 0 16px;}
 <div class="badge">New Founding Request</div>
 <h1>New founding access request received.</h1>
 <div class="field-row"><div class="field-label">Name</div><div class="field-value">${displayName}</div></div>
-<div class="field-row"><div class="field-label">Email</div><div class="field-value">${email}</div></div>
-${message ? `<div class="field-row"><div class="field-label">Message</div><div class="message-box">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div></div>` : ''}
-${requestId ? `<div class="field-row"><div class="field-label">Request ID</div><div class="field-value">#${requestId}</div></div>` : ''}
-<a href="${siteUrl}/app/admin" class="cta">Review in Admin Dashboard</a>
+<div class="field-row"><div class="field-label">Email</div><div class="field-value">${escapeEmailHtml(email)}</div></div>
+${message ? `<div class="field-row"><div class="field-label">Message</div><div class="message-box">${escapeEmailHtml(message)}</div></div>` : ''}
+${requestId !== null ? `<div class="field-row"><div class="field-label">Request ID</div><div class="field-value">#${escapeEmailHtml(requestId)}</div></div>` : ''}
+<a href="${buildEmailTemplateLink("/app/admin", siteUrl)}" class="cta">Review in Admin Dashboard</a>
 </div>
 <hr class="divider"/>
-<div class="footer">FAULTLINE &mdash; Macroeconomic Risk Intelligence<br/><a href="${siteUrl}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a></div>
+<div class="footer">FAULTLINE &mdash; Macroeconomic Risk Intelligence<br/><a href="${buildEmailTemplateLink("/", siteUrl)}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a></div>
 </div></body></html>`;
   return {
     to: "jt@getfaultline.live",
-    subject: `[FAULTLINE] New Founding Access Request — ${displayName} (${email})`,
+    subject: sanitizeEmailHeader(`[FAULTLINE] New Founding Access Request — ${name ?? "Anonymous"} (${email})`),
     html,
   };
 }
@@ -395,7 +467,7 @@ export function buildDay1PressureEmail(opts: {
   siteUrl?: string;
 }): EmailPayload {
   const { name, email, siteUrl = "https://getfaultline.live" } = opts;
-  const displayName = name?.trim() || "there";
+  const displayName = escapeEmailHtml(name?.trim() || "there");
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><style>
 body{margin:0;padding:0;background:#050A0F;font-family:'IBM Plex Sans',Arial,sans-serif;color:#CBD5E1;}
@@ -445,13 +517,13 @@ p{font-size:14px;line-height:1.7;color:#94A3B8;margin:0 0 16px;}
 <span class="hl">80 to 100:</span> Critical.</p>
 <p>These are pressure bands. The score is not an event percentage. Check input freshness and fallback labels alongside the score.</p>
 <p>Open the Pressure Index now and check today's reading.</p>
-<a href="${siteUrl}/app/pressure" class="cta">View Today's Pressure Index &#x2192;</a>
+<a href="${buildEmailTemplateLink("/app/pressure", siteUrl)}" class="cta">View Today's Pressure Index &#x2192;</a>
 </div>
 <div class="card" style="background:rgba(0,0,0,.2);">
 <p style="margin:0;font-size:13px;color:#64748B;">Tomorrow: why the Core tier unlocks the signals that matter most &mdash; and what you are missing on the Free tier.</p>
 </div>
 <hr class="divider"/>
-<div class="footer">FAULTLINE &mdash; Macroeconomic Risk Intelligence<br/><a href="${siteUrl}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a><br/><br/>You received this because you signed up for FAULTLINE. <a href="${siteUrl}/app/account" style="color:rgba(0,212,255,.3);text-decoration:none;">Manage preferences</a></div>
+<div class="footer">FAULTLINE &mdash; Macroeconomic Risk Intelligence<br/><a href="${buildEmailTemplateLink("/", siteUrl)}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a><br/><br/>You received this because you signed up for FAULTLINE. <a href="${buildEmailTemplateLink("/app/account", siteUrl)}" style="color:rgba(0,212,255,.3);text-decoration:none;">Manage preferences</a></div>
 </div></body></html>`;
   return { to: email, subject: `FAULTLINE: The one number that tells you everything`, html };
 }
@@ -463,7 +535,7 @@ export function buildDay2UpgradeEmail(opts: {
   siteUrl?: string;
 }): EmailPayload {
   const { name, email, siteUrl = "https://getfaultline.live" } = opts;
-  const displayName = name?.trim() || "there";
+  const displayName = escapeEmailHtml(name?.trim() || "there");
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><style>
 body{margin:0;padding:0;background:#050A0F;font-family:'IBM Plex Sans',Arial,sans-serif;color:#CBD5E1;}
@@ -527,13 +599,13 @@ td.yes{color:#FFA500;font-family:'IBM Plex Mono',monospace;}
 <div class="pperiod">FAULTLINE Standard $99/month · FAULTLINE Lifetime $1,500 one-time.</div>
 <div class="pnote">Your free account stays active, and nothing will charge you..</div>
 </div>
-<a href="${siteUrl}/app/pressure" class="cta1">Open the Pressure Index &#x2192;</a>
+<a href="${buildEmailTemplateLink("/app/pressure", siteUrl)}" class="cta1">Open the Pressure Index &#x2192;</a>
 </div>
 <div class="card" style="background:rgba(0,0,0,.2);">
 <p style="margin:0;font-size:13px;color:#64748B;">The public Pressure Index and methodology stay free to read at getfaultline.live.</p>
 </div>
 <hr class="divider"/>
-<div class="footer">FAULTLINE &mdash; Macroeconomic Risk Intelligence<br/><a href="${siteUrl}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a><br/><br/>You received this because you signed up for FAULTLINE. <a href="${siteUrl}/app/account" style="color:rgba(0,212,255,.3);text-decoration:none;">Manage preferences</a><br/><br/><span style="color:rgba(100,116,139,.4);">This is not financial advice. FAULTLINE provides market intelligence tools for informational purposes only.</span></div>
+<div class="footer">FAULTLINE &mdash; Macroeconomic Risk Intelligence<br/><a href="${buildEmailTemplateLink("/", siteUrl)}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a><br/><br/>You received this because you signed up for FAULTLINE. <a href="${buildEmailTemplateLink("/app/account", siteUrl)}" style="color:rgba(0,212,255,.3);text-decoration:none;">Manage preferences</a><br/><br/><span style="color:rgba(100,116,139,.4);">This is not financial advice. FAULTLINE provides market intelligence tools for informational purposes only.</span></div>
 </div></body></html>`;
   return { to: email, subject: `You're using 20% of FAULTLINE`, html };
 }
@@ -545,7 +617,7 @@ export function buildDay3FoundingEmail(opts: {
   siteUrl?: string;
 }): EmailPayload {
   const { name, email, siteUrl = "https://getfaultline.live" } = opts;
-  const displayName = name ? name.split(" ")[0] : "Member";
+  const displayName = escapeEmailHtml(name.trim().split(/\s+/)[0] || "Member");
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <style>
 body{margin:0;padding:0;background:#050608;font-family:'IBM Plex Sans',Arial,sans-serif;color:#E2E8F0;}
@@ -582,11 +654,59 @@ p{font-size:14px;color:#94A3B8;line-height:1.65;margin:0 0 14px;}
 <p>Membership is FAULTLINE Standard at $99/month or FAULTLINE Lifetime at $1,500 one-time. Nothing is charged unless you choose a membership.</p>
 <h2>What to use in the meantime</h2>
 <p>The Pressure Index shows where systemic pressure is building across credit, funding, the Treasury curve and macro conditions. The methodology page explains every input and its as-of time.</p>
-<a href="${siteUrl}/app/pressure" class="cta1">Open the Pressure Index &#x2192;</a>
-<a href="${siteUrl}/methodology" class="cta2">Read the methodology</a>
+<a href="${buildEmailTemplateLink("/app/pressure", siteUrl)}" class="cta1">Open the Pressure Index &#x2192;</a>
+<a href="${buildEmailTemplateLink("/methodology", siteUrl)}" class="cta2">Read the methodology</a>
 </div>
 <hr class="divider"/>
-<div class="footer">FAULTLINE &mdash; Macroeconomic Risk Intelligence<br/><a href="${siteUrl}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a><br/><br/>You received this because you signed up for FAULTLINE. <a href="${siteUrl}/app/account" style="color:rgba(0,212,255,.3);text-decoration:none;">Manage preferences</a><br/><br/><span style="color:rgba(100,116,139,.4);">This is not financial advice. FAULTLINE provides market intelligence tools for informational purposes only.</span></div>
+<div class="footer">FAULTLINE &mdash; Macroeconomic Risk Intelligence<br/><a href="${buildEmailTemplateLink("/", siteUrl)}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a><br/><br/>You received this because you signed up for FAULTLINE. <a href="${buildEmailTemplateLink("/app/account", siteUrl)}" style="color:rgba(0,212,255,.3);text-decoration:none;">Manage preferences</a><br/><br/><span style="color:rgba(100,116,139,.4);">This is not financial advice. FAULTLINE provides market intelligence tools for informational purposes only.</span></div>
 </div></body></html>`;
   return { to: email, subject: `FAULTLINE: where things go from here`, html };
+}
+
+
+// ── Subscriber Brief Notification Template ────────────────────────────────────
+export function buildSubscriberBriefEmailHtml(opts: {
+  name: string;
+  title: string;
+  category: string;
+  articlePath: string;
+  tier: string;
+}): string {
+  const { name, title, category, articlePath, tier } = opts;
+  const tierLabel = tier === "founding" ? "Founding Member" : tier === "premium" ? "Pro Member" : "Core Member";
+  const safeName = escapeEmailHtml(name);
+  const safeTitle = escapeEmailHtml(title);
+  const safeCategory = escapeEmailHtml(category);
+  const articleLink = buildEmailTemplateLink(articlePath);
+  const accountLink = buildEmailTemplateLink("/app/profile");
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${safeTitle}</title>
+</head>
+<body style="margin:0;padding:0;background:#050A0F;font-family:'IBM Plex Sans',Arial,sans-serif;color:#CBD5E1;">
+  <div style="max-width:560px;margin:0 auto;padding:40px 24px;">
+    <div style="font-family:'Rajdhani',Arial,sans-serif;font-size:26px;font-weight:700;letter-spacing:0.12em;color:#00D4FF;margin-bottom:8px;">
+      FAULT<span style="color:#E2E8F0;">LINE</span>
+    </div>
+    <div style="font-size:11px;color:#64748B;letter-spacing:0.1em;margin-bottom:32px;">INSTITUTIONAL MARKET INTELLIGENCE</div>
+    <div style="background:#0A1520;border:1px solid rgba(0,212,255,0.15);border-radius:12px;padding:32px;margin-bottom:24px;">
+      <div style="font-size:11px;color:#00D4FF;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;">${safeCategory}</div>
+      <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#E2E8F0;line-height:1.3;">${safeTitle}</h1>
+      <p style="margin:0 0 24px;font-size:14px;color:#94A3B8;line-height:1.6;">
+        Hi ${safeName}, your latest FAULTLINE intelligence brief is ready. This report is powered by live market data from the FAULTLINE engine — not AI speculation.
+      </p>
+      <a href="${articleLink}" style="display:inline-block;background:#00D4FF;color:#050A0F;font-weight:700;font-size:14px;padding:12px 24px;border-radius:6px;text-decoration:none;letter-spacing:0.05em;">
+        READ FULL BRIEF →
+      </a>
+    </div>
+    <div style="font-size:11px;color:#334155;text-align:center;">
+      ${tierLabel} · <a href="${accountLink}" style="color:#334155;">Manage preferences</a>
+    </div>
+  </div>
+</body>
+</html>`;
 }

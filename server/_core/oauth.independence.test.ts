@@ -17,7 +17,7 @@ import { handleHealth } from "../health";
 import * as db from "../db";
 import { createContext } from "./context";
 import { ENV } from "./env";
-import { registerOAuthRoutes } from "./oauth";
+import { OAUTH_STATE_COOKIE_NAME, registerOAuthRoutes } from "./oauth";
 import {
   isOAuthConfigured,
   OAuthInactiveError,
@@ -151,6 +151,14 @@ const tokenPayload = {
   idToken: "id-token",
 };
 
+const CALLBACK_STATE = "test-random-oauth-state";
+const CALLBACK_VERIFIER = "test-browser-only-oauth-verifier";
+const callbackCookie = `${OAUTH_STATE_COOKIE_NAME}=${CALLBACK_VERIFIER}`;
+
+function permitCallbackState() {
+  return vi.spyOn(db, "consumeOAuthAuthorizationState").mockResolvedValue(true);
+}
+
 async function withCallbackApp(fn: (origin: string) => Promise<void>) {
   const app = express();
   registerOAuthRoutes(app);
@@ -252,11 +260,12 @@ describe("OAuth independence Option 1+2", () => {
     const traps = installManusHttpTraps();
     const exchange = vi.spyOn(sdk, "exchangeCodeForToken");
     const jwtSync = vi.spyOn(sdk, "getUserInfoWithJwt");
+    permitCallbackState();
 
     await withCallbackApp(async origin => {
-      const state = btoa(`${origin}/api/oauth/callback`);
       const response = await fetch(
-        `${origin}/api/oauth/callback?code=auth-code&state=${encodeURIComponent(state)}`,
+        `${origin}/api/oauth/callback?code=auth-code&state=${CALLBACK_STATE}`,
+        { headers: { cookie: callbackCookie } },
       );
       expect(response.status).toBe(500);
       const body = await response.json();
@@ -278,9 +287,9 @@ describe("OAuth independence Option 1+2", () => {
     const { client, post } = mockAxiosClient();
     vi.spyOn(console, "warn").mockImplementation(() => {});
     const server = new SDKServer(client as any);
-    const redirectState = btoa("https://staging.example.com/api/oauth/callback");
+    const redirectUri = "https://staging.example.com/api/oauth/callback";
 
-    await expect(server.exchangeCodeForToken("code", redirectState)).rejects.toBeInstanceOf(
+    await expect(server.exchangeCodeForToken("code", redirectUri)).rejects.toBeInstanceOf(
       OAuthInactiveError,
     );
     await expect(server.getUserInfo("tok")).rejects.toBeInstanceOf(OAuthInactiveError);
@@ -323,9 +332,9 @@ describe("OAuth independence Option 1+2", () => {
     });
     vi.spyOn(console, "log").mockImplementation(() => {});
     const server = new SDKServer(client as any);
-    const redirectState = btoa("https://app.example/api/oauth/callback");
+    const redirectUri = "https://app.example/api/oauth/callback";
 
-    const token = await server.exchangeCodeForToken("auth-code", redirectState);
+    const token = await server.exchangeCodeForToken("auth-code", redirectUri);
     expect(token.accessToken).toBe("tok");
     expect(client.defaults.baseURL).toBe("https://api.manus.im");
     expect(post.mock.calls[0]?.[1]).toMatchObject({
@@ -355,11 +364,13 @@ describe("OAuth independence Option 1+2", () => {
         updatedAt: new Date(),
         lastSignedIn: new Date(),
       } as any);
+    vi.spyOn(db, "isAuthSessionActive").mockResolvedValue(true);
     const upsert = vi.spyOn(db, "upsertUser").mockResolvedValue(undefined as any);
     const session = await server.signSession({
       openId: "oid-complete",
       appId: "complete-app-id",
       name: "Ada",
+      sessionId: "independence-durable-session-id",
     });
     const user = await server.authenticateRequest({
       headers: { cookie: `${COOKIE_NAME}=${session}` },
@@ -381,12 +392,13 @@ describe("OAuth independence Option 1+2", () => {
     vi.spyOn(sdk, "createSessionToken").mockResolvedValue("session-jwt");
     const findUser = vi.spyOn(db, "getUserByOpenId").mockResolvedValue({ id: 7, openId: "oid-complete", accessTier: "premium" } as any);
     const upsert = vi.spyOn(db, "upsertUser").mockResolvedValue(undefined as any);
+    permitCallbackState();
+    vi.spyOn(db, "createAuthSession").mockResolvedValue(undefined);
 
     await withCallbackApp(async origin => {
-      const state = btoa(`${origin}/api/oauth/callback`);
       const response = await fetch(
-        `${origin}/api/oauth/callback?code=auth-code&state=${encodeURIComponent(state)}`,
-        { redirect: "manual" },
+        `${origin}/api/oauth/callback?code=auth-code&state=${CALLBACK_STATE}`,
+        { redirect: "manual", headers: { cookie: callbackCookie } },
       );
       expect(response.status).toBe(302);
       expect(response.headers.get("location")).toBe("/app");
@@ -395,10 +407,13 @@ describe("OAuth independence Option 1+2", () => {
     findUser.mockResolvedValue(undefined);
     upsert.mockClear();
     await withCallbackApp(async origin => {
-      const response = await fetch(`${origin}/api/oauth/callback?code=auth-code&state=${encodeURIComponent(btoa(`${origin}/api/oauth/callback`))}`, { redirect: "manual" });
+      const response = await fetch(`${origin}/api/oauth/callback?code=auth-code&state=${CALLBACK_STATE}-pricing`, {
+        redirect: "manual",
+        headers: { cookie: callbackCookie },
+      });
       expect(response.status).toBe(302);
       expect(response.headers.get("location")).toBe("/pricing");
-      expect(response.headers.get("set-cookie")).toBeNull();
+      expect(response.headers.get("set-cookie")).toContain(`${OAUTH_STATE_COOKIE_NAME}=;`);
     });
     expect(upsert).not.toHaveBeenCalled();
     traps.assertNoManusHttp();

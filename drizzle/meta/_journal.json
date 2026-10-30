@@ -582,6 +582,13 @@
       "when": 1793270956098,
       "tag": "0082_durable_alert_events",
       "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "5",
+      "when": 1793386577182,
+      "tag": "0083_auth_state_and_sessions",
+      "breakpoints": true
     }
   ]
 }

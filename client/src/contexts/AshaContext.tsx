@@ -36,7 +36,6 @@ export interface AshaThreadMessage {
   content: string;
   page: string;
   createdAt: number;
-  confidence?: "high" | "moderate" | "low";
   sources?: string[];
   enginesConsulted?: string[];
 }
@@ -45,7 +44,6 @@ export interface AshaThreadExchange {
   question: string;
   answer: string;
   page: string;
-  confidence?: "high" | "moderate" | "low";
   sources: string[];
   enginesConsulted: string[];
 }
@@ -59,14 +57,26 @@ function loadPersistedThread(): AshaThreadMessage[] {
     const parsed = JSON.parse(stored);
     if (!Array.isArray(parsed)) return [];
 
-    return parsed.filter((message): message is AshaThreadMessage => (
-      message
-      && typeof message.id === "string"
-      && (message.role === "user" || message.role === "assistant")
-      && typeof message.content === "string"
-      && typeof message.page === "string"
-      && typeof message.createdAt === "number"
-    )).slice(-MAX_ASHA_THREAD_MESSAGES);
+    return parsed.flatMap((message): AshaThreadMessage[] => {
+      if (!message
+        || typeof message.id !== "string"
+        || (message.role !== "user" && message.role !== "assistant")
+        || typeof message.content !== "string"
+        || typeof message.page !== "string"
+        || typeof message.createdAt !== "number") return [];
+      // Deliberately rebuild persisted records from the supported fields. This
+      // drops confidence values from older sessions instead of carrying a model
+      // keyword forward as customer-visible metadata.
+      return [{
+        id: message.id,
+        role: message.role,
+        content: message.content,
+        page: message.page,
+        createdAt: message.createdAt,
+        ...(Array.isArray(message.sources) ? { sources: message.sources.filter((source: unknown): source is string => typeof source === "string") } : {}),
+        ...(Array.isArray(message.enginesConsulted) ? { enginesConsulted: message.enginesConsulted.filter((engine: unknown): engine is string => typeof engine === "string") } : {}),
+      }];
+    }).slice(-MAX_ASHA_THREAD_MESSAGES);
   } catch {
     return [];
   }
@@ -137,7 +147,6 @@ export function AshaProvider({ children }: { children: ReactNode }) {
         content: exchange.answer,
         page: exchange.page,
         createdAt: createdAt + 1,
-        confidence: exchange.confidence,
         sources: exchange.sources,
         enginesConsulted: exchange.enginesConsulted,
       },

@@ -76,6 +76,8 @@ const rendered = [
   '',
 ];
 
+let emittedCanonical0057ForeignKey = false;
+
 for (const entry of journal.entries) {
   const migrationPath = path.join(migrationsDir, `${entry.tag}.sql`);
   const originalSql = fs.readFileSync(migrationPath, 'utf8');
@@ -87,6 +89,9 @@ for (const entry of journal.entries) {
     const occurrences = originalSql.split(legacy0057Constraint).length - 1;
     if (occurrences !== 1) fail(`0057 legacy constraint occurs ${occurrences} times, expected 1`);
     sqlToEmit = originalSql.replace(legacy0057Constraint, canonicalConstraint);
+    const canonicalOccurrences = sqlToEmit.split(`ADD CONSTRAINT \`${canonicalConstraint}\``).length - 1;
+    if (canonicalOccurrences !== 1) fail(`0057 canonical foreign key occurs ${canonicalOccurrences} times, expected 1`);
+    emittedCanonical0057ForeignKey = true;
   }
 
   if (entry.tag === expected0058Tag) {
@@ -129,8 +134,10 @@ for (const entry of journal.entries) {
 const sql = `${rendered.join('\n')}\n`;
 if (identifiersOver64(sql).length) fail('generated bootstrap contains an overlength quoted identifier');
 if ((sql.match(/INSERT INTO `__drizzle_migrations`/g) ?? []).length !== journal.entries.length) fail('generated ledger entry count does not match journal');
-if (!sql.includes(`ADD CONSTRAINT \`${canonicalConstraint}\``)) fail('canonical 0057 foreign key was not emitted');
-if ((sql.split(`ADD CONSTRAINT \`${canonicalConstraint}\``).length - 1) !== 1) fail('canonical foreign key is not emitted exactly once');
+// 0076 intentionally retains a conditional dynamic-SQL literal containing the
+// same DDL. Validate the transformed 0057 payload above instead of treating
+// that later string literal as a second physical foreign-key statement.
+if (!emittedCanonical0057ForeignKey) fail('canonical 0057 foreign key was not emitted');
 
 if (outputPath) {
   fs.writeFileSync(path.resolve(repoRoot, outputPath), sql);

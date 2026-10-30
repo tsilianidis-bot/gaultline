@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   missingSchemaObjects,
   missingSystemicSchemaObjects,
+  REQUIRED_FOREIGN_KEYS,
+  REQUIRED_INDEXES,
   REQUIRED_SYSTEMIC_COLUMNS,
+  REQUIRED_TABLE_CONSTRAINTS,
+  REQUIRED_TABLES,
+  REQUIRED_TRIGGERS,
+  REQUIRED_USER_COLUMNS,
   schemaGateMessage,
   systemicSchemaGateMessage,
 } from "./schemaGate";
@@ -18,32 +24,47 @@ function completeSystemicSchema() {
 }
 
 describe("deploy schema gate", () => {
-  it("names the existing ordered journals when accessExpiresAt is absent", () => {
+  it("names the ordered journal tail when an accepted-tail object is absent", () => {
     const missing = missingSchemaObjects([], []);
     expect(missing).toContain("users.accessExpiresAt");
-    expect(missing).toContain("foreign key algo_outcome_prov_fk");
+    expect(missing).toContain("table stripePaymentOrigins");
+    expect(missing).toContain("table oauthAuthorizationStates");
+    expect(missing).toContain("table authSessions");
+    expect(missing).toContain("index oauthAuthorizationStates_expiresAt_idx");
+    expect(missing).toContain("index authSessions_openId_expiresAt_idx");
+    expect(missing).toContain("index authSessions_expiresAt_idx");
+    expect(missing).toContain("foreign key stripePaymentReversalEvents_origin_fk");
+    expect(missing).toContain("constraint stripePaymentReversalEvents_policy_pending_only");
+    expect(missing).toContain("trigger user_alert_events_append_only_delete");
+
     const message = schemaGateMessage(missing);
     expect(message).toContain("Refusing to start");
     expect(message).toContain("0071_systemic_regime_engine.sql");
-    expect(message).toContain("0074_stripe_entitlement_resync.sql");
-    expect(message).toContain("0075_pentagonal_thesis_records.sql");
-    expect(message).toContain("0076_algorithm_outcome_fk_name.sql");
+    expect(message).toContain("0074_stripe_entitlement_resync.sql through drizzle/0083_auth_state_and_sessions.sql");
+    expect(message).toContain("restored backup/PITR copy");
     expect(message).toContain("Unknown column");
   });
 
-  it("passes when the required columns, tables, and foreign key are present", () => {
+  it("passes only when all runtime tables, indexes, constraints, and append-only triggers are present", () => {
     expect(missingSchemaObjects(
-      ["accessExpiresAt", "entitlementRevision"],
-      [
-        "stripeSubscriptionCancellations",
-        "pentagonalThesisRecords",
-        "pentagonalThesisOutcomeScores",
-        "systemicRegimeModels",
-        "systemicRegimeReadings",
-        "signalConvergenceReadings",
-      ],
-      ["algo_outcome_prov_fk"],
+      REQUIRED_USER_COLUMNS,
+      REQUIRED_TABLES,
+      REQUIRED_FOREIGN_KEYS,
+      REQUIRED_TABLE_CONSTRAINTS,
+      REQUIRED_TRIGGERS,
+      REQUIRED_INDEXES,
     )).toEqual([]);
+  });
+
+  it("fails closed when an exact 0083 auth index is absent", () => {
+    expect(missingSchemaObjects(
+      REQUIRED_USER_COLUMNS,
+      REQUIRED_TABLES,
+      REQUIRED_FOREIGN_KEYS,
+      REQUIRED_TABLE_CONSTRAINTS,
+      REQUIRED_TRIGGERS,
+      REQUIRED_INDEXES.filter(index => index !== "authSessions_openId_expiresAt_idx"),
+    )).toEqual(["index authSessions_openId_expiresAt_idx"]);
   });
 
   it("fails closed for a missing systemic schema instead of attempting runtime DDL", () => {

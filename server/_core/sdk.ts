@@ -3,6 +3,7 @@ import { AXIOS_TIMEOUT_MS, COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { ForbiddenError } from "@shared/_core/errors";
 import axios, { type AxiosInstance } from "axios";
 import { parse as parseCookieHeader } from "cookie";
+import { randomUUID } from "node:crypto";
 import type { Request } from "express";
 import { SignJWT, jwtVerify } from "jose";
 import type { User } from "../../drizzle/schema";
@@ -23,6 +24,8 @@ export type SessionPayload = {
   openId: string;
   appId: string;
   name: string;
+  /** Omitted only for legacy/cron JWTs, which cannot authenticate a browser user. */
+  sessionId?: string;
 };
 
 const EXCHANGE_TOKEN_PATH = `/webdev.v1.WebDevAuthPublicService/ExchangeToken`;
@@ -80,21 +83,16 @@ class OAuthService {
     }
   }
 
-  private decodeState(state: string): string {
-    const redirectUri = atob(state);
-    return redirectUri;
-  }
-
   async getTokenByCode(
     code: string,
-    state: string
+    redirectUri: string,
   ): Promise<ExchangeTokenResponse> {
     assertOAuthReady(this.client);
     const payload: ExchangeTokenRequest = {
       clientId: ENV.appId,
       grantType: "authorization_code",
       code,
-      redirectUri: this.decodeState(state),
+      redirectUri,
     };
 
     const { data } = await this.client.post<ExchangeTokenResponse>(
@@ -161,13 +159,13 @@ export class SDKServer {
   /**
    * Exchange OAuth authorization code for access token
    * @example
-   * const tokenResponse = await sdk.exchangeCodeForToken(code, state);
+   * const tokenResponse = await sdk.exchangeCodeForToken(code, redirectUri);
    */
   async exchangeCodeForToken(
     code: string,
-    state: string
+    redirectUri: string,
   ): Promise<ExchangeTokenResponse> {
-    return this.oauthService.getTokenByCode(code, state);
+    return this.oauthService.getTokenByCode(code, redirectUri);
   }
 
   /**
@@ -211,13 +209,14 @@ export class SDKServer {
    */
   async createSessionToken(
     openId: string,
-    options: { expiresInMs?: number; name?: string } = {}
+    options: { expiresInMs?: number; name?: string; sessionId?: string } = {}
   ): Promise<string> {
     return this.signSession(
       {
         openId,
         appId: ENV.appId,
         name: options.name || "",
+        sessionId: options.sessionId ?? randomUUID(),
       },
       options
     );
@@ -236,6 +235,7 @@ export class SDKServer {
       openId: payload.openId,
       appId: payload.appId,
       name: payload.name,
+      ...(payload.sessionId ? { sessionId: payload.sessionId } : {}),
     })
       .setProtectedHeader({ alg: "HS256", typ: "JWT" })
       .setExpirationTime(expirationSeconds)
@@ -244,7 +244,7 @@ export class SDKServer {
 
   async verifySession(
     cookieValue: string | undefined | null
-  ): Promise<{ openId: string; appId: string; name: string } | null> {
+  ): Promise<{ openId: string; appId: string; name: string; sessionId?: string } | null> {
     if (!cookieValue) {
       // Expected for public tRPC (e.g. markets ticker poll) and logged-out
       // browsers. Do not warn — missing cookie is not an auth failure.
@@ -256,12 +256,13 @@ export class SDKServer {
       const { payload } = await jwtVerify(cookieValue, secretKey, {
         algorithms: ["HS256"],
       });
-      const { openId, appId, name } = payload as Record<string, unknown>;
+      const { openId, appId, name, sessionId } = payload as Record<string, unknown>;
 
       if (
         !isNonEmptyString(openId) ||
         !isNonEmptyString(appId) ||
-        typeof name !== "string"
+        typeof name !== "string" ||
+        (sessionId !== undefined && !isNonEmptyString(sessionId))
       ) {
         console.warn("[Auth] Session payload missing required fields");
         return null;
@@ -271,6 +272,7 @@ export class SDKServer {
         openId,
         appId,
         name,
+        ...(isNonEmptyString(sessionId) ? { sessionId } : {}),
       };
     } catch (error) {
       console.warn("[Auth] Session verification failed", String(error));
@@ -325,6 +327,22 @@ export class SDKServer {
       return buildCronUser(userInfo);
     }
 
+    // JWT integrity alone cannot make logout durable: an earlier copied cookie
+    // stays correctly signed. Every browser session must have an active
+    // server-side row, and legacy tokens without a session ID are rejected.
+    if (!session.sessionId) {
+      throw ForbiddenError("Invalid session cookie");
+    }
+    try {
+      if (!await db.isAuthSessionActive(session.sessionId, session.openId)) {
+        throw ForbiddenError("Invalid session cookie");
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === "HttpError") throw error;
+      console.warn("[Auth] Durable session validation failed", String(error));
+      throw ForbiddenError("Invalid session cookie");
+    }
+
     const sessionUserId = session.openId;
     const signedInAt = new Date();
     let user = await db.getUserByOpenId(sessionUserId);
@@ -363,7 +381,7 @@ export class SDKServer {
       lastSignedIn: signedInAt,
     });
 
-    return user;
+    return { ...user, sessionId: session.sessionId };
   }
 }
 
@@ -371,6 +389,7 @@ const CRON_OPEN_ID_PREFIX = "cron_";
 
 /** Result of `sdk.authenticateRequest`. Cron callbacks set `isCron=true` and `taskUid`; see `references/periodic-updates.md`. */
 export type AuthenticatedUser = User & {
+  sessionId?: string;
   taskUid?: string;
   isCron?: boolean;
 };

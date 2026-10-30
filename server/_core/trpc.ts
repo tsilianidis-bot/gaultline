@@ -28,7 +28,16 @@ const clientVocabulary = t.middleware(async (opts) => {
   return { ...result, data };
 });
 
-export const publicProcedure = t.procedure.use(clientVocabulary);
+const denyQaMutation = t.middleware(async opts => {
+  if (opts.ctx.user?.isQaSession && opts.type !== "query") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Owner QA access is read-only" });
+  }
+  return opts.next();
+});
+
+// Public procedures can still receive the QA principal through the optional
+// request context, so they must enforce the same read-only boundary.
+export const publicProcedure = t.procedure.use(denyQaMutation).use(clientVocabulary);
 
 const requireUser = t.middleware(async opts => {
   const { ctx, next } = opts;
@@ -123,6 +132,12 @@ export const adminProcedure = t.procedure.use(
 
     if (!ctx.user) {
       throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+    }
+    // Do not rely on the current QA principal's non-admin role. A QA-marked
+    // context is read-only even if a future principal representation gains an
+    // administrative role.
+    if (ctx.user.isQaSession && opts.type !== "query") {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Owner QA access is read-only" });
     }
     if (ctx.user.role !== 'admin') {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });

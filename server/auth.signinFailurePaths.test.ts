@@ -29,15 +29,13 @@ describe("navigateToLogin reports whether a redirect started", () => {
     expect(location.href).toBe("https://getfaultline.live/app");
   });
 
-  it("returns true and navigates to the canonical app-auth URL when configured", () => {
+  it("returns true and navigates to the local OAuth initiator when configured", () => {
     vi.stubEnv("VITE_OAUTH_PORTAL_URL", "https://manus.im");
     vi.stubEnv("VITE_APP_ID", "test-app-id");
     const location = { origin: "https://www.getfaultline.live", href: "https://www.getfaultline.live/app" };
     vi.stubGlobal("window", { location });
     expect(navigateToLogin()).toBe(true);
-    const url = new URL(location.href);
-    expect(url.origin + url.pathname).toBe("https://manus.im/app-auth");
-    expect(url.searchParams.get("redirectUri")).toBe("https://getfaultline.live/api/oauth/callback");
+    expect(location.href).toBe("/api/oauth/login");
   });
 });
 
@@ -76,26 +74,20 @@ describe("OAuth callback failure is a recoverable page for browsers", () => {
     }
   });
 
-  it("browser navigation gets HTML, API clients keep the JSON body, no session cookie either way", async () => {
+  it("rejects callbacks without a browser-bound state before provider processing", async () => {
     const { base, close } = await startApp();
     try {
       const url = `${base}/api/oauth/callback?code=bogus&state=${encodeURIComponent(btoa("https://getfaultline.live/api/oauth/callback"))}`;
       const page = await fetch(url, { headers: { accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" } });
-      expect(page.status).toBe(500);
-      expect(page.headers.get("content-type")).toMatch(/text\/html/);
+      expect(page.status).toBe(400);
+      expect(page.headers.get("content-type")).toMatch(/application\/json/);
       expect(page.headers.get("cache-control")).toBe("no-store");
       expect(page.headers.get("set-cookie") ?? "").not.toContain(COOKIE_NAME);
-      const html = await page.text();
-      expect(html).toContain("SIGN-IN DID NOT COMPLETE");
-      expect(html).toContain("Error code: token_exchange_failed");
+      expect(await page.json()).toEqual({ error: "invalid or expired OAuth state" });
 
       const api = await fetch(url, { headers: { accept: "*/*" } });
-      expect(api.status).toBe(500);
-      expect(await api.json()).toEqual({
-        error: "OAuth callback failed",
-        errorCode: "token_exchange_failed",
-        message: "Authorization code could not be exchanged for a token.",
-      });
+      expect(api.status).toBe(400);
+      expect(await api.json()).toEqual({ error: "invalid or expired OAuth state" });
 
       const missing = await fetch(`${base}/api/oauth/callback`, { headers: { accept: "text/html" } });
       expect(missing.status).toBe(400);

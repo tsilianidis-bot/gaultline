@@ -4,7 +4,7 @@
 
    idle:        Floating orb in bottom-right corner
    summon:      AshaSummon overlay — 7-step cinematic activation
-   synthesizing: IntelligenceSynthesis overlay — live pipeline
+   synthesizing: IntelligenceSynthesis overlay — data-synthesis pipeline
    briefing:    OracleBriefing — classified intelligence report
    ============================================================ */
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -53,14 +53,14 @@ const PAGE_SUGGESTIONS: Record<string, string[]> = {
     "How long has this condition been building?",
     "What could trigger a regime change?",
     "Is this similar to 2000, 2008, 2020, or 2022?",
-    "What would invalidate the current seismic reading?",
+    "What would invalidate this Seismograph reading?",
     "Explain the Pressure Index",
     "Where is the market heading?",
   ],
   pressure: [
     "Why is pressure at this level?",
     "What would cause pressure to fall?",
-    "Which engine is contributing most to current stress?",
+    "Which engine is contributing most to observed stress?",
     "Explain the Pressure Index",
     "What is the historical range for this reading?",
     "Show systemic risks",
@@ -68,15 +68,15 @@ const PAGE_SUGGESTIONS: Record<string, string[]> = {
   "symbol-intelligence": [
     "What is the primary driver of this setup?",
     "Analyze NVDA",
-    "How does this asset perform in the current regime?",
+    "How does this asset perform in this regime?",
     "What would invalidate this outlook?",
     "What are the key risks for this position?",
     "Where is the market heading?",
   ],
   crypto: [
-    "How does crypto behave in the current macro regime?",
+    "How does crypto behave in this macro regime?",
     "What is the relationship between BTC and macro pressure?",
-    "What would invalidate the current crypto outlook?",
+    "What would invalidate this crypto outlook?",
     "Compare this with the 2022 crypto bear market.",
     "Explain today's market",
     "Show systemic risks",
@@ -91,15 +91,15 @@ const PAGE_SUGGESTIONS: Record<string, string[]> = {
   ],
   "market-intel": [
     "What regime are we in and how long has it lasted?",
-    "What is the current probability of a regime transition?",
-    "Which sectors are most exposed to the current regime?",
+    "How are regime-transition scenarios handled?",
+    "Which sectors are most exposed to this regime?",
     "What historical period most closely resembles today?",
     "Explain today's market",
     "Show systemic risks",
   ],
   signals: [
     "What signals are most significant right now?",
-    "Which signals are confirming the current regime?",
+    "Which signals are confirming this regime?",
     "Are any signals diverging from the consensus?",
     "Analyze NVDA",
     "What would a regime reversal look like in the signals?",
@@ -281,7 +281,6 @@ export default function AshaPanel() {
         question,
         answer: response.reply,
         page: fullPageContext.page,
-        confidence: response.confidence,
         sources: response.sources,
         enginesConsulted: response.enginesConsulted,
       });
@@ -301,8 +300,6 @@ export default function AshaPanel() {
         coreThesis: response.coreThesis || response.executiveSummary || response.reply.split("\n")[0],
         // Missing model fields are shown as not stated, never filled with invented values.
         marketBias: response.marketBias ?? "NOT STATED",
-        // No response confidence is established; OracleBriefing renders NOT ESTABLISHED.
-        confidence: undefined,
         marketRegime: response.marketRegime || fullPageContext.regime || "Unknown",
         threatLevel: response.threatLevel ?? "NOT STATED",
         pressureIndex: response.pressureIndex ?? fullPageContext.pressureScore ?? null,

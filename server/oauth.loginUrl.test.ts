@@ -14,7 +14,7 @@ const APP_ID = "Xbzsed6coyZiRmSu4UeiVi";
 const ORIGIN = "https://staging.example.com";
 
 describe("client login URL bootstrap", () => {
-  it("does not throw Invalid URL when the OAuth portal or app id is missing", () => {
+  it("does not throw when the OAuth portal or app id is missing", () => {
     expect(() => buildLoginUrl(undefined, undefined, ORIGIN)).not.toThrow();
     expect(() => buildLoginUrl("undefined", APP_ID, ORIGIN)).not.toThrow();
     expect(buildLoginUrl(undefined, APP_ID, ORIGIN)).toBe("");
@@ -28,27 +28,23 @@ describe("client login URL bootstrap", () => {
     expect(buildLoginUrl(PORTAL, "  ", ORIGIN)).toBe("");
   });
 
-  it("constructs the production app-auth URL only for a valid absolute portal and app id", () => {
+  it("navigates only to the local server initiator when OAuth is configured", () => {
     const loginUrl = buildLoginUrl(PORTAL, APP_ID, ORIGIN);
-    const parsed = new URL(loginUrl);
-    const redirectUri = `${ORIGIN}/api/oauth/callback`;
 
-    expect(parsed.origin + parsed.pathname).toBe("https://manus.im/app-auth");
-    expect(parsed.searchParams.get("appId")).toBe(APP_ID);
-    expect(parsed.searchParams.get("redirectUri")).toBe(redirectUri);
-    expect(parsed.searchParams.get("state")).toBe(btoa(redirectUri));
-    expect(parsed.searchParams.get("type")).toBe("signIn");
+    expect(loginUrl).toBe("/api/oauth/login");
+    expect(loginUrl).not.toContain("state=");
+    expect(loginUrl).not.toContain("redirectUri=");
+    expect(loginUrl).not.toContain("manus.im");
   });
 
-  it("uses the apex callback from either production hostname, preserving staging", () => {
-    for (const origin of ["https://getfaultline.live", "https://www.getfaultline.live"]) {
-      const url = new URL(buildLoginUrl(PORTAL, APP_ID, origin));
-      const callback = "https://getfaultline.live/api/oauth/callback";
-      expect(url.searchParams.get("redirectUri")).toBe(callback);
-      expect(atob(url.searchParams.get("state")!)).toBe(callback);
-    }
-    expect(new URL(buildLoginUrl(PORTAL, APP_ID, ORIGIN)).searchParams.get("redirectUri"))
-      .toBe(`${ORIGIN}/api/oauth/callback`);
+  it("never derives OAuth state from a browser origin", () => {
+    const production = buildLoginUrl(PORTAL, APP_ID, "https://getfaultline.live");
+    const www = buildLoginUrl(PORTAL, APP_ID, "https://www.getfaultline.live");
+    const staging = buildLoginUrl(PORTAL, APP_ID, ORIGIN);
+
+    expect(production).toBe("/api/oauth/login");
+    expect(www).toBe("/api/oauth/login");
+    expect(staging).toBe("/api/oauth/login");
   });
 
   it("treats only http(s) absolute URLs as a usable OAuth portal", () => {
@@ -65,7 +61,7 @@ describe("client login URL bootstrap", () => {
     expect(getLoginUrl()).not.toContain("api.manus.im");
   });
 
-  it("navigateToLogin and login CTAs do not send the browser to Manus when Vite OAuth is absent", () => {
+  it("navigateToLogin and login CTAs do not navigate when Vite OAuth is absent", () => {
     const location = {
       href: "https://staging.example.com/app",
       origin: "https://staging.example.com",
@@ -85,7 +81,7 @@ describe("client login URL bootstrap", () => {
     vi.unstubAllGlobals();
   });
 
-  it("login CTAs bind getLoginUrl/navigateToLogin and do not hardcode a Manus host", () => {
+  it("login CTAs bind getLoginUrl/navigateToLogin and do not hardcode a portal host", () => {
     const root = resolve(process.cwd(), "client/src");
     const files: string[] = [];
     const walk = (dir: string) => {

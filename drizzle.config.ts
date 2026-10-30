@@ -6,7 +6,17 @@ if (!connectionString) {
 }
 
 export default defineConfig({
-  schema: "./drizzle/schema.ts",
+  // The runtime tables introduced by 0078-0083 live in focused modules. Keep
+  // every module in the configured schema input so generation/introspection
+  // sees the same declarations used by the corresponding server writers.
+  schema: [
+    "./drizzle/schema.ts",
+    "./drizzle/billingPaymentLinkageSchema.ts",
+    "./drizzle/decisionOutcomeProvenanceSchema.ts",
+    "./drizzle/publishingDeliveryClaimsSchema.ts",
+    "./drizzle/ownerAdminAuditSchema.ts",
+    "./server/durableAlertEventsSchema.ts",
+  ],
   out: "./drizzle",
   dialect: "mysql",
   dbCredentials: {

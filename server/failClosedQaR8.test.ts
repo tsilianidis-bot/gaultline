@@ -125,7 +125,7 @@ describe("SmartDiscovery snapshot: no demo regime under a 503", () => {
     const s = read("client/src/pages/SmartDiscovery.tsx");
     expect(s).toContain("const regimeLabel = pressureScore === null ? null : regime.label;");
     expect(s).toContain("{regimeLabel ?? 'Unavailable'}");
-    expect(s).toContain("regimeLabel === null ? `The market regime is currently unavailable.");
+    expect(s).toContain("regimeLabel === null ? `The market regime is unavailable. What does that mean and what should I watch?`");
     expect(s).not.toContain("onQuickAction(`What is the ${regime.label} regime");
     expect(s).not.toMatch(/>\{regime\.label\}</);
   });

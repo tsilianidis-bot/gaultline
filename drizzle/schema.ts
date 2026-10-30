@@ -75,6 +75,36 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
+/**
+ * Short-lived OAuth authorization attempts. Only SHA-256 digests of the
+ * browser-returned state and the HttpOnly browser verifier are stored. A
+ * conditional update consumes a row exactly once before token exchange.
+ */
+export const oauthAuthorizationStates = mysqlTable("oauthAuthorizationStates", {
+  stateHash: varchar("stateHash", { length: 64 }).primaryKey(),
+  verifierHash: varchar("verifierHash", { length: 64 }).notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  consumedAt: timestamp("consumedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  expiresAtIdx: index("oauthAuthorizationStates_expiresAt_idx").on(t.expiresAt),
+}));
+
+/**
+ * Server-side authority for browser JWTs. JWT signatures establish integrity;
+ * this row establishes that the individual session has not been revoked.
+ */
+export const authSessions = mysqlTable("authSessions", {
+  sessionIdHash: varchar("sessionIdHash", { length: 64 }).primaryKey(),
+  openId: varchar("openId", { length: 64 }).notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  revokedAt: timestamp("revokedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  openIdExpiresAtIdx: index("authSessions_openId_expiresAt_idx").on(t.openId, t.expiresAt),
+  expiresAtIdx: index("authSessions_expiresAt_idx").on(t.expiresAt),
+}));
+
 // ── Portfolio positions ──────────────────────────────────────
 
 /**

@@ -1,7 +1,8 @@
-import { eq, and, desc, count, sql, like, or, gte, inArray } from "drizzle-orm";
+import { eq, and, desc, count, sql, like, or, gte, inArray, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
-import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport, mobileUsage, dayTradeWatchlist, InsertDayTradeWatchlistItem, tradeJournal, InsertTradeJournalEntry, chatbotSessions, chatbotMessages, chatbotLeads, InsertChatbotSession, InsertChatbotMessage, InsertChatbotLead, ChatbotSession, dayTradeSnapshot, pipelineHealthLog, onboardingEmailSequence, stripeSubscriptionCancellations } from "../drizzle/schema";
+import { createHash } from "node:crypto";
+import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport, mobileUsage, dayTradeWatchlist, InsertDayTradeWatchlistItem, tradeJournal, InsertTradeJournalEntry, chatbotSessions, chatbotMessages, chatbotLeads, InsertChatbotSession, InsertChatbotMessage, InsertChatbotLead, ChatbotSession, dayTradeSnapshot, pipelineHealthLog, onboardingEmailSequence, stripeSubscriptionCancellations, oauthAuthorizationStates, authSessions } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
 
@@ -31,6 +32,95 @@ export async function getDb() {
     }
   }
   return _db;
+}
+
+function opaqueTokenHash(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+/**
+ * Persists only digests of the OAuth state and its separate browser verifier.
+ * A missing database is an authentication failure, never an in-memory fallback.
+ */
+export async function createOAuthAuthorizationState(
+  state: string,
+  verifier: string,
+  expiresAt: Date,
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("OAuth state persistence is unavailable");
+  await db.insert(oauthAuthorizationStates).values({
+    stateHash: opaqueTokenHash(state),
+    verifierHash: opaqueTokenHash(verifier),
+    expiresAt,
+  });
+}
+
+/** Atomically consumes an unexpired state bound to the initiating browser. */
+export async function consumeOAuthAuthorizationState(
+  state: string,
+  verifier: string,
+  now = new Date(),
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("OAuth state persistence is unavailable");
+  const result = await db.update(oauthAuthorizationStates)
+    .set({ consumedAt: now })
+    .where(and(
+      eq(oauthAuthorizationStates.stateHash, opaqueTokenHash(state)),
+      eq(oauthAuthorizationStates.verifierHash, opaqueTokenHash(verifier)),
+      gte(oauthAuthorizationStates.expiresAt, now),
+      isNull(oauthAuthorizationStates.consumedAt),
+    ));
+  return affectedRows(result) === 1;
+}
+
+/** Records a newly issued browser-session identifier before its cookie is set. */
+export async function createAuthSession(
+  sessionId: string,
+  openId: string,
+  expiresAt: Date,
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Session persistence is unavailable");
+  await db.insert(authSessions).values({
+    sessionIdHash: opaqueTokenHash(sessionId),
+    openId,
+    expiresAt,
+  });
+}
+
+/** Checks persistent session validity on every browser-authenticated request. */
+export async function isAuthSessionActive(
+  sessionId: string,
+  openId: string,
+  now = new Date(),
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Session persistence is unavailable");
+  const rows = await db.select({ sessionIdHash: authSessions.sessionIdHash })
+    .from(authSessions)
+    .where(and(
+      eq(authSessions.sessionIdHash, opaqueTokenHash(sessionId)),
+      eq(authSessions.openId, openId),
+      gte(authSessions.expiresAt, now),
+      isNull(authSessions.revokedAt),
+    ))
+    .limit(1);
+  return rows.length === 1;
+}
+
+/** Revokes a session once, invalidating copied JWT cookies on every instance. */
+export async function revokeAuthSession(sessionId: string, now = new Date()): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Session persistence is unavailable");
+  const result = await db.update(authSessions)
+    .set({ revokedAt: now })
+    .where(and(
+      eq(authSessions.sessionIdHash, opaqueTokenHash(sessionId)),
+      isNull(authSessions.revokedAt),
+    ));
+  return affectedRows(result) === 1;
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
