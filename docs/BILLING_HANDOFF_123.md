@@ -1,12 +1,12 @@
-# Billing handoff for PR #123
+# Billing integration handoff (for the release owner / Manus)
 
-Draft for Manus. This file does not approve a merge, a deploy, or a production migration. Checkout stays off (`CHECKOUT_ENABLED` is false). Stripe live mode stays fail-closed unless `FAULTLINE_STRIPE_LAUNCH_AUTHORIZED=true`.
+Integration proceeds only with James's explicit approval. This file does not approve a merge, a deploy, or a production migration. Checkout stays off (`CHECKOUT_ENABLED` is false). Stripe live mode stays fail-closed unless `FAULTLINE_STRIPE_LAUNCH_AUTHORIZED=true`.
 
 ## SHA
 
-Branch `cursor/stripe-refund-dispute-entitlement-2996`. Billing behavior is `efa08cb8cf78731bf0ea3b0f0c6622c900b4fb5c` (parent `f2a193de966462a3932a3becd69324a14fb33a32`). The branch head is that commit, or one documentation pin on top of it that only writes this hash. Confirm with `git rev-parse HEAD`.
+Code review is a GO at `ae366a1376216b38ba9049398447a620c442c7b8` on `cursor/stripe-refund-dispute-entitlement-2996`. Billing behavior is `efa08cb8cf78731bf0ea3b0f0c6622c900b4fb5c`. This docs pass is the commit that updates this file. Confirm `git rev-parse HEAD` before using it.
 
-PR #123 is a draft into `cursor/faultline-rc-2026-10-28-4018`. That branch is the head of draft PR #121, which targets `release/verified-2026-10-22`. Merge #123 into the RC branch first so #121 carries this webhook. Do not merge #123 to `main` ahead of #121.
+PR #123 is a draft into `cursor/faultline-rc-2026-10-28-4018`, the head of draft PR #121 (`release/verified-2026-10-22`). Merging #123 into RC #121 requires James's explicit approval. Do not merge #123 to `main` ahead of #121.
 
 ## Prices (code only, unchanged)
 
@@ -17,7 +17,9 @@ PR #123 is a draft into `cursor/faultline-rc-2026-10-28-4018`. That branch is th
 | Standard (`premium`) | `PRICING_PLANS.premium` | 9900 cents, `$99/month` | `month` | available |
 | Lifetime (`lifetime`) | `PRICING_PLANS.lifetime` | 150000 cents, `$1,500 one-time` | `one_time` | available |
 
-No mismatch between those two files. A promotion code can lower the Checkout `amount_total` while the Stripe Price `unit_amount` stays 150000. `verifyStripePlanConfiguration` still requires the Price object to match the list amount. This repo has no Stripe price IDs in the environment, so the Dashboard prices were not read.
+No mismatch between those two files. `verifyStripePlanConfiguration` still requires the Stripe Price `unit_amount` to match the list amount. This repo has no Stripe price IDs in the environment, so the Dashboard prices were not read.
+
+Checkout sends `allow_promotion_codes: true` (`server/routers/billing.ts`), so a customer can enter a code and `amount_total` can be below the list price. The repo and env do not define any promotion code or coupon id. Whether any promotion codes exist in the Stripe account is unknown. A Dashboard check is required.
 
 ## Env and config
 
@@ -36,24 +38,26 @@ Test mode only. A live key is ignored unless `FAULTLINE_STRIPE_LAUNCH_AUTHORIZED
 | `DATABASE_URL` | MariaDB. Boot refuses to listen if 0074–0077 objects are missing |
 | `FAULTLINE_STRIPE_LAUNCH_AUTHORIZED` | must stay unset or not `true` |
 
-API version pinned in `server/stripe/client.ts`: `2026-04-22.dahlia`. `Charge.invoice` is not used. Subscription invoices come from InvoicePayment.
+## Migration 0074–0077
 
-## Migration 0077
-
-File: `drizzle/0077_stripe_purchase_revocations.sql`. Not in the Drizzle journal. Not applied by this PR. Do not run it on production from this handoff.
-
-Apply order on a backup, after the earlier entitlement files the boot gate names:
+Not applied by this PR. Not applied by boot. The release owner applies them on a fresh backup, in this order, only with James's approval:
 
 1. `drizzle/0074_stripe_entitlement_resync.sql` (`users.accessExpiresAt`, `users.entitlementRevision`, `stripeSubscriptionCancellations`)
 2. `drizzle/0075_pentagonal_thesis_records.sql`
 3. `drizzle/0076_algorithm_outcome_fk_name.sql`
 4. `drizzle/0077_stripe_purchase_revocations.sql`
 
-0077 adds `users.lifetimePaymentIntentId`, `entitlementAuditLog.sourceEventCreated`, and `stripePurchaseRevocations`. Every statement uses `IF NOT EXISTS`. It does not drop or rewrite columns. The boot gate in `server/schemaGate.ts` refuses to start until those objects exist.
+0077 is not in the Drizzle journal. It adds `users.lifetimePaymentIntentId`, `entitlementAuditLog.sourceEventCreated`, and `stripePurchaseRevocations`. Every 0077 statement uses `IF NOT EXISTS`. It does not drop or rewrite columns. The boot gate in `server/schemaGate.ts` refuses to start until those objects exist.
+
+**0076 write pause.** `0076` can delete `algorithmOutcomeObservations` rows whose `provenanceId` is missing, then drop an old foreign key and add `algo_outcome_prov_fk`. Pause writes to `algorithmOutcomeObservations` and `algorithmScoreProvenance` before running it. A write during that window can insert a new orphan after the delete and make the new foreign key fail. Run it only on the fresh backup, with James's approval.
 
 ## Webhook
 
-Endpoint: `POST /api/stripe/webhook` (`server/_core/index.ts`). Body must be the raw JSON Stripe signs. Enable these events:
+Endpoint: `POST /api/stripe/webhook` (`server/_core/index.ts`). Body must be the raw JSON Stripe signs.
+
+Pinned API version in `server/stripe/client.ts`: **2026-04-22.dahlia**. `Charge.invoice` is absent in that version. Subscription invoices come from InvoicePayment.
+
+Enable these events:
 
 - `checkout.session.completed`
 - `checkout.session.async_payment_succeeded`
@@ -63,11 +67,15 @@ Endpoint: `POST /api/stripe/webhook` (`server/_core/index.ts`). Body must be the
 - `customer.subscription.deleted`
 - `invoice.paid`
 - `invoice.payment_failed`
-- `charge.refunded`
-- `charge.dispute.created`
-- `charge.dispute.closed`
+- `charge.refunded` — needs James's approval
+- `charge.dispute.created` — needs James's approval
+- `charge.dispute.closed` — needs James's approval
 
 Other `checkout.session.*`, `customer.subscription.*`, `invoice.*`, and `payment_intent.*` events are accepted and recomputed. Unlisted event types are acknowledged and do not change access.
+
+## Alerting
+
+`[BILLING-ALERT]` logs and unknown `charge.dispute.closed` statuses: Grok, the billing owner, investigates. The release owner wires alerting. An unknown close returns 200, does not change access, and does not ask Stripe to retry.
 
 ## Smoke checklist
 
@@ -89,13 +97,14 @@ All of this is mocked in CI. A real test-mode pass needs the env vars above and 
 
 Redeploy the previous application SHA. Do not drop 0077 columns or `stripePurchaseRevocations` as part of rollback. The migration is additive. A build that selects `lifetimePaymentIntentId` will not boot if 0077 was never applied. A build from before that column was selected can boot with the column left in place.
 
-## Owner decisions (current default)
+## OPEN DECISIONS FOR JAMES
 
-These are implemented defaults, not a separate product sign-off.
+These are the current code defaults. They are not approved.
 
-- Partial refund: audit only. Access stays.
-- Full Standard refund during a paid period: access drops immediately. It does not run to period end.
-- Dispute `lost` or `charge_refunded` after a `won` restore: the newer close removes access again. An older close does not.
-- Unknown dispute close status: 200, no entitlement change, no Stripe retry.
-- Customer charge with amount > 0 and an empty InvoicePayment lookup: 500 until the invoice can be linked or the charge matches Lifetime another way.
-- Promotion-priced Lifetime: the checkout session match revokes and restores. A charge-metadata match still requires the $1,500 list amount.
+- A dispute opening revokes the linked purchase immediately.
+- A Standard full refund cuts access at once, including mid-period. Access does not run to period end.
+- A Lifetime refund removes Lifetime entirely. An active Standard subscription is left in place.
+- A partial refund keeps access. The event is audited and does not revoke.
+- A lost dispute after a won restore removes access again when the lost close is newer. An older close does not.
+
+Also still default, not signed off: an unknown dispute close returns 200 with no entitlement change. A customer charge with a positive amount and an empty InvoicePayment lookup returns 500 until it can be linked. A charge-metadata Lifetime match still requires the $1,500 list amount. The session match does not.
