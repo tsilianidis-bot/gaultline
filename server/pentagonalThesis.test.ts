@@ -127,6 +127,38 @@ describe("Pentagonal Thesis engine", () => {
     expect(thesis.sections.do.summary.toLowerCase()).toContain("not a recommendation to transact");
   });
 
+  it("sets a distinct non-numeric confirmation condition from fresh completed-range evidence", () => {
+    const thesis = buildPentagonalThesis(input());
+    const range = thesis.items.find(entry => entry.id === "happening:range");
+    expect(range).toMatchObject({ driver: true, fresh: true, stale: false, missing: false, source: "completed-daily-bars" });
+    expect(thesis.sections.next.scenarios.map(scenario => scenario.confirmation.condition)).toEqual([
+      "A later completed daily close stays above the reference range low.",
+      "A later completed daily close remains within the reference range.",
+      "A later completed daily close breaks below the reference range low.",
+    ]);
+    for (const scenario of thesis.sections.next.scenarios) {
+      expect(scenario.confirmation.available, scenario.id).toBe(true);
+      expect(scenario.confirmation.evidenceIds, scenario.id).toEqual(["happening:range"]);
+      expect(scenario.confirmation.condition, scenario.id).not.toMatch(/\d/);
+      expect(scenario.confirmation.condition, scenario.id).not.toContain("Invalidated");
+    }
+    expect(thesis.items.filter(entry => entry.id.startsWith("next:")).every(entry => entry.kind === "forecast")).toBe(true);
+    expect(thesis.integrity).toEqual({ ok: true, violations: [] });
+  });
+
+  it("explicitly withholds confirmation when fresh completed-range evidence is absent", () => {
+    const thesis = buildPentagonalThesis(input({ bars: bars(19) }));
+    expect(thesis.items.some(entry => entry.id === "happening:range" && entry.driver)).toBe(false);
+    expect(thesis.gaps.some(entry => entry.field === "technical-levels" && entry.citedAsDriver === false)).toBe(true);
+    for (const scenario of thesis.sections.next.scenarios) {
+      expect(scenario.confirmation).toEqual({ available: false, evidenceIds: [], condition: "Withheld because no fresh completed-session range is available." });
+      expect(scenario.invalidationMeasurable).toBe(false);
+      expect(scenario.invalidationRule).toBe("none");
+    }
+    expect(thesis.items.filter(entry => entry.id.startsWith("next:")).every(entry => entry.kind === "forecast" && entry.epistemic === "unavailable" && entry.missing)).toBe(true);
+    expect(thesis.integrity).toEqual({ ok: true, violations: [] });
+  });
+
   it("includes pressure and regime only when the canonical reading is fresh, and labels the link as a hypothesis", () => {
     const fresh = buildPentagonalThesis(input({
       market: { pressureIndex: 42, regime: "MODERATE RISK", source: "canonical-intelligence-state", observedAt: NOW, usable: true },
@@ -157,6 +189,10 @@ describe("Pentagonal Thesis engine", () => {
     forged.items[0]!.driver = true;
     forged.items[0]!.stale = true;
     expect(findThesisIntegrityViolations(forged).length).toBeGreaterThan(0);
+
+    const numericConfirmation = structuredClone(thesis);
+    numericConfirmation.sections.next.scenarios[0]!.confirmation.condition = "A later completed daily close stays above 101.";
+    expect(findThesisIntegrityViolations(numericConfirmation)).toContain("scenario bull confirmation condition is numeric");
   });
 
   it("plans an append-only version and refuses outcome scoring", () => {

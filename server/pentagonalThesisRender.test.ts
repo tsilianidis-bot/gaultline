@@ -267,6 +267,18 @@ describe("Pentagonal thesis render consistency", () => {
     expect(signals).toContain("fact · verified · yahoo");
     expect(signals).toContain("What's happening");
     expect(signals).toContain("What to do");
+    expect(signals).toContain("Confirmation · condition");
+    expect(signals).toContain("A later completed daily close stays above the reference range low.");
+  });
+
+  it("renders Confirmation distinctly and says when it is withheld", async () => {
+    const { PentagonalThesisNarrative } = await import("../client/src/components/PentagonalThesisNarrative");
+    const thesis = buildPentagonalThesis({ ...thesisInput(), bars: thesisInput().bars.slice(0, 19) });
+    const markup = renderToStaticMarkup(createElement(PentagonalThesisNarrative, { thesis, surface: "signals", compact: true, symbol: "AAPL" }));
+    expect(markup).toContain('data-thesis-confirmation="signals:bull"');
+    expect(visibleText(markup)).toContain("Confirmation · withheld");
+    expect(visibleText(markup)).toContain("Withheld because no fresh completed-session range is available.");
+    expect(visibleText(markup)).toContain("No measurable invalidation line is available.");
   });
 
   it("does not render a signal action, confidence percentage, entry, stop, or target", async () => {
@@ -488,6 +500,10 @@ describe("Pentagonal thesis render consistency", () => {
     expect(detailLines).toEqual(signalsLines);
     expect(intelligenceLines).toEqual(signalsLines);
     expect(signalsLines.join(" ")).toContain("fact");
+    for (const [surface, markup] of [["signals", signals], ["signal-detail", detailMarkup], ["symbol-intelligence", intelligence]] as const) {
+      expect(markup, surface).toContain(`data-thesis-confirmation="${surface}:bull"`);
+      expect(visibleText(markup), surface).toContain("Confirmation · condition");
+    }
     expect(signals).not.toContain("algorithmic estimates");
     expect(signals).not.toContain("probabilistic estimates");
     expect(signals).not.toContain("KEY PRICE LEVELS");

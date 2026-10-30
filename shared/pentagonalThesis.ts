@@ -10,6 +10,7 @@ export const PENTAGONAL_THESIS_ENGINE_VERSION = "pentagonal-thesis-v1" as const;
 
 export const THESIS_SECTIONS = ["happening", "why", "next", "watch", "do"] as const;
 export type ThesisSectionId = (typeof THESIS_SECTIONS)[number];
+export const THESIS_RANGE_EVIDENCE_ID = "happening:range" as const;
 
 export type EvidenceKind = "fact" | "inference" | "forecast";
 export type EpistemicStatus = "verified" | "hypothesis" | "unavailable";
@@ -104,6 +105,13 @@ export type InvalidationRule =
   | "completed_close_outside"
   | "none";
 
+export interface ThesisConfirmation {
+  /** A non-numeric condition. It is available only from the fresh completed-session range. */
+  condition: string;
+  available: boolean;
+  evidenceIds: Array<typeof THESIS_RANGE_EVIDENCE_ID>;
+}
+
 export interface ThesisScenario {
   id: "bull" | "base" | "bear";
   title: string;
@@ -111,6 +119,7 @@ export interface ThesisScenario {
   evidenceIds: string[];
   assumptions: string[];
   confidence: QualitativeConfidence;
+  confirmation: ThesisConfirmation;
   invalidation: string;
   invalidationMeasurable: boolean;
   invalidationRule: InvalidationRule;
@@ -338,10 +347,19 @@ function section(id: ThesisSectionId, summary: string, itemIds: string[]): Thesi
   return { id, title: SECTION_TITLES[id], summary, itemIds };
 }
 
+function rangeConfirmation(condition: string): ThesisConfirmation {
+  return { condition, available: true, evidenceIds: [THESIS_RANGE_EVIDENCE_ID] };
+}
+
+function withheldConfirmation(): ThesisConfirmation {
+  return { condition: "Withheld because no fresh completed-session range is available.", available: false, evidenceIds: [] };
+}
+
 export function thesisStatements(thesis: Pick<PentagonalThesis, "headline" | "sections" | "items" | "gaps">): string[] {
   const scenarioText = thesis.sections.next.scenarios.flatMap(scenario => [
     scenario.title,
     scenario.narrative,
+    scenario.confirmation.condition,
     scenario.invalidation,
     ...scenario.assumptions,
   ]);
@@ -373,6 +391,16 @@ export function findThesisIntegrityViolations(thesis: PentagonalThesis): string[
   for (const scenario of thesis.sections.next.scenarios) {
     if (scenario.confidence !== "insufficient" && scenario.evidenceIds.some(id => !driverIds.has(id))) {
       violations.push(`scenario ${scenario.id} cites evidence that is not a driver`);
+    }
+    if (scenario.confirmation.available) {
+      const range = thesis.items.find(entry => entry.id === THESIS_RANGE_EVIDENCE_ID);
+      if (scenario.confirmation.evidenceIds.length !== 1 || scenario.confirmation.evidenceIds[0] !== THESIS_RANGE_EVIDENCE_ID || !range || !range.driver || !range.fresh || range.stale || range.missing) {
+        violations.push(`scenario ${scenario.id} confirmation is not grounded in fresh completed-range evidence`);
+      }
+      if (/\d/.test(scenario.confirmation.condition)) violations.push(`scenario ${scenario.id} confirmation condition is numeric`);
+    } else {
+      if (scenario.confirmation.evidenceIds.length > 0) violations.push(`scenario ${scenario.id} withheld confirmation cites evidence`);
+      if (!/\bwithheld\b/i.test(scenario.confirmation.condition)) violations.push(`scenario ${scenario.id} confirmation is unavailable without an explicit withholding`);
     }
     if (scenario.invalidationMeasurable && scenario.invalidationRule === "none") {
       violations.push(`scenario ${scenario.id} claims a measurable invalidation without a rule`);
@@ -437,6 +465,7 @@ function withheldThesis(symbol: string, generatedAt: string, reason: string): Pe
           evidenceIds: [],
           assumptions: ["No observation was accepted."],
           confidence: "insufficient",
+          confirmation: withheldConfirmation(),
           invalidation: "No measurable invalidation line is available.",
           invalidationMeasurable: false,
           invalidationRule: "none",
@@ -842,7 +871,7 @@ export function buildPentagonalThesis(input: PentagonalThesisInput): PentagonalT
   const low = bars.range?.low ?? null;
   const high = bars.range?.high ?? null;
   const latestClose = bars.latest?.close ?? null;
-  const levelEvidence = ["happening:range", "happening:last-close"].filter(id => verifiedIds.includes(id));
+  const levelEvidence = [THESIS_RANGE_EVIDENCE_ID, "happening:last-close"].filter(id => verifiedIds.includes(id));
 
   const scenarios: ThesisScenario[] = bars.range && latestClose != null
     ? [
@@ -853,6 +882,7 @@ export function buildPentagonalThesis(input: PentagonalThesisInput): PentagonalT
           evidenceIds: levelEvidence,
           assumptions: ["The last 20 completed sessions remain the reference range.", "A completed close equal to the low invalidates this sketch.", "No earnings date, macro release, or company catalyst is assumed."],
           confidence,
+          confirmation: rangeConfirmation("A later completed daily close stays above the reference range low."),
           invalidation: `Invalidated by a completed daily close at or below ${formatPrice(low!)}.`,
           invalidationMeasurable: true,
           invalidationRule: "completed_close_below",
@@ -866,6 +896,7 @@ export function buildPentagonalThesis(input: PentagonalThesisInput): PentagonalT
           evidenceIds: levelEvidence,
           assumptions: ["The high and low are the extremes of the last 20 completed sessions, not a forecast level."],
           confidence,
+          confirmation: rangeConfirmation("A later completed daily close remains within the reference range."),
           invalidation: `Invalidated by a completed daily close at or below ${formatPrice(low!)} or at or above ${formatPrice(high!)}.`,
           invalidationMeasurable: true,
           invalidationRule: "completed_close_outside",
@@ -879,6 +910,7 @@ export function buildPentagonalThesis(input: PentagonalThesisInput): PentagonalT
           evidenceIds: levelEvidence,
           assumptions: ["The weaker path is a sketch of the range, not a forecast that the low will break."],
           confidence,
+          confirmation: rangeConfirmation("A later completed daily close breaks below the reference range low."),
           invalidation: `Invalidated by a completed daily close at or above ${formatPrice(high!)}.`,
           invalidationMeasurable: true,
           invalidationRule: "completed_close_above",
@@ -893,6 +925,7 @@ export function buildPentagonalThesis(input: PentagonalThesisInput): PentagonalT
         evidenceIds: [],
         assumptions: ["Missing range data is not filled in."],
         confidence: "insufficient" as const,
+        confirmation: withheldConfirmation(),
         invalidation: "No measurable invalidation line is available.",
         invalidationMeasurable: false,
         invalidationRule: "none" as const,
@@ -903,7 +936,7 @@ export function buildPentagonalThesis(input: PentagonalThesisInput): PentagonalT
   const nextItems: ThesisEvidenceItem[] = scenarios.map(scenario => item({
     id: `next:${scenario.id}`,
     section: "next",
-    statement: `${scenario.narrative} ${scenario.invalidation}`,
+    statement: `${scenario.narrative} Confirmation: ${scenario.confirmation.condition} ${scenario.invalidation}`,
     kind: "forecast",
     epistemic: scenario.confidence === "insufficient" ? "unavailable" : "hypothesis",
     source: scenario.invalidationMeasurable ? "completed-daily-bars" : "pentagonal-thesis-engine",
