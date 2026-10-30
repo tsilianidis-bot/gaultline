@@ -1,9 +1,16 @@
+import { randomBytes, randomUUID } from "node:crypto";
+import { parse as parseCookies } from "cookie";
 import { OPEN_REGISTRATION } from "@shared/tiers";
+import { canonicalAuthOrigin, FAULTLINE_ORIGIN } from "@shared/authOrigin";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
+import { ENV } from "./env";
 import { isOAuthConfigured, OAuthInactiveError, sdk } from "./sdk";
+
+export const OAUTH_STATE_COOKIE_NAME = "faultline_oauth_state_verifier";
+export const OAUTH_STATE_TTL_MS = 10 * 60 * 1_000;
 
 export const OAUTH_CALLBACK_ERROR_CODES = [
   "token_exchange_failed",
@@ -101,24 +108,141 @@ function getQueryParam(req: Request, key: string): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+function randomOpaqueToken(): string {
+  return randomBytes(32).toString("base64url");
+}
+
+function validAbsoluteHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (url.protocol === "https:" || url.protocol === "http:") && Boolean(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Never derive a redirect URI from an inbound Host header. Production uses the
+ * known canonical origin; staging must opt in through a trusted environment
+ * value so a forged Host cannot receive an authorization code.
+ */
+export function oauthCallbackUri(): string | null {
+  const configured = ENV.oAuthCallbackOrigin.trim() || FAULTLINE_ORIGIN;
+  if (!validAbsoluteHttpUrl(configured)) return null;
+  const parsed = new URL(configured);
+  if (parsed.pathname !== "/" || parsed.search || parsed.hash) return null;
+  return `${canonicalAuthOrigin(parsed.origin)}/api/oauth/callback`;
+}
+
+export function isOAuthLoginConfigured(): boolean {
+  return isOAuthConfigured()
+    && validAbsoluteHttpUrl(ENV.oAuthPortalUrl.trim())
+    && oauthCallbackUri() !== null;
+}
+
+export function buildOAuthAuthorizationUrl(state: string): string | null {
+  if (!isOAuthLoginConfigured()) return null;
+  const redirectUri = oauthCallbackUri();
+  if (!redirectUri) return null;
+  try {
+    const url = new URL("/app-auth", ENV.oAuthPortalUrl.trim());
+    url.searchParams.set("appId", ENV.appId);
+    url.searchParams.set("redirectUri", redirectUri);
+    url.searchParams.set("state", state);
+    url.searchParams.set("type", "signIn");
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function oauthStateCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax" as const,
+    path: "/",
+  };
+}
+
+function stateVerifierFrom(req: Request): string | undefined {
+  const verifier = parseCookies(req.headers.cookie ?? "")[OAUTH_STATE_COOKIE_NAME];
+  return typeof verifier === "string" && verifier.length > 0 ? verifier : undefined;
+}
+
+function respondInvalidOAuthState(res: Response): void {
+  res.status(400).set("Cache-Control", "no-store").json({ error: "invalid or expired OAuth state" });
+}
+
 export function registerOAuthRoutes(app: Express) {
+  app.get("/api/oauth/login", async (_req: Request, res: Response) => {
+    const authorizationUrl = buildOAuthAuthorizationUrl("placeholder");
+    if (!authorizationUrl) {
+      res.status(503).set("Cache-Control", "no-store").json({ error: "OAuth sign-in is unavailable" });
+      return;
+    }
+
+    const state = randomOpaqueToken();
+    const verifier = randomOpaqueToken();
+    try {
+      await db.createOAuthAuthorizationState(state, verifier, new Date(Date.now() + OAUTH_STATE_TTL_MS));
+    } catch (error) {
+      console.error("[OAuth] Refusing to initiate without durable state persistence", error);
+      res.status(503).set("Cache-Control", "no-store").json({ error: "OAuth sign-in is unavailable" });
+      return;
+    }
+
+    const redirectUrl = buildOAuthAuthorizationUrl(state);
+    if (!redirectUrl) {
+      // Do not leave a durable state usable when a configuration changes mid-request.
+      res.status(503).set("Cache-Control", "no-store").json({ error: "OAuth sign-in is unavailable" });
+      return;
+    }
+    res.cookie(OAUTH_STATE_COOKIE_NAME, verifier, {
+      ...oauthStateCookieOptions(),
+      maxAge: OAUTH_STATE_TTL_MS,
+    });
+    res.set("Cache-Control", "no-store").redirect(302, redirectUrl);
+  });
+
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
     const code = getQueryParam(req, "code");
     const state = getQueryParam(req, "state");
+    const verifier = stateVerifierFrom(req);
 
-    if (!code || !state) {
-      res.status(400).json({ error: "code and state are required" });
+    if (!code || !state || !verifier) {
+      respondInvalidOAuthState(res);
       return;
     }
+
+    let consumed: boolean;
+    try {
+      consumed = await db.consumeOAuthAuthorizationState(state, verifier);
+    } catch (error) {
+      respondOAuthCallbackFailure(req, res, new OAuthCallbackStepError("callback_failed", error));
+      return;
+    }
+    if (!consumed) {
+      respondInvalidOAuthState(res);
+      return;
+    }
+
+    // Consume first and clear the browser binding before any provider call.
+    res.clearCookie(OAUTH_STATE_COOKIE_NAME, oauthStateCookieOptions());
 
     if (!isOAuthConfigured()) {
       respondOAuthCallbackFailure(req, res, new OAuthCallbackStepError("token_exchange_failed", new OAuthInactiveError()));
       return;
     }
+    const redirectUri = oauthCallbackUri();
+    if (!redirectUri) {
+      respondOAuthCallbackFailure(req, res, new OAuthCallbackStepError("callback_failed"));
+      return;
+    }
 
     try {
       const tokenResponse = await runOAuthStep("token_exchange_failed", () =>
-        sdk.exchangeCodeForToken(code, state),
+        sdk.exchangeCodeForToken(code, redirectUri),
       );
       const userInfo = await runOAuthStep("userinfo_failed", () =>
         sdk.getUserInfo(tokenResponse.accessToken),
@@ -149,23 +273,29 @@ export function registerOAuthRoutes(app: Express) {
       if (userInfo.email) {
         try {
           const userByEmail = await db.getUserByEmail(userInfo.email);
-          if (userByEmail && userByEmail.accessTier === 'free') {
+          if (userByEmail && userByEmail.accessTier === "free") {
             const hasApproval = await db.hasApprovedFoundingRequest(userInfo.email);
             if (hasApproval) {
-              await db.updateUserTier(userByEmail.id, 'founding');
+              await db.updateUserTier(userByEmail.id, "founding");
               console.log(`[OAuth] Auto-granted founding tier to ${userInfo.email}`);
             }
           }
         } catch (e) {
-          console.warn('[OAuth] Could not check founding access request', e);
+          console.warn("[OAuth] Could not check founding access request", e);
         }
       }
 
+      const sessionId = randomUUID();
+      const expiresAt = new Date(Date.now() + ONE_YEAR_MS);
       const sessionToken = await runOAuthStep("session_failed", () =>
         sdk.createSessionToken(userInfo.openId, {
           name: userInfo.name || "",
           expiresInMs: ONE_YEAR_MS,
+          sessionId,
         }),
+      );
+      await runOAuthStep("session_failed", () =>
+        db.createAuthSession(sessionId, userInfo.openId, expiresAt),
       );
 
       const cookieOptions = getSessionCookieOptions(req);

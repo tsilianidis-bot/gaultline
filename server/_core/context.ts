@@ -4,6 +4,7 @@ import { sdk } from "./sdk";
 import { isQaSession, qaPrincipal } from "../qaAccess";
 
 export type RequestPrincipal = User & {
+  sessionId?: string;
   isQaSession?: true;
   qaAccess?: "read_only";
 };

@@ -24,6 +24,7 @@ const migrationTags = [
   "0080_publishing_delivery_claims",
   "0081_admin_audit_events",
   "0082_durable_alert_events",
+  "0083_auth_state_and_sessions",
 ] as const;
 const immutablePrefixSha256 = "318818c345df26cb45f99da89b6a215a5765c4eddf59624e65f908ab6395c3a1";
 
@@ -161,8 +162,8 @@ describe("current migration journal and synthetic local recovery", () => {
 
   it("preserves every immutable prefix field and order while registering the complete current accepted tail", async () => {
     const journal = JSON.parse(await readFile(journalPath, "utf8")) as { entries: JournalEntry[] };
-    expect(journal.entries).toHaveLength(83);
-    expect(journal.entries.map(entry => entry.idx)).toEqual(Array.from({ length: 83 }, (_, idx) => idx));
+    expect(journal.entries).toHaveLength(84);
+    expect(journal.entries.map(entry => entry.idx)).toEqual(Array.from({ length: 84 }, (_, idx) => idx));
     expect(createHash("sha256").update(JSON.stringify(journal.entries.slice(0, 77))).digest("hex"))
       .toBe(immutablePrefixSha256);
     expect(journal.entries.slice(76)).toEqual([
@@ -173,6 +174,7 @@ describe("current migration journal and synthetic local recovery", () => {
       { idx: 80, version: "5", when: 1793270956096, tag: "0080_publishing_delivery_claims", breakpoints: true },
       { idx: 81, version: "5", when: 1793270956097, tag: "0081_admin_audit_events", breakpoints: true },
       { idx: 82, version: "5", when: 1793270956098, tag: "0082_durable_alert_events", breakpoints: true },
+      { idx: 83, version: "5", when: 1793386577182, tag: "0083_auth_state_and_sessions", breakpoints: true },
     ]);
   });
 
@@ -184,12 +186,14 @@ describe("current migration journal and synthetic local recovery", () => {
       const [tables] = await fresh.connection.query<Array<{ tableName: string }>>(
         `SELECT TABLE_NAME AS tableName FROM information_schema.TABLES
          WHERE TABLE_SCHEMA = DATABASE()
-         AND TABLE_NAME IN ('stripePaymentOrigins', 'stripePaymentReversalEvents', 'decisionLedgerOutcomeProvenance', 'publishingRunClaims', 'publishingDeliveryClaims', 'adminAuditEvents', 'userAlertMonitorStates', 'userAlertEvents', 'userAlertEventAcknowledgements')
+         AND TABLE_NAME IN ('stripePaymentOrigins', 'stripePaymentReversalEvents', 'decisionLedgerOutcomeProvenance', 'publishingRunClaims', 'publishingDeliveryClaims', 'adminAuditEvents', 'userAlertMonitorStates', 'userAlertEvents', 'userAlertEventAcknowledgements', 'oauthAuthorizationStates', 'authSessions')
          ORDER BY TABLE_NAME`
       );
       expect(tables.map(row => row.tableName)).toEqual([
         "adminAuditEvents",
+        "authSessions",
         "decisionLedgerOutcomeProvenance",
+        "oauthAuthorizationStates",
         "publishingDeliveryClaims",
         "publishingRunClaims",
         "stripePaymentOrigins",

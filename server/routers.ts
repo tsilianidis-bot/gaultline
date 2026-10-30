@@ -34,7 +34,7 @@ import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAll
   deleteUser,
   insertPressureRun, getRecentPressureRuns, countPressureRuns,
   getAllFeatureFlags, getFeatureFlag, setFeatureFlag,
-  createSharedReport, getSharedReportByPublicId, listSharedReportsByUser, revokeSharedReport, incrementSharedReportViewCount } from "./db";
+  createSharedReport, getSharedReportByPublicId, listSharedReportsByUser, revokeSharedReport, incrementSharedReportViewCount, revokeAuthSession } from "./db";
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
 import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngineCache } from "./cryptoEngine";
 import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinOHLC, getCoinDetail } from "./coingeckoProxy";
@@ -131,7 +131,13 @@ export const appRouter = router({
 
   auth: router({
     me: publicProcedure.query(opts => toPublicAuthUser(opts.ctx.user)),
-    logout: publicProcedure.mutation(({ ctx }) => {
+    logout: publicProcedure.mutation(async ({ ctx }) => {
+      // Context authentication has already verified this ID against the shared
+      // authSessions table. Revoke first so a copied pre-logout cookie cannot
+      // be replayed to another process after this response.
+      if (ctx.user?.sessionId) {
+        await revokeAuthSession(ctx.user.sessionId);
+      }
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return {

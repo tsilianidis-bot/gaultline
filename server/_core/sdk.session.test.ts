@@ -32,13 +32,14 @@ describe("verifySession unauthenticated path", () => {
 
 describe("session profile name", () => {
   it("accepts a signed session with an empty optional display name", async () => {
-    const prior = { appId: ENV.appId, cookieSecret: ENV.cookieSecret };
-    Object.assign(ENV, { appId: "session-test-app", cookieSecret: "test-session-secret-only" });
-    try {
-      const token = await sdk.createSessionToken("authenticated-open-id");
-      await expect(sdk.verifySession(token)).resolves.toEqual({
-        openId: "authenticated-open-id", appId: "session-test-app", name: "",
-      });
+      const prior = { appId: ENV.appId, cookieSecret: ENV.cookieSecret };
+      Object.assign(ENV, { appId: "session-test-app", cookieSecret: "test-session-secret-only" });
+      try {
+        const token = await sdk.createSessionToken("authenticated-open-id");
+        await expect(sdk.verifySession(token)).resolves.toMatchObject({
+          openId: "authenticated-open-id", appId: "session-test-app", name: "",
+          sessionId: expect.any(String),
+        });
       for (const payload of [
         { openId: "", appId: ENV.appId, name: "" },
         { openId: "authenticated-open-id", appId: "", name: "" },
