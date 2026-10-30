@@ -128,42 +128,35 @@ describe("integration 117+118 shared surface", () => {
     expect(read("server/routers/pentagonalThesis.ts")).not.toContain("ctx.user");
   });
 
-  it("keeps the migration journal order and both schema additions", () => {
+  it("keeps the immutable journal tail and approved auth append in order", () => {
     const journal = JSON.parse(read("drizzle/meta/_journal.json")) as {
       entries: Array<{ idx: number; version: string; tag: string; when: number; breakpoints: boolean }>;
     };
-    const originalSegment = journal.entries.filter(entry => entry.idx >= 72 && entry.idx <= 76);
-    expect(originalSegment.map(entry => entry.tag)).toEqual([
-      "0072_final_recovery_controls",
-      "0073_pressure_v2_shadow",
-      "0074_stripe_entitlement_resync",
-      "0075_pentagonal_thesis_records",
-      "0076_algorithm_outcome_fk_name",
-    ]);
-    expect(originalSegment.map(entry => entry.idx)).toEqual([72, 73, 74, 75, 76]);
-    expect(originalSegment.map(entry => entry.when)).toEqual([1790544467081, 1791864000000, 1792100000000, 1792200000000, 1792300000000]);
-    expect(originalSegment[3]?.when).toBe(1792200000000);
-    expect(originalSegment[4]?.when).toBe(1792300000000);
-    const appended0077 = journal.entries.filter(entry => entry.idx === 77);
-    expect(appended0077).toEqual([
-      {
-        idx: 77,
-        version: "5",
-        when: 1793241851962,
-        tag: "0077_governed_research_immutability",
-        breakpoints: true,
-      },
-    ]);
-    expect(journal.entries.indexOf(appended0077[0]!)).toBe(journal.entries.indexOf(originalSegment[4]!) + 1);
-    expect(journal.entries[77]).toEqual(appended0077[0]);
-    expect(journal.entries.slice(-5)).toEqual([
+    const immutable0072To0082 = [
+      { idx: 72, version: "5", when: 1790544467081, tag: "0072_final_recovery_controls", breakpoints: true },
+      { idx: 73, version: "5", when: 1791864000000, tag: "0073_pressure_v2_shadow", breakpoints: true },
+      { idx: 74, version: "5", when: 1792100000000, tag: "0074_stripe_entitlement_resync", breakpoints: true },
+      { idx: 75, version: "5", when: 1792200000000, tag: "0075_pentagonal_thesis_records", breakpoints: true },
+      { idx: 76, version: "5", when: 1792300000000, tag: "0076_algorithm_outcome_fk_name", breakpoints: true },
+      { idx: 77, version: "5", when: 1793241851962, tag: "0077_governed_research_immutability", breakpoints: true },
       { idx: 78, version: "5", when: 1793270956094, tag: "0078_payment_event_linkage", breakpoints: true },
       { idx: 79, version: "5", when: 1793270956095, tag: "0079_decision_outcome_provenance", breakpoints: true },
       { idx: 80, version: "5", when: 1793270956096, tag: "0080_publishing_delivery_claims", breakpoints: true },
       { idx: 81, version: "5", when: 1793270956097, tag: "0081_admin_audit_events", breakpoints: true },
       { idx: 82, version: "5", when: 1793270956098, tag: "0082_durable_alert_events", breakpoints: true },
-    ]);
-    expect(journal.entries[78]!.when).toBeGreaterThan(appended0077[0]!.when);
+    ];
+    const approved0083 = {
+      idx: 83,
+      version: "5",
+      when: 1793386577182,
+      tag: "0083_auth_state_and_sessions",
+      breakpoints: true,
+    };
+    expect(journal.entries.slice(72, 83)).toEqual(immutable0072To0082);
+    expect(journal.entries.slice(72)).toEqual([...immutable0072To0082, approved0083]);
+    expect(journal.entries).toHaveLength(84);
+    expect(journal.entries.indexOf(journal.entries[83]!)).toBe(83);
+    expect(journal.entries[83]).toEqual(approved0083);
     const schema = read("drizzle/schema.ts");
     expect(schema).toContain("pressureV2ShadowObservations");
     expect(schema).toContain("accessExpiresAt");
@@ -171,6 +164,11 @@ describe("integration 117+118 shared surface", () => {
     expect(schema).toContain("stripeSubscriptionCancellations");
     expect(schema).toContain("pentagonalThesisRecords");
     expect(schema).toContain("pentagonalThesisOutcomeScores");
+    expect(schema).toContain('export const oauthAuthorizationStates = mysqlTable("oauthAuthorizationStates"');
+    expect(schema).toContain('index("oauthAuthorizationStates_expiresAt_idx").on(t.expiresAt)');
+    expect(schema).toContain('export const authSessions = mysqlTable("authSessions"');
+    expect(schema).toContain('index("authSessions_openId_expiresAt_idx").on(t.openId, t.expiresAt)');
+    expect(schema).toContain('index("authSessions_expiresAt_idx").on(t.expiresAt)');
   });
 
   it("keeps both edits on the shared Watchlist page", () => {

@@ -7,6 +7,7 @@ const read = (relative: string) => readFileSync(path.resolve(import.meta.dirname
 const panel = read("client/src/components/AshaPanel.tsx");
 const liveBriefing = read("client/src/components/AshaLiveBriefing.tsx");
 const dailyGreeting = read("client/src/components/AshaDailyGreeting.tsx");
+const context = read("client/src/contexts/AshaContext.tsx");
 
 describe("guest ASK PLATO", () => {
   it("reads auth through the existing hook and never calls asha.ask for a signed-out visitor", () => {
@@ -52,9 +53,12 @@ describe("no invented briefing fields or greeting claims", () => {
     expect(panel).not.toMatch(/Probability \?\? 50|pressureScore \?\? 50/);
   });
 
-  it("AshaPanel shows no response confidence: no keyword-guessed 82/65/45% mapping", () => {
+  it("has no response-confidence mapping and strips legacy session confidence", () => {
     expect(panel).not.toMatch(/\? 82|\? 65|: 45;/);
-    expect(panel).toMatch(/confidence: undefined,/);
+    expect(panel).not.toContain("response.confidence");
+    expect(panel).not.toMatch(/\bconfidence\s*:/);
+    expect(context).not.toMatch(/\bconfidence\??\s*:/);
+    expect(context).toContain("drops confidence values from older sessions");
   });
 
   it("AshaPanel never sends the demo engine output as page context", () => {
