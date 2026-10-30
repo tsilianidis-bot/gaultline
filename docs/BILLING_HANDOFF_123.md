@@ -4,7 +4,7 @@ Draft for Manus. This file does not approve a merge, a deploy, or a production m
 
 ## SHA
 
-Branch `cursor/stripe-refund-dispute-entitlement-2996`. Parent of the promo-code fix is `f2a193de966462a3932a3becd69324a14fb33a32`. The handoff SHA is the commit that contains this file (`git rev-parse HEAD` on that branch).
+Branch `cursor/stripe-refund-dispute-entitlement-2996`. Billing behavior is `efa08cb8cf78731bf0ea3b0f0c6622c900b4fb5c` (parent `f2a193de966462a3932a3becd69324a14fb33a32`). The branch head is that commit, or one documentation pin on top of it that only writes this hash. Confirm with `git rev-parse HEAD`.
 
 PR #123 is a draft into `cursor/faultline-rc-2026-10-28-4018`. That branch is the head of draft PR #121, which targets `release/verified-2026-10-22`. Merge #123 into the RC branch first so #121 carries this webhook. Do not merge #123 to `main` ahead of #121.
 
