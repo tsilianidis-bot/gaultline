@@ -17,6 +17,7 @@ import {
   completeStripeWebhookEvent,
   entitlementAuditExists,
   getAllUsersWithTier,
+  getUserByLifetimePaymentIntentId,
   getUserTier,
   listPurchaseRevocations,
   listStripeCancellationMarkers,
@@ -151,10 +152,13 @@ describe("stripe webhook claim concurrency", () => {
       throw new Error("lifetimePaymentIntentId must be added by 0077, not the base fixture");
     }
     const migration = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../drizzle/0077_stripe_purchase_revocations.sql"), "utf8");
-    for (const part of migration.split("--> statement-breakpoint")) {
-      const statement = part.split("\n").filter(line => !line.trim().startsWith("--")).join("\n").trim();
-      if (statement) await admin.query(statement);
-    }
+    const apply0077 = async () => {
+      for (const part of migration.split("--> statement-breakpoint")) {
+        const statement = part.split("\n").filter(line => !line.trim().startsWith("--")).join("\n").trim();
+        if (statement) await admin.query(statement);
+      }
+    };
+    await apply0077();
     const [afterColumn] = await admin.query(
       `SELECT COUNT(*) AS n FROM information_schema.COLUMNS
        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'lifetimePaymentIntentId'`,
@@ -170,6 +174,7 @@ describe("stripe webhook claim concurrency", () => {
     if (Number(afterColumn[0].n) !== 1 || Number(auditColumn[0].n) !== 1 || Number(revocationTable[0].n) !== 1) {
       throw new Error("0077 did not add the refund and dispute entitlement objects");
     }
+    await apply0077();
     process.env.DATABASE_URL = url;
     closeDbForTests();
   }, 60_000);
@@ -663,6 +668,47 @@ describe("stripe webhook claim concurrency", () => {
     expect(await listPurchaseRevocations(userId)).toEqual([
       expect.objectContaining({ active: true, disputeOutcome: "lost", sourceEventCreated: 250 }),
     ]);
+  });
+
+  it("restores access when a dispute is won in the same second it was opened", async () => {
+    await admin!.query("INSERT INTO users (openId, accessTier, lifetimeAccess, lifetimePaymentIntentId) VALUES ('same-second', 'founding', 1, 'pi_life')");
+    const [users] = await admin!.query("SELECT id FROM users WHERE openId = 'same-second'") as unknown as [Array<{ id: number }>];
+    const userId = users[0].id;
+    const opened = await applyPurchaseRevocation(revocation({
+      userId, purchaseKey: "pi:pi_life", purchaseKind: "lifetime", paymentIntentId: "pi_life", invoiceId: null,
+      sourceEventId: "evt_open_tie", sourceEventCreated: 100, reasonKind: "dispute:dp_tie", disputeId: "dp_tie", disputeOutcome: "open", active: true,
+    }));
+    expect(opened).toEqual({ applied: true, stale: false });
+    const won = await applyPurchaseRevocation(revocation({
+      userId, purchaseKey: "pi:pi_life", purchaseKind: "lifetime", paymentIntentId: "pi_life", invoiceId: null,
+      sourceEventId: "evt_won_tie", sourceEventCreated: 100, reasonKind: "dispute:dp_tie", disputeId: "dp_tie", disputeOutcome: "won", active: false,
+    }));
+    expect(won).toEqual({ applied: true, stale: false });
+    expect(await listPurchaseRevocations(userId)).toEqual([
+      expect.objectContaining({ active: false, disputeOutcome: "won", sourceEventCreated: 100, sourceEventId: "evt_won_tie" }),
+    ]);
+
+    const wonFirst = await applyPurchaseRevocation(revocation({
+      userId, purchaseKey: "pi:pi_other", purchaseKind: "lifetime", paymentIntentId: "pi_other", invoiceId: null,
+      sourceEventId: "evt_won_first", sourceEventCreated: 100, reasonKind: "dispute:dp_first", disputeId: "dp_first", disputeOutcome: "won", active: false,
+    }));
+    expect(wonFirst).toEqual({ applied: true, stale: false });
+    const openSecond = await applyPurchaseRevocation(revocation({
+      userId, purchaseKey: "pi:pi_other", purchaseKind: "lifetime", paymentIntentId: "pi_other", invoiceId: null,
+      sourceEventId: "evt_open_second", sourceEventCreated: 100, reasonKind: "dispute:dp_first", disputeId: "dp_first", disputeOutcome: "open", active: true,
+    }));
+    expect(openSecond).toEqual({ applied: false, stale: true });
+    expect(await listPurchaseRevocations(userId)).toEqual(expect.arrayContaining([
+      expect.objectContaining({ purchaseKey: "pi:pi_other", active: false, disputeOutcome: "won", sourceEventId: "evt_won_first" }),
+    ]));
+  });
+
+  it("finds a lifetime user by PaymentIntent when the charge has no customer", async () => {
+    await admin!.query("INSERT INTO users (openId, accessTier, lifetimeAccess, lifetimePaymentIntentId) VALUES ('life-lookup', 'founding', 1, 'pi_life')");
+    const found = await getUserByLifetimePaymentIntentId("pi_life");
+    expect(found?.lifetimePaymentIntentId).toBe("pi_life");
+    expect(found?.lifetimeAccess).toBe(true);
+    expect(await getUserByLifetimePaymentIntentId("pi_missing")).toBeNull();
   });
 
   it("converges concurrent dispute events onto the newer source timestamp", async () => {

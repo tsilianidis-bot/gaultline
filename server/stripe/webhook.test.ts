@@ -12,6 +12,7 @@ vi.mock('./client', () => {
     checkout: { sessions: { retrieve: vi.fn(), list: vi.fn() } },
     subscriptions: { retrieve: vi.fn(), list: vi.fn() },
     charges: { retrieve: vi.fn() },
+    invoicePayments: { list: vi.fn() },
   };
   return { stripe, requireStripe: () => stripe };
 });
@@ -21,6 +22,7 @@ vi.mock('../db', () => {
   class ZeroRowEntitlementWriteError extends Error {}
   return {
     getUserByStripeCustomerId: vi.fn(),
+    getUserByLifetimePaymentIntentId: vi.fn(),
     getEntitlementUserById: vi.fn(),
     getEntitlementRevision: vi.fn().mockResolvedValue(0),
     recordStripeWebhookEvent: vi.fn(),
@@ -47,6 +49,7 @@ vi.mock('../email', () => ({
 import { stripe } from './client';
 import {
   getUserByStripeCustomerId,
+  getUserByLifetimePaymentIntentId,
   getEntitlementUserById,
   getEntitlementRevision,
   recordStripeWebhookEvent,
@@ -127,6 +130,8 @@ describe('handleStripeWebhook re-sync', () => {
     vi.mocked(getUserByStripeCustomerId).mockResolvedValue({
       id: 7, name: 'Ada', email: 'ada@example.com', accessTier: 'free', lifetimeAccess: false,
     });
+    vi.mocked(getUserByLifetimePaymentIntentId).mockResolvedValue(null);
+    vi.mocked(stripe.invoicePayments.list).mockResolvedValue({ data: [], has_more: false } as never);
     vi.mocked(getEntitlementUserById).mockResolvedValue({
       id: 7, name: 'Ada', email: 'ada@example.com', accessTier: 'free', lifetimeAccess: false,
     });
@@ -413,18 +418,18 @@ describe('handleStripeWebhook re-sync', () => {
     }));
   });
 
-  it('does not acknowledge an event whose user cannot be resolved', async () => {
+  it('acknowledges an event whose user cannot be resolved', async () => {
     vi.mocked(getUserByStripeCustomerId).mockResolvedValue(null);
     vi.mocked(getEntitlementUserById).mockResolvedValue(null);
     const res = await post({
       id: 'evt_nouser', type: 'invoice.paid', created: PERIOD_START,
       data: { object: { id: 'in_paid', customer: 'cus_missing' } },
     });
-    expect(res._status).toBe(500);
-    expect(res._body).toEqual({ error: 'Webhook processing failed', conflict: 'missing_user' });
-    expect(completeStripeWebhookEvent).not.toHaveBeenCalled();
+    expect(res._status).toBe(200);
+    expect(res._body).toEqual({ received: true, ignored: 'missing_user' });
+    expect(completeStripeWebhookEvent).toHaveBeenCalled();
     expect(commitEntitlementResync).not.toHaveBeenCalled();
-    expect(releaseStripeWebhookEvent).toHaveBeenCalled();
+    expect(releaseStripeWebhookEvent).not.toHaveBeenCalled();
   });
 
   it('renews a paid invoice settled by customer credit', async () => {
@@ -545,8 +550,26 @@ describe('refund and dispute entitlement', () => {
     vi.mocked(getUserByStripeCustomerId).mockResolvedValue({
       id: 7, name: 'Ada', email: 'ada@example.com', accessTier: 'premium', lifetimeAccess: false, stripeCustomerId: 'cus_a',
     });
+    vi.mocked(getUserByLifetimePaymentIntentId).mockResolvedValue(null);
     vi.mocked(getEntitlementUserById).mockResolvedValue({
       id: 7, name: 'Ada', email: 'ada@example.com', accessTier: 'premium', lifetimeAccess: false, stripeCustomerId: 'cus_a',
+    });
+    vi.mocked(stripe.invoicePayments.list).mockImplementation(async (params: { payment?: { payment_intent?: string } }) => {
+      const paymentIntentId = params?.payment?.payment_intent;
+      const invoiceId = paymentIntentId === 'pi_std' ? 'in_paid'
+        : paymentIntentId === 'pi_old' ? 'in_old'
+        : paymentIntentId === 'pi_coupon' ? 'in_coupon'
+        : null;
+      return {
+        data: invoiceId ? [{
+          id: `inpay_${invoiceId}`,
+          object: 'invoice_payment',
+          invoice: invoiceId,
+          status: 'paid',
+          payment: { type: 'payment_intent', payment_intent: paymentIntentId },
+        }] : [],
+        has_more: false,
+      } as never;
     });
     usePicture();
     expect(STANDARD_CENTS).toBe(9900);
@@ -578,10 +601,13 @@ describe('refund and dispute entitlement', () => {
       amount_refunded: STANDARD_CENTS,
       refunded: true,
       customer: 'cus_a',
-      invoice: 'in_paid',
       payment_intent: 'pi_std',
     }));
     expect(res._status).toBe(200);
+    expect(stripe.invoicePayments.list).toHaveBeenCalledWith(
+      { payment: { type: 'payment_intent', payment_intent: 'pi_std' }, limit: 10 },
+      expect.objectContaining({ timeout: 4_000, maxNetworkRetries: 1 }),
+    );
     expect(applyPurchaseRevocation).toHaveBeenCalledWith(expect.objectContaining({
       purchaseKind: 'subscription',
       invoiceId: 'in_paid',
@@ -608,7 +634,6 @@ describe('refund and dispute entitlement', () => {
       amount_refunded: 1000,
       refunded: false,
       customer: 'cus_a',
-      invoice: 'in_paid',
       payment_intent: 'pi_std',
     }));
     expect(res._status).toBe(200);
@@ -717,7 +742,7 @@ describe('refund and dispute entitlement', () => {
       amount_refunded: 0,
       refunded: true,
       customer: 'cus_a',
-      invoice: 'in_coupon',
+      payment_intent: 'pi_coupon',
     }));
     expect(res._status).toBe(200);
     expect(applyPurchaseRevocation).not.toHaveBeenCalled();
@@ -752,7 +777,7 @@ describe('refund and dispute entitlement', () => {
       amount_refunded: STANDARD_CENTS,
       refunded: true,
       customer: 'cus_a',
-      invoice: 'in_old',
+      payment_intent: 'pi_old',
     }, PERIOD_START + 10));
     expect(res._status).toBe(200);
     expect(commitEntitlementResync).toHaveBeenCalledWith(expect.objectContaining({
@@ -775,7 +800,6 @@ describe('refund and dispute entitlement', () => {
           amount_refunded: 0,
           refunded: false,
           customer: 'cus_a',
-          invoice: 'in_paid',
           payment_intent: 'pi_std',
         },
         status: 'needs_response',
@@ -802,7 +826,6 @@ describe('refund and dispute entitlement', () => {
       amount_refunded: 0,
       refunded: false,
       customer: 'cus_a',
-      invoice: 'in_paid',
       payment_intent: 'pi_std',
     } as never);
   }
@@ -931,7 +954,7 @@ describe('refund and dispute entitlement', () => {
       amount_refunded: STANDARD_CENTS,
       refunded: true,
       customer: 'cus_a',
-      invoice: 'in_paid',
+      payment_intent: 'pi_std',
     }));
     expect(res._body).toEqual({ received: true, duplicate: true });
     expect(stripe.subscriptions.list).not.toHaveBeenCalled();
@@ -939,17 +962,137 @@ describe('refund and dispute entitlement', () => {
     expect(commitEntitlementResync).not.toHaveBeenCalled();
   });
 
-  it('does not seal an unrecognized dispute close', async () => {
+  it('acknowledges an unrecognized dispute close without an entitlement change', async () => {
     const res = await post({
       id: 'evt_unknown_close',
       type: 'charge.dispute.closed',
       created: PERIOD_START + 5,
       data: { object: { id: 'dp_x', status: 'under_review', charge: 'ch_std' } },
     });
-    expect(res._status).toBe(500);
-    expect(res._body).toEqual({ error: 'Webhook processing failed', conflict: 'unknown_dispute_status' });
+    expect(res._status).toBe(200);
+    expect(res._body).toEqual({ received: true, ignored: 'unknown_dispute_status' });
     expect(applyPurchaseRevocation).not.toHaveBeenCalled();
     expect(commitEntitlementResync).not.toHaveBeenCalled();
-    expect(releaseStripeWebhookEvent).toHaveBeenCalled();
+    expect(releaseStripeWebhookEvent).not.toHaveBeenCalled();
+    expect(completeStripeWebhookEvent).toHaveBeenCalled();
+  });
+
+  it('revokes a customer-less Lifetime charge refund and dispute', async () => {
+    const lifetimeUser = {
+      id: 7, name: 'Ada', email: 'ada@example.com', accessTier: 'founding' as const, lifetimeAccess: true, stripeCustomerId: null, lifetimePaymentIntentId: 'pi_life',
+    };
+    vi.mocked(getUserByStripeCustomerId).mockResolvedValue(null);
+    vi.mocked(getEntitlementUserById).mockResolvedValue(lifetimeUser);
+    vi.mocked(getUserByLifetimePaymentIntentId).mockResolvedValue(null);
+    vi.mocked(stripe.checkout.sessions.list).mockImplementation(async (params: { payment_intent?: string }) => {
+      if (params?.payment_intent !== 'pi_life') return { data: [], has_more: false } as never;
+      return {
+        data: [{
+          id: 'cs_life',
+          mode: 'payment',
+          payment_status: 'paid',
+          amount_total: LIFETIME_CENTS,
+          created: PERIOD_START,
+          customer: null,
+          client_reference_id: '7',
+          metadata: { plan_id: 'lifetime', user_id: '7' },
+          payment_intent: { id: 'pi_life', status: 'succeeded', amount_received: 0, amount: LIFETIME_CENTS },
+        }],
+        has_more: false,
+      } as never;
+    });
+    vi.mocked(listPurchaseRevocations).mockResolvedValue([{
+      purchaseKey: 'pi:pi_life',
+      reasonKind: 'full_refund',
+      purchaseKind: 'lifetime',
+      chargeId: 'ch_life',
+      invoiceId: null,
+      paymentIntentId: 'pi_life',
+      subscriptionId: null,
+      disputeId: null,
+      disputeOutcome: null,
+      active: true,
+      sourceEventId: 'evt_charge_refunded_ch_life',
+      sourceEventCreated: PERIOD_START + 40,
+      userId: 7,
+    }]);
+    const refund = await post(chargeEvent('charge.refunded', {
+      id: 'ch_life',
+      object: 'charge',
+      amount: LIFETIME_CENTS,
+      amount_refunded: LIFETIME_CENTS,
+      refunded: true,
+      customer: null,
+      payment_intent: 'pi_life',
+    }));
+    expect(refund._status).toBe(200);
+    expect(stripe.checkout.sessions.list).toHaveBeenCalledWith(
+      expect.objectContaining({ payment_intent: 'pi_life', limit: 1 }),
+      expect.objectContaining({ timeout: 4_000, maxNetworkRetries: 1 }),
+    );
+    expect(getEntitlementUserById).toHaveBeenCalledWith(7);
+    expect(stripe.subscriptions.list).not.toHaveBeenCalled();
+    expect(applyPurchaseRevocation).toHaveBeenCalledWith(expect.objectContaining({
+      purchaseKind: 'lifetime',
+      paymentIntentId: 'pi_life',
+      active: true,
+      userId: 7,
+    }));
+    expect(commitEntitlementResync).toHaveBeenCalledWith(expect.objectContaining({
+      desired: expect.objectContaining({ accessTier: 'free', grantLifetime: false, revokeLifetime: true }),
+    }));
+
+    vi.mocked(applyPurchaseRevocation).mockClear();
+    vi.mocked(commitEntitlementResync).mockClear();
+    vi.mocked(stripe.subscriptions.list).mockClear();
+    vi.mocked(getUserByLifetimePaymentIntentId).mockResolvedValue(lifetimeUser);
+    vi.mocked(stripe.checkout.sessions.list).mockResolvedValue({ data: [], has_more: false } as never);
+    vi.mocked(listPurchaseRevocations).mockResolvedValue([{
+      purchaseKey: 'pi:pi_life',
+      reasonKind: 'dispute:dp_life',
+      purchaseKind: 'lifetime',
+      chargeId: 'ch_life',
+      invoiceId: null,
+      paymentIntentId: 'pi_life',
+      subscriptionId: null,
+      disputeId: 'dp_life',
+      disputeOutcome: 'open',
+      active: true,
+      sourceEventId: 'evt_dispute_life',
+      sourceEventCreated: PERIOD_START + 50,
+      userId: 7,
+    }]);
+    const dispute = await post({
+      id: 'evt_dispute_life',
+      type: 'charge.dispute.created',
+      created: PERIOD_START + 50,
+      data: { object: {
+        id: 'dp_life',
+        status: 'needs_response',
+        charge: {
+          id: 'ch_life',
+          object: 'charge',
+          amount: LIFETIME_CENTS,
+          amount_refunded: 0,
+          refunded: false,
+          customer: null,
+          payment_intent: 'pi_life',
+        },
+      } },
+    });
+    expect(dispute._status).toBe(200);
+    expect(getUserByLifetimePaymentIntentId).toHaveBeenCalledWith('pi_life');
+    expect(stripe.subscriptions.list).not.toHaveBeenCalled();
+    expect(applyPurchaseRevocation).toHaveBeenCalledWith(expect.objectContaining({
+      purchaseKind: 'lifetime',
+      paymentIntentId: 'pi_life',
+      active: true,
+      disputeId: 'dp_life',
+      disputeOutcome: 'open',
+      userId: 7,
+    }));
+    expect(commitEntitlementResync).toHaveBeenCalledWith(expect.objectContaining({
+      desired: expect.objectContaining({ accessTier: 'free', grantLifetime: false, revokeLifetime: true }),
+    }));
   });
 });

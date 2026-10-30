@@ -11,7 +11,9 @@
  * in cash, by a discount, or by customer credit. An unverified lifetime
  * purchase does not. A full refund or an open or lost dispute revokes only
  * the linked purchase. A partial refund does not. A won dispute clears that
- * dispute alone, and only when its source timestamp is newer.
+ * dispute alone when its source timestamp is newer, and also when the win
+ * shares the opening event's second. An opening event cannot re-revoke that
+ * same-second win.
  */
 
 import { PRICING_PLANS, type AccessTier } from "../../shared/tiers";
@@ -225,8 +227,8 @@ function metadataUserId(metadata: unknown): number | null {
 /**
  * User ids carried on the event object, in lookup order after the Stripe
  * customer id: checkout/subscription/invoice metadata, then client_reference_id.
- * This does not hit the database. An empty list means the caller must not
- * acknowledge the event.
+ * This does not hit the database. An empty list means the caller still looks
+ * up the charge PaymentIntent before treating the event as unresolved.
  */
 export function linkedUserIds(object: Record<string, unknown>): number[] {
   const parent = object.parent as { subscription_details?: { metadata?: unknown } } | undefined;
@@ -578,11 +580,15 @@ function idString(value: unknown): string | null {
   return null;
 }
 
+/**
+ * Dahlia (2026-04-22) removed Charge.invoice. A charge record never supplies
+ * the invoice id, including when an older payload still carries that key.
+ * The invoice id comes from InvoicePayment, looked up by payment_intent.
+ */
 export function chargeViewFromRecord(object: Record<string, unknown> | null | undefined): ChargeView | null {
   if (!object) return null;
   const id = idString(object.id) ?? (typeof object.id === "string" ? object.id : null);
   if (!id) return null;
-  const invoice = object.invoice;
   const metadata = object.metadata;
   return {
     id,
@@ -590,10 +596,38 @@ export function chargeViewFromRecord(object: Record<string, unknown> | null | un
     amount_refunded: typeof object.amount_refunded === "number" ? object.amount_refunded : null,
     refunded: typeof object.refunded === "boolean" ? object.refunded : null,
     customer: idString(object.customer),
-    invoiceId: idString(invoice),
+    invoiceId: null,
     paymentIntentId: idString(object.payment_intent),
     metadata: metadata && typeof metadata === "object" ? metadata as ChargeView["metadata"] : null,
   };
+}
+
+export type InvoicePaymentView = {
+  id?: string | null;
+  invoice?: unknown;
+  status?: string | null;
+  payment?: { type?: string | null; payment_intent?: unknown } | null;
+};
+
+/**
+ * Invoice paid by this PaymentIntent. A paid InvoicePayment wins. A canceled
+ * one does not count. Dahlia charge fixtures have no invoice field.
+ */
+export function invoiceIdFromInvoicePayments(
+  paymentIntentId: string,
+  payments: readonly InvoicePaymentView[],
+): string | null {
+  let fallback: string | null = null;
+  for (const payment of payments) {
+    const intent = idString(payment.payment?.payment_intent);
+    if (intent !== paymentIntentId) continue;
+    const invoiceId = idString(payment.invoice);
+    if (!invoiceId) continue;
+    const status = (payment.status ?? "").toLowerCase();
+    if (status === "paid") return invoiceId;
+    if (!fallback && status !== "canceled" && status !== "cancelled") fallback = invoiceId;
+  }
+  return fallback;
 }
 
 export type LinkedPurchase =
@@ -603,8 +637,9 @@ export type LinkedPurchase =
 
 /**
  * A charge is the Lifetime purchase only when its PaymentIntent is that
- * checkout (or the charge itself carries plan_id lifetime at the Lifetime
- * amount). A subscription purchase is the invoice on the charge. Amount alone
+ * checkout, the charge itself carries plan_id lifetime at the Lifetime
+ * amount, or the stored lifetime PaymentIntent is this charge. A subscription
+ * purchase is the invoice paid by the charge's PaymentIntent. Amount alone
  * never links an unrelated charge to either one.
  */
 export function linkChargeToPurchase(input: {
@@ -612,6 +647,7 @@ export function linkChargeToPurchase(input: {
   sessions: LifetimeSessionView[];
   subscriptions?: SubscriptionView[];
   lifetimeAmountCents?: number;
+  storedLifetimePaymentIntentId?: string | null;
 }): LinkedPurchase {
   const lifetimeAmount = input.lifetimeAmountCents ?? PRICING_PLANS.lifetime.amountCents;
   const paymentIntentId = input.charge.paymentIntentId;
@@ -621,7 +657,13 @@ export function linkChargeToPurchase(input: {
   const metadataMatch = input.charge.metadata?.plan_id === "lifetime"
     && input.charge.amount === lifetimeAmount
     && paymentIntentId != null;
-  if ((sessionMatch || metadataMatch) && paymentIntentId) {
+  const storedMatch = Boolean(
+    paymentIntentId
+    && input.storedLifetimePaymentIntentId
+    && input.storedLifetimePaymentIntentId === paymentIntentId
+    && input.charge.amount === lifetimeAmount,
+  );
+  if ((sessionMatch || metadataMatch || storedMatch) && paymentIntentId) {
     return {
       kind: "lifetime",
       purchaseKey: `pi:${paymentIntentId}`,
@@ -660,12 +702,14 @@ export function planChargeRevocation(input: {
   charge: ChargeView;
   sessions: LifetimeSessionView[];
   subscriptions?: SubscriptionView[];
+  storedLifetimePaymentIntentId?: string | null;
   dispute?: { id: string; status: string | null; phase: "created" | "closed" };
 }): ChargePlan {
   const linked = linkChargeToPurchase({
     charge: input.charge,
     sessions: input.sessions,
     subscriptions: input.subscriptions,
+    storedLifetimePaymentIntentId: input.storedLifetimePaymentIntentId,
   });
   if (input.eventType === "charge.refunded") {
     const extent = refundExtent(input.charge);
@@ -747,8 +791,10 @@ function mutationFor(
 
 /**
  * Timestamp order for one purchase reason. An older event never applies.
- * An equal timestamp may activate a revocation and must not clear one.
  * The same event id is a replay and does not write again.
+ * An equal timestamp is ordered so a clear wins: a dispute won in the same
+ * second it was opened restores access, and the opening event cannot revoke
+ * that clear. Delivery order does not change the result.
  */
 export function reducePurchaseRevocation(
   existing: { active: boolean; sourceEventCreated: number; sourceEventId: string } | null,
@@ -758,8 +804,8 @@ export function reducePurchaseRevocation(
   if (existing.sourceEventId === incoming.sourceEventId) return { apply: false, stale: false };
   if (incoming.sourceEventCreated < existing.sourceEventCreated) return { apply: false, stale: true };
   if (incoming.sourceEventCreated === existing.sourceEventCreated) {
-    if (incoming.active && !existing.active) return { apply: true, stale: false };
-    if (!incoming.active && existing.active) return { apply: false, stale: true };
+    if (!incoming.active && existing.active) return { apply: true, stale: false };
+    if (incoming.active && !existing.active) return { apply: false, stale: true };
     return { apply: false, stale: false };
   }
   return { apply: true, stale: false };
@@ -786,8 +832,9 @@ export function revokedLifetimePaymentIntentIds(rows: ReadonlyArray<Pick<Purchas
 /**
  * Stored lifetime is cleared only when its own PaymentIntent is revoked, or
  * when a legacy row has no PaymentIntent and every Lifetime session we can
- * see for this customer is revoked. An admin grant has neither and stays.
- * A newer unrevoked Lifetime session keeps access.
+ * see is revoked. An admin grant has no Lifetime session and stays, even
+ * when some other PaymentIntent is revoked. A newer unrevoked Lifetime
+ * session keeps access.
  */
 export function lifetimeRevocationDecision(input: {
   storedLifetime: boolean;
@@ -800,8 +847,10 @@ export function lifetimeRevocationDecision(input: {
   let lifetimeVerified = false;
   let lifetimePurchasedAt: Date | null = null;
   let grantedPaymentIntentId: string | null = null;
+  const visibleLifetimeIntentIds: string[] = [];
   for (const session of input.sessions) {
     const paymentIntentId = lifetimePaymentIntentId(session, amount);
+    if (paymentIntentId) visibleLifetimeIntentIds.push(paymentIntentId);
     if (paymentIntentId && revoked.has(paymentIntentId)) continue;
     if (!verifiedLifetimePayment(session)) continue;
     lifetimeVerified = true;
@@ -811,7 +860,11 @@ export function lifetimeRevocationDecision(input: {
   const storedPi = input.storedPaymentIntentId;
   const storedRevoked = input.storedLifetime && storedPi != null && revoked.has(storedPi);
   const newerStoredPurchase = input.storedLifetime && storedPi != null && !revoked.has(storedPi);
-  const legacyRevoked = input.storedLifetime && storedPi == null && revoked.size > 0 && !lifetimeVerified;
+  const legacyRevoked = input.storedLifetime
+    && storedPi == null
+    && visibleLifetimeIntentIds.length > 0
+    && visibleLifetimeIntentIds.every(id => revoked.has(id))
+    && !lifetimeVerified;
   const suppressStoredLifetime = !lifetimeVerified && !newerStoredPurchase && (storedRevoked || legacyRevoked);
   return {
     suppressStoredLifetime,

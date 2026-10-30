@@ -7,11 +7,14 @@ on:
       - grok/faultline-baseline-stabilization-2026-09-11
       - grok/faultline-completion-2026-09-08
       - release/verified-2026-10-22
+      - cursor/faultline-rc-2026-10-28-4018
+      - cursor/stripe-refund-dispute-entitlement-2996
   pull_request:
     branches:
       - grok/faultline-completion-2026-09-08
       - grok/faultline-baseline-stabilization-2026-09-11
       - release/verified-2026-10-22
+      - cursor/faultline-rc-2026-10-28-4018
 
 concurrency:
   group: faultline-verify-${{ github.workflow }}-${{ github.ref }}

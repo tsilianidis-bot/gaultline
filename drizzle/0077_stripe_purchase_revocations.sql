@@ -4,12 +4,12 @@
 --   entitlementAuditLog.sourceEventCreated (Stripe event.created, unix seconds)
 --   stripePurchaseRevocations (one row per purchase and revocation reason)
 -- This file does not drop, modify, or rewrite existing columns.
--- Validated only on a disposable database.
-ALTER TABLE `users` ADD `lifetimePaymentIntentId` varchar(64) NULL;
+-- IF NOT EXISTS lets a partial apply be run again. Validated only on a disposable database.
+ALTER TABLE `users` ADD COLUMN IF NOT EXISTS `lifetimePaymentIntentId` varchar(64) NULL;
 --> statement-breakpoint
-ALTER TABLE `entitlementAuditLog` ADD `sourceEventCreated` bigint NULL;
+ALTER TABLE `entitlementAuditLog` ADD COLUMN IF NOT EXISTS `sourceEventCreated` bigint NULL;
 --> statement-breakpoint
-CREATE TABLE `stripePurchaseRevocations` (
+CREATE TABLE IF NOT EXISTS `stripePurchaseRevocations` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`purchaseKey` varchar(191) NOT NULL,
 	`reasonKind` varchar(64) NOT NULL,
@@ -30,4 +30,4 @@ CREATE TABLE `stripePurchaseRevocations` (
 	CONSTRAINT `stripePurchaseRevocations_purchase_reason_uniq` UNIQUE(`purchaseKey`, `reasonKind`)
 );
 --> statement-breakpoint
-CREATE INDEX `stripePurchaseRevocations_userId_idx` ON `stripePurchaseRevocations` (`userId`);
+CREATE INDEX IF NOT EXISTS `stripePurchaseRevocations_userId_idx` ON `stripePurchaseRevocations` (`userId`);

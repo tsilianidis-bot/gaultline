@@ -7,6 +7,8 @@ import { describe, expect, it } from "vitest";
 import { PRICING_PLANS } from "../../shared/tiers";
 import {
   decideEntitlement,
+  chargeViewFromRecord,
+  invoiceIdFromInvoicePayments,
   lifetimePaymentIntentId,
   lifetimeRevocationDecision,
   linkChargeToPurchase,
@@ -122,6 +124,55 @@ describe("refund extent and purchase link", () => {
       charge: charge({ amount: STANDARD, invoiceId: null, paymentIntentId: "pi_other" }),
       sessions: [lifetimeCheckout("pi_life")],
     }).kind).toBe("unrelated");
+    expect(linkChargeToPurchase({
+      charge: charge({ amount: LIFETIME, amount_refunded: LIFETIME, invoiceId: null, paymentIntentId: "pi_life", customer: null }),
+      sessions: [],
+      storedLifetimePaymentIntentId: "pi_life",
+    })).toMatchObject({ kind: "lifetime", paymentIntentId: "pi_life" });
+  });
+
+  it("links a dahlia charge through InvoicePayment and ignores Charge.invoice", () => {
+    const dahlia = {
+      id: "ch_std",
+      object: "charge",
+      amount: STANDARD,
+      amount_refunded: STANDARD,
+      refunded: true,
+      customer: "cus_a",
+      payment_intent: "pi_std",
+    };
+    expect(dahlia).not.toHaveProperty("invoice");
+    const viewed = chargeViewFromRecord(dahlia);
+    expect(viewed?.invoiceId).toBeNull();
+    expect(chargeViewFromRecord({ ...dahlia, invoice: "in_legacy" })?.invoiceId).toBeNull();
+    expect(linkChargeToPurchase({
+      charge: viewed!,
+      sessions: [],
+      subscriptions: [subscription()],
+    }).kind).toBe("unrelated");
+    const payments = [
+      {
+        id: "inpay_canceled",
+        object: "invoice_payment",
+        invoice: "in_canceled",
+        status: "canceled",
+        payment: { type: "payment_intent", payment_intent: "pi_std" },
+      },
+      {
+        id: "inpay_std",
+        object: "invoice_payment",
+        invoice: "in_paid",
+        status: "paid",
+        payment: { type: "payment_intent", payment_intent: { id: "pi_std" } },
+      },
+    ];
+    const invoiceId = invoiceIdFromInvoicePayments("pi_std", payments);
+    expect(invoiceId).toBe("in_paid");
+    expect(linkChargeToPurchase({
+      charge: { ...viewed!, invoiceId },
+      sessions: [],
+      subscriptions: [subscription()],
+    })).toMatchObject({ kind: "subscription", invoiceId: "in_paid", subscriptionId: "sub_live" });
   });
 });
 
@@ -175,11 +226,15 @@ describe("plan and timestamp order", () => {
     }).mutation).toMatchObject({ active: true, disputeOutcome: "lost" });
   });
 
-  it("ignores a replay, refuses a stale clear, and lets a newer timestamp win", () => {
+  it("ignores a replay, restores a same-second win, and lets a newer timestamp win", () => {
     const open = { active: true, sourceEventCreated: 100, sourceEventId: "evt_open" };
     expect(reducePurchaseRevocation(open, open)).toEqual({ apply: false, stale: false });
     expect(reducePurchaseRevocation(open, { active: false, sourceEventCreated: 90, sourceEventId: "evt_won_old" })).toEqual({ apply: false, stale: true });
-    expect(reducePurchaseRevocation(open, { active: false, sourceEventCreated: 100, sourceEventId: "evt_won_tie" })).toEqual({ apply: false, stale: true });
+    expect(reducePurchaseRevocation(open, { active: false, sourceEventCreated: 100, sourceEventId: "evt_won_tie" })).toEqual({ apply: true, stale: false });
+    expect(reducePurchaseRevocation(
+      { active: false, sourceEventCreated: 100, sourceEventId: "evt_won_tie" },
+      { active: true, sourceEventCreated: 100, sourceEventId: "evt_open_tie" },
+    )).toEqual({ apply: false, stale: true });
     expect(reducePurchaseRevocation(open, { active: false, sourceEventCreated: 200, sourceEventId: "evt_won" })).toEqual({ apply: true, stale: false });
     const won = { active: false, sourceEventCreated: 200, sourceEventId: "evt_won" };
     expect(reducePurchaseRevocation(won, { active: true, sourceEventCreated: 100, sourceEventId: "evt_open_late" })).toEqual({ apply: false, stale: true });
@@ -254,6 +309,18 @@ describe("entitlement decision under revocation", () => {
       sessions: [],
       revokedPaymentIntentIds: [],
     })).toMatchObject({ suppressStoredLifetime: false, lifetimeVerified: false });
+    expect(lifetimeRevocationDecision({
+      storedLifetime: true,
+      storedPaymentIntentId: null,
+      sessions: [],
+      revokedPaymentIntentIds: ["pi_old"],
+    })).toMatchObject({ suppressStoredLifetime: false, lifetimeVerified: false });
+    expect(lifetimeRevocationDecision({
+      storedLifetime: true,
+      storedPaymentIntentId: null,
+      sessions: [lifetimeCheckout("pi_old")],
+      revokedPaymentIntentIds: ["pi_old"],
+    })).toMatchObject({ suppressStoredLifetime: true, lifetimeVerified: false });
     expect(decide({
       storedLifetime: true,
       suppressStoredLifetime: true,
