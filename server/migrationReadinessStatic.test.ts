@@ -31,7 +31,7 @@ describe("migration source integrity and readiness wiring", () => {
     }
   });
 
-  it("configures every 0078-0082 runtime declaration module as a Drizzle schema input", () => {
+  it("configures schema.ts and every 0078-0082 runtime declaration module as Drizzle schema inputs", () => {
     const config = readFileSync(resolve(root, "drizzle.config.ts"), "utf8");
     for (const path of [
       "./drizzle/schema.ts",
@@ -45,16 +45,27 @@ describe("migration source integrity and readiness wiring", () => {
     }
   });
 
-  it("builds source-only fresh MySQL bootstrap SQL while preserving every journal ledger entry", () => {
+  it("builds source-only fresh MySQL bootstrap SQL while preserving the 84-entry journal through 0083", () => {
+    const journal = JSON.parse(readFileSync(resolve(root, "drizzle/meta/_journal.json"), "utf8")) as {
+      entries: Array<{ idx: number; tag: string }>;
+    };
+    expect(journal.entries).toHaveLength(84);
+    expect(journal.entries.at(-1)?.idx).toBe(83);
+    expect(journal.entries.at(-1)?.tag).toBe("0083_auth_state_and_sessions");
     const result = spawnSync(
       process.execPath,
       ["scripts/buildCandidateFreshMySqlMigrationSql.mjs"],
       { cwd: root, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }
     );
     expect(result.status, result.stderr).toBe(0);
-    expect(result.stderr).toContain('"lastTag":"0082_durable_alert_events"');
-    expect(result.stdout).toContain("-- journal 82: 0082_durable_alert_events");
+    expect(result.stderr).toContain('"journalEntries":84');
+    expect(result.stderr).toContain('"lastTag":"0083_auth_state_and_sessions"');
+    const emittedLedgerTail = result.stdout.slice(result.stdout.lastIndexOf("-- journal "));
+    expect(emittedLedgerTail).toContain("-- journal 83: 0083_auth_state_and_sessions");
+    expect(emittedLedgerTail).toContain("CREATE TABLE `oauthAuthorizationStates`");
+    expect(emittedLedgerTail).toContain("CREATE TABLE `authSessions`");
     expect(result.stdout).toContain("INSERT INTO `__drizzle_migrations`");
+    expect(emittedLedgerTail).toContain("INSERT INTO `__drizzle_migrations`");
     expect(result.stdout).toContain(
       "CREATE TRIGGER `user_alert_events_append_only_update`"
     );

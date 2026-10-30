@@ -6,7 +6,7 @@ if (!connectionString) {
 }
 
 export default defineConfig({
-  // The runtime tables introduced by 0078-0082 live in focused modules. Keep
+  // The runtime tables introduced by 0078-0083 live in focused modules. Keep
   // every module in the configured schema input so generation/introspection
   // sees the same declarations used by the corresponding server writers.
   schema: [

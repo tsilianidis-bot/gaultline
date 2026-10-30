@@ -24,6 +24,14 @@ export const REQUIRED_TABLES = [
   "userAlertMonitorStates",
   "userAlertEvents",
   "userAlertEventAcknowledgements",
+  "oauthAuthorizationStates",
+  "authSessions",
+] as const;
+/** Named non-primary indexes from the accepted 0083 auth-state/session tail. */
+export const REQUIRED_INDEXES = [
+  "oauthAuthorizationStates_expiresAt_idx",
+  "authSessions_openId_expiresAt_idx",
+  "authSessions_expiresAt_idx",
 ] as const;
 export const REQUIRED_FOREIGN_KEYS = [
   "algo_outcome_prov_fk",
@@ -35,7 +43,7 @@ export const REQUIRED_FOREIGN_KEYS = [
 ] as const;
 
 /**
- * Named UNIQUE and CHECK constraints from the accepted 0078-0082 tail.
+ * Named UNIQUE and CHECK constraints from the accepted 0078-0083 tail.
  * Foreign keys remain separate above so failures name their relationship.
  */
 export const REQUIRED_TABLE_CONSTRAINTS = [
@@ -92,7 +100,7 @@ export function schemaGateMessage(missing: string[]): string {
   return [
     "Refusing to start. The database is behind this build.",
     `Missing: ${missing.join(", ")}.`,
-    "Apply the existing ordered journals, including drizzle/0071_systemic_regime_engine.sql and drizzle/0074_stripe_entitlement_resync.sql through drizzle/0082_durable_alert_events.sql, only through the approved migration process.",
+    "Apply the existing ordered journals, including drizzle/0071_systemic_regime_engine.sql and drizzle/0074_stripe_entitlement_resync.sql through drizzle/0083_auth_state_and_sessions.sql, only through the approved migration process.",
     "Rehearse the ordered change on an isolated restored backup/PITR copy before any deploy; automatic schema repair and migration at boot are disabled.",
     "See docs/RC_DEPLOYMENT_AND_SCHEDULER_RUNBOOK.md.",
     "Do not start against an unmigrated users table: a users select that includes accessExpiresAt fails with Unknown column.",
@@ -106,18 +114,23 @@ export function missingSchemaObjects(
   presentForeignKeys: Iterable<string> = [],
   presentTableConstraints: Iterable<string> = [],
   presentTriggers: Iterable<string> = [],
+  presentIndexes: Iterable<string> = [],
 ): string[] {
   const columns = new Set(presentColumns);
   const tables = new Set(presentTables);
   const foreignKeys = new Set(presentForeignKeys);
   const constraints = new Set(presentTableConstraints);
   const triggers = new Set(presentTriggers);
+  const indexes = new Set(presentIndexes);
   const missing: string[] = [];
   for (const column of REQUIRED_USER_COLUMNS) {
     if (!columns.has(column)) missing.push(`users.${column}`);
   }
   for (const table of REQUIRED_TABLES) {
     if (!tables.has(table)) missing.push(`table ${table}`);
+  }
+  for (const index of REQUIRED_INDEXES) {
+    if (!indexes.has(index)) missing.push(`index ${index}`);
   }
   for (const foreignKey of REQUIRED_FOREIGN_KEYS) {
     if (!foreignKeys.has(foreignKey)) missing.push(`foreign key ${foreignKey}`);
@@ -176,7 +189,7 @@ function sqlList(values: readonly string[]): string {
 
 export async function assertDeploySchemaReady(databaseUrl = process.env.DATABASE_URL): Promise<void> {
   if (!databaseUrl) {
-    console.log("[Schema] DATABASE_URL is unset. Skipping the 0071 and 0074-0082 boot checks.");
+    console.log("[Schema] DATABASE_URL is unset. Skipping the 0071 and 0074-0083 boot checks.");
     return;
   }
   const connection = await mysql.createConnection(databaseUrl);
@@ -191,6 +204,15 @@ export async function assertDeploySchemaReady(databaseUrl = process.env.DATABASE
       `SELECT TABLE_NAME AS name FROM information_schema.TABLES
        WHERE TABLE_SCHEMA = DATABASE()
          AND TABLE_NAME IN (${sqlList(REQUIRED_TABLES)})`,
+    );
+    const [indexRows] = await connection.query(
+      `SELECT DISTINCT INDEX_NAME AS name FROM information_schema.STATISTICS
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND (
+           (TABLE_NAME = 'oauthAuthorizationStates' AND INDEX_NAME = 'oauthAuthorizationStates_expiresAt_idx')
+           OR (TABLE_NAME = 'authSessions' AND INDEX_NAME = 'authSessions_openId_expiresAt_idx')
+           OR (TABLE_NAME = 'authSessions' AND INDEX_NAME = 'authSessions_expiresAt_idx')
+         )`,
     );
     const [foreignKeyRows] = await connection.query(
       `SELECT CONSTRAINT_NAME AS name FROM information_schema.TABLE_CONSTRAINTS
@@ -214,6 +236,7 @@ export async function assertDeploySchemaReady(databaseUrl = process.env.DATABASE
       (foreignKeyRows as Array<{ name: string }>).map(row => row.name),
       (constraintRows as Array<{ name: string }>).map(row => row.name),
       (triggerRows as Array<{ name: string }>).map(row => row.name),
+      (indexRows as Array<{ name: string }>).map(row => row.name),
     );
     if (missing.length > 0) throw new Error(schemaGateMessage(missing));
   } finally {

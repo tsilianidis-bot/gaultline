@@ -3,6 +3,7 @@ import {
   missingSchemaObjects,
   missingSystemicSchemaObjects,
   REQUIRED_FOREIGN_KEYS,
+  REQUIRED_INDEXES,
   REQUIRED_SYSTEMIC_COLUMNS,
   REQUIRED_TABLE_CONSTRAINTS,
   REQUIRED_TABLES,
@@ -27,6 +28,11 @@ describe("deploy schema gate", () => {
     const missing = missingSchemaObjects([], []);
     expect(missing).toContain("users.accessExpiresAt");
     expect(missing).toContain("table stripePaymentOrigins");
+    expect(missing).toContain("table oauthAuthorizationStates");
+    expect(missing).toContain("table authSessions");
+    expect(missing).toContain("index oauthAuthorizationStates_expiresAt_idx");
+    expect(missing).toContain("index authSessions_openId_expiresAt_idx");
+    expect(missing).toContain("index authSessions_expiresAt_idx");
     expect(missing).toContain("foreign key stripePaymentReversalEvents_origin_fk");
     expect(missing).toContain("constraint stripePaymentReversalEvents_policy_pending_only");
     expect(missing).toContain("trigger user_alert_events_append_only_delete");
@@ -34,19 +40,31 @@ describe("deploy schema gate", () => {
     const message = schemaGateMessage(missing);
     expect(message).toContain("Refusing to start");
     expect(message).toContain("0071_systemic_regime_engine.sql");
-    expect(message).toContain("0074_stripe_entitlement_resync.sql through drizzle/0082_durable_alert_events.sql");
+    expect(message).toContain("0074_stripe_entitlement_resync.sql through drizzle/0083_auth_state_and_sessions.sql");
     expect(message).toContain("restored backup/PITR copy");
     expect(message).toContain("Unknown column");
   });
 
-  it("passes only when all runtime tables, constraints, and append-only triggers are present", () => {
+  it("passes only when all runtime tables, indexes, constraints, and append-only triggers are present", () => {
     expect(missingSchemaObjects(
       REQUIRED_USER_COLUMNS,
       REQUIRED_TABLES,
       REQUIRED_FOREIGN_KEYS,
       REQUIRED_TABLE_CONSTRAINTS,
       REQUIRED_TRIGGERS,
+      REQUIRED_INDEXES,
     )).toEqual([]);
+  });
+
+  it("fails closed when an exact 0083 auth index is absent", () => {
+    expect(missingSchemaObjects(
+      REQUIRED_USER_COLUMNS,
+      REQUIRED_TABLES,
+      REQUIRED_FOREIGN_KEYS,
+      REQUIRED_TABLE_CONSTRAINTS,
+      REQUIRED_TRIGGERS,
+      REQUIRED_INDEXES.filter(index => index !== "authSessions_openId_expiresAt_idx"),
+    )).toEqual(["index authSessions_openId_expiresAt_idx"]);
   });
 
   it("fails closed for a missing systemic schema instead of attempting runtime DDL", () => {
