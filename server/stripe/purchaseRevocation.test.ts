@@ -133,6 +133,21 @@ describe("refund extent and purchase link", () => {
       sessions: [],
       storedLifetimePaymentIntentId: "pi_life",
     })).toMatchObject({ kind: "lifetime", paymentIntentId: "pi_life" });
+    const discounted = { ...lifetimeCheckout("pi_promo"), amount_total: 100_000 };
+    expect(lifetimePaymentIntentId(discounted)).toBe("pi_promo");
+    expect(lifetimePaymentIntentId({ ...discounted, amount_total: 0 })).toBeNull();
+    expect(linkChargeToPurchase({
+      charge: charge({ amount: 100_000, amount_refunded: 100_000, invoiceId: null, paymentIntentId: "pi_promo" }),
+      sessions: [discounted],
+    })).toMatchObject({ kind: "lifetime", paymentIntentId: "pi_promo" });
+    expect(linkChargeToPurchase({
+      charge: charge({ amount: 100_000, amount_refunded: 100_000, invoiceId: null, paymentIntentId: "pi_meta", metadata: { plan_id: "lifetime" } }),
+      sessions: [],
+    }).kind).toBe("unresolved");
+    expect(linkChargeToPurchase({
+      charge: charge({ amount: LIFETIME, amount_refunded: LIFETIME, invoiceId: null, paymentIntentId: "pi_meta", metadata: { plan_id: "lifetime" } }),
+      sessions: [],
+    })).toMatchObject({ kind: "lifetime", paymentIntentId: "pi_meta" });
   });
 
   it("links a dahlia charge through InvoicePayment and ignores Charge.invoice", () => {

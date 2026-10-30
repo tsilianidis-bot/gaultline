@@ -505,18 +505,19 @@ export function decideEntitlement(input: {
 }
 
 /**
- * PaymentIntent of a Lifetime checkout ($1,500, plan_id lifetime, mode payment).
+ * PaymentIntent of a Lifetime checkout. Promo codes are allowed, so the
+ * session matches on plan_id lifetime, mode payment, and amount_total > 0.
  * This does not require amount_received: a later refund can zero that field
- * while the session still identifies the purchase.
+ * while the session still identifies the purchase. The list price is checked
+ * only when the charge metadata itself says plan_id lifetime.
  */
 export function lifetimePaymentIntentId(
   session: LifetimeSessionView | null | undefined,
-  amountCents: number = PRICING_PLANS.lifetime.amountCents,
 ): string | null {
   if (!session) return null;
   if (session.metadata?.plan_id !== "lifetime") return null;
   if ((session.mode ?? "") !== "payment") return null;
-  if (session.amount_total !== amountCents) return null;
+  if (!(typeof session.amount_total === "number" && session.amount_total > 0)) return null;
   const intent = session.payment_intent;
   if (typeof intent === "string" && intent) return intent;
   if (intent && typeof intent === "object" && typeof intent.id === "string" && intent.id) return intent.id;
@@ -655,7 +656,7 @@ export function linkChargeToPurchase(input: {
   const lifetimeAmount = input.lifetimeAmountCents ?? PRICING_PLANS.lifetime.amountCents;
   const paymentIntentId = input.charge.paymentIntentId;
   const sessionMatch = paymentIntentId
-    ? input.sessions.some(session => lifetimePaymentIntentId(session, lifetimeAmount) === paymentIntentId)
+    ? input.sessions.some(session => lifetimePaymentIntentId(session) === paymentIntentId)
     : false;
   const metadataMatch = input.charge.metadata?.plan_id === "lifetime"
     && input.charge.amount === lifetimeAmount
@@ -663,8 +664,7 @@ export function linkChargeToPurchase(input: {
   const storedMatch = Boolean(
     paymentIntentId
     && input.storedLifetimePaymentIntentId
-    && input.storedLifetimePaymentIntentId === paymentIntentId
-    && input.charge.amount === lifetimeAmount,
+    && input.storedLifetimePaymentIntentId === paymentIntentId,
   );
   if ((sessionMatch || metadataMatch || storedMatch) && paymentIntentId) {
     return {
@@ -850,13 +850,12 @@ export function lifetimeRevocationDecision(input: {
   revokedPaymentIntentIds: readonly string[];
 }): { suppressStoredLifetime: boolean; lifetimeVerified: boolean; lifetimePurchasedAt: Date | null; lifetimePaymentIntentId: string | null } {
   const revoked = new Set(input.revokedPaymentIntentIds);
-  const amount = PRICING_PLANS.lifetime.amountCents;
   let lifetimeVerified = false;
   let lifetimePurchasedAt: Date | null = null;
   let grantedPaymentIntentId: string | null = null;
   const visibleLifetimeIntentIds: string[] = [];
   for (const session of input.sessions) {
-    const paymentIntentId = lifetimePaymentIntentId(session, amount);
+    const paymentIntentId = lifetimePaymentIntentId(session);
     if (paymentIntentId) visibleLifetimeIntentIds.push(paymentIntentId);
     if (paymentIntentId && revoked.has(paymentIntentId)) continue;
     if (!verifiedLifetimePayment(session)) continue;

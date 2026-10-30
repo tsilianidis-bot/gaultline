@@ -1182,6 +1182,172 @@ describe('refund and dispute entitlement', () => {
     }));
   });
 
+  it('revokes and restores a discounted Lifetime refund and dispute', async () => {
+    const DISCOUNT = 100_000;
+    const user = {
+      id: 7, name: 'Ada', email: 'ada@example.com', accessTier: 'founding' as const, lifetimeAccess: true, stripeCustomerId: 'cus_a', lifetimePaymentIntentId: 'pi_promo',
+    };
+    vi.mocked(getUserByStripeCustomerId).mockResolvedValue(user);
+    vi.mocked(getEntitlementUserById).mockResolvedValue(user);
+    const session = {
+      ...lifetimeSession('pi_promo'),
+      amount_total: DISCOUNT,
+      payment_intent: { id: 'pi_promo', status: 'succeeded', amount_received: 0, amount: DISCOUNT },
+    };
+    usePicture(premiumSub({ status: 'canceled' }), [session]);
+    vi.mocked(listPurchaseRevocations).mockResolvedValue([{
+      purchaseKey: 'pi:pi_promo',
+      reasonKind: 'full_refund',
+      purchaseKind: 'lifetime',
+      chargeId: 'ch_promo',
+      invoiceId: null,
+      paymentIntentId: 'pi_promo',
+      subscriptionId: null,
+      disputeId: null,
+      disputeOutcome: null,
+      active: true,
+      sourceEventId: 'evt_charge_refunded_ch_promo',
+      sourceEventCreated: PERIOD_START + 40,
+      userId: 7,
+    }]);
+    const refund = await post(chargeEvent('charge.refunded', {
+      id: 'ch_promo',
+      object: 'charge',
+      amount: DISCOUNT,
+      amount_refunded: DISCOUNT,
+      refunded: true,
+      customer: 'cus_a',
+      payment_intent: 'pi_promo',
+    }));
+    expect(refund._status).toBe(200);
+    expect(applyPurchaseRevocation).toHaveBeenCalledWith(expect.objectContaining({
+      purchaseKind: 'lifetime',
+      paymentIntentId: 'pi_promo',
+      active: true,
+      reasonKind: 'full_refund',
+    }));
+    expect(commitEntitlementResync).toHaveBeenCalledWith(expect.objectContaining({
+      desired: expect.objectContaining({ accessTier: 'free', grantLifetime: false, revokeLifetime: true, stripeSubscriptionId: null }),
+    }));
+
+    vi.mocked(applyPurchaseRevocation).mockClear();
+    vi.mocked(commitEntitlementResync).mockClear();
+    vi.mocked(listPurchaseRevocations).mockResolvedValue([{
+      purchaseKey: 'pi:pi_promo',
+      reasonKind: 'dispute:dp_promo',
+      purchaseKind: 'lifetime',
+      chargeId: 'ch_promo',
+      invoiceId: null,
+      paymentIntentId: 'pi_promo',
+      subscriptionId: null,
+      disputeId: 'dp_promo',
+      disputeOutcome: 'open',
+      active: true,
+      sourceEventId: 'evt_dispute_promo',
+      sourceEventCreated: PERIOD_START + 50,
+      userId: 7,
+    }]);
+    const opened = await post({
+      id: 'evt_dispute_promo',
+      type: 'charge.dispute.created',
+      created: PERIOD_START + 50,
+      data: { object: {
+        id: 'dp_promo',
+        status: 'needs_response',
+        charge: {
+          id: 'ch_promo',
+          object: 'charge',
+          amount: DISCOUNT,
+          amount_refunded: 0,
+          refunded: false,
+          customer: 'cus_a',
+          payment_intent: 'pi_promo',
+        },
+      } },
+    });
+    expect(opened._status).toBe(200);
+    expect(applyPurchaseRevocation).toHaveBeenCalledWith(expect.objectContaining({
+      purchaseKind: 'lifetime',
+      paymentIntentId: 'pi_promo',
+      active: true,
+      disputeOutcome: 'open',
+    }));
+
+    vi.mocked(applyPurchaseRevocation).mockClear();
+    vi.mocked(commitEntitlementResync).mockClear();
+    vi.mocked(listPurchaseRevocations).mockResolvedValue([]);
+    vi.mocked(stripe.charges.retrieve).mockResolvedValue({
+      id: 'ch_promo',
+      amount: DISCOUNT,
+      amount_refunded: 0,
+      refunded: false,
+      customer: 'cus_a',
+      payment_intent: 'pi_promo',
+    } as never);
+    const sessionPaid = {
+      ...session,
+      payment_intent: { id: 'pi_promo', status: 'succeeded', amount_received: DISCOUNT, amount: DISCOUNT },
+    };
+    usePicture(premiumSub({ status: 'canceled' }), [sessionPaid]);
+    const won = await post({
+      id: 'evt_dispute_promo_won',
+      type: 'charge.dispute.closed',
+      created: PERIOD_START + 80,
+      data: { object: {
+        id: 'dp_promo',
+        status: 'won',
+        charge: 'ch_promo',
+      } },
+    });
+    expect(won._status).toBe(200);
+    expect(stripe.charges.retrieve).toHaveBeenCalled();
+    expect(applyPurchaseRevocation).toHaveBeenCalledWith(expect.objectContaining({
+      purchaseKind: 'lifetime',
+      paymentIntentId: 'pi_promo',
+      active: false,
+      disputeOutcome: 'won',
+    }));
+    expect(commitEntitlementResync).toHaveBeenCalledWith(expect.objectContaining({
+      desired: expect.objectContaining({ accessTier: 'founding', grantLifetime: true, revokeLifetime: false }),
+    }));
+  });
+
+  it('grants Standard from checkout.session.completed when the subscription is paid', async () => {
+    usePicture();
+    const res = await post({
+      id: 'evt_std_checkout',
+      type: 'checkout.session.completed',
+      created: PERIOD_START,
+      data: { object: { id: 'cs_std', customer: 'cus_a', mode: 'subscription', metadata: { user_id: '7', plan_id: 'premium' } } },
+    });
+    expect(res._status).toBe(200);
+    expect(commitEntitlementResync).toHaveBeenCalledWith(expect.objectContaining({
+      desired: expect.objectContaining({ accessTier: 'premium', stripeSubscriptionId: 'sub_live', grantLifetime: false }),
+    }));
+  });
+
+  it('grants Lifetime from async_payment_succeeded only when the payment is verified', async () => {
+    usePicture(premiumSub({ status: 'canceled' }), [{
+      id: 'cs_promo',
+      mode: 'payment',
+      payment_status: 'paid',
+      amount_total: 100_000,
+      created: PERIOD_START,
+      metadata: { plan_id: 'lifetime' },
+      payment_intent: { id: 'pi_promo', status: 'succeeded', amount_received: 100_000, amount: 100_000 },
+    }]);
+    const res = await post({
+      id: 'evt_async_life',
+      type: 'checkout.session.async_payment_succeeded',
+      created: PERIOD_START,
+      data: { object: { id: 'cs_promo', customer: 'cus_a', mode: 'payment', metadata: { plan_id: 'lifetime', user_id: '7' } } },
+    });
+    expect(res._status).toBe(200);
+    expect(commitEntitlementResync).toHaveBeenCalledWith(expect.objectContaining({
+      desired: expect.objectContaining({ accessTier: 'founding', grantLifetime: true, stripeSubscriptionId: null }),
+    }));
+  });
+
   it('acknowledges a charge whose user cannot be resolved and alerts', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(getUserByStripeCustomerId).mockResolvedValue(null);
