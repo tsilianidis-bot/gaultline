@@ -19,7 +19,10 @@ const LIFETIME_FOUNDING_LIMIT = 100;
  * Checkout params. A user who already has a Stripe customer reuses it so a
  * second session cannot create an unbound customer. Subscription checkouts
  * copy user_id onto the subscription. customer and customer_email are not
- * sent together.
+ * sent together. Lifetime (one_time) with no stored customer sends only
+ * customer_email, so the charge often has no customer. Refunds and disputes
+ * for that charge resolve the user from the Checkout Session payment_intent
+ * and from users.lifetimePaymentIntentId.
  */
 export function buildCheckoutSessionParams(input: {
   userId: number;

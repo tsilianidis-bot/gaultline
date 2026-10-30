@@ -7,11 +7,13 @@
  */
 import mysql from "mysql2/promise";
 
-export const REQUIRED_USER_COLUMNS = ["accessExpiresAt", "entitlementRevision"] as const;
+export const REQUIRED_USER_COLUMNS = ["accessExpiresAt", "entitlementRevision", "lifetimePaymentIntentId"] as const;
+export const REQUIRED_AUDIT_COLUMNS = ["sourceEventCreated"] as const;
 export const REQUIRED_TABLES = [
   "stripeSubscriptionCancellations",
   "pentagonalThesisRecords",
   "pentagonalThesisOutcomeScores",
+  "stripePurchaseRevocations",
 ] as const;
 export const REQUIRED_FOREIGN_KEYS = ["algo_outcome_prov_fk"] as const;
 
@@ -19,7 +21,7 @@ export function schemaGateMessage(missing: string[]): string {
   return [
     "Refusing to start. The database is behind this build.",
     `Missing: ${missing.join(", ")}.`,
-    "Apply drizzle/0074_stripe_entitlement_resync.sql, drizzle/0075_pentagonal_thesis_records.sql, and drizzle/0076_algorithm_outcome_fk_name.sql on a backup before this deploy.",
+    "Apply drizzle/0074_stripe_entitlement_resync.sql, drizzle/0075_pentagonal_thesis_records.sql, drizzle/0076_algorithm_outcome_fk_name.sql, and drizzle/0077_stripe_purchase_revocations.sql on a backup before this deploy.",
     "See docs/RC_DEPLOYMENT_AND_SCHEDULER_RUNBOOK.md.",
     "Do not start against an unmigrated users table: a users select that includes accessExpiresAt fails with Unknown column.",
     "0076 must leave the foreign key algo_outcome_prov_fk on algorithmOutcomeObservations.",
@@ -30,13 +32,18 @@ export function missingSchemaObjects(
   presentColumns: Iterable<string>,
   presentTables: Iterable<string>,
   presentForeignKeys: Iterable<string> = [],
+  presentAuditColumns: Iterable<string> = [],
 ): string[] {
   const columns = new Set(presentColumns);
   const tables = new Set(presentTables);
   const keys = new Set(presentForeignKeys);
+  const auditColumns = new Set(presentAuditColumns);
   const missing: string[] = [];
   for (const column of REQUIRED_USER_COLUMNS) {
     if (!columns.has(column)) missing.push(`users.${column}`);
+  }
+  for (const column of REQUIRED_AUDIT_COLUMNS) {
+    if (!auditColumns.has(column)) missing.push(`entitlementAuditLog.${column}`);
   }
   for (const table of REQUIRED_TABLES) {
     if (!tables.has(table)) missing.push(`table ${table}`);
@@ -58,12 +65,17 @@ export async function assertDeploySchemaReady(databaseUrl = process.env.DATABASE
     const [columnRows] = await connection.query(
       `SELECT COLUMN_NAME AS name FROM information_schema.COLUMNS
        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users'
-         AND COLUMN_NAME IN ('accessExpiresAt', 'entitlementRevision')`,
+         AND COLUMN_NAME IN ('accessExpiresAt', 'entitlementRevision', 'lifetimePaymentIntentId')`,
+    );
+    const [auditRows] = await connection.query(
+      `SELECT COLUMN_NAME AS name FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'entitlementAuditLog'
+         AND COLUMN_NAME = 'sourceEventCreated'`,
     );
     const [tableRows] = await connection.query(
       `SELECT TABLE_NAME AS name FROM information_schema.TABLES
        WHERE TABLE_SCHEMA = DATABASE()
-         AND TABLE_NAME IN ('stripeSubscriptionCancellations', 'pentagonalThesisRecords', 'pentagonalThesisOutcomeScores')`,
+         AND TABLE_NAME IN ('stripeSubscriptionCancellations', 'pentagonalThesisRecords', 'pentagonalThesisOutcomeScores', 'stripePurchaseRevocations')`,
     );
     const [keyRows] = await connection.query(
       `SELECT CONSTRAINT_NAME AS name FROM information_schema.TABLE_CONSTRAINTS
@@ -76,6 +88,7 @@ export async function assertDeploySchemaReady(databaseUrl = process.env.DATABASE
       (columnRows as Array<{ name: string }>).map(row => row.name),
       (tableRows as Array<{ name: string }>).map(row => row.name),
       (keyRows as Array<{ name: string }>).map(row => row.name),
+      (auditRows as Array<{ name: string }>).map(row => row.name),
     );
     if (missing.length > 0) {
       throw new Error(schemaGateMessage(missing));

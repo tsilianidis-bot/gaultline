@@ -64,6 +64,23 @@ Resolve the user by Stripe customer id, then metadata `user_id` on the checkout 
 - A paid tier with the flag omitted leaves an existing lifetime purchase in place.
 - The admin list returns `effectiveTier` as well as the stored `accessTier`. The users screen highlights and badges the effective tier. Choosing free, core, or premium passes `lifetimeAccess: false` so the effective tier matches the control. Choosing founding does not strip a lifetime purchase.
 
+## Refunds and disputes
+
+`charge.refunded`, `charge.dispute.created`, and `charge.dispute.closed` use the same claim fence, revision compare, and audit log. Each processed event writes one `entitlementAuditLog` row with the Stripe event id, `event.created` (`sourceEventCreated`, unix seconds), and a reason.
+
+A charge is the Lifetime purchase when its PaymentIntent is a Lifetime checkout session (`plan_id=lifetime`, mode `payment`, `amount_total` > 0, so a promotion code still matches), when the charge metadata itself says `plan_id=lifetime` at the $1,500 list amount, or when `users.lifetimePaymentIntentId` is that PaymentIntent. A charge is a subscription purchase when an InvoicePayment for its PaymentIntent names an invoice and the amount is positive. API version `2026-04-22.dahlia` does not include `Charge.invoice`. The public Standard price is $99/month. A charge with a customer and a positive amount but no InvoicePayment is not sealed: the handler returns 500 so Stripe retries. A charge with no customer that is not the Lifetime purchase is unrelated and does not revoke Lifetime or a subscription.
+
+Lifetime checkout with no stored customer sends `customer_email` only, so the charge often has no customer. The handler resolves that user from `checkout.sessions.list({ payment_intent })` and, if the session has no user id, from `users.lifetimePaymentIntentId`. Subscription and session reads then use `users.stripeCustomerId` when the charge itself has no customer, so an active Standard subscription stays in place when Lifetime is revoked.
+
+- A full refund (`refunded` or `amount_refunded >= amount`, amount > 0) revokes that purchase only. A partial refund writes the audit row and does not revoke. A zero-amount charge does not revoke.
+- `charge.dispute.created` revokes that purchase. `charge.dispute.closed` with `won` clears that dispute when its source timestamp is newer, and also when the win shares the opening event's second. `lost` and `charge_refunded` keep it revoked. `warning_closed` and `prevented` do not revoke. Any other close status is acknowledged and logged without an entitlement change.
+- Won restores access only when no other revocation reason is still active. A full refund on the same purchase stays in force. A cancellation marker is unchanged. A newer paid invoice is a different purchase and stays entitled. A stale event cannot clear a revocation. A same-second win does clear the opening, and the opening cannot re-revoke that win. An older event cannot revoke a newer one.
+- A charge event that cannot be resolved (no user, unknown dispute status, missing charge) is acknowledged with 200 and a `BILLING-ALERT` log. Grant events (`invoice.paid`, subscription, checkout) still return 500 so Stripe retries. An empty InvoicePayment lookup on a charge that has a customer and a positive amount returns 500 and is not sealed. Stripe and database failures still return 500.
+- Rows live in `stripePurchaseRevocations`, one per purchase and reason, so a dispute and a refund do not overwrite each other. The commit locks them with the user row. A mismatch is `stale_state` and is not sealed.
+- Stored lifetime is cleared only when its `lifetimePaymentIntentId` is revoked, or when a legacy row has no PaymentIntent and every Lifetime checkout session we can see is revoked. An admin grant has no Lifetime session and stays, even if another PaymentIntent is revoked. A newer stored PaymentIntent that is not revoked keeps access.
+
+`drizzle/0077_stripe_purchase_revocations.sql` adds `users.lifetimePaymentIntentId`, `entitlementAuditLog.sourceEventCreated`, and `stripePurchaseRevocations`. Each statement uses `IF NOT EXISTS`. It is additive. It is not applied by this change. The boot gate refuses to start until it has been applied on a backup.
+
 ## What this does not do
 
-Checkout prices, checkout enablement, and PLATO are unchanged. No migration is applied. No live Stripe object is modified.
+Checkout prices, checkout enablement, and PLATO are unchanged. No migration is applied. No live Stripe object is modified. Billing, registration, and checkout stay off.
